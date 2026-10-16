@@ -160,6 +160,7 @@ import { resolveDefaultViewSort, setDefaultViewSort } from "@/lib/default-view-p
 import { filterListItemsBySearch, listItemSortOptions, sortListItems } from "@/lib/list-item-sort"
 import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
 import "./filemanager98.css"
+import { withoutStepItems } from "@/lib/step-item-guard"
 
 interface EnhancedCategoryViewProps {
   onTaskSelect: (taskId: string) => void
@@ -648,10 +649,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory])
 
   const listedTasks = useMemo(() => {
-    let tasks =
+    // A step's item never shows in Lists (Phase 11); its step is in its task.
+    let tasks = withoutStepItems(
       openTarget?.type === "category" && openCategory?.sentThisWeek && !showSentItems
         ? visibleListItems(openTasks, openCategory.id, false)
-        : openTasks
+        : openTasks,
+    )
     if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return tasks
     const targetKey = openTargetKey(openTarget)
     const hiddenTypes = hiddenItemTypeIdsByTarget?.[targetKey]

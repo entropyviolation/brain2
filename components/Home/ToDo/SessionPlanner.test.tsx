@@ -78,6 +78,9 @@ describe("SessionPlanner", () => {
     expect(screen.getByRole("heading", { name: /process inbox|This line is ready to close/ })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "End" }))
+    // Phase 15 A: End shows the end-of-sitting strip first. "process inbox" has no steps, so no "Left it here".
+    expect(screen.getByText(/^Sat \d+m\.$/)).toBeInTheDocument()
+    fireEvent.click(within(screen.getByRole("dialog", { name: "End of sitting" })).getByRole("button", { name: "Close" }))
     expect(plan().phase).toBe("review")
     expect(screen.getByText(/Bare minimum reached/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Save session" }))
@@ -107,6 +110,7 @@ describe("SessionPlanner", () => {
     })
     const line = plan().activeLineId
     fireEvent.click(screen.getByRole("button", { name: "Park" }))
+    fireEvent.click(screen.getByRole("button", { name: "Park now" })) // the note to tomorrow-you is optional
     expect(plan()).toMatchObject({ phase: "parked", activeLineId: line })
     expect(screen.getByText("50:00")).toBeInTheDocument()
     act(() => {
@@ -143,6 +147,7 @@ describe("SessionPlanner", () => {
     expect(open.filter((p) => p.phase === "run")).toHaveLength(1)
 
     fireEvent.click(screen.getByRole("button", { name: "End" }))
+    fireEvent.click(within(screen.getByRole("dialog", { name: "End of sitting" })).getByRole("button", { name: /^(Skip|Close)$/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save session" }))
     expect(useSessionPlanStore.getState().history).toHaveLength(1)
 

@@ -6,6 +6,13 @@
  * the step's estimate, the live clock, Objectives (tied to steps), Just Start,
  * Pause / Resume, and Stop. Stop asks once what to do with free objectives:
  * keep them as steps of the task, or leave them on the Tracking block.
+ * Then the end-of-sitting strip (`SittingEnd`) pauses the clock and says
+ * how long you sat and where you left it; its Keep or Skip stops the clock.
+ *
+ * Sessions (slice H2): while a To Do session runs, **Park session** puts it
+ * down (with an optional note to tomorrow-you). Otherwise **Session** and
+ * **Just 25** open a new draft on the task on the clock
+ * (`lib/session-open-store.ts`).
  *
  * `FocusBarDock` is the always-mounted shell. It reads only the session's
  * task id and loads this module once a task is on the clock.
@@ -29,7 +36,12 @@ import {
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { useSessionPlanStore, parkLiveSession } from "@/lib/session-plan-store"
+import { openSession } from "@/lib/session-open-store"
+import { releasePenClock } from "@/lib/session-pen"
+import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import JustStartMode from "./JustStartMode"
+import SittingEnd from "./SittingEnd"
 import { useClockTask } from "./use-clock-task"
 import "./focus-bar.css"
 
@@ -39,6 +51,9 @@ export default function FocusBar() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const [asking, setAsking] = useState(false)
   const [justStart, setJustStart] = useState(false)
+  const [satMinutes, setSatMinutes] = useState<number | null>(null)
+  const [parkNote, setParkNote] = useState<string | null>(null)
+  const sessionRuns = useSessionPlanStore((s) => s.open.some((p) => p.phase === "run"))
 
   if (!session?.taskId || !clock.task) return null
   const pen = scopes.find((scope) => scope.id === session.scopeId)?.pens.find((p) => p.id === session.penId)
@@ -46,13 +61,20 @@ export default function FocusBar() {
   const free = (session.nowObjectives ?? []).filter((row) => !row.stepId)
   const estimate = clock.step?.estimatedDuration
 
+  // The end-of-sitting strip (Phase 15 A): pause so the minutes hold still, stop on Keep or Skip.
+  const endSitting = () => {
+    setAsking(false)
+    const live = usePenColorSessionStore.getState().session
+    setSatMinutes(live ? sessionElapsedMs(live) / 60_000 : 0)
+    pausePenColorSession()
+  }
+
   const stop = () => {
     if (free.length && !asking) {
       setAsking(true)
       return
     }
-    setAsking(false)
-    stopPenColorSession()
+    endSitting()
   }
 
   const keepAsSteps = () => {
@@ -60,8 +82,7 @@ export default function FocusBar() {
     for (const row of usePenColorSessionStore.getState().session?.nowObjectives ?? []) {
       if (!row.stepId) tiePenColorNowObjective(row.id, "new")
     }
-    setAsking(false)
-    stopPenColorSession()
+    endSitting()
   }
 
   // Just Start renders beside the bar, not inside it: the bar's transform would trap its fixed overlay.
@@ -74,7 +95,41 @@ export default function FocusBar() {
       data-ui-name="Focus bar"
       data-ui-docs="components/Focus/README.md"
     >
-      {asking ? (
+      {satMinutes != null ? (
+        <SittingEnd
+          task={clock.task}
+          minutes={satMinutes}
+          onDone={() => {
+            setSatMinutes(null)
+            stopPenColorSession()
+          }}
+        />
+      ) : parkNote !== null ? (
+        <div className="focus-bar-ask" role="alertdialog" aria-label="Park the session">
+          <input
+            className="focus-bar-note"
+            aria-label="Note to tomorrow-you"
+            placeholder="Note to tomorrow-you (optional)"
+            value={parkNote}
+            onChange={(e) => setParkNote(e.target.value)}
+          />
+          <button
+            data-no95
+            type="button"
+            className="focus-bar-key is-primary"
+            onClick={() => {
+              const parked = parkLiveSession(new Date(), parkNote)
+              setParkNote(null)
+              if (parked) releasePenClock([parked])
+            }}
+          >
+            Park
+          </button>
+          <button data-no95 type="button" className="focus-bar-key" onClick={() => setParkNote(null)}>
+            Keep going
+          </button>
+        </div>
+      ) : asking ? (
         <div className="focus-bar-ask" role="alertdialog" aria-label="Free objectives">
           <span className="focus-bar-ask-text">
             {free.length === 1 ? "1 objective isn't a step yet." : `${free.length} objectives aren't steps yet.`}
@@ -86,10 +141,7 @@ export default function FocusBar() {
             data-no95
             type="button"
             className="focus-bar-key"
-            onClick={() => {
-              setAsking(false)
-              stopPenColorSession()
-            }}
+            onClick={endSitting}
           >
             Leave on the block
           </button>
@@ -127,6 +179,38 @@ export default function FocusBar() {
           >
             Just start
           </button>
+          {sessionRuns ? (
+            <button data-no95 type="button" className="focus-bar-key" title="Park the running session" onClick={() => setParkNote("")}>
+              Park session
+            </button>
+          ) : (
+            <>
+              <button
+                data-no95
+                type="button"
+                className="focus-bar-key"
+                title="Plan a session starting with this"
+                onClick={() => openSession({ startOn: "session", seed: [{ taskId: session.taskId!, ...(session.stepId ? { stepId: session.stepId } : {}) }] })}
+              >
+                Session
+              </button>
+              <button
+                data-no95
+                type="button"
+                className="focus-bar-key"
+                title="Just 25 minutes on this: the clock is the commitment"
+                onClick={() =>
+                  openSession({
+                    startOn: "session",
+                    templateId: JUST_25_TEMPLATE_ID,
+                    seed: [{ taskId: session.taskId!, ...(session.stepId ? { stepId: session.stepId } : {}) }],
+                  })
+                }
+              >
+                Just 25
+              </button>
+            </>
+          )}
           <DvdTransportKey
             className="focus-bar-icon"
             mark={paused ? "play" : "pause"}

@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from "react"
 import { commitItemDraft } from "@/lib/commit-item-edit"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { withListMembership } from "@/lib/item-utils"
@@ -48,6 +49,8 @@ export interface ItemDetailDraft {
   touchDraft: (patch: Partial<Task>) => void
   originalTask: Task | null
   setOriginalTask: (task: Task | null) => void
+  /** Live dirty check: the draft ref (with unrendered keystrokes) against the saved baseline. */
+  isDraftDirty: () => boolean
   allTasks: Task[]
   lists: ReturnType<typeof useTaskStore.getState>["lists"]
   folders: ReturnType<typeof useTaskStore.getState>["folders"]
@@ -81,7 +84,8 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const types = useItemTypeStore((state) => state.types)
 
   const [task, setTaskState] = useState<Task | null>(null)
-  const [originalTask, setOriginalTask] = useState<Task | null>(null)
+  const [originalTask, setOriginalTaskState] = useState<Task | null>(null)
+  const originalRef = useRef<Task | null>(null)
   const taskRef = useRef<Task | null>(null)
   const draftListenersRef = useRef(new Set<() => void>())
 
@@ -93,6 +97,19 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   }, [])
 
   const getDraft = useCallback(() => taskRef.current, [])
+
+  const setOriginalTask = useCallback((next: Task | null) => {
+    originalRef.current = next
+    setOriginalTaskState(next)
+  }, [])
+
+  const isDraftDirty = useCallback(
+    () =>
+      !!taskRef.current &&
+      !!originalRef.current &&
+      !snapshotsEqual(taskRef.current, originalRef.current),
+    [],
+  )
 
   const touchDraft = useCallback((patch: Partial<Task>) => {
     if (!taskRef.current) return
@@ -118,7 +135,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
       setTask(foundTask)
       setOriginalTask(foundTask)
     }
-  }, [taskId, setTask])
+  }, [taskId, setTask, setOriginalTask])
 
   const addToCategory = useCallback(
     (categoryId: string) => {
@@ -202,7 +219,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
 
   const commitDraft = useCallback(
     (next: Task, source = "item-detail") => {
-      const before = originalTask ?? useTaskStore.getState().tasks.find((t) => t.id === next.id)
+      const before = originalRef.current ?? useTaskStore.getState().tasks.find((t) => t.id === next.id)
       if (!before) {
         updateTask(next)
         setOriginalTask(next)
@@ -214,7 +231,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
       setTask(saved)
       return saved
     },
-    [originalTask, updateTask, setTask],
+    [updateTask, setTask, setOriginalTask],
   )
 
   return {
@@ -225,6 +242,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
     touchDraft,
     originalTask,
     setOriginalTask,
+    isDraftDirty,
     allTasks,
     lists,
     folders,

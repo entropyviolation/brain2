@@ -13,10 +13,13 @@ import { Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { PointsRulesDialog } from "@/components/Settings/PointsRulesDialog"
+import { Switch } from "@/components/ui/switch"
+import { setPointsVisibility, useStepPointsVisible } from "@/lib/points-visibility"
 
 export function PointAllocationField() {
   const [open, setOpen] = useState(false)
   const [container, setContainer] = useState<HTMLElement | null>(null)
+  const stepPointsVisible = useStepPointsVisible()
 
   return (
     <div className="space-y-3 rounded-lg border border-dashed p-4" data-ui-name="Automatic point allocation">
@@ -46,6 +49,20 @@ export function PointAllocationField() {
         </DialogTrigger>
         <PointsRulesDialog container={container} />
       </Dialog>
+      <label className="flex items-center justify-between gap-3 text-sm" data-ui-name="Points visible">
+        <span>
+          <span className="font-medium">Points visible</span>
+          <span className="block text-xs text-muted-foreground">
+            Show step-point figures on To Do. Off, they still count and are kept. Task, tier and session points
+            always show.
+          </span>
+        </span>
+        <Switch
+          aria-label="Points visible"
+          checked={stepPointsVisible}
+          onCheckedChange={(on) => setPointsVisibility({ stepPoints: on })}
+        />
+      </label>
     </div>
   )
 }

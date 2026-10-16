@@ -36,7 +36,7 @@ export function MissedTodoSection({
       onOpenChange={onOpenChange}
       className="todo-section is-missed"
       data-ui-name="Missed"
-      data-ui-help="Marked too late for this period."
+      data-ui-help="Marked missed: the window for these passed this period."
       data-ui-docs="components/Home/ToDo/README.md"
       data-ui-docs-anchor="completion-status-feature-9"
     >
@@ -52,7 +52,7 @@ export function MissedTodoSection({
 
       <CollapsibleContent>
         {todos.length === 0 ? (
-          <div className="todo-empty">Nothing marked too late for this {period}.</div>
+          <div className="todo-empty">Nothing marked missed this {period}.</div>
         ) : (
           todos.map((todo) => {
             const task = byId.get(todo.taskId ?? todo.id)

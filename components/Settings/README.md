@@ -64,6 +64,8 @@ Notes and ingest sits with Imports: those doors are how notes enter. There is no
 
 ## Points rules
 
+_Last mapped: 2026-10-16._ The same bay holds a **Points visible** switch (Phase 15 D, Decision 13). Off by default: step-point figures stay hidden. It writes `lib/points-visibility.ts` (`brain2-points-visible`), never `points-store`, so points still accrue and are kept. Task, tier and session points always show. Step points themselves arrive with the task card (Phase 12); every step-point figure reads `useStepPointsVisible()`.
+
 Settings → **Points** → **Automatic point allocation** → **Points rules** opens one nested dialog (`PointsRulesDialog.tsx`) with every global rule. Each row is a label, a number, a unit, **Default**, and a plain explanation of when it fires, what it does not do, and whether saving it rewrites points already earned. A filter matches the label, the section, and that explanation. Sections stay grouped. A change saves immediately.
 
 The decision: one popup is the full catalog. Habit accomplishment, lift, average-beat, morning-review mark, and default points per period stay in Habits → Settings and are the same numbers — the popup writes those setters, it does not keep a second copy. Ritual section points, the whole-ritual bonus, and tomorrow’s goal focus stay on `user-settings` the same way. Everything else is the `pointsRules` map (persist **v5**). A missing key means today’s default, so an existing install does not change until that row is edited.

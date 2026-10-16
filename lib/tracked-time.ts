@@ -18,7 +18,9 @@
  */
 import { numericFieldValue } from "@/lib/pen-fields"
 import type { TimeEntry } from "@/lib/time-entries"
-import { assignedPenIds } from "@/lib/time-entries"
+import type { Subtask } from "@/lib/types"
+import { assignedPenIds, formatDuration } from "@/lib/time-entries"
+import { effectiveDurationMinutes } from "@/lib/todo-steps"
 import type { TrackPen, TrackScope, TrackTag } from "@/lib/time-tracking-store"
 
 /** The slice of the tracking store these helpers need. */
@@ -352,4 +354,21 @@ export function settleSpentOnFinish<S extends StepNode>(
     return changed ? next : steps
   }
   return visit(after)
+}
+
+/**
+ * parts (Phase 6, R6): the sum of the children's counting minutes. 0 on a
+ * leaf. The one rule for est · parts · spent outside the step tree too.
+ */
+export function partsMinutes(steps: readonly Subtask[] | undefined): number {
+  return (steps ?? []).reduce((total, step) => total + effectiveDurationMinutes(step.estimatedDuration, step.subtasks), 0)
+}
+
+/** "52m · est 30 · parts 45", leaving out what is not there. */
+export function timeTrio(est: number, parts: number, spent: number): string {
+  const bits: string[] = []
+  if (spent > 0) bits.push(formatDuration(spent))
+  if (est > 0) bits.push(`est ${est}`)
+  if (parts > 0) bits.push(`parts ${parts}`)
+  return bits.join(" · ")
 }

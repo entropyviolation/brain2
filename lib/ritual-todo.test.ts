@@ -5,7 +5,13 @@ import { describe, expect, it } from "vitest"
 import type { PeriodReview } from "@/lib/types"
 import { getWeekString } from "@/lib/date-utils"
 import { lunarOccasion } from "@/lib/lunar"
-import { ritualDayBoard, ritualTodoPhase, ritualsOnCalendarDay } from "@/lib/ritual-todo"
+import {
+  ritualDayBoard,
+  ritualSlotPlacement,
+  ritualTodoPhase,
+  ritualsOnCalendarDay,
+  starLordSlotPlacement,
+} from "@/lib/ritual-todo"
 
 function titles(date: Date, birthday?: string | null): string[] {
   return ritualsOnCalendarDay(date, birthday).map((rite) => rite.title)
@@ -181,5 +187,40 @@ describe("ritualsOnCalendarDay", () => {
     expect(night?.status).toBe("active")
     const star = board.placements.find((row) => row.title === "Star Lord ritual · New moon")
     expect(star && ritualTodoPhase(star, [], [])).toBe("none")
+  })
+})
+
+describe("slot placements (Home Rituals widget Open)", () => {
+  const base = { status: "none" as const, telegramCommand: "", appPath: "", periodTitle: "Saturday, June 20" }
+
+  it("maps morning and night to that day's walk", () => {
+    const morning = ritualSlotPlacement({
+      ...base, id: "m", kind: "day-morning", period: "day", phase: "start", periodKey: "2026-06-20", title: "Morning",
+    })
+    expect(morning.walk).toEqual({ type: "morning" })
+    expect(morning.dateKey).toBe("2026-06-20")
+    expect(morning.date.getDate()).toBe(20)
+    expect(morning.date.getHours()).toBe(12)
+    const night = ritualSlotPlacement({
+      ...base, id: "n", kind: "day-night", period: "day", phase: "end", periodKey: "2026-06-19", title: "Night",
+    })
+    expect(night.walk).toEqual({ type: "end", period: "day", periodKey: "2026-06-19" })
+  })
+
+  it("maps period start and end to their period key", () => {
+    expect(
+      ritualSlotPlacement({ ...base, id: "s", kind: "period-start", period: "month", phase: "start", periodKey: "2026-06", title: "Start" }).walk,
+    ).toEqual({ type: "start", period: "month", periodKey: "2026-06" })
+    const end = ritualSlotPlacement({ ...base, id: "e", kind: "period-end", period: "quarter", phase: "end", periodKey: "2026-Q2", title: "Review" })
+    expect(end.walk).toEqual({ type: "end", period: "quarter", periodKey: "2026-Q2" })
+    expect(end.kind).toBe("quarter-end")
+  })
+
+  it("maps a Star Lord slot to its occasion and day", () => {
+    const p = starLordSlotPlacement({
+      id: "x", kind: "birth", dateKey: "2026-03-01", title: "", periodTitle: "", status: "none", telegramCommand: "", appPath: "",
+    })
+    expect(p.walk).toEqual({ type: "star-lord", occasion: "birth", dateKey: "2026-03-01" })
+    expect(p.date.getMonth()).toBe(2)
   })
 })

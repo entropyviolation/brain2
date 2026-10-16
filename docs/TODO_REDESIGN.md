@@ -4,9 +4,9 @@ Home → To Do. _Last mapped: 2026-10-16._
 
 **Status.**
 - **Shipped 2026-10-15:** Phases 0–3. What they built is described in the room READMEs, not here (see [What already exists](#what-already-exists)).
-- **Built 2026-10-16, not committed:** Phase 4 sessions (slices G, Q, H), Phase 5 (slice E), Phase 6 part one (slice F) and Phase 8 (slice J).
-- **Next:** K, S (task half), L, and the Phase 4 leftovers.
-- **Planned:** Phases 6–7 and 9–15.
+- **Built 2026-10-16, not committed:** Phase 4 sessions (slices G, Q, H), Phase 5 (slice E), Phase 6 (slices F and L, plus Operations naming a task) and Phase 8 (slice J).
+- **Next:** K, S (task half), and the Phase 4 leftovers.
+- **Planned:** Phases 7 and 9–15. Phase 6 leftovers: a default estimate per tier; spent on the task card (Phase 12) and on every `StepTree` step (Phase 9).
 
 Behavior as it is now lives in [`components/Home/ToDo/README.md`](../components/Home/ToDo/README.md). The house order is [`DESIGN_STYLE.md`](DESIGN_STYLE.md): failures first, then layout, then palette. Tidy is the model for plans and for "currently working on" ([Modules README → Tidy internals](../components/Modules/README.md)). To Do copies Tidy's patterns but never imports `TidyView`.
 
@@ -22,7 +22,7 @@ Phase numbers are fixed, because other READMEs link to them. Parts group them by
 |------|--------|-------------------|-------|
 | 1. Foundations | 0 · 1 · 2 · 3 | One ledger grid, marks that carry on push, Just Start that picks well, a task on the clock, prerequisites | Shipped |
 | 2. Sessions | 4 | "Plan the next 3 hours" in three tiers, with a clock, a review, park and resume | Built; leftovers planned |
-| 3. Time that adds up | 5 · 6 | Pens on items, one estimate rule, time spent rolled up through the tree, your own pace | 5 built; 6 planned |
+| 3. Time that adds up | 5 · 6 | Pens on items, one estimate rule, time spent rolled up through the tree, your own pace | Built; per-tier default planned |
 | 4. The look | 7 | House language for every phase, applied as each ships | Ongoing |
 | 5. Rites | 8 | Morning and Night rows that follow the sun; a calmer night and a weekly check-in | Built; additions planned |
 | 6. The step tree | 9 · 10 · 11 | One tree everywhere, tiers and weighted progress inside tasks, steps that are items | Planned |
@@ -286,7 +286,9 @@ People already do this: a person's company pen (`PersonPipeline { kind: "company
 
 ## Phase 6: Estimates, parts, time spent, and your own pace
 
-_Last mapped: 2026-10-16._ **Slice F built, not committed.** `countingMinutes` (`lib/todo-steps.ts`) is the one rule; Plan's drop and `plan-capacity.ts` use it. **Default est** is one To Do pref (`defaultEstimateMin`, Pace bay, default 30), not one per tier yet; rows show it as `~30`, and the load strip still counts those rows as unestimated. Operations totals read `trackedTimeForItems`, which unions minutes per day so a clock log and its block count once. Not in F: the lid's spent, Operations naming a task, and everything under slice L.
+_Last mapped: 2026-10-16._ **Slices F and L built, not committed.** L: `stepSpentMinutes` / `stepSpentMap` / `settleSpentOnFinish` (`lib/tracked-time.ts`), `lib/estimate-pace.ts`, `use-todo-time.ts`, `todo-pace.tsx`; rows read `spent/counts`, the lid reads `est · parts · spent · pen`, steps get spent chips, the ghost sits beside estimate fields, and the session fit gauge reads `paceFor`. Operations naming a task is the **…or a task** menu in `WorkingNowControl.tsx`. Behavior: [To Do README → Time spent and your pace](../components/Home/ToDo/README.md), [Operations README](../components/Operations/README.md). **Still planned:** a default per tier, list-scope pace in Settings (the API takes `listIdsOf`; no UI yet), and the task card and `StepTree` placements.
+
+Slice F notes: `countingMinutes` (`lib/todo-steps.ts`) is the one rule; Plan's drop and `plan-capacity.ts` use it. **Default est** is one To Do pref (`defaultEstimateMin`, Pace bay, default 30), not one per tier yet; rows show it as `~30`, and the load strip still counts those rows as unestimated. Operations totals read `trackedTimeForItems`, which unions minutes per day so a clock log and its block count once. The lid's spent and Operations naming a task came with slice L.
 
 **One rule for counting minutes:** max(the typed estimate, else the default, against the sum of the steps). `effectiveDurationMinutes` does this. Two places bypass it and switch over: Plan's `handleScheduleTask` (`day-view.tsx` ~116, `task.estimatedDuration ?? 30`) and `plan-capacity.ts` (raw sums).
 
@@ -592,7 +594,7 @@ Decision 11: not in the first build, definitely later. Built after Phase 10 and 
 
 ### Files and tests
 
-`lib/unlock-value.ts`, `lib/priority.ts`, `PriorityWeights.unlocks?` in `lib/types.ts`, the Formula panel in `todo-filters.tsx`, `filterAndSortTodos` in `todo-utils.ts` (an optional all-tasks argument, so outside callers keep their behavior), `lib/next-step.ts`, the lock chip and the Dependencies tab. Tests: A → B → C fades by distance; a task waited on by three outranks an equal task waited on by none; nothing waiting means an unchanged score; the blocker sorts above its locked row; inherited due date along the longest chain, overdue when passed; a locked 40% task shows both; an open parent is never locked; `pickStartStep` unchanged without `dependsOn`; a weights blob without `unlocks` loads.
+`lib/unlock-value.ts`, `lib/priority.ts`, `PriorityWeights.unlocks?` in `lib/types.ts`, the Formula panel (`PRIORITY_WEIGHT_FIELDS` in `todo-panel.tsx`), `filterAndSortTodos` in `todo-utils.ts` (an optional all-tasks argument, so outside callers keep their behavior), `lib/next-step.ts`, the lock chip and the Dependencies tab. Tests: A → B → C fades by distance; a task waited on by three outranks an equal task waited on by none; nothing waiting means an unchanged score; the blocker sorts above its locked row; inherited due date along the longest chain, overdue when passed; a locked 40% task shows both; an open parent is never locked; `pickStartStep` unchanged without `dependsOn`; a weights blob without `unlocks` loads.
 
 ---
 
@@ -614,7 +616,7 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 - **No "should" (UI-3).** A house rule in `DESIGN_STYLE.md`: no UI text tells you what you should do. An audit of To Do, Just Start, sessions, the focus bar and rites lists every pressure word and empty state, and replaces labels:
   - `waiting Nd` → "Waiting since Tue" (the row already uses the priority date).
   - Push counts read "Pushed ×3".
-  - **Missed** stays a verb and keeps its key (M) and its record (`markMissedOpportunity`). Its well and alarm styling become neutral ink. Any rename of the word itself is listed by the audit for your yes first.
+  - **Missed** stays a verb and keeps its key (M) and its record (`markMissedOpportunity`). Its well and alarm styling become neutral ink. Any rename of the word itself is listed by the audit for your yes first. Decided 2026-10-16: the label reads **Missed opportunity** (well titles "Missed opportunities this week"). The morning review's "Something I absolutely must do" prompt is removed as redundant with Required; its stored field stays.
   - Overdue, red alarms and "!" marks go. Warm red is kept for estimate overruns only (Phase 7).
   - Only labels and colors change. Stored statuses, fields, keys and outside imports stay.
 - **Attention given (UI-4).** Each Done well gets a second, quieter line that is not about output: "3 sittings · 2h10 of attention given" for the period, from `timeLogs` and task blocks (Phase 6 spent). Tier lamps on Done rows show as lit facts; unreached levels read `—`, never dimmed shortfalls.
@@ -651,23 +653,23 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | A–D | Grid, mark carry, ink; Just Start; prerequisites; task on the clock | 0–3 | — | — | Shipped |
 | G, Q, H | Sessions; tier id rename; park, resume, shelves | 4 | B, C, D | — | Built 2026-10-16 |
 | J | Rites follow the sun | 8 | — | — | Built 2026-10-16 |
-| H2 | Phase 4 leftovers: ways in, Flat list, break down in place, Hofstadter in fit, interstitials, Park in focus bar, templates incl. **Just 25**, vault guard counts `open`; future note, floor suggestion | 4 | H | M | Planned |
+| H2 | Phase 4 leftovers: ways in, Flat list, break down in place, Hofstadter in fit, interstitials, Park in focus bar, templates incl. **Just 25**, vault guard counts `open`; future note, floor suggestion | 4 | H | M | Built 2026-10-16; task-card entry with O |
 | E | Pen ↔ item link, `trackedMinutesForItem`, item detail Time, pen settings field | 5 | — | M | Built 2026-10-16 |
 | F | Estimate rule everywhere, default estimate, Operations totals | 6 | E | S | Built 2026-10-16 |
-| L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge | 6 | D, E | M | Planned |
-| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Planned |
-| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Planned |
-| M | Step items, stacked item detail | 11 | K | M | Planned |
-| O | Task card | 12 | K, L, N (M for ↗) | L | Planned |
+| L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; task card placement with O |
+| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9), Paste as log (I) and step ↗ (M) left |
+| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags after M; Done-at-level and level points with O |
+| M | Step items, stacked item detail | 11 | K | M | Built 2026-10-16; card / session ↗ with O and P |
+| O | Task card | 12 | K, L, N (M for ↗) | L | In progress |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
-| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Planned |
+| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half after N |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
-| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Planned |
-| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Planned |
+| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Built 2026-10-16 without Pull me (needs N sparks); session-stop strip planned |
+| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps after N |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
-| X | Points visible switch | 15 D | — | S | Planned |
+| X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
 | R | Look pass | 7 | each slice | S | Ongoing |
 
 **Waves.**

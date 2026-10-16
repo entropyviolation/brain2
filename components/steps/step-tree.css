@@ -1,0 +1,348 @@
+/* components/steps/step-tree.css — the shared step tree (Phase 9). Cool paper, hairline guides, violet selection. */
+
+.step-tree {
+  --step-indent: 16px;
+  --step-guide: rgba(60, 70, 90, 0.18);
+  --step-select: rgba(125, 107, 184, 0.16);
+  --step-select-edge: #7d6bb8;
+  --step-quiet: rgba(40, 48, 60, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.step-tree-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-tree-row,
+.step-tree-composer,
+.step-tree-add,
+.step-tree-more {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 1px 6px 1px calc(var(--step-depth, 0) * var(--step-indent) + 4px);
+  border-radius: 4px;
+}
+
+/* Hairline indent guides, one per level. */
+.step-tree-row::before,
+.step-tree-composer::before,
+.step-tree-add::before,
+.step-tree-more::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--step-depth, 0) * var(--step-indent));
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0 calc(var(--step-indent) / 2 - 0.5px),
+    var(--step-guide) calc(var(--step-indent) / 2 - 0.5px) calc(var(--step-indent) / 2 + 0.5px),
+    transparent calc(var(--step-indent) / 2 + 0.5px) var(--step-indent)
+  );
+  pointer-events: none;
+}
+
+.step-tree-row:focus-visible {
+  outline: 1px solid var(--step-select-edge);
+  outline-offset: -1px;
+}
+.step-tree-row.is-selected {
+  background: var(--step-select);
+}
+.step-tree-row.is-locked .step-tree-name {
+  opacity: 0.6;
+}
+.step-tree-row.is-peek {
+  opacity: 0.55;
+}
+.step-tree-row.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--step-select-edge);
+}
+.step-tree-row.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--step-select-edge);
+}
+.step-tree-row.is-drop-inside,
+.step-tree-add.is-drop {
+  background: var(--step-select);
+  box-shadow: inset 0 0 0 1px var(--step-select-edge);
+}
+
+.step-tree-fold {
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--step-quiet);
+  cursor: pointer;
+}
+.step-tree-fold.is-empty {
+  cursor: default;
+}
+.step-tree-fold-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.step-tree-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(60, 70, 90, 0.45);
+  cursor: grab;
+}
+.step-tree-dot.is-parent {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+.step-tree-dot.is-bare {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--step-guide);
+  cursor: default;
+}
+/* Phase 11: a step with its own item wears a ring; the dot opens it. */
+.step-tree-dot.is-item {
+  box-shadow: 0 0 0 2px var(--step-select);
+  background: var(--step-select-edge);
+}
+.step-tree-dot.is-openable:hover {
+  background: var(--step-select-edge);
+}
+
+.step-tree-open {
+  border: 0;
+  background: none;
+  color: var(--step-quiet);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 3px;
+  cursor: pointer;
+  opacity: 0;
+}
+.step-tree-row:hover .step-tree-open,
+.step-tree-row:focus-within .step-tree-open,
+.step-tree-row:focus .step-tree-open {
+  opacity: 1;
+}
+.step-tree-open:hover {
+  color: var(--step-select-edge);
+}
+
+.step-tree-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  overflow-wrap: anywhere;
+}
+.step-tree-name.is-done {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.step-tree-name-edit,
+.step-tree-composer-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+}
+.step-tree-composer-min {
+  width: 56px;
+  font: inherit;
+}
+
+.step-tree-cols {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.step-tree-child {
+  border: 0;
+  background: none;
+  color: var(--step-quiet);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  opacity: 0;
+}
+.step-tree-row:hover .step-tree-child,
+.step-tree-row:focus-within .step-tree-child,
+.step-tree-row:focus .step-tree-child {
+  opacity: 1;
+}
+
+.step-tree-quiet {
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--step-quiet);
+  cursor: pointer;
+}
+.step-tree-quiet:hover {
+  color: inherit;
+  text-decoration: underline;
+}
+.step-tree-add .step-tree-quiet,
+.step-tree-more .step-tree-quiet {
+  margin-left: 32px;
+}
+
+.step-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.step-tree-refusal,
+.step-tree-selection,
+.step-waiting-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--step-quiet, rgba(40, 48, 60, 0.6));
+}
+
+.step-waiting-peek {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+.step-waiting-peek[aria-pressed="true"] {
+  text-decoration: underline;
+}
+
+/* Phase 10: tier filter containers, B · G · E tags, spark mark, level gauge. */
+.step-tree-row.is-greyed .step-tree-name {
+  color: var(--step-quiet);
+  font-style: italic;
+}
+
+.step-tier-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.step-tier-tag {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 1px solid rgba(60, 70, 90, 0.28);
+  border-radius: 3px;
+  background: transparent;
+  font: 600 10px/14px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: rgba(40, 48, 60, 0.8);
+  cursor: pointer;
+}
+.step-tier-tag.is-min { border-color: rgba(60, 120, 140, 0.55); color: #2f6f80; }
+.step-tier-tag.is-exceptional { border-color: rgba(125, 107, 184, 0.6); color: #6a58a6; }
+.step-tier-tag.is-inherited { opacity: 0.45; border-style: dashed; }
+
+.step-spark {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--step-quiet);
+  cursor: pointer;
+  opacity: 0;
+}
+.step-tree-row:hover .step-spark,
+.step-tree-row:focus-within .step-spark,
+.step-spark.is-on { opacity: 1; }
+.step-spark.is-on { color: #7d6bb8; }
+
+.level-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: rgba(40, 48, 60, 0.75);
+}
+.level-gauge-cell { display: inline-flex; align-items: center; gap: 3px; }
+.level-gauge-short { font-weight: 600; }
+.level-gauge-track {
+  position: relative;
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(60, 70, 90, 0.14);
+  overflow: hidden;
+}
+.level-gauge-fill { position: absolute; inset: 0 auto 0 0; background: #5b6f8f; }
+.level-gauge-cell.is-empty { opacity: 0.5; }
+.level-gauge-cell.is-focus .level-gauge-fill { background: #7d6bb8; }
+.level-gauge-cell.is-focus .level-gauge-short { color: #6a58a6; }
+
+/* Phase 11: the strip on a stacked item layer (StepItemStack). */
+.step-layer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--step-guide, rgba(60, 70, 90, 0.18));
+  font-size: 12px;
+  color: rgba(40, 48, 60, 0.75);
+}
+.step-layer-back,
+.step-layer-chip,
+.step-layer-crumb button {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.step-layer-back:hover,
+.step-layer-chip:hover,
+.step-layer-crumb button:hover {
+  color: #7d6bb8;
+  text-decoration: underline;
+}
+.step-layer-crumbs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+}
+.step-layer-sep {
+  padding: 0 3px;
+  opacity: 0.55;
+}
+.step-layer-chip {
+  border: 1px solid rgba(125, 107, 184, 0.45);
+  border-radius: 3px;
+  padding: 0 6px;
+}
+.step-layer-readout {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}

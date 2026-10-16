@@ -110,7 +110,7 @@ export function resetAllStores() {
   usePlannedActionStore.getState().setActions([])
   usePointsStore.setState({ pointsHistory: [] })
   useRegretStore.setState({ regretHistory: [] })
-  useSessionPlanStore.setState({ open: [], focusId: null, history: [], kept: [] })
+  useSessionPlanStore.setState({ open: [], focusId: null, history: [], kept: [], templates: [] })
   useMetricsStore.setState({ datapoints: [] })
   useGoalsStore.setState({ goals: [] })
   useReviewsStore.setState({ reviews: [] })

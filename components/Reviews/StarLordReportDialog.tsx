@@ -8,7 +8,7 @@
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -31,6 +31,7 @@ import {
   starLordReportId,
   type StarLordKind,
 } from "@/lib/star-lord"
+import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 
 function dateFromKey(key: string): Date {
   const [y, m, d] = key.split("-").map(Number)
@@ -107,6 +108,87 @@ export function StarLordReportDialog({
 
   const ledger = ritual.questions.filter((q) => q.group === "ledger")
   const alchemy = ritual.questions.filter((q) => q.group === "alchemy")
+  const question = (q: (typeof ritual.questions)[number]) => (
+    <div key={q.id} className="space-y-1.5">
+      <p id={`star-lord-${q.id}-q`} className="text-sm leading-snug">
+        {q.prompt}
+      </p>
+      <Textarea
+        id={`star-lord-${q.id}`}
+        aria-labelledby={`star-lord-${q.id}-q`}
+        value={answers[q.id] ?? ""}
+        onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+        rows={3}
+      />
+    </div>
+  )
+  const filled = (qs: typeof ledger) => qs.some((q) => !!answers[q.id]?.trim())
+
+  const stepDefs: (RitualStep & { body: ReactNode })[] = [
+    {
+      id: "begin",
+      label: "Before you begin",
+      answered: filled(ledger) || filled(alchemy),
+      body: (
+        <>
+          <section className="mr-carry">
+            <span className="mr-carry-label">{ritual.theme}</span>
+            <p className="text-sm">{ritual.themeLine}</p>
+            <p className="text-sm text-muted-foreground">{ritual.place}</p>
+          </section>
+          <ol className="list-decimal pl-5 space-y-1 text-sm">
+            {STAR_LORD_PREPARATION.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </>
+      ),
+    },
+    {
+      id: "ledger",
+      label: "The ledger",
+      answered: filled(ledger),
+      body: <section className="space-y-4">{ledger.map(question)}</section>,
+    },
+    {
+      id: "alchemy",
+      label: "Inner alchemy",
+      answered: filled(alchemy),
+      body: (
+        <section className="space-y-4">
+          <p className="mr-lede">{STAR_LORD_ALCHEMY_NOTE}</p>
+          {alchemy.map(question)}
+        </section>
+      ),
+    },
+    {
+      id: "closing",
+      label: "Closing",
+      answered: existing?.completed === true,
+      body: (
+        <section className="space-y-2 text-sm">
+          {STAR_LORD_CLOSING.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </section>
+      ),
+    },
+  ]
+  const [stepIndex, setStepIndex] = useRitualStep(
+    `brain2-ritual-step:star-lord:${kind}:${dateKey}`,
+    stepDefs.length,
+    () => 0,
+  )
+
+  /** Moving between parts writes a draft, the same as Close. */
+  const goStep = (next: number) => {
+    if (!submittedRef.current && snapshot() !== baselineRef.current) {
+      persist(false)
+      baselineRef.current = snapshot()
+    }
+    setStepIndex(next)
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) dismiss() }}>
@@ -128,67 +210,16 @@ export function StarLordReportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
-          <section className="space-y-1">
-            <p className="text-sm font-semibold">{ritual.theme}</p>
-            <p className="text-sm text-muted-foreground">{ritual.themeLine}</p>
-            <p className="text-sm text-muted-foreground">{ritual.place}</p>
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm">Before you begin</h3>
-            <ol className="list-decimal pl-5 space-y-1 text-sm text-muted-foreground">
-              {STAR_LORD_PREPARATION.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </section>
-
-          <section className="space-y-4">
-            <h3 className="font-semibold text-sm">The ledger</h3>
-            {ledger.map((q) => (
-              <div key={q.id} className="space-y-1.5">
-                <p id={`star-lord-${q.id}-q`} className="text-sm leading-snug">
-                  {q.prompt}
-                </p>
-                <Textarea
-                  id={`star-lord-${q.id}`}
-                  aria-labelledby={`star-lord-${q.id}-q`}
-                  value={answers[q.id] ?? ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-            ))}
-          </section>
-
-          <section className="space-y-4">
-            <h3 className="font-semibold text-sm">Inner alchemy</h3>
-            <p className="text-sm text-muted-foreground">{STAR_LORD_ALCHEMY_NOTE}</p>
-            {alchemy.map((q) => (
-              <div key={q.id} className="space-y-1.5">
-                <p id={`star-lord-${q.id}-q`} className="text-sm leading-snug">
-                  {q.prompt}
-                </p>
-                <Textarea
-                  id={`star-lord-${q.id}`}
-                  aria-labelledby={`star-lord-${q.id}-q`}
-                  value={answers[q.id] ?? ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-            ))}
-          </section>
-
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm">Closing</h3>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {STAR_LORD_CLOSING.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
-          </section>
+        <div className="hpp-body flex-1 min-h-0">
+          <RitualStepper
+            steps={stepDefs}
+            index={stepIndex}
+            onStep={goStep}
+            finishLabel="Finish"
+            onFinish={handleSave}
+          >
+            {stepDefs[stepIndex]?.body}
+          </RitualStepper>
         </div>
 
         <div className="hpp-actions">
