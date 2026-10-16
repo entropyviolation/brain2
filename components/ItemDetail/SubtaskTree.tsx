@@ -12,6 +12,9 @@
 import { Trash2 } from "lucide-react"
 import type { Subtask } from "@/lib/types"
 import { StepTree } from "@/components/steps/StepTree"
+import { useTaskStore } from "@/lib/task-store"
+import { findStep, updateStepChildren } from "@/lib/step-items"
+import { openStepItem } from "@/lib/step-item-stack"
 import {
   effectiveDurationMinutes,
   flattenSteps,
@@ -29,11 +32,14 @@ export function SubtaskTree({
   steps,
   onChange,
   onRemoved,
+  onOpenStep,
 }: {
   steps: readonly Subtask[] | undefined
   onChange: (next: Subtask[]) => void
   /** Ids of the step removed and every step nested inside it. */
   onRemoved?: (ids: string[]) => void
+  /** Phase 11: open a step's item on top (dot click and ↗). Only for a stored task. */
+  onOpenStep?: (step: Subtask) => void
 }) {
   const list = [...(steps ?? [])]
 
@@ -94,7 +100,7 @@ export function SubtaskTree({
   const total = effectiveDurationMinutes(undefined, list)
   return (
     <div className="id-step-tree">
-      <StepTree steps={list} onChange={onChange} columns={columns} label="Subtasks" />
+      <StepTree steps={list} onChange={onChange} columns={columns} label="Subtasks" onOpenStep={onOpenStep} />
       {all.length ? (
         <div className="id-step-sum">
           <span>
@@ -104,5 +110,22 @@ export function SubtaskTree({
         </div>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * Subtasks tab on a step's item (Phase 11): the steps inside that step, read
+ * from and written to the parent's tree, so there is no second copy.
+ */
+export function StepItemSubtasks({ stepOf }: { stepOf: { taskId: string; stepId: string } }) {
+  const parent = useTaskStore((s) => s.tasks.find((t) => t.id === stepOf.taskId))
+  const step = findStep(parent, stepOf.stepId)
+  if (!step) return <p className="text-sm text-muted-foreground">This step is no longer in its task.</p>
+  return (
+    <SubtaskTree
+      steps={step.subtasks}
+      onChange={(children) => updateStepChildren(stepOf, children)}
+      onOpenStep={(child) => openStepItem(stepOf.taskId, child.id)}
+    />
   )
 }

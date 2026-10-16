@@ -21,6 +21,10 @@ import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { openSession } from "@/lib/session-open-store"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import { NOTICE_PROMPT } from "@/lib/notice-dot"
+import { hasStepTiers } from "@/lib/step-tiers"
+import { LevelGauge } from "@/components/steps/LevelGauge"
+import { useTodoPrefs } from "./todo-prefs"
+import { openStepItem } from "@/lib/step-item-stack"
 
 const COLLAPSE_THRESHOLD = 8
 
@@ -159,6 +163,7 @@ export function TodoTable({
   /** Save the notice answer as a dated `noteLog` entry tagged `notice`. */
   onNotice?: (todoId: string, text: string) => void
 }) {
+  const { tierView } = useTodoPrefs()
   const [noticeRowId, setNoticeRowId] = useState<string | null>(null)
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
@@ -455,7 +460,11 @@ export function TodoTable({
               </span>
 
               <span className="todo-cell todo-cell-done todo-row-mins" title={walk ? undefined : `${completePct}% complete`}>
-                {walk ? null : <PercentLedBar value={completePct} label="Complete" density="compact" />}
+                {walk ? null : hasStepTiers(steps) ? (
+                  <LevelGauge steps={steps} counts={false} focus={tierView === "all" ? undefined : tierView} />
+                ) : (
+                  <PercentLedBar value={completePct} label="Complete" density="compact" />
+                )}
               </span>
 
               <span
@@ -643,6 +652,7 @@ export function TodoTable({
                   steps={steps}
                   onEstimateChange={(minutes) => onEstimateChange(todo.id, minutes)}
                   onStepsChange={(next) => onStepsChange(todo.id, next)}
+                  onOpenStep={(step) => openStepItem(todo.id, step.id)}
                   time={timeOf?.(todo.id)}
                   clock={
                     onClockStart

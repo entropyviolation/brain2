@@ -79,6 +79,7 @@ export const subtaskSchema: z.ZodTypeAny = z.lazy(() =>
       completedAt: dateLike.optional(),
       tier: z.enum(["min", "goal", "exceptional"]).optional().catch(undefined),
       sparkedAt: z.string().optional(),
+      itemId: z.string().optional(),
     })
     .passthrough(),
 )
@@ -138,6 +139,8 @@ export const taskSchema = z
     entropy: z.number().optional(),
     rewardValue: z.number().optional(),
     dependencies: z.array(z.string()).optional(),
+    parentTaskId: z.string().optional(),
+    stepOf: z.object({ taskId: z.string(), stepId: z.string() }).optional().catch(undefined),
     deadline: dateLike.optional(),
     scheduledDate: dateLike.optional(),
     scheduledTime: z.string().optional(),

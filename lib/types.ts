@@ -293,6 +293,12 @@ export interface Subtask {
   tier?: StepTier
   /** Spark mark (UI-7): set yourself on a step that pulls you. ISO time. No points, no effect on progress. */
   sparkedAt?: string
+  /**
+   * Phase 11: the `Task` that holds this step's notes, links, tags and pens
+   * (`lib/step-items.ts`). Made the first time the step opens in item detail.
+   * The tree stays the source of truth for name, done, estimate and order.
+   */
+  itemId?: string
 }
 
 /** Step tier ids (Phase 10). Labels: Bare minimum / Goal / Exceptional. */
@@ -601,6 +607,8 @@ export interface Task extends Item {
   /** Files attached to this item as resources (PDFs, images, anything). Bytes live in IndexedDB. */
   resources?: ItemResource[]
   parentTaskId?: string // For subtasks
+  /** Phase 11: this item is a step's item (`Subtask.itemId`). Never a To Do row, lens, list or search hit (`isStepItem`). */
+  stepOf?: { taskId: string; stepId: string }
   subtasks?: Subtask[] // Array of subtask objects
   // ---- Brain2 additions (see docs/BRAIN2_FEATURE_IDEAS.md) ----
   /** Gantt: a "summary"/rollup task that completes when its children do. */

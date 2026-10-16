@@ -10,6 +10,7 @@
  * not remove it. Home → To Do uses these same sets.
  * Polarity catalog: docs/TEMPORAL_POLARITY.md.
  */
+import { isStepItem, withoutStepItems } from "@/lib/step-item-guard"
 import type { Folder, SchedulePlacementPeriod, Task } from "@/lib/types"
 import {
   formatLocalDateKey,
@@ -47,7 +48,8 @@ export function tasksProspectiveForPeriod(
   now: Date = new Date(),
 ): Task[] {
   const open = tasks.filter(
-    (task) => !isClearedFromWork(task) && !task.hiddenFromTodo && scheduledForPeriod(task, period, value),
+    (task) =>
+      !isClearedFromWork(task) && !task.hiddenFromTodo && !isStepItem(task) && scheduledForPeriod(task, period, value),
   )
   if (!isPastFunnelPeriod(period, value, now)) return open
   // A past period's open table does not repeat rows that belong on Undone.
@@ -109,7 +111,9 @@ export function tasksForLedgerKind(
   folders: Folder[] = [],
   now: Date = new Date(),
 ): Task[] {
-  if (kind === "todo") return tasksProspectiveForPeriod(tasks, period, value, now)
-  if (kind === "done") return tasksCompletedInPeriod(tasks, period, value, folders)
-  return tasksUndoneForPeriod(tasks, period, value, now)
+  // A step's item is never a ledger row (Phase 11); its step is.
+  const rows = withoutStepItems(tasks)
+  if (kind === "todo") return tasksProspectiveForPeriod(rows, period, value, now)
+  if (kind === "done") return tasksCompletedInPeriod(rows, period, value, folders)
+  return tasksUndoneForPeriod(rows, period, value, now)
 }

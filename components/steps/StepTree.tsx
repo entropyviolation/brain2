@@ -42,6 +42,8 @@ import {
 import { buildStepView, type StepViewRow } from "./step-tree-view"
 import { toggleStepFold, useStepFolds } from "./step-folds"
 import { WaitingLine } from "./WaitingLine"
+import { StepTierMarks } from "./StepTierMarks"
+import type { StepTier } from "@/lib/types"
 import "./step-tree.css"
 
 export interface StepRowInfo {
@@ -49,6 +51,8 @@ export interface StepRowInfo {
   hasKids: boolean
   /** Waiting on an open prerequisite (`lib/prereqs.ts`). */
   locked: boolean
+  /** Tier filter on and this step is only a container (Phase 10). */
+  greyed?: boolean
 }
 
 export interface StepTreeProps {
@@ -60,6 +64,15 @@ export interface StepTreeProps {
   rowClassName?: (step: Subtask) => string | undefined
   hideLocked?: boolean
   nextOnly?: boolean
+  /** Tier filter (Phase 10): only that level's view, other steps greyed or hidden. */
+  tier?: StepTier
+  /** Show each step's B · G · E tag and spark mark (Phase 10, UI-7). Click cycles or toggles. */
+  tierTags?: boolean
+  /**
+   * Phase 11: open this step's item on top (`lib/step-item-stack.ts`). Set, a
+   * click on the dot opens it (dragging still moves) and each row gets ↗.
+   */
+  onOpenStep?: (step: Subtask) => void
   /** Called once before a move writes, so the host can push one undo step. */
   onBeforeMove?: (label: string) => void
   /** Shown under **Add the first step** while the tree is empty. */
@@ -178,6 +191,9 @@ export function StepTree({
   rowClassName,
   hideLocked = false,
   nextOnly = false,
+  tier,
+  tierTags = false,
+  onOpenStep,
   onBeforeMove,
   emptyExtra,
   composerMinutes = true,
@@ -198,8 +214,8 @@ export function StepTree({
   const rootRef = useRef<HTMLDivElement>(null)
 
   const view = useMemo(
-    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek }),
-    [list, folded, hideLocked, nextOnly, openedNext, peek],
+    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek, tier }),
+    [list, folded, hideLocked, nextOnly, openedNext, peek, tier],
   )
   const visibleIds = useMemo(
     () => view.rows.flatMap((r) => (r.kind === "step" ? [r.step.id] : [])),
@@ -415,7 +431,7 @@ export function StepTree({
         </div>
       )
     }
-    const { step, depth, hasKids, locked, peeked } = row
+    const { step, depth, hasKids, locked, peeked, greyed = false } = row
     const isFolded = folded.has(step.id)
     const isSelected = selected.has(step.id)
     const hint = drop && drop.where !== "end" && drop.id === step.id ? drop.where : null
@@ -438,6 +454,7 @@ export function StepTree({
             locked ? "is-locked" : "",
             isSelected ? "is-selected" : "",
             peeked ? "is-peek" : "",
+            greyed ? "is-greyed" : "",
             hint ? `is-drop-${hint}` : "",
             rowClassName?.(step) ?? "",
           ]
@@ -475,10 +492,15 @@ export function StepTree({
             onChange={() => onChange(updateNestedStep(list, step.id, { completed: !step.completed }))}
           />
           <span
-            className={`step-tree-dot${hasKids ? " is-parent" : ""}`}
+            className={`step-tree-dot${hasKids ? " is-parent" : ""}${step.itemId ? " is-item" : ""}${onOpenStep ? " is-openable" : ""}`}
             draggable
-            title="Drag to move. Select several first to move them together."
+            title={
+              onOpenStep
+                ? "Click to open this step's item. Drag to move."
+                : "Drag to move. Select several first to move them together."
+            }
             aria-hidden
+            onClick={onOpenStep ? () => onOpenStep(step) : undefined}
             onDragStart={(e) => onDragStart(e, step.id)}
             onDragEnd={endDrag}
           />
@@ -517,7 +539,21 @@ export function StepTree({
               {step.description}
             </button>
           )}
-          <span className="step-tree-cols">{columns?.(step, { depth, hasKids, locked })}</span>
+          {tierTags ? <StepTierMarks step={step} steps={list} onChange={onChange} /> : null}
+          <span className="step-tree-cols">{columns?.(step, { depth, hasKids, locked, greyed })}</span>
+          {onOpenStep ? (
+            <button
+              type="button"
+              data-no95
+              tabIndex={-1}
+              className="step-tree-open"
+              title="Open this step's item on top"
+              aria-label={`Open ${step.description}`}
+              onClick={() => onOpenStep(step)}
+            >
+              ↗
+            </button>
+          ) : null}
           <button
             type="button"
             data-no95
