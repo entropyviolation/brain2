@@ -3210,6 +3210,11 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   min-width: 0;
 }
 
+/* The task › step riding this pen clock, ahead of the pen name. */
+.trk95 .trk-pen-now-live-task {
+  font-weight: 700;
+}
+
 .trk95 .trk-pen-now-live-name {
   flex: 1 1 auto;
   min-width: 4rem;
@@ -5084,6 +5089,16 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
   gap: 6px;
   min-width: 0;
   padding: 2px 0;
+}
+
+/* Which step this objective is, while a task is on the clock. */
+.trk-now-obj-step {
+  flex: 0 1 7.5rem;
+  min-width: 0;
+  max-width: 9rem;
+  font: inherit;
+  font-size: 10px;
+  color: #1e2a24;
 }
 
 .trk-now-obj-row.done .trk-now-obj-text {

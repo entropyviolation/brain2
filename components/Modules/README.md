@@ -178,6 +178,38 @@ are excluded from the range; criteria with all-equal values normalize to 1; zero
 total weight ⇒ all-zero scores. Editing a weight slider updates the ranking live
 and persists onto the view. Pure + unit-tested in `lib/decision-matrix.test.ts`.
 
+### Tidy internals (`house-cleaning`)
+
+_Last mapped: 2026-10-15. Line numbers are approximate. Planned: Home → To Do borrows the plan and focus patterns, but does not import them ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md))._
+
+All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleaningState`. `TidyView.tsx` is one component (~189) built from inline closures and styled by the scoped `tidy.css`. Nothing in it is exported for reuse.
+
+**Plans**
+- `HousePlan` (~207) has `durationHr` / `durationMin` / `durationSec`, `tiers: Record<PlanTier, string[]>` (task ids), `phase` (`draft` / `run` / `done`), `clock: HouseClock | null` and `createdAt`.
+- `PLAN_TIERS` (~44) are `min` **Bare minimum**, `good` **Good** and `extra` **Exceptional**.
+- The draft starts from `emptyPlan()` at 1h30m. `planSec` sets the length, with a minimum of 60s.
+- `planAdd` appends a task to a tier. Adding a parent removes its descendants, and a task whose ancestor is already planned is refused (`planAncestorIn`).
+- `startPlan` → `planLive` counts down, with `planPause` / `planResume`. At 0, the 500ms interval in TidyView calls `completePlan`. `endPlan` clears the plan.
+- **Not there:** points or scoring on plan tiers, a check that the estimates fit the duration (each tier only shows "Xm est"), ordering inside a tier, and a current-step index during a plan run (any task can be timed).
+
+**Estimates and actuals**
+- `estOf` uses a leaf's `estMin` and sums the children of a parent. There is no max with the parent's own estimate (To Do's `effectiveDurationMinutes` uses the max).
+- `actOf` sums `actualSec` up through parents. `doneOf` counts a parent as done only when all of its leaves are.
+
+**Currently working on**
+- `HouseCleaningState.timer` holds `{ taskId, startedAt }`. Only one task runs at a time.
+- `startTaskTimer` commits any other running timer first. `commitTimer` adds the elapsed time to `actualSec`. `completeTask` commits, then marks the task done.
+- In the UI the running row gets `.running` plus a live clock, and the fixed `tidy-focusbar` shows the title, area, estimate, clock, Stop and Complete.
+
+**Sessions**
+- Stuck mode (`HouseStuckSession`) and subarea mode (`HouseSubareaSession`) step through `items[]` with an `index`.
+- `stuckComplete` moves to the next item. `subareaComplete` moves on only once `subareaCanAdvance` meets the percent threshold.
+- Sidequests unlock at `SIDEQUEST_TASKS_TO_UNLOCK` = 3 and `SIDEQUEST_SESSIONS_TO_UNLOCK` = 2.
+
+**Dependencies.** None between chores. `parentId` is the only hierarchy.
+
+**Not the same as plan tiers.** The generic Item completion tiers (`tier_bare_min` / `tier_goal` / `tier_exceptional` / `tier_current` / `points`) live in `lib/completion-tiers.ts`, with points from `buildPointsFormula` and the `tiers.*` points rules. They are shown read-only by `components/Lists/attributes/CompletionTiersPanel.tsx`, which is importable.
+
 ## Templates (`lib/module-templates.ts`)
 
 | Template | Lists created | Highlights |

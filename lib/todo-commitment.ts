@@ -120,6 +120,33 @@ export function withTodoCommitment(
   return { ...task, todoMarks }
 }
 
+/**
+ * A push moves a task to the next period of the same grain. Its required /
+ * prioritized mark for the period it leaves goes with it, merged with any mark
+ * already on the destination. The old mark stays as history. `alsoPrioritized`
+ * carries a ritual priority (morning `priorityTaskIds`), which is not a mark.
+ * Returns `{}` when nothing needs to change, else `{ todoMarks }`.
+ */
+export function carryTodoMarksPatch(
+  task: Task,
+  period: TodoMarkPeriod,
+  fromKey: string,
+  toKey: string,
+  alsoPrioritized = false,
+): Pick<Task, "todoMarks"> | Record<string, never> {
+  const from = findTodoMark(task, period, fromKey)
+  const required = !!from?.required
+  const prioritized = !!from?.prioritized || alsoPrioritized
+  if (!required && !prioritized) return {}
+  if (markKey(period, fromKey) === markKey(period, toKey)) return {}
+  const dest = findTodoMark(task, period, toKey)
+  const next = withTodoCommitment(task, period, toKey, {
+    required: required || !!dest?.required,
+    prioritized: prioritized || !!dest?.prioritized,
+  })
+  return next === task ? {} : { todoMarks: next.todoMarks }
+}
+
 /** Flip one flag and keep the other. */
 export function patchTodoCommitment(
   task: Task,

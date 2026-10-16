@@ -18,6 +18,13 @@ export interface NowObjectivesHandlers {
   onEditText: (id: string, text: string) => void
   onToggleComplete: (id: string) => void
   onRemove?: (id: string) => void
+  /**
+   * With a task on the clock: its open steps, and how to tie an objective to
+   * one (`"new"` makes a step from the objective; `undefined` unties it).
+   * Omit both and rows stay free-form, as before.
+   */
+  stepChoices?: { id: string; label: string }[]
+  onTieStep?: (id: string, stepId: string | "new" | undefined) => void
 }
 
 interface NowObjectivesListProps extends NowObjectivesHandlers {
@@ -34,6 +41,8 @@ function ObjectivesEditor({
   onEditText,
   onToggleComplete,
   onRemove,
+  stepChoices,
+  onTieStep,
   autoFocusAdd,
 }: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean }) {
   const [draft, setDraft] = useState("")
@@ -77,6 +86,29 @@ function ObjectivesEditor({
                     if (!e.target.value.trim() && onRemove) onRemove(row.id)
                   }}
                 />
+                {onTieStep ? (
+                  <select
+                    className="trk-now-obj-step"
+                    aria-label={`Step for ${row.text}`}
+                    title={row.stepId ? "Tied to a step. Ticking it ticks the step." : "Free objective. Tie it to a step?"}
+                    value={row.stepId ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      onTieStep(row.id, v === "" ? undefined : v)
+                    }}
+                  >
+                    <option value="">free</option>
+                    {row.stepId && !(stepChoices ?? []).some((c) => c.id === row.stepId) ? (
+                      <option value={row.stepId}>step (done)</option>
+                    ) : null}
+                    {(stepChoices ?? []).map((choice) => (
+                      <option key={choice.id} value={choice.id}>
+                        {choice.label}
+                      </option>
+                    ))}
+                    {row.stepId ? null : <option value="new">+ new step</option>}
+                  </select>
+                ) : null}
               </li>
             )
           })
@@ -111,6 +143,8 @@ export function NowObjectivesList({
   onEditText,
   onToggleComplete,
   onRemove,
+  stepChoices,
+  onTieStep,
   mode = "popup",
   contextName,
 }: NowObjectivesListProps) {
@@ -182,6 +216,8 @@ export function NowObjectivesList({
           onEditText={onEditText}
           onToggleComplete={onToggleComplete}
           onRemove={onRemove}
+          stepChoices={stepChoices}
+          onTieStep={onTieStep}
         />
       </div>
     )
@@ -209,6 +245,8 @@ export function NowObjectivesList({
               onEditText={onEditText}
               onToggleComplete={onToggleComplete}
               onRemove={onRemove}
+              stepChoices={stepChoices}
+              onTieStep={onTieStep}
               autoFocusAdd
             />
           </div>,

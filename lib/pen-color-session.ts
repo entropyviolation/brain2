@@ -6,6 +6,10 @@
  * and grows until stop — same slice math as an Operations work session, but
  * the paint is the pen you chose, in that pen's own view. It does not write a
  * Done row or touch the Operations session.
+ *
+ * A task may ride the clock (`taskId` / `stepId`, set by `lib/task-clock.ts`).
+ * Then the painted blocks carry the task and step, Stop logs the span on the
+ * task (`lib/task-clock-log.ts`), and objectives tied to steps tick them.
  */
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -22,10 +26,24 @@ import {
   addNowObjective,
   compactNowObjectives,
   editNowObjectiveText,
+  parseObjectiveClock,
   removeNowObjective,
+  tieNowObjectiveToStep,
   toggleNowObjectiveComplete,
   type NowObjective,
 } from "@/lib/now-objective"
+import {
+  addStepForObjective,
+  applyObjectiveToStep,
+  logTaskClockSpan,
+  matchStepForObjective,
+} from "@/lib/task-clock-log"
+import { sessionElapsedMs as elapsedMsOf } from "@/lib/operation-work-session"
+
+/** Block fields that follow the task on the clock. Empty for a plain pen clock. */
+function taskFields(session: Pick<PenColorSession, "taskId" | "stepId">): { taskId?: string; stepId?: string } {
+  return session.taskId ? { taskId: session.taskId, stepId: session.stepId } : {}
+}
 
 export { WORK_SESSION_TICK_MS as PEN_COLOR_SESSION_TICK_MS }
 export {
@@ -79,7 +97,7 @@ function coveringEntryId(date: string, scopeId: string, penId: string, minute: n
 
 function paintSlices(
   slices: WorkDaySlice[],
-  session: Pick<PenColorSession, "scopeId" | "penId" | "title" | "startedAt" | "nowObjectives">,
+  session: Pick<PenColorSession, "scopeId" | "penId" | "title" | "startedAt" | "nowObjectives" | "taskId" | "stepId">,
 ): string[] {
   const tracking = useTimeTrackingStore.getState()
   const spanId = `pen-color-${session.startedAt}`
@@ -89,7 +107,7 @@ function paintSlices(
     tracking.paintMinutes(slice.date, session.scopeId, slice.startMin, slice.endMin, session.penId, undefined, spanId)
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title: session.title, nowObjectives })
+      tracking.updateEntry(id, { title: session.title, nowObjectives, ...taskFields(session) })
       ids.push(id)
     }
   }
@@ -131,6 +149,7 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
       tracking.updateEntry(id, {
         title: session.title,
         nowObjectives: compactNowObjectives(session.nowObjectives),
+        ...taskFields(session),
       })
       ids.push(id)
     }
@@ -179,14 +198,23 @@ export function stopPenColorSession(now = new Date()): PenColorSession | null {
     const session = usePenColorSessionStore.getState().session
     if (!session) return null
 
+    let ids = session.trackingEntryIds ?? []
+    const end = sessionActiveEnd(session, now)
     if (locatePen(session.penId)) {
-      const end = sessionActiveEnd(session, now)
       const slices = splitIntoDaySlices(new Date(session.startedAt), end)
-      const ids = paintSlices(slices, session)
+      ids = paintSlices(slices, session)
       syncSliceDays(ids, slices)
     }
 
     usePenColorSessionStore.getState().clearSession()
+    if (session.taskId) {
+      logTaskClockSpan(
+        { taskId: session.taskId, stepId: session.stepId, trackingEntryIds: ids },
+        new Date(session.startedAt),
+        now,
+        elapsedMsOf(session, now.getTime()),
+      )
+    }
     return session
   })
 }
@@ -243,9 +271,38 @@ export function togglePenColorSession(penId: string, now = new Date()): PenColor
   return startPenColorSession(penId, now)
 }
 
-/** Add an objective for right now on the live pen-color block. */
-export function addPenColorNowObjective(text: string, now = new Date()): PenColorSession | null {
-  return withoutUndo(() => patchPenColorObjectives((list) => addNowObjective(list, text, now)))
+/**
+ * Add an objective for right now on the live pen-color block. A leading clock
+ * (`NOW 847 …`, `8:47 …`) backdates it. With a task on the clock, a line that
+ * names an open step is tied to that step; `stepId` ties it explicitly.
+ */
+export function addPenColorNowObjective(text: string, now = new Date(), stepId?: string): PenColorSession | null {
+  const parsed: { text: string; at?: Date } = stepId ? { text } : parseObjectiveClock(text, now)
+  const session = usePenColorSessionStore.getState().session
+  const tied = stepId ?? (session?.taskId ? matchStepForObjective(session.taskId, parsed.text) : undefined)
+  return withoutUndo(() =>
+    patchPenColorObjectives((list) => addNowObjective(list, parsed.text, now, { stepId: tied, addedAt: parsed.at })),
+  )
+}
+
+/**
+ * Point an objective at a step of the task on the clock. `"new"` makes a step
+ * from the objective's text (beside the step on the clock); `undefined` unties it.
+ */
+export function tiePenColorNowObjective(id: string, stepId: string | "new" | undefined): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  const objective = session.nowObjectives?.find((row) => row.id === id)
+  if (!objective) return session
+  let target = stepId === "new" ? undefined : stepId
+  if (stepId === "new") {
+    target = addStepForObjective({ taskId: session.taskId, stepId: session.stepId }, objective)
+    if (!target) return session
+  }
+  const next = withoutUndo(() => patchPenColorObjectives((list) => tieNowObjectiveToStep(list, id, target)))
+  const tiedRow = next?.nowObjectives?.find((row) => row.id === id)
+  if (tiedRow?.stepId && tiedRow.completedAt && stepId !== "new") applyObjectiveToStep(next ?? {}, tiedRow)
+  return next
 }
 
 export function editPenColorNowObjectiveText(id: string, text: string): PenColorSession | null {
@@ -253,7 +310,37 @@ export function editPenColorNowObjectiveText(id: string, text: string): PenColor
 }
 
 export function togglePenColorNowObjectiveComplete(id: string, now = new Date()): PenColorSession | null {
-  return withoutUndo(() => patchPenColorObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
+  const next = withoutUndo(() => patchPenColorObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
+  const row = next?.nowObjectives?.find((o) => o.id === id)
+  if (next?.taskId && row?.stepId) applyObjectiveToStep(next, row)
+  return next
+}
+
+/**
+ * Put a task (and optionally one of its steps) on the live clock without
+ * splitting the pen block. The blocks painted so far take the task and step.
+ */
+export function setPenColorSessionTask(
+  ref: { taskId: string; stepId?: string; title?: string } | null,
+): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  const next: PenColorSession = { ...session }
+  if (ref) {
+    next.taskId = ref.taskId
+    if (ref.stepId) next.stepId = ref.stepId
+    else delete next.stepId
+    if (ref.title) next.title = ref.title
+  } else {
+    delete next.taskId
+    delete next.stepId
+  }
+  usePenColorSessionStore.getState().setSession(next)
+  const tracking = useTimeTrackingStore.getState()
+  for (const entryId of next.trackingEntryIds ?? []) {
+    tracking.updateEntry(entryId, { title: next.title, taskId: next.taskId, stepId: next.stepId })
+  }
+  return next
 }
 
 export function removePenColorNowObjective(id: string): PenColorSession | null {

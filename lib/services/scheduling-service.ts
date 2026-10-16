@@ -154,8 +154,9 @@ export function pushTask(
   repo: TaskRepository = taskRepository,
   refDate: Date = new Date(),
   missReason?: StoredBlockedReason,
+  ritualPrioritized = false,
 ): Task | undefined {
   const task = repo.getById(id)
   if (!task) return undefined
-  return repo.update({ ...task, ...pushTaskOnePeriod(task, period, refDate, missReason) })
+  return repo.update({ ...task, ...pushTaskOnePeriod(task, period, refDate, missReason, ritualPrioritized) })
 }

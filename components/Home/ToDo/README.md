@@ -6,6 +6,13 @@ The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from
 
 **Open list** opens that period's To do list in Lists (`To do 8/31`, `To do 8/31-9/6`, `To do September 2026`). Season lists open tasks (active or partial) whose day, week, or month already falls in the quarter (`lib/seasons.ts`); missed, cancelled, deferred, and done stay off that list. Adding a task there schedules the first month of the quarter. There is no quarter placement on the period ledger. The same folder also holds **Done** and, once the period has ended, **Undone** — the same rows as this panel. **To do** here is the period ledger’s narrow **prospective** set (`tasksProspectiveForPeriod` — open scheduled work); **Done** is retrospective completion during the period ([`docs/TEMPORAL_POLARITY.md`](../../../docs/TEMPORAL_POLARITY.md)). Default sort is **priority**; prioritized Assigned rows always lead. Language: [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_STYLE.md#milled-fascia).
 
+**Planned (2026-10-15):** [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) covers a one-grid ledger with Pushes pinned right, marks that survive a push, a readability fix, a new Just Start picker, Now working, step prerequisites, session plans, and pens on items. Phase 0 shipped 2026-10-15:
+- **One grid.** The head and every closed row share one column set: Task · Tier · State · Done · Time · Steps · Actions · Pushes. Rows are CSS subgrids of `.todo-table`, with fixed widths where subgrid is missing. Every cell always renders (a `–` when empty, a dim `0` push tube), so no column moves. Pushes is the last column. Under 720px, Done, Time and Steps fold away and Pushes stays last.
+- **Marks carry on push** (`carryTodoMarksPatch`, below).
+- **Readable glass field.** The input now has dark ink on its light field. The lone via pad under an empty Steps fold is gone.
+- **Start** opens the rebuilt Just Start (Phase 1): the smallest ready step at any depth, its estimate on the clock, and Skip / Blocked by… / Too big. See [`components/Focus/README.md`](../../Focus/README.md).
+- **▶ Working on this now** (Phase 2): a transport key in Actions, before Start, puts the task on the Tracking pen clock, and every open step in the lid has its own ▶. A task with no pen asks once (`TaskClockStarter`). The row on the clock gets a phosphor rule down its left edge, and the live step a tint. ■ stops. The docked focus bar, the header and Tracking show the same clock. See [`components/Focus/README.md`](../../Focus/README.md#the-task-on-the-clock-phase-2-2026-10-15).
+
 ## Public door
 
 Home mounts **`TodoPanel`** from `todo-panel.tsx` (`components/Home/home-dashboard.tsx`).
@@ -24,7 +31,7 @@ Other rooms already import these helpers from `todo-utils.ts`:
 
 Outside tests import those same helpers, and Home’s dashboard test mocks `TodoPanel`. They do not add further exports.
 
-This room writes items on **`lib/task-store.ts`** (`addTask`, `updateTask`, `deleteTask`, `updatePriorityWeights`). Done and missed go through `completeTask` and `markMissedOpportunity`. Push goes through `pushTask`. Confirming an assumed Done time goes through `confirmTaskTimes`. **Log done** also calls `usePointsStore.addPoints`. A day **Prioritized** mark, when that day’s morning review already exists, saves `priorityTaskIds` with `useReviewsStore.saveMorningReview`. Show, pace, and lid prefs stay in `todo-prefs.ts`. The live persist key is `brain2-todo-prefs` (`persistKey("todo-prefs")`). `cogs-todo-prefs` is the legacy alias.
+This room writes items on **`lib/task-store.ts`** (`addTask`, `updateTask`, `deleteTask`, `updatePriorityWeights`). Done and missed go through `completeTask` and `markMissedOpportunity`. Push goes through `pushTask` in `lib/services/scheduling-service.ts` (not `task-store`), which calls `pushTaskOnePeriod` (`lib/item-utils.ts`). Undone Push uses `pushUndoneFields`, and auto-push uses `autoPushOneStep` (both in `lib/scheduling.ts`). _Last mapped: 2026-10-15._ Confirming an assumed Done time goes through `confirmTaskTimes`. **Log done** also calls `usePointsStore.addPoints`. A day **Prioritized** mark, when that day’s morning review already exists, saves `priorityTaskIds` with `useReviewsStore.saveMorningReview`. Show, pace, and lid prefs stay in `todo-prefs.ts`. The live persist key is `brain2-todo-prefs` (`persistKey("todo-prefs")`). `cogs-todo-prefs` is the legacy alias.
 
 These stay inside the room. Nothing outside this folder imports them: `TodoTable`, `TodoBreakdown` (`TodoLidSection`, `TodoDeleteButton`), `TodoLoadPanel`, `TodoPeriodNav`, `todo-filters`, `DoneTodoSection`, `MissedTodoSection`, `UndoneTodoSection`, `AddTodoDialog`, `AddDoneDialog`, `CompletionTimeLine`, `todo-prefs.ts`, `todo-chrome.css`, and every other export of `todo-utils.ts`.
 
@@ -106,6 +113,14 @@ Every open row on a period is **assigned** — that is the schedule. Two extra m
 | Neither | **Assigned**, unmarked metal. |
 
 A row can be both. Marks are per period: required this week is not required today. Day priorities from the morning ritual (`priorityTaskIds`) also read as prioritized for that day. Set the marks from the lid jewels (**Required** / **Prioritized**), keyboard **R**, item detail **Required and prioritized** (Scheduling), the morning ritual, or the start ritual. Done and Missed stay the lists they already were.
+
+**Marks follow a push** (2026-10-15). Every same-grain push copies the leaving period's Required / Prioritized onto the destination period, merged with any mark already there. The old mark stays as history. The helper is `carryTodoMarksPatch` (`lib/todo-commitment.ts`), called from:
+- `pushTaskOnePeriod` (manual Push, and review push);
+- `pushUndoneFields` (Undone Push, Scheduler card, ritual push);
+- `autoPushOneStep` (auto-push, hop by hop);
+- `pushYearUndoneFields`.
+
+A morning-ritual priority (`priorityTaskIds`) pushed off its day becomes a real Prioritized mark on the new day. Roll-up to a coarser grain (day → week) does not carry. Tests: `lib/todo-marks-carry.test.ts`.
 
 ## Period load
 

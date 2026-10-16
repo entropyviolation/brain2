@@ -3,6 +3,7 @@
  *
  * Dark focus shell with one mill cue: pixel eyebrow + phosphor Done key.
  * Step and timer stay separate instruments so they do not blur together.
+ * The step is as bright as the clock; the path above it is a hairline eyebrow.
  */
 
 .just-start {
@@ -32,11 +33,37 @@
 
 .just-start-stage {
   width: 100%;
-  max-width: 36rem;
+  max-width: 38rem;
+  max-height: 100%;
+  overflow-y: auto;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+}
+
+.just-start-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.just-start-path {
+  max-width: 100%;
+  margin: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(192, 192, 192, 0.18);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #b8bcc0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.just-start-path-sep {
+  color: #5f6468;
 }
 
 .just-start-eyebrow {
@@ -66,12 +93,43 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.just-start-step h1 {
+/*
+ * The house h1 rules (app/win95.css, and app/pcb-backdrop.css on light plates:
+ * dark ink + light emboss) outrank a bare `.just-start-step h1`. The focus room
+ * is always dark glass, so the step keeps its own light ink at a higher weight.
+ */
+.just-start-step h1,
+body.win95-app .just-start .just-start-step h1,
+html[data-pcb-ink] body.win95-app .just-start .just-start-step h1 {
   margin: 0;
   font-size: clamp(1.6rem, 3vw, 2.15rem);
   font-weight: 700;
   line-height: 1.25;
   color: #f8fafc;
+  text-shadow: 0 0 6px rgba(248, 250, 252, 0.18);
+}
+
+.just-start-step-meta {
+  margin: 0.65rem 0 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--js-crt);
+  opacity: 0.8;
+}
+
+.just-start-step.is-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.just-start-step.is-form h1,
+body.win95-app .just-start .just-start-step.is-form h1,
+html[data-pcb-ink] body.win95-app .just-start .just-start-step.is-form h1 {
+  font-size: 1.25rem;
+  text-align: center;
 }
 
 .just-start-step-context {
@@ -82,17 +140,6 @@
   white-space: pre-wrap;
 }
 
-.just-start-atomic {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.75rem;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--js-crt);
-}
 
 .just-start-timer {
   padding: 0.85rem 1rem 1rem;
@@ -137,6 +184,20 @@
   box-shadow: 0 0 6px var(--js-crt);
 }
 
+.just-start-opener {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 11px;
+  color: #8a8f94;
+  cursor: pointer;
+}
+
+.just-start-opener input {
+  accent-color: var(--js-crt);
+}
+
 .just-start-timer-hint {
   margin: 0.65rem 0 0;
   font-size: 12px;
@@ -145,12 +206,69 @@
 
 .just-start-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
 }
 
+.just-start-controls.is-spaced {
+  margin-top: 1.25rem;
+}
+
+.just-start-verbs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: -0.5rem;
+}
+
+/* Quiet milled key on dark glass: Pause, Reset, Skip, Blocked by…, Too big. */
+.just-start-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2a2e31, #17191b);
+  color: #d8dcdf;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px #3a3f43,
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.just-start-key.is-icon {
+  width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+}
+
+.just-start-key:hover {
+  color: #fff;
+  filter: brightness(1.15);
+}
+
+.just-start-key:focus-visible,
+.just-start-done:focus-visible,
+.just-start-chip:focus-visible {
+  outline: 1px solid var(--js-crt);
+  outline-offset: 2px;
+}
+
 .just-start-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   min-height: 2.75rem;
   padding: 0.55rem 1.25rem !important;
   border: none !important;
@@ -175,9 +293,170 @@
   filter: brightness(1.08);
 }
 
+.just-start-done:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.just-start-on-clock {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--js-crt);
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.35);
+}
+
+.just-start-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 3px;
+  background: #0f1214;
+  box-shadow:
+    inset 0 0 0 1px rgba(192, 192, 192, 0.22),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+
+.just-start-panel-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--js-mill);
+}
+
+.just-start-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 16rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.just-start-list li,
+.just-start-list label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.just-start-list li {
+  padding: 0.35rem 0.5rem;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.just-start-list label {
+  flex: 1;
+  cursor: pointer;
+}
+
+.just-start-list input[type="checkbox"] {
+  accent-color: var(--js-crt);
+}
+
+.just-start-list-name {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 13px;
+  color: #eef0f2;
+}
+
+.just-start-list-name em {
+  font-style: normal;
+  color: #7c8186;
+}
+
+.just-start-list-needs {
+  font-size: 11px;
+  color: #b7a6ff;
+}
+
+.just-start-list.is-split .just-start-field {
+  flex: 1 1 14rem;
+}
+
+.just-start-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.just-start-chip {
+  min-width: 2.4rem;
+  padding: 0.15rem 0.45rem;
+  border: 0;
+  border-radius: 2px;
+  background: #040a08;
+  color: var(--js-crt);
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.75), 0 0 0 1px #1f3a2e;
+  cursor: pointer;
+}
+
+.just-start-chip:hover {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--js-crt);
+}
+
+.just-start-chip-read {
+  min-width: 2.4rem;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #9ca3af;
+  text-align: right;
+}
+
+/* Dark field on dark glass: light ink, phosphor caret. */
+.just-start-field,
+body.win95-app .just-start input.just-start-field {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 2px;
+  background: #040a08;
+  color: #f2f4f5;
+  caret-color: var(--js-crt);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 0 1px #2a2f33;
+}
+
+.just-start-field::placeholder {
+  color: #5f6468;
+}
+
+.just-start-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .just-start-progress {
   margin: 0;
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: #525252;
+  color: #7c8186;
+}
+
+@media (max-width: 480px) {
+  .just-start {
+    padding: 1rem;
+  }
+
+  .just-start-clock {
+    font-size: 2.75rem;
+  }
 }

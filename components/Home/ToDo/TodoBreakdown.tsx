@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { ClipboardEvent, KeyboardEvent, ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
+import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import {
   getTodoPrefs,
   setTodoPrefs,
@@ -245,6 +246,13 @@ function StylusLine({
   )
 }
 
+/** The pen clock on this task's steps: which step is live, and how to start or stop one. */
+export interface StepClock {
+  liveStepId?: string
+  onStart: (stepId: string) => void
+  onStop: () => void
+}
+
 function StepBranch({
   step,
   depth,
@@ -252,6 +260,7 @@ function StepBranch({
   setFlockId,
   onChange,
   steps,
+  clock,
 }: {
   step: Subtask
   depth: number
@@ -259,7 +268,9 @@ function StepBranch({
   setFlockId: (id: string | null) => void
   onChange: (steps: Subtask[]) => void
   steps: Subtask[]
+  clock?: StepClock
 }) {
+  const live = clock?.liveStepId === step.id
   const [editing, setEditing] = useState(false)
   const [folded, setFolded] = useState(false)
   const progress = formatInternalProgress(step.subtasks)
@@ -283,7 +294,7 @@ function StepBranch({
 
   return (
     <li
-      className={`todo-step${flockId === step.id ? " is-flock-out" : ""}`}
+      className={`todo-step${flockId === step.id ? " is-flock-out" : ""}${live ? " is-live" : ""}`}
       style={{ ["--todo-depth" as string]: depth }}
     >
       <div className="todo-step-row">
@@ -333,6 +344,15 @@ function StepBranch({
             {step.description}
           </button>
         )}
+        {clock && !step.completed ? (
+          <DvdTransportKey
+            className="todo-step-clock"
+            mark={live ? "stop" : "play"}
+            pressed={live}
+            label={live ? `Stop the clock on ${step.description}` : `Working on ${step.description} now`}
+            onClick={() => (live ? clock.onStop() : clock.onStart(step.id))}
+          />
+        ) : null}
         <MinutesBox
           minutes={step.estimatedDuration}
           label={`Estimated minutes for ${step.description}`}
@@ -365,6 +385,7 @@ function StepBranch({
               setFlockId={setFlockId}
               onChange={onChange}
               steps={steps}
+              clock={clock}
             />
           ))}
         </ul>
@@ -445,12 +466,15 @@ export function TodoBreakdown({
   onEstimateChange,
   onStepsChange,
   usualMinutes,
+  clock,
 }: {
   estimate?: number
   steps?: Subtask[]
   onEstimateChange: (minutes: number | undefined) => void
   onStepsChange: (steps: Subtask[]) => void
   usualMinutes?: number
+  /** ▶ on each open step puts it on the pen clock. Omit to hide the keys. */
+  clock?: StepClock
 }) {
   const [flockId, setFlockId] = useState<string | null>(null)
   const [askDepth, setAskDepth] = useState(0)
@@ -540,14 +564,11 @@ export function TodoBreakdown({
                 setFlockId={setFlockId}
                 onChange={onStepsChange}
                 steps={list}
+                clock={clock}
               />
             ))}
           </ul>
-        ) : (
-          <div className="todo-trace-bare">
-            <ViaPad kind="bare" />
-          </div>
-        )}
+        ) : null}
 
         <StylusLine
           depth={0}

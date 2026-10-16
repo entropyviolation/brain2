@@ -74,6 +74,9 @@ export const subtaskSchema: z.ZodTypeAny = z.lazy(() =>
       context: z.string().optional(),
       estimatedDuration: z.number().optional(),
       subtasks: z.array(subtaskSchema).optional(),
+      dependsOn: z.array(z.string()).optional(),
+      actualDuration: z.number().optional(),
+      completedAt: dateLike.optional(),
     })
     .passthrough(),
 )

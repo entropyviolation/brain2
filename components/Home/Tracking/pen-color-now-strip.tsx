@@ -33,6 +33,7 @@ import {
 } from "@/lib/pen-color-session"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
+import { useClockTask } from "@/components/Focus/use-clock-task"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
@@ -118,6 +119,7 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
   const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
   const addPen = useTimeTrackingStore((s) => s.addPen)
   const { session, now } = usePenColorSessionClock()
+  const clock = useClockTask(session)
   const choices = useMemo(() => choicesFrom(scopes), [scopes])
   const [pickedId, setPickedId] = useState(session?.penId ?? "")
   const [query, setQuery] = useState("")
@@ -273,7 +275,8 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
       {live && selected && session && elapsed ? (
         <div className="trk-pen-now-live">
           <span className="trk-pen-now-bead" style={{ background: selected.color }} aria-hidden />
-          <span className="trk-pen-now-live-name" title={choiceLabel(selected)}>
+          <span className="trk-pen-now-live-name" title={clock.path ? `${clock.path} · ${choiceLabel(selected)}` : choiceLabel(selected)}>
+            {clock.path ? <span className="trk-pen-now-live-task">{clock.path} · </span> : null}
             {choiceLabel(selected)}
           </span>
           <span className="ops-now-elapsed" aria-live="polite">
@@ -292,6 +295,8 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
             onEditText={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleComplete={(id) => togglePenColorNowObjectiveComplete(id)}
             onRemove={(id) => removePenColorNowObjective(id)}
+            stepChoices={clock.stepChoices}
+            onTieStep={clock.onTieStep}
           />
           <DvdTransportKey
             className="trk-pen-now-icon"

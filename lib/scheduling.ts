@@ -24,6 +24,7 @@ import {
   sameWeekKey,
 } from "@/lib/date-utils"
 import { isClearedFromWork, withStatus } from "@/lib/completion-status"
+import { carryTodoMarksPatch } from "@/lib/todo-commitment"
 import type {
   Task,
   SchedulePeriod,
@@ -294,6 +295,7 @@ function autoPushOneStep(task: Task, now: Date): Partial<Task> | null {
     const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
     return {
       ...scheduleFieldsForPeriod("day", formatLocalDateKey(next)),
+      ...carryTodoMarksPatch(task, "day", formatLocalDateKey(date), formatLocalDateKey(next)),
       scheduledTime: undefined,
       daysPushed: (task.daysPushed ?? 0) + 1,
       hiddenFromTodo: false,
@@ -312,6 +314,7 @@ function autoPushOneStep(task: Task, now: Date): Partial<Task> | null {
     const nextStart = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + 7)
     return {
       ...scheduleFieldsForPeriod("week", getWeekString(nextStart)),
+      ...carryTodoMarksPatch(task, "week", task.scheduledWeek, getWeekString(nextStart)),
       weeksPushed: (task.weeksPushed ?? 0) + 1,
       hiddenFromTodo: false,
       schedulePlacements: recordPushedPlacement(task.schedulePlacements, "week", task.scheduledWeek),
@@ -325,6 +328,7 @@ function autoPushOneStep(task: Task, now: Date): Partial<Task> | null {
     const next = new Date(start.getFullYear(), start.getMonth() + 1, 1)
     return {
       ...scheduleFieldsForPeriod("month", formatLocalMonthKey(next)),
+      ...carryTodoMarksPatch(task, "month", task.scheduledMonth, formatLocalMonthKey(next)),
       monthsPushed: (task.monthsPushed ?? 0) + 1,
       hiddenFromTodo: false,
       schedulePlacements: recordPushedPlacement(task.schedulePlacements, "month", task.scheduledMonth),
@@ -581,6 +585,8 @@ export function pushUndoneFields(
   refDate: Date,
   now: Date = new Date(),
   missReason?: StoredBlockedReason,
+  /** The task was a ritual priority on the day it leaves. The new day gets a real Prioritized mark. */
+  ritualPrioritized = false,
 ): Partial<Task> {
   const destination = nextOpenPeriodValue(period, refDate, now)
   const counters: Partial<Task> =
@@ -591,6 +597,7 @@ export function pushUndoneFields(
         : { monthsPushed: (task.monthsPushed ?? 0) + 1 }
   return {
     ...scheduleFieldsForPeriod(period, destination),
+    ...carryTodoMarksPatch(task, period, value, destination, period === "day" && ritualPrioritized),
     ...counters,
     hiddenFromTodo: false,
     schedulePlacements: recordPushedPlacement(task.schedulePlacements, period, value, missReason),
@@ -625,6 +632,7 @@ export function pushYearUndoneFields(task: Task, value: string): Partial<Task> {
   const next = Number.isFinite(year) ? String(year + 1) : value
   return {
     ...scheduleFieldsForPeriod("year", next),
+    ...carryTodoMarksPatch(task, "year", value, next),
     schedulePlacements: recordPushedPlacement(task.schedulePlacements, "year", value),
   }
 }
