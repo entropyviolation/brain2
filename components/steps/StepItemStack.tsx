@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { lazy, Suspense, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import {
@@ -29,9 +29,8 @@ import { openStepItem, popItemLayer, pushItemLayer, useItemLayers, type ItemLaye
 import { withoutUndo } from "@/lib/action-history"
 import "./step-tree.css"
 
-const TaskDetailPopup = lazy(() =>
-  import("@/components/ItemDetail/ItemDetailPopup").then((mod) => ({ default: mod.TaskDetailPopup })),
-)
+// Static: To Do already loads the popup with the shell.
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 
 /** Keep step items in step with their tree. Cheap when there are none. */
 function useStepItemUpkeep() {
@@ -149,11 +148,11 @@ export function StepItemStack() {
   useSharedFieldSync(layers)
   if (!layers.length) return null
   return (
-    <Suspense fallback={null}>
+    <>
       {layers.map((layer, index) => (
         <LayerPopup key={layer.key} layer={layer} index={index} />
       ))}
-    </Suspense>
+    </>
   )
 }
 

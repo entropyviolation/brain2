@@ -659,8 +659,8 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; task card placement with O |
 | K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9), Paste as log (I) and step ↗ (M) left |
 | N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags after M; Done-at-level and level points with O |
-| M | Step items, stacked item detail | 11 | K | M | In progress |
-| O | Task card | 12 | K, L, N (M for ↗) | L | Planned |
+| M | Step items, stacked item detail | 11 | K | M | Built 2026-10-16; card / session ↗ with O and P |
+| O | Task card | 12 | K, L, N (M for ↗) | L | In progress |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
 | S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half after N |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |

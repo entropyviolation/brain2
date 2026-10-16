@@ -25,7 +25,8 @@
  * `stepId` skips the choices. A time-box ring (the estimate, or 10 / 25 / 50)
  * closes with "Time's up. That counted.": the minutes go on the step and the
  * task, the step stays open, **Keep going** restarts the ring. Leaving after a
- * minute or more off the pen clock shows the end-of-sitting strip.
+ * minute or more off the pen clock shows the end-of-sitting strip. **Pull me**
+ * (P) on the choices screen starts the latest sparked step (`pullMeStep`).
  */
 "use client"
 
@@ -41,6 +42,7 @@ import {
   findPlacedStep,
   finishStep,
   pickStartStep,
+  pullMeStep,
   rankStartSteps,
   setStepDependsOn,
   splitStep,
@@ -131,7 +133,22 @@ export default function JustStartMode({
         : [],
     [task, tasks, skip, pinnedId, ignoreTaskDeps],
   )
-  const showChoices = choosing && !pinnedId && pick?.kind === "step" && ranked.length >= 2
+  // Pull me (FN-5): the latest spark, whatever its estimate. Absent when nothing is sparked.
+  const pull = useMemo(
+    () => (task && !pinnedId ? pullMeStep(task, { allTasks: tasks, ignoreTaskDependencies: ignoreTaskDeps }) : undefined),
+    [task, tasks, pinnedId, ignoreTaskDeps],
+  )
+  const showChoices =
+    choosing &&
+    !pinnedId &&
+    pick?.kind === "step" &&
+    (ranked.length >= 2 || (!!pull && pull.step.id !== ranked[0]?.step.id))
+  const pullMe = () => {
+    if (!pull) return
+    setPinnedId(pull.step.id)
+    setChoosing(false)
+    setHighlight(0)
+  }
   const choose = (i: number) => {
     const hit = ranked[i]
     if (!hit) return
@@ -189,6 +206,11 @@ export default function JustStartMode({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (showChoices && !panel && ending == null) {
+        if ((e.key === "p" || e.key === "P") && pull) {
+          e.preventDefault()
+          pullMe()
+          return
+        }
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
           choose(highlight)
@@ -353,6 +375,19 @@ export default function JustStartMode({
                     </li>
                   ))}
                 </ul>
+                {pull ? (
+                  <div className="just-start-verbs">
+                    <button
+                      data-no95
+                      type="button"
+                      className="just-start-key"
+                      onClick={pullMe}
+                      title={`Start the latest spark: ${pull.step.description} (P)`}
+                    >
+                      ✦ Pull me
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : pick.kind === "step" && step ? (
               <>

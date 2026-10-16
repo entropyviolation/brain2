@@ -100,7 +100,7 @@ export function SubtaskTree({
   const total = effectiveDurationMinutes(undefined, list)
   return (
     <div className="id-step-tree">
-      <StepTree steps={list} onChange={onChange} columns={columns} label="Subtasks" onOpenStep={onOpenStep} />
+      <StepTree steps={list} onChange={onChange} columns={columns} label="Subtasks" tierTags onOpenStep={onOpenStep} />
       {all.length ? (
         <div className="id-step-sum">
           <span>
