@@ -93,8 +93,8 @@ import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeS
 import { isSentOnList, withSentMark } from "@/lib/list-sent"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
-import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import "./item-detail-chrome.css"
 
 interface TaskDetailPopupProps {
@@ -126,6 +126,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     touchDraft,
     originalTask,
     setOriginalTask,
+    isDraftDirty,
     allTasks,
     lists,
     folders,
@@ -291,14 +292,6 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     [task, lists, updateList, setTask],
   )
 
-  const handleNavigateToList = useCallback(
-    (listId: string) => {
-      onClose()
-      requestNavigateToListAfterPaint(listId, folders)
-    },
-    [folders, onClose],
-  )
-
   const handleSaveItemType = useCallback(
     (def: ItemTypeDefinition) => {
       if (itemTypes.some((t) => t.id === def.id)) updateItemType(def)
@@ -317,18 +310,31 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     if (selectedDependency && selectedDependency !== "none") setSelectedDependency("none")
   }, [addDependency, selectedDependency])
 
-  const isDirty = Boolean(task && originalTask && !snapshotsEqual(getDraft(), originalTask))
   const guard = useUnsavedGuard({
     open,
     onOpenChange: (next) => {
       if (!next) onClose()
     },
-    isDirty,
+    isDirty: isDraftDirty,
     onSave: handleSave,
     onDiscard: () => {
       if (originalTask) setTask(originalTask)
     },
   })
+
+  const guardAction = guard.guardAction
+  useItemDetailUnloadGuard(open && Boolean(task), isDraftDirty)
+  // Every way out of this item asks first when the draft is dirty.
+  const handleNavigateToList = useCallback(
+    (listId: string) => {
+      guardAction(() => {
+        onClose()
+        requestNavigateToListAfterPaint(listId, folders)
+      })
+    },
+    [guardAction, folders, onClose],
+  )
+  const openItem = useCallback((id: string) => guardAction(() => setOverrideId(id)), [guardAction])
 
   if (!task) {
     return null
@@ -573,7 +579,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                             setTask({ ...task, itemAttributeDefinitions })
                           }
                           onCreateAttribute={handleCreateAttribute}
-                          onOpenItem={(id) => setOverrideId(id)}
+                          onOpenItem={openItem}
                         />
                       </div>
 
@@ -964,7 +970,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                     <LinkPicker sourceId={task.id} onAdd={addLink} />
                     <RelatedItemsPanel
                       task={task}
-                      onOpenItem={(id) => setOverrideId(id)}
+                      onOpenItem={openItem}
                       onRemoveLink={removeLink}
                     />
                   </div>
@@ -1498,7 +1504,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
         }
         onOpenItem={(id) => {
           setEditingItemType(null)
-          setOverrideId(id)
+          openItem(id)
         }}
       />
       <MissReasonDialog
