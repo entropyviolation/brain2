@@ -37,6 +37,7 @@ import {
 } from "@/lib/operation-work-session"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import type { NowObjective } from "@/lib/now-objective"
+import { useClockTask } from "@/components/Focus/use-clock-task"
 
 function NowRow({
   name,
@@ -51,6 +52,8 @@ function NowRow({
   onEditObjective,
   onToggleObjective,
   onRemoveObjective,
+  stepChoices,
+  onTieStep,
 }: {
   name: string
   elapsed: string
@@ -64,6 +67,8 @@ function NowRow({
   onEditObjective: (id: string, text: string) => void
   onToggleObjective: (id: string) => void
   onRemoveObjective: (id: string) => void
+  stepChoices?: { id: string; label: string }[]
+  onTieStep?: (id: string, stepId: string | "new" | undefined) => void
 }) {
   const pauseLabel = paused ? `Resume ${name}` : `Pause ${name}`
   return (
@@ -82,6 +87,8 @@ function NowRow({
         onEditText={onEditObjective}
         onToggleComplete={onToggleObjective}
         onRemove={onRemoveObjective}
+        stepChoices={stepChoices}
+        onTieStep={onTieStep}
       />
       <DvdTransportKey mark={paused ? "play" : "pause"} label={pauseLabel} className="b2-shell-now-icon" onClick={onPauseToggle} />
       <DvdTransportKey mark="stop" label={stopLabel} className="b2-shell-now-icon" onClick={onStop} />
@@ -95,10 +102,13 @@ export function HeaderNowRows() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const penScope = penSession ? scopes.find((scope) => scope.id === penSession.scopeId) : undefined
   const penColor = penScope?.pens.find((pen) => pen.id === penSession?.penId)?.color
+  const clock = useClockTask(penSession)
   const penName = penSession
-    ? penScope
-      ? `${penSession.title} · ${penScope.name}`
-      : penSession.title
+    ? clock.path
+      ? `${clock.path} · ${penScope?.pens.find((pen) => pen.id === penSession.penId)?.name ?? penSession.title}`
+      : penScope
+        ? `${penSession.title} · ${penScope.name}`
+        : penSession.title
     : ""
 
   if (!opSession && !penSession) return null
@@ -145,6 +155,8 @@ export function HeaderNowRows() {
             onEditObjective={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleObjective={(id) => togglePenColorNowObjectiveComplete(id)}
             onRemoveObjective={(id) => removePenColorNowObjective(id)}
+            stepChoices={clock.stepChoices}
+            onTieStep={clock.onTieStep}
           />
         )}
       </div>

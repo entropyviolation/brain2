@@ -34,6 +34,10 @@ export interface PenColorSession {
   pausedAt?: string
   /** Completed pause milliseconds from earlier pause/resume cycles. */
   pausedAccumMs?: number
+  /** The task on this clock (`lib/task-clock.ts`). Omitted for a plain pen clock. */
+  taskId?: string
+  /** The step of that task being worked right now. */
+  stepId?: string
 }
 
 interface PenColorSessionState {

@@ -106,6 +106,8 @@ The rail always shows planned minutes for the **selected day** versus that dayâ€
 
 ## Gaps
 
+- _Last mapped 2026-10-15:_ dropping a task on the day grid goes through `handleScheduleTask` (`day-view.tsx` ~116), which sets `scheduledDate` / `scheduledTime` and writes a placement with `placementFromDrop` (`lib/planned-actions.ts`) at `task.estimatedDuration ?? 30` minutes. That raw estimate ignores the steps' sum, and so does capacity. **Planned:** use `effectiveDurationMinutes`, and add session blocks (source `"session"`) ([`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) Phases 4 and 6).
+
 - Carry-over of incomplete tasks to the next period is handled in Reviews, not automatically in Plan.
 - Plan text is an append log today (`v: 1` JSON entries via `lib/append-log.ts`). A Mongo `plans` collection is speculation, not the storage plan.
 - Official `02-home-plan*.png` were recaptured 2026-09-21 (Win95 calendar, capacity rail, append log). Capacity still needs both ends of a night (or 3+ typical nights).

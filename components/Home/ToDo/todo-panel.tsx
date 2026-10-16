@@ -45,6 +45,9 @@ import type { TodoItem, Task, PriorityWeights, CompletionStatus, Subtask, Stored
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import JustStartMode from "@/components/Focus/JustStartMode"
+import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { stopTaskClock } from "@/lib/task-clock"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { openPeriodTodoList, periodTodoListName } from "@/lib/scheduled-lists-sync"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
@@ -153,6 +156,9 @@ export function TodoPanel({
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [ritualWalk, setRitualWalk] = useState<RitualTodoPlacement | null>(null)
   const [justStartTaskId, setJustStartTaskId] = useState<string | null>(null)
+  const clockTaskId = usePenColorSessionStore((s) => s.session?.taskId ?? null)
+  const clockStepId = usePenColorSessionStore((s) => s.session?.stepId)
+  const taskClock = useTaskClockStarter()
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
   // when Home passes one, so midnight catch-up is not a copy taken at mount.
@@ -454,9 +460,10 @@ export function TodoPanel({
   const handlePush = (todoId: string, period: TodoPeriod) => {
     if (isRitualTodoId(todoId)) return
     const task = tasks.find((row) => row.id === todoId)
+    const ritualPrioritized = period === "day" && morningPriorities.includes(todoId)
     setReasonAsk({
       subject: itemTitleOrUntitled(task),
-      apply: (reason) => pushTask(todoId, period, undefined, new Date(), reason),
+      apply: (reason) => pushTask(todoId, period, undefined, new Date(), reason, ritualPrioritized),
     })
   }
 
@@ -485,7 +492,8 @@ export function TodoPanel({
       setReasonAsk({
         subject: itemTitleOrUntitled(task),
         apply: (reason) => {
-          const patch = pushUndoneFields(task, period, value, focusedDate, new Date(), reason)
+          const ritualPrioritized = period === "day" && morningPriorities.includes(taskId)
+          const patch = pushUndoneFields(task, period, value, focusedDate, new Date(), reason, ritualPrioritized)
           updateTask({ ...task, ...patch })
         },
       })
@@ -593,6 +601,10 @@ export function TodoPanel({
       selectedRowId,
       onSelectedRowIdChange: setSelectedRowId,
       flockingId,
+      clockTaskId,
+      clockStepId,
+      onClockStart: taskClock.start,
+      onClockStop: () => stopTaskClock(),
     }
     const inProgress = countInProgress(tasks)
     const openUnestimated = () => {
@@ -1288,6 +1300,7 @@ export function TodoPanel({
         }}
       />
 
+      {taskClock.picker}
       {justStartTaskId && (
         <JustStartMode taskId={justStartTaskId} onClose={() => setJustStartTaskId(null)} />
       )}

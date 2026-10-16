@@ -724,7 +724,7 @@ match, and does not sand them into one shared kit.
   ruler, typewriter keys and ball-bearing lamps, steel catalog drawers and
   index-card tabs for the index, cool white paper over a cobalt graph rule,
   FIG.-numbered double-ruled plates, graphite scopes. Type is handheld pixel:
-  Pixelify Sans, Silkscreen, DotGothic16. No yellow, no stars. Title bar and status bar keep the room in the house. Item
+  Pixelify Sans, Silkscreen, DotGothic16. No yellow, no celestial or astrology theme (star icons are fine). Title bar and status bar keep the room in the house. Item
   Types stays the library surface; Settings still edits types. Tooltips say
   what a control or a blank cell means (`ANALYTICS_TAB_HELP` and per-control
   titles). Match that density of explanation when a control would otherwise

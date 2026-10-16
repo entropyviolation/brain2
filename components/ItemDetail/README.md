@@ -180,6 +180,10 @@ and higher labels, with strings for characteristics left out (GS-7). Dated
 formulation wording lives on this same ledger and shows as a timeline (GS-10).
 [`docs/ScienceandSanityBrain2.md`](../../docs/ScienceandSanityBrain2.md) Part 3.
 
+## Time and pens
+
+_Last mapped: 2026-10-15._ The popup's **Time** tab (`ItemDetailPopup.tsx` ~1395) shows estimated vs actual, then the `timeLogs` list. The page shows `ItemEstimateField` and a "Took Nm" badge. Neither shell shows pens or Tracking time, and no field links a task to a pen. **Planned:** `Task.penLinks`, edited here and from pen settings, and a Time tab that totals linked-pen blocks plus time logs ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 5).
+
 ## Dependencies
 
 `addDependency` on the shared hook walks `findCyclePath`. A loop opens

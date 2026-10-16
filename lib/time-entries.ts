@@ -274,6 +274,13 @@ export interface TimeEntry {
    * Omitted on hand-painted and older blocks.
    */
   estimateOf?: { kind: "done" | "import"; id: string }
+  /**
+   * The task on the clock while this block was painted (Just Start, a To Do ▶,
+   * the focus bar). Omitted on hand-painted and older blocks. No persist bump.
+   */
+  taskId?: string
+  /** The task step on the clock when the block last grew. Step changes are stamped as objectives. */
+  stepId?: string
 }
 
 /** The detail fields that make two otherwise identical blocks worth keeping apart. */
@@ -288,6 +295,8 @@ const DETAIL_KEYS = [
   "startEventId",
   "endEventId",
   "moodReading",
+  "taskId",
+  "stepId",
 ] as const
 
 export function isInstant(entry: Pick<TimeEntry, "kind">): boolean {

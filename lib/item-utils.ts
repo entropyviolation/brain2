@@ -27,6 +27,7 @@ import {
   type SchedulableFields,
 } from "@/lib/date-utils"
 import { recordPushedPlacement } from "@/lib/scheduling"
+import { carryTodoMarksPatch } from "@/lib/todo-commitment"
 import { normalizeAttributeType } from "@/lib/attribute-utils"
 import { pointsRuleValue } from "@/lib/points-rules-live"
 import type { AttributeDefinition } from "@/lib/types"
@@ -487,6 +488,8 @@ export function pushTaskOnePeriod(
   period: "day" | "week" | "month",
   refDate: Date = new Date(),
   missReason?: StoredBlockedReason,
+  /** The task was a ritual priority on the day it leaves. The new day gets a real Prioritized mark. */
+  ritualPrioritized = false,
 ): Partial<Task> {
   const cleared = {
     scheduledDate: undefined,
@@ -503,6 +506,7 @@ export function pushTaskOnePeriod(
       next.setHours(0, 0, 0, 0)
       return {
         ...cleared,
+        ...carryTodoMarksPatch(task, "day", formatLocalDateKey(base), formatLocalDateKey(next), ritualPrioritized),
         scheduledDate: next,
         daysPushed: (task.daysPushed ?? 0) + 1,
         hiddenFromTodo: false,
@@ -523,6 +527,7 @@ export function pushTaskOnePeriod(
       const leftWeek = task.scheduledWeek ?? getWeekString(base)
       return {
         ...cleared,
+        ...carryTodoMarksPatch(task, "week", leftWeek, getWeekString(next)),
         scheduledWeek: getWeekString(next),
         weeksPushed: (task.weeksPushed ?? 0) + 1,
         hiddenFromTodo: false,
@@ -537,6 +542,7 @@ export function pushTaskOnePeriod(
       const leftMonth = task.scheduledMonth ?? formatLocalMonthKey(base)
       return {
         ...cleared,
+        ...carryTodoMarksPatch(task, "month", leftMonth, formatLocalMonthKey(next)),
         scheduledMonth: `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`,
         monthsPushed: (task.monthsPushed ?? 0) + 1,
         hiddenFromTodo: false,

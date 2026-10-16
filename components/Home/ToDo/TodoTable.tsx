@@ -17,6 +17,7 @@ import { effectiveDurationMinutes, flattenSteps, formatInternalProgress, todoCom
 import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPeriod } from "./todo-utils"
 import { itemTitle } from "@/lib/item-utils"
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection } from "./TodoBreakdown"
+import { DvdTransportKey } from "@/components/dvd-transport-keys"
 
 const COLLAPSE_THRESHOLD = 8
 
@@ -69,6 +70,10 @@ export function TodoTable({
   emptyLabel,
   flockingId,
   isWalkRow,
+  clockTaskId,
+  clockStepId,
+  onClockStart,
+  onClockStop,
 }: {
   todos: TodoItem[]
   period: TodoPeriod
@@ -101,6 +106,12 @@ export function TodoTable({
   flockingId?: string | null
   /** A derived ritual row. Open the rite; do not push, delete, or retier it. */
   isWalkRow?: (todoId: string) => boolean
+  /** The task (and step) on the Tracking pen clock, if any. */
+  clockTaskId?: string | null
+  clockStepId?: string
+  /** ▶ on a row or a step. Omit to hide the clock keys. */
+  onClockStart?: (taskId: string, stepId?: string) => void
+  onClockStop?: () => void
 }) {
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
@@ -192,11 +203,16 @@ export function TodoTable({
     >
       <div className="todo-table-head" role="row">
         <span className="todo-table-head-name">Task</span>
+        <span className="todo-table-head-cell" title="Tier — urgency and importance">Tier</span>
+        <span className="todo-table-head-cell" title="Active or in progress">State</span>
+        <span className="todo-table-head-cell" title="Share of steps finished">Done</span>
+        <span className="todo-table-head-cell" title="Minutes that count — the typed estimate or the steps' sum, whichever is larger">Time</span>
+        <span className="todo-table-head-cell" title="Steps finished of all steps">Steps</span>
+        <span className="todo-table-head-verbs">Actions</span>
         <span className="todo-table-head-push" title={pushLegend}>
           Pushes
           <em>{pushPeriodNoun}</em>
         </span>
-        <span className="todo-table-head-verbs">Actions</span>
       </div>
       {visibleTodos.map((todo) => {
         const status = getStatus(todo.id)
@@ -216,6 +232,8 @@ export function TodoTable({
         const open = openRowId === todo.id
         const selected = selectedRowId === todo.id
         const flocking = flockingId === todo.id
+        const clockId = todo.taskId || todo.id
+        const onClock = !walk && clockTaskId === clockId
         const toggleOpen = () => {
           onSelectedRowIdChange(todo.id)
           onOpenRowIdChange(open ? null : todo.id)
@@ -224,7 +242,7 @@ export function TodoTable({
         return (
           <div
             key={todo.id}
-            className={`todo-row${open ? " is-open" : ""}${selected ? " is-selected" : ""}${flocking ? " is-flocking" : ""}${walk ? " is-ritual" : ""}`}
+            className={`todo-row${open ? " is-open" : ""}${selected ? " is-selected" : ""}${flocking ? " is-flocking" : ""}${walk ? " is-ritual" : ""}${onClock ? " is-on-clock" : ""}`}
             data-todo-row={todo.id}
             data-ritual-todo={walk ? todo.id : undefined}
             role="listitem"
@@ -284,13 +302,9 @@ export function TodoTable({
                     {name}
                   </button>
                 )}
-                {pushed > 0 ? (
-                  <span className="todo-push-tube is-hot" title={`${pushed} ${pushLegend}`}>
-                    {pushed}
-                  </span>
-                ) : null}
               </div>
 
+              <span className="todo-cell todo-cell-tier">
               {walk ? null : <select
                 className="todo-nixie"
                 aria-label="Tier"
@@ -308,7 +322,9 @@ export function TodoTable({
                   </option>
                 ))}
               </select>}
+              </span>
 
+              <span className="todo-cell todo-cell-state">
               {walk ? null : <button
                 type="button"
                 className={`todo-status-lamp ${statusLampClass(status)}`}
@@ -330,25 +346,28 @@ export function TodoTable({
               >
                 <span className="todo-status-pip" aria-hidden />
               </button>}
+              </span>
 
-              {walk ? null : <span
-                className="todo-row-mins"
-                title={
-                  minutes > 0
-                    ? `${completePct}% complete · ${minutes} minutes that count`
-                    : `${completePct}% complete`
-                }
+              <span className="todo-cell todo-cell-done todo-row-mins" title={walk ? undefined : `${completePct}% complete`}>
+                {walk ? null : <PercentLedBar value={completePct} label="Complete" density="compact" />}
+              </span>
+
+              <span
+                className="todo-cell todo-cell-time"
+                title={walk ? undefined : minutes > 0 ? `${minutes} minutes that count` : "No estimate yet"}
               >
-                <PercentLedBar value={completePct} label="Complete" density="compact" />
-                {minutes > 0 ? <span className="todo-mins-read">{minutes}m</span> : null}
-              </span>}
+                {walk ? null : minutes > 0 ? <span className="todo-mins-read">{minutes}m</span> : <span className="todo-cell-blank">–</span>}
+              </span>
 
-              {stepCount > 0 ? (
-                <span className="todo-step-chip" title={progress ?? `${stepCount} steps`}>
-                  {doneSteps}/{stepCount}
-                  {minutes > 0 ? ` · ${minutes}m` : ""}
-                </span>
-              ) : null}
+              <span className="todo-cell todo-cell-steps">
+                {stepCount > 0 ? (
+                  <span className="todo-step-chip" title={progress ?? `${stepCount} steps`}>
+                    {doneSteps}/{stepCount}
+                  </span>
+                ) : walk ? null : (
+                  <span className="todo-cell-blank">–</span>
+                )}
+              </span>
 
               <div
                 className="todo-row-verbs"
@@ -375,6 +394,15 @@ export function TodoTable({
                 >
                   Done
                 </button>
+                {onClockStart ? (
+                  <DvdTransportKey
+                    className="todo-row-clock"
+                    mark={onClock ? "stop" : "play"}
+                    pressed={onClock}
+                    label={onClock ? `Stop the clock on ${name}` : `Working on ${name} now — start its pen clock`}
+                    onClick={() => (onClock ? onClockStop?.() : onClockStart(clockId))}
+                  />
+                ) : null}
                 <button
                   type="button"
                   className="todo-verb is-quiet"
@@ -404,6 +432,17 @@ export function TodoTable({
                   </>
                 )}
               </div>
+
+              <span className="todo-cell todo-cell-push">
+                {walk ? null : (
+                  <span
+                    className={`todo-push-tube${pushed > 0 ? " is-hot" : " is-zero"}`}
+                    title={`${pushed} — ${pushLegend}`}
+                  >
+                    {pushed}
+                  </span>
+                )}
+              </span>
             </div>
 
             {open && !walk ? (
@@ -457,6 +496,15 @@ export function TodoTable({
                   steps={steps}
                   onEstimateChange={(minutes) => onEstimateChange(todo.id, minutes)}
                   onStepsChange={(next) => onStepsChange(todo.id, next)}
+                  clock={
+                    onClockStart
+                      ? {
+                          liveStepId: onClock ? clockStepId : undefined,
+                          onStart: (stepId) => onClockStart(clockId, stepId),
+                          onStop: () => onClockStop?.(),
+                        }
+                      : undefined
+                  }
                 />
               </div>
             ) : null}

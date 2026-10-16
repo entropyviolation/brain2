@@ -29,6 +29,7 @@ import { HomeOverview } from "@/components/Home/home-overview"
 import { HomeWidgetsMenu } from "@/components/Home/home-widgets-menu"
 import { NeedsAttention } from "@/components/Home/NeedsAttention"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
+import { FocusBarDock } from "@/components/Focus/FocusBarDock"
 import { homeWidgetDate } from "@/lib/home-widgets"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useCurrentDate, useLiveToday } from "@/lib/use-current-date"
@@ -202,6 +203,7 @@ export function HomeDashboard() {
       </Tabs>
 
       <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      <FocusBarDock />
       </div>
     </div>
   )

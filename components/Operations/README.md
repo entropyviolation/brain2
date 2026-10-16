@@ -150,6 +150,8 @@ share one live clock (`lib/operation-work-session.ts` + `lib/work-session-store.
 Tag the operation in Settings with Tracking tags so linked habits count
 those minutes. One session at a time; starting another stops the current one.
 
+_Last mapped 2026-10-15:_ hour totals (`OperationHome`, `OperationLogFeed`) come only from `timeLogs`. Minutes painted in Tracking with a pen, even one carrying the operation's tags, are not counted, and there is no per-task total. **Planned:** a shared `trackedMinutesForItem` and a house-wide Now working that an operation's session can drive ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phases 2, 5 and 6).
+
 ## Files
 
 | File | Role |

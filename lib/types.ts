@@ -276,6 +276,15 @@ export interface Subtask {
   estimatedDuration?: number
   /** Steps inside this step. Independent of one another. */
   subtasks?: Subtask[]
+  /**
+   * Ids of other steps in the same task that must be done first. Missing ids
+   * do not block. Just Start skips a step until these are done.
+   */
+  dependsOn?: string[]
+  /** Minutes actually spent, written when the step is finished from a timer. */
+  actualDuration?: number
+  /** When the step was ticked done from a timer. Revived as a Date by the task store. */
+  completedAt?: Date
 }
 
 /**
@@ -461,6 +470,12 @@ export interface Task extends Item {
   urgency?: number // 1-5
   importance?: number // 1-5
   dependencies?: string[] // task IDs
+  /**
+   * Tracking pens joined to this task. The first one that still exists is the
+   * pen its clock paints with (To Do ▶, Just Start, the focus bar). Phase 5 of
+   * docs/TODO_REDESIGN.md adds editing from item detail and pen settings, and totals.
+   */
+  penLinks?: { scopeId: string; penId: string }[]
   context?: string // @home, @work, etc.
   entropy?: number // 0-1
   rewardValue?: number
@@ -665,6 +680,10 @@ export interface TimeLogEntry {
   durationMinutes: number
   notes?: string
   taskId?: string
+  /** The step that was on the clock (Just Start, the pen clock). */
+  stepId?: string
+  /** Tracking blocks painted for this same span, so a total never counts it twice. */
+  entryIds?: string[]
   location?: string
   activityLabel?: string
 }
