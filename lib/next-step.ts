@@ -4,8 +4,9 @@
  * `pickStartStep` walks a task's whole step tree and returns the single step
  * to do next: the **lowest-level** open step (a leaf, or a parent whose
  * children are all done), whose prerequisites are met, that **has an
- * estimate**, with the **lowest estimate**. Ties go to `isMolecular`, then tree
- * order. `rankStartSteps` returns the top three in that same order, for the
+ * estimate**: first one that counts toward the lowest level not yet reached
+ * (Phase 10, `lib/step-progress.ts`; a no-op without step tiers), then the
+ * **lowest estimate**. Ties go to `isMolecular`, then tree order. `rankStartSteps` returns the top three in that same order, for the
  * Today's choices screen; its first is always `pickStartStep`'s. When
  * nothing qualifies it says why (no steps, all done, steps need estimates,
  * everything blocked, or the task itself is waiting on another task), so the
@@ -18,6 +19,8 @@
 import type { Subtask, Task } from "@/lib/types"
 import { hasUnmetDependencies, type DepTask } from "@/lib/available-tasks"
 import { addNestedStep } from "@/lib/todo-steps"
+import { effectiveTierMap, tierRank } from "@/lib/step-tiers"
+import { nextLevel } from "@/lib/step-progress"
 
 export interface PlacedStep {
   step: Subtask
@@ -88,7 +91,24 @@ export function openBlockers(placed: PlacedStep, byId: Map<string, Subtask>): Su
   return blockers
 }
 
-/** The one Just Start order: lowest estimate, then atomic, then tree order. */
+/**
+ * Level first (Phase 10): 0 for a step that counts toward the lowest level not
+ * yet reached, else 1. Every step is 0 on a task without step tiers.
+ */
+function levelKeyFor(steps: readonly Subtask[] | undefined): (p: PlacedStep) => number {
+  const target = nextLevel({ subtasks: steps ? [...steps] : [] })
+  if (!target) return () => 0
+  const tiers = effectiveTierMap(steps)
+  const cap = tierRank(target)
+  return (p) => (tierRank(tiers.get(p.step.id) ?? "goal") <= cap ? 0 : 1)
+}
+
+/** The one Just Start order: lowest level not yet reached, lowest estimate, then atomic, then tree order. */
+function startOrderFor(steps: readonly Subtask[] | undefined): (a: PlacedStep, b: PlacedStep) => number {
+  const level = levelKeyFor(steps)
+  return (a, b) => level(a) - level(b) || startOrder(a, b)
+}
+
 function startOrder(a: PlacedStep, b: PlacedStep): number {
   return (
     ownMinutes(a.step) - ownMinutes(b.step) ||
@@ -116,9 +136,10 @@ export function rankStartSteps(
   const placed = placeSteps(task.subtasks)
   const byId = new Map(placed.map((p) => [p.step.id, p.step]))
   const skip = new Set(options.skip ?? [])
+  const order = startOrderFor(task.subtasks)
   const ready = placed
     .filter((p) => isOpenLeaf(p.step) && ownMinutes(p.step) > 0 && openBlockers(p, byId).length === 0)
-    .sort((a, b) => Number(skip.has(a.step.id)) - Number(skip.has(b.step.id)) || startOrder(a, b))
+    .sort((a, b) => Number(skip.has(a.step.id)) - Number(skip.has(b.step.id)) || order(a, b))
   const first = ready.find((p) => p.step.id === pick.step.id)!
   return [first, ...ready.filter((p) => p !== first)]
     .slice(0, Math.max(1, n))
@@ -157,7 +178,7 @@ export function pickStartStep(
     const skip = new Set(options.skip ?? [])
     const fresh = ready.filter((p) => !skip.has(p.step.id))
     const pool = fresh.length ? fresh : ready
-    const best = [...pool].sort(startOrder)[0]
+    const best = [...pool].sort(startOrderFor(task.subtasks))[0]
     return { kind: "step", step: best.step, path: best.path, minutes: ownMinutes(best.step), ready: ready.length }
   }
 
