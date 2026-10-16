@@ -120,4 +120,4 @@ _Last mapped: 2026-10-16_
 
 _Last mapped: 2026-10-16_
 
-Targeted run of the files the report named: 10 failures in 7 files, matching the report. The full-suite count is still to be confirmed.
+Full `vitest run` at `98f1475`: **41 failed, 5,842 passed** (5,883 tests). 20 of 686 files fail. It took 522 s, and most of that was import (354 s) and jsdom setup, not test bodies.
