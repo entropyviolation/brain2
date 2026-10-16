@@ -6,7 +6,7 @@ ritual** (plan the coming period) and **Review ritual** (end: clarify, push,
 document, evaluate). Dialog shells use the shared pin-bar milled fascia
 (`.hpp95` / `components/header-popup-chrome.css`).
 
-**Planned:** stepped walk for every rite, per-task night keys (why, push prompt,
+_Last mapped: 2026-10-16_ Every rite now walks one question at a time (`RitualSteps.tsx`). **Planned:** per-task night keys (why, push prompt,
 done-that-day, missed), start / duration / finish times, and morning look-ahead
 lists. The widget Open fix (Phase 0) is built. See [`docs/RITUALS_REDESIGN.md`](../../docs/RITUALS_REDESIGN.md).
 
@@ -36,7 +36,7 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
 | `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
 | `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
-| `RitualSteps.tsx` | `RitualStepper` + `useRitualStep`: one question at a time. Lamp strip, `03 / 09` plate, optional step index (remembered per viewer), Back / Next, Alt+←/→. Styles in `ritual-steps.css`. Its own buttons carry `.rst-own` so the house key chrome skips them. Morning uses it now. **Planned:** night, start, and Star Lord rituals |
+| `RitualSteps.tsx` | `RitualStepper` + `useRitualStep`: one question at a time. Lamp strip, `03 / 09` plate, optional step index (remembered per viewer), Back / Next, Alt+←/→. Styles in `ritual-steps.css`. Its own buttons carry `.rst-own` so the house key chrome skips them. _Last mapped: 2026-10-16_ Every rite uses it: Morning, Night / end, Start, Star Lord. The side index opens by default at 720px and wider; a toggle is remembered (`brain2-ritual-nav-open`). Under 640px the index is a strip above the card. Each rite hands in `{ id, label, answered, body }` steps and owns saving: moving to another step writes a draft. Step keys: `brain2-morning-step:{day}`, `brain2-ritual-step:end:{period}:{key}`, `brain2-ritual-step:start:{period}:{key}`, `brain2-ritual-step:star-lord:{kind}:{date}`. The last step's key is **Finish** (same as the primary save) |
 | `CommitmentMarkList.tsx` | Shared required / prioritized task checkboxes (`marks`: `required` \| `prioritized` \| `both`) for morning sections and start-ritual rows |
 | `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
 | `DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
@@ -106,6 +106,8 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 
 ## Start ritual (week–year)
 
+_Last mapped: 2026-10-16_ Stepped: Undone from last period · Priorities · Must be done (text + Required / Prioritized marks) · Intentions · Plan · Gratitude. Moving between steps is **Save progress**. Test: `StartRitualDialog.test.tsx`.
+
 1. **Undone from last period** — pull into this period or note them.
 2. **Priorities** — free text for what matters most.
 3. **Must be done** — required outcomes, plus `CommitmentMarkList` (`marks="both"`) that marks this period's assigned tasks **Required** or **Prioritized** (`Task.todoMarks`).
@@ -116,6 +118,8 @@ section below. Desktop and text `gm` share `replaceMorningReview`.
 **Close** saves a draft. **Save progress** / **Save Start ritual**. A start ritual that was already submitted stays submitted if you close it after a tweak. Undone from the last period uses the same date-scoped unfinished list as the night ritual. Telegram: `ritual start week` (etc.). After must-dos, the text walk asks `required: 1, 8` and `priority: 2` (a bare comma list marks required).
 
 ## Night / Review (end) flow (`ReviewDialog`)
+
+_Last mapped: 2026-10-16_ One step per item below, on `RitualStepper` (`stepDefs` in `reviews.tsx`). Night: Unfinished items · Assumed times · How the day was spent · Summary · Gratitude · Plan reflection (only with a stored plan) · Reflection · Tomorrow morning (wake-up reminder + what matters most) · Goals to focus on tomorrow · Tomorrow's plan. Week to year swap the time step for **This week / month / season / year** (stats + arc) and end on **The … to come**. Moving between steps saves a draft (no points unless already submitted). **Finish** on the last step and **Save** both submit.
 
 1. **Unfinished items** — the ritual's own period, not "today". A past day uses the Undone ledger (`lib/ritual-unfinished.ts`), so work that rolled onto the next day still appears. Done completes in place. **Push** uses the Scheduler's `pushCardWorkingQueue` (`lib/ritual-push.ts`): the task is reassigned to the next open period and the row leaves this ritual. A failed push leaves the row. One shared **Why blocked?** (`WhyBlockedControl`) sits above the unfinished list and is applied on Push. Presets stay the token. **Other** opens a text field; the words are stored with the token (`{ reason: "other", note }`). Spaces stay while typing; the saved note is trimmed. A blank Other stays the token `"other"`.
 2. **Assumed times** — correct or confirm. Optional **Est.** (`Task.timeRough`) means the duration or the start (or both) is a rough estimate. It stays on the task and shows on Done rows.
@@ -161,7 +165,7 @@ on March 1 in a year without that day.
 3. **Inner alchemy** — three further questions. The note asks to breathe the question into the belly and write what remains.
 4. **Closing** — warm the palms, rest them over the heart, bow slightly toward the north, and the three lines beginning "May my thoughts match the clarity of the Void."
 
-**Close** saves a draft and awards nothing. **Save Star Lord Report** submits it. Each answered question is a section. Re-saving replaces `ritual:star-lord:{kind}:{date}` in the points ledger. A rite that was already submitted stays submitted if you close it after a tweak.
+_Last mapped: 2026-10-16_ Stepped: Before you begin · The ledger · Inner alchemy · Closing. Moving between parts saves a draft. **Close** saves a draft and awards nothing. **Save Star Lord Report** (or **Finish** on Closing) submits it. Each answered question is a section. Re-saving replaces `ritual:star-lord:{kind}:{date}` in the points ledger. A rite that was already submitted stays submitted if you close it after a tweak.
 
 ## Telegram (BIM)
 
