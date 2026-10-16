@@ -83,7 +83,7 @@ export function splitEventLine(payload: string): { line: string; note?: string }
   return { line, note: note || undefined }
 }
 
-function withNote<T extends { note?: string }>(row: T, note?: string): T {
+function withNote<const T extends object>(row: T, note?: string): T & { note?: string } {
   return note ? { ...row, note } : row
 }
 
@@ -123,10 +123,10 @@ function combineCertainty(
   return undefined
 }
 
-function withCertainty<T extends { clockCertainty?: NoteClockCertainty }>(
+function withCertainty<const T extends object>(
   row: T,
   clockCertainty?: NoteClockCertainty,
-): T {
+): T & { clockCertainty?: NoteClockCertainty } {
   return clockCertainty ? { ...row, clockCertainty } : row
 }
 
@@ -142,7 +142,7 @@ export function peelLogLocation(text: string): { text: string; location?: string
   return { text: title, location }
 }
 
-function withLocation<T extends { location?: string }>(row: T, location?: string): T {
+function withLocation<const T extends object>(row: T, location?: string): T & { location?: string } {
   return location ? { ...row, location } : row
 }
 

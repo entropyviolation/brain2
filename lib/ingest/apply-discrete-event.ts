@@ -26,7 +26,7 @@ import {
   parseSwitchCommand,
   parseSwitchPayload,
   parseThoughtPayload,
-  type LogNote,
+  type BoundNote,
   type NoteClockCertainty,
   type SwitchNote,
 } from "./parse-tracking-note"
@@ -73,6 +73,7 @@ export function applyDiscreteLog(
       status: "ok",
       kind: "event-log",
       reply: formatLogKeywordList(phrases),
+      summary: "Log keywords",
     }
   }
   const parsed = parseLogPayload(payload, now, phrases)
@@ -428,7 +429,7 @@ function flagTitle(parsed: SwitchNote, noun: "task" | "objective" | "transit"): 
   return parsed.from ? `stopped ${parsed.from} · started ${parsed.to}` : `started ${parsed.to}`
 }
 
-function paintLogStart(parsed: Extract<LogNote, { shape: "start" }>, now: Date): ApplyResult {
+function paintLogStart(parsed: BoundNote, now: Date): ApplyResult {
   const title = `START ${parsed.title}`
   const id = paintInstant(
     title,
@@ -451,7 +452,7 @@ function paintLogStart(parsed: Extract<LogNote, { shape: "start" }>, now: Date):
   }
 }
 
-function paintLogEnd(parsed: Extract<LogNote, { shape: "end" }>, now: Date): ApplyResult {
+function paintLogEnd(parsed: BoundNote, now: Date): ApplyResult {
   const open = openStarts.get(startKey(parsed.title))
   openStarts.delete(startKey(parsed.title))
   const carried = joinUserNotes(open?.note, parsed.note)
