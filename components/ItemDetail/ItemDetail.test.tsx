@@ -6,8 +6,10 @@ import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Task } from "@/lib/types"
 import { TagInput } from "./TagInput"
-import { LinkPicker } from "./LinkPicker"
-import { RelatedItemsPanel } from "./RelatedItemsPanel"
+import { RichLinksPanel } from "./links/RichLinksPanel"
+import { PEOPLE_I_KNOW_LIST_ID } from "@/lib/people-i-know"
+import { useItemTypeStore } from "@/lib/item-type-store"
+import { registerRelationDefs } from "@/lib/links"
 import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
 
 function makeTask(overrides: Partial<Task> & Pick<Task, "id" | "description">): Task {
@@ -94,69 +96,109 @@ describe("TagInput", () => {
   })
 })
 
-describe("LinkPicker", () => {
+function panel(task: Task, overrides: Partial<Parameters<typeof RichLinksPanel>[0]> = {}) {
+  const props = {
+    task,
+    addLink: vi.fn(),
+    removeLink: vi.fn(),
+    writeDraft: vi.fn(),
+    onOpenItem: vi.fn(),
+    ...overrides,
+  }
+  render(<RichLinksPanel {...props} />)
+  return props
+}
+
+describe("RichLinksPanel", () => {
   beforeEach(() => {
     resetAllStores()
-    useTaskStore.getState().setTasks([
-      makeTask({ id: "a", description: "Write proposal" }),
-      makeTask({ id: "b", description: "Review budget" }),
-    ])
+    registerRelationDefs([])
+    useItemTypeStore.setState({ relations: [] })
   })
 
-  it("adds a link to a searched target item", async () => {
+  it("adds a link to a searched target item as a sentence", async () => {
     const user = userEvent.setup()
-    const onAdd = vi.fn()
-    render(<LinkPicker sourceId="a" onAdd={onAdd} />)
-
+    const a = makeTask({ id: "a", description: "Write proposal", title: "Write proposal" })
+    useTaskStore.getState().setTasks([a, makeTask({ id: "b", description: "Review budget", title: "Review budget" })])
+    const props = panel(a)
+    await user.click(screen.getByRole("combobox", { name: "Relation" }))
+    await user.click(screen.getByRole("option", { name: /^blocks/ }))
     await user.type(screen.getByLabelText("Search item to link"), "budget")
-    await user.click(screen.getByText("Review budget"))
-    await user.click(screen.getByRole("button", { name: /add link/i }))
-
-    expect(onAdd).toHaveBeenCalledWith("blocks", "b")
+    await user.click(screen.getByRole("option", { name: /Review budget/ }))
+    await user.click(screen.getByRole("button", { name: /^Link$/ }))
+    expect(props.addLink).toHaveBeenCalledWith("blocks", "b")
   })
-})
 
-describe("RelatedItemsPanel", () => {
-  beforeEach(() => resetAllStores())
-
-  it("renders forward links and removes one", async () => {
+  it("lists forward links and removes one", async () => {
     const user = userEvent.setup()
-    const target = makeTask({ id: "b", description: "Review budget" })
     const task = makeTask({
       id: "a",
       description: "Write proposal",
       links: [{ id: "l1", relation: "blocks", targetId: "b" }],
     })
-    useTaskStore.getState().setTasks([task, target])
-
-    const onRemoveLink = vi.fn()
-    render(<RelatedItemsPanel task={task} onOpenItem={vi.fn()} onRemoveLink={onRemoveLink} />)
-
-    expect(screen.getByText("Review budget")).toBeInTheDocument()
-    expect(screen.getByText("blocks")).toBeInTheDocument()
-
-    await user.click(screen.getByLabelText("Remove link"))
-    expect(onRemoveLink).toHaveBeenCalledWith("l1")
+    useTaskStore.getState().setTasks([task, makeTask({ id: "b", description: "Review budget", title: "Review budget" })])
+    const props = panel(task)
+    const row = screen.getAllByTestId("link-row")[0]
+    expect(row).toHaveTextContent("Review budget")
+    expect(screen.getByRole("heading", { name: "blocks" })).toBeInTheDocument()
+    await user.click(screen.getByLabelText("Remove link Review budget"))
+    expect(props.removeLink).toHaveBeenCalledWith("l1")
   })
 
-  it("renders backlinks labelled with the inverse relation", async () => {
+  it("reads a link pointing here with the inverse relation, opens it, and confirms the reciprocal", async () => {
     const user = userEvent.setup()
-    // Y blocks X → on X this should surface as "blocked by Y".
     const x = makeTask({ id: "x", description: "Ship release" })
     const y = makeTask({
       id: "y",
       description: "Fix blocker bug",
+      title: "Fix blocker bug",
       links: [{ id: "l1", relation: "blocks", targetId: "x" }],
     })
     useTaskStore.getState().setTasks([x, y])
+    const props = panel(x)
+    expect(screen.getByRole("heading", { name: "blocked by" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Fix blocker bug" }))
+    expect(props.onOpenItem).toHaveBeenCalledWith("y")
+    await user.click(screen.getByRole("button", { name: "Confirm" }))
+    expect(props.addLink).toHaveBeenCalledWith("blocked-by", "y")
+  })
 
-    const onOpenItem = vi.fn()
-    render(<RelatedItemsPanel task={x} onOpenItem={onOpenItem} onRemoveLink={vi.fn()} />)
+  it("shows both sides as one mutual row", () => {
+    const a = makeTask({ id: "a", description: "Elijah", type: "person", links: [{ id: "1", relation: "friends-with", targetId: "b" }] })
+    const b = makeTask({ id: "b", description: "Oey", title: "Oey", type: "person", links: [{ id: "2", relation: "friends-with", targetId: "a" }] })
+    useTaskStore.getState().setTasks([a, b])
+    panel(a)
+    const rows = screen.getAllByTestId("link-row")
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveAttribute("data-direction", "mutual")
+  })
 
-    expect(screen.getByText("blocked by")).toBeInTheDocument()
-    expect(screen.getByText("Fix blocker bug")).toBeInTheDocument()
+  it("creates a new relation from the composer and selects it", async () => {
+    const user = userEvent.setup()
+    const a = makeTask({ id: "a", description: "Elijah", type: "person" })
+    useTaskStore.getState().setTasks([a])
+    panel(a)
+    await user.click(screen.getByRole("combobox", { name: "Relation" }))
+    await user.type(screen.getByRole("combobox", { name: "Relation" }), "is the drummer of")
+    await user.click(screen.getByRole("option", { name: /Create “is the drummer of”/ }))
+    await user.clear(screen.getByLabelText("Reverse phrase"))
+    await user.type(screen.getByLabelText("Reverse phrase"), "has drummer")
+    await user.click(screen.getByRole("button", { name: "Create relation" }))
+    const relations = useItemTypeStore.getState().relations
+    expect(relations.map((r) => r.label).sort()).toEqual(["has drummer", "is the drummer of"])
+    expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("is the drummer of")
+  })
 
-    await user.click(screen.getByText("Fix blocker bug"))
-    expect(onOpenItem).toHaveBeenCalledWith("y")
+  it("suggests self's link from a Relation word on a person, and Dismiss writes the draft", async () => {
+    const user = userEvent.setup()
+    const self = makeTask({ id: "person-self", description: "self", title: "self", type: "person", personProfile: { self: true } })
+    const oey = makeTask({ id: "oey", description: "Oey", type: "person", lists: [PEOPLE_I_KNOW_LIST_ID], personProfile: { relation: "sister" } })
+    useTaskStore.getState().setTasks([self, oey])
+    const props = panel(oey)
+    const row = screen.getAllByTestId("link-row")[0]
+    expect(row).toHaveAttribute("data-direction", "derived")
+    expect(row).toHaveTextContent("self")
+    await user.click(screen.getByRole("button", { name: "Dismiss" }))
+    expect(props.writeDraft).toHaveBeenCalledWith({ dismissedLinkSuggestions: ["person-self|sibling-of"] })
   })
 })
