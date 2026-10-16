@@ -25,6 +25,7 @@
  */
 "use client"
 
+import { migratePersonNotesToNoteLog } from "@/lib/person-notes-fold"
 import { create } from "zustand"
 import { stampListAddedAt, stampListAddedAtAll } from "@/lib/list-added-at"
 import { applyMembershipRulesToTask, applyMembershipRulesToTasks, rulesChanged } from "@/lib/list-membership-rules"
@@ -265,7 +266,7 @@ export function appendTombstoneIds(
 }
 
 /** Persist blob version. v18 parks note prose in `body` and mirrors `description` to `title`. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
-export const TASK_STORE_PERSIST_VERSION = 18
+export const TASK_STORE_PERSIST_VERSION = 19
 
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
@@ -898,6 +899,10 @@ export const useTaskStore = create<TaskState>()(
           // Parked-note prose moves from description → body. description
           // becomes a pure title mirror. Search indexes body.
           persistedState = migrateParkedNoteBodyToField(persistedState)
+        }
+        if (version < 19) {
+          // Person dated notes join the item Notes log. Nothing is dropped.
+          persistedState = migratePersonNotesToNoteLog(persistedState)
         }
         if (!Array.isArray(persistedState.removedTaskIds)) {
           persistedState.removedTaskIds = []

@@ -119,4 +119,27 @@ describe("gift ideas", () => {
     expect(plan.list.giftIdeasPersonId).toBeUndefined()
     expect(plan.list.id).not.toBe(source.id)
   })
+
+  it("keeps a name someone typed through hydrate and person renames", () => {
+    const elijah = person("p-e", "Elijah", true)
+    useTaskStore.getState().addTask(elijah)
+    const listId = ensureGiftIdeasForPerson(elijah)
+    const list = () => useTaskStore.getState().lists.find((l) => l.id === listId)!
+    expect(list().giftIdeasAutoName).toBe("Gift ideas for Elijah")
+    useTaskStore.getState().updateList({ ...list(), name: "Elijah presents" })
+    ensureCloseGiftIdeas()
+    expect(list().name).toBe("Elijah presents")
+    const renamed = { ...elijah, title: "Eli", description: "Eli" }
+    noteSavedPeople([elijah], [renamed])
+    expect(list().name).toBe("Elijah presents")
+    expect(list().giftIdeasPersonId).toBe("p-e")
+  })
+
+  it("an automatic name still follows a person rename", () => {
+    const oey = person("p-o", "Oey", true)
+    useTaskStore.getState().addTask(oey)
+    const listId = ensureGiftIdeasForPerson(oey)
+    noteSavedPeople([oey], [{ ...oey, title: "Oey James", description: "Oey James" }])
+    expect(useTaskStore.getState().lists.find((l) => l.id === listId)?.name).toBe("Gift ideas for Oey James")
+  })
 })

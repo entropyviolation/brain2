@@ -14,6 +14,7 @@
  * Everything here is pure and unit-tested; the store/repository build on these.
  */
 import type { ItemLink, ItemRecord, LinkStance } from "@/lib/types"
+import { PERSON_RELATIONS } from "@/lib/person-relations"
 
 /** A relation type item links can express. */
 export interface RelationDef {
@@ -24,7 +25,20 @@ export interface RelationDef {
   inverse: string
   /** Label for the inverse direction, e.g. "blocked by". */
   inverseLabel: string
+  /** Item types this relation reads from. Absent = any. */
+  fromTypes?: string[]
+  /** Item types it points at. Absent = any. */
+  toTypes?: string[]
+  /** Color and sector in the Links constellation. */
+  family?: RelationFamily
+  /** Made by the person in the Links tab (`lib/relation-registry.ts`). */
+  custom?: true
+  /** Hidden from pickers; old links keep reading its label. */
+  archived?: true
+  createdAt?: string
 }
+
+export type RelationFamily = "family" | "friend" | "romance" | "work" | "group" | "place" | "task" | "evidence" | "other"
 
 /** Built-in relation catalog. Symmetric relations use themselves as inverse. */
 export const RELATIONS: RelationDef[] = [
@@ -58,7 +72,35 @@ export const RELATIONS: RelationDef[] = [
   { id: "related", label: "related to", inverse: "related", inverseLabel: "related to" },
 ]
 
-const RELATION_BY_ID = new Map(RELATIONS.map((r) => [r.id, r]))
+/**
+ * Every relation the app can read: the catalog above, the person seeds, and
+ * the person's own (`registerRelationDefs`, fed by the item-type store).
+ * Catalog ids always win, so a custom def cannot relabel `blocks`.
+ */
+const RELATION_BY_ID = new Map<string, RelationDef>()
+
+function seedRelationMap(custom: readonly RelationDef[] = []): void {
+  RELATION_BY_ID.clear()
+  for (const def of custom) RELATION_BY_ID.set(def.id, def)
+  for (const def of PERSON_RELATIONS) RELATION_BY_ID.set(def.id, def)
+  for (const def of RELATIONS) RELATION_BY_ID.set(def.id, def)
+}
+seedRelationMap()
+
+/** Replace the person-made relations the label / inverse helpers read. */
+export function registerRelationDefs(custom: readonly RelationDef[]): void {
+  seedRelationMap(custom)
+}
+
+/** The definition behind a relation id, catalog, seed, or custom. */
+export function getRelationDef(relation: string): RelationDef | undefined {
+  return RELATION_BY_ID.get(relation)
+}
+
+/** Every relation known right now (catalog first, then seeds, then custom). */
+export function allRelationDefs(): RelationDef[] {
+  return [...RELATION_BY_ID.values()]
+}
 
 /** Whether a relation id is part of the built-in catalog. */
 export function isKnownRelation(relation: string): boolean {
@@ -76,6 +118,12 @@ export function inverseRelation(relation: string): string {
 /** Human label for a relation id (falls back to the raw id). */
 export function relationLabel(relation: string): string {
   return RELATION_BY_ID.get(relation)?.label ?? relation
+}
+
+/** Label for reading this relation from its target's side. */
+export function inverseRelationLabel(relation: string): string {
+  const def = RELATION_BY_ID.get(relation)
+  return def?.inverseLabel ?? relationLabel(inverseRelation(relation))
 }
 
 function makeLinkId(): string {

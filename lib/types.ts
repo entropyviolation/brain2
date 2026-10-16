@@ -1694,6 +1694,12 @@ export interface List {
    * this. Delete is allowed. See `lib/gift-ideas.ts`.
    */
   giftIdeasPersonId?: string
+  /**
+   * The name Brain2 last wrote on this Gift ideas list. While `name` still
+   * equals it, a person rename renames the list. Once someone renames the list
+   * by hand, the names differ and Brain2 leaves the name alone.
+   */
+  giftIdeasAutoName?: string
   /** Tabs shown in item detail view for items in this list (unioned with the type's panels). */
   detailPanels?: ItemDetailPanel[]
   /** Panels to hide even if the item type (or another list) would show them. */

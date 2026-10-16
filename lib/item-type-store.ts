@@ -12,6 +12,8 @@
  */
 "use client"
 
+import { registerRelationDefs, type RelationDef } from "@/lib/links"
+import { sanitizeRelationDefs } from "@/lib/relation-registry"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
@@ -26,6 +28,15 @@ import { withFilmType } from "@/lib/film-types"
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
   types: ItemTypeDefinition[]
+  /**
+   * Person-made link relations (Links tab). Catalog and person seeds come from
+   * code (`lib/links.ts`, `lib/person-relations.ts`). Archived, never deleted,
+   * so old links keep their label.
+   */
+  relations: RelationDef[]
+  addRelations: (defs: RelationDef[]) => void
+  updateRelation: (def: RelationDef) => void
+  archiveRelation: (id: string) => void
   addType: (type: ItemTypeDefinition) => void
   updateType: (type: ItemTypeDefinition) => void
   deleteType: (id: string) => void
@@ -46,16 +57,38 @@ interface ItemTypeState {
 export const ITEM_TYPE_STORE_PERSIST_VERSION = 2
 
 /** v0/v1 snapshots had no migrate; without this Zustand drops the blob. */
-export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types"> {
-  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown }) : {}
+export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types" | "relations"> {
+  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown; relations?: unknown }) : {}
   const types = Array.isArray(prev.types) ? (prev.types as ItemTypeDefinition[]) : []
-  return { types: mergeTypeRegistry(types) }
+  return { types: mergeTypeRegistry(types), relations: sanitizeRelationDefs(prev.relations) }
 }
 
 export const useItemTypeStore = create<ItemTypeState>()(
   persist(
     (set, get) => ({
       types: getBuiltinItemTypes(),
+      relations: [],
+
+      addRelations: (defs) =>
+        set((state) => {
+          const fresh = sanitizeRelationDefs(defs).filter((def) => !state.relations.some((r) => r.id === def.id))
+          if (fresh.length === 0) return state
+          const relations = [...state.relations, ...fresh]
+          registerRelationDefs(relations)
+          return { relations }
+        }),
+      updateRelation: (def) =>
+        set((state) => {
+          const relations = state.relations.map((r) => (r.id === def.id ? { ...def, custom: true as const } : r))
+          registerRelationDefs(relations)
+          return { relations }
+        }),
+      archiveRelation: (id) =>
+        set((state) => {
+          const relations = state.relations.map((r) => (r.id === id ? { ...r, archived: true as const } : r))
+          registerRelationDefs(relations)
+          return { relations }
+        }),
 
       addType: (type) =>
         set((state) => {
@@ -114,7 +147,11 @@ export const useItemTypeStore = create<ItemTypeState>()(
       migrate: migrateItemTypeState,
       // System types always come from code; catalog types keep persisted edits.
       onRehydrateStorage: () => (state) => {
-        if (state) state.types = mergeTypeRegistry(state.types ?? [])
+        if (state) {
+          state.types = mergeTypeRegistry(state.types ?? [])
+          state.relations = sanitizeRelationDefs(state.relations)
+          registerRelationDefs(state.relations)
+        }
       },
     },
   ),
