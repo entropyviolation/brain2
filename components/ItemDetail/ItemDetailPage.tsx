@@ -13,6 +13,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
@@ -130,6 +132,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     subscribeDraft,
     touchDraft,
     originalTask,
+    isDraftDirty,
     setOriginalTask,
     allTasks,
     lists,
@@ -367,14 +370,35 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   const sourceHabitId = sourceHabitIdOf(task?.attributes)
 
-  const handleNavigateToList = useCallback(
-    (listId: string) => {
-      // Back on a habit-opened detail returns to habit settings. The list chip
-      // opens this list instead. The shell's navigate event closes the page.
-      requestNavigateToListAfterPaint(listId, folders)
-      if (!peekHabitSettingsReturn()) onBack()
+  // Every way out of the page asks about unsaved edits first.
+  const guard = useUnsavedGuard({
+    open: true,
+    onOpenChange: (next) => {
+      if (!next) onBack()
     },
-    [folders, onBack],
+    isDirty: isDraftDirty,
+    onSave: handleSave,
+    onDiscard: () => {
+      if (originalTask) setTask(originalTask)
+    },
+  })
+  const { guardAction, requestClose } = guard
+  useItemDetailUnloadGuard(Boolean(task), isDraftDirty)
+
+  const openItem = useCallback(
+    (id: string) => guardAction(() => setOverrideId(id)),
+    [guardAction],
+  )
+
+  const handleNavigateToList = useCallback(
+    (listId: string) =>
+      guardAction(() => {
+        // Back on a habit-opened detail returns to habit settings. The list chip
+        // opens this list instead. The shell's navigate event closes the page.
+        requestNavigateToListAfterPaint(listId, folders)
+        if (!peekHabitSettingsReturn()) onBack()
+      }),
+    [guardAction, folders, onBack],
   )
 
   const commitNotes = useCallback(
@@ -391,9 +415,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   const openHabitSettings = useCallback(() => {
     if (!sourceHabitId) return
-    armHabitSettingsReturn(sourceHabitId)
-    onBack()
-  }, [sourceHabitId, onBack])
+    guardAction(() => {
+      armHabitSettingsReturn(sourceHabitId)
+      onBack()
+    })
+  }, [sourceHabitId, guardAction, onBack])
 
   const handleSaveItemType = useCallback(
     (def: ItemTypeDefinition) => {
@@ -423,7 +449,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       <div className="id-window">
       <div className="id-fascia">
         <div className="id-fascia-row">
-          <Button variant="outline" size="icon" className="id-btn id-btn-icon" onClick={onBack}>
+          <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="Back" onClick={requestClose}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="id-mark">
@@ -621,7 +647,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     setTask({ ...task, itemAttributeDefinitions })
                   }
                   onCreateAttribute={handleCreateAttribute}
-                  onOpenItem={(id) => setOverrideId(id)}
+                  onOpenItem={openItem}
                 />
               </div>
               {isTask && (
@@ -888,7 +914,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   {isEditing && <LinkPicker sourceId={task.id} onAdd={addLink} />}
                   <RelatedItemsPanel
                     task={task}
-                    onOpenItem={(id) => setOverrideId(id)}
+                    onOpenItem={openItem}
                     onRemoveLink={removeLink}
                   />
                 </CardContent>
@@ -1377,7 +1403,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       }
       onOpenItem={(id) => {
         setEditingItemType(null)
-        setOverrideId(id)
+        openItem(id)
       }}
     />
     <MissReasonDialog
@@ -1388,6 +1414,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         if (task) markMissedOpportunity(task.id, undefined, reason)
       }}
     />
+    <UnsavedChangesDialog {...guard.prompt} />
     </>
   )
 }

@@ -4,6 +4,7 @@ import {
   blockerCandidates,
   finishStep,
   pickStartStep,
+  pullMeStep,
   rankStartSteps,
   setStepDependsOn,
   splitStep,
@@ -162,5 +163,44 @@ describe("rankStartSteps", () => {
     firstMatches({ subtasks: [s("a", { estimatedDuration: 5, dependsOn: ["b"] }), s("b", { estimatedDuration: 9 })] })
     firstMatches({ subtasks: [s("bare")] })
     firstMatches({ subtasks: [] })
+  })
+})
+
+describe("sparks", () => {
+  const ties = () => [
+    s("a", { estimatedDuration: 5, isMolecular: true }),
+    s("b", { estimatedDuration: 5, sparkedAt: "2026-10-15T09:00:00Z" }),
+    s("c", { estimatedDuration: 5, sparkedAt: "2026-10-16T09:00:00Z" }),
+    s("d", { estimatedDuration: 2 }),
+  ]
+
+  it("sparked steps win equal estimates, most recent first, after the lowest estimate", () => {
+    expect(rankStartSteps({ subtasks: ties() }, 4).map((r) => r.step.id)).toEqual(["d", "c", "b", "a"])
+    const pick = pickStartStep({ subtasks: ties() }, { skip: ["d"] })
+    expect(pick.kind === "step" && pick.step.id).toBe("c")
+    expect(rankStartSteps({ subtasks: ties() }, 3, { skip: ["d"] })[0].step.id).toBe("c")
+  })
+
+  it("without sparks the order is unchanged", () => {
+    expect(rankStartSteps({ subtasks: cds() }).map((r) => r.step.id)).toEqual([
+      "save and export",
+      "remove extra text",
+      "look at new templates",
+    ])
+  })
+
+  it("Pull me takes the latest spark, ignores estimate, and respects locks", () => {
+    const steps = [
+      s("old", { sparkedAt: "2026-10-14T09:00:00Z", estimatedDuration: 30 }),
+      s("bare", { sparkedAt: "2026-10-15T09:00:00Z" }),
+      s("locked", { sparkedAt: "2026-10-16T09:00:00Z", dependsOn: ["old"] }),
+      s("done", { sparkedAt: "2026-10-16T10:00:00Z", completed: true }),
+    ]
+    expect(pullMeStep({ subtasks: steps })?.step.id).toBe("bare")
+    expect(pullMeStep({ subtasks: cds() })).toBeUndefined()
+    const waiting = { subtasks: steps, dependencies: ["other"] }
+    const allTasks = [{ id: "other", completed: false }] as never
+    expect(pullMeStep(waiting, { allTasks })).toBeUndefined()
+    expect(pullMeStep(waiting, { allTasks, ignoreTaskDependencies: true })?.step.id).toBe("bare")
   })
 })

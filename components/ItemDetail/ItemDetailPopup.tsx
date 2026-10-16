@@ -19,6 +19,7 @@ import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { isReminderTask } from "@/lib/reminders"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
@@ -98,6 +99,25 @@ import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
+
+/**
+ * Phase 11: a click or focus inside an item layer stacked on top
+ * (`StepItemStack`) is not "outside" this popup, so the popup underneath keeps
+ * its place instead of closing.
+ */
+function layerSafeDismiss<P extends ReturnType<typeof unsavedDismissProps>>(props: P): P {
+  const inLayer = (event: Event) => {
+    const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as
+      | Element
+      | null
+    return !!target?.closest?.("[data-item-layer]")
+  }
+  return {
+    ...props,
+    onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onPointerDownOutside(event)),
+    onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onInteractOutside(event)),
+  }
+}
 
 interface TaskDetailPopupProps {
   taskId: string | null
@@ -341,6 +361,7 @@ export function TaskDetailPopup({
     },
   })
   const { guardAction } = guard
+  useItemDetailUnloadGuard(open && Boolean(task), isDraftDirty)
 
   // Every way out of the popup asks about unsaved edits first.
   const openItem = useCallback(
@@ -394,7 +415,8 @@ export function TaskDetailPopup({
           container={container}
           data-ui-name="Item detail"
           data-ui-docs="components/ItemDetail/README.md"
-          {...unsavedDismissProps(guard.requestClose)}
+          {...layerSafeDismiss(unsavedDismissProps(guard.requestClose))}
+          data-item-layer={layerHeader !== undefined ? "" : undefined}
         >
           <DialogTitle className="sr-only">Item detail</DialogTitle>
           {layerHeader}

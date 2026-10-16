@@ -74,6 +74,7 @@ import {
   parkSession,
   parkedLong,
   pauseSession,
+  elapsedMin,
   ranMinutes,
   resumeParked,
   runAgain,
@@ -110,6 +111,7 @@ import { togglePenColorNowObjectiveComplete } from "@/lib/pen-color-session"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import JustStartMode from "@/components/Focus/JustStartMode"
+import SittingEnd from "@/components/Focus/SittingEnd"
 import { TodoBreakdown } from "./TodoBreakdown"
 import { useTodoTime } from "./use-todo-time"
 import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
@@ -997,6 +999,15 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
     onChange(endSession(plan, tasks, new Date()))
   }
 
+  // End of sitting (Phase 15 A): End pauses, shows "Sat 52m. Left it here:", then ends on Keep or Skip.
+  const [sat, setSat] = useState<{ minutes: number; taskId: string } | null>(null)
+  const endToStrip = () => {
+    const taskId = (current ?? waiting)?.taskId
+    if (!taskId || !tasks.some((t) => t.id === taskId)) return end()
+    setSat({ minutes: elapsedMin(plan, new Date()), taskId })
+    if (!paused) onChange(pauseSession(plan, new Date()))
+  }
+
   return (
     <div className="todo-session-run">
       <div className="todo-session-clockbar">
@@ -1026,11 +1037,22 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
           >
             Park
           </button>
-          <button type="button" className="todo-verb is-missed" onClick={end}>
+          <button type="button" className="todo-verb is-missed" onClick={endToStrip}>
             End
           </button>
         </div>
       </div>
+      {sat ? (
+        <SittingEnd
+          paper
+          task={tasks.find((t) => t.id === sat.taskId)}
+          minutes={sat.minutes}
+          onDone={() => {
+            setSat(null)
+            end()
+          }}
+        />
+      ) : null}
       {parking !== null ? (
         <div className="todo-session-ask" role="group" aria-label="Park the session">
           <FutureNoteInput value={parking} onChange={setParking} />

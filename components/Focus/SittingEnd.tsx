@@ -4,7 +4,8 @@
  * At Stop (focus bar) or on leaving Just Start: "Sat 52m. Left it here:" and
  * the next leaf (`rankStartSteps(task)[0]`), pre-written and editable.
  * **Keep** saves the text as that step's `context`, so the next sitting opens
- * on it. **Skip** closes the strip. Both call `onDone`.
+ * on it. **Skip** closes the strip. Both call `onDone`. `paper` wears the
+ * To Do panel's keys (a session's End), not the dark focus glass.
  */
 "use client"
 
@@ -25,11 +26,15 @@ export default function SittingEnd({
   task,
   minutes,
   onDone,
+  paper = false,
 }: {
   task: Task | undefined
   minutes: number
   onDone: () => void
+  paper?: boolean
 }) {
+  const key = paper ? "todo-btn" : "focus-bar-key"
+  const primary = paper ? "todo-btn is-primary" : "focus-bar-key is-primary"
   const next = useMemo(() => (task ? rankStartSteps(task, 1)[0] : undefined), [task])
   const [text, setText] = useState(() => next?.step.context ?? next?.step.description ?? "")
 
@@ -43,7 +48,7 @@ export default function SittingEnd({
   }
 
   return (
-    <div className="sitting-end" role="dialog" aria-label="End of sitting" data-ui-name="End of sitting">
+    <div className={paper ? "sitting-end is-paper todo-session-ask" : "sitting-end"} role="dialog" aria-label="End of sitting" data-ui-name="End of sitting">
       <span className="sitting-end-text">Sat {formatSat(minutes)}.{next ? " Left it here:" : ""}</span>
       {next ? (
         <input
@@ -63,11 +68,11 @@ export default function SittingEnd({
         />
       ) : null}
       {next ? (
-        <button data-no95 type="button" className="focus-bar-key is-primary" onClick={keep}>
+        <button data-no95={paper ? undefined : ""} type="button" className={primary} onClick={keep}>
           Keep
         </button>
       ) : null}
-      <button data-no95 type="button" className="focus-bar-key" onClick={onDone}>
+      <button data-no95={paper ? undefined : ""} type="button" className={key} onClick={onDone}>
         {next ? "Skip" : "Close"}
       </button>
     </div>

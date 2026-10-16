@@ -64,6 +64,24 @@ describe("JustStartMode", () => {
     expect(screen.getByRole("heading", { name: "b" })).toBeInTheDocument()
   })
 
+  it("Pull me starts the latest spark and respects locks; absent with no sparks", () => {
+    seed([
+      step("a", { estimatedDuration: 5 }),
+      step("b", { estimatedDuration: 10 }),
+      step("bare", { sparkedAt: "2026-10-15T09:00:00Z" }),
+      step("locked", { sparkedAt: "2026-10-15T10:00:00Z", dependsOn: ["a"] }),
+    ])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: /Pull me/ }))
+    expect(screen.getByRole("heading", { name: "bare" })).toBeInTheDocument()
+  })
+
+  it("has no Pull me when nothing is sparked", () => {
+    seed([step("a", { estimatedDuration: 5 }), step("b", { estimatedDuration: 10 })])
+    render(<JustStartMode taskId="cds" onClose={() => {}} />)
+    expect(screen.queryByRole("button", { name: /Pull me/ })).toBeNull()
+  })
+
   it("the time-box ring closes: time's up counts, logs the minutes, and leaves the step open", () => {
     seed([step("a", { estimatedDuration: 5 })])
     render(<JustStartMode taskId="cds" onClose={() => {}} />)
