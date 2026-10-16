@@ -20,6 +20,7 @@ const { pathToFileURL } = require("url")
 const { resolveElectronUserData } = require("./user-data-path")
 const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cache")
 const { createStaticFileResolver } = require("./static-file")
+const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
 
 const isDev = !app.isPackaged
 
@@ -84,6 +85,8 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
+  // Linked resources stream from disk into the preview well (`file-links.js`).
+  LINK_SCHEME_PRIVILEGES,
 ])
 
 // Tracks the primary window so the global capture shortcut can focus it.
@@ -334,6 +337,13 @@ function registerScreenTimeIpcHandlers() {
   })
 }
 
+/** Linked resources: pick, stat, follow a move, open, reveal, text, preview. */
+function registerFileLinkIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const { dialog } = require("electron")
+  registerFileLinkIpc({ ipcMain, dialog, shell, protocol, net, getWindow: () => mainWindow })
+}
+
 function registerTelegramIpcHandlers() {
   // eslint-disable-next-line global-require
   const { registerTelegramIpc } = require("./telegram-ingest")
@@ -378,7 +388,12 @@ app.whenReady().then(async () => {
   registerWindowIpcHandlers()
   // One broken registration must not leave the rest of the app unwired — the
   // renderer would only see "No handler registered" with no cause.
-  for (const register of [registerNotesIpcHandlers, registerScreenTimeIpcHandlers, registerTelegramIpcHandlers]) {
+  for (const register of [
+    registerNotesIpcHandlers,
+    registerScreenTimeIpcHandlers,
+    registerTelegramIpcHandlers,
+    registerFileLinkIpcHandlers,
+  ]) {
     try {
       register()
     } catch (err) {

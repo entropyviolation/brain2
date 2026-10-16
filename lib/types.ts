@@ -835,6 +835,27 @@ export interface ItemResource extends FileValue {
   addedAt: string
   /** Optional caption: what this file is for. */
   caption?: string
+  /**
+   * Set when the file stays where it is on the computer instead of being
+   * copied (`uri` is then `link:<id>`). Desktop only. `docs/RESOURCE_LINKS.md`.
+   */
+  link?: ResourceLink
+}
+
+/** Where a linked resource lives on disk, and how to find it after a move. */
+export interface ResourceLink {
+  /** Absolute path on the computer that linked it. */
+  path: string
+  isDir: boolean
+  /** `dev:ino` at link time; finds the file again after a move on the same disk. */
+  fileId?: string
+  mtimeMs?: number
+  /** macOS bookmark (Finder alias data), base64. Follows moves and renames. */
+  bookmark?: string
+  /** Folders: files counted (VCS and build folders skipped). */
+  fileCount?: number
+  /** Folders: the count stopped at the walk cap. */
+  truncated?: boolean
 }
 
 export interface GoalValue {
