@@ -228,8 +228,22 @@
   box-shadow: var(--hpp-crt-ring, var(--hpp-raised));
 }
 
+/* Narrow: the index folds into a strip above the card so the question keeps
+   the full width. */
+@media (max-width: 640px) {
+  .rst-room { flex-direction: column; }
+  .rst-index {
+    flex-direction: row;
+    width: auto;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  .rst-index-row { flex-shrink: 0; }
+  .rst-index-label { max-width: 9em; }
+}
 @media (max-width: 560px) {
-  .rst-index { width: 120px; }
   .rst-walk-hint { display: none; }
 }
 

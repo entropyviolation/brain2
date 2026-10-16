@@ -77,7 +77,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     id: "settings-points",
     groupId: "points",
     title: "Automatic point allocation",
-    keywords: "inbox ritual section whole ritual bonus goal focus multiplier points rules per section",
+    keywords: "inbox ritual section whole ritual bonus goal focus multiplier points rules per section points visible step points hide",
   },
   {
     id: "settings-profile",

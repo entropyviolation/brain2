@@ -4,6 +4,10 @@
  * If a popup has unsaved edits, cancel / close / × / overlay must prompt:
  * Save changes, Cancel (stay), Exit without saving. Clean editors close
  * immediately. Pair with `lib/unsaved-changes.ts` snapshot compare.
+ * `guardAction(fn)` covers every other way out (open another item, go to a
+ * list): clean runs `fn` now; dirty asks first, then runs `fn` after Save or
+ * Exit without saving. `isDirty` may be a function so the check reads the
+ * live draft at call time instead of a render-time boolean.
  * Look: milled fascia (`.w95-confirm` in unsaved-changes.css) — CRT title,
  * brushed bay, metal keys. docs/DESIGN_STYLE.md#milled-fascia
  */
@@ -16,7 +20,7 @@ import "./unsaved-changes.css"
 export type UnsavedGuardOptions = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** A function is read at the moment someone tries to leave, so keystrokes that did not re-render still count. */
+  /** A boolean, or a function read at the moment someone tries to leave. */
   isDirty: boolean | (() => boolean)
   onSave?: () => void | boolean | Promise<void | boolean>
   onDiscard?: () => void
@@ -56,26 +60,37 @@ export function useUnsavedGuard({
 }: UnsavedGuardOptions) {
   const [promptOpen, setPromptOpen] = useState(false)
   const pendingRef = useRef<(() => void) | null>(null)
+  // Opening the prompt moves focus out of the host dialog, which fires its
+  // interact-outside → requestClose. Keep the first pending action.
+  const promptOpenRef = useRef(false)
+  const showPrompt = useCallback((next: boolean) => {
+    promptOpenRef.current = next
+    setPromptOpen(next)
+  }, [])
+
+  const readDirty = useCallback(
+    () => (typeof isDirty === "function" ? isDirty() : isDirty),
+    [isDirty],
+  )
 
   const forceClose = useCallback(() => {
-    setPromptOpen(false)
     pendingRef.current = null
+    showPrompt(false)
     onOpenChange(false)
-  }, [onOpenChange])
+  }, [onOpenChange, showPrompt])
 
-  const dirtyNow = useCallback(() => (typeof isDirty === "function" ? isDirty() : isDirty), [isDirty])
-
-  /** Run `action` now when clean; when dirty, ask first and run it after Save or Exit without saving. */
   const guardAction = useCallback(
     (action: () => void) => {
-      if (!dirtyNow()) {
+      if (promptOpenRef.current) return
+      if (!readDirty()) {
+        pendingRef.current = null
         action()
         return
       }
       pendingRef.current = action
-      setPromptOpen(true)
+      showPrompt(true)
     },
-    [dirtyNow],
+    [readDirty, showPrompt],
   )
 
   const requestClose = useCallback(() => {
@@ -97,14 +112,14 @@ export function useUnsavedGuard({
   const runPending = useCallback(() => {
     const action = pendingRef.current ?? forceClose
     pendingRef.current = null
-    setPromptOpen(false)
+    showPrompt(false)
     action()
-  }, [forceClose])
+  }, [forceClose, showPrompt])
 
   const stay = useCallback(() => {
     pendingRef.current = null
-    setPromptOpen(false)
-  }, [])
+    showPrompt(false)
+  }, [showPrompt])
 
   const saveAndClose = useCallback(async () => {
     if (onSave) {

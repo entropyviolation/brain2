@@ -12,7 +12,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -58,6 +58,7 @@ import { seasonOfDate, seasonSlug } from "@/lib/seasons"
 import { getPendingReviews } from "@/lib/pending-reviews"
 import { getStoredPlanText } from "@/lib/plan-text"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
+import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 import { DayReviewTomorrowSection } from "@/components/Reviews/DayReviewTomorrowSection"
 import { AssumedTimesSection, pendingAssumedTasks } from "@/components/Reviews/AssumedTimesSection"
 import { NightTimeGlance } from "@/components/Reviews/NightTimeGlance"
@@ -274,175 +275,198 @@ function ReviewDialog({
             ? "next quarter"
             : "next year"
 
-  const title =
-    period === "day" ? "Night ritual" : period === "quarter" ? "Season review" : `${period} Review ritual`
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) dismiss() }}>
-      <DialogContent
-        className="hpp95 hpp95-dialog sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col"
-        data-ui-name="Period review"
-        data-ui-docs="components/Reviews/README.md"
-      >
-        <DialogHeader className="hpp-caption">
-          <div className="hpp-caption-mark">
-            <span className="hpp-power-lamp" aria-hidden />
-            <DialogTitle className="flex items-center gap-2 capitalize">
-              {period === "day" ? (
-                <RitualMoonIcon className="h-5 w-5" />
-              ) : (
-                <ClipboardCheck className="h-5 w-5" />
-              )}
-              {title}
-            </DialogTitle>
-          </div>
-          <DialogDescription className="hpp-caption-lead">
-            {periodLabel(period, periodKey)}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm">
-              Unfinished, scheduled items ({visibleUnfinished.length})
-            </h3>
-            {visibleUnfinished.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing left unfinished. Nice work!</p>
-            ) : (
-              <div className="space-y-2">
-                <WhyBlockedControl
-                  taskTitle="unfinished items"
-                  value={sharedBlockedReason}
-                  onChange={setSharedBlockedReason}
-                />
-                {visibleUnfinished.map((task) => (
-                  <div key={task.id} className="border rounded-md p-2 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
-                      {resolved.includes(task.id) ? (
+  const filledGratitude = gratitude.some((g) => g.trim())
+  const unfinishedTouched = visibleUnfinished.every(
+    (task) => resolved.includes(task.id) || !!blockedReasons[task.id],
+  )
+  const liveAssumed = pendingAssumedTasks(tasks, period, periodKey)
+  const stepDefs: (RitualStep & { body: ReactNode })[] = [
+    {
+      id: "unfinished",
+      label: "Unfinished items",
+      answered: visibleUnfinished.length === 0 || unfinishedTouched,
+      body: (
+        <section className="space-y-2">
+          <p className="mr-lede">
+            Unfinished, scheduled items ({visibleUnfinished.length}). Done, push, or say why.
+          </p>
+          {visibleUnfinished.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing left unfinished. Nice work!</p>
+          ) : (
+            <div className="space-y-2">
+              <WhyBlockedControl
+                taskTitle="unfinished items"
+                value={sharedBlockedReason}
+                onChange={setSharedBlockedReason}
+              />
+              {visibleUnfinished.map((task) => (
+                <div key={task.id} className="border rounded-md p-2 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
+                    {resolved.includes(task.id) ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => setReflectTask({ ...task, completed: true })}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 mr-1" />
+                        Reflect
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" className="h-7" onClick={() => markDone(task)}>
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                          Done
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-7"
-                          onClick={() => setReflectTask({ ...task, completed: true })}
+                          onClick={() => {
+                            if (sharedBlockedReason) setReason(task.id, sharedBlockedReason)
+                            pushToNext(task)
+                          }}
                         >
-                          <Sparkles className="h-3.5 w-3.5 mr-1" />
-                          Reflect
+                          <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                          Push to {nextLabel}
                         </Button>
-                      ) : (
-                        <>
-                          <Button size="sm" variant="outline" className="h-7" onClick={() => markDone(task)}>
-                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                            Done
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7"
-                            onClick={() => {
-                              if (sharedBlockedReason) setReason(task.id, sharedBlockedReason)
-                              pushToNext(task)
-                            }}
-                          >
-                            <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                            Push to {nextLabel}
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-            {pushError && <p className="text-xs text-muted-foreground">{pushError}</p>}
-            {(resolved.length > 0 || pushed.length > 0) && (
-              <p className="text-xs text-muted-foreground">
-                {resolved.length} completed · {pushed.length} pushed to {nextLabel}
-              </p>
-            )}
-          </section>
-
-          <AssumedTimesSection period={period} periodKey={periodKey} />
-
-          {period !== "day" && (
-            <PeriodReviewStudio period={period} periodKey={periodKey} arc={arc} onArc={setArc} />
+                </div>
+              ))}
+            </div>
           )}
-
-          {period === "day" && (
-            <NightTimeGlance periodKey={periodKey} note={timeReflection} onNote={setTimeReflection} />
+          {pushError && <p className="text-xs text-muted-foreground">{pushError}</p>}
+          {(resolved.length > 0 || pushed.length > 0) && (
+            <p className="text-xs text-muted-foreground">
+              {resolved.length} completed · {pushed.length} pushed to {nextLabel}
+            </p>
           )}
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Summary — what happened this {period}?</Label>
-            <Textarea
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={3}
-              placeholder="A short recap…"
-            />
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Gratitude</Label>
-            {gratitude.map((g, i) => (
-              <div key={i} className="flex gap-2">
-                <Input
-                  value={g}
-                  onChange={(e) => setGratitude((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
-                  placeholder="I'm grateful for…"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  onClick={() =>
-                    setGratitude((arr) => (arr.length > 1 ? arr.filter((_, j) => j !== i) : arr))
-                  }
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={() => setGratitude((arr) => [...arr, ""])}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add
-            </Button>
-          </section>
-
-          {storedPlanText && (
-            <section className="space-y-3">
-              <Label className="font-semibold text-sm capitalize">Your {period} plan</Label>
-              <div className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap">
-                {storedPlanText}
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Reflect on what you wrote in your plan</p>
-                <Textarea
-                  value={planReflection}
-                  onChange={(e) => setPlanReflection(e.target.value)}
-                  rows={3}
-                  placeholder="How did the plan play out? What would you adjust?"
-                />
-              </div>
-            </section>
-          )}
-
-          <section className="space-y-3">
-            <Label className="font-semibold text-sm">Reflection</Label>
-            {REFLECTIONS.map((r) => (
-              <div key={r.id} className="space-y-1">
-                <p className="text-sm text-muted-foreground">{r.q}</p>
-                <Textarea
-                  value={reflections[r.id] || ""}
-                  onChange={(e) => setReflections((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                  rows={2}
-                />
-              </div>
-            ))}
-          </section>
-
-          {period === "day" ? (
-            <>
+        </section>
+      ),
+    },
+    {
+      id: "assumed",
+      label: "Assumed times",
+      answered: liveAssumed.length === 0 || liveAssumed.length < baselineAssumed.current,
+      body: <AssumedTimesSection period={period} periodKey={periodKey} />,
+    },
+    period === "day"
+      ? {
+          id: "time",
+          label: "How the day was spent",
+          answered: !!timeReflection.trim(),
+          body: <NightTimeGlance periodKey={periodKey} note={timeReflection} onNote={setTimeReflection} />,
+        }
+      : {
+          id: "period",
+          label: `This ${period === "quarter" ? "season" : period}`,
+          answered: Object.keys(cleanArc(arc) ?? {}).length > 0,
+          body: <PeriodReviewStudio period={period} periodKey={periodKey} arc={arc} onArc={setArc} />,
+        },
+    {
+      id: "summary",
+      label: "Summary",
+      answered: !!summary.trim(),
+      body: (
+        <section className="space-y-2">
+          <Label className="mr-lede">What happened this {period}?</Label>
+          <Textarea
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={3}
+            placeholder="A short recap…"
+          />
+        </section>
+      ),
+    },
+    {
+      id: "gratitude",
+      label: "Gratitude",
+      answered: filledGratitude,
+      body: (
+        <section className="space-y-2">
+          {gratitude.map((g, i) => (
+            <div key={i} className="flex gap-2">
+              <Input
+                value={g}
+                onChange={(e) => setGratitude((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))}
+                placeholder="I'm grateful for…"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() =>
+                  setGratitude((arr) => (arr.length > 1 ? arr.filter((_, j) => j !== i) : arr))
+                }
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button variant="outline" size="sm" onClick={() => setGratitude((arr) => [...arr, ""])}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </section>
+      ),
+    },
+    ...(storedPlanText
+      ? [
+          {
+            id: "plan",
+            label: "Plan reflection",
+            answered: !!planReflection.trim(),
+            body: (
+              <section className="space-y-3">
+                <Label className="mr-lede capitalize">Your {period} plan</Label>
+                <div className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap">
+                  {storedPlanText}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Reflect on what you wrote in your plan</p>
+                  <Textarea
+                    value={planReflection}
+                    onChange={(e) => setPlanReflection(e.target.value)}
+                    rows={3}
+                    placeholder="How did the plan play out? What would you adjust?"
+                  />
+                </div>
+              </section>
+            ),
+          },
+        ]
+      : []),
+    {
+      id: "reflection",
+      label: "Reflection",
+      answered: REFLECTIONS.some((r) => !!reflections[r.id]?.trim()),
+      body: (
+        <section className="space-y-3">
+          {REFLECTIONS.map((r) => (
+            <div key={r.id} className="space-y-1">
+              <p className="text-sm text-muted-foreground">{r.q}</p>
+              <Textarea
+                value={reflections[r.id] || ""}
+                onChange={(e) => setReflections((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                rows={2}
+              />
+            </div>
+          ))}
+        </section>
+      ),
+    },
+    ...(period === "day"
+      ? [
+          {
+            id: "wake",
+            label: "Tomorrow morning",
+            answered: !!wakeReminder.trim() || !!tomorrowMatters.trim(),
+            body: (
+              <>
               <section className="space-y-2">
                 <Label className="font-semibold text-sm">Things you&apos;d like to remind yourself when you wake up</Label>
                 <Textarea
@@ -463,8 +487,15 @@ function ReviewDialog({
                   aria-label="What matters most tomorrow?"
                 />
               </section>
+              </>
+            ),
+          },
+          {
+            id: "goals",
+            label: "Goals to focus on tomorrow",
+            answered: focusGoalIds.length > 0,
+            body: (
               <section className="space-y-2">
-                <Label className="font-semibold text-sm">Goals to focus on tomorrow</Label>
                 <p className="text-xs text-muted-foreground">
                   Tasks that serve these goals are more likely to be picked, and earn the focus multiplier when you
                   finish them.
@@ -492,21 +523,88 @@ function ReviewDialog({
                   </div>
                 )}
               </section>
-              <DayReviewTomorrowSection reviewedDayKey={periodKey} />
-            </>
-          ) : (
-            <section className="space-y-2">
-              <Label className="font-semibold text-sm">
-                Plans for the {nextLabel.replace("next ", "")} to come
-              </Label>
-              <Textarea
-                value={nextPlans}
-                onChange={(e) => setNextPlans(e.target.value)}
-                rows={3}
-                placeholder="What matters most next?"
-              />
-            </section>
-          )}
+            ),
+          },
+          {
+            id: "tomorrow",
+            label: "Tomorrow's plan",
+            answered: !!getStoredPlanText("day", tomorrowKey)?.trim(),
+            body: <DayReviewTomorrowSection reviewedDayKey={periodKey} />,
+          },
+        ]
+      : [
+          {
+            id: "next",
+            label: `The ${nextLabel.replace("next ", "")} to come`,
+            answered: !!nextPlans.trim(),
+            body: (
+              <section className="space-y-2">
+                <Label className="font-semibold text-sm">
+                  Plans for the {nextLabel.replace("next ", "")} to come
+                </Label>
+                <Textarea
+                  value={nextPlans}
+                  onChange={(e) => setNextPlans(e.target.value)}
+                  rows={3}
+                  placeholder="What matters most next?"
+                />
+              </section>
+            ),
+          },
+        ]),
+  ]
+  const [stepIndex, setStepIndex] = useRitualStep(
+    `brain2-ritual-step:end:${period}:${periodKey}`,
+    stepDefs.length,
+    () => 0,
+  )
+
+  /** Moving between questions writes a draft, the same as Close. */
+  const goStep = (next: number) => {
+    if (!submittedRef.current && snapshot() !== baselineRef.current) {
+      persist(false)
+      baselineRef.current = snapshot()
+    }
+    setStepIndex(next)
+  }
+
+  const title =
+    period === "day" ? "Night ritual" : period === "quarter" ? "Season review" : `${period} Review ritual`
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) dismiss() }}>
+      <DialogContent
+        className="hpp95 hpp95-dialog sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col"
+        data-ui-name="Period review"
+        data-ui-docs="components/Reviews/README.md"
+      >
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle className="flex items-center gap-2 capitalize">
+              {period === "day" ? (
+                <RitualMoonIcon className="h-5 w-5" />
+              ) : (
+                <ClipboardCheck className="h-5 w-5" />
+              )}
+              {title}
+            </DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead">
+            {periodLabel(period, periodKey)}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="hpp-body flex-1 min-h-0">
+          <RitualStepper
+            steps={stepDefs}
+            index={stepIndex}
+            onStep={goStep}
+            finishLabel="Finish"
+            onFinish={handleSave}
+          >
+            {stepDefs[stepIndex]?.body}
+          </RitualStepper>
         </div>
 
         <div className="hpp-actions">

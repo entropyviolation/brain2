@@ -13,9 +13,13 @@
  *                         you want momentum → (3-load)/2  (load 1 → 1, load 3 → 0)
  *   - entropy      (0-1): HIGHER entropy ranks higher so vague/unclear tasks
  *                         surface for clarification rather than rotting silently.
+ *   - unlocks      (0-1): what waits on the task (Phase 14), 1 − 1/(1 + value)
+ *                         from `lib/unlock-value.ts`. 0 when nothing waits.
+ *                         An inherited due date can raise urgency, never lower it.
  *
- * Score = wU·nUrgency + wI·nImportance + wC·nLoadInv + wE·entropy.
- * With default (all-1) weights the score lands in 0..4; higher = do sooner.
+ * Score = wU·nUrgency + wI·nImportance + wC·nLoadInv + wE·entropy + wN·unlocks.
+ * A task with nothing waiting scores exactly as before (the unlocks term is 0).
+ * With default (all-1) weights the score lands in 0..5; higher = do sooner.
  * Owner: Worker A.
  */
 import type { PriorityWeights, Task } from "@/lib/types"
@@ -26,7 +30,22 @@ export const DEFAULT_PRIORITY_WEIGHTS: PriorityWeights = {
   importance: 1,
   cognitiveLoad: 1,
   entropy: 1,
+  unlocks: 1,
 }
+
+/**
+ * What waits on a task, worked out by `lib/unlock-value.ts` (`unlockContextFor`).
+ * Omit it, and the score is the four-signal score.
+ */
+export interface PriorityContext {
+  /** Raw unlock value (sum of faded own values). */
+  unlocks?: number
+  /** Urgency floor (1–5) from an inherited due date. Raises urgency only. */
+  urgencyFloor?: number
+}
+
+/** `unlocks` weight, read as 1 when an older blob lacks it. */
+export const unlocksWeight = (weights: PriorityWeights): number => weights.unlocks ?? 1
 
 /** Defaults applied when a task omits a signal (mirrors createNextActionItem). */
 const FIELD_DEFAULTS = {
@@ -65,6 +84,7 @@ export interface PriorityBreakdown {
   importance: number
   cognitiveLoad: number
   entropy: number
+  unlocks: number
   total: number
 }
 
@@ -72,8 +92,14 @@ export interface PriorityBreakdown {
 export function priorityBreakdown(
   task: PriorityFields,
   weights: PriorityWeights = DEFAULT_PRIORITY_WEIGHTS,
+  context?: PriorityContext,
 ): PriorityBreakdown {
-  const n = normalizePriorityInputs(task)
+  const floor = context?.urgencyFloor
+  const raised =
+    floor && floor > (task.urgency ?? FIELD_DEFAULTS.urgency) ? { ...task, urgency: floor } : task
+  const n = normalizePriorityInputs(raised)
+  const value = context?.unlocks ?? 0
+  const unlocks = (value > 0 ? 1 - 1 / (1 + value) : 0) * unlocksWeight(weights)
   const urgency = n.urgency * weights.urgency
   const importance = n.importance * weights.importance
   const cognitiveLoad = n.cognitiveLoad * weights.cognitiveLoad
@@ -83,7 +109,9 @@ export function priorityBreakdown(
     importance,
     cognitiveLoad,
     entropy,
-    total: urgency + importance + cognitiveLoad + entropy,
+    unlocks,
+    // Add unlocks only when present, so a task with nothing waiting keeps its exact float.
+    total: unlocks ? urgency + importance + cognitiveLoad + entropy + unlocks : urgency + importance + cognitiveLoad + entropy,
   }
 }
 
@@ -94,8 +122,9 @@ export function priorityBreakdown(
 export function computePriorityScore(
   task: PriorityFields,
   weights: PriorityWeights = DEFAULT_PRIORITY_WEIGHTS,
+  context?: PriorityContext,
 ): number {
-  return priorityBreakdown(task, weights).total
+  return priorityBreakdown(task, weights, context).total
 }
 
 /** Sort a copy of `tasks` by descending priority (stable for ties). */

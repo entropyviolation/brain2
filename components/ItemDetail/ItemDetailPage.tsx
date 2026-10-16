@@ -13,6 +13,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
 import { RichLinksPanel } from "@/components/ItemDetail/links/RichLinksPanel"
@@ -75,8 +77,6 @@ import {
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
-import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
-import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
 import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
@@ -131,8 +131,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     subscribeDraft,
     touchDraft,
     originalTask,
-    setOriginalTask,
     isDraftDirty,
+    setOriginalTask,
     allTasks,
     lists,
     updateTask,
@@ -234,22 +234,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   }, [getDraft, commitDraft])
 
   useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
-  useItemDetailUnloadGuard(Boolean(task), isDraftDirty)
-
-  // Back, list chips, habit settings, and opening another item ask first when dirty.
-  const guard = useUnsavedGuard({
-    open: true,
-    onOpenChange: (next) => {
-      if (!next) onBack()
-    },
-    isDirty: isDraftDirty,
-    onSave: handleSave,
-    onDiscard: () => {
-      if (originalTask) setTask(originalTask)
-    },
-  })
-  const guardAction = guard.guardAction
-  const openItem = useCallback((id: string) => guardAction(() => setOverrideId(id)), [guardAction])
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -385,15 +369,34 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   const sourceHabitId = sourceHabitIdOf(task?.attributes)
 
+  // Every way out of the page asks about unsaved edits first.
+  const guard = useUnsavedGuard({
+    open: true,
+    onOpenChange: (next) => {
+      if (!next) onBack()
+    },
+    isDirty: isDraftDirty,
+    onSave: handleSave,
+    onDiscard: () => {
+      if (originalTask) setTask(originalTask)
+    },
+  })
+  const { guardAction, requestClose } = guard
+  useItemDetailUnloadGuard(Boolean(task), isDraftDirty)
+
+  const openItem = useCallback(
+    (id: string) => guardAction(() => setOverrideId(id)),
+    [guardAction],
+  )
+
   const handleNavigateToList = useCallback(
-    (listId: string) => {
-      // Back on a habit-opened detail returns to habit settings. The list chip
-      // opens this list instead. The shell's navigate event closes the page.
+    (listId: string) =>
       guardAction(() => {
+        // Back on a habit-opened detail returns to habit settings. The list chip
+        // opens this list instead. The shell's navigate event closes the page.
         requestNavigateToListAfterPaint(listId, folders)
         if (!peekHabitSettingsReturn()) onBack()
-      })
-    },
+      }),
     [guardAction, folders, onBack],
   )
 
@@ -415,7 +418,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       armHabitSettingsReturn(sourceHabitId)
       onBack()
     })
-  }, [guardAction, sourceHabitId, onBack])
+  }, [sourceHabitId, guardAction, onBack])
 
   const handleSaveItemType = useCallback(
     (def: ItemTypeDefinition) => {
@@ -445,7 +448,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       <div className="id-window">
       <div className="id-fascia">
         <div className="id-fascia-row">
-          <Button variant="outline" size="icon" className="id-btn id-btn-icon" onClick={guard.requestClose} aria-label="Back">
+          <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="Back" onClick={requestClose}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="id-mark">
@@ -1407,7 +1410,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         openItem(id)
       }}
     />
-    <UnsavedChangesDialog {...guard.prompt} />
     <MissReasonDialog
       open={missAsk}
       subject={itemTitleOrUntitled(task)}
@@ -1416,6 +1418,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         if (task) markMissedOpportunity(task.id, undefined, reason)
       }}
     />
+    <UnsavedChangesDialog {...guard.prompt} />
     </>
   )
 }

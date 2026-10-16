@@ -3,20 +3,27 @@
  *
  * Lives inside the open clamshell lid. Time is one segmented control; the
  * "counts" and progress readouts sit beside it, not inside it. Steps are their
- * own fold. Each step is a rounded card; a step with children folds them
- * (and its nested stylus) with a chevron. The next empty stylus line is
- * always waiting while that card is open. Minutes that count are the greater of the typed estimate and
- * the nested sum. Checking a step does not check its parent.
+ * own fold, drawn by the shared `StepTree` (`components/steps/`) with the
+ * lid's columns: Needs…, ▶, minutes, spent, counts, delete. Hide locked and
+ * Show next only come from `todo-prefs`; a move is one undo step. Minutes that
+ * count are the greater of the typed estimate and the nested sum. Checking a
+ * step does not check its parent.
  */
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react"
-import type { ClipboardEvent, KeyboardEvent, ReactNode } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
 import { stepBlockers, stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { StepTree } from "@/components/steps/StepTree"
+import { rememberWorld } from "@/lib/action-history"
 import { formatDuration } from "@/lib/time-entries"
 import { paceGhostLabel } from "@/lib/estimate-pace"
+import { partsMinutes, timeTrio } from "@/lib/tracked-time"
+import { STEP_TIER_LABEL, hasStepTiers } from "@/lib/step-tiers"
+import { tierMinutes } from "@/lib/step-progress"
+import { LevelGauge } from "@/components/steps/LevelGauge"
 import {
   getTodoPrefs,
   setTodoPrefs,
@@ -70,19 +77,6 @@ function useGhost(): string | null {
   const info = useContext(TimeInfoContext)
   if (!info || info.ghosts === false || info.pace == null) return null
   return paceGhostLabel(info.pace)
-}
-
-/** "52m · est 30 · parts 45", leaving out what is not there. */
-export function timeTrio(est: number, parts: number, spent: number): string {
-  const bits: string[] = []
-  if (spent > 0) bits.push(formatDuration(spent))
-  if (est > 0) bits.push(`est ${est}`)
-  if (parts > 0) bits.push(`parts ${parts}`)
-  return bits.join(" · ")
-}
-
-function partsOf(steps: readonly Subtask[] | undefined): number {
-  return (steps ?? []).reduce((total, step) => total + effectiveDurationMinutes(step.estimatedDuration, step.subtasks), 0)
 }
 
 function StepLinkKey({ step, steps }: { step: Subtask; steps: Subtask[] }) {
@@ -202,11 +196,6 @@ function parseMinutes(raw: string): number | undefined {
   return n
 }
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
-}
-
 function ViaPad({
   kind,
   checked,
@@ -272,106 +261,6 @@ function MinutesBox({
   )
 }
 
-function StylusLine({
-  autoFocus,
-  depth,
-  onCommit,
-  onEmptyEnter,
-  ariaLabel,
-}: {
-  autoFocus?: boolean
-  depth: number
-  onCommit: (description: string, minutes: number | undefined, staySibling: boolean) => void
-  onEmptyEnter: () => void
-  ariaLabel: string
-}) {
-  const nameRef = useRef<HTMLInputElement>(null)
-  const minRef = useRef<HTMLInputElement>(null)
-  const [name, setName] = useState("")
-  const [mins, setMins] = useState("")
-
-  useEffect(() => {
-    if (autoFocus) nameRef.current?.focus()
-  }, [autoFocus])
-
-  const commit = (staySibling: boolean) => {
-    const description = name.trim()
-    if (!description) {
-      onEmptyEnter()
-      return
-    }
-    onCommit(description, parseMinutes(mins), staySibling)
-    setName("")
-    setMins("")
-  }
-
-  const onNameKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      commit(e.shiftKey)
-      return
-    }
-    if (e.key === "Escape") {
-      e.preventDefault()
-      setName("")
-      setMins("")
-      onEmptyEnter()
-    }
-  }
-
-  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    const text = e.clipboardData.getData("text")
-    if (!text.includes("\n")) return
-    e.preventDefault()
-    const lines = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-    if (lines.length === 0) return
-    lines.forEach((line, i) => {
-      onCommit(line, undefined, i < lines.length - 1)
-    })
-    setName("")
-    setMins("")
-  }
-
-  return (
-    <div className="todo-stylus-line" style={{ ["--todo-depth" as string]: depth }}>
-      <ViaPad kind="bare" />
-      <input
-        ref={nameRef}
-        className="todo-stylus-name"
-        type="text"
-        value={name}
-        placeholder="Next step…"
-        aria-label={ariaLabel}
-        autoComplete="off"
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={onNameKey}
-        onPaste={onPaste}
-      />
-      <input
-        ref={minRef}
-        className="todo-min"
-        type="number"
-        min={0}
-        step={1}
-        inputMode="numeric"
-        placeholder="min"
-        aria-label="Minutes for the new step"
-        value={mins}
-        onChange={(e) => setMins(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault()
-            commit(e.shiftKey)
-          }
-        }}
-      />
-    </div>
-  )
-}
-
 /** The pen clock on this task's steps: which step is live, and how to start or stop one. */
 export interface StepClock {
   liveStepId?: string
@@ -379,175 +268,76 @@ export interface StepClock {
   onStop: () => void
 }
 
-function StepBranch({
+/** The lid's columns on one step row: Needs…, ▶, minutes, spent, counts, progress, delete. */
+function LidStepColumns({
   step,
-  depth,
-  flockId,
-  setFlockId,
-  onChange,
   steps,
   clock,
+  onChange,
 }: {
   step: Subtask
-  depth: number
-  flockId: string | null
-  setFlockId: (id: string | null) => void
-  onChange: (steps: Subtask[]) => void
   steps: Subtask[]
   clock?: StepClock
+  onChange: (steps: Subtask[]) => void
 }) {
   const live = clock?.liveStepId === step.id
-  const linking = useContext(StepLinkContext)?.from === step.id
-  const blocked = !step.completed && stepBlockers(steps, step.id).length > 0
-  const [editing, setEditing] = useState(false)
-  const [folded, setFolded] = useState(false)
-  const progress = formatInternalProgress(step.subtasks)
   const effective = effectiveDurationMinutes(step.estimatedDuration, step.subtasks)
   const own = step.estimatedDuration && step.estimatedDuration > 0 ? step.estimatedDuration : 0
   const spent = useContext(TimeInfoContext)?.stepSpent?.get(step.id) ?? 0
-  const kidCount = step.subtasks?.length ?? 0
-  const hasKids = kidCount > 0
+  const progress = formatInternalProgress(step.subtasks)
   const remove = () => {
     const inside = step.subtasks?.length ?? 0
     if (inside > 0 && !window.confirm(`Delete "${step.description}" and its ${inside} steps?`)) return
-    if (!prefersReducedMotion()) {
-      setFlockId(step.id)
-      window.setTimeout(() => {
-        onChange(removeNestedStep(steps, step.id))
-        setFlockId(null)
-      }, 280)
-      return
-    }
     onChange(removeNestedStep(steps, step.id))
   }
-
   return (
-    <li
-      className={`todo-step${flockId === step.id ? " is-flock-out" : ""}${live ? " is-live" : ""}${linking ? " is-linking" : ""}${blocked ? " is-blocked" : ""}`}
-      style={{ ["--todo-depth" as string]: depth }}
-    >
-      <div className="todo-step-row">
-        <ViaPad kind={hasKids ? "parent" : "leaf"} checked={step.completed} />
-        {hasKids ? (
-          <button
-            type="button"
-            className="todo-step-fold"
-            data-no95
-            aria-expanded={!folded}
-            aria-label={folded ? `Show steps under ${step.description}` : `Hide steps under ${step.description}`}
-            onClick={() => setFolded((open) => !open)}
-          >
-            {folded ? "▸" : "▾"}
-            <span className="todo-step-fold-count">{kidCount}</span>
-          </button>
-        ) : null}
-        <input
-          type="checkbox"
-          aria-label={`Done: ${step.description}`}
-          checked={step.completed}
-          onChange={() => onChange(updateNestedStep(steps, step.id, { completed: !step.completed }))}
-        />
-        {editing ? (
-          <input
-            className="todo-stylus-name"
-            type="text"
-            defaultValue={step.description}
-            autoFocus
-            aria-label="Step name"
-            onBlur={(e) => {
-              onChange(updateNestedStep(steps, step.id, { description: e.target.value }))
-              setEditing(false)
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur()
-              if (e.key === "Escape") setEditing(false)
-            }}
-          />
-        ) : (
-          <button
-            type="button"
-            className={`todo-step-name${step.completed ? " is-done" : ""}`}
-            data-no95
-            onClick={() => setEditing(true)}
-          >
-            {step.description}
-          </button>
-        )}
-        <StepLinkKey step={step} steps={steps} />
-        {clock && !step.completed ? (
-          <DvdTransportKey
-            className="todo-step-clock"
-            mark={live ? "stop" : "play"}
-            pressed={live}
-            label={live ? `Stop the clock on ${step.description}` : `Working on ${step.description} now`}
-            onClick={() => (live ? clock.onStop() : clock.onStart(step.id))}
-          />
-        ) : null}
-        <MinutesBox
-          minutes={step.estimatedDuration}
-          label={`Estimated minutes for ${step.description}`}
-          onCommit={(minutes) => onChange(updateNestedStep(steps, step.id, { estimatedDuration: minutes }))}
-          overrun={!step.completed && own > 0 && spent > own}
-        />
-        {step.completed && (spent > 0 || (step.actualDuration ?? 0) > 0) ? (
-          <span className="todo-step-spent" title="Time spent · typed estimate · the steps inside">
-            {timeTrio(own, partsOf(step.subtasks), Math.max(spent, step.actualDuration ?? 0))}
-          </span>
-        ) : !step.completed && spent > 0 ? (
-          <span className={`todo-step-spent is-open${own > 0 && spent > own ? " is-over" : ""}`} title="Time spent so far">
-            {formatDuration(spent)} spent
-          </span>
-        ) : null}
-        {effective > own ? (
-          <span className="todo-est-used" title="The steps inside add up to more, so this is the time that counts">
-            counts {effective}m
-          </span>
-        ) : null}
-        {progress ? <span className="todo-step-progress">{progress}</span> : null}
-        <button
-          type="button"
-          className="todo-btn todo-btn-icon"
-          title="Delete step"
-          aria-label={`Delete ${step.description}`}
-          onClick={remove}
-        >
-          <TrashMark />
-        </button>
-      </div>
-      {hasKids && !folded ? (
-        <ul className="todo-steps">
-          {step.subtasks!.map((child) => (
-            <StepBranch
-              key={child.id}
-              step={child}
-              depth={depth + 1}
-              flockId={flockId}
-              setFlockId={setFlockId}
-              onChange={onChange}
-              steps={steps}
-              clock={clock}
-            />
-          ))}
-        </ul>
-      ) : null}
-      {!hasKids || !folded ? (
-        <StylusLine
-          depth={depth + 1}
-          ariaLabel={`Add step under ${step.description}`}
-          onCommit={(description, minutes) => {
-            const next = addNestedStep(steps, step.id, { description, estimatedDuration: minutes })
-            onChange(next)
-            if (!prefersReducedMotion()) {
-              setFlockId(step.id)
-              window.setTimeout(() => setFlockId(null), 420)
-            }
-          }}
-          onEmptyEnter={() => {
-            /* empty Enter steps back — caret naturally stays; parent stylus handles sibling */
-          }}
+    <>
+      <StepLinkKey step={step} steps={steps} />
+      {clock && !step.completed ? (
+        <DvdTransportKey
+          className="todo-step-clock"
+          mark={live ? "stop" : "play"}
+          pressed={live}
+          label={live ? `Stop the clock on ${step.description}` : `Working on ${step.description} now`}
+          onClick={() => (live ? clock.onStop() : clock.onStart(step.id))}
         />
       ) : null}
-    </li>
+      <MinutesBox
+        minutes={step.estimatedDuration}
+        label={`Estimated minutes for ${step.description}`}
+        onCommit={(minutes) => onChange(updateNestedStep(steps, step.id, { estimatedDuration: minutes }))}
+        overrun={!step.completed && own > 0 && spent > own}
+      />
+      {step.completed && (spent > 0 || (step.actualDuration ?? 0) > 0) ? (
+        <span className="todo-step-spent" title="Time spent · typed estimate · the steps inside">
+          {timeTrio(own, partsMinutes(step.subtasks), Math.max(spent, step.actualDuration ?? 0))}
+        </span>
+      ) : !step.completed && spent > 0 ? (
+        <span className={`todo-step-spent is-open${own > 0 && spent > own ? " is-over" : ""}`} title="Time spent so far">
+          {formatDuration(spent)} spent
+        </span>
+      ) : null}
+      {effective > own ? (
+        <span className="todo-est-used" title="The steps inside add up to more, so this is the time that counts">
+          counts {effective}m
+        </span>
+      ) : null}
+      {progress ? <span className="todo-step-progress">{progress}</span> : null}
+      {step.subtasks?.length && hasStepTiers(steps) ? (
+        <span className="todo-step-gauge">
+          <LevelGauge steps={steps} stepId={step.id} counts={false} />
+        </span>
+      ) : null}
+      <button
+        type="button"
+        className="todo-btn todo-btn-icon"
+        title="Delete step"
+        aria-label={`Delete ${step.description}`}
+        onClick={remove}
+      >
+        <TrashMark />
+      </button>
+    </>
   )
 }
 
@@ -608,6 +398,7 @@ export function TodoBreakdown({
   usualMinutes,
   clock,
   time,
+  onOpenStep,
 }: {
   estimate?: number
   steps?: Subtask[]
@@ -618,8 +409,11 @@ export function TodoBreakdown({
   clock?: StepClock
   /** Spent and pace for the readout, step chips and ghost. Omit to hide them. */
   time?: TodoTimeInfo
+  /** Phase 11: open a step's item on top (dot click and ↗). */
+  onOpenStep?: (step: Subtask) => void
 }) {
-  const [flockId, setFlockId] = useState<string | null>(null)
+  const { hideLocked, showNextOnly, tierView } = useTodoPrefs()
+  const tier = tierView === "all" ? undefined : tierView
   const [askDepth, setAskDepth] = useState(0)
   const [linkFrom, setLinkFrom] = useState<string | null>(null)
   const list = steps ?? []
@@ -648,7 +442,6 @@ export function TodoBreakdown({
   }, [link.from])
   const effective = effectiveDurationMinutes(estimate, list)
   const own = estimate && estimate > 0 ? estimate : 0
-  const progress = formatInternalProgress(list)
   const bare = list.length === 0 && !(estimate && estimate > 0)
 
   const jog = (delta: number) => {
@@ -706,7 +499,11 @@ export function TodoBreakdown({
               usually ~{usualMinutes}
             </button>
           ) : null}
-          {effective > 0 ? (
+          {tier && list.length ? (
+            <span className="todo-est-used" title={`Minutes that count for ${STEP_TIER_LABEL[tier]} (its steps only)`}>
+              counts {tierMinutes(list, tier)}m for {STEP_TIER_LABEL[tier]}
+            </span>
+          ) : effective > 0 ? (
             <span className="todo-est-used" title="Minutes that count (greater of typed and step sum)">
               counts {effective}m
             </span>
@@ -716,7 +513,7 @@ export function TodoBreakdown({
               className={`todo-time-trio${effective > 0 && time.spent > effective ? " is-over" : ""}`}
               aria-label="Estimate, parts and time spent"
             >
-              {timeTrio(own, partsOf(list), time.spent) || "nothing spent yet"}
+              {timeTrio(own, partsMinutes(list), time.spent) || "nothing spent yet"}
               {time.pen ? (
                 <span className="todo-time-pen">
                   {" · pen "}
@@ -726,7 +523,7 @@ export function TodoBreakdown({
               ) : null}
             </span>
           ) : null}
-          {progress ? <span className="todo-step-progress">{progress}</span> : null}
+          {list.length ? <LevelGauge steps={list} focus={tier} /> : null}
           {bare ? <span className="todo-lump is-dim" title="No steps and no minutes" aria-label="Unestimated lump" /> : null}
         </div>
       </TodoLidSection>
@@ -743,45 +540,33 @@ export function TodoBreakdown({
             </button>
           </div>
         ) : null}
-        {list.length === 0 && askDepth < 3 ? (
-          <GlassQuestion
-            onAsk={(answer) => {
-              onStepsChange(addNestedStep(list, null, { description: answer }))
-              setAskDepth((n) => n + 1)
-            }}
-          />
-        ) : null}
-
-        {list.length > 0 ? (
-          <ul className="todo-steps">
-            {list.map((step) => (
-              <StepBranch
-                key={step.id}
-                step={step}
-                depth={0}
-                flockId={flockId}
-                setFlockId={setFlockId}
-                onChange={onStepsChange}
-                steps={list}
-                clock={clock}
+        <StepTree
+          steps={list}
+          onChange={onStepsChange}
+          label="Steps"
+          hideLocked={hideLocked}
+          nextOnly={showNextOnly}
+          tier={tier}
+          tierTags
+          onOpenStep={onOpenStep}
+          onBeforeMove={rememberWorld}
+          rowClassName={(step) => {
+            const bits = ["todo-tree-row"]
+            if (clock?.liveStepId === step.id) bits.push("is-live")
+            if (link.from === step.id) bits.push("is-linking")
+            return bits.join(" ")
+          }}
+          columns={(step) => <LidStepColumns step={step} steps={list} clock={clock} onChange={onStepsChange} />}
+          emptyExtra={
+            askDepth < 3 ? (
+              <GlassQuestion
+                onAsk={(answer) => {
+                  onStepsChange(addNestedStep(list, null, { description: answer }))
+                  setAskDepth((n) => n + 1)
+                }}
               />
-            ))}
-          </ul>
-        ) : null}
-
-        <StylusLine
-          depth={0}
-          ariaLabel="Add step"
-          onCommit={(description, minutes) => {
-            onStepsChange(addNestedStep(list, null, { description, estimatedDuration: minutes }))
-            if (!prefersReducedMotion()) {
-              setFlockId("root")
-              window.setTimeout(() => setFlockId(null), 420)
-            }
-          }}
-          onEmptyEnter={() => {
-            /* empty Enter on root does nothing */
-          }}
+            ) : null
+          }
         />
         </StepLinkContext.Provider>
       </TodoLidSection>

@@ -1055,3 +1055,11 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
 body.win95-app .b2-shell-now .trk-now-obj-trigger.has-active {
   color: #0b3d0b;
 }
+
+/* Header Now box: the To Do session chip (slice H2, `components/header-now-box.tsx`). */
+.b2-now-session-chip {
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}

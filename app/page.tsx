@@ -42,6 +42,7 @@ import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { AppHeader } from "@/components/AppHeader"
 import type { SearchSelection } from "@/components/Search/GlobalSearch"
 import { CaptureDoorHost } from "@/components/capture-doors"
+import { StepItemStack } from "@/components/steps/StepItemStack"
 import { useGlobalSearchHotkey } from "@/components/Search/useGlobalSearchHotkey"
 import { useTaskStore } from "@/lib/task-store"
 import { useQuickCaptureHotkey } from "@/hooks/useQuickCaptureHotkey"
@@ -397,6 +398,7 @@ export default function Home() {
       </Tabs>
     </main>
     <CaptureDoorHost />
+    <StepItemStack />
     {searchOpen ? (
       <Suspense fallback={null}>
         <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />

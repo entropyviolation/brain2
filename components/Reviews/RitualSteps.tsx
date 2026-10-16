@@ -2,8 +2,10 @@
  * components/Reviews/RitualSteps.tsx — one-question-at-a-time walk for rituals.
  *
  * A ritual hands in its steps (id, label, answered) and the current step's
- * body. This draws the lamp strip, the step plate (`03 / 09`), an optional
- * side index, and Back / Next. Arrow keys with Alt move between steps.
+ * body. This draws the lamp strip, the step plate (`03 / 09`), a side index
+ * that folds away (open by default on wide screens, the choice is
+ * remembered), and Back / Next. Arrow keys with Alt move between steps.
+ * Every rite uses it: Morning, Night / end, Start, and Star Lord.
  * The ritual owns saving; `onStep` fires before the index changes so it can
  * write progress. `useRitualStep` remembers the step per ritual and day.
  */
@@ -16,6 +18,7 @@ import "./ritual-steps.css"
 export type RitualStep = { id: string; label: string; answered: boolean }
 
 const NAV_PREF_KEY = "brain2-ritual-nav-open"
+const NAV_WIDE_QUERY = "(min-width: 720px)"
 
 function readPref(key: string): string | null {
   try {
@@ -68,7 +71,12 @@ export function RitualStepper({
   onFinish: () => void
 }) {
   const [navOpen, setNavOpen] = useState(false)
-  useEffect(() => setNavOpen(readPref(NAV_PREF_KEY) === "1"), [])
+  // A saved choice wins. With none, the index opens where there is room for it.
+  useEffect(() => {
+    const pref = readPref(NAV_PREF_KEY)
+    if (pref === "1" || pref === "0") setNavOpen(pref === "1")
+    else setNavOpen(typeof window !== "undefined" && window.matchMedia?.(NAV_WIDE_QUERY).matches === true)
+  }, [])
   const toggleNav = () =>
     setNavOpen((open) => {
       writePref(NAV_PREF_KEY, open ? "0" : "1")

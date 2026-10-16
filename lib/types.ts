@@ -285,7 +285,24 @@ export interface Subtask {
   actualDuration?: number
   /** When the step was ticked done from a timer. Revived as a Date by the task store. */
   completedAt?: Date
+  /**
+   * Which level this step belongs to (Phase 10): Bare minimum, Goal or
+   * Exceptional. Missing inherits the nearest ancestor's; a top-level step
+   * with none is Goal (`lib/step-tiers.ts`).
+   */
+  tier?: StepTier
+  /** Spark mark (UI-7): set yourself on a step that pulls you. ISO time. No points, no effect on progress. */
+  sparkedAt?: string
+  /**
+   * Phase 11: the `Task` that holds this step's notes, links, tags and pens
+   * (`lib/step-items.ts`). Made the first time the step opens in item detail.
+   * The tree stays the source of truth for name, done, estimate and order.
+   */
+  itemId?: string
 }
+
+/** Step tier ids (Phase 10). Labels: Bare minimum / Goal / Exceptional. */
+export type StepTier = "min" | "goal" | "exceptional"
 
 /**
  * Tunable weights for the transparent To-Do priority formula (Brain2 #46).
@@ -296,6 +313,8 @@ export interface PriorityWeights {
   importance: number
   cognitiveLoad: number
   entropy: number
+  /** What waits on the task (Phase 14). Missing reads as 1, so older blobs load as-is. */
+  unlocks?: number
 }
 
 // ---- Richer completion status (Feature 9, Worker I) -----------------------
@@ -588,6 +607,8 @@ export interface Task extends Item {
   /** Files attached to this item as resources (PDFs, images, anything). Bytes live in IndexedDB. */
   resources?: ItemResource[]
   parentTaskId?: string // For subtasks
+  /** Phase 11: this item is a step's item (`Subtask.itemId`). Never a To Do row, lens, list or search hit (`isStepItem`). */
+  stepOf?: { taskId: string; stepId: string }
   subtasks?: Subtask[] // Array of subtask objects
   // ---- Brain2 additions (see docs/BRAIN2_FEATURE_IDEAS.md) ----
   /** Gantt: a "summary"/rollup task that completes when its children do. */
@@ -829,6 +850,10 @@ export interface ItemNoteEntry {
   text: string
   /** ISO time the entry was last edited, when it was edited after being added. */
   editedAt?: string
+  /** `notice`: an answer to the To Do notice dot (`lib/notice-dot.ts`). */
+  tag?: "notice"
+  /** Total pushes on the task when a `notice` entry was written. The dot stays quiet until the next push. */
+  pushCount?: number
 }
 
 /** A file attached to an item as a resource. Same blob storage as `file` attributes. */
@@ -837,6 +862,27 @@ export interface ItemResource extends FileValue {
   addedAt: string
   /** Optional caption: what this file is for. */
   caption?: string
+  /**
+   * Set when the file stays where it is on the computer instead of being
+   * copied (`uri` is then `link:<id>`). Desktop only. `docs/RESOURCE_LINKS.md`.
+   */
+  link?: ResourceLink
+}
+
+/** Where a linked resource lives on disk, and how to find it after a move. */
+export interface ResourceLink {
+  /** Absolute path on the computer that linked it. */
+  path: string
+  isDir: boolean
+  /** `dev:ino` at link time; finds the file again after a move on the same disk. */
+  fileId?: string
+  mtimeMs?: number
+  /** macOS bookmark (Finder alias data), base64. Follows moves and renames. */
+  bookmark?: string
+  /** Folders: files counted (VCS and build folders skipped). */
+  fileCount?: number
+  /** Folders: the count stopped at the walk cap. */
+  truncated?: boolean
 }
 
 export interface GoalValue {
