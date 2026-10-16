@@ -1690,6 +1690,7 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 2px;
+  position: relative;
   background: var(--id-crt-glass);
   box-shadow: inset 0 0 0 1px #000;
 }
@@ -1833,6 +1834,74 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
   letter-spacing: 0.06em;
   color: var(--id-crt);
   text-shadow: var(--id-crt-glow);
+}
+
+/* Linked resources: Auto / Copy / Link switch, Linked / Missing lamp, path line. */
+.id95 .id-res-mode,
+.id95-dialog .id-res-mode {
+  display: inline-flex;
+  border: 1px solid var(--chrome-lo);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.id95 .id-res-mode button,
+.id95-dialog .id-res-mode button {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--id-nameplate);
+  background: transparent;
+}
+
+.id95 .id-res-mode button + button,
+.id95-dialog .id-res-mode button + button {
+  border-left: 1px solid var(--chrome-lo);
+}
+
+.id95 .id-res-mode button[aria-checked="true"],
+.id95-dialog .id-res-mode button[aria-checked="true"] {
+  color: var(--id-crt);
+  background: var(--id-crt-glass);
+  text-shadow: var(--id-crt-glow);
+}
+
+.id95 .id-res-link,
+.id95-dialog .id-res-link {
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dffc4;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.id95 .id-res-face .id-res-link,
+.id95-dialog .id-res-face .id-res-link {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+}
+
+.id95 .id-res-link[data-state="missing"],
+.id95-dialog .id-res-link[data-state="missing"] {
+  color: #ff9a9a;
+}
+
+.id95 .id-res-path,
+.id95-dialog .id-res-path {
+  margin: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--chrome-lo);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* ---- Subtasks tab: nested steps with minutes (SubtaskTree) -------------- */
