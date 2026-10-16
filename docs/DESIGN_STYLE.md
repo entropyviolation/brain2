@@ -840,6 +840,10 @@ orb. It may also be an object that room invented.
 - [ ] If it moves, it is a verb (or one rare gesture on that verb), and
       reduced motion snaps to the end state.
 - [ ] A number the person did not type wears `~` and an **est.** chip.
+- [ ] **Planned (2026-10-16):** no UI text tells the person what they should
+      do. States read as neutral facts ("Waiting since Tue", "Pushed ×3"), and
+      warm red is kept for estimate overruns. See
+      [`TODO_REDESIGN.md`](TODO_REDESIGN.md) Phase 15 B.
 - [ ] A dirty editor uses Save / Stay / Discard. A clean close is silent.
 - [ ] Habits, Lists, Plan chips, and the Analytics studio were left as their
       own rooms. New furniture was invented here, or a palette material was
