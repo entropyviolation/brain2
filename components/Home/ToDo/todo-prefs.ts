@@ -7,6 +7,7 @@
  */
 "use client"
 
+import type { StepTier } from "@/lib/types"
 import { useSyncExternalStore } from "react"
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
@@ -48,6 +49,8 @@ export type TodoPrefs = {
   hideLocked: boolean
   /** A branch shows only its next step and "+ N more" until opened. */
   showNextOnly: boolean
+  /** Tier filter (Phase 10): every lid shows that level's view. `all` shows every step. */
+  tierView: TodoTierView
 }
 
 export const DEFAULT_LID_COLLAPSED: Record<TodoLidSection, boolean> = {
@@ -67,6 +70,13 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   sessionPadded: true,
   hideLocked: false,
   showNextOnly: false,
+  tierView: "all",
+}
+
+export type TodoTierView = "all" | StepTier
+
+export function normalizeTierView(value: unknown): TodoTierView {
+  return value === "min" || value === "goal" || value === "exceptional" ? value : "all"
 }
 
 /** Keeps only positive finite overrides, clamped to 0.5–4. */
@@ -115,6 +125,7 @@ function load(): TodoPrefs {
       sessionPadded: parsed.sessionPadded !== false,
       hideLocked: parsed.hideLocked === true,
       showNextOnly: parsed.showNextOnly === true,
+      tierView: normalizeTierView(parsed.tierView),
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -139,7 +150,8 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.paceGhosts === DEFAULT_TODO_PREFS.paceGhosts &&
       snapshot.sessionPadded === DEFAULT_TODO_PREFS.sessionPadded &&
       snapshot.hideLocked === DEFAULT_TODO_PREFS.hideLocked &&
-      snapshot.showNextOnly === DEFAULT_TODO_PREFS.showNextOnly
+      snapshot.showNextOnly === DEFAULT_TODO_PREFS.showNextOnly &&
+      snapshot.tierView === DEFAULT_TODO_PREFS.tierView
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -166,6 +178,7 @@ export function setTodoPrefs(
     sessionPadded: patch.sessionPadded ?? snapshot.sessionPadded,
     hideLocked: patch.hideLocked ?? snapshot.hideLocked,
     showNextOnly: patch.showNextOnly ?? snapshot.showNextOnly,
+    tierView: patch.tierView !== undefined ? normalizeTierView(patch.tierView) : snapshot.tierView,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

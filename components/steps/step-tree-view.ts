@@ -6,6 +6,9 @@
  * a branch showing only its next step, and one quiet "+ step" at the end of
  * every open branch. The tree's data never changes here.
  *
+ * The Tier filter (`tier`) keeps one level's view (`lib/step-tiers.ts`); a
+ * step outside it with an in-view step inside shows greyed as its container.
+ *
  * Locked comes only from `lib/prereqs.ts` (a step waiting on an open
  * prerequisite, its own or an ancestor's). An incomplete step is never locked.
  */
@@ -13,9 +16,21 @@ import type { Subtask } from "@/lib/types"
 import { isStepAvailable } from "@/lib/prereqs"
 import { pickStartStep } from "@/lib/next-step"
 import { flattenSteps } from "@/lib/todo-steps"
+import { stepsForTier } from "@/lib/step-tiers"
+import type { StepTier } from "@/lib/types"
 
 export type StepViewRow =
-  | { kind: "step"; step: Subtask; depth: number; parentId: string | null; hasKids: boolean; locked: boolean; peeked: boolean }
+  | {
+      kind: "step"
+      step: Subtask
+      depth: number
+      parentId: string | null
+      hasKids: boolean
+      locked: boolean
+      peeked: boolean
+      /** Tier filter on: shown only as the container of an in-view step (Phase 10). */
+      greyed?: boolean
+    }
   | { kind: "more"; parentId: string; depth: number; count: number }
   | { kind: "add"; parentId: string | null; depth: number }
 
@@ -28,6 +43,8 @@ export interface StepViewOptions {
   openedNext?: ReadonlySet<string>
   /** Show what the switches hide, without turning them off. */
   peek?: boolean
+  /** Tier filter (Phase 10): only that level's view, with greyed containers. */
+  tier?: StepTier
 }
 
 export interface StepView {
@@ -65,18 +82,25 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
   let hiddenBySwitches = 0
   const folded = options.folded ?? new Set<string>()
   const openedNext = options.openedNext ?? new Set<string>()
+  const tierView = options.tier ? stepsForTier(all, options.tier) : null
 
   // `counted`: an ancestor is already counted as hidden (we are inside a peek).
   const walk = (list: readonly Subtask[], depth: number, parentId: string | null, counted = false) => {
     for (const step of list) {
       let peeked = counted
-      if (options.hideLocked && !counted && hiddenByLock(all, step)) {
+      if (tierView && !counted && !tierView.ids.has(step.id) && !tierView.containers.has(step.id)) {
+        hiddenBySwitches += 1 + flattenSteps(step.subtasks).length
+        if (!options.peek) continue
+        peeked = true
+      }
+      if (options.hideLocked && !peeked && hiddenByLock(all, step)) {
         hiddenBySwitches += 1 + flattenSteps(step.subtasks).length
         if (!options.peek) continue
         peeked = true
       }
       const kids = step.subtasks ?? []
-      rows.push({ kind: "step", step, depth, parentId, hasKids: kids.length > 0, locked: isStepLocked(all, step), peeked })
+      const greyed = !!tierView?.containers.has(step.id)
+      rows.push({ kind: "step", step, depth, parentId, hasKids: kids.length > 0, locked: isStepLocked(all, step), peeked, ...(greyed ? { greyed } : {}) })
       if (kids.length === 0 || folded.has(step.id)) continue
       const inside = flattenSteps(kids).length
       if (options.nextOnly && inside > 1 && !openedNext.has(step.id)) {

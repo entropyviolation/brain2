@@ -20,6 +20,10 @@ import { StepTree } from "@/components/steps/StepTree"
 import { rememberWorld } from "@/lib/action-history"
 import { formatDuration } from "@/lib/time-entries"
 import { paceGhostLabel } from "@/lib/estimate-pace"
+import { partsMinutes, timeTrio } from "@/lib/tracked-time"
+import { STEP_TIER_LABEL, hasStepTiers } from "@/lib/step-tiers"
+import { tierMinutes } from "@/lib/step-progress"
+import { LevelGauge } from "@/components/steps/LevelGauge"
 import {
   getTodoPrefs,
   setTodoPrefs,
@@ -73,19 +77,6 @@ function useGhost(): string | null {
   const info = useContext(TimeInfoContext)
   if (!info || info.ghosts === false || info.pace == null) return null
   return paceGhostLabel(info.pace)
-}
-
-/** "52m · est 30 · parts 45", leaving out what is not there. */
-export function timeTrio(est: number, parts: number, spent: number): string {
-  const bits: string[] = []
-  if (spent > 0) bits.push(formatDuration(spent))
-  if (est > 0) bits.push(`est ${est}`)
-  if (parts > 0) bits.push(`parts ${parts}`)
-  return bits.join(" · ")
-}
-
-function partsOf(steps: readonly Subtask[] | undefined): number {
-  return (steps ?? []).reduce((total, step) => total + effectiveDurationMinutes(step.estimatedDuration, step.subtasks), 0)
 }
 
 function StepLinkKey({ step, steps }: { step: Subtask; steps: Subtask[] }) {
@@ -319,7 +310,7 @@ function LidStepColumns({
       />
       {step.completed && (spent > 0 || (step.actualDuration ?? 0) > 0) ? (
         <span className="todo-step-spent" title="Time spent · typed estimate · the steps inside">
-          {timeTrio(own, partsOf(step.subtasks), Math.max(spent, step.actualDuration ?? 0))}
+          {timeTrio(own, partsMinutes(step.subtasks), Math.max(spent, step.actualDuration ?? 0))}
         </span>
       ) : !step.completed && spent > 0 ? (
         <span className={`todo-step-spent is-open${own > 0 && spent > own ? " is-over" : ""}`} title="Time spent so far">
@@ -332,6 +323,11 @@ function LidStepColumns({
         </span>
       ) : null}
       {progress ? <span className="todo-step-progress">{progress}</span> : null}
+      {step.subtasks?.length && hasStepTiers(steps) ? (
+        <span className="todo-step-gauge">
+          <LevelGauge steps={steps} stepId={step.id} counts={false} />
+        </span>
+      ) : null}
       <button
         type="button"
         className="todo-btn todo-btn-icon"
@@ -402,6 +398,7 @@ export function TodoBreakdown({
   usualMinutes,
   clock,
   time,
+  onOpenStep,
 }: {
   estimate?: number
   steps?: Subtask[]
@@ -412,8 +409,11 @@ export function TodoBreakdown({
   clock?: StepClock
   /** Spent and pace for the readout, step chips and ghost. Omit to hide them. */
   time?: TodoTimeInfo
+  /** Phase 11: open a step's item on top (dot click and ↗). */
+  onOpenStep?: (step: Subtask) => void
 }) {
-  const { hideLocked, showNextOnly } = useTodoPrefs()
+  const { hideLocked, showNextOnly, tierView } = useTodoPrefs()
+  const tier = tierView === "all" ? undefined : tierView
   const [askDepth, setAskDepth] = useState(0)
   const [linkFrom, setLinkFrom] = useState<string | null>(null)
   const list = steps ?? []
@@ -442,7 +442,6 @@ export function TodoBreakdown({
   }, [link.from])
   const effective = effectiveDurationMinutes(estimate, list)
   const own = estimate && estimate > 0 ? estimate : 0
-  const progress = formatInternalProgress(list)
   const bare = list.length === 0 && !(estimate && estimate > 0)
 
   const jog = (delta: number) => {
@@ -500,7 +499,11 @@ export function TodoBreakdown({
               usually ~{usualMinutes}
             </button>
           ) : null}
-          {effective > 0 ? (
+          {tier && list.length ? (
+            <span className="todo-est-used" title={`Minutes that count for ${STEP_TIER_LABEL[tier]} (its steps only)`}>
+              counts {tierMinutes(list, tier)}m for {STEP_TIER_LABEL[tier]}
+            </span>
+          ) : effective > 0 ? (
             <span className="todo-est-used" title="Minutes that count (greater of typed and step sum)">
               counts {effective}m
             </span>
@@ -510,7 +513,7 @@ export function TodoBreakdown({
               className={`todo-time-trio${effective > 0 && time.spent > effective ? " is-over" : ""}`}
               aria-label="Estimate, parts and time spent"
             >
-              {timeTrio(own, partsOf(list), time.spent) || "nothing spent yet"}
+              {timeTrio(own, partsMinutes(list), time.spent) || "nothing spent yet"}
               {time.pen ? (
                 <span className="todo-time-pen">
                   {" · pen "}
@@ -520,7 +523,7 @@ export function TodoBreakdown({
               ) : null}
             </span>
           ) : null}
-          {progress ? <span className="todo-step-progress">{progress}</span> : null}
+          {list.length ? <LevelGauge steps={list} focus={tier} /> : null}
           {bare ? <span className="todo-lump is-dim" title="No steps and no minutes" aria-label="Unestimated lump" /> : null}
         </div>
       </TodoLidSection>
@@ -543,6 +546,9 @@ export function TodoBreakdown({
           label="Steps"
           hideLocked={hideLocked}
           nextOnly={showNextOnly}
+          tier={tier}
+          tierTags
+          onOpenStep={onOpenStep}
           onBeforeMove={rememberWorld}
           rowClassName={(step) => {
             const bits = ["todo-tree-row"]

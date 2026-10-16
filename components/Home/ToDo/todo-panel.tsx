@@ -126,6 +126,7 @@ import {
 } from "@/lib/todo-commitment"
 import { flattenSteps, taskMatchesAssignedQuery, effectiveDurationMinutes } from "@/lib/todo-steps"
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection } from "./TodoBreakdown"
+import { openStepItem } from "@/lib/step-item-stack"
 import "./todo-chrome.css"
 
 const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint: string }[] = [
@@ -1075,6 +1076,7 @@ export function TodoPanel({
               steps={task.subtasks}
               onEstimateChange={(minutes) => handleEstimate(task.id, minutes)}
               onStepsChange={(subtasks) => handleSteps(task.id, subtasks)}
+              onOpenStep={(step) => openStepItem(task.id, step.id)}
               time={todoTime.timeOf(task.id)}
             />
           </div>

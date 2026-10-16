@@ -13,13 +13,44 @@ import {
   TODO_STATUS_FILTERS,
   getTodoSortOptionLabel,
 } from "./todo-utils"
-import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs } from "./todo-prefs"
+import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
 
-/** Hide locked and Show next only (Phase 9). Self-wired to `todo-prefs`. */
+const TIER_CHOICES: { value: TodoTierView; short: string; title: string }[] = [
+  { value: "all", short: "All", title: "Every step" },
+  { value: "min", short: "B", title: "Bare minimum: did enough that it counts" },
+  { value: "goal", short: "G", title: "Goal: what was intended (includes Bare minimum)" },
+  { value: "exceptional", short: "E", title: "Exceptional: above and beyond (includes all)" },
+]
+
+/** Tier (Phase 10): every lid shows that level's view. Self-wired to `todo-prefs`. */
+function TierKeys() {
+  const { tierView } = useTodoPrefs()
+  return (
+    <div className="todo-segment todo-tier-keys" role="radiogroup" aria-label="Step tier">
+      <span className="todo-label">Step tier</span>
+      {TIER_CHOICES.map(({ value, short, title }) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={tierView === value}
+          className={`todo-chiclet${tierView === value ? " is-on" : ""}`}
+          title={title}
+          onClick={() => setTodoPrefs({ tierView: value })}
+        >
+          {short}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Hide locked and Show next only (Phase 9), and the Tier filter. Self-wired to `todo-prefs`. */
 function StepViewKeys() {
   const { hideLocked, showNextOnly } = useTodoPrefs()
   return (
     <>
+      <TierKeys />
       <label
         className="todo-key-check"
         title="Hide steps and tasks waiting on an open prerequisite. Unfinished is not locked. They come back when the prerequisite is done."

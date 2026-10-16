@@ -658,7 +658,7 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | F | Estimate rule everywhere, default estimate, Operations totals | 6 | E | S | Built 2026-10-16 |
 | L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; task card placement with O |
 | K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9), Paste as log (I) and step ↗ (M) left |
-| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | In progress |
+| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags after M; Done-at-level and level points with O |
 | M | Step items, stacked item detail | 11 | K | M | In progress |
 | O | Task card | 12 | K, L, N (M for ↗) | L | Planned |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |

@@ -12,6 +12,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react"
+import type { ReactNode } from "react"
 import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
 import { PersonDetail } from "@/components/People/person-detail"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
@@ -27,7 +28,9 @@ import { ListPicker } from "@/components/Lists/list-picker"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
-import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
+import { SubtaskTree, StepItemSubtasks } from "@/components/ItemDetail/SubtaskTree"
+import { isStepItem } from "@/lib/step-items"
+import { openStepItem } from "@/lib/step-item-stack"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -93,7 +96,6 @@ import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeS
 import { isSentOnList, withSentMark } from "@/lib/list-sent"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
-import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
 
@@ -105,9 +107,21 @@ interface TaskDetailPopupProps {
   stackAbove?: boolean
   /** Mount inside that dialog so the page’s focus lock does not hide this one. */
   container?: HTMLElement | null
+  /** Phase 11: a strip above the fascia (breadcrumb, Back, Parent) when this layer is a step's item. */
+  layerHeader?: ReactNode
+  /** Phase 11: Complete on a step item ticks the step instead of completing the item. */
+  onStepComplete?: () => void
 }
 
-export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, container = null }: TaskDetailPopupProps) {
+export function TaskDetailPopup({
+  taskId,
+  open,
+  onClose,
+  stackAbove = false,
+  container = null,
+  layerHeader,
+  onStepComplete,
+}: TaskDetailPopupProps) {
   const detailRef = useRef<HTMLDivElement>(null)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
@@ -126,6 +140,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     touchDraft,
     originalTask,
     setOriginalTask,
+    isDraftDirty,
     allTasks,
     lists,
     folders,
@@ -214,11 +229,16 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
   // the contribution (objective/goal) + optional review on every completion.
   const handleComplete = useCallback(() => {
     const draft = getDraft()
+    if (draft && onStepComplete) {
+      commitDraft(draft)
+      onStepComplete()
+      return
+    }
     if (draft) {
       commitDraft({ ...draft, completed: true })
       onClose()
     }
-  }, [getDraft, commitDraft, onClose])
+  }, [getDraft, commitDraft, onClose, onStepComplete])
 
   const handleMissed = useCallback(() => {
     if (!task) return
@@ -291,14 +311,6 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     [task, lists, updateList, setTask],
   )
 
-  const handleNavigateToList = useCallback(
-    (listId: string) => {
-      onClose()
-      requestNavigateToListAfterPaint(listId, folders)
-    },
-    [folders, onClose],
-  )
-
   const handleSaveItemType = useCallback(
     (def: ItemTypeDefinition) => {
       if (itemTypes.some((t) => t.id === def.id)) updateItemType(def)
@@ -317,18 +329,33 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
     if (selectedDependency && selectedDependency !== "none") setSelectedDependency("none")
   }, [addDependency, selectedDependency])
 
-  const isDirty = Boolean(task && originalTask && !snapshotsEqual(getDraft(), originalTask))
   const guard = useUnsavedGuard({
     open,
     onOpenChange: (next) => {
       if (!next) onClose()
     },
-    isDirty,
+    isDirty: isDraftDirty,
     onSave: handleSave,
     onDiscard: () => {
       if (originalTask) setTask(originalTask)
     },
   })
+  const { guardAction } = guard
+
+  // Every way out of the popup asks about unsaved edits first.
+  const openItem = useCallback(
+    (id: string) => guardAction(() => setOverrideId(id)),
+    [guardAction],
+  )
+
+  const handleNavigateToList = useCallback(
+    (listId: string) =>
+      guardAction(() => {
+        onClose()
+        requestNavigateToListAfterPaint(listId, folders)
+      }),
+    [guardAction, folders, onClose],
+  )
 
   if (!task) {
     return null
@@ -370,6 +397,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
           {...unsavedDismissProps(guard.requestClose)}
         >
           <DialogTitle className="sr-only">Item detail</DialogTitle>
+          {layerHeader}
           <div className="id-fascia">
             <div className="id-fascia-row">
               <div className="id-mark">
@@ -429,7 +457,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                     Complete
                   </Button>
                 )}
-                {!isClearedFromWork(task) && caps.completable && (
+                {!isClearedFromWork(task) && caps.completable && !isStepItem(task) && (
                   <Button
                     variant="outline"
                     onClick={handleMissed}
@@ -573,7 +601,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                             setTask({ ...task, itemAttributeDefinitions })
                           }
                           onCreateAttribute={handleCreateAttribute}
-                          onOpenItem={(id) => setOverrideId(id)}
+                          onOpenItem={openItem}
                         />
                       </div>
 
@@ -885,7 +913,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         </div>
                       )}
 
-                      {caps.completable && (
+                      {caps.completable && !isStepItem(task) && (
                       <div className="space-y-3 text-sm">
                         <h3 className="id-rail-plate">Status</h3>
                         <div className="space-y-2">
@@ -964,7 +992,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                     <LinkPicker sourceId={task.id} onAdd={addLink} />
                     <RelatedItemsPanel
                       task={task}
-                      onOpenItem={(id) => setOverrideId(id)}
+                      onOpenItem={openItem}
                       onRemoveLink={removeLink}
                     />
                   </div>
@@ -1344,7 +1372,17 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         Break this into steps, and use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the steps inside, whichever is larger.
                       </p>
 
-                      <SubtaskTree steps={task.subtasks} onChange={(subtasks) => setTask({ ...task, subtasks })} />
+                      {task.stepOf ? (
+                        <StepItemSubtasks stepOf={task.stepOf} />
+                      ) : (
+                        <SubtaskTree
+                          steps={task.subtasks}
+                          onChange={(subtasks) => setTask({ ...task, subtasks })}
+                          onOpenStep={
+                            allTasks.some((t) => t.id === task.id) ? (step) => openStepItem(task.id, step.id) : undefined
+                          }
+                        />
+                      )}
                     </div>
                   </div>
                 </TabsContent>
@@ -1498,7 +1536,7 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
         }
         onOpenItem={(id) => {
           setEditingItemType(null)
-          setOverrideId(id)
+          openItem(id)
         }}
       />
       <MissReasonDialog

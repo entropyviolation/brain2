@@ -101,3 +101,101 @@ describe("useUnsavedGuard", () => {
     expect(screen.getByText("editor closed")).toBeInTheDocument()
   })
 })
+
+function GuardedLeaver({
+  dirtyRef,
+  onSave,
+  onDiscard,
+  onLeave,
+}: {
+  dirtyRef: { current: boolean }
+  onSave: () => void
+  onDiscard: () => void
+  onLeave: () => void
+}) {
+  const guard = useUnsavedGuard({
+    open: true,
+    onOpenChange: vi.fn(),
+    isDirty: () => dirtyRef.current,
+    onSave,
+    onDiscard,
+  })
+  return (
+    <>
+      <button type="button" onClick={() => guard.guardAction(onLeave)}>
+        Leave
+      </button>
+      <UnsavedChangesDialog {...guard.prompt} />
+    </>
+  )
+}
+
+describe("useUnsavedGuard guardAction", () => {
+  function setup(dirty: boolean) {
+    const dirtyRef = { current: dirty }
+    const calls: string[] = []
+    const props = {
+      dirtyRef,
+      onSave: vi.fn(() => {
+        calls.push("save")
+      }),
+      onDiscard: vi.fn(() => {
+        calls.push("discard")
+      }),
+      onLeave: vi.fn(() => {
+        calls.push("leave")
+      }),
+    }
+    render(<GuardedLeaver {...props} />)
+    return { ...props, calls }
+  }
+
+  it("runs the action at once when clean", async () => {
+    const user = userEvent.setup()
+    const { onLeave } = setup(false)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    expect(onLeave).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument()
+  })
+
+  it("asks first when dirty and does not run the action", async () => {
+    const user = userEvent.setup()
+    const { onLeave } = setup(true)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument()
+    expect(onLeave).not.toHaveBeenCalled()
+  })
+
+  it("Save then runs the action", async () => {
+    const user = userEvent.setup()
+    const { calls } = setup(true)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: "Save changes" }))
+    expect(calls).toEqual(["save", "leave"])
+  })
+
+  it("Exit without saving discards then runs the action", async () => {
+    const user = userEvent.setup()
+    const { calls } = setup(true)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: "Exit without saving" }))
+    expect(calls).toEqual(["discard", "leave"])
+  })
+
+  it("Cancel runs nothing", async () => {
+    const user = userEvent.setup()
+    const { calls } = setup(true)
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    await user.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(calls).toEqual([])
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument()
+  })
+
+  it("reads a function isDirty at call time", async () => {
+    const user = userEvent.setup()
+    const { dirtyRef, onLeave } = setup(true)
+    dirtyRef.current = false
+    await user.click(screen.getByRole("button", { name: "Leave" }))
+    expect(onLeave).toHaveBeenCalledTimes(1)
+  })
+})
