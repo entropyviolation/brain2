@@ -257,3 +257,49 @@ export function ritualDayBoard(
     byId: new Map(placements.map((placement) => [placement.id, placement])),
   }
 }
+
+/** Stand-in sunset (6:00 PM, minutes after midnight) when the sun cannot be computed. */
+export const FALLBACK_SUNSET_MINUTES = 18 * 60
+
+/**
+ * Rites follow the sun (To Do Phase 8). On today's day lens only:
+ * - **Night ritual** waits until sunset;
+ * - **Morning ritual** goes at sunset while it is not done.
+ * A started or done rite, and any other day, is never hidden.
+ */
+export function ritualHiddenAt(
+  placement: Pick<RitualTodoPlacement, "kind" | "dateKey">,
+  now: Date,
+  sunsetMinutes: number | null | undefined,
+  phase: "none" | "partial" | "done",
+): boolean {
+  if (placement.kind !== "day-morning" && placement.kind !== "day-night") return false
+  if (phase !== "none") return false
+  if (placement.dateKey !== localDayKey(now)) return false
+  const sunset = sunsetMinutes != null && Number.isFinite(sunsetMinutes) ? sunsetMinutes : FALLBACK_SUNSET_MINUTES
+  const afterSunset = now.getHours() * 60 + now.getMinutes() >= sunset
+  return placement.kind === "day-night" ? !afterSunset : afterSunset
+}
+
+/** The board without the rites `ritualHiddenAt` hides. `byId` keeps every rite, so an open walk still resolves. */
+export function ritualBoardFollowingSun(
+  board: RitualDayBoard,
+  now: Date,
+  sunsetMinutes: number | null | undefined,
+): RitualDayBoard {
+  const hidden = new Set(
+    board.placements
+      .filter((placement, i) => {
+        const task = board.tasks[i]
+        const phase = task?.completed ? "done" : task?.status === "partial" ? "partial" : "none"
+        return ritualHiddenAt(placement, now, sunsetMinutes, phase)
+      })
+      .map((placement) => placement.id),
+  )
+  if (hidden.size === 0) return board
+  return {
+    placements: board.placements.filter((p) => !hidden.has(p.id)),
+    tasks: board.tasks.filter((t) => !hidden.has(t.id)),
+    byId: board.byId,
+  }
+}

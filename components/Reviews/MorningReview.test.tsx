@@ -20,6 +20,8 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(TODAY)
   resetAllStores()
+  localStorage.clear()
+  sessionStorage.clear()
 })
 
 afterEach(() => {
@@ -128,6 +130,7 @@ describe("MorningReviewDialog", () => {
       { id: "water", name: "Drink water", type: TaskType.BOOLEAN, frequency: "daily", rewardValue: 10 },
     ])
     render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    fireEvent.click(screen.getByRole("button", { name: /Go to Daily habit priorities/ }))
     fireEvent.click(screen.getByRole("checkbox", { name: "Drink water" }))
     const habit = useHabitsStore.getState().tasks.find((task) => task.id === "water")
     expect(habit?.priorityLog?.[0]).toContain("Selected from day ritual")
@@ -147,5 +150,30 @@ describe("MorningReviewDialog", () => {
     expect(screen.getByText(/September 16/)).toBeTruthy()
     expect(screen.getByDisplayValue("yesterday's river")).toBeTruthy()
     expect(screen.getByRole("button", { name: "Next day" })).not.toBeDisabled()
+  })
+
+  it("walks one question at a time and remembers the step", () => {
+    const { unmount } = render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    expect(screen.getByRole("heading", { name: "Last night" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Next" }))
+    expect(screen.getByRole("heading", { name: "Affirmations" })).toBeTruthy()
+    expect(screen.queryByPlaceholderText("Anything you remember…")).toBeNull()
+    unmount()
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    expect(screen.getByRole("heading", { name: "Affirmations" })).toBeTruthy()
+  })
+
+  it("Enter in gratitude moves to the next line and keeps its text", () => {
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    fireEvent.click(screen.getByRole("button", { name: /Go to Gratitude/ }))
+    const fields = screen.getAllByPlaceholderText("Grateful for…") as HTMLInputElement[]
+    fireEvent.change(fields[0], { target: { value: "coffee" } })
+    fireEvent.change(fields[1], { target: { value: "rain" } })
+    fields[0].focus()
+    fireEvent.keyDown(fields[0], { key: "Enter" })
+    const after = screen.getAllByPlaceholderText("Grateful for…") as HTMLInputElement[]
+    expect(after[0].value).toBe("coffee")
+    expect(after[1].value).toBe("rain")
+    expect(document.activeElement).toBe(after[1])
   })
 })

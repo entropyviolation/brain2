@@ -14,13 +14,17 @@
 "use client"
 
 import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react"
+import "./ritual-steps.css"
+import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Sun, Plus, X, Moon, Mic, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
+import { Sun, Plus, X, Moon, Mic, Shuffle, ListChecks, ChevronLeft, ChevronRight } from "lucide-react"
+import { APP_NAV_KEYS, writeListsNavigation, writeStoredId, writeStoredTab } from "@/lib/app-navigation"
+import { COGS_NAV_RESTORE_EVENT } from "@/lib/screen-location"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { applyRitualPriority } from "@/lib/habit-priority"
@@ -58,6 +62,8 @@ import {
   pickRandom,
   AFFIRMATIONS_LIST_NAME,
 } from "@/lib/affirmations"
+import { affirmationKey } from "@/lib/affirmation-lenses"
+import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 import { createListItem } from "@/lib/item-utils"
 import type { List } from "@/lib/types"
 import { appendPlanEntry } from "@/lib/plan-text"
@@ -66,6 +72,7 @@ import {
   applyTodoWalkSlots,
   emptyTodoWalkForm,
   formToTodoWalkReply,
+  isTodoWalkFormBlank,
   parseTodoWalkReply,
   type TodoWalkFormFields,
 } from "@/lib/morning-todo-walk"
@@ -279,37 +286,137 @@ function StringListEditor({
   values,
   onChange,
   placeholder,
+  enterAdvances = false,
+  max,
 }: {
   values: string[]
   onChange: (next: string[]) => void
   placeholder: string
+  /** Enter moves to the next line (adding one at the end) and keeps the text where it was. */
+  enterAdvances?: boolean
+  max?: number
 }) {
   const rows = values.length ? values : [""]
+  const refs = useRef<Array<HTMLInputElement | null>>([])
+  const [focusAt, setFocusAt] = useState<number | null>(null)
+  useEffect(() => {
+    if (focusAt === null) return
+    refs.current[focusAt]?.focus()
+    setFocusAt(null)
+  }, [focusAt, rows.length])
+  const advance = (i: number) => {
+    if (i + 1 < rows.length) return setFocusAt(i + 1)
+    if (max !== undefined && rows.length >= max) return
+    onChange([...rows, ""])
+    setFocusAt(i + 1)
+  }
   return (
-    <div className="space-y-2">
+    <div className="mr-lines">
       {rows.map((v, i) => (
-        <div key={i} className="flex gap-2">
+        <div key={i} className="mr-line" data-filled={v.trim() ? "true" : undefined}>
+          <span className="mr-line-num" aria-hidden>
+            {i + 1}
+          </span>
           <Input
+            ref={(el) => {
+              refs.current[i] = el
+            }}
             value={v}
             onChange={(e) => onChange(rows.map((x, j) => (j === i ? e.target.value : x)))}
+            onKeyDown={
+              enterAdvances
+                ? (e) => {
+                    if (e.key !== "Enter" || e.nativeEvent.isComposing) return
+                    e.preventDefault()
+                    advance(i)
+                  }
+                : undefined
+            }
             placeholder={placeholder}
           />
           <Button
             variant="ghost"
             size="icon"
             className="h-9 w-9 shrink-0"
+            aria-label={`Remove line ${i + 1}`}
             onClick={() => onChange(rows.length > 1 ? rows.filter((_, j) => j !== i) : [""])}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       ))}
-      <Button variant="outline" size="sm" onClick={() => onChange([...rows, ""])}>
-        <Plus className="h-4 w-4 mr-1" />
-        Add
-      </Button>
+      {max === undefined || rows.length < max ? (
+        <Button variant="outline" size="sm" className="justify-self-start" onClick={() => onChange([...rows, ""])}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add
+        </Button>
+      ) : null}
     </div>
   )
+}
+
+/** A stored value, and whether it was written on this ritual's day. */
+type StoredSlot = { value: string; today: boolean } | null
+
+function latestDayRating(task: Task, dayKey: string, field: "importance" | "excitement"): StoredSlot {
+  const ratings = task.dayRatings ?? {}
+  const own = ratings[dayKey]?.[field]
+  if (own != null) return { value: String(own), today: true }
+  const prior = Object.keys(ratings)
+    .filter((key) => key < dayKey && ratings[key]?.[field] != null)
+    .sort()
+    .pop()
+  return prior ? { value: String(ratings[prior]![field]), today: false } : null
+}
+
+function latestResistance(task: Task, dayKey: string): StoredSlot {
+  const last = task.resistanceReadings?.[task.resistanceReadings.length - 1]
+  if (!last) return null
+  return { value: String(last.value), today: localDayKey(new Date(last.at)) === dayKey }
+}
+
+/** One walk field. Empty shows the stored value greyed as the placeholder; typing replaces it. */
+function WalkSlot({
+  label,
+  value,
+  stored,
+  onChange,
+}: {
+  label: string
+  value: string
+  stored: StoredSlot
+  onChange: (next: string) => void
+}) {
+  const state = value.trim() ? "new" : stored ? (stored.today ? "today" : "stored") : "empty"
+  return (
+    <label className="mr-slot" data-state={state}>
+      <span className="mr-slot-label">
+        {label}
+        {state === "new" && stored ? (
+          <button type="button" className="mr-slot-revert" onClick={() => onChange("")} title={`Keep ${stored.value}`}>
+            keep {stored.value}
+          </button>
+        ) : (
+          <span className="mr-slot-state">{state === "new" ? "new" : state === "today" ? "today" : state === "stored" ? "stored" : ""}</span>
+        )}
+      </span>
+      <input
+        className="mr-slot-field"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={stored?.value ?? "—"}
+        inputMode="decimal"
+        aria-label={label}
+      />
+    </label>
+  )
+}
+
+function openListInLists(listId: string) {
+  writeListsNavigation({ location: "home", openTarget: { type: "category", id: listId } })
+  writeStoredTab(APP_NAV_KEYS.appTab, "categories")
+  writeStoredId(APP_NAV_KEYS.appItemId, null)
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(COGS_NAV_RESTORE_EVENT))
 }
 
 function usePaintedNight(dayKey: string) {
@@ -318,24 +425,63 @@ function usePaintedNight(dayKey: string) {
   return useMemo(() => inferNight({ scopes, entries }, dayKey), [scopes, entries, dayKey])
 }
 
-function ensureAffirmationLines(lists: List[], tasks: Task[], addList: (n: string) => string, addTask: (t: Task) => void): string[] {
+/** The Affirmations list's lines (created with defaults if missing), and its id. */
+function affirmationPool(lists: List[], tasks: Task[], addList: (l: List) => void, addTask: (t: Task) => void) {
   try {
     let list = findAffirmationsCategory(lists)
     if (!list) {
-      const id = addList(AFFIRMATIONS_LIST_NAME)
-      list = { id, name: AFFIRMATIONS_LIST_NAME } as List
+      list = {
+        id: `affirmations-${Date.now()}`,
+        name: AFFIRMATIONS_LIST_NAME,
+        description: "Spoken morning affirmations",
+        createdAt: new Date(),
+        scheduleable: false,
+        itemLabel: "affirmation",
+      } as List
+      addList(list)
       for (const line of DEFAULT_AFFIRMATIONS) {
-        addTask(createListItem(line, [id]) as Task)
+        addTask(createListItem(line, [list.id]) as Task)
       }
     }
     const fromList = getAffirmationItems(tasks, list.id)
       .map((item) => affirmationText(item).trim())
       .filter(Boolean)
-    const pool = fromList.length > 0 ? fromList : DEFAULT_AFFIRMATIONS
-    return pickRandom(pool, AFFIRMATIONS_PER_SESSION)
+    return { pool: fromList.length > 0 ? fromList : DEFAULT_AFFIRMATIONS, listId: list.id as string | undefined }
   } catch {
-    return pickRandom(DEFAULT_AFFIRMATIONS, AFFIRMATIONS_PER_SESSION)
+    return { pool: DEFAULT_AFFIRMATIONS, listId: undefined }
   }
+}
+
+function ensureAffirmationLines(lists: List[], tasks: Task[], addList: (l: List) => void, addTask: (t: Task) => void): string[] {
+  return pickRandom(affirmationPool(lists, tasks, addList, addTask).pool, AFFIRMATIONS_PER_SESSION)
+}
+
+const MORNING_STEPS = [
+  { id: "night", label: "Last night" },
+  { id: "affirmations", label: "Affirmations" },
+  { id: "todos", label: "To do for today" },
+  { id: "habits", label: "Daily habit priorities" },
+  { id: "walk", label: "Go through to do list" },
+  { id: "plan", label: "Day plan" },
+  { id: "circumstances", label: "Circumstances" },
+  { id: "best", label: "Best day ever" },
+  { id: "gratitude", label: "Gratitude" },
+] as const
+
+/** `resumeStep` gap names (desktop and `gm`) to the step that asks it. */
+const RESUME_TO_STEP: Record<string, string> = {
+  bed: "night",
+  wake: "night",
+  dream: "night",
+  affirmation: "affirmations",
+  "todo-show": "todos",
+  "todo-priorities": "todos",
+  "habit-priorities": "habits",
+  walk: "walk",
+  "day-plan": "plan",
+  circumstances: "circumstances",
+  "best-day": "best",
+  gratitude: "gratitude",
 }
 
 export function MorningReviewDialog({
@@ -357,6 +503,14 @@ export function MorningReviewDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, dateKey])
   const dayKey = localDayKey(activeDate)
+  const recitations = useAffirmationLogStore((s) => s.recitations)
+  const recite = useAffirmationLogStore((s) => s.recite)
+  const undoRecite = useAffirmationLogStore((s) => s.undoRecite)
+  const saidToday = useMemo(() => {
+    const out = new Map<string, number>()
+    for (const r of recitations) if (r.date === dayKey) out.set(r.key, (out.get(r.key) ?? 0) + 1)
+    return out
+  }, [recitations, dayKey])
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const addList = useTaskStore((s) => s.addList)
@@ -734,8 +888,13 @@ export function MorningReviewDialog({
       for (const next of marked) updateTask(next)
       clearMorningDraft(dayKey)
       const clearedLines = [""]
+      const keptWalks: Record<string, TodoWalkFormFields> = {}
+      for (const [id, form] of Object.entries(todoWalkById)) {
+        if (form.skipped) keptWalks[id] = { ...emptyTodoWalkForm(), skipped: true }
+      }
       setNewTodoLines(clearedLines)
-      baselineRef.current = packForm({ ...currentForm(), newTodoLines: clearedLines })
+      setTodoWalkById(keptWalks)
+      baselineRef.current = packForm({ ...currentForm(), newTodoLines: clearedLines, todoWalkById: keptWalks })
       if (complete) onClose()
       else setSavedNote("Saved. Unanswered questions stay open.")
     } catch (err) {
@@ -759,6 +918,463 @@ export function MorningReviewDialog({
     })
   }
 
+  const [affirmSeen, setAffirmSeen] = useState(false)
+  const [step, setStep] = useRitualStep(`brain2-morning-step:${dayKey}`, MORNING_STEPS.length, () => {
+    if (!existing || existing.completed) return 0
+    const id = existing.resumeStep ? RESUME_TO_STEP[existing.resumeStep] : undefined
+    const at = MORNING_STEPS.findIndex((s) => s.id === id)
+    return at < 0 ? 0 : at
+  })
+  const stepId = MORNING_STEPS[step]?.id ?? "night"
+  useEffect(() => {
+    if (open && stepId === "affirmations") setAffirmSeen(true)
+  }, [open, stepId])
+  useEffect(() => {
+    if (open) setAffirmSeen(!!existing?.affirmations?.length)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dayKey])
+
+  const answered: Record<(typeof MORNING_STEPS)[number]["id"], boolean> = {
+    night: allNighter || !!(bedTime.trim() && wakeTime.trim()) || !!dream.trim(),
+    affirmations: affirmSeen,
+    todos: priorityIds.length > 0 || requiredIds.length > 0 || newTodoLines.some((l) => l.trim()),
+    habits: priorityHabitIds.length > 0,
+    walk: Object.values(todoWalkById).some((f) => f.skipped || !isTodoWalkFormBlank(f)),
+    plan: !!dayPlan.trim() || !!existing?.dayPlanLogged,
+    circumstances: Object.values(circumstance).some(Boolean),
+    best: !!bestDayWhy.trim(),
+    gratitude: gratitude.some((g) => g.trim()),
+  }
+  const steps: RitualStep[] = MORNING_STEPS.map((s) => ({ id: s.id, label: s.label, answered: answered[s.id] }))
+
+  /** Moving between questions writes progress, the same as Save progress. */
+  const goStep = (next: number) => {
+    if (packForm(currentForm()) !== baselineRef.current) commitMorning(false)
+    setStep(next)
+  }
+
+  const shuffleAffirmations = () => {
+    const { pool } = affirmationPool(lists, tasks, addList, addTask)
+    const current = new Set(affirmations)
+    const fresh = pool.filter((line) => !current.has(line))
+    const next = pickRandom(fresh.length >= AFFIRMATIONS_PER_SESSION ? fresh : pool, AFFIRMATIONS_PER_SESSION)
+    setAffirmations(next)
+    setSessionAffirmations(next)
+    affirmationsTouchedRef.current = true
+  }
+
+  const openAffirmationsList = () => {
+    const { listId } = affirmationPool(lists, tasks, addList, addTask)
+    dismiss()
+    if (listId) openListInLists(listId)
+  }
+
+  const shownAffirmations = affirmations.length ? affirmations : sessionAffirmations
+
+  const stepBody = (() => {
+    switch (stepId) {
+      case "night":
+        return (
+          <>
+            {(carry.wakeReminder || carry.tomorrowMatters || carry.focusGoalIds.length > 0) && (
+              <section className="mr-carry" data-testid="morning-carry">
+                {carry.wakeReminder ? (
+                  <div>
+                    <p className="mr-carry-label">From last night</p>
+                    <p className="text-sm whitespace-pre-wrap">{carry.wakeReminder}</p>
+                  </div>
+                ) : null}
+                {carry.tomorrowMatters ? (
+                  <div>
+                    <p className="mr-carry-label">What matters most today</p>
+                    <p className="text-sm whitespace-pre-wrap">{carry.tomorrowMatters}</p>
+                  </div>
+                ) : null}
+                {carry.focusGoalIds.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Focus:{" "}
+                    {carry.focusGoalIds
+                      .map((id) => goals.find((goal) => goal.id === id)?.title)
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                ) : null}
+              </section>
+            )}
+            <label className="flex items-start gap-2 rounded-md border bg-white/70 p-3 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={allNighter}
+                onChange={(e) => setAllNighterLocal(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold">All nighter</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  I did not sleep. Habits with an all-nighter block are exempt: the evening before for the night you stayed up, and this morning for the ones set to the morning of. Edit each block on the habit.
+                </span>
+                {allNighterLifts.length === 0 ? (
+                  <span className="block text-xs text-muted-foreground mt-1">
+                    No habit has an all-nighter block yet. Add one in that habit’s settings.
+                  </span>
+                ) : (
+                  <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    {allNighterLifts.map((row) => (
+                      <li key={`${row.name}-${row.day}`}>
+                        {row.name} — {row.day === "evening-before" ? "the evening before this night" : "this morning"}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </span>
+            </label>
+
+            {!allNighter && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {(
+                    [
+                      ["morning-bedtime", "Fell asleep", bedTime, bedEstSource, "asleep", setBedTime, setBedEstSource],
+                      ["morning-waketime", "Wake time", wakeTime, wakeEstSource, "awake", setWakeTime, setWakeEstSource],
+                    ] as const
+                  ).map(([id, label, value, est, kind, set, setEst]) => (
+                    <div key={id} className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="font-semibold text-sm" htmlFor={id}>
+                          {label}
+                        </Label>
+                        {est ? (
+                          <span
+                            className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
+                            title={sleepClockEstimateBasis(est, kind)}
+                          >
+                            est.
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className={est ? "flex items-center gap-1.5" : undefined}>
+                        {est ? <span className="text-sm font-bold text-slate-600" aria-hidden>~</span> : null}
+                        <ClockPicker
+                          id={id}
+                          value={value}
+                          onChange={(v) => {
+                            setEst(null)
+                            set(v)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="col-span-2 -mt-1 text-xs text-muted-foreground">{nightSummary}</p>
+                </div>
+
+                <section className="space-y-2">
+                  <Label className="font-semibold text-sm flex items-center gap-1">
+                    <Moon className="h-4 w-4" />
+                    Dream journal
+                  </Label>
+                  <Textarea
+                    value={dream}
+                    onChange={(e) => setDream(e.target.value)}
+                    rows={3}
+                    placeholder="Anything you remember…"
+                  />
+                </section>
+              </>
+            )}
+            {allNighter && <p className="text-xs text-muted-foreground">{nightSummary}</p>}
+          </>
+        )
+      case "affirmations":
+        return (
+          <>
+            <p className="mr-lede">
+              Five lines drawn from your Lists → {AFFIRMATIONS_LIST_NAME} list. Shuffle for a new five; the five
+              you keep are saved for today.
+            </p>
+            <ol className="mr-affirm-list" key={shownAffirmations.join("|")}>
+              {shownAffirmations.map((line, i) => {
+                const said = saidToday.get(affirmationKey(line)) ?? 0
+                return (
+                  <li key={i}>
+                    <span className="mr-affirm-line">{line}</span>
+                    <button
+                      type="button"
+                      className={said ? "mr-affirm-said is-on" : "mr-affirm-said"}
+                      aria-label={said ? `Said ${said} today; log once more` : "Log that I said it"}
+                      title={said ? `Said ${said}× today. Click to log again, Alt-click to undo.` : "Said it: log one recitation"}
+                      onClick={(event) =>
+                        event.altKey ? undoRecite(line, dayKey) : recite(line, dayKey, "ritual")
+                      }
+                    >
+                      {said ? `✓${said > 1 ? said : ""}` : "✓"}
+                    </button>
+                  </li>
+                )
+              })}
+            </ol>
+            <div className="mr-affirm-tools">
+              <Button type="button" className="hpp-key-go gap-1.5 h-8" size="sm" onClick={() => setAffirmationsOpen(true)}>
+                <Mic className="h-3.5 w-3.5" />
+                Speak them
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="gap-1.5 h-8" onClick={shuffleAffirmations}>
+                <Shuffle className="h-3.5 w-3.5" />
+                Shuffle
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="gap-1.5 h-8" onClick={openAffirmationsList}>
+                <ListChecks className="h-3.5 w-3.5" />
+                Edit the list
+              </Button>
+            </div>
+          </>
+        )
+      case "todos":
+        return (
+          <>
+            <section className="space-y-2">
+              {todaysTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">There is nothing on your to do list for today yet.</p>
+              ) : (
+                <>
+                  <p className="mr-lede">Here is what is on your to do list for the day:</p>
+                  <ol className="list-decimal pl-5 space-y-1 text-sm">
+                    {todaysTasks.map((t) => (
+                      <li key={t.id}>{itemTitle(t)}</li>
+                    ))}
+                  </ol>
+                </>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Add any new items (notes: logged from text). Enter starts the next line. They join the list when you
+                move on.
+              </p>
+              <StringListEditor values={newTodoLines} onChange={setNewTodoLines} placeholder="New to-do…" enterAdvances />
+            </section>
+
+            {todaysTasks.length > 0 && (
+              <section className="space-y-2">
+                <Label className="font-semibold text-sm">Required — must be done today</Label>
+                <p className="text-xs text-muted-foreground">
+                  Absolutely non-negotiable. These sit on the Required list. Leave them unchecked to keep a task
+                  only assigned.
+                </p>
+                <CommitmentMarkList
+                  tasks={todaysTasks}
+                  requiredIds={requiredIds}
+                  marks="required"
+                  onToggle={(_kind, id) =>
+                    setRequiredIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+                  }
+                />
+              </section>
+            )}
+
+            {todaysTasks.length > 0 && (
+              <section className="space-y-2">
+                <Label className="font-semibold text-sm">3–5 highest priorities</Label>
+                <p className="text-xs text-muted-foreground">Pick up to five from today&apos;s list.</p>
+                <CommitmentMarkList
+                  tasks={todaysTasks}
+                  requiredIds={requiredIds}
+                  prioritizedIds={priorityIds}
+                  marks="prioritized"
+                  onToggle={(_kind, id) => togglePriority(id)}
+                />
+              </section>
+            )}
+          </>
+        )
+      case "habits":
+        return (
+          <>
+            <p className="mr-lede">
+              Optionally pick 1–3 habits to prioritize for the day (shown on Home → Habits). Leave blank for none.
+            </p>
+            {dailyHabits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No daily habits yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {dailyHabits.map((h) => (
+                  <label key={h.id} className="flex items-center gap-2 border bg-white/70 rounded-md p-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={priorityHabitIds.includes(h.id)}
+                      onChange={() => toggleHabitPriority(h.id)}
+                    />
+                    <span className="truncate flex-1">{h.name}</span>
+                    {priorityHabitIds.includes(h.id) && (
+                      <span className="text-xs text-muted-foreground shrink-0">#{priorityHabitIds.indexOf(h.id) + 1}</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
+          </>
+        )
+      case "walk":
+        return (
+          <>
+            <p className="mr-lede">
+              Tier, minutes, points, and today&apos;s importance, resistance, and excitement (0–10). A blank field keeps
+              what is stored. Type to replace it.
+            </p>
+            <div className="mr-walk-legend" aria-hidden>
+              <span>
+                <i className="mr-swatch is-stored" /> stored earlier
+              </span>
+              <span>
+                <i className="mr-swatch is-today" /> logged today
+              </span>
+              <span>
+                <i className="mr-swatch is-new" /> changing now
+              </span>
+            </div>
+            {todaysTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing on today&apos;s to-do list to walk through.</p>
+            ) : (
+              todaysTasks.map((t) => {
+                const form = todoWalkById[t.id] ?? emptyTodoWalkForm()
+                const changed = !isTodoWalkFormBlank(form)
+                const storedTier = getTierFromTask(t)
+                const ratedToday =
+                  t.dayRatings?.[dayKey] != null || latestResistance(t, dayKey)?.today === true
+                return (
+                  <div key={t.id} className="mr-walk-row" data-skipped={form.skipped ? "true" : undefined}>
+                    <div className="mr-walk-head">
+                      <p className="mr-walk-title">{itemTitle(t)}</p>
+                      {changed && !form.skipped ? (
+                        <span className="mr-walk-badge is-new">Updating</span>
+                      ) : ratedToday ? (
+                        <span className="mr-walk-badge">Logged today</span>
+                      ) : null}
+                      <label className="flex items-center gap-1.5 text-xs shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.skipped}
+                          onChange={(e) => patchWalk(t.id, { skipped: e.target.checked })}
+                        />
+                        Skip
+                      </label>
+                    </div>
+                    {!form.skipped && (
+                      <div className="mr-walk-grid">
+                        <label className="mr-slot" data-state={form.tier ? "new" : storedTier ? "stored" : "empty"}>
+                          <span className="mr-slot-label">
+                            Tier
+                            {form.tier ? (
+                              <button type="button" className="mr-slot-revert" onClick={() => patchWalk(t.id, { tier: "" })}>
+                                keep {storedTier}
+                              </button>
+                            ) : (
+                              <span className="mr-slot-state">stored</span>
+                            )}
+                          </span>
+                          <select
+                            className="mr-slot-field"
+                            aria-label="Tier"
+                            value={form.tier}
+                            onChange={(e) => patchWalk(t.id, { tier: e.target.value })}
+                          >
+                            <option value="">{storedTier ? `${storedTier} (keep)` : "— keep"}</option>
+                            {TODO_WALK_TIERS.map((tier) => (
+                              <option key={tier} value={tier}>
+                                {tier}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <WalkSlot
+                          label="Minutes"
+                          value={form.duration}
+                          stored={t.estimatedDuration != null ? { value: String(t.estimatedDuration), today: false } : null}
+                          onChange={(v) => patchWalk(t.id, { duration: v })}
+                        />
+                        <WalkSlot
+                          label="Points"
+                          value={form.points}
+                          stored={t.rewardValue != null ? { value: String(t.rewardValue), today: false } : null}
+                          onChange={(v) => patchWalk(t.id, { points: v })}
+                        />
+                        <WalkSlot
+                          label="Importance"
+                          value={form.importance}
+                          stored={latestDayRating(t, dayKey, "importance")}
+                          onChange={(v) => patchWalk(t.id, { importance: v })}
+                        />
+                        <WalkSlot
+                          label="Resistance"
+                          value={form.resistance}
+                          stored={latestResistance(t, dayKey)}
+                          onChange={(v) => patchWalk(t.id, { resistance: v })}
+                        />
+                        <WalkSlot
+                          label="Excitement"
+                          value={form.excitement}
+                          stored={latestDayRating(t, dayKey, "excitement")}
+                          onChange={(v) => patchWalk(t.id, { excitement: v })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </>
+        )
+      case "plan":
+        return (
+          <>
+            <p className="mr-lede">Appends today&apos;s Plan log on the Plan tab (same as submitting there). Leave blank to skip.</p>
+            <Textarea value={dayPlan} onChange={(e) => setDayPlan(e.target.value)} rows={8} placeholder="Write the day plan…" />
+          </>
+        )
+      case "circumstances":
+        return (
+          <>
+            <p className="mr-lede">Check what applies, then fill in.</p>
+            {(
+              [
+                ["mustDo", "Something I absolutely must do", mustDo, setMustDo],
+                ["mustNotDo", "Something I absolutely must not do", mustNotDo, setMustNotDo],
+                ["newEvents", "New events scheduled today", newEvents, setNewEvents],
+                ["excited", "Something I'm excited about", excitedAbout, setExcitedAbout],
+              ] as const
+            ).map(([key, label, value, setter]) => (
+              <div key={key} className="space-y-1.5 rounded-md border bg-white/70 p-2.5">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={circumstance[key]}
+                    onChange={(e) => setCircumstance((c) => ({ ...c, [key]: e.target.checked }))}
+                  />
+                  {label}
+                </label>
+                {circumstance[key] && <Textarea value={value} onChange={(e) => setter(e.target.value)} rows={2} autoFocus />}
+              </div>
+            ))}
+          </>
+        )
+      case "best":
+        return (
+          <>
+            <p className="mr-lede">Why is today going to be the best day ever?</p>
+            <Textarea value={bestDayWhy} onChange={(e) => setBestDayWhy(e.target.value)} rows={5} aria-label="Why is today going to be the best day ever?" />
+          </>
+        )
+      case "gratitude":
+        return (
+          <>
+            <p className="mr-lede">
+              10 things you are grateful for today. Enter moves to the next line.{" "}
+              <b>{gratitude.filter((g) => g.trim()).length}/10</b>
+            </p>
+            <StringListEditor values={gratitude} onChange={setGratitude} placeholder="Grateful for…" enterAdvances max={10} />
+          </>
+        )
+    }
+  })()
+
   return (
     <Dialog
       open={open}
@@ -767,7 +1383,7 @@ export function MorningReviewDialog({
       }}
     >
       <DialogContent
-        className="hpp95 hpp95-dialog sm:max-w-xl max-h-[88vh] overflow-hidden flex flex-col"
+        className="hpp95 hpp95-dialog sm:max-w-2xl h-[min(88vh,780px)] overflow-hidden flex flex-col"
         data-ui-name="Morning review"
         data-ui-docs="components/Reviews/README.md"
       >
@@ -812,380 +1428,16 @@ export function MorningReviewDialog({
           </div>
         </DialogHeader>
 
-        <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
-          {(carry.wakeReminder || carry.tomorrowMatters || carry.focusGoalIds.length > 0) && (
-            <section className="space-y-2 rounded-md border bg-muted/40 p-3" data-testid="morning-carry">
-              {carry.wakeReminder ? (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground">From last night</p>
-                  <p className="text-sm whitespace-pre-wrap">{carry.wakeReminder}</p>
-                </div>
-              ) : null}
-              {carry.tomorrowMatters ? (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground">What matters most today</p>
-                  <p className="text-sm whitespace-pre-wrap">{carry.tomorrowMatters}</p>
-                </div>
-              ) : null}
-              {carry.focusGoalIds.length > 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Focus:{" "}
-                  {carry.focusGoalIds
-                    .map((id) => goals.find((goal) => goal.id === id)?.title)
-                    .filter(Boolean)
-                    .join(", ")}
-                </p>
-              ) : null}
-            </section>
-          )}
-          <label className="flex items-start gap-2 rounded-md border p-3 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4"
-              checked={allNighter}
-              onChange={(e) => setAllNighterLocal(e.target.checked)}
-            />
-            <span>
-              <span className="font-semibold">All nighter</span>
-              <span className="block text-xs text-muted-foreground mt-0.5">
-                I did not sleep. Habits with an all-nighter block are exempt: the evening before for the night you stayed up, and this morning for the ones set to the morning of. Edit each block on the habit.
-              </span>
-              {allNighterLifts.length === 0 ? (
-                <span className="block text-xs text-muted-foreground mt-1">
-                  No habit has an all-nighter block yet. Add one in that habit’s settings.
-                </span>
-              ) : (
-                <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-                  {allNighterLifts.map((row) => (
-                    <li key={`${row.name}-${row.day}`}>
-                      {row.name} — {row.day === "evening-before" ? "the evening before this night" : "this morning"}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </span>
-          </label>
-
-          {!allNighter && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="font-semibold text-sm" htmlFor="morning-bedtime">
-                      Fell asleep
-                    </Label>
-                    {bedEstSource ? (
-                      <span
-                        className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
-                        title={sleepClockEstimateBasis(bedEstSource, "asleep")}
-                      >
-                        est.
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className={bedEstSource ? "flex items-center gap-1.5" : undefined}>
-                    {bedEstSource ? <span className="text-sm font-bold text-slate-600" aria-hidden>~</span> : null}
-                    <ClockPicker
-                      id="morning-bedtime"
-                      value={bedTime}
-                      onChange={(v) => {
-                        setBedEstSource(null)
-                        setBedTime(v)
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="font-semibold text-sm" htmlFor="morning-waketime">
-                      Wake time
-                    </Label>
-                    {wakeEstSource ? (
-                      <span
-                        className="trk-est inline-flex items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
-                        title={sleepClockEstimateBasis(wakeEstSource, "awake")}
-                      >
-                        est.
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className={wakeEstSource ? "flex items-center gap-1.5" : undefined}>
-                    {wakeEstSource ? <span className="text-sm font-bold text-slate-600" aria-hidden>~</span> : null}
-                    <ClockPicker
-                      id="morning-waketime"
-                      value={wakeTime}
-                      onChange={(v) => {
-                        setWakeEstSource(null)
-                        setWakeTime(v)
-                      }}
-                    />
-                  </div>
-                </div>
-                <p className="col-span-2 -mt-1 text-xs text-muted-foreground">{nightSummary}</p>
-              </div>
-
-              <section className="space-y-2">
-                <Label className="font-semibold text-sm flex items-center gap-1">
-                  <Moon className="h-4 w-4" />
-                  Dream journal
-                </Label>
-                <Textarea
-                  value={dream}
-                  onChange={(e) => setDream(e.target.value)}
-                  rows={2}
-                  placeholder="Anything you remember…"
-                />
-              </section>
-            </>
-          )}
-
-          {allNighter && <p className="text-xs text-muted-foreground">{nightSummary}</p>}
-
-          <section className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="font-semibold text-sm flex items-center gap-1">
-                <Sparkles className="h-4 w-4" />
-                Affirmations
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 h-8"
-                onClick={() => setAffirmationsOpen(true)}
-              >
-                <Mic className="h-3.5 w-3.5" />
-                Speak them
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Five lines picked at random from your Lists → {AFFIRMATIONS_LIST_NAME} list.
-            </p>
-            <ol className="list-decimal pl-5 space-y-1 text-sm">
-              {(affirmations.length ? affirmations : sessionAffirmations).map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ol>
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">To do for today</Label>
-            {todaysTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">There is nothing on your to do list for today yet.</p>
-            ) : (
-              <>
-                <p className="text-xs text-muted-foreground">Here is what is on your to do list for the day:</p>
-                <ol className="list-decimal pl-5 space-y-1 text-sm">
-                  {todaysTasks.map((t) => (
-                    <li key={t.id}>{itemTitle(t)}</li>
-                  ))}
-                </ol>
-              </>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Add any new items (notes: logged from text). Leave blank to skip.
-            </p>
-            <StringListEditor values={newTodoLines} onChange={setNewTodoLines} placeholder="New to-do…" />
-          </section>
-
-          {todaysTasks.length > 0 && (
-            <section className="space-y-2">
-              <Label className="font-semibold text-sm">Required — must be done today</Label>
-              <p className="text-xs text-muted-foreground">
-                Absolutely non-negotiable. These sit on the Required list. Leave them unchecked to keep a task
-                only assigned.
-              </p>
-              <CommitmentMarkList
-                tasks={todaysTasks}
-                requiredIds={requiredIds}
-                marks="required"
-                onToggle={(_kind, id) =>
-                  setRequiredIds((ids) =>
-                    ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
-                  )
-                }
-              />
-            </section>
-          )}
-
-          {(todaysTasks.length > 0 || newTodoLines.some((l) => l.trim())) && (
-            <section className="space-y-2">
-              <Label className="font-semibold text-sm">3–5 highest priorities</Label>
-              <p className="text-xs text-muted-foreground">
-                Pick up to five from today&apos;s list (new items appear after save — select existing ones now).
-              </p>
-              <CommitmentMarkList
-                tasks={todaysTasks}
-                requiredIds={requiredIds}
-                prioritizedIds={priorityIds}
-                marks="prioritized"
-                onToggle={(_kind, id) => togglePriority(id)}
-              />
-            </section>
-          )}
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Daily habit priorities</Label>
-            <p className="text-xs text-muted-foreground">
-              Optionally pick 1–3 habits to prioritize for the day (shown on Home → Habits). Leave blank for none.
-            </p>
-            {dailyHabits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No daily habits yet.</p>
-            ) : (
-              <div className="space-y-1">
-                {dailyHabits.map((h) => (
-                  <label
-                    key={h.id}
-                    className="flex items-center gap-2 border rounded-md p-2 text-sm cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={priorityHabitIds.includes(h.id)}
-                      onChange={() => toggleHabitPriority(h.id)}
-                    />
-                    <span className="truncate flex-1">{h.name}</span>
-                    {priorityHabitIds.includes(h.id) && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        #{priorityHabitIds.indexOf(h.id) + 1}
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-3">
-            <Label className="font-semibold text-sm">Go through to do list</Label>
-            <p className="text-xs text-muted-foreground">
-              For each item: tier, expected duration (minutes), points, importance (1–10 for today), resistance
-              (1–10, recorded each time), excitement (1–10 for today). Leave a field blank or &quot;-&quot; to keep
-              the existing value. Skip leaves every field untouched.
-            </p>
-            {todaysTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing on today&apos;s to-do list to walk through.</p>
-            ) : (
-              todaysTasks.map((t) => {
-                const form = todoWalkById[t.id] ?? emptyTodoWalkForm()
-                const dayRating = t.dayRatings?.[dayKey]
-                return (
-                  <div key={t.id} className="rounded-md border p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-medium">{itemTitle(t)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          current: tier {getTierFromTask(t)} · duration{" "}
-                          {t.estimatedDuration != null ? `${t.estimatedDuration}m` : "—"} · points{" "}
-                          {t.rewardValue != null ? t.rewardValue : "—"}
-                          {dayRating?.importance != null ? ` · importance ${dayRating.importance}` : ""}
-                          {dayRating?.excitement != null ? ` · excitement ${dayRating.excitement}` : ""}
-                          {(t.resistanceReadings?.length ?? 0) > 0
-                            ? ` · resistance readings ${t.resistanceReadings!.length}`
-                            : ""}
-                        </p>
-                      </div>
-                      <label className="flex items-center gap-1.5 text-xs shrink-0 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.skipped}
-                          onChange={(e) => patchWalk(t.id, { skipped: e.target.checked })}
-                        />
-                        Skip
-                      </label>
-                    </div>
-                    {!form.skipped && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Tier</Label>
-                          <select
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-                            value={form.tier}
-                            onChange={(e) => patchWalk(t.id, { tier: e.target.value })}
-                          >
-                            <option value="">— keep</option>
-                            {TODO_WALK_TIERS.map((tier) => (
-                              <option key={tier} value={tier}>
-                                {tier}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        {(
-                          [
-                            ["duration", "Duration (min)", form.duration],
-                            ["points", "Points", form.points],
-                            ["importance", "Importance 1–10", form.importance],
-                            ["resistance", "Resistance 1–10", form.resistance],
-                            ["excitement", "Excitement 1–10", form.excitement],
-                          ] as const
-                        ).map(([key, label, value]) => (
-                          <div key={key} className="space-y-1">
-                            <Label className="text-xs">{label}</Label>
-                            <Input
-                              value={value}
-                              onChange={(e) => patchWalk(t.id, { [key]: e.target.value })}
-                              placeholder="—"
-                              inputMode="numeric"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Plaintext day plan</Label>
-            <p className="text-xs text-muted-foreground">
-              Appends today&apos;s Plan log on the Plan tab (same as submitting there). Leave blank to skip.
-            </p>
-            <Textarea
-              value={dayPlan}
-              onChange={(e) => setDayPlan(e.target.value)}
-              rows={3}
-              placeholder="Write the day plan…"
-            />
-          </section>
-
-          <section className="space-y-3">
-            <Label className="font-semibold text-sm">Circumstances</Label>
-            <p className="text-xs text-muted-foreground">Check what applies, then fill in:</p>
-            {(
-              [
-                ["mustDo", "1. Something I absolutely must do", mustDo, setMustDo],
-                ["mustNotDo", "2. Something I absolutely must not do", mustNotDo, setMustNotDo],
-                ["newEvents", "3. New events scheduled today", newEvents, setNewEvents],
-                ["excited", "4. Something I'm excited about", excitedAbout, setExcitedAbout],
-              ] as const
-            ).map(([key, label, value, setter]) => (
-              <div key={key} className="space-y-1.5">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={circumstance[key]}
-                    onChange={(e) => setCircumstance((c) => ({ ...c, [key]: e.target.checked }))}
-                  />
-                  {label}
-                </label>
-                {circumstance[key] && (
-                  <Textarea value={value} onChange={(e) => setter(e.target.value)} rows={2} />
-                )}
-              </div>
-            ))}
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Why is today going to be the best day ever?</Label>
-            <Textarea value={bestDayWhy} onChange={(e) => setBestDayWhy(e.target.value)} rows={2} />
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">10 things you are grateful for today</Label>
-            <StringListEditor values={gratitude} onChange={setGratitude} placeholder="Grateful for…" />
-          </section>
+        <div className="hpp-body flex-1 min-h-0">
+          <RitualStepper
+            steps={steps}
+            index={step}
+            onStep={goStep}
+            finishLabel="Finish"
+            onFinish={() => commitMorning(true)}
+          >
+            {stepBody}
+          </RitualStepper>
         </div>
 
         <div className="hpp-actions flex-wrap">
@@ -1203,7 +1455,9 @@ export function MorningReviewDialog({
       </DialogContent>
 
       <AffirmationsDialog
+        dayKey={dayKey}
         open={affirmationsOpen}
+        lines={shownAffirmations}
         onClose={() => {
           setAffirmationsOpen(false)
           if (sessionAffirmations.length) {
