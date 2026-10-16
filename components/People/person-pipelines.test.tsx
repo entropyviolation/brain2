@@ -7,6 +7,7 @@ import { PERSON_TYPE_ID } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
+import { subscribePenSettings } from "@/components/Home/Tracking/open-pen-settings"
 
 describe("PersonPipelinesEditor", () => {
   beforeEach(() => {
@@ -105,5 +106,24 @@ describe("PersonPipelinesEditor", () => {
     render(<PersonPipelinesEditor mode="entry" entryId="block-1" />)
     expect(screen.getByTestId("company-block-person")).toHaveTextContent("Ada")
     expect(screen.queryByLabelText("Person to attach")).not.toBeInTheDocument()
+  })
+
+  it("double-clicking a joined pen's color or name opens its pen settings", () => {
+    const listId = ensurePeopleIKnowList()
+    const person = {
+      ...createListItem("Ada", [listId]),
+      id: "ada",
+      type: PERSON_TYPE_ID,
+      personPipelines: [{ id: "pp", kind: "company-pen" as const, penId: "co-together" }],
+    }
+    const opened: string[] = []
+    const stop = subscribePenSettings((target) => opened.push(`${target.scopeId}:${target.penId}`))
+    render(<PersonPipelinesEditor mode="person" person={person} onChange={vi.fn()} />)
+    const label = document.querySelector('.person-pipelines-label[data-opens-pen="true"]')
+    expect(label).not.toBeNull()
+    fireEvent.doubleClick(label!)
+    fireEvent.doubleClick(document.querySelector('.person-pipelines-swatch[data-opens-pen="true"]')!)
+    stop()
+    expect(opened).toEqual(["company:co-together", "company:co-together"])
   })
 })

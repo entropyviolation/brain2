@@ -69,3 +69,13 @@
   width: 100%;
   font-size: 13px;
 }
+
+/* Double-click opens pen settings (open-pen-settings.ts). */
+.person-pipelines-swatch[data-opens-pen="true"],
+.person-pipelines-label[data-opens-pen="true"] {
+  cursor: pointer;
+}
+
+.person-pipelines-label[data-opens-pen="true"]:hover {
+  text-decoration: underline dotted;
+}
