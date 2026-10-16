@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -15,6 +15,11 @@ import { searchCities } from "@/lib/city-search"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { writeAliasedLocal } from "@/lib/storage-keys"
 import "./home-chrome.css"
+
+vi.mock("@/components/Reviews/RitualWalkDialog", () => ({
+  RitualWalkDialog: ({ placement }: { placement: { title: string } | null }) =>
+    placement ? <div role="dialog" aria-label="Rite">{placement.title}</div> : null,
+}))
 import "@/components/Home/Habits/habit-chrome.css"
 
 const HOME_WX = {
@@ -401,12 +406,14 @@ describe("HomeOverview", () => {
   it("keeps Open and Dismiss on the rituals square", async () => {
     const user = userEvent.setup()
     const onStartReview = vi.fn()
-    render(<HomeOverview currentDate={currentDate} onStartReview={onStartReview} />)
-    expect(screen.getByText("Rituals due")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /^Open$/ }))
-    expect(onStartReview).toHaveBeenCalledOnce()
-    await user.click(screen.getByRole("button", { name: "Dismiss" }))
-    expect(screen.queryByText("Rituals due")).not.toBeInTheDocument()
+    const { container } = render(<HomeOverview currentDate={currentDate} onStartReview={onStartReview} />)
+    const square = container.querySelector('[data-widget="review"]') as HTMLElement
+    expect(square).toBeInTheDocument()
+    await user.click(within(square).getByRole("button", { name: /^Open$/ }))
+    expect(await screen.findByRole("dialog", { name: "Rite" })).toBeInTheDocument()
+    expect(onStartReview).not.toHaveBeenCalled()
+    await user.click(within(square).getByRole("button", { name: "Dismiss" }))
+    expect(container.querySelector('[data-widget="review"]')).not.toBeInTheDocument()
   })
 
   it("opens a points breakdown and a progress detail", async () => {

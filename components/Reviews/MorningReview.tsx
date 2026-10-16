@@ -1154,9 +1154,9 @@ export function MorningReviewDialog({
 
             {todaysTasks.length > 0 && (
               <section className="space-y-2">
-                <Label className="font-semibold text-sm">Required — must be done today</Label>
+                <Label className="font-semibold text-sm">Required today</Label>
                 <p className="text-xs text-muted-foreground">
-                  Absolutely non-negotiable. These sit on the Required list. Leave them unchecked to keep a task
+                  These sit on the Required list. Leave them unchecked to keep a task
                   only assigned.
                 </p>
                 <CommitmentMarkList
@@ -1335,7 +1335,6 @@ export function MorningReviewDialog({
             <p className="mr-lede">Check what applies, then fill in.</p>
             {(
               [
-                ["mustDo", "Something I absolutely must do", mustDo, setMustDo],
                 ["mustNotDo", "Something I absolutely must not do", mustNotDo, setMustNotDo],
                 ["newEvents", "New events scheduled today", newEvents, setNewEvents],
                 ["excited", "Something I'm excited about", excitedAbout, setExcitedAbout],

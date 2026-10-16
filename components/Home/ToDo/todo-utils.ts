@@ -27,6 +27,7 @@ import {
 import type { CompletionStatus, PriorityWeights, Task, TaskCompletionReview, Folder, TodoItem } from "@/lib/types"
 import { isAvailableNow } from "@/lib/available-tasks"
 import { computePriorityScore } from "@/lib/priority"
+import { unlockContextFor, urgencyFloorForDue } from "@/lib/unlock-value"
 import { effectiveStatus, getTaskCompletionDate, isAvailable, isClearedFromWork, isMissed, isOpen, isPartial } from "@/lib/completion-status"
 import { tasksCompletedInPeriod, tasksUndoneForPeriod } from "@/lib/period-ledger"
 import {
@@ -354,30 +355,78 @@ function compareSortValues(a: number | string, b: number | string, order: TodoSo
   return 0
 }
 
+export interface PriorityUnlockOptions {
+  /** Reference time for inherited due dates. */
+  now?: Date
+  /** Task ids marked Required or Prioritized this period; they count as full value. */
+  markedIds?: ReadonlySet<string>
+}
+
 /**
  * Re-order a TodoItem list by the transparent priority formula (lib/priority.ts),
  * resolving each item back to its underlying Task for the signal values. Stable
  * for ties. Items whose task can't be found sort last. Pure (no React/store).
+ *
+ * Phase 14: `tasks` is the whole task list, so what waits on a row counts even
+ * when the waiting task is not on this list. Unlock value and an inherited due
+ * date join the score (`lib/unlock-value.ts`); a row with nothing waiting scores
+ * as before. Then an open prerequisite on the list moves above the first row
+ * that waits on it (`blockersFirst`).
  */
 export function sortTodosByPriority(
   todos: TodoItem[],
   tasks: Task[],
   weights: PriorityWeights,
   order: TodoSortOrder = "desc",
+  opts: PriorityUnlockOptions = {},
 ): TodoItem[] {
   const byId = new Map(tasks.map((t) => [t.id, t]))
+  const now = opts.now ?? new Date()
+  const unlock = unlockContextFor(tasks, { markedIds: opts.markedIds, now })
   const dir = order === "asc" ? 1 : -1
-  return todos
+  const sorted = todos
     .map((todo, index) => {
       const task = byId.get(todo.taskId ?? todo.id)
+      const ctx = task ? unlock.get(task.id) : undefined
+      const context = ctx
+        ? { unlocks: ctx.unlocks, urgencyFloor: ctx.inherited ? urgencyFloorForDue(ctx.inherited.due, now) : undefined }
+        : undefined
       return {
         todo,
         index,
-        score: task ? computePriorityScore(task, weights) : order === "asc" ? Infinity : -Infinity,
+        score: task ? computePriorityScore(task, weights, context) : order === "asc" ? Infinity : -Infinity,
       }
     })
     .sort((a, b) => (a.score - b.score) * dir || a.index - b.index)
     .map((x) => x.todo)
+  return blockersFirst(sorted, tasks)
+}
+
+/**
+ * Move each open prerequisite that is on the list to just above the first row
+ * waiting on it (through chains too). Rows with no prerequisites on the list
+ * keep their order. Pure.
+ */
+export function blockersFirst(todos: readonly TodoItem[], tasks: readonly Task[]): TodoItem[] {
+  const byId = new Map(tasks.map((t) => [t.id, t]))
+  const rowOf = new Map<string, TodoItem[]>()
+  for (const todo of todos) {
+    const id = todo.taskId ?? todo.id
+    rowOf.set(id, [...(rowOf.get(id) ?? []), todo])
+  }
+  const placed = new Set<string>()
+  const out: TodoItem[] = []
+  const place = (id: string) => {
+    if (placed.has(id)) return
+    placed.add(id)
+    for (const dep of byId.get(id)?.dependencies ?? []) {
+      const blocker = byId.get(dep)
+      if (rowOf.has(dep) && blocker && !isClearedFromWork(blocker)) place(dep)
+    }
+    out.push(...(rowOf.get(id) ?? []))
+  }
+  for (const todo of todos) place(todo.taskId ?? todo.id)
+  return out
 }
 
 /**
@@ -405,11 +454,11 @@ export function sortTodos(
     period: TodoPeriod
     tasks: Task[]
     weights: PriorityWeights
-  },
+  } & PriorityUnlockOptions,
 ): TodoItem[] {
   const { mode, order, period, tasks, weights } = opts
   if (mode === "priority") {
-    return sortTodosByPriority(todos, tasks, weights, order)
+    return sortTodosByPriority(todos, tasks, weights, order, { now: opts.now, markedIds: opts.markedIds })
   }
 
   const pushedKey = pushedKeyForPeriod(period)
@@ -780,11 +829,11 @@ export function getTodoMissedTitle(period: TodoPeriod, refDate: Date, now: Date 
   const current = isCurrentPeriod(period, refDate, now)
   switch (period) {
     case "day":
-      return current ? "Missed opportunities today" : `Missed ${format(refDate, "MMM d")}`
+      return current ? "Missed opportunities today" : `Missed opportunities ${format(refDate, "MMM d")}`
     case "week":
-      return current ? "Missed this week" : "Missed that week"
+      return current ? "Missed opportunities this week" : "Missed opportunities that week"
     case "month":
-      return current ? "Missed this month" : `Missed ${format(refDate, "MMMM yyyy")}`
+      return current ? "Missed opportunities this month" : `Missed opportunities ${format(refDate, "MMMM yyyy")}`
     default:
       return "Missed opportunities"
   }

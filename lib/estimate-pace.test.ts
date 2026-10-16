@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { paceFor, paceForTask, paceGhostLabel, paceKey, paceSamples } from "./estimate-pace"
-import type { SessionPlan } from "./session-plan"
-import type { Subtask } from "./types"
+import { paddedLabel, paceFor, paceForTask, paceGhostLabel, paceKey, paceSamples, sessionPaceFactor } from "./estimate-pace"
+import { emptySession, type SessionPlan } from "./session-plan"
+import type { Subtask, Task } from "./types"
 
 const done = (id: string, est: number, actual: number): Subtask => ({
   id,
@@ -48,5 +48,22 @@ describe("estimate-pace", () => {
   it("ghost words show from 1.2", () => {
     expect(paceGhostLabel(1.19)).toBeNull()
     expect(paceGhostLabel(2.4)).toBe("usually ×2.4 for you")
+  })
+
+  it("Padded for you weights each line by its minutes at its own task's pace", () => {
+    const samples = paceSamples(tasks)
+    const plan = emptySession(new Date("2026-10-16T09:00:00Z"), 120)
+    const work = [
+      { id: "p", title: "pen task", penLinks: [{ penId: "cd" }], estimatedDuration: 30 },
+      { id: "q", title: "plain", estimatedDuration: 10 },
+    ] as unknown as Task[]
+    plan.tiers.min = [{ id: "l1", taskId: "p" }]
+    plan.tiers.goal = [{ id: "l2", taskId: "q" }]
+    // (30 × 2.25 + 10 × 2) / 40
+    expect(sessionPaceFactor(plan, work, samples)).toBeCloseTo(2.1875)
+    expect(sessionPaceFactor(plan, work, [])).toBe(1)
+    expect(sessionPaceFactor(emptySession(), work, samples)).toBe(1)
+    expect(paddedLabel(1.6)).toBe("padded for you ×1.6")
+    expect(paddedLabel(1)).toBeNull()
   })
 })

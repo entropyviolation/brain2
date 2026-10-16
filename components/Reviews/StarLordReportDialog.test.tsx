@@ -14,6 +14,7 @@ describe("Star Lord Report dialog", () => {
     useStarLordStore.setState({ reports: [] })
     usePointsStore.setState({ pointsHistory: [] })
     useUserSettingsStore.setState({ ritualSectionPoints: 10, ritualCompletionBonus: 30 })
+    localStorage.clear()
   })
 
   it("saves a new-moon report and awards a section plus the bonus", async () => {
@@ -24,9 +25,12 @@ describe("Star Lord Report dialog", () => {
     expect(screen.getByRole("dialog")).toHaveAttribute("data-ui-name", "Star Lord Report")
     expect(screen.getByText("Emptying the vessel")).toBeInTheDocument()
     expect(screen.getByText(/At home, in a quiet room/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/old patterns that clutter my spirit/i)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Go to Inner alchemy/ }))
     expect(screen.getByLabelText(/foundational energy/i)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Go to Closing/ }))
     expect(screen.getByText(/May my actions flow like water/)).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Go to The ledger/ }))
+    expect(screen.getByLabelText(/old patterns that clutter my spirit/i)).toBeInTheDocument()
 
     await user.type(screen.getByLabelText(/old patterns/i), "a crowded desk")
     await user.click(screen.getByRole("button", { name: "Save Star Lord Report" }))

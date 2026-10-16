@@ -14,7 +14,11 @@
  * - the tier reached scores with the house completion-tier points;
  * - a running session can be parked and resumed later, keeping its line and
  *   the time it had left (`parkSession`, `resumeParked`), and only one runs at
- *   a time (`admitSession`).
+ *   a time (`admitSession`);
+ * - slice H2: a `"timebox"` shape whose Bare minimum is the clock itself
+ *   (Just 25), templates, break lines every N minutes, a note to
+ *   tomorrow-you (`futureNote`), a Hofstadter mark on the fit gauge, and one
+ *   Bare-minimum floor suggestion (`floorSuggestion`).
  *
  * Pure. The store is `lib/session-plan-store.ts`.
  */
@@ -24,6 +28,7 @@ import { findPlacedStep, pickStartStep, placeSteps, type StartPick } from "@/lib
 import { isStepAvailable } from "@/lib/prereqs"
 import { hasUnmetDependencies } from "@/lib/available-tasks"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { HOFSTADTER_PADDING } from "@/lib/todo-commitment"
 
 export type SessionTier = "min" | "goal" | "exceptional"
 
@@ -34,6 +39,20 @@ export const SESSION_TIERS: { id: SessionTier; label: string }[] = [
 ]
 
 export const SESSION_DURATION_PRESETS = [30, 60, 120, 180] as const
+/** Lengths offered for a timebox (Just 25). */
+export const TIMEBOX_DURATION_PRESETS = [10, 25, 50] as const
+/** Break-line spacing offered in the draft (minutes). */
+export const BREAK_EVERY_PRESETS = [25, 50, 90] as const
+export const DEFAULT_BREAK_MIN = 5
+
+/** `lines` (default): tiers of lines. `timebox`: the clock is the commitment, lines optional. */
+export type SessionShape = "lines" | "timebox"
+
+/** One optional line left for the next sitting, with when it was written. */
+export interface FutureNote {
+  text: string
+  at: string
+}
 
 export interface SessionLine {
   id: string
@@ -81,6 +100,31 @@ export interface SessionPlan {
   paint?: boolean
   /** ISO, when the session was parked. */
   parkedAt?: string
+  /** Absent = `"lines"`. */
+  shape?: SessionShape
+  /** Note to tomorrow-you, asked at Park and at End (FN-1). */
+  futureNote?: FutureNote
+  /** A break line every N minutes of clock; absent = none. */
+  breakEvery?: number
+  /** Minutes per break (default 5). */
+  breakMin?: number
+  /** Breaks taken or skipped so far. */
+  breaksTaken?: number
+}
+
+export function isTimebox(plan: Pick<SessionPlan, "shape">): boolean {
+  return plan.shape === "timebox"
+}
+
+/** Set or clear the note to tomorrow-you. Blank clears it. */
+export function withFutureNote(plan: SessionPlan, text: string | undefined, now = new Date()): SessionPlan {
+  const trimmed = text?.trim()
+  if (!trimmed) {
+    const { futureNote: _drop, ...rest } = plan
+    return rest
+  }
+  if (plan.futureNote?.text === trimmed) return plan
+  return { ...plan, futureNote: { text: trimmed, at: now.toISOString() } }
 }
 
 function rid(prefix: string): string {
@@ -342,8 +386,17 @@ export interface TierFit {
   /** Open lowest-level pieces in the tier with no estimate. */
   unestimated: number
   band: FitBand
-  /** Cumulative × pace ÷ duration. */
+  /** Cumulative × pace ÷ the time left after breaks. */
   ratio: number
+  /** The same with Hofstadter's ×2 on top: where the load strip's needle would sit. */
+  padded: number
+}
+
+/** Minutes of break lines inside the session (one every `breakEvery`, none at the very end). */
+export function breakMinutes(plan: Pick<SessionPlan, "durationMin" | "breakEvery" | "breakMin">): number {
+  if (!plan.breakEvery || plan.breakEvery <= 0 || plan.durationMin <= 0) return 0
+  const count = Math.max(0, Math.ceil(plan.durationMin / plan.breakEvery) - 1)
+  return count * (plan.breakMin ?? DEFAULT_BREAK_MIN)
 }
 
 /**
@@ -353,11 +406,12 @@ export interface TierFit {
  */
 export function sessionFit(plan: SessionPlan, tasks: readonly Task[], pace = 1): TierFit[] {
   let running = 0
+  const room = Math.max(0, plan.durationMin - breakMinutes(plan))
   return SESSION_TIERS.map(({ id }) => {
     const lines = plan.tiers[id]
     const minutes = lines.reduce((total, line) => total + lineMinutes(line, tasks), 0)
     running += minutes
-    const ratio = plan.durationMin > 0 ? (running * pace) / plan.durationMin : 0
+    const ratio = room > 0 ? (running * pace) / room : running > 0 ? Infinity : 0
     return {
       tier: id,
       minutes,
@@ -365,6 +419,7 @@ export function sessionFit(plan: SessionPlan, tasks: readonly Task[], pace = 1):
       unestimated: lines.reduce((total, line) => total + lineUnestimated(line, tasks), 0),
       band: ratio <= 0.85 ? "fits" : ratio <= 1 ? "tight" : "over",
       ratio,
+      padded: ratio * HOFSTADTER_PADDING,
     }
   })
 }
@@ -392,6 +447,8 @@ export function sessionPace(history: readonly SessionPlan[]): number {
 /** Why Start is not allowed yet, or null when it is. */
 export function cannotStartReason(plan: SessionPlan, tasks: readonly Task[]): string | null {
   if (plan.durationMin <= 0) return "Set how long the session is."
+  // A timebox is the clock: lines are optional, and any estimate gap is fine.
+  if (isTimebox(plan)) return null
   const min = plan.tiers.min.filter((line) => !lineIsDone(line, tasks))
   if (min.length === 0) return "Put at least one thing in Bare minimum."
   const bare = min.filter((line) => lineMinutes(line, tasks) === 0)
@@ -460,10 +517,11 @@ export function resumeSession(plan: SessionPlan, now = new Date()): SessionPlan 
 export const PARK_STALE_MS = 24 * 60 * 60 * 1000
 
 /** Put a running session down: the clock stops, the current line is remembered. */
-export function parkSession(plan: SessionPlan, now = new Date()): SessionPlan {
+export function parkSession(plan: SessionPlan, now = new Date(), futureNote?: string): SessionPlan {
   if (plan.phase !== "run") return plan
   const paused = pauseSession(plan, now)
-  return { ...paused, phase: "parked", parkedAt: now.toISOString(), activeSince: undefined }
+  const parked: SessionPlan = { ...paused, phase: "parked", parkedAt: now.toISOString(), activeSince: undefined }
+  return futureNote === undefined ? parked : withFutureNote(parked, futureNote, now)
 }
 
 /** Parked more than a day: resume asks whether to keep the clock. */
@@ -538,7 +596,16 @@ export function runAgain(plan: SessionPlan, now = new Date()): SessionPlan {
   for (const { id } of SESSION_TIERS) {
     tiers[id] = plan.tiers[id].map((line) => ({ id: rid("sl"), taskId: line.taskId, ...(line.stepId ? { stepId: line.stepId } : {}) }))
   }
-  return { ...base, title: plan.title, tiers, ...(plan.paint ? { paint: true } : {}) }
+  return {
+    ...base,
+    title: plan.title,
+    tiers,
+    ...(plan.paint ? { paint: true } : {}),
+    ...(plan.shape ? { shape: plan.shape } : {}),
+    ...(plan.breakEvery ? { breakEvery: plan.breakEvery, ...(plan.breakMin ? { breakMin: plan.breakMin } : {}) } : {}),
+    // Carried over with its own date, so the draft can say when it was written.
+    ...(plan.futureNote ? { futureNote: plan.futureNote } : {}),
+  }
 }
 
 /** Add minutes to the time box (+15 by default). */
@@ -603,7 +670,8 @@ export function lineSeconds(plan: SessionPlan, line: SessionLine, now = new Date
 }
 
 /** The highest tier whose lines (and every lower tier's) are all done. */
-export function tierReached(plan: SessionPlan, tasks: readonly Task[]): SessionTier | "none" {
+export function tierReached(plan: SessionPlan, tasks: readonly Task[], now = new Date()): SessionTier | "none" {
+  if (isTimebox(plan)) return timeboxReached(plan, tasks, now)
   let reached: SessionTier | "none" = "none"
   for (const { id } of SESSION_TIERS) {
     const lines = plan.tiers[id]
@@ -615,6 +683,19 @@ export function tierReached(plan: SessionPlan, tasks: readonly Task[]): SessionT
     else break
   }
   return reached
+}
+
+/**
+ * A timebox's Bare minimum is time given: the clock ran out with you on it,
+ * whatever got done ("showed up"). Goal and Exceptional are still lines:
+ * every Bare-minimum and Goal line done reaches Goal, then Exceptional's.
+ */
+function timeboxReached(plan: SessionPlan, tasks: readonly Task[], now: Date): SessionTier | "none" {
+  if (!plan.clock || remainingSec(plan, now) > 0) return "none"
+  const goal = [...plan.tiers.min, ...plan.tiers.goal]
+  if (goal.length === 0 || !goal.every((line) => lineIsDone(line, tasks))) return "min"
+  const exc = plan.tiers.exceptional
+  return exc.length && exc.every((line) => lineIsDone(line, tasks)) ? "exceptional" : "goal"
 }
 
 export interface TierPoints {
@@ -640,7 +721,7 @@ export function endSession(plan: SessionPlan, tasks: readonly Task[], now = new 
     activeLineId: undefined,
     activeSince: undefined,
     clock: committed.clock ? { running: false, baseSec: remainingSec(plan, now) } : null,
-    reachedTier: tierReached(committed, tasks),
+    reachedTier: tierReached(committed, tasks, now),
   }
 }
 
@@ -649,15 +730,23 @@ export function setLineOutcome(plan: SessionPlan, lineId: string, outcome: Sessi
 }
 
 /** Close the review: the session is history. */
-export function closeSession(plan: SessionPlan, tasks: readonly Task[], amounts: TierPoints, note?: string): SessionPlan {
-  const reached = tierReached(plan, tasks)
-  return {
+export function closeSession(
+  plan: SessionPlan,
+  tasks: readonly Task[],
+  amounts: TierPoints,
+  note?: string,
+  futureNote?: string,
+  now = new Date(),
+): SessionPlan {
+  const reached = tierReached(plan, tasks, now)
+  const closed: SessionPlan = {
     ...plan,
     phase: "done",
     reachedTier: reached,
     points: sessionPoints(reached, amounts),
     ...(note?.trim() ? { note: note.trim() } : {}),
   }
+  return futureNote === undefined ? closed : withFutureNote(closed, futureNote, now)
 }
 
 /** Unfinished lines the review marked **Keep for next session**, as fresh draft refs. */
@@ -745,4 +834,137 @@ export function sessionTimeLogs(plan: SessionPlan, tasks: readonly Task[]): { ta
     })
   }
   return out
+}
+
+// ---- Breaks (interstitials) ---------------------------------------------------
+
+/** Minutes of clock used so far (duration minus what is left). */
+export function elapsedMin(plan: SessionPlan, now = new Date()): number {
+  if (!plan.clock) return 0
+  return Math.max(0, plan.durationMin - remainingSec(plan, now) / 60)
+}
+
+/** A break line is due: `breakEvery` more minutes ran since the last one, and the session is not at its end. */
+export function breakDue(plan: SessionPlan, now = new Date()): boolean {
+  if (plan.phase !== "run" || !plan.breakEvery || plan.breakEvery <= 0) return false
+  const next = ((plan.breaksTaken ?? 0) + 1) * plan.breakEvery
+  return next < plan.durationMin && elapsedMin(plan, now) >= next
+}
+
+/**
+ * Take the due break or skip it. Breaks sit inside the time box (the fit
+ * gauge already set their minutes aside), so taking one keeps the clock going
+ * and lets go of the current line: no line collects break time. Either way it
+ * is counted, so the next one is `breakEvery` later.
+ */
+export function settleBreak(plan: SessionPlan, take: boolean, now = new Date()): SessionPlan {
+  const counted = { ...plan, breaksTaken: (plan.breaksTaken ?? 0) + 1 }
+  return take ? focusLine(counted, undefined, now) : counted
+}
+
+// ---- Templates ------------------------------------------------------------------
+
+export interface SessionTemplate {
+  id: string
+  title: string
+  durationMin: number
+  shape?: SessionShape
+  breakEvery?: number
+  /** Saved tier shape: pointers, like lines. */
+  tiers: Record<SessionTier, { taskId: string; stepId?: string }[]>
+  builtIn?: boolean
+}
+
+const NO_TIERS = (): SessionTemplate["tiers"] => ({ min: [], goal: [], exceptional: [] })
+
+export const JUST_25_TEMPLATE_ID = "tpl-just-25"
+
+/** Built in: Just 25 (FN-3), Morning 90m, Evening 3h. Never stored. */
+export const BUILT_IN_TEMPLATES: readonly SessionTemplate[] = [
+  { id: JUST_25_TEMPLATE_ID, title: "Just 25", durationMin: 25, shape: "timebox", tiers: NO_TIERS(), builtIn: true },
+  { id: "tpl-morning-90", title: "Morning 90m", durationMin: 90, breakEvery: 45, tiers: NO_TIERS(), builtIn: true },
+  { id: "tpl-evening-3h", title: "Evening 3h", durationMin: 180, breakEvery: 50, tiers: NO_TIERS(), builtIn: true },
+]
+
+/** The draft's shape as a template: length, shape, breaks and its lines as pointers. */
+export function templateFromSession(plan: SessionPlan, title = plan.title): SessionTemplate {
+  const tiers = NO_TIERS()
+  for (const { id } of SESSION_TIERS) {
+    tiers[id] = plan.tiers[id].map((line) => ({ taskId: line.taskId, ...(line.stepId ? { stepId: line.stepId } : {}) }))
+  }
+  return {
+    id: rid("tpl"),
+    title: title.trim() || "Session",
+    durationMin: plan.durationMin,
+    ...(plan.shape ? { shape: plan.shape } : {}),
+    ...(plan.breakEvery ? { breakEvery: plan.breakEvery } : {}),
+    tiers,
+  }
+}
+
+/**
+ * A new draft from a template. Lines whose task is gone or done are dropped;
+ * `seed` (for Just 25 on a task) goes into the first tier that lines use.
+ */
+export function sessionFromTemplate(
+  template: SessionTemplate,
+  tasks: readonly Task[],
+  now = new Date(),
+  seed: { taskId: string; stepId?: string }[] = [],
+): SessionPlan {
+  let plan: SessionPlan = {
+    ...emptySession(now, template.durationMin),
+    title: template.title,
+    ...(template.shape && template.shape !== "lines" ? { shape: template.shape } : {}),
+    ...(template.breakEvery ? { breakEvery: template.breakEvery } : {}),
+  }
+  for (const { id } of SESSION_TIERS) {
+    for (const ref of template.tiers[id] ?? []) {
+      const task = tasks.find((t) => t.id === ref.taskId)
+      if (!task || task.completed) continue
+      if (ref.stepId && !findPlacedStep(task.subtasks, ref.stepId)) continue
+      plan = addLine(plan, id, ref, tasks)
+    }
+  }
+  // A timebox's Bare minimum is time, so its seed is the Goal.
+  const seedTier: SessionTier = isTimebox(plan) ? "goal" : "min"
+  for (const ref of seed) plan = addLine(plan, seedTier, ref, tasks)
+  if (seed.length === 1 && isTimebox(plan)) plan = { ...plan, title: `${template.title} · ${lineLabel(seed[0], tasks)}` }
+  return plan
+}
+
+// ---- Bare-minimum floor (FN-4) -------------------------------------------------
+
+export interface FloorSuggestion {
+  taskId: string
+  stepId?: string
+  label: string
+  minutes: number
+}
+
+/**
+ * The smallest ready step that counts, for a draft with no Bare-minimum lines:
+ * Just Start's pick in each of the draft's tasks (or the lens's, when the
+ * draft is empty), smallest first. Locked steps and tasks waiting on other
+ * tasks are never offered. A step-less task with its own estimate counts as
+ * one step. Null when Bare minimum already has lines or nothing is ready.
+ */
+export function floorSuggestion(plan: SessionPlan, tasks: readonly Task[], lensTasks: readonly Task[] = []): FloorSuggestion | null {
+  if (plan.tiers.min.length) return null
+  const fromDraft = [...new Set(allLines(plan).map(({ line }) => line.taskId))]
+  const ids = fromDraft.length ? fromDraft : lensTasks.map((t) => t.id)
+  let best: FloorSuggestion | null = null
+  for (const id of ids) {
+    const task = tasks.find((t) => t.id === id)
+    if (!task || task.completed) continue
+    const pick = pickStartStep(task, { allTasks: tasks })
+    let found: FloorSuggestion | null = null
+    if (pick.kind === "step") {
+      found = { taskId: task.id, stepId: pick.step.id, label: lineLabel({ taskId: task.id, stepId: pick.step.id }, tasks), minutes: pick.minutes }
+    } else if (pick.kind === "no-steps" && task.estimatedDuration && task.estimatedDuration > 0) {
+      found = { taskId: task.id, label: itemTitleOrUntitled(task), minutes: task.estimatedDuration }
+    }
+    if (found && (!best || found.minutes < best.minutes)) best = found
+  }
+  return best
 }

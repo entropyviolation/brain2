@@ -21,7 +21,7 @@ const SCOPES: EstimateScope[] = ["all", "required", "required-prioritized"]
 const BAND_LABEL: Record<ComfortBand, string> = {
   manageable: "manageable",
   overfilled: "overfilled",
-  behind: "behind",
+  behind: "more than fits",
 }
 
 /** Map Hofstadter comfort ratio onto a −90°…+90° needle (1.0 sits at center). */
@@ -78,7 +78,7 @@ export function TodoLoadPanel({
         : 0
   const overCap = inProgress > wipLimit
   const needle = comfortNeedleDeg(comfortRatioValue)
-  const comfortTitle = `Estimated hours × 2 (Hofstadter's Law) ÷ working hours left. Under 1 is manageable. From 1 through 10 is overfilled. Above 10 is behind. Clock hours left: ${hoursLeft}.`
+  const comfortTitle = `Estimated hours × 2 (Hofstadter's Law) ÷ working hours left. Under 1 is manageable. From 1 through 10 is overfilled. Above 10 is more than fits. Clock hours left: ${hoursLeft}.`
 
   return (
     <div

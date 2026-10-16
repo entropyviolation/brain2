@@ -49,7 +49,7 @@ export interface ItemDetailDraft {
   touchDraft: (patch: Partial<Task>) => void
   originalTask: Task | null
   setOriginalTask: (task: Task | null) => void
-  /** Live dirty check over refs: counts keystrokes that have not re-rendered. */
+  /** Live dirty check: the draft ref (with unrendered keystrokes) against the saved baseline. */
   isDraftDirty: () => boolean
   allTasks: Task[]
   lists: ReturnType<typeof useTaskStore.getState>["lists"]
@@ -86,10 +86,6 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const [task, setTaskState] = useState<Task | null>(null)
   const [originalTask, setOriginalTaskState] = useState<Task | null>(null)
   const originalRef = useRef<Task | null>(null)
-  const setOriginalTask = useCallback((next: Task | null) => {
-    originalRef.current = next
-    setOriginalTaskState(next)
-  }, [])
   const taskRef = useRef<Task | null>(null)
   const draftListenersRef = useRef(new Set<() => void>())
 
@@ -102,8 +98,16 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
 
   const getDraft = useCallback(() => taskRef.current, [])
 
+  const setOriginalTask = useCallback((next: Task | null) => {
+    originalRef.current = next
+    setOriginalTaskState(next)
+  }, [])
+
   const isDraftDirty = useCallback(
-    () => !!taskRef.current && !!originalRef.current && !snapshotsEqual(taskRef.current, originalRef.current),
+    () =>
+      !!taskRef.current &&
+      !!originalRef.current &&
+      !snapshotsEqual(taskRef.current, originalRef.current),
     [],
   )
 
@@ -227,7 +231,7 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
       setTask(saved)
       return saved
     },
-    [originalTask, updateTask, setTask, setOriginalTask],
+    [updateTask, setTask, setOriginalTask],
   )
 
   return {

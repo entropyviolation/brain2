@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -37,6 +37,7 @@ import { itemTitle } from "@/lib/item-utils"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/todo-commitment"
 import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
+import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 
 function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
   const ref = dateFromPeriodKey(period, key)
@@ -187,88 +188,81 @@ export function StartRitualDialog({
     onClose()
   }
 
-  const phase = startRitualPhase(existing)
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) dismiss() }}>
-      <DialogContent
-        className="hpp95 hpp95-dialog sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col"
-        data-ui-name="Start ritual"
-        data-ui-docs="components/Reviews/README.md"
-      >
-        <DialogHeader className="hpp-caption">
-          <div className="hpp-caption-mark">
-            <span className="hpp-power-lamp" aria-hidden />
-            <DialogTitle className="flex items-center gap-2 capitalize">
-              <RitualSunIcon className="h-5 w-5" />
-              {period} Start ritual
-              {phase === "partial" ? (
-                <span className="text-xs font-normal text-muted-foreground">· in progress</span>
-              ) : null}
-            </DialogTitle>
-          </div>
-          <DialogDescription className="hpp-caption-lead">
-            Plan {periodLabel(period, periodKey)}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="hpp-body flex-1 overflow-y-auto space-y-6 pr-1">
-          <section className="space-y-2">
-            <h3 className="font-semibold text-sm">
-              Undone from last {period} ({undone.length})
-            </h3>
-            {undone.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing left undone. Clean slate.</p>
-            ) : (
-              <div className="space-y-2">
-                {undone.map((task) => (
-                  <div
-                    key={task.id}
-                    className="border rounded-md p-2 flex items-center justify-between gap-2"
-                  >
-                    <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
-                    {pulled.includes(task.id) ? (
-                      <span className="text-xs text-muted-foreground">Pulled in</span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        onClick={() => pullIntoPeriod(task)}
-                      >
-                        <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                        Bring into this {period}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                Notes on what you are leaving behind
-              </Label>
-              <Textarea
-                value={undoneNotes}
-                onChange={(e) => setUndoneNotes(e.target.value)}
-                rows={2}
-                placeholder="Anything to remember about last period’s open items…"
-              />
+  const stepDefs: (RitualStep & { body: ReactNode })[] = [
+    {
+      id: "undone",
+      label: `Undone from last ${period === "quarter" ? "season" : period}`,
+      answered: undone.length === 0 || undone.every((t) => pulled.includes(t.id)) || !!undoneNotes.trim(),
+      body: (
+        <section className="space-y-2">
+          <p className="mr-lede">
+            Undone from last {period} ({undone.length}). Bring it in, or note what you leave behind.
+          </p>
+          {undone.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing left undone. Clean slate.</p>
+          ) : (
+            <div className="space-y-2">
+              {undone.map((task) => (
+                <div
+                  key={task.id}
+                  className="border rounded-md p-2 flex items-center justify-between gap-2"
+                >
+                  <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
+                  {pulled.includes(task.id) ? (
+                    <span className="text-xs text-muted-foreground">Pulled in</span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7"
+                      onClick={() => pullIntoPeriod(task)}
+                    >
+                      <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                      Bring into this {period}
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
-          </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Priorities for this {period}</Label>
+          )}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              Notes on what you are leaving behind
+            </Label>
             <Textarea
-              value={priorities}
-              onChange={(e) => setPriorities(e.target.value)}
-              rows={3}
-              placeholder="What matters most — 3 to 5 lines…"
+              value={undoneNotes}
+              onChange={(e) => setUndoneNotes(e.target.value)}
+              rows={2}
+              placeholder="Anything to remember about last period’s open items…"
             />
-          </section>
-
+          </div>
+        </section>
+      ),
+    },
+    {
+      id: "priorities",
+      label: "Priorities",
+      answered: !!priorities.trim(),
+      body: (
+        <section className="space-y-2">
+          <Label className="mr-lede">What matters most this {period}?</Label>
+          <Textarea
+            value={priorities}
+            onChange={(e) => setPriorities(e.target.value)}
+            rows={3}
+            placeholder="What matters most — 3 to 5 lines…"
+          />
+        </section>
+      ),
+    },
+    {
+      id: "must",
+      label: "Must be done",
+      answered: !!mustDo.trim() || requiredIds.length > 0 || prioritizedIds.length > 0,
+      body: (
+        <>
           <section className="space-y-2">
-            <Label className="font-semibold text-sm">Must be done</Label>
+            <Label className="mr-lede">Required outcomes</Label>
             <Textarea
               value={mustDo}
               onChange={(e) => setMustDo(e.target.value)}
@@ -276,7 +270,6 @@ export function StartRitualDialog({
               placeholder="Required outcomes for this period…"
             />
           </section>
-
           <section className="space-y-2">
             <Label className="font-semibold text-sm">Mark assigned tasks</Label>
             <p className="text-xs text-muted-foreground">
@@ -305,46 +298,112 @@ export function StartRitualDialog({
               />
             )}
           </section>
-
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">
-              Intentions — what do you want from this {period}?
-            </Label>
-            <Textarea
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={2}
-              placeholder="Tone, focus, how you want to feel…"
+        </>
+      ),
+    },
+    {
+      id: "intentions",
+      label: "Intentions",
+      answered: !!summary.trim(),
+      body: (
+        <section className="space-y-2">
+          <Label className="mr-lede">What do you want from this {period}?</Label>
+          <Textarea
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={2}
+            placeholder="Tone, focus, how you want to feel…"
+          />
+        </section>
+      ),
+    },
+    {
+      id: "plan",
+      label: "Plan",
+      answered: !!nextPlans.trim(),
+      body: (
+        <section className="space-y-2">
+          <Label className="mr-lede">A concrete plan for the {period} ahead</Label>
+          <Textarea
+            value={nextPlans}
+            onChange={(e) => setNextPlans(e.target.value)}
+            rows={3}
+            placeholder="Concrete plan for the period ahead…"
+          />
+        </section>
+      ),
+    },
+    {
+      id: "gratitude",
+      label: "Gratitude",
+      answered: gratitude.some((g) => !!g.trim()),
+      body: (
+        <section className="space-y-2">
+          {gratitude.map((g, i) => (
+            <Input
+              key={i}
+              value={g}
+              onChange={(e) =>
+                setGratitude((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))
+              }
+              placeholder="I'm grateful for…"
             />
-          </section>
+          ))}
+          <Button variant="outline" size="sm" onClick={() => setGratitude((arr) => [...arr, ""])}>
+            <Sparkles className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </section>
+      ),
+    },
+  ]
+  const [stepIndex, setStepIndex] = useRitualStep(
+    `brain2-ritual-step:start:${period}:${periodKey}`,
+    stepDefs.length,
+    () => 0,
+  )
 
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Plan</Label>
-            <Textarea
-              value={nextPlans}
-              onChange={(e) => setNextPlans(e.target.value)}
-              rows={3}
-              placeholder="Concrete plan for the period ahead…"
-            />
-          </section>
+  /** Moving between questions writes progress, the same as Save progress. */
+  const goStep = (next: number) => {
+    if (!submittedRef.current && snapshot() !== baselineRef.current) handleSaveProgress()
+    setStepIndex(next)
+  }
 
-          <section className="space-y-2">
-            <Label className="font-semibold text-sm">Gratitude</Label>
-            {gratitude.map((g, i) => (
-              <Input
-                key={i}
-                value={g}
-                onChange={(e) =>
-                  setGratitude((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))
-                }
-                placeholder="I'm grateful for…"
-              />
-            ))}
-            <Button variant="outline" size="sm" onClick={() => setGratitude((arr) => [...arr, ""])}>
-              <Sparkles className="h-4 w-4 mr-1" />
-              Add
-            </Button>
-          </section>
+  const phase = startRitualPhase(existing)
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) dismiss() }}>
+      <DialogContent
+        className="hpp95 hpp95-dialog sm:max-w-2xl max-h-[88vh] overflow-hidden flex flex-col"
+        data-ui-name="Start ritual"
+        data-ui-docs="components/Reviews/README.md"
+      >
+        <DialogHeader className="hpp-caption">
+          <div className="hpp-caption-mark">
+            <span className="hpp-power-lamp" aria-hidden />
+            <DialogTitle className="flex items-center gap-2 capitalize">
+              <RitualSunIcon className="h-5 w-5" />
+              {period} Start ritual
+              {phase === "partial" ? (
+                <span className="text-xs font-normal text-muted-foreground">· in progress</span>
+              ) : null}
+            </DialogTitle>
+          </div>
+          <DialogDescription className="hpp-caption-lead">
+            Plan {periodLabel(period, periodKey)}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="hpp-body flex-1 min-h-0">
+          <RitualStepper
+            steps={stepDefs}
+            index={stepIndex}
+            onStep={goStep}
+            finishLabel="Finish"
+            onFinish={handleSave}
+          >
+            {stepDefs[stepIndex]?.body}
+          </RitualStepper>
         </div>
 
         <div className="hpp-actions">

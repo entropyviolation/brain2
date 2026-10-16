@@ -167,6 +167,79 @@ describe("TaskDetailPopup", () => {
     })
   })
 
+  describe("unsaved guard on every way out", () => {
+    const listNav = () => localStorage.getItem("brain2-lists-navigation") ?? ""
+
+    function typeIntoDescription() {
+      fireEvent.change(screen.getByDisplayValue("Plan sprint demo"), { target: { value: "Plan team demo" } })
+    }
+
+    it("asks before a dirty list double-click leaves", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.dblClick(screen.getByTitle("Double-click to open this list"))
+      expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(listNav()).not.toContain("na-list")
+    })
+
+    it("Save changes saves, then goes to the list", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.dblClick(screen.getByTitle("Double-click to open this list"))
+      await user.click(screen.getByRole("button", { name: "Save changes" }))
+      expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
+      expect(onClose).toHaveBeenCalled()
+      await waitFor(() => expect(listNav()).toContain("na-list"))
+    })
+
+    it("Exit without saving drops the edit, then goes to the list", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.dblClick(screen.getByTitle("Double-click to open this list"))
+      await user.click(screen.getByRole("button", { name: "Exit without saving" }))
+      expect(useTaskStore.getState().tasks[0].description).toBe("Plan sprint demo")
+      expect(onClose).toHaveBeenCalled()
+      await waitFor(() => expect(listNav()).toContain("na-list"))
+    })
+
+    it("asks before opening a related item, and opens it after Exit without saving", async () => {
+      const user = userEvent.setup()
+      act(() => {
+        useTaskStore.getState().addTask({
+          ...useTaskStore.getState().tasks[0],
+          id: "other-task",
+          title: "Book the room",
+          description: "Book the room",
+        })
+        useTaskStore.getState().updateTask({
+          ...useTaskStore.getState().tasks.find((t) => t.id === "popup-task")!,
+          links: [{ id: "l1", relation: "related", targetId: "other-task" }],
+        })
+      })
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.click(screen.getByRole("tab", { name: /Links/i }))
+      await user.click(screen.getByRole("button", { name: "Book the room" }))
+      expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+      expect(screen.getByDisplayValue("Plan team demo")).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "Exit without saving" }))
+      expect(await screen.findByDisplayValue("Book the room")).toBeInTheDocument()
+      expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.description).toBe("Plan sprint demo")
+    })
+
+    it("a clean list double-click leaves with no prompt", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      await user.dblClick(screen.getByTitle("Double-click to open this list"))
+      expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
+
   it("hides Scheduling and Complete for a non-scheduleable furniture item", () => {
     useTaskStore.getState().setLists([
       {

@@ -15,6 +15,7 @@ import { findCyclePath } from "@/lib/critical-path"
 import { hasUnmetDependencies, type DepTask } from "@/lib/available-tasks"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { blockerCandidates, findPlacedStep, openBlockers, placeSteps, setStepDependsOn } from "@/lib/next-step"
+import { isOwnStepOrParent } from "@/lib/step-item-guard"
 
 /** Open steps this step is waiting on (its own and its ancestors'). */
 export function stepBlockers(steps: readonly Subtask[] | undefined, stepId: string): Subtask[] {
@@ -53,6 +54,8 @@ export type TaskPrereqResult = { ok: true; dependencies: string[] } | { ok: fals
 export function addTaskPrereq(task: Task, needsId: string, allTasks: readonly Task[]): TaskPrereqResult {
   const current = task.dependencies ?? []
   if (current.includes(needsId)) return { ok: true, dependencies: current }
+  // Its own step's item, or the parent of a step item, is a part, not a prerequisite (Phase 11).
+  if (isOwnStepOrParent(task, allTasks.find((t) => t.id === needsId))) return { ok: false, loop: [task.id, needsId] }
   const loop = findCyclePath([...allTasks], task.id, needsId)
   if (loop.length) return { ok: false, loop }
   return { ok: true, dependencies: [...current, needsId] }

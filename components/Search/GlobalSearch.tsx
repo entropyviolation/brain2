@@ -32,6 +32,7 @@ import { formatDateDisplay } from "@/lib/date-utils"
 import { searchItems, displayTitle, type SearchResult } from "@/lib/search"
 import type { Item, Task, List, Folder, ItemTypeDefinition } from "@/lib/types"
 import "./search-chrome.css"
+import { withoutStepItems } from "@/lib/step-item-guard"
 
 /** The kind of record a search hit refers to. */
 export type SearchEntryKind = "item" | "list" | "folder"
@@ -176,7 +177,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
     const pull = () => {
       if (!alive) return
       const state = useTaskStore.getState()
-      setItems(taskRepository.getAll())
+      setItems(withoutStepItems(taskRepository.getAll()))
       setLists(state.lists)
       setFolders(state.folders)
       setTypes(useItemTypeStore.getState().types)

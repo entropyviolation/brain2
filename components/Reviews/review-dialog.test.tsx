@@ -22,11 +22,17 @@ function task(partial: Partial<Task> & { id: string }): Task {
   }
 }
 
+/** The end ritual walks one step at a time; jump with the lamp strip. */
+function goTo(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(`^Go to ${label}`) }))
+}
+
 describe("ReviewDialog drafts and date scope", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] })
     vi.setSystemTime(new Date(2026, 9, 5, 20, 0, 0))
     resetAllStores()
+    localStorage.clear()
   })
 
   afterEach(() => {
@@ -36,6 +42,7 @@ describe("ReviewDialog drafts and date scope", () => {
   it("saves a draft on close and does not award points or mark the night done", () => {
     const onClose = vi.fn()
     const view = render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={onClose} />)
+    goTo("Summary")
     fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "kept the draft" } })
     fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
@@ -51,6 +58,7 @@ describe("ReviewDialog drafts and date scope", () => {
 
   it("awards section points only when the night is submitted", () => {
     render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Summary")
     fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "done for the night" } })
     fireEvent.click(screen.getByRole("button", { name: /^Save$/i }))
     const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
@@ -92,6 +100,7 @@ describe("ReviewDialog drafts and date scope", () => {
       }),
     )
     const view = render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Assumed times")
     fireEvent.click(screen.getByRole("checkbox", { name: "Est. Water" }))
     expect(useTaskStore.getState().tasks.find((row) => row.id === "assumed")?.timeRough).toBe(true)
     view.unmount()
@@ -126,6 +135,7 @@ describe("ReviewDialog drafts and date scope", () => {
   it("restores a reflection draft and only counts it when the ritual is submitted", () => {
     const week = getWeekString(new Date(2026, 8, 28))
     const view = render(<ReviewDialog open period="week" periodKey={week} onClose={() => {}} />)
+    goTo("This week")
     fireEvent.change(screen.getByLabelText(/best thing that happened this past week/i), {
       target: { value: "the letter" },
     })
@@ -139,5 +149,42 @@ describe("ReviewDialog drafts and date scope", () => {
     const awarded = usePointsStore.getState().pointsHistory
     expect(awarded).toHaveLength(1)
     expect(awarded[0]?.points).toBeGreaterThanOrEqual(40)
+  })
+})
+
+describe("ReviewDialog steps", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(2026, 9, 5, 20, 0, 0))
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("walks the night one question at a time and keeps a draft when moving on", () => {
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    expect(screen.getByRole("heading", { name: "Unfinished items" })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText("A short recap…")).not.toBeInTheDocument()
+    goTo("Summary")
+    fireEvent.change(screen.getByPlaceholderText("A short recap…"), { target: { value: "a quiet day" } })
+    fireEvent.click(screen.getByRole("button", { name: /^Next/ }))
+    expect(screen.getByRole("heading", { name: "Gratitude" })).toBeInTheDocument()
+    const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
+    expect(saved?.summary).toBe("a quiet day")
+    expect(saved?.endCompleted).toBe(false)
+    expect(usePointsStore.getState().pointsHistory).toEqual([])
+    expect(localStorage.getItem("brain2-ritual-step:end:day:2026-10-04")).toBe(String(4))
+  })
+
+  it("Finish on the last step submits the night", () => {
+    const onClose = vi.fn()
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={onClose} />)
+    goTo("Tomorrow's plan")
+    fireEvent.click(screen.getByRole("button", { name: "Finish" }))
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.endCompleted).toBe(true)
+    expect(onClose).toHaveBeenCalled()
   })
 })

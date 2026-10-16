@@ -19,20 +19,31 @@
  * step shown goes on the Tracking pen clock (`lib/task-clock.ts`), and Done
  * ticks the step's objective there, so the clock logs the time once. Without
  * a pen, **Paint on Tracking** asks for one.
+ *
+ * Phase 15 A: it opens on **Today's choices** (`rankStartSteps`, two or three
+ * leaves, the first highlighted; Enter or Space starts it, arrows move). A
+ * `stepId` skips the choices. A time-box ring (the estimate, or 10 / 25 / 50)
+ * closes with "Time's up. That counted.": the minutes go on the step and the
+ * task, the step stays open, **Keep going** restarts the ring. Leaving after a
+ * minute or more off the pen clock shows the end-of-sitting strip. **Pull me**
+ * (P) on the choices screen starts the latest sparked step (`pullMeStep`).
  */
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Check, X, Play, Pause, RotateCcw, SkipForward, Link2, Scissors } from "lucide-react"
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { addNestedStep, updateNestedStep } from "@/lib/todo-steps"
 import {
+  addStepMinutes,
   blockerCandidates,
   findPlacedStep,
   finishStep,
   pickStartStep,
+  pullMeStep,
+  rankStartSteps,
   setStepDependsOn,
   splitStep,
   startProgress,
@@ -41,14 +52,23 @@ import {
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
-import { togglePenColorNowObjectiveComplete } from "@/lib/pen-color-session"
+import {
+  pausePenColorSession,
+  resumePenColorSession,
+  togglePenColorNowObjectiveComplete,
+} from "@/lib/pen-color-session"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { clockPenFor, startTaskClock } from "@/lib/task-clock"
 import { useTaskClockStarter } from "./TaskClockStarter"
+import SittingEnd from "./SittingEnd"
 import "./just-start.css"
 
 const OPENER_SECONDS = 120
 const QUICK_MINUTES = [2, 5, 10, 15, 30]
+const BOX_MINUTES = [10, 25, 50] as const
+type Box = "est" | (typeof BOX_MINUTES)[number]
+const RING_R = 18
+const RING_C = 2 * Math.PI * RING_R
 
 function formatClock(seconds: number): string {
   const abs = Math.abs(seconds)
@@ -83,6 +103,11 @@ export default function JustStartMode({
   const [skip, setSkip] = useState<string[]>([])
   const [pinnedId, setPinnedId] = useState<string | undefined>(stepId)
   const [ignoreTaskDeps, setIgnoreTaskDeps] = useState(false)
+  const [choosing, setChoosing] = useState(!stepId)
+  const [highlight, setHighlight] = useState(0)
+  /** Minutes sat, once leaving shows the end-of-sitting strip. */
+  const [ending, setEnding] = useState<number | null>(null)
+  const openedAt = useRef(Date.now())
 
   const pick: StartPick | null = useMemo(() => {
     if (!task) return null
@@ -101,7 +126,38 @@ export default function JustStartMode({
     return pickStartStep(task, { allTasks: tasks, skip, ignoreTaskDependencies: ignoreTaskDeps })
   }, [task, tasks, skip, pinnedId, ignoreTaskDeps])
 
-  const step = pick?.kind === "step" ? pick.step : undefined
+  const ranked = useMemo(
+    () =>
+      task && !pinnedId
+        ? rankStartSteps(task, 3, { allTasks: tasks, skip, ignoreTaskDependencies: ignoreTaskDeps })
+        : [],
+    [task, tasks, skip, pinnedId, ignoreTaskDeps],
+  )
+  // Pull me (FN-5): the latest spark, whatever its estimate. Absent when nothing is sparked.
+  const pull = useMemo(
+    () => (task && !pinnedId ? pullMeStep(task, { allTasks: tasks, ignoreTaskDependencies: ignoreTaskDeps }) : undefined),
+    [task, tasks, pinnedId, ignoreTaskDeps],
+  )
+  const showChoices =
+    choosing &&
+    !pinnedId &&
+    pick?.kind === "step" &&
+    (ranked.length >= 2 || (!!pull && pull.step.id !== ranked[0]?.step.id))
+  const pullMe = () => {
+    if (!pull) return
+    setPinnedId(pull.step.id)
+    setChoosing(false)
+    setHighlight(0)
+  }
+  const choose = (i: number) => {
+    const hit = ranked[i]
+    if (!hit) return
+    setPinnedId(hit.step.id)
+    setChoosing(false)
+    setHighlight(0)
+  }
+
+  const step = pick?.kind === "step" && !showChoices ? pick.step : undefined
   const progress = startProgress(task?.subtasks)
   const clockSession = usePenColorSessionStore((s) => s.session)
   const onClock = !!task && clockSession?.taskId === task.id
@@ -123,14 +179,22 @@ export default function JustStartMode({
   const [running, setRunning] = useState(true)
   const [startedAt, setStartedAt] = useState(() => new Date())
   const [panel, setPanel] = useState<Panel>(null)
+  const [box, setBox] = useState<Box>("est")
+  const [stopAtBox, setStopAtBox] = useState(true)
+  const [timesUp, setTimesUp] = useState(false)
+  /** Minutes already logged on this step by closed time boxes. */
+  const [banked, setBanked] = useState(0)
 
-  const targetSeconds = opener || !pick || pick.kind !== "step" || pick.minutes <= 0 ? OPENER_SECONDS : pick.minutes * 60
+  const estSeconds = !pick || pick.kind !== "step" || pick.minutes <= 0 ? OPENER_SECONDS : pick.minutes * 60
+  const targetSeconds = opener ? OPENER_SECONDS : box === "est" ? estSeconds : box * 60
 
   useEffect(() => {
     setElapsed(0)
     setRunning(true)
     setStartedAt(new Date())
     setPanel(null)
+    setTimesUp(false)
+    setBanked(0)
   }, [step?.id])
 
   useEffect(() => {
@@ -141,22 +205,92 @@ export default function JustStartMode({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (showChoices && !panel && ending == null) {
+        if ((e.key === "p" || e.key === "P") && pull) {
+          e.preventDefault()
+          pullMe()
+          return
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          choose(highlight)
+          return
+        }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault()
+          const dir = e.key === "ArrowDown" ? 1 : -1
+          setHighlight((h) => (h + dir + ranked.length) % ranked.length)
+          return
+        }
+      }
       if (e.key !== "Escape") return
       if (panel) setPanel(null)
-      else onClose()
+      else if (ending != null) onClose()
+      else exit()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onClose, panel])
+  })
+
+  /** Leaving ends the sitting. Off the pen clock, a minute or more shows the strip first. */
+  const exit = () => {
+    const sat = (Date.now() - openedAt.current) / 60_000
+    if (ending == null && task && !onClock && sat >= 1) setEnding(sat)
+    else onClose()
+  }
 
   const writeSteps = (subtasks: Subtask[], extra: Partial<Task> = {}) => {
     if (!task) return
     updateTask({ ...task, ...extra, subtasks })
   }
 
+  const timeLog = (from: Date, to: Date, minutes: number, where: Subtask[], what: Subtask): TimeLogEntry => ({
+    id: `tl-${to.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    date: formatLocalDateKey(from),
+    startTime: hhmm(from),
+    endTime: hhmm(to),
+    durationMinutes: minutes,
+    notes: `Just Start · ${where.length ? `${pathLabel(where)} › ` : ""}${what.description}`,
+    taskId: task!.id,
+  })
+
+  // The ring closed: log the box on the step and the task, leave the step open.
+  const closeBox = () => {
+    if (!task || !step || pick?.kind !== "step") return
+    setRunning(false)
+    setTimesUp(true)
+    const minutes = elapsed / 60
+    setElapsed(0)
+    if (onClock) {
+      // The pen clock logs at Stop; pausing it is the clock stopping.
+      pausePenColorSession()
+      return
+    }
+    const now = new Date()
+    const logged = Math.round(minutes)
+    setBanked((b) => b + logged)
+    writeSteps(addStepMinutes(task.subtasks, step.id, logged), {
+      timeLogs: logged >= 1 ? [...(task.timeLogs ?? []), timeLog(startedAt, now, logged, pick.path, step)] : task.timeLogs,
+    })
+  }
+
+  useEffect(() => {
+    if (stopAtBox && running && step && !timesUp && elapsed >= targetSeconds) closeBox()
+  })
+
+  const keepGoing = () => {
+    setTimesUp(false)
+    setElapsed(0)
+    setStartedAt(new Date())
+    setRunning(true)
+    if (onClock) resumePenColorSession()
+  }
+
   const handleDone = () => {
     if (!task || !step || pick?.kind !== "step") return
+    setChoosing(true)
     if (onClock) {
+      if (timesUp) resumePenColorSession()
       // The clock logs the time at Stop. Ticking the step's objective ticks the step with its own span.
       const row = activeNowObjectives(clockSession?.nowObjectives).find((o) => o.stepId === step.id)
       if (row) togglePenColorNowObjectiveComplete(row.id)
@@ -168,35 +302,25 @@ export default function JustStartMode({
     const minutes = elapsed / 60
     const logged = Math.round(minutes)
     const extra: Partial<Task> = {}
-    if (logged >= 1) {
-      const where = pathLabel(pick.path)
-      const log: TimeLogEntry = {
-        id: `tl-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-        date: formatLocalDateKey(startedAt),
-        startTime: hhmm(startedAt),
-        endTime: hhmm(now),
-        durationMinutes: logged,
-        notes: `Just Start · ${where ? `${where} › ` : ""}${step.description}`,
-        taskId: task.id,
-      }
-      extra.timeLogs = [...(task.timeLogs ?? []), log]
-    }
-    writeSteps(finishStep(task.subtasks, step.id, minutes >= 0.5 ? minutes : undefined, now), extra)
+    if (logged >= 1) extra.timeLogs = [...(task.timeLogs ?? []), timeLog(startedAt, now, logged, pick.path, step)]
+    const total = banked + minutes
+    writeSteps(finishStep(task.subtasks, step.id, total >= 0.5 ? total : undefined, now), extra)
     setPinnedId(undefined)
   }
 
   const handleSkip = () => {
     if (!step) return
     setPinnedId(undefined)
+    setChoosing(false)
     setSkip((prev) => [...prev.filter((id) => id !== step.id), step.id])
   }
 
-  const timeUp = elapsed >= targetSeconds
-  const pct = Math.min(100, Math.round((elapsed / targetSeconds) * 100))
+  const timeUp = timesUp || elapsed >= targetSeconds
+  const pct = timesUp ? 100 : Math.min(100, Math.round((elapsed / targetSeconds) * 100))
 
   return (
     <div className="just-start" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
-      <Button variant="ghost" size="icon" onClick={onClose} className="just-start-exit" aria-label="Exit focus mode">
+      <Button variant="ghost" size="icon" onClick={exit} className="just-start-exit" aria-label="Exit focus mode">
         <X className="h-5 w-5" />
       </Button>
 
@@ -225,7 +349,47 @@ export default function JustStartMode({
               </p>
             </div>
 
-            {pick.kind === "step" && step ? (
+            {showChoices ? (
+              <div className="just-start-step is-form">
+                <h1>Today&apos;s choices</h1>
+                <p className="just-start-step-context">
+                  {pick.kind === "step" ? `${pick.ready} ready steps, smallest first. ` : ""}Enter starts the highlighted one.
+                </p>
+                <ul className="just-start-list is-choices" role="group" aria-label="Today's choices">
+                  {ranked.map((r, i) => (
+                    <li key={r.step.id}>
+                      <button
+                        data-no95
+                        type="button"
+                        className={i === highlight ? "just-start-choice is-on" : "just-start-choice"}
+                        aria-pressed={i === highlight}
+                        onClick={() => choose(i)}
+                        onFocus={() => setHighlight(i)}
+                      >
+                        <span className="just-start-list-name">
+                          {r.path.length ? <em>{pathLabel(r.path)} › </em> : null}
+                          {r.step.description}
+                        </span>
+                        <span className="just-start-chip-read">{r.minutes}m</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {pull ? (
+                  <div className="just-start-verbs">
+                    <button
+                      data-no95
+                      type="button"
+                      className="just-start-key"
+                      onClick={pullMe}
+                      title={`Start the latest spark: ${pull.step.description} (P)`}
+                    >
+                      ✦ Pull me
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : pick.kind === "step" && step ? (
               <>
                 <div className="just-start-step">
                   <h1>{step.description}</h1>
@@ -260,19 +424,63 @@ export default function JustStartMode({
                   />
                 ) : (
                   <div className="just-start-timer">
-                    <div className={timeUp ? "just-start-clock is-up" : "just-start-clock"} aria-live="off">
-                      {formatClock(targetSeconds - elapsed)}
+                    <div className="just-start-clock-row">
+                      <div className={timeUp ? "just-start-clock is-up" : "just-start-clock"} aria-live="off">
+                        {formatClock(timesUp ? 0 : targetSeconds - elapsed)}
+                      </div>
+                      <svg className="just-start-ring" viewBox="0 0 44 44" role="img" aria-label={`Time box ${Math.round(targetSeconds / 60)}m`}>
+                        <circle className="just-start-ring-track" cx="22" cy="22" r={RING_R} />
+                        <circle
+                          className={timesUp ? "just-start-ring-arc is-closed" : "just-start-ring-arc"}
+                          cx="22"
+                          cy="22"
+                          r={RING_R}
+                          strokeDasharray={RING_C}
+                          strokeDashoffset={RING_C * (1 - pct / 100)}
+                        />
+                      </svg>
                     </div>
                     <div className={timeUp ? "just-start-meter is-up" : "just-start-meter"} aria-hidden>
                       <span style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="just-start-timer-hint">
-                      {timeUp
-                        ? "Past the mark. Keep going if you're in flow."
-                        : opener
-                          ? "Just two minutes. You only have to start."
-                          : `Counting down the ${pick.minutes}m estimate.`}
-                    </p>
+                    {timesUp ? (
+                      <p className="just-start-timer-hint is-up" role="status">
+                        <span className="just-start-lamp" aria-hidden /> Time&apos;s up. That counted.{" "}
+                        <button data-no95 type="button" className="just-start-key" onClick={keepGoing}>
+                          Keep going
+                        </button>
+                      </p>
+                    ) : (
+                      <p className="just-start-timer-hint">
+                        {timeUp
+                          ? "Past the mark. The clock keeps counting."
+                          : opener
+                            ? "A two-minute opener."
+                            : box === "est"
+                              ? `Counting down the ${pick.minutes}m estimate.`
+                              : `Counting down a ${box}m box.`}
+                      </p>
+                    )}
+                    <div className="just-start-box-row">
+                      <span className="just-start-chips" role="group" aria-label="Time box">
+                        {(["est", ...BOX_MINUTES] as Box[]).map((b) => (
+                          <button
+                            key={b}
+                            data-no95
+                            type="button"
+                            className={box === b ? "just-start-chip is-on" : "just-start-chip"}
+                            aria-pressed={box === b}
+                            onClick={() => setBox(b)}
+                          >
+                            {b === "est" ? "est" : `${b}m`}
+                          </button>
+                        ))}
+                      </span>
+                      <label className="just-start-opener">
+                        <input type="checkbox" checked={stopAtBox} onChange={(e) => setStopAtBox(e.target.checked)} />
+                        Stop when the ring closes
+                      </label>
+                    </div>
                     {pick.minutes > 0 ? (
                       <label className="just-start-opener">
                         <input type="checkbox" checked={opener} onChange={(e) => setOpener(e.target.checked)} />
@@ -369,6 +577,11 @@ export default function JustStartMode({
           </>
         )}
       </div>
+      {ending != null ? (
+        <div className="just-start-sitting">
+          <SittingEnd task={task} minutes={ending} onDone={onClose} />
+        </div>
+      ) : null}
       {taskClock.picker}
     </div>
   )

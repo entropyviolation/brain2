@@ -166,7 +166,7 @@ const TaskRow = memo(function TaskRow({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-orange-700 hover:text-orange-800 focus-ring"
-            title="Missed opportunity — too late"
+            title="Missed opportunity — the window for it passed"
             onClick={(e) => {
               e.stopPropagation()
               onMissed(task.id)

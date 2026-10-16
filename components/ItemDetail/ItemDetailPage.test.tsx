@@ -54,6 +54,42 @@ describe("EnhancedTaskDetail", () => {
     expect(screen.getByRole("tab", { name: "History" })).toBeInTheDocument()
   })
 
+  it("asks before Back leaves a dirty draft, and Exit without saving leaves", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+    await user.click(screen.getByRole("button", { name: /^Edit$/i }))
+    const durationInput = screen.getByLabelText(/Estimated Duration/i)
+    await user.clear(durationInput)
+    await user.type(durationInput, "90")
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+    expect(onBack).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Exit without saving" }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(45)
+  })
+
+  it("leaves at once on a clean Back", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it("asks the browser before unload while dirty", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+    const clean = new Event("beforeunload", { cancelable: true })
+    window.dispatchEvent(clean)
+    expect(clean.defaultPrevented).toBe(false)
+    await user.click(screen.getByRole("button", { name: /^Edit$/i }))
+    await user.type(screen.getByLabelText(/Estimated Duration/i), "5")
+    const dirty = new Event("beforeunload", { cancelable: true })
+    window.dispatchEvent(dirty)
+    expect(dirty.defaultPrevented).toBe(true)
+  })
+
   it("shows not found when task id is missing", () => {
     render(<EnhancedTaskDetail taskId="missing" onBack={onBack} />)
     expect(screen.getByText("Item not found")).toBeInTheDocument()

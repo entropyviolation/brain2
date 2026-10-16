@@ -17,6 +17,12 @@
  *   resuming another parks the running one. **Sessions** (caption and fascia)
  *   opens the shelves: Drafts, Parked, Done; a done one opens read-only and
  *   offers **Run again**.
+ * - **Slice H2**: templates (built-in Just 25, Morning 90m, Evening 3h, and
+ *   **Save as template**), the `"timebox"` shape, break lines, a note to
+ *   tomorrow-you at Park and End, a Hofstadter mark on each gauge, the
+ *   Bare-minimum floor suggestion, and the flat **Pick list** view
+ *   (`startOn="list"`). Requests from outside To Do come through
+ *   `lib/session-open-store.ts` and `SessionDock.tsx`.
  */
 "use client"
 
@@ -26,10 +32,23 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { liveSession, useSessionPlanStore } from "@/lib/session-plan-store"
+import type { SessionOpenRequest } from "@/lib/session-open-store"
+import { releasePenClock } from "@/lib/session-pen"
 import {
+  BREAK_EVERY_PRESETS,
+  BUILT_IN_TEMPLATES,
+  JUST_25_TEMPLATE_ID,
   SESSION_DURATION_PRESETS,
   SESSION_TIERS,
+  TIMEBOX_DURATION_PRESETS,
   addLine,
+  breakDue,
+  breakMinutes,
+  floorSuggestion,
+  isTimebox,
+  sessionFromTemplate,
+  settleBreak,
+  templateFromSession,
   allLines,
   cannotStartReason,
   closeSession,
@@ -55,6 +74,7 @@ import {
   parkSession,
   parkedLong,
   pauseSession,
+  elapsedMin,
   ranMinutes,
   resumeParked,
   runAgain,
@@ -66,8 +86,10 @@ import {
   setLineOutcome,
   startSession,
   tierReached,
+  type FutureNote,
   type SessionLine,
   type SessionPlan,
+  type SessionTemplate,
   type SessionTier,
 } from "@/lib/session-plan"
 import { placeSteps } from "@/lib/next-step"
@@ -87,11 +109,13 @@ import { pushTask } from "@/lib/services/scheduling-service"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { togglePenColorNowObjectiveComplete } from "@/lib/pen-color-session"
 import { activeNowObjectives } from "@/lib/now-objective"
-import { stopTaskClock } from "@/lib/task-clock"
 import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import JustStartMode from "@/components/Focus/JustStartMode"
+import SittingEnd from "@/components/Focus/SittingEnd"
 import { TodoBreakdown } from "./TodoBreakdown"
 import { useTodoTime } from "./use-todo-time"
+import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
+import { paddedLabel, sessionPaceFactor } from "@/lib/estimate-pace"
 import "./session-planner.css"
 
 const TIER_LABEL: Record<SessionTier, string> = { min: "Bare minimum", goal: "Goal", exceptional: "Exceptional" }
@@ -131,29 +155,37 @@ export function SessionPlanner({
   periodTasks,
   periodLabel,
   startOn = "session",
+  request,
 }: {
   open: boolean
   onClose: () => void
   /** Open tasks on the To Do lens right now. */
   periodTasks: Task[]
   periodLabel: string
-  /** `shelves` opens on the Sessions history panel. */
-  startOn?: "session" | "shelves"
+  /** `shelves` opens on the Sessions history panel; `list` on the flat pick list. */
+  startOn?: "session" | "shelves" | "list"
+  /** From another way in: a new draft of this length, template or seed. */
+  request?: Omit<SessionOpenRequest, "startOn">
 }) {
   const tasks = useTaskStore((s) => s.tasks)
   const openPlans = useSessionPlanStore((s) => s.open)
   const focusId = useSessionPlanStore((s) => s.focusId)
   const history = useSessionPlanStore((s) => s.history)
-  const [view, setView] = useState<"session" | "shelves">(startOn)
+  const [view, setView] = useState<"session" | "shelves" | "list">(startOn)
   const [doneId, setDoneId] = useState<string | null>(null)
   const [asking, setAsking] = useState(false)
+  const [parkNote, setParkNote] = useState("")
 
   // Opening shows the live session, else the focused one, else a new draft
   // seeded with lines kept from last time. Only on open: a session saved while
   // the popup is still up must not spawn a new draft.
   useEffect(() => {
-    if (!open || startOn === "shelves") return
+    if (!open || startOn !== "session") return
     const store = useSessionPlanStore.getState()
+    if (request && (request.durationMin || request.templateId || request.seed?.length)) {
+      newDraftFrom(request)
+      return
+    }
     const live = liveSession(store.open)
     if (live) {
       store.focus(live.id)
@@ -169,11 +201,13 @@ export function SessionPlanner({
   const update = (next: SessionPlan) => putSession(next)
 
   const requestClose = () => {
-    if (plan?.phase === "run") setAsking(true)
-    else onClose()
+    if (plan?.phase === "run" && view === "session") {
+      setParkNote(plan.futureNote?.text ?? "")
+      setAsking(true)
+    } else onClose()
   }
   const parkAndClose = () => {
-    if (plan) putSession(parkSession(plan, new Date()), [plan])
+    if (plan) putSession(parkSession(plan, new Date(), parkNote), [plan])
     setAsking(false)
     onClose()
   }
@@ -181,6 +215,11 @@ export function SessionPlanner({
     setDoneId(null)
     if (view === "shelves" && !plan) newDraft()
     setView(view === "shelves" ? "session" : "shelves")
+  }
+  const showList = () => {
+    setDoneId(null)
+    if (view === "list" && !plan) newDraft()
+    setView(view === "list" ? "session" : "list")
   }
   const openFromShelf = (id: string) => {
     useSessionPlanStore.getState().focus(id)
@@ -193,7 +232,9 @@ export function SessionPlanner({
       ? done
         ? `Session · ${done.title}`
         : "Sessions"
-      : plan?.phase === "run"
+      : view === "list"
+        ? "Pick list"
+        : plan?.phase === "run"
         ? `Session · ${plan.title}`
         : plan?.phase === "parked"
           ? `Parked · ${plan.title}`
@@ -214,6 +255,9 @@ export function SessionPlanner({
         <div className="todo-dialog-caption">
           <DialogTitle>{title}</DialogTitle>
           <span className="todo-session-caption-keys">
+            <button type="button" className={`todo-verb${view === "list" ? " is-on" : ""}`} aria-pressed={view === "list"} onClick={showList}>
+              Pick list
+            </button>
             <button type="button" className={`todo-verb${view === "shelves" ? " is-on" : ""}`} aria-pressed={view === "shelves"} onClick={showShelves}>
               Sessions
             </button>
@@ -225,6 +269,7 @@ export function SessionPlanner({
         {asking ? (
           <div className="todo-session-ask" role="alertdialog" aria-label="The session is running">
             <span>The session is still running.</span>
+            <FutureNoteInput value={parkNote} onChange={setParkNote} />
             <button type="button" className="todo-btn is-primary" onClick={parkAndClose}>
               Park
             </button>
@@ -241,7 +286,17 @@ export function SessionPlanner({
           </div>
         ) : null}
         <div className="todo-dialog-body todo-session-body">
-          {view === "shelves" ? (
+          {view === "list" ? (
+            <FlatListView
+              tasks={tasks}
+              periodTasks={periodTasks}
+              periodLabel={periodLabel}
+              onSession={(ref, templateId) => {
+                newDraftFrom({ seed: [ref], templateId })
+                setView("session")
+              }}
+            />
+          ) : view === "shelves" ? (
             done ? (
               <DoneView plan={done} tasks={tasks} onBack={() => setDoneId(null)} onRunAgain={() => openFromShelf(putSession(runAgain(done, new Date())))} />
             ) : (
@@ -273,6 +328,47 @@ export function SessionPlanner({
   )
 }
 
+/** A new draft from another way in: a template, a length, a title and seed lines. Focused. */
+function newDraftFrom(request: Omit<SessionOpenRequest, "startOn">): string {
+  const store = useSessionPlanStore.getState()
+  const tasks = useTaskStore.getState().tasks
+  const template = request.templateId ? findTemplate(request.templateId, store.templates) : undefined
+  let plan = template ? sessionFromTemplate(template, tasks, new Date(), request.seed) : emptySession(new Date(), request.durationMin ?? 180)
+  if (!template) for (const ref of request.seed ?? []) plan = addLine(plan, "min", ref, tasks)
+  if (request.durationMin) plan = { ...plan, durationMin: request.durationMin }
+  if (request.title?.trim()) plan = { ...plan, title: request.title.trim() }
+  store.put(plan)
+  store.focus(plan.id)
+  return plan.id
+}
+
+function findTemplate(id: string, saved: readonly SessionTemplate[]): SessionTemplate | undefined {
+  return BUILT_IN_TEMPLATES.find((t) => t.id === id) ?? saved.find((t) => t.id === id)
+}
+
+/** The one optional line for the next sitting (FN-1). */
+function FutureNoteInput({ value, onChange }: { value: string; onChange: (text: string) => void }) {
+  return (
+    <input
+      className="todo-session-futurenote-input"
+      value={value}
+      aria-label="Note to tomorrow-you"
+      placeholder="Note to tomorrow-you (optional)"
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
+}
+
+function FutureNoteBanner({ note }: { note?: FutureNote }) {
+  if (!note) return null
+  const when = new Date(note.at).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
+  return (
+    <p className="todo-session-futurenote" role="note">
+      <b>From {when}:</b> {note.text}
+    </p>
+  )
+}
+
 /** A new draft, seeded with what the last review kept, and focused. */
 function newDraft(): void {
   const store = useSessionPlanStore.getState()
@@ -290,10 +386,7 @@ function newDraft(): void {
  */
 function putSession(next: SessionPlan, parking: SessionPlan[] = []): string {
   const bumped = useSessionPlanStore.getState().put(next, new Date())
-  const pen = usePenColorSessionStore.getState().session
-  for (const p of [...parking, ...bumped]) {
-    if (p.paint && pen?.taskId && allLines(p).some(({ line }) => line.taskId === pen.taskId)) stopTaskClock()
-  }
+  releasePenClock([...parking, ...bumped])
   return next.id
 }
 
@@ -348,10 +441,27 @@ function DraftView({
   const [onlyReady, setOnlyReady] = useState(false)
   const [openTasks, setOpenTasks] = useState<Set<string>>(() => new Set())
   const [breakdownId, setBreakdownId] = useState<string | null>(null)
+  const savedTemplates = useSessionPlanStore((s) => s.templates)
+  const saveTemplate = useSessionPlanStore((s) => s.saveTemplate)
+  const [templateName, setTemplateName] = useState<string | null>(null)
+  const timebox = isTimebox(plan)
+  const floor = floorSuggestion(plan, tasks, periodTasks)
+  const breaks = breakMinutes(plan)
+
+  const applyTemplate = (id: string) => {
+    const template = findTemplate(id, savedTemplates)
+    if (!template) return
+    const fresh = sessionFromTemplate(template, tasks, new Date())
+    // Keep this draft's id and any note to tomorrow-you; take the template's shape and lines.
+    onChange({ ...fresh, id: plan.id, createdAt: plan.createdAt, ...(plan.futureNote ? { futureNote: plan.futureNote } : {}) })
+  }
 
   // Your own pace (`lib/estimate-pace.ts`): finished steps and closed lines, or your override.
   const todoTime = useTodoTime(tasks)
-  const pace = todoTime.pace
+  // Padded for you (FN-2): on, each line is weighted by your pace for its pen or list; off, raw estimates.
+  const { sessionPadded } = useTodoPrefs()
+  const pace = sessionPadded ? sessionPaceFactor(plan, tasks, todoTime.samples, todoTime.paceOverrides) : 1
+  const padLabel = sessionPadded ? paddedLabel(pace) : null
   const fit = sessionFit(plan, tasks, pace)
   const reason = cannotStartReason(plan, tasks)
   const missing = missingPrereqs(plan, tasks)
@@ -381,6 +491,7 @@ function DraftView({
 
   return (
     <div className="todo-session-draft">
+      <FutureNoteBanner note={plan.futureNote} />
       <div className="todo-session-head">
         <label className="todo-session-title">
           <span>Name</span>
@@ -388,7 +499,7 @@ function DraftView({
         </label>
         <div className="todo-session-duration" role="group" aria-label="Length">
           <span>Length</span>
-          {SESSION_DURATION_PRESETS.map((m) => (
+          {(timebox ? TIMEBOX_DURATION_PRESETS : SESSION_DURATION_PRESETS).map((m) => (
             <button
               key={m}
               type="button"
@@ -409,7 +520,50 @@ function DraftView({
           />
           <span className="todo-session-unit">min</span>
         </div>
+        <label className="todo-session-shape">
+          <input
+            type="checkbox"
+            checked={timebox}
+            onChange={(e) => onChange(e.target.checked ? { ...plan, shape: "timebox" } : (({ shape: _s, ...rest }) => rest)(plan))}
+          />
+          Timebox (the clock is the commitment)
+        </label>
+        <label className="todo-session-breaks">
+          <span>Breaks</span>
+          <select
+            aria-label="Break every"
+            value={plan.breakEvery ?? 0}
+            onChange={(e) => {
+              const every = Number(e.target.value)
+              if (every > 0) onChange({ ...plan, breakEvery: every })
+              else onChange((({ breakEvery: _b, breakMin: _m, ...rest }) => rest)(plan))
+            }}
+          >
+            <option value={0}>None</option>
+            {BREAK_EVERY_PRESETS.map((m) => (
+              <option key={m} value={m}>
+                5m every {fmtMinutes(m)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="todo-session-template">
+          <span>Template</span>
+          <select aria-label="Start from template" value="" onChange={(e) => e.target.value && applyTemplate(e.target.value)}>
+            <option value="">Choose…</option>
+            {[...BUILT_IN_TEMPLATES, ...savedTemplates].map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+      {timebox ? (
+        <p className="todo-session-pace">
+          Bare minimum is the clock: stay with it for {fmtMinutes(plan.durationMin)} and it counts, whatever gets done. Lines are optional.
+        </p>
+      ) : null}
 
       <div className="todo-session-panes">
         <section className="todo-session-pick" aria-label="Pick list">
@@ -499,22 +653,46 @@ function DraftView({
                 </div>
                 <div className="todo-session-gauge" aria-hidden>
                   <span style={{ width: `${Math.min(100, Math.round(f.ratio * 100))}%` }} />
+                  {f.cumulative > 0 ? (
+                    <i className="todo-session-hofstadter" data-over={f.padded > 1 || undefined} style={{ left: `${Math.min(100, Math.round(f.padded * 100))}%` }} />
+                  ) : null}
                 </div>
+                {f.cumulative > 0 ? (
+                  <p className="todo-session-hofstadter-note" title="Hofstadter's Law: it takes longer than you expect, even counting that. The load strip's needle doubles estimates the same way.">
+                    With Hofstadter ×2: {Math.round(f.padded * 100)}% of the time
+                  </p>
+                ) : null}
                 {f.unestimated ? (
                   <p className="todo-session-warn">
                     {f.unestimated === 1 ? "1 step has no estimate." : `${f.unestimated} steps have no estimate.`}
                   </p>
                 ) : null}
                 <ul className="todo-session-lines">
-                  {lines.length === 0 ? <li className="todo-session-empty">Add from the list.</li> : null}
+                  {lines.length === 0 && f.tier === "min" && floor && !timebox ? (
+                    <li className="todo-session-empty todo-session-floor">
+                      Smallest step that counts: <i>{floor.label}</i> ({fmtMinutes(floor.minutes)}){" "}
+                      <button type="button" className="todo-verb" onClick={() => add("min", { taskId: floor.taskId, stepId: floor.stepId })}>
+                        Add
+                      </button>
+                    </li>
+                  ) : lines.length === 0 ? (
+                    <li className="todo-session-empty">{timebox && f.tier === "min" ? "The clock is the Bare minimum." : "Add from the list."}</li>
+                  ) : null}
                   {lines.map((line, i) => {
                     const mins = lineMinutes(line, tasks)
                     const leafBare = mins === 0
                     return (
                       <li key={line.id} className={`todo-session-line${lineIsDone(line, tasks) ? " is-done" : ""}`}>
-                        <span className="todo-session-line-name" title={lineLabel(line, tasks)}>
+                        <button
+                          type="button"
+                          data-no95
+                          className="todo-session-line-name"
+                          title={`${lineLabel(line, tasks)} · open its steps here`}
+                          aria-pressed={breakdownId === line.taskId}
+                          onClick={() => setBreakdownId(breakdownId === line.taskId ? null : line.taskId)}
+                        >
                           {lineLabel(line, tasks)}
-                        </span>
+                        </button>
                         {leafBare ? (
                           <input
                             className="todo-session-est"
@@ -574,7 +752,19 @@ function DraftView({
               <b>Not in this session but needed first:</b> {[...new Set(missing.map((m) => m.needs))].join(", ")}
             </div>
           ) : null}
-          {pace !== 1 ? (
+          {breaks ? (
+            <p className="todo-session-pace">{fmtMinutes(breaks)} of breaks set aside; the gauge counts the rest.</p>
+          ) : null}
+          <label className="todo-session-padded">
+            <input
+              type="checkbox"
+              checked={sessionPadded}
+              onChange={(e) => setTodoPrefs({ sessionPadded: e.target.checked })}
+            />
+            Padded for you
+            <span className="todo-session-mins">{sessionPadded ? (padLabel ?? "your pace is ×1.0") : "raw estimates"}</span>
+          </label>
+          {padLabel ? (
             <p className="todo-session-pace">
               You usually run ×{pace.toFixed(1)} your estimates. The gauge counts that in.
             </p>
@@ -605,10 +795,44 @@ function DraftView({
           <input type="checkbox" checked={!!plan.paint} onChange={(e) => onChange({ ...plan, paint: e.target.checked })} />
           Paint the current step on Tracking
         </label>
+        {templateName === null ? (
+          <button type="button" className="todo-btn" onClick={() => setTemplateName(plan.title)} title="Keep this length, shape and lines to start from later">
+            Save as template
+          </button>
+        ) : (
+          <span className="todo-session-savetpl">
+            <input aria-label="Template name" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+            <button
+              type="button"
+              className="todo-btn is-primary"
+              onClick={() => {
+                saveTemplate(templateFromSession(plan, templateName))
+                setTemplateName(null)
+              }}
+            >
+              Save
+            </button>
+            <button type="button" className="todo-btn" onClick={() => setTemplateName(null)}>
+              Cancel
+            </button>
+          </span>
+        )}
         <button type="button" className="todo-btn" onClick={() => onChange(orderByPrereqs(plan, tasks))} title="Put prerequisites first">
           Order by needs
         </button>
-        <button type="button" className="todo-btn" onClick={() => onChange({ ...emptySession(new Date(), plan.durationMin), id: plan.id, title: plan.title })}>
+        <button
+          type="button"
+          className="todo-btn"
+          onClick={() =>
+            onChange({
+              ...emptySession(new Date(), plan.durationMin),
+              id: plan.id,
+              title: plan.title,
+              ...(plan.shape ? { shape: plan.shape } : {}),
+              ...(plan.futureNote ? { futureNote: plan.futureNote } : {}),
+            })
+          }
+        >
           Clear
         </button>
         <button
@@ -626,6 +850,78 @@ function DraftView({
   )
 }
 
+// ---- Flat list ------------------------------------------------------------------
+
+/**
+ * The pick list on its own (opened from the fascia **Pick list** key or the
+ * caption): every open lowest-level step and step-less task, flat, with its
+ * minutes and lock. Nothing is made until **Session** or **Just 25** is pressed.
+ */
+function FlatListView({
+  tasks,
+  periodTasks,
+  periodLabel,
+  onSession,
+}: {
+  tasks: Task[]
+  periodTasks: Task[]
+  periodLabel: string
+  onSession: (ref: { taskId: string; stepId?: string }, templateId?: string) => void
+}) {
+  const [scope, setScope] = useState<"period" | "all">("period")
+  const [query, setQuery] = useState("")
+  const [onlyReady, setOnlyReady] = useState(false)
+  const rows = useMemo(() => {
+    const base = scope === "period" ? periodTasks : tasks.filter((t) => !t.completed && !isClearedFromWork(t))
+    const live = base.map((t) => tasks.find((x) => x.id === t.id) ?? t).filter((t) => !t.completed)
+    const needle = query.trim().toLowerCase()
+    const out: { key: string; ref: { taskId: string; stepId?: string }; label: string; minutes: number; locked: boolean }[] = []
+    for (const task of live) {
+      const taskLocked = hasUnmetDependencies(task, tasks)
+      const leaves = placeSteps(task.subtasks).filter((p) => !p.step.completed && !p.step.subtasks?.some((c) => !c.completed))
+      const refs: { taskId: string; stepId?: string }[] = task.subtasks?.length ? leaves.map((p) => ({ taskId: task.id, stepId: p.step.id })) : [{ taskId: task.id }]
+      for (const ref of refs) {
+        const locked = taskLocked || (!!ref.stepId && !isStepAvailable(task.subtasks, ref.stepId))
+        if (onlyReady && locked) continue
+        const label = lineLabel(ref, tasks)
+        if (needle && !label.toLowerCase().includes(needle)) continue
+        out.push({ key: `${ref.taskId}|${ref.stepId ?? ""}`, ref, label, minutes: lineMinutes(ref, tasks), locked })
+      }
+    }
+    return out
+  }, [scope, periodTasks, tasks, query, onlyReady])
+  return (
+    <section className="todo-session-pick todo-session-flat" aria-label="Flat pick list">
+      <div className="todo-session-pick-bar">
+        <select aria-label="Which tasks" value={scope} onChange={(e) => setScope(e.target.value as "period" | "all")}>
+          <option value="period">{periodLabel || "This day"}</option>
+          <option value="all">All open tasks</option>
+        </select>
+        <input type="search" placeholder="Search tasks and steps" aria-label="Search pick list" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <label>
+          <input type="checkbox" checked={onlyReady} onChange={(e) => setOnlyReady(e.target.checked)} /> Available now
+        </label>
+      </div>
+      <ul className="todo-session-picklist">
+        {rows.length === 0 ? <li className="todo-empty">Nothing open here.</li> : null}
+        {rows.map((row) => (
+          <li key={row.key} className="todo-session-pickline">
+            <span className="todo-session-pickname">{row.label}</span>
+            {row.locked ? <span className="todo-row-lock">waits</span> : null}
+            <span className="todo-session-mins">{row.minutes ? fmtMinutes(row.minutes) : "–"}</span>
+            <button type="button" className="todo-verb" aria-label={`Session with ${row.label}`} onClick={() => onSession(row.ref)}>
+              Session
+            </button>
+            <button type="button" className="todo-verb" aria-label={`Just 25 on ${row.label}`} onClick={() => onSession(row.ref, JUST_25_TEMPLATE_ID)}>
+              Just 25
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 // ---- Run ----------------------------------------------------------------------
 
 function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; onChange: (plan: SessionPlan) => void }) {
@@ -634,14 +930,19 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   const now = useNow(true)
   const [skip, setSkip] = useState<string[]>([])
   const [justStart, setJustStart] = useState<{ taskId: string; stepId?: string } | null>(null)
+  const [parking, setParking] = useState<string | null>(null)
   const taskClock = useTaskClockStarter()
   const penSession = usePenColorSessionStore((s) => s.session)
 
   const left = remainingSec(plan, now)
   const paused = !plan.clock?.running
-  const reached = tierReached(plan, tasks)
+  const reached = tierReached(plan, tasks, now)
   const reachedRank = reached === "none" ? -1 : SESSION_TIERS.findIndex((t) => t.id === reached)
   const current = allLines(plan).find(({ line }) => line.id === plan.activeLineId)?.line
+  const timebox = isTimebox(plan)
+  const due = breakDue(plan, now)
+  // No current line but open ones left: on a break (or every line was skipped past).
+  const waiting = !current ? nextLine(plan, tasks) : undefined
   const focus = current ? lineFocusStep(current, tasks) : null
   const focusStep = focus?.kind === "step" ? focus.step : undefined
 
@@ -689,12 +990,22 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   }
 
   const park = () => {
-    putSession(parkSession(plan, new Date()), [plan])
+    putSession(parkSession(plan, new Date(), parking ?? undefined), [plan])
+    setParking(null)
   }
 
   const end = () => {
-    if (plan.paint && penSession?.taskId && allLines(plan).some(({ line }) => line.taskId === penSession.taskId)) stopTaskClock()
+    releasePenClock([plan])
     onChange(endSession(plan, tasks, new Date()))
+  }
+
+  // End of sitting (Phase 15 A): End pauses, shows "Sat 52m. Left it here:", then ends on Keep or Skip.
+  const [sat, setSat] = useState<{ minutes: number; taskId: string } | null>(null)
+  const endToStrip = () => {
+    const taskId = (current ?? waiting)?.taskId
+    if (!taskId || !tasks.some((t) => t.id === taskId)) return end()
+    setSat({ minutes: elapsedMin(plan, new Date()), taskId })
+    if (!paused) onChange(pauseSession(plan, new Date()))
   }
 
   return (
@@ -718,15 +1029,57 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
           <button type="button" className="todo-verb" onClick={() => onChange(extendSession(plan, 15, new Date()))}>
             +15
           </button>
-          <button type="button" className="todo-verb" title="Put it down and take it up later" onClick={park}>
+          <button
+            type="button"
+            className={`todo-verb${parking !== null ? " is-on" : ""}`}
+            title="Put it down and take it up later"
+            onClick={() => setParking(parking === null ? (plan.futureNote?.text ?? "") : null)}
+          >
             Park
           </button>
-          <button type="button" className="todo-verb is-missed" onClick={end}>
+          <button type="button" className="todo-verb is-missed" onClick={endToStrip}>
             End
           </button>
         </div>
       </div>
-      {left <= 0 ? <p className="todo-session-timeup">Time is up. End and review, or add 15 minutes.</p> : null}
+      {sat ? (
+        <SittingEnd
+          paper
+          task={tasks.find((t) => t.id === sat.taskId)}
+          minutes={sat.minutes}
+          onDone={() => {
+            setSat(null)
+            end()
+          }}
+        />
+      ) : null}
+      {parking !== null ? (
+        <div className="todo-session-ask" role="group" aria-label="Park the session">
+          <FutureNoteInput value={parking} onChange={setParking} />
+          <button type="button" className="todo-btn is-primary" onClick={park}>
+            Park now
+          </button>
+          <button type="button" className="todo-btn" onClick={() => setParking(null)}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
+      {left <= 0 ? (
+        <p className="todo-session-timeup">
+          {timebox ? "Time's up. That counted: Bare minimum reached. End and review, or add 15 minutes." : "Time is up. End and review, or add 15 minutes."}
+        </p>
+      ) : null}
+      {due ? (
+        <div className="todo-session-ask" role="group" aria-label="Break">
+          <span>Break · {fmtMinutes(plan.breakMin ?? 5)}</span>
+          <button type="button" className="todo-btn is-primary" onClick={() => onChange(settleBreak(plan, true, new Date()))}>
+            Take it
+          </button>
+          <button type="button" className="todo-btn" onClick={() => onChange(settleBreak(plan, false, new Date()))}>
+            Skip
+          </button>
+        </div>
+      ) : null}
 
       {current ? (
         <div className="todo-session-current">
@@ -757,6 +1110,18 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
               Paint on Tracking
             </label>
           </div>
+        </div>
+      ) : waiting ? (
+        <div className="todo-session-current">
+          <h3 className="todo-session-current-step">On a break.</h3>
+          <button type="button" className="todo-verb is-primary" onClick={() => onChange(focusLine(plan, waiting.id, new Date()))}>
+            Back to work
+          </button>
+        </div>
+      ) : timebox ? (
+        <div className="todo-session-current">
+          <h3 className="todo-session-current-step">{allLines(plan).length ? "Every line is done. Stay with the clock." : "Stay with it until the clock runs out."}</h3>
+          <p className="todo-session-current-meta">Bare minimum is showing up for {fmtMinutes(plan.durationMin)}.</p>
         </div>
       ) : (
         <div className="todo-session-current">
@@ -816,6 +1181,7 @@ function ParkedView({
   const resume = (mode: "as-was" | "fresh") => onChange(resumeParked(plan, useTaskStore.getState().tasks, new Date(), mode))
   return (
     <div className="todo-session-parked">
+      <FutureNoteBanner note={plan.futureNote} />
       <p className="todo-session-parked-head">
         <span className="todo-session-clock is-paused">{fmtClock(remainingSec(plan, now))}</span>
         <span>
@@ -994,6 +1360,7 @@ function DoneView({ plan, tasks, onBack, onRunAgain }: { plan: SessionPlan; task
         {plan.startedAt ? ` · ran ${fmtMinutes(ranMinutes(plan))} of ${fmtMinutes(plan.durationMin)}` : ""}
       </p>
       {plan.note ? <p className="todo-session-current-path">“{plan.note}”</p> : null}
+      <FutureNoteBanner note={plan.futureNote} />
       <table className="todo-session-table">
         <thead>
           <tr>
@@ -1037,6 +1404,7 @@ function ReviewView({ plan, tasks, onDone }: { plan: SessionPlan; tasks: Task[];
   const setCurrent = (next: SessionPlan) => putSession(next)
   const archive = useSessionPlanStore((s) => s.archive)
   const [note, setNote] = useState(plan.note ?? "")
+  const [futureNote, setFutureNote] = useState(plan.futureNote?.text ?? "")
   const amounts = activeTierPoints()
   const reached = tierReached(plan, tasks)
   const preview = closeSession(plan, tasks, { bareMin: amounts.bareMin, goal: amounts.goal, exceptional: amounts.exceptional })
@@ -1047,7 +1415,7 @@ function ReviewView({ plan, tasks, onDone }: { plan: SessionPlan; tasks: Task[];
     for (const { line } of allLines(plan)) {
       if (!line.outcome && !lineIsDone(line, tasks)) decided = setLineOutcome(decided, line.id, "keep")
     }
-    const closed = closeSession(decided, tasks, { bareMin: amounts.bareMin, goal: amounts.goal, exceptional: amounts.exceptional }, note)
+    const closed = closeSession(decided, tasks, { bareMin: amounts.bareMin, goal: amounts.goal, exceptional: amounts.exceptional }, note, futureNote)
     if (closed.points && closed.points > 0) {
       usePointsStore.getState().addPoints(`session:${closed.id}`, closed.points, `Session · ${closed.title} (${TIER_LABEL[reached as SessionTier] ?? "none"})`)
     }
@@ -1127,6 +1495,10 @@ function ReviewView({ plan, tasks, onDone }: { plan: SessionPlan; tasks: Task[];
         <span>One line on how it went</span>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What helped, what got in the way" />
       </label>
+      <label className="todo-session-note">
+        <span>Note to tomorrow-you</span>
+        <FutureNoteInput value={futureNote} onChange={setFutureNote} />
+      </label>
       <div className="todo-dialog-actions">
         <button type="button" className="todo-btn" onClick={() => setCurrent({ ...plan, phase: "run", clock: plan.clock ? { ...plan.clock } : null })}>
           Back to the session
@@ -1186,6 +1558,15 @@ export function SessionsKey({ onOpen }: { onOpen: () => void }) {
   return (
     <button type="button" className="todo-btn todo-sessions-key" title="Drafts, parked and done sessions" onClick={onOpen}>
       Sessions
+    </button>
+  )
+}
+
+/** The fascia key for the flat pick list: every open step, no session made until asked. */
+export function PickListKey({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button type="button" className="todo-btn todo-picklist-key" title="Every open step in one flat list" onClick={onOpen}>
+      Pick list
     </button>
   )
 }
