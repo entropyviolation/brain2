@@ -257,7 +257,7 @@ export function StartRitualDialog({
     },
     {
       id: "must",
-      label: "Must be done",
+      label: "Required",
       answered: !!mustDo.trim() || requiredIds.length > 0 || prioritizedIds.length > 0,
       body: (
         <>
