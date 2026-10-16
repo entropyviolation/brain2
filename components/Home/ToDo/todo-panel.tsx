@@ -50,13 +50,16 @@ import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { stopTaskClock } from "@/lib/task-clock"
 import { openTaskBlockers } from "@/lib/prereqs"
 import { TaskPrereqDialog } from "./TaskPrereqDialog"
+import { SessionKey, SessionPlanner, SessionsKey } from "./SessionPlanner"
+import { isClearedFromWork } from "@/lib/completion-status"
+import { formatLocalMonthKey, taskScheduledInMonth, taskScheduledInWeek, taskScheduledOnDay } from "@/lib/date-utils"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { openPeriodTodoList, periodTodoListName } from "@/lib/scheduled-lists-sync"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { effectiveStatus, isOpen, withStatus } from "@/lib/completion-status"
 import { localDayKey, useReviewsStore } from "@/lib/reviews-store"
 import { useStarLordStore } from "@/lib/star-lord-store"
-import { isRitualTodoId, ritualDayBoard } from "@/lib/ritual-todo"
+import { isRitualTodoId, ritualBoardFollowingSun, ritualDayBoard } from "@/lib/ritual-todo"
 import type { RitualTodoPlacement } from "@/lib/ritual-todo"
 import { RitualWalkDialog } from "@/components/Reviews/RitualWalkDialog"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
@@ -97,6 +100,9 @@ import { MissedTodoSection } from "./MissedTodoSection"
 import { UndoneTodoSection } from "./UndoneTodoSection"
 import { TodoFilters } from "./todo-filters"
 import { useTodoPrefs, setTodoPrefs } from "./todo-prefs"
+import { useRitesSun } from "./use-rites-sun"
+import { useTodoTime } from "./use-todo-time"
+import { PaceSettings } from "./todo-pace"
 import {
   comfortBand,
   comfortRatio,
@@ -162,6 +168,7 @@ export function TodoPanel({
   const clockStepId = usePenColorSessionStore((s) => s.session?.stepId)
   const taskClock = useTaskClockStarter()
   const [prereqTaskId, setPrereqTaskId] = useState<string | null>(null)
+  const [sessionOpen, setSessionOpen] = useState<false | "session" | "shelves">(false)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
   // when Home passes one, so midnight catch-up is not a copy taken at mount.
@@ -187,7 +194,9 @@ export function TodoPanel({
     else if (activeTodoTab === "quarter") setSeasonDate(date)
     else setCurrentDate(date)
   }
-  const { availableNow, wipLimit } = useTodoPrefs()
+  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin } = useTodoPrefs()
+  const todoTime = useTodoTime(tasks)
+  const ritesSun = useRitesSun(ritesFollowSun)
   const [showAllTasks, setShowAllTasks] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>("open")
   const [sortMode, setSortMode] = useState<TodoSortMode>("priority")
@@ -218,11 +227,33 @@ export function TodoPanel({
   const [composerTier, setComposerTier] = useState<TodoItem["tier"]>("A")
   const [periodFolding, setPeriodFolding] = useState(false)
   const sheetScrollRef = useRef<HTMLDivElement | null>(null)
+  // Open work on the lens, for the session pick list. Season falls back to every open task.
+  const sessionPeriod = useMemo(() => {
+    if (!sessionOpen) return { label: "", tasks: [] as Task[] }
+    const open = tasks.filter((t) => !t.completed && !isClearedFromWork(t))
+    if (activeTodoTab === "day") {
+      return { label: "This day", tasks: open.filter((t) => taskScheduledOnDay(t, focusedDate)) }
+    }
+    if (activeTodoTab === "week") {
+      const week = getWeekString(focusedDate)
+      return { label: "This week", tasks: open.filter((t) => taskScheduledInWeek(t, week)) }
+    }
+    if (activeTodoTab === "month") {
+      const month = formatLocalMonthKey(focusedDate)
+      return { label: "This month", tasks: open.filter((t) => taskScheduledInMonth(t, month)) }
+    }
+    return { label: "All open tasks", tasks: open }
+  }, [sessionOpen, tasks, activeTodoTab, focusedDate])
 
   const focusedDayKey = localDayKey(focusedDate)
   const ritualBoard = useMemo(
     () => ritualDayBoard(focusedDate, reviews, starReports, birthday),
     [focusedDate, reviews, starReports, birthday],
+  )
+  // The open list drops a rite at the wrong end of today. Done, lookups and walks keep the whole board.
+  const openRitualBoard = useMemo(
+    () => (ritesFollowSun ? ritualBoardFollowingSun(ritualBoard, ritesSun.now, ritesSun.sunsetMinutes) : ritualBoard),
+    [ritualBoard, ritesFollowSun, ritesSun.now, ritesSun.sunsetMinutes],
   )
   const morningPriorities = useReviewsStore(
     (s) => s.getMorningReview(focusedDayKey)?.priorityTaskIds ?? EMPTY_PRIORITY_IDS,
@@ -245,13 +276,13 @@ export function TodoPanel({
         weights: priorityWeights,
       })
     }
-    const riteItems = buildTodoItems(ritualBoard.tasks, true, focusedDate)
+    const riteItems = buildTodoItems(openRitualBoard.tasks, true, focusedDate)
     const riteScheduled = filterAndSortTodos(riteItems, "day", true, focusedDate)
     const riteById = new Map(riteScheduled.map((item) => [item.id, item]))
-    const riteView = [...tasks, ...ritualBoard.tasks]
+    const riteView = [...tasks, ...openRitualBoard.tasks]
     const dayRites = filterTodosAvailableNow(
       filterTodosByStatus(
-        ritualBoard.tasks.flatMap((task) => {
+        openRitualBoard.tasks.flatMap((task) => {
           const item = riteById.get(task.id)
           return item ? [item] : []
         }),
@@ -266,7 +297,7 @@ export function TodoPanel({
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, ritualBoard])
+  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, openRitualBoard])
 
   const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
@@ -484,7 +515,7 @@ export function TodoPanel({
   const handleSteps = (todoId: string, subtasks: Subtask[]) => {
     const task = tasks.find((t) => t.id === todoId)
     if (!task) return
-    updateTask({ ...task, subtasks })
+    updateTask({ ...task, subtasks: todoTime.settle(task, subtasks) })
   }
 
   const resolveUndone = (taskId: string, period: TodoPeriod, action: "assimilate" | "push" | "discard") => {
@@ -585,6 +616,9 @@ export function TodoPanel({
       onStepsChange: handleSteps,
       stepsOf: (todoId: string) => taskFor(todoId)?.subtasks,
       estimateOf: (todoId: string) => taskFor(todoId)?.estimatedDuration,
+      defaultEstimateMin,
+      spentOf: (todoId: string) => todoTime.spentOf(taskFor(todoId)?.id ?? todoId),
+      timeOf: (todoId: string) => todoTime.timeOf(taskFor(todoId)?.id ?? todoId),
       onTaskClick: openTask,
       onTierChange: handleTierChange,
       onJustStart: (taskId: string) => {
@@ -981,6 +1015,7 @@ export function TodoPanel({
               steps={task.subtasks}
               onEstimateChange={(minutes) => handleEstimate(task.id, minutes)}
               onStepsChange={(subtasks) => handleSteps(task.id, subtasks)}
+              time={todoTime.timeOf(task.id)}
             />
           </div>
         ) : null}
@@ -1070,6 +1105,8 @@ export function TodoPanel({
                 />
               )}
               <AddTodoDialog onAdd={handleAddTodo} />
+              <SessionKey onOpen={() => setSessionOpen("session")} />
+              <SessionsKey onOpen={() => setSessionOpen("shelves")} />
               <TabsList
                 className="todo-view-keys"
                 data-ui-name="Period keys"
@@ -1087,6 +1124,8 @@ export function TodoPanel({
                   period={activeTodoTab}
                   availableNow={availableNow}
                   onAvailableNowChange={(value) => setTodoPrefs({ availableNow: value })}
+                  ritesFollowSun={ritesFollowSun}
+                  onRitesFollowSunChange={(value) => setTodoPrefs({ ritesFollowSun: value })}
                   showAllTasks={showAllTasks}
                   onShowAllTasksChange={setShowAllTasks}
                   statusFilter={statusFilter}
@@ -1101,6 +1140,16 @@ export function TodoPanel({
                   onToggleFormula={() => setShowFormula((v) => !v)}
                   wipLimit={wipLimit}
                   onWipLimitChange={(value) => setTodoPrefs({ wipLimit: value })}
+                  defaultEstimateMin={defaultEstimateMin}
+                  onDefaultEstimateChange={(value) => setTodoPrefs({ defaultEstimateMin: value })}
+                  paceSlot={
+                    <PaceSettings
+                      samples={todoTime.samples}
+                      overrides={todoTime.paceOverrides}
+                      ghosts={todoTime.paceGhosts}
+                      scopes={todoTime.scopes}
+                    />
+                  }
                 />
               )}
             </div>
@@ -1310,6 +1359,15 @@ export function TodoPanel({
 
       {taskClock.picker}
       <TaskPrereqDialog taskId={prereqTaskId} onClose={() => setPrereqTaskId(null)} />
+      {sessionOpen ? (
+        <SessionPlanner
+          open
+          startOn={sessionOpen}
+          onClose={() => setSessionOpen(false)}
+          periodLabel={sessionPeriod.label}
+          periodTasks={sessionPeriod.tasks}
+        />
+      ) : null}
       {justStartTaskId && (
         <JustStartMode taskId={justStartTaskId} onClose={() => setJustStartTaskId(null)} />
       )}

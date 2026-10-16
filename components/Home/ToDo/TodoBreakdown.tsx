@@ -15,6 +15,8 @@ import type { ClipboardEvent, KeyboardEvent, ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
 import { stepBlockers, stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { formatDuration } from "@/lib/time-entries"
+import { paceGhostLabel } from "@/lib/estimate-pace"
 import {
   getTodoPrefs,
   setTodoPrefs,
@@ -46,6 +48,42 @@ interface StepLink {
 }
 
 const StepLinkContext = createContext<StepLink | null>(null)
+
+/**
+ * Time spent and your pace, for the lid (Phase 6). `spent` is the task's total
+ * (`trackedMinutesForItem`); `stepSpent` is each step's subtree
+ * (`stepSpentMap`). `pace` feeds the ghost figure; null `pace` or
+ * `ghosts: false` hides it. The ghost never writes an estimate.
+ */
+export interface TodoTimeInfo {
+  spent: number
+  stepSpent?: ReadonlyMap<string, number>
+  pace?: number
+  ghosts?: boolean
+  /** The linked pen, shown as a dot and short name. */
+  pen?: { name: string; color?: string }
+}
+
+const TimeInfoContext = createContext<TodoTimeInfo | null>(null)
+
+function useGhost(): string | null {
+  const info = useContext(TimeInfoContext)
+  if (!info || info.ghosts === false || info.pace == null) return null
+  return paceGhostLabel(info.pace)
+}
+
+/** "52m · est 30 · parts 45", leaving out what is not there. */
+export function timeTrio(est: number, parts: number, spent: number): string {
+  const bits: string[] = []
+  if (spent > 0) bits.push(formatDuration(spent))
+  if (est > 0) bits.push(`est ${est}`)
+  if (parts > 0) bits.push(`parts ${parts}`)
+  return bits.join(" · ")
+}
+
+function partsOf(steps: readonly Subtask[] | undefined): number {
+  return (steps ?? []).reduce((total, step) => total + effectiveDurationMinutes(step.estimatedDuration, step.subtasks), 0)
+}
 
 function StepLinkKey({ step, steps }: { step: Subtask; steps: Subtask[] }) {
   const link = useContext(StepLinkContext)
@@ -188,14 +226,19 @@ function MinutesBox({
   minutes,
   label,
   onCommit,
+  overrun = false,
 }: {
   minutes?: number
   label: string
   onCommit: (minutes: number | undefined) => void
+  /** Spent has passed the estimate: the ghost shows without focus. */
+  overrun?: boolean
 }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const [focused, setFocused] = useState(false)
+  const ghost = useGhost()
   const shown = draft ?? (minutes && minutes > 0 ? String(minutes) : "")
-  return (
+  const input = (
     <input
       className="todo-min"
       type="number"
@@ -206,7 +249,9 @@ function MinutesBox({
       aria-label={label}
       value={shown}
       onChange={(e) => setDraft(e.target.value)}
+      onFocus={() => setFocused(true)}
       onBlur={() => {
+        setFocused(false)
         if (draft == null) return
         onCommit(parseMinutes(draft))
         setDraft(null)
@@ -215,6 +260,15 @@ function MinutesBox({
         if (e.key === "Enter") e.currentTarget.blur()
       }}
     />
+  )
+  if (!ghost || !(focused || overrun)) return input
+  return (
+    <>
+      {input}
+      <span className="todo-pace-ghost" title="Your own pace from finished steps and sessions. Your number is never changed.">
+        {ghost}
+      </span>
+    </>
   )
 }
 
@@ -350,6 +404,7 @@ function StepBranch({
   const progress = formatInternalProgress(step.subtasks)
   const effective = effectiveDurationMinutes(step.estimatedDuration, step.subtasks)
   const own = step.estimatedDuration && step.estimatedDuration > 0 ? step.estimatedDuration : 0
+  const spent = useContext(TimeInfoContext)?.stepSpent?.get(step.id) ?? 0
   const kidCount = step.subtasks?.length ?? 0
   const hasKids = kidCount > 0
   const remove = () => {
@@ -432,7 +487,17 @@ function StepBranch({
           minutes={step.estimatedDuration}
           label={`Estimated minutes for ${step.description}`}
           onCommit={(minutes) => onChange(updateNestedStep(steps, step.id, { estimatedDuration: minutes }))}
+          overrun={!step.completed && own > 0 && spent > own}
         />
+        {step.completed && (spent > 0 || (step.actualDuration ?? 0) > 0) ? (
+          <span className="todo-step-spent" title="Time spent · typed estimate · the steps inside">
+            {timeTrio(own, partsOf(step.subtasks), Math.max(spent, step.actualDuration ?? 0))}
+          </span>
+        ) : !step.completed && spent > 0 ? (
+          <span className={`todo-step-spent is-open${own > 0 && spent > own ? " is-over" : ""}`} title="Time spent so far">
+            {formatDuration(spent)} spent
+          </span>
+        ) : null}
         {effective > own ? (
           <span className="todo-est-used" title="The steps inside add up to more, so this is the time that counts">
             counts {effective}m
@@ -542,6 +607,7 @@ export function TodoBreakdown({
   onStepsChange,
   usualMinutes,
   clock,
+  time,
 }: {
   estimate?: number
   steps?: Subtask[]
@@ -550,6 +616,8 @@ export function TodoBreakdown({
   usualMinutes?: number
   /** ▶ on each open step puts it on the pen clock. Omit to hide the keys. */
   clock?: StepClock
+  /** Spent and pace for the readout, step chips and ghost. Omit to hide them. */
+  time?: TodoTimeInfo
 }) {
   const [flockId, setFlockId] = useState<string | null>(null)
   const [askDepth, setAskDepth] = useState(0)
@@ -590,6 +658,7 @@ export function TodoBreakdown({
   }
 
   return (
+    <TimeInfoContext.Provider value={time ?? null}>
     <div
       className="todo-breakdown"
       onClick={(event) => event.stopPropagation()}
@@ -619,7 +688,12 @@ export function TodoBreakdown({
               </button>
             ))}
           </div>
-          <MinutesBox minutes={estimate} label="Estimated minutes" onCommit={onEstimateChange} />
+          <MinutesBox
+            minutes={estimate}
+            label="Estimated minutes"
+            onCommit={onEstimateChange}
+            overrun={own > 0 && (time?.spent ?? 0) > own}
+          />
         </div>
         <div className="todo-lid-readouts" aria-label="Time readouts">
           {usualMinutes && usualMinutes > 0 ? (
@@ -635,6 +709,21 @@ export function TodoBreakdown({
           {effective > 0 ? (
             <span className="todo-est-used" title="Minutes that count (greater of typed and step sum)">
               counts {effective}m
+            </span>
+          ) : null}
+          {time && (time.spent > 0 || time.pen) ? (
+            <span
+              className={`todo-time-trio${effective > 0 && time.spent > effective ? " is-over" : ""}`}
+              aria-label="Estimate, parts and time spent"
+            >
+              {timeTrio(own, partsOf(list), time.spent) || "nothing spent yet"}
+              {time.pen ? (
+                <span className="todo-time-pen">
+                  {" · pen "}
+                  <span className="todo-time-pen-dot" style={time.pen.color ? { background: time.pen.color } : undefined} aria-hidden />
+                  {time.pen.name}
+                </span>
+              ) : null}
             </span>
           ) : null}
           {progress ? <span className="todo-step-progress">{progress}</span> : null}
@@ -697,6 +786,7 @@ export function TodoBreakdown({
         </StepLinkContext.Provider>
       </TodoLidSection>
     </div>
+    </TimeInfoContext.Provider>
   )
 }
 

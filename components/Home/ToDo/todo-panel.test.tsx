@@ -558,6 +558,16 @@ describe("TodoPanel", () => {
     expect(useTaskStore.getState().tasks.find((task) => task.id === "todo-1")?.status).toBe("active")
   })
 
+  it("shows time spent beside the minutes that count, on the row and in the lid", () => {
+    const task = useTaskStore.getState().tasks[0]
+    useTaskStore.getState().updateTask({ ...task, timeLogs: [{ id: "log-1", date: "2026-10-01", durationMinutes: 25 }] })
+    render(<TodoPanel />)
+    const row = screen.getByRole("button", { name: "Finish slides" }).closest(".todo-row") as HTMLElement
+    expect(row.querySelector(".todo-cell-time")).toHaveTextContent("25/60m")
+    fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
+    expect(screen.getByLabelText("Estimate, parts and time spent")).toHaveTextContent("25m · est 60")
+  })
+
   it("picks a tier from a menu and folds the open card without a second title", () => {
     render(<TodoPanel />)
     fireEvent.change(screen.getByLabelText("Tier"), { target: { value: "B" } })

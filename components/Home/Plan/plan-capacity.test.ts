@@ -72,6 +72,24 @@ describe("plan-capacity", () => {
     expect(plannedMinutesForDay(date, tasks, events)).toBe(660)
   })
 
+  it("counts the steps' sum and, when given, the default estimate", () => {
+    const tasks = [
+      task({
+        id: "steps",
+        description: "Steps outgrow the estimate",
+        scheduledDate: date,
+        estimatedDuration: 20,
+        subtasks: [
+          { id: "s1", name: "a", completed: false, estimatedDuration: 30 },
+          { id: "s2", name: "b", completed: false, estimatedDuration: 15 },
+        ] as Task["subtasks"],
+      }),
+      task({ id: "bare", description: "No estimate", scheduledDate: date, estimatedDuration: undefined as never }),
+    ]
+    expect(plannedMinutesForDay(date, tasks, [])).toBe(45)
+    expect(plannedMinutesForDay(date, tasks, [], [], 30)).toBe(75)
+  })
+
   it("formats planned minutes against a waking window", () => {
     expect(wakingWindowMinutes({ wake: 8 * 60, bed: 17 * 60 })).toBe(9 * 60)
     expect(wakingWindowMinutes({ wake: 8 * 60 })).toBeNull()
