@@ -9,6 +9,12 @@ import {
   trackedMinutesByTag,
   trackedMinutesForTags,
   trackedMinutesForTagsInRange,
+  trackedTimeForItem,
+  trackedTimeForItems,
+  trackedMinutesForItem,
+  stepSpentMinutes,
+  stepSpentMap,
+  settleSpentOnFinish,
   type TrackedTimeSource,
 } from "./tracked-time"
 
@@ -122,5 +128,116 @@ describe("tracked-time tag rollups", () => {
     const src: TrackedTimeSource = { scopes, entries: [dual] }
     expect(trackedMinutesForTags(src, "2026-09-19", ["cleaning"])).toBe(60)
     expect(trackedMinutesForTags(src, "2026-09-19", ["deep"])).toBe(60)
+  })
+})
+
+describe("trackedTimeForItem", () => {
+  const cd = block("2026-10-01", "activity", "work", 600, 660)
+  const cdSecondary: TimeEntry = { ...block("2026-10-02", "activity", "untagged", 60, 90), secondaryPenIds: ["work"] }
+  const clocked: TimeEntry = { ...block("2026-10-03", "activity", "dishes", 0, 20), taskId: "t1" }
+  const other = block("2026-10-03", "activity", "laundry", 100, 200)
+  const instant: TimeEntry = { ...block("2026-10-03", "activity", "work", 300, 300), kind: "instant" }
+
+  it("sums linked-pen blocks, secondary pens, and clocked blocks", () => {
+    const task = { id: "t1", penLinks: [{ penId: "work" }] }
+    const r = trackedTimeForItem(task, [cd, cdSecondary, clocked, other, instant])
+    expect(r).toMatchObject({ total: 110, penMinutes: 90, clockMinutes: 20, logMinutes: 0 })
+    expect(r.entries.map((e) => e.id)).toEqual([clocked.id, cdSecondary.id, cd.id])
+  })
+
+  it("counts a duplicate entry id once", () => {
+    const task = { id: "t1", penLinks: [{ penId: "work" }] }
+    expect(trackedMinutesForItem(task, [cd, cd, { ...cd, taskId: "t1" }])).toBe(60)
+  })
+
+  it("counts a taskId block with no pen link", () => {
+    expect(trackedMinutesForItem({ id: "t1" }, [cd, clocked])).toBe(20)
+  })
+
+  it("adds time logs, minus the blocks they already name", () => {
+    const task = {
+      id: "t1",
+      timeLogs: [
+        { durationMinutes: 25, entryIds: [clocked.id] },
+        { durationMinutes: 15 },
+      ],
+    }
+    expect(trackedTimeForItem(task, [clocked])).toMatchObject({ total: 40, clockMinutes: 20, logMinutes: 20 })
+  })
+
+  it("is zero with nothing linked or logged", () => {
+    expect(trackedMinutesForItem({ id: "t9" }, [cd, other])).toBe(0)
+  })
+})
+
+describe("trackedTimeForItems", () => {
+  it("counts a log for the same span as a block once", () => {
+    const painted: TimeEntry = { ...block("2026-10-05", "activity", "work", 540, 600), taskId: "op" }
+    const op = { id: "op", timeLogs: [{ date: "2026-10-05", startTime: "09:00", endTime: "10:30", durationMinutes: 90 }] }
+    expect(trackedTimeForItems([op], [painted])).toMatchObject({ total: 90, clockMinutes: 60, logMinutes: 30 })
+  })
+
+  it("unions blocks across a tree and across linked views", () => {
+    const a = block("2026-10-06", "activity", "work", 0, 60)
+    const b = block("2026-10-06", "location", "home", 30, 90)
+    const tree = [
+      { id: "op", penLinks: [{ penId: "work" }] },
+      { id: "part", penLinks: [{ penId: "home" }, { penId: "work" }] },
+    ]
+    expect(trackedTimeForItems(tree, [a, b])).toMatchObject({ total: 90, penMinutes: 90 })
+  })
+
+  it("adds untimed logs as they are", () => {
+    expect(trackedTimeForItems([{ id: "x", timeLogs: [{ durationMinutes: 40 }] }, { id: "y", timeLogs: [{ durationMinutes: 5 }] }], []).total).toBe(45)
+  })
+})
+
+describe("stepSpentMinutes", () => {
+  const steps: { id: string; description: string; completed: boolean; actualDuration?: number; subtasks?: { id: string; description: string; completed: boolean }[] }[] = [
+    { id: "a", description: "A", completed: false, subtasks: [{ id: "a1", description: "A1", completed: false }] },
+    { id: "b", description: "B", completed: false },
+  ]
+  const onStep = (date: string, stepId: string, from: number, to: number): TimeEntry => ({
+    ...block(date, "act", "cd", from, to),
+    taskId: "t",
+    stepId,
+  })
+
+  it("walks the subtree, adds days, and counts a log and its block once", () => {
+    const day1 = onStep("2026-10-01", "a1", 60, 90)
+    const day2 = onStep("2026-10-02", "a", 0, 20)
+    const other = onStep("2026-10-02", "b", 30, 40)
+    const task = {
+      id: "t",
+      subtasks: steps,
+      timeLogs: [
+        { date: "2026-10-01", startTime: "01:00", endTime: "01:30", durationMinutes: 30, stepId: "a1" },
+        { durationMinutes: 30, stepId: "a1", entryIds: [day1.id] },
+        { durationMinutes: 5, stepId: "a1" },
+      ],
+    }
+    const entries = [day1, day1, day2, other]
+    expect(stepSpentMinutes(task, "a1", entries)).toBe(35)
+    expect(stepSpentMinutes(task, "a", entries)).toBe(55)
+    expect(stepSpentMinutes(task, "b", entries)).toBe(10)
+    expect(stepSpentMinutes(task, "missing", entries)).toBe(0)
+    expect(stepSpentMap(task, entries).get("a")).toBe(55)
+  })
+
+  it("ignores blocks for another task and plain pen blocks", () => {
+    const task = { id: "t", subtasks: steps, penLinks: [{ penId: "cd" }] }
+    const elsewhere = { ...onStep("2026-10-01", "a", 0, 30), taskId: "u" }
+    expect(stepSpentMinutes(task, "a", [elsewhere, block("2026-10-01", "act", "cd", 0, 60)])).toBe(0)
+  })
+
+  it("on finish, actualDuration takes spent when spent is larger", () => {
+    const task = { id: "t", subtasks: steps }
+    const entries = [onStep("2026-10-01", "b", 0, 50)]
+    const ticked = steps.map((s) => (s.id === "b" ? { ...s, completed: true, actualDuration: 20 } : s))
+    expect(settleSpentOnFinish(task, ticked, entries).find((s) => s.id === "b")?.actualDuration).toBe(50)
+    const bigger = steps.map((s) => (s.id === "b" ? { ...s, completed: true, actualDuration: 80 } : s))
+    expect(settleSpentOnFinish(task, bigger, entries).find((s) => s.id === "b")?.actualDuration).toBe(80)
+    // Untouched trees come back as the same array.
+    expect(settleSpentOnFinish(task, steps, entries)).toBe(steps)
   })
 })

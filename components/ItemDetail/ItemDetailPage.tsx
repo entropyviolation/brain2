@@ -39,6 +39,7 @@ import { PERSON_ATTR } from "@/lib/person-types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
 import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -1057,6 +1058,20 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               )}
             </CardContent>
           </Card>
+          {isTask && (
+            <Card>
+              <CardContent className="pt-6">
+                <ItemPenTimeSection
+                  task={task}
+                  readOnly={!isEditing}
+                  onPenLinksChange={(penLinks) => {
+                    touchDraft({ penLinks })
+                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="dependencies" className="space-y-6">

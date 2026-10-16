@@ -8,15 +8,16 @@
  */
 "use client"
 
+import { trackedTimeForItems } from "@/lib/tracked-time"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import {
   buildHeatmap,
   getOperationTaskTree,
-  loggedMinutes,
+  minutesToHours,
   neglectedDays,
   operationProgress,
-  rollupHours,
   type HeatCell,
 } from "@/lib/operations"
 import {
@@ -53,6 +54,7 @@ function HeatGrid({ cells }: { cells: HeatCell[] }) {
 
 export function OperationHome({ operation }: { operation: Task }) {
   const allTasks = useTaskStore((s) => s.tasks)
+  const trackingEntries = useTimeTrackingStore((s) => s.entries)
   const [notesDraft, setNotesDraft] = useState<string>(
     typeof operation.attributes?.[OPERATION_ATTR.homeNotes] === "string"
       ? (operation.attributes[OPERATION_ATTR.homeNotes] as string)
@@ -70,15 +72,16 @@ export function OperationHome({ operation }: { operation: Task }) {
     const tree = getOperationTaskTree(operation.id, allTasks)
     const timeContributors = [operation, ...tree]
     const cells = buildHeatmap(timeContributors, { days: 35 })
-    const totalMinutes = timeContributors.reduce((sum, t) => sum + loggedMinutes(t), 0)
+    // Logs plus Tracking blocks (linked pens, the task clock), each minute once.
+    const totalMinutes = trackedTimeForItems(timeContributors, trackingEntries).total
     return {
       cells,
-      hours: rollupHours(timeContributors),
+      hours: minutesToHours(totalMinutes),
       neglected: neglectedDays(cells),
       progress: operationProgress(operation.id, allTasks),
       totalMinutes,
     }
-  }, [operation, allTasks])
+  }, [operation, allTasks, trackingEntries])
 
   return (
     <div className="ops-panel ops-home-instrument">
