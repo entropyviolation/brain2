@@ -1,6 +1,6 @@
 # To Do redesign plan
 
-Home → To Do. _Last mapped: 2026-10-15._ **Status:** Phases 0–2 shipped on 2026-10-15. Phases 3–7 are planned. `Task.penLinks` exists and the clock uses it; Phase 5 adds editing it from item detail and pen settings, plus totals.
+Home → To Do. _Last mapped: 2026-10-15._ **Status:** Phases 0–3 shipped on 2026-10-15. Phases 4–7 are planned. `Task.penLinks` exists and the clock uses it; Phase 5 adds editing it from item detail and pen settings, plus totals.
 
 The room's current behavior is [`components/Home/ToDo/README.md`](../components/Home/ToDo/README.md). The house order is [`DESIGN_STYLE.md`](DESIGN_STYLE.md): failures first, then layout, then palette. Tidy is the model for plans and for "currently working on", and its internals are mapped in [`components/Modules/README.md` → Tidy internals](../components/Modules/README.md). To Do copies Tidy's patterns but never imports `TidyView`, which the Modules room keeps private.
 
@@ -188,7 +188,17 @@ _Revised 2026-10-15 after mapping Tracking's live clocks._ Brain2 already has tw
    - A thin **focus bar** (Tidy's `tidy-focusbar`, in To Do metal) docks at the bottom of Home with path, estimate, clock, Objectives, Pause and Stop.
 7. **Operations.** An operation's Working on this now can name a task as well; it then behaves as above. The two sessions stay separate stores, as the Tracking README requires.
 
-## Phase 3: Prerequisites that are quick to mark
+## Phase 3: Prerequisites that are quick to mark (shipped 2026-10-15)
+
+Shipped:
+- Step link mode in the lid.
+- Lock chips on steps and rows.
+- **Needs…** for tasks, which reuses `EventPrereqPicker` as is rather than lifting a new `PrereqPicker`.
+- `lib/prereqs.ts`.
+
+Still open:
+- Steps in item detail → Dependencies.
+- Pickers that hide blocked steps (that arrives with the Phase 4 pick list).
 
 - **Steps** gain `dependsOn?: string[]` (step ids inside the same task). **Tasks** keep `dependencies` (task ids).
 - `lib/available-tasks.ts` grows `stepIsAvailable(task, step)` and a cycle check that refuses a link which would close a loop.

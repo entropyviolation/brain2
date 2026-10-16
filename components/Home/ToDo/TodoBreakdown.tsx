@@ -10,9 +10,10 @@
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react"
 import type { ClipboardEvent, KeyboardEvent, ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
+import { stepBlockers, stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import {
   getTodoPrefs,
@@ -29,6 +30,77 @@ import {
 } from "@/lib/todo-steps"
 
 const JOG_PRESETS = [5, 15, 30, 60] as const
+
+/**
+ * Link mode: one step (`from`) is choosing what it needs. Every other step row
+ * becomes a toggle. `choices` are the steps it may wait on (no loops, no family).
+ */
+interface StepLink {
+  from: string | null
+  fromStep?: Subtask
+  needs: Set<string>
+  choices: Set<string>
+  start: (stepId: string) => void
+  toggle: (needsId: string) => void
+  end: () => void
+}
+
+const StepLinkContext = createContext<StepLink | null>(null)
+
+function StepLinkKey({ step, steps }: { step: Subtask; steps: Subtask[] }) {
+  const link = useContext(StepLinkContext)
+  if (!link) return null
+  if (link.from) {
+    if (link.from === step.id) {
+      return <span className="todo-step-link is-from">choosing</span>
+    }
+    const on = link.needs.has(step.id)
+    const allowed = on || link.choices.has(step.id)
+    return (
+      <button
+        type="button"
+        data-no95
+        className={`todo-step-link is-pick${on ? " is-on" : ""}`}
+        aria-pressed={on}
+        disabled={!allowed}
+        title={
+          allowed
+            ? on
+              ? `“${link.fromStep?.description}” needs this. Click to remove.`
+              : `“${link.fromStep?.description}” needs this first`
+            : "Not allowed: it would loop, it is family, or it is done"
+        }
+        onClick={() => link.toggle(step.id)}
+      >
+        {on ? "✓ needed" : "needed?"}
+      </button>
+    )
+  }
+  if (step.completed) return null
+  const blockers = stepBlockers(steps, step.id)
+  return blockers.length ? (
+    <button
+      type="button"
+      data-no95
+      className="todo-step-link is-blocked"
+      title={`Waiting on: ${blockers.map((b) => b.description).join(", ")}. Click to change.`}
+      onClick={() => link.start(step.id)}
+    >
+      needs {blockers.map((b) => b.description).join(", ")}
+    </button>
+  ) : (
+    <button
+      type="button"
+      data-no95
+      className="todo-step-link"
+      title="Mark what this step needs first"
+      aria-label={`What ${step.description} needs first`}
+      onClick={() => link.start(step.id)}
+    >
+      Needs…
+    </button>
+  )
+}
 
 export function TodoLidSection({
   id,
@@ -271,6 +343,8 @@ function StepBranch({
   clock?: StepClock
 }) {
   const live = clock?.liveStepId === step.id
+  const linking = useContext(StepLinkContext)?.from === step.id
+  const blocked = !step.completed && stepBlockers(steps, step.id).length > 0
   const [editing, setEditing] = useState(false)
   const [folded, setFolded] = useState(false)
   const progress = formatInternalProgress(step.subtasks)
@@ -294,7 +368,7 @@ function StepBranch({
 
   return (
     <li
-      className={`todo-step${flockId === step.id ? " is-flock-out" : ""}${live ? " is-live" : ""}`}
+      className={`todo-step${flockId === step.id ? " is-flock-out" : ""}${live ? " is-live" : ""}${linking ? " is-linking" : ""}${blocked ? " is-blocked" : ""}`}
       style={{ ["--todo-depth" as string]: depth }}
     >
       <div className="todo-step-row">
@@ -344,6 +418,7 @@ function StepBranch({
             {step.description}
           </button>
         )}
+        <StepLinkKey step={step} steps={steps} />
         {clock && !step.completed ? (
           <DvdTransportKey
             className="todo-step-clock"
@@ -478,7 +553,31 @@ export function TodoBreakdown({
 }) {
   const [flockId, setFlockId] = useState<string | null>(null)
   const [askDepth, setAskDepth] = useState(0)
+  const [linkFrom, setLinkFrom] = useState<string | null>(null)
   const list = steps ?? []
+  const link = useMemo<StepLink>(() => {
+    const fromStep = linkFrom ? flatFind(list, linkFrom) : undefined
+    return {
+      from: fromStep ? linkFrom : null,
+      fromStep,
+      needs: new Set(fromStep?.dependsOn ?? []),
+      choices: fromStep ? stepPrereqChoices(list, fromStep.id) : new Set(),
+      start: setLinkFrom,
+      toggle: (needsId) => {
+        if (linkFrom) onStepsChange(toggleStepPrereq(list, linkFrom, needsId))
+      },
+      end: () => setLinkFrom(null),
+    }
+  }, [linkFrom, list, onStepsChange])
+
+  useEffect(() => {
+    if (!link.from) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") setLinkFrom(null)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [link.from])
   const effective = effectiveDurationMinutes(estimate, list)
   const own = estimate && estimate > 0 ? estimate : 0
   const progress = formatInternalProgress(list)
@@ -544,6 +643,17 @@ export function TodoBreakdown({
       </TodoLidSection>
 
       <TodoLidSection id="steps" label="Steps">
+        <StepLinkContext.Provider value={link}>
+        {link.from && link.fromStep ? (
+          <div className="todo-link-banner" role="status">
+            <span>
+              Pick what <b>{link.fromStep.description}</b> needs first.
+            </span>
+            <button type="button" className="todo-verb" onClick={link.end}>
+              Done
+            </button>
+          </div>
+        ) : null}
         {list.length === 0 && askDepth < 3 ? (
           <GlassQuestion
             onAsk={(answer) => {
@@ -584,9 +694,19 @@ export function TodoBreakdown({
             /* empty Enter on root does nothing */
           }}
         />
+        </StepLinkContext.Provider>
       </TodoLidSection>
     </div>
   )
+}
+
+function flatFind(steps: readonly Subtask[], id: string): Subtask | undefined {
+  for (const step of steps) {
+    if (step.id === id) return step
+    const hit = step.subtasks?.length ? flatFind(step.subtasks, id) : undefined
+    if (hit) return hit
+  }
+  return undefined
 }
 
 export function TodoDeleteButton({ prompt, onDelete }: { prompt: string; onDelete: () => void }) {

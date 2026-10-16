@@ -2469,3 +2469,115 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   background: rgba(63, 209, 151, 0.14);
   box-shadow: inset 2px 0 0 #3fd197;
 }
+
+/* ---- Prerequisites (Phase 3): Needs… keys, lock chips, link mode ---- */
+
+.todo95 .todo-step-link {
+  flex: 0 0 auto;
+  max-width: 14rem;
+  min-height: 18px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--r-8, 8px);
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  color: var(--chrome-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.todo95 .todo-step-row:not(:hover):not(:focus-within) .todo-step-link:not(.is-blocked):not(.is-pick):not(.is-from) {
+  opacity: 0;
+}
+
+/* Waiting on something: a violet lock chip, the same violet as the in-progress lamp. */
+.todo95 .todo-step-link.is-blocked {
+  color: #3a2878;
+  background: #e6e0fb;
+  box-shadow: inset 0 0 0 1px #b7a6ff;
+}
+
+.todo95 .todo-step-link.is-blocked::before,
+.todo95 .todo-row-lock::before {
+  content: "⊘ ";
+}
+
+.todo95 .todo-step-link.is-pick {
+  color: #1a3a6b;
+  background: #eef2f8;
+  box-shadow: inset 0 0 0 1px #b7c6de;
+}
+
+.todo95 .todo-step-link.is-pick.is-on {
+  color: #fff;
+  background: #3a2878;
+  box-shadow: inset 0 0 0 1px #2a1c5c;
+}
+
+.todo95 .todo-step-link.is-pick:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.todo95 .todo-step-link.is-from {
+  color: #3a2878;
+  font-weight: 700;
+  cursor: default;
+}
+
+.todo95 .todo-step.is-linking > .todo-step-row {
+  box-shadow: inset 2px 0 0 #b7a6ff;
+  background: rgba(183, 166, 255, 0.16);
+}
+
+.todo95 .todo-link-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 6px;
+  padding: 4px 8px;
+  border-radius: var(--r-8, 8px);
+  font-size: 11px;
+  color: #2a1c5c;
+  background: #e6e0fb;
+  box-shadow: inset 0 0 0 1px #b7a6ff;
+}
+
+.todo95 .todo-row-lock {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 16rem;
+  padding: 0 6px;
+  border-radius: var(--r-8, 8px);
+  font-size: 10px;
+  color: #3a2878;
+  background: #e6e0fb;
+  box-shadow: inset 0 0 0 1px #b7a6ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A step still waiting on another reads as not-yet: dimmed name, chip says why. */
+.todo95 .todo-step.is-blocked > .todo-step-row .todo-step-name {
+  color: var(--chrome-ink-soft);
+}
+
+.todo95-dialog .todo-prereq-loop {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: #6b1020;
+  background: #fbe6ea;
+  box-shadow: inset 0 0 0 1px #e4a3b0;
+}
+
+.todo95-dialog .todo-prereq-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+}
