@@ -13,6 +13,8 @@ import {
   trackedTimeForItems,
   trackedMinutesForItem,
   stepSpentMinutes,
+  partsMinutes,
+  timeTrio,
   stepSpentMap,
   settleSpentOnFinish,
   type TrackedTimeSource,
@@ -239,5 +241,19 @@ describe("stepSpentMinutes", () => {
     expect(settleSpentOnFinish(task, bigger, entries).find((s) => s.id === "b")?.actualDuration).toBe(80)
     // Untouched trees come back as the same array.
     expect(settleSpentOnFinish(task, steps, entries)).toBe(steps)
+  })
+})
+
+describe("timeTrio and partsMinutes", () => {
+  it("parts sums the children's counting minutes, and the trio drops what is missing", () => {
+    const steps = [
+      { id: "a", description: "a", completed: false, estimatedDuration: 30 },
+      { id: "b", description: "b", completed: false, subtasks: [{ id: "b1", description: "b1", completed: false, estimatedDuration: 15 }] },
+    ]
+    expect(partsMinutes(steps)).toBe(45)
+    expect(partsMinutes(undefined)).toBe(0)
+    expect(timeTrio(30, 45, 52)).toBe("52m · est 30 · parts 45")
+    expect(timeTrio(0, 0, 0)).toBe("")
+    expect(timeTrio(120, 0, 0)).toBe("est 120")
   })
 })

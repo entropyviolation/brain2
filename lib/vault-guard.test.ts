@@ -307,6 +307,24 @@ describe("vault-guard", () => {
     expect(shouldRejectVaultShrink("cogs-timegrid-store", grid(173), grid(216))).toBe(false)
   })
 
+  it("counts open sessions as well as history, but only history must grow on the hub", () => {
+    const blob = (open: number, history: number) =>
+      JSON.stringify({
+        state: {
+          open: Array.from({ length: open }, (_, i) => ({ id: `o${i}` })),
+          history: Array.from({ length: history }, (_, i) => ({ id: `h${i}` })),
+        },
+        version: 2,
+      })
+    expect(vaultRecordCount("cogs-session-plans", blob(3, 2))).toBe(5)
+    // Wiping every open session is refused even with no history yet.
+    expect(shouldRejectVaultShrink("cogs-session-plans", blob(0, 0), blob(3, 0))).toBe(true)
+    // Deleting a draft is an edit; closing one moves it into history.
+    expect(shouldRejectVaultShrink("cogs-session-plans", blob(1, 0), blob(2, 0))).toBe(false)
+    expect(shouldRejectHubLogShrink("cogs-session-plans", blob(1, 2), blob(2, 2))).toBe(false)
+    expect(shouldRejectHubLogShrink("cogs-session-plans", blob(3, 1), blob(2, 2))).toBe(true)
+  })
+
   it("keeps a hand-painted block when Screen Time replaces its own rows", () => {
     const painted = JSON.stringify({
       state: {

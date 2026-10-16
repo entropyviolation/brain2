@@ -720,3 +720,73 @@
   opacity: 0.55;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Slice H2 ---------------------------------------------------------------- */
+
+/* Hofstadter mark: where the tier's minutes land with estimates doubled. */
+.todo-session-gauge {
+  position: relative;
+}
+
+.todo-session-hofstadter {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: #5a6470;
+}
+
+.todo-session-hofstadter[data-over] {
+  background: var(--ses-over);
+}
+
+.todo-session-hofstadter-note {
+  margin: 0;
+  font-size: 10px;
+  color: var(--chrome-ink-soft, #555);
+}
+
+/* The line name opens its steps here (break down in place). */
+button.todo-session-line-name {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.todo-session-line-name[aria-pressed="true"] {
+  text-decoration: underline;
+}
+
+.todo-session-floor i {
+  color: #111;
+}
+
+.todo-session-futurenote {
+  margin: 0 0 6px;
+  padding: 4px 8px;
+  border-left: 3px solid #8fa7c2;
+  background: #eef0f3;
+  color: #111;
+}
+
+.todo-session-futurenote-input {
+  min-width: 14rem;
+  flex: 1 1 14rem;
+}
+
+.todo-session-shape,
+.todo-session-breaks,
+.todo-session-template,
+.todo-session-savetpl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.todo-session-flat .todo-session-pickline .todo-verb {
+  flex: 0 0 auto;
+}

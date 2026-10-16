@@ -27,7 +27,7 @@ describe("todo-prefs", () => {
 
   it("persists available-now and clamps the WIP cap", () => {
     setTodoPrefs({ availableNow: true, wipLimit: 0 })
-    expect(getTodoPrefs()).toEqual({ availableNow: true, wipLimit: 1, lidCollapsed: { flags: false, time: false, steps: false }, ritesFollowSun: true, defaultEstimateMin: 30, paceOverrides: {}, paceGhosts: true })
+    expect(getTodoPrefs()).toEqual({ availableNow: true, wipLimit: 1, lidCollapsed: { flags: false, time: false, steps: false }, ritesFollowSun: true, defaultEstimateMin: 30, paceOverrides: {}, paceGhosts: true, sessionPadded: true, hideLocked: false, showNextOnly: false })
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}")).toMatchObject({
       availableNow: true,
       wipLimit: 1,
@@ -66,6 +66,20 @@ describe("todo-prefs", () => {
     setTodoPrefs({ paceGhosts: false })
     expect(getTodoPrefs().paceGhosts).toBe(false)
     expect(getTodoPrefs().paceOverrides).toEqual({ overall: 2, "pen:b": 4 })
+  })
+
+  it("Padded for you defaults on and persists", () => {
+    expect(getTodoPrefs().sessionPadded).toBe(true)
+    setTodoPrefs({ sessionPadded: false })
+    expect(getTodoPrefs().sessionPadded).toBe(false)
+    expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").sessionPadded).toBe(false)
+  })
+
+  it("Hide locked and Show next only default off and persist", () => {
+    expect(getTodoPrefs().hideLocked).toBe(false)
+    expect(getTodoPrefs().showNextOnly).toBe(false)
+    setTodoPrefs({ hideLocked: true, showNextOnly: true })
+    expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}")).toMatchObject({ hideLocked: true, showNextOnly: true })
   })
 
   it("clampWipLimit falls back to 3 for junk", () => {

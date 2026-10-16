@@ -1,0 +1,207 @@
+/* components/steps/step-tree.css — the shared step tree (Phase 9). Cool paper, hairline guides, violet selection. */
+
+.step-tree {
+  --step-indent: 16px;
+  --step-guide: rgba(60, 70, 90, 0.18);
+  --step-select: rgba(125, 107, 184, 0.16);
+  --step-select-edge: #7d6bb8;
+  --step-quiet: rgba(40, 48, 60, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.step-tree-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-tree-row,
+.step-tree-composer,
+.step-tree-add,
+.step-tree-more {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 1px 6px 1px calc(var(--step-depth, 0) * var(--step-indent) + 4px);
+  border-radius: 4px;
+}
+
+/* Hairline indent guides, one per level. */
+.step-tree-row::before,
+.step-tree-composer::before,
+.step-tree-add::before,
+.step-tree-more::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--step-depth, 0) * var(--step-indent));
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0 calc(var(--step-indent) / 2 - 0.5px),
+    var(--step-guide) calc(var(--step-indent) / 2 - 0.5px) calc(var(--step-indent) / 2 + 0.5px),
+    transparent calc(var(--step-indent) / 2 + 0.5px) var(--step-indent)
+  );
+  pointer-events: none;
+}
+
+.step-tree-row:focus-visible {
+  outline: 1px solid var(--step-select-edge);
+  outline-offset: -1px;
+}
+.step-tree-row.is-selected {
+  background: var(--step-select);
+}
+.step-tree-row.is-locked .step-tree-name {
+  opacity: 0.6;
+}
+.step-tree-row.is-peek {
+  opacity: 0.55;
+}
+.step-tree-row.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--step-select-edge);
+}
+.step-tree-row.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--step-select-edge);
+}
+.step-tree-row.is-drop-inside,
+.step-tree-add.is-drop {
+  background: var(--step-select);
+  box-shadow: inset 0 0 0 1px var(--step-select-edge);
+}
+
+.step-tree-fold {
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--step-quiet);
+  cursor: pointer;
+}
+.step-tree-fold.is-empty {
+  cursor: default;
+}
+.step-tree-fold-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.step-tree-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(60, 70, 90, 0.45);
+  cursor: grab;
+}
+.step-tree-dot.is-parent {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+.step-tree-dot.is-bare {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--step-guide);
+  cursor: default;
+}
+
+.step-tree-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  overflow-wrap: anywhere;
+}
+.step-tree-name.is-done {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.step-tree-name-edit,
+.step-tree-composer-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+}
+.step-tree-composer-min {
+  width: 56px;
+  font: inherit;
+}
+
+.step-tree-cols {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.step-tree-child {
+  border: 0;
+  background: none;
+  color: var(--step-quiet);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  opacity: 0;
+}
+.step-tree-row:hover .step-tree-child,
+.step-tree-row:focus-within .step-tree-child,
+.step-tree-row:focus .step-tree-child {
+  opacity: 1;
+}
+
+.step-tree-quiet {
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--step-quiet);
+  cursor: pointer;
+}
+.step-tree-quiet:hover {
+  color: inherit;
+  text-decoration: underline;
+}
+.step-tree-add .step-tree-quiet,
+.step-tree-more .step-tree-quiet {
+  margin-left: 32px;
+}
+
+.step-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.step-tree-refusal,
+.step-tree-selection,
+.step-waiting-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--step-quiet, rgba(40, 48, 60, 0.6));
+}
+
+.step-waiting-peek {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+.step-waiting-peek[aria-pressed="true"] {
+  text-decoration: underline;
+}

@@ -14,7 +14,7 @@ import { useMemo, useState } from "react"
 import { Link2, Plus, X } from "lucide-react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
-import { findPen, trackedTimeForItem } from "@/lib/tracked-time"
+import { findPen, partsMinutes, timeTrio, trackedTimeForItem } from "@/lib/tracked-time"
 import type { Task } from "@/lib/types"
 import "./item-pen-time.css"
 
@@ -125,13 +125,19 @@ export function ItemPenLinksField({
   )
 }
 
-export function ItemTrackedTime({ task }: { task: Pick<Task, "id" | "penLinks" | "timeLogs" | "estimatedDuration"> }) {
+export function ItemTrackedTime({
+  task,
+}: {
+  task: Pick<Task, "id" | "penLinks" | "timeLogs" | "estimatedDuration"> & Partial<Pick<Task, "subtasks">>
+}) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const [showAll, setShowAll] = useState(false)
   const tracked = useMemo(() => trackedTimeForItem(task, entries), [task, entries])
   const est = task.estimatedDuration ?? 0
   const left = est > 0 ? est - tracked.total : 0
+  // est · parts · spent (Phase 6, R6); only when there are steps, else the line above says it all.
+  const parts = partsMinutes(task.subtasks)
   const fill = est > 0 ? Math.min(1, tracked.total / est) : 0
   const blocks = showAll ? tracked.entries : tracked.entries.slice(0, ITEM_BLOCKS_SHOWN)
 
@@ -152,6 +158,11 @@ export function ItemTrackedTime({ task }: { task: Pick<Task, "id" | "penLinks" |
         >
           <span style={{ width: `${fill * 100}%` }} />
         </div>
+      )}
+      {parts > 0 && (
+        <p className="ipt-quiet ipt-trio" aria-label="Estimate, parts and time spent">
+          {timeTrio(est, parts, tracked.total)}
+        </p>
       )}
       {tracked.total > 0 && (
         <p className="ipt-quiet ipt-parts">
@@ -195,7 +206,7 @@ export function ItemPenTimeSection({
   onPenLinksChange,
   readOnly,
 }: {
-  task: Pick<Task, "id" | "penLinks" | "timeLogs" | "estimatedDuration">
+  task: Pick<Task, "id" | "penLinks" | "timeLogs" | "estimatedDuration"> & Partial<Pick<Task, "subtasks">>
   onPenLinksChange: (next: Task["penLinks"]) => void
   readOnly?: boolean
 }) {

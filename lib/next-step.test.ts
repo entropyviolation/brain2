@@ -4,6 +4,7 @@ import {
   blockerCandidates,
   finishStep,
   pickStartStep,
+  rankStartSteps,
   setStepDependsOn,
   splitStep,
   startProgress,
@@ -133,5 +134,33 @@ describe("step tree helpers", () => {
 
   it("startProgress counts lowest-level steps only", () => {
     expect(startProgress(cds())).toEqual({ done: 1, total: 7, minutesLeft: 75, minutesTotal: 75 })
+  })
+})
+
+describe("rankStartSteps", () => {
+  const firstMatches = (task: Pick<Task, "subtasks" | "dependencies">, skip?: string[]) => {
+    const pick = pickStartStep(task, { skip })
+    const ranked = rankStartSteps(task, 3, { skip })
+    if (pick.kind !== "step") expect(ranked).toEqual([])
+    else expect(ranked[0].step.id).toBe(pick.step.id)
+  }
+
+  it("returns the top three ready leaves in pick order", () => {
+    expect(rankStartSteps({ subtasks: cds() }).map((r) => r.step.id)).toEqual([
+      "save and export",
+      "remove extra text",
+      "look at new templates",
+    ])
+    expect(rankStartSteps({ subtasks: cds() }, 2)).toHaveLength(2)
+  })
+
+  it("always starts with pickStartStep's step", () => {
+    firstMatches({ subtasks: cds() })
+    firstMatches({ subtasks: cds() }, ["save and export"])
+    firstMatches({ subtasks: cds() }, ["save and export", "remove extra text", "look at new templates", "get better wood", "reformat insert"])
+    firstMatches({ subtasks: [s("a", { estimatedDuration: 5, isMolecular: false }), s("b", { estimatedDuration: 5, isMolecular: true })] })
+    firstMatches({ subtasks: [s("a", { estimatedDuration: 5, dependsOn: ["b"] }), s("b", { estimatedDuration: 9 })] })
+    firstMatches({ subtasks: [s("bare")] })
+    firstMatches({ subtasks: [] })
   })
 })
