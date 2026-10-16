@@ -2,7 +2,7 @@
  * electron/preload.js — Electron preload (context-isolated)
  *
  * Runs in the renderer before the web app loads and exposes a minimal, read-only
- * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, …) via `contextBridge`.
+ * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, …) via `contextBridge`.
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
@@ -14,7 +14,7 @@
  * change with the previous keys still present uses invoke, because persist
  * getItem already waits.
  */
-const { contextBridge, ipcRenderer } = require("electron")
+const { contextBridge, ipcRenderer, webUtils } = require("electron")
 
 // Sandbox: true blocks require() of app files, so this fallback is what actually
 // runs. It used to return the hub value whenever one existed, and every refresh
@@ -46,6 +46,18 @@ const QUICK_CAPTURE_IPC_CHANNEL = "quick-capture:open"
 // `EXTRACT_PDF_TEXT_IPC_CHANNEL` in electron/main.js + `extractPdfText` in
 // electron/ipc/channels.js. Consumed by lib/file-extract.ts.
 const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
+
+// Linked resources (Item Detail → Resources). MUST match `FILE_LINK_CHANNELS`
+// in electron/file-links.js. Consumed by lib/resource-links.ts.
+const FILE_LINK_CHANNELS = {
+  pick: "cogs:link:pick",
+  stat: "cogs:link:stat",
+  resolve: "cogs:link:resolve",
+  open: "cogs:link:open",
+  reveal: "cogs:link:reveal",
+  extractText: "cogs:link:extractText",
+  previewUrl: "cogs:link:previewUrl",
+}
 
 // Module pop-out channel (Workstream C). MUST match `OPEN_MODULE_POPOUT_IPC_CHANNEL`
 // in electron/main.js + `openModulePopout` in electron/ipc/channels.js. Consumed
@@ -297,6 +309,24 @@ contextBridge.exposeInMainWorld("desktop", {
   fetchAppleNotes: (range) => ipcRenderer.invoke(FETCH_APPLE_NOTES_IPC_CHANNEL, range),
   // Query local ActivityWatch. Resolves to health or window/afk/web events.
   fetchScreenTime: (req) => ipcRenderer.invoke(FETCH_SCREENTIME_IPC_CHANNEL, req),
+  // Linked resources: keep a file or folder where it is (docs/RESOURCE_LINKS.md).
+  fileLinks: {
+    // Electron 32 dropped File.path; webUtils reads it for a dropped or picked File.
+    pathForFile: (file) => {
+      try {
+        return webUtils.getPathForFile(file) || ""
+      } catch {
+        return ""
+      }
+    },
+    pick: (opts) => ipcRenderer.invoke(FILE_LINK_CHANNELS.pick, opts),
+    stat: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.stat, p),
+    resolve: (link) => ipcRenderer.invoke(FILE_LINK_CHANNELS.resolve, link),
+    open: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.open, p),
+    reveal: (p) => ipcRenderer.send(FILE_LINK_CHANNELS.reveal, p),
+    extractText: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.extractText, p),
+    previewUrl: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.previewUrl, p),
+  },
   telegram: {
     setToken: (token) => ipcRenderer.invoke(TELEGRAM_SET_TOKEN, token),
     clearToken: () => ipcRenderer.invoke(TELEGRAM_CLEAR_TOKEN),

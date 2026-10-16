@@ -3,11 +3,12 @@
  *
  * Any file can be attached: a PDF, a picture, a recording, a spreadsheet.
  * Bytes go to the attachments IndexedDB (`lib/attachments.ts`) exactly like
- * `file` attributes; the item keeps a small `ItemResource` record.
+ * `file` attributes; the item keeps a small `ItemResource` record. On desktop a
+ * file or folder can instead be linked where it lives (`lib/resource-links.ts`).
  */
 import type { FileValue, ItemResource } from "@/lib/types"
 
-export type ResourceKind = "image" | "pdf" | "audio" | "video" | "text" | "sheet" | "archive" | "other"
+export type ResourceKind = "image" | "pdf" | "audio" | "video" | "text" | "sheet" | "archive" | "folder" | "other"
 
 const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|xml|html?|css|js|ts|tsx|py|rtf|log|yaml|yml)$/i
 const SHEET_EXT = /\.(xlsx?|numbers|ods|csv|tsv)$/i
@@ -17,6 +18,7 @@ const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|svg|heic)$/i
 export function resourceKind(file: Pick<FileValue, "mime" | "name">): ResourceKind {
   const mime = (file.mime || "").toLowerCase()
   const name = file.name || ""
+  if (mime === "inode/directory") return "folder"
   if (mime.startsWith("image/") || IMAGE_EXT.test(name)) return "image"
   if (mime === "application/pdf" || /\.pdf$/i.test(name)) return "pdf"
   if (mime.startsWith("audio/")) return "audio"
@@ -36,6 +38,7 @@ export const RESOURCE_KIND_LABEL: Record<ResourceKind, string> = {
   text: "TXT",
   sheet: "SHT",
   archive: "ZIP",
+  folder: "DIR",
   other: "FILE",
 }
 
