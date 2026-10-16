@@ -182,7 +182,11 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  flex-shrink: 0;
+  /* Shrink and wrap bays inside the panel instead of running past its edge. */
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-end;
 }
 
 .todo95 .todo-bay {
@@ -1152,6 +1156,12 @@ body.win95-app .todo95 button.todo-row-name,
   color: #0a3d2a;
 }
 
+/* A default estimate, not a typed one: dim, regular weight. */
+.todo95 .todo-mins-read.is-default {
+  font-weight: 400;
+  opacity: 0.55;
+}
+
 .todo95 .todo-step-chip {
   flex-shrink: 0;
   font-size: 11px;
@@ -1731,6 +1741,54 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   background: #070c0a;
   padding: 0 4px;
   border-radius: var(--r-2, 2px);
+}
+
+/* Phase 6: est · parts · spent, and the pace ghost. */
+.todo95 .todo-time-trio,
+.todo95 .todo-step-spent {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #3a4a44;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.todo95 .todo-step-spent.is-open {
+  opacity: 0.75;
+}
+
+.todo95 .todo-time-trio.is-over,
+.todo95 .todo-step-spent.is-over {
+  color: #8a3b12;
+}
+
+.todo95 .todo-time-pen-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 3px 0 1px;
+  border-radius: 50%;
+  background: #7a8a84;
+  vertical-align: 0;
+}
+
+.todo95 .todo-pace-ghost {
+  font-size: 10px;
+  font-style: italic;
+  color: #7a8a84;
+  opacity: 0.8;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.todo95 .todo-mins-read.is-over .todo-mins-spent {
+  color: #8a3b12;
+  opacity: 0.9;
+}
+
+.todo95 .todo-mins-read .todo-mins-spent {
+  font-weight: 400;
+  opacity: 0.65;
 }
 
 .todo95 .todo-steps {
@@ -2580,4 +2638,19 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   margin: 0;
   font-size: 11px;
   color: var(--chrome-ink-soft);
+}
+
+/* Phase 6: your pace in the Pace bay. */
+.todo95 .todo-pace-settings {
+  display: contents;
+}
+
+.todo95 .todo-pace-row input {
+  width: 4em;
+}
+
+.todo95 .todo-pace-note {
+  font-size: 10px;
+  color: #5a6a64;
+  font-variant-numeric: tabular-nums;
 }

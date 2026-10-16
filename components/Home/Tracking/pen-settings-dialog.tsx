@@ -45,6 +45,7 @@ import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/co
 import { CrossViewDetailPicker } from "@/components/Home/Tracking/cross-view-detail-picker"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { PenRecentBlocks } from "@/components/Home/Tracking/pen-recent-blocks"
+import { PenLinkedItems } from "@/components/Home/Tracking/pen-linked-items"
 import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
 import { PenLevelPicker } from "@/components/Home/Tracking/pen-level-picker"
 import { PenPlaceEditor } from "@/components/Home/Tracking/pen-place-editor"
@@ -441,6 +442,8 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
           </div>
 
           <PenRecentBlocks scopeId={scopeId} penId={pen.id} penName={name || pen.name} color={color} />
+
+          <PenLinkedItems scopeId={scopeId} penId={pen.id} penName={name || pen.name} />
 
           <div className="trk-section text-xs">
             {feedingHabits.length > 0 ? (

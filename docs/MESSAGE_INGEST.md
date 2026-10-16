@@ -183,7 +183,8 @@ dump (`Name:` then one item per line) still files onto that list, and a
 verb-less line that names a capture destination — a leading list path
 (`brain2: item`, `folder: all: item`), `cat:`, `-mb` / `-monkey`, or `-p` /
 `-plain` — is still an Inbox capture. If the log cannot read the line it is
-captured to Inbox, so nothing is lost.
+captured to Inbox, so nothing is lost. A message whose first word is a link
+is neither: it goes to Inbox → Links (see **Links** below).
 
 **Inbox on purpose.** `inbox:` (also `add:`, `qa:`, `idea:`, `capture:`,
 `quick add:`) sends a line to Inbox only. A trailing **`-i`** or **`-inbox`**
@@ -219,17 +220,47 @@ the same way Mac From Notes parks. Custom first-word aliases live in Settings.
 Built-in **`store`** dumps the live grocery list even when that shortcut map is empty; the Settings example `store` → `groc` is only a shortcut you add yourself. Bare **`g`** is retired — it is a log line like
 any other prefix-less line, not grocery. A Telegram update with neither `update_id` nor `message_id` is logged with a null dedupe key and is not applied.
 
+### Links
+
+_Last mapped: 2026-10-16_
+
+A message whose **first word is a link** goes to **Inbox → Links**, its own
+tab beside Inbox and Monkey brain. It is not a log line and not a revisit
+idea. The link is the first word. Any text after it is the note.
+
+| Message | Link | Note |
+| --- | --- | --- |
+| `wikipedia.com good for research` | `https://wikipedia.com` | `good for research` |
+| `https://www.instagram.com/reel/C1abc/ outfit idea` | that reel | `outfit idea` |
+| `https://vm.tiktok.com/ZM123/` | that TikTok | (none) |
+| `look at https://youtu.be/abc` | — a log line; the link is not first | |
+
+`http://`, `https://`, and `www.` always count. A bare domain needs a known
+ending (`.com`, `.org`, `.io`, …), so `st.louis trip` stays a log line. A
+trailing `,` or `.` on the link is dropped. The row is a `stage: "inbox"` task
+with `savedLink` (`{ url, kind }`); its name is the URL and the note is
+`notes`. Smart-parse does not read the note, so a date or `-mb` in it stays
+text. The same open link sent again adds the new note under the old one
+instead of a second row. The reply names the source: `Links: Instagram reel —
+outfit idea`. The check runs before a pending clarify answer and before grocery
+or to-do pin replies, but an open ritual still owns the message. `-i` at the
+end also files the link in Inbox. `undo` removes it. `read inbox`, `today`,
+`status`, and `count` show Links apart from Inbox. Code:
+`lib/saved-links.ts` (parser, source names), `lib/ingest/apply-link.ts`
+(write), `components/inbox-links.tsx` (tab).
+
 ### Matching precedence
 
 Before any write, the executor applies this order (see `lib/ingest/executor.ts`):
 
 1. **Dedupe** — a text message is claimed by chat plus `message_id`, and also by `update_id` for the first delivery (`lib/ingest/dedupe.ts`). A later edit keeps the message id and is ignored. Live Location is the edit that re-applies, one sample per `update_id`. The event stores `telegramMessageId`. Neither id → log a null dedupe key and do not apply.
 2. **Help / start / info** — `help`, `/help`, `commands`; `/start` (pairing when followed by a code); `info`, `manual`, `cmds`, `instructions` (rewritten cheat-sheets in `lib/ingest/help.ts`).
-3. **Explicit verbs** — grocery (`groc`, …), `needed:` / `get:`, `plan for rn`, `currently` / `stopped` / `switched to`, `log:` / `log-`, and the rest of the verb table below (habit `h`, `track:`, `read:`, …).
-4. **`dh:` habit keywords** — the text after `dh:` must match an editable trigger on a habit (`lib/ingest/text-triggers.ts`, `apply-habit-trigger.ts`). Presets: `hemisync`, `read N pages`, `exercise N min`, `chess score N`. A few filler words may sit before the number (`dh: studied for 20 min`). Quantity **adds** to the day’s total; a score replaces it. The habit form’s **Try a phrase** box previews the same parser and writes nothing. A BIM keyword source (`lib/habit-keyword-source.ts`) counts messages the ingest path already stored. The whole message must be the phrase: “drank water” counts, “drank water please” does not. On that source row the count is true if one arrives, true after a set number, or a logged phrase such as `read {n} pages of {bookname}` or `cleaned for {x} minutes`, which writes the parsed amount and any name on that period. `{x}` and `{minutes}` are the same kind of number as `{n}`. A minutes or hours pattern also paints the prior span on the habit’s tracking activity (`lib/habit-logged-span.ts`). No clock ends that span at the message time and marks it estimated. A trailing clock such as `1:11` is the end; a bare clock is military and stays on the message’s date even when it is still ahead. A tracking link owns the cell number so those minutes are not added twice. With no link, the summed amount is written on the cell. The same message in the same minute counts once. The phrase list can still hold the words. The mode and the pattern live on the source row. A hit with no timestamp is not copied onto every period. A bare keyword, with no `dh:`, is still stored (a log line, or a discrete trigger such as `drank water`) and that stored line is what the source counts.
-5. **Whole-message discrete events** — Settings → **Message ingest** → discrete triggers (defaults: `smoked weed`, `drank water`, `ate {item}`, `took {item}`) via `apply-discrete-event.ts`. Separate from `log:` / `log-`. These stay unprefixed.
-6. **Else** — remaining parsed verbs, multi-line list dumps, explicit `inbox:` capture, or — with no verb — a `log:` line (Inbox only for a list path, `cat:`, `-mb`, `-p`, or a line the log cannot read).
-7. **`-i` / `-inbox`** — peeled off the end before step 1's parse; after the message lands, the text after its verb is also captured to Inbox.
+3. **Links** — a message whose first word is a link → Inbox → Links (`apply-link.ts`), ahead of clarify answers, pin replies, and every verb.
+4. **Explicit verbs** — grocery (`groc`, …), `needed:` / `get:`, `plan for rn`, `currently` / `stopped` / `switched to`, `log:` / `log-`, and the rest of the verb table below (habit `h`, `track:`, `read:`, …).
+5. **`dh:` habit keywords** — the text after `dh:` must match an editable trigger on a habit (`lib/ingest/text-triggers.ts`, `apply-habit-trigger.ts`). Presets: `hemisync`, `read N pages`, `exercise N min`, `chess score N`. A few filler words may sit before the number (`dh: studied for 20 min`). Quantity **adds** to the day’s total; a score replaces it. The habit form’s **Try a phrase** box previews the same parser and writes nothing. A BIM keyword source (`lib/habit-keyword-source.ts`) counts messages the ingest path already stored. The whole message must be the phrase: “drank water” counts, “drank water please” does not. On that source row the count is true if one arrives, true after a set number, or a logged phrase such as `read {n} pages of {bookname}` or `cleaned for {x} minutes`, which writes the parsed amount and any name on that period. `{x}` and `{minutes}` are the same kind of number as `{n}`. A minutes or hours pattern also paints the prior span on the habit’s tracking activity (`lib/habit-logged-span.ts`). No clock ends that span at the message time and marks it estimated. A trailing clock such as `1:11` is the end; a bare clock is military and stays on the message’s date even when it is still ahead. A tracking link owns the cell number so those minutes are not added twice. With no link, the summed amount is written on the cell. The same message in the same minute counts once. The phrase list can still hold the words. The mode and the pattern live on the source row. A hit with no timestamp is not copied onto every period. A bare keyword, with no `dh:`, is still stored (a log line, or a discrete trigger such as `drank water`) and that stored line is what the source counts.
+6. **Whole-message discrete events** — Settings → **Message ingest** → discrete triggers (defaults: `smoked weed`, `drank water`, `ate {item}`, `took {item}`) via `apply-discrete-event.ts`. Separate from `log:` / `log-`. These stay unprefixed.
+7. **Else** — remaining parsed verbs, multi-line list dumps, explicit `inbox:` capture, or — with no verb — a `log:` line (Inbox only for a list path, `cat:`, `-mb`, `-p`, or a line the log cannot read).
+8. **`-i` / `-inbox`** — peeled off the end before step 1's parse; after the message lands, the text after its verb is also captured to Inbox.
 
 An open walkthrough is earlier than this ladder: the reply belongs to that question. `gm` during night, start, or end still opens the morning ritual. `cancel` still quits those walks. Morning ignores `gm` as a command and keeps the current question until `STOP`. Each step edits one bot message for that chat. The person's messages stay as sent. `undo` reverts the last text write for this chat when that write is still the one the store can name. It does not rewind an open ritual. `undo the laundry` stays inbox.
 
@@ -521,6 +552,7 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/apply-phone-screen.ts` | `screen:` / `ios:` → **iPhone Screen Time** only (estimated; no Mac AW stamp). AirDrop `Screen Time to Brain2.shortcut`. |
 | `lib/ingest/apply-phone-life.ts` | `call:` → **iPhone Calls** interval; `text:` → **iPhone Texts** instant. AirDrop `iPhone Call to Brain2.shortcut` / `iPhone Text to Brain2.shortcut`. |
 | `lib/ingest/apply-iphone-notes.ts` | Parse Shortcut wire format, join `2/3` continuations, park on **iPhone Notes Store**; `parkLooseText` parks a read that named nothing |
+| `lib/ingest/apply-link.ts` | A message that starts with a link → Inbox → Links (`savedLink`, note in `notes`). Parser: `lib/saved-links.ts`. Tab: `components/inbox-links.tsx` |
 | `lib/ingest/apply-plan-text.ts` | `plan for rn:` appends today's plan log. `read plan for today` / `read plans for today` |
 | `lib/ingest/apply-todos.ts` | `do:` → Next Actions General. `to do today:` → Home To Do for today, which is the to-do pin. `read to do today` / `pin todo` pin that card once. A reply to the pin adds or checks off by number. Finish time is `completedDate` and `completionReview.completedAt`; `-est` / `-e` is a `logged` estimate on `completedDate` |
 | `lib/ingest/apply-ritual.ts` | `gm` and `review` / `reviews` over text. Morning moves on skip or next; a blank message waits. Live Location is paused until the ritual ends, then the same share resumes |

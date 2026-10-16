@@ -43,7 +43,7 @@ export const TIME_FILTERS: Array<[number, string]> = [
 
 export const PLAN_TIERS = [
   { k: "min", label: "Bare minimum" },
-  { k: "good", label: "Good" },
+  { k: "good", label: "Goal" },
   { k: "extra", label: "Exceptional" },
 ] as const
 

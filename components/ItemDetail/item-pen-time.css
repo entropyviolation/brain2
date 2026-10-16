@@ -1,0 +1,149 @@
+/**
+ * components/ItemDetail/item-pen-time.css — Pens and tracked time bay (`ItemPenTime.tsx`)
+ *
+ * Chips for linked pens, a quiet pen search, a thin est-vs-tracked bar, and
+ * the counted blocks as a ruled list. Diagram grammar, no new palette.
+ */
+
+.ipt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-chip,
+.ipt-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  font-size: 12px;
+  background: var(--id-face, transparent);
+  color: inherit;
+}
+
+.ipt-add {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.ipt-x {
+  display: inline-flex;
+  margin-left: 2px;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.ipt-x:hover,
+.ipt-x:focus-visible {
+  opacity: 1;
+}
+
+.ipt-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ipt-quiet {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+.ipt-picker {
+  margin-top: 6px;
+  max-width: 320px;
+}
+
+.ipt-search {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  background: var(--background, #fff);
+  color: inherit;
+  font-size: 13px;
+}
+
+.ipt-options {
+  margin-top: 4px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: var(--r-2, 4px);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ipt-options li > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.ipt-options li > button:hover,
+.ipt-options li > button:focus-visible {
+  background: var(--accent, rgba(0, 0, 128, 0.08));
+}
+
+.ipt-options > li.ipt-quiet {
+  padding: 5px 8px;
+}
+
+.ipt-time {
+  display: grid;
+  gap: 6px;
+}
+
+.ipt-total {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-bar {
+  height: 6px;
+  border: 1px solid var(--id-shadow, #808080);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ipt-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--id-blue, #000080);
+}
+
+.ipt-bar.is-over > span {
+  background: var(--destructive, #a33);
+}
+
+.ipt-blocks {
+  display: grid;
+  font-size: 12px;
+}
+
+.ipt-blocks > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-block-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

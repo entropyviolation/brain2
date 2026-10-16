@@ -51,6 +51,8 @@ import {
 } from "@/lib/affirmations"
 import { requiredVoicedSecondsFor, type ConfidenceScore } from "@/lib/vocal-confidence"
 import { useVocalConfidence } from "@/hooks/useVocalConfidence"
+import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
+import { formatLocalDateKey } from "@/lib/date-utils"
 
 type Phase = "intro" | "active" | "done"
 
@@ -91,9 +93,15 @@ function MeterRow({
 export function AffirmationsDialog({
   open,
   onClose,
+  lines,
+  dayKey,
 }: {
   open: boolean
+  /** Day the recitations count toward (defaults to today). */
+  dayKey?: string
   onClose: () => void
+  /** Today's shown lines. When given, these are spoken instead of a fresh draw. */
+  lines?: string[]
 }) {
   const { status, score, error, start, reset, stop } = useVocalConfidence()
 
@@ -147,13 +155,13 @@ export function AffirmationsDialog({
 
   const handleStart = useCallback(async () => {
     const pool = ensureAffirmationsPool()
-    const picked = pickRandom(pool, AFFIRMATIONS_PER_SESSION)
+    const picked = lines?.length ? lines.slice(0, AFFIRMATIONS_PER_SESSION) : pickRandom(pool, AFFIRMATIONS_PER_SESSION)
     setSession(picked)
     setIndex(0)
     setUnlocked(false)
     setPhase("active")
     await start(requiredVoicedSecondsFor(picked[0] ?? ""))
-  }, [ensureAffirmationsPool, start])
+  }, [ensureAffirmationsPool, start, lines])
 
   const goToIndex = useCallback(
     (next: number) => {
@@ -164,14 +172,19 @@ export function AffirmationsDialog({
     [reset, session],
   )
 
+  const recite = useAffirmationLogStore((s) => s.recite)
+
   const handleNext = useCallback(() => {
+    // A confident delivery (or a read-through without a mic) counts as said.
+    const said = session[index]
+    if (said) recite(said, dayKey ?? formatLocalDateKey(new Date()), "speak")
     if (index >= session.length - 1) {
       stop()
       setPhase("done")
       return
     }
     goToIndex(index + 1)
-  }, [index, session.length, stop, goToIndex])
+  }, [index, session, stop, goToIndex, recite, dayKey])
 
   const handleClose = useCallback(() => {
     stop()

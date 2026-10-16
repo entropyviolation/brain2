@@ -51,7 +51,7 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     id: "house-cleaning",
     name: "House Cleaning App",
     description:
-      "Tidy: areas with hierarchical chores, importance + estimates, a per-task timer, today’s goal, bulk paste, a Needed list, Stuck mode, and Bare-minimum / Good / Exceptional plans.",
+      "Tidy: areas with hierarchical chores, importance + estimates, a per-task timer, today’s goal, bulk paste, a Needed list, Stuck mode, and Bare-minimum / Goal / Exceptional plans.",
   },
   {
     id: "budget",

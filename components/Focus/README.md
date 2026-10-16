@@ -20,6 +20,8 @@ _Rebuilt 2026-10-15 (Phase 1 of [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESI
 
 Ties go to `isMolecular`, then tree order. The task's own `dependencies` are checked against the task store. `stepId` (a prop) starts that exact step first.
 
+**Planned** ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md), _2026-10-16_): the order grows level (Phase 10), then unlock value (Phase 14), then estimate, then sparks. Each is a no-op for a task without them. Phase 15 A adds `rankStartSteps` and a **Today's choices** screen (two or three leaves, Enter starts the first), **Pull me**, a time-box ring ("Time's up. That counted."), and an end-of-sitting strip at Stop in the focus bar.
+
 **The screen.**
 - An eyebrow, then the path (`Finish CDs › Chaos › insert`).
 - The step in large light type, with its `context`, and a meta line: estimate, "smallest of N ready steps", atomic.

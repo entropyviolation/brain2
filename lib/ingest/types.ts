@@ -74,6 +74,8 @@ export type IngestIntentKind =
   | "currently"
   | "stopped-activity"
   | "switched-to"
+  | "menu"
+  | "link"
   | "unknown"
 
 export interface IngestIntent {
@@ -140,6 +142,41 @@ export type PendingClarifyKind =
   | "receipt"
   | "ritual"
   | "duplicate"
+  | "menu"
+
+/** `today menu` / `week menu` / `month menu` / `season menu` (season is the quarter). */
+export type MenuPeriod = "day" | "week" | "month" | "quarter"
+
+export type MenuScreen =
+  | "home"
+  | "todo"
+  | "todo-help"
+  | "todo-add"
+  | "todo-op"
+  | "todo-detail"
+  | "habits"
+  | "habits-help"
+  | "plan"
+  | "plan-add"
+  | "summary"
+  | "summary-add"
+  | "summary-replace"
+
+/** Open phone menu. Steps advance in `lib/ingest/apply-menu.ts`. */
+export interface MenuState {
+  period: MenuPeriod
+  periodKey: string
+  /** ISO time the menu was opened; the period is read from it. */
+  anchor: string
+  screen: MenuScreen
+  /** To-do numbers as shown: index + 1 is the number. */
+  todoIds?: string[]
+  /** Action waiting for its numbers (`todo-op`). */
+  op?: number
+  /** Task ids still to walk on `todo-detail`. */
+  queue?: string[]
+  queueTotal?: number
+}
 
 export interface PendingClarify {
   kind: PendingClarifyKind
@@ -165,6 +202,8 @@ export interface PendingClarify {
   }
   /** Bot message edited in place for this open ritual. Never a person's message id. */
   ritualCardMessageId?: number
+  /** Open `today menu` (and week / month / season). Present when `kind` is `menu`. */
+  menu?: MenuState
   /**
    * Open lines the phone just skipped because an identical item is already
    * on the list. `see` peeks, `again` adds another, `dismiss` leaves them.

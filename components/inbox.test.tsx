@@ -86,6 +86,36 @@ describe("Inbox", () => {
     expect(screen.queryByRole("button", { name: /Clarify All Ideas/i })).not.toBeInTheDocument()
   })
 
+  it("keeps saved links on the Links tab with their note, apart from the revisit pile", async () => {
+    useTaskStore.getState().addTask(
+      inboxTask("link-1", "https://wikipedia.com", {
+        savedLink: { url: "https://wikipedia.com", kind: "wikipedia" },
+        notes: "good for research",
+      }),
+    )
+    const user = userEvent.setup()
+    render(<Inbox onTaskSelect={vi.fn()} />)
+    expect(screen.getByRole("button", { name: /Inbox/i })).toHaveAttribute("title", "1 to revisit")
+    await user.click(screen.getByRole("button", { name: /Inbox/i }))
+    expect(screen.queryByText("https://wikipedia.com")).not.toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: /Links/ }))
+    expect(screen.getByText("good for research")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /wikipedia\.com/ })).toHaveAttribute("href", "https://wikipedia.com")
+    expect(screen.queryByText("Untitled idea")).not.toBeInTheDocument()
+
+    await user.click(screen.getByTitle("Edit note"))
+    const field = screen.getByRole("textbox", { name: "Link note" })
+    await user.clear(field)
+    await user.type(field, "for the essay{Enter}")
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "link-1")?.notes).toBe("for the essay")
+
+    await user.click(screen.getByTitle("File to All Items"))
+    const filed = useTaskStore.getState().tasks.find((t) => t.id === "link-1")
+    expect(filed?.stage).not.toBe("inbox")
+    expect(filed?.savedLink?.url).toBe("https://wikipedia.com")
+    expect(screen.getByText("No saved links.")).toBeInTheDocument()
+  })
+
   it("deletes an inbox task from the store", async () => {
     const user = userEvent.setup()
     render(<Inbox onTaskSelect={vi.fn()} />)

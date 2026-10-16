@@ -420,13 +420,21 @@ function formatInbox(): string {
   const items = sortInboxNewestFirst(inboxItems())
   const revisit = items.filter((item) => inInboxPartition(item, "inbox"))
   const monkey = items.filter((item) => inInboxPartition(item, "monkey"))
-  if (revisit.length === 0 && monkey.length === 0) return "Inbox is empty."
+  const links = items.filter((item) => inInboxPartition(item, "links"))
+  if (revisit.length === 0 && monkey.length === 0 && links.length === 0) return "Inbox is empty."
   const lines: string[] = []
   lines.push(revisit.length === 0 ? "Inbox (0)" : `Inbox (${revisit.length})`)
   revisit.forEach((item, i) => lines.push(...formatItemLines(i + 1, item)))
   if (monkey.length > 0) {
     lines.push("", `Monkey brain (${monkey.length})`)
     monkey.forEach((item, i) => lines.push(...formatItemLines(i + 1, item)))
+  }
+  if (links.length > 0) {
+    lines.push("", `Links (${links.length})`)
+    links.forEach((item, i) => {
+      lines.push(`${i + 1}. ${item.savedLink!.url}`)
+      if (item.notes?.trim()) lines.push(`   ${item.notes.trim()}`)
+    })
   }
   return lines.join("\n")
 }
@@ -596,7 +604,8 @@ function formatToday(now: Date): string {
   const lines = [
     `Today ${formatDay(now)}`,
     `Inbox: ${inboxItems().filter((item) => inInboxPartition(item, "inbox")).length} open`,
-    ...(inboxItems().some((item) => item.monkeyBrain) ? [`Monkey brain: ${inboxItems().filter((item) => item.monkeyBrain).length}`] : []),
+    ...(inboxItems().some((item) => inInboxPartition(item, "monkey")) ? [`Monkey brain: ${inboxItems().filter((item) => inInboxPartition(item, "monkey")).length}`] : []),
+    ...(inboxItems().some((item) => inInboxPartition(item, "links")) ? [`Links: ${inboxItems().filter((item) => inInboxPartition(item, "links")).length}`] : []),
     `Habits: ${pct === null ? "nothing required" : `${pct}%`}`,
     loc ? `Location: ${loc}` : "Location: —",
     act ? `Activity: ${act}` : "Activity: —",
@@ -630,9 +639,11 @@ function formatStatus(now: Date): string {
     lines.push(`Sleep: ${bed}–${wake}${dur}`)
   }
   const revisit = inboxItems().filter((item) => inInboxPartition(item, "inbox")).length
-  const monkey = inboxItems().filter((item) => item.monkeyBrain).length
+  const monkey = inboxItems().filter((item) => inInboxPartition(item, "monkey")).length
+  const links = inboxItems().filter((item) => inInboxPartition(item, "links")).length
   lines.push(`Inbox: ${revisit} open`)
   if (monkey) lines.push(`Monkey brain: ${monkey}`)
+  if (links) lines.push(`Links: ${links}`)
   return lines.join("\n")
 }
 
@@ -648,9 +659,11 @@ function formatOps(): string {
 
 function formatCounts(): string {
   const revisit = inboxItems().filter((item) => inInboxPartition(item, "inbox")).length
-  const monkey = inboxItems().filter((item) => item.monkeyBrain).length
+  const monkey = inboxItems().filter((item) => inInboxPartition(item, "monkey")).length
+  const links = inboxItems().filter((item) => inInboxPartition(item, "links")).length
   const lines = ["Counts", `Inbox: ${revisit}`]
   if (monkey) lines.push(`Monkey brain: ${monkey}`)
+  if (links) lines.push(`Links: ${links}`)
   const real = [...realLists()].sort((a, b) => a.name.localeCompare(b.name))
   for (const list of real) {
     const counts = listCounts(list)

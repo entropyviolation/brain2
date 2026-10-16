@@ -182,7 +182,17 @@ formulation wording lives on this same ledger and shows as a timeline (GS-10).
 
 ## Time and pens
 
-_Last mapped: 2026-10-15._ The popup's **Time** tab (`ItemDetailPopup.tsx` ~1395) shows estimated vs actual, then the `timeLogs` list. The page shows `ItemEstimateField` and a "Took Nm" badge. Neither shell shows pens or Tracking time, and no field links a task to a pen. **Planned:** `Task.penLinks`, edited here and from pen settings, and a Time tab that totals linked-pen blocks plus time logs ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 5).
+_Last mapped: 2026-10-16._ The popup's **Time** tab (`ItemDetailPopup.tsx` ~1395) shows estimated vs actual, the `timeLogs` list, then **Pens and tracked time** (`ItemPenTime.tsx`). The page shows the same bay at the foot of **Scheduling** (tasks only, read-only when not editing). `ItemPenLinksField` edits `Task.penLinks` through the shell's draft (`touchDraft` + `setTask`); the first link is the clock pen. `ItemTrackedTime` reads `trackedTimeForItem`: total, est-left or past-est, a thin bar, the split (by pen · on the clock · logged), and the counted blocks (12, then "+ N more"). Pen settings edits the same field (**Linked items**). Built for [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 5 (slice E). Operations totals read the same function (slice F). **Planned:** the To Do lid reads it too (Phase 6, slice L).
+
+## Planned — steps as items, stacked popups, one step tree
+
+_Last mapped: 2026-10-16._ Today a step is a `Subtask` in `task.subtasks` with no notes, files or links. **Planned** in [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md):
+- **Phase 9.** `SubtaskTree.tsx` and the To Do lid's `TodoBreakdown.tsx` become hosts of one shared `components/steps/StepTree.tsx`, with drag, multi-select and `est · parts · spent` (Phase 6).
+- **Phase 10.** Steps carry a Bare minimum / Goal / Exceptional tag. The Subtasks tab and Time tab show the task's B / G / E percent (weighted by the tree, each child an equal share of its parent) and the level it is completed to. The step readout's percent changes from a flat leaf count to the weighted one.
+- **Phase 11.** A step becomes an item when needed (`Subtask.itemId`, the item has `parentTaskId` and `stepOf`). The tree stays the source of truth for order, done, estimate, needs, tier and points. `TaskDetailPopup` gains a stack: opening a step's item pushes a layer with a breadcrumb and Back, and Esc closes only the top. `SubtaskTree` rows get **↗**. The older Task-backed subtask that a step delete also removes (above) is a separate, legacy path; Phase 11 maps it before reusing `parentTaskId`.
+- **Phase 12.** A **Card** key opens the To Do task card when the task is on the current period.
+- **Phase 10 / 15.** Steps can carry a spark mark (`Subtask.sparkedAt`). A notice note from the To Do row lands in `noteLog`, tagged `notice`.
+- **Phase 14.** The Dependencies tab gains an **Unlocks** list (what waits on this item) beside what it needs. Parts stay on Subtasks: an open step makes the item incomplete, never locked. A task cannot list its own part or parent as a prerequisite.
 
 ## Dependencies
 

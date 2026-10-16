@@ -106,7 +106,9 @@ export function PlannedActionDialog({ open, onOpenChange, action, createDate }: 
       ? "Daily habit plan"
       : action?.source === "todo"
         ? "To-do plan"
-        : "Planned action"
+        : action?.source === "session"
+          ? "Session"
+          : "Planned action"
 
   return (
     <>

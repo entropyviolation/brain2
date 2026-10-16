@@ -14,6 +14,23 @@ function ownMinutes(minutes: number | undefined): number {
   return minutes
 }
 
+/** The default estimate when nothing is typed (To Do → Pace → Default est). */
+export const DEFAULT_ESTIMATE_MIN = 30
+
+/**
+ * The one rule for minutes that count (Phase 6): the typed estimate, else
+ * `defaultMin`, against the sum of the steps, whichever is greater. Pass
+ * `defaultMin` 0 to get `effectiveDurationMinutes`. The default is never written.
+ */
+export function countingMinutes(
+  item: { estimatedDuration?: number; subtasks?: readonly Subtask[] } | undefined,
+  defaultMin = DEFAULT_ESTIMATE_MIN,
+): number {
+  const typed = effectiveDurationMinutes(item?.estimatedDuration, item?.subtasks)
+  if (typed > 0) return typed
+  return defaultMin > 0 ? defaultMin : 0
+}
+
 /** Greater of the typed estimate and the sum of nested steps, at every level. */
 export function effectiveDurationMinutes(
   minutes: number | undefined,

@@ -10,6 +10,7 @@ import { formatLocalDateKey, sameCalendarDay } from "@/lib/date-utils"
 import { eventCoversDay, isMultiDayEvent } from "@/lib/event-links"
 import { formatDuration } from "@/lib/time-entries"
 import { scheduledDateCountsOnPlan } from "@/lib/item-utils"
+import { countingMinutes } from "@/lib/todo-steps"
 import {
   plannedDurationMinutes,
   todoIdsCoveredByPlacements,
@@ -29,6 +30,8 @@ export function plannedMinutesForDay(
   tasks: Task[],
   events: CalendarEvent[],
   actions: PlannedAction[] = [],
+  /** Minutes for a timed task with no estimate and no steps. 0 counts it as nothing (the old rule). */
+  defaultEstimateMin = 0,
 ): number {
   let minutes = 0
   const coveredTodos = todoIdsCoveredByPlacements(actions, date)
@@ -37,7 +40,7 @@ export function plannedMinutesForDay(
     if (coveredTodos.has(task.id)) continue
     if (!scheduledDateCountsOnPlan(task)) continue
     if (task.scheduledDate && sameCalendarDay(task.scheduledDate, date)) {
-      minutes += task.estimatedDuration ?? 0
+      minutes += countingMinutes(task, defaultEstimateMin)
     }
   }
   for (const event of events) {

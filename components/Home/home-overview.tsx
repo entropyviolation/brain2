@@ -15,17 +15,14 @@
  */
 "use client"
 
-import { useMemo, useState, type CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import {
   HOME_WIDGET_LABEL,
-  affirmationLinesForHome,
   homeInstrumentColorVars,
-  pickDailyAffirmation,
   type HomeWidgetId,
 } from "@/lib/home-widgets"
-import { useTaskStore } from "@/lib/task-store"
 import { DailyProgressQuickview } from "@/components/Home/daily-progress-quickview"
 import { DaysUntilTiles } from "@/components/Home/home-days-until"
 import { DayLampTile } from "@/components/Home/home-day-lamp"
@@ -39,13 +36,13 @@ import { MoonTile } from "@/components/Home/home-moon-tile"
 import { SolarRemainderTile } from "@/components/Home/home-solar-tile"
 import { TrackingNowTile } from "@/components/Home/home-tracking-tile"
 import { VocabTile } from "@/components/Home/home-vocab-tile"
+import { AffirmationTile } from "@/components/Home/home-affirmation-tile"
 import { HomeWidgetDialog, TileHide, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 import { PointsBoard } from "@/components/Home/points-stats"
 import { useHomeDayStats } from "@/components/Home/home-day-stats"
 import { WeatherTile } from "@/components/Home/weather-instrument"
 import type { ReviewPeriod } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { formatLocalDateKey } from "@/lib/date-utils"
 
 type HomeOverviewProps = {
   currentDate: Date
@@ -267,35 +264,6 @@ function ProgressDetail({ currentDate }: { currentDate: Date }) {
         <RemainFold label="Remaining habits" items={remainingHabits} />
       </div>
     </>
-  )
-}
-
-function AffirmationTile({
-  currentDate,
-  onHide,
-}: {
-  currentDate: Date
-  onHide: () => void
-}) {
-  const lists = useTaskStore((s) => s.lists)
-  const tasks = useTaskStore((s) => s.tasks)
-  const line = useMemo(() => {
-    const dateKey = formatLocalDateKey(currentDate)
-    return pickDailyAffirmation(affirmationLinesForHome(lists, tasks), dateKey)
-  }, [lists, tasks, currentDate])
-
-  return (
-    <OverviewTile id="affirmation" onHide={onHide} detail={<p className="home-widget-lead">{line}</p>}>
-      <div className="hab-score-caption">
-        <span>Affirmation</span>
-      </div>
-      <div className="home-crt home-affirmation-crt">
-        <p className="home-affirmation-line">{line}</p>
-      </div>
-      <div className="home-tile-foot">
-        <p className="hab-score-sub">today</p>
-      </div>
-    </OverviewTile>
   )
 }
 

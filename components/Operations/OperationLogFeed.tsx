@@ -8,9 +8,11 @@
  */
 "use client"
 
+import { trackedTimeForItems } from "@/lib/tracked-time"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { getOperationTaskTree, loggedMinutes, minutesToHours, rollupMinutes } from "@/lib/operations"
+import { getOperationTaskTree, minutesToHours } from "@/lib/operations"
 import type { Task, TimeLogEntry } from "@/lib/types"
 import { logTime } from "./operation-actions"
 import { itemTitle } from "@/lib/item-utils"
@@ -22,6 +24,7 @@ interface FeedRow {
 
 export function OperationLogFeed({ operation }: { operation: Task }) {
   const allTasks = useTaskStore((s) => s.tasks)
+  const trackingEntries = useTimeTrackingStore((s) => s.entries)
   const [minutesDraft, setMinutesDraft] = useState("")
   const [noteDraft, setNoteDraft] = useState("")
 
@@ -35,9 +38,9 @@ export function OperationLogFeed({ operation }: { operation: Task }) {
       }
     }
     rows.sort((a, b) => (a.log.date < b.log.date ? 1 : a.log.date > b.log.date ? -1 : 0))
-    const totalMinutes = loggedMinutes(operation) + rollupMinutes(tree)
+    const totalMinutes = trackedTimeForItems(contributors, trackingEntries).total
     return { rows, totalHours: minutesToHours(totalMinutes) }
-  }, [operation, allTasks])
+  }, [operation, allTasks, trackingEntries])
 
   const submit = () => {
     const minutes = Number(minutesDraft)

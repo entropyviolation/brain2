@@ -57,11 +57,16 @@ export const INBOX_CHORDS = {
   slice: ["/"],
 } as const
 
-/** Inbox is the pile to revisit. Monkey brain is the compulsive dump. */
-export type InboxPartition = "inbox" | "monkey"
+/**
+ * Inbox is the pile to revisit. Monkey brain is the compulsive dump. Links is
+ * saved links from BIM (`savedLink` set); a link is on Links and nowhere else.
+ */
+export type InboxPartition = "inbox" | "monkey" | "links"
 
 export function inInboxPartition(task: Task, partition: InboxPartition): boolean {
   if (task.stage !== "inbox" || task.completed) return false
+  if (task.savedLink != null) return partition === "links"
+  if (partition === "links") return false
   return partition === "monkey" ? task.monkeyBrain === true : task.monkeyBrain !== true
 }
 

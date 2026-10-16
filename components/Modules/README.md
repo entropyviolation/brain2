@@ -152,7 +152,7 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `itinerary-doc` | Self-contained printable trip days (`module.config.tripItinerary`): start/end auto-days, city or A→B labels, Open-Meteo weather, timed plans/notes, flight lookup by number |
 | `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
-| `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Good / Exceptional plans |
+| `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Goal / Exceptional plans |
 | `grad-search` | GradSearch program explorer. Search, filters, live scoring, compare, verify, hide/restore, and card or table views. A **Save** control on every card (and **Saved** in the toolbar) keeps favorites on this device. Programs that have a deadline show it on the card, in the table, and at the top of the detail drawer; an application note shows the same way when the record has one. The header scrolls inside the module pane so it stays under the Brain2 window bar. Catalog is the bundled research dataset. Personal marks use the same `gs-*` localStorage keys as the standalone explorer. |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable` (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
@@ -186,7 +186,7 @@ All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleanin
 
 **Plans**
 - `HousePlan` (~207) has `durationHr` / `durationMin` / `durationSec`, `tiers: Record<PlanTier, string[]>` (task ids), `phase` (`draft` / `run` / `done`), `clock: HouseClock | null` and `createdAt`.
-- `PLAN_TIERS` (~44) are `min` **Bare minimum**, `good` **Good** and `extra` **Exceptional**.
+- `PLAN_TIERS` (~44) are `min` **Bare minimum**, `good` **Goal** (shown as Good before 2026-10-16; the stored key stays `good`) and `extra` **Exceptional**.
 - The draft starts from `emptyPlan()` at 1h30m. `planSec` sets the length, with a minimum of 60s.
 - `planAdd` appends a task to a tier. Adding a parent removes its descendants, and a task whose ancestor is already planned is refused (`planAncestorIn`).
 - `startPlan` → `planLive` counts down, with `planPause` / `planResume`. At 0, the 500ms interval in TidyView calls `completePlan`. `endPlan` clears the plan.
