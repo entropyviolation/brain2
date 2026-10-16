@@ -4604,3 +4604,738 @@ body.win95-app .home-tabs [role="tab"][data-state="active"]::before {
 .hab95 .hab-plan-frame > legend + * {
   clear: both;
 }
+
+/* ---- Vocab ---------------------------------------------------------------
+   Word of the day. The face is a picture, the word, and its reading on the
+   glass; the foot is the definition in that language. ↻ sits beside × and
+   shows on hover the same way. */
+
+.home95 .home-vocab-shuffle {
+  position: absolute;
+  top: 8px;
+  right: 24px;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  line-height: 12px;
+  font-size: 11px;
+  color: #222;
+  background: var(--h-face);
+  border: none;
+  box-shadow: var(--h-raised);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.home95 .home-tile:hover > .home-vocab-shuffle,
+.home95 .home-tile:focus-within > .home-vocab-shuffle {
+  opacity: 1;
+}
+
+.home95 .home-vocab-crt {
+  gap: 10px;
+  padding: 4px 10px;
+}
+
+.home95 .home-vocab-picture {
+  flex: none;
+  font-size: 30px;
+  line-height: 1;
+  text-shadow: none;
+  filter: drop-shadow(0 0 4px rgba(125, 255, 196, 0.35));
+}
+
+.home95 .home-vocab-word-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.home95 .home-overview .home-vocab-word {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.home95 .home-overview .home-vocab-reading {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.home95 .home-overview .home-vocab-foot {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  text-align: left;
+}
+
+.home-widget-dialog .home-vocab-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-widget-dialog .home-vocab-views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-views .home-review-key {
+  align-self: center;
+}
+
+.home-widget-dialog .home-vocab-add {
+  margin: 0;
+}
+
+.home-widget-dialog .home-vocab-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-8, 8px);
+  background: var(--friend-lcd, #07140f);
+  color: var(--friend-glow, #7dffc4);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.home-widget-dialog .home-vocab-card p {
+  margin: 0;
+  color: inherit;
+}
+
+.home-widget-dialog .home-vocab-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-widget-dialog .home-vocab-card-picture {
+  flex: none;
+  font-size: 54px;
+  line-height: 1;
+}
+
+.home-widget-dialog .home-vocab-card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-widget-dialog .home-vocab-card .home-vocab-card-word {
+  padding: 0;
+  background: none;
+  font-size: 26px;
+  overflow-wrap: anywhere;
+}
+
+.home-widget-dialog .home-vocab-card-reading {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.home-widget-dialog .home-vocab-card-meta {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* Say it sits on the dark card. body.win95-app replaces background-image and
+   the key ink is near-black, so it takes the Moon transport face: phosphor on
+   lacquer. */
+.home-widget-dialog .home-vocab-speak,
+body.win95-app .home-widget-dialog.home-widget-instrument .home-vocab-card button.home-vocab-speak {
+  flex: none;
+  align-self: center;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  background-color: #0a100e;
+  background-image:
+    linear-gradient(180deg, rgba(184, 255, 220, 0.16) 0, transparent 34%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.08) 0 1px, transparent 1px 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #1e4a36;
+  color: #f4fff9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.95);
+  cursor: pointer;
+}
+
+body.win95-app .home-widget-dialog.home-widget-instrument .home-vocab-card button.home-vocab-speak:focus-visible {
+  outline: 1px dotted #7dffc4;
+  outline-offset: 1px;
+}
+
+.home-widget-dialog .home-vocab-definition {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.home-widget-dialog .home-vocab-example {
+  font-size: 12px;
+  line-height: 1.4;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.home-widget-dialog .home-vocab-inline-speak {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  font-style: normal;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.home-widget-dialog .home-vocab-card .home-widget-note {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.home-widget-dialog .home-vocab-translation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(125, 255, 196, 0.35);
+  color: #cfe9ff;
+}
+
+.home-widget-dialog .home-vocab-tag {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-vocab-week summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-widget-dialog .home-vocab-week ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.home-widget-dialog .home-vocab-week-day {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+/* ---- Vocab: favorites and flashcards ------------------------------------
+   The deck is one language's favorites. Front: a cool index card on cobalt
+   graph rule with a FIG. plate and crop marks. Back: the phosphor glass. The
+   card turns on Y with real depth. No yellow paper. */
+
+.home-widget-dialog .home-vocab-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 2px;
+  border-radius: var(--r-6, 6px);
+  background: #1b2420;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.home-widget-dialog .home-vocab-mode,
+body.win95-app .home-widget-dialog .home-vocab-modes button.home-vocab-mode {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-4, 4px);
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #8fb8a6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-vocab-mode.is-on,
+body.win95-app .home-widget-dialog .home-vocab-modes button.home-vocab-mode.is-on {
+  background: linear-gradient(180deg, #f3f3f3, #b5b5b5 55%, #8f8f8f);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #000;
+  color: var(--friend-ink, #1c140f);
+}
+
+.home-widget-dialog .home-vocab-mode-count {
+  margin-left: 4px;
+  opacity: 0.75;
+}
+
+.home-widget-dialog .home-vocab-card-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+body.win95-app .home-widget-dialog.home-widget-instrument .home-vocab-card button.home-vocab-fav.is-on {
+  color: #ffd1ea;
+  text-shadow: 0 0 6px rgba(255, 138, 212, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 230, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #6a2d52;
+}
+
+.home-widget-dialog .home-vocab-week-fav {
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-vocab-week-fav.is-on {
+  color: #d23c8c;
+}
+
+/* Flashcards */
+
+.home-widget-dialog .home-vocab-flash {
+  --flash-paper: #f4f7fb;
+  --flash-rule: rgba(46, 92, 196, 0.13);
+  --flash-rule-major: rgba(46, 92, 196, 0.26);
+  --flash-ink: #14213d;
+  --flash-cobalt: #2e5cc4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  outline: none;
+}
+
+.home-widget-dialog .home-vocab-flash-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-widget-dialog .home-vocab-flash-count {
+  min-width: 46px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-widget-dialog .home-vocab-flash-progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #1b2420;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.home-widget-dialog .home-vocab-flash-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #5ee0c5, #7dffc4);
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.8);
+  transition: width 240ms ease;
+}
+
+.home-widget-dialog .home-vocab-flash-tally {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-flash-tally > span {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-widget-dialog .home-vocab-flash-tally .is-learning {
+  background: #ffe1d6;
+  color: #a33a14;
+  box-shadow: inset 0 0 0 1px #e58a66;
+}
+
+.home-widget-dialog .home-vocab-flash-tally .is-know {
+  background: #d4f7ea;
+  color: #11684c;
+  box-shadow: inset 0 0 0 1px #5ec7a2;
+}
+
+.home-widget-dialog .home-vocab-flash-card,
+body.win95-app .home-widget-dialog .home-vocab-flash button.home-vocab-flash-card {
+  display: block;
+  width: 100%;
+  height: 290px;
+  padding: 0;
+  border: 0;
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  perspective: 1400px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.home-widget-dialog .home-vocab-flash-card:focus-visible {
+  outline: 1px dotted var(--flash-cobalt);
+  outline-offset: 3px;
+}
+
+.home-widget-dialog .home-vocab-flash-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.home-widget-dialog .home-vocab-flash-card.is-flipped .home-vocab-flash-inner {
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-widget-dialog .home-vocab-flash-inner {
+    transition: none;
+  }
+}
+
+.home-widget-dialog .home-vocab-flash-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 24px 22px;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* Front: cool index card on graph rule, crop marks in the corners. */
+.home-widget-dialog .home-vocab-flash-face.is-front {
+  color: var(--flash-ink);
+  background-color: var(--flash-paper);
+  background-image:
+    linear-gradient(var(--flash-rule-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--flash-rule-major) 1px, transparent 1px),
+    linear-gradient(var(--flash-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--flash-rule) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+  background-position: -1px -1px;
+  box-shadow:
+    0 1px 0 #fff inset,
+    0 0 0 1px #b9c6dc,
+    0 10px 22px rgba(20, 33, 61, 0.28),
+    0 2px 4px rgba(20, 33, 61, 0.2);
+}
+
+.home-widget-dialog .home-vocab-flash-face.is-front::before,
+.home-widget-dialog .home-vocab-flash-face.is-front::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--flash-cobalt);
+  border-style: solid;
+  opacity: 0.55;
+}
+
+.home-widget-dialog .home-vocab-flash-face.is-front::before {
+  top: 9px;
+  left: 9px;
+  border-width: 1px 0 0 1px;
+}
+
+.home-widget-dialog .home-vocab-flash-face.is-front::after {
+  right: 9px;
+  bottom: 9px;
+  border-width: 0 1px 1px 0;
+}
+
+/* Back: phosphor glass. */
+.home-widget-dialog .home-vocab-flash-face.is-back {
+  transform: rotateY(180deg);
+  color: var(--friend-glow, #7dffc4);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.14), transparent 55%),
+    repeating-linear-gradient(180deg, rgba(125, 255, 196, 0.05) 0 1px, transparent 1px 3px),
+    var(--friend-lcd, #07140f);
+  box-shadow:
+    inset 0 0 0 1px #1e4a36,
+    inset 0 0 40px rgba(0, 0, 0, 0.6),
+    0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.home-widget-dialog .home-vocab-flash-fig {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.home-widget-dialog .is-front .home-vocab-flash-fig {
+  color: var(--flash-cobalt);
+}
+
+.home-widget-dialog .home-vocab-flash-hint {
+  position: absolute;
+  bottom: 9px;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.home-widget-dialog .home-vocab-flash-term {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-flash-picture {
+  font-size: 72px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(20, 33, 61, 0.2));
+}
+
+.home-widget-dialog .home-vocab-flash-word {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+
+.home-widget-dialog .is-back .home-vocab-flash-word {
+  text-shadow: 0 0 8px rgba(125, 255, 196, 0.6);
+}
+
+.home-widget-dialog .home-vocab-flash-reading {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-vocab-flash-meaning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-y: auto;
+}
+
+.home-widget-dialog .home-vocab-flash-meaning p {
+  margin: 0;
+  color: inherit;
+}
+
+.home-widget-dialog .home-vocab-flash-pos {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.home-widget-dialog .home-vocab-flash-gloss {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.home-widget-dialog .home-vocab-flash-definition {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.home-widget-dialog .home-vocab-flash-english {
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .is-back .home-vocab-flash-english {
+  color: #cfe9ff;
+}
+
+.home-widget-dialog .home-vocab-flash-example {
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.home-widget-dialog .home-vocab-flash-controls {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 8px;
+}
+
+.home-widget-dialog .home-vocab-flash-controls .home-review-key {
+  align-self: stretch;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.home-widget-dialog .home-vocab-flash-controls .home-review-key:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+body.win95-app .home-widget-dialog .home-vocab-flash button.home-vocab-flash-learning {
+  background: linear-gradient(180deg, #fff1eb, #f6c2ad 60%, #e58a66);
+  color: #7a2a0c;
+}
+
+body.win95-app .home-widget-dialog .home-vocab-flash button.home-vocab-flash-know {
+  background: linear-gradient(180deg, #effff8, #b6efd9 60%, #5ec7a2);
+  color: #0c4e39;
+}
+
+.home-widget-dialog .home-vocab-flash-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-flash-keys {
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-vocab-flash-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 16px;
+  border-radius: 10px;
+  text-align: center;
+  color: #14213d;
+  background-color: #f4f7fb;
+  background-image:
+    linear-gradient(rgba(46, 92, 196, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 92, 196, 0.12) 1px, transparent 1px);
+  background-size: 12px 12px;
+  box-shadow: 0 0 0 1px #b9c6dc;
+}
+
+.home-widget-dialog .home-vocab-flash-empty p {
+  margin: 0;
+}
+
+.home-widget-dialog .home-vocab-flash-empty-mark {
+  font-size: 34px;
+  color: #2e5cc4;
+}
+
+.home-widget-dialog .home-vocab-flash-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border-radius: 10px;
+  color: var(--friend-glow, #7dffc4);
+  background: var(--friend-lcd, #07140f);
+  box-shadow: inset 0 0 0 1px #1e4a36;
+}
+
+.home-widget-dialog .home-vocab-flash-done p {
+  margin: 0;
+  color: inherit;
+}
+
+.home-widget-dialog .home-vocab-flash-done-figure {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(125, 255, 196, 0.7);
+}
+
+.home-widget-dialog .home-vocab-flash-done-figure span {
+  font-size: 24px;
+  opacity: 0.6;
+}
+
+.home-widget-dialog .home-vocab-flash-done-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-vocab-flash-done .home-widget-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* `.home-widget-dialog .home-widget-detail p` sets 13px and the house skin
+   repaints buttons and tablists; these restate the vocab sizes and faces at
+   that weight. */
+.home-widget-dialog .home-widget-detail p.home-vocab-definition { font-size: 14px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-card-word { font-size: 26px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-card-reading { font-size: 13px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-card-meta { font-size: 10px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-example { font-size: 12px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-pos { font-size: 10px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-gloss { font-size: 22px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-definition { font-size: 15px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-english { font-size: 12px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-example { font-size: 12px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-done-figure { font-size: 48px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-done-label { font-size: 10px; }
+.home-widget-dialog .home-widget-detail p.home-vocab-flash-empty-mark { font-size: 34px; }
+
+body.win95-app .home-widget-dialog .home-widget-detail div.home-vocab-modes {
+  background-color: #1b2420;
+  background-image: none;
+}
+
+body.win95-app .home-widget-dialog .home-widget-detail .home-vocab-flash-controls button.home-vocab-flash-learning {
+  background-image: linear-gradient(180deg, #fff1eb, #f6c2ad 60%, #e58a66);
+  color: #7a2a0c;
+}
+
+body.win95-app .home-widget-dialog .home-widget-detail .home-vocab-flash-controls button.home-vocab-flash-know {
+  background-image: linear-gradient(180deg, #effff8, #b6efd9 60%, #5ec7a2);
+  color: #0c4e39;
+}

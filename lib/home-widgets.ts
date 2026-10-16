@@ -1,7 +1,8 @@
 /**
  * lib/home-widgets.ts — Home overview strip catalog
  *
- * Square modules on the Home header (every sub-tab). Persist v9 appends
+ * Square modules on the Home header (every sub-tab). Persist v10 appends
+ * Vocab and shows it. Persist v9 appends
  * Already flowing and Plan and lived and leaves them hidden. Persist v8 adds
  * `widgetsFollowClock` (default off: squares stay on the day you are viewing).
  * Persist v7 shows Moon after Days Until. Persist v6 shows Latest award.
@@ -57,6 +58,7 @@ export const HOME_WIDGET_IDS = [
   "inbox",
   "flow",
   "paint",
+  "vocab",
 ] as const
 
 /** Points wells that used to be four tiles. Folded into `points` in persist v3. */
@@ -83,6 +85,7 @@ export const HOME_WIDGET_LABEL: Record<HomeWidgetId, string> = {
   inbox: "Inbox mill",
   flow: "Already flowing",
   paint: "Plan and lived",
+  vocab: "Vocab",
 }
 
 /**
@@ -108,6 +111,7 @@ export const DEFAULT_HOME_WIDGET_ORDER: HomeWidgetId[] = [
   "solar",
   "moon",
   "daysuntil",
+  "vocab",
 ]
 
 export const DEFAULT_HOME_WIDGET_HIDDEN: HomeWidgetId[] = [
@@ -132,6 +136,9 @@ export const HOME_WIDGETS_TUCKED_IN_V4: HomeWidgetId[] = ["solar", "tracking"]
 
 /** Optional tiles introduced in persist version 5. */
 export const HOME_WIDGETS_TUCKED_IN_V5: HomeWidgetId[] = ["night", "harvest", "inbox"]
+
+/** Vocab joins in persist version 10 at the end of the strip, showing. */
+export const HOME_WIDGETS_ADDED_IN_V10: HomeWidgetId[] = ["vocab"]
 
 /** Optional tiles introduced in persist version 9. Left hidden so the strip does not move. */
 export const HOME_WIDGETS_TUCKED_IN_V9: HomeWidgetId[] = ["flow", "paint"]
@@ -276,6 +283,13 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
     shows: "Prospective forward plan against retrospective waking paint. Plan is scheduled minutes still ahead, not duration copied onto done rows. Lived is painted minutes, each minute once, with sleep left out. Open means neither side has anything.",
     useful: "Prospective minutes and retrospective waking paint, in the same square.",
     preview: { caption: "Plan and lived", crt: "Short", footer: "plan 5h · lived 3h" },
+  },
+  {
+    id: "vocab",
+    name: "Vocab",
+    shows: "A new word every day with its definition. English runs from everyday words through SAT / Word Power to extremely advanced. Add French, Italian, German, Japanese, Spanish, or Mandarin views: common words come with a picture, and the definition is written in that language. ↻ draws another word for the day. The detail sets the level per language, says the word aloud, and Translate shows the English.",
+    useful: "A daily word to grow your own vocabulary, or to learn a new language one word at a time.",
+    preview: { caption: "Vocab", crt: "🍎 la pomme", footer: "noun · Un fruit rond, rouge ou vert." },
   },
 ]
 
@@ -695,6 +709,13 @@ export function migrateHomeWidgetPersist(
     for (const id of HOME_WIDGETS_TUCKED_IN_V9) {
       if (!order.includes(id)) order.push(id)
       if (!hidden.includes(id)) hidden.push(id)
+    }
+  }
+
+  if (fromVersion < 10) {
+    for (const id of HOME_WIDGETS_ADDED_IN_V10) {
+      if (!order.includes(id)) order.push(id)
+      hidden = hidden.filter((item) => item !== id)
     }
   }
 

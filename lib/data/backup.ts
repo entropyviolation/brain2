@@ -69,6 +69,7 @@ import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useSkyMotionStore } from "@/lib/sky-motion-store"
+import { useVocabStore } from "@/lib/vocab-store"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
@@ -178,6 +179,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("home-weather"), rehydrate: persistRehydrate(useHomeWeatherStore) },
   { key: persistKey("home-days-until"), rehydrate: persistRehydrate(useHomeDaysUntilStore) },
   { key: persistKey("sky-motion"), rehydrate: persistRehydrate(useSkyMotionStore) },
+  { key: persistKey("home-vocab"), rehydrate: persistRehydrate(useVocabStore) },
   { key: persistKey("sun-times"), rehydrate: persistRehydrate(useSunTimesStore) },
   { key: persistKey("ui-names"), rehydrate: persistRehydrate(useUiNamesStore) },
   { key: persistKey("log-keywords"), rehydrate: persistRehydrate(useLogKeywordsStore) },
@@ -244,6 +246,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-home-days-until": "Days Until",
   [persistKey("sky-motion")]: "Moon chart motion",
   "cogs-sky-motion": "Moon chart motion",
+  [persistKey("home-vocab")]: "Vocab",
+  "cogs-home-vocab": "Vocab",
   [persistKey("sun-times")]: "Sunrise & sunset history",
   "cogs-sun-times": "Sunrise & sunset history",
   [persistKey("ui-names")]: "Names overlay",
@@ -498,6 +502,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("home-weather")]: asLiveStore(useHomeWeatherStore),
   [persistKey("home-days-until")]: asLiveStore(useHomeDaysUntilStore),
   [persistKey("sky-motion")]: asLiveStore(useSkyMotionStore),
+  [persistKey("home-vocab")]: asLiveStore(useVocabStore),
   [persistKey("sun-times")]: asLiveStore(useSunTimesStore),
   [persistKey("ui-names")]: asLiveStore(useUiNamesStore),
   [persistKey("log-keywords")]: asLiveStore(useLogKeywordsStore),

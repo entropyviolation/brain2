@@ -90,6 +90,7 @@ body.win95-app .home95 .home-tile.is-harvest { --home-caption-pip: #a8ff9e; }
 body.win95-app .home95 .home-tile.is-inbox { --home-caption-pip: #ff6a8a; }
 body.win95-app .home95 .home-tile.is-flow { --home-caption-pip: #5ee0c5; }
 body.win95-app .home95 .home-tile.is-paint { --home-caption-pip: #e3a8ff; }
+body.win95-app .home95 .home-tile.is-vocab { --home-caption-pip: #8affe6; }
 
 /* ---- Body: satin handheld ---------------------------------------------- */
 
@@ -578,7 +579,8 @@ body.win95-app .home95 .home-overview .home-tile[data-widget="points"],
 body.win95-app .home95 .home-overview .home-tile[data-widget="weather"],
 body.win95-app .home95 .home-overview .home-tile[data-widget="affirmation"],
 body.win95-app .home95 .home-overview .home-tile[data-widget="flow"],
-body.win95-app .home95 .home-overview .home-tile[data-widget="paint"] {
+body.win95-app .home95 .home-overview .home-tile[data-widget="paint"],
+body.win95-app .home95 .home-overview .home-tile[data-widget="vocab"] {
   grid-column: span 2;
 }
 
