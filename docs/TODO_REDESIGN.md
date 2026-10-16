@@ -653,20 +653,20 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | A–D | Grid, mark carry, ink; Just Start; prerequisites; task on the clock | 0–3 | — | — | Shipped |
 | G, Q, H | Sessions; tier id rename; park, resume, shelves | 4 | B, C, D | — | Built 2026-10-16 |
 | J | Rites follow the sun | 8 | — | — | Built 2026-10-16 |
-| H2 | Phase 4 leftovers: ways in, Flat list, break down in place, Hofstadter in fit, interstitials, Park in focus bar, templates incl. **Just 25**, vault guard counts `open`; future note, floor suggestion | 4 | H | M | Planned |
+| H2 | Phase 4 leftovers: ways in, Flat list, break down in place, Hofstadter in fit, interstitials, Park in focus bar, templates incl. **Just 25**, vault guard counts `open`; future note, floor suggestion | 4 | H | M | Built 2026-10-16; padded gauge (FN-2) and row Just 25 in progress |
 | E | Pen ↔ item link, `trackedMinutesForItem`, item detail Time, pen settings field | 5 | — | M | Built 2026-10-16 |
 | F | Estimate rule everywhere, default estimate, Operations totals | 6 | E | S | Built 2026-10-16 |
-| L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16 |
-| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Planned |
-| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Planned |
-| M | Step items, stacked item detail | 11 | K | M | Planned |
+| L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; padded gauge wiring in progress; task card placement with O |
+| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9), Paste as log (I) and step ↗ (M) left |
+| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | In progress |
+| M | Step items, stacked item detail | 11 | K | M | In progress |
 | O | Task card | 12 | K, L, N (M for ↗) | L | Planned |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
 | S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half after N |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
-| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Planned |
+| U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | In progress (without Pull me) |
 | V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps after N |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
 | X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
