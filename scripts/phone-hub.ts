@@ -14,22 +14,35 @@
  * See docs/MESSAGE_INGEST.md.
  */
 import { readFileSync, writeFileSync, existsSync, watch, mkdirSync, statSync } from "node:fs"
-import { createServer } from "node:http"
+import { createServer, type IncomingMessage as HttpRequest, type ServerResponse } from "node:http"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { dumpLocalStorage, fillLocalStorage, installPhoneHubGlobals } from "./phone-hub-polyfill.mjs"
 import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./persist-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
-import { flushScheduledPersist } from "../lib/persist-storage.ts"
-import { createChatQueue } from "../lib/ingest/chat-queue.ts"
-import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates.ts"
-import { createDeferredAlbum } from "../lib/ingest/deferred-album.ts"
-import { compareSentOrder } from "../lib/ingest/message-time.ts"
+import { flushScheduledPersist } from "../lib/persist-storage"
+import { createChatQueue } from "../lib/ingest/chat-queue"
+import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates"
+import { createDeferredAlbum } from "../lib/ingest/deferred-album"
+import { compareSentOrder } from "../lib/ingest/message-time"
 import {
   allowedUpdatesParam,
   callbackQueryToIncoming,
   commandMenuRegistration,
 } from "../lib/ingest/telegram-ui.mjs"
+import type { IngestTransport } from "../lib/ingest/deliver-reply"
+import type { IncomingTelegramPayload } from "../lib/ingest/telegram-bridge"
+
+type ExecutorModule = typeof import("../lib/ingest/executor")
+type HydratedStore = {
+  persist?: {
+    hasHydrated?: () => boolean
+    onFinishHydration: (fn: () => void) => unknown
+    rehydrate?: () => Promise<void> | void
+  }
+}
+type TelegramUpdate = { update_id?: number; callback_query?: { id?: string } }
+type PollRow = { update: TelegramUpdate; payload: IncomingTelegramPayload | null; failed: boolean }
 
 installPhoneHubGlobals()
 
@@ -72,11 +85,11 @@ try {
   offset = 0
 }
 
-let ingestIncomingAsync
-let dropLocationDuringRitual
-let deliverIngestReply
-let incomingFromTelegram
-let stores = []
+let ingestIncomingAsync: ExecutorModule["ingestIncomingAsync"]
+let dropLocationDuringRitual: ExecutorModule["dropLocationDuringRitual"] | undefined
+let deliverIngestReply: typeof import("../lib/ingest/deliver-reply")["deliverIngestReply"]
+let incomingFromTelegram: typeof import("../lib/ingest/telegram-bridge")["incomingFromTelegram"]
+let stores: HydratedStore[] = []
 let flushing = false
 let ignoreWatch = false
 let lastPersistMtime = 0
@@ -89,7 +102,7 @@ function persistFileMtime() {
   }
 }
 
-function writeStatus(extra = {}) {
+function writeStatus(extra: Record<string, unknown> = {}) {
   mkdirSync(join(ROOT, "data"), { recursive: true })
   const payload = {
     ok: true,
@@ -104,7 +117,7 @@ function writeStatus(extra = {}) {
   writeFileSync(STATUS_FILE, JSON.stringify(payload), "utf8")
 }
 
-async function telegramApi(method, params) {
+async function telegramApi(method: string, params?: Record<string, unknown>) {
   const url = new URL(`https://api.telegram.org/bot${TOKEN}/${method}`)
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -121,7 +134,7 @@ async function telegramApi(method, params) {
   return data.result
 }
 
-async function waitHydrated(store) {
+async function waitHydrated(store: HydratedStore) {
   const persist = store?.persist
   if (!persist?.hasHydrated) return
   if (persist.hasHydrated()) return
@@ -130,17 +143,17 @@ async function waitHydrated(store) {
 
 async function loadStores() {
   fillLocalStorage(readSharedPersist().items)
-  const task = await import("../lib/task-store.ts")
-  const ingest = await import("../lib/ingest/ingest-store.ts")
-  const habits = await import("../lib/habits-store.ts")
-  const tracking = await import("../lib/time-tracking-store.ts")
-  const sleep = await import("../lib/sleep-store.ts")
-  const events = await import("../lib/event-store.ts")
-  const work = await import("../lib/work-session-store.ts")
-  const penNow = await import("../lib/pen-color-session-store.ts")
-  const exec = await import("../lib/ingest/executor.ts")
-  const deliver = await import("../lib/ingest/deliver-reply.ts")
-  const bridge = await import("../lib/ingest/telegram-bridge.ts")
+  const task = await import("../lib/task-store")
+  const ingest = await import("../lib/ingest/ingest-store")
+  const habits = await import("../lib/habits-store")
+  const tracking = await import("../lib/time-tracking-store")
+  const sleep = await import("../lib/sleep-store")
+  const events = await import("../lib/event-store")
+  const work = await import("../lib/work-session-store")
+  const penNow = await import("../lib/pen-color-session-store")
+  const exec = await import("../lib/ingest/executor")
+  const deliver = await import("../lib/ingest/deliver-reply")
+  const bridge = await import("../lib/ingest/telegram-bridge")
   stores = [
     task.useTaskStore,
     ingest.useIngestStore,
@@ -186,7 +199,7 @@ function flushVault() {
   }
 }
 
-const transport = {
+const transport: IngestTransport = {
   async send(chatId, text, markup) {
     const result = await telegramApi("sendMessage", {
       chat_id: chatId,
@@ -219,7 +232,7 @@ const transport = {
   },
 }
 
-async function handlePayload(payload, rehydrate = false) {
+async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false) {
   // Rehydrate once per poll batch, not before every text. A per-message
   // reload was reading the vault from before this turn's persist flush and
   // dropping the open ritual, so the next line looked like a new command.
@@ -240,18 +253,18 @@ async function handlePayload(payload, rehydrate = false) {
 }
 
 const enqueueChat = createChatQueue()
-const album = createDeferredAlbum((payload) => handlePayload(payload, Boolean(payload.rehydrateHub)))
+const album = createDeferredAlbum((payload: IncomingTelegramPayload) => handlePayload(payload, Boolean(payload.rehydrateHub)))
 
 /**
  * Vault writes for one poll batch. Text stays in send order. Album parts share
  * one write. Confirmation follows update id order so a failed write leaves a hole.
  */
-async function applyHydrated(rows) {
+async function applyHydrated(rows: PollRow[]) {
   const orderedIds = rows.map((row) => Number(row.update && row.update.update_id) || 0)
-  const doneById = new Map()
-  let textChain = Promise.resolve()
+  const doneById = new Map<number, Promise<boolean>>()
+  let textChain: Promise<void> = Promise.resolve()
   const writes = rows
-    .filter((row) => row.payload)
+    .filter((row): row is PollRow & { payload: IncomingTelegramPayload } => row.payload != null)
     .sort((a, b) => compareSentOrder(a.payload, b.payload))
   for (const row of writes) {
     const id = Number(row.update && row.update.update_id) || 0
@@ -266,11 +279,11 @@ async function applyHydrated(rows) {
     )
     doneById.set(id, run.then(() => true, () => false))
   }
-  const confirmed = new Set()
+  const confirmed = new Set<number>()
   for (let i = 0; i < rows.length; i++) {
-    const id = orderedIds[i]
-    if (rows[i].failed) continue
-    if (!rows[i].payload) {
+    const id = orderedIds[i]!
+    if (rows[i]!.failed) continue
+    if (!rows[i]!.payload) {
       confirmed.add(id)
       continue
     }
@@ -286,9 +299,9 @@ async function registerCommandMenu() {
 }
 
 /** Typed messages stay on hydrate. A question-button tap becomes that same text. */
-async function payloadFromUpdate(update) {
+async function payloadFromUpdate(update: TelegramUpdate): Promise<IncomingTelegramPayload | null> {
   const payload = await hydrateTelegramUpdate(update, TOKEN, telegramApi)
-  if (payload) return payload
+  if (payload) return payload as IncomingTelegramPayload
   const query = update && update.callback_query
   if (!query || !query.id) return null
   await telegramApi("answerCallbackQuery", { callback_query_id: query.id })
@@ -316,8 +329,8 @@ async function pollLoop() {
         offset,
         allowed_updates: allowedUpdatesParam(),
       })
-      const rows = []
-      for (const update of updates || []) {
+      const rows: PollRow[] = []
+      for (const update of (updates || []) as TelegramUpdate[]) {
         try {
           const payload = await payloadFromUpdate(update)
           rows.push({ update, payload, failed: false })
@@ -344,7 +357,7 @@ async function pollLoop() {
   }
 }
 
-function sendJson(res, status, body) {
+function sendJson(res: ServerResponse, status: number, body: unknown) {
   const json = JSON.stringify(body)
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -356,16 +369,16 @@ function sendJson(res, status, body) {
   res.end(json)
 }
 
-function readBody(req) {
+function readBody(req: HttpRequest): Promise<string> {
   return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
+    const chunks: Buffer[] = []
+    req.on("data", (c: Buffer) => chunks.push(c))
     req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
     req.on("error", reject)
   })
 }
 
-async function onRequest(req, res) {
+async function onRequest(req: HttpRequest, res: ServerResponse) {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`)
   const pathname = url.pathname
   if (req.method === "OPTIONS") {
@@ -388,7 +401,7 @@ async function onRequest(req, res) {
         return
       }
     }
-    let update
+    let update: TelegramUpdate
     try {
       update = JSON.parse((await readBody(req)) || "{}")
     } catch (err) {
@@ -415,7 +428,7 @@ async function onRequest(req, res) {
 function watchPersist() {
   mkdirSync(join(ROOT, "data"), { recursive: true })
   lastPersistMtime = persistFileMtime()
-  let timer
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
     watch(join(ROOT, "data"), (_event, name) => {
       if (name !== "shared-persist.json") return
@@ -435,43 +448,46 @@ function watchPersist() {
   }
 }
 
-await loadStores()
-writeStatus()
-setInterval(() => writeStatus(), 10000)
+// One async entry, not top-level await: jiti loads this file as CommonJS.
+async function main() {
+  await loadStores()
+  writeStatus()
+  setInterval(() => writeStatus(), 10000)
 
-const server = createServer((req, res) => {
-  void onRequest(req, res).catch((err) => {
-    console.error("[phone-hub] http", err instanceof Error ? err.message : err)
-    if (!res.headersSent) sendJson(res, 500, { ok: false })
+  const server = createServer((req, res) => {
+    void onRequest(req, res).catch((err) => {
+      console.error("[phone-hub] http", err instanceof Error ? err.message : err)
+      if (!res.headersSent) sendJson(res, 500, { ok: false })
+    })
   })
-})
-await new Promise((resolve) => server.listen(PORT, "0.0.0.0", resolve))
-console.log(`[phone-hub] persist + status on http://127.0.0.1:${PORT}`)
+  await new Promise<void>((resolve) => server.listen(PORT, "0.0.0.0", resolve))
+  console.log(`[phone-hub] persist + status on http://127.0.0.1:${PORT}`)
 
-try {
-  await registerCommandMenu()
-} catch (err) {
-  console.error("[phone-hub] commands", err instanceof Error ? err.message : err)
-}
-
-if (WEBHOOK) {
-  await telegramApi("setWebhook", {
-    url: WEBHOOK,
-    secret_token: WEBHOOK_SECRET || undefined,
-    allowed_updates: allowedUpdatesParam(),
-  })
-  console.log(`[phone-hub] webhook ${WEBHOOK}`)
-} else {
   try {
-    await telegramApi("deleteWebhook", { drop_pending_updates: false })
-  } catch {
-    /* already polling */
+    await registerCommandMenu()
+  } catch (err) {
+    console.error("[phone-hub] commands", err instanceof Error ? err.message : err)
   }
-  console.log("[phone-hub] polling getUpdates — do not also run Electron ingest or npm run ingest")
-  void pollLoop()
-}
 
-watchPersist()
+  if (WEBHOOK) {
+    await telegramApi("setWebhook", {
+      url: WEBHOOK,
+      secret_token: WEBHOOK_SECRET || undefined,
+      allowed_updates: allowedUpdatesParam(),
+    })
+    console.log(`[phone-hub] webhook ${WEBHOOK}`)
+  } else {
+    try {
+      await telegramApi("deleteWebhook", { drop_pending_updates: false })
+    } catch {
+      /* already polling */
+    }
+    console.log("[phone-hub] polling getUpdates — do not also run Electron ingest or npm run ingest")
+    void pollLoop()
+  }
+
+  watchPersist()
+}
 
 function shutdown() {
   try {
@@ -487,3 +503,8 @@ function shutdown() {
 }
 process.on("SIGINT", shutdown)
 process.on("SIGTERM", shutdown)
+
+void main().catch((err) => {
+  console.error("[phone-hub] start", err instanceof Error ? err.message : err)
+  process.exit(1)
+})

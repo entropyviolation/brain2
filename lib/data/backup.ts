@@ -116,9 +116,9 @@ interface StoreDescriptor {
   rehydrate: (mode: RestoreMode) => void | Promise<void>
 }
 
-interface PersistApi {
-  getOptions: () => { merge?: (persisted: unknown, current: unknown) => unknown }
-  setOptions: (options: { merge?: (persisted: unknown, current: unknown) => unknown }) => void
+interface PersistApi<S> {
+  getOptions: () => { merge?: (persisted: unknown, current: S) => S }
+  setOptions: (options: { merge?: (persisted: unknown, current: S) => S }) => void
   rehydrate: () => Promise<void> | void
 }
 
@@ -128,7 +128,7 @@ interface PersistApi {
  * then painted the newer rows back. On replace, disk fields overwrite; actions
  * stay on the live store.
  */
-function persistRehydrate(store: { persist: PersistApi }): (mode: RestoreMode) => Promise<void> {
+function persistRehydrate<S>(store: { persist: PersistApi<S> }): (mode: RestoreMode) => Promise<void> {
   return async (mode) => {
     if (mode !== "replace") {
       await store.persist.rehydrate()
@@ -136,10 +136,11 @@ function persistRehydrate(store: { persist: PersistApi }): (mode: RestoreMode) =
     }
     const previous = store.persist.getOptions().merge
     store.persist.setOptions({
-      merge: (persisted, current) => ({
-        ...(current as object),
-        ...((persisted ?? {}) as object),
-      }),
+      merge: (persisted, current) =>
+        ({
+          ...(current as object),
+          ...((persisted ?? {}) as object),
+        }) as S,
     })
     try {
       await store.persist.rehydrate()
