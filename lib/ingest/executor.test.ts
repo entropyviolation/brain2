@@ -143,6 +143,35 @@ describe("ingestIncoming", () => {
     expect(rows.some((row) => row.title === "fixing the car first")).toBe(false)
   })
 
+  it("files a message that starts with a link on Inbox → Links with the rest as its note", () => {
+    const result = ingestIncoming(sim("wikipedia.com good for research"), NOW)
+    expect(result.status).toBe("ok")
+    if (result.status !== "ok") return
+    expect(result.kind).toBe("link")
+    expect(result.reply).toBe("Links: Wikipedia — good for research")
+    const task = useTaskStore.getState().tasks.find((t) => t.savedLink?.url === "https://wikipedia.com")
+    expect(task?.stage).toBe("inbox")
+    expect(task?.notes).toBe("good for research")
+    expect(task?.description).toBe("https://wikipedia.com")
+    expect(task?.captureOrigin?.kind).toBe("telegram")
+    const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
+    expect(rows.some((row) => /wikipedia/.test(row.title ?? ""))).toBe(false)
+
+    const again = ingestIncoming(sim("wikipedia.com for the essay"), NOW)
+    expect(again.reply).toMatch(/Already in Links/)
+    const saved = useTaskStore.getState().tasks.filter((t) => t.savedLink?.url === "https://wikipedia.com")
+    expect(saved).toHaveLength(1)
+    expect(saved[0]?.notes).toBe("good for research\nfor the essay")
+
+    const reel = ingestIncoming(sim("https://www.instagram.com/reel/C1abc/"), NOW)
+    if (reel.status === "ok") expect(reel.reply).toBe("Links: Instagram reel")
+    expect(ingestIncoming(sim("undo"), NOW).status).toBe("ok")
+    expect(useTaskStore.getState().tasks.some((t) => t.savedLink?.kind === "instagram")).toBe(false)
+
+    const inText = ingestIncoming(sim("watched https://youtu.be/abc today"), NOW)
+    expect(inText.kind).toBe("event-log")
+  })
+
   it("keeps a list path, -mb, and -p on prefix-less text as captures", () => {
     const listed = ingestIncoming(sim("brain2: fix the clock"), NOW)
     expect(listed.kind).toBe("capture")

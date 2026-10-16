@@ -26,6 +26,7 @@ import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
+import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import {
   DEFAULT_HOME_DAYS_UNTIL_ITEM,
@@ -109,6 +110,7 @@ export function resetAllStores() {
   usePlannedActionStore.getState().setActions([])
   usePointsStore.setState({ pointsHistory: [] })
   useRegretStore.setState({ regretHistory: [] })
+  useSessionPlanStore.setState({ open: [], focusId: null, history: [], kept: [] })
   useMetricsStore.setState({ datapoints: [] })
   useGoalsStore.setState({ goals: [] })
   useReviewsStore.setState({ reviews: [] })

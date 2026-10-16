@@ -14,6 +14,8 @@
  */
 "use client"
 
+import { countingMinutes, DEFAULT_ESTIMATE_MIN } from "@/lib/todo-steps"
+import { getTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
 import { useEffect, useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useEventStore } from "@/lib/event-store"
@@ -130,7 +132,7 @@ export function DayView({
         date: dayKey,
         hour,
         minute,
-        durationMinutes: task.estimatedDuration ?? 30,
+        durationMinutes: countingMinutes(task, getTodoPrefs().defaultEstimateMin || DEFAULT_ESTIMATE_MIN),
         source: "todo",
         sourceId: task.id,
         title: itemTitle(task),

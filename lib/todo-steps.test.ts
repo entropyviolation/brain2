@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   addNestedStep,
+  countingMinutes,
   effectiveDurationMinutes,
   formatInternalProgress,
   removeNestedStep,
@@ -54,5 +55,14 @@ describe("todo steps", () => {
     expect(taskMatchesAssignedQuery("Trip", packed, "pass")).toBe(true)
     expect(taskMatchesAssignedQuery("Trip", packed, "zzz")).toBe(false)
     expect(taskMatchesAssignedQuery("Trip", packed, "  ")).toBe(true)
+  })
+})
+describe("countingMinutes", () => {
+  it("is the typed estimate against the steps, else the default", () => {
+    expect(countingMinutes({ estimatedDuration: 50 })).toBe(50)
+    expect(countingMinutes({ estimatedDuration: 10, subtasks: [{ id: "a", name: "a", completed: false, estimatedDuration: 25 }] as never })).toBe(25)
+    expect(countingMinutes({})).toBe(30)
+    expect(countingMinutes({ estimatedDuration: 0 }, 45)).toBe(45)
+    expect(countingMinutes(undefined, 0)).toBe(0)
   })
 })

@@ -38,7 +38,7 @@ function sanitizeAction(raw: unknown): PlannedAction | null {
   if (typeof row.id !== "string" || !row.id) return null
   if (typeof row.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) return null
   const source: PlannedActionSource =
-    row.source === "todo" || row.source === "habit" || row.source === "free" ? row.source : "free"
+    row.source === "todo" || row.source === "habit" || row.source === "free" || row.source === "session" ? row.source : "free"
   return makePlannedAction({
     id: row.id,
     date: row.date,

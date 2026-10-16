@@ -189,7 +189,7 @@ export const HOME_WIDGET_CATALOG: HomeWidgetBlurb[] = [
   {
     id: "affirmation",
     name: "Affirmation",
-    shows: "Today's line from the Affirmations list, the sentence this date already picks, or a built-in line when that list is empty. The footer is its place in the pool. The handheld repeats the line, the place, and the date.",
+    shows: "Today's five affirmations (the morning ritual's five, else five drawn from your Affirmations list). ⇄ flips each line between Original, E-Prime, French, Italian, Spanish, Vivid, and Higher Self; ✓ logs that you said it. The detail walks the five on a card, counts today, total, days, and streak, keeps a 14-day ledger and a log, and opens the whole 57-line bank.",
     useful: "A sentence already on the list, and which one it is.",
     preview: { caption: "Affirmation", crt: "I follow through.", footer: "9 of 57" },
   },

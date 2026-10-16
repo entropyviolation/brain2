@@ -10,6 +10,7 @@
  */
 "use client"
 
+import { trackedTimeForItems } from "@/lib/tracked-time"
 import { useTaskStore } from "@/lib/task-store"
 import { useReviewsStore, type OperationReviewInput, type OperationReview } from "@/lib/reviews-store"
 import { addLink, removeLinkByTarget } from "@/lib/links"
@@ -31,7 +32,8 @@ import {
   type OperationPanelId,
   type OperationStage,
 } from "@/lib/operation-types"
-import { OP_REL, getOperationTaskTree, getParts, getPhases, loggedMinutes, rollupMinutes } from "@/lib/operations"
+import { OP_REL, getOperationTaskTree, getParts, getPhases } from "@/lib/operations"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   OPERATIONS_FOLDER_ID,
   ensureOperationTaskList,
@@ -398,7 +400,7 @@ export function saveOperationPostMortem(
   const taskStore = useTaskStore.getState()
   const op = taskStore.tasks.find((t) => t.id === operationId)
   const tree = op ? getOperationTaskTree(operationId, taskStore.tasks) : []
-  const totalMinutes = (op ? loggedMinutes(op) : 0) + rollupMinutes(tree)
+  const totalMinutes = trackedTimeForItems(op ? [op, ...tree] : tree, useTimeTrackingStore.getState().entries).total
   const hoursLogged = input.hoursLogged ?? Math.round((totalMinutes / 60) * 10) / 10
 
   const reviews = useReviewsStore.getState() as {

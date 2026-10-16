@@ -6,6 +6,7 @@
  */
 "use client"
 
+import type { ReactNode } from "react"
 import type { TodoPeriod, TodoSortMode, TodoSortOrder, TodoStatusFilter } from "./todo-utils"
 import {
   TODO_SORT_OPTIONS,
@@ -29,6 +30,11 @@ export function TodoFilters({
   onToggleFormula,
   wipLimit,
   onWipLimitChange,
+  ritesFollowSun,
+  onRitesFollowSunChange,
+  defaultEstimateMin,
+  onDefaultEstimateChange,
+  paceSlot,
 }: {
   period: TodoPeriod
   availableNow: boolean
@@ -44,6 +50,14 @@ export function TodoFilters({
   onToggleFormula: () => void
   wipLimit: number
   onWipLimitChange: (value: number) => void
+  /** Optional so older callers keep compiling; the key shows only on the day lens when wired. */
+  ritesFollowSun?: boolean
+  onRitesFollowSunChange?: (value: boolean) => void
+  /** Optional: the Default est field shows only when wired. */
+  defaultEstimateMin?: number
+  onDefaultEstimateChange?: (value: number) => void
+  /** Your pace fields and the ghost switch (`todo-pace.tsx`), shown in the Pace bay. */
+  paceSlot?: ReactNode
 }) {
   return (
     <div
@@ -73,6 +87,16 @@ export function TodoFilters({
           />
           Show all tasks
         </label>
+        {period === "day" && onRitesFollowSunChange ? (
+          <label className="todo-key-check" title="Night ritual waits for sunset; an unstarted Morning ritual leaves at sunset. Today only.">
+            <input
+              type="checkbox"
+              checked={ritesFollowSun ?? true}
+              onChange={(e) => onRitesFollowSunChange(e.target.checked)}
+            />
+            Rites follow the sun
+          </label>
+        ) : null}
         <label className="todo-filter-field">
           <span className="todo-label" id="status-filter-label">
             Status
@@ -142,6 +166,24 @@ export function TodoFilters({
             onChange={(e) => onWipLimitChange(Number(e.target.value))}
           />
         </label>
+        {defaultEstimateMin !== undefined && onDefaultEstimateChange && (
+          <label className="todo-filter-field" title="Minutes a task with no estimate counts as on Plan. Shown as ~30. 0 = none.">
+            <span className="todo-label" id="todo-default-est-label">
+              Default est
+            </span>
+            <input
+              id="todo-default-est"
+              aria-labelledby="todo-default-est-label"
+              type="number"
+              min={0}
+              max={600}
+              step={5}
+              value={defaultEstimateMin}
+              onChange={(e) => onDefaultEstimateChange(Number(e.target.value))}
+            />
+          </label>
+        )}
+        {paceSlot}
       </fieldset>
     </div>
   )

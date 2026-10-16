@@ -86,6 +86,7 @@ import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition } from "@/lib/types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
@@ -1430,6 +1431,15 @@ export function TaskDetailPopup({ taskId, open, onClose, stackAbove = false, con
                         ))}
                       </ul>
                     )}
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg border">
+                    <ItemPenTimeSection
+                      task={task}
+                      onPenLinksChange={(penLinks) => {
+                        touchDraft({ penLinks })
+                        setTask((prev) => (prev ? { ...prev, penLinks } : prev))
+                      }}
+                    />
                   </div>
                 </TabsContent>
                 )}

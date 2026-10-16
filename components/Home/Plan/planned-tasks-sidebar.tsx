@@ -14,6 +14,7 @@
  */
 "use client"
 
+import { useTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
 import type React from "react"
 import { useMemo, useRef, useState } from "react"
 import { format, startOfMonth } from "date-fns"
@@ -203,15 +204,16 @@ export function PlannedTasksSidebar({
     [tasks, folders, mode, currentDate],
   )
 
+  const { defaultEstimateMin } = useTodoPrefs()
   const capacityLine = useMemo(() => {
-    const planned = plannedMinutesForDay(currentDate, tasks, events, plannedActions)
+    const planned = plannedMinutesForDay(currentDate, tasks, events, plannedActions, defaultEstimateMin)
     const window = wakingWindowMinutes(awakeWindowFor(dayKey, currentDate))
     return {
       text: formatCapacityLine(planned, window),
       over: window !== null && planned > window,
       pips: capacityPipCount(planned, window),
     }
-  }, [currentDate, tasks, events, plannedActions, dayKey, nights, trackingEntries])
+  }, [currentDate, tasks, events, plannedActions, dayKey, nights, trackingEntries, defaultEstimateMin])
 
   const filteredTasks = useMemo(() => {
     const matched = plannedTasks.filter((task) => matchesQuery(query, itemTitle(task), task.context))

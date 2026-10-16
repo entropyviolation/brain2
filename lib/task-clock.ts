@@ -113,3 +113,18 @@ export function stopTaskClock(taskId?: string, now = new Date()): void {
   if (taskId && session.taskId !== taskId) return
   stopPenColorSession(now)
 }
+
+/** Tasks linked to this pen (`Task.penLinks`), in list order. Pure. */
+export function tasksLinkedToPen<T extends Pick<Task, "penLinks">>(tasks: readonly T[], penId: string): T[] {
+  return tasks.filter((task) => task.penLinks?.some((link) => link.penId === penId))
+}
+
+/** Link or unlink one pen on a task, from pen settings. A new link goes last, so the clock pen stays. */
+export function setTaskPenLinked(taskId: string, scopeId: string, penId: string, linked: boolean): void {
+  const store = useTaskStore.getState()
+  const task = store.tasks.find((t) => t.id === taskId)
+  if (!task) return
+  const rest = (task.penLinks ?? []).filter((link) => link.penId !== penId)
+  const next = linked ? [...rest, { scopeId, penId }] : rest
+  store.updateTask({ ...task, penLinks: next.length ? next : undefined })
+}

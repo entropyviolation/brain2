@@ -49,6 +49,8 @@ import {
   OperationTimelinePanel,
 } from "./OperationFieldPlanPanels"
 import type { Task } from "@/lib/types"
+import { getOperationTaskTree } from "@/lib/operations"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import "./operations-chrome.css"
 
 /** Body for one enabled tab panel. */
@@ -105,6 +107,14 @@ export function OperationWorkspace({
   onOpenItem?: (id: string) => void
 }) {
   const operation = useTaskStore((s) => s.tasks.find((t) => t.id === operationId))
+  const allTasks = useTaskStore((s) => s.tasks)
+  const clockTasks = useMemo(
+    () =>
+      getOperationTaskTree(operationId, allTasks)
+        .filter((t) => !t.completed)
+        .map((t) => ({ id: t.id, name: itemTitleOrUntitled(t) })),
+    [operationId, allTasks],
+  )
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const [postMortemOpen, setPostMortemOpen] = useState(false)
@@ -264,7 +274,7 @@ export function OperationWorkspace({
                 ))}
               </span>
             )}
-            <WorkingNowControl operationId={operation.id} operationName={operation.description} />
+            <WorkingNowControl operationId={operation.id} operationName={operation.description} tasks={clockTasks} />
           </div>
         </div>
 

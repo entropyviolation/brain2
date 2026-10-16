@@ -1,7 +1,8 @@
 /**
  * components/inbox.tsx — Inbox walk, batch, and clarification
  *
- * Two partitions: Inbox (revisit) and Monkey brain (compulsive dump).
+ * Three partitions: Inbox (revisit), Monkey brain (compulsive dump), and Links
+ * (BIM messages that started with a link; `inbox-links.tsx` owns that tab).
  * Lists the open partition newest first. The header trigger counts the revisit
  * pile only: `stage: "inbox"` and `monkeyBrain` not set. Monkey brain does not
  * add to that well, and an empty revisit pile shows no count. Each dialog tab
@@ -79,6 +80,7 @@ import { rememberWorld, runAsAction, undoLastAction } from "@/lib/action-history
 import { creditInboxLogTransfer, handOffInboxLogTransfers } from "@/lib/inbox-transfer-queue"
 import { prepareInboxLogTransfers } from "@/lib/inbox-transfer-log"
 import { EnhancedBulkAdd } from "@/components/enhanced-bulk-add"
+import { InboxLinks } from "@/components/inbox-links"
 import {
   applyDeadlineToInboxItems,
   applyListsToInboxItems,
@@ -716,7 +718,12 @@ export function Inbox({
     () => sortInboxNewestFirst(allTasks.filter((task) => inInboxPartition(task, "monkey"))),
     [allTasks],
   )
-  const pileTasks = partition === "monkey" ? monkeyTasks : revisitTasks
+  const linkTasks = useMemo(
+    () => sortInboxNewestFirst(allTasks.filter((task) => inInboxPartition(task, "links"))),
+    [allTasks],
+  )
+  // Links has its own view. The idea pile behind it is empty so chords and the foot stay idle.
+  const pileTasks = partition === "monkey" ? monkeyTasks : partition === "links" ? [] : revisitTasks
   const inboxTasks = useMemo(() => {
     const sliced =
       slice === "bare" ? pileTasks.filter(isBareInboxCapture) : slice === "dated" ? pileTasks.filter(isDatedInboxCapture) : pileTasks
@@ -1126,7 +1133,7 @@ export function Inbox({
   }, [focusId, open, inboxIdList, nestedOpen])
 
   useEffect(() => {
-    if (!open || nestedOpen) return
+    if (!open || nestedOpen || partition === "links") return
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const key = e.key
@@ -1258,12 +1265,14 @@ export function Inbox({
           <DialogHeader className="inbox-mast">
             <DialogTitle className="flex items-center gap-2">
               <InboxIcon className="h-5 w-5" />
-              {partition === "monkey" ? "Monkey brain" : "Inbox — Clarify Your Ideas"}
+              {partition === "monkey" ? "Monkey brain" : partition === "links" ? "Links" : "Inbox — Clarify Your Ideas"}
             </DialogTitle>
             <DialogDescription>
               {partition === "monkey"
                 ? "A dump for compulsive, repetitive thoughts. Less weight than Inbox — promote one when you actually mean to revisit it."
-                : "The pile you mean to revisit."}
+                : partition === "links"
+                  ? "Links sent to BIM, with the note that came after each one."
+                  : "The pile you mean to revisit."}
             </DialogDescription>
           </DialogHeader>
 
@@ -1290,12 +1299,24 @@ export function Inbox({
               <span className="inbox-partition-label">Monkey brain</span>
               <i className="inbox-crt-count" data-heavy={monkeyTasks.length >= 10 ? "true" : undefined}>{monkeyTasks.length}</i>
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={partition === "links"}
+              className="inbox-partition inbox-partition-links"
+              onClick={() => showPartition("links")}
+            >
+              <span className="inbox-power-lamp" aria-hidden="true" />
+              <span className="inbox-partition-label">Links</span>
+              <i className="inbox-crt-count" data-heavy={linkTasks.length >= 10 ? "true" : undefined}>{linkTasks.length}</i>
+            </button>
           </div>
-          <p className="inbox-chord-manual">
+          {partition === "links" ? <InboxLinks links={linkTasks} /> : null}
+          <p className="inbox-chord-manual" hidden={partition === "links"}>
             j/k move · x select · shift-click range · a all · n select N · s unsorted · / slice · ↵ clarify · y file · t log · w walk · l list · d due · m merge · b monkey · i inbox · e edit · # delete
           </p>
 
-          {undoLabel && (
+          {undoLabel && partition !== "links" && (
             <div className="inbox-undo">
               <span>
                 {undoLabel === "inbox merge"
@@ -1322,7 +1343,7 @@ export function Inbox({
             </div>
           )}
 
-          <div className="inbox-list-well">
+          <div className="inbox-list-well" hidden={partition === "links"}>
             <div className="inbox-search">
               <input
                 type="search"

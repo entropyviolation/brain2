@@ -311,8 +311,8 @@
 }
 
 /* Raised metal keys. Day-log slabs keep their pen color (inline background). */
-.hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span),
-.hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span) {
+.hpp95 .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span):not(.rst-own),
+.hpp95-dialog .hpp-body button:not(.absolute):not([role="checkbox"]):not([role="switch"]):not(.agenda-span):not(.rst-own) {
   border: none !important;
   border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
@@ -323,13 +323,13 @@
   letter-spacing: 0.06em;
 }
 
-.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):hover:not(:disabled),
-.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):hover:not(:disabled) {
+.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):not(.rst-own):hover:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):not(.rst-own):hover:not(:disabled) {
   filter: brightness(1.04);
 }
 
-.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):active:not(:disabled),
-.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):active:not(:disabled) {
+.hpp95 .hpp-body button:not(.absolute):not(.agenda-span):not(.rst-own):active:not(:disabled),
+.hpp95-dialog .hpp-body button:not(.absolute):not(.agenda-span):not(.rst-own):active:not(:disabled) {
   box-shadow: var(--hpp-sunken) !important;
   text-shadow: none;
 }
