@@ -5,6 +5,8 @@
  * Simulate skips pairing. Unknown senders get no reply. Photos and PDFs
  * go through `ingestIncomingAsync`. Matching precedence: dedupe → help/pair
  * → explicit commands → habit/discrete triggers → everything else.
+ * A message whose first token is a link goes to Inbox → Links
+ * (`apply-link.ts`) before anything else reads it.
  * Text with no verb, no list path, and no capture flag is a `log:` line,
  * not Inbox. `inbox:` is the explicit Inbox verb. A trailing `-i` / `-inbox`
  * also files the message in Inbox after it lands wherever it was going.
@@ -32,6 +34,7 @@ import {
   undoNamedPhoneWrite,
 } from "./phone-undo"
 import { applyCapture } from "./apply-capture"
+import { applyLink } from "./apply-link"
 import { telegramCaptureOrigin } from "@/lib/capture-origin"
 import { applyBulk, isDuplicateFollowup, resolveDuplicateClarify } from "./apply-bulk"
 import { applyHabit, writeHabit } from "./apply-habit"
@@ -86,6 +89,7 @@ import { applyPlanForNow, applyReadPlanToday } from "./apply-plan-text"
 import { applyDoNext, applyReadTodoToday, applyTodoPinReply, applyTodoToday } from "./apply-todos"
 import { applyGps } from "./apply-gps"
 import { advanceRitual, startMorningReview, startNightRitual, startPeriodReview, startReviewsBoard } from "./apply-ritual"
+import { advanceMenu, menuClaims, menuPeriodFromText, openMenu } from "./apply-menu"
 import { applyPin } from "./apply-pin"
 import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
@@ -323,6 +327,17 @@ function applyTextIntent(message: IncomingMessage, now: Date): ApplyResult {
     }
     return advanceRitual(pending, raw, now)
   }
+  // An open phone menu answers only replies that read as menu answers.
+  // Anything else closes it and runs as an ordinary message.
+  if (pending?.kind === "menu" && !message.attachments?.length) {
+    const raw = String(message.text ?? "").replace(/^\uFEFF/, "").trim()
+    if (menuClaims(pending, raw, now)) {
+      return rememberNamedWrite(source, `menu: ${raw.slice(0, 70)}`, () => advanceMenu(pending, raw, now))
+    }
+    store.setPending(source.channel, source.chatId, null)
+  }
+  const menuPeriod = menuPeriodFromText(String(message.text ?? ""))
+  if (menuPeriod) return openMenu(menuPeriod, now)
   const expanded = expandIngestText(message.text)
   const label = expanded.trim().slice(0, 80) || "text"
   const { text, alsoInbox } = splitInboxFlag(expanded)
@@ -372,6 +387,11 @@ function alsoFileInInbox(message: IncomingMessage, text: string, primary: ApplyR
 function applyNamedText(message: IncomingMessage, now: Date, text: string): ApplyResult {
   const store = useIngestStore.getState()
   const { source } = message
+  // A message that starts with a link is a saved link, ahead of clarify answers and pin replies.
+  if (!message.attachments?.length) {
+    const link = applyLink(text, { now, origin: telegramCaptureOrigin(message, text) })
+    if (link) return link
+  }
   const pending = store.getPending(source.channel, source.chatId)
   if (pending && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {

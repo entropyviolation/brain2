@@ -313,7 +313,7 @@ function clockOn(when: { minutes: number | null; date?: string }, now: Date): Da
   return new Date(year, month, day, Math.floor(minutes / 60), minutes % 60, 0, 0)
 }
 
-function finishTodo(taskId: string, when: Date, estimated: boolean, now: Date) {
+export function finishTodo(taskId: string, when: Date, estimated: boolean, now: Date) {
   completeTask(taskId)
   const task = useTaskStore.getState().tasks.find((item) => item.id === taskId)
   if (!task) return
