@@ -25,6 +25,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { orbFor } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
+import { needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
 import { getWeekString, toLocalCalendarDate } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, quarterStartDate, seasonSlug, seasonOfDate, shiftQuarter, taskTouchesQuarter } from "@/lib/seasons"
 import { completeTask, markMissedOpportunity } from "@/lib/services/completion-service"
@@ -49,6 +50,7 @@ import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { stopTaskClock } from "@/lib/task-clock"
 import { openTaskBlockers } from "@/lib/prereqs"
+import { inheritedDue, unlockBreakdown } from "@/lib/unlock-value"
 import { TaskPrereqDialog } from "./TaskPrereqDialog"
 import { SessionKey, SessionPlanner, SessionsKey } from "./SessionPlanner"
 import { isClearedFromWork } from "@/lib/completion-status"
@@ -130,6 +132,7 @@ const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint:
   { key: "importance", label: "Importance", hint: "Higher importance ranks sooner" },
   { key: "cognitiveLoad", label: "Quick win", hint: "Lower cognitive load ranks sooner" },
   { key: "entropy", label: "Entropy", hint: "Vaguer tasks surface for clarification" },
+  { key: "unlocks", label: "Unlocks", hint: "Work that other tasks wait on rises" },
 ]
 
 const TODO_TABS = ["day", "week", "month", "quarter"] as const
@@ -264,6 +267,16 @@ export function TodoPanel({
   }, [tasks, showAllTasks, focusedDate])
 
   const filteredByPeriod = useMemo(() => {
+    // Required / Prioritized this period count as full value for what they wait on (Phase 14).
+    const markedIdsFor = (period: TodoPeriod) => {
+      const key = todoPeriodKey(period, focusedDate)
+      const ritual = period === "day" ? morningPriorities : undefined
+      return new Set(
+        tasks
+          .filter((t) => taskIsRequired(t, period, key) || taskIsPrioritized(t, period, key, ritual))
+          .map((t) => t.id),
+      )
+    }
     const order = (period: TodoPeriod) => {
       const base = filterAndSortTodos(todoItems, period, showAllTasks, focusedDate)
       const byStatus = filterTodosByStatus(base, tasks, statusFilter)
@@ -274,6 +287,8 @@ export function TodoPanel({
         period,
         tasks,
         weights: priorityWeights,
+        now: focusedDate,
+        markedIds: markedIdsFor(period),
       })
     }
     const riteItems = buildTodoItems(openRitualBoard.tasks, true, focusedDate)
@@ -297,7 +312,7 @@ export function TodoPanel({
       week: order("week"),
       month: order("month"),
     } satisfies Record<TodoPeriod, TodoItem[]>
-  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, openRitualBoard])
+  }, [todoItems, showAllTasks, statusFilter, availableNow, sortMode, sortOrder, tasks, priorityWeights, focusedDate, openRitualBoard, morningPriorities])
 
   const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
@@ -642,11 +657,32 @@ export function TodoPanel({
       clockStepId,
       onClockStart: taskClock.start,
       onClockStop: () => stopTaskClock(),
+      unlockOf: (taskId: string) => {
+        const breakdown = unlockBreakdown({ id: taskId }, tasks)
+        if (!breakdown.count) return null
+        const due = inheritedDue(taskId, tasks, focusedDate)
+        return {
+          count: breakdown.count,
+          title: breakdown.label,
+          due: due
+            ? `due ${due.due.toLocaleDateString(undefined, { weekday: "short" })} for ${itemTitleOrUntitled(due.forTask)}`
+            : undefined,
+          overdue: due?.overdue,
+        }
+      },
       blockersOf: (taskId: string) => {
         const task = taskFor(taskId)
         return task ? openTaskBlockers(task, tasks).map((t) => itemTitleOrUntitled(t)) : []
       },
       onNeeds: setPrereqTaskId,
+      noticeOf: (todoId: string) => {
+        const task = taskFor(todoId)
+        return task ? needsNotice(task) : false
+      },
+      onNotice: (todoId: string, text: string) => {
+        const task = taskFor(todoId)
+        if (task) updateTask(withNoticeAnswer(task, text))
+      },
     }
     const inProgress = countInProgress(tasks)
     const openUnestimated = () => {
@@ -754,7 +790,7 @@ export function TodoPanel({
           role="region"
           aria-label="Required"
           data-ui-name="Required"
-          data-ui-help="Must be done this period."
+          data-ui-help="Marked required for this period."
           data-ui-docs="components/Home/ToDo/README.md"
           data-ui-docs-anchor="required-prioritized-assigned"
         >
@@ -896,6 +932,7 @@ export function TodoPanel({
         onTaskClick={openTask}
         onAddDone={handleAddDone}
         onConfirmTimes={handleConfirmTimes}
+        refDate={focusedDate}
       />
       <MissedTodoSection
         title={getTodoMissedTitle(period, focusedDate)}
@@ -989,7 +1026,7 @@ export function TodoPanel({
                 className="todo-jewel is-required"
                 aria-pressed={required}
                 aria-label="Required"
-                title="Required — absolutely must be done this season"
+                title="Required — you marked this one for this season"
                 onClick={() => handleCommitment(task.id, "quarter", "required")}
               >
                 <span className="todo-jewel-glass" aria-hidden />
@@ -1180,7 +1217,7 @@ export function TodoPanel({
                 <div>
                   <h3>Priority formula</h3>
                   <p className="todo-hint">
-                    score = w·urgency + w·importance + w·(quick win) + w·entropy. Set a weight to 0 to ignore that
+                    score = w·urgency + w·importance + w·(quick win) + w·entropy + w·unlocks. Set a weight to 0 to ignore that
                     signal.
                   </p>
                 </div>
@@ -1201,7 +1238,7 @@ export function TodoPanel({
                       type="number"
                       min="0"
                       step="0.25"
-                      value={priorityWeights[key]}
+                      value={priorityWeights[key] ?? 1}
                       onChange={(e) => {
                         const n = Number.parseFloat(e.target.value)
                         updatePriorityWeights({
@@ -1256,7 +1293,7 @@ export function TodoPanel({
                       role="region"
                       aria-label="Required"
                       data-ui-name="Required"
-                      data-ui-help="Must be done this season."
+                      data-ui-help="Marked required for this season."
                       data-ui-docs="components/Home/ToDo/README.md"
                       data-ui-docs-anchor="required-prioritized-assigned"
                     >

@@ -268,7 +268,7 @@ export function StartRitualDialog({
           </section>
 
           <section className="space-y-2">
-            <Label className="font-semibold text-sm">Must be done</Label>
+            <Label className="font-semibold text-sm">Required</Label>
             <Textarea
               value={mustDo}
               onChange={(e) => setMustDo(e.target.value)}

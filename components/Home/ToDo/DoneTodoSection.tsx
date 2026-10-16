@@ -14,6 +14,8 @@ import { getTaskCompletionDate, type TodoPeriod } from "./todo-utils"
 import { AddDoneDialog } from "./AddDoneDialog"
 import { CompletionTimeLine } from "./CompletionTimeLine"
 import { itemTitle } from "@/lib/item-utils"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { attentionGiven, attentionGivenLabel } from "./attention-given"
 
 export function DoneTodoSection({
   title,
@@ -25,6 +27,7 @@ export function DoneTodoSection({
   onTaskClick,
   onAddDone,
   onConfirmTimes,
+  refDate,
 }: {
   title: string
   todos: TodoItem[]
@@ -35,8 +38,13 @@ export function DoneTodoSection({
   onTaskClick: (taskId: string) => void
   onAddDone: (description: string) => void
   onConfirmTimes?: (taskId: string, values: ConfirmedTimes) => void
+  /** The focused day / week / month. Given, the well shows its attention-given line. */
+  refDate?: Date
 }) {
   const byId = new Map(tasks.map((t) => [t.id, t]))
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const doneTasks = todos.map((todo) => byId.get(todo.taskId ?? todo.id)).filter((t): t is Task => !!t)
+  const attention = refDate ? attentionGivenLabel(attentionGiven(doneTasks, entries, period, refDate)) : null
   const assumedCount = todos.filter((todo) => {
     const task = byId.get(todo.taskId ?? todo.id)
     return task ? hasUnconfirmedEstimates(task) : false
@@ -70,6 +78,7 @@ export function DoneTodoSection({
         </CollapsibleTrigger>
         <AddDoneDialog onAdd={onAddDone} />
       </div>
+      {attention ? <div className="todo-attention-line">{attention}</div> : null}
 
       <CollapsibleContent>
         {todos.length === 0 ? (
