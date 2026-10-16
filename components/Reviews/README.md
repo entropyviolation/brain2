@@ -6,6 +6,10 @@ ritual** (plan the coming period) and **Review ritual** (end: clarify, push,
 document, evaluate). Dialog shells use the shared pin-bar milled fascia
 (`.hpp95` / `components/header-popup-chrome.css`).
 
+**Planned:** stepped walk for every rite, per-task night keys (why, push prompt,
+done-that-day, missed), start / duration / finish times, morning look-ahead
+lists, and the widget Open fix. See [`docs/RITUALS_REDESIGN.md`](../../docs/RITUALS_REDESIGN.md).
+
 Internal persistence still uses `PeriodReview` / `reviews-store` so existing
 data opens unchanged. User-facing copy is Rituals.
 
