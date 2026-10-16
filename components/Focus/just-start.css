@@ -464,7 +464,7 @@ body.win95-app .just-start input.just-start-field {
 /* ---- Phase 15 A: Today's choices, the time-box ring, the end-of-sitting strip ---- */
 .just-start-list.is-choices > li {
   padding: 0;
-  border: 0;
+  background: transparent;
 }
 
 .just-start-choice {
