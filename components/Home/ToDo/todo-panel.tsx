@@ -52,6 +52,9 @@ import { stopTaskClock } from "@/lib/task-clock"
 import { openTaskBlockers } from "@/lib/prereqs"
 import { inheritedDue, unlockBreakdown } from "@/lib/unlock-value"
 import { TaskPrereqDialog } from "./TaskPrereqDialog"
+import { TaskCard, type TaskCardHost } from "./TaskCard"
+import { registerTaskCardHost } from "@/lib/task-card"
+import { settleStepPoints } from "@/lib/step-points"
 import { PickListKey, SessionKey, SessionPlanner, SessionsKey } from "./SessionPlanner"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { formatLocalMonthKey, taskScheduledInMonth, taskScheduledInWeek, taskScheduledOnDay } from "@/lib/date-utils"
@@ -549,8 +552,12 @@ export function TodoPanel({
   const handleSteps = (todoId: string, subtasks: Subtask[]) => {
     const task = tasks.find((t) => t.id === todoId)
     if (!task) return
-    updateTask({ ...task, subtasks: todoTime.settle(task, subtasks) })
+    const settled = todoTime.settle(task, subtasks)
+    updateTask({ ...task, subtasks: settled })
+    // Phase 12: step points paid on tick, taken back on untick (lid and card).
+    settleStepPoints({ id: task.id, description: itemTitleOrUntitled(task) }, task.subtasks, settled)
   }
+  useEffect(() => registerTaskCardHost(), [])
 
   const resolveUndone = (taskId: string, period: TodoPeriod, action: "assimilate" | "push" | "discard") => {
     const task = tasks.find((t) => t.id === taskId)
@@ -610,6 +617,35 @@ export function TodoPanel({
     if (!task) return
     // `withStatus` flips `completed`; the store stamps/clears `completedDate`.
     updateTask(withStatus(task, status))
+  }
+
+  // Phase 12: the task card borrows the panel's handlers for the lens it opened on.
+  const cardPeriod: TodoPeriod = activeTodoTab === "week" ? "week" : activeTodoTab === "day" ? "day" : "month"
+  const cardPeriodKey = todoPeriodKey(cardPeriod, focusedDate)
+  const taskCardHost: TaskCardHost = {
+    period: cardPeriod,
+    periodLabel: cardPeriod === "day" ? "This day" : cardPeriod === "week" ? "This week" : "This month",
+    focusedDate,
+    isRequired: (id) => {
+      const t = tasks.find((x) => x.id === id)
+      return !!t && taskIsRequired(t, cardPeriod, cardPeriodKey)
+    },
+    isPrioritized: (id) => {
+      const t = tasks.find((x) => x.id === id)
+      return !!t && taskIsPrioritized(t, cardPeriod, cardPeriodKey, cardPeriod === "day" ? morningPriorities : undefined)
+    },
+    onToggleRequired: (id) => handleCommitment(id, cardPeriod, "required"),
+    onTogglePrioritized: (id) => handleCommitment(id, cardPeriod, "prioritized"),
+    onStepsChange: handleSteps,
+    onJustStart: (id) => setJustStartTaskId(id),
+    onNeeds: setPrereqTaskId,
+    timeOf: (id) => todoTime.timeOf(id),
+    clockTaskId,
+    clockStepId,
+    onClockStart: taskClock.start,
+    onClockStop: () => stopTaskClock(),
+    defaultEstimateMin,
+    hoursLeft: workingHoursLeft("day", new Date()),
   }
 
   const renderTab = (period: TodoPeriod) => {
@@ -1421,6 +1457,7 @@ export function TodoPanel({
       />
 
       {taskClock.picker}
+      <TaskCard host={taskCardHost} />
       <TaskPrereqDialog taskId={prereqTaskId} onClose={() => setPrereqTaskId(null)} />
       {sessionOpen ? (
         <SessionPlanner

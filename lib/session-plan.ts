@@ -24,6 +24,7 @@
  */
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 import { effectiveDurationMinutes } from "@/lib/todo-steps"
+import { stepPercent, taskPercent } from "@/lib/step-progress"
 import { findPlacedStep, pickStartStep, placeSteps, type StartPick } from "@/lib/next-step"
 import { isStepAvailable } from "@/lib/prereqs"
 import { hasUnmetDependencies } from "@/lib/available-tasks"
@@ -345,16 +346,23 @@ export function orderByPrereqs(plan: SessionPlan, tasks: readonly Task[]): Sessi
 }
 
 /** Open prerequisites of the session's lines that are not in the session. */
-export function missingPrereqs(plan: SessionPlan, tasks: readonly Task[]): { lineId: string; needs: string }[] {
+export interface MissingPrereq {
+  lineId: string
+  needs: string
+  /** What **Add *X*** puts in the session. */
+  ref: { taskId: string; stepId?: string }
+}
+
+export function missingPrereqs(plan: SessionPlan, tasks: readonly Task[]): MissingPrereq[] {
   const lines = allLines(plan).map(({ line }) => line)
-  const out: { lineId: string; needs: string }[] = []
+  const out: MissingPrereq[] = []
   for (const line of lines) {
     const task = tasks.find((t) => t.id === line.taskId)
     if (!task) continue
     for (const depId of task.dependencies ?? []) {
       const dep = tasks.find((t) => t.id === depId)
       if (!dep || dep.completed) continue
-      if (!lines.some((l) => l.taskId === depId)) out.push({ lineId: line.id, needs: itemTitleOrUntitled(dep) })
+      if (!lines.some((l) => l.taskId === depId)) out.push({ lineId: line.id, needs: itemTitleOrUntitled(dep), ref: { taskId: depId } })
     }
     if (line.stepId) {
       const placed = findPlacedStep(task.subtasks, line.stepId)
@@ -366,11 +374,39 @@ export function missingPrereqs(plan: SessionPlan, tasks: readonly Task[]): { lin
           if (!l.stepId || l.stepId === depId) return true
           return placeSteps(findPlacedStep(task.subtasks, l.stepId)?.step.subtasks).some((p) => p.step.id === depId)
         })
-        if (!inSession) out.push({ lineId: line.id, needs: dep.description })
+        if (!inSession) out.push({ lineId: line.id, needs: dep.description, ref: { taskId: task.id, stepId: depId } })
       }
     }
   }
   return out
+}
+
+/**
+ * **Add *X*** on a locked line (Phase 14 A): put the prerequisite in the same
+ * tier, just above the line that needs it. Unchanged when `addLine` refuses.
+ */
+export function addPrereqAbove(
+  plan: SessionPlan,
+  lineId: string,
+  ref: { taskId: string; stepId?: string },
+  tasks: readonly Task[],
+): SessionPlan {
+  const hit = allLines(plan).find(({ line }) => line.id === lineId)
+  if (!hit) return plan
+  const added = addLine(plan, hit.tier, ref, tasks)
+  const fresh = allLines(added).find(({ line }) => line.taskId === ref.taskId && line.stepId === ref.stepId)
+  if (!fresh) return plan
+  const at = added.tiers[hit.tier].findIndex((l) => l.id === lineId)
+  return moveLine(added, fresh.line.id, hit.tier, at < 0 ? undefined : at)
+}
+
+/** A line's percent over its parts (`lib/step-progress.ts`), or `null` when it has none. */
+export function linePercent(line: Pick<SessionLine, "taskId" | "stepId">, tasks: readonly Task[]): number | null {
+  const task = tasks.find((t) => t.id === line.taskId)
+  if (!task) return null
+  if (!line.stepId) return taskPercent(task, !!task.completed)
+  const step = findPlacedStep(task.subtasks, line.stepId)?.step
+  return step?.subtasks?.length ? stepPercent(step) : null
 }
 
 // ---- Fit --------------------------------------------------------------------

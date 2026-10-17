@@ -25,6 +25,7 @@ import { hasStepTiers } from "@/lib/step-tiers"
 import { LevelGauge } from "@/components/steps/LevelGauge"
 import { useTodoPrefs } from "./todo-prefs"
 import { openStepItem } from "@/lib/step-item-stack"
+import { openTaskCard } from "@/lib/task-card"
 
 const COLLAPSE_THRESHOLD = 8
 
@@ -559,6 +560,15 @@ export function TodoTable({
                 </button>
                 <button
                   type="button"
+                  className="todo-verb is-quiet"
+                  title="Plan this period's work on it: the task card"
+                  aria-label={`Card for ${name}`}
+                  onClick={() => openTaskCard(todo.taskId || todo.id)}
+                >
+                  Card
+                </button>
+                <button
+                  type="button"
                   className="todo-verb is-push is-quiet"
                   title={`Push to ${pushLabel}`}
                   onClick={() => onPush(todo.id, period)}
@@ -645,6 +655,14 @@ export function TodoTable({
                     onClick={() => onTaskClick(todo.taskId || todo.id)}
                   >
                     View
+                  </button>
+                  <button
+                    type="button"
+                    className="todo-verb"
+                    title="Plan this period's work on it: the task card"
+                    onClick={() => openTaskCard(todo.taskId || todo.id)}
+                  >
+                    Card
                   </button>
                 </TodoLidSection>
                 <TodoBreakdown

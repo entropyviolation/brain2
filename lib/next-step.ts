@@ -6,7 +6,8 @@
  * children are all done), whose prerequisites are met, that **has an
  * estimate**: first one that counts toward the lowest level not yet reached
  * (Phase 10, `lib/step-progress.ts`; a no-op without step tiers), then the
- * **lowest estimate**. Ties go to sparked steps (`sparkedAt`, most recent
+ * **highest unlock value** (Phase 14 D, `lib/unlock-value.ts`; a no-op without
+ * step `dependsOn`), then the **lowest estimate**. Ties go to sparked steps (`sparkedAt`, most recent
  * first), then `isMolecular`, then tree order. `rankStartSteps` returns the
  * top three in that same order, for the Today's choices screen; its first
  * is always `pickStartStep`'s. `pullMeStep` takes the latest spark. When
@@ -23,6 +24,7 @@ import { hasUnmetDependencies, type DepTask } from "@/lib/available-tasks"
 import { addNestedStep } from "@/lib/todo-steps"
 import { effectiveTierMap, tierRank } from "@/lib/step-tiers"
 import { nextLevel } from "@/lib/step-progress"
+import { stepUnlockValues } from "@/lib/unlock-value"
 
 export interface PlacedStep {
   step: Subtask
@@ -105,10 +107,16 @@ function levelKeyFor(steps: readonly Subtask[] | undefined): (p: PlacedStep) => 
   return (p) => (tierRank(tiers.get(p.step.id) ?? "goal") <= cap ? 0 : 1)
 }
 
-/** The one Just Start order: lowest level not yet reached, lowest estimate, then atomic, then tree order. */
-function startOrderFor(steps: readonly Subtask[] | undefined): (a: PlacedStep, b: PlacedStep) => number {
+/**
+ * The one Just Start order: lowest level not yet reached, highest unlock value
+ * (Phase 14 D, `stepUnlockValues`; 0 for all without `dependsOn`), lowest
+ * estimate, sparked most recent first, then atomic, then tree order.
+ */
+export function startOrderFor(steps: readonly Subtask[] | undefined): (a: PlacedStep, b: PlacedStep) => number {
   const level = levelKeyFor(steps)
-  return (a, b) => level(a) - level(b) || startOrder(a, b)
+  const unlocks = stepUnlockValues(steps)
+  const value = (p: PlacedStep) => unlocks.get(p.step.id) ?? 0
+  return (a, b) => level(a) - level(b) || value(b) - value(a) || startOrder(a, b)
 }
 
 /** Spark time in ms, 0 when not sparked (rank 4: sparked, most recent first). */

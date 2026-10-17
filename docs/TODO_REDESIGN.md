@@ -21,14 +21,14 @@ Phase numbers are fixed, because other READMEs link to them. Parts group them by
 | Part | Phases | What it gives you | State |
 |------|--------|-------------------|-------|
 | 1. Foundations | 0 · 1 · 2 · 3 | One ledger grid, marks that carry on push, Just Start that picks well, a task on the clock, prerequisites | Shipped |
-| 2. Sessions | 4 | "Plan the next 3 hours" in three tiers, with a clock, a review, park and resume | Built; leftovers planned |
+| 2. Sessions | 4 | "Plan the next 3 hours" in three tiers, with a clock, a review, park and resume | Built, leftovers included (H2, 2026-10-16); task-card entry with Phase 12 |
 | 3. Time that adds up | 5 · 6 | Pens on items, one estimate rule, time spent rolled up through the tree, your own pace | Built; per-tier default planned |
 | 4. The look | 7 | House language for every phase, applied as each ships | Ongoing |
 | 5. Rites | 8 | Morning and Night rows that follow the sun; a calmer night and a weekly check-in | Built; additions planned |
-| 6. The step tree | 9 · 10 · 11 | One tree everywhere, tiers and weighted progress inside tasks, steps that are items | Planned |
-| 7. Working surfaces | 12 · 13 | The To Do task card, and sessions that use the whole tree | Planned |
-| 8. What to do first | 14 | Locked vs incomplete, and prerequisites that rise | Planned |
-| 9. Less pressure | 15 | A gentler Just Start, neutral words, a Waiting shelf, quiet points | Planned |
+| 6. The step tree | 9 · 10 · 11 | One tree everywhere, tiers and weighted progress inside tasks, steps that are items | Built 2026-10-16 (K, N, M); cross-task drag open (Decision 9) |
+| 7. Working surfaces | 12 · 13 | The To Do task card, and sessions that use the whole tree | 12 in progress; 13 planned |
+| 8. What to do first | 14 | Locked vs incomplete, and prerequisites that rise | Task half built 2026-10-16; step half and E planned |
+| 9. Less pressure | 15 | A gentler Just Start, neutral words, a Waiting shelf, quiet points | A, B, D built 2026-10-16; C (Waiting shelf) planned |
 
 ---
 
@@ -657,20 +657,24 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | E | Pen ↔ item link, `trackedMinutesForItem`, item detail Time, pen settings field | 5 | — | M | Built 2026-10-16 |
 | F | Estimate rule everywhere, default estimate, Operations totals | 6 | E | S | Built 2026-10-16 |
 | L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; task card placement with O |
-| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9), Paste as log (I) and step ↗ (M) left |
-| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags after M; Done-at-level and level points with O |
+| K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9) and Paste as log (I) left; step ↗ came with M |
+| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags came with M; Done-at-level and level points with O |
 | M | Step items, stacked item detail | 11 | K | M | Built 2026-10-16; card / session ↗ with O and P |
 | O | Task card | 12 | K, L, N (M for ↗) | L | In progress |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
-| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half after N |
+| S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half (step unlock rank in `lib/next-step.ts`, D) next |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
 | U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Built 2026-10-16 |
-| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps after N |
+| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps on Done rows still to wire (N is in) |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
 | X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
 | R | Look pass | 7 | each slice | S | Ongoing |
+
+**Where work stopped (2026-10-16).** Wave 1 is done (H2, E, F, K, S task half, V, X). Wave 2 is done (N, M, L, U with Pull me). Wave 3 has started: O (task card) was paused at a clean point; see its row. Next: the rest of O, then P; S's step half; W once O exists; then S2, I, T. Decisions recorded today: **Missed** reads **Missed opportunity**; the morning review's "Something I absolutely must do" prompt is gone (field kept).
+
+Full `vitest run` on 2026-10-16: 17 files fail outside these slices (Lists integration ×12, Habits, home-overview, UiNames stamps, task-store titles, ingest iphone-notes, item-type-store, item-title-reads, Analytics, Operations, header-tracking, notes-ingest, SheetGrid). All 17 already failed at `8d2c68e`, before this work; none regressed. Fixing them is separate work.
 
 **Waves.**
 1. **Now, in parallel (separate files):** H2 (session files), E then F (time), K (step tree), S task half (`lib/priority.ts`, `todo-utils.ts`, Formula panel), V and X (words, settings).
