@@ -687,6 +687,7 @@ function ReviewDialog({
 
         <div className="hpp-body flex-1 min-h-0">
           <RitualStepper
+            tone="dusk"
             steps={stepDefs}
             index={stepIndex}
             onStep={goStep}

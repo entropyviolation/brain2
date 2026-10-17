@@ -1458,6 +1458,7 @@ export function MorningReviewDialog({
 
         <div className="hpp-body flex-1 min-h-0">
           <RitualStepper
+            tone="dawn"
             steps={steps}
             index={step}
             onStep={goStep}

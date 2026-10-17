@@ -163,7 +163,9 @@ _Last mapped: 2026-10-17_ End rites already share `ReviewDialog`, so Phases 2–
   month, month → season, season → year) with **Do this period**.
 - Do not change period keys, `endCompleted`, or the points ledger ids.
 
-## Phase 7 — Make it beautiful
+## Phase 7 — Make it beautiful (partly done)
+
+_Last mapped: 2026-10-17_ **Built:** tone per rite on `RitualStepper` (`tone` prop), unfinished / assumed rows as cards (`.rv-row`), look-back and look-ahead cards, CRT tally and countdowns. Checked at 1280px in the app. **Planned:** the widget face below, a partial lamp, dark mode pass.
 
 - One rite shell: milled fascia header with the period nameplate, the rail on
   the left, a single question card in the middle, ‹ › and Save on a key bar.
