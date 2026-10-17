@@ -55,7 +55,8 @@
 
 .trip-checklist-paper .tc-add-row input,
 .trip-checklist-paper .tc-add-row select,
-.trip-checklist-paper .tc-bulk textarea {
+.trip-checklist-paper .tc-bulk textarea,
+.trip-checklist-paper .tc-add-row .native-select {
   background: #fff !important;
   color: var(--tc-ink) !important;
   border: 1px solid #cfc8bc !important;

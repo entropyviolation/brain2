@@ -7,6 +7,7 @@ import { appDriftPosition, DEFAULT_DRIFT_PERIOD_MS, DRIFT_PRESET_MS, phaseForPos
 import { chromePatinaTokens } from "@/lib/chrome-patina"
 import { DEFAULT_CHROME_FACE, DEFAULT_CORNER_DRIFT, DEFAULT_WARMTH_DRIFT, useThemeStore } from "@/lib/theme-store"
 import { ChromeFaceField } from "./ChromeFaceField"
+import { pickOption } from "@/tests/native-select"
 
 function renderPanel() {
   return render(
@@ -67,7 +68,7 @@ describe("ChromeFaceField", () => {
     render(<ChromeFaceField />)
     fireEvent.click(screen.getByRole("button", { name: "Pause warmth drift" }))
     expect(useThemeStore.getState().chromePaused).toBe(true)
-    fireEvent.change(screen.getByLabelText("Warmth drift speed"), { target: { value: "30s" } })
+    pickOption(screen.getByLabelText("Warmth drift speed"), "30s")
     expect(useThemeStore.getState().chromePeriodMs).toBe(DRIFT_PRESET_MS["30s"])
     expect(useThemeStore.getState().chromeTransition).toBeNull()
   })

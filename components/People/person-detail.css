@@ -81,7 +81,8 @@
 .person-detail select,
 .person-detail textarea,
 .person-log-add input[type="text"],
-.person-log-add input[type="date"] {
+.person-log-add input[type="date"],
+.person-detail .native-select {
   box-sizing: border-box;
   height: 32px;
   width: 100%;
@@ -95,7 +96,8 @@
   padding-right: 6px;
 }
 
-.person-detail select {
+.person-detail select,
+.person-detail .native-select {
   padding: 0 28px 0 10px;
 }
 
@@ -499,7 +501,8 @@
 }
 
 /* Nameplate type stays on the label, not on the field inside it. */
-.person-field :is(input, select, textarea, button) {
+.person-field :is(input, select, textarea, button),
+.person-field :is(input, .native-select, textarea, button) {
   font-variant: normal;
   letter-spacing: normal;
   text-shadow: none;

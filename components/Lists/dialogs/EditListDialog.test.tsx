@@ -11,6 +11,7 @@ import { TaskType, type Folder, type List, type WeeklyTask } from "@/lib/types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { FILM_TYPE_ID } from "@/lib/film-types"
 import { EditListDialog } from "./EditListDialog"
+import { pickOption } from "@/tests/native-select"
 
 const list = (partial: Partial<List> & Pick<List, "id" | "name">): List => ({
   color: "#3B82F6",
@@ -331,7 +332,7 @@ describe("EditListDialog", () => {
     ])
     const { onSave } = renderDialog()
     openTab("Bulk edit")
-    await user.selectOptions(screen.getByRole("combobox", { name: "Change" }), "addTags")
+    pickOption(screen.getByRole("combobox", { name: "Change" }), "addTags")
     await user.type(screen.getByRole("textbox", { name: "Tags" }), "kitchen")
     await user.click(screen.getByRole("button", { name: /Apply to 2 items/ }))
     await user.click(screen.getByRole("button", { name: /Confirm/ }))

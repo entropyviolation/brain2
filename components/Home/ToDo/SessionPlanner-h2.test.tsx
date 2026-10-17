@@ -8,6 +8,7 @@ import { startSession, type SessionPlan } from "@/lib/session-plan"
 import type { Subtask, Task } from "@/lib/types"
 import { SessionPlanner } from "./SessionPlanner"
 import { getTodoPrefs } from "./todo-prefs"
+import { useTaskCardStore } from "@/lib/task-card"
 
 const T0 = new Date("2026-10-16T20:00:00")
 const s = (id: string, extra: Partial<Subtask> = {}): Subtask => ({ id, description: id, completed: false, ...extra })
@@ -47,6 +48,13 @@ describe("SessionPlanner, slice H2", () => {
     expect(focused().tiers.min).toHaveLength(0) // nothing added unasked
     fireEvent.click(screen.getByRole("button", { name: "Add" }))
     expect(focused().tiers.min[0]).toMatchObject({ taskId: "cds", stepId: "confirm wood" })
+  })
+
+  it("opens the task card from a task name in the draft", () => {
+    const tasks = seed()
+    render(<SessionPlanner open onClose={() => {}} periodTasks={tasks} periodLabel="This day" />)
+    fireEvent.click(screen.getByRole("button", { name: "Card for Finish CDs" }))
+    expect(useTaskCardStore.getState().taskId).toBe("cds")
   })
 
   it("opens the flat list without making a session, then Just 25 makes a timebox", () => {
@@ -101,6 +109,7 @@ describe("SessionPlanner, slice H2", () => {
     fireEvent.change(screen.getByLabelText("Template name"), { target: { value: "Evening CDs" } })
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(useSessionPlanStore.getState().templates.map((t) => t.title)).toEqual(["Evening CDs"])
+    fireEvent.click(screen.getByRole("combobox", { name: "Start from template" }))
     expect(screen.getByRole("option", { name: "Evening CDs" })).toBeInTheDocument()
   })
 })

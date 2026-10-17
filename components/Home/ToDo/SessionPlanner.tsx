@@ -31,6 +31,7 @@ import { createPortal } from "react-dom"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
+import { openTaskCard } from "@/lib/task-card"
 import { liveSession, useSessionPlanStore } from "@/lib/session-plan-store"
 import type { SessionOpenRequest } from "@/lib/session-open-store"
 import { releasePenClock } from "@/lib/session-pen"
@@ -614,7 +615,15 @@ function DraftView({
                     ) : (
                       <span className="todo-session-fold-gap" />
                     )}
-                    <span className="todo-session-pickname">{itemTitleOrUntitled(task)}</span>
+                    <button
+                      type="button"
+                      className="todo-session-pickname is-card"
+                      title="Open its task card"
+                      aria-label={`Card for ${itemTitleOrUntitled(task)}`}
+                      onClick={() => openTaskCard(task.id)}
+                    >
+                      {itemTitleOrUntitled(task)}
+                    </button>
                     {blocked ? <span className="todo-row-lock">waits</span> : null}
                     <span className="todo-session-mins">{lineMinutes({ taskId: task.id }, tasks) ? fmtMinutes(lineMinutes({ taskId: task.id }, tasks)) : "–"}</span>
                     <TierKeys inTier={tierOf.get(`${task.id}|`)} label={itemTitleOrUntitled(task)} onPick={(tier) => add(tier, { taskId: task.id })} />

@@ -671,7 +671,8 @@ body.win95-app .inbox-dialog {
 
 .inbox-dialog input:not([type="checkbox"]):not([type="radio"]),
 .inbox-dialog textarea,
-.inbox-dialog select {
+.inbox-dialog select,
+.inbox-dialog .native-select {
   border: 0 !important;
   border-radius: var(--r-2, 2px);
   box-shadow: var(--inbox-field) !important;

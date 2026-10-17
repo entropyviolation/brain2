@@ -10,6 +10,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Task } from "@/lib/types"
 import { resetAllStores } from "@/tests/test-utils"
+import { pickOption } from "@/tests/native-select"
 
 const TODAY = new Date(2026, 9, 10)
 
@@ -77,7 +78,7 @@ describe("PersonDetail", () => {
     fireEvent.blur(instagram)
     expect(instagram).toHaveValue("ada")
 
-    fireEvent.change(screen.getByLabelText("Address precision"), { target: { value: "neighborhood" } })
+    pickOption(screen.getByLabelText("Address precision"), "neighborhood")
     fireEvent.change(screen.getByLabelText("Address"), { target: { value: "SoMa" } })
     expect(screen.getByLabelText("Address")).toHaveAttribute("placeholder", "Neighborhood")
     expect(screen.getByLabelText("Address")).toHaveValue("SoMa")

@@ -490,7 +490,9 @@
 .fm98.an95 .an-studio-field input,
 .fm98.an95 .an-studio-tools select,
 .fm98.an95 .an-studio-tools button,
-.fm98.an95 .an-chip {
+.fm98.an95 .an-chip,
+.fm98.an95 .an-studio-field .native-select,
+.fm98.an95 .an-studio-tools .native-select {
   font: inherit;
   font-size: 11px;
   line-height: 1;
@@ -1133,7 +1135,8 @@
   color: var(--an-muted);
 }
 
-.fm98.an95 .an-library-field select {
+.fm98.an95 .an-library-field select,
+.fm98.an95 .an-library-field .native-select {
   font: inherit;
   font-size: 11px;
   background: var(--an-panel);

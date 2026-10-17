@@ -815,7 +815,10 @@
 .fm98.an95 .an-studio-field select,
 .fm98.an95 .an-studio-field input,
 .fm98.an95 .an-studio-tools select,
-.fm98.an95 .an-library-field select {
+.fm98.an95 .an-library-field select,
+.fm98.an95 .an-studio-field .native-select,
+.fm98.an95 .an-studio-tools .native-select,
+.fm98.an95 .an-library-field .native-select {
   font-family: var(--at-type);
   font-size: 11px;
   color: var(--at-ink);

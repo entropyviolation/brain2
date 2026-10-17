@@ -6,6 +6,7 @@ import { createListItem } from "@/lib/item-utils"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
 import type { Task } from "@/lib/types"
 import { resetAllStores } from "@/tests/test-utils"
+import { pickOption } from "@/tests/native-select"
 
 const search = vi.fn()
 vi.mock("@/lib/geo-address", () => ({
@@ -89,7 +90,7 @@ describe("AddressSuggestInput on a person", () => {
 
   it("picks with the keyboard and keeps the neighborhood line at that precision", async () => {
     render(<Host />)
-    fireEvent.change(screen.getByLabelText("Address precision"), { target: { value: "neighborhood" } })
+    pickOption(screen.getByLabelText("Address precision"), "neighborhood")
     const field = screen.getByLabelText("Address")
     await typeAndWait(field, "1 Main")
     fireEvent.keyDown(field, { key: "ArrowDown" })

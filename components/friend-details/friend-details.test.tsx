@@ -6,6 +6,7 @@ import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useTaskStore } from "@/lib/task-store"
 import { resetLocalStorage } from "@/tests/test-utils"
 import type { BabyAnimalPhoto } from "@/lib/baby-animal-photos"
+import { pickOption } from "@/tests/native-select"
 
 const photo: BabyAnimalPhoto = {
   id: "p-hedge",
@@ -42,7 +43,7 @@ describe("FriendDetailsPanel", () => {
     expect(screen.getByRole("button", { name: "Remove reading" })).toBeInTheDocument()
     expect(save).toBeEnabled()
 
-    await user.selectOptions(screen.getByLabelText("Add a favorite list"), "garden")
+    pickOption(screen.getByLabelText("Add a favorite list"), "garden")
     await user.click(save)
 
     const stored = useBabyAnimalsStore.getState().personalities.hedgehog

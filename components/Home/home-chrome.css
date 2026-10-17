@@ -1183,7 +1183,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 }
 
 .home-widget-dialog .home-widget-field input,
-.home-widget-dialog .home-widget-field select {
+.home-widget-dialog .home-widget-field select,
+.home-widget-dialog .home-widget-field .native-select {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1198,7 +1199,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 }
 
 .home-widget-dialog .home-widget-field input:focus,
-.home-widget-dialog .home-widget-field select:focus {
+.home-widget-dialog .home-widget-field select:focus,
+.home-widget-dialog .home-widget-field .native-select:focus {
   outline: 1px dotted #111;
   outline-offset: 2px;
 }

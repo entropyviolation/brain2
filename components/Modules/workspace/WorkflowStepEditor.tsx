@@ -7,8 +7,8 @@
  * `WorkflowAction` kind) as an ordered, drag-reorderable step list. The source of
  * truth is the JSON shape — there is no DSL. Used inside `WorkflowBuilder`.
  *
- * Uses native `<select>`/inputs (styled to the app) so the builder stays simple,
- * fully keyboard-accessible, and trivially testable without portal/pointer shims.
+ * Uses `NativeSelect` and plain inputs, styled to the app, so the builder stays
+ * simple and keyboard-accessible. Tests pick options with `pickOption`.
  */
 "use client"
 

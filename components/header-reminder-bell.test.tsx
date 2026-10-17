@@ -5,6 +5,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { addReminder, findRemindersList } from "@/lib/reminders"
 import { useTaskStore } from "@/lib/task-store"
 import { HeaderReminderBell } from "./header-reminder-bell"
+import { pickOption } from "@/tests/native-select"
 
 const PAST = new Date(2020, 0, 1, 9, 0)
 
@@ -56,7 +57,7 @@ describe("HeaderReminderBell", () => {
     await user.click(screen.getByTestId("reminder-bell"))
     fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Tea break" } })
     fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-10T15:30" } })
-    fireEvent.change(screen.getByLabelText("Repeat"), { target: { value: "weekly" } })
+    pickOption(screen.getByLabelText("Repeat"), "weekly")
     await user.click(screen.getByRole("button", { name: "Add reminder" }))
 
     const list = findRemindersList(useTaskStore.getState().lists)

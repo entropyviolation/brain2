@@ -279,7 +279,9 @@
 .todo95 .todo-bay input[type="number"],
 .todo95 .todo-sheet select,
 .todo95 .todo-formula input[type="number"],
-.todo95 .todo-time input {
+.todo95 .todo-time input,
+.todo95 .todo-bay .native-select,
+.todo95 .todo-sheet .native-select {
   min-height: 22px;
   padding: 1px 4px;
   font: inherit;
@@ -291,7 +293,8 @@
 }
 
 .todo95 .todo-bay select,
-.todo95 .todo-bay input[type="number"] {
+.todo95 .todo-bay input[type="number"],
+.todo95 .todo-bay .native-select {
   width: 100%;
   border-radius: var(--r-2, 2px);
   background:
@@ -1087,7 +1090,8 @@ body.win95-app .todo95 button.todo-row-name,
 }
 
 .todo95 .todo-nixie,
-.todo95 select.todo-nixie {
+.todo95 select.todo-nixie,
+.todo95 .native-select.todo-nixie {
   appearance: none;
   flex-shrink: 0;
   min-width: 3.2rem;
@@ -2252,19 +2256,24 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
   text-shadow: 0 0 3px var(--td-crt);
 }
 
-.todo95 select[data-todo-status="done"] {
+.todo95 select[data-todo-status="done"],
+.todo95 .native-select[data-todo-status="done"] {
   color: #166534;
 }
-.todo95 select[data-todo-status="partial"] {
+.todo95 select[data-todo-status="partial"],
+.todo95 .native-select[data-todo-status="partial"] {
   color: #1d4ed8;
 }
-.todo95 select[data-todo-status="deferred"] {
+.todo95 select[data-todo-status="deferred"],
+.todo95 .native-select[data-todo-status="deferred"] {
   color: #5b4b9a;
 }
-.todo95 select[data-todo-status="missed"] {
+.todo95 select[data-todo-status="missed"],
+.todo95 .native-select[data-todo-status="missed"] {
   color: #9a3048;
 }
-.todo95 select[data-todo-status="cancelled"] {
+.todo95 select[data-todo-status="cancelled"],
+.todo95 .native-select[data-todo-status="cancelled"] {
   color: #6b7280;
   text-decoration: line-through;
 }
@@ -2285,7 +2294,9 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 .todo95 select:focus,
 .todo95 select:focus-visible,
 .todo95 input:focus,
-.todo95 input:focus-visible {
+.todo95 input:focus-visible,
+.todo95 .native-select:focus,
+.todo95 .native-select:focus-visible {
   outline-width: 1px;
   outline-style: dotted;
   outline-color: var(--td-blue);
@@ -2295,7 +2306,9 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 .todo95 input:not([type="checkbox"]):not([type="radio"]):focus,
 .todo95 input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 .todo95 select:focus,
-.todo95 select:focus-visible {
+.todo95 select:focus-visible,
+.todo95 .native-select:focus,
+.todo95 .native-select:focus-visible {
   outline-width: 2px;
   outline-style: solid;
   outline-offset: -2px;
@@ -2354,7 +2367,8 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 }
 
 .todo95-dialog input,
-.todo95-dialog select {
+.todo95-dialog select,
+.todo95-dialog .native-select {
   width: 100%;
   min-height: 22px;
   padding: 2px 4px;
@@ -2367,7 +2381,8 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 }
 
 .todo95-dialog input:focus,
-.todo95-dialog select:focus {
+.todo95-dialog select:focus,
+.todo95-dialog .native-select:focus {
   outline: 2px solid #000080;
   outline-offset: -2px;
 }

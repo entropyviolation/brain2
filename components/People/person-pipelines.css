@@ -64,7 +64,8 @@
 }
 
 .person-pipelines select,
-.person-pipelines input[type="text"] {
+.person-pipelines input[type="text"],
+.person-pipelines .native-select {
   height: 28px;
   width: 100%;
   font-size: 13px;

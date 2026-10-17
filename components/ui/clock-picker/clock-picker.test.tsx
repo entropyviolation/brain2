@@ -287,6 +287,6 @@ describe("ClockPicker", () => {
     mount("08:00")
     openClock()
     expect(screen.getByRole("img", { name: "08:00 AM" })).toHaveAttribute("data-dial", "ceramic")
-    expect(screen.getByLabelText("Dial")).toHaveValue("ceramic")
+    expect(screen.getByLabelText("Dial")).toHaveTextContent("Ceramic")
   })
 })

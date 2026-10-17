@@ -2061,7 +2061,8 @@ body.win95-app .trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button[ar
 /* fields on the console */
 .trk95 .trk-logbook .trk-logbook-compose input:not([type="checkbox"]),
 .trk95 .trk-logbook .trk-logbook-compose textarea,
-.trk95 .trk-logbook .trk-logbook-compose select {
+.trk95 .trk-logbook .trk-logbook-compose select,
+.trk95 .trk-logbook .trk-logbook-compose .native-select {
   color: #111;
   background: #fbfaf4;
   border: 1px solid #404040;

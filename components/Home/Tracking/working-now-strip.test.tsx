@@ -27,7 +27,7 @@ describe("WorkingNowStrip", () => {
     const user = userEvent.setup()
     render(<WorkingNowStrip />)
 
-    expect(screen.getByRole("combobox", { name: "Operation to work on" })).toHaveValue("op_1")
+    expect(screen.getByRole("combobox", { name: "Operation to work on" })).toHaveTextContent("Foxtide rebuild")
     await user.click(screen.getByRole("button", { name: "Working on this now" }))
     expect(screen.getByRole("button", { name: "Stop working on Foxtide rebuild" })).toBeInTheDocument()
     expect(useTimeTrackingStore.getState().entries.length).toBeGreaterThan(0)
