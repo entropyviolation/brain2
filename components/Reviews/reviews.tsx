@@ -58,6 +58,7 @@ import { seasonOfDate, seasonSlug } from "@/lib/seasons"
 import { getPendingReviews } from "@/lib/pending-reviews"
 import { getStoredPlanText } from "@/lib/plan-text"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
+import { LookBackSection } from "@/components/Reviews/LookBackSection"
 import { MissReasonDialog, type WorkedToday } from "@/components/Reviews/MissReasonDialog"
 import { ritualDonePatch } from "@/lib/ritual-done"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
@@ -121,6 +122,7 @@ function ReviewDialog({
   const [missed, setMissed] = useState<string[]>(existing?.missedTaskIds || [])
   const [workedToday, setWorkedToday] = useState<Record<string, WorkedToday>>(existing?.workedToday || {})
   const [pushPrompt, setPushPrompt] = useState<Task | null>(null)
+  const [lookBack, setLookBack] = useState(existing?.lookBack || "")
   const [pushError, setPushError] = useState<string | null>(null)
   const [reflectTask, setReflectTask] = useState<Task | null>(null)
   const accrueRegret = useRegretStore((s) => s.addRegret)
@@ -224,6 +226,7 @@ function ReviewDialog({
       pushed,
       missed,
       workedToday,
+      lookBack,
       blockedReasons,
     })
 
@@ -255,6 +258,7 @@ function ReviewDialog({
       resolvedTaskIds: resolved,
       pushedTaskIds: pushed,
       missedTaskIds: missed.length ? missed : undefined,
+      lookBack: lookBack.trim() || undefined,
       workedToday: Object.keys(workedToday).length ? workedToday : undefined,
       blockedReasons: Object.keys(blockedReasons).length ? blockedReasons : undefined,
       ...(existing?.morning ? { morning: existing.morning } : {}),
@@ -419,6 +423,25 @@ function ReviewDialog({
       label: "Assumed times",
       answered: liveAssumed.length === 0 || liveAssumed.length < baselineAssumed.current,
       body: <AssumedTimesSection period={period} periodKey={periodKey} />,
+    },
+    {
+      id: "lookback",
+      label: "Look back",
+      answered: !!lookBack.trim(),
+      body: (
+        <LookBackSection
+          period={period}
+          review={existing}
+          counts={{
+            done: resolved.length,
+            pushed: pushed.length,
+            missed: missed.length,
+            open: visibleUnfinished.filter((t) => !resolved.includes(t.id)).length,
+          }}
+          note={lookBack}
+          onNote={setLookBack}
+        />
+      ),
     },
     period === "day"
       ? {

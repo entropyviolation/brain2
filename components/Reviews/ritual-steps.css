@@ -505,3 +505,44 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ── Look back step (LookBackSection.tsx) ─────────────────── */
+
+.lb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+.lb-block {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--rst-accent);
+  background: rgba(255, 255, 255, 0.75);
+}
+.lb-text { margin: 0; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+.lb-marks { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.lb-marks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(46, 92, 110, 0.14);
+}
+.lb-marks li[data-done="true"] { box-shadow: inset 3px 0 0 #1f9d6a, inset 0 0 0 1px rgba(31, 157, 106, 0.22); }
+.lb-mark { width: 14px; text-align: center; font-weight: 700; color: #1f7a54; }
+.lb-mark-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-mark-kind { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rst-quiet); }
+.lb-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 8px 12px;
+  font: 600 12px/1 ui-monospace, Menlo, monospace;
+  color: var(--hpp-crt, #7dffc4);
+  background: var(--hpp-crt-glass, #0b1a14);
+  text-shadow: var(--hpp-crt-glow);
+}
+.lb-tally b { font-size: 15px; margin-right: 3px; }

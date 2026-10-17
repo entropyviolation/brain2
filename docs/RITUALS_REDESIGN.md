@@ -124,7 +124,9 @@ _Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land he
    as zero time, not missing.
 3. Rows from Phase 2 Done (`completedTimeUnknown`) appear here first.
 
-## Phase 4 — Look back step (all end rites)
+## Phase 4 — Look back step (all end rites) (done)
+
+_Last mapped: 2026-10-17_ Built in `components/Reviews/LookBackSection.tsx` with one note (`lookBack`), not one per block. Tracked time by scope stays on the night's How the day was spent and the period stats steps. Not scored.
 
 One read-only step that sets the period's plan beside what happened: the
 morning or start answers (priorities, required, plan, best day), tracked time
