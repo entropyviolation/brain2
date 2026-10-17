@@ -111,7 +111,9 @@ Each row gets four keys: **Done · Push · Missed · (reason)**.
 
 Footer: `n done · n pushed · n missed`.
 
-## Phase 3 — Night: assumed times
+## Phase 3 — Night: assumed times (done)
+
+_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. **Planned:** Analytics reading `timeNegligible` as zero time.
 
 1. Fields are **Start · Duration · Finish**, in that order. Editing any one
    recomputes the others: start + duration → finish (default); finish edits
