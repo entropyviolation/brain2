@@ -11,7 +11,9 @@ One step tree for every host, so item detail never imports from Home. Built in P
 | To Do lid (`components/Home/ToDo/TodoBreakdown.tsx`) | Tier tag and spark (`tierTags`), Needs…, ▶, minutes, spent, counts, progress (a branch's level gauge on hover), delete. Tier filter from `todo-prefs` `tierView`. Hide locked and Show next only from `todo-prefs`. A move is one undo step (`rememberWorld`). |
 | Item detail → Subtasks (`components/ItemDetail/SubtaskTree.tsx`) | Tier tag and spark (`tierTags`), parts (`n/m`), minutes, `=Nm`, delete, ↗ (stored tasks only). No view switches. |
 
-**Planned:** the task card (Phase 12) and the session pick list (Phase 13) host it too.
+| Task card (`components/Home/ToDo/TaskCard.tsx`) | _Last mapped: 2026-10-16_ (Phase 12). Tier tags, ↗, and its column picker. Passes controlled `selected` / `onSelectedChange` (mass edit) and `onVisibleIds` (Chain order). Card-local level filter, Hide locked, Show next only. |
+
+**Planned:** the session pick list (Phase 13) hosts it too.
 
 ## Files
 
@@ -43,10 +45,10 @@ _Last mapped: 2026-10-16_
 - A host passes `onOpenStep`. Then a click on the dot opens the step's item (a drag still moves) and each row gets a hover **↗**. A dot with an item wears a violet ring (`is-item`). The lid (`TodoTable`, `todo-panel`) and item detail → Subtasks pass `openStepItem(taskId, stepId)`.
 - `openStepItem` makes the item if needed (`lib/step-items.ts`) and pushes a layer. Layers stack: Esc and **‹ Back** close only the top; a crumb opens that ancestor (the task, or a step's item) as a new layer. Everything underneath stays mounted, so the lid, scroll, selection, link mode and running session keep their state.
 - `TaskDetailPopup` ignores a click or focus inside a layer above it (`data-item-layer`, `layerSafeDismiss`), so it stays open under the stack.
-- **Planned:** ↗ from the task card (Phase 12) and a session (Phase 13); **Card** on a step item (the parent's card, scrolled to the step) waits for Phase 12. The level gauge on a step item's bar waits on slice N's `LevelGauge`.
+- ↗ from the task card and **Card** on a step item (the parent's card, scrolled to the step) are built (Phase 12). **Planned:** ↗ from a session (Phase 13). The level gauge on a step item's bar waits on slice N's `LevelGauge`.
 
 ## Not built yet
 
-- Cross-task drag (Decision 9 is open). Drag between B / G / E columns (task card, Phase 12). Show next only still picks inside a branch without the tier filter. **Paste as log** waits for `lib/work-log-parse.ts` (slice I).
+- Cross-task drag (Decision 9 is open). Drag between B / G / E columns is the task card's own three-column view, not `StepTree`. Show next only still picks inside a branch without the tier filter. **Paste as log** waits for `lib/work-log-parse.ts` (slice I).
 
 Tests: `StepTree.test.tsx`, `step-tree-view.test.ts`, `StepItemStack.test.tsx`, `lib/todo-steps-move.test.ts`, `lib/step-items.test.ts`.

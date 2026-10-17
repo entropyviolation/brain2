@@ -80,6 +80,11 @@ export interface StepTreeProps {
   /** Show the minutes box in the composer (default on). */
   composerMinutes?: boolean
   label?: string
+  /** Controlled selection (the task card's mass edit, Phase 12). Omit to keep it inside the tree. */
+  selected?: ReadonlySet<string>
+  onSelectedChange?: (next: ReadonlySet<string>) => void
+  /** Told the visible step ids, in order, whenever they change (Chain, Select all). */
+  onVisibleIds?: (ids: string[]) => void
 }
 
 type Composer = { parentId: string | null }
@@ -198,12 +203,17 @@ export function StepTree({
   emptyExtra,
   composerMinutes = true,
   label = "Steps",
+  selected: selectedProp,
+  onSelectedChange,
+  onVisibleIds,
 }: StepTreeProps) {
   const list = useMemo(() => [...(steps ?? [])], [steps])
   const folded = useStepFolds()
   const [openedNext, setOpenedNext] = useState<ReadonlySet<string>>(() => new Set())
   const [peek, setPeek] = useState(false)
-  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [ownSelected, setOwnSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const selected = selectedProp ?? ownSelected
+  const setSelected = (next: ReadonlySet<string>) => (onSelectedChange ? onSelectedChange(next) : setOwnSelected(next))
   const [anchor, setAnchor] = useState<string | null>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
@@ -226,7 +236,13 @@ export function StepTree({
   useEffect(() => {
     if (![...selected].some((id) => !visibleIds.includes(id))) return
     setSelected(new Set([...selected].filter((id) => visibleIds.includes(id))))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleIds, selected])
+  const visibleKey = visibleIds.join("\0")
+  useEffect(() => {
+    onVisibleIds?.(visibleIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleKey])
 
   const focusRow = (id: string) => {
     setFocusId(id)

@@ -1,0 +1,287 @@
+/**
+ * lib/task-card.ts — The To Do task card's rules (Phase 12, R7 R8 R15)
+ *
+ * Pure. The card (`components/Home/ToDo/TaskCard.tsx`) plans this period's
+ * work on one task. Here: which card is open (a tiny store, so item detail and
+ * a step item can open it), the mass-edit bar's tree edits (each returns a new
+ * tree; the card writes it once, so one undo per bar action), the task's
+ * points and where they come from, step points on tick, the order lane, and
+ * the period values. Store side effects for step points are in
+ * `lib/step-points.ts`.
+ */
+import { create } from "zustand"
+import type { Folder, List, SchedulePlacement, StepTier, Subtask, Task } from "@/lib/types"
+import { flattenSteps, removeNestedStep, countingMinutes } from "@/lib/todo-steps"
+import { stepsForTier } from "@/lib/step-tiers"
+import { resolveCompletionPoints } from "@/lib/item-utils"
+import { formatLocalDateKey, formatLocalMonthKey, getWeekString, parseLocalDate } from "@/lib/date-utils"
+
+// ── Which card is open ───────────────────────────────────────────────
+
+interface TaskCardState {
+  taskId: string | null
+  /** Scroll to and select this step when the card opens (a step item's **Card**). */
+  stepId?: string
+  /** How many hosts (`todo-panel`) are mounted; item detail shows **Card** only when one is. */
+  hosts: number
+}
+
+export const useTaskCardStore = create<TaskCardState>()(() => ({ taskId: null, hosts: 0 }))
+
+export function openTaskCard(taskId: string, stepId?: string): void {
+  useTaskCardStore.setState({ taskId, stepId })
+}
+
+export function closeTaskCard(): void {
+  useTaskCardStore.setState({ taskId: null, stepId: undefined })
+}
+
+/** Called by the host on mount; returns the unmount. */
+export function registerTaskCardHost(): () => void {
+  useTaskCardStore.setState((s) => ({ hosts: s.hosts + 1 }))
+  return () => useTaskCardStore.setState((s) => ({ hosts: Math.max(0, s.hosts - 1) }))
+}
+
+/** On this day's, this week's or this month's To Do list. */
+export function onCurrentPeriod(
+  task: Pick<Task, "scheduledDate" | "scheduledWeek" | "scheduledMonth">,
+  now: Date = new Date(),
+): boolean {
+  const day = parseLocalDate(task.scheduledDate as Date | string | undefined)
+  if (day && formatLocalDateKey(day) === formatLocalDateKey(now)) return true
+  if (task.scheduledWeek && task.scheduledWeek === getWeekString(now)) return true
+  return !!task.scheduledMonth && task.scheduledMonth === formatLocalMonthKey(now)
+}
+
+// ── Mass edit (R8) ───────────────────────────────────────────────────
+
+function mapIds(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, edit: (s: Subtask) => Subtask): Subtask[] {
+  return (steps ?? []).map((step) => {
+    const kids = step.subtasks?.length ? mapIds(step.subtasks, ids, edit) : step.subtasks
+    const base = kids === step.subtasks ? step : { ...step, subtasks: kids }
+    return ids.has(step.id) ? edit(base) : base
+  })
+}
+
+export type EstimateEdit = { set: number } | { delta: number }
+
+export function massEstimate(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, edit: EstimateEdit): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    const next = "set" in edit ? edit.set : Math.max(0, (s.estimatedDuration ?? 0) + edit.delta)
+    const out = { ...s }
+    if (next > 0) out.estimatedDuration = next
+    else delete out.estimatedDuration
+    return out
+  })
+}
+
+/** `undefined` clears the tier (inherit). */
+export function massTier(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, tier: StepTier | undefined): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    const out = { ...s }
+    if (tier) out.tier = tier
+    else delete out.tier
+    return out
+  })
+}
+
+/** `undefined` or 0 clears step points. */
+export function massPoints(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, points: number | undefined): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    const out = { ...s }
+    if (points && points > 0) out.points = points
+    else delete out.points
+    return out
+  })
+}
+
+export function massSpark(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, on: boolean, now = new Date()): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    const out = { ...s }
+    if (on) out.sparkedAt = now.toISOString()
+    else delete out.sparkedAt
+    return out
+  })
+}
+
+export function massDone(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, done: boolean, now = new Date()): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    if (s.completed === done) return s
+    const out = { ...s, completed: done }
+    if (done) out.completedAt = now
+    else delete out.completedAt
+    return out
+  })
+}
+
+export function massDelete(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>): Subtask[] {
+  let out = [...(steps ?? [])]
+  for (const id of ids) out = removeNestedStep(out, id)
+  return out
+}
+
+/** **Needs…**: every selected step needs `needsId` (never itself). */
+export function needsAll(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, needsId: string): Subtask[] {
+  return mapIds(steps, ids, (s) =>
+    s.id === needsId || (s.dependsOn ?? []).includes(needsId) ? s : { ...s, dependsOn: [...(s.dependsOn ?? []), needsId] },
+  )
+}
+
+/** **Chain**: each selected step needs the one above it, in visible order. */
+export function chainNeeds(steps: readonly Subtask[] | undefined, orderedIds: readonly string[]): Subtask[] {
+  const above = new Map<string, string>()
+  for (let i = 1; i < orderedIds.length; i++) above.set(orderedIds[i], orderedIds[i - 1])
+  return mapIds(steps, new Set(above.keys()), (s) => {
+    const prev = above.get(s.id)!
+    return (s.dependsOn ?? []).includes(prev) ? s : { ...s, dependsOn: [...(s.dependsOn ?? []), prev] }
+  })
+}
+
+/** **Clear needs** on the selected steps. */
+export function clearNeeds(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>): Subtask[] {
+  return mapIds(steps, ids, (s) => {
+    if (!s.dependsOn) return s
+    const out = { ...s }
+    delete out.dependsOn
+    return out
+  })
+}
+
+export function openStepIds(steps: readonly Subtask[] | undefined): string[] {
+  return flattenSteps(steps).filter((s) => !s.completed).map((s) => s.id)
+}
+
+export function leafStepIds(steps: readonly Subtask[] | undefined): string[] {
+  return flattenSteps(steps).filter((s) => !s.subtasks?.length).map((s) => s.id)
+}
+
+// ── Points ───────────────────────────────────────────────────────────
+
+export type PointsSource = "override" | "tier formula" | "list rule" | "item value" | "default"
+
+/** The task's completion points (`resolveCompletionPoints`) and where they come from. */
+export function taskPointsWithSource(
+  task: Task,
+  lists: readonly List[],
+  folders: readonly Folder[],
+): { points: number; source: PointsSource } {
+  const points = resolveCompletionPoints(task, lists as List[], folders as Folder[])
+  if (typeof task.pointsOverride === "number" && task.pointsOverride >= 0) return { points, source: "override" }
+  const defs = (task.lists ?? [])
+    .flatMap((id) => lists.find((l) => l.id === id)?.itemAttributes ?? [])
+    .filter((d) => d.name.trim().toLowerCase() === "points")
+  if (defs.some((d) => String(d.type) === "formula")) return { points, source: "tier formula" }
+  if (defs.some((d) => task.attributes?.[d.id] != null && task.attributes?.[d.id] !== "")) return { points, source: "list rule" }
+  if (task.rewardValue != null) return { points, source: "item value" }
+  return { points, source: "default" }
+}
+
+/** The points store id for one step. */
+export function stepPointsKey(taskId: string, stepId: string): string {
+  return `step:${taskId}:${stepId}`
+}
+
+/** Step points earned: the sum over ticked steps. */
+export function stepPointsEarned(steps: readonly Subtask[] | undefined): number {
+  return flattenSteps(steps).reduce((sum, s) => sum + (s.completed && s.points ? s.points : 0), 0)
+}
+
+export interface StepPointChange {
+  step: Subtask
+  /** Ticked now (pay) or unticked (take back). */
+  paid: boolean
+}
+
+/** Steps with points whose tick changed between two trees. */
+export function stepPointChanges(prev: readonly Subtask[] | undefined, next: readonly Subtask[] | undefined): StepPointChange[] {
+  const before = new Map(flattenSteps(prev).map((s) => [s.id, s]))
+  const out: StepPointChange[] = []
+  for (const step of flattenSteps(next)) {
+    const was = before.get(step.id)
+    const pts = step.points ?? was?.points ?? 0
+    if (!(pts > 0)) continue
+    const wasDone = !!was?.completed
+    if (step.completed && !wasDone) out.push({ step, paid: true })
+    else if (!step.completed && wasDone) out.push({ step: { ...step, points: pts, completedAt: was?.completedAt }, paid: false })
+  }
+  // A ticked step with points that was deleted takes its points back too.
+  const nextIds = new Set(flattenSteps(next).map((s) => s.id))
+  for (const [id, was] of before) {
+    if (!nextIds.has(id) && was.completed && (was.points ?? 0) > 0) out.push({ step: was, paid: false })
+  }
+  return out
+}
+
+// ── Order lane ───────────────────────────────────────────────────────
+
+export interface LaneNode {
+  id: string
+  name: string
+  /** Column: the longest chain of open prerequisites before it. */
+  depth: number
+  /** How many open steps wait on it, directly or through others. */
+  unlocks: number
+}
+
+/** The open steps' prerequisite graph, left to right. Loops are cut. */
+export function orderLane(steps: readonly Subtask[] | undefined): LaneNode[] {
+  const open = flattenSteps(steps).filter((s) => !s.completed)
+  const byId = new Map(open.map((s) => [s.id, s]))
+  const depth = new Map<string, number>()
+  const visiting = new Set<string>()
+  const depthOf = (id: string): number => {
+    if (depth.has(id)) return depth.get(id)!
+    if (visiting.has(id)) return 0
+    visiting.add(id)
+    const needs = (byId.get(id)?.dependsOn ?? []).filter((n) => byId.has(n))
+    const d = needs.length ? 1 + Math.max(...needs.map(depthOf)) : 0
+    visiting.delete(id)
+    depth.set(id, d)
+    return d
+  }
+  const waiters = new Map<string, string[]>()
+  for (const s of open) for (const n of s.dependsOn ?? []) if (byId.has(n)) waiters.set(n, [...(waiters.get(n) ?? []), s.id])
+  const unlocksOf = (id: string): number => {
+    const seen = new Set<string>()
+    const walk = (x: string) => {
+      for (const w of waiters.get(x) ?? []) if (!seen.has(w) && w !== id) (seen.add(w), walk(w))
+    }
+    walk(id)
+    return seen.size
+  }
+  const linked = open.filter((s) => (s.dependsOn ?? []).some((n) => byId.has(n)) || waiters.has(s.id))
+  return linked.map((s) => ({ id: s.id, name: s.description, depth: depthOf(s.id), unlocks: unlocksOf(s.id) }))
+}
+
+// ── Period values ────────────────────────────────────────────────────
+
+type Grain = "day" | "week" | "month"
+
+/** Pushes into this period (left an earlier one of the same grain) and out of it. */
+export function periodPushes(
+  task: Pick<Task, "schedulePlacements">,
+  grain: Grain,
+  value: string,
+): { in: number; out: number } {
+  const same = (task.schedulePlacements ?? []).filter(
+    (p: SchedulePlacement) => p.period === grain && p.resolved === "pushed",
+  )
+  return { in: same.filter((p) => p.value !== value).length, out: same.filter((p) => p.value === value).length }
+}
+
+/** Minutes still open in one level's view (open leaves, own estimate or the default). */
+export function remainingForLevel(steps: readonly Subtask[] | undefined, tier: StepTier, defaultMin = 0): number {
+  const view = stepsForTier(steps ?? [], tier)
+  const ids = view.ids as ReadonlySet<string>
+  return flattenSteps(steps)
+    .filter((s) => ids.has(s.id) && !s.completed && !s.subtasks?.length)
+    .reduce((sum, s) => sum + countingMinutes(s, defaultMin), 0)
+}
+
+/** The notice-dot answers on this task, newest first. */
+export function noticeAnswers(task: Pick<Task, "noteLog">): { id: string; date: string; text: string }[] {
+  return (task.noteLog ?? [])
+    .filter((e) => e.tag === "notice")
+    .map((e) => ({ id: e.id, date: e.date, text: e.text }))
+    .reverse()
+}

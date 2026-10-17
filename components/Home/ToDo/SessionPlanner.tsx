@@ -66,7 +66,9 @@ import {
   lineSeconds,
   lineTarget,
   lineUnestimated,
+  linePercent,
   missingPrereqs,
+  addPrereqAbove,
   moveLine,
   nextLine,
   nudgeLine,
@@ -714,6 +716,20 @@ function DraftView({
                         ) : (
                           <span className="todo-session-mins">{fmtMinutes(mins)}</span>
                         )}
+                        {(() => {
+                          const pct = lineIsDone(line, tasks) ? null : linePercent(line, tasks)
+                          return pct == null ? null : <span className="todo-session-pct">{formatPercent(pct)}</span>
+                        })()}
+                        {missing
+                          .filter((m) => m.lineId === line.id)
+                          .map((m) => (
+                            <span key={`${m.ref.taskId}|${m.ref.stepId ?? ""}`} className="todo-session-needs">
+                              <span className="todo-row-lock">needs {m.needs}</span>
+                              <button type="button" data-no95 className="todo-verb" onClick={() => onChange(addPrereqAbove(plan, line.id, m.ref, tasks))}>
+                                Add {m.needs}
+                              </button>
+                            </span>
+                          ))}
                         <button type="button" data-no95 className="todo-session-mini" aria-label="Move up" disabled={i === 0} onClick={() => onChange(nudgeLine(plan, line.id, -1))}>
                           ▲
                         </button>
@@ -878,7 +894,10 @@ function FlatListView({
     const out: { key: string; ref: { taskId: string; stepId?: string }; label: string; minutes: number; locked: boolean }[] = []
     for (const task of live) {
       const taskLocked = hasUnmetDependencies(task, tasks)
-      const leaves = placeSteps(task.subtasks).filter((p) => !p.step.completed && !p.step.subtasks?.some((c) => !c.completed))
+      // Same rank as Just Start (`startOrderFor`): level, unlock value, estimate, spark, atomic, tree order.
+      const leaves = placeSteps(task.subtasks)
+        .filter((p) => !p.step.completed && !p.step.subtasks?.some((c) => !c.completed))
+        .sort(startOrderFor(task.subtasks))
       const refs: { taskId: string; stepId?: string }[] = task.subtasks?.length ? leaves.map((p) => ({ taskId: task.id, stepId: p.step.id })) : [{ taskId: task.id }]
       for (const ref of refs) {
         const locked = taskLocked || (!!ref.stepId && !isStepAvailable(task.subtasks, ref.stepId))

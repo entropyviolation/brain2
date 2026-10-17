@@ -13,10 +13,14 @@
  * - `inheritedDue`: the earliest deadline of anything waiting, less the
  *   estimates in between along the longest chain. Never written to the task.
  *
- * Task-level only. The step half (`Subtask.dependsOn`) waits for slice N.
+ * Step half (Phase 14 D): `stepUnlockValues` reads `Subtask.dependsOn` inside
+ * one task. Open steps waiting on a step, directly or through a chain, each
+ * worth its tier (B 1, G 0.6, E 0.3; all 1 without step tiers), faded the
+ * same way. Rank 2 of the Just Start order (`lib/next-step.ts`).
  * Pure.
  */
-import type { Task } from "@/lib/types"
+import type { Subtask, Task } from "@/lib/types"
+import { effectiveTierMap, hasStepTiers, type StepTier } from "@/lib/step-tiers"
 import { normalizePriorityInputs } from "@/lib/priority"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { parseLocalDate } from "@/lib/date-utils"
@@ -215,6 +219,82 @@ export function unlockContextFor(
       unlocks: unlockValue(id, tasks, opts, index),
       inherited: inheritedDue(id, tasks, opts.now, index),
     })
+  }
+  return out
+}
+
+/** Phase 14 D: an open step waiting is worth its tier. Open steps are always in a level not yet reached. */
+export const STEP_TIER_WEIGHT: Record<StepTier, number> = { min: 1, goal: 0.6, exceptional: 0.3 }
+
+export interface WaitingStep {
+  step: Subtask
+  distance: number
+}
+
+function flatSteps(steps: readonly Subtask[] | undefined): { step: Subtask; path: Subtask[] }[] {
+  const out: { step: Subtask; path: Subtask[] }[] = []
+  const walk = (list: readonly Subtask[], path: Subtask[]) => {
+    for (const step of list) {
+      out.push({ step, path })
+      if (step.subtasks?.length) walk(step.subtasks, [...path, step])
+    }
+  }
+  walk(steps ?? [], [])
+  return out
+}
+
+/**
+ * Every open step waiting on `stepId`, or on one of its ancestors, directly or
+ * through a chain, once each, nearest first. A step finishing `stepId` moves
+ * closer, so waiting on its parent counts too.
+ */
+export function stepsWaitingOn(steps: readonly Subtask[] | undefined, stepId: string): WaitingStep[] {
+  const flat = flatSteps(steps)
+  const index = new Map<string, Subtask[]>()
+  for (const { step } of flat) {
+    if (step.completed) continue
+    for (const id of new Set(step.dependsOn ?? [])) {
+      if (id === step.id) continue
+      const list = index.get(id)
+      if (list) list.push(step)
+      else index.set(id, [step])
+    }
+  }
+  if (index.size === 0) return []
+  const self = flat.find((f) => f.step.id === stepId)
+  if (!self) return []
+  const seen = new Set<string>([stepId])
+  const out: WaitingStep[] = []
+  let frontier = [stepId, ...self.path.map((p) => p.id)]
+  for (let distance = 1; frontier.length; distance += 1) {
+    const next: string[] = []
+    for (const id of frontier) {
+      for (const dep of index.get(id) ?? []) {
+        if (seen.has(dep.id)) continue
+        seen.add(dep.id)
+        out.push({ step: dep, distance })
+        next.push(dep.id)
+      }
+    }
+    frontier = next
+  }
+  return out
+}
+
+/**
+ * Unlock value of every step in a task, keyed by id. Steps nothing waits on are
+ * left out (read as 0). Empty when no step has `dependsOn`.
+ */
+export function stepUnlockValues(steps: readonly Subtask[] | undefined): Map<string, number> {
+  const out = new Map<string, number>()
+  const flat = flatSteps(steps)
+  if (!flat.some((f) => f.step.dependsOn?.length)) return out
+  const tiered = hasStepTiers(steps ? [...steps] : [])
+  const tiers = tiered ? effectiveTierMap(steps ? [...steps] : []) : null
+  const weight = (s: Subtask) => (tiers ? STEP_TIER_WEIGHT[tiers.get(s.id) ?? "goal"] : 1)
+  for (const { step } of flat) {
+    const value = stepsWaitingOn(steps, step.id).reduce((sum, w) => sum + weight(w.step) * fade(w.distance), 0)
+    if (value > 0) out.set(step.id, value)
   }
   return out
 }
