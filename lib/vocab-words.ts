@@ -8,7 +8,9 @@
  * everyday → SAT / Word Power → advanced → extremely advanced. French,
  * Italian, German, Japanese, Spanish, and Mandarin run common (with pictures)
  * → everyday → advanced, and define each word in that language. Settings
- * persist in `lib/vocab-store.ts`; banks live in `lib/vocab/`.
+ * persist in `lib/vocab-store.ts`; banks live in `lib/vocab/`. IPA for the
+ * bank words is `lib/vocab/bank-ipa.json` (built by
+ * `scripts/build-vocab-frequency.py`). Speech is `lib/vocab-speech.ts`.
  */
 
 import { DE_BANK } from "@/lib/vocab/de"
@@ -17,8 +19,10 @@ import { ES_BANK } from "@/lib/vocab/es"
 import { FR_BANK } from "@/lib/vocab/fr"
 import { IT_BANK } from "@/lib/vocab/it"
 import { JA_BANK } from "@/lib/vocab/ja"
+import BANK_IPA from "@/lib/vocab/bank-ipa.json"
 import type { VocabBank, VocabEntry, VocabLang, VocabLevel } from "@/lib/vocab/types"
 import { ZH_BANK } from "@/lib/vocab/zh"
+import { speak } from "@/lib/vocab-speech"
 
 export type { VocabBank, VocabEntry, VocabLang, VocabLevel } from "@/lib/vocab/types"
 
@@ -211,14 +215,19 @@ export function vocabDeck(lang: VocabLang, words: string[] | undefined): { entry
   return deck
 }
 
-/** Say a word or sentence in its language with the browser's speech synthesis. */
-export function speakVocab(text: string, lang: VocabLang): void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = VOCAB_LANG_SPEECH[lang]
-  utterance.rate = lang === "en" ? 0.95 : 0.85
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(utterance)
+/**
+ * Say a word or sentence in its language: the neural voice online, the best
+ * installed voice offline (`lib/vocab-speech.ts`).
+ */
+export function speakVocab(text: string, lang: VocabLang, opts: { slow?: boolean } = {}): void {
+  speak(text, VOCAB_LANG_SPEECH[lang], { rate: lang === "en" ? 0.95 : 0.85, slow: opts.slow })
+}
+
+const IPA_TABLE = BANK_IPA as Partial<Record<VocabLang, Record<string, string>>>
+
+/** IPA for a bank word, without slashes; undefined when the build found none. */
+export function vocabIpa(lang: VocabLang, word: string): string | undefined {
+  return IPA_TABLE[lang]?.[word]
 }
 
 /** True for every bank but English: the definition is in the target language. */

@@ -436,9 +436,9 @@ describe("HomeOverview", () => {
     await user.click(screen.getByRole("button", { name: "Open Today's Progress" }))
     const progress = await screen.findByRole("dialog")
     expect(progress).toHaveTextContent("To do:")
-    expect(progress).toHaveTextContent("Remaining habits")
+    expect(progress).toHaveTextContent("Undone habits")
     const habitSummary = [...progress.querySelectorAll("summary")].find((node) =>
-      node.textContent?.includes("Remaining habits"),
+      node.textContent?.includes("Undone habits"),
     )
     expect(habitSummary).toBeTruthy()
     const shut = habitSummary!.querySelector(".is-shut") as HTMLElement

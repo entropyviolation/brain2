@@ -55,6 +55,7 @@ import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
 import { useCloseGiftIdeas } from "@/hooks/use-close-gift-ideas"
 import { useInstagramFollowersList, useInstagramFollowingList } from "@/hooks/use-instagram-lists"
+import { useVocabLanguageLists } from "@/hooks/use-vocab-language-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
 import { PenSettingsHost } from "@/components/Home/Tracking/pen-settings-host"
@@ -119,6 +120,7 @@ function IdleVaultSeeds() {
   useCloseGiftIdeas()
   useInstagramFollowingList()
   useInstagramFollowersList()
+  useVocabLanguageLists()
   return null
 }
 

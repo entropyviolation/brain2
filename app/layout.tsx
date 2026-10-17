@@ -27,6 +27,7 @@ import "./win95.css"
 // component-imported CSS; the skin then falls back to unskinned Tailwind.
 import "@/components/Lists/filemanager98.css"
 import "@/components/Home/home-chrome.css"
+import "@/components/Home/home-vocab-study.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 import "@/components/Home/Plan/plan-chrome.css"
 import "@/components/Home/Habits/habit-grid.css"

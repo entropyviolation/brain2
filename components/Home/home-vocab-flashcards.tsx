@@ -17,6 +17,7 @@ import {
   VOCAB_LANG_SPEECH,
   VOCAB_LEVEL_LABEL,
   speakVocab,
+  vocabIpa,
   vocabIsTarget,
   type VocabEntry,
   type VocabLang,
@@ -182,6 +183,7 @@ export function VocabFlashcards({
       {entry.picture ? <span className="home-vocab-flash-picture" aria-hidden="true">{entry.picture}</span> : null}
       <span className="home-vocab-flash-word">{entry.word}</span>
       {reading ? <span className="home-vocab-flash-reading">{reading}</span> : null}
+      {vocabIpa(lang, entry.word) ? <span className="home-vocab-flash-reading home-vocab-flash-ipa">/{vocabIpa(lang, entry.word)}/</span> : null}
     </div>
   )
 
@@ -273,6 +275,9 @@ export function VocabFlashcards({
       <div className="home-vocab-flash-tools">
         <button type="button" className="home-review-key" onClick={() => speakVocab(entry.word, lang)}>
           Say it
+        </button>
+        <button type="button" className="home-review-key" onClick={() => speakVocab(entry.definition, lang)}>
+          ♪ Definition
         </button>
         <button
           type="button"

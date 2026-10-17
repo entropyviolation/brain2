@@ -18,13 +18,16 @@ import { isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task, WeeklyTask } from "@/lib/types"
-import type { HomeDayCount } from "@/components/Home/home-day-stats"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
+import type { HomeDayCount, HomeDayRemainingItem } from "@/components/Home/home-day-stats"
 
 export type HomePeriod = "week" | "month"
 
 export type HomePeriodStats = {
   todo: HomeDayCount
   habit: HomeDayCount
+  remainingTodos: HomeDayRemainingItem[]
+  remainingHabits: HomeDayRemainingItem[]
 }
 
 type HabitLedger = ReturnType<typeof useHabitsStore.getState>["weeklyHabitData"]
@@ -61,13 +64,23 @@ export function homePeriodStatsOf(
   const periodHabits = habits.filter(
     (habit) => habit.frequency === frequency && !isHabitPeriodExempt(habit, key, frequency, habitExemptions),
   )
-  const habitDone = periodHabits.filter((habit) =>
-    isHabitGoalMet(habit, ledger[key]?.[habit.id], { date: periodStart, weeklyData: ledger }),
-  ).length
+  const remainingHabits: HomeDayRemainingItem[] = []
+  let habitDone = 0
+  for (const habit of periodHabits) {
+    if (isHabitGoalMet(habit, ledger[key]?.[habit.id], { date: periodStart, weeklyData: ledger })) {
+      habitDone++
+    } else {
+      remainingHabits.push({ id: habit.id, title: habit.name.trim() || "Untitled habit" })
+    }
+  }
 
   return {
     todo: countOf(todoDone, todos.length),
     habit: countOf(habitDone, periodHabits.length),
+    remainingTodos: todos
+      .filter((task) => !task.completed)
+      .map((task) => ({ id: task.id, title: itemTitleOrUntitled(task) })),
+    remainingHabits,
   }
 }
 
