@@ -115,6 +115,39 @@
   box-shadow: var(--id-crt-ring);
 }
 
+/* Item orb at the left of the CRT title (8.2). 28px, photographed look kept. */
+.id95 .id-fascia-orb,
+.id95-dialog .id-fascia-orb {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #1a1f1d, #050807 72%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(125, 255, 196, 0.18);
+}
+
+.id95 button.id-fascia-orb,
+.id95-dialog button.id-fascia-orb {
+  cursor: pointer;
+}
+
+.id95 button.id-fascia-orb:focus-visible,
+.id95-dialog button.id-fascia-orb:focus-visible {
+  outline: 1px dotted var(--id-crt);
+  outline-offset: 2px;
+}
+
+.id95 .id-fascia-orb img,
+.id95-dialog .id-fascia-orb img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .id95 .id-power-lamp,
 .id95-dialog .id-power-lamp {
   width: 10px;
@@ -602,6 +635,26 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
 .id95-dialog input:not([type="checkbox"]):not([type="radio"]):not(.id-title-input),
 .id95-dialog textarea {
   border-radius: var(--r-0, 0px);
+}
+
+/* Padding safety net for raw fields with no padding class. The exclusions
+   sit in :where() so the rule scores (0,1,1): above Tailwind preflight's
+   bare `input { padding: 0 }`, below any classed component rule. Shadcn
+   Input carries px-3, so it is skipped. */
+:is(.id95, .id95-dialog)
+  input:not(
+    :where(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="color"],
+        [type="file"],
+        .id-title-input,
+        [class*="px-"]
+      )
+  ),
+:is(.id95, .id95-dialog) textarea:not(:where([class*="px-"])) {
+  padding-inline: 8px;
 }
 
 .id95 img,

@@ -247,6 +247,12 @@ export interface Item {
    * those arrays are not merged into `links` in this persist era.
    */
   links?: ItemLink[]
+  /**
+   * Derived link suggestions the person dismissed on the Links tab, by edge
+   * key (`${otherId}|${canonicalRelation}`, `lib/link-graph.ts`). Draft
+   * field: Save keeps it.
+   */
+  dismissedLinkSuggestions?: string[]
   /** Flexible, schema-driven attributes keyed by AttributeDefinition.id. */
   attributes?: Record<string, AttributeValue>
   /**
@@ -299,6 +305,11 @@ export interface Subtask {
    * The tree stays the source of truth for name, done, estimate and order.
    */
   itemId?: string
+  /**
+   * Phase 12: points paid when this step is ticked (`step:{taskId}:{stepId}`
+   * in the points store), taken back on untick. Extra to the task's own.
+   */
+  points?: number
 }
 
 /** Step tier ids (Phase 10). Labels: Bare minimum / Goal / Exceptional. */
@@ -607,6 +618,8 @@ export interface Task extends Item {
   /** Files attached to this item as resources (PDFs, images, anything). Bytes live in IndexedDB. */
   resources?: ItemResource[]
   parentTaskId?: string // For subtasks
+  /** Phase 12: the task card's quick points. Set, it wins over the list rule; cleared, the rule returns. */
+  pointsOverride?: number
   /** Phase 11: this item is a step's item (`Subtask.itemId`). Never a To Do row, lens, list or search hit (`isStepItem`). */
   stepOf?: { taskId: string; stepId: string }
   subtasks?: Subtask[] // Array of subtask objects
@@ -1740,6 +1753,13 @@ export interface List {
    * this. Delete is allowed. See `lib/gift-ideas.ts`.
    */
   giftIdeasPersonId?: string
+  /**
+   * The name Brain2 last wrote on a Gift ideas list. The name follows the
+   * person only while `name` still equals this, so a person's rename of the
+   * list sticks. Absent on older lists: then a name starting "Gift ideas for "
+   * counts as automatic.
+   */
+  giftIdeasAutoName?: string
   /** Tabs shown in item detail view for items in this list (unioned with the type's panels). */
   detailPanels?: ItemDetailPanel[]
   /** Panels to hide even if the item type (or another list) would show them. */

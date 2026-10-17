@@ -149,6 +149,23 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved")
   })
 
+  it("shows the item orb on the fascia and saves a pick from it", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    const orb = screen.getByRole("button", { name: "Change item orb" })
+    expect(orb.querySelector("img")?.getAttribute("src")).toBeTruthy()
+    await user.click(orb)
+    expect(await screen.findByText("Choose an Icon")).toBeInTheDocument()
+    const picks = [...document.querySelectorAll("[role=dialog] img")].filter((img) => !orb.contains(img))
+    const pick = picks.at(-1) as HTMLElement
+    await user.click(pick.closest("button") ?? pick)
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", metaKey: true, bubbles: true, cancelable: true }))
+    })
+    expect(useTaskStore.getState().tasks[0].icon).toEqual(expect.any(String))
+  })
+
   it("opens the item type editor when a type badge is double-clicked", async () => {
     const user = userEvent.setup()
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
@@ -353,4 +370,44 @@ describe("TaskDetailPopup", () => {
     expect(attrs.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole("button", { name: /add attribute/i })).toBeInTheDocument()
   })
+
+  it("keeps two person fields typed without blur when saved with Cmd+S", async () => {
+    const user = userEvent.setup({ delay: null })
+    useTaskStore.getState().addTask({
+      ...useTaskStore.getState().tasks[0],
+      id: "popup-person",
+      description: "Eli",
+      type: "person",
+    })
+    render(<TaskDetailPopup taskId="popup-person" open onClose={onClose} />)
+    await user.type(screen.getByLabelText("Full name"), "Elijah Hart")
+    await user.type(screen.getByLabelText("Instagram"), "eli")
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", metaKey: true, bubbles: true, cancelable: true }))
+    })
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-person")
+    expect(saved?.personProfile?.fullName).toBe("Elijah Hart")
+    expect(saved?.personProfile?.instagram).toBe("eli")
+  })
+
+  it("keeps a string attribute typed without blur when saved with Cmd+S", async () => {
+    const user = userEvent.setup({ delay: null })
+    useTaskStore.getState().addTask({
+      ...useTaskStore.getState().tasks[0],
+      id: "popup-attr",
+      description: "Book",
+      itemAttributeDefinitions: [{ id: "author", name: "Author", type: "string" }],
+      attributes: {},
+    })
+    render(<TaskDetailPopup taskId="popup-attr" open onClose={onClose} />)
+    await user.type(screen.getByLabelText("Author"), "Ada")
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes")
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", metaKey: true, bubbles: true, cancelable: true }))
+    })
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-attr")
+    expect(saved?.attributes?.author).toBe("Ada")
+  })
 })
+

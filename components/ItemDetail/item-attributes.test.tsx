@@ -46,6 +46,29 @@ describe("ItemAttributesSection", () => {
     )
   })
 
+  it("sends string keys live and commits once on blur", async () => {
+    const user = userEvent.setup()
+    const onChangeValues = vi.fn()
+    const onLiveValue = vi.fn()
+    render(
+      <ItemAttributesSection
+        attributes={{ author: "" }}
+        itemCategoryIds={["reading"]}
+        categories={[readingList]}
+        onChangeValues={onChangeValues}
+        onLiveValue={onLiveValue}
+        onCreateAttribute={vi.fn()}
+      />,
+    )
+    await user.type(screen.getByLabelText("Author"), "Ada")
+    expect(onLiveValue).toHaveBeenCalledTimes(3)
+    expect(onLiveValue).toHaveBeenLastCalledWith("author", "Ada")
+    expect(onChangeValues).not.toHaveBeenCalled()
+    await user.tab()
+    expect(onChangeValues).toHaveBeenCalledTimes(1)
+    expect(onChangeValues).toHaveBeenCalledWith(expect.objectContaining({ author: "Ada" }))
+  })
+
   it("opens the creator above the attribute grid, not below it", async () => {
     const user = userEvent.setup()
     render(

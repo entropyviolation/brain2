@@ -51,6 +51,12 @@ export interface ItemAttributesSectionProps {
   /** Ids edited on another panel of this same view. They stay on the item and stay out of this one. */
   omitAttributeIds?: readonly string[]
   onChangeValues: (values: Record<string, AttributeValue>) => void
+  /**
+   * One attribute's text on every keystroke (no render). Hosts map it to
+   * `touchDraft` merged with the latest draft attributes, so Cmd+S keeps
+   * text that has not blurred yet. `onChangeValues` still fires on blur.
+   */
+  onLiveValue?: (id: string, value: AttributeValue) => void
   onChangeItemAttributeDefinitions?: (defs: AttributeDefinition[]) => void
   onCreateAttribute: (def: AttributeDefinition, value: AttributeValue, listId: string | null) => void
   /** Open the creator on mount (an item with no attributes yet). */
@@ -66,6 +72,7 @@ function AttributeCell({
   allDefs,
   values,
   onChange,
+  onLive,
   onRemove,
   featured = false,
 }: {
@@ -75,6 +82,7 @@ function AttributeCell({
   allDefs: AttributeDefinition[]
   values: Record<string, AttributeValue>
   onChange: (v: AttributeValue) => void
+  onLive?: (v: AttributeValue) => void
   onRemove?: () => void
   featured?: boolean
 }) {
@@ -101,7 +109,14 @@ function AttributeCell({
           </button>
         )}
       </div>
-      <AttributeValueField def={def} value={value} onChange={onChange} definitions={allDefs} siblingValues={values} />
+      <AttributeValueField
+        def={def}
+        value={value}
+        onChange={onChange}
+        onLive={onLive}
+        definitions={allDefs}
+        siblingValues={values}
+      />
     </div>
   )
 }
@@ -115,6 +130,7 @@ export function ItemAttributesSection({
   layout,
   omitAttributeIds,
   onChangeValues,
+  onLiveValue,
   onChangeItemAttributeDefinitions,
   onCreateAttribute,
   defaultCreating = false,
@@ -206,6 +222,7 @@ export function ItemAttributesSection({
         allDefs={allDefs}
         values={values}
         onChange={(v) => set(d.id, v)}
+        onLive={onLiveValue ? (v) => onLiveValue(d.id, v) : undefined}
         onRemove={opts.removable ? () => removeItemOnly(d.id) : undefined}
         featured={opts.featured}
       />

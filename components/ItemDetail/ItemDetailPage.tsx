@@ -11,6 +11,7 @@
  */
 "use client"
 
+import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
@@ -35,6 +36,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
 import { PersonDetail } from "@/components/People/person-detail"
+import { PersonNotes } from "@/components/People/person-notes"
+import { foldPersonNoteLog } from "@/lib/person-notes-fold"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
@@ -442,6 +445,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   }
 
   const tabCount = visiblePanels.length + 1
+  // Old person notes still on personProfile.noteLog count too (3.3 fold).
+  const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
 
   return (
     <>
@@ -454,6 +459,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           </Button>
           <div className="id-mark">
             <span className="id-power-lamp is-on" aria-hidden />
+            <FasciaOrb
+              id={task.id}
+              icon={task.icon}
+              onPick={isEditing ? (icon) => setTask((prev) => (prev ? { ...prev, icon } : prev)) : undefined}
+            />
             <h1 className="id-title">
               {isEditing ? (
                 <IsolatedInput
@@ -570,7 +580,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           {visiblePanels.includes("notes") && (
             <TabsTrigger value="notes">
               Notes
-              {(task.noteLog?.length ?? 0) > 0 && <span className="id-tab-count">{task.noteLog!.length}</span>}
+              {noteCount > 0 && <span className="id-tab-count">{noteCount}</span>}
             </TabsTrigger>
           )}
           {visiblePanels.includes("resources") && (
@@ -598,24 +608,27 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                         />
               ) : null}
               {task && itemShowsPersonPipelines(task, lists) ? (
-                <>
-                  <PersonDetail
-                    person={task}
-                    onChange={(patch) => {
-                      touchDraft(patch)
-                      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-                    }}
-                  />
-                  <PersonPipelinesEditor
-                    mode="person"
-                    person={task}
-                    onChange={(personPipelines) => {
-                      const next = personPipelines.length > 0 ? personPipelines : undefined
-                      touchDraft({ personPipelines: next })
-                      setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
-                    }}
-                  />
-                </>
+                <PersonDetail
+                  person={task}
+                  onChange={(patch) => {
+                    touchDraft(patch)
+                    setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                  }}
+                  onLive={touchDraft}
+                  readDraft={getDraft}
+                  onNavigateToList={handleNavigateToList}
+                  pipelines={
+                    <PersonPipelinesEditor
+                      mode="person"
+                      person={task}
+                      onChange={(personPipelines) => {
+                        const next = personPipelines.length > 0 ? personPipelines : undefined
+                        touchDraft({ personPipelines: next })
+                        setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
+                      }}
+                    />
+                  }
+                />
               ) : null}
               {sourceHabitId ? (
                 <HabitLinkedDetail
@@ -638,6 +651,9 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                     itemShowsPersonPipelines(task, lists)
                       ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
                       : undefined
+                  }
+                  onLiveValue={(id, value) =>
+                    touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
                   }
                   onChangeValues={(attributes) => {
                     touchDraft({ attributes })
@@ -1339,16 +1355,28 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
         {visiblePanels.includes("notes") && (
           <TabsContent value="notes">
-            <ItemNotesLog
-              entries={task.noteLog}
-              standing={task.notes}
-              onChangeEntries={(noteLog) => {
-                touchDraft({ noteLog })
-                setTask((prev) => (prev ? { ...prev, noteLog } : prev))
-              }}
-              onLiveStanding={(notes) => touchDraft({ notes })}
-              onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
-            />
+            {itemShowsPersonPipelines(task, lists) ? (
+              <PersonNotes
+                person={task}
+                onChange={(patch) => {
+                  touchDraft(patch)
+                  setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                }}
+                onLive={touchDraft}
+                readDraft={getDraft}
+              />
+            ) : (
+              <ItemNotesLog
+                entries={task.noteLog}
+                standing={task.notes}
+                onChangeEntries={(noteLog) => {
+                  touchDraft({ noteLog })
+                  setTask((prev) => (prev ? { ...prev, noteLog } : prev))
+                }}
+                onLiveStanding={(notes) => touchDraft({ notes })}
+                onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
+              />
+            )}
           </TabsContent>
         )}
 

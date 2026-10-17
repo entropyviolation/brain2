@@ -14,6 +14,10 @@
  * Everything here is pure and unit-tested; the store/repository build on these.
  */
 import type { ItemLink, ItemRecord, LinkStance } from "@/lib/types"
+import { getRelationDef } from "@/lib/relation-registry"
+
+/** How a relation groups in the Links constellation. */
+export type RelationFamily = "family" | "friend" | "romance" | "work" | "group" | "place" | "task" | "evidence" | "other"
 
 /** A relation type item links can express. */
 export interface RelationDef {
@@ -24,6 +28,16 @@ export interface RelationDef {
   inverse: string
   /** Label for the inverse direction, e.g. "blocked by". */
   inverseLabel: string
+  /** Item type ids this relation starts from. Absent = any. */
+  fromTypes?: string[]
+  /** Item type ids this relation points at. Absent = any. */
+  toTypes?: string[]
+  family?: RelationFamily
+  /** Made by the person (lives in `useItemTypeStore.relations`). */
+  custom?: true
+  /** Hidden from pickers; old links keep their label. */
+  archived?: true
+  createdAt?: string
 }
 
 /** Built-in relation catalog. Symmetric relations use themselves as inverse. */
@@ -70,12 +84,17 @@ export function isKnownRelation(relation: string): boolean {
  * inverse), so user-defined relations still produce backlinks.
  */
 export function inverseRelation(relation: string): string {
-  return RELATION_BY_ID.get(relation)?.inverse ?? relation
+  return (RELATION_BY_ID.get(relation) ?? getRelationDef(relation))?.inverse ?? relation
 }
 
 /** Human label for a relation id (falls back to the raw id). */
 export function relationLabel(relation: string): string {
-  return RELATION_BY_ID.get(relation)?.label ?? relation
+  return (RELATION_BY_ID.get(relation) ?? getRelationDef(relation))?.label ?? relation
+}
+
+/** Label for reading a relation backwards (unknown ids read the same both ways). */
+export function inverseRelationLabel(relation: string): string {
+  return (RELATION_BY_ID.get(relation) ?? getRelationDef(relation))?.inverseLabel ?? relation
 }
 
 function makeLinkId(): string {
