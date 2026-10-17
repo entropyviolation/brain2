@@ -1,0 +1,538 @@
+/*
+ * components/Home/home-vocab-study.css — Vocab: 1000 words, Look up, dictionary, IPA
+ *
+ * Loaded by `home-vocab-tile.tsx` after `home-chrome.css`. The study card is
+ * the same phosphor CRT as the word card. The dictionary entry is a page of
+ * cool index paper on cobalt graph rule (the flashcard front), with a Doulos /
+ * Charis face for IPA. Keys under `body.win95-app` repeat the selector so the
+ * Win95 button skin does not take them. No yellow.
+ */
+
+.home-widget-dialog .home-vocab-modes.is-auto {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.home-vocab-ipa,
+.home-widget-dialog .home-vocab-card p.home-vocab-ipa {
+  font-family: "Doulos SIL", "Charis SIL", "Gentium Plus", "Lucida Grande", "Segoe UI", system-ui, serif;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+
+.home95 .home-overview .home-vocab-tile-ipa {
+  font-family: "Doulos SIL", "Charis SIL", "Lucida Grande", system-ui, serif;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ---- Chips (sources, filters, nav) ------------------------------------- */
+
+.home-widget-dialog .home-vocab-chip,
+body.win95-app .home-widget-dialog .home-vocab-detail button.home-vocab-chip {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: #e3e8ef;
+  background-image: none;
+  box-shadow: inset 0 0 0 1px #b9c6dc;
+  color: #14213d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.home-widget-dialog .home-vocab-chip.is-on,
+body.win95-app .home-widget-dialog .home-vocab-detail button.home-vocab-chip.is-on {
+  background: #2e5cc4;
+  box-shadow: inset 0 0 0 1px #1d3f8f;
+  color: #fff;
+}
+
+.home-widget-dialog .home-vocab-chip:focus-visible {
+  outline: 1px dotted #2e5cc4;
+  outline-offset: 2px;
+}
+
+/* ---- 1000 words --------------------------------------------------------- */
+
+.home-widget-dialog .home-vocab-thousand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-widget-dialog .home-vocab-thousand-bar,
+.home-widget-dialog .home-vocab-sources,
+.home-widget-dialog .home-vocab-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-thousand-bar {
+  justify-content: space-between;
+}
+
+.home-widget-dialog .home-vocab-known {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-6, 6px);
+  background: var(--friend-lcd, #07140f);
+  color: var(--friend-glow, #7dffc4);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.home-widget-dialog .home-vocab-known-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-widget-dialog .home-vocab-known-count strong {
+  font-size: 18px;
+  color: #f4fff9;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.8);
+}
+
+.home-widget-dialog .home-vocab-known-bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(90deg, rgba(125, 255, 196, 0.12) 0 9px, transparent 9px 10px);
+  box-shadow: inset 0 0 0 1px #1e4a36;
+  overflow: hidden;
+}
+
+.home-widget-dialog .home-vocab-known-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #2bd38c, #7dffc4);
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.8);
+}
+
+.home-widget-dialog .home-vocab-known-list {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-vocab-rank {
+  flex: none;
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px #1e4a36;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.home-widget-dialog .home-vocab-reveal,
+body.win95-app .home-widget-dialog .home-vocab-card button.home-vocab-reveal {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border: 1px dashed rgba(125, 255, 196, 0.45);
+  border-radius: var(--r-4, 4px);
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+body.win95-app .home-widget-dialog.home-widget-instrument .home-vocab-card button.home-vocab-speak.is-known {
+  color: #d9ffe9;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 1px #2bd38c;
+}
+
+.home-widget-dialog .home-vocab-study-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+/* Word grid: the whole list as small tiles, known ones lit. */
+.home-widget-dialog .home-vocab-grid-fold summary,
+.home-widget-dialog .home-vocab-dict-fold summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.home-widget-dialog .home-vocab-grid-fold summary::-webkit-details-marker,
+.home-widget-dialog .home-vocab-dict-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-widget-dialog .home-vocab-grid-fold[open] .home-widget-fold .is-shut,
+.home-widget-dialog .home-vocab-dict-fold[open] .home-widget-fold .is-shut {
+  display: none;
+}
+
+.home-widget-dialog .home-vocab-grid-fold[open] .home-widget-fold .is-open,
+.home-widget-dialog .home-vocab-dict-fold[open] .home-widget-fold .is-open {
+  display: inline;
+}
+
+.home-widget-dialog .home-vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 3px;
+  max-height: 240px;
+  margin: 6px 0 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  border-radius: var(--r-6, 6px);
+  background: var(--friend-lcd, #07140f);
+}
+
+.home-widget-dialog .home-vocab-grid-word,
+body.win95-app .home-widget-dialog .home-vocab-grid button.home-vocab-grid-word {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 5px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  background-image: none;
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+  color: rgba(215, 255, 233, 0.7);
+  font-size: 12px;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-vocab-grid-word.is-known,
+body.win95-app .home-widget-dialog .home-vocab-grid button.home-vocab-grid-word.is-known {
+  color: #f4fff9;
+  background: rgba(43, 211, 140, 0.22);
+  box-shadow: inset 0 0 0 1px #2bd38c;
+}
+
+.home-widget-dialog .home-vocab-grid-word.is-current,
+body.win95-app .home-widget-dialog .home-vocab-grid button.home-vocab-grid-word.is-current {
+  box-shadow: inset 0 0 0 2px #9ecbff;
+}
+
+.home-widget-dialog .home-vocab-grid-rank {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 9px;
+  opacity: 0.55;
+}
+
+/* Practice round */
+.home-widget-dialog .home-vocab-practice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  outline: none;
+}
+
+.home-widget-dialog .home-vocab-practice .home-vocab-flash-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-widget-dialog .home-vocab-practice-card,
+body.win95-app .home-widget-dialog .home-vocab-practice button.home-vocab-practice-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 190px;
+  border: 0;
+  background-image: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-vocab-practice-card .home-vocab-rank {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+}
+
+.home-widget-dialog .home-vocab-practice-word {
+  font-size: 34px;
+  line-height: 1.1;
+  color: #f4fff9;
+  text-shadow: 0 0 8px rgba(125, 255, 196, 0.7);
+}
+
+.home-widget-dialog .home-vocab-practice-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.home-widget-dialog .home-vocab-practice-done {
+  align-items: flex-start;
+}
+
+/* ---- Dictionary entry: cool index paper -------------------------------- */
+
+.home-widget-dialog .home-vocab-dict-fold {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(125, 255, 196, 0.35);
+}
+
+.home-widget-dialog .home-vocab-dict {
+  --dict-paper: #f4f7fb;
+  --dict-rule: rgba(46, 92, 196, 0.1);
+  --dict-ink: #14213d;
+  --dict-cobalt: #2e5cc4;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-6, 6px);
+  color: var(--dict-ink);
+  background-color: var(--dict-paper);
+  background-image:
+    linear-gradient(var(--dict-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dict-rule) 1px, transparent 1px);
+  background-size: 12px 12px;
+  box-shadow: 0 0 0 1px #b9c6dc, 0 4px 12px rgba(20, 33, 61, 0.2);
+  text-align: left;
+}
+
+.home-widget-dialog .home-vocab-card .home-vocab-dict p {
+  color: var(--dict-ink);
+}
+
+.home-widget-dialog .home-vocab-dict-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #b9c6dc;
+}
+
+.home-widget-dialog .home-vocab-dict-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-widget-dialog .home-vocab-dict-title strong {
+  font-size: 20px;
+}
+
+.home-widget-dialog .home-vocab-dict-title .home-vocab-ipa {
+  color: var(--dict-cobalt);
+  opacity: 1;
+}
+
+.home-widget-dialog .home-vocab-dict-keys {
+  display: flex;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-vocab-dict .home-vocab-inline-speak,
+body.win95-app .home-widget-dialog .home-vocab-dict button.home-vocab-inline-speak,
+.home-widget-dialog .home-vocab-dict-back,
+body.win95-app .home-widget-dialog .home-vocab-dict button.home-vocab-dict-back {
+  margin: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--dict-cobalt);
+  border-radius: 999px;
+  background: #fff;
+  background-image: none;
+  box-shadow: none;
+  color: var(--dict-cobalt);
+  font-size: 11px;
+  font-style: normal;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-vocab-dict-note {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5a78;
+}
+
+.home-widget-dialog .home-vocab-dict-body {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  overscroll-behavior: contain;
+}
+
+.home-widget-dialog .home-vocab-dict-body.is-conj {
+  max-height: 300px;
+  overflow-x: auto;
+}
+
+.home-widget-dialog .home-vocab-dict-body :is(h2, h3, h4, h5, h6) {
+  margin: 10px 0 4px;
+  color: var(--dict-cobalt);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-widget-dialog .home-vocab-dict-body p {
+  margin: 4px 0;
+}
+
+.home-widget-dialog .home-vocab-dict-body ol {
+  margin: 4px 0;
+  padding-left: 22px;
+}
+
+.home-widget-dialog .home-vocab-dict-body ul {
+  margin: 2px 0;
+  padding-left: 18px;
+}
+
+.home-widget-dialog .home-vocab-dict-body li {
+  margin: 3px 0;
+}
+
+.home-widget-dialog .home-vocab-dict-body li ul,
+.home-widget-dialog .home-vocab-dict-body li dl {
+  color: #3b4a68;
+  font-style: italic;
+}
+
+.home-widget-dialog .home-vocab-dict-body dl,
+.home-widget-dialog .home-vocab-dict-body dd {
+  margin: 2px 0 2px 10px;
+}
+
+.home-widget-dialog .home-vocab-dict-body table {
+  margin: 6px 0;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.home-widget-dialog .home-vocab-dict-body :is(th, td) {
+  padding: 2px 6px;
+  border: 1px solid #c8d3e6;
+  vertical-align: top;
+}
+
+.home-widget-dialog .home-vocab-dict-body th {
+  background: #e3e8ef;
+}
+
+.home-widget-dialog .home-vocab-dict-body [data-ipa] {
+  font-family: "Doulos SIL", "Charis SIL", "Gentium Plus", "Lucida Grande", system-ui, serif;
+  color: var(--dict-cobalt);
+}
+
+.home-widget-dialog .home-vocab-dict-body a,
+.home-widget-dialog .home-vocab-dict-foot a {
+  color: var(--dict-cobalt);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.home-widget-dialog .home-vocab-dict-body a[data-vocab-word] {
+  text-decoration-style: solid;
+}
+
+.home-widget-dialog .home-vocab-dict-conj summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dict-cobalt);
+}
+
+.home-widget-dialog .home-vocab-dict-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding-top: 6px;
+  border-top: 1px solid #b9c6dc;
+  font-size: 11px;
+  color: #4b5a78;
+}
+
+.home-widget-dialog .home-vocab-dict-foot .home-review-key {
+  margin-left: auto;
+}
+
+.home-widget-dialog .home-vocab-dict-added {
+  margin-left: auto;
+  font-weight: 700;
+  color: #1f7a4d;
+}
+
+/* ---- Look up ------------------------------------------------------------ */
+
+.home-widget-dialog .home-vocab-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-widget-dialog .home-vocab-lookup-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.home-widget-dialog .home-vocab-lookup-form .home-widget-field {
+  flex: 1;
+  margin: 0;
+}
+
+.home-widget-dialog .home-vocab-lookup-form input {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .home-widget-dialog .home-vocab-modes.is-auto {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .home-widget-dialog .home-vocab-practice-word {
+    font-size: 28px;
+  }
+}

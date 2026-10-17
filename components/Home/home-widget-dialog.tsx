@@ -26,16 +26,29 @@ export function HomeWidgetDialog({
   title,
   children,
   className,
+  modal = true,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   children: ReactNode
   className?: string
+  /** False while an item detail popup is stacked on top, so it can take focus and clicks. */
+  modal?: boolean
 }) {
+  // Clicks in the stacked popup land outside this dialog; they must not close it.
+  const holdOutside = (event: Event) => {
+    if (!modal) event.preventDefault()
+  }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("home-widget-dialog home-widget-instrument", className)} aria-describedby={undefined} hideClose>
+    <Dialog open={open} modal={modal} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={cn("home-widget-dialog home-widget-instrument", className)}
+        aria-describedby={undefined}
+        hideClose
+        onPointerDownOutside={holdOutside}
+        onInteractOutside={holdOutside}
+      >
         <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
           ×
         </button>

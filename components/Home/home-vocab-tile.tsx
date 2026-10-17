@@ -5,15 +5,23 @@
  * view: a picture when the word has one, the word, its kana or pinyin, and the
  * definition in that language on the foot. ↻ on the tile (and Shuffle in the
  * detail) draws another word for the day. The detail switches and adds
- * language views, sets the level per language, says the word aloud, and
- * Translate reveals the English for a target language. ♡ Favorite saves a word
- * to that language's deck; Flashcards reviews the deck
- * (`home-vocab-flashcards.tsx`). Banks: `lib/vocab/`.
+ * language views, sets the level per language, says the word and its
+ * definition aloud (neural voice, `lib/vocab-speech.ts`), shows IPA, and
+ * Translate reveals the English for a target language. Dictionary entry opens
+ * the full Wiktionary entry in that language (`home-vocab-dictionary.tsx`).
+ * ♡ Favorite saves a word to that language's deck; Flashcards reviews the
+ * deck (`home-vocab-flashcards.tsx`). **1000 words** works through that
+ * language's most common words list in Lists (`home-vocab-thousand.tsx`), and
+ * **Look up** finds any word. Banks: `lib/vocab/`.
  */
 "use client"
 
 import { useMemo, useState } from "react"
+import { VocabDictionaryFold, VocabLookup } from "@/components/Home/home-vocab-dictionary"
 import { VocabFlashcards } from "@/components/Home/home-vocab-flashcards"
+import { VocabThousand } from "@/components/Home/home-vocab-thousand"
+import { isThousandLang } from "@/lib/vocab-lists"
+import "@/components/Home/home-vocab-study.css"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import { addCalendarDays, formatLocalDateKey } from "@/lib/date-utils"
 import { useVocabStore, vocabShuffleCount } from "@/lib/vocab-store"
@@ -30,6 +38,7 @@ import {
   resolveVocabLevel,
   speakVocab,
   vocabDeck,
+  vocabIpa,
   vocabIsTarget,
   vocabLevelsFor,
   type VocabEntry,
@@ -94,6 +103,9 @@ export function VocabTile({
                 <span className="home-vocab-word-stack">
                   <span className="home-vocab-word">{entry.word}</span>
                   {entry.reading ? <span className="home-vocab-reading">{entry.reading}</span> : null}
+                  {vocabIpa(active, entry.word) ? (
+                    <span className="home-vocab-reading home-vocab-tile-ipa">/{vocabIpa(active, entry.word)}/</span>
+                  ) : null}
                 </span>
               </>
             ) : (
@@ -128,7 +140,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
   const favorites = useVocabStore((s) => s.favorites)
   const toggleFavorite = useVocabStore((s) => s.toggleFavorite)
   const [translate, setTranslate] = useState(false)
-  const [mode, setMode] = useState<"word" | "cards">("word")
+  const [mode, setMode] = useState<"word" | "thousand" | "cards" | "lookup">("word")
 
   const dateKey = formatLocalDateKey(currentDate)
   const level = resolveVocabLevel(active, levels[active])
@@ -200,28 +212,34 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
         ) : null}
       </div>
 
-      <div className="home-vocab-modes" role="tablist" aria-label="Vocab mode">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "word"}
-          className={mode === "word" ? "home-vocab-mode is-on" : "home-vocab-mode"}
-          onClick={() => setMode("word")}
-        >
-          Word of the day
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "cards"}
-          className={mode === "cards" ? "home-vocab-mode is-on" : "home-vocab-mode"}
-          onClick={() => setMode("cards")}
-        >
-          Flashcards <span className="home-vocab-mode-count">♥ {deck.length}</span>
-        </button>
+      <div className="home-vocab-modes is-auto" role="tablist" aria-label="Vocab mode">
+        {(
+          [
+            ["word", "Word of the day"],
+            ...(isThousandLang(active) ? ([["thousand", "1000 words"]] as const) : []),
+            ["cards", "Flashcards"],
+            ["lookup", "Look up"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            className={mode === value ? "home-vocab-mode is-on" : "home-vocab-mode"}
+            onClick={() => setMode(value)}
+          >
+            {label}
+            {value === "cards" ? <span className="home-vocab-mode-count">♥ {deck.length}</span> : null}
+          </button>
+        ))}
       </div>
 
-      {mode === "cards" ? (
+      {mode === "thousand" && isThousandLang(active) ? (
+        <VocabThousand key={active} lang={active} />
+      ) : mode === "lookup" ? (
+        <VocabLookup lang={active} />
+      ) : mode === "cards" ? (
         <VocabFlashcards key={active} lang={active} deck={deck} onUnfavorite={(word) => toggleFavorite(active, word)} />
       ) : (
       <>
@@ -234,6 +252,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
             <div className="home-vocab-card-title">
               <p className="home-widget-lead home-vocab-card-word">{entry.word}</p>
               {reading ? <p className="home-vocab-card-reading">{reading}</p> : null}
+              {vocabIpa(active, entry.word) ? <p className="home-vocab-ipa">/{vocabIpa(active, entry.word)}/</p> : null}
               <p className="home-vocab-card-meta">
                 {entry.pos} · {VOCAB_LEVEL_LABEL[pick.level]} · {pick.place} of {pick.poolSize}
               </p>
@@ -258,7 +277,17 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
             </div>
           </div>
 
-          <p className="home-vocab-definition">{entry.definition}</p>
+          <p className="home-vocab-definition">
+            {entry.definition}
+            <button
+              type="button"
+              className="home-vocab-inline-speak"
+              aria-label="Say the definition aloud"
+              onClick={() => speakVocab(entry.definition, active)}
+            >
+              ♪
+            </button>
+          </p>
           {entry.example ? (
             <p className="home-vocab-example">
               “{entry.example}”
@@ -285,6 +314,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
               </div>
             ) : null
           ) : null}
+          <VocabDictionaryFold key={`${active}:${entry.word}`} lang={active} word={entry.word} fallbackIpa={vocabIpa(active, entry.word)} />
         </section>
       ) : (
         <p className="home-widget-note">No words at this level yet.</p>
@@ -313,7 +343,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
         </button>
         {count > 0 ? (
           <button type="button" className="home-review-key" onClick={() => unshuffle(active)}>
-            Today's word
+            Today&apos;s word
           </button>
         ) : null}
       </div>
