@@ -9,7 +9,7 @@ import { TagInput } from "./TagInput"
 import { RichLinksPanel } from "./links/RichLinksPanel"
 import { PEOPLE_I_KNOW_LIST_ID } from "@/lib/people-i-know"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import { registerRelationDefs } from "@/lib/links"
+import { registerCustomRelations } from "@/lib/relation-registry"
 import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
 
 function makeTask(overrides: Partial<Task> & Pick<Task, "id" | "description">): Task {
@@ -112,7 +112,7 @@ function panel(task: Task, overrides: Partial<Parameters<typeof RichLinksPanel>[
 describe("RichLinksPanel", () => {
   beforeEach(() => {
     resetAllStores()
-    registerRelationDefs([])
+    registerCustomRelations([])
     useItemTypeStore.setState({ relations: [] })
   })
 
@@ -138,10 +138,10 @@ describe("RichLinksPanel", () => {
     })
     useTaskStore.getState().setTasks([task, makeTask({ id: "b", description: "Review budget", title: "Review budget" })])
     const props = panel(task)
-    const row = screen.getAllByTestId("link-row")[0]
+    const row = screen.getAllByTestId("link-ledger-row")[0]
     expect(row).toHaveTextContent("Review budget")
     expect(screen.getByRole("heading", { name: "blocks" })).toBeInTheDocument()
-    await user.click(screen.getByLabelText("Remove link Review budget"))
+    await user.click(screen.getByLabelText("Remove link to Review budget"))
     expect(props.removeLink).toHaveBeenCalledWith("l1")
   })
 
@@ -157,9 +157,9 @@ describe("RichLinksPanel", () => {
     useTaskStore.getState().setTasks([x, y])
     const props = panel(x)
     expect(screen.getByRole("heading", { name: "blocked by" })).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Fix blocker bug" }))
+    await user.click(screen.getByRole("button", { name: "Open Fix blocker bug" }))
     expect(props.onOpenItem).toHaveBeenCalledWith("y")
-    await user.click(screen.getByRole("button", { name: "Confirm" }))
+    await user.click(screen.getByRole("button", { name: "Confirm link to Fix blocker bug" }))
     expect(props.addLink).toHaveBeenCalledWith("blocked-by", "y")
   })
 
@@ -168,7 +168,7 @@ describe("RichLinksPanel", () => {
     const b = makeTask({ id: "b", description: "Oey", title: "Oey", type: "person", links: [{ id: "2", relation: "friends-with", targetId: "a" }] })
     useTaskStore.getState().setTasks([a, b])
     panel(a)
-    const rows = screen.getAllByTestId("link-row")
+    const rows = screen.getAllByTestId("link-ledger-row")
     expect(rows).toHaveLength(1)
     expect(rows[0]).toHaveAttribute("data-direction", "mutual")
   })
@@ -180,10 +180,10 @@ describe("RichLinksPanel", () => {
     panel(a)
     await user.click(screen.getByRole("combobox", { name: "Relation" }))
     await user.type(screen.getByRole("combobox", { name: "Relation" }), "is the drummer of")
-    await user.click(screen.getByRole("option", { name: /Create “is the drummer of”/ }))
+    await user.click(screen.getByRole("option", { name: /Create "is the drummer of"/ }))
     await user.clear(screen.getByLabelText("Reverse phrase"))
     await user.type(screen.getByLabelText("Reverse phrase"), "has drummer")
-    await user.click(screen.getByRole("button", { name: "Create relation" }))
+    await user.click(screen.getByRole("button", { name: "Create" }))
     const relations = useItemTypeStore.getState().relations
     expect(relations.map((r) => r.label).sort()).toEqual(["has drummer", "is the drummer of"])
     expect(screen.getByRole("combobox", { name: "Relation" })).toHaveValue("is the drummer of")
@@ -195,10 +195,10 @@ describe("RichLinksPanel", () => {
     const oey = makeTask({ id: "oey", description: "Oey", type: "person", lists: [PEOPLE_I_KNOW_LIST_ID], personProfile: { relation: "sister" } })
     useTaskStore.getState().setTasks([self, oey])
     const props = panel(oey)
-    const row = screen.getAllByTestId("link-row")[0]
+    const row = screen.getAllByTestId("link-ledger-row")[0]
     expect(row).toHaveAttribute("data-direction", "derived")
     expect(row).toHaveTextContent("self")
-    await user.click(screen.getByRole("button", { name: "Dismiss" }))
+    await user.click(screen.getByRole("button", { name: /^Dismiss suggestion/ }))
     expect(props.writeDraft).toHaveBeenCalledWith({ dismissedLinkSuggestions: ["person-self|sibling-of"] })
   })
 })

@@ -118,6 +118,18 @@ export function LinkLedger({
                     {DIRECTION_GLYPH[edge.direction]}
                   </span>
                   <span className="rl-ledger-actions">
+                    {onOpen && facts ? (
+                      <button
+                        type="button"
+                        className="rl-key"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onOpen(edge.otherId)
+                        }}
+                      >
+                        Open {title}
+                      </button>
+                    ) : null}
                     {(edge.direction === "out" || edge.direction === "mutual") && edge.outLinkId ? (
                       <button
                         type="button"
@@ -145,18 +157,6 @@ export function LinkLedger({
                         >
                           Confirm
                         </button>
-                        {onOpen && facts ? (
-                          <button
-                            type="button"
-                            className="rl-key"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              onOpen(edge.otherId)
-                            }}
-                          >
-                            Open {title}
-                          </button>
-                        ) : null}
                       </>
                     ) : null}
                     {edge.direction === "derived" ? (

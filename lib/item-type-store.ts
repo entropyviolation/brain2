@@ -12,8 +12,6 @@
  */
 "use client"
 
-import { registerRelationDefs, type RelationDef } from "@/lib/links"
-import { sanitizeRelationDefs } from "@/lib/relation-registry"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
@@ -25,20 +23,11 @@ import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withFilmType } from "@/lib/film-types"
 import type { RelationDef } from "@/lib/links"
-import { registerCustomRelations } from "@/lib/relation-registry"
+import { pickOverridable, registerCustomRelations, registerRelationOverrides } from "@/lib/relation-registry"
 
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
   types: ItemTypeDefinition[]
-  /**
-   * Person-made link relations (Links tab). Catalog and person seeds come from
-   * code (`lib/links.ts`, `lib/person-relations.ts`). Archived, never deleted,
-   * so old links keep their label.
-   */
-  relations: RelationDef[]
-  addRelations: (defs: RelationDef[]) => void
-  updateRelation: (def: RelationDef) => void
-  archiveRelation: (id: string) => void
   addType: (type: ItemTypeDefinition) => void
   updateType: (type: ItemTypeDefinition) => void
   deleteType: (id: string) => void
@@ -60,16 +49,46 @@ interface ItemTypeState {
   updateRelation: (def: RelationDef) => void
   /** Archive instead of delete so old links keep a label. */
   archiveRelation: (id: string) => void
+  /**
+   * Person overrides on any relation, built-ins included: parent, traits,
+   * reciprocity, phrases, description only (`OVERRIDABLE_RELATION_KEYS`).
+   */
+  relationOverrides: Record<string, Partial<RelationDef>>
+  /** Merge a patch into one relation's override. Non-overridable keys are dropped. */
+  setRelationOverride: (id: string, patch: Partial<RelationDef>) => void
+  clearRelationOverride: (id: string) => void
 }
 
-/** Persist bump: system types always re-seed; catalog + user types keep stored edits. */
-export const ITEM_TYPE_STORE_PERSIST_VERSION = 2
+/**
+ * Persist bump: system types always re-seed; catalog + user types keep stored
+ * edits. v3 (LINKS_REDESIGN L1.4) adds `relationOverrides` and carries
+ * `relations` through the migrate.
+ */
+export const ITEM_TYPE_STORE_PERSIST_VERSION = 3
 
-/** v0/v1 snapshots had no migrate; without this Zustand drops the blob. */
-export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types" | "relations"> {
-  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown; relations?: unknown }) : {}
+type MigratedItemTypeState = Pick<ItemTypeState, "types" | "relations" | "relationOverrides"> & {
+  /** **Planned** (L3.1): typed as `RelationRule[]` once rules land. Carried as-is. */
+  relationRules?: unknown[]
+}
+
+/**
+ * v0/v1 snapshots had no migrate; without this Zustand drops the blob. Every
+ * bump must carry the vocabulary, or a migrate silently drops it: other
+ * persisted fields are kept as they are.
+ */
+export function migrateItemTypeState(persisted: unknown, _version: number): MigratedItemTypeState {
+  const prev = persisted && typeof persisted === "object" ? (persisted as Record<string, unknown>) : {}
   const types = Array.isArray(prev.types) ? (prev.types as ItemTypeDefinition[]) : []
-  return { types: mergeTypeRegistry(types), relations: sanitizeRelationDefs(prev.relations) }
+  const out: MigratedItemTypeState = {
+    ...prev,
+    types: mergeTypeRegistry(types),
+    relations: cleanRelations(prev.relations),
+    relationOverrides: cleanRelationOverrides(prev.relationOverrides),
+  }
+  const rules = cleanRelationRules(prev.relationRules)
+  if (rules) out.relationRules = rules
+  else delete out.relationRules
+  return out
 }
 
 function cleanRelations(value: unknown): RelationDef[] {
@@ -80,11 +99,44 @@ function cleanRelations(value: unknown): RelationDef[] {
   )
 }
 
+function cleanRelationOverrides(value: unknown): Record<string, Partial<RelationDef>> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  const out: Record<string, Partial<RelationDef>> = {}
+  for (const [id, patch] of Object.entries(value as Record<string, unknown>)) {
+    const clean = pickOverridable(patch as Partial<RelationDef>)
+    if (Object.keys(clean).length) out[id] = clean
+  }
+  return out
+}
+
+function cleanRelationRules(value: unknown): unknown[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.filter((r) => !!r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string")
+}
+
 export const useItemTypeStore = create<ItemTypeState>()(
   persist(
     (set, get) => ({
       types: getBuiltinItemTypes(),
       relations: [],
+      relationOverrides: {},
+
+      setRelationOverride: (id, patch) =>
+        set((state) => {
+          const merged = pickOverridable({ ...state.relationOverrides[id], ...patch })
+          const next = { ...state.relationOverrides }
+          if (Object.keys(merged).length) next[id] = merged
+          else delete next[id]
+          return { relationOverrides: next }
+        }),
+
+      clearRelationOverride: (id) =>
+        set((state) => {
+          if (!(id in state.relationOverrides)) return state
+          const next = { ...state.relationOverrides }
+          delete next[id]
+          return { relationOverrides: next }
+        }),
 
       addRelations: (defs) =>
         set((state) => {
@@ -163,7 +215,9 @@ export const useItemTypeStore = create<ItemTypeState>()(
         if (state) {
           state.types = mergeTypeRegistry(state.types ?? [])
           state.relations = cleanRelations(state.relations)
+          state.relationOverrides = cleanRelationOverrides(state.relationOverrides)
           registerCustomRelations(state.relations)
+          registerRelationOverrides(state.relationOverrides)
         }
       },
     },
@@ -173,4 +227,5 @@ export const useItemTypeStore = create<ItemTypeState>()(
 // Keep the pure registry in step with every store change (and backup restore).
 useItemTypeStore.subscribe((state, prev) => {
   if (state.relations !== prev.relations) registerCustomRelations(state.relations ?? [])
+  if (state.relationOverrides !== prev.relationOverrides) registerRelationOverrides(state.relationOverrides ?? {})
 })

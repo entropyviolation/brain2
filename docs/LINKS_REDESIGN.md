@@ -66,12 +66,12 @@ edges with reasons, not because anything writes itself.
 
 | Step | Title | Depends on | Status |
 |------|-------|-----------|--------|
-| L0.1 | Board truth: mark PD 5.2 and 6.1 built | — | ☐ |
+| L0.1 | Board truth: mark PD 5.2 and 6.1 built | — | ☑ |
 | L0.2 | Ship PD 6.2–6.5 and 8.1 (rich Links tab everywhere) | PD plan | ☐ |
-| L1.1 | Vocabulary v2 fields on `RelationDef` | — | ☐ |
-| L1.2 | Relation lattice helpers (`lib/graph/relation-lattice.ts`) | L1.1 | ☐ |
-| L1.3 | Seed hierarchy for built-ins and person seeds | L1.2 | ☐ |
-| L1.4 | Persist bump that carries `relations` | L1.1 | ☐ |
+| L1.1 | Vocabulary v2 fields on `RelationDef` | — | ☑ |
+| L1.2 | Relation lattice helpers (`lib/graph/relation-lattice.ts`) | L1.1 | ☑ |
+| L1.3 | Seed hierarchy for built-ins and person seeds | L1.2 | ☑ |
+| L1.4 | Persist bump that carries `relations` | L1.1 | ☑ |
 | L2.1 | Relations library tab in `ItemTypesLibrary` | L1.1 | ☐ |
 | L2.2 | Relation sheet (edit, traits, phrases, usage) | L2.1 | ☐ |
 | L2.3 | Merge as alias (no link rewrite) | L2.2 | ☐ |
@@ -146,8 +146,13 @@ parents, pen "always means" links, `checklist-of` deriving deadlines,
 `supported-by` feeding `lib/belief-strength.ts`. This plan leaves them in
 their stores. KG-D1 (vault edge view) reads them later.
 
-**Status board drift.** PD board lists 5.2 and 6.1 as ☐. Both files exist
-and are tested. L0.1 fixes the board.
+**Status board drift.** Fixed (L0.1): the PD board shows 5.2 and 6.1 as ☑.
+
+**Vocabulary v2** _Last mapped: 2026-10-16_ (L1.1, L1.4). `RelationDef`
+carries the §6.1 fields. `getRelationDef` merges `BUILTIN_TRAITS`
+(`lib/graph/builtin-traits.ts`, empty until L1.3) and
+`useItemTypeStore.relationOverrides` into a cached copy, and resolves
+`aliasOf` once. `rawRelationDef` gives the stored def. Persist is v3.
 
 ---
 
@@ -319,7 +324,9 @@ export interface RelationDef {
 Built-ins stay frozen in `RELATIONS`. Their v2 fields come from a side map
 merged by the registry on read: `part-of` transitive and acyclic, `blocks`
 acyclic, `supports` disjoint with `refutes`, `subgoal-of` transitive,
-`mother-of` functional 1 with parent `parent-of`, and so on. The person can
+`mother-of` inverse-functional 1 (one mother per person; built: the earlier
+"functional 1" would cap a mother at one child), and so on. Seed parents
+live on the seeds. The person can
 override traits on a built-in. The override lives in
 `useItemTypeStore.relationOverrides: Record<id, Partial<RelationDef>>`
 (labels and ids excepted).
@@ -935,3 +942,8 @@ L1.4 ─┘    │                                     ├─ L4.4 ∥          
 ## 18. Handoff log
 
 _Append one line per finished step: `YYYY-MM-DD · step · who · result`._
+2026-10-16 · L0.1 · Claude · PD board already showed 5.2 and 6.1 ☑ with handoff lines; their tests are green (person-relations, link-graph). Spec drift was already in the 5.1 handoff (`RelationFamily` is a union in `lib/links.ts`).
+2026-10-16 · L1.1 · Claude · `RelationDef` v2 fields (`RelationTraits`, `RelationReciprocity`, `RelationOrigin` types). Registry: `OVERRIDABLE_RELATION_KEYS` (parent, traits, reciprocity, phrases, description), `pickOverridable`, `registerRelationOverrides`, `rawRelationDef`. `getRelationDef` caches resolved defs and clears the cache on every register. Side table and overrides apply to every def. Ids, labels, inverses, scope and `aliasOf` cannot be overridden. An alias returns `{ ...target, id, aliasOf: target.id, archived }`. `allRelations` merges traits but leaves aliases unresolved. Store: `relationOverrides`, `setRelationOverride`, `clearRelationOverride`, registered on rehydrate and on change. `updateRelation` already took the new fields.
+2026-10-16 · L1.4 · Claude · `brain2-item-types-store` v3. `migrateItemTypeState` keeps every persisted field, then cleans `relations`, `relationOverrides`, and `relationRules` (rules carried as-is until L3.1 types them). Fixed the stale `cogs-` key read in `item-type-store.test.ts` (the 5.1 handoff named it). `backup.ts` restores the store by key, so it needed no change. Six `components/ItemDetail` tests were stale against the merged ledger markup (`link-ledger-row`, `Remove link to …`, `Create`). Updated them. `LinkLedger` now shows **Open** on every row with an item, not only in-links. 100 ItemDetail tests green.
+2026-10-16 · L1.2 · Claude · `lib/graph/relation-lattice.ts`: `buildLattice(defs)` → `ancestors`, `descendants`, `isSubrelation`, `meet`, `depth`, `parentOf`, `checks` (`parent-cycle`, cut at the first repeat). `LATTICE_ROOT = "related"`. An unknown id parents to `related`, and an alias parents to its target. Also `unexplainedInverses(defs, lattice)`, the L5.1 inverse check, here early so L1.3 can test it. Build it from `allRelations()`. Nothing caches it yet. 5 tests.
+2026-10-16 · L1.3 · Claude · `person-relations.ts`: new seed `family-of` (sym), `SEED_PARENTS`, and every seed gets `parent` (default `related`) and `origin: "seed"`. No id or label changed. `builtin-traits.ts` filled: part-of / has-part / subgoal-of / has-subgoal transitive + acyclic, phase-of ⊑ part-of, blocks acyclic, evidence pairs disjoint, reviews quiet, mother-of / father-of inverse-functional 1, married-to functional 1. The lattice over `allRelations()` has no cycles and no unexplained inverses. `components/People/person-pipelines.test.tsx` "double-clicking a joined pen" fails on the uncommitted People edits. It is not links work.

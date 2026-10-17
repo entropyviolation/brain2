@@ -38,9 +38,36 @@ export interface RelationDef {
   /** Hidden from pickers; old links keep their label. */
   archived?: true
   createdAt?: string
+  // Vocabulary v2 (LINKS_REDESIGN §6.1). All optional; old data reads unchanged.
+  /** Parent relation id (R ⊑ parent). Absent = `related`. */
+  parent?: string
+  traits?: RelationTraits
+  /** How hard the ledger asks for the reverse link. Absent = "ask". */
+  reciprocity?: RelationReciprocity
+  /** Talkable phrases. The first forward phrase is the display label. */
+  phrases?: { forward?: string[]; inverse?: string[] }
+  /** One plain line: what this relation means. */
+  description?: string
+  /** Merged into another relation; reads as that one. Links keep their id. */
+  aliasOf?: string
+  /** Who named it. Model-named relations stay proposed until accepted. */
+  origin?: RelationOrigin
 }
 
-export type RelationFamily = "family" | "friend" | "romance" | "work" | "group" | "place" | "task" | "evidence" | "other"
+/** Small, checkable statements about a relation (LINKS_REDESIGN §5). */
+export interface RelationTraits {
+  transitive?: true
+  acyclic?: true
+  /** Max targets per source. */
+  functional?: number
+  /** Max sources per target. */
+  inverseFunctional?: number
+  disjointWith?: string[]
+}
+
+export type RelationReciprocity = "ask" | "quiet" | "expect"
+
+export type RelationOrigin = "seed" | "person" | `model:${string}` | `import:${string}`
 
 /** Built-in relation catalog. Symmetric relations use themselves as inverse. */
 export const RELATIONS: RelationDef[] = [
@@ -74,35 +101,7 @@ export const RELATIONS: RelationDef[] = [
   { id: "related", label: "related to", inverse: "related", inverseLabel: "related to" },
 ]
 
-/**
- * Every relation the app can read: the catalog above, the person seeds, and
- * the person's own (`registerRelationDefs`, fed by the item-type store).
- * Catalog ids always win, so a custom def cannot relabel `blocks`.
- */
-const RELATION_BY_ID = new Map<string, RelationDef>()
-
-function seedRelationMap(custom: readonly RelationDef[] = []): void {
-  RELATION_BY_ID.clear()
-  for (const def of custom) RELATION_BY_ID.set(def.id, def)
-  for (const def of PERSON_RELATIONS) RELATION_BY_ID.set(def.id, def)
-  for (const def of RELATIONS) RELATION_BY_ID.set(def.id, def)
-}
-seedRelationMap()
-
-/** Replace the person-made relations the label / inverse helpers read. */
-export function registerRelationDefs(custom: readonly RelationDef[]): void {
-  seedRelationMap(custom)
-}
-
-/** The definition behind a relation id, catalog, seed, or custom. */
-export function getRelationDef(relation: string): RelationDef | undefined {
-  return RELATION_BY_ID.get(relation)
-}
-
-/** Every relation known right now (catalog first, then seeds, then custom). */
-export function allRelationDefs(): RelationDef[] {
-  return [...RELATION_BY_ID.values()]
-}
+const RELATION_BY_ID = new Map(RELATIONS.map((r) => [r.id, r]))
 
 /** Whether a relation id is part of the built-in catalog. */
 export function isKnownRelation(relation: string): boolean {
@@ -125,12 +124,6 @@ export function relationLabel(relation: string): string {
 /** Label for reading a relation backwards (unknown ids read the same both ways). */
 export function inverseRelationLabel(relation: string): string {
   return (RELATION_BY_ID.get(relation) ?? getRelationDef(relation))?.inverseLabel ?? relation
-}
-
-/** Label for reading this relation from its target's side. */
-export function inverseRelationLabel(relation: string): string {
-  const def = RELATION_BY_ID.get(relation)
-  return def?.inverseLabel ?? relationLabel(inverseRelation(relation))
 }
 
 function makeLinkId(): string {
