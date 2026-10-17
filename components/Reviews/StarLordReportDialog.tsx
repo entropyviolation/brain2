@@ -212,6 +212,7 @@ export function StarLordReportDialog({
 
         <div className="hpp-body flex-1 min-h-0">
           <RitualStepper
+            tone="north"
             steps={stepDefs}
             index={stepIndex}
             onStep={goStep}

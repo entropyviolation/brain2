@@ -120,6 +120,8 @@ describe("ReviewDialog drafts and date scope", () => {
       target: { value: "the rain" },
     })
     fireEvent.click(screen.getByRole("button", { name: "Push to next week" }))
+    const prompt = screen.getByRole("dialog", { name: "Why push it to next week?" })
+    fireEvent.click(within(prompt).getByRole("button", { name: "Save" }))
     expect(screen.queryByText("sort my clothes")).not.toBeInTheDocument()
     const moved = useTaskStore.getState().tasks.find((row) => row.id === "clothes")
     expect(moved?.scheduledWeek).toBe(getWeekString(new Date(2026, 9, 5)))
@@ -176,7 +178,7 @@ describe("ReviewDialog steps", () => {
     expect(saved?.summary).toBe("a quiet day")
     expect(saved?.endCompleted).toBe(false)
     expect(usePointsStore.getState().pointsHistory).toEqual([])
-    expect(localStorage.getItem("brain2-ritual-step:end:day:2026-10-04")).toBe(String(4))
+    expect(localStorage.getItem("brain2-ritual-step:end:day:2026-10-04")).toBe(String(5))
   })
 
   it("Finish on the last step submits the night", () => {
@@ -186,5 +188,142 @@ describe("ReviewDialog steps", () => {
     fireEvent.click(screen.getByRole("button", { name: "Finish" }))
     expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.endCompleted).toBe(true)
     expect(onClose).toHaveBeenCalled()
+  })
+})
+
+describe("ReviewDialog unfinished rows", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(2026, 9, 5, 20, 0, 0))
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const open = (id: string, description: string) =>
+    useTaskStore.getState().addTask(
+      task({ id, description, schedulePlacements: [{ period: "day", value: "2026-10-04" }], scheduledDate: new Date(2026, 9, 4, 9) }),
+    )
+
+  it("Done stamps the reviewed day with an unknown time, sends it to Assumed times, and keeps its own reason", () => {
+    open("letter", "Write the letter")
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("combobox", { name: "Why blocked? Write the letter" }))
+    fireEvent.click(screen.getByRole("option", { name: "Other" }))
+    fireEvent.change(screen.getByLabelText("Other reason for Write the letter"), { target: { value: "late start" } })
+    fireEvent.click(screen.getByRole("button", { name: "Done" }))
+    const row = useTaskStore.getState().tasks.find((t) => t.id === "letter")!
+    expect(row.completed).toBe(true)
+    expect(new Date(row.completedDate!).getDate()).toBe(4)
+    expect(row.completedCertainty).toBe("estimated")
+    expect(row.estimates?.some((e) => e.field === "completedDate" && !e.confirmedAt)).toBe(true)
+    fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
+    const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
+    expect(saved?.blockedReasons?.letter).toEqual({ reason: "other", note: "late start" })
+    expect(saved?.resolvedTaskIds).toContain("letter")
+  })
+
+  it("Missed marks a missed opportunity and leaves the list", () => {
+    open("call", "Call the bank")
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "Missed" }))
+    expect(screen.queryByText("Call the bank")).not.toBeInTheDocument()
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "call")?.status).toBe("missed")
+    fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.missedTaskIds).toEqual(["call"])
+  })
+
+  it("Push asks whether you worked on it that day and stores the answer", () => {
+    open("read", "Read chapter 3")
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "Push to tomorrow" }))
+    const prompt = screen.getByRole("dialog", { name: "Why push it to tomorrow?" })
+    fireEvent.click(within(prompt).getByRole("button", { name: "A bit" }))
+    fireEvent.click(within(prompt).getByRole("button", { name: "Skip" }))
+    expect(screen.queryByText("Read chapter 3")).not.toBeInTheDocument()
+    fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
+    const saved = useReviewsStore.getState().getReview("day", "2026-10-04")
+    expect(saved?.pushedTaskIds).toContain("read")
+    expect(saved?.workedToday).toEqual({ read: "some" })
+  })
+})
+
+describe("Assumed times", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(2026, 9, 5, 20, 0, 0))
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const assumed = () =>
+    useTaskStore.getState().addTask(
+      task({
+        id: "walk",
+        description: "Walk",
+        completed: true,
+        completedDate: new Date(2026, 9, 4, 18, 0, 0),
+        actualDuration: 20,
+        estimates: [{ field: "actualDuration", kind: "anchor", basis: "assumed length", generatedAt: "2026-10-04T18:00:00.000Z" }],
+      }),
+    )
+
+  it("a duration edit keeps the start and moves the finish", () => {
+    assumed()
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Assumed times")
+    fireEvent.change(screen.getByLabelText("Minutes Walk"), { target: { value: "60" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save correction" }))
+    const row = useTaskStore.getState().tasks.find((t) => t.id === "walk")!
+    expect(row.actualDuration).toBe(60)
+    expect(new Date(row.startedAt!).getHours()).toBe(17)
+    expect(new Date(row.startedAt!).getMinutes()).toBe(40)
+    expect(new Date(row.completedDate!).getHours()).toBe(18)
+    expect(new Date(row.completedDate!).getMinutes()).toBe(40)
+  })
+
+  it("Negligible sets no time on purpose and settles the row", () => {
+    assumed()
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Assumed times")
+    fireEvent.click(screen.getByRole("button", { name: "Negligible" }))
+    const row = useTaskStore.getState().tasks.find((t) => t.id === "walk")!
+    expect(row.timeNegligible).toBe(true)
+    expect(row.actualDuration).toBeUndefined()
+    expect(screen.queryByText("Walk")).not.toBeInTheDocument()
+  })
+})
+
+describe("Look back", () => {
+  beforeEach(() => {
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  it("shows the morning plan, the marked tasks, and keeps the note", () => {
+    useTaskStore.getState().addTask(task({ id: "req", description: "Pay rent", completed: true }))
+    useReviewsStore.getState().replaceMorningReview("2026-10-04", {
+      completed: true,
+      dayPlanText: "Rent first, then the garden",
+      requiredTaskIds: ["req"],
+    })
+    const view = render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Look back")
+    expect(screen.getByText("Rent first, then the garden")).toBeInTheDocument()
+    expect(screen.getByText("Pay rent")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Looking back"), { target: { value: "the garden waited" } })
+    fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.lookBack).toBe("the garden waited")
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.morning?.dayPlanText).toBe(
+      "Rent first, then the garden",
+    )
+    view.unmount()
   })
 })

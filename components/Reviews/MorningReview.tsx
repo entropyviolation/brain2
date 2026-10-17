@@ -16,6 +16,7 @@
 import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react"
 import "./ritual-steps.css"
 import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
+import { LookAheadSection } from "@/components/Reviews/LookAheadSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
@@ -33,7 +34,7 @@ import { useReviewsStore, localDayKey, morningReviewPhase, periodLabel } from "@
 import { useGoalsStore } from "@/lib/goals-store"
 import { nightCarryForMorning } from "@/lib/ritual-carry"
 import { taskServesFocusGoals } from "@/lib/goal-focus"
-import { taskScheduledOnDay } from "@/lib/date-utils"
+import { getWeekString, taskScheduledOnDay } from "@/lib/date-utils"
 import type { PeriodReview, Task } from "@/lib/types"
 import { AffirmationsDialog } from "@/components/Reviews/AffirmationsDialog"
 import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
@@ -461,6 +462,9 @@ const MORNING_STEPS = [
   { id: "night", label: "Last night" },
   { id: "affirmations", label: "Affirmations" },
   { id: "todos", label: "To do for today" },
+  { id: "ahead", label: "Week and month" },
+  { id: "due", label: "Due within a week" },
+  { id: "overdue", label: "Overdue" },
   { id: "habits", label: "Daily habit priorities" },
   { id: "walk", label: "Go through to do list" },
   { id: "plan", label: "Day plan" },
@@ -927,6 +931,12 @@ export function MorningReviewDialog({
     return at < 0 ? 0 : at
   })
   const stepId = MORNING_STEPS[step]?.id ?? "night"
+  // Look-ahead steps are read-and-act; seeing them is the answer.
+  const [visitedAhead, setVisitedAhead] = useState<string[]>([])
+  useEffect(() => {
+    if (open && (stepId === "ahead" || stepId === "due" || stepId === "overdue"))
+      setVisitedAhead((v) => (v.includes(stepId) ? v : [...v, stepId]))
+  }, [open, stepId])
   useEffect(() => {
     if (open && stepId === "affirmations") setAffirmSeen(true)
   }, [open, stepId])
@@ -939,6 +949,9 @@ export function MorningReviewDialog({
     night: allNighter || !!(bedTime.trim() && wakeTime.trim()) || !!dream.trim(),
     affirmations: affirmSeen,
     todos: priorityIds.length > 0 || requiredIds.length > 0 || newTodoLines.some((l) => l.trim()),
+    ahead: visitedAhead.includes("ahead"),
+    due: visitedAhead.includes("due"),
+    overdue: visitedAhead.includes("overdue"),
     habits: priorityHabitIds.length > 0,
     walk: Object.values(todoWalkById).some((f) => f.skipped || !isTodoWalkFormBlank(f)),
     plan: !!dayPlan.trim() || !!existing?.dayPlanLogged,
@@ -972,6 +985,7 @@ export function MorningReviewDialog({
 
   const shownAffirmations = affirmations.length ? affirmations : sessionAffirmations
 
+  const lookAheadNow = activeDate.getTime() > Date.now() ? activeDate : new Date()
   const stepBody = (() => {
     switch (stepId) {
       case "night":
@@ -1129,6 +1143,21 @@ export function MorningReviewDialog({
               </Button>
             </div>
           </>
+        )
+      case "ahead":
+      case "due":
+      case "overdue":
+        return (
+          <LookAheadSection
+            key={stepId}
+            mode={stepId === "ahead" ? "lists" : stepId}
+            now={lookAheadNow}
+            target={{ period: "day", key: dayKey, label: "Today" }}
+            lists={[
+              { title: "This week", period: "week", key: getWeekString(activeDate) },
+              { title: "This month", period: "month", key: dayKey.slice(0, 7) },
+            ]}
+          />
         )
       case "todos":
         return (
@@ -1430,6 +1459,7 @@ export function MorningReviewDialog({
 
         <div className="hpp-body flex-1 min-h-0">
           <RitualStepper
+            tone="dawn"
             steps={steps}
             index={step}
             onStep={goStep}

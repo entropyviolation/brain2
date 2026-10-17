@@ -86,7 +86,9 @@ _Last mapped: 2026-10-16_
 **Due soon** step (Phase 5) join these lists. The answered lamp is on / off;
 a partial lamp can come with Phase 7.
 
-## Phase 2 — Night: unfinished, scheduled items
+## Phase 2 — Night: unfinished, scheduled items (done)
+
+_Last mapped: 2026-10-17_ Built as below, with these choices: no `completedTimeUnknown` field — Done uses `completedCertainty: "estimated"` plus an unconfirmed `completedDate` estimate, which Assumed times already lists. Push notes are `PeriodReview.workedToday` (reason stays in `blockedReasons`). Missed ids are `PeriodReview.missedTaskIds`. Details: `components/Reviews/README.md` → Night / Review. Tests: `review-dialog.test.tsx` (unfinished rows), `lib/ritual-done.test.ts`.
 
 Each row gets four keys: **Done · Push · Missed · (reason)**.
 
@@ -109,7 +111,9 @@ Each row gets four keys: **Done · Push · Missed · (reason)**.
 
 Footer: `n done · n pushed · n missed`.
 
-## Phase 3 — Night: assumed times
+## Phase 3 — Night: assumed times (done)
+
+_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. **Planned:** Analytics reading `timeNegligible` as zero time.
 
 1. Fields are **Start · Duration · Finish**, in that order. Editing any one
    recomputes the others: start + duration → finish (default); finish edits
@@ -120,7 +124,9 @@ Footer: `n done · n pushed · n missed`.
    as zero time, not missing.
 3. Rows from Phase 2 Done (`completedTimeUnknown`) appear here first.
 
-## Phase 4 — Look back step (all end rites)
+## Phase 4 — Look back step (all end rites) (done)
+
+_Last mapped: 2026-10-17_ Built in `components/Reviews/LookBackSection.tsx` with one note (`lookBack`), not one per block. Tracked time by scope stays on the night's How the day was spent and the period stats steps. Not scored.
 
 One read-only step that sets the period's plan beside what happened: the
 morning or start answers (priorities, required, plan, best day), tracked time
@@ -128,7 +134,9 @@ by scope, done / pushed / missed counts, and the summary. A note field per
 block (`PeriodReview.lookBack`). Night reads that day's morning. Week / month
 read that period's Start ritual.
 
-## Phase 5 — Morning: look ahead
+## Phase 5 — Morning: look ahead (done)
+
+_Last mapped: 2026-10-17_ Built as three steps (`components/Reviews/LookAheadSection.tsx`, `lib/ritual-due.ts`). Overdue rows have Do today and Missed (no Push: an overdue task has no obvious next slot). Telegram `gm` counts are **Planned**.
 
 New steps, after **To do for today**:
 
@@ -143,7 +151,9 @@ New steps, after **To do for today**:
 - Helper `lib/ritual-due.ts` (`dueWithin(tasks, now, days)`, `overdue(tasks, now)`)
   with tests. Telegram `gm` gets the counts only.
 
-## Phase 6 — Week / month / season / year
+## Phase 6 — Week / month / season / year (done)
+
+_Last mapped: 2026-10-17_ End rites already share `ReviewDialog`, so Phases 2–4 apply to every period (Done dates to the period's last day). Start rites got the look-ahead steps; only week start has a bigger list (the month), since seasons are not a schedule slot.
 
 - **End rites:** the Phase 2 row keys (Push asks why; Done dates to the last
   day of the period with unknown time; Missed), the Phase 3 times, and the
@@ -153,7 +163,9 @@ New steps, after **To do for today**:
   month, month → season, season → year) with **Do this period**.
 - Do not change period keys, `endCompleted`, or the points ledger ids.
 
-## Phase 7 — Make it beautiful
+## Phase 7 — Make it beautiful (partly done)
+
+_Last mapped: 2026-10-17_ **Built:** tone per rite on `RitualStepper` (`tone` prop), unfinished / assumed rows as cards (`.rv-row`), look-back and look-ahead cards, CRT tally and countdowns. Checked at 1280px in the app. **Planned:** the widget face below, a partial lamp, dark mode pass.
 
 - One rite shell: milled fascia header with the period nameplate, the rail on
   the left, a single question card in the middle, ‹ › and Save on a key bar.
