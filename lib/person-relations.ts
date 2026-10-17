@@ -45,7 +45,40 @@ function into(id: string, label: string, inverse: string, inverseLabel: string, 
 
 const fromPerson = { fromTypes: P }
 
-export const PERSON_RELATIONS: RelationDef[] = [
+/**
+ * Seed hierarchy (LINKS_REDESIGN L1.3): R ⊑ parent. This names what the
+ * many-to-one inverses assumed (`mother-of` ⊑ `parent-of`). Seeds not listed
+ * sit under `related`.
+ */
+const SEED_PARENTS: Record<string, string> = {
+  knows: "related",
+  "friends-with": "knows",
+  "best-friends-with": "friends-with",
+  "partner-of": "knows",
+  "married-to": "partner-of",
+  dating: "partner-of",
+  "ex-of": "knows",
+  "family-of": "knows",
+  "parent-of": "family-of",
+  "child-of": "family-of",
+  "mother-of": "parent-of",
+  "father-of": "parent-of",
+  "sibling-of": "family-of",
+  "cousin-of": "family-of",
+  "grandparent-of": "family-of",
+  "grandchild-of": "family-of",
+  "aunt-uncle-of": "family-of",
+  "niece-nephew-of": "family-of",
+  "roommate-of": "knows",
+  "neighbor-of": "knows",
+  "works-with": "knows",
+  "manager-of": "works-with",
+  "reports-to": "works-with",
+  "mentor-of": "knows",
+  "mentee-of": "knows",
+}
+
+const SEEDS: RelationDef[] = [
   // friend
   sym("friends-with", "is friends with", "friend"),
   sym("knows", "knows", "friend"),
@@ -56,6 +89,7 @@ export const PERSON_RELATIONS: RelationDef[] = [
   sym("dating", "is dating", "romance"),
   sym("ex-of", "is the ex of", "romance"),
   // family
+  sym("family-of", "is family of", "family"),
   ...pair("parent-of", "is the parent of", "child-of", "is the child of", "family"),
   into("mother-of", "is the mother of", "child-of", "is the child of", "family"),
   into("father-of", "is the father of", "child-of", "is the child of", "family"),
@@ -78,6 +112,12 @@ export const PERSON_RELATIONS: RelationDef[] = [
   // how they met
   ...pair("met-through", "met through", "introduced", "introduced", "friend"),
 ]
+
+export const PERSON_RELATIONS: RelationDef[] = SEEDS.map((def) => ({
+  ...def,
+  parent: SEED_PARENTS[def.id] ?? "related",
+  origin: "seed" as const,
+}))
 
 /**
  * A Relation-field word read from Self's side. `relation` is the link Self

@@ -55,3 +55,24 @@ describe("RELATION_WORDS", () => {
     expect(relationWord("")).toBeUndefined()
   })
 })
+
+describe("seed hierarchy (L1.3)", () => {
+  it("gives every person seed a parent, and the lattice explains every inverse", async () => {
+    const { allRelations } = await import("@/lib/relation-registry")
+    const { buildLattice, unexplainedInverses } = await import("@/lib/graph/relation-lattice")
+    for (const def of PERSON_RELATIONS) expect(def.parent, def.id).toBeTruthy()
+    const defs = allRelations()
+    const lattice = buildLattice(defs)
+    expect(lattice.checks).toEqual([])
+    expect(unexplainedInverses(defs, lattice)).toEqual([])
+    expect(lattice.ancestors("mother-of")).toEqual(["parent-of", "family-of", "knows", "related"])
+    expect(lattice.isSubrelation("phase-of", "part-of")).toBe(true)
+  })
+
+  it("adds built-in traits without touching labels", () => {
+    expect(getRelationDef("part-of")?.traits?.transitive).toBe(true)
+    expect(getRelationDef("part-of")?.label).toBe("part of")
+    expect(getRelationDef("reviews")?.reciprocity).toBe("quiet")
+    expect(getRelationDef("mother-of")?.traits?.inverseFunctional).toBe(1)
+  })
+})
