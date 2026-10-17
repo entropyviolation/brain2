@@ -839,7 +839,8 @@ body.win95-app .b2-shell-rail button.b2-reminder-bell .b2-reminder-count {
 }
 
 .b2-reminder-compose input,
-.b2-reminder-compose select {
+.b2-reminder-compose select,
+.b2-reminder-compose .native-select {
   width: 100%;
   min-width: 0;
   min-height: 2rem;

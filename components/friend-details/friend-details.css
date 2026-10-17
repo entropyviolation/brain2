@@ -889,7 +889,8 @@
 }
 
 .friend-bead-input,
-.friend-tray select {
+.friend-tray select,
+.friend-tray .native-select {
   border: 0;
   border-radius: var(--r-4, 4px);
   padding: 3px 6px;

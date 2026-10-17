@@ -312,7 +312,9 @@
 .set95 select,
 .set95-dialog input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
 .set95-dialog textarea,
-.set95-dialog select {
+.set95-dialog select,
+.set95 .native-select,
+.set95-dialog .native-select {
   border: none !important;
   border-radius: var(--r-2, 2px);
   background: #fff !important;
@@ -325,7 +327,9 @@
 .set95 select:focus,
 .set95-dialog input:not([type="range"]):focus,
 .set95-dialog textarea:focus,
-.set95-dialog select:focus {
+.set95-dialog select:focus,
+.set95 .native-select:focus,
+.set95-dialog .native-select:focus {
   outline: 1px dotted #000080;
   outline-offset: 1px;
   box-shadow: var(--s-field), 0 0 0 2px #000080;
@@ -634,7 +638,8 @@
   padding: 2px;
 }
 
-.set95-settings .set-group-select select {
+.set95-settings .set-group-select select,
+.set95-settings .set-group-select .native-select {
   flex: 1;
   min-width: 0;
   height: 28px;

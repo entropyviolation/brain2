@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { WorkflowBuilder } from "./WorkflowBuilder"
+import { pickOption } from "@/tests/native-select"
 
 describe("WorkflowBuilder", () => {
   beforeEach(() => {
@@ -25,7 +26,7 @@ describe("WorkflowBuilder", () => {
     await user.type(nameInput, "Tag finalized")
 
     // Default trigger is item → create. Add an "Add a tag" action.
-    await user.selectOptions(screen.getByLabelText("Add action"), "addTag")
+    pickOption(screen.getByLabelText("Add action"), "addTag")
 
     const tagInput = await screen.findByLabelText(/^Tag 1$/)
     await user.type(tagInput, "finalized")
@@ -49,15 +50,15 @@ describe("WorkflowBuilder", () => {
     await user.click(screen.getByRole("button", { name: /New workflow/i }))
     await user.type(await screen.findByLabelText("Workflow name"), "Manual run")
 
-    await user.selectOptions(screen.getByLabelText("Trigger"), "manual")
+    pickOption(screen.getByLabelText("Trigger"), "manual")
     await user.type(screen.getByLabelText("Button label"), "Go")
 
     await user.click(screen.getByRole("button", { name: /Add condition/i }))
     await user.type(screen.getByLabelText("Condition field 1"), "status")
-    await user.selectOptions(screen.getByLabelText("Condition operator 1"), "eq")
+    pickOption(screen.getByLabelText("Condition operator 1"), "eq")
     await user.type(screen.getByLabelText("Condition value 1"), "Finalized")
 
-    await user.selectOptions(screen.getByLabelText("Add action"), "addToNextActions")
+    pickOption(screen.getByLabelText("Add action"), "addToNextActions")
     await user.click(screen.getByRole("button", { name: /Save workflow/i }))
 
     const def = useWorkflowsStore.getState().workflows[0]
@@ -73,9 +74,9 @@ describe("WorkflowBuilder", () => {
     await user.click(screen.getByRole("button", { name: /New workflow/i }))
     await user.type(await screen.findByLabelText("Workflow name"), "Two steps")
 
-    await user.selectOptions(screen.getByLabelText("Add action"), "addTag")
+    pickOption(screen.getByLabelText("Add action"), "addTag")
     await user.type(await screen.findByLabelText(/^Tag 1$/), "first")
-    await user.selectOptions(screen.getByLabelText("Add action"), "block")
+    pickOption(screen.getByLabelText("Add action"), "block")
     await user.type(await screen.findByLabelText(/^Message 2$/), "stop")
 
     // Move step 2 up so the block action comes first.

@@ -197,7 +197,9 @@ label.habit95-field,
 .habit95-field > .habit95-pick,
 label.habit95-field > input,
 label.habit95-field > select,
-label.habit95-field > .habit95-input {
+label.habit95-field > .habit95-input,
+.habit95-field > .native-select,
+label.habit95-field > .native-select {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -251,7 +253,8 @@ label.habit95-field > .habit95-input {
 .habit95-form input[type="number"],
 .habit95-form select,
 .habit95-form .habit95-input,
-.habit95-form .habit95-select {
+.habit95-form .habit95-select,
+.habit95-form .native-select {
   height: 24px;
   padding: 2px 6px;
   border: none;
@@ -263,7 +266,8 @@ label.habit95-field > .habit95-input {
   font-size: 12px;
 }
 
-.habit95-form select {
+.habit95-form select,
+.habit95-form .native-select {
   appearance: none;
   padding-right: 18px;
   background-image: linear-gradient(45deg, transparent 50%, #000 50%), linear-gradient(135deg, #000 50%, transparent 50%);
@@ -659,7 +663,8 @@ label.habit95-field > .habit95-input {
 
 .habit95-form input:focus,
 .habit95-form select:focus,
-.habit95-form .habit95-input:focus {
+.habit95-form .habit95-input:focus,
+.habit95-form .native-select:focus {
   outline: 1px dotted #000;
   outline-offset: -3px;
 }

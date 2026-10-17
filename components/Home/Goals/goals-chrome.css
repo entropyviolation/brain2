@@ -505,7 +505,8 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
 
 .gol95 input,
 .gol95 select,
-.gol95 textarea {
+.gol95 textarea,
+.gol95 .native-select {
   min-height: 22px;
   padding: 2px 4px;
   font: inherit;
@@ -526,7 +527,8 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
 .gol95 [role="tab"]:focus-visible,
 .gol95 select:focus,
 .gol95 input:focus,
-.gol95 textarea:focus {
+.gol95 textarea:focus,
+.gol95 .native-select:focus {
   outline-width: 1px;
   outline-style: dotted;
   outline-color: var(--g-blue);
@@ -535,7 +537,8 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
 
 .gol95 input:focus,
 .gol95 select:focus,
-.gol95 textarea:focus {
+.gol95 textarea:focus,
+.gol95 .native-select:focus {
   outline-width: 2px;
   outline-style: solid;
   outline-offset: -2px;
@@ -603,7 +606,8 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
 
 .gol95-dialog input,
 .gol95-dialog select,
-.gol95-dialog textarea {
+.gol95-dialog textarea,
+.gol95-dialog .native-select {
   width: 100%;
   min-height: 22px;
   padding: 2px 4px;
@@ -621,7 +625,8 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
 
 .gol95-dialog input:focus,
 .gol95-dialog select:focus,
-.gol95-dialog textarea:focus {
+.gol95-dialog textarea:focus,
+.gol95-dialog .native-select:focus {
   outline: 2px solid #000080;
   outline-offset: -2px;
 }

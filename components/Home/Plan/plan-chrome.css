@@ -584,7 +584,8 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 }
 
 .plan95 .plan-rail-tools input,
-.plan95 .plan-rail-tools select {
+.plan95 .plan-rail-tools select,
+.plan95 .plan-rail-tools .native-select {
   width: 100%;
   height: 24px;
   padding: 2px 6px;
@@ -1562,7 +1563,9 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 .plan95-dialog textarea:focus,
 .plan95-dialog textarea:focus-visible,
 .plan95-dialog select:focus,
-.plan95-dialog select:focus-visible {
+.plan95-dialog select:focus-visible,
+.plan95-dialog .native-select:focus,
+.plan95-dialog .native-select:focus-visible {
   outline-width: 2px;
   outline-style: solid;
   outline-color: #000080;
@@ -1782,7 +1785,8 @@ body.win95-app .plan95 .plan-view-keys [role="tab"][data-state="active"]::before
 
 .plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
 .plan95-dialog textarea,
-.plan95-dialog select {
+.plan95-dialog select,
+.plan95-dialog .native-select {
   border-radius: var(--r-0, 0px);
   background: #fff;
   color: #000;
@@ -2361,7 +2365,8 @@ body.win95-app .plan95[data-plan-dark="true"] .plan-view-keys [role="tab"][data-
 .plan95[data-plan-dark="true"] .plan-add input,
 .plan95[data-plan-dark="true"] .plan-week,
 .plan95[data-plan-dark="true"] .plan-rail-tools input,
-.plan95[data-plan-dark="true"] .plan-rail-tools select {
+.plan95[data-plan-dark="true"] .plan-rail-tools select,
+.plan95[data-plan-dark="true"] .plan-rail-tools .native-select {
   background: var(--p-paper);
   color: var(--p-ink);
 }

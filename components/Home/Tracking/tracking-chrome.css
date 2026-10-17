@@ -1009,7 +1009,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   background: var(--t-face);
 }
 
-.trk95 .trk-pen-now-create select {
+.trk95 .trk-pen-now-create select,
+.trk95 .trk-pen-now-create .native-select {
   height: 22px;
   min-width: 7rem;
   max-width: 10rem;
@@ -1064,7 +1065,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   white-space: nowrap;
 }
 
-.trk95 .trk-now-module .ops-now-bar select {
+.trk95 .trk-now-module .ops-now-bar select,
+.trk95 .trk-now-module .ops-now-bar .native-select {
   min-width: 0;
   max-width: 11rem;
 }
@@ -4225,7 +4227,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 /* Counts: one column of rows under the composer. Not the fascia four-up. */
-.trk95 .trk-count-statuses .trk-count-create select {
+.trk95 .trk-count-statuses .trk-count-create select,
+.trk95 .trk-count-statuses .trk-count-create .native-select {
   min-height: 22px;
   padding: 1px 4px;
   border: 0;
@@ -4340,7 +4343,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   color: #111;
 }
 
-.trk95 .trk-logbook-view select {
+.trk95 .trk-logbook-view select,
+.trk95 .trk-logbook-view .native-select {
   min-height: 22px;
   padding: 1px 4px;
   border: 0;

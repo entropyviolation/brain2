@@ -790,3 +790,9 @@ button.todo-session-line-name[aria-pressed="true"] {
 .todo-session-flat .todo-session-pickline .todo-verb {
   flex: 0 0 auto;
 }
+
+.todo-session-pickname.is-card {
+  border: 0; padding: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.todo-session-pickname.is-card:hover,
+.todo-session-pickname.is-card:focus-visible { text-decoration: underline; }

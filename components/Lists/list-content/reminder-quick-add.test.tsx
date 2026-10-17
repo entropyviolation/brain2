@@ -4,6 +4,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { findRemindersList } from "@/lib/reminders"
 import { ReminderQuickAdd, nextHalfHourWhenInput } from "./reminder-quick-add"
+import { pickOption } from "@/tests/native-select"
 
 describe("ReminderQuickAdd", () => {
   beforeEach(() => resetAllStores())
@@ -13,7 +14,7 @@ describe("ReminderQuickAdd", () => {
     render(<ReminderQuickAdd onCancel={onCancel} />)
     fireEvent.change(screen.getByLabelText("New reminder"), { target: { value: "Call mom" } })
     fireEvent.change(screen.getByLabelText("Reminder time"), { target: { value: "2026-10-09T15:30" } })
-    fireEvent.change(screen.getByLabelText("Repeat"), { target: { value: "daily" } })
+    pickOption(screen.getByLabelText("Repeat"), "daily")
     fireEvent.click(screen.getByRole("button", { name: "Add reminder" }))
 
     const list = findRemindersList(useTaskStore.getState().lists)
@@ -83,12 +84,12 @@ describe("ReminderQuickAdd", () => {
     expect(screen.getByRole("button", { name: "Tomorrow 9am" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Next Monday" })).toBeInTheDocument()
     const repeat = screen.getByLabelText("Repeat")
-    expect(repeat).toHaveDisplayValue("Once")
-    fireEvent.change(repeat, { target: { value: "weekdays" } })
-    expect(repeat).toHaveDisplayValue("Weekdays")
-    fireEvent.change(repeat, { target: { value: "monthly" } })
-    expect(repeat).toHaveDisplayValue("Every month")
-    fireEvent.change(repeat, { target: { value: "yearly" } })
-    expect(repeat).toHaveDisplayValue("Every year")
+    expect(repeat).toHaveTextContent("Once")
+    pickOption(repeat, "weekdays")
+    expect(repeat).toHaveTextContent("Weekdays")
+    pickOption(repeat, "monthly")
+    expect(repeat).toHaveTextContent("Every month")
+    pickOption(repeat, "yearly")
+    expect(repeat).toHaveTextContent("Every year")
   })
 })

@@ -6,6 +6,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import type { Task } from "@/lib/types"
 import { OperationsView } from "./OperationsView"
+import { pickOption } from "@/tests/native-select"
 
 vi.mock("./OperationWorkspace", () => ({
   OperationWorkspace: ({ operationId, onBack }: { operationId: string; onBack?: () => void }) => (
@@ -54,7 +55,7 @@ describe("OperationsView", () => {
     const user = userEvent.setup()
     render(<OperationsView />)
     await user.type(screen.getByLabelText("New operation name"), "Moonshot")
-    await user.selectOptions(screen.getByLabelText("Shape"), "trip")
+    pickOption(screen.getByLabelText("Shape"), "trip")
     await user.click(screen.getByRole("button", { name: "New Operation" }))
     expect(screen.getByText(/^Workspace /)).toBeInTheDocument()
 

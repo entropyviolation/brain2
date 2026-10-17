@@ -9,6 +9,7 @@ import { getWeekString } from "@/lib/date-utils"
 import { readListsNavigation } from "@/lib/app-navigation"
 import { periodTodoListName } from "@/lib/scheduled-lists-sync"
 import { TodoPanel } from "./todo-panel"
+import { pickOption } from "@/tests/native-select"
 
 vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
@@ -72,7 +73,7 @@ describe("TodoPanel", () => {
     expect(screen.getByText("Today's Tasks")).toBeInTheDocument()
     expect(screen.getByText("Finish slides")).toBeInTheDocument()
     expect(screen.getByLabelText("Sort")).toBeInTheDocument()
-    expect(screen.getByLabelText("Sort")).toHaveValue("priority")
+    expect(screen.getByLabelText("Sort")).toHaveTextContent("Priority")
     expect(screen.getByLabelText("Sort descending")).toBeInTheDocument()
     expect(screen.getByLabelText("Available now")).not.toBeChecked()
     expect(screen.queryByText("Undone")).not.toBeInTheDocument()
@@ -205,7 +206,7 @@ describe("TodoPanel", () => {
       },
     ])
     render(<TodoPanel />)
-    fireEvent.change(screen.getByLabelText("Sort"), { target: { value: "name" } })
+    pickOption(screen.getByLabelText("Sort"), "name")
     // Name mode defaults to ascending.
     const apple = screen.getByText("Apple")
     const zebra = screen.getByText("Zebra")
@@ -259,7 +260,7 @@ describe("TodoPanel", () => {
       },
     ])
     render(<TodoPanel />)
-    fireEvent.change(screen.getByLabelText("Sort"), { target: { value: "name" } })
+    pickOption(screen.getByLabelText("Sort"), "name")
     const zeta = screen.getByText("Zeta prioritized")
     const alpha = screen.getByText("Alpha ordinary")
     expect(zeta.compareDocumentPosition(alpha) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -573,7 +574,7 @@ describe("TodoPanel", () => {
 
   it("picks a tier from a menu and folds the open card without a second title", () => {
     render(<TodoPanel />)
-    fireEvent.change(screen.getByLabelText("Tier"), { target: { value: "B" } })
+    pickOption(screen.getByLabelText("Tier"), "B")
     const updated = useTaskStore.getState().tasks.find((task) => task.id === "todo-1")
     expect(updated?.urgency).toBe(2)
     expect(updated?.importance).toBe(2)

@@ -8,6 +8,7 @@ import { PERSON_TYPE_ID } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
+import { pickOption } from "@/tests/native-select"
 
 describe("PersonPipelinesEditor", () => {
   beforeEach(() => {
@@ -20,7 +21,7 @@ describe("PersonPipelinesEditor", () => {
     const onChange = vi.fn()
     render(<PersonPipelinesEditor mode="person" person={person} onChange={onChange} />)
 
-    fireEvent.change(screen.getByLabelText("Company pen to attach"), { target: { value: "co-together" } })
+    pickOption(screen.getByLabelText("Company pen to attach"), "co-together")
     fireEvent.click(screen.getByRole("button", { name: "Add pen" }))
 
     expect(onChange).toHaveBeenCalled()

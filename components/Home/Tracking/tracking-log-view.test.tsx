@@ -9,6 +9,7 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { QuickAddWroteHost } from "@/components/quick-add-wrote"
 import { TrackingLogView } from "./tracking-log-view"
 import { resetLogCycleMarks, writeCycleDayMark, type LogTimeEntry } from "./tracking-log-model"
+import { pickOption } from "@/tests/native-select"
 
 const DAY = new Date(2026, 5, 20, 12, 0, 0)
 const KEY = "2026-06-20"
@@ -102,7 +103,7 @@ describe("TrackingLogView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Switch" }))
     expect(screen.getByLabelText("From")).toBeInTheDocument()
     expect(screen.getByLabelText("To")).toBeInTheDocument()
-    expect(screen.getByLabelText("View")).toHaveValue("activity")
+    expect(screen.getByLabelText("View")).toHaveTextContent("Activity")
     expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
     expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Note" }))
@@ -206,7 +207,7 @@ describe("TrackingLogView", () => {
     const started = useTimeTrackingStore.getState().entries.find((entry) => entry.switchTo === "cleaning")
     expect(started).toMatchObject({ scopeId: "activity", title: "started cleaning", kind: "instant" })
 
-    fireEvent.change(screen.getByLabelText("View"), { target: { value: "location" } })
+    pickOption(screen.getByLabelText("View"), "location")
     fireEvent.change(screen.getByLabelText("From"), { target: { value: "home" } })
     fireEvent.change(screen.getByLabelText("To"), { target: { value: "work" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))

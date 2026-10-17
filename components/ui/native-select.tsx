@@ -1,8 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { ChevronDown } from "lucide-react"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import "./native-select.css"
 
 /**
  * Drop-in for a native `<select>` with `<option>` children. Renders the
@@ -84,13 +87,20 @@ export function NativeSelect({ value, defaultValue, onChange, children, classNam
         onChange?.({ target: { value: raw }, currentTarget: { value: raw } })
       }}
     >
-      <SelectTrigger className={cn("native-select h-auto min-h-0", className)} style={style} {...rest}>
-        <SelectValue />
-      </SelectTrigger>
+      {/* The bare trigger, not `SelectTrigger`: no shadcn field classes, so the
+          house rules that style `select` (twinned as `.native-select`) apply. */}
+      <SelectPrimitive.Trigger className={cn("native-select", className)} style={style} {...rest}>
+        <span className="native-select-value">
+          <SelectValue />
+        </span>
+        <SelectPrimitive.Icon asChild>
+          <ChevronDown className="native-select-icon" aria-hidden />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
       <SelectContent onClick={stop} onPointerDown={stop} onMouseDown={stop} onKeyDown={stop}>
         {groupRuns(options).map((run, i) => {
           const items = run.items.map((o) => (
-            <SelectItem key={o.value} value={o.value === "" ? EMPTY : o.value} disabled={o.disabled}>
+            <SelectItem key={o.value} value={o.value === "" ? EMPTY : o.value} disabled={o.disabled} data-value={o.value}>
               {o.label}
             </SelectItem>
           ))

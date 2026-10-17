@@ -383,7 +383,9 @@
 .hpp95 .hpp-body select,
 .hpp95-dialog .hpp-body input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
 .hpp95-dialog .hpp-body textarea,
-.hpp95-dialog .hpp-body select {
+.hpp95-dialog .hpp-body select,
+.hpp95 .hpp-body .native-select,
+.hpp95-dialog .hpp-body .native-select {
   border: none !important;
   border-radius: var(--r-2, 2px);
   background: #fff !important;
@@ -396,7 +398,9 @@
 .hpp95 .hpp-body select:focus,
 .hpp95-dialog .hpp-body input:focus,
 .hpp95-dialog .hpp-body textarea:focus,
-.hpp95-dialog .hpp-body select:focus {
+.hpp95-dialog .hpp-body select:focus,
+.hpp95 .hpp-body .native-select:focus,
+.hpp95-dialog .hpp-body .native-select:focus {
   outline: 1px dotted #000080;
   outline-offset: 1px;
   box-shadow: var(--hpp-field), 0 0 0 2px #000080;

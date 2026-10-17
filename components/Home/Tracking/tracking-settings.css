@@ -1067,7 +1067,8 @@
 .trk95 .trk-level-new > input,
 .trk95 .trk-levels-row > input,
 .trk95 .trk-fields-row > input,
-.trk95 .trk-fields-row > select {
+.trk95 .trk-fields-row > select,
+.trk95 .trk-fields-row > .native-select {
   min-width: 0;
   min-height: 22px;
   padding: 1px 6px;

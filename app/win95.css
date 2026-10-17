@@ -191,7 +191,8 @@ body.win95-app [role="menuitem"],
 body.win95-app h1,
 body.win95-app h2,
 body.win95-app h3,
-body.win95-app h4 {
+body.win95-app h4,
+body.win95-app .native-select {
   font-family: var(--w95-font);
 }
 
@@ -258,6 +259,15 @@ body.win95-app
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
     textarea,
     select,
+    [role="combobox"]
+  ):not(.itinerary-inline-input):not(.itinerary-autogrow):not(.itinerary-time-input):not(
+    .itinerary-mode-select
+  ):not(.itinerary-ghost),
+body.win95-app
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    textarea,
+    .native-select,
     [role="combobox"]
   ):not(.itinerary-inline-input):not(.itinerary-autogrow):not(.itinerary-time-input):not(
     .itinerary-mode-select
@@ -403,7 +413,8 @@ body.win95-app :is([role="dialog"], [role="alertdialog"]) > button.b2-close-key.
 body.win95-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
 body.win95-app textarea,
 body.win95-app [role="combobox"],
-body.win95-app select {
+body.win95-app select,
+body.win95-app .native-select {
   box-shadow: var(--w95-field);
 }
 
@@ -845,7 +856,9 @@ body.win95-app textarea:focus-visible,
 body.win95-app select:focus,
 body.win95-app select:focus-visible,
 body.win95-app [contenteditable="true"]:focus,
-body.win95-app [contenteditable="true"]:focus-visible {
+body.win95-app [contenteditable="true"]:focus-visible,
+body.win95-app .native-select:focus,
+body.win95-app .native-select:focus-visible {
   outline-width: 2px !important;
   outline-style: solid !important;
   outline-color: #000080 !important;

@@ -9,6 +9,7 @@ import type { Task } from "@/lib/types"
 import { PartsPanel } from "./PartsPanel"
 import { OperationTasksPanel } from "./OperationTasksPanel"
 import { addPhase, addPhaseStep } from "./operation-actions"
+import { pickOption } from "@/tests/native-select"
 
 function seedOperation(): Task {
   const op: Task = {
@@ -44,7 +45,7 @@ describe("PartsPanel", () => {
 
     rerender(<PartsPanel operation={operation()} />)
     await user.type(screen.getByLabelText("New kind"), "Article")
-    await user.selectOptions(screen.getByLabelText("Lives inside"), "Issue")
+    pickOption(screen.getByLabelText("Lives inside"), "Issue")
     await user.type(screen.getByLabelText("Stages"), "drafted, written, formatted")
     await user.click(screen.getByRole("button", { name: "Add kind" }))
 

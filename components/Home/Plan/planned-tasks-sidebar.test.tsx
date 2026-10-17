@@ -9,6 +9,7 @@ import { TaskType } from "@/lib/types"
 import { getWeekString } from "@/lib/date-utils"
 import { buildTodoItems, filterAndSortTodos } from "@/components/Home/ToDo/todo-utils"
 import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
+import { pickOption } from "@/tests/native-select"
 
 describe("PlannedTasksSidebar", () => {
   const currentDate = new Date("2026-06-20T12:00:00")
@@ -288,7 +289,7 @@ describe("PlannedTasksSidebar", () => {
     expect(screen.queryByText("Pay rent")).not.toBeInTheDocument()
 
     await user.clear(screen.getByLabelText("Search planned items"))
-    await user.selectOptions(screen.getByLabelText("Sort planned items"), "duration")
+    pickOption(screen.getByLabelText("Sort planned items"), "duration")
     const titles = [...document.querySelectorAll(".plan-rail-item .plan-rail-title")].map((el) =>
       el.childNodes[0]?.textContent?.trim(),
     )
