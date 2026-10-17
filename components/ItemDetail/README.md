@@ -41,7 +41,7 @@ Popup and page are both public entries.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
 
-Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `LinkPicker`, `RelatedItemsPanel`, `ItemActivityPanel`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
+Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
 `useItemDetailDraft.commitDraft` → `commitItemEdit` (patch + History line).
@@ -194,9 +194,8 @@ Attribute Demo item →** creates it if missing and opens it.
 | `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute: a type palette grouped by Words / Numbers / Choices / Time / Media / References with a description of the chosen type, its settings (options, unit, labels, formula, scope), name, target, and initial value. The attribute can be added to one of the item's lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
 | `ItemTagChip.tsx` | One item-tag chip. Value is the string name. When `normalizeTag(name)` matches a Tracking catalog tag, shows that tag’s color bead. Double-click opens `openTagSettings(id)` or `openTagSettingsFromName(name)`. Used by `TagInput` and Item Detail view-mode badges. |
 | `TagInput.tsx` | Presentational chip/token tag editor. Renders applied tags as removable `ItemTagChip`s and a text field that adds a tag on Enter/comma, with autocomplete suggestions drawn from all tags in use across `taskRepository.getAll()` (catalog matches show a bead in the list). Normalization via `lib/links.ts`. Props: `tags`, `onAdd`, `onRemove`. Chips stay strings. They are not Tracking tag ids. A Tracking catalog rename follows a string that used the old normalized name (`lib/catalog-tag.ts`). |
-| `LinkPicker.tsx` | Presentational control for adding a typed link: a relation `Select` from the `lib/links.ts` `RELATIONS` catalog plus a target-item typeahead searching the repository by title/description (excluding the current item). Props: `sourceId`, `onAdd(relation, targetId)`. |
-| `RelatedItemsPanel.tsx` | Shows an item's relationships: outgoing links grouped by relation (each removable) and discovered backlinks labelled with the inverse relation (e.g. "Y blocks X" surfaces as "blocked by Y" on X) via `useTaskStore.getBacklinks`. Rows open the linked item. Props: `task`, `onOpenItem(id)`, `onRemoveLink(linkId)`. |
-| `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), `LinkPicker` (search + add link), and `RelatedItemsPanel` (forward links, removal, inverse-labelled backlinks). |
+| `links/` | The Links tab. See **Links tab** above. |
+| `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), and `RichLinksPanel` (sentence add, remove, inverse-labelled incoming links with Confirm, one mutual row, Create a relation, a suggested edge with Dismiss). |
 | `ItemDetailPopup.test.tsx` | Popup hides scheduling / Complete / scheduler chrome for non-task types (e.g. Furniture). History tab; save records the ledger. |
 | `ItemDetailPage.test.tsx` | Full-screen detail follows `resolveDetailView`; Task chrome gated. History tab; save records estimated-duration changes. A habit-linked item shows notes, a completion summary, and **Habit settings**. A generic item does not. The list chip opens that list id. |
 
@@ -270,10 +269,10 @@ A Tracking catalog rename can rewrite a string that used the old normalized name
 Context badges are not Tags and never open tag settings. The detail view does not
 grow a second habit-tag editor and does not store `TrackTag` ids on `task.tags`.
 Both detail variants mount a "Tags" section (`TagInput` in edit; matching chips
-in page view mode) and related items (`LinkPicker` + `RelatedItemsPanel`: the
+in page view mode) and related items (`RichLinksPanel`: the
 popup's **Links** tab, the page's Related card) wired to the shared draft mutators. "Open item" navigation is handled in-place:
-each variant keeps a local `overrideId` so clicking a related/backlinked row
-swaps the detail view to that item without leaving the surface (reset when the
+each variant keeps a local `overrideId` so opening a linked row (through
+the unsaved guard) swaps the detail view to that item without leaving the surface (reset when the
 host opens a new item).
 
 ## Import paths

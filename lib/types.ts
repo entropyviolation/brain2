@@ -709,6 +709,8 @@ export interface Task extends Item {
    * at runtime.
    */
   personProfile?: import("@/lib/person-profile").PersonProfile
+  /** Derived link suggestions (`lib/self-relations.ts`) hidden on this item, by edge key. */
+  dismissedLinkSuggestions?: string[]
 }
 
 /**

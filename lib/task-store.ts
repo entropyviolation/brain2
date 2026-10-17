@@ -25,6 +25,7 @@
  */
 "use client"
 
+import { migratePersonNotesToNoteLog } from "@/lib/person-notes-fold"
 import { create } from "zustand"
 import { stampListAddedAt, stampListAddedAtAll } from "@/lib/list-added-at"
 import { applyMembershipRulesToTask, applyMembershipRulesToTasks, rulesChanged } from "@/lib/list-membership-rules"

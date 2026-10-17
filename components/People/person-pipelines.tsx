@@ -31,6 +31,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import type { PersonPipeline, Task } from "@/lib/types"
+import { PEN_COLOR_OPEN_TITLE, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./person-pipelines.css"
 
 type PersonMode = {

@@ -12,6 +12,8 @@
  */
 "use client"
 
+import { registerRelationDefs, type RelationDef } from "@/lib/links"
+import { sanitizeRelationDefs } from "@/lib/relation-registry"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
@@ -28,6 +30,15 @@ import { registerCustomRelations } from "@/lib/relation-registry"
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
   types: ItemTypeDefinition[]
+  /**
+   * Person-made link relations (Links tab). Catalog and person seeds come from
+   * code (`lib/links.ts`, `lib/person-relations.ts`). Archived, never deleted,
+   * so old links keep their label.
+   */
+  relations: RelationDef[]
+  addRelations: (defs: RelationDef[]) => void
+  updateRelation: (def: RelationDef) => void
+  archiveRelation: (id: string) => void
   addType: (type: ItemTypeDefinition) => void
   updateType: (type: ItemTypeDefinition) => void
   deleteType: (id: string) => void
@@ -55,10 +66,10 @@ interface ItemTypeState {
 export const ITEM_TYPE_STORE_PERSIST_VERSION = 2
 
 /** v0/v1 snapshots had no migrate; without this Zustand drops the blob. */
-export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types"> {
-  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown }) : {}
+export function migrateItemTypeState(persisted: unknown, _version: number): Pick<ItemTypeState, "types" | "relations"> {
+  const prev = persisted && typeof persisted === "object" ? (persisted as { types?: unknown; relations?: unknown }) : {}
   const types = Array.isArray(prev.types) ? (prev.types as ItemTypeDefinition[]) : []
-  return { types: mergeTypeRegistry(types) }
+  return { types: mergeTypeRegistry(types), relations: sanitizeRelationDefs(prev.relations) }
 }
 
 function cleanRelations(value: unknown): RelationDef[] {

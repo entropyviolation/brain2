@@ -240,7 +240,7 @@ describe("TaskDetailPopup", () => {
       render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
       typeIntoDescription()
       await user.click(screen.getByRole("tab", { name: /Links/i }))
-      await user.click(screen.getByRole("button", { name: /Book the room/ }))
+      await user.click(screen.getByRole("button", { name: "Book the room" }))
       expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
       expect(screen.getByDisplayValue("Plan team demo")).toBeInTheDocument()
       await user.click(screen.getByRole("button", { name: "Exit without saving" }))

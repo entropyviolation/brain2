@@ -71,6 +71,7 @@ export function addressTextForPick(
   return text || pick.label
 }
 
+/** @deprecated Dated notes fold into `Task.noteLog` (`lib/person-notes-fold.ts`). Old snapshots still carry it. */
 export interface PersonDatedNote {
   id: string
   /** Local day YYYY-MM-DD. */
@@ -336,6 +337,25 @@ function keepTyped(value: unknown): string | undefined {
 
 function cleanDate(value: unknown): string | undefined {
   return typeof value === "string" && parseIsoDate(value) ? value : undefined
+}
+
+const PART_KEYS = ["house", "street", "neighborhood", "city", "county", "state", "country", "postcode"] as const
+
+function cleanCoords(raw: PersonAddress | undefined): Pick<PersonAddress, "lat" | "lng" | "parts"> {
+  const out: Pick<PersonAddress, "lat" | "lng" | "parts"> = {}
+  if (raw && Number.isFinite(raw.lat) && Number.isFinite(raw.lng)) {
+    out.lat = raw.lat
+    out.lng = raw.lng
+  }
+  if (raw?.parts && typeof raw.parts === "object") {
+    const parts: AddressParts = {}
+    for (const key of PART_KEYS) {
+      const value = cleanText(raw.parts[key])
+      if (value) parts[key] = value
+    }
+    if (Object.keys(parts).length > 0) out.parts = parts
+  }
+  return out
 }
 
 function cleanNotes(rows: unknown): PersonDatedNote[] | undefined {
