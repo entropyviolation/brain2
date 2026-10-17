@@ -581,3 +581,35 @@
 .la-count[data-late="true"] { color: #ffb3a8; text-shadow: 0 0 4px rgba(255, 120, 100, 0.6); }
 .la-keys { display: inline-flex; gap: 6px; }
 .la-done { font-size: 11px; font-weight: 600; color: #1f7a54; }
+
+/* ── Tone by rite (RitualStepper `tone`) ─────────────────────
+   Dawn for morning and start, dusk for night and end, north for Star Lord.
+   Only the accent, the paper, and the current lamp change. */
+
+.rst[data-tone="dawn"] {
+  --rst-paper: #fbf5ec;
+  --rst-rule: rgba(176, 112, 40, 0.08);
+  --rst-rule-major: rgba(176, 112, 40, 0.16);
+  --rst-accent: #b0641c;
+}
+.rst[data-tone="dusk"] {
+  --rst-paper: #eef1f8;
+  --rst-rule: rgba(52, 66, 128, 0.08);
+  --rst-rule-major: rgba(52, 66, 128, 0.16);
+  --rst-accent: #34428a;
+}
+.rst[data-tone="north"] {
+  --rst-paper: #f2f3f5;
+  --rst-rule: rgba(90, 96, 110, 0.08);
+  --rst-rule-major: rgba(90, 96, 110, 0.16);
+  --rst-accent: #4d5566;
+}
+.rst[data-tone] .rst-card {
+  box-shadow: var(--hpp-field), inset 0 3px 0 var(--rst-accent);
+}
+.rst[data-tone] .rst-index-row[data-current="true"] {
+  box-shadow: inset 3px 0 0 var(--rst-accent);
+}
+.rst[data-tone] .mr-lede {
+  font-style: italic;
+}
