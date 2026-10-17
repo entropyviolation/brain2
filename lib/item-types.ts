@@ -757,3 +757,21 @@ export function validateItem(
 ): string[] {
   return applyRulesFor(item, type, "validate").errors
 }
+
+/**
+ * The type a link reads from or points at: the item's own type unless it is
+ * the generic Item, then the first type a list pins (a People I Know row with
+ * no type is a person), else Item.
+ */
+export function itemLinkTypeId(
+  item: { type?: ItemType; lists?: string[] },
+  lists: { id: string; itemTypeId?: ItemType; itemTypeIds?: ItemType[] }[],
+): string {
+  if (item.type && item.type !== BUILTIN_ITEM_TYPE_ID) return item.type as string
+  for (const id of item.lists ?? []) {
+    const list = lists.find((l) => l.id === id)
+    const pinned = list?.itemTypeId ?? list?.itemTypeIds?.[0]
+    if (pinned) return pinned as string
+  }
+  return (item.type as string) ?? (BUILTIN_ITEM_TYPE_ID as string)
+}

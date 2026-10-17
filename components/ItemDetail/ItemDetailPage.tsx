@@ -18,8 +18,7 @@ import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailU
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
-import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
-import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
+import { RichLinksPanel } from "@/components/ItemDetail/links/RichLinksPanel"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
 import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
@@ -927,11 +926,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   <CardTitle>Related</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {isEditing && <LinkPicker sourceId={task.id} onAdd={addLink} />}
-                  <RelatedItemsPanel
+                  <RichLinksPanel
                     task={task}
+                    editable={isEditing}
+                    addLink={addLink}
+                    removeLink={removeLink}
+                    writeDraft={(patch) => {
+                      touchDraft(patch)
+                      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                    }}
                     onOpenItem={openItem}
-                    onRemoveLink={removeLink}
                   />
                 </CardContent>
               </Card>

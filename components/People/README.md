@@ -5,7 +5,7 @@ People I Know, shown in more than one room.
 > **Planned.** Person detail redesign and rich Links:
 > [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
 
-## Known gaps
+## What changed, what is still open
 
 _Last mapped: 2026-10-16_
 

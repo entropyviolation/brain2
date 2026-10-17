@@ -131,6 +131,22 @@ describe("EnhancedTaskDetail", () => {
     expect(screen.getByRole("button", { name: /^Edit$/i })).toBeInTheDocument()
   })
 
+  it("Back with unsaved edits asks first; clean Back leaves at once", async () => {
+    const user = userEvent.setup()
+    render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole("button", { name: /^Edit$/i }))
+    const durationInput = screen.getByLabelText(/Estimated Duration/i)
+    await user.clear(durationInput)
+    await user.type(durationInput, "75")
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+    await user.click(await screen.findByRole("button", { name: /exit without saving/i }))
+    expect(onBack).toHaveBeenCalledTimes(2)
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(45)
+  })
+
   it("deletes the item from the danger-quiet Delete key", async () => {
     const user = userEvent.setup()
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true)

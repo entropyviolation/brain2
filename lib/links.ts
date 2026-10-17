@@ -40,6 +40,8 @@ export interface RelationDef {
   createdAt?: string
 }
 
+export type RelationFamily = "family" | "friend" | "romance" | "work" | "group" | "place" | "task" | "evidence" | "other"
+
 /** Built-in relation catalog. Symmetric relations use themselves as inverse. */
 export const RELATIONS: RelationDef[] = [
   { id: "blocks", label: "blocks", inverse: "blocked-by", inverseLabel: "blocked by" },
@@ -72,7 +74,35 @@ export const RELATIONS: RelationDef[] = [
   { id: "related", label: "related to", inverse: "related", inverseLabel: "related to" },
 ]
 
-const RELATION_BY_ID = new Map(RELATIONS.map((r) => [r.id, r]))
+/**
+ * Every relation the app can read: the catalog above, the person seeds, and
+ * the person's own (`registerRelationDefs`, fed by the item-type store).
+ * Catalog ids always win, so a custom def cannot relabel `blocks`.
+ */
+const RELATION_BY_ID = new Map<string, RelationDef>()
+
+function seedRelationMap(custom: readonly RelationDef[] = []): void {
+  RELATION_BY_ID.clear()
+  for (const def of custom) RELATION_BY_ID.set(def.id, def)
+  for (const def of PERSON_RELATIONS) RELATION_BY_ID.set(def.id, def)
+  for (const def of RELATIONS) RELATION_BY_ID.set(def.id, def)
+}
+seedRelationMap()
+
+/** Replace the person-made relations the label / inverse helpers read. */
+export function registerRelationDefs(custom: readonly RelationDef[]): void {
+  seedRelationMap(custom)
+}
+
+/** The definition behind a relation id, catalog, seed, or custom. */
+export function getRelationDef(relation: string): RelationDef | undefined {
+  return RELATION_BY_ID.get(relation)
+}
+
+/** Every relation known right now (catalog first, then seeds, then custom). */
+export function allRelationDefs(): RelationDef[] {
+  return [...RELATION_BY_ID.values()]
+}
 
 /** Whether a relation id is part of the built-in catalog. */
 export function isKnownRelation(relation: string): boolean {
@@ -95,6 +125,12 @@ export function relationLabel(relation: string): string {
 /** Label for reading a relation backwards (unknown ids read the same both ways). */
 export function inverseRelationLabel(relation: string): string {
   return (RELATION_BY_ID.get(relation) ?? getRelationDef(relation))?.inverseLabel ?? relation
+}
+
+/** Label for reading this relation from its target's side. */
+export function inverseRelationLabel(relation: string): string {
+  const def = RELATION_BY_ID.get(relation)
+  return def?.inverseLabel ?? relationLabel(inverseRelation(relation))
 }
 
 function makeLinkId(): string {

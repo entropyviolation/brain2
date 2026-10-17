@@ -116,6 +116,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   sentAtByList: true,
   personPipelines: true,
   personProfile: true,
+  dismissedLinkSuggestions: true,
   noteLog: true,
   resources: true,
 }

@@ -25,8 +25,8 @@ import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { isReminderTask } from "@/lib/reminders"
 import { TagInput } from "@/components/ItemDetail/TagInput"
-import { LinkPicker } from "@/components/ItemDetail/LinkPicker"
-import { RelatedItemsPanel } from "@/components/ItemDetail/RelatedItemsPanel"
+import { RichLinksPanel, useItemEdges } from "@/components/ItemDetail/links/RichLinksPanel"
+import { edgeCount } from "@/lib/link-graph"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -377,6 +377,7 @@ export function TaskDetailPopup({
     (id: string) => guardAction(() => setOverrideId(id)),
     [guardAction],
   )
+  const itemEdges = useItemEdges(task)
 
   const handleNavigateToList = useCallback(
     (listId: string) =>
@@ -419,7 +420,7 @@ export function TaskDetailPopup({
   // Old person notes still on personProfile.noteLog count too (3.3 fold).
   const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
   const resourceCount = task.resources?.length ?? 0
-  const linkCount = task.links?.length ?? 0
+  const linkCount = edgeCount(itemEdges)
   const writeDraft = (patch: Partial<Task>) => {
     touchDraft(patch)
     setTask((prev) => (prev ? { ...prev, ...patch } : prev))
@@ -1062,13 +1063,13 @@ export function TaskDetailPopup({
                 )}
 
                 <TabsContent value="links" className="space-y-4 mt-0">
-                  <div className="id-bay space-y-3">
-                    <h3 className="id-rail-plate">Related items</h3>
-                    <LinkPicker sourceId={task.id} onAdd={addLink} />
-                    <RelatedItemsPanel
+                  <div className="id-bay">
+                    <RichLinksPanel
                       task={task}
+                      addLink={addLink}
+                      removeLink={removeLink}
+                      writeDraft={writeDraft}
                       onOpenItem={openItem}
-                      onRemoveLink={removeLink}
                     />
                   </div>
                 </TabsContent>

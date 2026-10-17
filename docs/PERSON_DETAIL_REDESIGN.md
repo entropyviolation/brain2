@@ -15,6 +15,19 @@ Willpower gems, "Checklist before shipping UI"). Room docs:
 
 ---
 
+## Where it stands
+
+_Last mapped: 2026-10-16_
+
+**Shipped:** every way out of item detail is guarded (Phase 0); the person
+data layer (notes fold v19, rename-safe Gift ideas list, self, relation
+vocabulary); the rich Links tab for every item (Phases 5–8.1); Company pen
+double-click. **Next:** steps 1.1 → 2.1 → 3.1 (one rewrite of
+`person-detail.tsx`), which also finishes 3.2–3.5 and 7.1. Pieces for that
+rewrite are already in the tree and unwired: `components/ui/address-suggest-input.tsx`,
+`components/People/person-nicknames.tsx`, `components/People/person-log.tsx`
+(a copy of `Log` from `person-detail.tsx`; delete the original when wiring).
+
 ## How to use this file (agents read first)
 
 1. Read **§1 Context pack** instead of re-reading the files it summarizes.
@@ -667,7 +680,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: user rename survives `ensureCloseGiftIdeas()` and a person
   rename; auto name still follows a person rename; key opens dialog; quick
   add puts an item on the list.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done: `List.giftIdeasAutoName` and `giftIdeasNameIsAuto` in `lib/gift-ideas.ts` (tests: a hand rename survives hydrate and person renames). **Not done:** the key and popup (`person-gift-ideas.tsx`). Note: when the item popup is `stackAbove` it is `z-[80]`; give any dialog opened from it `z-[90]` (`OrbPickerDialog` now takes `className` for this).
 
 #### 3.5 Company pen double-click + move up
 - **Files**: `components/People/person-pipelines.tsx` (row ~95),
@@ -679,7 +692,7 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
   stacks above the item popup and that closing it returns focus to the popup.
 - **Tests**: double-click calls `openPenSettings("company", penId)` (spy on
   the module).
-- **Handoff**: _(fill in)_
+- **Handoff**: Done in `person-pipelines.tsx` (all modes; `data-opens-pen`), test in `person-pipelines.test.tsx`. Pen settings is a separate Radix dialog mounted later, so it stacks above a normal item popup. Moving the section up waits on the 3.1 `pipelines` slot.
 
 ### Phase 4 — Self
 
@@ -857,7 +870,7 @@ nothing in it may import from `components/People/`.
   (draft).
 - **Tests**: create a custom relation and link in one flow; scoped relation
   filters targets; duplicate pair is refused (no-op, row flashes).
-- **Handoff**: _(fill in)_
+- **Handoff**: `LinkComposer.tsx` holds the relation combobox and `NewRelationForm`; `LinkTargetSearch.tsx` matches title, full name, nicknames, description, and offers "New person" when the relation points at people. Type of an item: `itemLinkTypeId(item, lists)` in `lib/item-types.ts`.
 
 #### 6.3 Link ledger
 - **Files**: `components/ItemDetail/links/LinkLedger.tsx`.
@@ -870,7 +883,7 @@ nothing in it may import from `components/People/`.
   `lib/commit-item-edit.ts`). Empty state: one muted line.
 - **Tests**: confirm turns an in row into mutual in the draft; remove only
   removes own link; dismiss hides a derived row and survives Save.
-- **Handoff**: _(fill in)_
+- **Handoff**: `Task.dismissedLinkSuggestions` added to `lib/types.ts` and `TASK_FIELDS`.
 
 #### 6.4 Constellation view
 - **Files**: `components/ItemDetail/links/LinkConstellation.tsx`,
@@ -900,7 +913,7 @@ nothing in it may import from `components/People/`.
   full-text twin.
 - **Tests**: layout is deterministic for a fixed edge set; sectors don't
   overlap; reduced motion renders final positions.
-- **Handoff**: _(fill in)_
+- **Handoff**: Changed from the plan: incoming cords use the family color, dashed and flowing toward the center (not amber). Motion is a small spring integrator in the component (entrance, stir, grab-and-fling), not the Lists gravity stepper, because the slots are fixed. Layout: `lib/link-constellation-layout.ts` (tests).
 
 #### 6.5 `RichLinksPanel` wired into popup for people
 - **Files**: `components/ItemDetail/links/RichLinksPanel.tsx`,
@@ -917,7 +930,7 @@ nothing in it may import from `components/People/`.
 - **Tests**: popup for a person shows the rich panel; a task still shows the
   old one; adding a link then Save writes `task.links`; open linked item
   with a dirty draft prompts.
-- **Handoff**: _(fill in)_
+- **Handoff**: `useItemEdges(task)` is exported for the tab count. Styles: `components/ItemDetail/links/rich-links.css` (container query narrows the composer in the page rail).
 
 ### Phase 7 — Self knows everyone
 
@@ -935,7 +948,7 @@ nothing in it may import from `components/People/`.
   keys.
 - **Tests**: words map both sides; a pinned edge replaces its derived twin;
   no Self item → no derived edges.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done: `derivedSelfEdges(item, all, dismissed)`; unknown words read "knows · {word}". **Not done:** the Relation field datalist from `RELATION_WORDS` (part of 3.1).
 
 ### Phase 8 — Every item
 
@@ -950,7 +963,7 @@ nothing in it may import from `components/People/`.
   them (`grep -rn "LinkPicker\|RelatedItemsPanel" components`).
 - **Tests**: the old popup link tests ported to the new panel; belief /
   objective tests untouched and green.
-- **Handoff**: _(fill in)_
+- **Handoff**: Done in the same change as 6.5. `LinkPicker.tsx` and `RelatedItemsPanel.tsx` are deleted; their tests moved to `RichLinksPanel` in `ItemDetail.test.tsx`.
 
 #### 8.2 Orb well for every item (fascia)
 - **Files**: both shells' fascia, `item-detail-chrome.css`.
