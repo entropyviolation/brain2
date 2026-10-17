@@ -131,6 +131,7 @@ import { flattenSteps, taskMatchesAssignedQuery, effectiveDurationMinutes } from
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection } from "./TodoBreakdown"
 import { openStepItem } from "@/lib/step-item-stack"
 import "./todo-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint: string }[] = [
   { key: "urgency", label: "Urgency", hint: "Higher urgency ranks sooner" },
@@ -928,7 +929,7 @@ export function TodoPanel({
                 }
               }}
             />
-            <select
+            <NativeSelect
               className="todo-nixie"
               aria-label="Composer tier"
               title={`Tier ${composerTier}`}
@@ -940,7 +941,7 @@ export function TodoPanel({
                   {tier}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             {composerMatch ? (
               <button
                 type="button"

@@ -55,6 +55,7 @@ import { resizeImageForDoc } from "@/lib/image-resize"
 import { docsScrollSlot, readScrollOffset, writeScrollOffset } from "@/lib/app-navigation"
 import { canPersistScroller } from "@/lib/use-persisted-scroll"
 import "./document-editor.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 interface DocumentEditorProps {
   /** Document HTML (or legacy markdown — converted on load). */
@@ -677,7 +678,7 @@ export function DocumentEditor({
 
         <label className="docs-picker" title="Font for highlighted text">
           <span className="docs-picker-label">Font</span>
-          <select
+          <NativeSelect
             className="docs-select"
             value={selFont}
             disabled={readOnly}
@@ -689,12 +690,12 @@ export function DocumentEditor({
                 {f}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
 
         <label className="docs-picker" title="Size for highlighted text">
           <span className="docs-picker-label">Size</span>
-          <select
+          <NativeSelect
             className="docs-select docs-select-sm"
             value={selSize}
             disabled={readOnly}
@@ -706,12 +707,12 @@ export function DocumentEditor({
                 {n}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
 
         <label className="docs-picker" title="Font for the current heading">
           <span className="docs-picker-label">H-font</span>
-          <select
+          <NativeSelect
             className="docs-select"
             value={headingFont}
             disabled={readOnly}
@@ -723,13 +724,13 @@ export function DocumentEditor({
                 {f}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
 
         {onDocumentFontChange && (
           <label className="docs-picker" title="Default font for the whole document">
             <span className="docs-picker-label">Page</span>
-            <select
+            <NativeSelect
               className="docs-select"
               value={isAllowedFont(documentFont) ? documentFont : "Merriweather"}
               disabled={readOnly}
@@ -741,7 +742,7 @@ export function DocumentEditor({
                   {f}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         )}
 

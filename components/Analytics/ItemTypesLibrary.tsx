@@ -16,6 +16,8 @@ import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import type { ItemTypeDefinition } from "@/lib/types"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { openItemsInLists } from "./open-in-lists"
+import { RelationsLibrary } from "./relations/RelationsLibrary"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type SortKey = "name" | "count" | "kind"
 type KindFilter = "all" | "system" | "catalog" | "user"
@@ -38,7 +40,24 @@ function kindLabel(type: ItemTypeDefinition): string {
   return "User"
 }
 
+/** Types and Relations side by side (LINKS_REDESIGN L2.1). */
 export function ItemTypesLibrary() {
+  const [tab, setTab] = useState<"types" | "relations">("types")
+  return (
+    <>
+      <div className="an-library-filters" role="tablist" aria-label="Library section">
+        {(["types", "relations"] as const).map((t) => (
+          <button key={t} type="button" role="tab" className="an-chip" aria-selected={tab === t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+            {t === "types" ? "Types" : "Relations"}
+          </button>
+        ))}
+      </div>
+      {tab === "types" ? <TypesCatalog /> : <RelationsLibrary />}
+    </>
+  )
+}
+
+function TypesCatalog() {
   const types = useItemTypeStore((s) => s.types)
   const addType = useItemTypeStore((s) => s.addType)
   const updateType = useItemTypeStore((s) => s.updateType)
@@ -115,7 +134,7 @@ export function ItemTypesLibrary() {
         <div className="an-library-tools">
           <label className="an-library-field">
             Sort
-            <select
+            <NativeSelect
               aria-label="Sort item types"
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
@@ -123,7 +142,7 @@ export function ItemTypesLibrary() {
               <option value="count">By count</option>
               <option value="name">By name</option>
               <option value="kind">By kind</option>
-            </select>
+            </NativeSelect>
           </label>
           <div className="an-library-filters" role="group" aria-label="Filter item types">
             {(["all", "system", "catalog", "user"] as const).map((k) => (

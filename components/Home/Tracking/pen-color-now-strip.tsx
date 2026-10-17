@@ -36,6 +36,7 @@ import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-lis
 import { useClockTask } from "@/components/Focus/use-clock-task"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 interface PenChoice {
   penId: string
@@ -254,7 +255,7 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
           {draftName && !live && (
             <div className="trk-pen-now-create">
               <ColorSwatch value={newColor} onChange={setNewColor} size="sm" aria-label="New pen color" />
-              <select
+              <NativeSelect
                 aria-label="View for the new pen"
                 value={createScopeId}
                 onChange={(e) => setCreateScopeId(e.target.value)}
@@ -264,7 +265,7 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
                     {scope.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <button type="button" className="ops-btn" disabled={!canCreate} onMouseDown={(e) => e.preventDefault()} onClick={createPen}>
                 {nameTaken ? "Already in this view" : `Create “${draftName}”`}
               </button>

@@ -42,6 +42,7 @@ import { airportFromCity, enrichParsedFlightWithApi } from "@/lib/flight-lookup"
 import { CitySuggestInput } from "@/components/Modules/workspace/itinerary/CitySuggestInput"
 import type { TripFlightInfo } from "@/lib/trip-itinerary"
 import "./itinerary-document.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function defaultRange(): { start: string; end: string } {
   const start = new Date()
@@ -764,7 +765,7 @@ export function ItineraryDocumentView({
                 <div className="itinerary-day-meta">
                   <div className="itinerary-date">{formatItineraryDateLabel(day.date)}</div>
                   <div className="itinerary-city-edit no-print">
-                    <select
+                    <NativeSelect
                       className="itinerary-mode-select"
                       value={day.cityMode}
                       onChange={(e) => {
@@ -781,7 +782,7 @@ export function ItineraryDocumentView({
                     >
                       <option value="city">City</option>
                       <option value="travel">Travel (A → B)</option>
-                    </select>
+                    </NativeSelect>
                     {day.cityMode === "travel" ? (
                       <div className="itinerary-travel-fields">
                         <CitySuggestInput

@@ -26,6 +26,7 @@ import {
   WORK_SESSION_TICK_MS,
 } from "@/lib/operation-work-session"
 import { useWorkSessionStore } from "@/lib/work-session-store"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function useWorkSessionClock() {
   const session = useWorkSessionStore((s) => s.session)
@@ -94,7 +95,7 @@ export function WorkingNowControl({
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
-        <select
+        <NativeSelect
           className="ops-btn ops-now-task"
           aria-label="Work on a task in this operation now"
           value=""
@@ -111,7 +112,7 @@ export function WorkingNowControl({
               {t.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       ) : null}
       {taskClock.picker}
     </span>

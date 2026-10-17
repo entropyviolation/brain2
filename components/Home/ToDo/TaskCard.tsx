@@ -63,6 +63,7 @@ import { attentionGiven, attentionGivenLabel } from "./attention-given"
 import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "./todo-utils"
 import type { TodoTimeInfo } from "./TodoBreakdown"
 import "./task-card.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 /** What the panel lends the card (its handlers, so the lid and the card agree). */
 export interface TaskCardHost {
@@ -252,7 +253,7 @@ function TaskCardBody({
           />
         ) : null}
         {choices ? (
-          <select
+          <NativeSelect
             className="task-card-needs"
             aria-label={`Needs for ${step.description}`}
             title={needNames.length ? `Needs ${needNames.join(", ")}` : "Needs…"}
@@ -268,7 +269,7 @@ function TaskCardBody({
                   {s.description}
                 </option>
               ))}
-          </select>
+          </NativeSelect>
         ) : null}
         {has("lock") && info.locked ? <span className="task-card-lock" title="Waits on an open step">locked</span> : null}
         {unlockCount > 0 ? <span className="task-card-num">unlocks {unlockCount}</span> : null}
@@ -460,7 +461,7 @@ function TaskCardBody({
               {pointsVisible ? <MinutesSet label="pts" onSet={(p) => writeSteps("Step points", massPoints(steps, sel, p))} /> : null}
               <button type="button" onClick={bar("Spark", (s) => massSpark(s, sel, true))}>Spark</button>
               <button type="button" onClick={bar("Clear spark", (s) => massSpark(s, sel, false))}>Clear spark</button>
-              <select
+              <NativeSelect
                 aria-label="All need one step"
                 value=""
                 onChange={(e) => e.target.value && writeSteps("Needs", needsAll(steps, sel, e.target.value))}
@@ -473,14 +474,14 @@ function TaskCardBody({
                       {s.description}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
               <button type="button" onClick={() => writeSteps("Chain", chainNeeds(steps, ordered))} disabled={ordered.length < 2}>
                 Chain
               </button>
               <button type="button" onClick={bar("Clear needs", (s) => clearNeeds(s, sel))}>Clear needs</button>
               <button type="button" onClick={bar("Done", (s) => massDone(s, sel, true))}>Done</button>
               <button type="button" onClick={bar("Not done", (s) => massDone(s, sel, false))}>Not done</button>
-              <select
+              <NativeSelect
                 aria-label="Move under"
                 value=""
                 onChange={(e) => e.target.value && writeSteps("Move", moveSteps(steps, sel, { id: e.target.value, where: "inside" }))}
@@ -493,7 +494,7 @@ function TaskCardBody({
                       {s.description}
                     </option>
                   ))}
-              </select>
+              </NativeSelect>
               <button
                 type="button"
                 className="is-delete"

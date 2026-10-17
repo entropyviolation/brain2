@@ -27,6 +27,7 @@ import {
 } from "@/lib/operation-types"
 import type { Task } from "@/lib/types"
 import { setHomeNotes, setMission, setStage } from "./operation-actions"
+import { NativeSelect } from "@/components/ui/native-select"
 
 /** Cold days read hotter (neglect signal); worked days stay phosphor green. */
 const HEAT_COLORS: Record<number, string> = {
@@ -103,7 +104,7 @@ export function OperationHome({ operation }: { operation: Task }) {
           <label className="ops-label" htmlFor="op-stage">
             Stage
           </label>
-          <select
+          <NativeSelect
             id="op-stage"
             className="ops-input"
             value={stage}
@@ -114,7 +115,7 @@ export function OperationHome({ operation }: { operation: Task }) {
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
 

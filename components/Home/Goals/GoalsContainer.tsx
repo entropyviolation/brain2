@@ -20,6 +20,7 @@ import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const PERIOD_KINDS: GoalPeriodKind[] = ["day", "week", "month", "quarter", "year", "custom", "aspirational"]
 const GOAL_FILTERS = ["all", ...PERIOD_KINDS] as const
@@ -197,11 +198,11 @@ export function GoalsContainer() {
       <div className="gol-grid-3">
         <label>
           Type
-          <select value={fields.type} onChange={(e) => onChange({ ...fields, type: e.target.value as Goal["type"] })}>
+          <NativeSelect value={fields.type} onChange={(e) => onChange({ ...fields, type: e.target.value as Goal["type"] })}>
             <option value="count">Count</option>
             <option value="numerical">Numerical</option>
             <option value="boolean">Yes/No</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Target
@@ -215,13 +216,13 @@ export function GoalsContainer() {
       <div className="gol-grid-2">
         <label>
           Period
-          <select value={fields.periodKind} onChange={(e) => onChange({ ...fields, periodKind: e.target.value as GoalPeriodKind })}>
+          <NativeSelect value={fields.periodKind} onChange={(e) => onChange({ ...fields, periodKind: e.target.value as GoalPeriodKind })}>
             {PERIOD_KINDS.map((p) => (
               <option key={p} value={p}>
                 {PERIOD_LABELS[p]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Points reward

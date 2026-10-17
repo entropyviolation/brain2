@@ -19,6 +19,7 @@ import type { AttributeDefinition, ModuleListBinding } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { AttributeSchemaEditor } from "@/components/Lists/attributes/AttributeSchemaEditor"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -65,7 +66,7 @@ export function ModuleListsPanel({
               </div>
               <div className="flex-1 min-w-[140px] space-y-1">
                 <Label className="text-[10px]">List</Label>
-                <select
+                <NativeSelect
                   aria-label={`List ${idx + 1}`}
                   className={SELECT_CLS}
                   value={binding.categoryId}
@@ -77,11 +78,11 @@ export function ModuleListsPanel({
                       {c.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="flex-1 min-w-[140px] space-y-1">
                 <Label className="text-[10px]">Item type (optional)</Label>
-                <select
+                <NativeSelect
                   aria-label={`Item type ${idx + 1}`}
                   className={SELECT_CLS}
                   value={binding.itemTypeId ?? ""}
@@ -93,7 +94,7 @@ export function ModuleListsPanel({
                       {t.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => remove(idx)}>
                 <Trash2 className="h-4 w-4" />

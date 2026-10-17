@@ -63,6 +63,7 @@ import { raiseQuickAddWrote } from "@/components/quick-add-wrote"
 import { getTrackingViewPrefs, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import "./tracking-chrome.css"
 import "./daylog-week.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const MODES: { id: LogComposerMode; label: string }[] = [
   { id: "event", label: "Event" },
@@ -774,7 +775,7 @@ export function TrackingLogView({
               />
               <label className="trk-logbook-view">
                 View
-                <select
+                <NativeSelect
                   aria-label="View"
                   value={switchScopeId}
                   onChange={(event) => setSwitchScopeId(event.target.value)}
@@ -784,7 +785,7 @@ export function TrackingLogView({
                       {scope.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               <datalist id="tracking-log-switch-pens">
                 {switchPens.map((pen) => (

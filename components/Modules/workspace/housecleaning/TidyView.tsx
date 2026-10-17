@@ -110,6 +110,7 @@ import {
   type PlanTier,
 } from "@/lib/house-cleaning"
 import "./tidy.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type Route =
   | { view: "home" }
@@ -170,13 +171,13 @@ function formData(e: FormEvent<HTMLFormElement>): FormData {
 
 function ImpSelect({ value }: { value: Importance }) {
   return (
-    <select name="importance" aria-label="Importance" defaultValue={value}>
+    <NativeSelect name="importance" aria-label="Importance" defaultValue={value}>
       {IMPORTANCE.map((i) => (
         <option key={i.k} value={i.k}>
           {i.label}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   )
 }
 
@@ -411,7 +412,7 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
           </button>
         ))}
         <span className="sep" />
-        <select
+        <NativeSelect
           aria-label="Filter by estimated time"
           value={f.maxMin}
           onChange={(e) => patch((s) => ({ ...s, filters: { ...s.filters, maxMin: Number(e.target.value) || 0 } }))}
@@ -421,7 +422,7 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
               {l}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <button
           className={`chip ${f.hideDone ? "on" : ""}`}
           type="button"
@@ -720,13 +721,13 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
         >
           <input type="text" name="text" required autoComplete="off" placeholder="Something you need to buy or find…" />
           {global ? (
-            <select name="areaId" aria-label="Area" defaultValue="general">
+            <NativeSelect name="areaId" aria-label="Area" defaultValue="general">
               {allAreas(state).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           ) : null}
           <button className="btn primary" type="submit">
             Add
@@ -1120,13 +1121,13 @@ export function TidyView({ module }: { module?: ModuleInstance }) {
             }}
           >
             <input type="text" name="title" required autoComplete="off" placeholder="New task…" autoFocus />
-            <select name="areaId" aria-label="Area">
+            <NativeSelect name="areaId" aria-label="Area">
               {allAreas(state).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <input type="number" name="estMin" min={0} step={1} placeholder="min" aria-label="Estimated minutes" />
             <button className="btn primary" type="submit">
               Add

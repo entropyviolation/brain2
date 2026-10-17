@@ -76,6 +76,7 @@ import {
   parseTodoWalkReply,
   type TodoWalkFormFields,
 } from "@/lib/morning-todo-walk"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const LOGGED_FROM_TEXT = "logged from text"
 
@@ -1270,7 +1271,7 @@ export function MorningReviewDialog({
                               <span className="mr-slot-state">stored</span>
                             )}
                           </span>
-                          <select
+                          <NativeSelect
                             className="mr-slot-field"
                             aria-label="Tier"
                             value={form.tier}
@@ -1282,7 +1283,7 @@ export function MorningReviewDialog({
                                 {tier}
                               </option>
                             ))}
-                          </select>
+                          </NativeSelect>
                         </label>
                         <WalkSlot
                           label="Minutes"

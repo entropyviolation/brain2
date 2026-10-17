@@ -94,7 +94,8 @@ import {
   type SessionTemplate,
   type SessionTier,
 } from "@/lib/session-plan"
-import { placeSteps } from "@/lib/next-step"
+import { placeSteps, startOrderFor } from "@/lib/next-step"
+import { formatPercent } from "@/lib/step-progress"
 import { isStepAvailable } from "@/lib/prereqs"
 import { hasUnmetDependencies } from "@/lib/available-tasks"
 import { isClearedFromWork } from "@/lib/completion-status"
@@ -119,6 +120,7 @@ import { useTodoTime } from "./use-todo-time"
 import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
 import { paddedLabel, sessionPaceFactor } from "@/lib/estimate-pace"
 import "./session-planner.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const TIER_LABEL: Record<SessionTier, string> = { min: "Bare minimum", goal: "Goal", exceptional: "Exceptional" }
 const TIER_SHORT: Record<SessionTier, string> = { min: "Min", goal: "Goal", exceptional: "Exc" }
@@ -532,7 +534,7 @@ function DraftView({
         </label>
         <label className="todo-session-breaks">
           <span>Breaks</span>
-          <select
+          <NativeSelect
             aria-label="Break every"
             value={plan.breakEvery ?? 0}
             onChange={(e) => {
@@ -547,18 +549,18 @@ function DraftView({
                 5m every {fmtMinutes(m)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="todo-session-template">
           <span>Template</span>
-          <select aria-label="Start from template" value="" onChange={(e) => e.target.value && applyTemplate(e.target.value)}>
+          <NativeSelect aria-label="Start from template" value="" onChange={(e) => e.target.value && applyTemplate(e.target.value)}>
             <option value="">Choose…</option>
             {[...BUILT_IN_TEMPLATES, ...savedTemplates].map((t) => (
               <option key={t.id} value={t.id}>
                 {t.title}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       {timebox ? (
@@ -570,10 +572,10 @@ function DraftView({
       <div className="todo-session-panes">
         <section className="todo-session-pick" aria-label="Pick list">
           <div className="todo-session-pick-bar">
-            <select aria-label="Which tasks" value={scope} onChange={(e) => setScope(e.target.value as "period" | "all")}>
+            <NativeSelect aria-label="Which tasks" value={scope} onChange={(e) => setScope(e.target.value as "period" | "all")}>
               <option value="period">{periodLabel}</option>
               <option value="all">All open tasks</option>
-            </select>
+            </NativeSelect>
             <input type="search" placeholder="Search tasks and steps" aria-label="Search pick list" value={query} onChange={(e) => setQuery(e.target.value)} />
             <label>
               <input type="checkbox" checked={onlyReady} onChange={(e) => setOnlyReady(e.target.checked)} /> Available now
@@ -743,13 +745,13 @@ function DraftView({
                         >
                           ▼
                         </button>
-                        <select aria-label="Tier" value={f.tier} onChange={(e) => onChange(moveLine(plan, line.id, e.target.value as SessionTier))}>
+                        <NativeSelect aria-label="Tier" value={f.tier} onChange={(e) => onChange(moveLine(plan, line.id, e.target.value as SessionTier))}>
                           {SESSION_TIERS.map(({ id }) => (
                             <option key={id} value={id}>
                               {TIER_SHORT[id]}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                         <button type="button" data-no95 className="todo-session-mini" title="Break down" aria-label={`Break down ${lineLabel(line, tasks)}`} onClick={() => setBreakdownId(line.taskId)}>
                           ✎
                         </button>
@@ -912,10 +914,10 @@ function FlatListView({
   return (
     <section className="todo-session-pick todo-session-flat" aria-label="Flat pick list">
       <div className="todo-session-pick-bar">
-        <select aria-label="Which tasks" value={scope} onChange={(e) => setScope(e.target.value as "period" | "all")}>
+        <NativeSelect aria-label="Which tasks" value={scope} onChange={(e) => setScope(e.target.value as "period" | "all")}>
           <option value="period">{periodLabel || "This day"}</option>
           <option value="all">All open tasks</option>
-        </select>
+        </NativeSelect>
         <input type="search" placeholder="Search tasks and steps" aria-label="Search pick list" value={query} onChange={(e) => setQuery(e.target.value)} />
         <label>
           <input type="checkbox" checked={onlyReady} onChange={(e) => setOnlyReady(e.target.checked)} /> Available now
@@ -1494,7 +1496,7 @@ function ReviewView({ plan, tasks, onDone }: { plan: SessionPlan; tasks: Task[];
                   {done ? (
                     "done"
                   ) : (
-                    <select
+                    <NativeSelect
                       aria-label={`What next for ${lineLabel(line, tasks)}`}
                       value={line.outcome ?? "keep"}
                       onChange={(e) => setCurrent(setLineOutcome(plan, line.id, e.target.value as SessionLine["outcome"]))}
@@ -1502,7 +1504,7 @@ function ReviewView({ plan, tasks, onDone }: { plan: SessionPlan; tasks: Task[];
                       <option value="keep">Keep for next session</option>
                       {line.stepId ? null : <option value="push">Push to tomorrow</option>}
                       <option value="leave">Leave</option>
-                    </select>
+                    </NativeSelect>
                   )}
                 </td>
               </tr>

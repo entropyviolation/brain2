@@ -37,6 +37,7 @@ import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {}) {
   const tasks = useTaskStore((s) => s.tasks)
@@ -75,7 +76,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
       {compact ? null : <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />}
       <label>
         {compact ? <span className="sr-only">Working on</span> : "Working on"}
-        <select
+        <NativeSelect
           aria-label="Operation to work on"
           value={selectedId}
           disabled={live}
@@ -86,7 +87,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
               {op.description}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       {live && elapsed && <span className="ops-now-elapsed">{elapsed}</span>}
       {live && session && (

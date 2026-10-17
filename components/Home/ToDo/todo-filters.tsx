@@ -14,6 +14,7 @@ import {
   getTodoSortOptionLabel,
 } from "./todo-utils"
 import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const TIER_CHOICES: { value: TodoTierView; short: string; title: string }[] = [
   { value: "all", short: "All", title: "Every step" },
@@ -153,7 +154,7 @@ export function TodoFilters({
           <span className="todo-label" id="status-filter-label">
             Status
           </span>
-          <select
+          <NativeSelect
             id="status-filter"
             aria-labelledby="status-filter-label"
             value={statusFilter}
@@ -164,7 +165,7 @@ export function TodoFilters({
                 {label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </fieldset>
 
@@ -174,7 +175,7 @@ export function TodoFilters({
           <span className="todo-label" id="todo-sort-label">
             Sort
           </span>
-          <select
+          <NativeSelect
             id="todo-sort"
             aria-labelledby="todo-sort-label"
             value={sortMode}
@@ -185,7 +186,7 @@ export function TodoFilters({
                 {getTodoSortOptionLabel(value, period)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <button
           type="button"

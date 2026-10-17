@@ -17,6 +17,7 @@ import {
   type SettingsGroup,
   type SettingsGroupId,
 } from "@/components/Settings/settings-index"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function visibleRailButtons(root: ParentNode | null | undefined): HTMLButtonElement[] {
   if (!root) return []
@@ -128,7 +129,7 @@ export function SettingsIndex({
     <nav className="set-rail" aria-label="Settings sections">
       <label className="set-group-select">
         Group
-        <select
+        <NativeSelect
           aria-label="Settings group"
           value={groups.some((group) => group.id === activeGroup) ? activeGroup : (groups[0]?.id ?? "")}
           onChange={(event) => onJump(groupDomId(event.target.value as SettingsGroupId))}
@@ -138,7 +139,7 @@ export function SettingsIndex({
               {group.title}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <div className="set-rail-list" ref={listRef} onKeyDown={onListKeyDown}>
         {groups.map((group) => (

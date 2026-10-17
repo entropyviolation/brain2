@@ -34,7 +34,8 @@ describe("LinkComposer", () => {
     await user.click(screen.getByRole("option", { name: 'Create "is the drummer for"' }))
     const form = screen.getByRole("form", { name: "New relation" })
     await user.type(within(form).getByLabelText("Reverse phrase"), "has drummer")
-    await user.selectOptions(within(form).getByLabelText("From type"), "")
+    await user.click(within(form).getByLabelText("From type"))
+    await user.click(screen.getByRole("option", { name: "Any type" }))
     await user.click(within(form).getByRole("button", { name: "Create" }))
 
     const created = useItemTypeStore.getState().relations
@@ -93,5 +94,20 @@ describe("LinkComposer", () => {
     expect(onDraft).not.toHaveBeenCalled()
     expect(onDuplicate).toHaveBeenCalledWith("oey|knows")
     expect(screen.getByTestId("link-ledger-row")).toHaveAttribute("data-flash", "true")
+  })
+
+  it("creates a new target item and links to it", async () => {
+    const user = userEvent.setup({ delay: null })
+    const onDraft = vi.fn()
+    render(<LinksHarness initial={item("elijah", "Elijah", PERSON_TYPE_ID)} onDraft={onDraft} />)
+
+    await user.type(screen.getByRole("combobox", { name: "Search item to link" }), "Brand new thing")
+    await user.click(screen.getByRole("option", { name: 'Create "Brand new thing"' }))
+    await user.click(screen.getByRole("button", { name: "Link" }))
+
+    const made = useTaskStore.getState().tasks.find((t) => t.title === "Brand new thing")
+    expect(made).toBeTruthy()
+    const draft = onDraft.mock.calls.at(-1)?.[0] as Task
+    expect(draft.links).toEqual([expect.objectContaining({ targetId: made!.id })])
   })
 })

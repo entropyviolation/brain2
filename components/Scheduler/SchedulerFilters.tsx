@@ -9,6 +9,7 @@
 import { useState } from "react"
 import type { List } from "@/lib/types"
 import type { SchedulerSortBy, SchedulerSortOrder } from "./scheduler-utils"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function SchedulerFilters({
   categories,
@@ -70,7 +71,7 @@ export function SchedulerFilters({
           <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
             <label style={{ flex: 1 }}>
               <div className="sch-label">Sort by</div>
-              <select
+              <NativeSelect
                 className="sch-address-field"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SchedulerSortBy)}
@@ -80,7 +81,7 @@ export function SchedulerFilters({
                 <option value="deadline">Deadline</option>
                 <option value="reward">Reward</option>
                 <option value="category">List</option>
-              </select>
+              </NativeSelect>
             </label>
             <button
               type="button"

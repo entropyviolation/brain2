@@ -18,6 +18,7 @@ import { useTaskStore } from "@/lib/task-store"
 import type { ModuleInstance, ModuleType, AttrRule, RuleOperator } from "@/lib/modules-store"
 import { mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { MODULE_META, RULE_OPERATORS, STAT_OPTIONS, WIDGET_MODULE_TYPES, rid } from "./module-helpers"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function ModuleConfigDialog({
   open,
@@ -185,7 +186,7 @@ export function ModuleConfigDialog({
                 {rules.map((r, i) => (
                   <div key={r.id} className="flex flex-wrap items-center gap-1 border rounded p-2">
                     <span className="text-xs text-muted-foreground">If</span>
-                    <select
+                    <NativeSelect
                       className="border rounded h-8 px-1 text-xs bg-background"
                       value={r.attrId}
                       onChange={(e) => setRules((rs) => rs.map((x, xi) => (xi === i ? { ...x, attrId: e.target.value } : x)))}
@@ -195,8 +196,8 @@ export function ModuleConfigDialog({
                           {d.name}
                         </option>
                       ))}
-                    </select>
-                    <select
+                    </NativeSelect>
+                    <NativeSelect
                       className="border rounded h-8 px-1 text-xs bg-background"
                       value={r.op}
                       onChange={(e) =>
@@ -208,7 +209,7 @@ export function ModuleConfigDialog({
                           {op}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                     {r.op !== "is set" && r.op !== "is empty" && (
                       <Input
                         value={r.value || ""}

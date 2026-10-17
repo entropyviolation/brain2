@@ -56,6 +56,7 @@ import {
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { AttributeValue, Task } from "@/lib/types"
 import "./person-detail.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const PRECISIONS: AddressPrecision[] = ["mailing", "neighborhood", "state", "country"]
 
@@ -339,7 +340,7 @@ export function PersonDetail({
         <div className="person-field person-address">
           <span>Address</span>
           <div className="person-address-row">
-            <select
+            <NativeSelect
               aria-label="Address precision"
               value={shownPrecision}
               onChange={(event) => {
@@ -354,7 +355,7 @@ export function PersonDetail({
                   {addressPrecisionLabel(item)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <AddressSuggestInput
               type="text"
               aria-label="Address"

@@ -14,6 +14,8 @@
 
 import { useMemo, useState } from "react"
 import { LinkTargetSearch } from "@/components/ItemDetail/links/LinkTargetSearch"
+import { createListItem } from "@/lib/item-utils"
+import { useTaskStore } from "@/lib/task-store"
 import { NewRelationForm } from "@/components/ItemDetail/links/NewRelationForm"
 import { RelationCombobox } from "@/components/ItemDetail/links/RelationCombobox"
 import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
@@ -61,6 +63,14 @@ export function LinkComposer({
 
   const toTypes = getRelationDef(relation)?.toTypes
 
+  // A new target item is a store write at once (like a new relation). The link stays a draft.
+  const createTarget = (title: string) => {
+    const base = createListItem(title)
+    const task = { ...base, type: (toTypes?.[0] ?? base.type) as Task["type"] } as Task
+    useTaskStore.getState().addTask(task)
+    setTarget(facts(task))
+  }
+
   const submit = () => {
     if (!target) return
     const key = edgeKey(target.id, relation)
@@ -94,6 +104,7 @@ export function LinkComposer({
           facts={facts}
           selected={target}
           onSelect={setTarget}
+          onCreate={createTarget}
           excludeIds={excludeIds}
           toTypes={toTypes}
         />

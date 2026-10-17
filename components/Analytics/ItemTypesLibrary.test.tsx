@@ -47,17 +47,29 @@ describe("ItemTypesLibrary", () => {
     render(<ItemTypesLibrary />)
 
     expect(screen.getByTestId("item-types-library")).toBeInTheDocument()
-    expect(screen.getByRole("combobox", { name: "Sort item types" })).toHaveValue("count")
+    expect(screen.getByRole("combobox", { name: "Sort item types" })).toHaveTextContent("By count")
     expect(screen.getAllByText(/Task/).length).toBeGreaterThan(0)
 
     await user.click(screen.getByTitle("Task: 1 items"))
     expect(screen.getByText("Write brief")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Open 1 item\(s\) in Lists/ })).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Sort item types" }), "name")
-    expect(screen.getByRole("combobox", { name: "Sort item types" })).toHaveValue("name")
+    await user.click(screen.getByRole("combobox", { name: "Sort item types" }))
+    await user.click(screen.getByRole("option", { name: "By name" }))
+    expect(screen.getByRole("combobox", { name: "Sort item types" })).toHaveTextContent("By name")
 
     await user.click(screen.getByRole("button", { name: "Catalog" }))
     expect(screen.getByRole("button", { name: "Catalog" })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("shows the Relations tab with usage and origin", async () => {
+    const user = userEvent.setup()
+    render(<ItemTypesLibrary />)
+    await user.click(screen.getByRole("tab", { name: "Relations" }))
+    expect(screen.getByTestId("relations-library")).toBeInTheDocument()
+    expect(screen.getByTestId("relation-row-blocks")).toHaveTextContent("built-in")
+    expect(screen.getByTestId("relation-row-born-in")).toHaveTextContent("seed")
+    await user.click(screen.getByRole("button", { name: "Tree" }))
+    expect(screen.getByRole("list", { name: "Relation tree" })).toBeInTheDocument()
   })
 })

@@ -24,6 +24,7 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, dateKeyOf, isThinSample, thinWindowSentence } from "./analytics-range"
 import { FindingBlock, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { NativeSelect } from "@/components/ui/native-select"
 
 interface NamedSeries {
   id: string
@@ -198,21 +199,21 @@ export function CorrelationExplorer() {
           </div>
 
           <div className="an-studio-tools">
-            <select className="an-chip" value={aId} onChange={(e) => setAId(e.target.value)}>
+            <NativeSelect className="an-chip" value={aId} onChange={(e) => setAId(e.target.value)}>
               {series.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <span className="an-canvas-kicker">vs</span>
-            <select className="an-chip" value={bId} onChange={(e) => setBId(e.target.value)}>
+            <NativeSelect className="an-chip" value={bId} onChange={(e) => setBId(e.target.value)}>
               {series.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           {empty ? (

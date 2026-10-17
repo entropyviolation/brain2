@@ -163,6 +163,7 @@ import { pointsRuleValue } from "@/lib/points-rules-live"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { offsetToClock, parseBedtime, parseWakeTime } from "@/lib/sleep-log"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
+import { NativeSelect } from "@/components/ui/native-select"
 
 interface TaskFormProps {
   onSubmit: (task: WeeklyTask) => void
@@ -2308,7 +2309,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                   <div className="habit95-goal-grid" style={{ marginTop: 8 }}>
                     <div className="habit95-field">
                       <label htmlFor="tracking-unit">Count tracked blocks as</label>
-                      <select
+                      <NativeSelect
                         id="tracking-unit"
                         className="habit95-input"
                         value={link.fieldId ? `field:${link.fieldId}` : (link.unit ?? "minutes")}
@@ -2332,11 +2333,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                             ))}
                           </optgroup>
                         ) : null}
-                      </select>
+                      </NativeSelect>
                     </div>
                     <div className="habit95-field">
                       <label htmlFor="tracking-mode">Combine with manual entries</label>
-                      <select
+                      <NativeSelect
                         id="tracking-mode"
                         className="habit95-input"
                         value={link.mode ?? "add"}
@@ -2347,7 +2348,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                             {label}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                   </div>
                   <p className="habit95-hint">{TRACKING_MODES.find((m) => m.value === (link.mode ?? "add"))?.desc}</p>
@@ -2393,7 +2394,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
             <div className="habit95-brick" key={`${block.when}-${block.day}-${index}`}>
               <label className="habit95-field">
                 Log
-                <select
+                <NativeSelect
                   aria-label="Log that lifts this habit"
                   value={block.when}
                   onChange={(e) => {
@@ -2406,11 +2407,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                   }}
                 >
                   <option value="all-nighter">All-nighter</option>
-                </select>
+                </NativeSelect>
               </label>
               <label className="habit95-field">
                 Lifts
-                <select
+                <NativeSelect
                   aria-label="Which day the log lifts"
                   value={block.day}
                   onChange={(e) => {
@@ -2424,7 +2425,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 >
                   <option value="evening-before">the evening before that night</option>
                   <option value="morning-of">the morning of that night</option>
-                </select>
+                </NativeSelect>
               </label>
               <button
                 type="button"
@@ -2469,7 +2470,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
             <div className="habit95-brick">
               <label className="habit95-field">
                 Clock
-                <select
+                <NativeSelect
                   aria-label="Sleep clock"
                   value={task.sleepLink.end}
                   onChange={(e) => {
@@ -2483,7 +2484,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                 >
                   <option value="bed">Bedtime</option>
                   <option value="wake">Wake</option>
-                </select>
+                </NativeSelect>
               </label>
               <label className="habit95-field">
                 At or before
@@ -2619,7 +2620,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
               </div>
               <div className="habit95-field">
                 <label htmlFor={`trigger-mode-${trigger.id}`}>Mode</label>
-                <select
+                <NativeSelect
                   id={`trigger-mode-${trigger.id}`}
                   className="habit95-input"
                   value={trigger.mode}
@@ -2632,7 +2633,7 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
                       {label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               {(trigger.mode === "quantity" || trigger.mode === "score") && (
                 <div className="habit95-field">

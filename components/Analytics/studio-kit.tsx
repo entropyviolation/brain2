@@ -13,6 +13,7 @@ import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import { contrastRatio, relativeLuminance } from "@/lib/chrome-patina"
 import { formatCrtNumber } from "@/lib/crt-number"
 import { hourLabel, type HourDayGrid } from "./hour-day"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export const STUDIO_GRID = "#808080"
 export const STUDIO_AXIS = "#000000"
@@ -164,9 +165,9 @@ export function StudioSelect({
   return (
     <label className="an-studio-field">
       <span>{label}</span>
-      <select value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
+      <NativeSelect value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
         {children}
-      </select>
+      </NativeSelect>
     </label>
   )
 }

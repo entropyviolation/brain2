@@ -28,6 +28,7 @@ import { useAnalyticsRange } from "./analytics-range-store"
 import { dateKeyOf } from "./analytics-range"
 import { MetricLogger } from "@/components/Tracking/MetricLogger"
 import { STUDIO_TOOLTIP } from "./studio-kit"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function formatAt(at: string): string {
   const d = new Date(at)
@@ -82,7 +83,7 @@ export function MetricsTrends() {
         </div>
         <div className="an-studio-tools">
             {active.length > 0 && (
-              <select
+              <NativeSelect
                 className="an-chip"
                 value={selected?.key ?? ""}
                 onChange={(e) => setMetricId(e.target.value as MetricKey)}
@@ -92,7 +93,7 @@ export function MetricsTrends() {
                     {d.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             )}
             <Dialog open={logOpen} onOpenChange={setLogOpen}>
               <DialogTrigger asChild>

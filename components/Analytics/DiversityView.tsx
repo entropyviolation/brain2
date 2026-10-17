@@ -17,6 +17,7 @@ import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-ran
 import { CanvasTitle, PhosphorTrace, StudioReadout } from "./studio-kit"
 import { allocationGini, penMinutesByDay, weekdayWeekendCut } from "./signal-stats"
 import { penTotalsAtDepth } from "@/lib/tracking-summary"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function DiversityView() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -63,13 +64,13 @@ export function DiversityView() {
         </div>
         <label className="an-studio-field">
           <span>Scope</span>
-          <select value={scope.id} aria-label="Tracking scope" onChange={(e) => setScopeId(e.target.value)}>
+          <NativeSelect value={scope.id} aria-label="Tracking scope" onChange={(e) => setScopeId(e.target.value)}>
             {scopes.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </header>
 

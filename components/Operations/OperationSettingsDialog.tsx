@@ -52,6 +52,7 @@ import {
   toggleOperationPanel,
 } from "./operation-actions"
 import "./operations-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function attrString(operation: Task, id: string): string {
   const raw = operation.attributes?.[id]
@@ -148,7 +149,7 @@ export function OperationSettingsDialog({
               </div>
               <div>
                 <label htmlFor="ops-set-stage">Stage</label>
-                <select
+                <NativeSelect
                   id="ops-set-stage"
                   value={stage}
                   onChange={(e) => setStage(operation.id, e.target.value as OperationStage)}
@@ -158,7 +159,7 @@ export function OperationSettingsDialog({
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div>
                 <label htmlFor="ops-set-mission">Mission</label>

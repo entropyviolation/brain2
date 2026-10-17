@@ -20,6 +20,7 @@ import { daysUntilFieldsFromEvent, syncDaysUntilScheduledEvent } from "@/lib/hom
 import { useEventStore } from "@/lib/event-store"
 import { formatLocalDateKey, toLocalCalendarDate } from "@/lib/date-utils"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell } from "@/components/Home/home-widget-dialog"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function useNowTick(open: boolean) {
   const [now, setNow] = useState(() => new Date())
@@ -232,7 +233,7 @@ export function DaysUntilTile({
           ) : null}
           <label className="home-widget-field">
             Attach existing event
-            <select
+            <NativeSelect
               value={item.eventId}
               onChange={(event) => {
                 const id = event.target.value
@@ -252,7 +253,7 @@ export function DaysUntilTile({
                   {event.isAllDay ? "" : ` ${event.startTime}`} — {event.title || "Untitled"}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         </fieldset>
 

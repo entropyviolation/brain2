@@ -44,6 +44,7 @@ import {
   type VocabEntry,
   type VocabLang,
 } from "@/lib/vocab-words"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function readingLine(entry: VocabEntry): string {
   return [entry.reading, entry.romanization].filter(Boolean).join(" · ")
@@ -191,7 +192,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
         ))}
         {addable.length > 0 ? (
           <label className="home-widget-field home-vocab-add" aria-label="Add a language">
-            <select
+            <NativeSelect
               value=""
               onChange={(event) => {
                 const lang = event.target.value
@@ -207,7 +208,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
                   {VOCAB_LANG_LABEL[lang]} — {VOCAB_LANG_ENDONYM[lang]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         ) : null}
       </div>

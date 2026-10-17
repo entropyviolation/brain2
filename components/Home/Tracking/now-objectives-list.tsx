@@ -12,6 +12,7 @@ import { createPortal } from "react-dom"
 import type { NowObjective } from "@/lib/now-objective"
 import { activeNowObjectives } from "@/lib/now-objective"
 import "@/components/Home/Tracking/tracking-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export interface NowObjectivesHandlers {
   onAdd: (text: string) => void
@@ -87,7 +88,7 @@ function ObjectivesEditor({
                   }}
                 />
                 {onTieStep ? (
-                  <select
+                  <NativeSelect
                     className="trk-now-obj-step"
                     aria-label={`Step for ${row.text}`}
                     title={row.stepId ? "Tied to a step. Ticking it ticks the step." : "Free objective. Tie it to a step?"}
@@ -107,7 +108,7 @@ function ObjectivesEditor({
                       </option>
                     ))}
                     {row.stepId ? null : <option value="new">+ new step</option>}
-                  </select>
+                  </NativeSelect>
                 ) : null}
               </li>
             )

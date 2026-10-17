@@ -59,6 +59,7 @@ import { taskStoreMutators } from "@/lib/ingest/apply-capture"
 import { createListItem, withCategoryDefaults } from "@/lib/item-utils"
 import { parseSmartCapture } from "@/lib/smart-parse"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type Step = "period" | "loading" | "swipe" | "process" | "empty" | "error"
 
@@ -409,7 +410,7 @@ export function NotesIngest({ hideTrigger = false }: { hideTrigger?: boolean } =
               )}
               <div className="space-y-2">
                 <Label htmlFor="notes-period">Date range</Label>
-                <select
+                <NativeSelect
                   id="notes-period"
                   className="w-full border rounded-md h-9 px-2 bg-background text-sm"
                   value={preset}
@@ -420,7 +421,7 @@ export function NotesIngest({ hideTrigger = false }: { hideTrigger?: boolean } =
                       {p.label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               {preset === "custom" && (
                 <div className="grid grid-cols-2 gap-3">

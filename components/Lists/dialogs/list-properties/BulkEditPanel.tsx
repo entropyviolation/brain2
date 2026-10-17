@@ -16,6 +16,7 @@ import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history"
 import { completeTask, uncompleteTask } from "@/lib/services/completion-service"
 import { AttributeValuesEditor } from "@/components/Lists/attribute-editor"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type Action =
   | "attribute"
@@ -229,18 +230,18 @@ export function BulkEditPanel({
 
         <div className="lp-sect">
           <div className="lp-label">2 · What to change</div>
-          <select className="lp-field lp-sel" value={action} onChange={(e) => setAction(e.target.value as Action)} aria-label="Change">
+          <NativeSelect className="lp-field lp-sel" value={action} onChange={(e) => setAction(e.target.value as Action)} aria-label="Change">
             {ACTIONS.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
 
           <div className="lp-bulk-params">
             {action === "attribute" ? (
               <>
-                <select
+                <NativeSelect
                   className="lp-field lp-sel"
                   value={attrId}
                   onChange={(e) => {
@@ -255,7 +256,7 @@ export function BulkEditPanel({
                       {a.name} · {a.type}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 {def ? <AttributeValuesEditor definitions={[def]} values={attrValues} onChange={setAttrValues} /> : null}
               </>
             ) : null}
@@ -263,27 +264,27 @@ export function BulkEditPanel({
               <input className="lp-field" value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="tag, another tag" aria-label="Tags" />
             ) : null}
             {action === "type" ? (
-              <select className="lp-field lp-sel" value={typeId} onChange={(e) => setTypeId(e.target.value)} aria-label="Item type">
+              <NativeSelect className="lp-field lp-sel" value={typeId} onChange={(e) => setTypeId(e.target.value)} aria-label="Item type">
                 <option value="">Choose type…</option>
                 {types.map((t) => (
                   <option key={t.id} value={t.id as string}>
                     {t.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             ) : null}
             {action === "deadline" ? (
               <input className="lp-field" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
             ) : null}
             {action === "addToList" ? (
-              <select className="lp-field lp-sel" value={targetListId} onChange={(e) => setTargetListId(e.target.value)} aria-label="Target list">
+              <NativeSelect className="lp-field lp-sel" value={targetListId} onChange={(e) => setTargetListId(e.target.value)} aria-label="Target list">
                 <option value="">Choose list…</option>
                 {otherLists.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             ) : null}
             {action === "removeFromList" ? (
               <p className="lp-caption">The items stay in the vault and on their other lists.</p>

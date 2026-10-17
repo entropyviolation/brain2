@@ -14,6 +14,7 @@ import {
   type ReminderRepeat,
 } from "@/lib/reminders"
 import type { Task } from "@/lib/types"
+import { NativeSelect } from "@/components/ui/native-select"
 
 /** Clock, repeat, Text me, and Persistent for an item already on the Reminders list. */
 export function ReminderScheduleFields({
@@ -55,7 +56,7 @@ export function ReminderScheduleFields({
       </div>
       <div className="space-y-2">
         <Label className="text-sm font-semibold">Repeat</Label>
-        <select
+        <NativeSelect
           className="fm-input focus-ring"
           aria-label="Repeat"
           value={repeat}
@@ -66,7 +67,7 @@ export function ReminderScheduleFields({
               {option.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <div className="flex items-center justify-between gap-3">
         <div>

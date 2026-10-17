@@ -35,6 +35,7 @@ import {
   writeSelectedDialId,
 } from "./clock-dials"
 import "./clock-picker.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type Period = "AM" | "PM"
 type Column = "hour" | "minute" | "period"
@@ -726,7 +727,7 @@ export function ClockPicker({
                 painting={dial.placement === "center" ? dial.src : null}
               />
               <div className="clock-picker-dials">
-                <select
+                <NativeSelect
                   className="clock-picker-dial"
                   aria-label="Dial"
                   value={dial.id}
@@ -737,7 +738,7 @@ export function ClockPicker({
                       {item.label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 <button
                   type="button"
                   className="clock-picker-mini"

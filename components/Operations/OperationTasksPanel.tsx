@@ -29,6 +29,7 @@ import { parseListBulkAddText } from "@/lib/smart-parse"
 import { sanitizeEnabledDisplays, type Task } from "@/lib/types"
 import { addOperationListTask, addOperationListTasks, fileLooseOperationTodos, setTaskCompleted } from "./operation-actions"
 import "@/components/Lists/filemanager98.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const FALLBACK_DISPLAYS: ListDisplay[] = ["default", "checklist", "table", "spreadsheet"]
 
@@ -76,7 +77,7 @@ export function OperationTasksPanel({
           <label className="ops-inline-label" htmlFor="op-tasks-display">
             View
           </label>
-          <select
+          <NativeSelect
             id="op-tasks-display"
             className="ops-input ops-input-sm"
             value={currentDisplay}
@@ -87,7 +88,7 @@ export function OperationTasksPanel({
                 {mode.charAt(0).toUpperCase() + mode.slice(1)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </span>
       </div>
 

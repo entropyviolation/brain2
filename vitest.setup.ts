@@ -43,3 +43,12 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
+
+// Radix Select (components/ui/select.tsx) needs these in jsdom.
+if (typeof Element !== "undefined") {
+  const proto = Element.prototype as unknown as Record<string, unknown>
+  proto.hasPointerCapture ??= () => false
+  proto.setPointerCapture ??= () => {}
+  proto.releasePointerCapture ??= () => {}
+  proto.scrollIntoView ??= () => {}
+}

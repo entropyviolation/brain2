@@ -26,6 +26,7 @@ import type {
 } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -222,7 +223,7 @@ export function WorkflowStepEditor({
         </div>
         <div className="space-y-2">
           <Label className="text-xs">When</Label>
-          <select
+          <NativeSelect
             aria-label="Trigger"
             className={SELECT_CLS}
             value={triggerKind}
@@ -233,12 +234,12 @@ export function WorkflowStepEditor({
                 {TRIGGER_LABELS[k]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {triggerKind === "item" && (
           <div className="space-y-2">
             <Label className="text-xs">Item event</Label>
-            <select
+            <NativeSelect
               aria-label="Item event"
               className={SELECT_CLS}
               value={itemEvent}
@@ -249,7 +250,7 @@ export function WorkflowStepEditor({
                   An item {o.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         )}
         {triggerKind === "attribute" && (
@@ -289,7 +290,7 @@ export function WorkflowStepEditor({
         )}
         <div className="space-y-2">
           <Label className="text-xs">Limit to list (optional)</Label>
-          <select
+          <NativeSelect
             aria-label="Limit to list"
             className={SELECT_CLS}
             value={scopeCategoryId}
@@ -301,7 +302,7 @@ export function WorkflowStepEditor({
                 {c.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </section>
 
@@ -331,7 +332,7 @@ export function WorkflowStepEditor({
                   onChange={(e) => updateCondition(i, { field: e.target.value })}
                   placeholder="field / attribute id"
                 />
-                <select
+                <NativeSelect
                   aria-label={`Condition operator ${i + 1}`}
                   className={`${SELECT_CLS} w-40`}
                   value={c.operator}
@@ -342,7 +343,7 @@ export function WorkflowStepEditor({
                       {o.label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 {c.operator !== "exists" && c.operator !== "empty" && (
                   <Input
                     aria-label={`Condition value ${i + 1}`}
@@ -391,7 +392,7 @@ export function WorkflowStepEditor({
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground">Step {i + 1}</span>
-                    <select
+                    <NativeSelect
                       aria-label={`Action kind ${i + 1}`}
                       className={`${SELECT_CLS} flex-1`}
                       value={a.kind}
@@ -402,7 +403,7 @@ export function WorkflowStepEditor({
                           {k.label}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -451,7 +452,7 @@ export function WorkflowStepEditor({
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-xs text-muted-foreground">Add step:</span>
-          <select
+          <NativeSelect
             aria-label="Add action"
             className={`${SELECT_CLS} w-56`}
             value=""
@@ -465,7 +466,7 @@ export function WorkflowStepEditor({
                 {k.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </section>
 
@@ -515,14 +516,14 @@ function ActionFields({
   const categorySelect = (label: string, value: string, set: (v: string) => void) => (
     <div className="space-y-1">
       <Label className="text-[10px]">{label}</Label>
-      <select aria-label={`${label} ${index + 1}`} className={`${SELECT_CLS} h-8`} value={value} onChange={(e) => set(e.target.value)}>
+      <NativeSelect aria-label={`${label} ${index + 1}`} className={`${SELECT_CLS} h-8`} value={value} onChange={(e) => set(e.target.value)}>
         <option value="">Choose a list…</option>
         {lists.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   )
 
@@ -592,7 +593,7 @@ function ActionFields({
       return (
         <div className="space-y-1">
           <Label className="text-[10px]">Workflow to run</Label>
-          <select
+          <NativeSelect
             aria-label={`Workflow to run ${index + 1}`}
             className={`${SELECT_CLS} h-8`}
             value={action.workflowId}
@@ -604,7 +605,7 @@ function ActionFields({
                 {w.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       )
     case "require":

@@ -91,6 +91,7 @@ import { tagMonthTrend } from "./tag-trends"
 import { TagTrendBoard } from "./TagTrendBoard"
 import type { TrackingSearchHit } from "@/lib/tracking-search"
 import "./analytics-boards.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const UNTRACKED_COLOR = "#243044"
 const UNTRACKED_LABEL = "Untracked"
@@ -788,7 +789,7 @@ export function TrackingAnalytics() {
     <div className="an-canvas an-track an-stack">
       <header className="an-track-header">
         <div className="an-studio-tools">
-          <select
+          <NativeSelect
             value={scope.id}
             onChange={(e) => setScopeId(e.target.value)}
             aria-label="Tracking scope"
@@ -798,7 +799,7 @@ export function TrackingAnalytics() {
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <div className="flex">
             {(["tracked", "period"] as const).map((option) => (
               <button

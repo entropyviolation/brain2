@@ -26,6 +26,7 @@ import { LevelGauge } from "@/components/steps/LevelGauge"
 import { useTodoPrefs } from "./todo-prefs"
 import { openStepItem } from "@/lib/step-item-stack"
 import { openTaskCard } from "@/lib/task-card"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const COLLAPSE_THRESHOLD = 8
 
@@ -417,23 +418,20 @@ export function TodoTable({
               </div>
 
               <span className="todo-cell todo-cell-tier">
-              {walk ? null : <select
+              {walk ? null : <NativeSelect
                 className="todo-nixie"
                 aria-label="Tier"
                 title={`Tier ${todo.tier} — ${TIER_HINT[todo.tier]}`}
                 value={todo.tier}
                 onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  e.stopPropagation()
-                  onTierChange(todo.id, e.target.value as TodoItem["tier"])
-                }}
+                onChange={(e) => onTierChange(todo.id, e.target.value as TodoItem["tier"])}
               >
                 {TIERS.map((tier) => (
                   <option key={tier} value={tier}>
                     {tier}
                   </option>
                 ))}
-              </select>}
+              </NativeSelect>}
               </span>
 
               <span className="todo-cell todo-cell-state">

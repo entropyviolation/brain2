@@ -33,6 +33,7 @@ import { isPeopleIKnowList } from "@/lib/people-i-know"
 import { isInstagramPeopleList } from "@/lib/instagram-lists"
 import { applyListsNavigation, requestNavigateToList } from "@/lib/app-navigation"
 import "@/components/Lists/lists-settings.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 interface NextActionsSettingsDialogProps {
   open: boolean
@@ -370,7 +371,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                     Export one list together with its sublists and tasks, or import such a file (merged by ID).
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <select
+                    <NativeSelect
                       className="flex-1 rounded-md border bg-background px-2 py-1 text-sm"
                       value={exportCategoryId || lists[0]?.id || ""}
                       onChange={(e) => setExportCategoryId(e.target.value)}
@@ -380,7 +381,7 @@ export function NextActionsSettingsDialog({ open, onClose }: NextActionsSettings
                           {c.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                     <Button onClick={handleExportCategory} variant="outline" disabled={lists.length === 0}>
                       <FileText className="h-4 w-4 mr-2" />
                       Export List

@@ -36,4 +36,7 @@ export const BUILTIN_TRAITS: Record<string, Partial<RelationDef>> = {
   "mother-of": { traits: { inverseFunctional: 1 } },
   "father-of": { traits: { inverseFunctional: 1 } },
   "married-to": { traits: { functional: 1 } },
+  "born-in": { traits: { functional: 1 } },
+  "located-in": { traits: { transitive: true, acyclic: true } },
+  "location-of": { traits: { transitive: true, acyclic: true } },
 }

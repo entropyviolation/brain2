@@ -32,6 +32,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `label.tsx` | Form labels |
 | `progress.tsx` | Progress bars (supports `indicatorClassName`) |
 | `select.tsx` | Select dropdowns. The list portals to `document.body` on the shared menu layer |
+| `native-select.tsx` | _Last mapped: 2026-10-16._ `NativeSelect`: drop-in for `<select>` + `<option>` children. Renders `select.tsx`, so the list matches the app, not the OS popup. `onChange` gets `{ target: { value } }`. `""` values are encoded. Tests click the combobox, then the option (jsdom shims in `vitest.setup.ts`). **Planned:** sweep the remaining native `<select>`s onto it. |
 | `separator.tsx` | Visual dividers |
 | `switch.tsx` | Toggle switches |
 | `table.tsx` | Table layout (Lists details view) |

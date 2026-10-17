@@ -40,6 +40,7 @@ import {
   setTaskCompleted,
   syncAllPartTasks,
 } from "./operation-actions"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function PartsPanel({ operation }: { operation: Task }) {
   const tasks = useTaskStore((s) => s.tasks)
@@ -259,7 +260,7 @@ function PartsBoard({
           </div>
           <div>
             <label htmlFor="ops-kind-parent">Lives inside</label>
-            <select
+            <NativeSelect
               id="ops-kind-parent"
               className="ops-input"
               value={parentId}
@@ -271,7 +272,7 @@ function PartsBoard({
                   {formula.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div>
             <label htmlFor="ops-kind-stages">Stages</label>
