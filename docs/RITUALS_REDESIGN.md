@@ -86,7 +86,9 @@ _Last mapped: 2026-10-16_
 **Due soon** step (Phase 5) join these lists. The answered lamp is on / off;
 a partial lamp can come with Phase 7.
 
-## Phase 2 — Night: unfinished, scheduled items
+## Phase 2 — Night: unfinished, scheduled items (done)
+
+_Last mapped: 2026-10-17_ Built as below, with these choices: no `completedTimeUnknown` field — Done uses `completedCertainty: "estimated"` plus an unconfirmed `completedDate` estimate, which Assumed times already lists. Push notes are `PeriodReview.workedToday` (reason stays in `blockedReasons`). Missed ids are `PeriodReview.missedTaskIds`. Details: `components/Reviews/README.md` → Night / Review. Tests: `review-dialog.test.tsx` (unfinished rows), `lib/ritual-done.test.ts`.
 
 Each row gets four keys: **Done · Push · Missed · (reason)**.
 

@@ -15,12 +15,23 @@ import { WhyBlockedControl } from "@/components/Reviews/WhyBlockedControl"
 import type { StoredBlockedReason } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
+export type WorkedToday = "yes" | "some" | "no"
+
+const WORKED_OPTIONS: [WorkedToday, string][] = [
+  ["yes", "Yes"],
+  ["some", "A bit"],
+  ["no", "No"],
+]
+
 export function MissReasonDialog({
   open,
   subject,
   initial,
   title = "Why didn't it get done?",
   className,
+  askWorked = false,
+  workedInitial,
+  workedHint,
   onResolve,
 }: {
   open: boolean
@@ -28,10 +39,16 @@ export function MissReasonDialog({
   initial?: StoredBlockedReason
   title?: string
   className?: string
+  /** Also ask "Did you work on it today?" (the night ritual's Push). */
+  askWorked?: boolean
+  workedInitial?: WorkedToday
+  /** Shown under the question when the app already saw work that day. */
+  workedHint?: string
   /** Called once. `undefined` means they skipped or left it blank. */
-  onResolve: (reason: StoredBlockedReason | undefined) => void
+  onResolve: (reason: StoredBlockedReason | undefined, worked?: WorkedToday) => void
 }) {
   const [value, setValue] = useState<StoredBlockedReason | undefined>(initial)
+  const [worked, setWorked] = useState<WorkedToday | undefined>(workedInitial)
   const resolved = useRef(false)
   const wasOpen = useRef(false)
 
@@ -39,14 +56,16 @@ export function MissReasonDialog({
     if (open && !wasOpen.current) {
       resolved.current = false
       setValue(initial)
+      setWorked(workedInitial)
     }
     wasOpen.current = open
-  }, [open, initial])
+  }, [open, initial, workedInitial])
 
   const finish = (reason: StoredBlockedReason | undefined) => {
     if (resolved.current) return
     resolved.current = true
-    onResolve(reason)
+    if (askWorked) onResolve(reason, worked)
+    else onResolve(reason)
   }
 
   return (
@@ -68,6 +87,26 @@ export function MissReasonDialog({
           onChange={setValue}
           onClear={() => setValue(undefined)}
         />
+        {askWorked ? (
+          <div className="space-y-1" role="group" aria-label="Did you work on it today?">
+            <p className="text-xs font-semibold">Did you work on it today?</p>
+            <div className="flex gap-1">
+              {WORKED_OPTIONS.map(([id, label]) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant={worked === id ? "default" : "outline"}
+                  aria-pressed={worked === id}
+                  onClick={() => setWorked((cur) => (cur === id ? undefined : id))}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            {workedHint ? <p className="text-xs text-muted-foreground">{workedHint}</p> : null}
+          </div>
+        ) : null}
         <p className="text-xs text-muted-foreground">Optional. You can skip this.</p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => finish(undefined)}>

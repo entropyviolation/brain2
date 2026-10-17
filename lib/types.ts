@@ -2175,6 +2175,10 @@ export interface PeriodReview {
   // Snapshot of how the carried-over tasks were resolved during the review.
   resolvedTaskIds: string[] // marked done
   pushedTaskIds: string[] // pushed to the next period
+  /** Marked a missed opportunity from this ritual (no longer possible). */
+  missedTaskIds?: string[]
+  /** Push answer per task: did you work on it that day. Reason stays in `blockedReasons`. */
+  workedToday?: Record<string, "yes" | "some" | "no">
   /**
    * End / night / review ritual completion.
    * `true` after Save Review / Telegram end save. `false` while partial.
