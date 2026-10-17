@@ -35,6 +35,7 @@ import {
 } from "@/components/Home/ToDo/todo-utils"
 import { dateFromPeriodKey } from "@/lib/reviews-store"
 import { itemTitle } from "@/lib/item-utils"
+import { fromClock, linkTimes, toClock, type TimeField, type TimeTriple } from "@/lib/assumed-time-math"
 
 export function pendingAssumedTasks(tasks: Task[], period: ReviewPeriod, periodKey: string): Task[] {
   return tasks
@@ -60,28 +61,40 @@ function completedInPeriod(task: Task, period: ReviewPeriod, key: string): boole
 function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const completedAt = task.completedDate
-  const [time, setTime] = useState(() => (completedAt ? format(completedAt, "HH:mm") : ""))
-  const [minutes, setMinutes] = useState(() => String(task.actualDuration ?? ""))
+  const [times, setTimes] = useState<TimeTriple>(() => {
+    const finish = completedAt ? completedAt.getHours() * 60 + completedAt.getMinutes() : 12 * 60
+    const duration = Math.max(0, Math.round(task.actualDuration ?? 0))
+    const start = task.startedAt
+      ? task.startedAt.getHours() * 60 + task.startedAt.getMinutes()
+      : finish - duration
+    return { start: start < 0 ? start + 1440 : start, duration, finish }
+  })
+
+  const edit = (field: TimeField, value: number | null) => {
+    if (value === null || !Number.isFinite(value)) return
+    setTimes((cur) => linkTimes(cur, field, value))
+  }
 
   const save = () => {
     if (!completedAt) return
-    const [hours, mins] = time.split(":").map((part) => Number.parseInt(part, 10))
-    const corrected = new Date(completedAt)
-    if (Number.isFinite(hours) && Number.isFinite(mins)) corrected.setHours(hours, mins, 0, 0)
-    const parsed = Number.parseFloat(minutes)
-    confirmTaskTimes(task.id, {
-      completedAt: corrected,
-      durationMinutes: minutes.trim() === "" ? 0 : Number.isFinite(parsed) ? parsed : undefined,
-    })
+    const finishAt = new Date(completedAt)
+    finishAt.setHours(Math.floor(times.finish / 60), times.finish % 60, 0, 0)
+    const startedAt = new Date(finishAt.getTime() - times.duration * 60_000)
+    confirmTaskTimes(task.id, { completedAt: finishAt, startedAt, durationMinutes: times.duration })
+  }
+
+  const negligible = () => {
+    const confirmed = confirmTaskTimes(task.id, { durationMinutes: 0 })
+    if (confirmed) updateTask({ ...confirmed, timeNegligible: true })
   }
 
   const pending = unconfirmedEstimates(task.estimates)
 
   return (
-    <div className="border rounded-md p-2 space-y-2">
+    <div className="rv-row">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm truncate">{itemTitle(task)}</p>
+          <p className="rv-row-title">{itemTitle(task)}</p>
           <p className="text-xs text-muted-foreground">
             {period !== "day" && completedAt && `${format(completedAt, "MMM d")} · `}
             assumed {pending.map((e) => estimatedFieldLabel(e.field)).join(", ")}
@@ -104,11 +117,11 @@ function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) 
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-muted-foreground">
-          Finished
+          Start
           <ClockPicker
-            aria-label="Finished"
-            value={time}
-            onChange={setTime}
+            aria-label={`Start ${itemTitle(task)}`}
+            value={toClock(times.start)}
+            onChange={(v) => edit("start", fromClock(v))}
             className="ml-1.5 h-7 text-xs"
           />
         </label>
@@ -118,15 +131,33 @@ function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) 
             type="number"
             min="0"
             step="5"
-            value={minutes}
-            onChange={(e) => setMinutes(e.target.value)}
-            placeholder="min"
+            value={times.duration}
+            aria-label={`Minutes ${itemTitle(task)}`}
+            onChange={(e) => edit("duration", e.target.value === "" ? 0 : Number.parseFloat(e.target.value))}
             className="ml-1.5 h-7 w-16 rounded-md border bg-background px-1.5 text-xs"
           />
           <span className="ml-1">min</span>
         </label>
+        <label className="text-xs text-muted-foreground">
+          Finished
+          <ClockPicker
+            aria-label={`Finished ${itemTitle(task)}`}
+            value={toClock(times.finish)}
+            onChange={(v) => edit("finish", fromClock(v))}
+            className="ml-1.5 h-7 text-xs"
+          />
+        </label>
         <Button size="sm" variant="outline" className="h-7" onClick={save}>
           Save correction
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7"
+          title="Took no meaningful time"
+          onClick={negligible}
+        >
+          Negligible
         </Button>
         <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           <input

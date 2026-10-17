@@ -250,3 +250,53 @@ describe("ReviewDialog unfinished rows", () => {
     expect(saved?.workedToday).toEqual({ read: "some" })
   })
 })
+
+describe("Assumed times", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(2026, 9, 5, 20, 0, 0))
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const assumed = () =>
+    useTaskStore.getState().addTask(
+      task({
+        id: "walk",
+        description: "Walk",
+        completed: true,
+        completedDate: new Date(2026, 9, 4, 18, 0, 0),
+        actualDuration: 20,
+        estimates: [{ field: "actualDuration", kind: "anchor", basis: "assumed length", generatedAt: "2026-10-04T18:00:00.000Z" }],
+      }),
+    )
+
+  it("a duration edit keeps the start and moves the finish", () => {
+    assumed()
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Assumed times")
+    fireEvent.change(screen.getByLabelText("Minutes Walk"), { target: { value: "60" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save correction" }))
+    const row = useTaskStore.getState().tasks.find((t) => t.id === "walk")!
+    expect(row.actualDuration).toBe(60)
+    expect(new Date(row.startedAt!).getHours()).toBe(17)
+    expect(new Date(row.startedAt!).getMinutes()).toBe(40)
+    expect(new Date(row.completedDate!).getHours()).toBe(18)
+    expect(new Date(row.completedDate!).getMinutes()).toBe(40)
+  })
+
+  it("Negligible sets no time on purpose and settles the row", () => {
+    assumed()
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Assumed times")
+    fireEvent.click(screen.getByRole("button", { name: "Negligible" }))
+    const row = useTaskStore.getState().tasks.find((t) => t.id === "walk")!
+    expect(row.timeNegligible).toBe(true)
+    expect(row.actualDuration).toBeUndefined()
+    expect(screen.queryByText("Walk")).not.toBeInTheDocument()
+  })
+})

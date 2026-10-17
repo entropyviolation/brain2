@@ -452,6 +452,8 @@ export interface Task extends Item {
    * approximate. Shown wherever that window is read.
    */
   timeRough?: boolean
+  /** Took no meaningful time. Duration is 0 on purpose, not missing (Assumed times → Negligible). */
+  timeNegligible?: boolean
   /**
    * Richer completion status (Feature 9, Worker I). Invariant:
    * `status === "done"` ⇔ `completed === true`; helpers in
