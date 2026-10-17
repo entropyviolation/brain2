@@ -178,7 +178,7 @@ describe("ReviewDialog steps", () => {
     expect(saved?.summary).toBe("a quiet day")
     expect(saved?.endCompleted).toBe(false)
     expect(usePointsStore.getState().pointsHistory).toEqual([])
-    expect(localStorage.getItem("brain2-ritual-step:end:day:2026-10-04")).toBe(String(4))
+    expect(localStorage.getItem("brain2-ritual-step:end:day:2026-10-04")).toBe(String(5))
   })
 
   it("Finish on the last step submits the night", () => {
@@ -298,5 +298,32 @@ describe("Assumed times", () => {
     expect(row.timeNegligible).toBe(true)
     expect(row.actualDuration).toBeUndefined()
     expect(screen.queryByText("Walk")).not.toBeInTheDocument()
+  })
+})
+
+describe("Look back", () => {
+  beforeEach(() => {
+    resetAllStores()
+    localStorage.clear()
+  })
+
+  it("shows the morning plan, the marked tasks, and keeps the note", () => {
+    useTaskStore.getState().addTask(task({ id: "req", description: "Pay rent", completed: true }))
+    useReviewsStore.getState().replaceMorningReview("2026-10-04", {
+      completed: true,
+      dayPlanText: "Rent first, then the garden",
+      requiredTaskIds: ["req"],
+    })
+    const view = render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("Look back")
+    expect(screen.getByText("Rent first, then the garden")).toBeInTheDocument()
+    expect(screen.getByText("Pay rent")).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Looking back"), { target: { value: "the garden waited" } })
+    fireEvent.click(within(document.querySelector(".hpp-actions")!).getByRole("button", { name: "Close" }))
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.lookBack).toBe("the garden waited")
+    expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.morning?.dayPlanText).toBe(
+      "Rent first, then the garden",
+    )
+    view.unmount()
   })
 })
