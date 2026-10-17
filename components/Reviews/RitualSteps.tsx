@@ -62,6 +62,7 @@ export function RitualStepper({
   children,
   finishLabel,
   onFinish,
+  tone,
 }: {
   steps: RitualStep[]
   index: number
@@ -69,6 +70,8 @@ export function RitualStepper({
   children: ReactNode
   finishLabel: string
   onFinish: () => void
+  /** Color of the rite: dawn (morning, start), dusk (night, end), north (Star Lord). */
+  tone?: "dawn" | "dusk" | "north"
 }) {
   const [navOpen, setNavOpen] = useState(false)
   // A saved choice wins. With none, the index opens where there is room for it.
@@ -91,6 +94,7 @@ export function RitualStepper({
   return (
     <div
       className="rst"
+      data-tone={tone}
       data-nav-open={navOpen ? "true" : undefined}
       onKeyDown={(e) => {
         if (!e.altKey) return

@@ -463,6 +463,8 @@ export interface Task extends Item {
    * approximate. Shown wherever that window is read.
    */
   timeRough?: boolean
+  /** Took no meaningful time. Duration is 0 on purpose, not missing (Assumed times → Negligible). */
+  timeNegligible?: boolean
   /**
    * Richer completion status (Feature 9, Worker I). Invariant:
    * `status === "done"` ⇔ `completed === true`; helpers in
@@ -2197,6 +2199,12 @@ export interface PeriodReview {
   // Snapshot of how the carried-over tasks were resolved during the review.
   resolvedTaskIds: string[] // marked done
   pushedTaskIds: string[] // pushed to the next period
+  /** Marked a missed opportunity from this ritual (no longer possible). */
+  missedTaskIds?: string[]
+  /** End ritual: note on the plan beside what happened (Look back step). */
+  lookBack?: string
+  /** Push answer per task: did you work on it that day. Reason stays in `blockedReasons`. */
+  workedToday?: Record<string, "yes" | "some" | "no">
   /**
    * End / night / review ritual completion.
    * `true` after Save Review / Telegram end save. `false` while partial.

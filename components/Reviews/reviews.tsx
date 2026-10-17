@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ClipboardCheck, CheckCircle2, ArrowRight, Plus, X, Sparkles } from "lucide-react"
+import { ClipboardCheck, CheckCircle2, ArrowRight, Plus, X, Sparkles, XCircle } from "lucide-react"
 import { RitualMoonIcon, RitualSunIcon } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
 import { useRegretStore } from "@/lib/regret-store"
@@ -58,6 +58,11 @@ import { seasonOfDate, seasonSlug } from "@/lib/seasons"
 import { getPendingReviews } from "@/lib/pending-reviews"
 import { getStoredPlanText } from "@/lib/plan-text"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
+import { LookBackSection } from "@/components/Reviews/LookBackSection"
+import { MissReasonDialog, type WorkedToday } from "@/components/Reviews/MissReasonDialog"
+import { ritualDonePatch } from "@/lib/ritual-done"
+import { markMissedOpportunity } from "@/lib/services/completion-service"
+import { listItemActivity } from "@/lib/item-activity"
 import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 import { DayReviewTomorrowSection } from "@/components/Reviews/DayReviewTomorrowSection"
 import { AssumedTimesSection, pendingAssumedTasks } from "@/components/Reviews/AssumedTimesSection"
@@ -114,6 +119,10 @@ function ReviewDialog({
     existing?.blockedReasons || {},
   )
   const [sharedBlockedReason, setSharedBlockedReason] = useState<StoredBlockedReason | undefined>(undefined)
+  const [missed, setMissed] = useState<string[]>(existing?.missedTaskIds || [])
+  const [workedToday, setWorkedToday] = useState<Record<string, WorkedToday>>(existing?.workedToday || {})
+  const [pushPrompt, setPushPrompt] = useState<Task | null>(null)
+  const [lookBack, setLookBack] = useState(existing?.lookBack || "")
   const [pushError, setPushError] = useState<string | null>(null)
   const [reflectTask, setReflectTask] = useState<Task | null>(null)
   const accrueRegret = useRegretStore((s) => s.addRegret)
@@ -126,7 +135,7 @@ function ReviewDialog({
     () => unfinishedTasksForRitual(tasks, period, periodKey),
     [tasks, period, periodKey],
   )
-  const visibleUnfinished = incomplete.filter((task) => !pushed.includes(task.id))
+  const visibleUnfinished = incomplete.filter((task) => !pushed.includes(task.id) && !missed.includes(task.id))
   const assumedPending = useMemo(
     () => pendingAssumedTasks(tasks, period, periodKey).length,
     [tasks, period, periodKey],
@@ -138,10 +147,48 @@ function ReviewDialog({
     return getStoredPlanText(period, periodKey)?.trim() || null
   }, [period, periodKey])
 
+  /** Done means done inside the reviewed period; the time goes to Assumed times. */
   const markDone = (task: Task) => {
-    updateTask({ ...task, completed: true })
+    updateTask(ritualDonePatch(task, period, periodKey))
     setResolved((r) => [...new Set([...r, task.id])])
+    openReflectAfterCompletion({ ...task, completed: true })
   }
+
+  /** The completion popup comes first; the how-did-it-go note opens after it closes. */
+  const reflectTimer = useRef<number | null>(null)
+  const openReflectAfterCompletion = (task: Task) => {
+    if (reflectTimer.current != null) window.clearInterval(reflectTimer.current)
+    const tryOpen = () => {
+      if (document.querySelector('[data-ui-name="Completion"]')) return false
+      setReflectTask(task)
+      return true
+    }
+    // Give the popup a beat to mount before checking for it.
+    let ticks = 0
+    reflectTimer.current = window.setInterval(() => {
+      ticks += 1
+      if ((ticks > 1 && tryOpen()) || ticks > 600) {
+        window.clearInterval(reflectTimer.current!)
+        reflectTimer.current = null
+      }
+    }, 250)
+  }
+  useEffect(() => () => {
+    if (reflectTimer.current != null) window.clearInterval(reflectTimer.current)
+  }, [])
+
+  const markMissed = (task: Task) => {
+    markMissedOpportunity(task.id, undefined, rowReason(task.id))
+    if (!blockedReasons[task.id] && sharedBlockedReason) setReason(task.id, sharedBlockedReason)
+    setMissed((m) => [...new Set([...m, task.id])])
+  }
+
+  const rowReason = (id: string): StoredBlockedReason | undefined => blockedReasons[id] ?? sharedBlockedReason
+
+  /** Activity on the item during the reviewed day, from its own ledger. */
+  const sawWork = (task: Task): boolean =>
+    period === "day" &&
+    listItemActivity(task.id).some((row) => localDayKey(new Date(row.at)) === periodKey && row.source !== "ritual")
 
   const pushToNext = (task: Task) => {
     try {
@@ -177,6 +224,9 @@ function ReviewDialog({
       arc,
       resolved,
       pushed,
+      missed,
+      workedToday,
+      lookBack,
       blockedReasons,
     })
 
@@ -207,6 +257,9 @@ function ReviewDialog({
       arc: cleanArc(arc),
       resolvedTaskIds: resolved,
       pushedTaskIds: pushed,
+      missedTaskIds: missed.length ? missed : undefined,
+      lookBack: lookBack.trim() || undefined,
+      workedToday: Object.keys(workedToday).length ? workedToday : undefined,
       blockedReasons: Object.keys(blockedReasons).length ? blockedReasons : undefined,
       ...(existing?.morning ? { morning: existing.morning } : {}),
       ...(existing?.start ? { start: existing.start } : {}),
@@ -218,7 +271,7 @@ function ReviewDialog({
     const input = {
       period,
       unfinishedCount: incomplete.length,
-      unfinishedTouched: new Set([...resolved, ...pushed, ...Object.keys(blockedReasons)]).size,
+      unfinishedTouched: new Set([...resolved, ...pushed, ...missed, ...Object.keys(blockedReasons)]).size,
       assumedPending,
       assumedTouched:
         assumedPending < baselineAssumed.current ||
@@ -247,7 +300,7 @@ function ReviewDialog({
     if (!markDone) return
     for (const task of incomplete) {
       const reason = blockedReasonToken(blockedReasons[task.id])
-      if (reason && !resolved.includes(task.id)) {
+      if (reason && !resolved.includes(task.id) && !missed.includes(task.id)) {
         accrueRegret(task.id, task.importance ?? 1, itemTitle(task), dateFromPeriodKey(period, periodKey), reason)
       }
     }
@@ -294,54 +347,72 @@ function ReviewDialog({
             <p className="text-sm text-muted-foreground">Nothing left unfinished. Nice work!</p>
           ) : (
             <div className="space-y-2">
-              <WhyBlockedControl
-                taskTitle="unfinished items"
-                value={sharedBlockedReason}
-                onChange={setSharedBlockedReason}
-              />
-              {visibleUnfinished.map((task) => (
-                <div key={task.id} className="border rounded-md p-2 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm flex-1 truncate">{itemTitle(task)}</span>
-                    {resolved.includes(task.id) ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        onClick={() => setReflectTask({ ...task, completed: true })}
-                      >
-                        <Sparkles className="h-3.5 w-3.5 mr-1" />
-                        Reflect
-                      </Button>
+              <div className="rv-shared">
+                <span className="rv-shared-label">Same reason for all</span>
+                <WhyBlockedControl
+                  taskTitle="unfinished items"
+                  value={sharedBlockedReason}
+                  onChange={setSharedBlockedReason}
+                />
+              </div>
+              {visibleUnfinished.map((task) => {
+                const done = resolved.includes(task.id)
+                return (
+                  <div key={task.id} className="rv-row" data-done={done ? "true" : undefined}>
+                    <div className="rv-row-head">
+                      <span className="rv-row-title">{itemTitle(task)}</span>
+                      {done ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          onClick={() => setReflectTask({ ...task, completed: true })}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1" />
+                          How did it go?
+                        </Button>
+                      ) : null}
+                    </div>
+                    {done ? (
+                      <p className="text-xs text-muted-foreground">
+                        Done {period === "day" ? "that day" : `this ${period}`}. Set the time under Assumed times.
+                      </p>
                     ) : (
-                      <>
+                      <div className="rv-row-keys">
                         <Button size="sm" variant="outline" className="h-7" onClick={() => markDone(task)}>
                           <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                           Done
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7" onClick={() => setPushPrompt(task)}>
+                          <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                          Push to {nextLabel}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-7"
-                          onClick={() => {
-                            if (sharedBlockedReason) setReason(task.id, sharedBlockedReason)
-                            pushToNext(task)
-                          }}
+                          title="No longer possible: not done, not pushed"
+                          onClick={() => markMissed(task)}
                         >
-                          <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                          Push to {nextLabel}
+                          <XCircle className="h-3.5 w-3.5 mr-1" />
+                          Missed
                         </Button>
-                      </>
+                        <WhyBlockedControl
+                          taskTitle={itemTitle(task)}
+                          value={blockedReasons[task.id]}
+                          onChange={(reason) => setReason(task.id, reason)}
+                        />
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           {pushError && <p className="text-xs text-muted-foreground">{pushError}</p>}
-          {(resolved.length > 0 || pushed.length > 0) && (
+          {(resolved.length > 0 || pushed.length > 0 || missed.length > 0) && (
             <p className="text-xs text-muted-foreground">
-              {resolved.length} completed · {pushed.length} pushed to {nextLabel}
+              {resolved.length} done · {pushed.length} pushed to {nextLabel} · {missed.length} missed
             </p>
           )}
         </section>
@@ -352,6 +423,25 @@ function ReviewDialog({
       label: "Assumed times",
       answered: liveAssumed.length === 0 || liveAssumed.length < baselineAssumed.current,
       body: <AssumedTimesSection period={period} periodKey={periodKey} />,
+    },
+    {
+      id: "lookback",
+      label: "Look back",
+      answered: !!lookBack.trim(),
+      body: (
+        <LookBackSection
+          period={period}
+          review={existing}
+          counts={{
+            done: resolved.length,
+            pushed: pushed.length,
+            missed: missed.length,
+            open: visibleUnfinished.filter((t) => !resolved.includes(t.id)).length,
+          }}
+          note={lookBack}
+          onNote={setLookBack}
+        />
+      ),
     },
     period === "day"
       ? {
@@ -597,6 +687,7 @@ function ReviewDialog({
 
         <div className="hpp-body flex-1 min-h-0">
           <RitualStepper
+            tone="dusk"
             steps={stepDefs}
             index={stepIndex}
             onStep={goStep}
@@ -618,6 +709,23 @@ function ReviewDialog({
       </DialogContent>
 
       <PostMortemDialog task={reflectTask} open={!!reflectTask} onClose={() => setReflectTask(null)} />
+      <MissReasonDialog
+        open={!!pushPrompt}
+        subject={pushPrompt ? itemTitle(pushPrompt) : ""}
+        title={`Why push it to ${nextLabel}?`}
+        initial={pushPrompt ? rowReason(pushPrompt.id) : undefined}
+        askWorked={period === "day"}
+        workedInitial={pushPrompt ? workedToday[pushPrompt.id] ?? (sawWork(pushPrompt) ? "yes" : undefined) : undefined}
+        workedHint={pushPrompt && sawWork(pushPrompt) ? "It changed that day, so this starts at Yes." : undefined}
+        onResolve={(reason, worked) => {
+          const task = pushPrompt
+          setPushPrompt(null)
+          if (!task) return
+          if (reason) setReason(task.id, reason)
+          if (worked) setWorkedToday((prev) => ({ ...prev, [task.id]: worked }))
+          pushToNext(task)
+        }}
+      />
     </Dialog>
   )
 }
