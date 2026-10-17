@@ -61,6 +61,7 @@ import { taskIndexOf } from "@/lib/task-index"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { migrateTaskFileValues, migrateTaskImageAttributes } from "@/lib/attachments"
+import { migratePersonNoteLogs } from "@/lib/person-notes-fold"
 import {
   addListLinkToLists,
   applyListLinksToTask,
@@ -264,8 +265,8 @@ export function appendTombstoneIds(
   return next.slice(-cap)
 }
 
-/** Persist blob version. v18 parks note prose in `body` and mirrors `description` to `title`. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
-export const TASK_STORE_PERSIST_VERSION = 18
+/** Persist blob version. v19 folds person dated notes into `noteLog`. v18 parks note prose in `body` and mirrors `description` to `title`. v17 repairs UTC-midnight schedule dates. v16 records past assignments as Undone. */
+export const TASK_STORE_PERSIST_VERSION = 19
 
 /** False until persist finishes reading disk so mount-time list sync cannot persist seed tasks over the vault. Tests persist immediately. */
 let taskPersistHydrated = typeof process !== "undefined" && !!process.env.VITEST
@@ -898,6 +899,11 @@ export const useTaskStore = create<TaskState>()(
           // Parked-note prose moves from description → body. description
           // becomes a pure title mirror. Search indexes body.
           persistedState = migrateParkedNoteBodyToField(persistedState)
+        }
+        if (version < 19) {
+          // Person dated notes (personProfile.noteLog) fold into task.noteLog,
+          // the Notes tab. Deduped by id; nothing is deleted.
+          persistedState = migratePersonNoteLogs(persistedState)
         }
         if (!Array.isArray(persistedState.removedTaskIds)) {
           persistedState.removedTaskIds = []

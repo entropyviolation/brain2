@@ -14,7 +14,7 @@ in `components/Lists/lib/icon-utils.tsx`, `components/Lists/dialogs/OrbPickerDia
 | File | Responsibility |
 | --- | --- |
 | `Icon.tsx` | Icon resolution + rendering helpers: `orbFor(id)`, `folderFor(id)` (photographed folders, same hash contract as orbs), `iconFor(id, custom?)`, and the `FolderGlyph` SVG (list chips). |
-| `OrbPicker.tsx` | `OrbPickerDialog` — orb gallery + custom upload (background removed via `lib/remove-background`) + search; an "Edit gallery" mode hides/restores orbs, and your uploads live in a personal library. Hidden orbs + the uploaded library persist in `lib/lists-ui-store`. Exports `OrbPickerDialogProps`. |
+| `OrbPicker.tsx` | `OrbPickerDialog` — orb gallery + custom upload (background removed via `lib/remove-background`) + search; an "Edit gallery" mode hides/restores orbs, and your uploads live in a personal library. Hidden orbs + the uploaded library persist in `lib/lists-ui-store`. Exports `OrbPickerDialogProps`. _Last mapped: 2026-10-16:_ `container?` portals it inside an open dialog (item detail) so it stacks on top. |
 | `icon-registry.ts` | Central data registry: re-exports the orb manifest (`ORB_IMAGES`, `ORB_PATHS`), folder manifest, freeform grid layout (`computeIconGridPositions`), and Rituals glyphs (`RitualSunIcon`, `RitualMoonIcon` from lucide). |
 | `index.ts` | Barrel exporting the public surface. |
 

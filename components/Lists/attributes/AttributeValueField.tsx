@@ -636,7 +636,17 @@ function linkHost(raw: string): string {
   }
 }
 
-function LinkValueEditor({ value, onChange, label }: { value: AttributeValue; onChange: (v: AttributeValue) => void; label: string }) {
+function LinkValueEditor({
+  value,
+  onChange,
+  onLive,
+  label,
+}: {
+  value: AttributeValue
+  onChange: (v: AttributeValue) => void
+  onLive?: (v: AttributeValue) => void
+  label: string
+}) {
   const raw = value === undefined || value === null ? "" : String(value)
   const href = raw && !/^[a-z]+:/i.test(raw) ? `https://${raw}` : raw
   const host = href ? linkHost(href) : ""
@@ -647,6 +657,7 @@ function LinkValueEditor({ value, onChange, label }: { value: AttributeValue; on
         value={raw}
         aria-label={label}
         onCommit={(next) => onChange(next.trim() === "" ? undefined : next.trim())}
+        onLiveChange={onLive ? (next) => onLive(next.trim() === "" ? undefined : next.trim()) : undefined}
         className="h-8 flex-1"
         placeholder="https://…"
       />
@@ -708,14 +719,21 @@ function GoalValueEditor({
   )
 }
 
+function parseNumber(raw: string, whole: boolean): AttributeValue {
+  if (raw === "") return undefined
+  return whole ? parseInt(raw, 10) : Number(raw)
+}
+
 function NumberValueEditor({
   def,
   value,
   onChange,
+  onLive,
 }: {
   def: AttributeDefinition
   value: AttributeValue
   onChange: (v: AttributeValue) => void
+  onLive?: (v: AttributeValue) => void
 }) {
   const whole = def.allowFloat === false
   const n = typeof value === "number" ? value : value === undefined || value === null || value === "" ? undefined : Number(value)
@@ -728,10 +746,8 @@ function NumberValueEditor({
         step={whole ? 1 : "any"}
         aria-label={def.name}
         value={n === undefined || !Number.isFinite(n) ? "" : String(n)}
-        onCommit={(raw) => {
-          if (raw === "") onChange(undefined)
-          else onChange(whole ? parseInt(raw, 10) : Number(raw))
-        }}
+        onCommit={(raw) => onChange(parseNumber(raw, whole))}
+        onLiveChange={onLive ? (raw) => onLive(parseNumber(raw, whole)) : undefined}
         className="h-8"
       />
       {def.unit && !/[$£€¥]/.test(def.unit) && <span className="attr-unit">{def.unit}</span>}
@@ -753,12 +769,18 @@ export function AttributeValueField({
   def,
   value,
   onChange,
+  onLive,
   definitions,
   siblingValues,
 }: {
   def: AttributeDefinition
   value: AttributeValue
   onChange: (v: AttributeValue) => void
+  /**
+   * Every keystroke in a text, number or link field (keep cheap: ref writes).
+   * `onChange` still fires once, on blur / Enter.
+   */
+  onLive?: (v: AttributeValue) => void
   /** Sibling attribute schema — enables live formula evaluation when provided. */
   definitions?: AttributeDefinition[]
   /** This item's other attribute values — required to compute formula results. */
@@ -836,17 +858,18 @@ export function AttributeValueField({
     case "multifile":
       return <FileValueEditor multiple value={value} onChange={onChange} />
     case "link":
-      return <LinkValueEditor value={value} onChange={onChange} label={label} />
+      return <LinkValueEditor value={value} onChange={onChange} onLive={onLive} label={label} />
     case "goal":
       return <GoalValueEditor def={def} value={value} onChange={onChange} />
     case "number":
-      return <NumberValueEditor def={def} value={value} onChange={onChange} />
+      return <NumberValueEditor def={def} value={value} onChange={onChange} onLive={onLive} />
     case "string":
     default:
       return (
         <IsolatedTextarea
           value={value === undefined || value === null ? "" : String(value)}
           onCommit={(raw) => onChange(raw === "" ? undefined : raw)}
+          onLiveChange={onLive ? (raw) => onLive(raw === "" ? undefined : raw) : undefined}
           aria-label={label}
           rows={1}
           className="attr-text min-h-[32px] resize-y"

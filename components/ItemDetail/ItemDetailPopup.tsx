@@ -11,10 +11,13 @@
  */
 "use client"
 
+import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
 import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
 import { PersonDetail } from "@/components/People/person-detail"
+import { PersonNotes } from "@/components/People/person-notes"
+import { foldPersonNoteLog } from "@/lib/person-notes-fold"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
@@ -31,7 +34,8 @@ import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-f
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { SubtaskTree, StepItemSubtasks } from "@/components/ItemDetail/SubtaskTree"
 import { isStepItem } from "@/lib/step-items"
-import { openStepItem } from "@/lib/step-item-stack"
+import { clearItemLayers, openStepItem } from "@/lib/step-item-stack"
+import { onCurrentPeriod, openTaskCard, useTaskCardStore } from "@/lib/task-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -190,12 +194,17 @@ export function TaskDetailPopup({
   // A "task" item type (anything in Next Actions, plus items explicitly typed
   // "task") gets the full set of task features/panels.
   const isTask = task ? isTaskItem(task, folders) : false
+  // `resolveDetailView` reads only `type` and `lists`, so typing elsewhere
+  // in the draft does not recompute the panels.
+  const hasTask = !!task
+  const taskType = task?.type
+  const taskLists = task?.lists
   const detailView = useMemo(
     () =>
-      task
-        ? resolveDetailView(task, lists, itemTypes, { isTask })
+      hasTask
+        ? resolveDetailView({ type: taskType, lists: taskLists }, lists, itemTypes, { isTask })
         : { panels: ["details"] as ItemDetailPanel[], capabilities: {}, layout: undefined },
-    [task, lists, itemTypes, isTask],
+    [hasTask, taskType, taskLists, lists, itemTypes, isTask],
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
@@ -377,10 +386,20 @@ export function TaskDetailPopup({
       }),
     [guardAction, folders, onClose],
   )
+  const cardHosts = useTaskCardStore((s) => s.hosts)
 
   if (!task) {
     return null
   }
+  // Phase 12: **Card** opens the To Do task card (a step item opens its parent's, at the step).
+  const cardTarget =
+    cardHosts > 0 && !task.completed
+      ? task.stepOf
+        ? { taskId: task.stepOf.taskId, stepId: task.stepOf.stepId }
+        : onCurrentPeriod(task)
+          ? { taskId: task.id, stepId: undefined }
+          : null
+      : null
 
   const availableTasksForDependencies = allTasks.filter((t) => t.id !== task.id && !(task.dependencies || []).includes(t.id))
 
@@ -397,7 +416,8 @@ export function TaskDetailPopup({
   const handleToggleSent = () => {
     commitDraft(withSentMark(task, sentListIds, !sentOnThoseLists, new Date()))
   }
-  const noteCount = task.noteLog?.length ?? 0
+  // Old person notes still on personProfile.noteLog count too (3.3 fold).
+  const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
   const resourceCount = task.resources?.length ?? 0
   const linkCount = task.links?.length ?? 0
   const writeDraft = (patch: Partial<Task>) => {
@@ -424,6 +444,7 @@ export function TaskDetailPopup({
             <div className="id-fascia-row">
               <div className="id-mark">
                 <span className="id-power-lamp is-on" aria-hidden />
+                <FasciaOrb id={task.id} icon={task.icon} onPick={(icon) => writeDraft({ icon })} />
                 <IsolatedInput
                   value={task.description}
                   onLiveChange={(description) => touchDraft({ description, title: description })}
@@ -490,6 +511,20 @@ export function TaskDetailPopup({
                     Missed
                   </Button>
                 )}
+                {cardTarget ? (
+                  <Button
+                    variant="outline"
+                    className="id-btn id-btn-secondary"
+                    title="Open the To Do task card"
+                    onClick={() => {
+                      if (stackAbove) clearItemLayers()
+                      else guard.requestClose()
+                      openTaskCard(cardTarget.taskId, cardTarget.stepId)
+                    }}
+                  >
+                    Card
+                  </Button>
+                ) : null}
                 <Button
                   variant="outline"
                   onClick={handleDelete}
@@ -583,24 +618,27 @@ export function TaskDetailPopup({
                         />
                       ) : null}
                       {itemShowsPersonPipelines(task, lists) ? (
-                        <>
-                          <PersonDetail
-                            person={task}
-                            onChange={(patch) => {
-                              touchDraft(patch)
-                              setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-                            }}
-                          />
-                          <PersonPipelinesEditor
-                            mode="person"
-                            person={task}
-                            onChange={(personPipelines) => {
-                              const next = personPipelines.length > 0 ? personPipelines : undefined
-                              touchDraft({ personPipelines: next })
-                              setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
-                            }}
-                          />
-                        </>
+                        <PersonDetail
+                          person={task}
+                          onChange={(patch) => {
+                            touchDraft(patch)
+                            setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                          }}
+                          onLive={touchDraft}
+                          readDraft={getDraft}
+                          onNavigateToList={handleNavigateToList}
+                          pipelines={
+                            <PersonPipelinesEditor
+                              mode="person"
+                              person={task}
+                              onChange={(personPipelines) => {
+                                const next = personPipelines.length > 0 ? personPipelines : undefined
+                                touchDraft({ personPipelines: next })
+                                setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
+                              }}
+                            />
+                          }
+                        />
                       ) : null}
                       <div className="id-bay">
                         <ItemAttributesSection
@@ -614,6 +652,9 @@ export function TaskDetailPopup({
                             itemShowsPersonPipelines(task, lists)
                               ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
                               : undefined
+                          }
+                          onLiveValue={(id, value) =>
+                            touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
                           }
                           onChangeValues={(attributes) => {
                             touchDraft({ attributes })
@@ -992,13 +1033,25 @@ export function TaskDetailPopup({
 
                 {visiblePanels.includes("notes") && (
                 <TabsContent value="notes" className="mt-0">
-                  <ItemNotesLog
-                    entries={task.noteLog}
-                    standing={task.notes}
-                    onChangeEntries={(noteLog) => writeDraft({ noteLog })}
-                    onLiveStanding={(notes) => touchDraft({ notes })}
-                    onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
-                  />
+                  {itemShowsPersonPipelines(task, lists) ? (
+                    <PersonNotes
+                      person={task}
+                      onChange={(patch) => {
+                        touchDraft(patch)
+                        setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                      }}
+                      onLive={touchDraft}
+                      readDraft={getDraft}
+                    />
+                  ) : (
+                    <ItemNotesLog
+                      entries={task.noteLog}
+                      standing={task.notes}
+                      onChangeEntries={(noteLog) => writeDraft({ noteLog })}
+                      onLiveStanding={(notes) => touchDraft({ notes })}
+                      onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
+                    />
+                  )}
                 </TabsContent>
                 )}
 

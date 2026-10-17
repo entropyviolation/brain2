@@ -12,6 +12,7 @@
  * them. Ingest finish sites call `applyLinkedEffects`; create stays on
  * `useTaskStore`.
  */
+import { settleStepPoints } from "@/lib/step-points"
 import { taskRepository } from "@/lib/data/task-repository"
 import {
   activityFieldLabel,
@@ -42,6 +43,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   createdAt: true,
   tags: true,
   links: true,
+  dismissedLinkSuggestions: true,
   attributes: true,
   itemAttributeDefinitions: true,
   body: true,
@@ -92,6 +94,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   loggedAction: true,
   notes: true,
   parentTaskId: true,
+  pointsOverride: true,
   subtasks: true,
   isSummary: true,
   parallelGroup: true,
@@ -271,6 +274,8 @@ export function commitItemEdit(
 
   const merged = applyItemEditPatch(before, patch)
   taskRepository.update(merged, patch)
+  // Phase 12: a step ticked or unticked in item detail pays or takes back its step points.
+  if ("subtasks" in patch) settleStepPoints({ id: before.id, description: before.description }, before.subtasks, merged.subtasks)
 
   const tagged = namedOrder(order)
   const changes = activityChanges(before, patch)

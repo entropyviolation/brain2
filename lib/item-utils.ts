@@ -400,6 +400,10 @@ export function resolveCompletionPoints(
   lists: List[],
   folders: Folder[],
 ): number {
+  // Phase 12: the task card's quick points win over every rule while set.
+  if (typeof task.pointsOverride === "number" && Number.isFinite(task.pointsOverride) && task.pointsOverride >= 0) {
+    return task.pointsOverride
+  }
   const isNextAction = taskIsNextAction(task, folders)
   let base = pointsRuleValue("list.defaultCompletionPoints")
   let resolvedFromPointsAttr = false

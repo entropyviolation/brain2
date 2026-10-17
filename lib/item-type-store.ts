@@ -22,6 +22,8 @@ import { withSecondBrainTypes } from "@/lib/second-brain-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withFilmType } from "@/lib/film-types"
+import type { RelationDef } from "@/lib/links"
+import { registerCustomRelations } from "@/lib/relation-registry"
 
 interface ItemTypeState {
   /** All types (built-in + user). Always includes the built-ins. */
@@ -40,6 +42,13 @@ interface ItemTypeState {
   seedFlightType: () => void
   /** Ensure the catalog Film type is registered (idempotent; additive). */
   seedFilmType: () => void
+  /** Custom link relations (vocabulary, not item data: writes are immediate). */
+  relations: RelationDef[]
+  /** Add new defs; ids already present are skipped. */
+  addRelations: (defs: RelationDef[]) => void
+  updateRelation: (def: RelationDef) => void
+  /** Archive instead of delete so old links keep a label. */
+  archiveRelation: (id: string) => void
 }
 
 /** Persist bump: system types always re-seed; catalog + user types keep stored edits. */
@@ -52,10 +61,36 @@ export function migrateItemTypeState(persisted: unknown, _version: number): Pick
   return { types: mergeTypeRegistry(types) }
 }
 
+function cleanRelations(value: unknown): RelationDef[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(
+    (r): r is RelationDef =>
+      !!r && typeof r === "object" && typeof r.id === "string" && typeof r.label === "string" && typeof r.inverse === "string",
+  )
+}
+
 export const useItemTypeStore = create<ItemTypeState>()(
   persist(
     (set, get) => ({
       types: getBuiltinItemTypes(),
+      relations: [],
+
+      addRelations: (defs) =>
+        set((state) => {
+          const have = new Set(state.relations.map((r) => r.id))
+          const fresh = defs.filter((d) => !have.has(d.id)).map((d) => ({ ...d, custom: true as const }))
+          return fresh.length ? { relations: [...state.relations, ...fresh] } : state
+        }),
+
+      updateRelation: (def) =>
+        set((state) => ({
+          relations: state.relations.map((r) => (r.id === def.id ? { ...r, ...def, custom: true as const } : r)),
+        })),
+
+      archiveRelation: (id) =>
+        set((state) => ({
+          relations: state.relations.map((r) => (r.id === id ? { ...r, archived: true as const } : r)),
+        })),
 
       addType: (type) =>
         set((state) => {
@@ -114,8 +149,17 @@ export const useItemTypeStore = create<ItemTypeState>()(
       migrate: migrateItemTypeState,
       // System types always come from code; catalog types keep persisted edits.
       onRehydrateStorage: () => (state) => {
-        if (state) state.types = mergeTypeRegistry(state.types ?? [])
+        if (state) {
+          state.types = mergeTypeRegistry(state.types ?? [])
+          state.relations = cleanRelations(state.relations)
+          registerCustomRelations(state.relations)
+        }
       },
     },
   ),
 )
+
+// Keep the pure registry in step with every store change (and backup restore).
+useItemTypeStore.subscribe((state, prev) => {
+  if (state.relations !== prev.relations) registerCustomRelations(state.relations ?? [])
+})
