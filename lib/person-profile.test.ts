@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  addressTextForPick,
   birthdaySentence,
   calendarSpan,
   cleanPersonProfile,
@@ -68,6 +69,38 @@ describe("person profile spans", () => {
     expect(birthdaySentence(2)).toBe("2 days until next birthday.")
     expect(birthdaySentence(0)).toBe("Birthday today.")
     expect(birthdaySentence(null)).toBe("No birthday yet.")
+  })
+
+  it("keeps map coordinates and parts on an address, and drops junk", () => {
+    expect(
+      cleanPersonProfile({
+        address: {
+          precision: "mailing",
+          text: " 1 Main St ",
+          lat: 37.77,
+          lng: -122.41,
+          parts: { city: " SF ", bogus: "x" } as never,
+          source: "photon",
+        },
+      }),
+    ).toEqual({
+      address: { precision: "mailing", text: "1 Main St", lat: 37.77, lng: -122.41, parts: { city: "SF" }, source: "photon" },
+    })
+    expect(
+      cleanPersonProfile({ address: { precision: "state", text: "CA", lat: Number.NaN, lng: 3 } })?.address,
+    ).toEqual({ precision: "state", text: "CA" })
+  })
+
+  it("stores a map pick at the chosen precision", () => {
+    const pick = {
+      label: "1 Main St, SoMa, San Francisco, CA, USA",
+      parts: { neighborhood: "SoMa", city: "San Francisco", state: "California", country: "USA" },
+    }
+    expect(addressTextForPick(pick, "mailing")).toBe(pick.label)
+    expect(addressTextForPick(pick, "neighborhood")).toBe("SoMa, San Francisco")
+    expect(addressTextForPick(pick, "state")).toBe("California, USA")
+    expect(addressTextForPick(pick, "country")).toBe("USA")
+    expect(addressTextForPick({ label: "Somewhere" }, "country")).toBe("Somewhere")
   })
 
   it("keeps a real biography and drops a blank one", () => {

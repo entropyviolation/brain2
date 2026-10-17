@@ -28,6 +28,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `menu-layer.ts` | Shared menu layer. Select and dropdown lists portal to `document.body` on this z-index so a sheet, frozen header, bar, or dialog cannot cover them |
 | `dropdown-menu.tsx` | Menus (Reviews header, etc.). Same menu layer as select |
 | `input.tsx` | Text and number inputs |
+| `address-suggest-input.tsx` | _Last mapped: 2026-10-16._ `AddressSuggestInput`: an isolated text field (local text, `onLive` per key, commit on blur / Enter) with live map search. 3+ characters, 300ms, `searchAddresses` (`lib/geo-address.ts`); ↑ ↓ Enter Esc; a pick fills parts (`withParts`) and goes to `onPick`, which returns the text to show. Used by the person Address field. Styles in `address-suggest-input.css`. |
 | `label.tsx` | Form labels |
 | `progress.tsx` | Progress bars (supports `indicatorClassName`) |
 | `select.tsx` | Select dropdowns. The list portals to `document.body` on the shared menu layer |

@@ -1,23 +1,37 @@
 /**
  * components/People/person-detail.tsx — Biography on a person
  *
- * Full name, nicknames, date met (with Est.), how long known, time since last
- * seen, an optional relation, Instagram, an address at the precision that is
- * known, standing notes, a dated notes log, an interaction log, and gift
- * notes. Close, when on, has a Gift ideas list in the Gift ideas folder.
- * That list is what "gift ideas" means. The notes stay on the person and are
- * not cleared. The birthday plaque
- * reads the birthday attribute and says how many days remain. The cake is
- * drawn here (milled silver, phosphor candle) so the plaque matches the house.
- * A later folder of cute PNGs, the same idea as habit gemstones and list orbs,
- * is a later step. This plaque does not load images.
+ * Reads top to bottom (3.1, `docs/PERSON_DETAIL_REDESIGN.md` §2):
+ * 1. Identity bay: the person's orb on a velvet well (click → orb picker,
+ *    writes `icon` on the draft) beside the birthday plaque, then one phosphor
+ *    readout strip: Known for · Last saw · the Close lamp key.
+ * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
+ *    Relation, Date met + Est., Instagram, Address.
+ * 3. Time together. 4. The host's `pipelines` slot (Company pens).
+ * 5. Interactions (`person-log.tsx`; feeds Last saw).
+ * 6. The Gift ideas key → a small popup with the list and quick notes
+ *    (`person-gift-ideas.tsx`).
+ *
+ * Standing and dated notes live in the Notes tab (`person-notes.tsx`). Close,
+ * when on, makes a Gift ideas list in the Gift ideas folder. The cake is drawn
+ * here (milled silver, phosphor candle) so the plaque matches the house.
+ * Text fields are isolated: each key goes to `onLive` (the host's
+ * `touchDraft`, no render) and blur / Enter commits through `onChange`. Every
+ * write merges from `readDraft()` so a second field keeps the first one's
+ * unrendered keys.
  */
 "use client"
 
-import { useMemo, useState } from "react"
-import { Label } from "@/components/ui/label"
-import { addGiftIdeaOnList, ensureGiftIdeasForPerson, findGiftIdeasList } from "@/lib/gift-ideas"
-import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { useMemo, useState, type ReactNode } from "react"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
+import { AddressSuggestInput } from "@/components/ui/address-suggest-input"
+import { iconFor } from "@/components/Icons/Icon"
+import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
+import { GiftIdeasKey } from "@/components/People/person-gift-ideas"
+import { Log } from "@/components/People/person-log"
+import { NicknameField } from "@/components/People/person-nicknames"
+import { ensureGiftIdeasForPerson } from "@/lib/gift-ideas"
+import { RELATION_WORD_KEYS } from "@/lib/person-relations"
 import { PERSON_ATTR } from "@/lib/person-types"
 import { COMPANY_SCOPE_ID, joinedCompanyPenIds } from "@/lib/people-i-know"
 import { personMinuteMasks } from "@/lib/person-time"
@@ -25,6 +39,7 @@ import { PersonTimeTogether } from "@/components/People/person-time-together"
 import {
   addressPlaceholder,
   addressPrecisionLabel,
+  addressTextForPick,
   birthdaySentence,
   daysUntilBirthday,
   knownForSentence,
@@ -35,21 +50,20 @@ import {
   presentPersonProfile,
   ymdFromDate,
   type AddressPrecision,
-  type PersonGiftIdea,
   type PersonInteraction,
   type PersonProfile,
 } from "@/lib/person-profile"
-import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { AttributeValue, Task } from "@/lib/types"
 import "./person-detail.css"
 
 const PRECISIONS: AddressPrecision[] = ["mailing", "neighborhood", "state", "country"]
-const RELATION_SUGGESTIONS = ["friend", "sister", "boyfriend"]
 
 export interface PersonDetailPatch {
   personProfile?: PersonProfile
   attributes?: Record<string, AttributeValue>
+  /** Orb image; `undefined` with the key present resets to the default orb. */
+  icon?: string
 }
 
 function newRowId(prefix: string): string {
@@ -94,10 +108,22 @@ function PersonCake() {
 export function PersonDetail({
   person,
   onChange,
+  onLive,
+  readDraft,
+  pipelines,
+  onNavigateToList,
   today = new Date(),
 }: {
   person: Task
   onChange: (patch: PersonDetailPatch) => void
+  /** Per-key draft write with no render (host `touchDraft`). */
+  onLive?: (patch: PersonDetailPatch) => void
+  /** Latest draft, including keys that have not rendered (host `getDraft`). */
+  readDraft?: () => Task | null
+  /** The host's Company pens editor, shown after Time together. */
+  pipelines?: ReactNode
+  /** The host's guarded list navigation, for the gift popup's Open list key. */
+  onNavigateToList?: (listId: string) => void
   today?: Date
 }) {
   const todayIso = localIsoDate(today)
@@ -120,75 +146,143 @@ export function PersonDetail({
   const lastSaw = [storedLast, trackedLast].filter(Boolean).sort().at(-1) as typeof storedLast
   const [precision, setPrecision] = useState<AddressPrecision>(profile?.address?.precision ?? "mailing")
   const shownPrecision = profile?.address?.precision ?? precision
+  const [orbOpen, setOrbOpen] = useState(false)
+  const [orbHost, setOrbHost] = useState<HTMLElement | null>(null)
+  const close = profile?.close === true
+  const address = profile?.address
+  const pin =
+    address && Number.isFinite(address.lat) && Number.isFinite(address.lng)
+      ? { lat: address.lat as number, lng: address.lng as number }
+      : null
+
+  // The draft ref, not the prop: the prop misses keys typed since the last render.
+  const latest = (): Task => {
+    const draft = readDraft?.()
+    return draft && draft.id === person.id ? draft : person
+  }
+  const current = (): PersonProfile | undefined => latest().personProfile
 
   const writeProfile = (next: PersonProfile) => {
     onChange({ personProfile: presentPersonProfile(next) })
   }
 
-  const writeAttribute = (id: string, value: string) => {
-    const attributes = { ...(person.attributes ?? {}) }
-    if (value) attributes[id] = value
-    else delete attributes[id]
-    onChange({ attributes })
+  const liveProfile = (next: PersonProfile) => {
+    onLive?.({ personProfile: presentPersonProfile(next) })
   }
 
-  const notes = profile?.noteLog ?? []
+  const attributesWith = (id: string, value: string) => {
+    const attributes = { ...(latest().attributes ?? {}) }
+    if (value) attributes[id] = value
+    else delete attributes[id]
+    return attributes
+  }
+
+  const writeAttribute = (id: string, value: string) => {
+    onChange({ attributes: attributesWith(id, value) })
+  }
+
   const interactions = profile?.interactions ?? []
   const gifts = profile?.giftIdeas ?? []
 
   return (
     <section className="person-detail" data-testid="person-detail" aria-label="Person">
-      <Label>Person</Label>
-      <div className="person-birthday">
-        <PersonCake />
-        <div className="person-birthday-copy">
-          <p className="person-birthday-count">{birthdaySentence(days)}</p>
-          <label>
-            Birthday
-            <input
-              type="date"
-              aria-label="Birthday"
-              value={birthday}
-              onChange={(event) => writeAttribute(PERSON_ATTR.birthday, event.target.value)}
-            />
-          </label>
+      <div className="person-identity">
+        <button
+          type="button"
+          className="person-orb"
+          data-orb
+          data-no95
+          aria-label="Change orb"
+          title="Change orb"
+          onClick={(event) => {
+            // Inside item detail, portal the picker into that dialog so it stacks on top.
+            const host = event.currentTarget.closest('[role="dialog"]')
+            setOrbHost(host instanceof HTMLElement ? host : null)
+            setOrbOpen(true)
+          }}
+        >
+          <img src={iconFor(person.id, person.icon)} alt="" draggable={false} />
+        </button>
+        <div className="person-birthday">
+          <PersonCake />
+          <div className="person-birthday-copy">
+            <p className="person-birthday-count">{birthdaySentence(days)}</p>
+            <label className="person-field">
+              Birthday
+              <input
+                type="date"
+                aria-label="Birthday"
+                value={birthday}
+                onChange={(event) => writeAttribute(PERSON_ATTR.birthday, event.target.value)}
+              />
+            </label>
+          </div>
         </div>
       </div>
 
+      <div className="person-readout-strip" role="group" aria-label="Readouts">
+        <span className="person-readout">
+          Known for {knownForSentence(profile?.dateMet, profile?.dateMetEstimated, todayIso)}
+        </span>
+        <span
+          className="person-readout"
+          title="Interactions marked Saw them, plus tracked time with a pen joined to this person."
+        >
+          Last saw {lastSawSentence(lastSaw, todayIso)}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          className="person-lamp"
+          aria-label="Close"
+          aria-checked={close}
+          data-on={close ? "true" : "false"}
+          title="Close makes a Gift ideas list. Turning it off leaves the list."
+          onClick={() => {
+            const next = !close
+            writeProfile({ ...current(), close: next ? true : undefined })
+            if (next) ensureGiftIdeasForPerson(person)
+          }}
+        >
+          <span className="person-lamp-bulb" aria-hidden />
+          Close
+        </button>
+      </div>
+
       <div className="person-grid">
-        <label>
+        <label className="person-field">
           Full name
-          <input
+          <IsolatedInput
             type="text"
             aria-label="Full name"
             value={profile?.fullName ?? ""}
-            onChange={(event) => writeProfile({ ...profile, fullName: event.target.value })}
-            onBlur={(event) => writeProfile({ ...profile, fullName: event.target.value.trim() })}
+            onLiveChange={(value) => liveProfile({ ...current(), fullName: value })}
+            onCommit={(value) => writeProfile({ ...current(), fullName: value.trim() })}
           />
         </label>
         <NicknameField
           nicknames={profile?.nicknames ?? []}
-          onChange={(nicknames) => writeProfile({ ...profile, nicknames })}
+          onChange={(nicknames) => writeProfile({ ...current(), nicknames })}
         />
-        <label>
+        <label className="person-field">
           Relation
-          <input
+          <IsolatedInput
             type="text"
             aria-label="Relation"
             list={`person-relation-${person.id}`}
             placeholder="friend, sister, boyfriend…"
             value={profile?.relation ?? ""}
-            onChange={(event) => writeProfile({ ...profile, relation: event.target.value })}
-            onBlur={(event) => writeProfile({ ...profile, relation: event.target.value.trim() })}
+            onLiveChange={(value) => liveProfile({ ...current(), relation: value })}
+            onCommit={(value) => writeProfile({ ...current(), relation: value.trim() })}
           />
           <datalist id={`person-relation-${person.id}`}>
-            {RELATION_SUGGESTIONS.map((suggestion) => (
+            {RELATION_WORD_KEYS.map((suggestion) => (
               <option key={suggestion} value={suggestion} />
             ))}
           </datalist>
         </label>
         <div className="person-date-met">
-          <label>
+          <label className="person-field">
             Date met
             <input
               type="date"
@@ -196,9 +290,9 @@ export function PersonDetail({
               value={profile?.dateMet ?? ""}
               onChange={(event) =>
                 writeProfile({
-                  ...profile,
+                  ...current(),
                   dateMet: event.target.value || undefined,
-                  dateMetEstimated: event.target.value ? profile?.dateMetEstimated : undefined,
+                  dateMetEstimated: event.target.value ? current()?.dateMetEstimated : undefined,
                 })
               }
             />
@@ -209,108 +303,106 @@ export function PersonDetail({
               aria-label="Date met is estimated"
               checked={profile?.dateMetEstimated === true}
               disabled={!profile?.dateMet}
-              onChange={(event) => writeProfile({ ...profile, dateMetEstimated: event.target.checked || undefined })}
+              onChange={(event) => writeProfile({ ...current(), dateMetEstimated: event.target.checked || undefined })}
             />
             Est.
           </label>
         </div>
-        <label>
+        <label className="person-field">
           Instagram
-          <input
-            type="text"
-            aria-label="Instagram"
-            placeholder="handle"
-            value={profile?.instagram ?? ""}
-            onChange={(event) => writeProfile({ ...profile, instagram: event.target.value })}
-            onBlur={(event) => writeProfile({ ...profile, instagram: normalizeInstagram(event.target.value) })}
-          />
+          <span className="person-adorned">
+            <span className="person-adorn" aria-hidden>
+              @
+            </span>
+            <IsolatedInput
+              type="text"
+              aria-label="Instagram"
+              placeholder="handle"
+              value={profile?.instagram ?? ""}
+              onLiveChange={(value) => liveProfile({ ...current(), instagram: value })}
+              onCommit={(value) => writeProfile({ ...current(), instagram: normalizeInstagram(value) })}
+            />
+            {profile?.instagram ? (
+              <a
+                className="person-adorn-link"
+                href={`https://instagram.com/${encodeURIComponent(profile.instagram)}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open @${profile.instagram} on Instagram`}
+                title="Open profile"
+              >
+                ↗
+              </a>
+            ) : null}
+          </span>
         </label>
-        <div className="person-address">
+        <div className="person-field person-address">
           <span>Address</span>
-          <select
-            aria-label="Address precision"
-            value={shownPrecision}
-            onChange={(event) => {
-              const next = event.target.value as AddressPrecision
-              setPrecision(next)
-              if (profile?.address?.text) {
-                writeProfile({ ...profile, address: { precision: next, text: profile.address.text } })
+          <div className="person-address-row">
+            <select
+              aria-label="Address precision"
+              value={shownPrecision}
+              onChange={(event) => {
+                const next = event.target.value as AddressPrecision
+                setPrecision(next)
+                const address = current()?.address
+                if (address?.text) writeProfile({ ...current(), address: { ...address, precision: next } })
+              }}
+            >
+              {PRECISIONS.map((item) => (
+                <option key={item} value={item}>
+                  {addressPrecisionLabel(item)}
+                </option>
+              ))}
+            </select>
+            <AddressSuggestInput
+              type="text"
+              aria-label="Address"
+              placeholder={addressPlaceholder(shownPrecision)}
+              value={profile?.address?.text ?? ""}
+              onLive={(value) => liveProfile({ ...current(), address: { precision: shownPrecision, text: value } })}
+              onCommit={(value) =>
+                writeProfile({ ...current(), address: { precision: shownPrecision, text: value } })
               }
-            }}
-          >
-            {PRECISIONS.map((item) => (
-              <option key={item} value={item}>
-                {addressPrecisionLabel(item)}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            aria-label="Address"
-            placeholder={addressPlaceholder(shownPrecision)}
-            value={profile?.address?.text ?? ""}
-            onChange={(event) =>
-              writeProfile({
-                ...profile,
-                address: { precision: shownPrecision, text: event.target.value },
-              })
-            }
-          />
+              onPick={(full) => {
+                const text = addressTextForPick(full, shownPrecision)
+                writeProfile({
+                  ...current(),
+                  address: {
+                    precision: shownPrecision,
+                    text,
+                    lat: full.lat,
+                    lng: full.lng,
+                    parts: full.parts,
+                    source: full.source,
+                  },
+                })
+                return text
+              }}
+            />
+            {pin ? (
+              <a
+                className="person-address-pin"
+                href={`https://www.openstreetmap.org/?mlat=${pin.lat}&mlon=${pin.lng}#map=15/${pin.lat}/${pin.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Open on the map"
+                title="Open on the map"
+                data-testid="person-address-pin"
+              >
+                <svg viewBox="0 0 12 16" width="12" height="16" aria-hidden>
+                  <path d="M6 15s5-5.6 5-9A5 5 0 0 0 1 6c0 3.4 5 9 5 9Z" fill="#050807" />
+                  <circle cx="6" cy="6" r="2" fill="#7dffc4" />
+                </svg>
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <label className="person-check">
-        <input
-          type="checkbox"
-          aria-label="Close"
-          checked={profile?.close === true}
-          onChange={(event) => {
-            const close = event.target.checked
-            writeProfile({ ...profile, close: close ? true : undefined })
-            if (close) ensureGiftIdeasForPerson(person)
-          }}
-        />
-        Close
-      </label>
-      <p className="person-detail-help">
-        Close makes a Gift ideas list for this person. Turning it off leaves that list in place.
-      </p>
-
-      <p className="person-readout">
-        Known for {knownForSentence(profile?.dateMet, profile?.dateMetEstimated, todayIso)}
-      </p>
-      <p className="person-readout">Last saw {lastSawSentence(lastSaw, todayIso)}</p>
-      <p className="person-detail-help">
-        Last saw reads interactions marked Saw them, plus Tracking time with a pen joined to this person — on a Company
-        block or ticked on a Social block. A stored block join from before still counts.
-      </p>
-
       <PersonTimeTogether person={person} todayIso={todayIso} />
 
-      <label>
-        Notes
-        <textarea
-          aria-label="Notes"
-          value={attributeText(person.attributes?.[PERSON_ATTR.notes])}
-          onChange={(event) => writeAttribute(PERSON_ATTR.notes, event.target.value)}
-        />
-      </label>
-
-      <Log
-        title="Dated notes"
-        rows={newestFirst(notes).map((note) => ({
-          id: note.id,
-          date: note.date,
-          text: note.text,
-        }))}
-        addLabel="Add note"
-        textLabel="Dated note"
-        onAdd={(date, text) =>
-          writeProfile({ ...profile, noteLog: [{ id: newRowId("pn"), date, text }, ...notes] })
-        }
-        onRemove={(id) => writeProfile({ ...profile, noteLog: notes.filter((note) => note.id !== id) })}
-        today={todayIso}
-      />
+      {pipelines}
 
       <Log
         title="Interactions"
@@ -326,7 +418,7 @@ export function PersonDetail({
         flagLabel="Saw them"
         onAdd={(date, text, saw) =>
           writeProfile({
-            ...profile,
+            ...current(),
             interactions: [
               saw ? { id: newRowId("pi"), date, text, saw: true } : { id: newRowId("pi"), date, text },
               ...interactions,
@@ -334,11 +426,11 @@ export function PersonDetail({
           })
         }
         onRemove={(id) =>
-          writeProfile({ ...profile, interactions: interactions.filter((row) => row.id !== id) })
+          writeProfile({ ...current(), interactions: interactions.filter((row) => row.id !== id) })
         }
         onFlag={(id, saw) =>
           writeProfile({
-            ...profile,
+            ...current(),
             interactions: interactions.map((row) =>
               row.id === id ? (saw ? { ...row, saw: true } : { id: row.id, date: row.date, text: row.text }) : row,
             ) as PersonInteraction[],
@@ -347,258 +439,23 @@ export function PersonDetail({
         today={todayIso}
       />
 
-      <GiftIdeasList personId={person.id} />
-
-      <GiftLog
+      <GiftIdeasKey
+        person={person}
         gifts={gifts}
-        onAdd={(text) => writeProfile({ ...profile, giftIdeas: [...gifts, { id: newRowId("pg"), text }] })}
-        onRemove={(id) => writeProfile({ ...profile, giftIdeas: gifts.filter((gift) => gift.id !== id) })}
-        onGiven={(id, given) =>
-          writeProfile({
-            ...profile,
-            giftIdeas: gifts.map((gift) =>
-              gift.id === id ? (given ? { ...gift, given: true } : { id: gift.id, text: gift.text }) : gift,
-            ),
-          })
-        }
+        onGiftsChange={(giftIdeas) => writeProfile({ ...current(), giftIdeas })}
+        onOpenList={onNavigateToList}
       />
-    </section>
-  )
-}
 
-function NicknameField({
-  nicknames,
-  onChange,
-}: {
-  nicknames: string[]
-  onChange: (nicknames: string[]) => void
-}) {
-  const [draft, setDraft] = useState("")
-  const add = () => {
-    const name = draft.trim()
-    if (!name || nicknames.some((other) => other.toLowerCase() === name.toLowerCase())) return
-    onChange([...nicknames, name])
-    setDraft("")
-  }
-  return (
-    <div>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          add()
+      <OrbPickerDialog
+        open={orbOpen}
+        current={person.icon}
+        container={orbHost}
+        onClose={() => setOrbOpen(false)}
+        onSelect={(icon) => {
+          onChange({ icon })
+          setOrbOpen(false)
         }}
-      >
-        <label>
-          Nickname
-          <input
-            type="text"
-            aria-label="Nickname"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-        </label>
-        <button type="submit">Add nickname</button>
-      </form>
-      {nicknames.length > 0 ? (
-        <ul className="person-nicknames">
-          {nicknames.map((name) => (
-            <li key={name} className="person-nickname">
-              {name}
-              <button type="button" aria-label={`Remove nickname ${name}`} onClick={() => onChange(nicknames.filter((other) => other !== name))}>
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  )
-}
-
-function Log({
-  title,
-  rows,
-  addLabel,
-  textLabel,
-  flagLabel,
-  onAdd,
-  onRemove,
-  onFlag,
-  today,
-}: {
-  title: string
-  rows: { id: string; date: string; text: string; flag?: boolean; flagLabel?: string }[]
-  addLabel: string
-  textLabel: string
-  flagLabel?: string
-  onAdd: (date: string, text: string, flag?: boolean) => void
-  onRemove: (id: string) => void
-  onFlag?: (id: string, flag: boolean) => void
-  today: string
-}) {
-  const [date, setDate] = useState(today)
-  const [text, setText] = useState("")
-  const [flag, setFlag] = useState(false)
-  return (
-    <section className="person-log" aria-label={title}>
-      <h3>{title}</h3>
-      {rows.length > 0 ? (
-        <ul className="person-log-list">
-          {rows.map((row) => (
-            <li key={row.id} className="person-log-row">
-              <span className="person-log-date">{row.date}</span>
-              <span className="person-log-text">{row.text}</span>
-              {row.flagLabel && onFlag ? (
-                <label className="person-check">
-                  <input
-                    type="checkbox"
-                    aria-label={`${row.flagLabel} ${row.text}`}
-                    checked={row.flag === true}
-                    onChange={(event) => onFlag(row.id, event.target.checked)}
-                  />
-                  {row.flagLabel}
-                </label>
-              ) : null}
-              <button type="button" aria-label={`Remove ${textLabel.toLowerCase()} ${row.text}`} onClick={() => onRemove(row.id)}>
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <form
-        className="person-log-add"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const trimmed = text.trim()
-          if (!trimmed) return
-          onAdd(date || today, trimmed, flagLabel ? flag : undefined)
-          setText("")
-          setFlag(false)
-        }}
-      >
-        <label>
-          Date
-          <input type="date" aria-label={`${title} date`} value={date} onChange={(event) => setDate(event.target.value)} />
-        </label>
-        <label>
-          {textLabel}
-          <input
-            type="text"
-            aria-label={textLabel}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-          />
-        </label>
-        {flagLabel ? (
-          <label className="person-check">
-            <input type="checkbox" aria-label={flagLabel} checked={flag} onChange={(event) => setFlag(event.target.checked)} />
-            {flagLabel}
-          </label>
-        ) : null}
-        <button type="submit">{addLabel}</button>
-      </form>
-    </section>
-  )
-}
-
-function GiftIdeasList({ personId }: { personId: string }) {
-  const lists = useTaskStore((s) => s.lists)
-  const tasks = useTaskStore((s) => s.tasks)
-  const list = findGiftIdeasList(lists, personId)
-  const [text, setText] = useState("")
-  if (!list) return null
-  const items = tasks.filter((task) => task.id !== personId && (task.lists ?? []).includes(list.id))
-  return (
-    <section className="person-log" aria-label="Gift ideas">
-      <h3>Gift ideas</h3>
-      <p className="person-detail-help">
-        {list.name}. This is the list in the Gift ideas folder. A rename of this person updates that name.
-      </p>
-      {items.length > 0 ? (
-        <ul className="person-log-list">
-          {items.map((item) => (
-            <li key={item.id} className="person-log-row" data-testid="gift-ideas-item">
-              <span className="person-log-text">{itemTitleOrUntitled(item, "Gift")}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <form
-        className="person-log-add"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const trimmed = text.trim()
-          if (!trimmed) return
-          addGiftIdeaOnList(personId, trimmed)
-          setText("")
-        }}
-      >
-        <label>
-          Gift idea
-          <input type="text" aria-label="Gift idea" value={text} onChange={(event) => setText(event.target.value)} />
-        </label>
-        <button type="submit">Add to gift ideas</button>
-      </form>
-    </section>
-  )
-}
-
-function GiftLog({
-  gifts,
-  onAdd,
-  onRemove,
-  onGiven,
-}: {
-  gifts: PersonGiftIdea[]
-  onAdd: (text: string) => void
-  onRemove: (id: string) => void
-  onGiven: (id: string, given: boolean) => void
-}) {
-  const [text, setText] = useState("")
-  return (
-    <section className="person-log" aria-label="Gift notes">
-      <h3>Gift notes</h3>
-      <p className="person-detail-help">
-        Quick notes kept on this person. They stay here when a Gift ideas list exists, and they are not that list.
-      </p>
-      {gifts.length > 0 ? (
-        <ul className="person-log-list">
-          {gifts.map((gift) => (
-            <li key={gift.id} className="person-log-row">
-              <span className="person-log-text">{gift.text}</span>
-              <label className="person-check">
-                <input
-                  type="checkbox"
-                  aria-label={`Given ${gift.text}`}
-                  checked={gift.given === true}
-                  onChange={(event) => onGiven(gift.id, event.target.checked)}
-                />
-                Given
-              </label>
-              <button type="button" aria-label={`Remove gift note ${gift.text}`} onClick={() => onRemove(gift.id)}>
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <form
-        className="person-log-add"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const trimmed = text.trim()
-          if (!trimmed) return
-          onAdd(trimmed)
-          setText("")
-        }}
-      >
-        <label>
-          Gift note
-          <input type="text" aria-label="Gift note" value={text} onChange={(event) => setText(event.target.value)} />
-        </label>
-        <button type="submit">Add gift note</button>
-      </form>
+      />
     </section>
   )
 }

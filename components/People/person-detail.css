@@ -49,10 +49,21 @@
   line-height: 1.35;
 }
 
+/* Biography grid: two columns of engraved nameplates (3.1). */
 .person-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.person-grid .person-address {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .person-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .person-detail label,
@@ -71,14 +82,27 @@
 .person-detail textarea,
 .person-log-add input[type="text"],
 .person-log-add input[type="date"] {
-  height: 28px;
+  box-sizing: border-box;
+  height: 32px;
   width: 100%;
+  padding: 0 10px;
   font-size: 13px;
+}
+
+/* Keep the calendar glyph inside the field. */
+.person-detail input[type="date"],
+.person-log-add input[type="date"] {
+  padding-right: 6px;
+}
+
+.person-detail select {
+  padding: 0 28px 0 10px;
 }
 
 .person-detail textarea {
   height: auto;
   min-height: 4.5rem;
+  padding: 8px 10px;
   resize: vertical;
 }
 
@@ -92,12 +116,12 @@
   flex: 1;
 }
 
-.person-est {
+.person-detail .person-est {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  height: 32px;
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -385,3 +409,330 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ---- Person field kit (2.1). Used by the Details layout (3.1). ---------- */
+
+/* Engraved nameplate over a field. */
+.person-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 10px;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  color: var(--id-nameplate, #2a2c2e);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Nickname chips sit inside one sunken field, with the typing input after them. */
+.person-chipfield {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 3px 6px 3px 10px;
+  background: #fff;
+  color: #000;
+  box-shadow: var(
+    --id-field,
+    inset -1px -1px #fff,
+    inset 1px 1px #808080,
+    inset -2px -2px #c0c0c0,
+    inset 2px 2px #000
+  );
+}
+
+.person-chipfield input[type="text"] {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  height: 24px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* A milled metal key, the same face as .id-btn. */
+.person-key {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 12px 5px;
+  border: none;
+  border-radius: var(--r-2, 2px);
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--id-key-face, #c8ccd2);
+  box-shadow: var(--id-key-ring, inset 1px 1px #fff, inset -1px -1px #808080);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.person-key[aria-pressed="true"] {
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+/* Phosphor readout strip, like the CRT title. */
+.person-readout-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 6px 10px;
+  background: #050807;
+  color: #7dffc4;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.45);
+  border-radius: var(--r-2, 2px);
+}
+
+/* Nameplate type stays on the label, not on the field inside it. */
+.person-field :is(input, select, textarea, button) {
+  font-variant: normal;
+  letter-spacing: normal;
+  text-shadow: none;
+}
+
+/* ---- Identity bay (3.1) ------------------------------------------------- */
+
+.person-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* The orb sits on a velvet well, the same object the Lists desktop shows. */
+.person-orb {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-2, 2px);
+  background: radial-gradient(circle at 50% 38%, #2b2e33 0%, #121417 62%, #070809 100%);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.8), inset -1px -1px 0 rgba(255, 255, 255, 0.18), 0 1px 0 #fff;
+  cursor: pointer;
+}
+
+.person-orb img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.person-orb:focus-visible {
+  outline: 2px solid #7dffc4;
+  outline-offset: 2px;
+}
+
+.person-readout-strip .person-readout {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+/* Close is a lamp key in the readout strip. */
+.person-lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(125, 255, 196, 0.35);
+  border-radius: var(--r-2, 2px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.person-lamp-bulb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1d2a24;
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.4);
+}
+
+.person-lamp[data-on="true"] .person-lamp-bulb {
+  background: #7dffc4;
+  box-shadow: 0 0 6px #7dffc4;
+}
+
+.person-lamp:focus-visible {
+  outline: 1px solid #7dffc4;
+  outline-offset: 2px;
+}
+
+/* ---- Biography fields (3.1) --------------------------------------------- */
+
+.person-address-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Instagram: @ inside the field, a small open key after it. */
+.person-adorned {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.person-adorn {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7075;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.person-detail .person-adorned input[type="text"] {
+  padding-left: 22px;
+}
+
+.person-adorn-link {
+  flex: none;
+  color: var(--id-nameplate, #2a2c2e);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+/* Beats the house field ring (`app/win95.css`): the chip field is the one well. */
+body.win95-app .person-detail .person-nickfield .person-chipfield input.person-chip-input[type="text"][aria-label] {
+  height: 24px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.person-chipfield .person-nickname {
+  font-variant: normal;
+  letter-spacing: normal;
+  text-shadow: none;
+}
+
+.person-chip-add {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: var(--id-key-face, #c8ccd2);
+  box-shadow: var(--id-key-ring, inset 1px 1px #fff, inset -1px -1px #808080);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.person-address-pin {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 32px;
+}
+
+/* ---- Gift ideas key + popup (person-gift-ideas.tsx, 3.4) ---------------- */
+
+.person-gift-key {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 34px;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+}
+
+.person-gift-key-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-gift-key-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--id-nameplate, #2a2c2e);
+}
+
+.person-gift-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.person-gift-dialog .person-log-row[data-done="true"] .person-log-text {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.person-gift-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--id-nameplate, #2a2c2e);
+  opacity: 0.75;
+}
+
+.person-gift-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.person-gift-rename {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+}
+
+.person-gift-rename input {
+  flex: 1 1 auto;
+  height: 28px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+/* ---- Notes tab (person-notes.tsx) --------------------------------------- */
+
+.person-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.person-notes-captured {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.person-notes-captured-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+

@@ -9,9 +9,10 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { memo, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { PEN_COLOR_OPEN_TITLE, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import {
   COMPANY_SCOPE_ID,
@@ -75,15 +76,23 @@ function PipelineRows({
         const who = rowName ?? personName
         let detail = pipeline.kind
         let color: string | undefined
+        // The pen a double-click opens: the row's pen, or the block's pen.
+        let penId: string | undefined
         if (isCompanyPenPipeline(pipeline)) {
           const pen = pens.find((row) => row.id === pipeline.penId)
           detail = pen ? pen.name : "This pen is no longer in Company"
           color = pen?.color
+          penId = pen?.id
         } else if (isCompanyTimeblockPipeline(pipeline)) {
           const entry = entries.find((row) => row.id === pipeline.entryId)
           detail = entry ? blockLabel(entry, pens) : "This timeblock is no longer on the grid"
-          color = entry ? pens.find((row) => row.id === entry.penId)?.color : undefined
+          const pen = entry ? pens.find((row) => row.id === entry.penId) : undefined
+          color = pen?.color
+          penId = pen?.id
         }
+        const openPen = penId
+          ? { onDoubleClick: penColorDoubleClick(COMPANY_SCOPE_ID, penId), title: PEN_COLOR_OPEN_TITLE, "data-opens-pen": "" }
+          : {}
         const kind =
           pipeline.kind === "company-pen"
             ? "Company pen"
@@ -92,8 +101,10 @@ function PipelineRows({
               : pipeline.kind
         return (
           <li key={pipeline.id} className="person-pipelines-row" data-testid="person-pipeline-row" data-kind={pipeline.kind}>
-            {color ? <span className="person-pipelines-swatch" style={{ background: color }} aria-hidden /> : null}
-            <span className="person-pipelines-label">
+            {color ? (
+              <span className="person-pipelines-swatch" style={{ background: color }} aria-hidden {...openPen} />
+            ) : null}
+            <span className="person-pipelines-label" {...openPen}>
               <span className="person-pipelines-kind">{kind}</span>
               {who ? ` · ${who}` : ""} — {detail}
             </span>
@@ -121,7 +132,7 @@ function useCompanyTracking() {
   return { pens, entries }
 }
 
-export function PersonPipelinesEditor(props: PersonPipelinesEditorProps) {
+function PersonPipelinesEditorView(props: PersonPipelinesEditorProps) {
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const updateTask = useTaskStore((s) => s.updateTask)
@@ -470,3 +481,24 @@ function ListEditor({
   )
 }
 
+
+/**
+ * Memoized (1.2): in person mode it renders only from the person's id, name
+ * and `personPipelines`, so a draft edit elsewhere skips it. `onChange` is
+ * ignored in the compare: hosts pass a fresh closure each render that only
+ * writes the draft (`touchDraft` + functional `setTask`).
+ */
+export const PersonPipelinesEditor = memo(PersonPipelinesEditorView, (a, b) => {
+  if (a.mode !== b.mode) return false
+  if (a.mode === "person" && b.mode === "person") {
+    return (
+      a.person.id === b.person.id &&
+      a.person.title === b.person.title &&
+      a.person.description === b.person.description &&
+      a.person.personPipelines === b.person.personPipelines
+    )
+  }
+  if (a.mode === "pen" && b.mode === "pen") return a.penId === b.penId
+  if (a.mode === "entry" && b.mode === "entry") return a.entryId === b.entryId
+  return true
+})

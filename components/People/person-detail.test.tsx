@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { PersonDetail } from "@/components/People/person-detail"
 import { findGiftIdeasFolder, findGiftIdeasList } from "@/lib/gift-ideas"
 import { createListItem } from "@/lib/item-utils"
@@ -32,7 +33,7 @@ describe("PersonDetail", () => {
     resetAllStores()
   })
 
-  it("shows days until the birthday beside a pixel cake, and edits birthday and standing notes once", () => {
+  it("shows days until the birthday beside a pixel cake, edits the birthday, and leaves notes to the Notes tab", () => {
     render(
       <Biography
         person={person({
@@ -50,8 +51,9 @@ describe("PersonDetail", () => {
     fireEvent.change(screen.getByLabelText("Birthday"), { target: { value: "1990-10-10" } })
     expect(screen.getByText("Birthday today.")).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText("Notes"), { target: { value: "Brings soup on Sundays" } })
-    expect(screen.getByLabelText("Notes")).toHaveValue("Brings soup on Sundays")
+    // Standing and dated notes moved to the Notes tab (plan 3.3).
+    expect(screen.queryByLabelText("Notes")).not.toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: "Dated notes" })).not.toBeInTheDocument()
   })
 
   it("keeps a name, an estimated date met, an Instagram handle, and an address at the chosen precision", () => {
@@ -115,11 +117,8 @@ describe("PersonDetail", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Saw them Called" }))
     expect(screen.getByText("Last saw 1 day ago.")).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText("Dated notes date"), { target: { value: "2026-10-01" } })
-    fireEvent.change(screen.getByLabelText("Dated note"), { target: { value: "Brought soup" } })
-    fireEvent.click(screen.getByRole("button", { name: "Add note" }))
-    expect(screen.getByText("Brought soup")).toBeInTheDocument()
-
+    // Gift notes moved into the Gift ideas popup (plan 3.4).
+    fireEvent.click(screen.getByTestId("gift-ideas-key"))
     fireEvent.change(screen.getByLabelText("Gift note"), { target: { value: "Notebook" } })
     fireEvent.click(screen.getByRole("button", { name: "Add gift note" }))
     fireEvent.click(screen.getByRole("checkbox", { name: "Given Notebook" }))
@@ -128,7 +127,7 @@ describe("PersonDetail", () => {
 
   it("keeps an optional relation, and Close creates a gift list that stays when Close is turned off", () => {
     render(<Biography person={person()} />)
-    expect(screen.queryByRole("region", { name: "Gift ideas" })).not.toBeInTheDocument()
+    expect(screen.getByTestId("gift-ideas-key")).toHaveTextContent("Start gift ideas")
 
     fireEvent.change(screen.getByLabelText("Relation"), { target: { value: "sister" } })
     expect(screen.getByLabelText("Relation")).toHaveValue("sister")
@@ -138,6 +137,9 @@ describe("PersonDetail", () => {
     expect(list?.name).toBe("Gift ideas for Ada")
     expect(list?.giftIdeasPersonId).toBe("ada")
     expect(findGiftIdeasFolder(useTaskStore.getState().folders)?.listIds).toContain(list?.id)
+    expect(screen.getByTestId("gift-ideas-key")).toHaveTextContent("Gift ideas for Ada · 0")
+
+    fireEvent.click(screen.getByTestId("gift-ideas-key"))
     expect(screen.getByRole("region", { name: "Gift ideas" })).toBeInTheDocument()
     expect(screen.getByRole("region", { name: "Gift notes" })).toBeInTheDocument()
 
@@ -148,8 +150,116 @@ describe("PersonDetail", () => {
       true,
     )
 
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
     fireEvent.click(screen.getByLabelText("Close"))
     expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.id).toBe(list?.id)
-    expect(screen.getByRole("region", { name: "Gift ideas" })).toBeInTheDocument()
+    expect(screen.getByTestId("gift-ideas-key")).toHaveTextContent("Gift ideas for Ada · 1")
+  })
+
+  it("starts a gift list from the key without turning Close on, renames it, and opens it", async () => {
+    const user = userEvent.setup({ delay: null })
+    const onNavigateToList = vi.fn()
+    function Host() {
+      const [p, setP] = useState(person())
+      return (
+        <PersonDetail
+          person={p}
+          today={TODAY}
+          onChange={(patch) => setP((prev) => ({ ...prev, ...patch }))}
+          onNavigateToList={onNavigateToList}
+        />
+      )
+    }
+    render(<Host />)
+    await user.click(screen.getByTestId("gift-ideas-key"))
+    const list = findGiftIdeasList(useTaskStore.getState().lists, "ada")
+    expect(list?.name).toBe("Gift ideas for Ada")
+    expect(screen.getByRole("switch", { name: "Close", hidden: true })).toHaveAttribute("aria-checked", "false")
+
+    await user.click(screen.getByRole("button", { name: "Rename" }))
+    const field = screen.getByLabelText("List name")
+    await user.clear(field)
+    await user.type(field, "Ada birthday{Enter}")
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.name).toBe("Ada birthday")
+
+    await user.click(screen.getByRole("button", { name: "Open list" }))
+    expect(onNavigateToList).toHaveBeenCalledWith(list?.id)
+    expect(screen.queryByRole("region", { name: "Gift notes" })).not.toBeInTheDocument()
+  })
+
+  it("reads as one biography: orb, birthday, readouts, fields, time, pens slot, interactions, gifts", () => {
+    render(
+      <PersonDetail person={person()} today={TODAY} onChange={vi.fn()} pipelines={<div data-testid="pens-slot" />} />,
+    )
+    const order = [
+      screen.getByRole("button", { name: "Change orb" }),
+      screen.getByLabelText("Birthday"),
+      screen.getByRole("switch", { name: "Close" }),
+      screen.getByLabelText("Full name"),
+      screen.getByLabelText("Address"),
+      screen.getByTestId("person-time"),
+      screen.getByTestId("pens-slot"),
+      screen.getByRole("region", { name: "Interactions" }),
+      screen.getByTestId("gift-ideas-key"),
+    ]
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
+  it("adds nicknames with Enter or a comma and removes the last with Backspace", async () => {
+    const user = userEvent.setup({ delay: null })
+    render(<Biography person={person()} />)
+    const field = screen.getByLabelText("Nickname")
+    await user.type(field, "Ace{Enter}")
+    await user.type(field, "Lady A,")
+    expect(screen.getByText("Ace")).toBeInTheDocument()
+    expect(screen.getByText("Lady A")).toBeInTheDocument()
+    await user.type(field, "{Backspace}")
+    expect(screen.queryByText("Lady A")).not.toBeInTheDocument()
+    expect(screen.getByText("Ace")).toBeInTheDocument()
+  })
+
+  it("opens the orb picker from the orb well and writes the pick on the draft", async () => {
+    const user = userEvent.setup({ delay: null })
+    const onChange = vi.fn()
+    render(<PersonDetail person={person()} today={TODAY} onChange={onChange} />)
+    const well = screen.getByRole("button", { name: "Change orb" })
+    expect(well.querySelector("img")?.getAttribute("src")).toBeTruthy()
+    await user.click(well)
+    expect(await screen.findByText("Choose an Icon")).toBeInTheDocument()
+    const orb = document.querySelector("[role=dialog] img") as HTMLElement
+    await user.click(orb.closest("button") ?? orb)
+    expect(onChange).toHaveBeenCalledWith({ icon: expect.any(String) })
+  })
+
+  it("types into a name without writing the draft per key, then commits once on blur", async () => {
+    const user = userEvent.setup({ delay: null })
+    const onChange = vi.fn()
+    const onLive = vi.fn()
+    let draft: Task = person()
+    render(
+      <PersonDetail
+        person={person()}
+        today={TODAY}
+        onChange={onChange}
+        onLive={(patch) => {
+          onLive(patch)
+          draft = { ...draft, ...patch }
+        }}
+        readDraft={() => draft}
+      />,
+    )
+    await user.type(screen.getByLabelText("Full name"), "Elijah ")
+    expect(onLive).toHaveBeenCalledTimes(7)
+    expect(onChange).not.toHaveBeenCalled()
+    expect(draft.personProfile?.fullName).toBe("Elijah ")
+
+    await user.type(screen.getByLabelText("Relation"), "friend")
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0][0].personProfile.fullName).toBe("Elijah")
+    // The second field merged from the live draft, so the name kept.
+    expect(draft.personProfile?.fullName).toBe("Elijah ")
+    expect(draft.personProfile?.relation).toBe("friend")
   })
 })

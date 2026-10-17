@@ -5,8 +5,10 @@
  * creates one Lists folder named Gift ideas (adopted by id, by
  * `giftIdeasFolder`, or by that name) and a list inside it named
  * "Gift ideas for {item title}". The list is tied with `giftIdeasPersonId`,
- * so a rename follows the person and two people with the same title do not
- * share a list.
+ * so two people with the same title do not share a list. The name follows a
+ * person rename only while it is still the automatic one
+ * (`giftIdeasAutoName`, or a legacy "Gift ideas for …" name). A name the
+ * person typed is kept.
  *
  * Turning Close off does not delete the list. Deleting the folder or a
  * person's list is allowed: they are ordinary Lists records, not a second
@@ -54,6 +56,14 @@ export function findGiftIdeasList(lists: List[], personId: string): List | undef
   )
 }
 
+const LEGACY_AUTO_PREFIX = "gift ideas for "
+
+/** True when Brain2 may rewrite this list's name: it still has the automatic name. */
+export function giftIdeasNameIsAuto(list: Pick<List, "name" | "giftIdeasAutoName">): boolean {
+  if (list.giftIdeasAutoName !== undefined) return list.name === list.giftIdeasAutoName
+  return list.name.trim().toLowerCase().startsWith(LEGACY_AUTO_PREFIX)
+}
+
 function ensureGiftIdeasFolder(): string {
   const store = useTaskStore.getState()
   const existing = findGiftIdeasFolder(store.folders)
@@ -93,8 +103,11 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
   let listId: string
   if (existing) {
     listId = existing.id
-    if (existing.name !== title || existing.giftIdeasPersonId !== person.id) {
-      store.updateList({ ...existing, name: title, giftIdeasPersonId: person.id })
+    const auto = giftIdeasNameIsAuto(existing)
+    const name = auto ? title : existing.name
+    const autoName = auto ? title : existing.giftIdeasAutoName
+    if (existing.name !== name || existing.giftIdeasPersonId !== person.id || existing.giftIdeasAutoName !== autoName) {
+      store.updateList({ ...existing, name, giftIdeasPersonId: person.id, giftIdeasAutoName: autoName })
     }
   } else {
     listId = giftIdeasListId(person.id)
@@ -106,6 +119,7 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
       itemLabel: "gift",
       scheduleable: false,
       giftIdeasPersonId: person.id,
+      giftIdeasAutoName: title,
       detailPanels: ["details"],
       description:
         "Gift ideas for this person. Close created this list. Turning Close off leaves it here. A copy of this list does not stay tied to the person.",
@@ -115,14 +129,27 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
   return listId
 }
 
-/** Rename an existing list after the person's item title changes. Does not create one. */
+/**
+ * Rename an existing list after the person's item title changes. Does not
+ * create one. A name the person typed is left alone.
+ */
 export function renameGiftIdeasList(person: Pick<Task, "id" | "title" | "description">): void {
   const store = useTaskStore.getState()
   const existing = findGiftIdeasList(store.lists, person.id)
-  if (!existing) return
+  if (!existing || !giftIdeasNameIsAuto(existing)) return
   const title = giftIdeasListTitle(itemTitleOrUntitled(person))
-  if (existing.name === title) return
-  store.updateList({ ...existing, name: title })
+  if (existing.name === title && existing.giftIdeasAutoName === title) return
+  store.updateList({ ...existing, name: title, giftIdeasAutoName: title })
+}
+
+/** The person renames their Gift ideas list. Empty text is ignored. */
+export function renameGiftIdeasListByHand(personId: string, name: string): void {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  const store = useTaskStore.getState()
+  const existing = findGiftIdeasList(store.lists, personId)
+  if (!existing || existing.name === trimmed) return
+  store.updateList({ ...existing, name: trimmed })
 }
 
 /**
