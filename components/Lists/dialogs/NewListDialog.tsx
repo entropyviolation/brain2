@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { isExplicitlyScheduleable } from "@/lib/scheduling"
 import { parseBulkCreateNames } from "@/lib/lists-duplicate"
 import { BulkNamesField, PlacementModeRadios, ScheduleableSwitch } from "./new-dialog-fields"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export interface NewListFields {
   name: string
@@ -152,7 +153,7 @@ export function NewListDialog({
           {!bulkMode && (
             <div className="space-y-2">
               <Label htmlFor="category-template">Item template</Label>
-              <select
+              <NativeSelect
                 id="category-template"
                 className="w-full border rounded-md h-9 px-2 bg-background text-sm"
                 value={template}
@@ -163,7 +164,7 @@ export function NewListDialog({
                     {t.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <p className="text-xs text-muted-foreground">
                 Gives items in this list a starting set of attributes (e.g. price &amp; store, or author &amp; pages). Editable later.
               </p>

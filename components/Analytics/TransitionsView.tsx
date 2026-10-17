@@ -15,6 +15,7 @@ import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-ran
 import { CanvasTitle, StudioReadout } from "./studio-kit"
 import { AlluvialChart } from "./studio-plots"
 import { penTransitionMatrix } from "./signal-stats"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function TransitionsView() {
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -53,13 +54,13 @@ export function TransitionsView() {
         </div>
         <label className="an-studio-field">
           <span>Scope</span>
-          <select value={scope.id} aria-label="Tracking scope" onChange={(e) => setScopeId(e.target.value)}>
+          <NativeSelect value={scope.id} aria-label="Tracking scope" onChange={(e) => setScopeId(e.target.value)}>
             {scopes.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </header>
 

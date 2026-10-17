@@ -11,6 +11,7 @@
 "use client"
 
 import { useState } from "react"
+import { NativeSelect } from "@/components/ui/native-select"
 import { guessReversePhrase } from "@/components/ItemDetail/links/relation-phrase"
 import { createRelationPair } from "@/lib/relation-registry"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -93,25 +94,25 @@ export function NewRelationForm({
       </button>
       <label className="rl-new-field">
         From
-        <select className="rl-field" aria-label="From type" value={fromType} onChange={(e) => setFromType(e.target.value)}>
+        <NativeSelect className="rl-field" aria-label="From type" value={fromType} onChange={(e) => setFromType(e.target.value)}>
           <option value="">Any type</option>
           {types.map((type) => (
             <option key={type.id} value={type.id}>
               {type.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="rl-new-field">
         To
-        <select className="rl-field" aria-label="To type" value={toType} onChange={(e) => setToType(e.target.value)}>
+        <NativeSelect className="rl-field" aria-label="To type" value={toType} onChange={(e) => setToType(e.target.value)}>
           <option value="">Any type</option>
           {types.map((type) => (
             <option key={type.id} value={type.id}>
               {type.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <div className="rl-new-foot">
         <button type="button" className="rl-key" onClick={onCancel}>

@@ -146,7 +146,8 @@ meaningful on its own.
 | `MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
 | `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
 | `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
-| `ItemTypesLibrary.tsx` | Type mosaic, sort, drill, Open in Lists. |
+| `ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
+| `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. Sheet, merge, schematic are **Planned** (L2.2–L2.4). |
 | `ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
 | `AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
 | `LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |

@@ -27,6 +27,7 @@ import { withOperationType } from "@/lib/operation-types"
 import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
+import { withLocationType } from "@/lib/location-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
 import { withPersonType } from "@/lib/person-types"
@@ -77,7 +78,7 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   return withPersonType(
     withCatalogTypes(
       withFilmType(
-        withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))),
+        withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes()))))),
       ),
     ),
   )

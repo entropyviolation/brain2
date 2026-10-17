@@ -26,6 +26,7 @@ import { quarterLabel, taskTouchesQuarter } from "@/lib/seasons"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, isThinSample, periodKeysFromDateKeys, thinWindowSentence } from "./analytics-range"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const GRAINS: { value: PlanPeriod; label: string }[] = [
   { value: "day", label: "Day" },
@@ -108,7 +109,7 @@ export function PlanVsReality() {
   return (
     <div className="an-canvas an-stack">
       <div className="an-studio-tools">
-        <select
+        <NativeSelect
           className="an-chip"
           value={period}
           aria-label="Plan grain"
@@ -124,8 +125,8 @@ export function PlanVsReality() {
               {p.label}
             </option>
           ))}
-        </select>
-        <select
+        </NativeSelect>
+        <NativeSelect
           className="an-chip"
           value={activeKey}
           aria-label="Plan period"
@@ -139,7 +140,7 @@ export function PlanVsReality() {
                 {periodKeyLabel(period, k)}
               </option>
             ))}
-        </select>
+        </NativeSelect>
         <span className="an-canvas-kicker">inside the {label}</span>
         <span className="an-n">
           n = {plannedPeriods} planned {period}

@@ -47,15 +47,6 @@ export function findGiftIdeasFolder(folders: Folder[]): Folder | undefined {
   )
 }
 
-/**
- * Still carrying the name Brain2 wrote. A list from before `giftIdeasAutoName`
- * counts as automatic while its name still reads "Gift ideas for …".
- */
-export function giftIdeasNameIsAuto(list: Pick<List, "name" | "giftIdeasAutoName">): boolean {
-  if (list.giftIdeasAutoName !== undefined) return list.name === list.giftIdeasAutoName
-  return /^gift ideas for /i.test(list.name.trim())
-}
-
 /** The list tied to this person. Title is not an identity. */
 export function findGiftIdeasList(lists: List[], personId: string): List | undefined {
   if (!personId) return undefined
@@ -123,7 +114,6 @@ export function ensureGiftIdeasForPerson(person: Pick<Task, "id" | "title" | "de
     store.addList({
       id: listId,
       name: title,
-      giftIdeasAutoName: title,
       color: "#b45309",
       createdAt: new Date(),
       itemLabel: "gift",

@@ -13,11 +13,12 @@
 import { useMemo, useState } from "react"
 import { LinkComposer } from "@/components/ItemDetail/links/LinkComposer"
 import { LinkConstellation } from "@/components/ItemDetail/links/LinkConstellation"
-import { LinkLedger } from "@/components/ItemDetail/links/LinkLedger"
+import { LinkLedger, visibleEdges } from "@/components/ItemDetail/links/LinkLedger"
+import { useLinkItems } from "@/components/ItemDetail/links/link-items"
 import { itemLinkTypeId } from "@/lib/item-types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import { egoEdges, secondRing, type EgoEdge } from "@/lib/link-graph"
+import { egoEdges, type EgoEdge } from "@/lib/link-graph"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { derivedSelfEdges } from "@/lib/self-relations"
 import { useTaskStore } from "@/lib/task-store"
@@ -34,7 +35,7 @@ interface RichLinksPanelProps {
   onOpenItem: (id: string) => void
 }
 
-/** Edges for an item's Links tab (also used for the tab key's count). */
+/** Edges for an item's Links tab, dismissed suggestions left out (also the tab key's count). */
 export function useItemEdges(task: Task | null): EgoEdge[] {
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
@@ -42,68 +43,58 @@ export function useItemEdges(task: Task | null): EgoEdge[] {
   const relations = useItemTypeStore((s) => s.relations)
   return useMemo(() => {
     if (!task) return []
-    const derived = itemShowsPersonPipelines(task, lists)
-      ? derivedSelfEdges(task, tasks, task.dismissedLinkSuggestions)
-      : []
-    return egoEdges(task, tasks, derived)
+    const derived = itemShowsPersonPipelines(task, lists) ? derivedSelfEdges(task, tasks) : []
+    return visibleEdges(egoEdges(task, tasks, derived), task.dismissedLinkSuggestions)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task, tasks, lists, relations])
 }
 
 export function RichLinksPanel({ task, editable = true, addLink, removeLink, writeDraft, onOpenItem }: RichLinksPanelProps) {
-  const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const types = useItemTypeStore((s) => s.types)
+  const { tasks, facts, factsFor } = useLinkItems()
   const edges = useItemEdges(task)
-  const [activeKey, setActiveKey] = useState<string | null>(null)
-  const [showSecondRing, setShowSecondRing] = useState(false)
-  const byId = useMemo(() => {
-    const map = new Map(tasks.map((t) => [t.id, t]))
-    map.set(task.id, task)
-    return map
-  }, [tasks, task])
-  const ring = useMemo(() => secondRing(task.id, edges, tasks), [task.id, edges, tasks])
-  const sourceTypeId = itemLinkTypeId(task, lists)
-  const typeName = (item: Task) => {
-    const id = itemLinkTypeId(item, lists)
-    return types.find((type) => type.id === id)?.name ?? id
-  }
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [flashKey, setFlashKey] = useState<string | null>(null)
+  const fromTypeId = itemLinkTypeId(task, lists)
+  const fromTypeName = types.find((type) => type.id === fromTypeId)?.name ?? fromTypeId
+  const title = itemTitleOrUntitled(task)
 
   return (
     <div className="rl" data-testid="rich-links">
       <LinkConstellation
-        center={task}
+        center={{ id: task.id, title, icon: task.icon }}
         edges={edges}
-        secondRing={ring}
-        showSecondRing={showSecondRing}
-        onToggleSecondRing={() => setShowSecondRing((v) => !v)}
-        byId={byId}
-        activeKey={activeKey}
-        onActive={setActiveKey}
-        onOpenItem={onOpenItem}
+        factsFor={factsFor}
+        allTasks={tasks}
+        selectedKey={selectedKey}
+        onSelect={setSelectedKey}
+        onOpen={onOpenItem}
       />
       {editable ? (
         <LinkComposer
-          sourceId={task.id}
-          sourceTitle={itemTitleOrUntitled(task)}
-          sourceTypeId={sourceTypeId}
-          existing={(task.links ?? []).map((link) => ({ relation: link.relation, targetId: link.targetId }))}
+          centerId={task.id}
+          centerTitle={title}
+          fromTypeId={fromTypeId}
+          fromTypeName={fromTypeName}
+          edges={edges}
+          tasks={tasks}
+          facts={facts}
           onAdd={addLink}
+          onDuplicate={setFlashKey}
         />
       ) : null}
       <LinkLedger
         edges={edges}
-        byId={byId}
-        typeName={typeName}
-        activeKey={activeKey}
-        onActive={setActiveKey}
-        editable={editable}
-        onOpenItem={onOpenItem}
+        factsFor={factsFor}
+        selectedKey={selectedKey}
+        flashKey={flashKey}
+        onSelect={setSelectedKey}
+        onOpen={onOpenItem}
         onRemove={removeLink}
-        onConfirm={(edge) => addLink(edge.relation, edge.otherId)}
-        onDismiss={(edge) =>
-          writeDraft({ dismissedLinkSuggestions: [...(task.dismissedLinkSuggestions ?? []), edge.key] })
-        }
+        onConfirm={addLink}
+        onPin={addLink}
+        onDismiss={(key) => writeDraft({ dismissedLinkSuggestions: [...(task.dismissedLinkSuggestions ?? []), key] })}
       />
     </div>
   )

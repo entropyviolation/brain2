@@ -13,6 +13,7 @@ import { friendRewardPoints } from "@/lib/friend-reward"
 import { sourceMixPercents, titleLoveMatchCount } from "@/lib/friend-stats"
 import { FRIEND_PRESETS } from "@/components/friend-details/useFriendDraft"
 import type { List } from "@/lib/types"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type FaderKey = "habitWeight" | "todoWeight" | "nextActionsWeight" | "urgencyBias" | "loveYouRate" | "whimRate" | "rewardScale" | "suggestionRate"
 
@@ -259,7 +260,7 @@ export function FriendDetailsEqualizer({
             )
           })}
         </ul>
-        <select aria-label="Add a favorite list" value="" onChange={(event) => addList(event.target.value)}>
+        <NativeSelect aria-label="Add a favorite list" value="" onChange={(event) => addList(event.target.value)}>
           <option value="">{lists.length ? "Add a list…" : "No lists yet"}</option>
           {lists
             .filter((list) => draft.listBias[list.id] == null)
@@ -268,7 +269,7 @@ export function FriendDetailsEqualizer({
                 {list.name}
               </option>
             ))}
-        </select>
+        </NativeSelect>
         <p className="friend-tray-note">Each list has a 0–100 mark. Higher marks are offered more often.</p>
       </div>
     </fieldset>

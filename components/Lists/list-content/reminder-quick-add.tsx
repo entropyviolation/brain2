@@ -11,6 +11,7 @@ import {
   type ReminderQuickWhenId,
   type ReminderRepeat,
 } from "@/lib/reminders"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export type ReminderQuickAddProps = {
   /** Lists add-row: close the composer. Shell popup may omit. */
@@ -84,7 +85,7 @@ export function ReminderQuickAdd({
   const inputClass = shell ? undefined : "fm-input"
   const btnClass = shell ? "hpp-key-go" : "fm-btn fm-btn-sm"
   const repeatSelect = (
-    <select
+    <NativeSelect
       className={inputClass}
       aria-label="Repeat"
       value={repeat}
@@ -95,7 +96,7 @@ export function ReminderQuickAdd({
           {option.label}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   )
 
   if (!shell) {

@@ -25,6 +25,7 @@ import { iconFor } from "@/components/Icons"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { ModuleViewEditor } from "./ModuleViewEditor"
 import { ModuleListsPanel } from "./ModuleListsPanel"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -201,7 +202,7 @@ export function ModuleSettingsDialog({
               <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                 <div className="space-y-1">
                   <Label className="text-[10px]">Source list</Label>
-                  <select
+                  <NativeSelect
                     aria-label="Plan sync list"
                     className={SELECT_CLS}
                     value={draft.planSync.categoryId}
@@ -213,11 +214,11 @@ export function ModuleSettingsDialog({
                         {c.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Date attribute</Label>
-                  <select
+                  <NativeSelect
                     aria-label="Plan sync date attribute"
                     className={SELECT_CLS}
                     value={draft.planSync.dateAttrId}
@@ -229,11 +230,11 @@ export function ModuleSettingsDialog({
                         {a.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Status attribute (optional)</Label>
-                  <select
+                  <NativeSelect
                     aria-label="Plan sync status attribute"
                     className={SELECT_CLS}
                     value={draft.planSync.statusAttrId ?? ""}
@@ -247,7 +248,7 @@ export function ModuleSettingsDialog({
                         {a.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Status value (optional)</Label>

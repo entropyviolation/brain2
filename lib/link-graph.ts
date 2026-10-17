@@ -154,3 +154,8 @@ export function secondRing(
   }
   return out
 }
+
+/** The Links tab key's count: real edges only, suggestions left out. */
+export function edgeCount(edges: readonly EgoEdge[]): number {
+  return edges.filter((e) => e.direction !== "derived").length
+}

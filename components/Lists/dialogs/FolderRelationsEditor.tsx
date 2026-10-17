@@ -16,6 +16,7 @@ import { folderFor } from "@/components/Icons/Icon"
 import { iconFor } from "@/components/Lists/lib/icon-utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function AutoMark({ show }: { show: boolean }) {
   if (!show) return null
@@ -79,7 +80,7 @@ export function FolderRelationsEditor({
 
       <div className="space-y-1.5">
         <Label className="text-xs">Parent folder</Label>
-        <select
+        <NativeSelect
           className="w-full border rounded-md h-9 px-2 bg-background text-sm"
           aria-label="Parent folder"
           value={folder.parentFolderId || ""}
@@ -95,7 +96,7 @@ export function FolderRelationsEditor({
               {isAutoCreatedFolder(f) ? " (auto)" : ""}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {parent && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             Current: {parent.name}

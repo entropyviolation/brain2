@@ -13,6 +13,7 @@ import { createListItem, withCategoryDefaults, getItemLabel, itemTitle } from "@
 import type { ModuleView } from "@/lib/modules-store"
 import type { Task } from "@/lib/types"
 import "./trip-checklists.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const PACK_KINDS = ["Clothes", "Toiletries", "Electronics", "Documents", "Other"] as const
 
@@ -104,13 +105,13 @@ export function PackingChecklistView({
           placeholder={`Add ${label}…`}
           className="h-9 max-w-xs"
         />
-        <select className="h-9 px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <NativeSelect className="h-9 px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
           {PACK_KINDS.map((k) => (
             <option key={k} value={k}>
               {k}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <Button size="sm" onClick={add} disabled={!desc.trim()}>
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
@@ -243,11 +244,11 @@ export function PreTripChecklistView({
           placeholder={`Add ${label}…`}
           className="h-9 max-w-xs"
         />
-        <select className="h-9 px-2 text-sm" value={priority} onChange={(e) => setPriority(e.target.value)}>
+        <NativeSelect className="h-9 px-2 text-sm" value={priority} onChange={(e) => setPriority(e.target.value)}>
           <option value="High">High</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
-        </select>
+        </NativeSelect>
         <Button size="sm" onClick={add} disabled={!desc.trim()}>
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>

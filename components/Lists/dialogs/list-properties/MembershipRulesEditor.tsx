@@ -27,6 +27,7 @@ import {
   previewMembershipRules,
 } from "@/lib/list-membership-rules"
 import { HabitBarRocker } from "@/components/Home/Habits/habit-led-switch"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type Kind = MembershipCondition["kind"]
 
@@ -126,11 +127,11 @@ export function MembershipRulesEditor({
       case "onLists":
         return (
           <span className="lp-cond-fields">
-            <select className="lp-field lp-sel" value={c.mode} onChange={(e) => set({ ...c, mode: e.target.value as typeof c.mode })} aria-label="List match">
+            <NativeSelect className="lp-field lp-sel" value={c.mode} onChange={(e) => set({ ...c, mode: e.target.value as typeof c.mode })} aria-label="List match">
               <option value="any">is on any of</option>
               <option value="all">is on all of</option>
               <option value="none">is on none of</option>
-            </select>
+            </NativeSelect>
             {c.listIds.map((id) => (
               <span key={id} className="lp-cond-chip">
                 {names.list(id)}
@@ -139,7 +140,7 @@ export function MembershipRulesEditor({
                 </button>
               </span>
             ))}
-            <select
+            <NativeSelect
               className="lp-field lp-sel"
               value=""
               aria-label="Add a list"
@@ -153,13 +154,13 @@ export function MembershipRulesEditor({
                     {l.name}
                   </option>
                 ))}
-            </select>
+            </NativeSelect>
           </span>
         )
       case "dateWithin":
         return (
           <span className="lp-cond-fields">
-            <select className="lp-field lp-sel" value={c.field} onChange={(e) => set({ ...c, field: e.target.value as typeof c.field })} aria-label="Date field">
+            <NativeSelect className="lp-field lp-sel" value={c.field} onChange={(e) => set({ ...c, field: e.target.value as typeof c.field })} aria-label="Date field">
               {Object.entries(DATE_FIELD_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
@@ -170,11 +171,11 @@ export function MembershipRulesEditor({
                   {a.name}
                 </option>
               ))}
-            </select>
-            <select className="lp-field lp-sel" value={c.direction} onChange={(e) => set({ ...c, direction: e.target.value as "next" | "past" })} aria-label="Direction">
+            </NativeSelect>
+            <NativeSelect className="lp-field lp-sel" value={c.direction} onChange={(e) => set({ ...c, direction: e.target.value as "next" | "past" })} aria-label="Direction">
               <option value="next">in the next</option>
               <option value="past">in the past</option>
-            </select>
+            </NativeSelect>
             <input
               className="lp-field lp-num"
               type="number"
@@ -197,15 +198,15 @@ export function MembershipRulesEditor({
         const def = attributes.find((a) => a.id === c.attributeId)
         return (
           <span className="lp-cond-fields">
-            <select className="lp-field lp-sel" value={c.attributeId} onChange={(e) => set({ ...c, attributeId: e.target.value })} aria-label="Attribute">
+            <NativeSelect className="lp-field lp-sel" value={c.attributeId} onChange={(e) => set({ ...c, attributeId: e.target.value })} aria-label="Attribute">
               <option value="">Choose attribute…</option>
               {attributes.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} · {a.type}
                 </option>
               ))}
-            </select>
-            <select className="lp-field lp-sel" value={c.op} onChange={(e) => set({ ...c, op: e.target.value as typeof c.op })} aria-label="Comparison">
+            </NativeSelect>
+            <NativeSelect className="lp-field lp-sel" value={c.op} onChange={(e) => set({ ...c, op: e.target.value as typeof c.op })} aria-label="Comparison">
               <option value="is">is</option>
               <option value="isNot">is not</option>
               <option value="contains">contains</option>
@@ -213,17 +214,17 @@ export function MembershipRulesEditor({
               <option value="lt">is less than</option>
               <option value="isSet">is set</option>
               <option value="isEmpty">is empty</option>
-            </select>
+            </NativeSelect>
             {needsValue ? (
               def?.type === "selection" && def.options?.length ? (
-                <select className="lp-field lp-sel" value={String(c.value ?? "")} onChange={(e) => set({ ...c, value: e.target.value })} aria-label="Value">
+                <NativeSelect className="lp-field lp-sel" value={String(c.value ?? "")} onChange={(e) => set({ ...c, value: e.target.value })} aria-label="Value">
                   <option value="">…</option>
                   {def.options.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               ) : (
                 <input
                   className="lp-field lp-val"
@@ -241,11 +242,11 @@ export function MembershipRulesEditor({
       case "tag":
         return (
           <span className="lp-cond-fields">
-            <select className="lp-field lp-sel" value={c.mode} onChange={(e) => set({ ...c, mode: e.target.value as typeof c.mode })} aria-label="Tag match">
+            <NativeSelect className="lp-field lp-sel" value={c.mode} onChange={(e) => set({ ...c, mode: e.target.value as typeof c.mode })} aria-label="Tag match">
               <option value="any">has any of</option>
               <option value="all">has all of</option>
               <option value="none">has none of</option>
-            </select>
+            </NativeSelect>
             <input
               className="lp-field lp-val"
               defaultValue={c.tags.join(", ")}
@@ -257,10 +258,10 @@ export function MembershipRulesEditor({
         )
       case "done":
         return (
-          <select className="lp-field lp-sel" value={c.done ? "done" : "open"} onChange={(e) => set({ ...c, done: e.target.value === "done" })} aria-label="Done state">
+          <NativeSelect className="lp-field lp-sel" value={c.done ? "done" : "open"} onChange={(e) => set({ ...c, done: e.target.value === "done" })} aria-label="Done state">
             <option value="open">is not done</option>
             <option value="done">is done</option>
-          </select>
+          </NativeSelect>
         )
     }
   }
@@ -284,7 +285,7 @@ export function MembershipRulesEditor({
               label={`Rule ${ri + 1}`}
             />
             <span className="lp-caption">Add items that match</span>
-            <select
+            <NativeSelect
               className="lp-field lp-sel"
               value={rule.match}
               onChange={(e) => patchRule(rule.id, { match: e.target.value as "all" | "any" })}
@@ -292,7 +293,7 @@ export function MembershipRulesEditor({
             >
               <option value="all">all</option>
               <option value="any">any</option>
-            </select>
+            </NativeSelect>
             <span className="lp-caption">of these:</span>
             <button type="button" className="lp-icon-key" aria-label={`Delete rule ${ri + 1}`} onClick={() => setRules(rules.filter((r) => r.id !== rule.id))}>
               <Trash2 className="h-3.5 w-3.5" />
@@ -300,7 +301,7 @@ export function MembershipRulesEditor({
           </div>
           {rule.conditions.map((c, i) => (
             <div key={i} className="lp-cond">
-              <select
+              <NativeSelect
                 className="lp-field lp-sel lp-cond-kind"
                 value={c.kind}
                 onChange={(e) => patchCondition(rule, i, blankCondition(e.target.value as Kind))}
@@ -311,7 +312,7 @@ export function MembershipRulesEditor({
                     {KIND_LABELS[k]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               {conditionEditor(rule, c, i)}
               <button
                 type="button"

@@ -20,6 +20,7 @@ import {
   type DriftPresetId,
   type DriftUnit,
 } from "@/lib/drift-clock"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const PRESET_OPTIONS: { id: DriftPresetId; label: string }[] = [
   { id: "1w", label: "1 week" },
@@ -152,7 +153,7 @@ function DurationControl({
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex flex-wrap items-center gap-2">
-        <select
+        <NativeSelect
           id={id}
           value={kind}
           onChange={(e) => choose(e.target.value as DriftPresetId)}
@@ -163,7 +164,7 @@ function DurationControl({
               {option.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {kind === "hours" ? (
           <input
             id={hoursId}
@@ -194,7 +195,7 @@ function DurationControl({
                 if (Number.isFinite(next) && next > 0) onChange(periodFromAmount(next, split.unit))
               }}
             />
-            <select
+            <NativeSelect
               id={unitId}
               value={split.unit}
               aria-label={`${label} unit`}
@@ -205,7 +206,7 @@ function DurationControl({
                   {unit}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </>
         ) : null}
       </div>

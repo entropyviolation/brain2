@@ -8,7 +8,6 @@ import { PERSON_TYPE_ID } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
-import { subscribePenSettings } from "@/components/Home/Tracking/open-pen-settings"
 
 describe("PersonPipelinesEditor", () => {
   beforeEach(() => {

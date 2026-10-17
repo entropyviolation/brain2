@@ -12,6 +12,7 @@
  * "boss") to a seed, read from Self's side (7.1 uses it).
  */
 import type { RelationDef, RelationFamily } from "@/lib/links"
+import { LOCATION_TYPE_ID } from "@/lib/location-types"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
 
 const P = [PERSON_TYPE_ID]
@@ -44,6 +45,7 @@ function into(id: string, label: string, inverse: string, inverseLabel: string, 
 }
 
 const fromPerson = { fromTypes: P }
+const toLocation = { fromTypes: P, toTypes: [LOCATION_TYPE_ID] }
 
 /**
  * Seed hierarchy (LINKS_REDESIGN L1.3): R ⊑ parent. This names what the
@@ -101,6 +103,9 @@ const SEEDS: RelationDef[] = [
   sym("roommate-of", "is the roommate of", "place"),
   sym("neighbor-of", "is the neighbor of", "place"),
   ...pair("lives-in", "lives in", "home-of", "is home to", "place", fromPerson),
+  ...pair("born-in", "was born in", "birthplace-of", "is the birthplace of", "place", toLocation),
+  ...pair("grew-up-in", "grew up in", "where-grew-up", "is where they grew up", "place", toLocation),
+  ...pair("located-in", "is located in", "location-of", "contains", "place", { fromTypes: [LOCATION_TYPE_ID], toTypes: [LOCATION_TYPE_ID] }),
   // work
   sym("works-with", "works with", "work"),
   ...pair("manager-of", "is the manager of", "reports-to", "reports to", "work"),

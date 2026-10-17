@@ -31,8 +31,8 @@ import { useTaskStore } from "@/lib/task-store"
 import { minutesToLabel, type TimeEntry } from "@/lib/time-entries"
 import { useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import type { PersonPipeline, Task } from "@/lib/types"
-import { PEN_COLOR_OPEN_TITLE, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./person-pipelines.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type PersonMode = {
   mode: "person"
@@ -272,14 +272,14 @@ function PersonEditor({
       <div className="person-pipelines-add">
         <label>
           Company pen
-          <select aria-label="Company pen to attach" value={penId} onChange={(event) => setPenId(event.target.value)}>
+          <NativeSelect aria-label="Company pen to attach" value={penId} onChange={(event) => setPenId(event.target.value)}>
             <option value="">Choose a pen</option>
             {pens.map((pen) => (
               <option key={pen.id} value={pen.id}>
                 {pen.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <Button
           type="button"
@@ -336,14 +336,14 @@ function AttachPerson({
     <div className="person-pipelines-add">
       <label>
         Person
-        <select aria-label="Person to attach" value={personId} onChange={(event) => setPersonId(event.target.value)}>
+        <NativeSelect aria-label="Person to attach" value={personId} onChange={(event) => setPersonId(event.target.value)}>
           <option value="">Choose a person</option>
           {people.map((task) => (
             <option key={task.id} value={task.id}>
               {itemTitleOrUntitled(task, "Person")}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <Button
         type="button"
@@ -450,14 +450,14 @@ function ListEditor({
       <div className="person-pipelines-add">
         <label>
           Person
-          <select aria-label="Pipeline person" value={personId} onChange={(event) => setPersonId(event.target.value)}>
+          <NativeSelect aria-label="Pipeline person" value={personId} onChange={(event) => setPersonId(event.target.value)}>
             <option value="">Choose a person</option>
             {people.map((task) => (
               <option key={task.id} value={task.id}>
                 {itemTitleOrUntitled(task, "Person")}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label>
           New person
@@ -465,14 +465,14 @@ function ListEditor({
         </label>
         <label>
           Company pen
-          <select aria-label="Pipeline target" value={targetId} onChange={(event) => setTargetId(event.target.value)}>
+          <NativeSelect aria-label="Pipeline target" value={targetId} onChange={(event) => setTargetId(event.target.value)}>
             <option value="">Choose a pen</option>
             {pens.map((pen) => (
               <option key={pen.id} value={pen.id}>
                 {pen.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <Button type="button" size="sm" variant="outline" disabled={!targetId || (!personId && !name.trim())} onClick={add}>
           Add pipeline

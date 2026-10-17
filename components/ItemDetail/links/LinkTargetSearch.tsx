@@ -5,6 +5,7 @@
  * Typeahead over every item: 20px orb, title, type plate, first list name.
  * Leaves out this item, items already linked here with the chosen relation,
  * and (when the relation is scoped with `toTypes`) items of other types.
+ * A last row, Create "<query>", makes a new item (`onCreate`).
  * ↑ ↓ move, Enter picks, Esc closes.
  */
 "use client"
@@ -23,6 +24,7 @@ export function LinkTargetSearch({
   onSelect,
   excludeIds,
   toTypes,
+  onCreate,
 }: {
   tasks: readonly Task[]
   facts: (task: Task) => LinkItemFacts
@@ -31,6 +33,8 @@ export function LinkTargetSearch({
   excludeIds: ReadonlySet<string>
   /** The relation's `toTypes`; absent = any type. */
   toTypes?: string[]
+  /** Make a new item titled `title` and select it. */
+  onCreate?: (title: string) => void
 }) {
   const listId = useId()
   const [query, setQuery] = useState("")
@@ -59,7 +63,16 @@ export function LinkTargetSearch({
     setOpen(false)
   }
 
-  const shown = open && !selected && matches.length > 0
+  const trimmed = query.trim()
+  const canCreate =
+    !!onCreate && !!trimmed && !matches.some((row) => row.title.trim().toLowerCase() === trimmed.toLowerCase())
+  const rowCount = matches.length + (canCreate ? 1 : 0)
+  const shown = open && !selected && rowCount > 0
+  const create = () => {
+    onCreate?.(trimmed)
+    setQuery("")
+    setOpen(false)
+  }
 
   return (
     <div className="rl-combo rl-target">
@@ -84,13 +97,14 @@ export function LinkTargetSearch({
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
             event.preventDefault()
-            setActive((i) => Math.min(matches.length - 1, i + 1))
+            setActive((i) => Math.min(rowCount - 1, i + 1))
           } else if (event.key === "ArrowUp") {
             event.preventDefault()
             setActive((i) => Math.max(0, i - 1))
           } else if (event.key === "Enter" && shown) {
             event.preventDefault()
-            pick(matches[active])
+            if (canCreate && active === matches.length) create()
+            else pick(matches[active])
           } else if (event.key === "Escape" && shown) {
             event.stopPropagation()
             setOpen(false)
@@ -118,6 +132,21 @@ export function LinkTargetSearch({
               {row.listName ? <span className="rl-target-list">{row.listName}</span> : null}
             </li>
           ))}
+          {canCreate ? (
+            <li
+              role="option"
+              aria-selected={active === matches.length}
+              className="rl-menu-row rl-target-row rl-target-create"
+              data-active={active === matches.length ? "true" : undefined}
+              onMouseDown={(event) => {
+                event.preventDefault()
+                create()
+              }}
+              onMouseEnter={() => setActive(matches.length)}
+            >
+              <span className="rl-target-title">{`Create "${trimmed}"`}</span>
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </div>

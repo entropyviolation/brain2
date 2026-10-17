@@ -9,6 +9,7 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import type { TodoItem } from "@/lib/types"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export interface NewTodoDraft {
   description: string
@@ -60,7 +61,7 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
           />
 
           <label htmlFor="todo-tier">Tier</label>
-          <select
+          <NativeSelect
             id="todo-tier"
             value={draft.tier}
             onChange={(e) => setDraft({ ...draft, tier: e.target.value as TodoItem["tier"] })}
@@ -71,7 +72,7 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
             <option value="B">B (Medium)</option>
             <option value="C">C (Low)</option>
             <option value="D">D (Very Low)</option>
-          </select>
+          </NativeSelect>
 
           <div className="todo-dialog-actions">
             <button type="button" className="todo-btn" onClick={() => setOpen(false)}>

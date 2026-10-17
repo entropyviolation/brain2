@@ -49,6 +49,7 @@ import {
   plannedMinutesForDay,
   wakingWindowMinutes,
 } from "./plan-capacity"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export type PlannedSidebarMode = "month" | "week" | "day"
 type RailSort = "name" | "duration" | "created"
@@ -306,7 +307,7 @@ export function PlannedTasksSidebar({
         />
         <label>
           <span className="sr-only">Sort planned items</span>
-          <select
+          <NativeSelect
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value as RailSort)}
             aria-label="Sort planned items"
@@ -314,7 +315,7 @@ export function PlannedTasksSidebar({
             <option value="name">Sort: Name</option>
             <option value="duration">Sort: Duration</option>
             <option value="created">Sort: Created</option>
-          </select>
+          </NativeSelect>
         </label>
       </div>
       <div className="plan-rail-filters">

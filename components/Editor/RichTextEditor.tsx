@@ -44,6 +44,7 @@ import {
   isAllowedFont,
 } from "@/lib/google-fonts"
 import "./editor.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 type ViewMode = "edit" | "split" | "preview"
 
@@ -186,7 +187,7 @@ export function RichTextEditor({
             <span className="rte-toolbar-sep" aria-hidden />
             <label className="rte-font-picker" title="Document font (Google Fonts)">
               <Type className="h-3.5 w-3.5" aria-hidden />
-              <select
+              <NativeSelect
                 className="rte-select"
                 value={isAllowedFont(documentFont) ? documentFont : "Arial"}
                 disabled={readOnly || !onDocumentFontChange}
@@ -198,10 +199,10 @@ export function RichTextEditor({
                     {f}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="rte-font-picker" title="Wrap selection in a Google Font">
-              <select
+              <NativeSelect
                 className="rte-select"
                 defaultValue=""
                 disabled={readOnly}
@@ -218,7 +219,7 @@ export function RichTextEditor({
                     {f}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </>
         )}

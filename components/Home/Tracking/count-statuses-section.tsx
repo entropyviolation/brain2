@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import { useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { minutesToLabel, type IntakeClass } from "@/lib/time-entries"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const RECENT = 6
 
@@ -124,12 +125,12 @@ export function CountStatusesSection() {
         />
         <label className="trk-logbook-view">
           Intake
-          <select aria-label="Intake class" value={intake} onChange={(event) => setIntake(event.target.value as "" | IntakeClass)}>
+          <NativeSelect aria-label="Intake class" value={intake} onChange={(event) => setIntake(event.target.value as "" | IntakeClass)}>
             <option value="">None</option>
             <option value="drug">Drug</option>
             <option value="food">Food</option>
             <option value="drink">Drink</option>
-          </select>
+          </NativeSelect>
         </label>
         <input
           aria-label="Count keyword"

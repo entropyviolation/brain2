@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export interface CsvImportDialogProps {
   csvImport: CsvImportState
@@ -29,7 +30,7 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Import into</Label>
-            <select
+            <NativeSelect
               className="w-full border rounded-md h-9 px-2 bg-background text-sm"
               value={csvImport.targetCategoryId}
               onChange={(e) => onUpdate({ ...csvImport, targetCategoryId: e.target.value })}
@@ -40,7 +41,7 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
                   {c.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           {csvImport.targetCategoryId === "" && (
             <div className="space-y-2">
@@ -50,7 +51,7 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
           )}
           <div className="space-y-2">
             <Label>Item name column</Label>
-            <select
+            <NativeSelect
               className="w-full border rounded-md h-9 px-2 bg-background text-sm"
               value={csvImport.nameCol}
               onChange={(e) => onUpdate({ ...csvImport, nameCol: Number(e.target.value) })}
@@ -60,7 +61,7 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
                   {h || `Column ${i + 1}`}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="text-xs text-muted-foreground">
             Attributes:{" "}

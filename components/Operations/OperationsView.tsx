@@ -42,6 +42,7 @@ import { APP_NAV_KEYS, readStoredId, writeStoredId } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistHydrated } from "@/lib/use-persist-hydrated"
 import "./operations-chrome.css"
+import { NativeSelect } from "@/components/ui/native-select"
 
 const SORT_LABELS: Record<OperationSortMode, string> = {
   name: "Name",
@@ -204,7 +205,7 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
             <label className="ops-inline-label" htmlFor="ops-new-preset">
               Shape
             </label>
-            <select
+            <NativeSelect
               id="ops-new-preset"
               className="ops-input ops-input-sm"
               value={presetId}
@@ -216,7 +217,7 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
                   {preset.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <button type="button" className="ops-btn ops-btn-default" onClick={handleCreate} disabled={!newTitle.trim()}>
               New Operation
             </button>
@@ -228,7 +229,7 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
             <label className="ops-inline-label" htmlFor="ops-sort">
               Sort
             </label>
-            <select
+            <NativeSelect
               id="ops-sort"
               className="ops-input ops-input-sm"
               value={sort}
@@ -239,7 +240,7 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
                   {SORT_LABELS[mode]}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <label className="ops-check ops-check-inline">
               <input
                 type="checkbox"

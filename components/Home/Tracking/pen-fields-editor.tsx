@@ -12,6 +12,7 @@
 
 import { useState } from "react"
 import { FIELD_PRESETS, makeFieldId, type BlockField, type PenField, type PenFieldKind } from "@/lib/pen-fields"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function PenFieldsEditor({
   fields,
@@ -57,14 +58,14 @@ export function PenFieldsEditor({
               if (!event.target.value.trim()) update(field.id, { name: field.name || "Field" })
             }}
           />
-          <select
+          <NativeSelect
             aria-label={`${field.name} type`}
             value={field.kind}
             onChange={(event) => update(field.id, { kind: event.target.value as PenFieldKind })}
           >
             <option value="text">Text</option>
             <option value="number">Number</option>
-          </select>
+          </NativeSelect>
           {field.kind === "number" ? (
             <input
               className="trk-fields-unit"
@@ -113,10 +114,10 @@ export function PenFieldsEditor({
             }
           }}
         />
-        <select aria-label="New field type" value={kind} onChange={(event) => setKind(event.target.value as PenFieldKind)}>
+        <NativeSelect aria-label="New field type" value={kind} onChange={(event) => setKind(event.target.value as PenFieldKind)}>
           <option value="text">Text</option>
           <option value="number">Number</option>
-        </select>
+        </NativeSelect>
         <button type="button" data-no95="" onClick={addCustom} disabled={!name.trim()}>
           Add field
         </button>

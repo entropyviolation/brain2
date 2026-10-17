@@ -27,6 +27,7 @@ import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { useTaskStore } from "@/lib/task-store"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
 import { normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
+import { NativeSelect } from "@/components/ui/native-select"
 
 export function MessageIngestPanel() {
   const enabled = useIngestStore((s) => s.enabled)
@@ -377,7 +378,7 @@ export function MessageIngestPanel() {
           example <code className="text-foreground">store</code> → <code className="text-foreground">groc</code>{" "}
           is optional — an empty shortcut map still understands <code className="text-foreground">store</code>.
         </p>
-        <select
+        <NativeSelect
           id="live-grocery-list"
           aria-label="Live grocery list"
           value={groceryListId ?? ""}
@@ -391,7 +392,7 @@ export function MessageIngestPanel() {
                 {list.name}
               </option>
             ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="space-y-2">
