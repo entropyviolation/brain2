@@ -134,7 +134,9 @@ by scope, done / pushed / missed counts, and the summary. A note field per
 block (`PeriodReview.lookBack`). Night reads that day's morning. Week / month
 read that period's Start ritual.
 
-## Phase 5 — Morning: look ahead
+## Phase 5 — Morning: look ahead (done)
+
+_Last mapped: 2026-10-17_ Built as three steps (`components/Reviews/LookAheadSection.tsx`, `lib/ritual-due.ts`). Overdue rows have Do today and Missed (no Push: an overdue task has no obvious next slot). Telegram `gm` counts are **Planned**.
 
 New steps, after **To do for today**:
 
@@ -149,7 +151,9 @@ New steps, after **To do for today**:
 - Helper `lib/ritual-due.ts` (`dueWithin(tasks, now, days)`, `overdue(tasks, now)`)
   with tests. Telegram `gm` gets the counts only.
 
-## Phase 6 — Week / month / season / year
+## Phase 6 — Week / month / season / year (done)
+
+_Last mapped: 2026-10-17_ End rites already share `ReviewDialog`, so Phases 2–4 apply to every period (Done dates to the period's last day). Start rites got the look-ahead steps; only week start has a bigger list (the month), since seasons are not a schedule slot.
 
 - **End rites:** the Phase 2 row keys (Push asks why; Done dates to the last
   day of the period with unknown time; Missed), the Phase 3 times, and the

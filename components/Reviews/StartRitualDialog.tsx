@@ -38,6 +38,7 @@ import { isClearedFromWork } from "@/lib/completion-status"
 import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/todo-commitment"
 import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
 import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
+import { LookAheadSection, type LookAheadTarget } from "@/components/Reviews/LookAheadSection"
 
 function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
   const ref = dateFromPeriodKey(period, key)
@@ -188,6 +189,19 @@ export function StartRitualDialog({
     onClose()
   }
 
+  const [visited, setVisited] = useState<string[]>([])
+  const unitName = period === "quarter" ? "season" : period
+  const periodStart = dateFromPeriodKey(period, periodKey)
+  const monthKeyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+  const dueDays = period === "week" ? 7 : period === "month" ? 31 : period === "quarter" ? 92 : 366
+  // Seasons are not a schedule slot; "this season" lands on its first month.
+  const lookTarget: LookAheadTarget =
+    period === "week"
+      ? { period: "week", key: periodKey, label: "This week" }
+      : period === "year"
+        ? { period: "year", key: periodKey, label: "This year" }
+        : { period: "month", key: monthKeyOf(periodStart), label: "This month" }
+  const lookNow = periodStart.getTime() > Date.now() ? periodStart : new Date()
   const stepDefs: (RitualStep & { body: ReactNode })[] = [
     {
       id: "undone",
@@ -238,6 +252,36 @@ export function StartRitualDialog({
           </div>
         </section>
       ),
+    },
+    ...(period === "week"
+      ? [
+          {
+            id: "ahead",
+            label: "This month",
+            answered: visited.includes("ahead"),
+            body: (
+              <LookAheadSection
+                key="ahead"
+                mode="lists"
+                now={lookNow}
+                target={lookTarget}
+                lists={[{ title: "This month", period: "month", key: monthKeyOf(periodStart) }]}
+              />
+            ),
+          },
+        ]
+      : []),
+    {
+      id: "due",
+      label: `Due this ${unitName}`,
+      answered: visited.includes("due"),
+      body: <LookAheadSection key="due" mode="due" now={lookNow} target={lookTarget} dueDays={dueDays} />,
+    },
+    {
+      id: "overdue",
+      label: "Overdue",
+      answered: visited.includes("overdue"),
+      body: <LookAheadSection key="overdue" mode="overdue" now={lookNow} target={lookTarget} />,
     },
     {
       id: "priorities",
@@ -362,6 +406,12 @@ export function StartRitualDialog({
     stepDefs.length,
     () => 0,
   )
+
+  const currentStepId = stepDefs[stepIndex]?.id
+  useEffect(() => {
+    if (currentStepId && ["ahead", "due", "overdue"].includes(currentStepId))
+      setVisited((v) => (v.includes(currentStepId) ? v : [...v, currentStepId]))
+  }, [currentStepId])
 
   /** Moving between questions writes progress, the same as Save progress. */
   const goStep = (next: number) => {

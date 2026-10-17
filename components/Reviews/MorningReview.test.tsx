@@ -6,6 +6,7 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { TaskType } from "@/lib/types"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useTaskStore } from "@/lib/task-store"
 import { MorningReviewDialog } from "./MorningReview"
 
 /** Thursday 17 September 2026. */
@@ -175,5 +176,45 @@ describe("MorningReviewDialog", () => {
     expect(after[0].value).toBe("coffee")
     expect(after[1].value).toBe("rain")
     expect(document.activeElement).toBe(after[1])
+  })
+})
+
+describe("MorningReviewDialog look ahead", () => {
+  const add = (extra: Record<string, unknown>) =>
+    useTaskStore.getState().addTask({
+      description: "x",
+      stage: "scheduled",
+      createdAt: TODAY,
+      completed: false,
+      lists: [],
+      ...extra,
+    } as never)
+
+  it("lists week and month work by importance and moves one onto today", () => {
+    add({ id: "m1", description: "Book the dentist", scheduledMonth: "2026-09", importance: 2 })
+    add({ id: "m2", description: "File taxes", scheduledMonth: "2026-09", importance: 5 })
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    fireEvent.click(screen.getByRole("button", { name: /^Go to Week and month/ }))
+    const titles = screen.getAllByText(/Book the dentist|File taxes/).map((n) => n.textContent)
+    expect(titles).toEqual(["File taxes", "Book the dentist"])
+    fireEvent.click(screen.getAllByRole("button", { name: "Do today" })[0])
+    const moved = useTaskStore.getState().tasks.find((t) => t.id === "m2")!
+    expect(new Date(moved.scheduledDate!).getDate()).toBe(17)
+    expect(screen.getByText("On today")).toBeInTheDocument()
+  })
+
+  it("shows what is due within a week with a countdown, and what is overdue", () => {
+    add({ id: "d1", description: "Send invoice", deadline: new Date(2026, 8, 19, 9) })
+    add({ id: "o1", description: "Return library book", deadline: new Date(2026, 8, 14, 9) })
+    render(<MorningReviewDialog open onClose={() => {}} date={TODAY} />)
+    fireEvent.click(screen.getByRole("button", { name: /^Go to Due within a week/ }))
+    expect(screen.getByText("Send invoice")).toBeInTheDocument()
+    expect(screen.getByText("2d")).toBeInTheDocument()
+    expect(screen.queryByText("Return library book")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /^Go to Overdue/ }))
+    expect(screen.getByText("Return library book")).toBeInTheDocument()
+    expect(screen.getByText("3d late")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Missed" }))
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "o1")?.status).toBe("missed")
   })
 })
