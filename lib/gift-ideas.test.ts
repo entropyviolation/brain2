@@ -6,6 +6,7 @@ import {
   findGiftIdeasFolder,
   findGiftIdeasList,
   noteSavedPeople,
+  renameGiftIdeasListByHand,
 } from "@/lib/gift-ideas"
 import { planDuplicateList } from "@/lib/lists-duplicate"
 import { createListItem } from "@/lib/item-utils"
@@ -118,5 +119,32 @@ describe("gift ideas", () => {
     })
     expect(plan.list.giftIdeasPersonId).toBeUndefined()
     expect(plan.list.id).not.toBe(source.id)
+  })
+
+  it("keeps a name the person typed through hydrate and a person rename", () => {
+    const ada = person("ada", "Ada", true)
+    useTaskStore.getState().addTask(ada)
+    ensureCloseGiftIdeas()
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.giftIdeasAutoName).toBe("Gift ideas for Ada")
+
+    renameGiftIdeasListByHand("ada", "Ada wishlist")
+    ensureCloseGiftIdeas()
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.name).toBe("Ada wishlist")
+
+    const renamed = { ...ada, title: "Augusta", description: "Augusta" }
+    noteSavedPeople([ada], [renamed])
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.name).toBe("Ada wishlist")
+  })
+
+  it("lets a legacy automatic name follow a rename, but not a legacy hand name", () => {
+    const store = useTaskStore.getState()
+    store.addList({ id: "l1", name: "Gift ideas for Ada", color: "#000", createdAt: new Date(), giftIdeasPersonId: "ada" })
+    store.addList({ id: "l2", name: "Bo stuff", color: "#000", createdAt: new Date(), giftIdeasPersonId: "bo" })
+    const ada = person("ada", "Ada")
+    const bo = person("bo", "Bo")
+    noteSavedPeople([ada, bo], [{ ...ada, title: "Augusta", description: "Augusta" }, { ...bo, title: "Bob", description: "Bob" }])
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.name).toBe("Gift ideas for Augusta")
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "ada")?.giftIdeasAutoName).toBe("Gift ideas for Augusta")
+    expect(findGiftIdeasList(useTaskStore.getState().lists, "bo")?.name).toBe("Bo stuff")
   })
 })

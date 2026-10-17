@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { memo, useMemo } from "react"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { joinedCompanyPenIds } from "@/lib/people-i-know"
 import { cadenceSentence, personTimeStats, type PenShare } from "@/lib/person-time"
@@ -24,7 +24,7 @@ function dayLabel(date: string): string {
   return new Date(y!, m! - 1, d!).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })
 }
 
-export function PersonTimeTogether({ person, todayIso }: { person: Task; todayIso: string }) {
+function PersonTimeTogetherView({ person, todayIso }: { person: Task; todayIso: string }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const penIds = useMemo(() => joinedCompanyPenIds(person.personPipelines), [person.personPipelines])
@@ -164,3 +164,13 @@ function ShareList({ title, rows, empty }: { title: string; rows: PenShare[]; em
     </div>
   )
 }
+
+/** Memoized (1.2): reads only the person's name and `personPipelines`. */
+export const PersonTimeTogether = memo(
+  PersonTimeTogetherView,
+  (a, b) =>
+    a.todayIso === b.todayIso &&
+    a.person.title === b.person.title &&
+    a.person.description === b.person.description &&
+    a.person.personPipelines === b.person.personPipelines,
+)

@@ -7,12 +7,68 @@
  * time since last seen, days until the next birthday) are read here and not
  * stored.
  */
+import type { AddressParts } from "@/lib/pen-place"
+
 export type AddressPrecision = "mailing" | "neighborhood" | "state" | "country"
 
 export interface PersonAddress {
   precision: AddressPrecision
   /** The words known: a street, a neighborhood, a state, or a country. */
   text: string
+  /** Set when the text came from a map search pick (3.2). Typing clears them. */
+  lat?: number
+  lng?: number
+  parts?: AddressParts
+  source?: "photon" | "google"
+}
+
+const ADDRESS_PART_KEYS = ["house", "street", "neighborhood", "city", "county", "state", "country", "postcode"] as const
+
+function cleanParts(raw: unknown): AddressParts | undefined {
+  if (!raw || typeof raw !== "object") return undefined
+  const out: AddressParts = {}
+  for (const key of ADDRESS_PART_KEYS) {
+    const value = (raw as Record<string, unknown>)[key]
+    if (typeof value === "string" && value.trim()) out[key] = value.trim()
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+function cleanAddress(raw: PersonAddress | undefined, text: (value: unknown) => string | undefined): PersonAddress | undefined {
+  const addressText = text(raw?.text)
+  const precision = raw?.precision
+  if (!raw || !addressText || !precision || !ADDRESS_PRECISIONS.has(precision)) return undefined
+  const out: PersonAddress = { precision, text: addressText }
+  if (Number.isFinite(raw.lat) && Number.isFinite(raw.lng)) {
+    out.lat = raw.lat
+    out.lng = raw.lng
+  }
+  const parts = cleanParts(raw.parts)
+  if (parts) out.parts = parts
+  if (raw.source === "photon" || raw.source === "google") out.source = raw.source
+  return out
+}
+
+/**
+ * The words stored for a map pick at a precision: mailing keeps the full
+ * label; neighborhood keeps "neighborhood, city"; state keeps "state,
+ * country"; country keeps the country. Falls back to the label.
+ */
+export function addressTextForPick(
+  pick: { label: string; parts?: AddressParts },
+  precision: AddressPrecision,
+): string {
+  const parts = pick.parts ?? {}
+  const join = (...rows: (string | undefined)[]) => rows.filter(Boolean).join(", ")
+  const text =
+    precision === "neighborhood"
+      ? join(parts.neighborhood, parts.city)
+      : precision === "state"
+        ? join(parts.state, parts.country)
+        : precision === "country"
+          ? (parts.country ?? "")
+          : pick.label
+  return text || pick.label
 }
 
 export interface PersonDatedNote {
@@ -61,6 +117,8 @@ export interface PersonProfile {
    * Turning it off does not delete a list that already exists.
    */
   close?: boolean
+  /** The "self" person (`lib/people-self.ts`). Only `true` is stored. */
+  self?: true
 }
 
 export interface CalendarSpan {
@@ -337,12 +395,7 @@ function assembleProfile(
     : []
   const dateMet = cleanDate(raw.dateMet)
   const instagram = instagramOf(raw.instagram)
-  const addressText = text(raw.address?.text)
-  const precision = raw.address?.precision
-  const address =
-    addressText && precision && ADDRESS_PRECISIONS.has(precision)
-      ? { precision, text: addressText }
-      : undefined
+  const address = cleanAddress(raw.address, text)
   const relation = text(raw.relation)
   const noteLog = cleanNotes(raw.noteLog)
   const interactions = cleanInteractions(raw.interactions)
@@ -352,6 +405,7 @@ function assembleProfile(
   if (nicknames.length > 0) next.nicknames = nicknames
   if (relation) next.relation = relation
   if (raw.close === true) next.close = true
+  if (raw.self === true) next.self = true
   if (dateMet) {
     next.dateMet = dateMet
     if (raw.dateMetEstimated) next.dateMetEstimated = true

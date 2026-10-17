@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
+import { subscribePenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { createListItem } from "@/lib/item-utils"
 import { ensurePeopleIKnowList } from "@/lib/people-i-know"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
@@ -24,6 +25,28 @@ describe("PersonPipelinesEditor", () => {
 
     expect(onChange).toHaveBeenCalled()
     expect(onChange.mock.calls[0][0][0]).toMatchObject({ kind: "company-pen", penId: "co-together" })
+  })
+
+  it("opens Company pen settings on a double-click of the swatch or the label", () => {
+    const listId = ensurePeopleIKnowList()
+    const person = {
+      ...createListItem("Ada", [listId]),
+      id: "ada",
+      type: PERSON_TYPE_ID,
+      personPipelines: [{ id: "pp1", kind: "company-pen" as const, penId: "co-together" }],
+    }
+    const heard = vi.fn()
+    const stop = subscribePenSettings(heard)
+    render(<PersonPipelinesEditor mode="person" person={person} onChange={vi.fn()} />)
+    const row = screen.getByTestId("person-pipeline-row")
+    const label = row.querySelector(".person-pipelines-label") as HTMLElement
+    expect(label).toHaveAttribute("title", "Double-click to open pen settings")
+    fireEvent.doubleClick(label)
+    expect(heard).toHaveBeenCalledWith({ scopeId: "company", penId: "co-together" })
+    const swatch = row.querySelector(".person-pipelines-swatch") as HTMLElement
+    fireEvent.doubleClick(swatch)
+    expect(heard).toHaveBeenCalledTimes(2)
+    stop()
   })
 
   it("creates a person joined to this company pen", () => {

@@ -1,0 +1,45 @@
+/* Map search listbox under an address field (address-suggest-input.tsx). */
+.address-suggest-list {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  background: #fff;
+  color: #000;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #fff, 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.address-suggest-option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-variant: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-shadow: none;
+}
+
+.address-suggest-option[data-active="true"] {
+  background: #050807;
+  color: #7dffc4;
+}
+
+.address-suggest-name {
+  font-weight: 700;
+}
+
+.address-suggest-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
