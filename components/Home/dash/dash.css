@@ -19,6 +19,7 @@
 
 :is(body, body.win95-app .home95) .home-overview[data-style="dash"],
 .home-widget-dialog[data-style="dash"],
+.home-catalog.vdg[data-style="dash"],
 .dash-sample {
   --dash-glass: #020708;
   --dash-glass-2: #061214;
@@ -43,6 +44,8 @@
 :is(body, body.win95-app .home95) .home-overview[data-style="dash"] *,
 .home-widget-dialog[data-style="dash"],
 .home-widget-dialog[data-style="dash"] *,
+.home-catalog.vdg[data-style="dash"],
+.home-catalog.vdg[data-style="dash"] *,
 .dash-sample,
 .dash-sample * {
   --dash-legend: color-mix(in srgb, var(--dash-ink) 72%, #9fb8bd);
@@ -1189,6 +1192,152 @@ body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-keys {
   font: 400 7px/1 var(--dash-seg-font);
   color: var(--dash-legend);
   text-align: center;
+}
+
+/* ---- Widget gallery in Dash --------------------------------------------- */
+
+/*
+ * The gallery dialog keeps its milled frame. When the dashboard is on Dash,
+ * the gallery root carries `data-style="dash"`: the page becomes a sheet of
+ * cluster glass with LCD words, and the rail becomes a column of dark keys
+ * with phosphor lamps. The sample switch can still show Milled faces.
+ */
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail-head {
+  font: 400 8px/1 var(--dash-seg-font);
+  letter-spacing: 0.14em;
+  color: #2a2c2e;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick {
+  color: var(--dash-lcd);
+  background: linear-gradient(180deg, #3e4448, #262a2d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 0 #000;
+  font: 400 12px/1.2 var(--dash-dot-font);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick[aria-selected="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 45%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick .home-widgets-lamp[data-on="true"] {
+  background: var(--dash-ink);
+  box-shadow: 0 0 5px var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick-count {
+  color: var(--dash-ink);
+  background: var(--dash-glass);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail {
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--dash-lcd);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0, transparent 14px),
+    radial-gradient(120% 90% at 50% 20%, var(--dash-glass-2), var(--dash-glass) 75%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 0 3px var(--dash-hood);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--dash-ink) 22%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-group, .vdg-section > h4, .vdg-setup-title, .vdg-installed-mark, .vdg-table th, .vdg-setting > dt, .vdg-rules > dt) {
+  font-family: var(--dash-seg-font);
+  font-weight: 400;
+  color: var(--dash-legend);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-name {
+  font: 400 26px/1.1 var(--dash-dot-font);
+  letter-spacing: 0.02em;
+  color: var(--dash-ink);
+  text-shadow: var(--dash-text-glow);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-section > p, .vdg-how > li, .vdg-guide-list > li, .vdg-setting > dd, .vdg-rules > dd, .vdg-copy-name, .vdg-table td, .vdg-setup-form, .vdg-faces[data-style="milled"] figcaption) {
+  color: var(--dash-lcd);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-setting-help, .vdg-copy-meta, .vdg-options) {
+  color: color-mix(in srgb, var(--dash-lcd) 62%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-how, .vdg-guide-list) > li::before {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dash-ink) 50%, transparent);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-chip {
+  font-family: var(--dash-seg-font);
+  font-weight: 400;
+  font-size: 8px;
+  color: var(--dash-legend);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-chip[data-default="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-notice, .vdg-copy, .vdg-setup, .vdg-table-wrap, .vdg-settings-list, .vdg-place-hits) {
+  color: var(--dash-lcd);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-table :is(th, td) {
+  border-color: color-mix(in srgb, var(--dash-ink) 14%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-table td[data-mine="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-link, .vdg-reset) {
+  color: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-place-hit[aria-selected="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail :is(input[type="text"], input[type="date"], input[type="search"], input:not([type]), .native-select) {
+  color: var(--dash-lcd);
+  background: var(--dash-glass);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail .home-review-key {
+  background: linear-gradient(180deg, #4a5054, #2c3034);
+  color: var(--dash-lcd);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 0 #000;
+  font: 400 9px/1 var(--dash-seg-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail .home-review-key:is(.is-on, [aria-pressed="true"], [aria-checked="true"]) {
+  background: var(--dash-lcd);
+  color: var(--dash-glass);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 50%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-faces.dash-sample {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
 }
 
 /* ---- Small screens and motion ------------------------------------------- */
