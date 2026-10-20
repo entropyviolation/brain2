@@ -68,6 +68,7 @@ import {
   NotebookPen,
   Paperclip,
   Link2,
+  Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemNotesLog, NotesPeek } from "@/components/ItemDetail/ItemNotesLog"
@@ -81,6 +82,7 @@ import {
   COMPLETION_STATUS_DESCRIPTIONS,
   effectiveStatus,
   withStatus,
+  withCompleted,
   isClearedFromWork,
 } from "@/lib/completion-status"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
@@ -101,6 +103,10 @@ import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeS
 import { isSentOnList, withSentMark } from "@/lib/list-sent"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
+import { CompletionDialog } from "@/components/Completion/CompletionDialog"
+import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
+import { SchedulingSummary } from "@/components/ItemDetail/SchedulingSummary"
+import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
 
@@ -159,6 +165,8 @@ export function TaskDetailPopup({
   const {
     task,
     setTask,
+    undo,
+    redo,
     getDraft,
     subscribeDraft,
     touchDraft,
@@ -245,6 +253,7 @@ export function TaskDetailPopup({
   }, [getDraft, commitDraft])
 
   useItemDetailSaveHotkey(detailRef, handleSave, open && Boolean(task))
+  useItemDetailUndoHotkey(detailRef, undo, redo, open && Boolean(task))
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -268,6 +277,13 @@ export function TaskDetailPopup({
       onClose()
     }
   }, [getDraft, commitDraft, onClose, onStepComplete])
+
+  // Mark incomplete changes only the done flag and status. Nothing else is cleared.
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const handleReopen = useCallback(() => {
+    const draft = getDraft()
+    if (draft) commitDraft(withCompleted(draft, false))
+  }, [getDraft, commitDraft])
 
   const handleMissed = useCallback(() => {
     if (!task) return
@@ -491,6 +507,17 @@ export function TaskDetailPopup({
                     Save
                   </Button>
                 </div>
+                {task.completed && caps.completable && !isStepItem(task) && (
+                  <Button
+                    variant="outline"
+                    onClick={handleReopen}
+                    className="id-btn id-btn-reopen"
+                    title="Mark incomplete: undo Complete and keep everything else"
+                  >
+                    <Undo2 className="h-4 w-4" />
+                    Mark incomplete
+                  </Button>
+                )}
                 {!isClearedFromWork(task) && caps.completable && (
                   <Button
                     variant="outline"
@@ -537,6 +564,9 @@ export function TaskDetailPopup({
               </div>
             </div>
           </div>
+
+          <ItemDoneBanner task={task} onReopen={handleReopen} onEditReview={() => setReviewOpen(true)} />
+          {reviewOpen ? <CompletionDialog taskId={task.id} basePoints={0} edit onClose={() => setReviewOpen(false)} /> : null}
 
           <div className="id-dialog-scroll">
             <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="flex-1 min-h-0 flex flex-col">
@@ -1075,7 +1105,10 @@ export function TaskDetailPopup({
                 </TabsContent>
 
                 <TabsContent value="scheduling" className="space-y-6 mt-0">
-                  <div className="space-y-8">
+                  <div className="id-sched">
+                    <SchedulingSummary task={task} scheduleableCategoryIds={scheduleableCategoryIds} />
+                    <section className="id-sched-sec" aria-label="Where it shows up">
+                      <header className="id-sched-sechead"><span className="id-sched-num">01</span><h2>Where it shows up</h2><p>Which lists read this item: the Scheduler, and the To Do periods.</p></header>
                     <ItemScheduleFlags
                       task={task}
                       scheduleableCategoryIds={scheduleableCategoryIds}
@@ -1083,7 +1116,7 @@ export function TaskDetailPopup({
                     />
                     <TodoCommitmentFields task={task} onChange={setTask} />
                     {task.scheduledDate && !task.scheduledWeek && (
-                      <div className="flex items-center justify-between gap-3 p-4 rounded-lg border bg-blue-50/60 border-blue-200">
+                      <div className="id-sched-callout">
                         <div>
                           <p className="font-semibold text-sm">On daily to-do list</p>
                           <p className="text-xs text-muted-foreground">
@@ -1096,10 +1129,13 @@ export function TaskDetailPopup({
                         </Button>
                       </div>
                     )}
+                    </section>
+                    <section className="id-sched-sec" aria-label="When">
+                      <header className="id-sched-sechead"><span className="id-sched-num">02</span><h2>When</h2><p>Pick one placement. Setting a date clears the looser ones.</p></header>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-6">
-                        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                          <h3 className="font-semibold flex items-center gap-2">
+                        <div className="id-sched-card">
+                          <h3 className="id-sched-card-title">
                             <Calendar className="h-4 w-4" />
                             Specific Date & Time
                           </h3>
@@ -1142,33 +1178,11 @@ export function TaskDetailPopup({
                             </div>
                           </div>
                         </div>
-
-                        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                          <h3 className="font-semibold flex items-center gap-2">
-                            <Target className="h-4 w-4" />
-                            Deadline
-                          </h3>
-                          <div className="space-y-2">
-                            <Label htmlFor="deadline" className="text-sm font-medium">
-                              Deadline Date
-                            </Label>
-                            <Input
-                              id="deadline"
-                              type="date"
-                              value={dateInputValue(task.deadline)}
-                              onChange={(e) => {
-                                const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
-                                setTask({ ...task, deadline: date })
-                              }}
-                              className="focus-ring"
-                            />
-                          </div>
-                        </div>
                       </div>
 
                       <div className="space-y-6">
-                        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                          <h3 className="font-semibold">Flexible Scheduling</h3>
+                        <div className="id-sched-card">
+                          <h3 className="id-sched-card-title">Flexible Scheduling</h3>
                           <div className="space-y-4">
                             <div className="space-y-2">
                               <Label htmlFor="scheduled-week" className="text-sm font-medium">
@@ -1248,10 +1262,33 @@ export function TaskDetailPopup({
                         </div>
                       </div>
                     </div>
+                    </section>
+                    <section className="id-sched-sec" aria-label="Deadline and limits">
+                      <header className="id-sched-sechead"><span className="id-sched-num">03</span><h2>Deadline and limits</h2><p>What it must beat, and the windows it must stay inside.</p></header>
 
-                    {/* Scheduling Constraints */}
-                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                      <h3 className="font-semibold flex items-center gap-2">
+                        <div className="id-sched-card">
+                          <h3 className="id-sched-card-title">
+                            <Target className="h-4 w-4" />
+                            Deadline
+                          </h3>
+                          <div className="space-y-2">
+                            <Label htmlFor="deadline" className="text-sm font-medium">
+                              Deadline Date
+                            </Label>
+                            <Input
+                              id="deadline"
+                              type="date"
+                              value={dateInputValue(task.deadline)}
+                              onChange={(e) => {
+                                const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
+                                setTask({ ...task, deadline: date })
+                              }}
+                              className="focus-ring"
+                            />
+                          </div>
+                        </div>
+                    <div className="id-sched-card">
+                      <h3 className="id-sched-card-title">
                         <Settings className="h-4 w-4" />
                         Scheduling Constraints
                       </h3>
@@ -1359,6 +1396,7 @@ export function TaskDetailPopup({
                         />
                       </div>
                     </div>
+                    </section>
                   </div>
                 </TabsContent>
 

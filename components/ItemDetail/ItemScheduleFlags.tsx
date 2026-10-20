@@ -30,7 +30,7 @@ export function ItemScheduleFlags({
 }) {
   return (
     <>
-      <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="id-sched-row flex items-center justify-between rounded-lg border p-3">
         <div>
           <Label className="text-sm font-semibold">Send to Scheduler</Label>
           <p className="text-xs text-muted-foreground">
@@ -53,7 +53,7 @@ export function ItemScheduleFlags({
           }
         />
       </div>
-      <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="id-sched-row flex items-center justify-between rounded-lg border p-3">
         <div>
           <Label className="text-sm font-semibold">Auto-push</Label>
           <p className="text-xs text-muted-foreground">

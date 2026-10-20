@@ -54,7 +54,7 @@ export function TodoCommitmentFields({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="id-sched-row id-sched-row-tall space-y-3 rounded-lg border p-3">
       <div>
         <Label className="text-sm font-semibold">Required and prioritized</Label>
         <p className="text-xs text-muted-foreground">

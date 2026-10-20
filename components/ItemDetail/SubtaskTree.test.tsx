@@ -18,32 +18,34 @@ function Harness() {
 const read = () => JSON.parse(screen.getByTestId("json").textContent || "[]") as Subtask[]
 
 describe("SubtaskTree", () => {
-  it("adds steps with minutes, nests them as deep as you like, and sums minutes", async () => {
+  it("adds, nests, times and opens steps in its own outline", async () => {
     const user = userEvent.setup()
-    render(<Harness />)
+    const opened: string[] = []
+    function Opening() {
+      const [steps, setSteps] = useState<Subtask[]>([])
+      return (
+        <>
+          <SubtaskTree steps={steps} onChange={setSteps} onOpenStep={(s) => opened.push(s.description)} />
+          <output data-testid="json">{JSON.stringify(steps)}</output>
+        </>
+      )
+    }
+    render(<Opening />)
 
-    // The shared step tree: no blank line until asked.
-    expect(screen.queryByLabelText("Add step")).toBeNull()
-    await user.click(screen.getByRole("button", { name: "Add the first step" }))
-    await user.type(screen.getByLabelText("Add step"), "hang art")
-    await user.type(screen.getByLabelText("Minutes for the new step"), "10{Enter}")
-    expect(read()).toMatchObject([{ description: "hang art", estimatedDuration: 10 }])
+    await user.click(screen.getByRole("button", { name: "+ Add step" }))
+    await user.type(screen.getByLabelText("New step name"), "hang art{Enter}")
+    await user.click(screen.getByRole("button", { name: "Add a step inside hang art" }))
+    await user.type(screen.getByLabelText("New step name"), "find nails{Enter}")
+    expect(read()[0].subtasks?.map((s) => s.description)).toEqual(["find nails"])
 
-    // Enter went one level deeper; Shift+Enter stays there.
-    await user.type(screen.getByLabelText("Add step under hang art"), "find nails")
-    await user.type(screen.getByLabelText("Minutes for the new step"), "5{Shift>}{Enter}{/Shift}")
-    await user.type(screen.getByLabelText("Add step under hang art"), "measure wall")
-    await user.type(screen.getByLabelText("Minutes for the new step"), "15{Shift>}{Enter}{/Shift}")
-    expect(read()[0].subtasks?.map((s) => s.description)).toEqual(["find nails", "measure wall"])
-    expect(screen.getByText("=20m")).toBeInTheDocument()
+    const min = screen.getByLabelText("Minutes for find nails")
+    await user.type(min, "5{Enter}")
+    expect(read()[0].subtasks?.[0].estimatedDuration).toBe(5)
+    expect(screen.getByText("=5m")).toBeInTheDocument()
 
-    // A third level through the hover +.
-    fireEvent.keyDown(screen.getByLabelText("Add step under hang art"), { key: "Escape" })
-    await user.click(screen.getByRole("button", { name: "Add step inside find nails" }))
-    await user.type(screen.getByLabelText("Add step under find nails"), "check drawer{Enter}")
-    expect(read()[0].subtasks?.[0].subtasks?.[0].description).toBe("check drawer")
-    expect(screen.getByText("0 / 4 done")).toBeInTheDocument()
-    expect(screen.getByText("20m est")).toBeInTheDocument()
-    expect(screen.getByRole("tree", { name: "Subtasks" })).toBeInTheDocument()
+    await user.click(screen.getByLabelText("Done: find nails"))
+    expect(read()[0].subtasks?.[0].completed).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Open find nails" }))
+    expect(opened).toEqual(["find nails"])
   })
 })

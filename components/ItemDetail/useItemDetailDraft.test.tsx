@@ -80,3 +80,37 @@ describe("useItemDetailDraft addDependency cycle guard", () => {
     expect(screen.queryByText(/→/)).not.toBeInTheDocument()
   })
 })
+
+function UndoHarness({ taskId }: { taskId: string }) {
+  const { task, addTag, removeTag, undo, redo } = useItemDetailDraft(taskId)
+  return (
+    <div>
+      <span data-testid="tags">{(task?.tags ?? []).join(",")}</span>
+      <button type="button" onClick={() => addTag("x")}>add</button>
+      <button type="button" onClick={() => removeTag("x")}>drop</button>
+      <button type="button" onClick={() => undo()}>undo</button>
+      <button type="button" onClick={() => redo()}>redo</button>
+    </div>
+  )
+}
+
+describe("useItemDetailDraft undo", () => {
+  beforeEach(() => {
+    resetLocalStorage()
+    useTaskStore.getState().clearAllData()
+    seed({ id: "task-a", description: "Write" })
+  })
+
+  it("undoes and redoes draft edits, and a fresh load has nothing to undo", async () => {
+    const user = userEvent.setup()
+    render(<UndoHarness taskId="task-a" />)
+    await user.click(screen.getByRole("button", { name: "undo" }))
+    expect(screen.getByTestId("tags")).toHaveTextContent("")
+    await user.click(screen.getByRole("button", { name: "add" }))
+    expect(screen.getByTestId("tags")).toHaveTextContent("x")
+    await user.click(screen.getByRole("button", { name: "undo" }))
+    expect(screen.getByTestId("tags")).toHaveTextContent("")
+    await user.click(screen.getByRole("button", { name: "redo" }))
+    expect(screen.getByTestId("tags")).toHaveTextContent("x")
+  })
+})

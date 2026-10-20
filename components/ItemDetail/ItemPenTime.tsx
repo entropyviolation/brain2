@@ -167,7 +167,7 @@ export function ItemTrackedTime({
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const [showAll, setShowAll] = useState(false)
-  const tracked = useMemo(() => trackedTimeForItem(task, entries), [task, entries])
+  const tracked = useMemo(() => trackedTimeForItem(task, entries, { penScope: "tagged" }), [task, entries])
   const est = task.estimatedDuration ?? 0
   const left = est > 0 ? est - tracked.total : 0
   // est · parts · spent (Phase 6, R6); only when there are steps, else the line above says it all.
@@ -207,6 +207,11 @@ export function ItemTrackedTime({
           ]
             .filter(Boolean)
             .join(" · ")}
+        </p>
+      )}
+      {tracked.penPoolMinutes > 0 && (
+        <p className="ipt-quiet ipt-parts" title="Time on the linked pen that is not tagged with this item. Not counted above.">
+          pen overall {formatDuration(tracked.penPoolMinutes)} (not tagged to this)
         </p>
       )}
       {blocks.length > 0 && (
