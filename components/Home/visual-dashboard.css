@@ -1,0 +1,370 @@
+/**
+ * components/Home/visual-dashboard.css — Chrome the Visual dashboard added, in Milled
+ *
+ * The cells, edit mode, the gear, the copy settings panel, and the first-run
+ * guide are new pieces. This file draws them in Milled (today's satin
+ * handhelds) so that style keeps looking like itself. Dash draws the same
+ * pieces in `components/Home/dash/dash.css`, which loads after this file and
+ * wins inside `[data-style="dash"]`. DOM: the project file
+ * `visual-dashboard/dom-contract.md`. Look: `docs/DESIGN_STYLE.md` → Milled
+ * fascia and Dash.
+ */
+
+/* ---- Cells -------------------------------------------------------------- */
+
+.home-overview > .vd-cell {
+  position: relative;
+  min-width: 0;
+}
+
+/* No size picked on Milled: the tile keeps today's CSS footprint. */
+.home-overview > .vd-cell.is-auto {
+  display: contents;
+}
+
+/* A size picked in edit mode: the tile fills the cell's span. */
+body.win95-app .home95 .home-overview[data-style="milled"] > .vd-cell:not(.is-auto) > .home-tile,
+body.win95-app .hab95 .home95 .home-overview[data-style="milled"] > .vd-cell:not(.is-auto) > .home-tile {
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+/* ---- Edit mode ---------------------------------------------------------- */
+
+.vd-edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 6px 8px;
+  padding: 6px 8px 6px 10px;
+  border-radius: var(--r-3, 3px);
+  color: var(--face-ink, #1d2126);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--chrome-mist, #eef0f2), var(--chrome-face, #c0c0c0));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px var(--chrome-ring, #5c6064);
+}
+
+.vd-edit-banner p {
+  flex: 1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.vd-edit-lamp {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hab-crt-green, #7dffc4);
+  box-shadow: 0 0 6px var(--hab-crt-green, #7dffc4);
+}
+
+/* The banner over a Dash panel is a strip of the same glass. */
+.vd-edit-banner:has(+ .home-overview[data-style="dash"]) {
+  color: #cdeeff;
+  background: linear-gradient(180deg, #2c3034, #1c1f22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 0 0 1px #000;
+  font-family: var(--font-dotgothic), "DotGothic16", monospace;
+}
+
+.vd-edit-banner:has(+ .home-overview[data-style="dash"]) .vd-edit-lamp {
+  background: #5cf2d6;
+  box-shadow: 0 0 6px #5cf2d6;
+}
+
+.home-overview[data-editing="true"] > .vd-cell {
+  outline: 1px dashed color-mix(in srgb, var(--chrome-ring, #5c6064) 80%, transparent);
+  outline-offset: 2px;
+  cursor: grab;
+}
+
+.home-overview[data-editing="true"] > .vd-cell:focus-visible {
+  outline: 1px dotted #000080;
+}
+
+.home-overview > .vd-cell.is-dragging {
+  opacity: 0.5;
+}
+
+.home-overview > .vd-cell[data-drop="before"]::before,
+.home-overview > .vd-cell[data-drop="after"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--hab-crt-green, #7dffc4);
+  box-shadow: 0 0 6px var(--hab-crt-green, #7dffc4);
+}
+
+.home-overview > .vd-cell[data-drop="before"]::before { left: -7px; }
+.home-overview > .vd-cell[data-drop="after"]::after { right: -7px; }
+
+.home-overview .vd-grip {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border-radius: 3px;
+  font: 10px/12px monospace;
+  color: var(--face-ink-soft, #464c54);
+  background: var(--chrome-mist, #eef0f2);
+  box-shadow: 0 0 0 1px var(--chrome-ring, #5c6064);
+  pointer-events: none;
+}
+
+.home-overview .vd-resize {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  z-index: 4;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  cursor: nwse-resize;
+  background:
+    linear-gradient(135deg, transparent 40%, var(--face-ink-soft, #464c54) 40% 50%, transparent 50% 65%, var(--face-ink-soft, #464c54) 65% 75%, transparent 75%),
+    var(--chrome-mist, #eef0f2);
+  box-shadow: 0 0 0 1px var(--chrome-ring, #5c6064);
+}
+
+.home-overview .vd-size-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+  padding: 2px 5px;
+  border-radius: 2px;
+  font: 700 10px/1 var(--w95-font, Tahoma, sans-serif);
+  color: var(--hab-crt-green, #7dffc4);
+  background: #050b0a;
+  box-shadow: 0 0 0 1px #1d3a2c;
+}
+
+/* ---- Gear --------------------------------------------------------------- */
+
+/* The same opaque metal square as the close key beside it. */
+body.win95-app .home-widget-dialog button.vd-gear {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  margin-right: 6px;
+  padding: 0;
+  border: 1px solid var(--chrome-ring-deep, #3a3d40);
+  border-radius: var(--r-2, 2px);
+  color: #1c1e20;
+  background-color: var(--chrome-face, #c0c0c0);
+  background-image: var(--fascia-key-face);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(55, 58, 62, 0.55);
+  cursor: pointer;
+}
+
+body.win95-app .home-widget-dialog button.vd-gear.is-on {
+  color: var(--hab-crt-green, #7dffc4);
+  background: #07140f;
+  box-shadow: inset 0 0 0 1px #1d3a2c, 0 0 6px rgba(125, 255, 196, 0.45);
+}
+
+/* ---- Copy settings ------------------------------------------------------ */
+
+.home-widget-dialog .vd-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-widget-dialog .vd-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 3px double color-mix(in srgb, var(--chrome-ring, #5c6064) 45%, transparent);
+}
+
+.home-widget-dialog .vd-settings-group:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.home-widget-dialog .vd-settings-group > h4 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.home-widget-dialog .vd-lamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.home-widget-dialog .vd-lamps > legend {
+  width: 100%;
+}
+
+.home-widget-dialog .vd-lamp-choice {
+  position: relative;
+  align-items: center;
+  margin: 0;
+  padding: 3px 8px 3px 4px;
+  border-radius: var(--r-6, 6px);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 0 0 1px var(--chrome-lo, #8a8e92);
+}
+
+/* The chip is the radio: the native dot is kept for focus and screen readers, out of sight. */
+.home-widget-dialog .vd-lamp-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.home-widget-dialog .vd-lamp-choice:has(input:focus-visible) {
+  outline: 1px dotted #000080;
+  outline-offset: 2px;
+}
+
+.home-widget-dialog .vd-lamp-choice:has(input:checked) {
+  background: #07140f;
+  color: #d7ffe9;
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+}
+
+.home-widget-dialog .vd-lamp-swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lamp, #7dffc4);
+  box-shadow: 0 0 5px var(--lamp, #7dffc4);
+}
+
+.home-widget-dialog .vd-lamp-choice[data-lamp="phosphor"] { --lamp: #7dffc4; }
+.home-widget-dialog .vd-lamp-choice[data-lamp="blue"] { --lamp: #9ad7ff; }
+.home-widget-dialog .vd-lamp-choice[data-lamp="violet"] { --lamp: #a98bff; }
+.home-widget-dialog .vd-lamp-choice[data-lamp="white"] { --lamp: #eef6ff; }
+
+.home-widget-dialog .vd-size-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.home-widget-dialog .vd-size-keys > .home-review-key {
+  align-self: auto;
+}
+
+.home-widget-dialog .vd-settings-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.home-widget-dialog .vd-remove-confirm {
+  padding: 8px 10px;
+  border-radius: var(--r-6, 6px);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px var(--chrome-lo, #8a8e92);
+}
+
+.home-widget-dialog .vd-copy-id {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+/* ---- First-run guide ---------------------------------------------------- */
+
+.home-widget-dialog .vd-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 170px;
+}
+
+.home-widget-dialog .vd-guide-step {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .vd-guide-pips {
+  display: flex;
+  gap: 4px;
+}
+
+.home-widget-dialog .vd-guide-pips > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a221e;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.home-widget-dialog .vd-guide-pips > i.is-done {
+  background: color-mix(in srgb, var(--hab-crt-green, #7dffc4) 45%, #1a221e);
+}
+
+.home-widget-dialog .vd-guide-pips > i.is-on {
+  background: var(--hab-crt-green, #7dffc4);
+  box-shadow: 0 0 6px var(--hab-crt-green, #7dffc4);
+}
+
+.home-widget-dialog .vd-guide-title {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-8, 8px);
+  font-size: 17px;
+  color: var(--hab-crt-green, #7dffc4);
+  background: #07140f;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.6);
+}
+
+.home-widget-dialog .vd-guide-body {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.home-widget-dialog .vd-guide-keys {
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+/* ---- Unknown kind ------------------------------------------------------- */
+
+.home-overview .home-tile.is-unknown {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--face-ink-soft, #464c54);
+}
+
+/* One row tall on Milled (a 74px row): the screen takes the room, the foot steps out. */
+body.win95-app .home95 .home-overview[data-style="milled"] > .vd-cell:is([data-size="1x1"], [data-size="2x1"], [data-size="3x1"]) > .home-tile .home-tile-foot,
+body.win95-app .home95 .home-overview[data-style="milled"] > .vd-cell:is([data-size="1x1"], [data-size="2x1"], [data-size="3x1"]) > .home-tile .home-review-actions {
+  display: none;
+}

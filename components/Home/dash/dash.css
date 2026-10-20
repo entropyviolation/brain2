@@ -17,7 +17,7 @@
 
 /* ---- Tokens ------------------------------------------------------------ */
 
-.home-overview[data-style="dash"],
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"],
 .home-widget-dialog[data-style="dash"],
 .dash-sample {
   --dash-glass: #020708;
@@ -39,8 +39,8 @@
  * these are declared on every element in the scope: a face that changes
  * `--dash-ink` gets its own ghost, legend, and glow.
  */
-.home-overview[data-style="dash"],
-.home-overview[data-style="dash"] *,
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"],
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] *,
 .home-widget-dialog[data-style="dash"],
 .home-widget-dialog[data-style="dash"] *,
 .dash-sample,
@@ -69,7 +69,7 @@
 
 /* ---- The panel ---------------------------------------------------------- */
 
-.home-overview[data-style="dash"] {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
   position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--dash-cell-w));
@@ -97,7 +97,7 @@
 }
 
 /* A soft glare across the glass, like the photos. Not interactive. */
-.home-overview[data-style="dash"]::after {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"]::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -111,7 +111,7 @@
   );
 }
 
-.home-overview[data-style="dash"] > .vd-cell {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell {
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -121,7 +121,7 @@
 }
 
 /* The button the backend wraps a face in: no chrome of its own. */
-.home-overview[data-style="dash"] > .vd-cell > button {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face {
   all: unset;
   box-sizing: border-box;
   display: block;
@@ -131,26 +131,26 @@
   border-radius: 6px;
 }
 
-.home-overview[data-style="dash"] > .vd-cell > button:hover {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face:hover {
   background: color-mix(in srgb, var(--dash-ink) 4%, transparent);
 }
 
-.home-overview[data-style="dash"] > .vd-cell > button:focus-visible {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face:focus-visible {
   outline: 1px dotted var(--dash-ink);
   outline-offset: -2px;
 }
 
 /* × only in edit mode on Dash. */
-.home-overview[data-style="dash"] .home-tile-hide {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .home-tile-hide {
   display: none;
 }
 
-.home-overview[data-style="dash"][data-editing="true"] .home-tile-hide {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] .home-tile-hide {
   display: grid;
 }
 
 /* A kind this build does not know. */
-.home-overview[data-style="dash"] .home-tile.is-unknown {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .home-tile.is-unknown {
   display: grid;
   place-items: center;
   height: 100%;
@@ -735,7 +735,7 @@ rect.dash-pet-z {
 
 /* ---- Edit mode ---------------------------------------------------------- */
 
-.home-overview[data-style="dash"][data-editing="true"] > .vd-cell {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] > .vd-cell {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 35%, transparent);
   background-image: repeating-linear-gradient(
     135deg,
@@ -744,20 +744,20 @@ rect.dash-pet-z {
   );
 }
 
-.home-overview[data-style="dash"][data-editing="true"] > .vd-cell > button {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] > .vd-cell > .vd-face {
   cursor: grab;
 }
 
-.home-overview[data-style="dash"] > .vd-cell.is-dragging {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell.is-dragging {
   opacity: 0.45;
 }
 
-.home-overview[data-style="dash"] > .vd-cell.is-resizing {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell.is-resizing {
   box-shadow: inset 0 0 0 1px var(--dash-ink), 0 0 10px color-mix(in srgb, var(--dash-ink) 35%, transparent);
 }
 
-.home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before,
-.home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before,
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after {
   content: "";
   position: absolute;
   top: 2px;
@@ -767,25 +767,41 @@ rect.dash-pet-z {
   box-shadow: 0 0 6px var(--dash-ink);
 }
 
-.home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before { left: -4px; }
-.home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after { right: -4px; }
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before { left: -4px; }
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after { right: -4px; }
 
-.home-overview[data-style="dash"] .vd-grip {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-grip {
   position: absolute;
-  top: 2px;
+  top: 0;
   left: 50%;
   z-index: 2;
-  width: 18px;
-  height: 6px;
   transform: translateX(-50%);
-  border: 0;
-  padding: 0;
+  font: 9px/1 monospace;
+  color: var(--dash-ink);
+  opacity: 0.75;
   cursor: grab;
-  background: radial-gradient(circle, var(--dash-ink) 0.8px, transparent 1.2px) 0 0 / 4px 3px;
-  opacity: 0.8;
+  pointer-events: none;
 }
 
-.home-overview[data-style="dash"] .vd-resize {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-hide {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  font: 11px/1 var(--dash-seg-font);
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+  cursor: pointer;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-resize {
   position: absolute;
   right: 1px;
   bottom: 1px;
@@ -799,7 +815,7 @@ rect.dash-pet-z {
     linear-gradient(135deg, transparent 45%, var(--dash-ink) 45% 55%, transparent 55% 70%, var(--dash-ink) 70% 80%, transparent 80%);
 }
 
-.home-overview[data-style="dash"] .vd-size-badge {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-size-badge {
   position: absolute;
   right: 4px;
   top: 4px;
@@ -810,7 +826,7 @@ rect.dash-pet-z {
   background: var(--dash-lcd);
 }
 
-.home-overview[data-style="dash"] .vd-edit-banner {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-edit-banner {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -821,7 +837,7 @@ rect.dash-pet-z {
   color: var(--dash-lcd);
 }
 
-.home-overview[data-style="dash"] .vd-edit-lamp {
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-edit-lamp {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -831,33 +847,38 @@ rect.dash-pet-z {
 
 /* ---- Detail popup ------------------------------------------------------- */
 
-/* Same frame and keys as Milled; the body becomes a lit cluster screen. */
-body .home-widget-dialog.home-widget-instrument[data-style="dash"] {
+/*
+ * Same frame and keys as Milled; the frame turns to the gray hood and the
+ * body becomes a lit cluster screen. The house dialog face in `win95.css`
+ * paints from `--fascia-dialog-face` and `--fascia-dialog-ring`, so the hood
+ * is set through those tokens rather than by out-ranking that rule.
+ */
+body:is(*, .win95-app) .home-widget-dialog.home-widget-instrument[data-style="dash"] {
   --friend-glow: var(--dash-ink);
   --friend-lcd: var(--dash-glass-2);
   --friend-nixie: #8fd3ff;
-  color: var(--dash-lcd);
-  background:
-    linear-gradient(180deg, var(--dash-hood-hi) 0, var(--dash-hood) 14px, #2c3034 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 0 0 1px #111,
-    0 8px 0 #1c1f22,
+  --chrome-face: #33383c;
+  --fascia-dialog-face: linear-gradient(180deg, var(--dash-hood-hi) 0, var(--dash-hood) 16px, #2a2e31 100%);
+  --fascia-dialog-ring: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 1px #111, 0 8px 0 #1c1f22,
     0 18px 30px rgba(0, 0, 0, 0.45);
+  color: var(--dash-lcd);
+  background-color: var(--chrome-face);
+  background-image: var(--fascia-dialog-face);
+  box-shadow: var(--fascia-dialog-ring);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-caption h2 {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-caption h2 {
   font: 400 10px/1 var(--dash-seg-font);
   letter-spacing: 0.12em;
   color: #e7eef0;
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-power {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-power {
   background: var(--dash-ink);
   box-shadow: 0 0 6px var(--dash-ink);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-detail {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-detail {
   padding: 10px;
   border-radius: 8px;
   background:
@@ -867,7 +888,7 @@ body .home-widget-dialog[data-style="dash"] .home-widget-detail {
   color: var(--dash-lcd);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-lead {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-lead {
   background: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 18%, transparent);
   color: var(--dash-lcd);
@@ -875,31 +896,31 @@ body .home-widget-dialog[data-style="dash"] .home-widget-lead {
   text-shadow: var(--dash-text-glow);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-note {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-note {
   color: color-mix(in srgb, var(--dash-lcd) 70%, transparent);
   font-size: 11px;
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-well,
-body .home-widget-dialog[data-style="dash"] .home-widget-row,
-body .home-widget-dialog[data-style="dash"] .home-points-detail {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-well,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-row,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-points-detail {
   background: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
   color: var(--dash-lcd);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-well-label {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-well-label {
   font: 400 7px/1 var(--dash-seg-font);
   letter-spacing: 0.1em;
   color: var(--dash-legend);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-widget-glow {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-glow {
   color: var(--dash-ink);
   text-shadow: var(--dash-text-glow);
 }
 
-body .home-widget-dialog[data-style="dash"] .home-review-key {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-review-key {
   background: linear-gradient(180deg, #4a5054, #2c3034);
   color: var(--dash-lcd);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 0 #000;
@@ -909,14 +930,14 @@ body .home-widget-dialog[data-style="dash"] .home-review-key {
   padding: 6px 10px;
 }
 
-body .home-widget-dialog[data-style="dash"] .home-review-key.is-on {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-review-key.is-on {
   background: var(--dash-lcd);
   color: var(--dash-glass);
   box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 50%, transparent);
 }
 
 /* The gear: a square cap the size of the close key, in either style. */
-body .home-widget-dialog[data-style="dash"] .vd-gear {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-gear {
   display: grid;
   place-items: center;
   width: 22px;
@@ -932,8 +953,8 @@ body .home-widget-dialog[data-style="dash"] .vd-gear {
   cursor: pointer;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-gear[aria-pressed="true"],
-body .home-widget-dialog[data-style="dash"] .home-widget-detail[data-view="settings"] ~ * .vd-gear {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-gear[aria-pressed="true"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-detail[data-view="settings"] ~ * .vd-gear {
   color: var(--dash-glass);
   background: var(--dash-ink);
   box-shadow: 0 0 8px color-mix(in srgb, var(--dash-ink) 55%, transparent);
@@ -941,13 +962,13 @@ body .home-widget-dialog[data-style="dash"] .home-widget-detail[data-view="setti
 
 /* ---- Settings view ------------------------------------------------------ */
 
-body .home-widget-dialog[data-style="dash"] .vd-settings {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings-group {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -956,7 +977,7 @@ body .home-widget-dialog[data-style="dash"] .vd-settings-group {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 14%, transparent);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings-group h4 {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group h4 {
   margin: 0;
   font: 400 8px/1 var(--dash-seg-font);
   letter-spacing: 0.12em;
@@ -964,29 +985,29 @@ body .home-widget-dialog[data-style="dash"] .vd-settings-group h4 {
   color: var(--dash-legend);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings label,
-body .home-widget-dialog[data-style="dash"] .vd-settings .home-widget-field {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings label,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings .home-widget-field {
   color: var(--dash-lcd);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings input[type="text"],
-body .home-widget-dialog[data-style="dash"] .vd-settings input[type="date"],
-body .home-widget-dialog[data-style="dash"] .vd-settings input:not([type]),
-body .home-widget-dialog[data-style="dash"] .vd-settings .native-select {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input[type="text"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input[type="date"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input:not([type]),
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings .native-select {
   color: var(--dash-lcd);
   background: var(--dash-glass);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-lamps,
-body .home-widget-dialog[data-style="dash"] .vd-size-keys {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamps,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice,
-body .home-widget-dialog[data-style="dash"] .vd-size-keys > button {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1001,15 +1022,14 @@ body .home-widget-dialog[data-style="dash"] .vd-size-keys > button {
   cursor: pointer;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[aria-pressed="true"],
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[aria-checked="true"],
-body .home-widget-dialog[data-style="dash"] .vd-size-keys > button[aria-pressed="true"],
-body .home-widget-dialog[data-style="dash"] .vd-size-keys > button.is-on {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice:has(input:checked),
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button[aria-pressed="true"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button.is-on {
   color: var(--dash-glass);
   background: var(--dash-lcd);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-lamp-swatch {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-swatch {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -1017,74 +1037,124 @@ body .home-widget-dialog[data-style="dash"] .vd-lamp-swatch {
   box-shadow: 0 0 5px var(--dash-ink);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="phosphor"] { --dash-ink: #5cf2d6; }
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="blue"] { --dash-ink: #8fd3ff; }
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="violet"] { --dash-ink: #b39cff; }
-body .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="white"] { --dash-ink: #e4f3ff; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="phosphor"] { --dash-ink: #5cf2d6; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="blue"] { --dash-ink: #8fd3ff; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="violet"] { --dash-ink: #b39cff; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="white"] { --dash-ink: #e4f3ff; }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings-switch {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font: 400 12px/1.2 var(--dash-dot-font);
-  color: var(--dash-lcd);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-remove-confirm {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch .hab-rocker {
+  --hab-rocker-ink: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch .hab-rocker-caption {
+  font: 400 12px/1.2 var(--dash-dot-font);
+  color: var(--dash-lcd);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-remove-confirm {
   padding: 8px;
   border-radius: 6px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-lcd) 30%, transparent);
   font: 400 12px/1.3 var(--dash-dot-font);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-settings-done {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-done {
   align-self: flex-end;
+}
+
+/* Fields, choices, and fieldsets inside a Dash detail. */
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-fieldset {
+  border: 0;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 14%, transparent);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-fieldset legend,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-field {
+  font: 400 8px/1.2 var(--dash-seg-font);
+  letter-spacing: 0.1em;
+  color: var(--dash-legend);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice {
+  font: 400 12px/1.3 var(--dash-dot-font);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice input[type="radio"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice input[type="checkbox"] {
+  accent-color: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-field input {
+  font: 400 13px var(--dash-dot-font);
+  letter-spacing: 0;
+  color: var(--dash-lcd);
+  background: var(--dash-glass);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group > h4 {
+  color: var(--dash-legend);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group {
+  border-top: 0;
 }
 
 /* ---- First-run guide ---------------------------------------------------- */
 
-body .home-widget-dialog[data-style="dash"] .vd-guide {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide {
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 180px;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-pips {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips {
   display: flex;
   gap: 4px;
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-pips > i {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i {
   width: 14px;
   height: 3px;
   background: var(--dash-ghost);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-done {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-done {
   background: color-mix(in srgb, var(--dash-ink) 45%, transparent);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-on {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-on {
   background: var(--dash-ink);
   box-shadow: 0 0 5px var(--dash-ink);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-title {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-title {
   margin: 0;
   font: 400 20px/1.15 var(--dash-dot-font);
   color: var(--dash-lcd);
   text-shadow: var(--dash-text-glow);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-body {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-body {
   margin: 0;
   font: 400 13px/1.45 var(--dash-dot-font);
   color: color-mix(in srgb, var(--dash-lcd) 85%, transparent);
 }
 
-body .home-widget-dialog[data-style="dash"] .vd-guide-keys {
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-keys {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -1124,7 +1194,7 @@ body .home-widget-dialog[data-style="dash"] .vd-guide-keys {
 /* ---- Small screens and motion ------------------------------------------- */
 
 @media (max-width: 520px) {
-  .home-overview[data-style="dash"] {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
     --dash-cell-w: 76px;
     --dash-cell-h: 56px;
     --dash-gap: 5px;
@@ -1133,7 +1203,7 @@ body .home-widget-dialog[data-style="dash"] .vd-guide-keys {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-overview[data-style="dash"] * {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] * {
     transition: none !important;
   }
 }

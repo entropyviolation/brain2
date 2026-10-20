@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react"
 import { format } from "date-fns"
 import { useHomeDayStats, type HomeDayCount } from "@/components/Home/home-day-stats"
 import { useHomePeriodStats } from "@/components/Home/home-period-stats"
@@ -33,12 +33,12 @@ import {
   StairMeter,
   type DashPictoName,
 } from "@/components/Home/dash/dash-primitives"
-import type { DashSize } from "@/components/Home/dash/dash-sizes"
+import { registerDashFaces, type DashFaceProps } from "@/components/Home/widgets/dash-face-registry"
+import type { WidgetSize } from "@/lib/widgets/types"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { awardFace, latestPointAward } from "@/lib/habit-points"
 import {
   affirmationLinesForHome,
-  daysUntilRemainingMs,
   dayLampWord,
   petPose,
   pickHomeNext,
@@ -55,6 +55,7 @@ import {
   planAndLivedFace,
 } from "@/lib/home-glances"
 import { useHomeDaysUntilStore, type HomeDaysUntilItem } from "@/lib/home-days-until-store"
+import { countdownFace } from "@/lib/countdown"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { resolveWeatherCity, weatherRainCopy } from "@/lib/home-weather"
 import { fetchHomeDayWeather, type HomeDayWeather } from "@/lib/weather-client"
@@ -98,36 +99,17 @@ import { cn } from "@/lib/utils"
 
 /* ---- Contract ----------------------------------------------------------- */
 
-/** The installed copy as the dashboard hands it to a face. */
-export type DashCopy = {
-  id: string
-  kind: string
-  /** perKey kinds only: the language for Language study, the place for Weather. */
-  key?: string
-  /** User's title. Empty means the kind's own legend. */
-  title?: string
-  lamp?: string
-  showFoot?: boolean
-}
-
-export type DashFaceProps = {
-  size: DashSize
-  currentDate: Date
-  settings?: Record<string, unknown>
-  copy: DashCopy
-}
-
-function pick<T extends string>(settings: Record<string, unknown> | undefined, key: string, allowed: readonly T[], fallback: T): T {
+function pick<T extends string>(settings: DashFaceProps["settings"] | undefined, key: string, allowed: readonly T[], fallback: T): T {
   const raw = settings?.[key]
   return typeof raw === "string" && (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback
 }
 
-function flag(settings: Record<string, unknown> | undefined, key: string, fallback: boolean): boolean {
+function flag(settings: DashFaceProps["settings"] | undefined, key: string, fallback: boolean): boolean {
   const raw = settings?.[key]
   return typeof raw === "boolean" ? raw : fallback
 }
 
-function text(settings: Record<string, unknown> | undefined, key: string): string {
+function text(settings: DashFaceProps["settings"] | undefined, key: string): string {
   const raw = settings?.[key]
   return typeof raw === "string" ? raw.trim() : ""
 }
@@ -201,8 +183,8 @@ function DashFace({
   )
 }
 
-const wide = (size: DashSize) => size[0] !== "1"
-const tall = (size: DashSize) => size[2] !== "1"
+const wide = (size: WidgetSize) => size[0] !== "1"
+const tall = (size: WidgetSize) => size[2] !== "1"
 
 /* ---- Today's Progress --------------------------------------------------- */
 
@@ -414,128 +396,44 @@ function MoonFace(props: DashFaceProps) {
 
 /* ---- Countdown (was Days Until) ---------------------------------------- */
 
-type MarkExtras = {
-  unit?: "days" | "weeks" | "sleeps" | "workdays"
-  repeat?: "none" | "yearly" | "monthly"
-  start?: string
-  milestones?: boolean
-  whenPassed?: "countup" | "done" | "hide"
-}
-
-const MS_DAY = 86_400_000
-
-function workdaysBetween(a: Date, b: Date): number {
-  const [from, to] = a < b ? [a, b] : [b, a]
-  let n = 0
-  const day = new Date(from.getFullYear(), from.getMonth(), from.getDate())
-  const end = new Date(to.getFullYear(), to.getMonth(), to.getDate())
-  while (day < end) {
-    day.setDate(day.getDate() + 1)
-    const dow = day.getDay()
-    if (dow !== 0 && dow !== 6) n += 1
-  }
-  return n
-}
-
-/** Roll a repeating mark forward to its next date on or after `now`. */
-function nextRepeat(date: string, repeat: MarkExtras["repeat"], now: Date): string {
-  if (!date || !repeat || repeat === "none") return date
-  const [y, m, d] = date.split("-").map(Number)
-  if (!y || !m || !d) return date
-  let at = new Date(y, m - 1, d)
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  let guard = 0
-  while (at < today && guard < 2400) {
-    at = repeat === "yearly" ? new Date(at.getFullYear() + 1, m - 1, d) : new Date(at.getFullYear(), at.getMonth() + 1, d)
-    guard += 1
-  }
-  return formatLocalDateKey(at)
-}
-
-/** Round counts that earn a milestone lamp on a count-up mark. */
-function isMilestone(days: number): boolean {
-  return days > 0 && (days % 100 === 0 || days % 365 === 0)
-}
-
-function countdownReading(ms: number, unit: NonNullable<MarkExtras["unit"]>, target: Date, now: Date): { value: string; unit: string } {
-  const abs = Math.abs(ms)
-  if (unit === "weeks") return { value: (abs / (7 * MS_DAY)).toFixed(abs < 7 * MS_DAY * 10 ? 1 : 0), unit: "WK" }
-  if (unit === "sleeps") {
-    const nights = Math.round(
-      Math.abs(
-        new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime() -
-          new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(),
-      ) / MS_DAY,
-    )
-    return { value: String(nights), unit: "SLEEPS" }
-  }
-  if (unit === "workdays") return { value: String(workdaysBetween(now, target)), unit: "WORK" }
-  if (abs < MS_DAY) {
-    const h = Math.floor(abs / 3_600_000)
-    const m = Math.floor((abs % 3_600_000) / 60_000)
-    return { value: `${h}:${String(m).padStart(2, "0")}`, unit: "H:M" }
-  }
-  return { value: String(Math.floor(abs / MS_DAY)), unit: "DAYS" }
+/** Printed beside the digits for the whole-unit formats. */
+const COUNT_UNIT: Partial<Record<HomeDaysUntilItem["format"], string>> = {
+  days: "DAYS",
+  weeks: "WK",
+  sleeps: "SLEEPS",
+  workdays: "WORK",
 }
 
 function CountdownFace(props: DashFaceProps) {
   const { settings, size } = props
   const markId = text(settings, "markId")
-  const item = useHomeDaysUntilStore((s) => s.items.find((entry) => entry.id === markId) ?? s.items[0]) as
-    | (HomeDaysUntilItem & MarkExtras)
-    | undefined
+  const item = useHomeDaysUntilStore((s) => s.items.find((entry) => entry.id === markId))
   const now = useNow(15_000)
-  if (!item || !item.date) {
+  if (!item) {
     return (
       <DashFace props={props} legend="Countdown" picto="flag" lit={false} foot="Set a date">
         <DashReading text="—" />
       </DashFace>
     )
   }
-  const date = nextRepeat(item.date, item.repeat, now)
-  const ms = daysUntilRemainingMs(date, item.time, now)
-  if (ms == null) {
-    return (
-      <DashFace props={props} legend={item.label || "Countdown"} picto="flag" lit={false} foot="Set a date">
-        <DashReading text="—" />
-      </DashFace>
-    )
-  }
-  const target = new Date(now.getTime() + ms)
-  const passed = ms <= 0
-  const counting = item.mode === "countup" || (item.mode === "auto" && passed) ? "SINCE" : "UNTIL"
-  const done = passed && item.mode !== "countup" && item.whenPassed === "done"
-  const reading = countdownReading(ms, item.unit ?? "days", target, now)
-  const days = Math.floor(Math.abs(ms) / MS_DAY)
-  const milestone = Boolean(item.milestones) && counting === "SINCE" && isMilestone(days)
-  let span: number | null = null
-  if (item.start) {
-    const [y, m, d] = item.start.split("-").map(Number)
-    if (y && m && d) {
-      const start = new Date(y, m - 1, d).getTime()
-      const total = target.getTime() - start
-      span = total > 0 ? (now.getTime() - start) / total : null
-    }
-  }
+  const face = countdownFace(item, now)
+  const counting = face.caption === "Count up" ? "SINCE" : "UNTIL"
+  const unit = COUNT_UNIT[item.format]
   return (
     <DashFace
       props={props}
       legend={item.label || "Countdown"}
       picto="flag"
-      lit={!done}
-      foot={done ? "Done" : `${counting === "UNTIL" ? "until" : "since"} ${format(target, "MMM d")}`}
-      className={cn(milestone && "is-milestone")}
+      lit={Boolean(face.date) && !face.hidden && !(face.passed && face.caption === "Countdown")}
+      foot={face.footer}
+      className={cn(face.milestone && "is-milestone")}
     >
-      {done ? (
-        <DashWord>Done</DashWord>
-      ) : (
-        <div className="dash-count">
-          {size !== "1x1" ? <DashSelector options={["UNTIL", "SINCE"]} active={counting} className="is-column" /> : null}
-          <DashReading text={reading.value} />
-          <span className="dash-unit">{reading.unit}</span>
-        </div>
-      )}
-      {span != null && size !== "1x1" ? <BarMeter value={span} segments={16} label="Of the span" /> : null}
+      <div className="dash-count">
+        {size !== "1x1" && face.date ? <DashSelector options={["UNTIL", "SINCE"]} active={counting} className="is-column" /> : null}
+        <DashReading text={face.crt} />
+        {unit && face.date ? <span className="dash-unit">{unit}</span> : null}
+      </div>
+      {face.progress != null && size !== "1x1" ? <BarMeter value={face.progress} segments={16} label="Of the span" /> : null}
     </DashFace>
   )
 }
@@ -1006,7 +904,7 @@ function SolarFace(props: DashFaceProps) {
 
 /* ---- Registry ----------------------------------------------------------- */
 
-export const DASH_FACES: Record<string, (props: DashFaceProps) => ReactNode> = {
+export const DASH_FACES: Record<string, ComponentType<DashFaceProps>> = {
   progress: ProgressFace,
   review: RitualsFace,
   points: PointsFace,
@@ -1028,3 +926,4 @@ export const DASH_FACES: Record<string, (props: DashFaceProps) => ReactNode> = {
   solar: SolarFace,
 }
 
+registerDashFaces(DASH_FACES)
