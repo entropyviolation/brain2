@@ -256,7 +256,11 @@ export function pointsPeriodSeries(
   })
 
   const last = buckets[buckets.length - 1]!
-  const value = round2(values[values.length - 1] ?? 0)
+  // All time in New mode heads with the whole window (every point since the first), not the last bucket.
+  const value =
+    period === "all" && mode === "new"
+      ? round2(values.reduce((a, b) => a + b, 0))
+      : round2(values[values.length - 1] ?? 0)
   let previous: number
   if (mode === "new") {
     previous = period === "all" ? 0 : round2(values[values.length - 2] ?? 0)

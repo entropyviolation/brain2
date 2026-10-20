@@ -15,6 +15,7 @@
  */
 
 import { objectiveMultiplierFor } from "@/lib/goals-store"
+import { periodKeyFor } from "@/lib/objectives"
 import { awardReason, type LedgerAward } from "@/lib/habit-points"
 import { beatTheClockMultiplier, itemTitleOrUntitled, taskIsNextAction } from "@/lib/item-utils"
 import { pointsRuleDef, type PointsRuleId } from "@/lib/points-rules"
@@ -126,7 +127,9 @@ function objectiveMultipliers(ctx: AwardContext, ids: readonly string[] | undefi
     const objective = ctx.objectives.find((o) => o.id === id)
     if (!objective) continue
     const value = objectiveMultiplierFor(objective, date)
-    const prioritized = (objective.priorities ?? []).some((p) => p.multiplier === value)
+    const prioritized = (objective.priorities ?? []).some(
+      (p) => p.periodKey === periodKeyFor(p.period, date) && p.multiplier === value,
+    )
     out.push({
       label: `Objective · ${objective.title}`,
       value,
