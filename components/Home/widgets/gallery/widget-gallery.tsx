@@ -22,6 +22,7 @@ const ABOUT = "about"
 export function WidgetGallery({ open, initialKind }: { open: boolean; initialKind?: string }) {
   const copies = useDashboardStore((s) => s.copies)
   const ensureReady = useDashboardStore((s) => s.ensureReady)
+  const style = useDashboardStore((s) => s.style)
   const kinds = allWidgetKinds()
   const grouped = GROUPS.map((group) => ({ group, kinds: kinds.filter((kind) => kind.group === group) })).filter(
     (entry) => entry.kinds.length > 0,
@@ -62,7 +63,7 @@ export function WidgetGallery({ open, initialKind }: { open: boolean; initialKin
   const kind = page === ABOUT ? undefined : widgetKind(page)
 
   return (
-    <div className="home-catalog vdg" data-testid="home-widget-catalog">
+    <div className="home-catalog vdg" data-style={style} data-testid="home-widget-catalog">
       <div className="home-catalog-body vdg-body">
         <nav className="home-catalog-list vdg-rail" role="listbox" aria-label="All widgets">
           <button
