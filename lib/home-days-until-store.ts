@@ -1,10 +1,16 @@
 /**
- * lib/home-days-until-store.ts — Countdown / count-up home tiles
+ * lib/home-days-until-store.ts — Countdown marks (was Days Until)
  *
- * Many timers. Each has a label, date, optional clock, unit/decimal format,
+ * Many marks; each Countdown copy on the Visual dashboard draws one
+ * (`settings.markId`). Each has a label, date, optional clock, format,
  * countdown-to or count-up-from mode, and an optional Plan event link with
- * all-day scheduling. Storage: `brain2-home-days-until` (persist **v3** is
- * the `items` list; v2 was one object). Included in the Settings full backup.
+ * all-day scheduling. Countdown adds: whole units (days, weeks, sleeps,
+ * working days), a yearly or monthly repeat, an optional start date for a
+ * progress bar, milestone lamps on count-ups, and what a countdown does once
+ * it passes. Older builds read the new formats as `unit` and drop the other
+ * new fields. Storage: `brain2-home-days-until` (persist **v3** is the
+ * `items` list; v2 was one object; an empty list stays empty). Included in
+ * the Settings full backup. Face math: `lib/countdown.ts`.
  */
 "use client"
 
@@ -17,7 +23,15 @@ export const HOME_DAYS_UNTIL_STORAGE_KEY = persistKey("home-days-until")
 
 export const DEFAULT_DAYS_UNTIL_ID = "default"
 
-export type DaysUntilFormat = "unit" | "decimal"
+/** `unit` is `01 day 3 hours`, `decimal` is `1.25 days`; the rest are one whole unit. */
+export type DaysUntilFormat = "unit" | "decimal" | "days" | "weeks" | "sleeps" | "workdays"
+
+export const DAYS_UNTIL_FORMATS: DaysUntilFormat[] = ["unit", "decimal", "days", "weeks", "sleeps", "workdays"]
+
+export type DaysUntilRepeat = "none" | "yearly" | "monthly"
+
+/** What a countdown does once its mark passes. `countup` is the old Auto face. */
+export type DaysUntilWhenPassed = "stay" | "countup" | "hide"
 
 /**
  * Count down to the mark, count up from it, or `auto` (Until while ahead,
@@ -37,6 +51,14 @@ export type HomeDaysUntilItem = {
   eventId: string
   /** When true, keep (or create) an all-day Plan event for this mark. */
   scheduleAllDay: boolean
+  /** Roll to the next yearly or monthly occurrence (birthdays, anniversaries). */
+  repeat: DaysUntilRepeat
+  /** Optional `YYYY-MM-DD` start; a countdown then shows how far along the span is. */
+  start: string
+  /** Count-ups light a lamp at round numbers (every 100 days, each year). */
+  milestones: boolean
+  /** Countdown mode only: stay at 0, switch to counting up, or hide the face. */
+  whenPassed: DaysUntilWhenPassed
 }
 
 /** @deprecated Prefer `HomeDaysUntilItem`. Flat shape kept for migrate + tests. */
@@ -55,6 +77,10 @@ export const EMPTY_HOME_DAYS_UNTIL_ITEM: Omit<HomeDaysUntilItem, "id"> = {
   mode: "countdown",
   eventId: "",
   scheduleAllDay: false,
+  repeat: "none",
+  start: "",
+  milestones: false,
+  whenPassed: "stay",
 }
 
 /** Fresh vault / empty migrate seed — auto keeps the old Until/Since face. */
@@ -67,6 +93,10 @@ export const DEFAULT_HOME_DAYS_UNTIL_ITEM: HomeDaysUntilItem = {
   mode: "auto",
   eventId: "",
   scheduleAllDay: false,
+  repeat: "none",
+  start: "",
+  milestones: false,
+  whenPassed: "stay",
 }
 
 export const EMPTY_HOME_DAYS_UNTIL: HomeDaysUntil = {
@@ -80,7 +110,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/
 const TIME = /^\d{2}:\d{2}$/
 
 export function sanitizeDaysUntilFormat(value: unknown): DaysUntilFormat {
-  return value === "decimal" ? "decimal" : "unit"
+  return DAYS_UNTIL_FORMATS.includes(value as DaysUntilFormat) ? (value as DaysUntilFormat) : "unit"
 }
 
 export function sanitizeDaysUntilMode(value: unknown): DaysUntilMode {
@@ -117,10 +147,17 @@ export function sanitizeHomeDaysUntilItem(value: unknown, fallbackId = DEFAULT_D
     mode: sanitizeDaysUntilMode(raw.mode),
     eventId: typeof raw.eventId === "string" ? raw.eventId.slice(0, 80) : "",
     scheduleAllDay: raw.scheduleAllDay === true,
+    repeat: raw.repeat === "yearly" || raw.repeat === "monthly" ? raw.repeat : "none",
+    start: typeof raw.start === "string" && DATE.test(raw.start) ? raw.start : "",
+    milestones: raw.milestones === true,
+    whenPassed: raw.whenPassed === "countup" || raw.whenPassed === "hide" ? raw.whenPassed : "stay",
   }
 }
 
-/** Accept v2 flat object or v3 `{ items }`. Always at least one item. */
+/**
+ * Accept v2 flat object or v3 `{ items }`. A saved empty list stays empty
+ * (every Countdown was removed); nothing saved seeds one blank mark.
+ */
 export function sanitizeHomeDaysUntilItems(value: unknown): HomeDaysUntilItem[] {
   if (value && typeof value === "object" && Array.isArray((value as { items?: unknown }).items)) {
     const seen = new Set<string>()
@@ -132,7 +169,7 @@ export function sanitizeHomeDaysUntilItems(value: unknown): HomeDaysUntilItem[] 
       seen.add(id)
       next.push({ ...item, id })
     }
-    if (next.length > 0) return next
+    return next
   }
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const flat = value as Record<string, unknown>
@@ -178,12 +215,7 @@ export const useHomeDaysUntilStore = create<HomeDaysUntilState>()(
               : item,
           ),
         })),
-      removeCountdown: (id) =>
-        set((state) => {
-          const next = state.items.filter((item) => item.id !== id)
-          if (next.length > 0) return { items: next }
-          return { items: [{ ...DEFAULT_HOME_DAYS_UNTIL_ITEM }] }
-        }),
+      removeCountdown: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
       setCountdown: (patch) => {
         const primary = primaryDaysUntilItem(get().items)
         get().updateCountdown(primary.id, patch)

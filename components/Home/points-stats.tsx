@@ -5,16 +5,19 @@
  * is a market ticker (`lib/points-ticker.ts`): D / W / M / ALL keys choose the
  * period, the screen shows its total, the change against the previous period
  * (▲ / ▼, points and percent), and a chart with the previous value dashed.
- * The chosen period is a per-device convenience in localStorage. Detail adds
- * sparkline trends. `instrument` still packs all four for callers that want the set.
+ * The chosen period is a per-device convenience in localStorage. Detail keeps
+ * the four wells with their current vs possible meters, then one ticker plate
+ * per period (D / W / M / Y / ALL) with New / Cumulative keys
+ * (`points-detail.tsx`). `instrument` still packs all four for callers that want the set.
  */
 "use client"
+
+import { CopyCaption, useCopySetting, useCopySettingsWriter, useWidgetFrame } from "@/components/Home/widgets/copy-context"
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Trophy, Target, Calendar, TrendingUp } from "lucide-react"
-import { addCalendarDays } from "@/lib/date-utils"
 import { usePointsStore } from "@/lib/points-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -24,6 +27,7 @@ import type { HabitGemSlot } from "@/lib/habit-gems"
 import { HOME_WIDGET_LABEL, homeInstrumentColorVars, type HomeWidgetId } from "@/lib/home-widgets"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell, WidgetWells } from "@/components/Home/home-widget-dialog"
 import { cn } from "@/lib/utils"
+import { PointsPeriodsDetail } from "@/components/Home/points-detail"
 import {
   TICKER_PERIODS,
   formatTickerChange,
@@ -46,9 +50,23 @@ function readTickerPeriod(): TickerPeriod {
   return "day"
 }
 
+function isTickerPeriod(value: unknown): value is TickerPeriod {
+  return value === "day" || value === "week" || value === "month" || value === "all"
+}
+
+/**
+ * The ticker period. On the Visual dashboard each Points copy keeps its own
+ * (the gear's Period, or the face keys); outside it, the per-device key.
+ */
 function useTickerPeriod(): [TickerPeriod, (p: TickerPeriod) => void] {
+  const frame = useWidgetFrame()
+  const copyPeriod = useCopySetting<string>("period", "")
+  const writeCopy = useCopySettingsWriter()
   const [period, setPeriod] = useState<TickerPeriod>("day")
   useEffect(() => setPeriod(readTickerPeriod()), [])
+  if (frame && isTickerPeriod(copyPeriod)) {
+    return [copyPeriod, (p) => writeCopy({ period: p })]
+  }
   const choose = (p: TickerPeriod) => {
     setPeriod(p)
     try {
@@ -188,55 +206,9 @@ const POINT_ROWS: { kind: WellKind; short: string }[] = [
   { kind: "month", short: "Month" },
 ]
 
-function pointsSeries(currentDate: Date, days: number, getDayPoints: (d: Date) => number): number[] {
-  const end = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
-  const out: number[] = []
-  for (let i = days - 1; i >= 0; i -= 1) {
-    out.push(getDayPoints(addCalendarDays(end, -i)))
-  }
-  return out
-}
-
-function PointsSparkline({ values, label }: { values: number[]; label: string }) {
-  const hasSignal = values.some((v) => v !== 0)
-  if (!hasSignal) {
-    return (
-      <div className="home-widget-chart">
-        <span className="home-widget-chart-label">{label}</span>
-        <p className="home-widget-spark-empty">No points in this window yet.</p>
-      </div>
-    )
-  }
-  const max = Math.max(...values, 1)
-  const min = Math.min(...values, 0)
-  const span = max - min || 1
-  const w = 320
-  const h = 56
-  const padT = 6
-  const padB = 6
-  const innerH = h - padT - padB
-  const pts = values.map((v, i) => {
-    const x = values.length === 1 ? w / 2 : (i / (values.length - 1)) * w
-    const y = padT + innerH - ((v - min) / span) * innerH
-    return { x, y }
-  })
-  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ")
-  const area = `${d} L ${pts[pts.length - 1]!.x.toFixed(1)} ${h - padB} L ${pts[0]!.x.toFixed(1)} ${h - padB} Z`
-  return (
-    <div className="home-widget-chart" role="img" aria-label={label}>
-      <span className="home-widget-chart-label">{label}</span>
-      <svg className="home-widget-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={56}>
-        <path className="home-widget-spark-area" d={area} />
-        <path className="home-widget-spark-line" d={d} />
-      </svg>
-    </div>
-  )
-}
-
 /** One overview tile for all four point periods. */
 export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide: () => void }) {
   const points = useHomePoints(currentDate)
-  const getDayPoints = usePointsStore((s) => s.getDayPoints)
   const percentLedTint = useHabitsStore((s) => s.percentLedTint)
   const gradeTubeColor = useHabitsStore((s) => s.gradeTubeColor)
   const outputGradeTubeColor = useHabitsStore((s) => s.outputGradeTubeColor)
@@ -245,6 +217,8 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
 
   const pointsHistory = usePointsStore((s) => s.pointsHistory)
   const [period, setPeriod] = useTickerPeriod()
+  const showChart = useCopySetting<boolean>("chart", true)
+  const showKeys = useCopySetting<boolean>("keys", true)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const ticker = useMemo(
@@ -253,8 +227,6 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
   )
   const periodMeta = TICKER_PERIODS.find((p) => p.id === period) ?? TICKER_PERIODS[0]!
 
-  const last14 = useMemo(() => pointsSeries(currentDate, 14, getDayPoints), [currentDate, getDayPoints])
-  const last30 = useMemo(() => pointsSeries(currentDate, 30, getDayPoints), [currentDate, getDayPoints])
 
   return (
     <>
@@ -267,9 +239,11 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
         <TileHide id="points" onHide={onHide} />
         <TileOpen label="Points" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Points</span>
+            <span>
+              <CopyCaption>Points</CopyCaption>
+            </span>
           </div>
-          <div className="home-crt home-points-crt home-ticker-crt">
+          <div className="home-crt home-points-crt home-ticker-crt" data-chart={showChart ? "on" : "off"}>
             <div className="home-ticker-quote">
               <span className="home-ticker-symbol">
                 PTS <em>{periodMeta.label}</em>
@@ -286,7 +260,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </span>
               <span className="home-ticker-vs">{periodMeta.vs}</span>
             </div>
-            {mounted ? <TickerChart ticker={ticker} /> : <div className="home-ticker-chart" />}
+            {showChart ? mounted ? <TickerChart ticker={ticker} /> : <div className="home-ticker-chart" /> : null}
           </div>
         </TileOpen>
         <div className="home-tile-foot home-ticker-foot">
@@ -294,6 +268,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
             all-time {points.alltime.score}
             {points.today.sub ? ` · ${points.today.sub}` : ""}
           </p>
+          {showKeys ? (
           <div className="home-ticker-keys" role="group" aria-label="Points period">
             {TICKER_PERIODS.map((p) => (
               <button
@@ -309,6 +284,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </button>
             ))}
           </div>
+          ) : null}
         </div>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Points">
@@ -326,8 +302,10 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </WidgetWell>
             ))}
           </WidgetWells>
-          <PointsSparkline values={last14} label="Last 14 days" />
-          <PointsSparkline values={last30} label="Last 30 days" />
+          <PointsPeriodsDetail
+            currentDate={currentDate}
+            meters={{ day: points.today, week: points.week, month: points.month }}
+          />
         </div>
       </HomeWidgetDialog>
     </>

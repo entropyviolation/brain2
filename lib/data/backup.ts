@@ -68,6 +68,7 @@ import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
+import { useDashboardStore } from "@/lib/widgets/dashboard-store"
 import { useSkyMotionStore } from "@/lib/sky-motion-store"
 import { useVocabStore } from "@/lib/vocab-store"
 import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
@@ -187,6 +188,8 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("home-days-until"), rehydrate: persistRehydrate(useHomeDaysUntilStore) },
   { key: persistKey("sky-motion"), rehydrate: persistRehydrate(useSkyMotionStore) },
   { key: persistKey("home-vocab"), rehydrate: persistRehydrate(useVocabStore) },
+  // After the old strip, Countdown marks and Vocab: their rehydrates nudge the dashboard, this one wins.
+  { key: persistKey("home-dashboard"), rehydrate: persistRehydrate(useDashboardStore) },
   { key: persistKey("affirmation-log"), rehydrate: persistRehydrate(useAffirmationLogStore) },
   { key: persistKey("session-plans"), rehydrate: persistRehydrate(useSessionPlanStore) },
   { key: persistKey("sun-times"), rehydrate: persistRehydrate(useSunTimesStore) },
@@ -251,12 +254,14 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-home-widgets": "Home layout",
   [persistKey("home-weather")]: "Home weather place",
   "cogs-home-weather": "Home weather place",
-  [persistKey("home-days-until")]: "Days Until",
-  "cogs-home-days-until": "Days Until",
+  [persistKey("home-days-until")]: "Countdown marks",
+  "cogs-home-days-until": "Countdown marks",
   [persistKey("sky-motion")]: "Moon chart motion",
   "cogs-sky-motion": "Moon chart motion",
-  [persistKey("home-vocab")]: "Vocab",
-  "cogs-home-vocab": "Vocab",
+  [persistKey("home-vocab")]: "Language study words",
+  "cogs-home-vocab": "Language study words",
+  [persistKey("home-dashboard")]: "Visual dashboard",
+  "cogs-home-dashboard": "Visual dashboard",
   [persistKey("affirmation-log")]: "Affirmation recitations",
   "cogs-affirmation-log": "Affirmation recitations",
   [persistKey("session-plans")]: "Sessions",
@@ -516,6 +521,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("home-days-until")]: asLiveStore(useHomeDaysUntilStore),
   [persistKey("sky-motion")]: asLiveStore(useSkyMotionStore),
   [persistKey("home-vocab")]: asLiveStore(useVocabStore),
+  [persistKey("home-dashboard")]: asLiveStore(useDashboardStore),
   [persistKey("affirmation-log")]: asLiveStore(useAffirmationLogStore),
   [persistKey("session-plans")]: asLiveStore(useSessionPlanStore),
   [persistKey("sun-times")]: asLiveStore(useSunTimesStore),

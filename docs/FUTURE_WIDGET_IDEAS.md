@@ -1,8 +1,8 @@
 # Future widget ideas
 
-Potential squares for the Home overview strip (`HomeOverview`). These are
+Potential widget kinds for the Visual dashboard on Home (`HomeOverview`). Each idea would be a kind in `lib/widgets/kinds.ts`, installed once, once per key, or many times ([`WIDGETS_REDESIGN.md`](WIDGETS_REDESIGN.md)). These are
 **plans**, not commitments. Shipped tiles stay in
-[`components/Home/README.md`](../components/Home/README.md#overview-widgets).
+[`components/Home/README.md`](../components/Home/README.md#widget-kinds).
 The join is [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). Meaning-layer sketches
 follow [`jungideas.md`](jungideas.md). Map-and-territory sketches follow
 [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md). Steersman sketches
@@ -13,7 +13,7 @@ Product chrome never names those sources.
 
 The strip is caption + CRT + footer, equal height, hidable from the date-bar
 **Widgets** key. Do not clone Review, Points, Today’s Progress, the screen pet,
-Affirmation, Weather, Next, Day lamp, Days Until, **Moon**, **Latest award**, **Solar remainder**,
+Affirmation, Weather, Next, Day lamp, Countdown (was Days Until), Language study (was Vocab), **Moon**, **Latest award**, **Solar remainder**,
 **Tracking now**, **Night well**, **Harvest leftover**, **Inbox mill**, **Already flowing**,
 or **Plan and lived**.
 Do not clone the header **now** well, **today’s friend**, or

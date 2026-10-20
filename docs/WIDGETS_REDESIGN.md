@@ -1,466 +1,308 @@
-# Widgets redesign plan
+# Widgets redesign plan: the Visual dashboard
 
-Home → the widget row at the top of every Home tab. _Last mapped: 2026-10-20._
+Home → the widget row above the sub-tabs. _Last mapped: 2026-10-20._
 
 **Status.**
-- **Planned:** every phase below. Nothing is built yet.
-- **Shipped before this plan:** 19 widget kinds in `lib/home-widgets.ts`, the row in `components/Home/home-overview.tsx`, the Widgets menu and Widget catalog, and the click-open handheld. Behavior as it is now lives in [`components/Home/README.md`](../components/Home/README.md#overview-widgets).
+- **Built 2026-10-20:** phases 1–8 below. Kinds and installed copies, the dashboard store, migration, and backup; edit mode and the **Edit** key; the gear with per-copy settings; Countdown; Language study with CEFR levels and the placement quizzes; the Dash style and the style switch; and the Widget gallery with setup, guides, and **Reset to my old layout**.
+- **Planned:** retiring the mirror (phase 9), more Language study modes, and user-made kinds.
 
-The house order is [`DESIGN_STYLE.md`](DESIGN_STYLE.md): failures first, then layout, then palette. Module rules are [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md). Taste notes that bind this plan: cool paper and graph rule for diagrams, no yellow or amber, no celestial costume.
+What is built is described in [`components/Home/README.md`](../components/Home/README.md#visual-dashboard) and [`lib/README.md`](../lib/README.md#widgets-libwidgets). This file is the plan and the reasons.
 
-**Rule for every phase: break nothing.** Every widget that ships today keeps its reading, its click-open detail, its × with **Are you sure?**, Follow the clock, and its saved settings. The current look stays, as the **Classic** style. Old vaults and old backups load into the new model with nothing lost. Each phase ships with its tests, and `home-overview.test.tsx`, `home-dashboard.test.tsx`, and `lib/home-widgets.test.ts` stay green. Where a phase changes something you can see on purpose, it says so and updates the test on purpose.
+**Rule for every phase: break nothing.** Every widget, setting, and saved layout keeps working. Today's look stays available as the **Milled** style.
 
----
+**Dash is permanent.** Athena chose Dash as a lasting option (2026-10-20). Every future version keeps both the Dash and Milled styles and the switch between them.
 
-## What a widget is
+### How the build differs from the plan
 
-A **widget** is a small reusable app. The **Widget gallery** holds one entry per kind (Countdown, Language study, Weather…). Installing a kind puts one **instance** on the **Visual dashboard**. Some kinds allow one instance. Some allow one per something (one Language study per language, one Weather per city). Some allow many (Countdown).
+_Last mapped: 2026-10-20_
 
-Each instance has three faces of itself:
+- **Kind ids did not change.** Countdown is still `daysuntil` and Language study is still `vocab`, so saved layouts, backups, and `data-kind` selectors keep working. Only the names changed.
+- **Layouts are an order plus sizes,** not x / y boxes. Each style keeps `order` (copy ids) and `sizes` (copy id → `1x1` … `3x2`, or `auto` on Milled). The grid packs them densely.
+- **Copy fields.** `WidgetCopy` (`lib/widgets/types.ts`) also has `hidden`, `lamp` (`phosphor`, `blue`, `violet`, or `white`; no amber), `daySource` (`dashboard`, `clock`, or `viewed`), `showFoot`, and `guideSeen`. `title` is `""` for the kind's own caption.
+- **Settings are a schema.** Each kind lists choice, toggle, and text fields in `lib/widgets/kinds.ts`. The gear draws them. Countdown and Language study add their own panels.
+- **Countdown copies point at marks.** A Countdown copy holds `settings.markId`. The mark's fields stay in `brain2-home-days-until`, and `reconcileCountdowns` keeps marks and copies one to one.
+- **Language study copies are keyed by language.** `key` and `settings.lang` are the code. `settings.role` is `studied` or `native`, and `settings.cefr` is the level. English is native by default; the rest are studied.
+- **Install rules as built:** Points and Countdown are `many`. Weather, Solar remainder, and Language study are `perKey`. The rest are `once`.
+- **First style.** A vault with a saved strip lands on Milled; a fresh one lands on Dash.
 
-1. **The face.** A glance on the dashboard, like a gauge on a car dash. One number, one word, or one small picture. Never a form.
-2. **The detail.** Click the face. The detail is the widget's own room, and it may look like anything (Law 4, "skins stay feral").
-3. **The settings.** The gear in the detail. Settings for *this* instance only.
-
-Later, people make their own kinds (Phase W10).
-
----
-
-## How this plan is laid out
-
-| Part | Phases | What it gives you | State |
-|------|--------|-------------------|-------|
-| 1. Names | W0 | Visual dashboard, Widget gallery, Countdown, Language study. Words only | Planned |
-| 2. The model | W1 | Kinds and instances, one store, one migration | Planned |
-| 3. The shell | W2 | Face / detail split, the gear, shared settings sections | Planned |
-| 4. The look | W3 | The Cluster: a car-dash band (Oldsmobile VFD or Prius LCD), bay sizes, and Classic kept | Planned |
-| 5. Arranging | W4 | Edit mode: drag to move, drag to resize | Planned |
-| 6. The gallery | W5 | A page per kind, install and setup, first-run guides | Planned |
-| 7. Countdown | W6 | Days Until remade as Countdown | Planned |
-| 8. Language study | W7 · W8 | One widget per language; levels and placement tests | Planned |
-| 9. Settings that matter | W9 | Real per-kind settings for the other 17 kinds | Planned |
-| 10. Your own widgets | W10 | Make a kind from a readout | Planned |
-
-Build order is in [Order of work](#order-of-work).
+The open questions at the end are answered by those defaults until the owner says otherwise.
 
 ---
 
-## Decisions
+## Summary
 
-| # | Question | Decided (change here if you disagree) |
-|---|----------|---------|
-| 1 | Name of the row | **Confirmed 2026-10-20.** **Visual dashboard** to the person (`data-ui-name="Visual dashboard"`). **Widget container** in code and docs (`WidgetContainer`, `widget-container.tsx`) |
-| 2 | Name of the catalog | **Widget gallery** |
-| 3 | Name of the old look | **Classic**. Today's satin handhelds, kept as a full option. Default for an existing vault |
-| 4 | Name of the new look | **Cluster**, an instrument cluster drawn from the photos in [`mockups/dashboard-inspo/`](mockups/dashboard-inspo/). Two lamps: **VFD** (1980s Oldsmobile, aqua) and **LCD** (2010-era Prius, cool white-cyan). Default for a fresh vault. See [W3](#w3--the-cluster) |
-| 5 | Hide vs remove | × **hides** (parks the instance, keeps its settings, as today). **Remove** lives in settings and asks first |
-| 6 | Layout model | **Confirmed 2026-10-20, as a dashboard.** One long horizontal instrument band, like a car dash: gauges, buttons, and mode switches laid out side by side. Widgets sit left to right in **bays** and fill the band's height. A second band (row) opens only when the first is full. Each widget keeps an order and a width; there is no free x/y. On a phone the band scrolls sideways like a dash, or stacks into bands. See [W3](#w3--the-cluster) |
-| 7 | Where domain data lives | Settings live on the instance. Records stay in their stores or become Items (Law 1). Countdown marks stay in `home-days-until-store`; words, known ticks, and test results are Items |
-| 8 | Ids of instances that already exist | A one-instance kind keeps its old id (`points`, `moon`…), so `data-widget`, tests, and UI Names stamps hold |
-| 9 | Official exam questions | **Interim, accepted 2026-10-20: link and score, do not copy.** A better answer is still to come. See [W8](#w8--levels-and-placement) and its open question |
-| 10 | Drag library | **None.** Pointer events, like `components/Home/Plan/use-plan-rail-drag.ts`. No new dependency |
-| 11 | Settings validation | **zod** (already a dependency). Each kind has one schema with defaults |
+Today's Home strip has 19 widget kinds, each allowed exactly one copy, saved as one `order` + `hidden` list in `brain2-home-widgets` (persist v10). Footprints are fixed in CSS, settings live in seven separate stores, and only Days Until already behaves like "many copies". The plan keeps every one of those stores readable, adds one new store of **installed copies**, and moves the strip to it with a migration that turns each visible or hidden id into a copy. Today's look survives as a style called **Milled** next to the new **Dash** style.
 
----
+- **Kinds vs copies.** A kind is the app in the Widget gallery. A copy is one installed instance with its own id, size, place, and settings. Kinds declare `once`, `perKey`, or `many`.
+- **Face, detail, gear.** Faces become dash-gauge glances. Today's handheld dialogs become the detail views, unchanged at first. Each copy gets a gear that opens its own settings.
+- **Edit mode.** Drag and resize only while edit mode is on. Out of edit mode the dash is locked.
+- **Two replacements.** Countdown replaces Days Until (each mark becomes its own copy). Language study replaces Vocab (one copy per language, vocab is one mode, levels and placement quizzes).
+- **Room to grow.** The kind registry is a plain manifest, so a user-made kind can join later through the Module platform's rung 2 manifest.
 
-## What already exists
+Written as a plan against `3e31da6`, before any code changed. See **Status** above for what is built.
 
-Read these before building. File paths are the map.
+## Inventory of today's widgets
 
-| Piece | Where | Note for this plan |
-|-------|-------|--------------------|
-| Kind ids, labels, order, hidden defaults, catalog copy, migrations v2–v10 | `lib/home-widgets.ts` | Ids are a closed `as const` list. Catalog blurbs (`HOME_WIDGET_CATALOG`) become gallery copy |
-| Order + hidden + Follow the clock | `lib/home-widgets-store.ts` (`brain2-home-widgets`, v10) | Becomes the source for the W1 migration |
-| The row | `components/Home/home-overview.tsx` | An `if` per id. `OverviewTile` wraps hide + open + dialog. `ProgressTile` holds its popup state outside the dialog (Radix remounts on `modal` flip); keep that |
-| The handheld | `components/Home/home-widget-dialog.tsx` | `HomeWidgetDialog`, `TileHide`, `WidgetWell(s)`. The gear goes in its caption |
-| Menu + catalog | `home-widgets-menu.tsx`, `home-widget-catalog.tsx` | Become the gallery |
-| Face skin | `home-chrome.css` (`--home-tile-h: 156px`, tiles 132–200px), `home-widget-face.css` (867 lines; Vocab and Affirmation already `grid-column: span 2`) | Becomes the Classic style |
-| Countdown marks | `lib/home-days-until-store.ts` (v3 `items[]`), `lib/home-days-until-event.ts`, `components/Home/home-days-until.tsx` | Already many-per-family. Each mark becomes an instance |
-| Vocab | `home-vocab-tile.tsx` (411), `-flashcards`, `-thousand`, `-dictionary`; `lib/vocab-store.ts` (`brain2-home-vocab` v2), `lib/vocab-words.ts`, `lib/vocab-lists.ts`, `lib/vocab/*` | Languages are already per-language inside one widget. Known words are already Items (`vocab-known`). Favorites are not |
-| Points period | `points-stats.tsx`, localStorage `brain2-home-points-period` | Moves into instance settings |
-| Backup | `lib/data/backup.ts` ~185, ~250, ~514 | New key joins all three tables. Old keys stay restorable |
-| Module widgets | `components/Modules/` (`WIDGET_MODULE_CATALOG`) | A different "widget" today. W10 joins them |
+Nineteen kinds are registered in `HOME_WIDGET_IDS` (`lib/home-widgets.ts`). Eight show on a fresh install; eleven start hidden. Only seven kinds own saved settings, and Points keeps its one setting outside the backup. Footprints are columns × rows on the `home-widget-face.css` grid (columns `minmax(144px, 1fr)`, rows 74px).
 
----
+| Widget (id) | Fresh install | Footprint | Saved settings and where | Code | Research doc |
+|---|---|---|---|---|---|
+| Today's Progress (`progress`) | showing | 3 × 2 | None. Fold state is in memory only. | `home-overview.tsx` (`ProgressTile`) | `home-widget-progress.md` |
+| Rituals (`review`) | showing | 1 × 2 | **Not now** writes `brain2-rituals-snooze-until`. **Dismiss** is session-only. | `home-review-banner.tsx` | `home-widget-review.md` |
+| Points (`points`) | showing | 2 × 2 | Ticker period D / W / M / ALL in plain localStorage `brain2-home-points-period`. Per device, **not in the backup**. | `points-stats.tsx` | `home-widget-points.md` |
+| Latest award (`award`) | showing | 1 × 2 | None. | `home-award-tile.tsx` | `home-widget-award.md` |
+| Screen pet (`pet`) | showing | 1 × 2 | None. | `home-screen-pet.tsx` | `home-widget-pet.md` |
+| Moon (`moon`) | showing | 1 × 3 | View width and time rate in `brain2-sky-motion` (v1). Zoom, True sizes, Stars near, pause, reverse are session-only. | `home-moon-tile.tsx`, `home-moon-orrery.tsx`, `home-sky-*.tsx` | `home-widget-moon.md`, `components/Home/MOON_SKY_MOTION.md` |
+| Days Until (`daysuntil`) | showing | 1 × 2 per mark | `brain2-home-days-until` v3 `items[]`: label, date, time, format, mode (countdown / countup / auto), `eventId`, `scheduleAllDay`. Can write a Plan all-day event. | `home-days-until.tsx`, `lib/home-days-until-event.ts` | `home-widget-countdown.md` (was `home-widget-daysuntil.md`) |
+| Vocab (`vocab`) | showing | 2 × 2 | `brain2-home-vocab` v2: languages, active, level per language, today's shuffle, favorites. Also Lists items `vocab-1000-<lang>`, `vocab-mine-<lang>`, attribute `vocab-known`. | `home-vocab-tile.tsx`, `-thousand`, `-flashcards`, `-dictionary` | None (README rows only) |
+| Affirmation (`affirmation`) | hidden | 2 × 2 | Lens and recitation log in `brain2-affirmation-log`. Lines come from Lists → affirmations or the morning ritual. | `home-affirmation-tile.tsx` | `home-widget-affirmation.md` |
+| Weather (`weather`) | hidden | 2 × 2 | City and beach in `brain2-home-weather`. Falls back to Settings `homeCity`. | `weather-instrument.tsx` | `home-widget-weather.md` |
+| Next (`next`) | hidden | 1 × 2 | None. | `home-next-tile.tsx` | `home-widget-next.md` |
+| Day lamp (`daylamp`) | hidden | 1 × 2 | None. | `home-day-lamp.tsx` | `home-widget-daylamp.md` |
+| Harvest leftover (`harvest`) | hidden | 1 × 2 | None. | `home-glance-tiles.tsx` | `home-widget-harvest.md` |
+| Inbox mill (`inbox`) | hidden | 1 × 2 | None. | `home-glance-tiles.tsx` | `home-widget-inbox.md` |
+| Already flowing (`flow`) | hidden | 2 × 2 | None. | `home-reading-tiles.tsx` | `home-widget-flow.md` |
+| Plan and lived (`paint`) | hidden | 2 × 2 | None. | `home-reading-tiles.tsx` | `home-widget-paint.md` |
+| Tracking now (`tracking`) | hidden | 1 × 2 | None. **Update** writes Tracking, not a setting. | `home-tracking-tile.tsx` | `home-widget-tracking.md` |
+| Night well (`night`) | hidden | 1 × 2 | None. | `home-glance-tiles.tsx` | `home-widget-night.md` |
+| Solar remainder (`solar`) | hidden | 1 × 2 | None of its own. Reads the Weather pin, else Settings `homeCity`, else San Diego. | `home-solar-tile.tsx` | `home-widget-solar.md` |
 
-## Part 1 — Names
+Shared by every widget: **Follow the clock** (`widgetsFollowClock` in `brain2-home-widgets`) and the three Habits hues (`percentLedTint`, `gradeTubeColor`, `outputGradeTubeColor`) that tint meters. The shell is `home-overview.tsx` (one `if` per id), `home-widget-dialog.tsx` (the silver handheld detail), `home-widgets-menu.tsx` (the **Widgets** key), and `home-widget-catalog.tsx` (**Widget catalog**).
 
-### W0 · Names only
+**Where the docs live.** Every kind has a row in `components/Home/README.md` (Overview widgets, ~92) and a blurb in `HOME_WIDGET_CATALOG`. Research reports are in `docs/widget-improvement/` (research docs above) and the fix plan in `docs/widget-improvement/plan/` (`day-score.md`, `clock-sky.md`, `capture-rites.md`, `shared-chrome.md`). Ideas are in `docs/FUTURE_WIDGET_IDEAS.md`. Days Until is also named in `lib/README.md`, `docs/UI_NEXT.md`, `docs/PLAN_OF_ACTION.md`, `docs/SPEC_MAPPING.md`, `docs/tree.md`, `docs/cyberneticsbrain2.md`. Vocab is also named in `lib/README.md`, `docs/KNOWLEDGE_GRAPH_PLAN.md`, `docs/LINKS_REDESIGN.md`, and `docs/analytics-vision/`.
 
-A word pass. No behavior changes, no persist changes.
+A second, separate widget system exists: Modules **Widgets** (List Explorer, Writing Generator, Random Task, Analytics Stat, List Summary, Rules) in `lib/modules-store.ts`. Those are already many-copy instances with per-copy `config`. They are out of scope here but they are the precedent for the copy model below.
 
-- **Visual dashboard.** `data-ui-name="Home overview"` becomes `"Visual dashboard"` (`home-overview.tsx`, `ui-names-stamps.test.ts`). The CSS class `home-overview` stays until W1 so no style breaks.
-- **Widget gallery.** The **Widget catalog** key and dialog title.
-- **Countdown.** `HOME_WIDGET_LABEL.daysuntil` and catalog copy. The face caption reads `Countdown` unless the mark has a label.
-- **Language study.** `HOME_WIDGET_LABEL.vocab`. "Vocab" survives as the name of one mode (Vocabulary).
-- **Docs.** Every doc in [Docs to change](#docs-to-change) gets the new words, and the definition from [What a widget is](#what-a-widget-is).
+## How layouts and settings are saved today
 
-Tests: update label assertions on purpose. Nothing else moves.
+A saved layout is only two lists and a switch: `order` (every id, in strip order), `hidden` (ids not showing), and `widgetsFollowClock`. Size and position on the grid are not saved; CSS decides them per kind, and `grid-auto-flow: dense` lets a small tile jump ahead of its menu position.
 
----
+- **Store.** `lib/home-widgets-store.ts`, zustand `persist`, key `brain2-home-widgets`, version 10. The `cogs-home-widgets` alias is still read (`lib/storage-keys.ts`). Demo profile writes `brain2-demo-home-widgets`.
+- **Sanitize on load.** `sanitizeHomeWidgetOrder` drops unknown ids and duplicates, then appends any missing id at the end. `sanitizeHomeWidgetHidden` keeps only known ids. So an unknown id in a saved blob is silently lost today. The new store must not do that.
+- **Migration ladder.** `migrateHomeWidgetPersist` (~662) walks v1 to v10: v3 folds `alltime` / `today` / `week` / `month` into `points`; v2, v4, v5, v9 tuck new kinds hidden; v6 and v7 place `award` and `moon`; v8 adds Follow the clock; v10 appends `vocab` showing.
+- **Backup.** `lib/data/backup.ts` (~181, ~246, ~510) backs up and live-restores `home-widgets`, `home-weather`, `home-days-until`, `sky-motion`, `home-vocab`, and `affirmation-log`. `brain2-home-points-period` and `brain2-rituals-snooze-until` are not in that list.
+- **Who writes it.** Only the **Widgets** menu (show, hide, move up / down, Follow the clock), the tile × (with **Are you sure?**), and the **Widget catalog** (Add, Hide, Add another). There is no drag today.
 
-## Part 2 — The model
+README drift found while mapping: `components/Home/README.md` says the weather pin persists under `cogs-home-weather`; the code writes `brain2-home-weather` and only reads the `cogs-` alias. The Layout diagram (~75) still shows an equal-height single row, which the dense grid replaced. Both are worth fixing when the README is next touched.
 
-### W1 · Kinds and instances
+## Model: widget kinds and installed copies
 
-**New files.**
-- `lib/widgets/kinds.ts` — `WidgetKindId` and `WIDGET_KINDS`, one `WidgetKind` per kind (pure data, no React).
-- `lib/widgets/instances.ts` — the instance type, sanitize, migrate, pure moves. Unit-tested.
-- `lib/widgets/instances-store.ts` — zustand + persist, key `brain2-widgets`, v1.
-- `components/Home/widget-container.tsx` — replaces the `if` chain with a registry lookup. `home-overview.tsx` re-exports it for one release.
+A **kind** is the app as the Widget gallery lists it. An **installed copy** is one instance of a kind on the dashboard, with its own id, settings, size, and place. Every face, detail, and gear reads one copy, never the kind's global state.
+
+_Diagram in the source doc: kind to copy to face, detail, and gear._
+
+Installing a kind makes a copy. The copy draws its face; a click opens the detail, and its gear saves back to that copy alone.
+
+**Kind manifest** (new `lib/widgets/kinds.ts`, one plain object per kind):
+
+- `id`, `name`, `version` — stable id, gallery name, settings schema version.
+- `installs` — `once` (at most one copy), `perKey` (one copy per key, for example per language), or `many` (any number).
+- `keyOf(settings)` — for `perKey` only: the key that must stay unique (`"fr"`).
+- `sizes` and `defaultSize` — allowed footprints in dash cells, for example `["1x1", "2x1", "2x2"]`.
+- `defaultSettings`, `sanitizeSettings(raw)`, `migrateSettings(raw, fromVersion)` — the same sanitize-then-merge habit every store here already uses.
+- `Face`, `Detail`, `Settings` — lazy components. `Setup` and `Guide` are optional.
+- `gallery` — what it does, how it works, and a static sample (today's `HOME_WIDGET_CATALOG` blurb moves here).
+
+**Installed copy** (new store, key `brain2-home-dashboard`):
 
 ```ts
-type WidgetKind = {
-  id: WidgetKindId              // "points", "countdown", "language"…
-  name: string                  // "Language study"
-  family: "score" | "clock" | "sky" | "capture" | "study" | "custom"
-  cardinality: "one" | "one-per-key" | "many"
-  keyLabel?: string             // "Language", "City"
-  sizes: WidgetSize[]           // sizes the face can draw
-  defaultSize: WidgetSize
-  settings: ZodType             // with defaults; parse fills gaps
-  setup?: SetupStep[]           // asked on install (W5)
-  guide?: GuideStep[]           // first-run tour (W5)
-  legacyIds?: string[]          // "daysuntil", "vocab"
+type WidgetCopy = {
+  id: string            // "cpy_…", stable across devices
+  kind: string          // "countdown", "language", "points", …
+  key?: string          // perKey kinds only
+  title?: string        // optional rename on the face
+  settings: unknown     // validated by the kind's sanitizeSettings
+  settingsVersion: number
+  installedAt: string
 }
-
-type WidgetSize = "mini" | "compact" | "standard" | "wide" | "large"   // bay widths; see W3
-
-type WidgetInstance = {
-  id: string                    // stable; one-instance kinds keep the old id
-  kind: WidgetKindId
-  key?: string                  // "fr", a city id
-  title?: string                // the person's name for it
-  size: WidgetSize
-  style?: "classic" | "cluster" // empty = the dashboard's style
-  band?: number                 // which band (row) the bay sits in; empty = first that fits
-  hidden: boolean               // parked; settings kept
-  settings: Record<string, unknown>
-  guideSeen?: boolean
-  createdAt: string
-}
-
-type WidgetDashboard = {
-  instances: WidgetInstance[]   // array order is face order
-  followClock: boolean          // was widgetsFollowClock
-  style: "classic" | "cluster"
-  lamp: "vfd" | "lcd"           // Cluster lamp color and type
-  bandHeight: "low" | "standard" | "tall"
+type DashLayout = { copyId: string; x: number; y: number; w: number; h: number; hidden?: boolean }[]
+type DashboardState = {
+  copies: WidgetCopy[]
+  layouts: { milled: DashLayout; dash: DashLayout }
+  style: "milled" | "dash"
+  followClock: boolean
+  legacy?: { order: string[]; hidden: string[] }   // the v10 blob, kept read-only
+  unknown?: WidgetCopy[]                           // copies of kinds this build does not know
 }
 ```
 
-Per-instance **Follow the clock** is a setting that overrides the dashboard one (`inherit | day | clock`).
+Settings are layout and preference, never records. That follows law 2 of `docs/MODULE_PLATFORM.md`. Vocab favorites, `vocab-known`, affirmation recitations, and Plan events stay where they are. A copy points at them by key.
 
-**Migration** (`migrateLegacyDashboard`, pure, runs once when `brain2-widgets` is empty):
-1. Read `brain2-home-widgets` through the existing `migrateHomeWidgetPersist`, so v2–v10 still land right.
-2. Each id in `order` becomes an instance with `hidden` from `hidden`. Size is `standard`, or `wide` for `affirmation` and `vocab` (they already span 2).
-3. `daysuntil` becomes one `countdown` instance per mark in `home-days-until-store`, id `countdown-<markId>`, settings `{ markId }`. No marks: one hidden countdown.
-4. `vocab` becomes one `language` instance per language in `vocab-store`, id `language-<lang>`, key `<lang>`, settings `{ level }` from `levels[lang]`, `relationship: "native"` for `en`. The `active` language goes first.
-5. `brain2-home-points-period` becomes `points.settings.period`.
-6. Style is `classic` for a migrated vault and `cluster` for a fresh one.
+**Proposed install rule per kind.** A kind can loosen later (once → many) without a migration; tightening needs one.
 
-The old key is read, never deleted, for one release. A rollback still finds it.
+| Kind | Installs | Why |
+|---|---|---|
+| Countdown (was Days Until) | many | One copy per mark. Each mark is already its own tile. |
+| Language study (was Vocab) | perKey: language | One copy per language, as the brief asks. |
+| Points | many | Each copy can pin its own period (D / W / M / ALL) and show it at once. |
+| Weather | perKey: place | Two cities side by side. |
+| Solar remainder | perKey: place | Same pin as Weather, or its own. |
+| Today's Progress, Rituals, Latest award, Screen pet, Moon, Affirmation, Next, Day lamp, Harvest leftover, Inbox mill, Already flowing, Plan and lived, Tracking now, Night well | once | One reading of one vault. Next and Tracking now could become many later (per list or per lane). |
 
-**Backup.** Add `brain2-widgets` to the three tables in `lib/data/backup.ts` ("Visual dashboard"). Restoring a backup that has only the old key clears `brain2-widgets` and migrates again, so an old backup still restores the old layout.
+## Faces, details, gear settings, styles, edit mode
 
-**Compatibility.** `vocab-store.languages` must still list every installed language, because `lib/vocab-lists.ts` writes the 1000-word Items only for those. Installing or removing a Language study instance calls `addLanguage` / `removeLanguage`. A test covers it.
+The face is a gauge, the detail is the instrument, and the gear is the copy's settings. Edit mode is the only way to move or resize.
 
-Tests: migrate every persisted version v1–v10 plus a days-until v2 and v3 blob and a vocab v1 and v2 blob; round trip to the same visible faces in the same order. `home-overview.test.tsx` runs against `WidgetContainer` unchanged.
+### Faces
 
----
+- **Dash cell.** The new grid is a cell of about 96 × 64 px. A kind declares the sizes it can draw: `1x1`, `2x1`, `1x2`, `2x2`, up to `3x2`. Screen pet and Solar remainder must support `1x1`. Moon keeps `1x3` as an option.
+- **Face rule.** One reading (a number or a word), one short label, an optional lamp. At most one secondary line, and only at `2x1` or larger. No keys on the face; today's hover keys (↻ on Vocab, ⇄ and ✓ on Affirmation) move into the detail, or stay as a per-copy "quick key" setting.
+- **Face contract.** `Face({ copy, size, date, style })`. Every kind must render every size it lists. A test renders each kind at each size against a fixture vault.
 
-## Part 3 — The shell
+### Detail
 
-### W2 · Face, detail, gear
+Clicking a face opens its detail. Today's silver handheld (`home-widget-dialog.tsx`) becomes the detail frame, so every existing detail works on day one. A kind may ask for a wide or full sheet (Moon, Language study) and can use any UI inside. Esc, ×, and outside click close it as now.
 
-**Split every kind in two.**
-- `useFaceData(instance, date)` — the hook that reads stores today.
-- `Face({ data, size, style })` — pure drawing, no store reads.
+### Gear
 
-This split is what lets the gallery draw a real face from sample data, lets one kind draw at five sizes, and lets Classic and Cluster share one reading. Do it kind by kind; a kind not split yet keeps its old tile and only offers `standard`.
+The detail header gets a gear key. It opens that copy's `Settings` panel in place of the detail body, with **Done** to return. Settings save to `copy.settings` only, so two Points copies can differ. Every setting must visibly change the face or the detail; a setting with no visible effect does not ship. A test per setting renders before and after and asserts the output changed.
 
-**The gear.** `HomeWidgetDialog` gets a gear key beside × in the caption (`aria-label="Settings for <title>"`). The gear turns the detail over to its settings side in the same dialog (no second popup, so the `ProgressTile` stacking rule still holds). A live face sits at the top of the settings side and redraws as you change things.
+First settings proposed per kind:
 
-**Shared sections** every kind gets for free, in this order:
+| Kind | Gear settings |
+|---|---|
+| Points | Period (D / W / M / ALL), show change vs previous, show chart |
+| Today's Progress | Lines (habits, to-dos, both), period (today, week, month) |
+| Rituals | Which slots count (morning, night), show Star Lord |
+| Screen pet | Show clock, pet name |
+| Moon | Face shows phase name or next major phase; chart view width and time rate (from `brain2-sky-motion`) |
+| Weather, Solar remainder | Place (the key), units, what the foot shows |
+| Affirmation | Lens, source (ritual's five or the list), quick keys on or off |
+| Next | Sources (events, planned actions), look-ahead |
+| Countdown, Language study | See their section below |
+| All kinds | Title, day source (dashboard day or wall clock), lamp color |
 
-| Section | Holds |
-|---------|-------|
-| Face | Size (the kind's allowed sizes), style (inherit / Classic / Cluster), title, which readout leads when a kind has more than one |
-| Day | Follow the clock: inherit / day being viewed / wall clock |
-| Kind | The kind's own settings (W6–W9) |
-| Guide | Show the guide again |
-| This widget | Hide, Duplicate (`many` kinds), Remove (asks), Reset settings, Copy settings as JSON, Paste settings |
+The global **Follow the clock** stays as the dashboard default. A copy can override it with "day source".
 
-Each section has **Reset section**. Settings write through the zod schema; a bad paste is refused with the field that failed.
+### Styles
 
----
+- **Milled** is today's look: `home-widget-face.css`, the nameplate, the CRT, today's footprints. It stays the default for anyone who already has a saved layout.
+- **Dash** is the new look: flat dark bezel, vacuum-fluorescent segment digits and bar meters (1980s Oldsmobile), with a soft blue LCD field and simple pictograms (2011 Prius). Tokens go in `docs/DESIGN_STYLE.md` under a new Dash section.
+- Style is a dashboard setting. Each style keeps its own layout, because Milled footprints and Dash cells differ.
 
-## Part 4 — The look
+### Edit mode
 
-### W3 · The Cluster
+- An **Edit** key on the date plate (beside the Widgets key, which becomes **Gallery**) turns edit mode on. A banner names it and offers **Done**.
+- In edit mode faces show a drag grip, a resize corner, and ×. Clicking a face does not open its detail. Resize snaps to the kind's allowed sizes.
+- Out of edit mode nothing can be dragged or resized. Edit mode is not saved; reload always starts locked.
+- No drag library is in `package.json`. Use pointer events on the grid, plus keyboard: arrow keys move the focused copy, Shift+arrows resize. The current move up / down keys in the menu keep working as the accessible fallback.
 
-**The brief.** This is the dashboard of your brain. A car dash at night: one dark glass panel, gauges glowing under it, everything readable in a glance, nothing you have to study. The meat is in the detail. It may feel a little surreal (a gauge for habits, an odometer for points) but it reads like a real instrument.
+## Widget gallery, setup, and first-run guides
 
-**The inspiration.** Six photos in [`mockups/dashboard-inspo/`](mockups/dashboard-inspo/): a late-1980s Oldsmobile digital cluster (`olds-*`) and a 2010-era Prius center display (`prius-*`). What we take from each:
+The **Widget catalog** (`home-widget-catalog.tsx`) becomes the **Widget gallery**: one page per kind, not per copy. It already steps through kinds with a sample face, "what it shows" and "when it is useful", so it grows rather than restarts.
 
-| From | What we take | Where it goes |
-|------|--------------|---------------|
-| Oldsmobile | Aqua vacuum-fluorescent glow on a smoked, near-black glass | The **VFD** lamp |
-| Oldsmobile | **Arc gauges** built from separate tick segments, with endpoint letters (E · F, L · H, C · H) and a small pictogram in the middle | Progress, Harvest, Day lamp, Language known meter, Solar |
-| Oldsmobile | A big arc of numbered ticks around one large segment numeral (the MPH dial) | Points, Countdown |
-| Oldsmobile | **Ghost segments**: unlit `888` behind the lit digits | Every segment numeral |
-| Oldsmobile | Red-orange segments only at the danger end of an arc (redline, hot, empty) | Coral danger ticks: a miss pile, an old inbox, low daylight. Never amber or yellow |
-| Oldsmobile | **Bar-graph tach**: a rising stack of bars beside a numbered scale | Fractions over time: Plan and lived, Harvest |
-| Oldsmobile | ODOMETER label over a small dot-matrix number in the middle of a gauge | The second readout of a gauge (all-time points, days since start) |
-| Oldsmobile | Tiny printed caps legends (`FUEL`, `RPM X 100`) and a red warning plate at the edge | Legends; tell-tale plates |
-| Prius | Cool white-cyan LCD, huge chunky digits with a small unit beside them (`35 km/h`) | The **LCD** lamp; big readouts |
-| Prius | **Bracket scale** `)` with three numbers (0 · 5 · 10) | Small range readouts: rate, pace, words per day |
-| Prius | **Selector stack** `P R N D B` with the live letter boxed | Period and mode pickers on the face: Points `D W M A`, Language mode, Moon zoom |
-| Prius | **Stair fuel gauge** (F, E, stepped bars) | Battery-like reserves: willpower, harvest left, cards due |
-| Prius | **Energy monitor**: a dot-matrix outline with arrows that flow between parts | A flow diagram in large faces and details: habits → points → level; plan → lived; inbox → lists |
-| Prius | Clock and `ODO` line in plain small type | The band's corner clock and date |
-| Both | The bezel: brushed grey frame, a lip, and a soft glare across the glass | The band itself |
+Each kind's page has:
 
-**The band.** One dark glass band spans the dashboard. It has a grey milled bezel with a lip on top, a soft diagonal glare (a CSS gradient, off under reduced transparency), and a faint vignette. Widgets are not separate objects on it. They are **bays** lit behind the same glass. A thin unlit rule separates bays, like the gap between the Oldsmobile's left and right pods.
+- **What it does.** One paragraph, from the kind's `gallery` field.
+- **How it works.** Where its numbers come from, in plain words (for example "habit points paid over the habit ceiling"). Today this text lives in the README rows and the research docs; it moves into the manifest.
+- **Samples at each size**, in the current style.
+- **Installed copies.** A list of this kind's copies with **Open**, **Settings**, and **Remove**. For `perKey` kinds the list shows which keys are taken.
+- **Install.** `once`: Install, or Installed. `perKey`: Install for… with the free keys. `many`: Add another.
 
-**Fitting.** The band is wide and short, like a dash. Bays fill it left to right and stretch to its full height. A bay's width is its size. A second band opens below only when the first is full, and it carries the same bezel. Band height is a dashboard setting: low (about 120 px), standard (about 160 px), tall (about 220 px). Inside a bay, a face lays out for the band height it gets, so a gauge grows with the band rather than leaving dead glass.
+**Setup.** A kind may declare a `Setup` step that runs before the copy lands. Countdown asks for the label and date. Language study asks for the language, and whether it is native or studied. Weather asks for the place. A kind without `Setup` installs with defaults.
 
-| Size | Bay width | Good for |
-|------|-----------|----------|
-| `mini` | 1 unit (about 64 px) | A stacked pair of small arc gauges, a tell-tale, one number. Pet, Solar, Day lamp, Harvest, Inbox |
-| `compact` | 2 units | A small dial or a selector stack. Countdown, Moon, Next |
-| `standard` | 3 units | A full dial with ghost numerals. Points, Progress |
-| `wide` | 5 units | Words and a bar graph. Affirmation, Language study |
-| `large` | 7 units | An energy-monitor flow or a chart. Weather, Plan and lived |
+**First-run guide.** A kind may declare an optional `Guide`: a few short cards shown the first time a copy's detail opens, with **Skip** always visible. A flag on the copy (`guideSeen`) keeps it from returning. Good candidates: Language study (modes and levels), Moon (zoom, scale tour), Points (what the split means). The gallery page has **Show the guide again**.
 
-Two `mini` bays stack top and bottom in one column, like the Oldsmobile's fuel-over-volts pods. The pet and Solar remainder default to `mini` in a fresh vault. A migrated vault keeps its sizes until you change them.
+## Countdown and Language study
 
-**Phones and narrow windows.** The band keeps its height and scrolls sideways, with snap points at each bay. A setting lets it stack into bands instead.
+Both replacements reuse today's stores as their data source, so no mark, favorite, or known word moves.
 
-**Lamps.**
-- **VFD** (Oldsmobile): aqua phosphor on smoked glass, ghost segments visible, slight bloom on lit segments.
-- **LCD** (Prius): cool white-cyan on black, chunky digits, dot-matrix pictures.
-- Both keep the house phosphor green `--hab-crt-green` for "fine", coral for "act", and never amber or yellow.
+### Countdown replaces Days Until / Days Since
 
-**The parts.** One kit in `components/Home/cluster/`, used by every kind's Cluster face: `ArcGauge`, `SegmentNumeral` (with ghosts), `TickDial`, `BarTach`, `BracketScale`, `SelectorStack`, `StairGauge`, `OdometerLine`, `FlowMonitor`, `TellTale`, `Legend`. Each is a pure SVG drawing with props, unit-tested, and shown in the gallery's hero. A kind composes them; it does not draw its own gauge from scratch.
+Today one `daysuntil` id draws one tile per item in `brain2-home-days-until` v3, and × hides the whole family. Countdown makes each mark its own copy (`installs: many`).
 
-**Buttons and modes on the band.** A car dash is not only gauges; switches and mode keys sit right beside them. The band does the same, laid out next to the gauges in one line:
-- **Switch bays.** A narrow bay of real keys between widgets: lit push buttons with a lamp, rockers, and `SelectorStack` letters. Built-in switches: **Follow the clock** (today's menu toggle, moved onto the dash), **Lamp** (VFD / LCD), **Night** (dims the glass), **Edit** (arranging), and **Widgets** (opens the gallery). You place, remove, and reorder switch bays like any widget.
-- **Mode keys on a widget.** A widget may put its own keys at the edge of its bay, like a trip button beside an odometer: Points `D W M A`, Countdown `Days / Weeks / Sleeps`, Language study `Word / 1000 / Cards / Level`, Moon `Phase / Sky`. Pressing one changes the face in place and saves to that instance's settings.
-- **Dashboard modes.** One selector on the band switches whole layouts, like drive modes: for example **Morning**, **Work**, **Evening**, each a saved set of which bays show and in what order. Optional; one mode by default. _Planned within W4._
-- Keys use the house transport-key and milled-fascia language ([`DESIGN_STYLE.md`](DESIGN_STYLE.md#transport-keys)), lit in the band's lamp color.
+Kept from today: label, date, optional time, unit or decimal format, mode (count down to, count up from, auto), the Plan event link, and the all-day Plan day (`lib/home-days-until-event.ts`).
 
-**Interaction on the glass.** A click on a bay opens the detail. A `SelectorStack` on a face is live: tap a letter to switch the period or mode without opening anything. A tell-tale shows its reason on hover. Segments light in order on load (about 400 ms) and hold still under reduced motion.
+Improved:
 
-**Classic.** Today's satin handhelds (`home-widget-face.css`), unchanged, are the other style. A dashboard can be all Classic, all Cluster, or mixed per widget. Classic lays out in the same bays so editing works the same.
+- **One × per mark.** Removing a copy removes only that mark (today's **Remove this** in the detail becomes the normal path).
+- **Units.** Days, weeks, "sleeps", or working days, plus the existing decimal.
+- **Repeats.** Yearly or monthly, for birthdays and anniversaries; the face rolls to the next one.
+- **Progress from a start.** An optional start date draws a bar of how far along the span is (useful for "days since" streaks too).
+- **Milestones.** Optional lamp at round numbers (100 days, 1 year) for count-up marks.
+- **When it passes.** Choose: switch to count-up (today's auto), show "Done", or hide the copy.
+- **Setup** on install asks label and date; the date can be picked from a Plan event.
 
-Add a **Cluster** subsection to `DESIGN_STYLE.md` under Palette, beside Phosphor and Milled fascia, with the table above and the photos.
+### Language study replaces Vocab
 
----
+One copy per language (`installs: perKey`, key = language code). A copy has a **role**: studied or native.
 
-## Part 5 — Arranging
+- **Modes.** Vocab is one mode and holds everything Vocab does today: Word of the day, 1000 words, Flashcards, Look up, the dictionary fold, Say it. Later modes (reading, listening, grammar drills) are **Planned** and slot in as more modes, not more widgets.
+- **Levels for studied languages.** CEFR A1–C2 as the shared ladder. The level picks the word pool: today's `common` and `everyday` banks and the 1000-word frequency ranks map onto A1–B1, `advanced` onto B2 and up.
+- **Placement quiz (optional).** Offered at setup and from the gear. Its format follows the real exam for that language, scored to CEFR: DELF / DALF (French), DELE (Spanish), CELI / CILS (Italian), Goethe-Zertifikat (German), JLPT N5–N1 (Japanese), HSK (Mandarin). The questions are original, written in that exam's format; no exam content is copied. The result sets the level, and the user can override it.
+- **Native languages.** Vocab building and flashcards only: Word of the day at Everyday, SAT / Word Power, Advanced, or Extremely advanced, plus favorites and flashcards. No CEFR level, no placement quiz, no 1000 words. This is today's English view.
+- **Face.** Today's word and its reading at `2x1`; the level and a known-word meter at `1x1`.
+- **Data stays put.** Favorites and shuffles stay in `brain2-home-vocab`, keyed by language. Known words stay as the `vocab-known` attribute on `vocab-1000-<lang>` items, and My words stay in `vocab-mine-<lang>`, so Lists still sees them.
 
-### W4 · Edit mode
+Gaps found: German has a daily word but no 1000-word list (`THOUSAND_LANGS` excludes `de`). English has only native-style levels. Both are fine for a first cut and are named in the gallery page.
 
-Faces only move while editing. Outside edit mode a click opens the detail, as today.
+## Room for user-made widgets
 
-- **Enter.** An **Edit** key on the date bar beside **Widgets**, or **Arrange** in the Widgets menu. Esc or **Done** leaves.
-- **Look.** The glass dims and the bays light their outlines, like a dash in service mode. Each bay shows a grip strip on top and a resize edge on the right. Clicks do not open details. × still hides. An empty slot at the end of each band, and a new band below, show where a bay can go.
-- **Move.** Drag a bay. Others slide to make room in the band; drop commits the new order and band. Pointer events with capture, as `use-plan-rail-drag.ts` does.
-- **Resize.** Drag the right edge. It snaps to the next width the kind allows and shows the width in units while dragging. Band height is set for the whole dashboard, not per bay.
-- **Keyboard.** Arrow keys move the focused face one place. Shift + arrows step its size. The Widgets menu keeps its move keys.
-- **Touch.** Same in edit mode; a long press starts the drag so scrolling still scrolls.
-- **Undo.** Each drop or resize is one step on the shell's Cmd/Ctrl-Z.
+Nothing user-made ships in this redesign, but the shapes above are chosen so it can join later without another migration.
 
-Switch bays and dashboard modes ship with edit mode: they need the same placement.
+- **Kinds are data first.** The manifest is a plain object plus lazy components. A built-in kind and a future user kind register the same way, through one `registerWidgetKind` call.
+- **Ids are namespaced.** Built-ins use bare ids (`points`). User kinds will use `user:<slug>`, so they can never collide.
+- **Unknown kinds are kept.** A copy whose kind this build does not know goes to `unknown[]` instead of being dropped, and the dash shows a quiet "widget not available" face. That fixes today's silent drop in `sanitizeHomeWidgetOrder`, and it also protects a layout synced from a newer build.
+- **Where they come from.** The path is rung 2 of `docs/MODULE_PLATFORM.md`: a hand-written manifest. A user widget would be a face and detail built from existing Module view kinds (stat, list summary, random pick, notes) bound to the user's lists. Arbitrary code (rung 3) stays out.
+- **The five laws apply.** A user widget keeps records as Items and only layout and preference in `copy.settings`.
+- **Modules Widgets converge.** List Explorer, Random Task, Analytics Stat, and the rest are already many-copy instances. They are good first "user-style" kinds to port onto the dash later, which proves the path end to end.
 
-Tests: drag reorders; resize stops at allowed sizes; clicks do not open details in edit mode; keyboard move and size; leaving edit mode restores click-to-open.
+## Migration plan
 
----
+The migration only adds. It builds `brain2-home-dashboard` from the stores that exist, never deletes or rewrites an old key, and mirrors back to the old blob for one release so an older build still opens the same strip.
 
-## Part 6 — The gallery
+**When it runs.** On first load with no `brain2-home-dashboard`, after `brain2-home-widgets` has run its own v10 migration. It also runs when a backup without the new key is restored, and per data profile (Live and Demo).
 
-### W5 · Widget gallery, install, guides
+**What each old thing becomes.**
 
-The Widgets menu stays the quick list (lamp, hide/add, + for `many` kinds). **Widget gallery** opens full-frame.
+| Today | Becomes | Rule |
+|---|---|---|
+| Each id in `order` | One copy of that kind | Same position in the Milled layout. Footprint = today's CSS footprint. `hidden` ids keep `hidden: true`. |
+| `daysuntil` with N items | N Countdown copies | Each item's fields copy into `settings`; the item id is kept as `settings.legacyId`. If the family was hidden, every copy is hidden. The copies sit where the family sat, in item order. |
+| `vocab` with its `languages` | One Language study copy per language | The `active` language takes Vocab's place and shows. The others install hidden, so the strip does not grow overnight. English gets role native; the rest get role studied, with today's level mapped to CEFR. |
+| `brain2-home-points-period` | The Points copy's `period` | Read once. The key stays for rollback. |
+| `brain2-home-weather` pin | The Weather copy's key and place | The store stays as the default pin Solar remainder already reads. |
+| `brain2-sky-motion`, `brain2-affirmation-log`, `brain2-home-vocab`, `brain2-home-days-until` | Unchanged | Still the data source. The gear writes to them for `once` kinds; `perKey` and `many` kinds keep their per-copy part in the copy. |
+| `widgetsFollowClock` | `followClock` | Same meaning, dashboard default. |
+| `review` session Dismiss, `rituals-snooze-until` | Unchanged | Still session and day state, not layout. |
+| Any id the build does not know | A copy in `unknown[]` | Never dropped. |
 
-**Gallery index.** A grid of kinds by family. Each card: the kind's face drawn live from sample data, the name, one line, and a badge: Installed, Installed ×3, or Not installed. A **Parked** shelf holds hidden instances.
+**Style on first run.** A vault that already had `brain2-home-widgets` lands on **Milled**, so nothing looks different until the user picks Dash. A fresh install starts on **Dash**. Switching style never deletes the other style's layout.
 
-**A kind's page.** On cool paper with graph rule, in this order:
+**Safety.**
 
-1. **Hero.** The face at every size it draws, side by side on a strip of bezel, in the current style, with a Classic / Cluster switch.
-2. **What it does.** Two or three sentences.
-3. **How to read it.** A diagram of the face with numbered callouts: "1 — the remainder", "2 — the next sunset". Diagram grammar, not decoration.
-4. **Where the numbers come from.** Chips naming the room and the store (Habits, Plan, Tracking, Lists), each a link.
-5. **What you can tune.** The kind's settings, grouped, one line each.
-6. **Ways to use it.** Short cases, many of them about several instances ("one Countdown per trip", "one Weather for home and one for the beach").
-7. **Your instances.** Each with Open, Settings, Hide or Show.
-8. **Install** / **Add another** / **Add a language** (by cardinality).
+- `legacy` keeps the v10 `order` and `hidden` exactly as read, for at least two releases.
+- For one release, every layout change also writes `order` and `hidden` back to `brain2-home-widgets` (dual-write, the same pattern as the Trip Itinerary wave in `lib/modules-store.ts`).
+- `lib/data/backup.ts` adds `home-dashboard` to the backup, the label map, and live restore.
+- Fixture tests: one saved blob per persist version v1–v10, Days Until v2 and v3, Vocab v1 and v2. Each asserts every old id has a copy, hidden stays hidden, every mark and language is a copy, and `unknown[]` is empty. A round-trip test restores an old backup and checks the same.
+- A **Reset to my old layout** key in the gallery rebuilds the dashboard from `legacy`.
 
-Copy lives in `lib/widgets/guides/<kind>.ts`, grown from today's `HOME_WIDGET_CATALOG` blurbs and the readings in `docs/widget-improvement/`.
+## Build order, doc updates, open questions
 
-**Install.** A kind with `setup` asks first, in a short sheet: Countdown asks for the date and what it counts to; Language study asks for the language and native or studying; Weather and Solar ask for a place. Every step has a default, so **Install** alone always works. A `one-per-key` kind does not offer a key already installed.
+Each phase ships on its own and leaves the app working. Phases 1–2 change nothing the user can see.
 
-**First-run guide.** The first time an instance's detail opens, a kind with `guide` lights its parts one at a time with a short note each (three to five steps, **Next**, **Skip**). Off for everything with one setting in the gallery: **Show guides**. Back on from the gear's Guide section.
+1. **Registry.** Add `lib/widgets/kinds.ts` with all 19 kinds wrapping today's tiles and dialogs as `Face` and `Detail`. `HomeOverview` renders from the registry instead of the `if` chain. Check: Home looks identical; existing tests pass.
+1. **Copies store and migration.** Add `brain2-home-dashboard`, the migration, the dual-write, backup wiring, and the fixture tests. The strip renders from copies in the Milled style. Check: every fixture vault keeps its exact strip.
+1. **Edit mode.** Add the Edit key, drag, resize, keyboard moves, and save to the Milled layout. Check: nothing moves while edit mode is off.
+1. **Gear.** Add the gear and per-copy `Settings` for each kind, with a visible-change test per setting.
+1. **Countdown.** Replace Days Until with copies, then add the improvements.
+1. **Language study.** Replace Vocab with per-language copies, roles, CEFR levels, then the placement quizzes.
+1. **Dash style.** Add the Dash faces at every declared size, plus the style switch and the Dash section of `docs/DESIGN_STYLE.md`.
+1. **Widget gallery.** Rename the catalog, add per-kind pages, setup steps, guides, and **Reset to my old layout**.
+1. **Retire the mirror.** After two releases, stop dual-writing `brain2-home-widgets`. Keep reading it as an import source.
 
-Tests: install with and without setup; duplicate key refused; guide shows once; Skip marks it seen; the gallery draws a face from sample data with no store reads.
+**Doc updates** (with the phase that changes the behavior):
 
----
+- `components/Home/README.md`: rewrite Overview widgets around kinds and copies; rename Days Until → Countdown and Vocab → Language study; fix the weather key and the Layout diagram; link this plan as **Planned** until built.
+- `lib/README.md`: add `lib/widgets/` and the new store; rename the Days Until and Vocab store notes.
+- `docs/widget-improvement/`: rename `home-widget-daysuntil.md`, add a Language study page, and use "kind" and "copy" throughout.
+- `docs/FUTURE_WIDGET_IDEAS.md`, `docs/UI_NEXT.md`, `docs/PLAN_OF_ACTION.md`, `docs/SPEC_MAPPING.md`, `docs/tree.md`, `docs/KNOWLEDGE_GRAPH_PLAN.md`, `docs/LINKS_REDESIGN.md`, `docs/analytics-vision/`: rename mentions.
+- `docs/DESIGN_STYLE.md`: add the Dash style; keep Milled fascia as is.
+- Commit this plan as `docs/WIDGETS_REDESIGN.md`, matching the other `*_REDESIGN.md` plans.
 
-## Part 7 — Countdown
+**Open questions**
 
-### W6 · Days Until remade as Countdown
-
-Each mark is its own instance. What stays: countdown, count-up, and auto; optional clock; unit or decimal; Plan event link and all-day scheduling (`home-days-until-event.ts`).
-
-**New settings.**
-
-| Setting | What it does |
-|---------|--------------|
-| Count in | Days, weeks, sleeps, workdays (Mon–Fri, skipping Plan days off), hours, or the full unit spread |
-| Started on | A start date. The face gains a bar from start to mark, and the detail says how much of the wait is gone |
-| Repeats | Never, yearly, monthly. A birthday rolls to next year the day after |
-| Face | Numerals, split-flap, odometer, or nixie |
-| Milestones | Lines at 100, 30, 7, 1 left (editable). Crossing one lights a tell-tale |
-| After the mark | Switch to count-up, hide, or say "Done" for a day |
-
-**Detail.** A calendar strip from start to mark with today marked, the Plan event if attached, milestones as ticks, and a notes field.
-
-**Gallery cases.** A trip, a deadline, a sober streak (count-up), a birthday (yearly).
-
-Tests: every existing days-until test still passes against the instance. Workdays, yearly roll, and milestones each get their own.
-
----
-
-## Part 8 — Language study
-
-### W7 · One widget per language
-
-Kind `language`, cardinality `one-per-key`, key is the language. "Vocab" is now one mode.
-
-**Relationship** (asked at install, changeable in settings):
-- **Studying.** Every mode.
-- **Native.** Vocabulary only: word power (SAT / Advanced / Extremely advanced), Flashcards, Look up. No level, no translate, no 1000 words. English installs as native by default.
-
-**Modes.** Today the detail has **Word of the day**, **1000 words**, **Flashcards**, and **Look up**. Each becomes a mode you turn on or off and order in settings. **Level** joins in W8.
-
-**Face** (pick in settings): word of the day; known meter (`312 / 1000`); level badge (`B1`); cards due; streak. Each size draws a subset: `mini` is the level or the due count, `wide` is the word with its definition.
-
-**Settings.**
-
-| Setting | What it does |
-|---------|--------------|
-| Relationship | Studying / Native |
-| Modes | Which modes, in what order |
-| Word level | Today's per-language level. With a placed level (W8) it can follow that level |
-| Definition in | The language itself, or English |
-| Show | IPA, reading (kana / pinyin), article, emoji |
-| Voice | Speech voice and rate (`lib/vocab-speech.ts`) |
-| Flashcards | Plain pass (today) or Leitner boxes. Boxes save each card's box on the word Item, so the deck remembers |
-| Cards per day | New and review caps for Leitner |
-| Daily goal | Words or minutes; drives the streak |
-
-**Records.** Favorites move from `vocab-store.favorites` to an attribute (`vocab-favorite`) on the word's Item in that language's My words list, created on first favorite (Law 1). The store keeps reading the old field for one release. Known stays `vocab-known`.
-
-**Migration.** W1 already made one instance per language. W7 moves favorites and drops `vocab-store.active` from use.
-
-Tests: two instances for two languages; the same language twice is refused; native hides the right modes; favorites survive the move; `vocab-lists` still fills words for every installed language.
-
-### W8 · Levels and placement
-
-A placed level per language and per skill, on the CEFR scale (A1–C2). Japanese also shows JLPT (N5–N1) and Mandarin HSK (1–6). The mapping is a table in `lib/language-levels.ts` and the detail says it is approximate.
-
-**Three ways to place.**
-
-1. **Self-check.** The CEFR self-assessment "can do" lines per skill (listening, reading, speaking, writing). About two minutes. Labeled a self-check.
-2. **Placement quiz.** An adaptive quiz in the formats the real exams use (DELF/DALF for French, DELE for Spanish, CILS/CELI for Italian, Goethe for German, JLPT, HSK): reading, listening (browser speech), vocabulary, and grammar items, each tagged with a level and a skill. It steps up after right answers and down after wrong ones, and ends with a level per skill and how sure it is. Items are written for Brain2 to the CEFR descriptors and the exams' task types, in `lib/language-placement/<lang>.ts`.
-3. **Official practice paper.** For real exam questions. The page links the exam body's own free sample papers. You take one, enter the section scores, and Brain2 converts them with that exam's published pass marks (DELF: four sections of 25, 50 of 100 to pass, 5 minimum per section).
-
-**Open question (Decision 9).** Link and score is the interim answer. A better way to bring real exam questions in is still to find: licensed item banks, exam bodies' practice APIs, or a partnership. Revisit before W8 ships, and keep a `TODO(W8-exam-source)` comment at the placement source switch in code.
-
-**Why not bundle real exam questions today.** The papers belong to the exam bodies (France Éducation international, Instituto Cervantes, the Japan Foundation, and others). Linking and scoring is legitimate and accurate. Copying them into the app is not ours to do. If a body publishes papers under a license that allows reuse, we can bundle that set and say so on the page. See Decision 9.
-
-**Records.** Each placement is an Item of type `language-assessment` in `Languages/<language>`: date, method, level per skill, overall level, raw scores, and the paper's link. Analytics can chart it like anything else.
-
-**What the level changes.**
-- Word of the day can follow the level (Common ≈ A1–A2, Everyday ≈ B1, Advanced ≈ B2–C1, Extremely advanced ≈ C2).
-- 1000 words starts practice at the rank band that fits.
-- The face can show the badge, and a tell-tale lights when a re-test is due (setting: every 1, 3, or 6 months).
-- The **Level** mode shows the level per skill as bars, the history as a line, what the next level asks for, and an estimate of known words.
-
-Tests: CEFR ↔ JLPT ↔ HSK table; adaptive steps; DELF scoring (pass, fail on a section under 5); assessment Item shape.
-
----
-
-## Part 9 — Settings that matter
-
-### W9 · The other 17 kinds
-
-Each row is a kind's own section, on top of the shared ones. Every setting must change what the face or the detail shows; a setting that does nothing does not ship.
-
-| Kind | Cardinality | Settings |
-|------|-------------|----------|
-| Rituals | one | Which rites count (morning, night, weekly); open on click or show the list; quiet when clear (0 vs hide for the day) |
-| Points | one | Period (today's D / W / M / ALL, moved from localStorage); chart window; face: ticker, needle gauge, or number; show possible points |
-| Latest award | one | Smallest amount that takes the face; sources (habits, bonuses, inbox); how far back the detail lists |
-| Today's Progress | one | Periods on the face (today / week / month); habit piles or fraction; which lists count as to-dos; folds open by default |
-| Affirmation | many (per list) | Source list; lines per day (now 5); starting lens; which lenses are on; voice |
-| Weather | one per city | City; °F / °C; glance (next change, high/low, rain chance, wind); tides on or off; beach |
-| Screen pet | one | Creature and palette; sleep threshold (now 20%); night hours; 12 / 24 h clock; clock on or off |
-| Next | many | Look-ahead (today, 3 days, a week); Plan events, planned actions, or both; all-day on or off; a Plan calendar filter |
-| Day lamp | one | The thresholds for each word; which bars count |
-| Moon | one | Face (sprite, phase name, days to next major phase); chart opens at (zoom stop); True sizes default; place for moonrise and moonset |
-| Solar remainder | one per place | Place; counts to (sunset / sunrise, golden hour, civil twilight, daylight left as a bar); format |
-| Tracking now | one | Which axes (Activity, Location, Mood, Company); age after which the face warns |
-| Night well | one | What counts as a real night (shortest sleep) |
-| Harvest leftover | one | Face: remainder, `N left of M`, or bar |
-| Inbox mill | one | Which lists are excluded (Monkey brain now); age that lights the tell-tale |
-| Already flowing | one | Thresholds for Quiet / Flowing / Pushed / Mixed |
-| Plan and lived | one | Waking hours window; thresholds for each word |
-
-Do these kind by kind with the W2 face split; each lands with its tests.
-
----
-
-## Part 10 — Your own widgets
-
-### W10 · Make a kind
-
-**Planned, after W1–W9.** Joins [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md) rung 2.
-
-- **Readout kind.** Pick a source (an Analytics stat, a list count, an attribute sum, a habit), a face (number, bar, word by thresholds, sparkline), and a name. It saves as a `WidgetKind` in data, not code, and installs like any other.
-- **Module cards.** The Modules room's widgets (analytics stat, list summary, writing prompt, random task, rules) become kinds the gallery can install on the Visual dashboard.
-- **Share.** Copy a kind or an instance as JSON (W2 already copies settings), paste it on another vault.
-
-Law 5 holds: a made kind runs offline from its saved definition.
-
----
-
-## Order of work
-
-1. **W0** names. Small, safe, and it makes every later diff read right.
-2. **W1** model and migration. Everything after builds on it. Ship it with the old faces untouched.
-3. **W2** shell and gear, with the face split for Progress, Points, Pet, and Solar first.
-4. **W3** the band, the gauge kit, and Cluster faces for the four split kinds.
-5. **W6** Countdown and **W7** Language study, which are the two the request names. They can run side by side: they touch different files.
-6. **W4** edit mode.
-7. **W5** gallery, install, guides.
-8. **W8** levels and placement.
-9. **W9** the remaining kinds, one at a time.
-10. **W10** your own widgets.
-
----
-
-## Docs to change
-
-| Doc | Change | When |
-|-----|--------|------|
-| `components/Home/README.md` | "Overview widgets" becomes "Visual dashboard"; the widget definition; file table rows for new files; Stores row gains `brain2-widgets` | W0, then each phase |
-| `lib/README.md` | `lib/widgets/*`, `lib/language-levels.ts`, `lib/language-placement/*` | W1, W8 |
-| `docs/FUTURE_WIDGET_IDEAS.md` | New words; ideas are written as kinds with a cardinality | W0 |
-| `docs/widget-improvement/README.md` | New words; links to gallery copy | W0, W5 |
-| `docs/DESIGN_STYLE.md` | Cluster subsection with the inspiration table | W3 |
-| `docs/mockups/dashboard-inspo/` | The six reference photos (added 2026-10-20) | Now |
-| `docs/README.md` | Index row for this plan | Now |
-| `components/Modules/README.md` | Module widgets vs dashboard widgets; W10 join | W0, W10 |
-| `docs/screenshots/` | Retake the Home shots | W3 |
+- Is English your native language for Language study, and are any others native?
+- Should a fresh install start on Dash, or on Milled like everyone else?
+- Should Points, Weather, and Solar remainder allow more than one copy, as proposed?
+- Is the Widgets key renamed **Gallery**, or kept as Widgets with Gallery inside?

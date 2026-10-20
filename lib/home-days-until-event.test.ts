@@ -15,6 +15,10 @@ const baseItem: HomeDaysUntilItem = {
   mode: "countdown",
   eventId: "",
   scheduleAllDay: true,
+  repeat: "none",
+  start: "",
+  milestones: false,
+  whenPassed: "stay",
 }
 
 describe("home-days-until-event", () => {
