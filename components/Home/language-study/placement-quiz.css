@@ -1,0 +1,303 @@
+/*
+ * components/Home/language-study/placement-quiz.css — Placement quiz
+ *
+ * Loaded by `placement-quiz.tsx`. The quiz sits inside `.home-vocab-flash`,
+ * so it inherits the flashcard paper, ink and cobalt tokens, the progress
+ * bar, and the phosphor result panel. This file adds only the ladder, the
+ * question card, the answer keys and the per-level tally.
+ */
+
+.home-widget-dialog .home-placement-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.home-widget-dialog .home-placement-badge {
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--friend-glow, #7dffc4);
+  background: var(--friend-lcd, #07140f);
+}
+
+.home-widget-dialog .home-placement-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--flash-ink);
+}
+
+/* The ladder: six rungs, the start rung lit. */
+.home-widget-dialog .home-placement-ladder {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-widget-dialog .home-placement-ladder li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--flash-ink);
+  background: var(--flash-paper);
+  box-shadow: inset 0 0 0 1px var(--flash-rule-major);
+}
+
+.home-widget-dialog .home-placement-ladder b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-widget-dialog .home-placement-ladder em {
+  font-style: normal;
+  opacity: 0.6;
+}
+
+.home-widget-dialog .home-placement-ladder li.is-on {
+  color: var(--friend-glow, #7dffc4);
+  background: var(--friend-lcd, #07140f);
+  box-shadow: inset 0 0 0 1px #1e4a36;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.6);
+}
+
+.home-widget-dialog .home-placement-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-widget-dialog .home-placement-start > span {
+  margin-right: 4px;
+}
+
+/* Level lamps in the progress bar. */
+.home-widget-dialog .home-placement-steps {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.home-widget-dialog .home-placement-steps i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1b2420;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.home-widget-dialog .home-placement-steps i.is-done {
+  background: #7dffc4;
+  box-shadow: 0 0 5px rgba(125, 255, 196, 0.8);
+}
+
+.home-widget-dialog .home-placement-steps i.is-miss {
+  background: #e58a66;
+}
+
+.home-widget-dialog .home-placement-steps i.is-on {
+  outline: 1px solid var(--flash-cobalt);
+  outline-offset: 1px;
+}
+
+/* The question card: index-card paper on graph rule, like the flashcard front. */
+.home-widget-dialog .home-placement-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 26px 14px 14px;
+  border-radius: 10px;
+  color: var(--flash-ink);
+  background-color: var(--flash-paper);
+  background-image:
+    linear-gradient(var(--flash-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--flash-rule) 1px, transparent 1px);
+  background-size: 12px 12px;
+  box-shadow: 0 0 0 1px #b9c6dc;
+}
+
+.home-widget-dialog .home-placement-card .home-vocab-flash-fig {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+}
+
+.home-widget-dialog .home-placement-card p {
+  margin: 0;
+}
+
+.home-widget-dialog .home-placement-ask {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.home-widget-dialog .home-placement-listen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-placement-passage {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--flash-cobalt);
+  font-size: 13px;
+  line-height: 1.45;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.home-widget-dialog .home-placement-stem {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.home-widget-dialog .home-placement-choices {
+  display: grid;
+  gap: 6px;
+}
+
+.home-widget-dialog .home-placement-choice,
+body.win95-app .home-widget-dialog .home-placement-choices button.home-placement-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--flash-ink);
+  background: #fff;
+  background-image: none;
+  box-shadow: inset 0 0 0 1px #b9c6dc;
+  cursor: pointer;
+}
+
+.home-widget-dialog .home-placement-choice:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--flash-cobalt);
+}
+
+.home-widget-dialog .home-placement-choice:focus-visible {
+  outline: 1px dotted var(--flash-cobalt);
+  outline-offset: 2px;
+}
+
+.home-widget-dialog .home-placement-choice:disabled {
+  cursor: default;
+}
+
+.home-widget-dialog .home-placement-choice.is-right,
+body.win95-app .home-widget-dialog .home-placement-choices button.home-placement-choice.is-right {
+  color: #0c4e39;
+  background: #d4f7ea;
+  box-shadow: inset 0 0 0 1px #5ec7a2;
+}
+
+.home-widget-dialog .home-placement-choice.is-wrong,
+body.win95-app .home-widget-dialog .home-placement-choices button.home-placement-choice.is-wrong {
+  color: #7a2a0c;
+  background: #ffe1d6;
+  box-shadow: inset 0 0 0 1px #e58a66;
+}
+
+.home-widget-dialog .home-placement-key {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--friend-glow, #7dffc4);
+  background: var(--friend-lcd, #07140f);
+}
+
+.home-widget-dialog .home-placement-why {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.home-widget-dialog .home-placement-why.is-right b {
+  color: #11684c;
+}
+
+.home-widget-dialog .home-placement-why.is-wrong b {
+  color: #a33a14;
+}
+
+/* Result panel additions. */
+.home-widget-dialog .home-placement-result-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-widget-dialog .home-placement-result-note {
+  max-width: 34em;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.home-widget-dialog .home-placement-tally {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-widget-dialog .home-placement-tally li {
+  display: grid;
+  grid-template-columns: 2.4em auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-widget-dialog .home-placement-tally li.is-miss {
+  opacity: 0.6;
+}
+
+.home-widget-dialog .home-placement-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.home-widget-dialog .home-placement-pips i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.5;
+}
+
+.home-widget-dialog .home-placement-pips i.is-on {
+  background: currentColor;
+  opacity: 1;
+  box-shadow: 0 0 5px rgba(125, 255, 196, 0.7);
+}
+
+@media (max-width: 520px) {
+  .home-widget-dialog .home-placement-ladder {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
