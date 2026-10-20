@@ -895,3 +895,82 @@ body .home-widget-dialog.home-widget-instrument.vdg-dialog {
     border-bottom: 0;
   }
 }
+
+/* ---- Date plate: Edit key and style switch ------------------------------ */
+
+/*
+ * _Last mapped: 2026-10-20_
+ * The keys sit on the date plate, which is milled in both looks. The house
+ * button lip in `app/win95.css` repaints `background-image` on every button,
+ * so these selectors match its weight and win by order. Edit down shows a
+ * phosphor lamp. Each style key carries a swatch of its look: satin for
+ * Milled, black glass with a cyan line for Dash.
+ */
+body.win95-app .home95 .home-title-widgets button.home-widgets-key:not([data-no95]) {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0.12) 14%, transparent 30%),
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 34%, var(--h-surface) 68%, var(--chrome-key-shade) 100%);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-edit-key:not([data-no95]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home95 .home-widgets-edit-key::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2a1414;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-edit-key[aria-pressed="true"]:not([data-no95]) {
+  color: #0d3a24;
+  background-image: linear-gradient(180deg, #c9cdd1, #b9bdc1);
+  box-shadow: var(--h-sunken);
+  text-shadow: none;
+}
+
+.home95 .home-widgets-edit-key[aria-pressed="true"]::before {
+  background: #7dffc4;
+  box-shadow: 0 0 4px #7dffc4, 0 0 9px rgba(125, 255, 196, 0.55);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-style-key:not([data-no95]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 40%);
+  box-shadow: var(--h-raised);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-style-key[aria-checked="true"]:not([data-no95]) {
+  background-image: none;
+  background-color: #c4c8cc;
+  box-shadow: var(--h-sunken);
+}
+
+.home95 .home-widgets-style-key::before {
+  content: "";
+  flex: none;
+  width: 18px;
+  height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(165deg, #f4f5f6, #c3c7cb 60%, #a3a7ab);
+  box-shadow: inset 0 0 0 1px #7b7f83;
+}
+
+.home95 .home-widgets-style-key:nth-child(2)::before {
+  background:
+    linear-gradient(90deg, transparent 3px, #5cf2d6 3px, #5cf2d6 9px, transparent 9px) center / 100% 2px no-repeat,
+    #020708;
+  box-shadow: inset 0 0 0 1px #3b4044;
+}
+
+.home95 .home-widgets-style-key[aria-checked="true"]:nth-child(2)::before {
+  box-shadow: inset 0 0 0 1px #3b4044, 0 0 5px rgba(92, 242, 214, 0.55);
+}
