@@ -513,7 +513,7 @@ describe("HomeOverview", () => {
     expect(useHomeDaysUntilStore.getState().items[0]?.format).toBe("decimal")
   })
 
-  it("adds a second Days Until tile from the widgets menu", async () => {
+  it("adds a second Countdown tile from the widgets menu", async () => {
     const user = userEvent.setup()
     render(
       <div className="home95">
@@ -523,7 +523,40 @@ describe("HomeOverview", () => {
     )
     expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Widgets" }))
-    await user.click(screen.getByRole("button", { name: "Add another Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Add another Countdown" }))
     expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(2)
+  })
+
+  it("turns edit mode on and off from the Edit key", async () => {
+    const user = userEvent.setup()
+    render(
+      <div className="home95">
+        <HomeWidgetsMenu />
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    await user.click(screen.getByRole("button", { name: "Edit" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-editing", "true")
+    expect(screen.getByTestId("dashboard-edit-banner")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("button", { name: "Done" }))
+    expect(screen.queryByTestId("dashboard-edit-banner")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("switches between Milled and Dash from the Widgets key", async () => {
+    const user = userEvent.setup()
+    render(
+      <div className="home95">
+        <HomeWidgetsMenu />
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    await user.click(screen.getByRole("button", { name: "Widgets" }))
+    expect(screen.getByRole("radio", { name: "Milled" })).toHaveAttribute("aria-checked", "true")
+    await user.click(screen.getByRole("radio", { name: "Dash" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-style", "dash")
+    await user.click(screen.getByRole("radio", { name: "Milled" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-style", "milled")
   })
 })
