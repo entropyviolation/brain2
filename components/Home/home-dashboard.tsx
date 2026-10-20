@@ -143,6 +143,7 @@ export function HomeDashboard() {
           <div className="home-window-body">
             <HomeOverview
               currentDate={overviewDate}
+              viewedDate={currentDate}
               onStartReview={handleStartReview}
               onOpenHomeTab={(tab) => setActiveTab(tab)}
             />

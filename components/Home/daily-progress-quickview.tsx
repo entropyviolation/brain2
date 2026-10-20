@@ -10,6 +10,7 @@
  */
 "use client"
 
+import { CopyCaption } from "@/components/Home/widgets/copy-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, ListTodo, Repeat } from "lucide-react"
@@ -45,15 +46,24 @@ function PeriodColumn({ label, todo, habit }: { label: string; todo: HomeDayCoun
 export function DailyProgressQuickview({
   currentDate,
   instrument = false,
+  periods = "all",
 }: {
   currentDate: Date
   instrument?: boolean
+  /** Which period columns the instrument draws (the Today's Progress Columns setting). */
+  periods?: "today" | "week" | "all"
 }) {
   const { todo: todoStats, habit: habitStats } = useHomeDayStats(currentDate)
   const week = useHomePeriodStats("week", currentDate)
   const month = useHomePeriodStats("month", currentDate)
   const done = (a: HomeDayCount, b: HomeDayCount) => `${a.completed + b.completed}/${a.total + b.total}`
-  const footer = `Today ${done(todoStats, habitStats)} · week ${done(week.todo, week.habit)} · month ${done(month.todo, month.habit)}`
+  const footer = [
+    `Today ${done(todoStats, habitStats)}`,
+    periods !== "today" ? `week ${done(week.todo, week.habit)}` : "",
+    periods === "all" ? `month ${done(month.todo, month.habit)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   const meters = (
     <>
@@ -107,12 +117,14 @@ export function DailyProgressQuickview({
     return (
       <div className="hab-progress-module">
         <div className="hab-score-caption">
-          <span>Today&apos;s Progress</span>
+          <span>
+            <CopyCaption>Today&apos;s Progress</CopyCaption>
+          </span>
         </div>
-        <div className="home-crt is-stack home-progress-crt">
+        <div className="home-crt is-stack home-progress-crt" data-periods={periods}>
           <PeriodColumn label="Today" todo={todoStats} habit={habitStats} />
-          <PeriodColumn label="This week" todo={week.todo} habit={week.habit} />
-          <PeriodColumn label="This month" todo={month.todo} habit={month.habit} />
+          {periods !== "today" ? <PeriodColumn label="This week" todo={week.todo} habit={week.habit} /> : null}
+          {periods === "all" ? <PeriodColumn label="This month" todo={month.todo} habit={month.habit} /> : null}
         </div>
         <div className="home-tile-foot">
           <p className="hab-score-sub">{footer}</p>
