@@ -13,10 +13,12 @@ is the Visual dashboard redesign doc (`docs/WIDGETS_REDESIGN.md` once committed)
 | File | Purpose |
 |------|---------|
 | `dash-primitives.tsx` | The parts, with no data: `SegDigits` (seven-segment digits with unlit ghost segments, `:`, `.`, `/`), `DashReading` (digits as segments, units as small printed legends), `ArcGauge` (arc of separate blocks, `marker` lights one block for a position), `BarMeter`, `StairMeter` (Prius fuel stair), `DashSelector` (P R N D column, live choice boxed), `DashLamp`, `DashWord` (DotGothic16 LCD words), `DashPicto` (16px line pictograms), `DashPet`, `DashMoon`, `DashTrace`. |
-| `dash-faces.tsx` | One face per kind, exported as `DASH_FACES`. A face reads the same stores and lib helpers as the Milled tile, so both styles show the same number. A face has no keys and opens nothing; the cell around it is the button and the detail is the tile's own dialog. |
-| `dash-sizes.ts` | `DASH_SIZES`: the footprints each kind draws, default first. The live copy is `lib/widgets/kinds.ts`. Cells are about 88 × 60 px. |
-| `dash.css` | Every rule is scoped to `[data-style="dash"]` (the dashboard root and the detail dialog) or `.dash-sample` (gallery samples). Panel, pods, faces, edit mode, detail popup, gear, settings view, first-run guide. Imported in `app/layout.tsx` after `home-widget-face.css`. |
-| `dash-faces.test.tsx` | Every kind renders every size it lists, with no keys and no foot at `1x1`. Each setting changes the rendered face. |
+| `dash-faces.tsx` | One face per kind, exported as `DASH_FACES` and registered with `registerDashFaces` (`components/Home/widgets/dash-face-registry.ts`) when the module loads; `app/layout.tsx` imports it for that side effect. Sizes come from `lib/widgets/kinds.ts`. A face reads the same stores and lib helpers as the Milled tile, so both styles show the same number. A face has no keys and opens nothing; the cell around it is the button and the detail is the tile's own dialog. |
+| `dash.css` | Every rule is scoped to `[data-style="dash"]` (the dashboard root and the detail dialog) or `.dash-sample` (gallery samples). Panel, pods, faces, edit mode, detail popup, gear, settings view, first-run guide. Imported in `app/layout.tsx` after `../visual-dashboard.css`. Scoped rules use `:is(body, body.win95-app .home95)` so they out-rank the Milled skin without `!important`. The detail hood is set through `--fascia-dialog-face` and `--fascia-dialog-ring`, the tokens the house dialog rule in `app/win95.css` paints from. |
+| `../visual-dashboard.css` | The new chrome in Milled: `.vd-cell.is-auto` is `display: contents` (today's footprint), a picked size makes the tile fill its cell (one-row sizes drop the foot), the edit banner, grip, resize corner, drop marks, the gear as a close-key twin, the settings panel, lamp chips, and the guide. |
+| `dash-faces.test.tsx` | Every kind renders every size `kinds.ts` lists, with no keys and no foot at `1x1`. Each setting changes the rendered face. |
+
+To look at the faces without the app, render them with Testing Library into a page that inlines `dash.css` (and `visual-dashboard.css`, `home-chrome.css`, `home-widget-face.css`, `app/win95.css` for the whole dashboard) and screenshot it with Playwright using `executablePath: "/opt/pw-browsers/chromium"`. Server rendering shows only store defaults (zustand's server snapshot), so use a client render.
 
 ## Contract with the dashboard
 
@@ -44,7 +46,7 @@ line. Saved `amber` reads as violet.
 | `award` (Latest award) | — | Latest positive row, reason on the foot. |
 | `pet` (Screen pet) | `caption` clock, name, mood; `name` | The readout beside the pet: clock, its name, or its mood. |
 | `moon` | `readout` phase, countdown, light; `sprite` | Phase name, days to the next full or new, or percent lit; `sprite` shows the disk. |
-| `daysuntil` (Countdown) | `markId` | Picks the mark. The mark's own `unit`, `repeat`, `start`, `milestones`, `whenPassed` change units, roll the date, draw a span bar, glow at round numbers, and show Done. |
+| `daysuntil` (Countdown) | `markId` | Picks the mark. The face comes from `countdownFace` (`lib/countdown.ts`), so the mark's `format` (unit, decimal, days, weeks, sleeps, workdays), `repeat`, `start`, `milestones`, and `whenPassed` all show: whole units get a printed unit, a start date draws a span bar, a milestone glows. |
 | `vocab` (Language study) | `copy.key` language, `role`, `cefr`, `face` word or level | Word face: today's word, reading, definition. Level face: CEFR (studied) or word level (native) with a known-word stair. |
 | `affirmation` | `pips` | Lamps for each of today's lines said. `keys` has no Dash effect. |
 | `weather` | `place`, `units` f or c, `foot` glance, range, rain | City, °F or °C, and the foot line. `2x2` is a low-to-high arc. |

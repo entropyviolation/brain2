@@ -2,12 +2,14 @@ import { render, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { usePointsStore } from "@/lib/points-store"
-import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
+import { EMPTY_HOME_DAYS_UNTIL_ITEM, useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { fetchHomeDayWeather } from "@/lib/weather-client"
-import { DASH_FACES, type DashFaceProps } from "./dash-faces"
-import { DASH_SIZES, type DashSize } from "./dash-sizes"
+import type { DashFaceProps } from "@/components/Home/widgets/dash-face-registry"
+import { BUILT_IN_KIND_IDS, widgetKind } from "@/lib/widgets/kinds"
+import type { WidgetSize as DashSize } from "@/lib/widgets/types"
+import { DASH_FACES } from "./dash-faces"
 import { DashReading, SegDigits, segDrawable } from "./dash-primitives"
 
 vi.mock("@/lib/weather-client", async (orig) => {
@@ -34,14 +36,14 @@ const WX = {
   week: [],
 }
 
-function face(kind: string, size: DashSize, settings: Record<string, unknown> = {}, copy: Partial<DashFaceProps["copy"]> = {}) {
+function face(kind: string, size: DashSize, settings: DashFaceProps["settings"] = {}, copy: Partial<DashFaceProps["copy"]> = {}) {
   const Face = DASH_FACES[kind]!
   return render(
-    <Face size={size} currentDate={DAY} settings={settings} copy={{ id: `${kind}-1`, kind, lamp: "phosphor", showFoot: true, ...copy }} />,
+    <Face size={size} currentDate={DAY} settings={settings} copy={{ id: `${kind}-1`, kind, title: "", lamp: "phosphor", showFoot: true, ...copy }} />,
   )
 }
 
-function html(kind: string, size: DashSize, settings: Record<string, unknown> = {}, copy: Partial<DashFaceProps["copy"]> = {}) {
+function html(kind: string, size: DashSize, settings: DashFaceProps["settings"] = {}, copy: Partial<DashFaceProps["copy"]> = {}) {
   const { container, unmount } = face(kind, size, settings, copy)
   const out = container.innerHTML
   unmount()
@@ -60,8 +62,8 @@ beforeEach(() => {
   })
   useHomeDaysUntilStore.setState({
     items: [
-      { id: "trip", label: "Trip", date: "2026-11-01", time: "", format: "unit", mode: "countdown", eventId: "", scheduleAllDay: false },
-      { id: "quit", label: "Quit", date: "2026-01-01", time: "", format: "unit", mode: "countup", eventId: "", scheduleAllDay: false },
+      { ...EMPTY_HOME_DAYS_UNTIL_ITEM, id: "trip", label: "Trip", date: "2026-11-01", mode: "countdown" },
+      { ...EMPTY_HOME_DAYS_UNTIL_ITEM, id: "quit", label: "Quit", date: "2026-01-01", mode: "countup", format: "days" },
     ],
   })
   useSleepStore.setState({ nights: { [today]: { date: today, sleptMin: -30, wokeMin: 420 } } })
@@ -91,7 +93,8 @@ describe("segment digits", () => {
 })
 
 describe("every kind draws every size it lists", () => {
-  for (const [kind, sizes] of Object.entries(DASH_SIZES)) {
+  for (const kind of BUILT_IN_KIND_IDS) {
+    const sizes = widgetKind(kind)?.sizes ?? []
     for (const size of sizes) {
       it(`${kind} at ${size}`, () => {
         const { container } = face(kind, size)
@@ -108,7 +111,7 @@ describe("every kind draws every size it lists", () => {
   }
 
   it("every registered face has sizes", () => {
-    expect(Object.keys(DASH_FACES).sort()).toEqual(Object.keys(DASH_SIZES).sort())
+    expect(Object.keys(DASH_FACES).sort()).toEqual([...BUILT_IN_KIND_IDS].sort())
   })
 })
 
@@ -130,7 +133,7 @@ describe("copy settings change the face", () => {
 })
 
 describe("kind settings change the face", () => {
-  const differs = (kind: string, size: DashSize, a: Record<string, unknown>, b: Record<string, unknown>) =>
+  const differs = (kind: string, size: DashSize, a: DashFaceProps["settings"], b: DashFaceProps["settings"]) =>
     expect(html(kind, size, a)).not.toEqual(html(kind, size, b))
 
   it("points: period, chart, keys", () => {
