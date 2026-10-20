@@ -53,7 +53,7 @@ describe("TodoPanel", () => {
 
   it("renders todo panel header and day tab", () => {
     const { container } = render(<TodoPanel />)
-    expect(screen.getByText("To Do")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(/^To do /)
     expect(container.querySelector(".todo95")).toHaveAttribute("data-ui-name", "To Do")
     expect(container.querySelector(".todo-fascia")).toHaveAttribute("data-ui-name", "To Do fascia")
     expect(container.querySelector(".todo-period")).toHaveAttribute("data-ui-name", "Period nameplate")
@@ -450,6 +450,7 @@ describe("TodoPanel", () => {
     expect(screen.getByRole("status")).toHaveTextContent("4 in progress (cap 3)")
     expect(screen.getByText("WIP one")).toBeInTheDocument()
 
+    fireEvent.click(screen.getByRole("button", { name: "To Do settings" }))
     fireEvent.change(screen.getByLabelText("In progress cap"), { target: { value: "5" } })
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").wipLimit).toBe(5)

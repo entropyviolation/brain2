@@ -274,6 +274,8 @@ export interface Subtask {
   id: string
   description: string
   completed: boolean
+  /** Task card: this step's own pens. Unset inherits from the nearest parent step, then the task. `[]` means no pen. */
+  penLinks?: { scopeId: string; penId: string }[]
   /** Atomic step that should not be decomposed further. */
   isMolecular?: boolean
   /** Self-contained background so the step reads correctly out of context. */
@@ -310,6 +312,20 @@ export interface Subtask {
    * in the points store), taken back on untick. Extra to the task's own.
    */
   points?: number
+  /** Default points for every step inside this one that sets none of its own. Inherited down the tree. */
+  stepPoints?: number
+  /**
+   * Points paid per level reached inside this step (a step with children).
+   * When any is set they replace `points`: reaching B pays B, then G, then E
+   * (`lib/step-points.ts`). Keys `step:{taskId}:{stepId}:{tier}`.
+   */
+  tierPoints?: Partial<Record<StepTier, number>>
+  /** Other tasks (any item in the task store) that must be done first. */
+  needsTaskIds?: string[]
+  /** Items or lists (`list:{id}`) holding what this step needs. Reference only; never locks. */
+  resourceIds?: string[]
+  /** `event` items this step waits on. Locks until each is logged (ticked) or its date has passed. */
+  awaitIds?: string[]
 }
 
 /** Step tier ids (Phase 10). Labels: Bare minimum / Goal / Exceptional. */
@@ -528,6 +544,10 @@ export interface Task extends Item {
   urgency?: number // 1-5
   importance?: number // 1-5
   dependencies?: string[] // task IDs
+  /** Task card: items or lists (`list:{id}`) holding what this task needs. */
+  resourceIds?: string[]
+  /** Task card: `event` items this task waits on (see `Subtask.awaitIds`). */
+  awaitIds?: string[]
   /**
    * Tracking pens joined to this task. The first one that still exists is the
    * pen its clock paints with (To Do ▶, Just Start, the focus bar). Phase 5 of
@@ -622,6 +642,8 @@ export interface Task extends Item {
   parentTaskId?: string // For subtasks
   /** Phase 12: the task card's quick points. Set, it wins over the list rule; cleared, the rule returns. */
   pointsOverride?: number
+  /** Default points paid by every step of this task that sets none of its own (`Subtask.stepPoints` nearer wins). */
+  stepPoints?: number
   /** Phase 10: the step level reached when it was marked Done (Done at Bare minimum / Goal, or the top level). Cleared on reopen. */
   tierReached?: StepTier
   /** Phase 11: this item is a step's item (`Subtask.itemId`). Never a To Do row, lens, list or search hit (`isStepItem`). */

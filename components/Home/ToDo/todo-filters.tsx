@@ -1,19 +1,18 @@
 /**
  * components/Home/ToDo/todo-filters.tsx — Filters and sort, always on the fascia
  *
- * Three milled bays: what to show, how to sort, and the in-progress cap.
- * Native checkbox / select, skinned as keys and recessed fields.
+ * One slim strip: show chips, tier, status, sort, formula. Global knobs
+ * (sun rites, in-progress cap, default estimate, pace) live behind the gear.
  */
 "use client"
 
-import type { ReactNode } from "react"
 import type { TodoPeriod, TodoSortMode, TodoSortOrder, TodoStatusFilter } from "./todo-utils"
 import {
   TODO_SORT_OPTIONS,
   TODO_STATUS_FILTERS,
   getTodoSortOptionLabel,
 } from "./todo-utils"
-import { MIN_WIP_LIMIT, MAX_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
+import { setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const TIER_CHOICES: { value: TodoTierView; short: string; title: string }[] = [
@@ -28,7 +27,7 @@ function TierKeys() {
   const { tierView } = useTodoPrefs()
   return (
     <div className="todo-segment todo-tier-keys" role="radiogroup" aria-label="Step tier">
-      <span className="todo-label">Step tier</span>
+      <span className="todo-label">Tier</span>
       {TIER_CHOICES.map(({ value, short, title }) => (
         <button
           key={value}
@@ -53,13 +52,13 @@ function StepViewKeys() {
     <>
       <TierKeys />
       <label
-        className="todo-key-check"
+        className="todo-chip"
         title="Hide steps and tasks waiting on an open prerequisite. Unfinished is not locked. They come back when the prerequisite is done."
       >
         <input type="checkbox" checked={hideLocked} onChange={(e) => setTodoPrefs({ hideLocked: e.target.checked })} />
         Hide locked
       </label>
-      <label className="todo-key-check" title="A branch shows only its next step and how many more. One click opens it.">
+      <label className="todo-chip" title="A branch shows only its next step and how many more. One click opens it.">
         <input type="checkbox" checked={showNextOnly} onChange={(e) => setTodoPrefs({ showNextOnly: e.target.checked })} />
         Show next only
       </label>
@@ -80,13 +79,6 @@ export function TodoFilters({
   sortOrder,
   onSortOrderChange,
   onToggleFormula,
-  wipLimit,
-  onWipLimitChange,
-  ritesFollowSun,
-  onRitesFollowSunChange,
-  defaultEstimateMin,
-  onDefaultEstimateChange,
-  paceSlot,
 }: {
   period: TodoPeriod
   availableNow: boolean
@@ -100,144 +92,75 @@ export function TodoFilters({
   sortOrder: TodoSortOrder
   onSortOrderChange: (value: TodoSortOrder) => void
   onToggleFormula: () => void
-  wipLimit: number
-  onWipLimitChange: (value: number) => void
-  /** Optional so older callers keep compiling; the key shows only on the day lens when wired. */
-  ritesFollowSun?: boolean
-  onRitesFollowSunChange?: (value: boolean) => void
-  /** Optional: the Default est field shows only when wired. */
-  defaultEstimateMin?: number
-  onDefaultEstimateChange?: (value: number) => void
-  /** Your pace fields and the ghost switch (`todo-pace.tsx`), shown in the Pace bay. */
-  paceSlot?: ReactNode
 }) {
+  const chip = (label: string, checked: boolean, onChange: (v: boolean) => void, title?: string, id?: string) => (
+    <label className="todo-chip" title={title}>
+      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      {label}
+    </label>
+  )
   return (
     <div
       className="todo-filters"
       aria-label="Filters and sort"
       data-ui-name="Show / Sort / Pace"
-      data-ui-help="Available now, status, sort, the priority formula, and the in-progress cap."
+      data-ui-help="One strip: show chips, tier, status, sort, and the priority formula."
       data-ui-docs="components/Home/ToDo/README.md"
       data-ui-docs-anchor="options"
     >
-      <fieldset className="todo-bay">
-        <legend>Show</legend>
-        <label className="todo-key-check">
-          <input
-            type="checkbox"
-            checked={availableNow}
-            onChange={(e) => onAvailableNowChange(e.target.checked)}
-          />
-          Available now
-        </label>
-        <label className="todo-key-check">
-          <input
-            id="show-all-tasks"
-            type="checkbox"
-            checked={showAllTasks}
-            onChange={(e) => onShowAllTasksChange(e.target.checked)}
-          />
-          Show all tasks
-        </label>
-        {period === "day" && onRitesFollowSunChange ? (
-          <label className="todo-key-check" title="Night ritual waits for sunset; an unstarted Morning ritual leaves at sunset. Today only.">
-            <input
-              type="checkbox"
-              checked={ritesFollowSun ?? true}
-              onChange={(e) => onRitesFollowSunChange(e.target.checked)}
-            />
-            Rites follow the sun
-          </label>
-        ) : null}
+      <div className="todo-strip-group" role="group" aria-label="Show">
+        {chip("Available now", availableNow, onAvailableNowChange)}
+        {chip("All tasks", showAllTasks, onShowAllTasksChange, "Show all tasks", "show-all-tasks")}
         <StepViewKeys />
-        <label className="todo-filter-field">
-          <span className="todo-label" id="status-filter-label">
-            Status
-          </span>
-          <NativeSelect
-            id="status-filter"
-            aria-labelledby="status-filter-label"
-            value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value as TodoStatusFilter)}
-          >
-            {TODO_STATUS_FILTERS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-      </fieldset>
+      </div>
 
-      <fieldset className="todo-bay">
-        <legend>Sort</legend>
-        <label className="todo-filter-field">
-          <span className="todo-label" id="todo-sort-label">
-            Sort
-          </span>
-          <NativeSelect
-            id="todo-sort"
-            aria-labelledby="todo-sort-label"
-            value={sortMode}
-            onChange={(e) => onSortModeChange(e.target.value as TodoSortMode)}
-          >
-            {TODO_SORT_OPTIONS.map(({ value }) => (
-              <option key={value} value={value}>
-                {getTodoSortOptionLabel(value, period)}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-        <button
-          type="button"
-          className="todo-btn todo-btn-icon"
-          title={sortOrder === "asc" ? "Ascending — click for descending" : "Descending — click for ascending"}
-          aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
-          aria-pressed={sortOrder === "desc"}
-          onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
+      <span className="todo-strip-rule" aria-hidden />
+
+      <label className="todo-inline-field">
+        <span className="todo-label" id="status-filter-label">Status</span>
+        <NativeSelect
+          id="status-filter"
+          aria-labelledby="status-filter-label"
+          value={statusFilter}
+          onChange={(e) => onStatusFilterChange(e.target.value as TodoStatusFilter)}
         >
-          {sortOrder === "asc" ? "↑" : "↓"}
-        </button>
-        <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
-          Formula
-        </button>
-      </fieldset>
+          {TODO_STATUS_FILTERS.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </NativeSelect>
+      </label>
 
-      <fieldset className="todo-bay">
-        <legend>Pace</legend>
-        <label className="todo-filter-field">
-          <span className="todo-label" id="todo-wip-limit-label">
-            In progress cap
-          </span>
-          <input
-            id="todo-wip-limit"
-            aria-labelledby="todo-wip-limit-label"
-            type="number"
-            min={MIN_WIP_LIMIT}
-            max={MAX_WIP_LIMIT}
-            value={wipLimit}
-            onChange={(e) => onWipLimitChange(Number(e.target.value))}
-          />
-        </label>
-        {defaultEstimateMin !== undefined && onDefaultEstimateChange && (
-          <label className="todo-filter-field" title="Minutes a task with no estimate counts as on Plan. Shown as ~30. 0 = none.">
-            <span className="todo-label" id="todo-default-est-label">
-              Default est
-            </span>
-            <input
-              id="todo-default-est"
-              aria-labelledby="todo-default-est-label"
-              type="number"
-              min={0}
-              max={600}
-              step={5}
-              value={defaultEstimateMin}
-              onChange={(e) => onDefaultEstimateChange(Number(e.target.value))}
-            />
-          </label>
-        )}
-        {paceSlot}
-      </fieldset>
+      <label className="todo-inline-field">
+        <span className="todo-label" id="todo-sort-label">Sort</span>
+        <NativeSelect
+          id="todo-sort"
+          aria-labelledby="todo-sort-label"
+          value={sortMode}
+          onChange={(e) => onSortModeChange(e.target.value as TodoSortMode)}
+        >
+          {TODO_SORT_OPTIONS.map(({ value }) => (
+            <option key={value} value={value}>
+              {getTodoSortOptionLabel(value, period)}
+            </option>
+          ))}
+        </NativeSelect>
+      </label>
+      <button
+        type="button"
+        className="todo-btn todo-btn-icon"
+        title={sortOrder === "asc" ? "Ascending — click for descending" : "Descending — click for ascending"}
+        aria-label={sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+        aria-pressed={sortOrder === "desc"}
+        onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
+      >
+        {sortOrder === "asc" ? "↑" : "↓"}
+      </button>
+
+      <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
+        Formula
+      </button>
     </div>
   )
 }

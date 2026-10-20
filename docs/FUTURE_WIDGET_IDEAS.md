@@ -9,6 +9,8 @@ follow [`jungideas.md`](jungideas.md). Map-and-territory sketches follow
 follow [`cyberneticsbrain2.md`](cyberneticsbrain2.md) Part 3.
 Product chrome never names those sources.
 
+**Planned:** [`WIDGETS_REDESIGN.md`](WIDGETS_REDESIGN.md). Squares become installable kinds with instances, settings, and sizes. Write new ideas as kinds: say whether one, one per key, or many can be installed.
+
 The strip is caption + CRT + footer, equal height, hidable from the date-bar
 **Widgets** key. Do not clone Review, Points, Today’s Progress, the screen pet,
 Affirmation, Weather, Next, Day lamp, Days Until, **Moon**, **Latest award**, **Solar remainder**,

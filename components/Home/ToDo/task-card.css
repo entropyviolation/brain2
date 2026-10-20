@@ -20,7 +20,21 @@
   border-bottom: 1px solid #9aa0a6;
 }
 .task-card-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.task-card-name { margin: 0; font-size: 16px; font-weight: 700; }
+.task-card-head { padding-right: 44px; }
+/* The task: the root every step hangs from. Half the card at least, title-sized. */
+.task-card-name {
+  flex: 1 1 50%; min-width: min(50%, 100%); margin: 0;
+  font: 700 26px/1.15 Georgia, serif; letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.task-card-close {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 28px; height: 28px; padding: 0; font-size: 16px; line-height: 1;
+}
+.task-card-num.is-explained { cursor: help; border-bottom: 1px dotted rgba(40, 48, 60, 0.45); }
+.task-card-rawmath { margin: 2px 0 0; color: #3b3f45; }
+.tcs-pens h3 { cursor: help; }
+.tcs-link { border: 0; padding: 0; background: none; font: inherit; color: #5b4a9e; text-decoration: underline; cursor: pointer; }
 .task-card-plate {
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   color: #2a2c2e; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -39,7 +53,7 @@
 .task-card-points { font-size: 12px; color: #3b3f45; }
 .task-card-pen { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
 .task-card-pen-dot { width: 8px; height: 8px; border-radius: 50%; }
-.task-card-main { display: grid; grid-template-columns: minmax(0, 1fr) 16rem; gap: 0; min-height: 0; overflow: auto; }
+.task-card-main { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 0; min-height: 0; overflow: auto; }
 @media (max-width: 720px) { .task-card-main { grid-template-columns: 1fr; } }
 .task-card-tree { padding: 8px 12px; min-width: 0; }
 .task-card-side { padding: 8px 12px; border-left: 1px solid rgba(60, 70, 90, 0.18); display: flex; flex-direction: column; gap: 10px; }
@@ -56,10 +70,16 @@
 .task-card-pts { width: 4.5em; font: inherit; font-size: 12px; }
 .task-card-needs { max-width: 9em; font-size: 12px; }
 .task-card-lock { font-size: 11px; color: rgba(40, 48, 60, 0.6); }
-.task-card-lane { display: flex; gap: 14px; align-items: center; padding: 4px 2px 8px; border-bottom: 1px solid rgba(60, 70, 90, 0.12); margin-bottom: 6px; }
-.task-card-lane-col { display: flex; flex-direction: column; gap: 4px; align-items: center; }
-.task-card-lane-node { width: var(--node); height: var(--node); padding: 0; border-radius: 50%; border: 1px solid #5c6064; background: #fff; cursor: pointer; }
-.task-card-lane-node.is-selected { background: #7d6bb8; border-color: #7d6bb8; }
+.task-card-lane { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 4px 2px 8px; border-bottom: 1px solid rgba(60, 70, 90, 0.12); margin-bottom: 6px; }
+.task-card-lane-cap { font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.55; margin-right: 4px; cursor: help; }
+.task-card-lane-col { display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+.task-card-lane-col[data-arrow]::before { content: attr(data-arrow); position: absolute; margin: 2px 0 0 -14px; opacity: 0.45; }
+.task-card-lane-col[data-arrow] { position: relative; margin-left: 12px; }
+.task-card-lane-node { display: inline-flex; align-items: center; gap: 5px; max-width: 180px; padding: 2px 7px 2px 5px; border: 1px solid rgba(60, 70, 90, 0.25); border-radius: 3px; background: rgba(255, 255, 255, 0.55); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.task-card-lane-node > i { flex: none; width: var(--node); height: var(--node); border-radius: 50%; border: 1px solid #5c6064; background: #fff; }
+.task-card-lane-node > small { opacity: 0.6; }
+.task-card-lane-node.is-selected { border-color: #7d6bb8; background: rgba(125, 107, 184, 0.14); }
+.task-card-lane-node.is-selected > i { background: #7d6bb8; border-color: #7d6bb8; }
 .task-card-bar {
   position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
   margin-top: 8px; padding: 6px 8px; background: #f6f7f8; border: 1px solid #7d6bb8; border-radius: 4px;
@@ -76,5 +96,178 @@
 .task-card-dl dd { margin: 0; }
 .task-card-dl .is-over { color: #a33b3b; }
 .task-card-list { margin: 0; padding-left: 1.1em; }
-.task-card-field { display: flex; gap: 6px; align-items: center; font-size: 12px; }
-.task-card-notice-input { width: 100%; font: inherit; font-size: 12px; }
+
+/* ── Right bar: node detail (TaskCardSide.tsx) ── */
+.task-card-side > * { animation: tcs-in 0.32s cubic-bezier(0.2, 1, 0.3, 1) both; }
+@keyframes tcs-in { from { opacity: 0; transform: translateY(4px); } }
+.task-card-needcount { opacity: 0.6; font-size: 11px; }
+.tcs-node { display: flex; flex-direction: column; gap: 12px; }
+.tcs-node-head { display: grid; gap: 3px; }
+.tcs-path { margin: 0; font-size: 10px; opacity: 0.55; letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-card-side .tcs-node-name { margin: 0; font: 600 15px/1.25 Georgia, serif; letter-spacing: 0; text-transform: none; }
+.tcs-node-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin: 0; font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.85; }
+.tcs-lamp { padding: 2px 6px; border-radius: 9px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(60, 70, 90, 0.1); }
+.tcs-lamp.is-done { background: rgba(60, 120, 140, 0.18); color: #2f6f80; }
+.tcs-lamp.is-locked { background: rgba(163, 59, 59, 0.12); color: #a33b3b; }
+.tcs-tier { font-weight: 700; color: #5b6f8f; }
+.tcs-tier.is-min { color: #2f6f80; }
+.tcs-tier.is-exceptional { color: #6a58a6; }
+.tcs-total { float: right; font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; color: #6a58a6; }
+
+.tcs-points { display: grid; gap: 6px; }
+.tcs-seg { display: inline-flex; border: 1px solid rgba(60, 70, 90, 0.25); border-radius: 4px; overflow: hidden; width: max-content; }
+.tcs-seg button { border: 0; padding: 3px 10px; font: inherit; font-size: 11px; background: transparent; cursor: pointer; transition: background 0.2s; }
+.tcs-seg button[aria-pressed="true"] { background: rgba(125, 107, 184, 0.18); color: #4f3f8a; }
+.tcs-ladder { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tcs-rung { --c: #5b6f8f; position: relative; display: grid; justify-items: center; gap: 2px; padding: 6px 4px 4px; border: 1px solid rgba(60, 70, 90, 0.18); border-top: 3px solid var(--c); border-radius: 4px; background: rgba(255, 255, 255, 0.5); transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s; }
+.tcs-rung.is-min { --c: #2f6f80; }
+.tcs-rung.is-exceptional { --c: #6a58a6; }
+.tcs-rung:focus-within { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40, 48, 60, 0.12); }
+.tcs-rung.is-reached { background: color-mix(in srgb, var(--c) 14%, white); }
+.tcs-rung.is-reached::after { content: "✓"; position: absolute; top: 2px; right: 5px; font-size: 10px; color: var(--c); }
+.tcs-rung.is-off { opacity: 0.4; }
+.tcs-rung-tag { font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--c); }
+.tcs-rung input { width: 100%; border: 0; background: transparent; text-align: center; font: 600 18px/1.1 Georgia, serif; color: rgba(36, 44, 58, 0.9); -moz-appearance: textfield; }
+.tcs-rung input::-webkit-inner-spin-button { display: none; }
+.tcs-rung input:focus { outline: none; }
+
+.tcs-needs { display: grid; gap: 10px; }
+.tcs-need { display: grid; gap: 4px; }
+.task-card-side .tcs-need h4 { margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; opacity: 0.7; cursor: help; }
+.tcs-chips { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.tcs-chip { --dot: #8a929c; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 3px 2px 7px; border: 1px solid rgba(60, 70, 90, 0.2); border-radius: 11px; background: rgba(255, 255, 255, 0.6); animation: tcs-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes tcs-pop { from { opacity: 0; transform: scale(0.85); } }
+.tcs-chip > i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+.tcs-chip.is-open { --dot: #5b6f8f; }
+.tcs-chip.is-done { --dot: #2f6f80; }
+.tcs-chip.is-done .tcs-chip-name { text-decoration: line-through; opacity: 0.6; }
+.tcs-chip.is-wait { --dot: #a33b3b; border-style: dashed; }
+.tcs-chip.is-ref > i { border-radius: 1px; }
+.tcs-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 0; padding: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+span.tcs-chip-name { cursor: default; }
+.tcs-chip-x, .tcs-log { border: 0; background: none; padding: 0 4px; font: inherit; cursor: pointer; opacity: 0.5; }
+.tcs-chip-x:hover, .tcs-log:hover { opacity: 1; }
+.tcs-log { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #a33b3b; opacity: 0.85; }
+.tcs-picker { position: relative; display: block; }
+.tcs-picker input { width: 100%; box-sizing: border-box; padding: 4px 8px; border: 1px dashed rgba(60, 70, 90, 0.3); border-radius: 4px; background: transparent; font: inherit; font-size: 12px; transition: border-color 0.2s, background 0.2s; }
+.tcs-picker input:focus { outline: none; border-style: solid; border-color: #7d6bb8; background: rgba(255, 255, 255, 0.7); }
+.tcs-picker-menu { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 3px); display: grid; padding: 3px; border: 1px solid rgba(60, 70, 90, 0.2); border-radius: 5px; background: #f6f7f9; box-shadow: 0 8px 24px rgba(30, 36, 48, 0.18); transform-origin: top; animation: tcs-drop 0.22s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@keyframes tcs-drop { from { opacity: 0; transform: scaleY(0.9) translateY(-3px); } }
+.tcs-picker-menu button { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; border: 0; border-radius: 3px; background: none; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.tcs-picker-menu button:hover { background: rgba(125, 107, 184, 0.12); }
+.tcs-picker-menu small { opacity: 0.5; }
+.tcs-picker-menu .is-create { color: #4f3f8a; border-top: 1px solid rgba(60, 70, 90, 0.1); }
+
+.tcs-sum { display: grid; gap: 8px; }
+.tcs-mix { display: flex; gap: 2px; height: 16px; font: 700 10px/16px ui-monospace, SFMono-Regular, Menlo, monospace; color: #fff; }
+.tcs-mix > span { flex-basis: 0; padding: 0 5px; border-radius: 2px; background: #5b6f8f; overflow: hidden; white-space: nowrap; transition: flex-grow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tcs-mix > .is-min { background: #2f6f80; }
+.tcs-mix > .is-exceptional { background: #6a58a6; }
+.tcs-mosaic { --tm-min: #2f6f80; --tm-goal: #5b6f8f; --tm-exceptional: #6a58a6; display: grid; gap: 4px; }
+
+/* ── Side bar rhythm: one hairline between jobs, small caps heads ── */
+.task-card-side > section + section, .task-card-side > header + section { padding-top: 10px; border-top: 1px solid rgba(60, 70, 90, 0.1); }
+.task-card-name[role="button"] { cursor: pointer; border-radius: 3px; transition: background 0.2s; }
+.task-card-name[role="button"]:hover { background: rgba(125, 107, 184, 0.08); }
+.task-card-name[role="button"]:focus-visible { outline: 2px solid rgba(125, 107, 184, 0.5); outline-offset: 2px; }
+.tcs-node-head.is-task .tcs-path { opacity: 0.5; text-transform: uppercase; letter-spacing: 0.1em; font-size: 9px; }
+
+/* ── Points dials: − N + on a ruled well ── */
+.tcs-dials { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch; }
+.tcs-dial {
+  --c: #6a58a6;
+  display: grid; gap: 3px; align-content: start; padding: 7px 8px 6px;
+  border: 1px solid rgba(60, 70, 90, 0.16); border-radius: 6px;
+  background:
+    linear-gradient(rgba(91, 111, 143, 0.06) 1px, transparent 1px) 0 0 / 100% 8px,
+    rgba(255, 255, 255, 0.55);
+  transition: border-color 0.2s, box-shadow 0.25s;
+}
+.tcs-dial:focus-within { border-color: color-mix(in srgb, var(--c) 55%, transparent); box-shadow: 0 0 0 3px rgba(125, 107, 184, 0.12); }
+.tcs-dial.is-sm { --c: #5b6f8f; min-width: 6.5rem; }
+.tcs-dial-label { font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
+.tcs-dial-body { display: grid; grid-template-columns: 20px 1fr 20px; align-items: center; gap: 2px; }
+.tcs-dial-body button {
+  width: 20px; height: 20px; padding: 0; border: 1px solid rgba(60, 70, 90, 0.18); border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8); font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: rgba(40, 48, 60, 0.7);
+  cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.15s, transform 0.15s;
+}
+.tcs-dial:hover .tcs-dial-body button, .tcs-dial:focus-within .tcs-dial-body button { opacity: 1; }
+.tcs-dial-body button:hover:not(:disabled) { background: color-mix(in srgb, var(--c) 14%, white); color: var(--c); }
+.tcs-dial-body button:active:not(:disabled) { transform: scale(0.9); }
+.tcs-dial-body button:disabled { opacity: 0.25 !important; cursor: default; }
+.tcs-dial input {
+  width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; text-align: center;
+  font: 600 26px/1.05 Georgia, serif; font-variant-numeric: tabular-nums; color: rgba(36, 44, 58, 0.92); -moz-appearance: textfield;
+}
+.tcs-dial.is-sm input { font-size: 18px; }
+.tcs-dial input::placeholder { color: rgba(36, 44, 58, 0.38); }
+.tcs-dial input::-webkit-inner-spin-button, .tcs-dial input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.tcs-dial input:focus { outline: none; }
+.tcs-dial-cap { font-size: 10px; text-align: center; color: rgba(40, 48, 60, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcs-reset { border: 0; padding: 0; background: none; font: inherit; color: #6a58a6; cursor: pointer; }
+.tcs-reset:hover { text-decoration: underline; }
+
+/* ── + Add need: quiet key, then kind chips, then search ── */
+.tcs-add-key {
+  justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 5px;
+  border: 1px dashed rgba(60, 70, 90, 0.28); border-radius: 11px; background: transparent;
+  font: inherit; font-size: 11px; color: rgba(40, 48, 60, 0.7); cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.tcs-add-key b { display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: rgba(125, 107, 184, 0.14); color: #6a58a6; font-size: 11px; line-height: 1; }
+.tcs-add-key:hover { border-style: solid; border-color: #7d6bb8; color: #4f3f8a; background: rgba(255, 255, 255, 0.6); }
+.tcs-reveal, .tcs-add-need { display: grid; gap: 6px; animation: tcs-in 0.24s cubic-bezier(0.2, 1, 0.3, 1) both; }
+.tcs-kinds { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tcs-kinds button {
+  --dot: #5b6f8f; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px;
+  border: 1px solid rgba(60, 70, 90, 0.2); border-radius: 11px; background: rgba(255, 255, 255, 0.6);
+  font: inherit; font-size: 11px; cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.tcs-kinds button > i { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+.tcs-kinds .is-resource { --dot: #8a929c; }
+.tcs-kinds .is-resource > i { border-radius: 1px; }
+.tcs-kinds .is-await { --dot: #a33b3b; border-style: dashed; }
+.tcs-kinds button[aria-pressed="true"] { border-color: var(--dot); background: color-mix(in srgb, var(--dot) 12%, white); }
+.tcs-kinds .tcs-kinds-x { margin-left: auto; padding: 2px 6px; border: 0; background: none; opacity: 0.5; }
+.tcs-kinds .tcs-kinds-x:hover { opacity: 1; }
+.tcs-hint, .tcs-empty { margin: 0; font-size: 11px; opacity: 0.5; }
+
+/* ── Notes: a fold, a composer, a dated rail ── */
+.tcs-notes { display: grid; gap: 8px; }
+.tcs-fold {
+  display: flex; align-items: center; gap: 6px; width: 100%; padding: 2px 0; border: 0; background: none; cursor: pointer;
+  font-family: inherit; font-size: 10px; font-weight: 700; line-height: 1.4; letter-spacing: 0.12em; text-transform: uppercase; color: inherit; text-align: left;
+}
+.tcs-fold-caret { width: 0; height: 0; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; opacity: 0.55; transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tcs-fold[aria-expanded="true"] .tcs-fold-caret { transform: rotate(90deg); }
+.tcs-count { padding: 1px 6px; border-radius: 8px; background: rgba(125, 107, 184, 0.14); color: #4f3f8a; font: 600 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0; }
+.tcs-due { width: 6px; height: 6px; border-radius: 50%; background: rgba(36, 44, 58, 0.75); }
+.tcs-notes-body { display: grid; gap: 10px; animation: tcs-in 0.28s cubic-bezier(0.2, 1, 0.3, 1) both; }
+.tcs-compose {
+  position: relative; border: 1px solid rgba(60, 70, 90, 0.2); border-radius: 10px; background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 2px rgba(30, 36, 48, 0.06); transition: border-color 0.2s, box-shadow 0.25s;
+}
+.tcs-compose:focus-within { border-color: #7d6bb8; box-shadow: 0 0 0 3px rgba(125, 107, 184, 0.13); }
+.tcs-compose textarea {
+  display: block; width: 100%; box-sizing: border-box; min-height: 3.6em; padding: 8px 10px 28px; border: 0; background: transparent;
+  font: inherit; font-size: 12px; line-height: 1.45; resize: vertical;
+}
+.tcs-compose textarea:focus { outline: none; }
+.tcs-send {
+  position: absolute; right: 6px; bottom: 6px; display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px 2px 9px;
+  border: 0; border-radius: 9px; background: #6a58a6; color: #fff; font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1.5; cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+}
+.tcs-send kbd { padding: 0 4px; border-radius: 5px; background: rgba(255, 255, 255, 0.2); font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tcs-send:disabled { opacity: 0.3; cursor: default; }
+.tcs-send:active:not(:disabled) { transform: scale(0.95); }
+.tcs-timeline { list-style: none; margin: 0; padding: 0 0 0 12px; display: grid; gap: 8px; border-left: 1px solid rgba(125, 107, 184, 0.28); }
+.tcs-timeline li { position: relative; display: grid; gap: 1px; animation: tcs-in 0.3s cubic-bezier(0.2, 1, 0.3, 1) both; }
+.tcs-timeline li::before { content: ""; position: absolute; left: -16px; top: 3px; width: 7px; height: 7px; border-radius: 50%; background: #f3f4f7; border: 1px solid #7d6bb8; }
+.tcs-timeline li:first-child::before { background: #7d6bb8; }
+.tcs-timeline time { font: 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; color: rgba(40, 48, 60, 0.55); }
+.tcs-timeline p { margin: 0; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .task-card-side > *, .tcs-chip, .tcs-picker-menu, .tcs-reveal, .tcs-add-need, .tcs-notes-body, .tcs-timeline li { animation: none; }
+  .tcs-fold-caret, .tcs-dial-body button { transition: none; }
+}
