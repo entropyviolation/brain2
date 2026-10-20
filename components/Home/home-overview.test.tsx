@@ -395,7 +395,7 @@ describe("HomeOverview", () => {
     expect(getComputedStyle(overview).overflowX).not.toBe("auto")
     expect(getComputedStyle(overview).overflowX).not.toBe("scroll")
     expect(getComputedStyle(body).overflowX).toBe("hidden")
-    const tiles = [...container.querySelectorAll(".home-overview > .home-tile, .home-overview > .hab-score-well")] as HTMLElement[]
+    const tiles = [...container.querySelectorAll(".home-overview > .vd-cell > .home-tile, .home-overview > .vd-cell > .hab-score-well")] as HTMLElement[]
     expect(tiles.length).toBeGreaterThan(4)
     const h = getComputedStyle(tiles[0]).height
     for (const tile of tiles) {
