@@ -70,7 +70,7 @@ export function makeCopy(
   return {
     id: patch.id ?? newCopyId(kind),
     kind,
-    ...(patch.key != null ? { key: patch.key } : {}),
+    ...(patch.key ? { key: patch.key } : {}),
     title: patch.title ?? "",
     hidden: patch.hidden ?? false,
     lamp: patch.lamp ?? "phosphor",

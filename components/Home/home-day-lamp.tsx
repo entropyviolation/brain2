@@ -7,6 +7,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useState } from "react"
 import { dayLampWord } from "@/lib/home-widgets"
 import { useHomeDayStats } from "@/components/Home/home-day-stats"
@@ -28,15 +30,18 @@ export function DayLampTile({
   onHide: () => void
 }) {
   const stats = useHomeDayStats(currentDate)
+  const bars = useCopySetting<string>("bars", "both")
+  const readHabits = bars !== "todos"
+  const readTodos = bars !== "habits"
   const word = dayLampWord({
     habitPercent: stats.habit.percent,
-    habitTotal: stats.habit.total,
+    habitTotal: readHabits ? stats.habit.total : 0,
     todoPercent: stats.todo.percent,
-    todoTotal: stats.todo.total,
+    todoTotal: readTodos ? stats.todo.total : 0,
   })
   const bits: string[] = []
-  if (stats.habit.total > 0) bits.push(`habits ${stats.habit.completed}/${stats.habit.total}`)
-  if (stats.todo.total > 0) bits.push(`to do ${stats.todo.completed}/${stats.todo.total}`)
+  if (readHabits && stats.habit.total > 0) bits.push(`habits ${stats.habit.completed}/${stats.habit.total}`)
+  if (readTodos && stats.todo.total > 0) bits.push(`to do ${stats.todo.completed}/${stats.todo.total}`)
 
   const [open, setOpen] = useState(false)
   const footer = bits.join(" · ") || "Nothing scheduled"
@@ -47,7 +52,9 @@ export function DayLampTile({
         <TileHide id="daylamp" onHide={onHide} />
         <TileOpen label="Day lamp" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Day lamp</span>
+            <span>
+              <CopyCaption>Day lamp</CopyCaption>
+            </span>
           </div>
           <div className="home-crt">
             <span className="home-daylamp-word" data-lamp={word.toLowerCase()}>

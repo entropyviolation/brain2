@@ -8,6 +8,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useMemo, useState } from "react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { formatMajorWhen, moonGlance } from "@/lib/lunar"
@@ -38,6 +40,15 @@ export function MoonTile({
       : new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 12, 0, 0, 0)
   }, [currentDate, now])
   const face = useMemo(() => moonGlance(when), [when])
+  const readout = useCopySetting<string>("readout", "phase")
+  const sprite = useCopySetting<boolean>("sprite", true)
+  const crtLine =
+    readout === "countdown"
+      ? face.untilPhrase
+      : readout === "light"
+        ? `${Math.round(face.illumination * 100)}% lit`
+        : face.label
+  const footLine = readout === "phase" ? face.untilPhrase : face.label
 
   return (
     <>
@@ -45,14 +56,16 @@ export function MoonTile({
         <TileHide id="moon" onHide={onHide} />
         <TileOpen label="Moon" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Moon</span>
+            <span>
+              <CopyCaption>Moon</CopyCaption>
+            </span>
           </div>
-          <div className="home-crt home-moon-crt">
-            <PixelMoon cycle={face.cycle} />
-            <p className="home-moon-name">{face.label}</p>
+          <div className="home-crt home-moon-crt" data-readout={readout}>
+            {sprite ? <PixelMoon cycle={face.cycle} /> : null}
+            <p className="home-moon-name">{crtLine}</p>
           </div>
           <div className="home-tile-foot">
-            <p className="hab-score-sub">{face.untilPhrase}</p>
+            <p className="hab-score-sub">{footLine}</p>
           </div>
         </TileOpen>
       </div>
