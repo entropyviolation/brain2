@@ -1,5 +1,10 @@
 /**
- * lib/home-widgets-store.ts — Which Home overview squares are showing
+ * lib/home-widgets-store.ts — The old Home strip: order + hidden kinds
+ *
+ * Kept for compatibility. The Visual dashboard's installed copies live in
+ * `lib/widgets/dashboard-store.ts` (`brain2-home-dashboard`), which builds
+ * itself from this blob on first run and dual-writes order + hidden back
+ * here, so an older build opens the same strip.
  *
  * One persist blob for every Home sub-tab (Habits / Plan / To Do / Goals /
  * Tracking). Order + hidden ids, plus whether the overview squares follow
@@ -39,6 +44,13 @@ interface HomeWidgetsState {
   moveWidget: (id: HomeWidgetId, direction: -1 | 1) => void
   setWidgetsFollowClock: (follow: boolean) => void
   resetWidgets: () => void
+}
+
+/** True once a saved strip was read from storage. The Visual dashboard lands such a vault on Milled. */
+let hadSavedLayout = false
+
+export function homeWidgetsHadSavedLayout(): boolean {
+  return hadSavedLayout
 }
 
 const EMPTY: Pick<HomeWidgetsState, "order" | "hidden" | "widgetsFollowClock"> = {
@@ -81,6 +93,7 @@ export const useHomeWidgetsStore = create<HomeWidgetsState>()(
           version,
         ),
       merge: (persisted, current) => {
+        if (persisted && typeof persisted === "object") hadSavedLayout = true
         const raw = (persisted ?? {}) as Partial<
           Pick<HomeWidgetsState, "order" | "hidden" | "widgetsFollowClock">
         >

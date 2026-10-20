@@ -53,11 +53,15 @@ function readingLine(entry: VocabEntry): string {
 export function VocabTile({
   currentDate,
   onHide,
+  lang,
 }: {
   currentDate: Date
   onHide: () => void
+  /** A Language study copy's language. Without it, the old active view. */
+  lang?: VocabLang
 }) {
-  const active = useVocabStore((s) => s.active)
+  const storeActive = useVocabStore((s) => s.active)
+  const active = lang ?? storeActive
   const levels = useVocabStore((s) => s.levels)
   const shuffles = useVocabStore((s) => s.shuffles)
   const shuffle = useVocabStore((s) => s.shuffle)
@@ -121,15 +125,16 @@ export function VocabTile({
         </TileOpen>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Vocab" className="home-vocab-dialog">
-        <VocabDetail currentDate={currentDate} />
+        <VocabDetail currentDate={currentDate} lang={lang} />
       </HomeWidgetDialog>
     </>
   )
 }
 
-function VocabDetail({ currentDate }: { currentDate: Date }) {
+function VocabDetail({ currentDate, lang }: { currentDate: Date; lang?: VocabLang }) {
   const languages = useVocabStore((s) => s.languages)
-  const active = useVocabStore((s) => s.active)
+  const storeActive = useVocabStore((s) => s.active)
+  const active = lang ?? storeActive
   const levels = useVocabStore((s) => s.levels)
   const shuffles = useVocabStore((s) => s.shuffles)
   const addLanguage = useVocabStore((s) => s.addLanguage)
@@ -174,6 +179,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
 
   return (
     <div className="home-vocab-detail">
+      {lang ? null : (
       <div className="home-vocab-views" role="tablist" aria-label="Language views">
         {languages.map((lang) => (
           <button
@@ -212,6 +218,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
           </label>
         ) : null}
       </div>
+      )}
 
       <div className="home-vocab-modes is-auto" role="tablist" aria-label="Vocab mode">
         {(
@@ -399,7 +406,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
       </>
       )}
 
-      {languages.length > 1 ? (
+      {!lang && languages.length > 1 ? (
         <div className="home-widget-actions">
           <button type="button" className="home-review-key" onClick={() => removeLanguage(active)}>
             Remove {VOCAB_LANG_LABEL[active]}
