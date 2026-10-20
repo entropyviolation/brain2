@@ -368,3 +368,609 @@ body.win95-app .home95 .home-overview[data-style="milled"] > .vd-cell:is([data-s
 body.win95-app .home95 .home-overview[data-style="milled"] > .vd-cell:is([data-size="1x1"], [data-size="2x1"], [data-size="3x1"]) > .home-tile .home-review-actions {
   display: none;
 }
+
+/* ---- Widget gallery ----------------------------------------------------- */
+
+/*
+ * One page per kind, read like a page of an instrument manual: the name
+ * engraved, the install rule on two chips, live samples on a strip of glass,
+ * then what it does, how it works (numbered phosphor steps), the settings as
+ * a spec sheet, and this vault's installed copies. Layout comes from the old
+ * catalog (`.home-catalog*` in `home-chrome.css`); these are the new parts.
+ */
+
+body .home-widget-dialog.home-widget-instrument.vdg-dialog {
+  width: min(60rem, calc(100vw - 1.5rem));
+  max-width: 60rem;
+}
+
+.vdg .vdg-body {
+  max-height: min(72vh, 640px);
+}
+
+.vdg .vdg-rail {
+  gap: 2px;
+}
+
+.vdg .vdg-rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.vdg .vdg-rail-head {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.vdg .vdg-pick-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vdg .vdg-pick-count {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #7dffc4;
+  background: #07140f;
+}
+
+.vdg .vdg-pick-about {
+  font-weight: 700;
+}
+
+.vdg .vdg-detail {
+  align-items: stretch;
+}
+
+.vdg .vdg-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.vdg .vdg-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 3px double color-mix(in srgb, var(--chrome-ring, #5c6064) 45%, transparent);
+}
+
+.vdg .vdg-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vdg .vdg-group {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome-pressed, #6b6f73);
+}
+
+.vdg .vdg-name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.vdg .vdg-rule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.vdg .vdg-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #2a2c2e;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 0 0 1px var(--chrome-lo, #8a8e92);
+}
+
+.vdg .vdg-chip[data-default="true"] {
+  color: #7dffc4;
+  background: #07140f;
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+  text-shadow: 0 0 5px rgba(125, 255, 196, 0.5);
+}
+
+.vdg .vdg-head-keys {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vdg .vdg-installed-mark {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+}
+
+.vdg .vdg-notice {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--r-6, 6px);
+  font-size: 12px;
+  color: #d7ffe9;
+  background: #07140f;
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+}
+
+/* Samples: the faces at every size on a strip of their style's own glass. */
+.vdg .vdg-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vdg .vdg-sample-switch {
+  display: flex;
+  gap: 4px;
+}
+
+.vdg .vdg-sample-switch .home-review-key {
+  align-self: auto;
+}
+
+.vdg .vdg-faces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.vdg .vdg-faces.dash-sample {
+  display: flex;
+  margin: 3px;
+}
+
+.vdg .vdg-face-sample {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.vdg .vdg-face-sample[data-default="true"] .dash-sample-size {
+  color: var(--dash-ink);
+  text-shadow: var(--dash-text-glow);
+}
+
+.vdg .vdg-faces[data-style="milled"] figcaption {
+  font-size: 10px;
+  color: #2a2c2e;
+}
+
+.vdg .vdg-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vdg .vdg-section > h4 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.vdg .vdg-section > p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1c1e20;
+}
+
+/* How it works: numbered steps with a phosphor numeral in a small well. */
+.vdg .vdg-how,
+.vdg .vdg-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: vdg-step;
+}
+
+.vdg .vdg-how > li,
+.vdg .vdg-guide-list > li {
+  position: relative;
+  max-width: 62ch;
+  padding-left: 30px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  counter-increment: vdg-step;
+}
+
+.vdg .vdg-how > li::before,
+.vdg .vdg-guide-list > li::before {
+  content: counter(vdg-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7dffc4;
+  background: #040a08;
+  box-shadow: inset 0 0 0 1px #1c3d2c;
+  text-shadow: 0 0 5px rgba(125, 255, 196, 0.6);
+}
+
+/* Settings for each copy: a spec sheet. */
+.vdg .vdg-settings-list {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid color-mix(in srgb, var(--chrome-ring, #5c6064) 30%, transparent);
+}
+
+.vdg .vdg-setting {
+  display: contents;
+}
+
+.vdg .vdg-setting > dt,
+.vdg .vdg-setting > dd {
+  margin: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--chrome-ring, #5c6064) 30%, transparent);
+}
+
+.vdg .vdg-setting > dt {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2a2c2e;
+}
+
+.vdg .vdg-setting > dd {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vdg .vdg-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.vdg .vdg-setting-help {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #464c54;
+}
+
+/* Language study levels: a CRT grid. */
+.vdg .vdg-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: var(--r-6, 6px);
+  background: #040a08;
+  box-shadow: inset 0 0 0 1px #1c3d2c;
+}
+
+.vdg .vdg-table {
+  border-collapse: collapse;
+  font-size: 11px;
+  color: #d7ffe9;
+}
+
+.vdg .vdg-table :is(th, td) {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(125, 255, 196, 0.1);
+  text-align: left;
+  vertical-align: top;
+}
+
+.vdg .vdg-table th {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(215, 255, 233, 0.7);
+}
+
+.vdg .vdg-table-exam {
+  display: block;
+  font-size: 9px;
+  opacity: 0.65;
+}
+
+.vdg .vdg-table td[data-mine="true"] {
+  color: #7dffc4;
+  background: rgba(125, 255, 196, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.45);
+  text-shadow: 0 0 5px rgba(125, 255, 196, 0.5);
+}
+
+/* Installed copies. */
+.vdg .vdg-copy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vdg .vdg-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--r-6, 6px);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px var(--chrome-lo, #8a8e92);
+}
+
+.vdg .vdg-copy[data-hidden="true"] .vdg-copy-name {
+  opacity: 0.6;
+}
+
+.vdg .vdg-copy-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.vdg .vdg-copy-meta {
+  margin-left: 6px;
+  font-weight: 400;
+  font-size: 11px;
+  color: #464c54;
+}
+
+.vdg .vdg-copy-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.vdg .vdg-copy-keys .home-review-key {
+  align-self: auto;
+}
+
+/* Setup. */
+.vdg .vdg-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vdg .vdg-setup-title {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--r-8, 8px);
+  font-size: 15px;
+  color: #7dffc4;
+  background: #07140f;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.55);
+}
+
+.vdg .vdg-setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vdg .vdg-setup-keys {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.vdg .vdg-lang-picks,
+.vdg .vdg-cefr-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.vdg .vdg-lang-picks label[data-taken="true"] {
+  opacity: 0.5;
+}
+
+.vdg .vdg-cefr-name {
+  margin: 0;
+  font-size: 12px;
+  color: #464c54;
+}
+
+.vdg .vdg-place-hits {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vdg .vdg-place-hit {
+  width: 100%;
+  text-align: left;
+}
+
+.vdg .vdg-place-hit[aria-selected="true"] {
+  color: #7dffc4;
+  background: #07140f;
+}
+
+/* About. */
+.vdg .vdg-rules {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.vdg .vdg-rules > dt {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.vdg .vdg-rules > dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.vdg .vdg-link {
+  all: unset;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.vdg .vdg-link:focus-visible {
+  outline: 1px dotted #000080;
+}
+
+.vdg .vdg-reset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 3px double color-mix(in srgb, var(--chrome-ring, #5c6064) 45%, transparent);
+}
+
+@media (max-width: 640px) {
+  .vdg .vdg-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vdg .vdg-settings-list {
+    grid-template-columns: 1fr;
+  }
+
+  .vdg .vdg-setting > dt {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}
+
+/* ---- Date plate: Edit key and style switch ------------------------------ */
+
+/*
+ * _Last mapped: 2026-10-20_
+ * The keys sit on the date plate, which is milled in both looks. The house
+ * button lip in `app/win95.css` repaints `background-image` on every button,
+ * so these selectors match its weight and win by order. Edit down shows a
+ * phosphor lamp. Each style key carries a swatch of its look: satin for
+ * Milled, black glass with a cyan line for Dash.
+ */
+body.win95-app .home95 .home-title-widgets button.home-widgets-key:not([data-no95]) {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0.12) 14%, transparent 30%),
+    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 34%, var(--h-surface) 68%, var(--chrome-key-shade) 100%);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-edit-key:not([data-no95]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home95 .home-widgets-edit-key::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2a1414;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-edit-key[aria-pressed="true"]:not([data-no95]) {
+  color: #0d3a24;
+  background-image: linear-gradient(180deg, #c9cdd1, #b9bdc1);
+  box-shadow: var(--h-sunken);
+  text-shadow: none;
+}
+
+.home95 .home-widgets-edit-key[aria-pressed="true"]::before {
+  background: #7dffc4;
+  box-shadow: 0 0 4px #7dffc4, 0 0 9px rgba(125, 255, 196, 0.55);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-style-key:not([data-no95]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 40%);
+  box-shadow: var(--h-raised);
+}
+
+body.win95-app .home95 .home-title-widgets button.home-widgets-style-key[aria-checked="true"]:not([data-no95]) {
+  background-image: none;
+  background-color: #c4c8cc;
+  box-shadow: var(--h-sunken);
+}
+
+.home95 .home-widgets-style-key::before {
+  content: "";
+  flex: none;
+  width: 18px;
+  height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(165deg, #f4f5f6, #c3c7cb 60%, #a3a7ab);
+  box-shadow: inset 0 0 0 1px #7b7f83;
+}
+
+.home95 .home-widgets-style-key:is([data-style="dash"], :nth-child(2):not([data-style]))::before {
+  background:
+    linear-gradient(90deg, transparent 3px, #5cf2d6 3px, #5cf2d6 9px, transparent 9px) center / 100% 2px no-repeat,
+    #020708;
+  box-shadow: inset 0 0 0 1px #3b4044;
+}
+
+.home95 .home-widgets-style-key[aria-checked="true"]:is([data-style="dash"], :nth-child(2):not([data-style]))::before {
+  box-shadow: inset 0 0 0 1px #3b4044, 0 0 5px rgba(92, 242, 214, 0.55);
+}
