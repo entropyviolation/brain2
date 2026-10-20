@@ -147,6 +147,14 @@ describe("trackedTimeForItem", () => {
     expect(r.entries.map((e) => e.id)).toEqual([clocked.id, cdSecondary.id, cd.id])
   })
 
+  it("tagged scope: a linked pen only colors the task; its other blocks sit in the pen pool", () => {
+    const task = { id: "t1", penLinks: [{ penId: "work" }] }
+    const r = trackedTimeForItem(task, [cd, cdSecondary, clocked, other], { penScope: "tagged" })
+    expect(r).toMatchObject({ total: 20, penPoolMinutes: 90 })
+    const mine: TimeEntry = { ...cd, id: "mine", taskId: "t1" }
+    expect(trackedTimeForItem(task, [mine, cdSecondary], { penScope: "tagged" })).toMatchObject({ total: 60, penPoolMinutes: 30 })
+  })
+
   it("counts a duplicate entry id once", () => {
     const task = { id: "t1", penLinks: [{ penId: "work" }] }
     expect(trackedMinutesForItem(task, [cd, cd, { ...cd, taskId: "t1" }])).toBe(60)

@@ -29,6 +29,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ClipboardEvent, DragEvent, KeyboardEvent, MouseEvent, ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
+import { useTaskStore } from "@/lib/task-store"
+import { iconFor, orbFor } from "@/components/Icons/Icon"
 import {
   addNestedStep,
   flattenSteps,
@@ -73,6 +75,8 @@ export interface StepTreeProps {
    * click on the dot opens it (dragging still moves) and each row gets ↗.
    */
   onOpenStep?: (step: Subtask) => void
+  /** The row checkbox selects the step (multi-select) instead of ticking it done. */
+  checkboxSelects?: boolean
   /** Called once before a move writes, so the host can push one undo step. */
   onBeforeMove?: (label: string) => void
   /** Shown under **Add the first step** while the tree is empty. */
@@ -135,12 +139,24 @@ function StepComposer({
     nameRef.current?.focus()
   }, [label])
 
+  // A step typed but not yet entered is saved when the composer goes away (navigating to a sub-card, closing).
+  const pending = useRef({ name: "", mins: "", onCommit })
+  pending.current = { name, mins, onCommit }
+  useEffect(
+    () => () => {
+      const { name: left, mins: m, onCommit: save } = pending.current
+      if (left.trim()) save(left.trim(), parseMinutes(m), false)
+    },
+    [],
+  )
+
   const commit = (stay: boolean) => {
     const description = name.trim()
     if (!description) {
       onStepOut()
       return
     }
+    pending.current.name = ""
     onCommit(description, parseMinutes(mins), stay)
     setName("")
     setMins("")
@@ -198,6 +214,16 @@ function StepComposer({
   )
 }
 
+/** The step's orb: its item's orb in item view (a custom pick, else the item's stable one); a step with no item yet shows the one its item will be born with. */
+function StepOrb({ step }: { step: Subtask }) {
+  const src = useTaskStore((st) => {
+    const item = step.itemId ? st.tasks.find((t) => t.id === step.itemId) : undefined
+    return item ? iconFor(item.id, item.icon) : orbFor(step.id)
+  })
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" data-orb draggable={false} />
+}
+
 export function StepTree({
   steps,
   onChange,
@@ -208,6 +234,7 @@ export function StepTree({
   tier,
   tierTags = false,
   onOpenStep,
+  checkboxSelects = false,
   onBeforeMove,
   emptyExtra,
   composerMinutes = true,
@@ -255,6 +282,16 @@ export function StepTree({
       }, FOLD_OUT_MS)
     }
   }
+  /** Double-click on a fold: open (or close) every branch under this step. The two clicks cancel out, so act on the state the first one saw. */
+  const foldAll = (step: Subtask) => {
+    clearTimeout(motionTimer.current)
+    setMotion(null)
+    const close = !foldWas.current
+    const branches = [step, ...flattenSteps(step.subtasks)].filter((s) => s.subtasks?.length)
+    for (const b of branches) if (b.id !== step.id || close) toggleStepFold(b.id, close)
+    if (!close) toggleStepFold(step.id, false)
+  }
+  const foldWas = useRef(false)
   const motionOf = (id: string | null, isAdd = false): { className: string; style: Record<string, number> } | null => {
     if (!motion || id == null) return null
     const i = motion.order.get(id)
@@ -304,6 +341,14 @@ export function StepTree({
     onChange(next)
     if (target.where === "inside") toggleStepFold(target.id, false)
     return true
+  }
+
+  // The orb selects (⌘/Shift add, like a row) and never opens a popup; clicking a selected orb keeps it, with no rename.
+  const pickOrb = (e: MouseEvent, id: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return select(e, id)
+    setSelected(new Set([id]))
+    setAnchor(id)
+    focusRow(id)
   }
 
   const select = (e: MouseEvent, id: string) => {
@@ -533,8 +578,12 @@ export function StepTree({
               className="step-tree-fold"
               aria-expanded={!isFolded}
               aria-label={isFolded ? `Show steps under ${step.description}` : `Hide steps under ${step.description}`}
-              title={isFolded ? `Show the ${kidCount} steps inside` : "Fold these steps away"}
-              onClick={() => foldStep(step)}
+              title={isFolded ? `Show the ${kidCount} steps inside · double-click: open all` : "Fold these steps away · double-click: fold all"}
+              onClick={(e) => {
+                if (e.detail < 2) foldWas.current = isFolded
+                foldStep(step)
+              }}
+              onDoubleClick={() => foldAll(step)}
             >
               <span className="step-tree-caret" aria-hidden>▸</span>
               <span className="step-tree-fold-count">{kidCount}</span>
@@ -545,23 +594,25 @@ export function StepTree({
           <input
             type="checkbox"
             tabIndex={-1}
-            aria-label={`Done: ${step.description}`}
-            checked={step.completed}
-            onChange={() => onChange(updateNestedStep(list, step.id, { completed: !step.completed }))}
+            aria-label={`${checkboxSelects ? "Select" : "Done"}: ${step.description}`}
+            checked={checkboxSelects ? isSelected : step.completed}
+            onChange={() => {
+              if (!checkboxSelects) return onChange(updateNestedStep(list, step.id, { completed: !step.completed }))
+              setSelected(new Set(isSelected ? [...selected].filter((x) => x !== step.id) : [...selected, step.id]))
+              setAnchor(step.id)
+            }}
           />
           <span
             className={`step-tree-dot${hasKids ? " is-parent" : ""}${step.itemId ? " is-item" : ""}${onOpenStep ? " is-openable" : ""}`}
             draggable
-            title={
-              onOpenStep
-                ? "Click to open this step's item. Drag to move."
-                : "Drag to move. Select several first to move them together."
-            }
+            title="Select · drag to move"
             aria-hidden
-            onClick={onOpenStep ? () => onOpenStep(step) : undefined}
+            onClick={(e) => pickOrb(e, step.id)}
             onDragStart={(e) => onDragStart(e, step.id)}
             onDragEnd={endDrag}
-          />
+          >
+            <StepOrb step={step} />
+          </span>
           {editing === step.id ? (
             <input
               className="step-tree-name-edit"

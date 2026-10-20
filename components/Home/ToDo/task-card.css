@@ -24,7 +24,7 @@
 /* The task: the root every step hangs from. Half the card at least, title-sized. */
 .task-card-name {
   flex: 1 1 50%; min-width: min(50%, 100%); margin: 0;
-  font: 700 26px/1.15 Georgia, serif; letter-spacing: -0.01em;
+  font: 600 28px/1.12 var(--font-fraunces), Georgia, serif; font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
 .task-card-close {
@@ -104,7 +104,7 @@
 .tcs-node { display: flex; flex-direction: column; gap: 12px; }
 .tcs-node-head { display: grid; gap: 3px; }
 .tcs-path { margin: 0; font-size: 10px; opacity: 0.55; letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.task-card-side .tcs-node-name { margin: 0; font: 600 15px/1.25 Georgia, serif; letter-spacing: 0; text-transform: none; }
+.task-card-side .tcs-node-name { margin: 0; font: 600 21px/1.15 var(--font-fraunces), Georgia, serif; font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -0.01em; text-transform: none; }
 .tcs-node-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin: 0; font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.85; }
 .tcs-lamp { padding: 2px 6px; border-radius: 9px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(60, 70, 90, 0.1); }
 .tcs-lamp.is-done { background: rgba(60, 120, 140, 0.18); color: #2f6f80; }
@@ -271,3 +271,219 @@ span.tcs-chip-name { cursor: default; }
   .task-card-side > *, .tcs-chip, .tcs-picker-menu, .tcs-reveal, .tcs-add-need, .tcs-notes-body, .tcs-timeline li { animation: none; }
   .tcs-fold-caret, .tcs-dial-body button { transition: none; }
 }
+
+/* ── Type: Fraunces for names and figures, DM Mono for labels ── */
+.task-card { --tc-serif: var(--font-fraunces), Georgia, serif; --tc-mono: var(--font-dmmono), ui-monospace, Menlo, monospace; }
+.task-card .tcs-node-meta, .task-card .tcs-dial-label, .task-card .task-card-side h3, .task-card .tcs-hist, .task-card .tc-est, .task-card .tc-est-input { font-family: var(--tc-mono); }
+.task-card-side h3 { color: #5b4a9e; }
+
+/* ── Points: one stepper, always legible, never stretched by global input styles ── */
+.task-card .tcs-dials { display: flex; flex-wrap: wrap; gap: 8px; }
+.task-card .tcs-dial { flex: 1 1 8.5rem; min-width: 0; gap: 4px; padding: 8px 10px 7px; }
+.task-card .tcs-dial.is-sm { flex: 0 1 7rem; }
+.task-card .tcs-dial-body { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.task-card .tcs-dial-body button {
+  flex: none; width: 26px; height: 26px; min-width: 0; min-height: 0; padding: 0; opacity: 1; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); background: color-mix(in srgb, var(--c) 8%, white);
+  color: var(--c); font: 500 15px/1 var(--tc-mono); box-shadow: none;
+}
+.task-card .tcs-dial input {
+  flex: 1 1 auto; width: 0; min-width: 2ch; height: auto; min-height: 0; padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; outline: none;
+  text-align: center; font: 600 30px/1 var(--tc-serif); font-variation-settings: "SOFT" 100; appearance: textfield; -moz-appearance: textfield;
+}
+.task-card .tcs-dial.is-sm input { font-size: 22px; }
+.task-card .tcs-dial-cap { text-align: center; }
+.task-card .tcs-rung input { width: 3.2rem; min-height: 0; text-align: center; }
+
+/* ── Estimates: a time you click ── */
+.tc-est, .tc-est-input {
+  min-width: 2.9rem; padding: 1px 7px; border: 1px solid transparent; border-radius: 10px; background: transparent;
+  font: 500 12px/1.5 var(--font-dmmono), ui-monospace, monospace; font-variant-numeric: tabular-nums; color: #3b3f45; text-align: right; cursor: text;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tc-est:hover { background: rgba(125, 107, 184, 0.12); border-color: rgba(125, 107, 184, 0.35); }
+.tc-est.is-empty { color: rgba(40, 48, 60, 0.32); font-style: italic; }
+.tc-est.is-empty:hover { color: #5b4a9e; }
+.tc-est-input { width: 4.2rem; height: auto; border: 1px solid #7d6bb8; background: #fff; box-shadow: 0 0 0 3px rgba(125, 107, 184, 0.16); outline: none; text-align: center; appearance: textfield; -moz-appearance: textfield; }
+.tc-est-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.tc-est.is-big, .tc-est-input.is-big { font: 600 34px/1.1 var(--font-fraunces), Georgia, serif; font-variation-settings: "SOFT" 100; padding: 0 10px; border-radius: 12px; text-align: left; }
+.tc-est-input.is-big { width: 7rem; }
+.tcs-est-row { display: flex; align-items: baseline; gap: 10px; }
+.tcs-est-parts { font: 11px var(--font-dmmono), monospace; color: rgba(40, 48, 60, 0.6); }
+.tcs-quick { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tcs-quick button { min-width: 0; padding: 1px 8px; border: 1px solid rgba(60, 70, 90, 0.2); border-radius: 10px; background: rgba(255, 255, 255, 0.6); font: 500 11px/1.6 var(--font-dmmono), monospace; cursor: pointer; transition: background 0.15s, transform 0.12s; }
+.tcs-quick button:hover { background: #e4defa; }
+.tcs-quick button:active { transform: scale(0.94); }
+.tcs-quick button[aria-pressed="true"] { background: #6a58a6; color: #fff; border-color: #6a58a6; }
+.tcs-hist { display: flex; gap: 0; margin: 8px 0 0; padding: 0; list-style: none; overflow-x: auto; }
+.tcs-hist li { position: relative; display: grid; gap: 1px; padding: 0 14px 0 0; font-size: 11px; opacity: 0.55; }
+.tcs-hist li::after { content: "→"; position: absolute; right: 2px; top: 0; opacity: 0.5; }
+.tcs-hist li:last-child { opacity: 1; padding-right: 0; }
+.tcs-hist li:last-child::after { content: none; }
+.tcs-hist time { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; }
+
+/* ── Steps inside: first level preview ── */
+.tcs-kids ul { display: grid; gap: 1px; margin: 4px 0 0; padding: 0; list-style: none; border: 1px solid rgba(60, 70, 90, 0.14); border-radius: 8px; background: rgba(255, 255, 255, 0.5); overflow: hidden; }
+.tcs-kids li { display: flex; align-items: center; gap: 8px; padding: 3px 6px 3px 9px; }
+.tcs-kids li + li { border-top: 1px solid rgba(60, 70, 90, 0.08); }
+.tcs-kids li > i { flex: none; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #8a8fb0; }
+.tcs-kids li.is-done > i { background: #2f6f80; border-color: #2f6f80; }
+.tcs-kids li.is-done .tcs-kid-name { text-decoration: line-through; opacity: 0.55; }
+.tcs-kid-name { flex: 1; min-width: 0; padding: 0; border: 0; background: none; font: 13px/1.3 var(--font-fraunces), Georgia, serif; text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcs-kid-name:hover { color: #5b4a9e; }
+.tcs-kids small { font: 10px var(--font-dmmono), monospace; opacity: 0.55; }
+
+/* ── Sub-card: crumbs and the opener ── */
+.task-card-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: 11px; }
+.task-card-crumbs span { display: inline-flex; align-items: center; gap: 4px; }
+.task-card-crumbs i { font-style: normal; opacity: 0.4; }
+.task-card-crumbs button { padding: 0 2px; border: 0; background: none; font: 500 11px var(--font-dmmono), monospace; color: #5b4a9e; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcs-openers { display: grid; gap: 6px; }
+.tcs-openers .task-card-key { width: 100%; padding: 6px 10px; }
+.tcs-openers .tcs-subcard { background: linear-gradient(#efeaff, #d9d0f5); border-color: #7d6bb8; font-weight: 600; }
+.tcs-openers .tcs-subcard:hover { background: linear-gradient(#f5f1ff, #e2dbf8); }
+
+/* ── Calm pass: soft rules, pills, one accent. Beats the win95 key skin inside the card. ── */
+body.win95-app .task-card {
+  --tc-rule: #cdd2da; --tc-ink: #1f2630; --tc-mute: #6b7482; --tc-accent: #6a58a6; --tc-wash: #eceff4;
+  background: #f4f6f9; border-color: #aab1bc; border-radius: 10px; color: var(--tc-ink);
+}
+body.win95-app .task-card .task-card-tree { background: #fbfcfd; padding: 12px 16px; }
+body.win95-app .task-card .task-card-side { background: #f1f3f7; border-left: 0; padding: 14px 16px; gap: 14px; box-shadow: inset 1px 0 0 rgba(60, 70, 90, 0.08); }
+body.win95-app .task-card .task-card-head { background: #e9ecf1; border-bottom: 1px solid var(--tc-rule); padding-block: 12px; gap: 8px; }
+
+/* Keys: soft grey, rounded, no milled lip */
+body.win95-app .task-card :is(.task-card-key, .task-card-jewel, .task-card-bar button, .task-card-seg button, .tcs-quick button, .tcs-seg button, .tcs-add-key) {
+  border: 1px solid var(--tc-rule); border-radius: 7px; background: #fff; background-image: none; box-shadow: none; color: var(--tc-ink); padding: 3px 10px; transition: background 0.15s, border-color 0.15s;
+}
+body.win95-app .task-card :is(.task-card-key, .task-card-jewel, .task-card-bar button, .task-card-seg button, .tcs-quick button, .tcs-seg button):hover:not(:disabled) { background: #eee9fb; border-color: #b6a9e0; }
+body.win95-app .task-card :is(.task-card-key, .task-card-jewel, .task-card-seg button, .tcs-quick button, .tcs-seg button)[aria-pressed="true"] { background: #e4defa; border-color: var(--tc-accent); color: #3d2f78; }
+body.win95-app .task-card .tcs-quick button[aria-pressed="true"] { background: var(--tc-accent); color: #fff; }
+body.win95-app .task-card .task-card-bar .is-delete { color: #a33b3b; }
+/* The one primary action */
+body.win95-app .task-card .task-card-key[title="Start the next open step now"] { background: var(--tc-accent); border-color: var(--tc-accent); color: #fff; font-weight: 600; }
+body.win95-app .task-card .task-card-key[title="Start the next open step now"]:hover { background: #5a4994; }
+
+/* Estimates: static pills, not fields */
+body.win95-app .task-card .tc-est { border: 0; border-radius: 999px; background: var(--tc-wash); box-shadow: none; background-image: none; color: #3b4452; padding: 1px 9px; min-width: 3rem; text-align: center; font-style: normal; }
+body.win95-app .task-card .tc-est.is-empty { background: transparent; color: #98a0ad; }
+body.win95-app .task-card .tc-est:hover { background: #e4defa; color: #3d2f78; }
+body.win95-app .task-card .tc-est.is-big { background: transparent; text-align: left; padding: 0 6px; border-radius: 10px; font-size: 38px; }
+body.win95-app .task-card .tc-est-input { border: 1px solid var(--tc-accent); border-radius: 999px; background: #fff; box-shadow: 0 0 0 3px rgba(106, 88, 166, 0.16); padding: 1px 8px; }
+body.win95-app .task-card .tc-est-input.is-big { border-radius: 12px; font-size: 38px; }
+
+/* Rows breathe */
+body.win95-app .task-card .step-tree-row { min-height: 34px; border-radius: 8px; }
+body.win95-app .task-card .step-tree-row:hover { background: #f1eefb; }
+body.win95-app .task-card input[type="checkbox"] { accent-color: var(--tc-accent); width: 15px; height: 15px; }
+
+/* Steps inside: names are text, not keys */
+body.win95-app .task-card .tcs-kids ul { background: #fff; border-color: var(--tc-rule); border-radius: 10px; gap: 0; }
+body.win95-app .task-card .tcs-kids li { padding: 5px 8px 5px 12px; }
+body.win95-app .task-card .tcs-kid-name { border: 0; border-radius: 0; background: none; background-image: none; box-shadow: none; padding: 0; font: 13px/1.3 var(--font-fraunces), Georgia, serif; text-align: left; }
+body.win95-app .task-card .tcs-kid-name:hover { background: none; color: var(--tc-accent); }
+
+/* Points: a stat with small flanking buttons */
+body.win95-app .task-card .tcs-dial { background: #fff; border-color: var(--tc-rule); border-radius: 12px; padding: 10px 12px 8px; box-shadow: none; }
+body.win95-app .task-card .tcs-dial-body button { width: 24px; height: 24px; border: 1px solid var(--tc-rule); border-radius: 50%; background: var(--tc-wash); background-image: none; box-shadow: none; color: var(--tc-accent); }
+body.win95-app .task-card .tcs-dial-body input[type="number"] { border: 0; border-radius: 0; background: transparent; background-image: none; box-shadow: none; padding: 0; height: auto; font-size: 34px; }
+body.win95-app .task-card .tcs-dial-body input[type="number"]::placeholder { color: #b3b9c4; }
+
+/* Labels: Title Case, quiet (no shouting) */
+body.win95-app .task-card .task-card-side h3 { text-transform: none; letter-spacing: 0.02em; font-size: 12px; font-weight: 600; color: var(--tc-accent); }
+body.win95-app .task-card .tcs-dial-label { text-transform: none; letter-spacing: 0.02em; font-size: 11px; }
+body.win95-app .task-card .task-card-plate { text-transform: none; letter-spacing: 0.04em; font-size: 11px; color: var(--tc-mute); text-shadow: none; }
+body.win95-app .task-card .tcs-lamp { text-transform: none; letter-spacing: 0.02em; font-size: 11px; }
+
+/* Empty states + stats */
+body.win95-app .task-card .tcs-add-key { border-style: dashed; background: transparent; color: var(--tc-mute); }
+body.win95-app .task-card .tcs-empty { text-align: center; color: var(--tc-mute); }
+body.win95-app .task-card .task-card-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+body.win95-app .task-card .task-card-dl dt { color: var(--tc-mute); }
+body.win95-app .task-card .task-card-dl dd { margin: 0; }
+body.win95-app .task-card .task-card-bar { border: 1px solid var(--tc-rule); border-radius: 10px; background: #f4f6f9; padding: 8px; gap: 6px; }
+
+/* ── Sections, Order toggle, stat cards, Open item (2026-10-20) ── */
+.task-card-head { position: relative; z-index: 3; }
+.task-card-tree { display: flex; flex-direction: column; gap: 10px; }
+.tc-section { display: block; }
+.tc-section-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 2px 0 6px; border-bottom: 1px solid var(--tc-rule, #cdd2da); margin-bottom: 8px; font: 500 11px/1 var(--tc-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tc-accent, #6a58a6); text-align: left; }
+.tc-section-title { font-weight: 500; }
+.tc-section-count { padding: 1px 7px; border-radius: 999px; background: var(--tc-wash, #eceff4); color: var(--tc-mute, #6b7482); letter-spacing: 0; }
+.tc-section-summary { color: var(--tc-mute, #6b7482); letter-spacing: 0; text-transform: none; font-size: 12px; }
+.tc-section-chev { margin-left: auto; transition: transform 0.15s; color: var(--tc-mute, #6b7482); }
+.tc-section-head.is-toggle[aria-expanded="false"] .tc-section-chev { transform: rotate(-90deg); }
+body.win95-app .task-card .tc-section-head.is-toggle { background: none; border: 0; border-bottom: 1px solid var(--tc-rule); border-radius: 0; box-shadow: none; padding: 2px 0 6px; cursor: pointer; }
+body.win95-app .task-card .tc-section-head.is-toggle:hover .tc-section-title { text-decoration: underline; }
+.task-card-order .task-card-lane { border-bottom: 0; margin-bottom: 0; padding-top: 0; }
+
+.tcs-name-row { display: flex; align-items: flex-start; gap: 8px; }
+.tcs-name-row .tcs-node-name { flex: 1; min-width: 0; }
+body.win95-app .task-card .tcs-open-item { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 7px; background: none; box-shadow: none; color: var(--tc-mute); cursor: pointer; }
+body.win95-app .task-card .tcs-open-item:hover, body.win95-app .task-card .tcs-open-item:focus-visible { background: var(--tc-wash); border-color: var(--tc-rule); color: var(--tc-accent); }
+.task-card-side .tcs-node-head { position: sticky; top: 0; z-index: 2; background: #f4f6f9; padding-bottom: 6px; margin: -8px -12px 0; padding: 8px 12px 6px; border-bottom: 1px solid var(--tc-rule, #cdd2da); }
+
+.tcs-stats { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; align-items: stretch; }
+.tcs-stat-wrap { position: relative; display: flex; }
+body.win95-app .task-card .tcs-stat { display: grid; gap: 2px; min-width: 88px; min-height: 58px; padding: 7px 12px; text-align: left; border: 1px solid var(--tc-rule); border-radius: 10px; background: #fff; background-image: none; box-shadow: none; color: var(--tc-ink); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+body.win95-app .task-card .tcs-stat:hover { border-color: var(--tc-accent); }
+body.win95-app .task-card .tcs-stat[aria-expanded="true"] { border-color: var(--tc-accent); background: #f3f0fb; }
+.tcs-stat-label { font: 500 10px/1 var(--tc-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tc-mute); }
+.tcs-stat-value { font: 600 22px/1.05 var(--tc-serif); font-variation-settings: "SOFT" 100; }
+.tcs-stat-sub { font: 400 11px/1 var(--tc-mono); color: var(--tc-mute); }
+.tcs-stat-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; width: 300px; max-width: 86vw; padding: 12px 14px; border: 1px solid var(--tc-rule); border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(30, 40, 60, 0.18); font-size: 12px; }
+.tcs-stat-pop.is-wide { width: min(640px, 86vw); max-height: 60vh; overflow: auto; }
+.tcs-stat-pop dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+.tcs-stat-pop dt { color: var(--tc-mute); font-family: var(--tc-mono); }
+.tcs-stat-pop dd { margin: 0; }
+.tcs-stat-pop p { margin: 8px 0 0; }
+
+/* Popover rows (2026-10-20): flex rows, not a definition list, so win95 dl rules cannot break them. */
+.tcs-stat-pop { text-align: left; color: var(--tc-ink, #1f2630); line-height: 1.4; }
+.tcs-stat-pop h4 { margin: 10px 0 4px; font: 500 10px/1 var(--tc-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tc-accent); }
+.tcs-stat-pop h4:first-child { margin-top: 0; }
+.tcs-stat-pop .tcs-formula { margin: 4px 0 6px; padding: 5px 8px; border-radius: 6px; background: var(--tc-wash); font: 400 12px/1.4 var(--tc-mono); overflow-wrap: anywhere; }
+.tcs-pop-lead { margin: 0 0 8px; }
+.tcs-r { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 10px; padding: 3px 0; border-bottom: 1px solid var(--tc-wash); }
+.tcs-r > span { color: var(--tc-mute); font-family: var(--tc-mono); font-size: 11px; }
+.tcs-r > b { font-weight: 500; overflow-wrap: anywhere; }
+.tcs-rows { list-style: none; margin: 0; padding: 0; }
+.tcs-rows > li, .tcs-rows.is-pick > li > button { display: grid; grid-template-columns: minmax(0, 1fr) 56px 48px 44px; align-items: center; gap: 8px; width: 100%; padding: 3px 0; text-align: left; }
+.tcs-rows:not(.is-pick) > li { grid-template-columns: 5rem 3.5rem 1fr; border-bottom: 1px solid var(--tc-wash); }
+.tcs-rows em { font-style: normal; color: var(--tc-mute); font-family: var(--tc-mono); font-size: 11px; text-align: right; }
+.tcs-rows > li > span, .tcs-rows.is-pick > li > button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcs-rows > li > b, .tcs-rows.is-pick b { font-family: var(--tc-mono); font-weight: 500; text-align: right; }
+body.win95-app .task-card .tcs-rows.is-pick > li > button { border: 0; background: none; box-shadow: none; border-radius: 6px; padding: 3px 4px; cursor: pointer; font: inherit; }
+body.win95-app .task-card .tcs-rows.is-pick > li > button:hover { background: var(--tc-wash); }
+.tcs-bar { display: block; height: 6px; border-radius: 999px; background: var(--tc-wash); overflow: hidden; margin: 4px 0; }
+.tcs-bar > i { display: block; height: 100%; background: var(--tc-accent); border-radius: inherit; }
+.tcs-bar.is-over > i { background: #b4563f; }
+.tcs-stat-pop.is-wide { width: min(680px, 86vw); }
+
+/* Icon jewels: Required (!) and the priority star. */
+body.win95-app .task-card .task-card-jewel.is-icon { display: inline-grid; place-items: center; width: 32px; height: 28px; padding: 0; }
+body.win95-app .task-card .task-card-jewel.is-required.is-icon[aria-pressed="true"] { color: #a2412c; background: #fbe9e4; border-color: #d98a78; }
+body.win95-app .task-card .task-card-jewel.is-prioritized.is-icon[aria-pressed="true"] { color: #2f9d4a; background: #e6f4ea; border-color: #8ccaa0; }
+.tc-star-pop { width: 320px; }
+.tc-why { display: grid; gap: 4px; margin-bottom: 8px; font: 500 10px/1 var(--tc-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tc-mute); }
+.tc-why textarea { font: 400 13px/1.4 inherit; letter-spacing: 0; text-transform: none; padding: 6px 10px; border: 1px solid var(--tc-rule); border-radius: 8px; resize: vertical; color: var(--tc-ink); background: #fff; }
+.tc-star-actions { display: flex; gap: 8px; }
+.tc-star-log { list-style: none; margin: 10px 0 0; padding: 8px 0 0; border-top: 1px solid var(--tc-wash); font-size: 12px; display: grid; gap: 4px; }
+
+/* Detail panel pass: corner close, push flag, digital readouts, quieter estimate */
+.task-card-title-row { padding-right: 30px; }
+.task-card .task-card-close { top: 3px; right: 3px; width: 22px; height: 22px; }
+.task-card-pushflag { font: 700 11px/1 var(--font-dmmono), monospace; letter-spacing: 0.04em; padding: 4px 8px; border-radius: 4px; color: #8a2a1f; background: #fbe9e5; border: 1px solid #e3a99f; box-shadow: inset 0 0 0 1px #fff7; white-space: nowrap; }
+body.win95-app .task-card .tcs-dials { display: flex; gap: 6px; flex-wrap: nowrap; }
+body.win95-app .task-card .tcs-dial { flex: 1 1 0; min-width: 0; padding: 6px 8px 5px; gap: 2px; background: linear-gradient(#0d1a1c, #12262a); border: 1px solid #2a4348; border-radius: 6px; box-shadow: inset 0 1px 6px #000a, 0 0 0 1px #fff6; }
+body.win95-app .task-card .tcs-dial.is-sm { flex: 0 0 5.6rem; }
+body.win95-app .task-card .tcs-dial-label { color: #6fb9b0; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+body.win95-app .task-card .tcs-dial-body { display: flex; align-items: center; gap: 4px; }
+body.win95-app .task-card .tcs-dial-body input[type="number"] { flex: 1; min-width: 0; text-align: center; color: #7dffe0; text-shadow: 0 0 6px #3ee0c088; font: 500 26px/1 var(--font-dmmono), ui-monospace, monospace; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+body.win95-app .task-card .tcs-dial.is-sm .tcs-dial-body input[type="number"] { font-size: 20px; }
+body.win95-app .task-card .tcs-dial.is-fallback .tcs-dial-body input[type="number"]::placeholder { color: #3f8f82; text-shadow: none; }
+body.win95-app .task-card .tcs-dial-body button { width: 18px; height: 18px; font-size: 12px; line-height: 1; background: #1c3236; color: #7dffe0; border: 1px solid #2f5157; opacity: 0.85; }
+body.win95-app .task-card .tcs-dial-cap { color: #6fb9b0; font-size: 9px; opacity: 0.8; }
+body.win95-app .task-card .tcs-dial-cap button, body.win95-app .task-card .tcs-dial-cap a { color: #7dffe0; }
+body.win95-app .task-card .tc-est.is-big, body.win95-app .task-card .tc-est-input.is-big { font: 600 18px/1.2 var(--font-dmmono), ui-monospace, monospace; padding: 0 6px; border-radius: 6px; }
+body.win95-app .task-card .tc-est-input.is-big { width: 5rem; }

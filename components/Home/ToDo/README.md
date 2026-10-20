@@ -455,3 +455,31 @@ Wave 13 (GS-9) keeps goal-complete and grade so partial work is credited.
 - Lists smart lists (Daily/Weekly/Monthly To Do) read the same `task-store` scheduling fields.
 - Next Actions also auto-manages **Completed** and **Missed Opportunities** lists (`na-smart-completed` / `na-smart-missed`) as real lists in that folder (open them from the tree).
 - Scheduler funnel assigns the underlying schedule; this panel is the execution view.
+
+## Task card: estimates, sub-cards, pen time
+
+_Last mapped: 2026-10-20_
+
+- **Type.** Names and figures use Fraunces (`--font-fraunces`), labels DM Mono (`--font-dmmono`), both loaded in `app/layout.tsx`. Styles are at the foot of `task-card.css`.
+- **Points.** `PointsDial` is a flex stepper (− N +) with explicit sizes, so global input styles no longer stretch it.
+- **Estimates.** `EstimateCell.tsx` is a click-to-edit time (Enter saves and opens the next one). Every change goes through `setEstimate` / `withEstimate` in `lib/task-card.ts` and appends to `Subtask.estimateLog` (`{ at, minutes }`), so the history can be learned from. The side panel's `EstimatePanel` adds quick values and the last six estimates. **Planned:** feed `estimateLog` into `lib/estimate-pace.ts`.
+- **Steps inside.** `SubstepPreview` in `TaskCardSide.tsx` lists the first level under the selected step, each with its estimate.
+- **Sub-card.** **⧉ Open as card** calls `openSubCard(taskId, stepId)` (`lib/task-card.ts`, `rootStepId` in the card store). Same task, narrower view: the tree, totals and lane read `view` (the root's children); edits write the whole tree through `replaceKids`. Crumbs above the title climb back up. A typed-but-unentered step (`StepTree` composer) and an unlogged note (`LogNotes`) are saved when the card is left.
+- **Pen time.** A linked pen only colors a task. `trackedTimeForItem(..., { penScope: "tagged" })` counts blocks carrying the task's `taskId` plus `timeLogs`; the pen's other minutes come back as `penPoolMinutes` and show as "pen overall". Operations still use the default `"all"` scope.
+
+### Task card: sections, Order toggle, stat cards, Open item
+
+_Last mapped: 2026-10-20_
+
+- **Zones.** Header band (title, state, stat cards, actions); left column = **Order** (collapsible) then **Steps** (toolbar, tree, mass-edit bar); right = detail panel with a sticky title. Both use `CardSection.tsx` (title bar, count, hairline). Detail order: Estimate → Inside → Points → Pen → Needs → This period → Notes.
+- **Order toggle.** The whole title row toggles (`aria-expanded`). Saved in localStorage `brain2-task-card-order-open`, default open, guarded. Collapsed shows "N steps · M in sequence" (M = steps that wait). No lane, no section.
+- **Stat cards** (`TaskCardStats.tsx`, under the title): Estimate, Parts, Spent, Points, Progress. Each opens one popover (Esc or outside click closes it; focus returns). Progress holds the completion math (`TreeMath`); the old **Show math** key is gone. In a sub-card they describe the root step. `guardEscape` lets Esc close the popover first, not the card.
+- **Orb selects, key opens.** The tree orb selects the step (⌘/Shift add); it no longer opens the item. **Open item** (window-arrow key, `OpenItemKey` in `TaskCardSide.tsx`) sits by the node name in the detail header and, for the whole task, calls `pushItemLayer`. The old bottom "↗ Step item" button is removed; the row hover ↗ stays.
+
+### Task card is its own UI (not item detail's)
+
+_Last mapped: 2026-10-20_
+
+- The card has its own code and docs; do not mirror the lid or item detail. Row checkboxes **select** (multi), never tick done (`StepTree` `checkboxSelects`); done is the mass-edit bar's **Done**.
+- **Required** is a circle-! icon key (on until turned off for the period). **Prioritized** is a star (`PriorityStar.tsx`) that works like Prioritize habit: a press asks for a plain-text reason, the star fades 10 points a day from `Task.priorityRefreshedOn` (`priorityStarFade`), **Reaffirm** refreshes it, and every press is kept on `Task.priorityLog`. The mark itself still goes through the host.
+- Stat-card popovers (`TaskCardStats.tsx`) show the formula (est = max(own, Σ parts)), the estimate log with deltas, per-part shares (click selects the step), pace, and points sum.

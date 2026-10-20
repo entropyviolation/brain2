@@ -22,6 +22,8 @@ interface TaskCardState {
   taskId: string | null
   /** Scroll to and select this step when the card opens (a step item's **Card**). */
   stepId?: string
+  /** Open the card with this step as its root: the tree and totals show only what is inside it. */
+  rootStepId?: string
   /** How many hosts (`todo-panel`) are mounted; item detail shows **Card** only when one is. */
   hosts: number
 }
@@ -29,11 +31,45 @@ interface TaskCardState {
 export const useTaskCardStore = create<TaskCardState>()(() => ({ taskId: null, hosts: 0 }))
 
 export function openTaskCard(taskId: string, stepId?: string): void {
-  useTaskCardStore.setState({ taskId, stepId })
+  useTaskCardStore.setState({ taskId, stepId, rootStepId: undefined })
+}
+
+/** Open a card whose root is one step ("sub-card"). The same task, so every write lands in the one tree. */
+export function openSubCard(taskId: string, rootStepId: string | undefined): void {
+  useTaskCardStore.setState({ taskId, stepId: undefined, rootStepId })
 }
 
 export function closeTaskCard(): void {
-  useTaskCardStore.setState({ taskId: null, stepId: undefined })
+  useTaskCardStore.setState({ taskId: null, stepId: undefined, rootStepId: undefined })
+}
+
+/** The steps from the top down to `id` (empty when it is not in the tree). */
+export function stepTrail(steps: readonly Subtask[] | undefined, id: string, trail: Subtask[] = []): Subtask[] {
+  for (const s of steps ?? []) {
+    if (s.id === id) return [...trail, s]
+    const hit = stepTrail(s.subtasks, id, [...trail, s])
+    if (hit.length) return hit
+  }
+  return []
+}
+
+/** `steps` with the children of step `id` swapped for `kids`. */
+export function replaceKids(steps: readonly Subtask[], id: string, kids: Subtask[]): Subtask[] {
+  return steps.map((s) => (s.id === id ? { ...s, subtasks: kids } : s.subtasks?.length ? { ...s, subtasks: replaceKids(s.subtasks, id, kids) } : s))
+}
+
+/** Set one step's estimate (0 clears it) and log the change when the value differs. */
+export function withEstimate(s: Subtask, minutes: number, now = new Date()): Subtask {
+  const next = Math.max(0, Math.round(minutes))
+  if (next === (s.estimatedDuration ?? 0)) return s
+  const out = { ...s, estimateLog: [...(s.estimateLog ?? []), { at: now.toISOString(), minutes: next }] }
+  if (next > 0) out.estimatedDuration = next
+  else delete out.estimatedDuration
+  return out
+}
+
+export function setEstimate(steps: readonly Subtask[] | undefined, id: string, minutes: number): Subtask[] {
+  return mapIds(steps, new Set([id]), (s) => withEstimate(s, minutes))
 }
 
 /** Called by the host on mount; returns the unmount. */
@@ -68,10 +104,7 @@ export type EstimateEdit = { set: number } | { delta: number }
 export function massEstimate(steps: readonly Subtask[] | undefined, ids: ReadonlySet<string>, edit: EstimateEdit): Subtask[] {
   return mapIds(steps, ids, (s) => {
     const next = "set" in edit ? edit.set : Math.max(0, (s.estimatedDuration ?? 0) + edit.delta)
-    const out = { ...s }
-    if (next > 0) out.estimatedDuration = next
-    else delete out.estimatedDuration
-    return out
+    return withEstimate(s, next)
   })
 }
 

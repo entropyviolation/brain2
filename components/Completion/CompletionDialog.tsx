@@ -196,12 +196,15 @@ export function CompletionDialog({
   taskId,
   basePoints,
   pending = false,
+  edit = false,
   onClose,
 }: {
   taskId: string
   basePoints: number
   /** True when the checkbox opened this dialog before flipping `completed`. */
   pending?: boolean
+  /** Opened from item detail on a finished task: shows what was answered, and Save rewrites only the review and contributions (no second goal tick or bonus). */
+  edit?: boolean
   onClose: () => void
 }) {
   const task = useTaskStore((s) => s.tasks.find((t) => t.id === taskId))
@@ -223,7 +226,7 @@ export function CompletionDialog({
   const [goalQuery, setGoalQuery] = useState("")
   const [objectiveDraft, setObjectiveDraft] = useState("")
   const [goalDraft, setGoalDraft] = useState("")
-  const [showReflection, setShowReflection] = useState(false)
+  const [showReflection, setShowReflection] = useState(edit)
   const [scores, setScores] = useState<Partial<CompletionReflections>>(initialScores)
   const [durationCertainty, setDurationCertainty] = useState<ClockDraft["durationCertainty"]>(initialClock.durationCertainty)
   const [actualDuration, setActualDuration] = useState(initialClock.durationMinutes)
@@ -232,7 +235,7 @@ export function CompletionDialog({
   const [doneCertainty, setDoneCertainty] = useState<ClockDraft["doneCertainty"]>(initialClock.doneCertainty)
   const [doneDate, setDoneDate] = useState(initialClock.doneDate)
   const [doneTime, setDoneTime] = useState(initialClock.doneTime)
-  const [notes, setNotes] = useState("")
+  const [notes, setNotes] = useState(edit ? (task?.completionReview?.notes ?? "") : "")
 
   const activeObjectives = useMemo(() => objectives.filter((o) => !o.archived), [objectives])
 
@@ -345,12 +348,14 @@ export function CompletionDialog({
       ...(review ? { completionReview: review } : {}),
     })
 
-    for (const id of goalIds) {
-      const goal = goals.find((g) => g.id === id)
-      if (goal) setGoalProgress(goal.id, goal.current + 1)
+    if (!edit) {
+      for (const id of goalIds) {
+        const goal = goals.find((g) => g.id === id)
+        if (goal) setGoalProgress(goal.id, goal.current + 1)
+      }
     }
 
-    if (bonus > 0) {
+    if (bonus > 0 && !edit) {
       addPoints(task.id, bonus, `Objective bonus: ${itemTitleOrUntitled(task, "Task")}`, completedAt)
     }
 
@@ -765,12 +770,16 @@ export function CompletionDialog({
           )}
 
           <div className="flex items-center justify-between gap-2 pt-1">
-            <Button variant="ghost" onClick={handleUndo} aria-label="Undo completion">
-              <Undo2 className="h-4 w-4 mr-2" />
-              Undo
-            </Button>
+            {edit ? (
+              <span />
+            ) : (
+              <Button variant="ghost" onClick={handleUndo} aria-label="Undo completion">
+                <Undo2 className="h-4 w-4 mr-2" />
+                Undo
+              </Button>
+            )}
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={handleSkip}>Skip</Button>
+              <Button variant="ghost" onClick={edit ? guard.requestClose : handleSkip}>{edit ? "Cancel" : "Skip"}</Button>
               <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Save

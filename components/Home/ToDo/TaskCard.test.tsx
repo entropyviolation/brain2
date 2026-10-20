@@ -62,10 +62,11 @@ describe("TaskCard", () => {
     expect(itemLayers().map((l) => l.taskId)).toEqual(["t1"])
   })
 
-  it("shows the completion math: ρ and σ over the top-level parts", () => {
+  it("the Progress card opens the completion math: ρ and σ over the top-level parts; Esc closes it", () => {
     seed()
     render(<TaskCard host={host()} />)
     act(() => openTaskCard("t1"))
+    fireEvent.click(document.querySelector('[data-stat="progress"]')!)
     const fig = screen.getByRole("figure", { name: "Completion math" })
     expect(fig.textContent).toContain("n = 3")
     expect(fig.textContent).toContain("L = 3")
@@ -102,7 +103,7 @@ describe("TaskCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Session with this" }))
     expect(useSessionOpenStore.getState().request?.seed).toEqual([{ taskId: "t1" }])
     fireEvent.change(screen.getByLabelText("On done"), { target: { value: "10" } })
-    expect(screen.getByTestId("task-card-points").textContent).toContain("task 10")
+    expect(screen.getByTestId("task-card-points").textContent).toContain("10")
     fireEvent.click(screen.getByRole("button", { name: /Back to the rule/ }))
     expect(useTaskStore.getState().tasks[0].pointsOverride).toBeUndefined()
   })

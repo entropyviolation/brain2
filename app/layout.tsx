@@ -19,7 +19,7 @@
  */
 import type React from "react"
 import type { Metadata } from "next"
-import { DotGothic16, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
+import { DM_Mono, DotGothic16, Fraunces, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -89,6 +89,21 @@ const dotGothic = DotGothic16({
   display: "swap",
 })
 
+// Task card: a soft, characterful serif for names and figures, a calm mono for labels.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  axes: ["SOFT", "WONK", "opsz"],
+  display: "swap",
+})
+
+const dmMono = DM_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-dmmono",
+  display: "swap",
+})
+
 const silkscreen = Silkscreen({
   weight: ["400", "700"],
   subsets: ["latin"],
@@ -111,7 +126,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${karla.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable}`}
+      className={`${karla.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable} ${fraunces.variable} ${dmMono.variable}`}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning

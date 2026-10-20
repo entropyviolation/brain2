@@ -64,6 +64,8 @@ const StepLinkContext = createContext<StepLink | null>(null)
  */
 export interface TodoTimeInfo {
   spent: number
+  /** Minutes on the linked pen not tagged to this task (never counted in `spent`). */
+  penPool?: number
   stepSpent?: ReadonlyMap<string, number>
   pace?: number
   ghosts?: boolean
