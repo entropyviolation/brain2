@@ -84,6 +84,7 @@ export function HomeWidgetDialog({
     <Dialog open={open} modal={modal} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn("home-widget-dialog home-widget-instrument", className)}
+        data-style={frame?.style ?? "milled"}
         aria-describedby={undefined}
         hideClose
         onPointerDownOutside={holdOutside}

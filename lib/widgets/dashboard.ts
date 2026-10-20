@@ -83,6 +83,12 @@ export function makeCopy(
   }
 }
 
+/** An early build offered amber and red lamps; amber reads as violet and red as phosphor. */
+export function sanitizeLamp(value: unknown): WidgetLamp {
+  if (value === "amber") return "violet"
+  return (WIDGET_LAMPS as readonly string[]).includes(value as string) ? (value as WidgetLamp) : "phosphor"
+}
+
 const DAY_SOURCES: WidgetDaySource[] = ["dashboard", "clock", "viewed"]
 
 /** Clean one saved copy. Unknown kinds return null so the caller can keep them raw. */
@@ -99,7 +105,7 @@ export function sanitizeCopy(raw: unknown): WidgetCopy | null {
     ...(typeof value.key === "string" && value.key ? { key: value.key.slice(0, 64) } : {}),
     title: typeof value.title === "string" ? value.title.replace(/[\r\n\t]/g, " ").slice(0, 40) : "",
     hidden: value.hidden === true,
-    lamp: (WIDGET_LAMPS as readonly string[]).includes(value.lamp as string) ? (value.lamp as WidgetLamp) : "phosphor",
+    lamp: sanitizeLamp(value.lamp),
     daySource: DAY_SOURCES.includes(value.daySource as WidgetDaySource) ? (value.daySource as WidgetDaySource) : "dashboard",
     showFoot: value.showFoot !== false,
     settings: sanitizeWidgetSettings(kind, value.settings),

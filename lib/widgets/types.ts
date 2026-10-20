@@ -26,8 +26,8 @@ export type DashboardStyle = "milled" | "dash"
 /** Where a copy reads its day: the dashboard default, the wall clock, or the day being viewed. */
 export type WidgetDaySource = "dashboard" | "clock" | "viewed"
 
-/** Lamp colors a copy can pick. Each maps to one CSS color in `visual-dashboard.css`. */
-export const WIDGET_LAMPS = ["phosphor", "amber", "blue", "red", "white"] as const
+/** Lamp colors a copy can pick. The DSi lights rule allows no amber or orange, and keeps red for a fault. */
+export const WIDGET_LAMPS = ["phosphor", "blue", "violet", "white"] as const
 export type WidgetLamp = (typeof WIDGET_LAMPS)[number]
 
 export type WidgetSettings = Record<string, string | number | boolean>
