@@ -98,6 +98,12 @@ describe("pointsPeriodSeries", () => {
     expect(s.value).toBe(33.5)
   })
 
+  it("all time in new mode heads with every point, not the last bucket", () => {
+    const s = pointsPeriodSeries(entries, "all", asOf, "new")
+    expect(s.value).toBe(33.5)
+    expect(s.delta).toBe(33.5)
+  })
+
   it("an empty ledger still draws one bucket for all time", () => {
     const s = pointsPeriodSeries([], "all", asOf, "new")
     expect(s.buckets).toHaveLength(1)

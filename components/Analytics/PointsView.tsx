@@ -21,6 +21,7 @@ import { AwardDetail } from "@/components/Home/award-detail"
 import { awardReason, formatAwardPoints } from "@/lib/habit-points"
 import { AWARD_KIND_LABEL, awardKindOf } from "@/lib/points-award-explain"
 import { POINTS_LEDGER_ANCHOR, openItemDetailPage, takeLedgerFocus } from "@/lib/points-ledger-nav"
+import { COGS_NAV_RESTORE_EVENT } from "@/lib/screen-location"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useGoalsStore } from "@/lib/goals-store"
 
@@ -37,7 +38,10 @@ function PointsLedger() {
   const [expanded, setExpanded] = useState<number | null>(null)
   const focusRef = useRef<{ date: string; taskId: string } | null>(null)
 
-  useEffect(() => {
+  // Read the focus on mount, and again on each nav restore: Analytics stays
+  // mounted (hidden) once opened, so a later jump from Home lands here.
+  const consumeFocusRef = useRef<() => void>(() => {})
+  consumeFocusRef.current = () => {
     const focus = takeLedgerFocus()
     if (!focus) return
     focusRef.current = focus
@@ -50,7 +54,12 @@ function PointsLedger() {
         break
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }
+  useEffect(() => {
+    const consume = () => consumeFocusRef.current()
+    consume()
+    window.addEventListener(COGS_NAV_RESTORE_EVENT, consume)
+    return () => window.removeEventListener(COGS_NAV_RESTORE_EVENT, consume)
   }, [])
 
   useEffect(() => {
