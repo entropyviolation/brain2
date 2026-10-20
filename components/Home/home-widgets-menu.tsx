@@ -113,6 +113,7 @@ export function HomeWidgetsMenu() {
                 role="radio"
                 aria-checked={style === entry.id}
                 className="home-widgets-style-key"
+                data-style={entry.id}
                 title={entry.note}
                 onClick={() => store().setStyle(entry.id)}
               >
