@@ -1605,6 +1605,12 @@ export type MembershipCondition =
     }
   | { kind: "tag"; tags: string[]; mode: "any" | "all" | "none" }
   | { kind: "done"; done: boolean }
+  /**
+   * One-hop ego pattern (LINKS_REDESIGN L7.1): has / has not relation R
+   * (or any relation under R) to one item, or to any item of these types.
+   * Reads both stored directions.
+   */
+  | { kind: "link"; relation: string; mode: "has" | "hasNot"; targetId?: string; targetTypeIds?: string[] }
 
 /** Items matching all (or any) of the conditions join the list. Empty never matches. */
 export interface ListMembershipRule {

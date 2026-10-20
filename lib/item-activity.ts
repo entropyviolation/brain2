@@ -187,6 +187,11 @@ function newEntryId(): string {
 }
 
 /** Newest-first ledger for one item. */
+/** Every item's lines (weekly graph review reads link edits from it). */
+export function allItemActivity(): Record<string, ItemActivityEntry[]> {
+  return readAll()
+}
+
 export function listItemActivity(itemId: string): ItemActivityEntry[] {
   if (!itemId) return []
   const rows = readAll()[itemId] ?? []

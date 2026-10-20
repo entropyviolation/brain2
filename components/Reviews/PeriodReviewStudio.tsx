@@ -7,6 +7,7 @@
  */
 "use client"
 
+import { GraphReviewSection } from "@/components/Reviews/GraphReviewSection"
 import { useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -275,6 +276,7 @@ export function PeriodReviewStudio({
         <h3 className="font-semibold text-sm">This period</h3>
         <StatsBlock stats={stats} />
       </div>
+      {period === "week" ? <GraphReviewSection /> : null}
       <div className="space-y-2">
         <h3 className="font-semibold text-sm">Reflection</h3>
         <p className="text-sm text-muted-foreground">Optional. Leave any of these blank.</p>

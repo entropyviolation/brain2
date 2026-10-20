@@ -74,6 +74,8 @@ import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
+import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
+import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
 import {
@@ -172,6 +174,8 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("theme-store"), rehydrate: persistRehydrate(useThemeStore) },
   { key: persistKey("user-settings"), rehydrate: persistRehydrate(useUserSettingsStore) },
   { key: persistKey("item-types-store"), rehydrate: persistRehydrate(useItemTypeStore) },
+  { key: persistKey("graph-inbox"), rehydrate: persistRehydrate(useGraphInboxStore) },
+  { key: persistKey("links-view"), rehydrate: persistRehydrate(useLinksViewStore) },
   { key: persistKey("workflows-store"), rehydrate: persistRehydrate(useWorkflowsStore) },
   { key: persistKey("module-definitions"), rehydrate: persistRehydrate(useModuleDefinitionsStore) },
   { key: persistKey("metrics-store"), rehydrate: persistRehydrate(useMetricsStore) },
