@@ -10,7 +10,7 @@ The hub file `data/shared-persist.json` (`updatedAt` 2026-10-10T06:07:48.085Z, `
 
 Checking the last open to-do would make the mean (25 + 100) / 2 = 62.5, which is **Bright**, with the habit sheet still 7/28. One more met habit at the current to-do percent is 8/28 → 29%, mean 60.5, also Bright.
 
-**Layout in the live strip.** Order places `daylamp` after `next` and before `daysuntil`. Hidden ids are affirmation, next, days until, night, harvest, inbox, flow, and paint. Day lamp is on. Visible run: review, points, award, progress, weather, pet, day lamp, moon, solar, tracking.
+**Layout in the live strip.** Order places `daylamp` after `next` and before `daysuntil`. Hidden ids are affirmation, next, daysuntil (Countdown), night, harvest, inbox, flow, and paint. Day lamp is on. Visible run: review, points, award, progress, weather, pet, day lamp, moon, solar, tracking.
 
 **The sheet under the lamp is a different day.** `widgetsFollowClock` is true, so the tile reads the wall clock (Friday 9 October). `brain2-home-date` is `2026-09-24` and `brain2-home-date-follows-today` is `0`, so Habits and To Do stay on Thursday 24 September. That day is also 7/28 habits, and its to-dos are 9/9, mean 62.5, word Bright. The date plate says Friday October 9. The lamp, the plate, and the grids are not one day.
 

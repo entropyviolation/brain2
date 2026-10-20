@@ -27,7 +27,7 @@ The task blobs differ. The Affirmations list does not, for the fields this tile 
 
 `brain2-home-date` is `2026-09-24` and `brain2-home-date-follows-today` is `0` (an explicit other day). If Follow the clock were off, the same pool would show index 49: “I will win a Nobel Prize” (24 characters). That is the hub’s clock setting. The running profile would not show it.
 
-**Strip.** Order index of `affirmation` is 4 (after Today’s Progress). It is in `hidden`, with `next`, `daysuntil`, `night`, `harvest`, `inbox`, `flow`, and `paint`. Visible: Rituals, Points, Latest award, Today’s Progress, Weather, Screen pet, Day lamp, Moon, Solar remainder, Tracking now. The catalog default already tucks Affirmation (`DEFAULT_HOME_WIDGET_HIDDEN`). This layout is not that default: Weather, Day lamp, Solar remainder, and Tracking now were turned on, and Days Until was turned off. Affirmation stayed off.
+**Strip.** Order index of `affirmation` is 4 (after Today’s Progress). It is in `hidden`, with `next`, `daysuntil`, `night`, `harvest`, `inbox`, `flow`, and `paint`. Visible: Rituals, Points, Latest award, Today’s Progress, Weather, Screen pet, Day lamp, Moon, Solar remainder, Tracking now. The catalog default already tucks Affirmation (`DEFAULT_HOME_WIDGET_HIDDEN`). This layout is not that default: Weather, Day lamp, Solar remainder, and Tracking now were turned on, and Countdown was turned off. Affirmation stayed off.
 
 **Ritual, same day.** `brain2-reviews-store` has a day review `periodKey` `2026-10-09` whose morning is `{ source: "telegram", completed: false, resumeStep: "bed" }` and has no `affirmations` field. The spoken step was never reached. Across the store, 8 of 15 reviews have a morning and 5 of those have affirmation lines. The home tile does not read that store.
 
@@ -58,7 +58,7 @@ What this face does with that frame:
 
 ### Detail view
 
-`HomeWidgetDialog` is the silver handheld: power pip, uppercase title **Affirmation**, one scroll, ×. Sibling instruments use it as wells (Points, Today’s Progress, Days Until). Affirmation passes a single lead paragraph.
+`HomeWidgetDialog` is the silver handheld: power pip, uppercase title **Affirmation**, one scroll, ×. Sibling instruments use it as wells (Points, Today’s Progress, Countdown). Affirmation passes a single lead paragraph.
 
 `.home-widget-lead` is the right material for a value: dark LCD `#07140f`, phosphor `#7dffc4`, 18px, weight 700. It will show all 65 characters. Two things fight the sentence. Letter-spacing `0.03em` is label tracking on a line meant to be spoken. And the lead is the entire body. Style for a dialog is one body, actions in one row at the foot when there is a decision, three type sizes, sibling wells of one height. This body has the large type and nothing else: no wells, no 11px note, no key. A clean close is correct (nothing is edited). An empty instrument is not.
 
