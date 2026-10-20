@@ -6,10 +6,12 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useMemo, useState } from "react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
-import { clockMinutesOnDay, solarRemainderFace } from "@/lib/solar-remainder"
+import { clockMinutesOnDay, solarTargetFace } from "@/lib/solar-remainder"
 import { SAN_DIEGO_COORDS, computeDaySun } from "@/lib/sun-times"
 import { sunPlaceForCity, useSunTimesStore } from "@/lib/sun-times-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
@@ -29,10 +31,19 @@ export function SolarRemainderTile({ onHide }: { onHide: () => void }) {
     return () => window.clearInterval(id)
   }, [])
 
+  const place = useCopySetting<string>("place", "").trim()
+  const target = useCopySetting<string>("target", "auto")
+  const placeLat = useCopySetting<number>("lat", NaN)
+  const placeLng = useCopySetting<number>("lng", NaN)
   const pin = useMemo(() => {
+    if (place && Number.isFinite(placeLat) && Number.isFinite(placeLng)) return { lat: placeLat, lng: placeLng }
+    if (place) {
+      const own = sunPlaceForCity(place, places)
+      if (own) return own
+    }
     if (lat != null && lng != null) return { lat, lng }
     return sunPlaceForCity(settingsCity, places) ?? SAN_DIEGO_COORDS
-  }, [lat, lng, settingsCity, places])
+  }, [place, placeLat, placeLng, lat, lng, settingsCity, places])
 
   const dateKey = formatLocalDateKey(now)
   const sun = useMemo(() => computeDaySun(dateKey, pin.lat, pin.lng), [dateKey, pin.lat, pin.lng])
@@ -41,7 +52,11 @@ export function SolarRemainderTile({ onHide }: { onHide: () => void }) {
     if (sun) rememberIfAbsent(sun)
   }, [sun, rememberIfAbsent])
 
-  const face = solarRemainderFace(clockMinutesOnDay(now), sun)
+  const face = solarTargetFace(
+    clockMinutesOnDay(now),
+    sun,
+    target === "sunset" || target === "sunrise" ? target : "auto",
+  )
 
   return (
     <>
@@ -49,7 +64,9 @@ export function SolarRemainderTile({ onHide }: { onHide: () => void }) {
         <TileHide id="solar" onHide={onHide} />
         <TileOpen label="Solar remainder" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Solar remainder</span>
+            <span>
+              <CopyCaption>{place ? place.split(",")[0] : "Solar remainder"}</CopyCaption>
+            </span>
           </div>
           <div className="hab-score-readout home-solar-readout" data-centered="true" data-phase={face.phase}>
             {face.crt}

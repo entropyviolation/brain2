@@ -17,6 +17,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useMemo, useState } from "react"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import { addCalendarDays, formatLocalDateKey } from "@/lib/date-utils"
@@ -89,6 +91,8 @@ export function AffirmationTile({ currentDate, onHide }: { currentDate: Date; on
   const setLens = useAffirmationLogStore((s) => s.setLens)
   const recite = useAffirmationLogStore((s) => s.recite)
   const [open, setOpen] = useState(false)
+  const faceKeys = useCopySetting<boolean>("keys", true)
+  const showPips = useCopySetting<boolean>("pips", true)
 
   const said = useMemo(() => {
     const today = new Set(rows.filter((r) => r.date === dateKey).map((r) => r.key))
@@ -111,6 +115,8 @@ export function AffirmationTile({ currentDate, onHide }: { currentDate: Date; on
         data-lens={shownLens}
       >
         <TileHide id="affirmation" onHide={onHide} />
+        {faceKeys ? (
+        <>
         <button
           type="button"
           className="home-affirm-key is-flip"
@@ -136,9 +142,13 @@ export function AffirmationTile({ currentDate, onHide }: { currentDate: Date; on
         >
           ✓
         </button>
+        </>
+        ) : null}
         <TileOpen label="Affirmation" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Affirmation · {AFFIRMATION_LENS_CODE[shownLens]}</span>
+            <span>
+              <CopyCaption>Affirmation</CopyCaption> · {AFFIRMATION_LENS_CODE[shownLens]}
+            </span>
           </div>
           <div className="home-crt home-affirmation-crt">
             <p key={`${shownLens}|${focus}`} className="home-affirmation-line home-affirm-roll" lang={AFFIRMATION_LENS_SPEECH[shownLens]}>
@@ -146,11 +156,13 @@ export function AffirmationTile({ currentDate, onHide }: { currentDate: Date; on
             </p>
           </div>
           <div className="home-tile-foot home-affirm-foot">
-            <span className="home-affirm-pips" aria-hidden="true">
-              {said.map((on, i) => (
-                <i key={i} className={on ? "is-on" : i === focusIndex ? "is-now" : ""} />
-              ))}
-            </span>
+            {showPips ? (
+              <span className="home-affirm-pips" aria-hidden="true">
+                {said.map((on, i) => (
+                  <i key={i} className={on ? "is-on" : i === focusIndex ? "is-now" : ""} />
+                ))}
+              </span>
+            ) : null}
             <p className="hab-score-sub">
               {saidCount} of {lines.length} said · ×{total}
             </p>

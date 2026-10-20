@@ -5,6 +5,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useMemo, useState } from "react"
 import { pickHomeNext } from "@/lib/home-widgets"
 import { HomeWidgetDialog, TileHide, TileOpen, WidgetWell } from "@/components/Home/home-widget-dialog"
@@ -26,6 +28,7 @@ export function NextTile({
   const tasks = useTaskStore((s) => openTodosOnDay(s.tasks, currentDate))
   const lists = useTaskStore((s) => s.lists)
 
+  const sources = useCopySetting<string>("sources", "both")
   const hit = useMemo(() => {
     const todos = tasks.map((task) => {
       const list = lists.find((item) => item.id === task.lists?.[0])
@@ -34,10 +37,10 @@ export function NextTile({
     return pickHomeNext({
       now: currentDate,
       clock: new Date(),
-      events,
-      todos,
+      events: sources === "todos" ? [] : events,
+      todos: sources === "events" ? [] : todos,
     })
-  }, [events, tasks, lists, currentDate])
+  }, [events, tasks, lists, currentDate, sources])
 
   const [open, setOpen] = useState(false)
   const jump = () => {
@@ -52,7 +55,9 @@ export function NextTile({
         <TileHide id="next" onHide={onHide} />
         <TileOpen label="Next" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Next</span>
+            <span>
+              <CopyCaption>Next</CopyCaption>
+            </span>
           </div>
           <div className="home-crt home-next-crt">
             <p className="home-next-title">{hit?.title ?? "—"}</p>

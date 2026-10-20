@@ -8,6 +8,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { searchCities, type CitySuggestion } from "@/lib/city-search"
@@ -62,12 +64,25 @@ export function WeatherTile({
   const [status, setStatus] = useState<"loading" | "ready" | "empty">("loading")
   const [open, setOpen] = useState(false)
 
-  const city = resolveWeatherCity(
+  // A Weather copy with its own place reads that place; the first copy follows the pin.
+  const ownPlace = useCopySetting<string>("place", "").trim()
+  const ownLat = useCopySetting<number>("lat", NaN)
+  const ownLng = useCopySetting<number>("lng", NaN)
+  const units = useCopySetting<string>("units", "f")
+  const footMode = useCopySetting<string>("foot", "glance")
+  const pinnedCity = resolveWeatherCity(
     { cityQuery, cityName, lat, lng, stationId, beachLabel },
     settingsCity,
   )
-  const coords =
-    lat != null && lng != null ? { lat, lng, name: cityName || city } : null
+  const city = ownPlace || pinnedCity
+  const coords = ownPlace
+    ? Number.isFinite(ownLat) && Number.isFinite(ownLng)
+      ? { lat: ownLat, lng: ownLng, name: ownPlace }
+      : null
+    : lat != null && lng != null
+      ? { lat, lng, name: cityName || city }
+      : null
+  const deg = (tempF: number) => (units === "c" ? Math.round(((tempF - 32) * 5) / 9) : Math.round(tempF))
 
   useEffect(() => {
     let alive = true
@@ -95,12 +110,12 @@ export function WeatherTile({
 
   const nowHour = dateKey === todayKey ? currentDate.getHours() : undefined
   const labelCity = wx?.cityName?.split(",")[0] ?? cityName.split(",")[0] ?? city.split(",")[0] ?? "Home"
-  const faceCity = beachLabel || labelCity
+  const faceCity = ownPlace ? ownPlace.split(",")[0]! : beachLabel || labelCity
   const icon =
     status === "ready" && wx
       ? weatherIconKindFromCode(wx.weatherCode)
       : weatherIconKind(undefined)
-  const glance =
+  const baseGlance =
     status === "loading"
       ? "Looking up…"
       : wx
@@ -112,6 +127,12 @@ export function WeatherTile({
         : city.trim()
           ? "No reading."
           : "Set a home city in Settings."
+  const glance =
+    wx && footMode === "range"
+      ? `high ${deg(wx.highF)}° · low ${deg(wx.lowF)}°`
+      : wx && footMode === "rain"
+        ? `${Math.round(wx.precipChance ?? 0)}% chance of rain`
+        : baseGlance
 
   return (
     <>
@@ -124,11 +145,13 @@ export function WeatherTile({
           onClick={() => setOpen(true)}
         >
           <div className="hab-score-caption">
-            <span>{faceCity}</span>
+            <span>
+              <CopyCaption>{faceCity}</CopyCaption>
+            </span>
           </div>
-          <div className="hab-score-readout home-weather-readout" data-centered="true">
+          <div className="hab-score-readout home-weather-readout" data-centered="true" data-units={units}>
             <WeatherGlyph kind={icon} />
-            <span>{status === "loading" ? "···" : wx ? `${wx.tempF}°` : "—"}</span>
+            <span>{status === "loading" ? "···" : wx ? `${deg(wx.tempF)}°` : "—"}</span>
           </div>
           <div className="home-tile-foot">
             <p className="hab-score-sub">{glance}</p>

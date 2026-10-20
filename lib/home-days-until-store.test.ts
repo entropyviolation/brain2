@@ -49,10 +49,19 @@ describe("home-days-until-store", () => {
     )
   })
 
-  it("keeps one empty item when the last countdown is removed", () => {
+  it("removes the last countdown, and a saved empty list stays empty", () => {
     const id = useHomeDaysUntilStore.getState().items[0]!.id
     useHomeDaysUntilStore.getState().removeCountdown(id)
-    expect(useHomeDaysUntilStore.getState().items).toHaveLength(1)
-    expect(useHomeDaysUntilStore.getState().items[0]?.label).toBe("")
+    expect(useHomeDaysUntilStore.getState().items).toHaveLength(0)
+    expect(sanitizeHomeDaysUntilItems({ items: [] })).toEqual([])
+    expect(sanitizeHomeDaysUntilItems(undefined)).toHaveLength(1)
+  })
+
+  it("keeps the Countdown fields and reads unknown formats as units", () => {
+    const [item] = sanitizeHomeDaysUntilItems({
+      items: [{ id: "a", date: "2026-12-25", format: "sleeps", repeat: "yearly", start: "2026-12-01", milestones: true, whenPassed: "hide" }],
+    })
+    expect(item).toMatchObject({ format: "sleeps", repeat: "yearly", start: "2026-12-01", milestones: true, whenPassed: "hide" })
+    expect(sanitizeHomeDaysUntilItems({ items: [{ id: "b", format: "fortnights" }] })[0]!.format).toBe("unit")
   })
 })
