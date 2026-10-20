@@ -2295,6 +2295,80 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
   font-size: 10px;
 }
 
+/* Events and Thought process shelves wear the steel well: black text on light
+   metal, the same read as the Now popup's lists. The other shelves stay CRT. */
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] {
+  padding: 8px 10px 10px;
+  border-radius: var(--r-3, 3px);
+  color: #111;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-sheen) 0%, var(--t-surface) 48%, var(--chrome-shade) 100%);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 2px var(--chrome-inset);
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-heading {
+  padding: 0 0 2px;
+  color: #111;
+  background: none;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-heading .trk-logbook-count {
+  color: #111;
+  background: #fff;
+  border-color: var(--chrome-lo, #808080);
+  text-shadow: none;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-note,
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] p {
+  padding: 4px 0 0;
+  color: #2a2c2e;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-empty {
+  padding-bottom: 0;
+  color: #44484c;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log {
+  margin-top: 6px;
+  padding: 2px;
+  background: #fff;
+  box-shadow: inset 1px 1px var(--chrome-lo, #808080), inset -1px -1px #fff;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row,
+body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row {
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: #111;
+  font-size: 13px;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row:hover,
+body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row:hover {
+  background: var(--chrome-mill-hi, #d8dce0);
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-when {
+  color: #000080 !important;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-scope,
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-logbook-badge {
+  color: #44484c !important;
+}
+
 /* spend ledger bars */
 .trk95 .trk-logbook-board .trk-logbook-spent-total {
   color: #9ad7ff;

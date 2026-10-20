@@ -53,7 +53,11 @@ import {
   type LogClockChoice,
   type LogComposerMode,
   type LogList,
+  loggedFlag,
+  recentIntakeByClass,
 } from "@/components/Home/Tracking/tracking-log-model"
+
+export { loggedFlag }
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { formatSpendAmount, parseSpendAmount, spendSourceOptions, summarizeSpend } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -99,39 +103,6 @@ function fieldLabel(mode: LogComposerMode): string {
   if (mode === "thought") return "Thought process"
   if (mode === "intake") return "Name"
   return "Title"
-}
-
-const FLAG_KIND: Record<LogComposerMode, string> = {
-  event: "Event",
-  switch: "Switch",
-  intake: "Intake",
-  spend: "Spent",
-  note: "Note",
-  thought: "Thought process",
-}
-
-/** "COFFEE · DRINK INTAKE LOGGED · 2:43 PM" for the bottom-right flag. */
-export function loggedFlag(
-  mode: LogComposerMode,
-  intake: IntakeClass,
-  name: string,
-  clock: LogClockChoice,
-  timeValue: string,
-  spendCents?: number | null,
-): string {
-  const firstLine = name.trim().split("\n")[0] ?? ""
-  const short = firstLine.length > 40 ? `${firstLine.slice(0, 39)}…` : firstLine
-  const subject = mode === "spend" && spendCents != null ? `${formatSpendAmount(spendCents)} ${short}` : short
-  const kind = mode === "intake" ? `${intake} intake` : FLAG_KIND[mode]
-  const minute = timeStringToMinutes(timeValue)
-  let when = "time unknown"
-  if (clock !== "unknown" && minute != null) {
-    const h = Math.floor(minute / 60)
-    const m = minute % 60
-    const label = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
-    when = clock === "estimated" ? `~${label}` : label
-  }
-  return [subject.toUpperCase(), `${kind.toUpperCase()} LOGGED`, when].filter(Boolean).join(" · ")
 }
 
 function fieldPlaceholder(mode: LogComposerMode, intake: IntakeClass): string {
@@ -395,6 +366,7 @@ function LogListWell({
   copyFor,
   metaFor,
   leadFor,
+  face,
   onOpen,
   onRemove,
 }: {
@@ -405,11 +377,13 @@ function LogListWell({
   copyFor?: (entry: LogBookEntry) => string
   metaFor?: (entry: LogBookEntry) => string
   leadFor?: (entry: LogBookEntry) => ReactNode
+  /** `steel` — the light well with black text, as in the Now popup. Default is the CRT shelf. */
+  face?: "steel"
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
   return (
-    <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"}>
+    <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"} data-face={face}>
       <h3 className="trk-logbook-heading">
         {title}
         {rows.length > 0 ? (
@@ -548,30 +522,15 @@ export function TrackingLogView({
 
   // Recent intake by class (most used first) and recent purchases, across every day.
   const recents = useMemo(() => {
-    const intake: Record<IntakeClass, { title: string; count: number; last: string }[]> = { food: [], drink: [], drug: [] }
-    const counts = new Map<string, { cls: IntakeClass; title: string; count: number; last: string }>()
+    const intake = recentIntakeByClass(entries, penName)
     const buys: { amount: number; on: string; source: string; when: string }[] = []
     for (const entry of entries) {
       const row = classifyLogBookRow(asLogEntry(entry), penName.get(entry.penId))
       if (!row) continue
       const when = `${entry.date} ${String(entry.startMin).padStart(4, "0")}`
-      if (row.list === "food" || row.list === "drink" || row.list === "drug") {
-        const title = (row.title ?? "").trim()
-        if (!title) continue
-        const key = `${row.list}:${title.toLowerCase()}`
-        const hit = counts.get(key)
-        if (hit) {
-          hit.count += 1
-          if (when > hit.last) hit.last = when
-        } else counts.set(key, { cls: row.list, title, count: 1, last: when })
-      } else if (row.list === "spend" && typeof row.spendAmount === "number") {
+      if (row.list === "spend" && typeof row.spendAmount === "number") {
         buys.push({ amount: row.spendAmount, on: row.spendOn?.trim() || row.title?.trim() || "", source: row.spendSource?.trim() || "", when })
       }
-    }
-    for (const hit of counts.values()) intake[hit.cls].push(hit)
-    for (const cls of Object.keys(intake) as IntakeClass[]) {
-      intake[cls].sort((a, b) => b.count - a.count || b.last.localeCompare(a.last))
-      intake[cls] = intake[cls].slice(0, 8)
     }
     buys.sort((a, b) => b.when.localeCompare(a.when))
     const seen = new Set<string>()
@@ -995,6 +954,7 @@ export function TrackingLogView({
             title="Events"
             note="Any repeated phrase can be counted later. Example: left room."
             rows={grouped.event}
+            face="steel"
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
@@ -1003,6 +963,7 @@ export function TrackingLogView({
             title="Thought process"
             note="A strand from what you are doing, to what it leads to, to how it feels."
             rows={grouped.thought}
+            face="steel"
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
