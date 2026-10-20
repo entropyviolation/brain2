@@ -299,6 +299,8 @@ export interface Subtask {
    * with none is Goal (`lib/step-tiers.ts`).
    */
   tier?: StepTier
+  /** Every value this step's estimate has had, oldest first, so the evolution can be learned from (`lib/task-card.ts` `setEstimate`). */
+  estimateLog?: { at: string; minutes: number }[]
   /** Spark mark (UI-7): set yourself on a step that pulls you. ISO time. No points, no effect on progress. */
   sparkedAt?: string
   /**
@@ -355,6 +357,14 @@ export type TodoMarkPeriod = "day" | "week" | "month" | "quarter" | "year"
  * The period key matches the To Do / ritual key: day `YYYY-MM-DD`, week
  * `getWeekString`, month `YYYY-MM`, quarter `YYYY-Qn`, year `YYYY`.
  */
+/** One prioritize press on a task, oldest first on `Task.priorityLog`. `reasoning` is plain text. */
+export interface TaskPriorityEntry {
+  at: string
+  dayKey: string
+  kind: "set" | "refreshed" | "off"
+  reasoning?: string
+}
+
 export interface TodoPeriodMark {
   period: TodoMarkPeriod
   periodKey: string
@@ -625,6 +635,10 @@ export interface Task extends Item {
    * set. Absent means just assigned.
    */
   todoMarks?: TodoPeriodMark[]
+  /** Task-card star: every prioritize, reaffirm and removal, with the reason given. */
+  priorityLog?: TaskPriorityEntry[]
+  /** Local day (`YYYY-MM-DD`) the task's star was last set or reaffirmed; it fades 10 points a day. */
+  priorityRefreshedOn?: string
   /**
    * True when this record is a generated implied-action (e.g. "read 12 pages of Dune").
    * Counts toward Done / points / goals without being a user-authored Task.

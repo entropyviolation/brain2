@@ -7,7 +7,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
+import { ensureCountForKeyword, useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
+import { logKeywordPhrase, useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { minutesToLabel, type IntakeClass } from "@/lib/time-entries"
 import { NativeSelect } from "@/components/ui/native-select"
@@ -29,11 +30,59 @@ function tickFace(tick: CountTick, today: string): { text: string; badge?: "Esti
   return { text }
 }
 
+const pad = (n: number) => String(n).padStart(2, "0")
+
+function TickEditor({ count }: { count: CountStatus }) {
+  const updateTick = useCountStatusesStore((state) => state.updateTick)
+  const removeTick = useCountStatusesStore((state) => state.removeTick)
+  const ticks = [...count.ticks].reverse()
+  return (
+    <ul className="trk-count-ticks" aria-label={`${count.name} times`}>
+      {ticks.map((tick) => {
+        const save = (patch: Partial<{ date: string; startMin: number; clockCertainty: CountTick["clockCertainty"] | "exact" }>) =>
+          updateTick(count.id, tick.id, { date: tick.date, startMin: tick.startMin, clockCertainty: tick.clockCertainty, ...patch })
+        return (
+          <li key={tick.id}>
+            <input
+              type="date"
+              aria-label="Date"
+              value={tick.date}
+              onChange={(event) => event.target.value && save({ date: event.target.value })}
+            />
+            <input
+              type="time"
+              aria-label="Time"
+              value={`${pad(Math.floor(tick.startMin / 60))}:${pad(tick.startMin % 60)}`}
+              onChange={(event) => {
+                const [h, m] = event.target.value.split(":").map(Number)
+                if (Number.isFinite(h) && Number.isFinite(m)) save({ startMin: h! * 60 + m! })
+              }}
+            />
+            <NativeSelect
+              aria-label="Clock certainty"
+              value={tick.clockCertainty ?? "exact"}
+              onChange={(event) => save({ clockCertainty: event.target.value as "exact" | "estimated" | "unknown" })}
+            >
+              <option value="exact">Exact</option>
+              <option value="estimated">Estimated</option>
+              <option value="unknown">Unknown</option>
+            </NativeSelect>
+            <button type="button" aria-label="Remove tick" onClick={() => removeTick(count.id, tick.id)}>
+              ×
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 function CountRow({ count, today }: { count: CountStatus; today: string }) {
   const renameCount = useCountStatusesStore((state) => state.renameCount)
   const removeCount = useCountStatusesStore((state) => state.removeCount)
   const incrementCount = useCountStatusesStore((state) => state.incrementCount)
   const [name, setName] = useState(count.name)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     setName(count.name)
@@ -79,9 +128,19 @@ function CountRow({ count, today }: { count: CountStatus; today: string }) {
           })}
         </span>
       ) : null}
+      <button
+        type="button"
+        aria-label={`Edit times for ${count.name}`}
+        aria-expanded={editing}
+        disabled={count.ticks.length === 0}
+        onClick={() => setEditing((v) => !v)}
+      >
+        {editing ? "Done" : "Edit times"}
+      </button>
       <button type="button" aria-label={`Delete ${count.name}`} onClick={() => removeCount(count.id)}>
         Delete
       </button>
+      {editing ? <TickEditor count={count} /> : null}
     </li>
   )
 }
@@ -93,6 +152,10 @@ export function CountStatusesSection() {
   const [intake, setIntake] = useState<"" | IntakeClass>("")
   const [keyword, setKeyword] = useState("")
   const today = formatLocalDateKey(new Date())
+  const keywords = useLogKeywordsStore((state) => state.keywords)
+  const untallied = keywords
+    .map(logKeywordPhrase)
+    .filter((phrase) => !counts.some((c) => c.keyword?.toLowerCase() === phrase.toLowerCase() || c.name.toLowerCase() === phrase.toLowerCase()))
 
   function add() {
     const id = addCount({
@@ -148,6 +211,16 @@ export function CountStatusesSection() {
           Add
         </button>
       </div>
+      {untallied.length > 0 ? (
+        <p className="trk-count-suggest" aria-label="Saved phrases to tally">
+          <span>Start a tally:</span>
+          {untallied.map((phrase) => (
+            <button key={phrase} type="button" onClick={() => ensureCountForKeyword(phrase)}>
+              {phrase} +
+            </button>
+          ))}
+        </p>
+      ) : null}
       {counts.length > 0 ? (
         <ul className="trk-count-list">
           {counts.map((count) => (

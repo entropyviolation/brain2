@@ -60,7 +60,26 @@
   flex: 1 1 auto;
 }
 
-@container trkdesk (max-width: 980px) {
+/* Use the whole window: break out of the page's centred container cap (slack leaves room for a scrollbar). */
+.trk95[data-ui-name="Tracking"] {
+  --trk-bleed: min(calc(100vw - 32px), 2200px);
+  width: var(--trk-bleed);
+  max-width: none;
+  margin-inline: calc((100% - var(--trk-bleed)) / 2);
+}
+
+/* Roomier rack and recorder once there is width to spare. */
+@container trkdesk (min-width: 1400px) {
+  .trk95 .trk-desk {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  .trk95 .trk-grid-desk {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+/* The rack stacks first; the grid's right panel holds its column until the plot would be cramped. */
+@container trkdesk (max-width: 860px) {
   .trk95 .trk-desk,
   .trk95 .trk-grid-desk {
     grid-template-columns: minmax(0, 1fr);
@@ -2519,4 +2538,33 @@ body.win95-app .trk95 .trk-logbook .trk-log-week-row {
 
 .trk95 .trk-now-row .trk-pen-now-field {
   min-width: 240px;
+}
+
+/* Dark (non-steel) log wells: the shared white .trk-log field left pale green text unreadable. */
+.trk95 .trk-logbook-board > .trk-aside-well:not([data-face="steel"]) .trk-log {
+  background: transparent;
+  box-shadow: none;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well:not([data-face="steel"]) > .trk-logbook-empty {
+  color: #86ad9d;
+}
+
+/* Logging inputs in two columns: the composer left, counts right. One column when the desk is narrow. */
+.trk95 .trk-logbook-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.trk95 .trk-logbook-inputs > .trk-aside-well {
+  margin-top: 0;
+  min-width: 0;
+}
+
+@container trkdesk (max-width: 1200px) {
+  .trk95 .trk-logbook-inputs {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -214,7 +214,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
               {image ? (
                 <span
                   className="trk-selected-swatch"
-                  style={{ backgroundImage: `url("${image}")`, background: color }}
+                  style={{ background: `center / cover url("${image}"), ${color}` }}
                   aria-hidden
                 />
               ) : null}
@@ -483,6 +483,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
     {pickingImage && (
       <OrbPickerDialog
         open
+        photo
         current={image || undefined}
         onClose={() => setPickingImage(false)}
         onSelect={(icon) => {

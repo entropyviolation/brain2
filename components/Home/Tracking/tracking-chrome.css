@@ -117,6 +117,10 @@
 }
 
 .trk95 .trk-fascia {
+  /* Pinned beneath the sticky app header + Home tab strip. */
+  position: sticky;
+  top: calc(var(--home-tabs-top, 0px) + var(--home-tabs-height, 0px));
+  z-index: 25;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -5665,4 +5669,144 @@ body.win95-app .trk95 .trk-ribbon-basis button[aria-pressed="true"] {
   .trk95 .trk-motion {
     display: none;
   }
+}
+
+/* Counts: start-a-tally chips and the per-tick time editor. */
+.trk95 .trk-count-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.trk95 .trk-count-suggest button,
+.trk95 .trk-count-ticks button {
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 0;
+  background: var(--t-surface);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  box-shadow: var(--t-raised);
+  cursor: pointer;
+}
+
+.trk95 .trk-count-ticks {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 11rem;
+  margin: 0;
+  padding: 4px 6px;
+  overflow-y: auto;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-count-ticks li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.trk95 .trk-count-ticks input {
+  min-height: 22px;
+  padding: 1px 4px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 11px;
+}
+
+/* Day summary reference: toggle shelves of what the day held. */
+.trk95 .trk-sumref {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+.trk95 .trk-sumref-keys {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.trk95 .trk-sumref-lead {
+  padding: 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-sumref-shelves {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 6px;
+}
+
+.trk95 .trk-sumref-shelf {
+  max-height: 11rem;
+  padding: 6px 8px;
+  overflow-y: auto;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font-size: 12px;
+}
+
+.trk95 .trk-sumref-shelf h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-sumref-shelf ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trk95 .trk-sumref-shelf li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.trk95 .trk-sumref-when {
+  min-width: 6.5rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.trk95 .trk-sumref-note,
+.trk95 .trk-sumref-empty {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.trk95 .trk-sumref-empty {
+  margin: 0;
+}
+
+.trk95 .trk-cycle-quiet-note {
+  min-height: 22px;
+  padding: 1px 6px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--t-sunken);
+  font: inherit;
+  font-size: 11px;
 }
