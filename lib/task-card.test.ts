@@ -120,3 +120,14 @@ describe("step points inherited from stepPoints", () => {
     expect(stepPointChanges(next, prev, 1).map((c) => [c.step.id, c.step.points, c.paid])).toEqual([["a1", 3, false]])
   })
 })
+
+describe("setEstimate", () => {
+  it("logs each change and ignores no-ops", async () => {
+    const { setEstimate } = await import("./task-card")
+    const a = setEstimate([{ id: "a", description: "a", completed: false }], "a", 20)
+    const b = setEstimate(a, "a", 30)
+    expect(setEstimate(b, "a", 30)[0]).toBe(b[0])
+    expect(b[0].estimatedDuration).toBe(30)
+    expect(b[0].estimateLog?.map((e) => e.minutes)).toEqual([20, 30])
+  })
+})

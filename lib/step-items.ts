@@ -19,6 +19,7 @@ import type { Subtask, Task } from "@/lib/types"
 import { findPlacedStep, placeSteps } from "@/lib/next-step"
 import { countingMinutes, internalStepProgress, updateNestedStep } from "@/lib/todo-steps"
 import { useTaskStore } from "@/lib/task-store"
+import { orbFor } from "@/components/Icons/Icon"
 import { withoutUndo } from "@/lib/action-history"
 import type { StepRef } from "@/lib/step-item-guard"
 
@@ -50,6 +51,8 @@ export function buildStepItem(parent: Task, step: Subtask, id: string, now: Date
     estimatedDuration: step.estimatedDuration,
     parentTaskId: parent.id,
     stepOf: { taskId: parent.id, stepId: step.id },
+    // Born with the orb the tree already showed for this step.
+    icon: orbFor(step.id),
   } as Task
 }
 

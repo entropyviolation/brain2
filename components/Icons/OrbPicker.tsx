@@ -15,9 +15,35 @@ export interface OrbPickerDialogProps {
   onSelect: (icon: string | undefined) => void
   /** Portal inside an open dialog (e.g. item detail) so the picker stacks on top of it. */
   container?: HTMLElement | null
+  /** Pen mosaic: upload keeps the picture whole (no background removal, not added to the orb library). */
+  photo?: boolean
 }
 
-export function OrbPickerDialog({ open, current, onClose, onSelect, container }: OrbPickerDialogProps) {
+/** Downscale to a small JPEG so a mosaic tile stays light in the persisted store. */
+async function fileToTile(file: File, edge = 192): Promise<string> {
+  const src = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image()
+    el.onload = () => resolve(el)
+    el.onerror = reject
+    el.src = src
+  })
+  const scale = Math.min(1, edge / Math.max(img.naturalWidth, img.naturalHeight, 1))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return src
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL("image/jpeg", 0.85)
+}
+
+export function OrbPickerDialog({ open, current, onClose, onSelect, container, photo }: OrbPickerDialogProps) {
   const iconLibrary = useListsUiStore((s) => s.iconLibrary)
   const addLibraryIcon = useListsUiStore((s) => s.addLibraryIcon)
   const removeLibraryIcon = useListsUiStore((s) => s.removeLibraryIcon)
@@ -41,9 +67,13 @@ export function OrbPickerDialog({ open, current, onClose, onSelect, container }:
     if (!file) return
     setBusy(true)
     try {
-      const dataUrl = await removeBackground(file, { threshold: 60, size: 256 })
-      addLibraryIcon(dataUrl)
-      onSelect(dataUrl)
+      if (photo) {
+        onSelect(await fileToTile(file))
+      } else {
+        const dataUrl = await removeBackground(file, { threshold: 60, size: 256 })
+        addLibraryIcon(dataUrl)
+        onSelect(dataUrl)
+      }
     } catch (err) {
       console.error("Background removal failed", err)
     } finally {
@@ -59,18 +89,20 @@ export function OrbPickerDialog({ open, current, onClose, onSelect, container }:
         container={container}
       >
         <DialogHeader>
-          <DialogTitle>Choose an Icon</DialogTitle>
+          <DialogTitle>{photo ? "Choose a pen image" : "Choose an Icon"}</DialogTitle>
           <DialogDescription>
-            Pick an orb, use one you uploaded, or upload your own (its background is removed automatically).
+            {photo
+              ? "Upload a picture from your files, or pick an orb. It tiles across this pen's cells."
+              : "Pick an orb, use one you uploaded, or upload your own (its background is removed automatically)."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => onSelect(undefined)}>
-            Use random orb
+            {photo ? "No image" : "Use random orb"}
           </Button>
           <Button size="sm" disabled={busy} onClick={() => fileRef.current?.click()}>
-            {busy ? "Processing…" : "Upload orb"}
+            {busy ? "Processing…" : photo ? "Upload image" : "Upload orb"}
           </Button>
           <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode((v) => !v)}>
             {editMode ? "Done editing" : "Edit gallery"}

@@ -17,11 +17,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { StepTree, type StepRowInfo } from "@/components/steps/StepTree"
-import { SplitGauge, TreeMath } from "@/components/steps/TreeMath"
-import { splitStats, tierSplit } from "@/lib/tree-math"
+import { SplitGauge } from "@/components/steps/TreeMath"
+import { tierSplit } from "@/lib/tree-math"
 import { externalWaits, needCount } from "@/lib/node-needs"
 import { isStepLocked } from "@/components/steps/step-tree-view"
-import { LogNotes, NeedsEditor, NodeDetail, SelectionSummary, TaskPens, TaskPoints, TaskUnlocks } from "./TaskCardSide"
+import { LogNotes, NeedsEditor, NodeDetail, OpenItemKey, SelectionSummary, TaskPens, TaskPoints, TaskUnlocks } from "./TaskCardSide"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -40,7 +40,7 @@ import { effectiveDurationMinutes, flattenSteps, moveSteps } from "@/lib/todo-st
 import { stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { inheritedDue, waitingOn } from "@/lib/unlock-value"
 import { NOTICE_PROMPT, needsNotice, totalPushes, withNoticeAnswer } from "@/lib/notice-dot"
-import { partsMinutes, timeTrio } from "@/lib/tracked-time"
+import { partsMinutes } from "@/lib/tracked-time"
 import {
   chainNeeds,
   clearNeeds,
@@ -55,7 +55,11 @@ import {
   needsAll,
   noticeAnswers,
   openStepIds,
+  openSubCard,
   orderLane,
+  replaceKids,
+  setEstimate,
+  stepTrail,
   periodPushes,
   remainingForLevel,
   stepPointsEarned,
@@ -63,6 +67,11 @@ import {
   useTaskCardStore,
 } from "@/lib/task-card"
 import type { StepTier, Subtask, Task } from "@/lib/types"
+import { EstimateCell } from "./EstimateCell"
+import { CardSection } from "./CardSection"
+import { PriorityStar } from "./PriorityStar"
+import { CircleAlert } from "lucide-react"
+import { TaskCardStats } from "./TaskCardStats"
 import { attentionGiven, attentionGivenLabel } from "./attention-given"
 import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "./todo-utils"
 import type { TodoTimeInfo } from "./TodoBreakdown"
@@ -131,14 +140,14 @@ const inOtherLayer = (event: Event) => {
   return !!target?.closest?.("[data-item-layer], [role='dialog']:not(.task-card)")
 }
 
-const MATH_KEY = "brain2-task-card-math"
+const ORDER_KEY = "brain2-task-card-order-open"
 
 /**
  * Esc closes the card only when nothing would be lost: not while Just Start or
  * another layer sits on top, and not over typed text (`[data-draft]`) without a yes.
  */
 function guardEscape(event: KeyboardEvent): void {
-  if (document.querySelector("[data-item-layer]")) return event.preventDefault()
+  if (document.querySelector("[data-item-layer], .tcs-stat-pop")) return event.preventDefault()
   const dirty = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(".task-card [data-draft]")].some(
     (el) => el.value.trim() !== (el.dataset.draft ?? "").trim(),
   )
@@ -148,6 +157,7 @@ function guardEscape(event: KeyboardEvent): void {
 export function TaskCard({ host }: { host: TaskCardHost }) {
   const taskId = useTaskCardStore((s) => s.taskId)
   const focusStepId = useTaskCardStore((s) => s.stepId)
+  const rootStepId = useTaskCardStore((s) => s.rootStepId)
   const tasks = useTaskStore((s) => s.tasks)
   const task = taskId ? tasks.find((t) => t.id === taskId) : undefined
   return (
@@ -164,7 +174,7 @@ export function TaskCard({ host }: { host: TaskCardHost }) {
           onInteractOutside={(e) => (inOtherLayer(e) ? e.preventDefault() : undefined)}
           onEscapeKeyDown={guardEscape}
         >
-          <TaskCardBody key={task.id} task={task} tasks={tasks} host={host} focusStepId={focusStepId} />
+          <TaskCardBody key={`${task.id}:${rootStepId ?? ""}`} task={task} tasks={tasks} host={host} focusStepId={focusStepId} rootStepId={rootStepId} />
         </DialogContent>
       ) : null}
     </Dialog>
@@ -176,11 +186,13 @@ function TaskCardBody({
   tasks,
   host,
   focusStepId,
+  rootStepId,
 }: {
   task: Task
   tasks: Task[]
   host: TaskCardHost
   focusStepId?: string
+  rootStepId?: string
 }) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const lists = useTaskStore((s) => s.lists)
@@ -189,7 +201,12 @@ function TaskCardBody({
   const history = useSessionPlanStore((s) => s.history)
   const pointsVisible = useStepPointsVisible()
   const steps = useMemo(() => task.subtasks ?? [], [task.subtasks])
-  const name = itemTitleOrUntitled(task)
+  // A sub-card: one step is the root. Edits still go to the whole tree; only the view narrows.
+  const trail = useMemo(() => (rootStepId ? stepTrail(steps, rootStepId) : []), [steps, rootStepId])
+  const root = trail.length ? trail[trail.length - 1] : undefined
+  const view = useMemo(() => (root ? root.subtasks ?? [] : steps), [root, steps])
+  const taskName = itemTitleOrUntitled(task)
+  const name = root ? root.description : taskName
   const time = host.timeOf?.(task.id)
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => (focusStepId ? new Set([focusStepId]) : new Set()))
@@ -201,23 +218,6 @@ function TaskCardBody({
   const [nextOnly, setNextOnly] = useState(false)
   const [columnsView, setColumnsView] = useState(false)
   const [noticeDraft, setNoticeDraft] = useState("")
-  const [mathShown, setMathShown] = useState(() => {
-    try {
-      return localStorage.getItem(MATH_KEY) !== "hidden"
-    } catch {
-      return true
-    }
-  })
-  const toggleMath = () => {
-    setMathShown((on) => {
-      try {
-        localStorage.setItem(MATH_KEY, on ? "hidden" : "shown")
-      } catch {
-        /* view state only */
-      }
-      return !on
-    })
-  }
   const rootRef = useRef<HTMLDivElement>(null)
 
   // A step item's **Card**: scroll to that step.
@@ -243,8 +243,8 @@ function TaskCardBody({
   const bar = (label: string, edit: (s: Subtask[]) => Subtask[]) => () => writeSteps(label, edit(steps))
 
   // ── Numbers ──
-  const est = effectiveDurationMinutes(task.estimatedDuration, steps)
-  const spent = time?.spent ?? 0
+  const est = root ? effectiveDurationMinutes(root.estimatedDuration, root.subtasks) : effectiveDurationMinutes(task.estimatedDuration, steps)
+  const spent = root ? (time?.stepSpent?.get(root.id) ?? 0) : (time?.spent ?? 0)
   const pts = taskPointsWithSource(task, lists, folders)
   const earned = stepPointsEarned(steps, task.stepPoints)
   const reached = levelReached(task, task.completed)
@@ -257,15 +257,16 @@ function TaskCardBody({
   const waiting = waitingOn(task.id, tasks)
   const due = inheritedDue(task.id, tasks, host.focusedDate)
   const blockers = (task.dependencies ?? []).map((id) => tasks.find((t) => t.id === id)).filter((t): t is Task => !!t)
-  const lane = orderLane(steps)
+  const lane = orderLane(view)
   const tierOf = useMemo(() => effectiveTierMap(steps), [steps])
   const flat = useMemo(() => flattenSteps(steps), [steps])
-  const levels = useMemo(() => tierSplit(steps, tierOf), [steps, tierOf])
+  const viewFlat = useMemo(() => flattenSteps(view), [view])
+  const levels = useMemo(() => tierSplit(view, tierOf), [view, tierOf])
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
   const extraLock = useCallback((step: Subtask) => externalWaits(step, (id) => taskById.get(id)).length > 0, [taskById])
-  const rowLevels = useMemo(() => new Map(flat.filter((s) => s.subtasks?.length).map((s) => [s.id, tierSplit(steps, tierOf, s)])), [flat, steps, tierOf])
+  const rowLevels = useMemo(() => new Map(viewFlat.filter((s) => s.subtasks?.length).map((s) => [s.id, tierSplit(steps, tierOf, s)])), [viewFlat, steps, tierOf])
   const chosenLevel: StepTier = tier ?? "goal"
-  const remaining = remainingForLevel(steps, chosenLevel, host.defaultEstimateMin ?? 0)
+  const remaining = remainingForLevel(view, chosenLevel, host.defaultEstimateMin ?? 0)
   const dayLeftMin = Math.max(0, Math.round(host.hoursLeft * 60))
   const sessions = history.filter((plan) => allLines(plan).some(({ line }) => line.taskId === task.id))
   const answers = noticeAnswers(task)
@@ -278,7 +279,7 @@ function TaskCardBody({
     return (
       <span className="task-card-cols">
         {has("pct") ? <SplitGauge levels={rowLevels.get(step.id) ?? null} focus={tier} /> : null}
-        {has("est") ? <span className="task-card-num">{step.estimatedDuration ? `${step.estimatedDuration}m` : "—"}</span> : null}
+        {has("est") ? <EstimateCell minutes={step.estimatedDuration} label={step.description} onSet={(m) => writeSteps("Estimate", setEstimate(steps, step.id, m))} /> : null}
         {has("parts") && step.subtasks?.length ? <span className="task-card-num">={partsMinutes(step.subtasks)}m</span> : null}
         {has("spent") ? <span className="task-card-num is-quiet">{time?.stepSpent?.get(step.id) ? `${time.stepSpent.get(step.id)}m` : ""}</span> : null}
         {has("points") ? (
@@ -317,6 +318,21 @@ function TaskCardBody({
     <div className="task-card-body" ref={rootRef}>
       {/* ── Header ── */}
       <header className="task-card-head">
+        {root ? (
+          <nav className="task-card-crumbs" aria-label="Where this card sits">
+            <button type="button" title="Back to the whole task" onClick={() => openSubCard(task.id, undefined)}>
+              {taskName}
+            </button>
+            {trail.slice(0, -1).map((t) => (
+              <span key={t.id}>
+                <i aria-hidden>›</i>
+                <button type="button" title={`Open ${t.description} as the card's root`} onClick={() => openSubCard(task.id, t.id)}>
+                  {t.description}
+                </button>
+              </span>
+            ))}
+          </nav>
+        ) : null}
         <div className="task-card-title-row">
           <DialogTitle
             className="task-card-name"
@@ -328,35 +344,56 @@ function TaskCardBody({
           >
             {name}
           </DialogTitle>
-          <button type="button" className="task-card-key" title="Open item detail on top" onClick={() => pushItemLayer(task.id)}>
+          <button type="button" className="task-card-key" title="Open item detail on top" onClick={() => (root ? openStepItem(task.id, root.id) : pushItemLayer(task.id))}>
             ↗ Item
           </button>
           <span className="task-card-plate">{host.periodLabel}</span>
-          <button type="button" className="task-card-jewel is-required" title="Must happen this period" aria-pressed={host.isRequired(task.id)} onClick={() => host.onToggleRequired(task.id)}>
-            Required
+          <button
+            type="button"
+            className="task-card-jewel is-required is-icon"
+            title={`Required ${host.isRequired(task.id) ? "on" : "off"} for ${host.periodLabel.toLowerCase()}: must happen. Click to turn ${host.isRequired(task.id) ? "off" : "on"}.`}
+            aria-label="Required"
+            aria-pressed={host.isRequired(task.id)}
+            onClick={() => host.onToggleRequired(task.id)}
+          >
+            <CircleAlert size={17} aria-hidden />
           </button>
-          <button type="button" className="task-card-jewel is-prioritized" title="Do this before the rest this period" aria-pressed={host.isPrioritized(task.id)} onClick={() => host.onTogglePrioritized(task.id)}>
-            Prioritized
-          </button>
+          <PriorityStar task={task} on={host.isPrioritized(task.id)} periodLabel={host.periodLabel} onToggle={() => host.onTogglePrioritized(task.id)} />
           <span className={`task-card-lamp is-${task.completed ? "done" : (task.status ?? "active")}`} title="State">
             {COMPLETION_STATUS_LABELS[task.completed ? "done" : (task.status ?? "active")] ?? "Active"}
           </span>
-          <span className="task-card-num" title={`Pushes this ${host.period}`}>
-            pushed ×{task[pushKey] ?? 0}
-          </span>
+          {(task[pushKey] ?? 0) > 2 ? (
+            <span className="task-card-pushflag" title={`Pushed ${task[pushKey]} times this ${host.period}. Shrink it, split it, or drop it.`}>
+              ↻ pushed ×{task[pushKey]}
+            </span>
+          ) : null}
           <button type="button" className="task-card-key b2-close-key task-card-close" title="Close the card (Esc)" aria-label="Close the card" onClick={closeTaskCard}>
             ×
           </button>
         </div>
         <div className="task-card-title-row">
-          <span className="task-card-num is-explained" title={trioHelp(task.estimatedDuration, est, partsMinutes(steps), spent)}>
-            {timeTrio(est, partsMinutes(steps), spent)}
-          </span>
-          <span className="task-card-points" data-testid="task-card-points">
-            task {pts.points}
-            {pointsVisible ? ` · steps ${earned}` : ""}
-            {reached !== "none" ? ` · level +${levelPts}` : ""}
-          </span>
+          <TaskCardStats
+            data={{
+              view,
+              tierOf,
+              levels,
+              tier,
+              est,
+              ownEst: root ? root.estimatedDuration : task.estimatedDuration,
+              estLog: root?.estimateLog,
+              parts: partsMinutes(view),
+              spent,
+              periodSpent: attention.minutes,
+              periodLabel: host.period,
+              penPool: time?.penPool,
+              pts,
+              earned,
+              pointsVisible,
+              levelName: reached === "none" ? "none" : STEP_TIER_LABEL[reached],
+              levelPts,
+              onPick: (id) => setSelected(new Set([id])),
+            }}
+          />
           <span className="task-card-spacer" />
           {host.onClockStart ? (
             <DvdTransportKey
@@ -380,19 +417,49 @@ function TaskCardBody({
           <button type="button" className="task-card-key" title="Plan a session around this task" onClick={() => openSession({ startOn: "session", seed: [{ taskId: task.id }] })}>
             Session with this
           </button>
-          {steps.length ? (
-            <button type="button" className="task-card-key" aria-pressed={mathShown} title="Show the completion math in detail, or just the raw numbers" onClick={toggleMath}>
-              {mathShown ? "Hide math" : "Show math"}
-            </button>
-          ) : null}
         </div>
-        {mathShown ? <TreeMath steps={steps} tiers={tierOf} levels={levels} focus={tier} /> : <RawMath steps={steps} tiers={tierOf} />}
       </header>
 
       <div className="task-card-main">
-        <section className="task-card-tree" aria-label="Steps">
+        <div className="task-card-tree">
+          {/* ── Order ── */}
+          {lane.length ? (
+            <CardSection
+              title="Order"
+              count={lane.length}
+              storageKey={ORDER_KEY}
+              className="task-card-order"
+              summary={`${lane.length} ${lane.length === 1 ? "step" : "steps"} · ${lane.filter((n) => n.depth > 0).length} in sequence`}
+            >
+              <div className="task-card-lane" aria-label="Order lane">
+                {Array.from({ length: Math.max(...lane.map((n) => n.depth)) + 1 }, (_, d) => (
+                  <span key={d} className="task-card-lane-col" data-arrow={d ? "→" : undefined}>
+                    {lane
+                      .filter((n) => n.depth === d)
+                      .map((n) => (
+                        <button
+                          key={n.id}
+                          type="button"
+                          className={`task-card-lane-node${sel.has(n.id) ? " is-selected" : ""}`}
+                          style={{ ["--node" as string]: `${8 + Math.min(4, n.unlocks) * 3}px` }}
+                          title={`${n.name}${n.unlocks ? ` · unlocks ${n.unlocks}` : ""}`}
+                          aria-label={n.name}
+                          onClick={() => setSelected(new Set([n.id]))}
+                        >
+                          <i aria-hidden />
+                          {n.name}
+                          {n.unlocks ? <small> ⇢{n.unlocks}</small> : null}
+                        </button>
+                      ))}
+                  </span>
+                ))}
+              </div>
+            </CardSection>
+          ) : null}
+
+          <CardSection title="Steps" count={viewFlat.length} className="task-card-plan">
           {/* ── View switches ── */}
-          <div className="task-card-switches">
+          <div className="task-card-switches" role="toolbar" aria-label="Step view">
             <span className="task-card-seg" role="group" aria-label="Level filter">
               <button type="button" aria-pressed={!tier} title="Show every level" onClick={() => setTier(undefined)}>
                 All
@@ -418,10 +485,10 @@ function TaskCardBody({
             >
               List mode
             </button>
-            <button type="button" className="task-card-key" title="Select every step not yet done" onClick={() => setSelected(new Set(openStepIds(steps)))}>
+            <button type="button" className="task-card-key" title="Select every step not yet done" onClick={() => setSelected(new Set(openStepIds(view)))}>
               Select all open
             </button>
-            <button type="button" className="task-card-key" title="Select every end node (steps with nothing inside)" onClick={() => setSelected(new Set(leafStepIds(steps)))}>
+            <button type="button" className="task-card-key" title="Select every end node (steps with nothing inside)" onClick={() => setSelected(new Set(leafStepIds(view)))}>
               Select leaves
             </button>
             <button type="button" className="task-card-key" title="Clear the selection (Esc)" disabled={!sel.size} onClick={() => setSelected(new Set())}>
@@ -443,42 +510,12 @@ function TaskCardBody({
             </span>
           </div>
 
-          {/* ── Order lane ── */}
-          {lane.length ? (
-            <div className="task-card-lane" aria-label="Order lane">
-              <span className="task-card-lane-cap" title="Open steps linked by Needs…, in the order they can be done. Click one to select it.">
-                Order
-              </span>
-              {Array.from({ length: Math.max(...lane.map((n) => n.depth)) + 1 }, (_, d) => (
-                <span key={d} className="task-card-lane-col" data-arrow={d ? "→" : undefined}>
-                  {lane
-                    .filter((n) => n.depth === d)
-                    .map((n) => (
-                      <button
-                        key={n.id}
-                        type="button"
-                        className={`task-card-lane-node${sel.has(n.id) ? " is-selected" : ""}`}
-                        style={{ ["--node" as string]: `${8 + Math.min(4, n.unlocks) * 3}px` }}
-                        title={`${n.name}${n.unlocks ? ` · unlocks ${n.unlocks}` : ""}`}
-                        aria-label={n.name}
-                        onClick={() => setSelected(new Set([n.id]))}
-                      >
-                        <i aria-hidden />
-                        {n.name}
-                        {n.unlocks ? <small> ⇢{n.unlocks}</small> : null}
-                      </button>
-                    ))}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
           {columnsView ? (
-            <ThreeColumns steps={steps} tierOf={tierOf} onSetTier={(id, t) => writeSteps("Step tier", massTier(steps, new Set([id]), t))} />
+            <ThreeColumns steps={view} tierOf={tierOf} onSetTier={(id, t) => writeSteps("Step tier", massTier(steps, new Set([id]), t))} />
           ) : (
             <StepTree
-              steps={steps}
-              onChange={(next) => host.onStepsChange(task.id, next)}
+              steps={view}
+              onChange={(next) => host.onStepsChange(task.id, root ? replaceKids(steps, root.id, next) : next)}
               columns={stepColumns}
               tierTags={has("tier")}
               tier={tier}
@@ -486,6 +523,7 @@ function TaskCardBody({
               nextOnly={nextOnly}
               extraLock={extraLock}
               onOpenStep={(step) => openStepItem(task.id, step.id)}
+              checkboxSelects
               onBeforeMove={(label) => runAsAction(label, () => undefined)}
               selected={selected}
               onSelectedChange={setSelected}
@@ -571,19 +609,22 @@ function TaskCardBody({
               </button>
             </div>
           ) : null}
-        </section>
+          </CardSection>
+        </div>
 
         {/* ── Side panel ── */}
         <aside className="task-card-side">
-          {sel.size === 1 && oneStep ? (
+          {(sel.size === 1 && oneStep) || (sel.size === 0 && root) ? (
             <NodeDetail
+              isRoot={sel.size === 0}
+              onSelect={(id) => setSelected(new Set([id]))}
               task={task}
-              step={oneStep}
+              step={(oneStep ?? root)!}
               steps={steps}
               write={writeSteps}
-              tier={tierOf.get(oneStep.id) ?? "goal"}
-              locked={isStepLocked(steps, oneStep, extraLock)}
-              spent={time?.stepSpent?.get(oneStep.id)}
+              tier={tierOf.get((oneStep ?? root)!.id) ?? "goal"}
+              locked={isStepLocked(steps, (oneStep ?? root)!, extraLock)}
+              spent={time?.stepSpent?.get((oneStep ?? root)!.id)}
             />
           ) : sel.size > 1 ? (
             <SelectionSummary steps={steps} ids={sel} tierOf={tierOf} isLocked={(st) => isStepLocked(steps, st, extraLock)} spentOf={(id) => time?.stepSpent?.get(id) ?? 0} />
@@ -593,7 +634,10 @@ function TaskCardBody({
             <p className="tcs-path" title="The whole task this card is about">
               {host.periodLabel} · whole task
             </p>
-            <h3 className="tcs-node-name">{name}</h3>
+            <div className="tcs-name-row">
+              <h3 className="tcs-node-name">{name}</h3>
+              <OpenItemKey onClick={() => pushItemLayer(task.id)} />
+            </div>
             <p className="tcs-node-meta">
               <span className={`tcs-lamp is-${task.completed ? "done" : "open"}`}>{task.completed ? "done" : (task.status ?? "active")}</span>
               <span>{est ? `${est}m` : "—"} est</span>
@@ -626,11 +670,12 @@ function TaskCardBody({
               </dd>
               <dt>Pushes</dt>
               <dd>
-                in {pushes.in} · out {pushes.out}
+                pushed ×{task[pushKey] ?? 0} · in {pushes.in} · out {pushes.out}
               </dd>
               <dt>Spent</dt>
               <dd>
                 {attention.minutes}m this {host.period} · {spent}m all time
+                {time?.penPool ? <small className="is-quiet" title="Time on this task's pen that is not tagged to this task"> · pen overall {time.penPool}m</small> : null}
               </dd>
               <dt>Left for {STEP_TIER_LABEL[chosenLevel]}</dt>
               <dd className={remaining > dayLeftMin ? "is-over" : undefined}>
@@ -729,28 +774,5 @@ function ThreeColumns({
         )
       })}
     </div>
-  )
-}
-
-/** Where est · parts · spent come from, in words, for the header tooltip. */
-function trioHelp(own: number | undefined, est: number, parts: number, spent: number): string {
-  const lines = [
-    `Spent ${spent}m: time-grid blocks painted with this task's pens (▶, Just Start, or painted by hand), all time.`,
-    `Est ${est}m: the larger of the task's own estimate (${own ? `${own}m` : "none set"}) and the sum of its steps.`,
-    `Parts ${parts}m: the sum of the step estimates.`,
-  ]
-  if (est > parts && parts > 0) lines.push(`${est - parts}m of the estimate is not split into steps yet.`)
-  if (spent > est && est > 0) lines.push(`Over the estimate by ${spent - est}m.`)
-  return lines.join("\n")
-}
-
-/** "Hide math": just the raw numbers. */
-function RawMath({ steps, tiers }: { steps: readonly Subtask[]; tiers: Map<string, StepTier> }) {
-  const { parts, leaves, done, raw, split } = splitStats(steps, tiers)
-  if (!parts.length) return null
-  return (
-    <p className="task-card-num task-card-rawmath" title="ρ: every end step weighs the same. σ: every top-level part weighs the same.">
-      {done}/{leaves} ends done · ρ {formatPercent(raw)} · σ {formatPercent(split)} · {parts.length} parts
-    </p>
   )
 }

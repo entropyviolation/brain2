@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import type { StepTier, Subtask, Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { createListItem, itemTitleOrUntitled } from "@/lib/item-utils"
@@ -30,6 +30,9 @@ import { Mosaic } from "@/components/steps/TreeMath"
 import { ItemPenLinksField } from "@/components/ItemDetail/ItemPenTime"
 import { stepPenLinks } from "@/lib/task-clock"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
+import { openSubCard, setEstimate } from "@/lib/task-card"
+import { partsMinutes } from "@/lib/tracked-time"
+import { EstimateCell } from "./EstimateCell"
 
 type Write = (label: string, next: Subtask[]) => void
 interface Option {
@@ -485,7 +488,19 @@ function PointsLadder({ task, step, steps, write }: { task: Task; step: Subtask;
 
 // ── One step ─────────────────────────────────────────────────────────
 
-export function NodeDetail({ task, step, steps, write, tier, locked, spent }: { task: Task; step: Subtask; steps: Subtask[]; write: Write; tier: StepTier; locked: boolean; spent?: number }) {
+/** The one way into the item popup from the detail panel: a ghost window-arrow key. */
+export function OpenItemKey({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="tcs-open-item" title="Open item" aria-label="Open item" onClick={onClick}>
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M6.5 3H3.5A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V9.5" />
+        <path d="M9.5 2H14v4.5M14 2 7.5 8.5" />
+      </svg>
+    </button>
+  )
+}
+
+export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSelect, isRoot }: { task: Task; step: Subtask; steps: Subtask[]; write: Write; tier: StepTier; locked: boolean; spent?: number; onSelect?: (id: string) => void; isRoot?: boolean }) {
   const path = pathTo(steps, step.id)
   const { leaves, done } = leafTally(step)
   const est = effectiveDurationMinutes(step.estimatedDuration, step.subtasks)
@@ -496,7 +511,10 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent }: { 
         <p className="tcs-path" title="Where this step sits">
           {[itemTitleOrUntitled(task), ...path.slice(0, -1).map((s) => s.description)].join(" › ")}
         </p>
-        <h3 className="tcs-node-name">{step.description}</h3>
+        <div className="tcs-name-row">
+          <h3 className="tcs-node-name">{step.description}</h3>
+          <OpenItemKey onClick={() => openStepItem(task.id, step.id)} />
+        </div>
         <p className="tcs-node-meta">
           <span className={`tcs-lamp is-${state}`}>{state}</span>
           <span className={`tcs-tier is-${tier}`} title={STEP_TIER_LABEL[tier]}>{STEP_TIER_SHORT[tier]}</span>
@@ -505,6 +523,8 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent }: { 
           {step.subtasks?.length ? <span title="End nodes done / end nodes">{done}/{leaves} ends</span> : null}
         </p>
       </header>
+      <EstimatePanel step={step} steps={steps} write={write} />
+      <SubstepPreview step={step} steps={steps} write={write} onSelect={onSelect} />
       <PointsLadder task={task} step={step} steps={steps} write={write} />
       <StepPens task={task} step={step} steps={steps} write={write} />
       <section aria-label="Needs" className="tcs-needs">
@@ -512,10 +532,78 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent }: { 
         <NeedsEditor task={task} step={step} steps={steps} write={write} />
         <StepUnlocks step={step} steps={steps} write={write} />
       </section>
-      <button type="button" className="task-card-key" title="Open this step as an item: notes, links, resources" onClick={() => openStepItem(task.id, step.id)}>
-        ↗ Step item
-      </button>
+      <div className="tcs-openers">
+        {isRoot ? null : (
+          <button type="button" className="task-card-key tcs-subcard" title="Open a new card with this step as its root: its own tree, totals and detail" onClick={() => openSubCard(task.id, step.id)}>
+            ⧉ Open as card
+          </button>
+        )}
+      </div>
     </div>
+  )
+}
+
+const QUICK_MINUTES = [5, 10, 15, 25, 45, 60, 90]
+
+/** "Oct 20" for a log stamp. */
+const stamp = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+
+/** The step's estimate: one big figure, quick values, and every value it has had. */
+function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]; write: Write }) {
+  const set = (m: number) => write("Estimate", setEstimate(steps, step.id, m))
+  const log = step.estimateLog ?? []
+  const parts = partsMinutes(step.subtasks)
+  return (
+    <section className="tcs-est" aria-label="Estimate">
+      <h3 title="Minutes you think this takes. Every change is kept so you can see how your guesses move.">Estimate</h3>
+      <div className="tcs-est-row">
+        <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} onSet={set} />
+        {parts > 0 ? <span className="tcs-est-parts" title="Sum of the steps inside">= {parts}m in parts</span> : null}
+      </div>
+      <div className="tcs-quick" role="group" aria-label="Quick estimates">
+        {QUICK_MINUTES.map((m) => (
+          <button key={m} type="button" aria-pressed={step.estimatedDuration === m} onClick={() => set(m)}>
+            {m}
+          </button>
+        ))}
+      </div>
+      {log.length > 1 ? (
+        <ol className="tcs-hist" aria-label="Estimate history">
+          {log.slice(-6).map((e, i, a) => (
+            <li key={e.at + i} className={i === a.length - 1 ? "is-now" : undefined} title={new Date(e.at).toLocaleString()}>
+              <b>{e.minutes}m</b>
+              <time dateTime={e.at}>{stamp(e.at)}</time>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </section>
+  )
+}
+
+/** The first level of steps inside this one, each with its estimate one click away. */
+function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps: Subtask[]; write: Write; onSelect?: (id: string) => void }) {
+  const kids = step.subtasks ?? []
+  if (!kids.length) return null
+  const done = kids.filter((k) => k.completed).length
+  return (
+    <section className="tcs-kids" aria-label="Steps inside">
+      <h3>
+        Inside <span className="tcs-total">{done}/{kids.length}</span>
+      </h3>
+      <ul>
+        {kids.map((k) => (
+          <li key={k.id} className={k.completed ? "is-done" : undefined}>
+            <i aria-hidden />
+            <button type="button" className="tcs-kid-name" title={`Select ${k.description}`} onClick={() => onSelect?.(k.id)}>
+              {k.description}
+            </button>
+            {k.subtasks?.length ? <small title="Steps inside it">+{k.subtasks.length}</small> : null}
+            <EstimateCell minutes={k.estimatedDuration} label={k.description} onSet={(m) => write("Estimate", setEstimate(steps, k.id, m))} />
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -659,6 +747,18 @@ export function LogNotes({ task }: { task: Task }) {
   const [open, setOpen] = useState(readOpen)
   const answers = noticeAnswers(task)
   const due = needsNotice(task)
+  // A note written but not logged is kept when the card is left.
+  const left = useRef(draft)
+  left.current = draft
+  useEffect(
+    () => () => {
+      const text = left.current.trim()
+      const fresh = useTaskStore.getState().tasks.find((t) => t.id === task.id)
+      if (text && fresh) useTaskStore.getState().updateTask(withNoticeAnswer(fresh, text))
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [task.id],
+  )
   const toggle = () => {
     setOpen(!open)
     try {
@@ -670,6 +770,7 @@ export function LogNotes({ task }: { task: Task }) {
   const add = () => {
     if (!draft.trim()) return
     updateTask(withNoticeAnswer(task, draft))
+    left.current = ""
     setDraft("")
   }
   return (

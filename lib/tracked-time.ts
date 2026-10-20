@@ -174,6 +174,19 @@ export interface ItemTrackedTime {
   logMinutes: number
   /** The counted blocks, newest first. */
   entries: TimeEntry[]
+  /**
+   * `penScope: "tagged"` only: minutes on the linked pens that carry no tag for
+   * this task. The pen's whole history, shown apart so it never inflates `total`.
+   */
+  penPoolMinutes: number
+}
+
+export interface TrackedTimeOptions {
+  /**
+   * `"all"` (default): every block on a linked pen counts, tagged or not (an operation's rollup).
+   * `"tagged"`: a linked pen only colors the task; only blocks carrying the task's `taskId` count.
+   */
+  penScope?: "all" | "tagged"
 }
 
 type TrackedItem = {
@@ -204,7 +217,9 @@ function clockMinute(hhmm: string | undefined): number | null {
  * (the Operations clock writes both), counts once. A log that names its blocks
  * (`entryIds`) adds only what they did not; an untimed log adds its minutes.
  */
-export function trackedTimeForItems(tasks: readonly TrackedItem[], entries: readonly TimeEntry[]): ItemTrackedTime {
+export function trackedTimeForItems(tasks: readonly TrackedItem[], entries: readonly TimeEntry[], options: TrackedTimeOptions = {}): ItemTrackedTime {
+  const tagged = options.penScope === "tagged"
+  const pool = new Map<string, Set<number>>()
   const pens = new Set(tasks.flatMap((t) => (t.penLinks ?? []).map((link) => link.penId)))
   const ids = new Set(tasks.map((t) => t.id))
   const counted = new Map<string, TimeEntry>()
@@ -218,13 +233,19 @@ export function trackedTimeForItems(tasks: readonly TrackedItem[], entries: read
   for (const entry of entries) {
     if (entry.kind === "instant" || entry.endMin <= entry.startMin || counted.has(entry.id)) continue
     const pen = pens.size > 0 && assignedPenIds(entry).some((id) => pens.has(id))
-    if (!pen && !(entry.taskId && ids.has(entry.taskId))) continue
+    const mine = !!entry.taskId && ids.has(entry.taskId)
+    if (tagged && pen && !mine) {
+      add(pool, entry.date, entry.startMin, entry.endMin)
+      continue
+    }
+    if (!pen && !mine) continue
     counted.set(entry.id, entry)
     if (pen) add(byPen, entry.date, entry.startMin, entry.endMin)
     add(all, entry.date, entry.startMin, entry.endMin)
   }
   const size = (map: Map<string, Set<number>>) => [...map.values()].reduce((n, set) => n + set.size, 0)
   const penMinutes = size(byPen)
+  const penPoolMinutes = size(pool)
   const blockMinutes = size(all)
 
   let logMinutes = 0
@@ -256,16 +277,16 @@ export function trackedTimeForItems(tasks: readonly TrackedItem[], entries: read
     }
   }
   const list = [...counted.values()].sort((a, b) => b.date.localeCompare(a.date) || b.startMin - a.startMin)
-  return { total: blockMinutes + logMinutes, penMinutes, clockMinutes: blockMinutes - penMinutes, logMinutes, entries: list }
+  return { total: blockMinutes + logMinutes, penMinutes, clockMinutes: blockMinutes - penMinutes, logMinutes, entries: list, penPoolMinutes }
 }
 
 /** One task's tracked time. See `trackedTimeForItems`. */
-export function trackedTimeForItem(task: TrackedItem, entries: readonly TimeEntry[]): ItemTrackedTime {
-  return trackedTimeForItems([task], entries)
+export function trackedTimeForItem(task: TrackedItem, entries: readonly TimeEntry[], options?: TrackedTimeOptions): ItemTrackedTime {
+  return trackedTimeForItems([task], entries, options)
 }
 
-export function trackedMinutesForItem(task: TrackedItem, entries: readonly TimeEntry[]): number {
-  return trackedTimeForItems([task], entries).total
+export function trackedMinutesForItem(task: TrackedItem, entries: readonly TimeEntry[], options?: TrackedTimeOptions): number {
+  return trackedTimeForItems([task], entries, options).total
 }
 
 type StepNode = { id: string; completed?: boolean; actualDuration?: number; subtasks?: StepNode[] }

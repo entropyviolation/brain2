@@ -40,15 +40,29 @@ beforeEach(() => {
 })
 
 describe("StepTree open on top", () => {
-  it("the dot and ↗ open the step; no ↗ without a host handler", () => {
+  it("↗ opens the step; the dot only selects it; no ↗ without a host handler", () => {
     const open = vi.fn()
-    const { rerender, container } = render(<StepTree steps={steps} onChange={() => {}} onOpenStep={open} />)
+    const picked = vi.fn()
+    const { rerender, container } = render(<StepTree steps={steps} onChange={() => {}} onOpenStep={open} onSelectedChange={picked} selected={new Set()} />)
     fireEvent.click(screen.getByRole("button", { name: "Open disc" }))
     expect(open).toHaveBeenLastCalledWith(expect.objectContaining({ id: "disc" }))
+    open.mockClear()
     fireEvent.click(container.querySelector(".step-tree-dot.is-parent")!)
-    expect(open).toHaveBeenLastCalledWith(expect.objectContaining({ id: "insert" }))
+    expect(open).not.toHaveBeenCalled()
+    expect([...picked.mock.lastCall![0]]).toEqual(["insert"])
     rerender(<StepTree steps={steps} onChange={() => {}} />)
     expect(screen.queryByRole("button", { name: "Open disc" })).toBeNull()
+  })
+})
+
+describe("StepTree checkboxSelects", () => {
+  it("the checkbox selects (multi) and never ticks a step done", () => {
+    const change = vi.fn()
+    const picked = vi.fn()
+    render(<StepTree steps={steps} onChange={change} onSelectedChange={picked} selected={new Set(["disc"])} checkboxSelects />)
+    fireEvent.click(screen.getByLabelText("Select: insert"))
+    expect(change).not.toHaveBeenCalled()
+    expect([...picked.mock.lastCall![0]].sort()).toEqual(["disc", "insert"])
   })
 })
 

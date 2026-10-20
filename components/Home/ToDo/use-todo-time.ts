@@ -11,7 +11,7 @@
 import { useCallback, useMemo } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
-import { findPen, settleSpentOnFinish, stepSpentMap, trackedMinutesForItem } from "@/lib/tracked-time"
+import { findPen, settleSpentOnFinish, stepSpentMap, trackedMinutesForItem, trackedTimeForItem } from "@/lib/tracked-time"
 import { paceFor, paceForTask, paceSamples } from "@/lib/estimate-pace"
 import type { Subtask, Task } from "@/lib/types"
 import { useTodoPrefs } from "./todo-prefs"
@@ -39,7 +39,7 @@ export function useTodoTime(tasks: readonly Task[]) {
       const hit = spentCache.get(taskId)
       if (hit !== undefined) return hit
       const task = byId.get(taskId)
-      const spent = task ? trackedMinutesForItem(task, entries) : 0
+      const spent = task ? trackedMinutesForItem(task, entries, { penScope: "tagged" }) : 0
       spentCache.set(taskId, spent)
       return spent
     },
@@ -54,6 +54,7 @@ export function useTodoTime(tasks: readonly Task[]) {
       const pen = link ? findPen(scopes, link.penId) : undefined
       return {
         spent: spentOf(taskId),
+        penPool: link ? trackedTimeForItem(task, entries, { penScope: "tagged" }).penPoolMinutes : 0,
         stepSpent: stepSpentMap(task, entries),
         pace: paceForTask(task, samples, paceOverrides),
         ghosts: paceGhosts,

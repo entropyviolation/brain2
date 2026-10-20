@@ -44,9 +44,9 @@ _Last mapped: 2026-10-20_. `StepTree` `foldStep` animates folds (click and ←/�
 
 ## Open on top (Phase 11)
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-20_
 
-- A host passes `onOpenStep`. Then a click on the dot opens the step's item (a drag still moves) and each row gets a hover **↗**. A dot with an item wears a violet ring (`is-item`). The lid (`TodoTable`, `todo-panel`) and item detail → Subtasks pass `openStepItem(taskId, stepId)`.
+- A host passes `onOpenStep`. Then each row gets a hover **↗** that opens the step's item. The dot only selects the step (⌘/Shift add; a drag still moves). Hosts that show a detail panel (the task card) put **Open item** there. A dot with an item wears a violet ring (`is-item`). The lid (`TodoTable`, `todo-panel`) and item detail → Subtasks pass `openStepItem(taskId, stepId)`.
 - `openStepItem` makes the item if needed (`lib/step-items.ts`) and pushes a layer. Layers stack: Esc and **‹ Back** close only the top; a crumb opens that ancestor (the task, or a step's item) as a new layer. Everything underneath stays mounted, so the lid, scroll, selection, link mode and running session keep their state.
 - `TaskDetailPopup` ignores a click or focus inside a layer above it (`data-item-layer`, `layerSafeDismiss`), so it stays open under the stack.
 - ↗ from the task card and **Card** on a step item (the parent's card, scrolled to the step) are built (Phase 12). **Planned:** ↗ from a session (Phase 13). The level gauge on a step item's bar waits on slice N's `LevelGauge`.
