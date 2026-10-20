@@ -115,9 +115,10 @@ function NowLogList({
   )
 }
 
+/** Events and Thought process side by side. The parent supplies the `.trk95 .trk-logbook` chassis. */
 export function NowLogLists({ dayKey }: { dayKey: string }) {
   return (
-    <div className="trk95 trk-logbook htk-logs">
+    <div className="htk-log-pair">
       <NowLogList
         dayKey={dayKey}
         list="event"

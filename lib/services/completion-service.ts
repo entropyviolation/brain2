@@ -26,10 +26,13 @@ import {
   REFLECTION_SCORE_KEYS,
   type ClockWrite,
 } from "@/lib/completion-review"
+import type { StepTier } from "@/lib/types"
 
 export interface CompleteOptions {
   /** Minutes actually spent; stored on the task when provided. */
   actualDuration?: number
+  /** Phase 10: Done at this step level (Done at Bare minimum / Goal). The store stamps the top level otherwise. */
+  level?: StepTier
 }
 
 /**
@@ -48,6 +51,7 @@ export function completeTask(
 
   let updated: Task = { ...task }
   if (options.actualDuration !== undefined) updated.actualDuration = options.actualDuration
+  if (options.level) updated.tierReached = options.level
 
   const repeat = task.repeatSettings
   if (task.isRepeated && repeat?.type === "count") {

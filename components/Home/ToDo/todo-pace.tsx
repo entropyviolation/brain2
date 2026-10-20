@@ -39,7 +39,7 @@ function PaceRow({
   const note =
     count < PACE_MIN_SAMPLES ? `${count} of ${PACE_MIN_SAMPLES} samples, reads ×1` : `×${mine.toFixed(1)} from ${count} samples`
   return (
-    <label className="todo-filter-field todo-pace-row" title={note}>
+    <label className="todo-inline-field todo-pace-row" title={note}>
       <span className="todo-label">{label}</span>
       <input
         type="number"
@@ -88,7 +88,7 @@ export function PaceSettings({
           overrides={overrides}
         />
       ))}
-      <label className="todo-key-check" title='The dim "usually ×2.4 for you" beside an estimate. It never changes your number.'>
+      <label className="todo-chip" title='The dim "usually ×2.4 for you" beside an estimate. It never changes your number.'>
         <input type="checkbox" checked={ghosts} onChange={(e) => setTodoPrefs({ paceGhosts: e.target.checked })} />
         Pace ghosts
       </label>

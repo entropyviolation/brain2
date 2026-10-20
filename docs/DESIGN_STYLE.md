@@ -456,6 +456,9 @@ key (search open) turns to CRT glass with a phosphor mark.
 
 _Last mapped: 2026-10-20_
 
+Dash is a permanent option: every future version keeps it and the Milled /
+Dash switch. Do not remove or fold it into Milled.
+
 A material for the Visual dashboard (the Home widget row), and its second
 style beside Milled. Milled stays exactly as it is and is the default for any
 vault that already had a layout. Code: `components/Home/dash/`.
@@ -902,3 +905,10 @@ orb. It may also be an object that room invented.
 - [ ] Habits, Lists, Plan chips, and the Analytics studio were left as their
       own rooms. New furniture was invented here, or a palette material was
       used, without cloning `.hab95`.
+
+
+## Math, shown
+
+_Added 2026-10-20_
+
+Where a screen computes something, offer the math. Typeset the formula, plot the quantities, and keep it data rich, in the spirit of 3Blue1Brown. Keep it optional: behind a settings switch or a "Show the math" key, never in the daily path. First instance: `components/Home/ToDo/PriorityFormulaPanel.tsx`.

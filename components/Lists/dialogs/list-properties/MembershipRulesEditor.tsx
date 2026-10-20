@@ -28,6 +28,7 @@ import {
 } from "@/lib/list-membership-rules"
 import { HabitBarRocker } from "@/components/Home/Habits/habit-led-switch"
 import { NativeSelect } from "@/components/ui/native-select"
+import { allRelations } from "@/lib/relation-registry"
 
 type Kind = MembershipCondition["kind"]
 
@@ -38,6 +39,7 @@ const KIND_LABELS: Record<Kind, string> = {
   attribute: "Attribute",
   tag: "Tag",
   done: "Done",
+  link: "Link",
 }
 
 function blankCondition(kind: Kind): MembershipCondition {
@@ -54,6 +56,8 @@ function blankCondition(kind: Kind): MembershipCondition {
       return { kind, tags: [], mode: "any" }
     case "done":
       return { kind, done: false }
+    case "link":
+      return { kind, relation: "related", mode: "has" }
   }
 }
 
@@ -262,6 +266,30 @@ export function MembershipRulesEditor({
             <option value="open">is not done</option>
             <option value="done">is done</option>
           </NativeSelect>
+        )
+      case "link":
+        return (
+          <span className="lp-cond-chips">
+            <NativeSelect className="lp-field lp-sel" value={c.mode} onChange={(e) => set({ ...c, mode: e.target.value as "has" | "hasNot" })} aria-label="Link mode">
+              <option value="has">has</option>
+              <option value="hasNot">has no</option>
+            </NativeSelect>
+            <NativeSelect className="lp-field lp-sel" value={c.relation} onChange={(e) => set({ ...c, relation: e.target.value })} aria-label="Link relation">
+              {allRelations().filter((d) => !d.archived).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+            </NativeSelect>
+            <NativeSelect className="lp-field lp-sel" value={c.targetTypeIds?.[0] ?? ""} onChange={(e) => set({ ...c, targetTypeIds: e.target.value ? [e.target.value] : undefined })} aria-label="Link target type">
+              <option value="">to any item</option>
+              {types.map((t) => (
+                <option key={t.id} value={t.id as string}>
+                  to any {t.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </span>
         )
     }
   }

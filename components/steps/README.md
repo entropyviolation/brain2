@@ -20,10 +20,10 @@ One step tree for every host, so item detail never imports from Home. Built in P
 | File | Role |
 |------|------|
 | `StepTree.tsx` | The tree. Rows: fold chevron and count, tick, dot (drag handle), name, host columns, hover **+** for a child. Each open branch ends in one quiet **+ step**; an empty tree shows **Add the first step** (and the host's `emptyExtra`). |
-| `step-tree-view.ts` | Pure. `buildStepView` turns the tree plus folds, Hide locked, Show next only and peek into flat rows (`step`, `more`, `add`) and a hidden count. `isStepLocked` / `hiddenByLock` / `nextStepInBranch`. |
+| `step-tree-view.ts` | Pure. `buildStepView` turns the tree plus folds, Hide locked, Show next only and peek into flat rows (`step`, `more`, `add`) and a hidden count. `isStepLocked` / `hiddenByLock` / `nextStepInBranch`. _2026-10-20_: each takes an optional `extra` lock (`StepViewOptions.extraLock`, `StepTree` `extraLock`) for waits outside the tree. |
 | `step-folds.ts` | Folds remembered per step id in `brain2-step-folds` (view state; not in backups). |
 | `WaitingLine.tsx` | The calm line (UI-5): "Everything else is waiting, not forgotten. · 3 hidden". The count peeks without turning the switch off. Absent when nothing is hidden. Also used under the To Do Assigned list. |
-| `StepTierMarks.tsx` | _Last mapped: 2026-10-16_ (Phase 10). The `B · G · E` tag (own tier, or the inherited one dimmed and dashed; click cycles B → G → E → inherit) and the spark mark (UI-7; click sets or clears `sparkedAt`). Drawn when the host passes `tierTags`. |
+| `StepTierMarks.tsx` | _Last mapped: 2026-10-16_ (Phase 10). The `B · G · E` tag (own tier, or the inherited one dimmed and dashed; click cycles B → G → E → inherit) and the spark mark (UI-7; click sets or clears `sparkedAt`). Drawn when the host passes `tierTags`. _2026-10-20_: the tag flips at once (optimistic) and the write runs in `startTransition`. |
 | `LevelGauge.tsx` | _Last mapped: 2026-10-16_ (Phase 10). `3/6` then three thin bars B · G · E (weighted percent per level; an empty level reads `—`). Without step tiers: one weighted bar. `stepId` reads one step's subtree; `focus` draws the Tier filter's level stronger. Numbers from `lib/step-progress.ts`. |
 | `StepItemStack.tsx` | _Last mapped: 2026-10-16_ (Phase 11, slice M). Mounted once in `app/page.tsx`. Draws each layer of `lib/step-item-stack.ts` as a `TaskDetailPopup` with `stackAbove`, a `layerHeader` (‹ Back, breadcrumb `Finish CDs › insert › disc`, **Parent** chip, `est · parts · spent`) and `onStepComplete` (Complete ticks the step). Also keeps step items in step: removes an item whose step is gone, moves it with a step that changed task (`applyStepItemFixes`), and while a step item is open sends its name and estimate edits back to the step. |
 | `step-tree.css` | Cool paper rows, hairline indent guides, violet selection and drop marks. The step-item ring on a dot, ↗, and the layer bar. |
@@ -37,6 +37,10 @@ One step tree for every host, so item detail never imports from Home. Built in P
 - **Hide locked.** Hides a step waiting on an open prerequisite (`lib/prereqs.ts`, ancestors' waits included) and a branch whose children are all hidden that way. Never hides a step for being incomplete. Hidden steps still count in progress. Ticking the prerequisite brings them back.
 - **Tier filter** (_Last mapped: 2026-10-16_, Phase 10). `tier` keeps one level's view (`stepsForTier`, cumulative). A step outside it with an in-view step inside shows greyed (`is-greyed`, `StepRowInfo.greyed`) as its container. The rest is hidden and counted in the calm line; the peek shows it.
 - **Show next only.** A branch with two or more steps inside shows only its next step (the `pickStartStep` pick inside it, else its first open leaf) and a dim **+ N more**; one click opens the branch. The data never changes. **Planned:** switch to `rankStartSteps` once it exists (its `[0]` equals `pickStartStep`).
+
+## Fold motion
+
+_Last mapped: 2026-10-20_. `StepTree` `foldStep` animates folds (click and ←/→). Unfolding renders the rows with `is-fold-in`: a staggered spring that drops each row from the fold line (`step-unfold`). Folding marks them `is-fold-out` (quick, bottom-up) and folds after 200 ms. The caret turns with overshoot. No motion under reduced motion or where `matchMedia` is missing (tests).
 
 ## Open on top (Phase 11)
 

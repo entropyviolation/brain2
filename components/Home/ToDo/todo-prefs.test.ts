@@ -27,7 +27,7 @@ describe("todo-prefs", () => {
 
   it("persists available-now and clamps the WIP cap", () => {
     setTodoPrefs({ availableNow: true, wipLimit: 0 })
-    expect(getTodoPrefs()).toEqual({ availableNow: true, wipLimit: 1, lidCollapsed: { flags: false, time: false, steps: false }, ritesFollowSun: true, defaultEstimateMin: 30, paceOverrides: {}, paceGhosts: true, sessionPadded: true, hideLocked: false, showNextOnly: false, tierView: "all" })
+    expect(getTodoPrefs()).toEqual({ availableNow: true, wipLimit: 1, lidCollapsed: { flags: false, time: false, steps: false }, ritesFollowSun: true, defaultEstimateMin: 30, paceOverrides: {}, paceGhosts: true, sessionPadded: true, hideLocked: false, showNextOnly: false, tierView: "all", titleBase: "To do", titleByView: {}, ranges: [], activeRangeId: null, formulas: [], showMath: false })
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}")).toMatchObject({
       availableNow: true,
       wipLimit: 1,

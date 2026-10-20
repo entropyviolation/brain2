@@ -108,3 +108,15 @@ describe("task card period", () => {
     expect(periodPushes(t, "day", "2026-10-16")).toEqual({ in: 1, out: 1 })
   })
 })
+
+describe("step points inherited from stepPoints", () => {
+  it("pays the nearest default above a step that sets none", async () => {
+    const { effectiveStepPoints, stepPointChanges } = await import("@/lib/task-card")
+    const prev = [{ id: "a", description: "A", stepPoints: 3, subtasks: [{ id: "a1", description: "A1" }, { id: "a2", description: "A2", points: 7 }] }, { id: "b", description: "B" }] as never
+    expect(Object.fromEntries(effectiveStepPoints(prev, 1))).toEqual({ a: 1, a1: 3, a2: 7, b: 1 })
+    const next = [{ id: "a", description: "A", stepPoints: 3, subtasks: [{ id: "a1", description: "A1", completed: true }, { id: "a2", description: "A2", points: 7 }] }, { id: "b", description: "B" }] as never
+    const changes = stepPointChanges(prev, next, 1)
+    expect(changes.map((c) => [c.step.id, c.step.points, c.paid])).toEqual([["a1", 3, true]])
+    expect(stepPointChanges(next, prev, 1).map((c) => [c.step.id, c.step.points, c.paid])).toEqual([["a1", 3, false]])
+  })
+})

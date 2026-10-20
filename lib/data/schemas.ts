@@ -140,6 +140,7 @@ export const taskSchema = z
     entropy: z.number().optional(),
     rewardValue: z.number().optional(),
     pointsOverride: z.number().optional().catch(undefined),
+    tierReached: z.enum(["min", "goal", "exceptional"]).optional().catch(undefined),
     dependencies: z.array(z.string()).optional(),
     parentTaskId: z.string().optional(),
     stepOf: z.object({ taskId: z.string(), stepId: z.string() }).optional().catch(undefined),
