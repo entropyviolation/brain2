@@ -1,11 +1,13 @@
 /**
- * components/Home/home-widgets-menu.tsx — Widgets catalog on the date bar
+ * components/Home/home-widgets-menu.tsx — Widgets and Edit keys on the date bar
  *
- * A small key, not a peer tile. The popover keeps Follow the clock, its
- * one-line note, and the widget list in separate bands so they cannot stack.
- * Widget catalog opens the browser for every square. Follow the clock
- * (default off) makes those squares read the wall clock instead of the day
- * being viewed.
+ * Small keys, not peer tiles. Edit turns on edit mode for the Visual
+ * dashboard (grip, resize corner, ×); it is never saved, so a reload starts
+ * locked. The Widgets popover keeps its bands apart so they cannot stack:
+ * Follow the clock and its one-line note, the Milled / Dash style switch,
+ * the Widget gallery key, and one row per installed copy in the current
+ * style's order (show or hide, step left or right). Countdown rows carry a
+ * + that adds another mark, and with it another Countdown copy.
  */
 "use client"
 
@@ -13,25 +15,40 @@ import { useEffect, useRef, useState } from "react"
 import { HomeWidgetCatalog } from "@/components/Home/home-widget-catalog"
 import { HideWidgetConfirm } from "@/components/Home/home-widget-dialog"
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
-import { HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
+import { useDashboardEditMode } from "@/components/Home/widgets/edit-mode"
 import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
-import { useHomeWidgetsStore, selectHiddenHomeWidgets } from "@/lib/home-widgets-store"
+import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
+import { VOCAB_LANG_LABEL, type VocabLang } from "@/lib/vocab-words"
+import { copyDisplayName, orderedCopies } from "@/lib/widgets/dashboard"
+import { useDashboardStore } from "@/lib/widgets/dashboard-store"
+import type { DashboardStyle, WidgetCopy } from "@/lib/widgets/types"
+
+const STYLES: { id: DashboardStyle; label: string; note: string }[] = [
+  { id: "milled", label: "Milled", note: "Today's milled squares." },
+  { id: "dash", label: "Dash", note: "Small lit faces on a dark dash." },
+]
 
 export function HomeWidgetsMenu() {
   const [open, setOpen] = useState(false)
   const [catalog, setCatalog] = useState(false)
-  const [pendingHide, setPendingHide] = useState<HomeWidgetId | null>(null)
+  const [pendingHide, setPendingHide] = useState<WidgetCopy | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
-  const order = useHomeWidgetsStore((s) => s.order)
-  const hidden = useHomeWidgetsStore((s) => s.hidden)
   const followClock = useHomeWidgetsStore((s) => s.widgetsFollowClock)
   const setWidgetsFollowClock = useHomeWidgetsStore((s) => s.setWidgetsFollowClock)
-  const showWidget = useHomeWidgetsStore((s) => s.showWidget)
-  const hideWidget = useHomeWidgetsStore((s) => s.hideWidget)
-  const moveWidget = useHomeWidgetsStore((s) => s.moveWidget)
-  const daysUntilCount = useHomeDaysUntilStore((s) => s.items.length)
-  const addDaysUntil = useHomeDaysUntilStore((s) => s.addCountdown)
-  const tucked = new Set(selectHiddenHomeWidgets({ order, hidden }))
+  const marks = useHomeDaysUntilStore((s) => s.items)
+  const addCountdown = useHomeDaysUntilStore((s) => s.addCountdown)
+  const style = useDashboardStore((s) => s.style)
+  const copies = useDashboardStore((s) => s.copies)
+  const milled = useDashboardStore((s) => s.milled)
+  const dash = useDashboardStore((s) => s.dash)
+  const unknown = useDashboardStore((s) => s.unknown)
+  const migrated = useDashboardStore((s) => s.migrated)
+  const editing = useDashboardEditMode((s) => s.editing)
+  const setEditing = useDashboardEditMode((s) => s.setEditing)
+
+  useEffect(() => {
+    if (!migrated) useDashboardStore.getState().ensureReady()
+  }, [migrated])
 
   useEffect(() => {
     if (!open) return
@@ -43,8 +60,28 @@ export function HomeWidgetsMenu() {
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open, pendingHide, catalog])
 
+  const rows = orderedCopies({ style, copies, milled, dash, unknown })
+  const nameOf = (copy: WidgetCopy) => {
+    if (copy.kind === "daysuntil" && !copy.title.trim()) {
+      const mark = marks.find((item) => item.id === copy.settings.markId)
+      if (mark?.label.trim()) return `Countdown · ${mark.label.trim()}`
+    }
+    return copyDisplayName(copy, (key) => VOCAB_LANG_LABEL[key as VocabLang] ?? key)
+  }
+  const firstCountdown = rows.find((copy) => copy.kind === "daysuntil" && !copy.hidden)?.id
+  const store = useDashboardStore.getState
+
   return (
     <div className="home-title-widgets" ref={rootRef}>
+      <button
+        type="button"
+        className="home-widgets-key home-widgets-edit-key"
+        aria-pressed={editing}
+        title={editing ? "Stop moving and resizing widgets" : "Move and resize widgets"}
+        onClick={() => setEditing(!editing)}
+      >
+        Edit
+      </button>
       <button
         type="button"
         className="home-widgets-key"
@@ -68,6 +105,21 @@ export function HomeWidgetsMenu() {
               {followClock ? "Widgets use right now." : "Widgets use the day you're viewing."}
             </p>
           </div>
+          <div className="home-widgets-style" role="radiogroup" aria-label="Dashboard style">
+            {STYLES.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                role="radio"
+                aria-checked={style === entry.id}
+                className="home-widgets-style-key"
+                title={entry.note}
+                onClick={() => store().setStyle(entry.id)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="home-widgets-catalog-key"
@@ -76,52 +128,55 @@ export function HomeWidgetsMenu() {
               setOpen(false)
             }}
           >
-            Widget catalog
+            Widget gallery
           </button>
           <div className="home-widgets-list">
-            {order.map((id) => {
-              const showing = !tucked.has(id)
-              const label = HOME_WIDGET_LABEL[id]
+            {rows.map((copy) => {
+              const showing = !copy.hidden
+              const label = nameOf(copy)
               return (
-                <div key={id} className="home-add-row">
+                <div key={copy.id} className="home-add-row" data-copy-id={copy.id}>
                   <button
                     type="button"
                     className="home-add-name"
-                    onClick={() => (showing ? setPendingHide(id) : showWidget(id))}
+                    onClick={() => (showing ? setPendingHide(copy) : store().showCopy(copy.id))}
                   >
                     <span className="home-widgets-lamp" data-on={showing ? "true" : "false"} aria-hidden="true" />
                     <span>
                       {showing ? "Hide" : "Add"} {label}
-                      {id === "daysuntil" && daysUntilCount > 1 ? ` (${daysUntilCount})` : ""}
                     </span>
                   </button>
-                  {id === "daysuntil" && showing ? (
+                  {copy.id === firstCountdown ? (
                     <button
                       type="button"
                       className="home-add-move"
-                      aria-label="Add another Days Until"
+                      aria-label="Add another Countdown"
                       title="Add another countdown or count-up"
-                      onClick={() => addDaysUntil()}
+                      onClick={() => addCountdown()}
                     >
                       +
                     </button>
                   ) : null}
-                  <button
-                    type="button"
-                    className="home-add-move"
-                    aria-label={`Move ${label} left`}
-                    onClick={() => moveWidget(id, -1)}
-                  >
-                    ◀
-                  </button>
-                  <button
-                    type="button"
-                    className="home-add-move"
-                    aria-label={`Move ${label} right`}
-                    onClick={() => moveWidget(id, 1)}
-                  >
-                    ▶
-                  </button>
+                  {showing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="home-add-move"
+                        aria-label={`Move ${label} left`}
+                        onClick={() => store().stepCopy(copy.id, -1)}
+                      >
+                        ◀
+                      </button>
+                      <button
+                        type="button"
+                        className="home-add-move"
+                        aria-label={`Move ${label} right`}
+                        onClick={() => store().stepCopy(copy.id, 1)}
+                      >
+                        ▶
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               )
             })}
@@ -131,10 +186,10 @@ export function HomeWidgetsMenu() {
       <HomeWidgetCatalog open={catalog} onOpenChange={setCatalog} />
       <HideWidgetConfirm
         open={pendingHide != null}
-        label={pendingHide ? HOME_WIDGET_LABEL[pendingHide] : "this widget"}
+        label={pendingHide ? nameOf(pendingHide) : "this widget"}
         onCancel={() => setPendingHide(null)}
         onConfirm={() => {
-          if (pendingHide) hideWidget(pendingHide)
+          if (pendingHide) store().hideCopy(pendingHide.id)
           setPendingHide(null)
         }}
       />
