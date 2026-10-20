@@ -93,6 +93,7 @@ import {
   pickVocabWord,
   resolveVocabLevel,
   type VocabLang,
+  type VocabLevel,
 } from "@/lib/vocab-words"
 import { isThousandLang, isVocabKnown, thousandListId } from "@/lib/vocab-lists"
 import { cn } from "@/lib/utils"
@@ -440,6 +441,15 @@ function CountdownFace(props: DashFaceProps) {
 
 /* ---- Language study (was Vocab) ---------------------------------------- */
 
+/* Word levels short enough for a 1x1 glass. */
+const LEVEL_SHORT: Record<VocabLevel, string> = {
+  common: "Common",
+  everyday: "Everyday",
+  sat: "SAT",
+  advanced: "Advanced",
+  rare: "Rare",
+}
+
 function LanguageFace(props: DashFaceProps) {
   const { copy, currentDate, settings, size } = props
   const active = useVocabStore((s) => s.active)
@@ -461,7 +471,7 @@ function LanguageFace(props: DashFaceProps) {
     if (words.length === 0) return null
     return { known: words.filter(isVocabKnown).length, total: words.length }
   }, [tasks, lang])
-  const levelText = role === "native" ? VOCAB_LEVEL_LABEL[level] : cefr || "—"
+  const levelText = role === "native" ? (size === "1x1" ? LEVEL_SHORT[level] : VOCAB_LEVEL_LABEL[level]) : cefr || "—"
   const legend = `${VOCAB_LANG_CODE[lang] ?? lang} · ${VOCAB_LANG_ENDONYM[lang] ?? lang}`
   const reading = entry ? [entry.reading, entry.romanization].filter(Boolean).join(" · ") : ""
 

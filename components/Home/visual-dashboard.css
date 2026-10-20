@@ -568,8 +568,9 @@ body .home-widget-dialog.home-widget-instrument.vdg-dialog {
   margin: 0;
 }
 
-.vdg .vdg-face-sample[data-default="true"] .dash-sample-size::after {
-  content: " · default";
+.vdg .vdg-face-sample[data-default="true"] .dash-sample-size {
+  color: var(--dash-ink);
+  text-shadow: var(--dash-text-glow);
 }
 
 .vdg .vdg-faces[data-style="milled"] figcaption {
