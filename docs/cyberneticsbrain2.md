@@ -78,7 +78,7 @@ C. Process: the loops
     ◦ In Brain2: the push counters are a tremor sensor. Task.daysPushed and weeksPushed count each overcorrection. Needs Attention flags a "zombie" at a high push count (lib/needs-attention.ts). The Overcommit view rebuilds day-pushes as a daily series. Brain2 can see the oscillation but does not yet damp it (Part 2b, change 1).
 20. Anticipatory feedback: aim where the target will be.
     ◦ Wiener: when duck shooting, you close the gap to where the bird will be, not where it is. A lagging effector needs a predictor in the loop (pp. 5, 112–113).
-    ◦ In Brain2: the Overcommit early warning looks at the trend and slope of load, not just today. Days Until counts down to what is coming. Sunrise and sunset lines on the Plan agenda show the edges of the day before you reach them.
+    ◦ In Brain2: the Overcommit early warning looks at the trend and slope of load, not just today. Countdown counts down to what is coming. Sunrise and sunset lines on the Plan agenda show the edges of the day before you reach them.
 21. Informative feedback on an icy road.
     ◦ Wiener: on ice, a driver taps the wheel with small, quick pulses. The pulses are too small to cause a skid but big enough to feel how the road will respond. The driver then steers by what they learned (p. 113).
     ◦ In Brain2: Just Start (components/Focus/JustStartMode.tsx) is this move. It offers the smallest next step and a 2-minute timer, which is a small probe of how a stalled task will respond before any real commitment. lib/molecular.ts breaks work into probes that size.

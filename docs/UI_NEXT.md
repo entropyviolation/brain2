@@ -95,8 +95,8 @@ message id is present it is stored on the ingest event and a repeat is deduped.
 ## Shipped — Debt + screen-family polish (2026-10-10)
 
 Shell fascia tightened; Rituals/Inbox share one phosphor count grammar; Nav
-dims when dead. Home overview: Progress + Rituals hero; Points one primary CRT;
-Moon / Days Until quieter. Habits control: tubes lead, sheet lamps quieter,
+dims when dead. Visual dashboard (was Home overview): Progress + Rituals hero; Points one primary CRT;
+Moon / Countdown quieter. Habits control: tubes lead, sheet lamps quieter,
 willpower reward-scale. Just Start keeps mill phosphor Done. Plan week/month
 inherit Day rail voice. Period data: Habits coarser periods follow Home day.
 World write: ItemDetail → `commitItemEdit`; ingest finish → `applyLinkedEffects`.

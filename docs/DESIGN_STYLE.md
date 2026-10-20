@@ -425,7 +425,7 @@ the required start for every new tab.
 | Piece | What it is |
 |-------|------------|
 | **Bay** | Brushed mill (1px horizontal hairlines) on cool silver. Outer `#5c6064` stroke, white top lip, inset pewter, a soft inner shadow. Radius 2–3px. |
-| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. Home overview plates and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
+| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. Visual dashboard plates (Milled style) and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
 | **CRT** | The value in black glass (`#040a08`–`#070c0a`), a faint phosphor bloom at the top, a gunmetal ring. One green: `--hab-crt-green` (`#7dffc4`) and `--hab-crt-glow`. Pad the glyphs (about 8px 14px). Do not paint phosphor straight on the mill. |
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
 | **Key** | Raised metal: specular top lip, mill, pressed foot. Sibling keys share the bay equally. Active mode is the CRT plus the power lamp. |
@@ -469,7 +469,7 @@ Call it with `mark` (`pause` | `play` | `stop`), `label` (the accessible
 name), and `onClick`. `pressed` and `disabled` are optional. The header now
 well and the Tracking pen clock already use it.
 
-Home overview tiles (`home-chrome.css`, one rule shared with `.mod95` catalog
+Visual dashboard tiles in the Milled style (`home-chrome.css`, one rule shared with `.mod95` catalog
 cards) paint that copy in Karla (`--font-karla` from `app/layout.tsx`), not
 `w95fa`. Nameplates are 13px, footers and the old 9px labels are 11px, secondary
 lines that were 10px are 12px, and CRT values the Habits sheet had pinned at
