@@ -31,6 +31,7 @@ export function useMessageIngest() {
   const enabled = useIngestStore((s) => s.enabled)
   const setPollStatus = useIngestStore((s) => s.setPollStatus)
   const phoneHubUrl = useIngestStore((s) => s.phoneHubUrl)
+  const phoneHubToken = useIngestStore((s) => s.phoneHubToken)
 
   useEffect(() => {
     if (!enabled) return
@@ -51,7 +52,7 @@ export function useMessageIngest() {
       // blobs and stale Inbox rows.
       const remote = await fetchPhoneHubStatus(hubOrigin)
       if (!remote.ok || !remote.polling) return
-      await pushVaultToHub(hubOrigin)
+      await pushVaultToHub(hubOrigin, phoneHubToken)
     }
 
     const tickHubOwnership = async () => {
@@ -197,5 +198,5 @@ export function useMessageIngest() {
       if (pushTimer) window.clearInterval(pushTimer)
       if (desktop) void desktop.stop()
     }
-  }, [enabled, phoneHubUrl, setPollStatus])
+  }, [enabled, phoneHubUrl, phoneHubToken, setPollStatus])
 }
