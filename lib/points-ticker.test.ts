@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatTickerChange, formatTickerDelta, pointsTicker, type TickerEntry } from "./points-ticker"
+import { formatTickerChange, formatTickerDelta, pointsPeriodSeries, pointsTicker, type TickerEntry } from "./points-ticker"
 
 // Wednesday 14 Oct 2026; its week starts Monday 12 Oct.
 const asOf = new Date(2026, 9, 14, 15, 0)
@@ -65,5 +65,42 @@ describe("pointsTicker", () => {
     expect(t.direction).toBe("down") // 2 vs Monday's 4
     expect(formatTickerChange(t)).toBe("−50%")
     expect(formatTickerDelta(t.delta)).toBe("−2")
+  })
+})
+
+describe("pointsPeriodSeries", () => {
+  it("new mode sums each bucket and compares with the one before", () => {
+    const s = pointsPeriodSeries(entries, "week", asOf, "new")
+    expect(s.buckets).toHaveLength(12)
+    expect(s.value).toBe(10.5)
+    expect(s.previous).toBe(6)
+    expect(s.direction).toBe("up")
+  })
+
+  it("cumulative mode ends on the all-time total and the change is this period", () => {
+    const s = pointsPeriodSeries(entries, "month", asOf, "cumulative")
+    expect(s.value).toBe(33.5)
+    expect(s.previous).toBe(17)
+    expect(s.delta).toBe(16.5)
+  })
+
+  it("year buckets are calendar years", () => {
+    const s = pointsPeriodSeries(entries, "year", asOf, "new")
+    expect(s.buckets.at(-1)).toMatchObject({ label: "2026", value: 33.5 })
+    expect(s.previous).toBe(0)
+    expect(s.changePct).toBeNull()
+  })
+
+  it("all time starts on the first ledger day", () => {
+    const s = pointsPeriodSeries(entries, "all", asOf, "cumulative")
+    expect(s.buckets[0]!.start).toBe("2026-08-01")
+    expect(s.buckets[0]!.value).toBe(7)
+    expect(s.value).toBe(33.5)
+  })
+
+  it("an empty ledger still draws one bucket for all time", () => {
+    const s = pointsPeriodSeries([], "all", asOf, "new")
+    expect(s.buckets).toHaveLength(1)
+    expect(s.value).toBe(0)
   })
 })

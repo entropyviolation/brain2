@@ -1,0 +1,172 @@
+/* components/Home/award-detail.css — One opened points award (award-detail.tsx).
+   Phosphor well on Home; the Analytics ledger re-points the tokens to paper. */
+
+.award-detail {
+  --award-bg: var(--friend-lcd, #07140f);
+  --award-ink: #d7ffe9;
+  --award-label: rgba(125, 255, 196, 0.75);
+  --award-num: var(--friend-nixie, #4a7fd4);
+  --award-muted: rgba(215, 255, 233, 0.55);
+  --award-rule: rgba(125, 255, 196, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 2px;
+  padding: 8px 10px;
+  border-radius: var(--r-6, 6px);
+  background: var(--award-bg);
+  color: var(--award-ink);
+  box-shadow: inset 0 0 0 1px #1d3a2c;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.award-detail p {
+  margin: 0;
+}
+
+.award-detail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.award-detail-head strong,
+.award-detail li strong,
+.award-detail-lines dd {
+  margin-left: auto;
+  color: var(--award-num);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 700;
+}
+
+.award-detail-kind,
+.award-detail-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--award-label);
+}
+
+.award-detail-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.award-detail-block.is-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.award-detail ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.award-detail li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 2px 0;
+  border-top: 1px solid var(--award-rule);
+}
+
+.award-detail li em {
+  flex-basis: 100%;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--award-muted);
+}
+
+.award-detail details {
+  width: 100%;
+}
+
+.award-detail summary {
+  display: flex;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.award-detail summary::-webkit-details-marker {
+  display: none;
+}
+
+.award-detail details p {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--award-muted);
+}
+
+.award-detail-lines {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin: 0;
+}
+
+.award-detail-lines > div {
+  display: flex;
+  gap: 8px;
+}
+
+.award-detail-lines dt {
+  color: var(--award-muted);
+}
+
+.award-detail-lines dd {
+  margin: 0 0 0 auto;
+}
+
+.award-detail-muted {
+  font-size: 10px;
+  color: var(--award-muted);
+}
+
+.award-detail-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--award-num);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Latest award list: a row is a key that opens its breakdown. */
+.home-award-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-widget-dialog button.home-award-row {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.home-widget-dialog button.home-award-row[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px #7dffc4;
+}
+
+/* Analytics ledger: paper plate, cobalt numbers. */
+.an95 .award-detail {
+  --award-bg: #f6f8fc;
+  --award-ink: #10183a;
+  --award-label: #2a44a8;
+  --award-num: #1d3fbf;
+  --award-muted: #56607e;
+  --award-rule: rgba(42, 68, 168, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(42, 68, 168, 0.35);
+}
