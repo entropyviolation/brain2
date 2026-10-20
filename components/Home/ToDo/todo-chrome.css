@@ -278,7 +278,7 @@
 .todo95 .todo-bay select,
 .todo95 .todo-bay input[type="number"],
 .todo95 .todo-sheet select,
-.todo95 .todo-formula input[type="number"],
+:is(.todo95, .todo95-dialog) .todo-formula input[type="number"],
 .todo95 .todo-time input,
 .todo95 .todo-bay .native-select,
 .todo95 .todo-sheet .native-select {
@@ -332,7 +332,7 @@
   background-color: var(--chrome-ice);
 }
 
-.todo95 .todo-formula {
+:is(.todo95, .todo95-dialog) .todo-formula {
   margin: 0 4px 0;
   padding: 4px 6px;
   display: flex;
@@ -343,21 +343,21 @@
   flex-shrink: 0;
 }
 
-.todo95 .todo-formula-head {
+:is(.todo95, .todo95-dialog) .todo-formula-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
 
-.todo95 .todo-formula h3 {
+:is(.todo95, .todo95-dialog) .todo-formula h3 {
   margin: 0 0 2px;
   font-size: 12px;
   font-weight: bold;
   color: var(--td-blue);
 }
 
-.todo95 .todo-formula-grid {
+:is(.todo95, .todo95-dialog) .todo-formula-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
@@ -2736,7 +2736,175 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   box-shadow: inset 0 1px 2px rgba(40, 48, 60, 0.25);
 }
 
-/* Phase 15 B: Done row level facts. */
-.todo-done-levels { display: inline-flex; gap: 3px; margin-left: 8px; font: 600 10px/1 ui-monospace, monospace; color: #8a9099; }
-.todo-done-levels i { font-style: normal; }
-.todo-done-levels i.is-lit { color: #4a6fa5; text-shadow: 0 0 4px rgba(120, 160, 220, 0.5); }
+/* Phase 15 B: Done row level facts. Lit pips in a small sunken bay; unreached reads "—". */
+.todo95 .todo-done-levels {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+  padding: 1px 3px;
+  vertical-align: 1px;
+  border-radius: 3px;
+  background: #d4d8dd;
+  box-shadow: var(--td-sunken);
+  font: 700 9px/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+.todo95 .todo-done-levels i {
+  min-width: 11px;
+  padding: 2px 1px;
+  border-radius: 2px;
+  font-style: normal;
+  text-align: center;
+  color: #9aa1aa;
+}
+.todo95 .todo-done-levels i.is-lit {
+  color: #0f3550;
+  background: radial-gradient(ellipse at 50% 35%, #d8f0ff 0%, #9ad7ff 70%, #79bfe9 100%);
+  box-shadow: 0 0 4px rgba(154, 215, 255, 0.75), inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* Header redesign (2026-10-20): row 1 = the To do list title + gear, a row to itself.
+   Row 2 = nameplate (or range picker) · view keys · actions. Row 3 = the filter strip. */
+.todo95 .todo-fascia { gap: 6px; padding: 6px 8px; }
+.todo95 .todo-fascia-row { flex-wrap: wrap; gap: 6px; min-height: 0; }
+.todo95 .todo-fascia-row.is-strip:empty { display: none; }
+.todo95 .todo-period { margin-right: 0; min-height: 0; }
+.todo95 .todo-period h3 { margin: 0 2px; min-width: 15ch; text-align: center; }
+body.win95-app .todo95 .todo-view-keys[role="tablist"] { margin-left: 0; padding: 3px; }
+body.win95-app .todo95 .todo-view-keys [role="tab"] { min-height: 26px; padding: 4px 12px; }
+.todo95 .todo-actions { display: inline-flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+
+.todo95 .todo-fascia-row.is-strip {
+  padding: 4px 6px;
+  border-radius: var(--r-2, 2px);
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.16), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.todo95 .todo-filters { display: flex; flex: 1 1 auto; justify-content: flex-start; margin-left: 0; gap: 6px; align-items: center; flex-wrap: wrap; }
+.todo95 .todo-strip-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.todo95 .todo-strip-rule { width: 1px; align-self: stretch; margin: 2px 2px; background: var(--chrome-ring-deep); box-shadow: 1px 0 0 rgba(255,255,255,.6); }
+
+/* LED chip: native checkbox becomes a lamp. */
+:is(.todo95, .todo95-dialog) .todo-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 8px;
+  border-radius: 12px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #3a3d40;
+  background: linear-gradient(180deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 0 0 1px var(--chrome-ring-deep);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+:is(.todo95, .todo95-dialog) .todo-chip input {
+  appearance: none; -webkit-appearance: none; margin: 0;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #8d9296; box-shadow: inset 0 1px 1px rgba(0,0,0,.4);
+}
+:is(.todo95, .todo95-dialog) .todo-chip:has(input:checked) { color: #7dffc4; text-shadow: 0 0 3px rgba(125,255,196,.6); background: #0b120f; box-shadow: 0 0 0 1px var(--chrome-pressed), inset 0 4px 6px rgba(0,0,0,.4); }
+:is(.todo95, .todo95-dialog) .todo-chip input:checked { background: #7dffc4; box-shadow: 0 0 5px #7dffc4; }
+:is(.todo95, .todo95-dialog) .todo-chip:has(input:focus-visible) { outline: 2px solid #1a6b48; outline-offset: 1px; }
+
+.todo95 .todo-tier-keys { height: 24px; }
+.todo95 .todo-tier-keys .todo-label { margin: 0 4px 0 2px; }
+
+:is(.todo95, .todo95-dialog) .todo-inline-field { display: inline-flex; align-items: center; gap: 5px; }
+:is(.todo95, .todo95-dialog) .todo-inline-field .todo-label { margin: 0; }
+:is(.todo95, .todo95-dialog) .todo-inline-field .native-select,
+:is(.todo95, .todo95-dialog) .todo-inline-field select { min-width: 8rem; }
+:is(.todo95, .todo95-dialog) .todo-inline-field select,
+:is(.todo95, .todo95-dialog) .todo-inline-field input[type="number"],
+:is(.todo95, .todo95-dialog) .todo-inline-field .native-select {
+  min-height: 22px; padding: 1px 4px; font: inherit; font-size: 11px; color: #000; border: 0;
+  border-radius: var(--r-2, 2px); background: linear-gradient(180deg, var(--chrome-paper), var(--chrome-pearl)); box-shadow: var(--td-field);
+}
+:is(.todo95, .todo95-dialog) .todo-inline-field input[type="number"] { width: 4.5em; }
+
+
+/* Title row: the To do list title owns the line. */
+.todo95 .todo-fascia-row.is-title { flex-wrap: nowrap; gap: 8px; }
+.todo95 .todo-fascia-row.is-title .todo-mark { flex: 1 1 auto; min-width: 0; min-height: 56px; padding: 6px 14px 6px 10px; gap: 12px; }
+.todo95 .todo-fascia-row.is-title .todo-mark h2 {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: clamp(20px, 2.6vw, 30px); letter-spacing: 0.12em;
+}
+.todo95 .todo-fascia-row.is-title .todo-title-orb { width: 32px; height: 32px; }
+.todo95 .todo-fascia-row.is-title .todo-mark-count { font-size: 15px; padding: 3px 9px; }
+.todo95 .todo-gear {
+  flex: 0 0 auto; width: 56px; min-height: 56px; border: 0; border-radius: var(--r-2, 2px);
+  font-size: 26px; line-height: 1; color: #1c1e20; cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.7) 0, transparent 28%), linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(55,58,62,.35), 0 0 0 1px var(--chrome-ring-deep);
+  transition: transform .2s ease;
+}
+.todo95 .todo-gear:hover { transform: rotate(30deg); }
+.todo95 .todo-gear:focus-visible { outline: 2px solid #1a6b48; outline-offset: 2px; }
+.todo95 .todo-fascia-row.is-nav { align-items: center; }
+
+/* Other: range picker on the nav row. */
+.todo95 .todo-range-nav, .todo95 .todo-range-new, .todo95 .todo-range-edit { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.todo95 .todo-range-nav .native-select { min-width: 12rem; }
+.todo95 .todo-range-edit { flex-basis: 100%; padding: 6px 8px; border-radius: var(--r-2, 2px); background: rgba(0,0,0,.05); box-shadow: inset 0 1px 2px rgba(0,0,0,.16); }
+.todo95 .todo-range-nav input, .todo95 .todo-range-new input {
+  min-height: 24px; padding: 1px 6px; font: inherit; font-size: 12px; color: #000; border: 0;
+  border-radius: var(--r-2, 2px); background: linear-gradient(180deg, var(--chrome-paper), var(--chrome-pearl)); box-shadow: var(--td-field);
+}
+.todo95 .todo-range-name-input { width: 18rem; max-width: 60vw; }
+.todo95 .todo-range-left { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-variant-numeric: tabular-nums; color: #2a2c2e; }
+.todo95 .todo-range-left.is-near { color: #8a4a12; }
+.todo95 .todo-range-left.is-past { color: #8e2b2b; }
+
+/* Other: the range sheet. */
+.todo95 .todo-range-sheet { display: flex; flex-direction: column; gap: 8px; }
+.todo95 .todo-range-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.todo95 .todo-range-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: var(--r-2, 2px); background: rgba(255,255,255,.55); }
+.todo95 .todo-range-row.is-done { opacity: .6; }
+.todo95 .todo-range-row.is-done .todo-range-row-name { text-decoration: line-through; }
+.todo95 .todo-range-row-name { flex: 1 1 auto; text-align: left; border: 0; background: none; font: inherit; font-size: 12px; cursor: pointer; padding: 0; }
+.todo95 .todo-range-row-due { font-size: 10px; color: #5a6a64; font-variant-numeric: tabular-nums; }
+.todo95 .todo-band > summary { cursor: pointer; }
+
+/* Gear dialog. */
+.todo95-dialog.todo-settings .todo-settings-group { margin: 0 0 10px; padding: 8px 10px; border: 0; border-radius: var(--r-2, 2px); background: rgba(0,0,0,.04); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 6px; }
+.todo95-dialog.todo-settings legend { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; padding: 0 4px; }
+.todo95-dialog.todo-settings .todo-settings-row { display: grid; grid-template-columns: 5rem 1fr; align-items: center; gap: 6px; }
+.todo95-dialog.todo-settings .todo-pace-settings { display: flex; flex-direction: column; gap: 6px; }
+
+/* Priority formula: saved formulas, dials, and the math (portaled dialog too). */
+:is(.todo95, .todo95-dialog) .todo-formula-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 8px; }
+:is(.todo95, .todo95-dialog) .todo-formula-preset { display: inline-flex; align-items: center; }
+:is(.todo95, .todo95-dialog) .todo-formula-preset-x { border: 0; background: none; cursor: pointer; font-size: 12px; color: #5a5f64; padding: 0 4px; }
+:is(.todo95, .todo95-dialog) .todo-formula-presets .todo-chiclet.is-on { background: #0b120f; color: #7dffc4; text-shadow: 0 0 3px rgba(125,255,196,.6); }
+:is(.todo95, .todo95-dialog) .todo-formula-presets input { min-height: 22px; padding: 1px 6px; font: inherit; font-size: 11px; border: 0; border-radius: var(--r-2, 2px); background: #fff; box-shadow: var(--td-field); width: 10rem; }
+:is(.todo95, .todo95-dialog) .todo-formula-share { float: right; font-variant-numeric: tabular-nums; color: var(--term, #2a2c2e); }
+:is(.todo95, .todo95-dialog) .todo-formula-dial { display: flex; align-items: center; gap: 6px; }
+:is(.todo95, .todo95-dialog) .todo-formula-dial input[type="range"] { flex: 1 1 auto; accent-color: var(--term, #1a6b48); }
+:is(.todo95, .todo95-dialog) .todo-formula-dial input[type="number"] { width: 4.5em; }
+
+:is(.todo95, .todo95-dialog) .todo-math {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 10px;
+  padding: 10px; border-radius: var(--r-3, 3px);
+  /* Graph-paper ground: the quiet rule of a notebook, not a costume. */
+  background:
+    linear-gradient(rgba(47,95,168,.07) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(47,95,168,.07) 1px, transparent 1px) 0 0 / 12px 12px,
+    #f7f8f6;
+  box-shadow: inset 0 0 0 1px rgba(47,95,168,.18);
+}
+:is(.todo95, .todo95-dialog) .todo-math-card { padding: 8px 10px; border-radius: var(--r-2, 2px); background: rgba(255,255,255,.82); box-shadow: 0 0 0 1px rgba(0,0,0,.08); min-width: 0; }
+:is(.todo95, .todo95-dialog) .todo-math-card.is-wide { grid-column: 1 / -1; }
+:is(.todo95, .todo95-dialog) .todo-math-card h4 { margin: 0 0 6px; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #2a2c2e; }
+:is(.todo95, .todo95-dialog) .todo-math-eq { margin: 2px 0; font-family: "STIX Two Math", "Cambria Math", "Latin Modern Math", Georgia, serif; font-size: 16px; font-style: italic; color: #1c1e20; }
+:is(.todo95, .todo95-dialog) .todo-math-eq.is-live { font-size: 14px; font-style: normal; font-variant-numeric: tabular-nums; }
+:is(.todo95, .todo95-dialog) .todo-math-big { font-size: 1.5em; font-style: normal; vertical-align: -0.12em; }
+:is(.todo95, .todo95-dialog) .todo-math-defs { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0; padding: 0; list-style: none; font-family: "STIX Two Math", "Cambria Math", Georgia, serif; font-style: italic; font-size: 13px; }
+:is(.todo95, .todo95-dialog) .todo-math-svg { display: block; width: 100%; height: auto; overflow: visible; }
+:is(.todo95, .todo95-dialog) .todo-math-svg-label { font-size: 9px; fill: #fff; font-family: Georgia, serif; font-style: italic; }
+:is(.todo95, .todo95-dialog) .todo-math-svg-name { font-size: 9px; fill: #2a2c2e; }
+:is(.todo95, .todo95-dialog) .todo-math-svg-num { font-size: 8px; fill: #5a6a64; font-variant-numeric: tabular-nums; }
+:is(.todo95, .todo95-dialog) .todo-math-axis { stroke: rgba(28,30,32,.35); stroke-width: 1; }
+:is(.todo95, .todo95-dialog) .todo-math-axis.is-dashed { stroke-dasharray: 3 3; }
+
+.todo95-dialog.todo-settings { max-width: min(920px, 96vw); max-height: 90vh; overflow-y: auto; }
+:is(.todo95, .todo95-dialog) .todo-formula-presets .todo-chiclet { min-height: 22px; padding: 2px 10px; border: 0; border-radius: 11px; font: inherit; font-size: 10px; font-weight: 700; letter-spacing: .06em; cursor: pointer; background: linear-gradient(180deg, var(--chrome-key-sheen, #f2f3f4), var(--chrome-mill-soft, #d4d7da)); box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 0 0 1px var(--chrome-ring-deep, #8a8f94); }
+:is(.todo95, .todo95-dialog) .todo-math-card.is-wide .todo-math-svg { max-width: 640px; }

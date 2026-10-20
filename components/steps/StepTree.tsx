@@ -85,7 +85,14 @@ export interface StepTreeProps {
   onSelectedChange?: (next: ReadonlySet<string>) => void
   /** Told the visible step ids, in order, whenever they change (Chain, Select all). */
   onVisibleIds?: (ids: string[]) => void
+  /** Locks from outside the tree (awaited events, other tasks). */
+  extraLock?: (step: Subtask) => boolean
 }
+
+/** Fold motion: the rows under a branch unfold in (staggered spring) or fold out before they unmount. */
+type FoldMotion = { kind: "in" | "out"; parent: string; order: Map<string, number> }
+const FOLD_OUT_MS = 200
+const reducedMotion = () => typeof window === "undefined" || !window.matchMedia || window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 type Composer = { parentId: string | null }
 type DropHint = { id: string; where: "before" | "after" | "inside" } | { where: "end"; parentId: string | null }
@@ -162,6 +169,7 @@ function StepComposer({
       <input
         ref={nameRef}
         className="step-tree-composer-name"
+        data-draft=""
         type="text"
         value={name}
         placeholder="Step…"
@@ -174,6 +182,7 @@ function StepComposer({
       {minutes ? (
         <input
           className="step-tree-composer-min"
+          data-draft=""
           type="number"
           min={0}
           step={1}
@@ -206,6 +215,7 @@ export function StepTree({
   selected: selectedProp,
   onSelectedChange,
   onVisibleIds,
+  extraLock,
 }: StepTreeProps) {
   const list = useMemo(() => [...(steps ?? [])], [steps])
   const folded = useStepFolds()
@@ -222,10 +232,41 @@ export function StepTree({
   const [refusal, setRefusal] = useState<string | null>(null)
   const dragIds = useRef<string[] | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const [motion, setMotion] = useState<FoldMotion | null>(null)
+  const motionTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(motionTimer.current), [])
+  /** Fold or unfold with motion. `close` forces a direction (keyboard ←/→). */
+  const foldStep = (step: Subtask, close?: boolean) => {
+    const isFolded = folded.has(step.id)
+    const closing = close ?? !isFolded
+    if (closing === isFolded) return
+    const order = new Map(flattenSteps(step.subtasks).map((s, i) => [s.id, Math.min(i, 12)]))
+    clearTimeout(motionTimer.current)
+    if (reducedMotion()) return toggleStepFold(step.id, closing)
+    if (!closing) {
+      toggleStepFold(step.id, false)
+      setMotion({ kind: "in", parent: step.id, order })
+      motionTimer.current = setTimeout(() => setMotion(null), 700)
+    } else {
+      setMotion({ kind: "out", parent: step.id, order })
+      motionTimer.current = setTimeout(() => {
+        toggleStepFold(step.id, true)
+        setMotion(null)
+      }, FOLD_OUT_MS)
+    }
+  }
+  const motionOf = (id: string | null, isAdd = false): { className: string; style: Record<string, number> } | null => {
+    if (!motion || id == null) return null
+    const i = motion.order.get(id)
+    if (i == null && !(isAdd && id === motion.parent)) return null
+    const n = i ?? motion.order.size
+    const last = Math.min(motion.order.size, 12)
+    return { className: ` is-fold-${motion.kind}`, style: { ["--fold-i" as string]: motion.kind === "in" ? n : last - Math.min(n, last) } }
+  }
 
   const view = useMemo(
-    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek, tier }),
-    [list, folded, hideLocked, nextOnly, openedNext, peek, tier],
+    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek, tier, extraLock }),
+    [list, folded, hideLocked, nextOnly, openedNext, peek, tier, extraLock],
   )
   const visibleIds = useMemo(
     () => view.rows.flatMap((r) => (r.kind === "step" ? [r.step.id] : [])),
@@ -323,7 +364,7 @@ export function StepTree({
     } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault()
       const step = siblings.find((s) => s.id === id)
-      if (step?.subtasks?.length) toggleStepFold(id, e.key === "ArrowLeft")
+      if (step?.subtasks?.length) foldStep(step, e.key === "ArrowLeft")
     } else if (e.key === "Enter") {
       e.preventDefault()
       setEditing(id)
@@ -432,8 +473,8 @@ export function StepTree({
       return (
         <div
           key={`add-${row.parentId ?? "root"}-${index}`}
-          className={`step-tree-add${hint ? " is-drop" : ""}`}
-          style={{ ["--step-depth" as string]: row.depth }}
+          className={`step-tree-add${hint ? " is-drop" : ""}${motionOf(row.parentId, true)?.className ?? ""}`}
+          style={{ ["--step-depth" as string]: row.depth, ...motionOf(row.parentId, true)?.style }}
           onDragOver={(e) => {
             if (!dragIds.current) return
             e.preventDefault()
@@ -441,7 +482,7 @@ export function StepTree({
           }}
           onDrop={(e) => onDropAt(e, { where: "end", parentId: row.parentId })}
         >
-          <button type="button" data-no95 className="step-tree-quiet" onClick={() => openComposer(row.parentId)}>
+          <button type="button" data-no95 className="step-tree-quiet" title="Add a step here (paste many lines to add many)" onClick={() => openComposer(row.parentId)}>
             + step
           </button>
         </div>
@@ -455,7 +496,7 @@ export function StepTree({
     const composerHere = composer?.parentId === step.id && (!hasKids || isFolded)
     const tabbable = focusId ? focusId === step.id : visibleIds[0] === step.id
     return (
-      <div key={step.id} className="step-tree-item" role="none">
+      <div key={step.id} className={`step-tree-item${motionOf(step.id)?.className ?? ""}`} style={motionOf(step.id)?.style} role="none">
         <div
           role="treeitem"
           aria-level={depth + 1}
@@ -492,9 +533,10 @@ export function StepTree({
               className="step-tree-fold"
               aria-expanded={!isFolded}
               aria-label={isFolded ? `Show steps under ${step.description}` : `Hide steps under ${step.description}`}
-              onClick={() => toggleStepFold(step.id)}
+              title={isFolded ? `Show the ${kidCount} steps inside` : "Fold these steps away"}
+              onClick={() => foldStep(step)}
             >
-              {isFolded ? "▸" : "▾"}
+              <span className="step-tree-caret" aria-hidden>▸</span>
               <span className="step-tree-fold-count">{kidCount}</span>
             </button>
           ) : (
@@ -523,6 +565,7 @@ export function StepTree({
           {editing === step.id ? (
             <input
               className="step-tree-name-edit"
+              data-draft={step.description}
               type="text"
               defaultValue={step.description}
               autoFocus

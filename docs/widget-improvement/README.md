@@ -2,7 +2,7 @@
 
 Readings of the Home overview widgets and the Module cards against the vault as it is.
 
-These are research reports from the live Electron localStorage vault (origin `http://localhost:3000`, userData `~/Library/Application Support/cogs`) on 9 Oct 2026. Implementation plans are in [`plan/`](plan/). The Home and Modules catalogs record those readings. Hidden widgets stay hidden, the milled face stays, and overview type is not resized again there. Each problem below is the first item in that report’s “Biggest problems right now.”
+These are research reports from the live Electron localStorage vault (origin `http://localhost:3000`, userData `~/Library/Application Support/cogs`) on 9 Oct 2026. Implementation plans are in [`plan/`](plan/). The redesign that turns these squares into installable kinds is [`../WIDGETS_REDESIGN.md`](../WIDGETS_REDESIGN.md) (planned). The Home and Modules catalogs record those readings. Hidden widgets stay hidden, the milled face stays, and overview type is not resized again there. Each problem below is the first item in that report’s “Biggest problems right now.”
 
 ## Home overview widgets
 

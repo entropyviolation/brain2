@@ -95,6 +95,9 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   notes: true,
   parentTaskId: true,
   pointsOverride: true,
+  stepPoints: true,
+  resourceIds: true,
+  awaitIds: true,
   tierReached: true,
   subtasks: true,
   isSummary: true,
@@ -283,7 +286,7 @@ export function commitItemEdit(
   const merged = applyItemEditPatch(before, patch)
   taskRepository.update(merged, patch)
   // Phase 12: a step ticked or unticked in item detail pays or takes back its step points.
-  if ("subtasks" in patch) settleStepPoints({ id: before.id, description: before.description }, before.subtasks, merged.subtasks)
+  if ("subtasks" in patch) settleStepPoints({ id: before.id, description: before.description, stepPoints: merged.stepPoints }, before.subtasks, merged.subtasks)
 
   const tagged = namedOrder(order)
   const changes = activityChanges(before, patch)

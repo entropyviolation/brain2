@@ -208,9 +208,15 @@ async function captureHome(page) {
   // which is the thing a week view exists for.
   await page.getByRole("button", { name: "week", exact: true }).click()
   await wait(500)
+  // The range fill sits behind the Fill tool key in the Home desk bay.
+  const fillKey = page.getByRole("button", { name: "Fill", exact: true })
+  await fillKey.click()
+  await wait(300)
   await page.getByRole("button", { name: "Mon–Fri" }).click()
   await wait(300)
   await screenshot(page, "08-home-tracking-week.png")
+  await fillKey.click()
+  await wait(300)
   await page.getByRole("button", { name: "day", exact: true }).click()
   await wait(400)
 
@@ -494,14 +500,30 @@ async function captureAnalytics(page) {
   await wait(300)
 }
 
+/**
+ * The header Rituals door loads its room on the first press and only swaps
+ * itself in, so the menu needs a second press once the room is there.
+ */
+async function openRitualsMenu(page) {
+  const slot = page.locator("[data-ritual-slot=day-morning]")
+  for (let i = 0; i < 3; i++) {
+    await page.locator("[data-home-review-entry]").first().click()
+    try {
+      await slot.waitFor({ state: "visible", timeout: 3000 })
+      return
+    } catch {
+      // Room was still loading; press again.
+    }
+  }
+}
+
 async function captureDialogs(page) {
   await clickTopTab(page, "Home")
   await wait(400)
 
   // End-of-day review. The rituals menu labels it Night (today), not "day review".
   if (wantShot("20-dialog-reviews.png")) {
-    await page.locator("[data-home-review-entry]").click()
-    await wait(300)
+    await openRitualsMenu(page)
     await page.locator("[data-ritual-slot=day-night]").click()
     await wait(600)
     await screenshot(page, "20-dialog-reviews.png")
@@ -511,8 +533,7 @@ async function captureDialogs(page) {
 
   // Morning review lives in the same Rituals menu (Morning), not a header key.
   if (wantShot("20-dialog-morning-review.png")) {
-    await page.locator("[data-home-review-entry]").click()
-    await wait(300)
+    await openRitualsMenu(page)
     await page.locator("[data-ritual-slot=day-morning]").click()
     await wait(600)
     await screenshot(page, "20-dialog-morning-review.png")
@@ -541,7 +562,7 @@ async function captureDialogs(page) {
     await wait(300)
   }
 
-  // Bulk lives inside Quick Add now (checkbox). The header no longer has a Bulk Add key.
+  // Bulk lives inside Quick Add now (checkbox under Bulk & shorthand). The header no longer has a Bulk Add key.
   if (wantShot("20-dialog-quick-add.png") || wantShot("20-dialog-bulk-add.png")) {
     await page.getByRole("button", { name: "Quick Add" }).click()
     await wait(500)
@@ -549,6 +570,9 @@ async function captureDialogs(page) {
       await screenshot(page, "20-dialog-quick-add.png")
     }
     if (wantShot("20-dialog-bulk-add.png")) {
+      // Bulk sits inside the Bulk & shorthand disclosure.
+      await page.getByText("Bulk & shorthand", { exact: true }).click()
+      await wait(200)
       await page.getByRole("checkbox", { name: "Bulk" }).click()
       await wait(400)
       await screenshot(page, "20-dialog-bulk-add.png")

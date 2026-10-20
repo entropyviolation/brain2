@@ -7,7 +7,7 @@
  */
 "use client"
 
-import type { StepTier } from "@/lib/types"
+import type { PriorityWeights, StepTier } from "@/lib/types"
 import { useSyncExternalStore } from "react"
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
@@ -51,7 +51,25 @@ export type TodoPrefs = {
   showNextOnly: boolean
   /** Tier filter (Phase 10): every lid shows that level's view. `all` shows every step. */
   tierView: TodoTierView
+  /** Global To Do settings: the word before the view phrase ("To do" → "To do today"). */
+  titleBase: string
+  /** Full title per view; a blank or missing key reads `titleBase` + the view phrase. */
+  titleByView: Partial<Record<TodoTitleView, string>>
+  /** Other view: custom ranges. Each id is a real List (`todo-ranges.ts`); the name lives on the List. */
+  ranges: TodoRange[]
+  /** The range the Other view has loaded. */
+  activeRangeId: string | null
+  /** Saved priority formulas. Applying one writes its weights to the task store. */
+  formulas: SavedFormula[]
+  /** Settings → Show the math: the formula panel opens its plots. */
+  showMath: boolean
 }
+
+export type SavedFormula = { id: string; name: string; weights: PriorityWeights }
+
+export type TodoTitleView = "day" | "week" | "month" | "quarter" | "other"
+/** `end` is the "done before" day, `YYYY-MM-DD`. `start` is optional and only labels the span. */
+export type TodoRange = { id: string; end: string; start?: string }
 
 export const DEFAULT_LID_COLLAPSED: Record<TodoLidSection, boolean> = {
   flags: false,
@@ -71,6 +89,12 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   hideLocked: false,
   showNextOnly: false,
   tierView: "all",
+  titleBase: "To do",
+  titleByView: {},
+  ranges: [],
+  activeRangeId: null,
+  formulas: [],
+  showMath: false,
 }
 
 export type TodoTierView = "all" | StepTier
@@ -102,6 +126,51 @@ export function normalizeLidCollapsed(value: unknown): Record<TodoLidSection, bo
 const listeners = new Set<() => void>()
 let snapshot: TodoPrefs = load()
 
+export function normalizeTitleBase(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, 40) : DEFAULT_TODO_PREFS.titleBase
+}
+
+const TITLE_VIEWS: TodoTitleView[] = ["day", "week", "month", "quarter", "other"]
+
+export function normalizeTitleByView(value: unknown): Partial<Record<TodoTitleView, string>> {
+  const out: Partial<Record<TodoTitleView, string>> = {}
+  if (!value || typeof value !== "object") return out
+  for (const view of TITLE_VIEWS) {
+    const v = (value as Record<string, unknown>)[view]
+    if (typeof v === "string" && v.trim()) out[view] = v.trim().slice(0, 60)
+  }
+  return out
+}
+
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/
+
+export function normalizeRanges(value: unknown): TodoRange[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((r) => {
+    if (!r || typeof r !== "object") return []
+    const { id, end, start } = r as Record<string, unknown>
+    if (typeof id !== "string" || typeof end !== "string" || !DAY_KEY.test(end)) return []
+    return [typeof start === "string" && DAY_KEY.test(start) ? { id, end, start } : { id, end }]
+  })
+}
+
+const WEIGHT_KEYS = ["urgency", "importance", "cognitiveLoad", "entropy", "unlocks"] as const
+
+export function normalizeFormulas(value: unknown): SavedFormula[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((f) => {
+    if (!f || typeof f !== "object") return []
+    const { id, name, weights } = f as Record<string, unknown>
+    if (typeof id !== "string" || typeof name !== "string" || !weights || typeof weights !== "object") return []
+    const w = {} as Record<string, number>
+    for (const k of WEIGHT_KEYS) {
+      const n = Number((weights as Record<string, unknown>)[k])
+      w[k] = Number.isFinite(n) && n >= 0 ? n : k === "unlocks" ? 1 : 0
+    }
+    return [{ id, name: name.slice(0, 40), weights: w as unknown as PriorityWeights }]
+  })
+}
+
 export function clampWipLimit(value: unknown): number {
   const n = typeof value === "number" ? value : Number(value)
   if (!Number.isFinite(n)) return DEFAULT_WIP_LIMIT
@@ -126,6 +195,12 @@ function load(): TodoPrefs {
       hideLocked: parsed.hideLocked === true,
       showNextOnly: parsed.showNextOnly === true,
       tierView: normalizeTierView(parsed.tierView),
+      titleBase: normalizeTitleBase(parsed.titleBase),
+      titleByView: normalizeTitleByView(parsed.titleByView),
+      ranges: normalizeRanges(parsed.ranges),
+      activeRangeId: typeof parsed.activeRangeId === "string" ? parsed.activeRangeId : null,
+      formulas: normalizeFormulas(parsed.formulas),
+      showMath: parsed.showMath === true,
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -151,7 +226,13 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.sessionPadded === DEFAULT_TODO_PREFS.sessionPadded &&
       snapshot.hideLocked === DEFAULT_TODO_PREFS.hideLocked &&
       snapshot.showNextOnly === DEFAULT_TODO_PREFS.showNextOnly &&
-      snapshot.tierView === DEFAULT_TODO_PREFS.tierView
+      snapshot.tierView === DEFAULT_TODO_PREFS.tierView &&
+      snapshot.titleBase === DEFAULT_TODO_PREFS.titleBase &&
+      Object.keys(snapshot.titleByView).length === 0 &&
+      snapshot.ranges.length === 0 &&
+      snapshot.activeRangeId === null &&
+      snapshot.formulas.length === 0 &&
+      snapshot.showMath === false
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -179,6 +260,12 @@ export function setTodoPrefs(
     hideLocked: patch.hideLocked ?? snapshot.hideLocked,
     showNextOnly: patch.showNextOnly ?? snapshot.showNextOnly,
     tierView: patch.tierView !== undefined ? normalizeTierView(patch.tierView) : snapshot.tierView,
+    titleBase: patch.titleBase !== undefined ? normalizeTitleBase(patch.titleBase) : snapshot.titleBase,
+    titleByView: patch.titleByView !== undefined ? normalizeTitleByView(patch.titleByView) : snapshot.titleByView,
+    ranges: patch.ranges !== undefined ? normalizeRanges(patch.ranges) : snapshot.ranges,
+    activeRangeId: patch.activeRangeId !== undefined ? patch.activeRangeId : snapshot.activeRangeId,
+    formulas: patch.formulas !== undefined ? normalizeFormulas(patch.formulas) : snapshot.formulas,
+    showMath: patch.showMath ?? snapshot.showMath,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

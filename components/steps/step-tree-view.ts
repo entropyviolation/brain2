@@ -45,6 +45,8 @@ export interface StepViewOptions {
   peek?: boolean
   /** Tier filter (Phase 10): only that level's view, with greyed containers. */
   tier?: StepTier
+  /** Locks from outside the tree (awaited events, other tasks; `lib/node-needs.ts`). */
+  extraLock?: (step: Subtask) => boolean
 }
 
 export interface StepView {
@@ -56,23 +58,23 @@ export interface StepView {
 }
 
 /** True when an open step waits on an open prerequisite (`lib/prereqs.ts`). Done or merely incomplete is never locked. */
-export function isStepLocked(steps: readonly Subtask[] | undefined, step: Subtask): boolean {
-  return !step.completed && !isStepAvailable(steps, step.id)
+export function isStepLocked(steps: readonly Subtask[] | undefined, step: Subtask, extra?: (step: Subtask) => boolean): boolean {
+  return !step.completed && (!isStepAvailable(steps, step.id) || !!extra?.(step))
 }
 
 /** Hide locked drops a locked step, and a branch whose children are all hidden for the same reason. */
-export function hiddenByLock(steps: readonly Subtask[] | undefined, step: Subtask): boolean {
-  if (isStepLocked(steps, step)) return true
+export function hiddenByLock(steps: readonly Subtask[] | undefined, step: Subtask, extra?: (step: Subtask) => boolean): boolean {
+  if (isStepLocked(steps, step, extra)) return true
   const kids = step.subtasks ?? []
-  return kids.length > 0 && kids.every((kid) => hiddenByLock(steps, kid))
+  return kids.length > 0 && kids.every((kid) => hiddenByLock(steps, kid, extra))
 }
 
 /** The one step Show next only keeps under a branch: the Just Start pick inside it, else its first open leaf. */
-export function nextStepInBranch(steps: readonly Subtask[] | undefined, branch: Subtask): Subtask | undefined {
+export function nextStepInBranch(steps: readonly Subtask[] | undefined, branch: Subtask, extra?: (step: Subtask) => boolean): Subtask | undefined {
   const pick = pickStartStep({ subtasks: branch.subtasks })
-  if (pick.kind === "step" && !isStepLocked(steps, pick.step)) return pick.step
+  if (pick.kind === "step" && !isStepLocked(steps, pick.step, extra)) return pick.step
   return flattenSteps(branch.subtasks).find(
-    (s) => !s.completed && (s.subtasks ?? []).every((k) => k.completed) && !isStepLocked(steps, s),
+    (s) => !s.completed && (s.subtasks ?? []).every((k) => k.completed) && !isStepLocked(steps, s, extra),
   )
 }
 
@@ -93,18 +95,18 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
         if (!options.peek) continue
         peeked = true
       }
-      if (options.hideLocked && !peeked && hiddenByLock(all, step)) {
+      if (options.hideLocked && !peeked && hiddenByLock(all, step, options.extraLock)) {
         hiddenBySwitches += 1 + flattenSteps(step.subtasks).length
         if (!options.peek) continue
         peeked = true
       }
       const kids = step.subtasks ?? []
       const greyed = !!tierView?.containers.has(step.id)
-      rows.push({ kind: "step", step, depth, parentId, hasKids: kids.length > 0, locked: isStepLocked(all, step), peeked, ...(greyed ? { greyed } : {}) })
+      rows.push({ kind: "step", step, depth, parentId, hasKids: kids.length > 0, locked: isStepLocked(all, step, options.extraLock), peeked, ...(greyed ? { greyed } : {}) })
       if (kids.length === 0 || folded.has(step.id)) continue
       const inside = flattenSteps(kids).length
       if (options.nextOnly && inside > 1 && !openedNext.has(step.id)) {
-        const next = nextStepInBranch(all, step)
+        const next = nextStepInBranch(all, step, options.extraLock)
         const more = inside - (next ? 1 : 0)
         if (!peeked) hiddenBySwitches += more
         if (!options.peek) {
