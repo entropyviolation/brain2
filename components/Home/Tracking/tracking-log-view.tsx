@@ -646,6 +646,7 @@ export function TrackingLogView({
         </div>
       ) : null}
 
+      <div className="trk-logbook-inputs">
       <section className="trk-aside-well trk-logbook-compose" aria-label="Add to the tracking log">
         <h3 className="trk-logbook-heading">Add a line</h3>
         <div className="trk-span-switch trk-logbook-modes" role="toolbar" aria-label="What to log">
@@ -904,6 +905,7 @@ export function TrackingLogView({
       </section>
 
       <CountStatusesSection />
+      </div>
 
       {isWeek ? (
         <TrackingLogWeek

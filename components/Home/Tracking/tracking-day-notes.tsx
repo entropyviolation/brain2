@@ -8,8 +8,8 @@
  * summary of what actually happened: one editable day summary, and — when the
  * well is open — Week, Month, Season, and Year. Those higher periods have no
  * tracking grid of their own (Tracking’s boards are day and week). Week boards
- * also show truncated day summaries under each day. Plan text is a different
- * store and is not shown here.
+ * also show truncated day summaries under each day. Day shows a read-only
+ * reference (`summary-reference.tsx`): plans, events, thoughts, and log.
  *
  * Collapsed is the Day summary legend and Expand. Expand
  * (`notesWellExpanded`) opens the editor. Storage is `brain2-tracking-day-notes`.
@@ -23,6 +23,7 @@ import { persistKeyFailed, subscribePersistStatus } from "@/lib/persist-storage"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { SUMMARY_PERIODS, type SummaryPeriod } from "@/lib/tracking-summaries"
 import { setTrackingViewPrefs, useTrackingViewPrefs } from "./tracking-view-prefs"
+import { SummaryReference } from "./summary-reference"
 import {
   MonthSummaryNest,
   SeasonSummaryNest,
@@ -96,6 +97,7 @@ export function TrackingDayNotes({
               </button>
             ))}
           </div>
+          {period === "day" ? <SummaryReference dateKey={dayKey} /> : null}
           {period === "day" ? (
             <SummaryEditor storageKey={dayKey} label={legend} period="day" rows={8} />
           ) : period === "week" ? (

@@ -22,7 +22,13 @@ export type CycleDayMark = {
   bleeding?: boolean
   spotting?: boolean
   ovulation?: boolean
+  /** Private marks for analysis only. They never touch the phase and are not in `CYCLE_FLAGS`. */
+  o?: boolean
+  intimacy?: boolean
+  intimacyNote?: string
 }
+
+export type CyclePrivatePatch = Partial<Pick<CycleDayMark, "o" | "intimacy" | "intimacyNote">>
 
 export const CYCLE_FLAGS = ["bleeding", "spotting", "ovulation"] as const
 export type CycleFlag = (typeof CYCLE_FLAGS)[number]
@@ -47,6 +53,7 @@ interface CycleMarksState {
   marks: Record<string, CycleDayMark>
   /** Set or clear one flag. `false` drops it. A day with no flags is removed. */
   setFlag: (date: string, flag: CycleFlag, value: boolean) => void
+  setPrivate: (date: string, patch: CyclePrivatePatch) => void
   /** Flip one flag. Returns the value now stored, or false when the day was removed. */
   toggleFlag: (date: string, flag: CycleFlag) => boolean
 }
@@ -56,7 +63,13 @@ function cleanMark(mark: CycleDayMark): CycleDayMark | null {
   if (mark.bleeding) next.bleeding = true
   if (mark.spotting) next.spotting = true
   if (mark.ovulation) next.ovulation = true
-  if (!next.bleeding && !next.spotting && !next.ovulation) return null
+  if (mark.o) next.o = true
+  if (mark.intimacy) {
+    next.intimacy = true
+    const note = mark.intimacyNote?.trim()
+    if (note) next.intimacyNote = note
+  }
+  if (!next.bleeding && !next.spotting && !next.ovulation && !next.o && !next.intimacy) return null
   return next
 }
 
@@ -70,6 +83,17 @@ export const useCycleMarksStore = create<CycleMarksState>()(
         set((state) => {
           const current = state.marks[date] ?? { date }
           const nextMark = cleanMark({ ...current, date, [flag]: value ? true : undefined })
+          const marks = { ...state.marks }
+          if (!nextMark) delete marks[date]
+          else marks[date] = nextMark
+          return { marks }
+        })
+      },
+
+      setPrivate: (date, patch) => {
+        if (!isCycleDayKey(date)) return
+        set((state) => {
+          const nextMark = cleanMark({ ...(state.marks[date] ?? { date }), date, ...patch })
           const marks = { ...state.marks }
           if (!nextMark) delete marks[date]
           else marks[date] = nextMark

@@ -469,12 +469,15 @@ export function migrateHabitsState(persisted: unknown, version: number): HabitsS
     missedOpWand: !!state.missedOpWand,
     highlightHabitPriorities: !!state.highlightHabitPriorities,
     showStreakMarks: state.showStreakMarks !== false,
+    groupHabitsByKind: state.groupHabitsByKind !== false,
     morningRitualPointMultiplier: clampMorningRitualPointMultiplier(
       has("morningRitualPointMultiplier") ? state.morningRitualPointMultiplier : DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER,
     ),
     habitExemptions: sanitizeExemptionBooks(state.habitExemptions),
     habitsControlPanelWidth: HABITS_CONTROL_PANEL_DEFAULT_WIDTH,
     willpowerPhysicsHud: !!state.willpowerPhysicsHud,
+    willpowerGemSpots:
+      state.willpowerGemSpots && typeof state.willpowerGemSpots === "object" ? state.willpowerGemSpots : {},
     willpowerPhysics: (() => {
       const base =
         version < 18
@@ -770,6 +773,8 @@ interface HabitsState {
   habitSortDirection: "asc" | "desc" | null
   setHabitSortDirection: (direction: "asc" | "desc") => void
   /** Priority bar: green / red name wash. Default off. */
+  groupHabitsByKind: boolean
+  setGroupHabitsByKind: (value: boolean) => void
   highlightHabitPriorities: boolean
   setHighlightHabitPriorities: (value: boolean) => void
   /** Priority bar: streak and × marks under the name. Default on. */
@@ -806,6 +811,9 @@ interface HabitsState {
   setWillpowerPhysicsHud: (value: boolean) => void
   /** Editable Willpower gems physics knobs. Persist v16. */
   willpowerPhysics: WillpowerPhysicsParams
+  /** Where each gem last came to rest, as fractions of the plate. Missing id = halo. */
+  willpowerGemSpots: Record<string, [number, number]>
+  setWillpowerGemSpots: (spots: Record<string, [number, number]>) => void
   setWillpowerPhysics: (value: Partial<WillpowerPhysicsParams> | WillpowerPhysicsParams) => void
   /** Photographed gem per Daily Habits mark. Empty slot uses catalog default. */
   habitGems: HabitGemMap
@@ -1375,6 +1383,8 @@ export const useHabitsStore = create<HabitsState>()(
       setHabitSortDirection: (direction) => set({ habitSortDirection: direction }),
       highlightHabitPriorities: false,
       setHighlightHabitPriorities: (value) => set({ highlightHabitPriorities: !!value }),
+      groupHabitsByKind: true,
+      setGroupHabitsByKind: (value) => set({ groupHabitsByKind: !!value }),
       showStreakMarks: true,
       setShowStreakMarks: (value) => set({ showStreakMarks: !!value }),
       morningRitualPointMultiplier: DEFAULT_MORNING_RITUAL_POINT_MULTIPLIER,
@@ -1396,6 +1406,8 @@ export const useHabitsStore = create<HabitsState>()(
       willpowerPhysicsHud: false,
       setWillpowerPhysicsHud: (value) => set({ willpowerPhysicsHud: !!value }),
       willpowerPhysics: { ...DEFAULT_WILLPOWER_PHYSICS },
+      willpowerGemSpots: {},
+      setWillpowerGemSpots: (spots) => set({ willpowerGemSpots: spots }),
       setWillpowerPhysics: (value) =>
         set((state) => ({
           willpowerPhysics: sanitizeWillpowerPhysics({ ...state.willpowerPhysics, ...value }),
@@ -1884,12 +1896,14 @@ export const useHabitsStore = create<HabitsState>()(
           habitSortDirection: state.habitSortDirection,
           highlightHabitPriorities: state.highlightHabitPriorities,
           showStreakMarks: state.showStreakMarks,
+          groupHabitsByKind: state.groupHabitsByKind,
           morningRitualPointMultiplier: state.morningRitualPointMultiplier,
           sortHabitsByPriorityFlag: state.sortHabitsByPriorityFlag,
           willpowerImage: state.willpowerImage,
           habitsControlPanelWidth: state.habitsControlPanelWidth,
           willpowerPhysicsHud: state.willpowerPhysicsHud,
           willpowerPhysics: state.willpowerPhysics,
+          willpowerGemSpots: state.willpowerGemSpots ?? {},
           habitGems: state.habitGems,
           percentLedTint: state.percentLedTint,
           gradeTubeColor: state.gradeTubeColor,

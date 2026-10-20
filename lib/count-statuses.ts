@@ -87,9 +87,9 @@ function cleanWhen(when: CountWhen): CountWhen | null {
   }
 }
 
-function tickFrom(when: CountWhen): CountTick {
+function tickFrom(when: CountWhen, id = newId("tick")): CountTick {
   return {
-    id: newId("tick"),
+    id,
     date: when.date,
     startMin: when.startMin,
     ...(when.clockCertainty && when.clockCertainty !== "exact" ? { clockCertainty: when.clockCertainty } : {}),
@@ -212,6 +212,9 @@ interface CountStatusesState {
   removeCount: (id: string) => void
   /** One tick. Omitted `when` is the current local minute, exact. */
   incrementCount: (id: string, when?: CountWhen) => CountTick | null
+  /** Correct one tick's date, minute or clock certainty (backlogging). */
+  updateTick: (countId: string, tickId: string, when: CountWhen) => boolean
+  removeTick: (countId: string, tickId: string) => void
 }
 
 export const useCountStatusesStore = create<CountStatusesState>()(
@@ -270,6 +273,33 @@ export const useCountStatusesStore = create<CountStatusesState>()(
         })
         if (count.intakeClass) paintIntakeInstant(count.name, count.intakeClass, clean)
         return tick
+      },
+      updateTick: (countId, tickId, when) => {
+        const clean = cleanWhen(when)
+        if (!clean) return false
+        let hit = false
+        set({
+          counts: get().counts.map((row) =>
+            row.id !== countId
+              ? row
+              : {
+                  ...row,
+                  ticks: row.ticks.map((tick) => {
+                    if (tick.id !== tickId) return tick
+                    hit = true
+                    return tickFrom(clean, tick.id)
+                  }),
+                },
+          ),
+        })
+        return hit
+      },
+      removeTick: (countId, tickId) => {
+        set({
+          counts: get().counts.map((row) =>
+            row.id === countId ? { ...row, ticks: row.ticks.filter((tick) => tick.id !== tickId) } : row,
+          ),
+        })
       },
     }),
     {

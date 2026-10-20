@@ -66,6 +66,34 @@ export function CycleLogSection({ date }: { date: string }) {
               </button>
             ))}
           </div>
+          <div className="trk-span-switch trk-cycle-quiet" role="group" aria-label="Private marks">
+            <button
+              type="button"
+              aria-label="O"
+              aria-pressed={mark?.o === true}
+              onClick={() => useCycleMarksStore.getState().setPrivate(date, { o: mark?.o !== true })}
+            >
+              O
+            </button>
+            <button
+              type="button"
+              aria-label="Intimacy"
+              aria-pressed={mark?.intimacy === true}
+              onClick={() => useCycleMarksStore.getState().setPrivate(date, { intimacy: mark?.intimacy !== true })}
+            >
+              Intimacy
+            </button>
+          </div>
+          {mark?.intimacy ? (
+            <input
+              key={date}
+              className="trk-cycle-quiet-note"
+              aria-label="Intimacy note"
+              placeholder="note (optional)"
+              defaultValue={mark.intimacyNote ?? ""}
+              onBlur={(event) => useCycleMarksStore.getState().setPrivate(date, { intimacyNote: event.target.value })}
+            />
+          ) : null}
           <button type="button" className="trk-cycle-open" onClick={() => setOpen(true)}>
             Cycle detail
           </button>
