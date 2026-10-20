@@ -2010,6 +2010,8 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 .home95 .home-title-widgets {
   position: relative;
   flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
   margin-left: auto;
 }
 
@@ -2060,8 +2062,15 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   cursor: default;
 }
 
-.home95 .home-widgets-key:active {
+.home95 .home-widgets-key:active,
+.home95 .home-widgets-key[aria-pressed="true"] {
   box-shadow: var(--h-sunken);
+}
+
+/* Edit is lit while edit mode is on: the key stays down with a green lamp line. */
+.home95 .home-widgets-edit-key[aria-pressed="true"] {
+  color: #0d3a24;
+  background: linear-gradient(180deg, #cfe9da, #a9d4bc);
 }
 
 .home95 .home-pet-clock {
@@ -3942,6 +3951,37 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 
 .home95 .home-widgets-catalog-key:active {
   box-shadow: var(--h-sunken);
+}
+
+.home95 .home-widgets-style {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  background: var(--chrome-nickel);
+  box-shadow:
+    inset 1px 1px var(--chrome-lo),
+    inset -1px -1px #fff;
+}
+
+.home95 .home-widgets-style-key {
+  border: none;
+  min-height: 26px;
+  background: var(--h-face);
+  box-shadow: var(--h-raised);
+  color: #1c1e20;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+.home95 .home-widgets-style-key[aria-checked="true"] {
+  box-shadow: var(--h-sunken);
+  background: #d5d8dc;
 }
 
 .home95 .home-widgets-list {
