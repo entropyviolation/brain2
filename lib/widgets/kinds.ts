@@ -542,7 +542,7 @@ const BUILT_IN_KINDS: WidgetKind[] = [
         default: "phase",
         options: [
           { value: "phase", label: "Phase name" },
-          { value: "countdown", label: "Days to the next major phase" },
+          { value: "countdown", label: "Days to the next full or new moon" },
           { value: "light", label: "Percent lit" },
         ],
       },
