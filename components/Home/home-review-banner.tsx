@@ -11,6 +11,7 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
 import { useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { useReviewsStore } from "@/lib/reviews-store"
@@ -94,6 +95,7 @@ export function HomeReviewBanner({
     [reviews, currentDate, starDue.length],
   )
   const first = available[0]
+  const faceKeys = useCopySetting<boolean>("keys", true)
   const dayKey = formatLocalDateKey(currentDate)
   const snoozedForToday = Boolean(snoozedUntil && dayKey < snoozedUntil)
 
@@ -154,12 +156,15 @@ export function HomeReviewBanner({
         {onHide && <TileHide id="review" onHide={onHide} />}
         <TileOpen label="Rituals" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Rituals</span>
+            <span>
+              <CopyCaption>Rituals</CopyCaption>
+            </span>
           </div>
           <div className="hab-score-readout" data-centered="true">
             {pendingCount}
           </div>
         </TileOpen>
+        {faceKeys ? (
         <div className="home-review-actions">
           <button type="button" className="home-review-key" onClick={openFirst}>
             Open
@@ -176,6 +181,7 @@ export function HomeReviewBanner({
             Dismiss
           </button>
         </div>
+        ) : null}
         <div className="home-tile-foot">
           <p className="hab-score-sub" title={period}>
             {period}

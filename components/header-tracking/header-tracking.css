@@ -1,12 +1,13 @@
 /**
  * Header Tracking popup layout. The Home Tracking desk is not restyled from here.
- * Plot-strip wrap applies only under `.htk-grid`.
- * The frame is a small step in from 70rem, still wide enough for the day grid.
+ * The Tracking pane mounts the desk's three bays (pen rack, screen, time
+ * recorder), so the frame is wide enough for them side by side. Below the
+ * desk's 980px container break they stack, as on Home.
  */
 
 .hpp95-dialog.htk-popup {
-  width: min(94vw, 66rem);
-  max-width: min(94vw, 66rem);
+  width: min(96vw, 84rem);
+  max-width: min(96vw, 84rem);
   overflow: auto;
   grid-template-rows: auto minmax(0, 1fr);
 }
@@ -14,7 +15,7 @@
 .htk-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   overflow: visible;
@@ -33,11 +34,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  padding: 6px;
+  border-radius: var(--r-3, 3px);
+  background: var(--chrome-mill-soft, #c0c4c8);
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-lo);
 }
 
 .htk-panes button {
-  min-height: 28px;
-  padding: 4px 14px;
+  min-height: 30px;
+  min-width: 7.5rem;
+  padding: 4px 18px;
   border: 0;
   border-radius: var(--r-2, 2px);
   color: #111;
@@ -66,10 +76,11 @@
 .htk-moment {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   flex: none;
   min-height: min-content;
-  padding: 8px;
+  padding: 10px 12px 12px;
+  border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     linear-gradient(165deg, var(--chrome-sheen) 0%, var(--chrome-face) 48%, var(--chrome-shade) 100%);
@@ -81,10 +92,37 @@
 
 .htk-moment-title {
   margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+/* Lanes + Metrics, then Update state or the hint. One block, always up. */
+.htk-state {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.htk-state-panel {
+  margin-top: -1px;
+  padding: 10px 12px 12px;
+  border-radius: 0 0 var(--r-3, 3px) var(--r-3, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg, var(--chrome-mill-hi, #d8dce0), var(--chrome-sheen, #e4e6e8));
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 0 var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid),
+    inset 2px 0 var(--chrome-lo);
+}
+
+.htk-state-hint {
+  margin: 4px 2px 0;
 }
 
 .htk-moment-band {
@@ -95,12 +133,12 @@
 }
 
 .htk-moment-lanes {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   flex: 1 1 auto;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   min-height: min-content;
-  overflow-x: auto;
   padding: 6px;
   background: var(--chrome-mill-soft, #c0c4c8);
   box-shadow:
@@ -112,14 +150,12 @@
 
 .htk-lane {
   display: flex;
-  flex: 0 0 auto;
   flex-direction: column;
   align-items: flex-start;
-  gap: 1px;
-  min-width: 7.5rem;
-  max-width: 12rem;
+  gap: 2px;
+  min-width: 0;
   min-height: min-content;
-  padding: 6px 8px;
+  padding: 8px 12px 7px;
   border: 0;
   border-radius: var(--r-2, 2px);
   color: #111;
@@ -137,11 +173,21 @@ button.htk-lane {
   cursor: pointer;
 }
 
+button.htk-lane:hover {
+  background: var(--chrome-sheen, #e4e6e8);
+}
+
 .htk-lane[aria-pressed="true"] {
+  background: #fff;
   box-shadow:
-    inset -1px -1px var(--chrome-frame),
-    inset 1px 1px #fff,
-    inset 2px 2px var(--chrome-lo);
+    inset 1px 1px var(--chrome-frame),
+    inset 2px 2px var(--chrome-lo),
+    inset 0 -3px 0 #000080;
+}
+
+.htk-lane[data-kind="empty"] .htk-lane-name {
+  color: #5c6166;
+  font-weight: 500;
 }
 
 .htk-lane-scope,
@@ -159,9 +205,14 @@ button.htk-lane {
 }
 
 .htk-lane-name {
-  font-size: 13px;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 15px;
   font-weight: 650;
+  line-height: 1.25;
   color: #111;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Metrics sits beside the four lanes. Same logger, milled like the other popup keys. */
@@ -378,20 +429,14 @@ button.htk-lane {
   border-radius: var(--r-2, 2px);
 }
 
-.htk-grid .trk95 .trk-plot-strip,
-.htk-grid .trk95 .trk-mode-bar {
-  flex-wrap: wrap;
-  overflow: visible;
-  height: auto;
+/* The desk inside the popup. `.trk95` grows to fill on Home; here it is one block. */
+.htk-desk.trk95 {
+  flex: none;
+  gap: 10px;
 }
 
-.htk-grid .trk95 .trk-plot-bezel {
-  min-height: 280px;
-  max-height: 520px;
-}
-
-.htk-grid .trk95 .trk-grid.trk-grid-full-day {
-  max-height: 400px;
+.htk-desk .trk-lace {
+  margin-top: 0;
 }
 
 .htk-agenda {
@@ -424,47 +469,109 @@ button.htk-lane {
   flex: none;
 }
 
+/* Events and Thought process side by side when there is room. */
+.htk-log-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.htk-log-pair > .trk-aside-well,
+.htk-logs > .htk-intake {
+  margin-top: 0;
+}
+
+/* Intake: class keys beside the heading, then quick chips, then the field. */
+.htk-intake-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.htk-intake-head .trk-logbook-heading {
+  margin: 0;
+}
+
+.htk-intake-classes {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.htk-intake-classes > button,
+.htk-chip {
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 0;
+  border-radius: var(--r-2, 2px);
+  color: #111;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 32%),
+    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px var(--chrome-ring-deep);
+}
+
+.htk-intake-classes > button {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.htk-intake-classes > button[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(180deg, #1a2a8a, #000080);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--chrome-frame);
+}
+
+.htk-intake-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.htk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 14rem;
+  background: #fff;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 0 0 1px var(--chrome-ring-deep);
+}
+
+.htk-chip:hover {
+  background: var(--chrome-mill-hi, #d8dce0);
+}
+
+.htk-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trk95 .htk-chip .htk-chip-count {
+  color: #5c6166;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95 .htk-intake-saved {
+  color: #1d4d1d;
+}
+
 .htk-moment .trk95.trk-logbook .trk-log {
   max-height: 7.5rem;
 }
 
 .htk-moment .ops-now-bar {
   margin: 0;
-}
-
-/* Paint… — pens / Update state stay behind a milled disclosure; Working on stays visible. */
-.htk-paint {
-  margin: 0;
-  min-width: 0;
-}
-
-.htk-paint-sum {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 22px;
-  padding: 2px 10px;
-  list-style: none;
-  cursor: pointer;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #2a2c2e;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 40%),
-    linear-gradient(165deg, var(--chrome-key-sheen, #e8eaec), var(--chrome-mill-soft, #c0c4c8));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 0 1px var(--chrome-ring-deep, #6a6e72);
-}
-
-.htk-paint-sum::-webkit-details-marker {
-  display: none;
-}
-
-.htk-paint-body {
-  margin-top: 6px;
-  min-width: 0;
 }
 
 .htk-log-add input {

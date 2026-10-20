@@ -1,0 +1,575 @@
+/* components/Lab/NodeDetailLab/lace.css — Concept III: lace paper and nacre. */
+
+.lc {
+  --lc-ink: #2c3140;
+  --lc-quiet: #8a90a0;
+  --lc-violet: #7a63e6;
+  --lc-teal: #3aa7a6;
+  --lc-rose: #d0647d;
+  --lc-paper: #fbfcfe;
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 24px 22px 22px;
+  border-radius: 26px;
+  color: var(--lc-ink);
+  font-family: var(--font-karla), sans-serif;
+  background:
+    radial-gradient(60% 40% at var(--px) var(--py), rgba(255, 255, 255, 0.9), transparent 70%),
+    conic-gradient(from calc(var(--px) * 3.6deg) at var(--px) var(--py), #f3f0ff, #e7f6f7, #fdf0f4, #eef3ff, #f3f0ff);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(40, 50, 90, 0.08), 0 30px 50px -24px rgba(60, 60, 120, 0.45);
+}
+.lc-head {
+  text-align: center;
+}
+.lc-path {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lc-quiet);
+}
+.lc-head h2 {
+  margin-top: 4px;
+  font-family: "Didot", "Bodoni 72", Georgia, serif;
+  font-weight: normal;
+  font-size: 32px;
+  line-height: 1.05;
+}
+.lc-meta {
+  margin-top: 8px !important;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--lc-quiet);
+}
+.lc-meta .is-over {
+  color: #c2453a;
+}
+.lc-tier {
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: var(--lc-violet);
+}
+
+.lc-stage {
+  display: grid;
+  justify-items: center;
+}
+.lc-dial {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1;
+  touch-action: none;
+  user-select: none;
+  overflow: visible;
+}
+.lc-lace circle {
+  fill: var(--lc-paper);
+  stroke: rgba(122, 99, 230, 0.25);
+  stroke-width: 0.6;
+}
+.lc-lace .lc-lace-fill {
+  stroke: none;
+}
+.lc-lace .lc-hole {
+  fill: #e8e5f7;
+  stroke: rgba(122, 99, 230, 0.3);
+}
+.lc-spin {
+  filter: drop-shadow(0 6px 10px rgba(60, 60, 120, 0.18));
+  cursor: grab;
+}
+.lc.is-bloom .lc-spin {
+  animation: lc-bloom 1.4s cubic-bezier(0.2, 1.2, 0.3, 1);
+}
+@keyframes lc-bloom {
+  0% {
+    transform: scale(0.82) rotate(-40deg);
+  }
+  60% {
+    transform: scale(1.06) rotate(8deg);
+  }
+}
+.lc-face {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: rgba(44, 49, 64, 0.12);
+}
+.lc-track {
+  fill: none;
+  stroke: rgba(44, 49, 64, 0.07);
+  stroke-width: 18;
+}
+.lc-track.is-thin {
+  stroke-width: 6;
+}
+.lc-detent {
+  stroke: rgba(44, 49, 64, 0.25);
+  stroke-width: 1;
+}
+.lc-pts {
+  fill: none;
+  stroke: var(--lc-violet);
+  stroke-width: 18;
+  stroke-linecap: round;
+  opacity: 0.85;
+  transition: d 0.2s;
+}
+.lc-knob {
+  fill: #fff;
+  stroke: var(--lc-violet);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px rgba(60, 40, 160, 0.35));
+  cursor: grab;
+}
+.lc-turn {
+  fill: var(--lc-violet);
+}
+.lc-rung-bed {
+  fill: none;
+  stroke: rgba(44, 49, 64, 0.08);
+  stroke-width: 18;
+}
+.lc-rung-fill {
+  fill: none;
+  stroke-width: 18;
+  stroke-linecap: round;
+}
+.lc-rung.is-min .lc-rung-fill {
+  stroke: var(--lc-teal);
+}
+.lc-rung.is-goal .lc-rung-fill {
+  stroke: var(--lc-violet);
+}
+.lc-rung.is-exceptional .lc-rung-fill {
+  stroke: var(--lc-rose);
+}
+.lc-rung.is-off {
+  opacity: 0.35;
+}
+.lc-rung.is-reached .lc-rung-fill {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+.lc-rung-tag {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(44, 49, 64, 0.35);
+  stroke-width: 2;
+}
+.lc-time {
+  fill: none;
+  stroke: var(--lc-teal);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.lc-over {
+  fill: none;
+  stroke: #d2453a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 2 4;
+}
+.lc-end {
+  fill: none;
+  stroke: rgba(44, 49, 64, 0.12);
+  stroke-width: 7;
+}
+.lc-end.is-on {
+  stroke: var(--lc-ink);
+}
+.lc-core {
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 2;
+  filter: drop-shadow(0 4px 10px rgba(60, 60, 120, 0.2));
+}
+.lc-core-state {
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  text-anchor: middle;
+  fill: var(--lc-quiet);
+}
+.lc-dial.is-locked .lc-core-state {
+  fill: var(--lc-rose);
+}
+.lc-dial.is-done .lc-core-state {
+  fill: var(--lc-teal);
+}
+.lc-core-num {
+  font-family: "Didot", "Bodoni 72", Georgia, serif;
+  font-size: 40px;
+  text-anchor: middle;
+  fill: var(--lc-ink);
+}
+.lc-core-unit {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-anchor: middle;
+  fill: var(--lc-quiet);
+  text-transform: uppercase;
+}
+.lc-thread {
+  stroke: rgba(44, 49, 64, 0.35);
+  stroke-width: 1;
+}
+.lc-thread.is-wait,
+.lc-thread.is-open {
+  stroke-dasharray: 2 2;
+}
+.lc-bead {
+  stroke: #fff;
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 3px rgba(40, 40, 90, 0.3));
+  transition: r 0.2s;
+  cursor: pointer;
+}
+.lc-bead.is-open,
+.lc-bead.is-wait {
+  animation: lc-breathe 2s ease-in-out infinite;
+}
+.lc-bead.is-done {
+  opacity: 0.55;
+}
+@keyframes lc-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+.lc-hint {
+  margin-top: -2px !important;
+  font-size: 11px;
+  color: var(--lc-quiet);
+}
+.lc-math {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  animation: lc-in 0.3s ease-out;
+}
+@keyframes lc-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Legend rows */
+.lc-legend {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(40, 50, 90, 0.06);
+}
+.lc-legend h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: normal;
+  font-size: 17px;
+}
+.lc-legend h3 small {
+  font-family: var(--font-karla), sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--lc-quiet);
+}
+.lc-seg {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(44, 49, 64, 0.06);
+  font-family: var(--font-karla), sans-serif;
+  font-style: normal;
+  font-size: 12px;
+}
+.lc-seg button {
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.lc-seg button[aria-pressed="true"] {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(40, 50, 90, 0.15);
+}
+.lc-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.lc-field {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--lc-quiet);
+}
+.lc-field.is-off {
+  opacity: 0.4;
+}
+.lc-field input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(44, 49, 64, 0.25);
+  background: transparent;
+  outline: 0;
+  font-family: "Didot", "Bodoni 72", Georgia, serif;
+  font-size: 26px;
+  color: var(--lc-ink);
+  -moz-appearance: textfield;
+}
+.lc-field input::-webkit-inner-spin-button {
+  display: none;
+}
+.lc-field input:focus {
+  border-bottom-color: var(--lc-violet);
+}
+.lc-field small {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.lc-rows {
+  display: grid;
+  gap: 2px;
+}
+.lc-row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: background 0.15s;
+  animation: lc-in 0.3s ease-out;
+}
+.lc-row i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.lc-row i.is-diamond {
+  border-radius: 1px;
+  transform: rotate(45deg) scale(0.85);
+}
+.lc-row.is-done .lc-row-name {
+  color: var(--lc-quiet);
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 0, 0, 0.2);
+}
+.lc-row.is-hot {
+  background: rgba(122, 99, 230, 0.08);
+}
+.lc-row-name {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lc-row small {
+  font-size: 11px;
+  color: var(--lc-quiet);
+}
+.lc-mini {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(44, 49, 64, 0.06);
+}
+.lc-mini:hover:not(:disabled) {
+  background: rgba(122, 99, 230, 0.15);
+}
+.lc-mini.is-x {
+  background: none;
+  color: var(--lc-quiet);
+}
+.lc-quiet {
+  font-size: 12px;
+  color: var(--lc-quiet);
+}
+.lc-adds,
+.lc-keys {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.lc-keys {
+  margin-top: 0;
+}
+.lc-add {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(44, 49, 64, 0.12), 0 1px 2px rgba(40, 50, 90, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.lc-add:hover:not(:disabled),
+.lc-add[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px var(--lc-violet), 0 4px 12px rgba(122, 99, 230, 0.2);
+  transform: translateY(-1px);
+}
+.lc-keys .lc-add {
+  flex: 1;
+}
+.lc-add.is-done {
+  background: linear-gradient(135deg, #fff, #eefaf9);
+}
+.lc-addneed,
+.lc-picker {
+  margin-top: 10px;
+  animation: lc-in 0.25s ease-out;
+}
+.lc-kinds {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.lc-kinds button {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  box-shadow: 0 0 0 1px rgba(44, 49, 64, 0.15);
+}
+.lc-kinds button.is-first[aria-pressed="true"] {
+  background: var(--lc-violet);
+  color: #fff;
+}
+.lc-kinds button.is-resource[aria-pressed="true"] {
+  background: var(--lc-teal);
+  color: #fff;
+}
+.lc-kinds button.is-await[aria-pressed="true"] {
+  background: var(--lc-rose);
+  color: #fff;
+}
+.lc-x {
+  margin-left: auto;
+  color: var(--lc-quiet);
+}
+.lc-hint {
+  font-size: 11px;
+  color: var(--lc-quiet);
+}
+.lc-picker input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 0;
+  outline: 0;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(122, 99, 230, 0.4);
+}
+.lc-menu {
+  margin-top: 4px;
+  display: grid;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 24px -8px rgba(40, 50, 90, 0.3);
+}
+.lc-menu button {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 12px;
+  font-size: 13px;
+  text-align: left;
+}
+.lc-menu button[aria-selected="true"] {
+  background: rgba(122, 99, 230, 0.1);
+}
+.lc-menu small {
+  color: var(--lc-quiet);
+}
+.lc-menu .is-create {
+  color: var(--lc-violet);
+}
+.lc-menu.is-empty {
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--lc-quiet);
+}
+
+/* Notes */
+.lc-count {
+  font-family: var(--font-karla), sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(122, 99, 230, 0.12);
+  color: var(--lc-violet);
+}
+.lc-due {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lc-violet);
+  animation: lc-breathe 1.4s ease-in-out infinite;
+}
+.lc-compose {
+  position: relative;
+}
+.lc-compose textarea {
+  width: 100%;
+  resize: none;
+  padding: 10px 12px 34px;
+  border-radius: 12px;
+  border: 0;
+  outline: 0;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(44, 49, 64, 0.1);
+  font-size: 13px;
+}
+.lc-compose .is-send {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+}
+.lc-thread-list {
+  margin-top: 12px;
+  position: relative;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+.lc-thread-list::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: linear-gradient(var(--lc-violet), transparent);
+}
+.lc-thread-list li {
+  position: relative;
+  font-size: 13px;
+}
+.lc-thread-list li::before {
+  content: "";
+  position: absolute;
+  left: -19px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px var(--lc-violet);
+}
+.lc-thread-list time {
+  font-size: 11px;
+  color: var(--lc-quiet);
+  letter-spacing: 0.04em;
+}

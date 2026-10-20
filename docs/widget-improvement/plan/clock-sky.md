@@ -10,7 +10,7 @@ One evening is being told as if it were still afternoon, still last night, or al
 
 Solar remainder is on the strip and counts time since sunset. At 11:10 PM the glass is `4h 46m` / `after sunset · 6:24 PM`. Tomorrow’s sunrise is already known: 6:50 AM, 7h 40m away. Moon is on the strip and says both **New moon** and **1 day until new moon**. The instant is 10 Oct 2026, 8:51 AM. Weather is on the strip at 69°F, clear, and the footer still says the day warms to 81° by 3p. The same fetch has Saturday drizzle and Sunday heavy rain. Tracking now is on the strip, caption `Last`, footer `last known`, lanes ended at 9:55 PM, and the 10:41 PM Text log instant is skipped. At 11pm the pet is asleep on a 7/28 sheet, so an underway day wears the empty-night face.
 
-The hidden faces, if read, are the same kind of miss. Next would be the untimed inbox row “process inbox information”. Night well is empty for Oct 8 and Oct 9, while Oct 6 is an all-nighter and Oct 4 was 5h 59m. Plan and lived says Close (17h 42m vs 18h 56m) because plan minutes are mostly Computer Work copied onto done rows and lived includes 9h 40m of sleep. Days Until target “Elijah Comes Home” on 2026-09-28 is past, and the tile is hidden.
+The hidden faces, if read, are the same kind of miss. Next would be the untimed inbox row “process inbox information”. Night well is empty for Oct 8 and Oct 9, while Oct 6 is an all-nighter and Oct 4 was 5h 59m. Plan and lived says Close (17h 42m vs 18h 56m) because plan minutes are mostly Computer Work copied onto done rows and lived includes 9h 40m of sleep. Countdown target “Elijah Comes Home” on 2026-09-28 is past, and the tile is hidden.
 
 ## Do these, in order
 
@@ -98,9 +98,9 @@ The dialog shows the amounts left out: echoed minutes, and the sleep that left t
 
 **Acceptance.** For 9 Oct the word is not Close and the footer is not `plan 17h 42m · lived 18h 56m`. Plan for the word is the 30 forward minutes (open “process inbox information”, no clock). The 1,032 echoed minutes stay out: five pen-action Computer Work rows (165+40+67+189+55 = 516) plus “Work for 5 hours” holding that 516 again. Lived for the word is 556 (9h 16m), the union after the 580 sleep minutes (9h 40m, 3:00 AM–12:40 PM) leave, even though Home still runs 3:00 AM–9:56 PM. 556 against 30 is Over. Mood (356) and Alone (250) are not the lived number. The five zero-length habit rows add nothing. `paint` stays hidden.
 
-### 9. Days Until — a past date says Since
+### 9. Countdown — a past date says Since
 
-**Change.** When the target is behind you, the caption and the dialog title follow the count-up. `daysUntilLiveFace` in `lib/home-widgets.ts` already returns footer `Since ${label}` once a date-only target is past midnight, and the CRT is `formatCountdownSpan` of the elapsed time. Empty `time` is local midnight via `daysUntilTargetDate`. **Shipped after this plan:** many marks (`items[]`), explicit countdown / count-up / auto modes, caption from `daysUntilCaption`, optional Plan all-day link — see [`../home-widget-daysuntil.md`](../home-widget-daysuntil.md). The honesty step here (Since caption + midnight note) still applies per mark; the family may stay hidden.
+**Change.** When the target is behind you, the caption and the dialog title follow the count-up. `daysUntilLiveFace` in `lib/home-widgets.ts` already returns footer `Since ${label}` once a date-only target is past midnight, and the CRT is `formatCountdownSpan` of the elapsed time. Empty `time` is local midnight via `daysUntilTargetDate`. **Shipped after this plan:** many marks (`items[]`), explicit countdown / count-up / auto modes, caption from `daysUntilCaption`, optional Plan all-day link — see [`../home-widget-countdown.md`](../home-widget-countdown.md). The honesty step here (Since caption + midnight note) still applies per mark; the family may stay hidden.
 
 **Why this is last.** The count-up math is already the true span. The remaining lie is the future caption on a date that passed. Nothing else on the strip depends on it tonight, and the square stays in `hidden`.
 
@@ -112,7 +112,7 @@ The dialog shows the amounts left out: echoed minutes, and the sleep that left t
 
 Do not add a sun-phase helper. Solar and Night both resolve the pin the same way — weather latitude and longitude, otherwise `sunPlaceForCity` of Settings `homeCity`, otherwise `SAN_DIEGO_COORDS` — and both call `computeDaySun`. Solar needs tomorrow’s sunrise (10 Oct, 6:50 AM). Night needs the sunset of the evening before the logged morning (`previousDateKey`: 3 Oct 6:32 PM for the 4 Oct night, 5 Oct 6:29 PM for the 6 Oct all-nighter). Those are two dates. Weather’s own sunrise and sunset (6:48 AM / 6:22 PM on 9 Oct) stay on the weather instrument.
 
-Do not add an “age since last stamp” helper. Tracking’s age is `loggedAt` on `trackingScopeStatuses` (9:55 PM, 74 minutes before 11:09). Days Until counts from a target midnight with `daysUntilRemainingMs`. Night’s gap is a walk across mornings in `pickHomeNight`.
+Do not add an “age since last stamp” helper. Tracking’s age is `loggedAt` on `trackingScopeStatuses` (9:55 PM, 74 minutes before 11:09). Countdown counts from a target midnight with `daysUntilRemainingMs`. Night’s gap is a walk across mornings in `pickHomeNight`.
 
 ## Leave for later
 
@@ -125,7 +125,7 @@ These are in the reports. They are not the true-next-fact steps above.
 - Next: the rest-of-day rail, and the key pinning the home cursor to the hit’s day (Open To Do currently lands on 24 Sep).
 - Night: four single-word wells, a week of mornings, the 8h target, the 17 Sep `nightProblem` line, estimated marks, a Morning Review key.
 - Plan and lived: day-plan and week-plan lines as prose, the est. chip, the ratio next to the fifth-either-way sentence, the gold pip following the word.
-- Days Until: a previous-mark line that keeps 28 Sep when a new target is set (multi-mark tiles already ship), the minutes under the hour, a passed lamp, opening 28 Sep on the home calendar.
+- Countdown: a previous-mark line that keeps 28 Sep when a new target is set (multi-mark tiles already ship), the minutes under the hour, a passed lamp, opening 28 Sep on the home calendar.
 - Tracking: Update that sends only a changed lane and offers this minute versus the open stretch, today’s sequence with holes, the mood reading, a minute tick, the lamp following Now versus Last.
 
 ## Do not
@@ -134,6 +134,6 @@ These are in the reports. They are not the true-next-fact steps above.
 - Do not restyle overview type, CRT sizes, or overview font CSS.
 - Do not edit the research reports or `docs/widget-improvement/README.md`.
 - Do not seed faces from `data/shared-persist.json`. That file still has Portland, Follow the clock off, a thinner sleep store, and an empty Elijah date.
-- Do not invent a city, a date, a moonrise, or a log camera. (Multiple Days Until marks are intentional product work outside this honesty pass — see [`../home-widget-daysuntil.md`](../home-widget-daysuntil.md).)
+- Do not invent a city, a date, a moonrise, or a log camera. (Multiple Countdown marks are intentional product work outside this honesty pass — see [`../home-widget-countdown.md`](../home-widget-countdown.md).)
 - Do not paint the 73 open tracking minutes as part of showing their age.
 - Do not change the Plan sidebar by folding the echo cut into `plannedMinutesForDay`.

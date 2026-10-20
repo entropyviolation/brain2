@@ -16,6 +16,7 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { findPen, partsMinutes, timeTrio, trackedTimeForItem } from "@/lib/tracked-time"
 import type { Task } from "@/lib/types"
+import { PEN_COLOR_OPEN_TITLE, openPenSettings, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./item-pen-time.css"
 
 type PenLink = { scopeId: string; penId: string }
@@ -27,16 +28,21 @@ export function ItemPenLinksField({
   penLinks,
   onChange,
   readOnly = false,
+  parent,
 }: {
   penLinks: PenLink[] | undefined
   onChange: (next: PenLink[] | undefined) => void
   readOnly?: boolean
+  /** A new pen made here counts as this one (same view), until pen settings say otherwise. */
+  parent?: PenLink
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
+  const addPen = useTimeTrackingStore((s) => s.addPen)
   const [picking, setPicking] = useState(false)
   const [query, setQuery] = useState("")
   const links = penLinks ?? []
   const linked = new Set(links.map((l) => l.penId))
+  const parentPen = parent && scopes.find((sc) => sc.id === parent.scopeId)?.pens.find((p) => p.id === parent.penId)
 
   const options = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -70,7 +76,12 @@ export function ItemPenLinksField({
         {links.map((link, i) => {
           const pen = findPen(scopes, link.penId)
           return (
-            <span key={link.penId} className="ipt-chip" title={i === 0 ? "Clock pen: ▶ paints with this one" : undefined}>
+            <span
+              key={link.penId}
+              className="ipt-chip"
+              title={`${i === 0 ? "Clock pen: ▶ paints with this one. " : ""}${PEN_COLOR_OPEN_TITLE}`}
+              onDoubleClick={penColorDoubleClick(link.scopeId, link.penId)}
+            >
               <span className="ipt-dot" style={{ background: pen?.color ?? "transparent" }} aria-hidden />
               {pen?.name ?? "Missing pen"}
               {i === 0 && links.length > 1 && <span className="ipt-quiet"> · clock</span>}
@@ -93,6 +104,7 @@ export function ItemPenLinksField({
           <input
             autoFocus
             className="ipt-search"
+            data-draft=""
             placeholder="Find a pen…"
             aria-label="Find a pen"
             value={query}
@@ -108,7 +120,29 @@ export function ItemPenLinksField({
             }}
           />
           <ul className="ipt-options" role="listbox" aria-label="Pens">
-            {options.length === 0 && <li className="ipt-quiet">No pens match.</li>}
+            {options.length === 0 && !query.trim() && <li className="ipt-quiet">No pens match.</li>}
+            {query.trim() && scopes[0] && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) && (
+              <li>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  title={`New pen${parentPen ? ` counting as ${parentPen.name}` : ""}, then open its settings`}
+                  onClick={() => {
+                    const scopeId = parentPen ? parent!.scopeId : scopes[0].id
+                    const penId = addPen(scopeId, {
+                      name: query.trim(),
+                      color: `hsl(${Math.round(Math.random() * 360)} 45% 50%)`,
+                      ...(parentPen ? { parentId: parentPen.id, parentIds: [parentPen.id] } : {}),
+                    })
+                    add({ scopeId, penId })
+                    openPenSettings(scopeId, penId)
+                  }}
+                >
+                  <Plus className="h-3 w-3" /> New pen “{query.trim()}”
+                </button>
+              </li>
+            )}
             {options.map((o) => (
               <li key={o.penId}>
                 <button type="button" role="option" aria-selected={false} onClick={() => add({ scopeId: o.scopeId, penId: o.penId })}>

@@ -15,7 +15,7 @@ import {
   togglePenColorNowObjectiveComplete,
 } from "./pen-color-session"
 import { usePenColorSessionStore } from "./pen-color-session-store"
-import { clockPenFor, isTaskOnClock, startTaskClock } from "./task-clock"
+import { clockPenFor, isTaskOnClock, startTaskClock, stepPenLinks } from "./task-clock"
 
 const AT = new Date(2026, 9, 15, 20, 24, 0)
 const later = (min: number) => new Date(AT.getTime() + min * 60_000)
@@ -156,5 +156,20 @@ describe("parseObjectiveClock", () => {
   })
   it("honours am/pm and rolls to yesterday when the time is still ahead", () => {
     expect(parseObjectiveClock("now 9:30pm call", now).at?.getDate()).toBe(14)
+  })
+})
+
+describe("stepPenLinks", () => {
+  const a = { scopeId: "s", penId: "a" }
+  const b = { scopeId: "s", penId: "b" }
+  const t = {
+    penLinks: [a],
+    subtasks: [{ id: "p", description: "P", completed: false, penLinks: [b], subtasks: [{ id: "c", description: "C", completed: false }] }, { id: "q", description: "Q", completed: false, penLinks: [] }],
+  }
+  it("inherits from the nearest parent, then the task; [] is no pen", () => {
+    expect(stepPenLinks(t, "c")).toMatchObject({ links: [b], own: false })
+    expect(stepPenLinks(t, "p")).toMatchObject({ links: [b], own: true })
+    expect(stepPenLinks(t, "q").links).toEqual([])
+    expect(stepPenLinks({ ...t, subtasks: [] }, "x")).toMatchObject({ links: [a], from: null })
   })
 })

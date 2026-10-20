@@ -1,0 +1,68 @@
+/* components/steps/tree-math.css — completion figure (TreeMath) and row gauges (SplitGauge) */
+
+.tree-math {
+  --tm-min: #2f6f80;
+  --tm-goal: #5b6f8f;
+  --tm-exceptional: #6a58a6;
+  --tm-ink: rgba(36, 44, 58, 0.88);
+  --tm-rule: rgba(60, 70, 90, 0.14);
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 6px 22px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--tm-rule);
+  border-radius: 4px;
+  color: var(--tm-ink);
+  background:
+    linear-gradient(var(--tm-rule) 1px, transparent 1px) 0 0 / 100% 12px,
+    linear-gradient(90deg, var(--tm-rule) 1px, transparent 1px) 0 0 / 12px 100%,
+    rgba(255, 255, 255, 0.35);
+  background-blend-mode: normal;
+}
+.tree-math small { font-size: 10px; letter-spacing: 0.04em; opacity: 0.6; }
+.tm-v { font: italic 15px/1 "STIX Two Math", "Cambria Math", "Latin Modern Math", Georgia, serif; }
+
+.tm-structure { display: grid; gap: 4px; font: 13px/1.2 Georgia, serif; }
+
+.tm-mosaics { display: grid; gap: 5px; }
+.tm-mosaic { display: grid; grid-template-columns: 52px 1fr 36px; align-items: center; gap: 8px; font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tm-mosaic-label { opacity: 0.6; text-align: right; }
+.tm-mosaic-val { text-align: right; font-weight: 600; }
+.tm-mosaic-bar { display: flex; gap: 2px; height: 14px; }
+.tm-seg { position: relative; flex-basis: 0; min-width: 6px; background: rgba(60, 70, 90, 0.1); border-radius: 1px; overflow: hidden; transition: flex-grow 0.35s ease; }
+.tm-seg-fill { position: absolute; inset: 0 auto 0 0; background: var(--tm-goal); opacity: 0.85; transition: width 0.35s ease; }
+.tm-seg.is-min .tm-seg-fill { background: var(--tm-min); }
+.tm-seg.is-exceptional .tm-seg-fill { background: var(--tm-exceptional); }
+.tm-seg-name { position: absolute; left: 3px; top: 1px; font: italic 10px/12px Georgia, serif; color: #fff; mix-blend-mode: difference; }
+
+.tm-formulas { display: grid; gap: 5px; font: 13px/1 Georgia, serif; white-space: nowrap; }
+.tm-eq { display: flex; align-items: center; gap: 4px; }
+.tm-eq b { font-weight: 600; }
+.tm-eq sub { font-size: 9px; }
+.tm-frac { display: inline-flex; flex-direction: column; align-items: center; font-size: 10px; line-height: 1.1; vertical-align: middle; }
+.tm-frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 2px; }
+.tm-frac .tm-v { font-size: 11px; }
+.tm-paren { font-size: 22px; font-weight: 200; line-height: 1; }
+.tm-delta { font-size: 12px; opacity: 0.85; }
+
+.tm-levels { display: grid; gap: 3px; font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tm-level { display: grid; grid-template-columns: 14px 48px 56px 56px auto; align-items: center; gap: 6px; --c: var(--tm-goal); }
+.tm-level.is-min { --c: var(--tm-min); }
+.tm-level.is-exceptional { --c: var(--tm-exceptional); }
+.tm-level.is-empty { opacity: 0.4; }
+.tm-level.is-focus { font-weight: 700; }
+.tm-level .tm-v { font-size: 12px; }
+.tm-level-tag { color: var(--c); font-weight: 700; }
+.tm-level-track { height: 3px; background: rgba(60, 70, 90, 0.14); border-radius: 2px; overflow: hidden; }
+.tm-level-track > span { display: block; height: 100%; background: var(--c); transition: width 0.35s ease; }
+.tree-math .is-quiet { opacity: 0.55; }
+
+@media (max-width: 900px) {
+  .tree-math { grid-template-columns: 1fr; }
+}
+
+/* Row gauges: fixed width so leaves (blank) keep the columns lined up. */
+.tm-gauge { min-width: 246px; }
+.tm-gauge .level-gauge-pct { min-width: 30px; text-align: right; }

@@ -17,6 +17,11 @@ import { itemTitle } from "@/lib/item-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { attentionGiven, attentionGivenLabel } from "./attention-given"
 
+// Phase 15 B: the level reached shows as lit facts; unreached levels read "—".
+const LEVELS = ["min", "goal", "exceptional"] as const
+const LEVEL_KEY = { min: "B", goal: "G", exceptional: "E" } as const
+const LEVEL_WORD = { min: "Bare minimum", goal: "Goal", exceptional: "Exceptional" } as const
+
 export function DoneTodoSection({
   title,
   todos,
@@ -95,7 +100,18 @@ export function DoneTodoSection({
               >
                 <span className="todo-lamp is-done" aria-hidden />
                 <div className="flex-1 min-w-0">
-                  <div className="todo-row-name">{itemTitle(todo)}</div>
+                  <div className="todo-row-name">
+                    {itemTitle(todo)}
+                    {task?.tierReached ? (
+                      <span className="todo-done-levels" aria-label={`Done at ${LEVEL_WORD[task.tierReached]}`}>
+                        {LEVELS.map((l, i) => (
+                          <i key={l} className={i <= LEVELS.indexOf(task.tierReached!) ? "is-lit" : undefined}>
+                            {i <= LEVELS.indexOf(task.tierReached!) ? LEVEL_KEY[l] : "—"}
+                          </i>
+                        ))}
+                      </span>
+                    ) : null}
+                  </div>
                   {task && completedAt && (
                     <CompletionTimeLine
                       task={task}

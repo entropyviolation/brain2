@@ -18,4 +18,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, Why missed (optional preset and note on the operation review; closing without Save writes nothing; marking the stage abandoned opens the same dialog), category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail. Status: N panels on.
+Back / Board; click title to rename; stage badge. Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Tabs from Settings: Home / To do / Phases / Parts / Timeline / Locations / Plan / Resources / Log. Home: Mission, Stage, Notes, Work/neglect heatmap. To do next rail. Status: N panels on.

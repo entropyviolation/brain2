@@ -151,6 +151,36 @@ describe("Header tracking popup", () => {
     expect(within(moment).getByRole("region", { name: "Events" })).toBeInTheDocument()
   })
 
+  it("logs intake at this minute; a chip only fills the name", async () => {
+    const user = userEvent.setup()
+    render(<HeaderTrackingPopup />)
+    const intake = await screen.findByRole("region", { name: "Intake" })
+    const field = within(intake).getByRole("textbox", { name: "Add to Intake" })
+    await user.click(within(intake).getByRole("button", { name: "Water" }))
+    expect(field).toHaveValue("Water")
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "Water")).toBe(false)
+    await user.click(within(intake).getByRole("button", { name: "Add to Intake" }))
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "Water" && entry.intakeClass === "drink")).toBe(true)
+
+    await user.click(within(intake).getByRole("button", { name: "Drug / med" }))
+    await user.type(within(intake).getByRole("textbox", { name: "Add to Intake" }), "ibuprofen{Enter}")
+    const med = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "ibuprofen")
+    expect(med?.intakeClass).toBe("drug")
+    expect(med?.date).toBe(formatLocalDateKey(new Date()))
+  })
+
+  it("keeps the four lanes up and closes Update state on a second click", async () => {
+    const user = userEvent.setup()
+    render(<HeaderTrackingPopup />)
+    const lane = await screen.findByTestId("htk-lane-mood")
+    expect(lane).toBeVisible()
+    await user.click(lane)
+    expect(screen.getByRole("region", { name: "Update state" })).toBeInTheDocument()
+    await user.click(lane)
+    expect(screen.queryByRole("region", { name: "Update state" })).not.toBeInTheDocument()
+    expect(screen.getAllByTestId(/^htk-lane-/)).toHaveLength(4)
+  })
+
   it("shows the day plan log and keeps an added line", async () => {
     const user = userEvent.setup()
     render(<HeaderTrackingPopup />)

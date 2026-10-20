@@ -12,6 +12,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting, useCopySettingsWriter, useWidgetFrame } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -48,9 +50,23 @@ function readTickerPeriod(): TickerPeriod {
   return "day"
 }
 
+function isTickerPeriod(value: unknown): value is TickerPeriod {
+  return value === "day" || value === "week" || value === "month" || value === "all"
+}
+
+/**
+ * The ticker period. On the Visual dashboard each Points copy keeps its own
+ * (the gear's Period, or the face keys); outside it, the per-device key.
+ */
 function useTickerPeriod(): [TickerPeriod, (p: TickerPeriod) => void] {
+  const frame = useWidgetFrame()
+  const copyPeriod = useCopySetting<string>("period", "")
+  const writeCopy = useCopySettingsWriter()
   const [period, setPeriod] = useState<TickerPeriod>("day")
   useEffect(() => setPeriod(readTickerPeriod()), [])
+  if (frame && isTickerPeriod(copyPeriod)) {
+    return [copyPeriod, (p) => writeCopy({ period: p })]
+  }
   const choose = (p: TickerPeriod) => {
     setPeriod(p)
     try {
@@ -201,6 +217,8 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
 
   const pointsHistory = usePointsStore((s) => s.pointsHistory)
   const [period, setPeriod] = useTickerPeriod()
+  const showChart = useCopySetting<boolean>("chart", true)
+  const showKeys = useCopySetting<boolean>("keys", true)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const ticker = useMemo(
@@ -221,9 +239,11 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
         <TileHide id="points" onHide={onHide} />
         <TileOpen label="Points" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Points</span>
+            <span>
+              <CopyCaption>Points</CopyCaption>
+            </span>
           </div>
-          <div className="home-crt home-points-crt home-ticker-crt">
+          <div className="home-crt home-points-crt home-ticker-crt" data-chart={showChart ? "on" : "off"}>
             <div className="home-ticker-quote">
               <span className="home-ticker-symbol">
                 PTS <em>{periodMeta.label}</em>
@@ -240,7 +260,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </span>
               <span className="home-ticker-vs">{periodMeta.vs}</span>
             </div>
-            {mounted ? <TickerChart ticker={ticker} /> : <div className="home-ticker-chart" />}
+            {showChart ? mounted ? <TickerChart ticker={ticker} /> : <div className="home-ticker-chart" /> : null}
           </div>
         </TileOpen>
         <div className="home-tile-foot home-ticker-foot">
@@ -248,6 +268,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
             all-time {points.alltime.score}
             {points.today.sub ? ` · ${points.today.sub}` : ""}
           </p>
+          {showKeys ? (
           <div className="home-ticker-keys" role="group" aria-label="Points period">
             {TICKER_PERIODS.map((p) => (
               <button
@@ -263,6 +284,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </button>
             ))}
           </div>
+          ) : null}
         </div>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Points">

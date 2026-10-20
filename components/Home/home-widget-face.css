@@ -95,7 +95,8 @@ body.win95-app .home95 .home-tile.is-vocab { --home-caption-pip: #8affe6; }
 /* ---- Body: satin handheld ---------------------------------------------- */
 
 body.win95-app .home95 .home-overview .home-tile,
-body.win95-app .hab95 .home95 .home-overview > .home-tile {
+body.win95-app .hab95 .home95 .home-overview > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .vd-cell > .home-tile {
   --home-tile-h: var(--face-tile-h);
   height: var(--face-tile-h);
   min-height: var(--face-tile-h);
@@ -440,7 +441,9 @@ body.win95-app .hab95 .home95 .home-overview[data-testid="home-overview"] {
 }
 
 body.win95-app .home95 .home-overview > .home-tile,
-body.win95-app .hab95 .home95 .home-overview > .home-tile {
+body.win95-app .home95 .home-overview > .vd-cell > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .vd-cell > .home-tile {
   width: auto;
   min-width: 0;
   max-width: none;
@@ -495,7 +498,8 @@ body.win95-app .hab95 .home95 .home-overview > .home-tile {
 /* ---- Nameplate: a separate brushed plate hung on the top edge ----------- */
 
 body.win95-app .home95 .home-overview .home-tile,
-body.win95-app .hab95 .home95 .home-overview > .home-tile {
+body.win95-app .hab95 .home95 .home-overview > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .vd-cell > .home-tile {
   padding-top: 17px;
 }
 
@@ -566,7 +570,8 @@ body.win95-app .hab95 .home95 .home-overview[data-testid="home-overview"] {
 
 /* Tiles fill their grid area; the area sets the size. */
 body.win95-app .home95 .home-overview .home-tile,
-body.win95-app .hab95 .home95 .home-overview > .home-tile {
+body.win95-app .hab95 .home95 .home-overview > .home-tile,
+body.win95-app .hab95 .home95 .home-overview > .vd-cell > .home-tile {
   grid-column: span 1;
   grid-row: span 2;
   height: auto;

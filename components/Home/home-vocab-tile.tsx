@@ -20,7 +20,12 @@ import { useMemo, useState } from "react"
 import { VocabDictionaryFold, VocabLookup } from "@/components/Home/home-vocab-dictionary"
 import { VocabFlashcards } from "@/components/Home/home-vocab-flashcards"
 import { VocabThousand } from "@/components/Home/home-vocab-thousand"
-import { isThousandLang } from "@/lib/vocab-lists"
+import { isThousandLang, isVocabKnown, thousandListId } from "@/lib/vocab-lists"
+import { useTaskStore } from "@/lib/task-store"
+import { useDashboardStore } from "@/lib/widgets/dashboard-store"
+import { CEFR_LABEL, examLevelName, isCefrLevel } from "@/lib/widgets/language-levels"
+import { CopyCaption, useCopySetting, useWidgetFrame } from "@/components/Home/widgets/copy-context"
+import { LanguageStudySettings } from "@/components/Home/widgets/language-study-settings"
 import "@/components/Home/home-vocab-study.css"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
 import { addCalendarDays, formatLocalDateKey } from "@/lib/date-utils"
@@ -44,6 +49,7 @@ import {
   type VocabEntry,
   type VocabLang,
 } from "@/lib/vocab-words"
+import type { CefrLevel } from "@/lib/widgets/language-levels"
 import { NativeSelect } from "@/components/ui/native-select"
 
 function readingLine(entry: VocabEntry): string {
@@ -53,21 +59,48 @@ function readingLine(entry: VocabEntry): string {
 export function VocabTile({
   currentDate,
   onHide,
+  lang,
 }: {
   currentDate: Date
   onHide: () => void
+  /** A Language study copy's language. Without it, the old active view. */
+  lang?: VocabLang
 }) {
-  const active = useVocabStore((s) => s.active)
+  const storeActive = useVocabStore((s) => s.active)
+  const active = lang ?? storeActive
   const levels = useVocabStore((s) => s.levels)
   const shuffles = useVocabStore((s) => s.shuffles)
   const shuffle = useVocabStore((s) => s.shuffle)
+  const favorites = useVocabStore((s) => s.favorites[active])
   const [open, setOpen] = useState(false)
+  const frame = useWidgetFrame()
+  const copy = useDashboardStore((s) => (frame ? s.copies.find((entry) => entry.id === frame.copy.id) : undefined))
+  const study = Boolean(frame && lang)
+  const role = useCopySetting<string>("role", active === "en" ? "native" : "studied")
+  const cefrRaw = useCopySetting<string>("cefr", "")
+  const faceMode = useCopySetting<string>("face", "word")
+  const cefr = study && role === "studied" && isCefrLevel(cefrRaw) ? cefrRaw : null
+  const known = useTaskStore((s) => {
+    if (!study || !isThousandLang(active)) return null
+    const listId = thousandListId(active)
+    let total = 0
+    let ticked = 0
+    for (const task of s.tasks) {
+      if (!task.lists?.includes(listId)) continue
+      total++
+      if (isVocabKnown(task)) ticked++
+    }
+    return total > 0 ? `${ticked}/${total}` : null
+  })
 
   const dateKey = formatLocalDateKey(currentDate)
   const level = resolveVocabLevel(active, levels[active])
   const count = vocabShuffleCount(shuffles, active, dateKey)
   const pick = useMemo(() => pickVocabWord(active, level, dateKey, count), [active, level, dateKey, count])
   const entry = pick?.entry
+  const levelTag = cefr ?? (study ? VOCAB_LEVEL_LABEL[level] : null)
+  const showLevel = study && faceMode === "level"
+  const [knownN, knownOf] = (known ?? "0/0").split("/").map(Number) as [number, number]
 
   return (
     <>
@@ -75,6 +108,7 @@ export function VocabTile({
         className="home-tile is-vocab"
         data-widget="vocab"
         data-vocab-lang={active}
+        data-face={showLevel ? "level" : "word"}
         data-testid="home-vocab-tile"
         lang={VOCAB_LANG_SPEECH[active]}
       >
@@ -91,12 +125,29 @@ export function VocabTile({
         >
           ↻
         </button>
-        <TileOpen label="Vocab" onOpen={() => setOpen(true)}>
+        <TileOpen label={study ? `Language study ${VOCAB_LANG_LABEL[active]}` : "Vocab"} onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Vocab · {VOCAB_LANG_CODE[active]}</span>
+            {study ? (
+              <span>
+                <CopyCaption>{VOCAB_LANG_ENDONYM[active]}</CopyCaption>
+                {levelTag ? ` · ${levelTag}` : ""}
+              </span>
+            ) : (
+              <span>Vocab · {VOCAB_LANG_CODE[active]}</span>
+            )}
           </div>
           <div className="home-crt home-vocab-crt">
-            {entry ? (
+            {showLevel ? (
+              <span className="home-vocab-word-stack home-vocab-level-face">
+                <span className="home-vocab-word">{cefr ?? VOCAB_LEVEL_LABEL[level]}</span>
+                {cefr ? <span className="home-vocab-reading">{CEFR_LABEL[cefr]}</span> : null}
+                {known ? (
+                  <span className="home-widget-meter" role="progressbar" aria-label="Known words" aria-valuenow={knownN} aria-valuemin={0} aria-valuemax={knownOf}>
+                    <span style={{ width: `${knownOf ? Math.round((knownN / knownOf) * 100) : 0}%` }} />
+                  </span>
+                ) : null}
+              </span>
+            ) : entry ? (
               <>
                 {entry.picture ? (
                   <span className="home-vocab-picture" aria-hidden="true">{entry.picture}</span>
@@ -115,21 +166,46 @@ export function VocabTile({
           </div>
           <div className="home-tile-foot">
             <p className="hab-score-sub home-vocab-foot">
-              {entry ? `${entry.pos} · ${entry.definition}` : "No words at this level"}
+              {showLevel
+                ? known
+                  ? `${knownN} of ${knownOf} known`
+                  : `${favorites?.length ?? 0} favorites · ${entry ? entry.word : ""}`
+                : entry
+                  ? `${entry.pos} · ${entry.definition}`
+                  : "No words at this level"}
             </p>
           </div>
         </TileOpen>
       </div>
-      <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Vocab" className="home-vocab-dialog">
-        <VocabDetail currentDate={currentDate} />
+      <HomeWidgetDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={study ? `Language study · ${VOCAB_LANG_LABEL[active]}` : "Vocab"}
+        className="home-vocab-dialog"
+        settings={study && copy && lang ? <LanguageStudySettings copy={copy} lang={lang} /> : undefined}
+        removeNote="Favorites, shuffles, and known words stay, so installing it again picks up where you left off."
+      >
+        <VocabDetail currentDate={currentDate} lang={lang} role={study ? (role === "native" ? "native" : "studied") : undefined} cefr={cefr} />
       </HomeWidgetDialog>
     </>
   )
 }
 
-function VocabDetail({ currentDate }: { currentDate: Date }) {
+function VocabDetail({
+  currentDate,
+  lang,
+  role,
+  cefr,
+}: {
+  currentDate: Date
+  lang?: VocabLang
+  /** A Language study copy's role; native hides 1000 words. */
+  role?: "studied" | "native"
+  cefr?: CefrLevel | null
+}) {
   const languages = useVocabStore((s) => s.languages)
-  const active = useVocabStore((s) => s.active)
+  const storeActive = useVocabStore((s) => s.active)
+  const active = lang ?? storeActive
   const levels = useVocabStore((s) => s.levels)
   const shuffles = useVocabStore((s) => s.shuffles)
   const addLanguage = useVocabStore((s) => s.addLanguage)
@@ -174,6 +250,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
 
   return (
     <div className="home-vocab-detail">
+      {lang ? null : (
       <div className="home-vocab-views" role="tablist" aria-label="Language views">
         {languages.map((lang) => (
           <button
@@ -212,12 +289,13 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
           </label>
         ) : null}
       </div>
+      )}
 
       <div className="home-vocab-modes is-auto" role="tablist" aria-label="Vocab mode">
         {(
           [
             ["word", "Word of the day"],
-            ...(isThousandLang(active) ? ([["thousand", "1000 words"]] as const) : []),
+            ...(isThousandLang(active) && role !== "native" ? ([["thousand", "1000 words"]] as const) : []),
             ["cards", "Flashcards"],
             ["lookup", "Look up"],
           ] as const
@@ -236,7 +314,13 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
         ))}
       </div>
 
-      {mode === "thousand" && isThousandLang(active) ? (
+      {role === "studied" && cefr ? (
+        <p className="home-widget-note home-vocab-level-line">
+          Level {cefr} · {CEFR_LABEL[cefr]} · {examLevelName(active, cefr)}. The gear changes it or runs the placement quiz.
+        </p>
+      ) : null}
+
+      {mode === "thousand" && isThousandLang(active) && role !== "native" ? (
         <VocabThousand key={active} lang={active} />
       ) : mode === "lookup" ? (
         <VocabLookup lang={active} />
@@ -349,6 +433,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
         ) : null}
       </div>
 
+      {role === "studied" ? null : (
       <fieldset className="home-widget-fieldset">
         <legend>{VOCAB_LANG_LABEL[active]} level</legend>
         {vocabLevelsFor(active).map((option) => (
@@ -365,6 +450,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
           </label>
         ))}
       </fieldset>
+      )}
 
       {week.length > 0 ? (
         <details className="home-vocab-week">
@@ -399,7 +485,7 @@ function VocabDetail({ currentDate }: { currentDate: Date }) {
       </>
       )}
 
-      {languages.length > 1 ? (
+      {!lang && languages.length > 1 ? (
         <div className="home-widget-actions">
           <button type="button" className="home-review-key" onClick={() => removeLanguage(active)}>
             Remove {VOCAB_LANG_LABEL[active]}

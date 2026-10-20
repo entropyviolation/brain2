@@ -52,6 +52,8 @@ import {
   DEFAULT_WEEKLY_AVERAGE_BEAT_BONUS,
   DEFAULT_WEEKLY_GRADE_LIFT_BONUS,
 } from "@/lib/habit-points"
+import { useDashboardStore } from "@/lib/widgets/dashboard-store"
+import { useDashboardEditMode } from "@/components/Home/widgets/edit-mode"
 import { DEFAULT_GRADE_TOLERANCE } from "@/lib/calculations"
 import { DEFAULT_PERCENT_LED_TINT } from "@/lib/habit-led"
 import { DEFAULT_GRADE_TUBE_COLOR, DEFAULT_OUTPUT_TUBE_COLOR } from "@/lib/habit-tube"
@@ -172,6 +174,9 @@ export function resetAllStores() {
   useBabyAnimalsStore.getState().resetGallery()
   useHomeWidgetsStore.getState().resetWidgets()
   useHomeDaysUntilStore.setState({ items: [{ ...DEFAULT_HOME_DAYS_UNTIL_ITEM }] })
+  // Existing tests read the Milled look; Dash tests switch style themselves.
+  useDashboardStore.getState().resetDashboard("milled")
+  useDashboardEditMode.setState({ editing: false })
   useSkyMotionStore.setState({ ...DEFAULT_SKY_MOTION })
   useHomeWeatherStore.getState().resetPlace()
   useUiNamesStore.setState({ mode: "off" })

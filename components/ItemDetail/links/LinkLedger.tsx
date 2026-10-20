@@ -15,6 +15,7 @@
  */
 "use client"
 
+import { getRelationDef } from "@/lib/relation-registry"
 import { useMemo } from "react"
 import { iconFor } from "@/components/Icons/Icon"
 import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
@@ -59,6 +60,8 @@ export function LinkLedger({
   selectedKey,
   flashKey,
   onSelect,
+  onWhy,
+  notes,
 }: {
   edges: readonly EgoEdge[]
   factsFor: (id: string) => LinkItemFacts | null
@@ -71,6 +74,10 @@ export function LinkLedger({
   /** A row to flash once (a refused duplicate). */
   flashKey?: string | null
   onSelect?: (key: string) => void
+  /** Derived rule edges: open the proof card. */
+  onWhy?: (key: string) => void
+  /** Check lines by edge key (L5.2), neutral ink. */
+  notes?: ReadonlyMap<string, string>
 }) {
   const groups = useMemo(() => {
     const map = new Map<string, EgoEdge[]>()
@@ -117,6 +124,11 @@ export function LinkLedger({
                   >
                     {DIRECTION_GLYPH[edge.direction]}
                   </span>
+                  {notes?.get(edge.key) ? (
+                    <span className="rl-check" data-testid="link-check" title={notes.get(edge.key)}>
+                      check
+                    </span>
+                  ) : null}
                   <span className="rl-ledger-actions">
                     {onOpen && facts ? (
                       <button
@@ -143,7 +155,7 @@ export function LinkLedger({
                         Remove
                       </button>
                     ) : null}
-                    {edge.direction === "in" ? (
+                    {edge.direction === "in" && getRelationDef(edge.inLink?.relation ?? edge.relation)?.reciprocity !== "quiet" ? (
                       <>
                         <button
                           type="button"
@@ -161,6 +173,19 @@ export function LinkLedger({
                     ) : null}
                     {edge.direction === "derived" ? (
                       <>
+                        {onWhy && "proof" in edge ? (
+                          <button
+                            type="button"
+                            className="rl-key"
+                            aria-label={`Why is ${title} here?`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              onWhy(edge.key)
+                            }}
+                          >
+                            why?
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className="rl-key"

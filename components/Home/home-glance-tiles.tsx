@@ -7,9 +7,11 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useMemo, useState } from "react"
 import { harvestFace, inboxMillFace, nightWellFace, pickHomeNight } from "@/lib/home-glances"
-import { previousDateKey } from "@/lib/sleep-log"
+import { previousDateKey, sleepMinutes } from "@/lib/sleep-log"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { computeDaySun, SAN_DIEGO_COORDS } from "@/lib/sun-times"
 import { sunPlaceForCity, useSunTimesStore } from "@/lib/sun-times-store"
@@ -39,7 +41,13 @@ export function NightWellTile({
   const sunset = night
     ? computeDaySun(previousDateKey(night.date), pin.lat, pin.lng)?.sunsetMinutes
     : undefined
-  const face = nightWellFace(night, sunset)
+  const nightFace = nightWellFace(night, sunset)
+  const format = useCopySetting<string>("format", "hm")
+  const minutes = night ? sleepMinutes(night) : null
+  const face =
+    format === "decimal" && minutes != null && !night?.allNighter
+      ? { ...nightFace, crt: `${(minutes / 60).toFixed(1)}h` }
+      : nightFace
 
   return (
     <>
@@ -47,7 +55,9 @@ export function NightWellTile({
         <TileHide id="night" onHide={onHide} />
         <TileOpen label="Night well" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Night</span>
+            <span>
+              <CopyCaption>Night</CopyCaption>
+            </span>
           </div>
           <div className="hab-score-readout home-night-readout" data-centered="true">
             {face.crt}
@@ -77,7 +87,13 @@ export function HarvestTile({
   const [open, setOpen] = useState(false)
   const earned = getDayPoints(currentDate)
   const possible = getPossibleDayPoints(currentDate, tasks)
-  const face = harvestFace(earned, possible)
+  const harvest = harvestFace(earned, possible)
+  const readout = useCopySetting<string>("readout", "points")
+  const total = Math.max(0, Math.round(earned)) + Math.max(0, Math.round(possible))
+  const face =
+    readout === "percent" && total > 0
+      ? { ...harvest, crt: `${Math.round((Math.max(0, Math.round(earned)) / total) * 100)}%`, footer: `harvested · ${harvest.footer}` }
+      : harvest
 
   return (
     <>
@@ -85,7 +101,9 @@ export function HarvestTile({
         <TileHide id="harvest" onHide={onHide} />
         <TileOpen label="Harvest leftover" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Left</span>
+            <span>
+              <CopyCaption>Left</CopyCaption>
+            </span>
           </div>
           <div className="hab-score-readout" data-centered="true">
             {face.crt}
@@ -113,7 +131,20 @@ export function InboxMillTile({ onHide }: { onHide: () => void }) {
     () => inboxTasks.map((task) => ({ id: task.id, title: itemTitleOrUntitled(task) })),
     [inboxTasks],
   )
-  const face = inboxMillFace(ideas.map((idea) => idea.title))
+  const footMode = useCopySetting<string>("foot", "newest")
+  const oldestAge = useMemo(() => {
+    const times = inboxTasks
+      .map((task) => (task.createdAt ? new Date(task.createdAt).getTime() : NaN))
+      .filter((time) => Number.isFinite(time))
+    if (times.length === 0) return ""
+    const days = Math.floor((Date.now() - Math.min(...times)) / 86_400_000)
+    return days < 1 ? "today" : `${days}d`
+  }, [inboxTasks])
+  const mill = inboxMillFace(ideas.map((idea) => idea.title))
+  const face =
+    footMode === "oldest" && ideas.length > 0
+      ? { ...mill, footer: oldestAge ? `oldest ${oldestAge}` : mill.footer }
+      : { ...mill, footer: ideas.length > 0 && oldestAge ? `${mill.footer} · ${oldestAge}` : mill.footer }
   const openInbox = () => {
     setOpen(false)
     document.querySelector<HTMLButtonElement>("[data-inbox-entry]")?.click()
@@ -125,7 +156,9 @@ export function InboxMillTile({ onHide }: { onHide: () => void }) {
         <TileHide id="inbox" onHide={onHide} />
         <TileOpen label="Inbox mill" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Inbox</span>
+            <span>
+              <CopyCaption>Inbox</CopyCaption>
+            </span>
           </div>
           <div className="hab-score-readout" data-centered="true">
             {face.crt}
