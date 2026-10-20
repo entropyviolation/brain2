@@ -40,27 +40,30 @@ function PointsLedger() {
 
   // Read the focus on mount, and again on each nav restore: Analytics stays
   // mounted (hidden) once opened, so a later jump from Home lands here.
-  const consumeFocusRef = useRef<() => void>(() => {})
-  consumeFocusRef.current = () => {
-    const focus = takeLedgerFocus()
-    if (!focus) return
-    focusRef.current = focus
-    if (!range.keySet.has(focus.date)) setScope("all")
-    // The newest matching row is the one Home showed.
-    for (let i = pointsHistory.length - 1; i >= 0; i -= 1) {
-      const e = pointsHistory[i]!
-      if (e.date === focus.date && e.taskId === focus.taskId) {
-        setExpanded(i)
-        break
+  // The focus is read once (`takeLedgerFocus` clears it), so re-running on new
+  // history or range does nothing until Home writes another.
+  useEffect(() => {
+    const consume = () => {
+      const focus = takeLedgerFocus()
+      if (!focus) return
+      focusRef.current = focus
+      // A search or a short page could hide the row, so show the whole ledger.
+      setQuery("")
+      setLimit(Math.max(LEDGER_PAGE, pointsHistory.length))
+      if (!range.keySet.has(focus.date)) setScope("all")
+      // The newest matching row is the one Home showed.
+      for (let i = pointsHistory.length - 1; i >= 0; i -= 1) {
+        const e = pointsHistory[i]!
+        if (e.date === focus.date && e.taskId === focus.taskId) {
+          setExpanded(i)
+          break
+        }
       }
     }
-  }
-  useEffect(() => {
-    const consume = () => consumeFocusRef.current()
     consume()
     window.addEventListener(COGS_NAV_RESTORE_EVENT, consume)
     return () => window.removeEventListener(COGS_NAV_RESTORE_EVENT, consume)
-  }, [])
+  }, [pointsHistory, range.keySet])
 
   useEffect(() => {
     if (expanded === null || !focusRef.current) return
