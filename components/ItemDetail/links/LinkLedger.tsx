@@ -130,7 +130,7 @@ export function LinkLedger({
                     </span>
                   ) : null}
                   <span className="rl-ledger-actions">
-                    {onOpen && facts ? (
+                    {onOpen && facts && facts.openable !== false ? (
                       <button
                         type="button"
                         className="rl-key"
@@ -186,6 +186,7 @@ export function LinkLedger({
                             why?
                           </button>
                         ) : null}
+                        {edge.derivedFrom === "structure" ? null : (
                         <button
                           type="button"
                           className="rl-key"
@@ -197,6 +198,7 @@ export function LinkLedger({
                         >
                           Pin
                         </button>
+                        )}
                         <button
                           type="button"
                           className="rl-key"

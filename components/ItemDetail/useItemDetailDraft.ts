@@ -10,6 +10,10 @@
  * keystrokes.
  * `addDependency` refuses a graph loop (`findCyclePath`) and returns the cycle
  * label for a Win95 confirm — it does not write `Task.dependencies` on refuse.
+ * `undo` / `redo` walk the draft's own edit history (hierarchy moves,
+ * deletes, tags, links…): `setTask` pushes the draft it replaces, bursts inside
+ * `UNDO_COALESCE_MS` count as one step, and loading or saving starts a fresh
+ * history. Steps the page already wrote to the store are written back too.
  * Variant-
  * specific behavior (scheduling UX, completion flow, subtasks) stays in each
  * component. This is the de-duplication seam for the consolidated ItemDetail.
@@ -34,6 +38,10 @@ import type { Task } from "@/lib/types"
 import { findCyclePath } from "@/lib/critical-path"
 import { itemTitle } from "@/lib/item-utils"
 
+/** Edits closer together than this undo as one step. */
+const UNDO_COALESCE_MS = 500
+const MAX_DRAFT_HISTORY = 50
+
 export type AddDependencyResult =
   | { ok: true }
   | { ok: false; cycleIds: string[]; cycleLabel: string }
@@ -43,6 +51,9 @@ export interface ItemDetailDraft {
   setTask: Dispatch<SetStateAction<Task | null>>
   /** Latest draft including isolated-field keystrokes that have not re-rendered yet. */
   getDraft: () => Task | null
+  /** Step the draft back one edit. False when there is nothing to undo. */
+  undo: () => boolean
+  redo: () => boolean
   /** Fires when `touchDraft` writes the ref. The save lamp listens; the detail tree does not. */
   subscribeDraft: (listener: () => void) => () => void
   /** Write fields onto the draft ref without re-rendering the detail tree. */
@@ -89,12 +100,64 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const taskRef = useRef<Task | null>(null)
   const draftListenersRef = useRef(new Set<() => void>())
 
-  const setTask = useCallback<Dispatch<SetStateAction<Task | null>>>((next) => {
-    const resolved = typeof next === "function" ? next(taskRef.current) : next
+  const pastRef = useRef<Task[]>([])
+  const futureRef = useRef<Task[]>([])
+  const lastEditAtRef = useRef(0)
+
+  /** Write the draft without recording history (load, save, undo, redo). */
+  const applyTask = useCallback((resolved: Task | null) => {
     taskRef.current = resolved
     setTaskState(resolved)
     for (const listener of draftListenersRef.current) listener()
   }, [])
+
+  const resetHistory = useCallback(() => {
+    pastRef.current = []
+    futureRef.current = []
+    lastEditAtRef.current = 0
+  }, [])
+
+  const setTask = useCallback<Dispatch<SetStateAction<Task | null>>>(
+    (next) => {
+      const prev = taskRef.current
+      const resolved = typeof next === "function" ? next(prev) : next
+      if (prev && resolved && resolved !== prev && resolved.id === prev.id) {
+        const now = Date.now()
+        if (now - lastEditAtRef.current > UNDO_COALESCE_MS || pastRef.current.length === 0) {
+          pastRef.current.push(prev)
+          if (pastRef.current.length > MAX_DRAFT_HISTORY) pastRef.current.shift()
+        }
+        lastEditAtRef.current = now
+        futureRef.current = []
+      } else {
+        resetHistory()
+      }
+      applyTask(resolved)
+    },
+    [applyTask, resetHistory],
+  )
+
+  const stepHistory = useCallback(
+    (from: Task[], to: Task[]): boolean => {
+      const current = taskRef.current
+      const target = from.pop()
+      if (!current || !target) return false
+      to.push(current)
+      lastEditAtRef.current = 0
+      // The page writes subtask edits straight to the store; keep it in step.
+      const stored = useTaskStore.getState().tasks.find((t) => t.id === current.id)
+      if (stored && JSON.stringify(stored.subtasks ?? null) === JSON.stringify(current.subtasks ?? null)) {
+        if (JSON.stringify(target.subtasks ?? null) !== JSON.stringify(stored.subtasks ?? null)) {
+          useTaskStore.getState().updateTask({ ...stored, subtasks: target.subtasks })
+        }
+      }
+      applyTask(target)
+      return true
+    },
+    [applyTask],
+  )
+  const undo = useCallback(() => stepHistory(pastRef.current, futureRef.current), [stepHistory])
+  const redo = useCallback(() => stepHistory(futureRef.current, pastRef.current), [stepHistory])
 
   const getDraft = useCallback(() => taskRef.current, [])
 
@@ -125,17 +188,18 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   }, [])
 
   useEffect(() => {
+    resetHistory()
     if (!taskId) {
-      setTask(null)
+      applyTask(null)
       setOriginalTask(null)
       return
     }
     const foundTask = useTaskStore.getState().tasks.find((t) => t.id === taskId)
     if (foundTask) {
-      setTask(foundTask)
+      applyTask(foundTask)
       setOriginalTask(foundTask)
     }
-  }, [taskId, setTask, setOriginalTask])
+  }, [taskId, applyTask, resetHistory, setOriginalTask])
 
   const addToCategory = useCallback(
     (categoryId: string) => {
@@ -220,23 +284,26 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
   const commitDraft = useCallback(
     (next: Task, source = "item-detail") => {
       const before = originalRef.current ?? useTaskStore.getState().tasks.find((t) => t.id === next.id)
+      resetHistory()
       if (!before) {
         updateTask(next)
         setOriginalTask(next)
-        setTask(next)
+        applyTask(next)
         return next
       }
       const saved = commitItemDraft(before, next, source)
       setOriginalTask(saved)
-      setTask(saved)
+      applyTask(saved)
       return saved
     },
-    [updateTask, setTask, setOriginalTask],
+    [updateTask, applyTask, resetHistory, setOriginalTask],
   )
 
   return {
     task,
     setTask,
+    undo,
+    redo,
     getDraft,
     subscribeDraft,
     touchDraft,

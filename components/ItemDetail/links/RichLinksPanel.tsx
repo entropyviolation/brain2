@@ -22,6 +22,9 @@ import { egoEdges, type EgoEdge } from "@/lib/link-graph"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { derivedSelfEdges } from "@/lib/self-relations"
 import { useTaskStore } from "@/lib/task-store"
+import { parseNodeId, structureEdges } from "@/lib/structure-edges"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { openStepItem } from "@/lib/step-item-stack"
 import type { Task } from "@/lib/types"
 import { EdgeInspector } from "@/components/ItemDetail/links/EdgeInspector"
 import { LinkMatrix } from "@/components/ItemDetail/links/LinkMatrix"
@@ -57,12 +60,17 @@ export function useItemEdges(task: Task | null, extraDerived: readonly EgoEdge[]
   const lists = useTaskStore((s) => s.lists)
   // Relations made in this session relabel edges.
   const relations = useItemTypeStore((s) => s.relations)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
   return useMemo(() => {
     if (!task) return []
+    const known = {
+      listIds: new Set(lists.map((l) => l.id)),
+      penIds: new Set(scopes.flatMap((scope) => scope.pens.map((pen) => pen.id))),
+    }
     const derived = itemShowsPersonPipelines(task, lists) ? derivedSelfEdges(task, tasks) : []
-    return visibleEdges(egoEdges(task, tasks, [...derived, ...extraDerived]), task.dismissedLinkSuggestions)
+    return visibleEdges(egoEdges(task, tasks, [...structureEdges(task, tasks, known), ...derived, ...extraDerived]), task.dismissedLinkSuggestions)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task, tasks, lists, relations, extraDerived])
+  }, [task, tasks, lists, scopes, relations, extraDerived])
 }
 
 export function RichLinksPanel({ task, editable = true, addLink, removeLink, writeDraft, onOpenItem }: RichLinksPanelProps) {
@@ -71,6 +79,12 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
   const { tasks, facts, factsFor } = useLinkItems()
   const graph = useLinksGraph(task)
   const edges = useItemEdges(task, graph.derived)
+  // Pens and lists have nothing to open; a step opens by making its item.
+  const openNode = (id: string) => {
+    const node = parseNodeId(id)
+    if (!node) return onOpenItem(id)
+    if (node.kind === "step") openStepItem(node.taskId, node.stepId)
+  }
   const withDerived = useLinksViewStore((s) => s.withDerived)
   const setWithDerived = useLinksViewStore((s) => s.setWithDerived)
   const toggleMuted = useLinksViewStore((s) => s.toggleMuted)
@@ -128,7 +142,7 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
         allTasks={tasks}
         selectedKey={selectedKey}
         onSelect={setSelectedKey}
-        onOpen={onOpenItem}
+        onOpen={openNode}
       />
       ) : null}
       {inspected ? (
@@ -183,7 +197,7 @@ export function RichLinksPanel({ task, editable = true, addLink, removeLink, wri
         selectedKey={selectedKey}
         flashKey={flashKey}
         onSelect={setSelectedKey}
-        onOpen={onOpenItem}
+        onOpen={openNode}
         onRemove={removeLink}
         onConfirm={addLink}
         onPin={addLink}

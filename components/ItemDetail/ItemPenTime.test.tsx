@@ -16,7 +16,7 @@ beforeEach(() => {
       },
     ],
     entries: [
-      { id: "e1", date: "2026-10-10", scopeId: "activity", penId: "cd", startMin: 600, endMin: 690 },
+      { id: "e1", date: "2026-10-10", scopeId: "activity", penId: "cd", startMin: 600, endMin: 690, taskId: "t1" },
       { id: "e2", date: "2026-10-11", scopeId: "activity", penId: "walk", startMin: 60, endMin: 90, taskId: "t1" },
       { id: "e3", date: "2026-10-11", scopeId: "activity", penId: "walk", startMin: 100, endMin: 200 },
     ],

@@ -26,6 +26,7 @@ import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
+import { openStepItem } from "@/lib/step-item-stack"
 import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -76,10 +77,12 @@ import {
   Rocket,
   History,
   TimerOff,
+  Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
+import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
 import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
@@ -92,7 +95,10 @@ import {
   type DetailViewResolution,
 } from "@/lib/item-types"
 import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
-import { isClearedFromWork } from "@/lib/completion-status"
+import { isClearedFromWork, withCompleted } from "@/lib/completion-status"
+import { CompletionDialog } from "@/components/Completion/CompletionDialog"
+import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
+import { SchedulingSummary } from "@/components/ItemDetail/SchedulingSummary"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
@@ -130,6 +136,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const {
     task,
     setTask,
+    undo,
+    redo,
     getDraft,
     subscribeDraft,
     touchDraft,
@@ -237,6 +245,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   }, [getDraft, commitDraft])
 
   useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
+  useItemDetailUndoHotkey(detailRef, undo, redo, Boolean(task))
 
   const handleDelete = useCallback(() => {
     if (!task) return
@@ -257,6 +266,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         actualDuration: actualDuration,
       })
     }
+  }, [getDraft, commitDraft])
+
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const handleReopen = useCallback(() => {
+    const draft = getDraft()
+    if (draft) commitDraft(withCompleted(draft, false))
   }, [getDraft, commitDraft])
 
   const handleMissed = useCallback(() => {
@@ -496,6 +511,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 <Button className="id-btn id-btn-primary" onClick={() => setIsEditing(true)}>Edit</Button>
               )}
             </div>
+            {task.completed && caps.completable && (
+              <Button variant="outline" className="id-btn id-btn-reopen" onClick={handleReopen} title="Mark incomplete: undo Complete and keep everything else">
+                <Undo2 className="h-4 w-4" />
+                Mark incomplete
+              </Button>
+            )}
             {!isClearedFromWork(task) && caps.completable && (
               <>
                 {caps.duration && (
@@ -553,6 +574,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </DropdownMenu>
           </div>
         </div>
+        <ItemDoneBanner task={task} onReopen={handleReopen} onEditReview={() => setReviewOpen(true)} />
+          {reviewOpen ? <CompletionDialog taskId={task.id} basePoints={0} edit onClose={() => setReviewOpen(false)} /> : null}
         <div className="id-fascia-row id-meta">
           <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
             {task.completed ? "Completed" : task.stage}
@@ -968,6 +991,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <SchedulingSummary task={task} scheduleableCategoryIds={scheduleableCategoryIds} />
               <ItemScheduleFlags
                 task={task}
                 scheduleableCategoryIds={scheduleableCategoryIds}
@@ -1198,7 +1222,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                 Use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the
                 steps inside, whichever is larger.
               </p>
-              <SubtaskTree steps={task.subtasks} onChange={persistSubtasks} onRemoved={removeBackingSubtasks} />
+              <SubtaskTree steps={task.subtasks} onChange={persistSubtasks} onRemoved={removeBackingSubtasks} onOpenStep={allTasks.some((t) => t.id === task.id) ? (step) => openStepItem(task.id, step.id) : undefined} />
             </CardContent>
           </Card>
 

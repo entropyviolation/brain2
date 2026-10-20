@@ -32,6 +32,26 @@ _Last mapped: 2026-10-16_
 - The person block passes the Company pens editor into `PersonDetail`'s
   `pipelines` slot and its guarded `handleNavigateToList` (step 3.1).
 
+## Undo and automatic structure links
+
+_Last mapped: 2026-10-20_
+
+- **Cmd/Ctrl+Z** undoes the last edit to the open draft; Shift+Z or Ctrl+Y redoes
+  it (`useItemDetailUndoHotkey`, both shells). `useItemDetailDraft.setTask` keeps
+  the history: bursts within 500 ms are one step, capped at 50, and loading an
+  item or saving starts fresh. Text fields keep the browser's own undo, a dialog
+  above keeps the chord, and with nothing to undo here the chord falls through to
+  the app-wide stack (`hooks/useUndoHotkey.ts`). The page writes subtask edits
+  straight to the store, so undo writes the restored subtasks back there too.
+  **Planned:** the keystroke fields (`touchDraft`) are not stepped.
+- **Links tab, structure edges.** `lib/structure-edges.ts` derives edges from
+  `parentTaskId`, `stepOf`, `subtasks`, `penLinks` and `lists`: parent task and
+  enclosing steps (`part-of`), each subtask (`has-part`), tracking pens (own or
+  inherited by a step), and lists. Always on, never stored, no Pin. Pens, lists
+  and steps with no item yet are virtual nodes (`pen:`, `list:`, `step:`);
+  `useLinkItems.factsFor` names them. A step node opens by making its item. Pens
+  and lists have nothing to open. Dismiss still hides one.
+
 ## Public door
 
 Popup and page are both public entries.

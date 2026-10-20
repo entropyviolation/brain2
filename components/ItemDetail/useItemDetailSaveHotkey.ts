@@ -15,7 +15,7 @@ function isItemSaveChord(e: KeyboardEvent): boolean {
 }
 
 /** True when no open dialog sits above this item-detail root. */
-function itemDetailIsFront(root: HTMLElement | null): boolean {
+export function itemDetailIsFront(root: HTMLElement | null): boolean {
   if (!root?.isConnected) return false
   const dialogs = document.querySelectorAll('[role="dialog"][data-state="open"]')
   const top = dialogs[dialogs.length - 1]
