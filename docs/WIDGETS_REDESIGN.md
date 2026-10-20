@@ -3,9 +3,8 @@
 Home → the widget row above the sub-tabs. _Last mapped: 2026-10-20._
 
 **Status.**
-- **Built 2026-10-20, not yet pushed:** phases 1–6 below. Kinds and installed copies, the dashboard store and migration, edit mode (drag, resize, keyboard), the gear with per-copy settings, Countdown, and Language study (roles, CEFR levels, the quiz hook).
-- **Next:** the **Edit** key on the date plate and the Milled / Dash style switch, `home-dashboard` in `lib/data/backup.ts`, and the Widgets menu rewrite.
-- **Planned:** the Dash faces (phase 7, its own thread), the Widget gallery with setup steps and **Reset to my old layout** (phase 8), the placement quizzes, and retiring the mirror (phase 9).
+- **Built 2026-10-20:** phases 1–8 below. Kinds and installed copies, the dashboard store, migration, and backup; edit mode and the **Edit** key; the gear with per-copy settings; Countdown; Language study with CEFR levels and the placement quizzes; the Dash style and the style switch; and the Widget gallery with setup, guides, and **Reset to my old layout**.
+- **Planned:** retiring the mirror (phase 9), more Language study modes, and user-made kinds.
 
 What is built is described in [`components/Home/README.md`](../components/Home/README.md#visual-dashboard) and [`lib/README.md`](../lib/README.md#widgets-libwidgets). This file is the plan and the reasons.
 

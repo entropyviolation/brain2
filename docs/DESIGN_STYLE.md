@@ -450,6 +450,40 @@ these keys so the set matches; it is not the 22px dialog close key. An “on”
 key (search open) turns to CRT glass with a phosphor mark.
 `.fm-cap-key` + `CaptionKeyGlyph` in `components/Lists/`.
 
+<a id="dash"></a>
+
+### Dash
+
+_Last mapped: 2026-10-20_
+
+A material for the Visual dashboard (the Home widget row), and its second
+style beside Milled. Milled stays exactly as it is and is the default for any
+vault that already had a layout. Code: `components/Home/dash/`.
+
+Two clusters are the reference. A 1980s Oldsmobile vacuum-fluorescent dash:
+one long smoked-glass panel under a gray molded hood, cyan segment digits with
+the unlit 8s still faintly showing, gauges built from separate blocks, tiny
+engraved legends (FUEL, VOLTS, RPM × 100). A 2011 Prius multi-display: soft
+white-blue LCD words, a boxed P R N D column, a stair fuel meter, thin line
+pictograms, a clock in the corner.
+
+| Piece | What it is |
+|-------|------------|
+| **Panel** | One glass for the whole row: near-black teal (`#020708`–`#061214`), a hood shadow along the top edge, a faint diagonal glare, a gray hood rim. Pods are printed on the same glass with a 1px outline at 9% ink. Never a floating card per widget. |
+| **Cell** | About 88 × 60 px, 6px gap, dense flow. A kind lists its sizes (`1x1` to `3x2`, `1x3`). Screen pet and Solar remainder draw at `1x1`. |
+| **Face** | One reading, one legend, one lamp. At most one foot line, never at `1x1`. No keys on a face. Depth is in the detail. |
+| **Digits** | Seven-segment, ghost segments at 8% ink, glow from a drop-shadow. Units (H, M, DAYS, °F) are small printed legends beside the digits, not more segments. |
+| **Words** | DotGothic16 in LCD white-blue `#cdeeff` with a soft glow. Legends and units are Silkscreen, 7–9px, uppercase. |
+| **Gauges** | Arcs of separate blocks, bar rows of blocks, the Prius stair. A position (the sun across the day) lights one block; an amount lights up to it. |
+| **Selector** | Every mode printed, the live one boxed and inverted, like the Prius D. It tells which mode a reading is in. It is not a control on the face. |
+| **Ink** | The copy's lamp tints the whole face: phosphor `#5cf2d6`, blue `#8fd3ff`, violet `#b39cff`, white `#e4f3ff`. No amber or orange light, as in [DSi pixel and lights](#dsi-pixel-and-lights). A saved amber reads as violet. |
+| **Quiet** | A face with nothing to read turns its lamp off and drops to 55%. It does not go red. |
+| **Detail** | The same dialog as Milled with a gray hood frame and the body as cluster glass. The gear is a 22px cap beside the close key. Settings and the first-run guide use the same glass, legends, and boxed choices. |
+| **Edit mode** | Pods get a brighter outline and a faint hatch, a dotted grip on top, a resize corner, and ×. Out of edit mode × is hidden and nothing moves. |
+
+Motion stays a verb. Nothing on a face blinks or scrolls. A Countdown that
+reaches a milestone glows brighter and holds still.
+
 ### Transport keys
 
 This is the Pause, Play, and Stop the house likes. Reuse it whenever a clock
@@ -837,6 +871,7 @@ instrument and Needs Attention are already on a machine face.
 | Upload cutouts | `lib/remove-background.ts` |
 | Unsaved edits | `lib/unsaved-changes.ts`, `components/ui/unsaved-changes-guard.tsx` |
 | Estimated values | `lib/estimated-values.ts`, `components/Home/ToDo/CompletionTimeLine.tsx` |
+| Visual dashboard Dash style | `components/Home/dash/` (`dash-primitives.tsx`, `dash-faces.tsx`, `dash.css`); Milled stays in `home-widget-face.css` |
 | Stills | [`DESIGN_REFS.md`](DESIGN_REFS.md), `designrefs/` |
 
 When a new room needs chrome, lay it out first. Then use a material from this
