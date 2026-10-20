@@ -7,6 +7,7 @@ import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { usePointsStore } from "@/lib/points-store"
 import { HomeOverview } from "@/components/Home/home-overview"
 import { useDashboardEditMode } from "@/components/Home/widgets/edit-mode"
+import { LanguageStudySettings } from "@/components/Home/widgets/language-study-settings"
 import "@/components/Home/home-chrome.css"
 
 vi.mock("@/components/Reviews/RitualWalkDialog", () => ({
@@ -137,5 +138,22 @@ describe("Visual dashboard", () => {
     await user.click(screen.getByRole("button", { name: "Skip" }))
     expect(copyOf("moon").guideSeen).toBe(true)
     expect(screen.queryByTestId("widget-guide")).not.toBeInTheDocument()
+  })
+
+  it("runs the placement quiz from Language study settings and saves the level", async () => {
+    const user = userEvent.setup()
+    useDashboardStore.getState().ensureReady()
+    const result = useDashboardStore.getState().installCopy("vocab", { key: "fr", settings: { role: "studied", cefr: "B2" } })
+    const copy = () => useDashboardStore.getState().copies.find((entry) => entry.id === result!.id)!
+    const { rerender } = render(<LanguageStudySettings copy={copy()} lang="fr" />)
+    await user.click(screen.getByRole("button", { name: "Take the placement quiz" }))
+    rerender(<LanguageStudySettings copy={copy()} lang="fr" />)
+    await user.click(await screen.findByRole("button", { name: "Begin" }))
+    await user.click(screen.getAllByRole("radio")[0]!)
+    await user.click(screen.getByRole("button", { name: "Next" }))
+    await user.click(screen.getByRole("button", { name: "Stop and score" }))
+    await user.click(screen.getByRole("button", { name: "Use A1" }))
+    expect(copy().settings.cefr).toBe("A1")
+    expect(copy().settings.placedScore).toMatch(/^\d+\/1$/)
   })
 })
