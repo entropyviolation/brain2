@@ -209,7 +209,7 @@ _Last mapped: 2026-10-16._ Phase 10 (slice N) of [`docs/TODO_REDESIGN.md`](../..
 - Each lid step has a `B · G · E` tag (click cycles B → G → E → inherit) and a spark mark (`StepTierMarks`, `components/steps/`). No tier inherits; a top-level step with none is Goal.
 - **Step tier** in the Show bay (`todo-filters.tsx` `TierKeys`; All / B / G / E; `todo-prefs` `tierView`, default All) filters every lid to that level's view, containers greyed. The readout then says "counts 45m for Goal" (`tierMinutes`).
 - The percent is weighted everywhere (`todoCompletionPercent` → `lib/step-progress.ts`); counts stay counts. On a task with step tiers the closed row's Done cell and the lid readout show the level gauge (`LevelGauge`); without tiers the row keeps its LED bar and the lid one weighted bar.
-- **Planned (not built in slice N):** Done at Bare minimum / Done at Goal and `tierReached` on the Done row; points for the level reached; the task card's B / G / E column and three-column view (Phase 12).
+- **Done at a level.** _Last mapped: 2026-10-16._ The row shows **Done at B** / **Done at G** beside **Done** once that level is reached and it is not the top level (`TodoTable.tsx`). It calls `completeTask(id, { level })`. Plain Done on a tiered task stamps the top non-empty level (`updateTask` in `lib/task-store.ts`); reopening clears `Task.tierReached`. With no list Points rule (and no override), the level pays the house tier amount (`resolveCompletionPoints`). Done rows show the level as lit `B G E`; unreached levels read `—` (`DoneTodoSection.tsx`). Tests: `lib/done-at-level.test.ts`, `todo-panel.test.tsx`.
 
 **Flags**, **Time**, and **Steps** each collapse. The choice is shared across rows and stored in `lidCollapsed` (`todo-prefs`). Default is all open. The header already shows the name, and when the lid is open that header is the edit field — the body does not repeat it.
 
@@ -333,7 +333,7 @@ _Last mapped: 2026-10-16._ Slice O of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Side panel.** Points with source and **Quick points** (`Task.pointsOverride`; **Back to the rule** clears it). Needs (task prerequisites, **Needs…** opens `TaskPrereqDialog`), Unlocks (`waitingOn`) and the inherited due date (`inheritedDue`). This period: marks, pushes in / out (`schedulePlacements`), spent this period (`attentionGiven`) vs all time, minutes left for the chosen level vs working minutes left today, level reached and B / G / E %, sessions in history that held it with tier reached. Notice: dated `notice` answers, and the one-line prompt while the dot is due.
 - **Step points.** `Subtask.points` pays `step:{taskId}:{stepId}` on tick and takes it back on untick, through `handleSteps` (lid and card). Ticks from item detail → Subtasks do not pay yet.
 - **Ways in, more.** _Last mapped: 2026-10-16._ **Card** in the row's closed Actions (`TodoTable.tsx`). A task name in the session draft's pick list opens its card (`SessionPlanner.tsx`).
-- **Planned.** **More…** on a session's **Add new** line (that line does not exist yet); **Move to task…** (Decision 9); Done at Bare minimum / Goal and paying the level reached (Phase 10 places them); node size by Phase 14 unlock value instead of the count; step points from item detail ticks.
+- **Planned.** **More…** on a session's **Add new** line (that line does not exist yet); **Move to task…** (Decision 9); node size by Phase 14 unlock value instead of the count; step points from item detail ticks.
 - Tests: `TaskCard.test.tsx`, `lib/task-card.test.ts`.
 
 ## Completion status (Feature 9)

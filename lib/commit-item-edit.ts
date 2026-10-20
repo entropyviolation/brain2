@@ -95,6 +95,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   notes: true,
   parentTaskId: true,
   pointsOverride: true,
+  tierReached: true,
   subtasks: true,
   isSummary: true,
   parallelGroup: true,

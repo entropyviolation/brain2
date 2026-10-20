@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
-import type { CompletionStatus, Subtask, TodoItem } from "@/lib/types"
+import type { CompletionStatus, StepTier, Subtask, TodoItem } from "@/lib/types"
 import { COMPLETION_STATUS_LABELS } from "@/lib/completion-status"
 import { PercentLedBar } from "@/components/Home/Habits/percent-led-bar"
 import { effectiveDurationMinutes, flattenSteps, formatInternalProgress, todoCompletionPercent } from "@/lib/todo-steps"
@@ -23,6 +23,7 @@ import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import { NOTICE_PROMPT } from "@/lib/notice-dot"
 import { hasStepTiers } from "@/lib/step-tiers"
 import { LevelGauge } from "@/components/steps/LevelGauge"
+import { levelReached } from "@/lib/step-progress"
 import { useTodoPrefs } from "./todo-prefs"
 import { openStepItem } from "@/lib/step-item-stack"
 import { openTaskCard } from "@/lib/task-card"
@@ -115,7 +116,8 @@ export function TodoTable({
   period: TodoPeriod
   isExpanded: boolean
   onToggleExpand: () => void
-  onComplete: (todoId: string) => void
+  /** `level`: Done at Bare minimum / Goal (Phase 10). */
+  onComplete: (todoId: string, level?: StepTier) => void
   onMissed: (todoId: string) => void
   onPush: (todoId: string, period: TodoPeriod) => void
   onDelete: (todoId: string) => void
@@ -530,6 +532,24 @@ export function TodoTable({
                 >
                   Done
                 </button>
+                {(() => {
+                  // Phase 10: Done at the level reached, when it is below the top level.
+                  if (!hasStepTiers(steps)) return null
+                  const lvl = levelReached({ subtasks: steps })
+                  if (lvl === "none" || lvl === "exceptional" || lvl === levelReached({ subtasks: steps }, true)) return null
+                  const word = lvl === "min" ? "Bare minimum" : "Goal"
+                  return (
+                    <button
+                      type="button"
+                      className="todo-verb is-complete is-quiet"
+                      title={`Mark complete at ${word}: the rest of the steps stay as they are`}
+                      aria-label={`Done at ${word}`}
+                      onClick={() => onComplete(todo.id, lvl)}
+                    >
+                      Done at {lvl === "min" ? "B" : "G"}
+                    </button>
+                  )
+                })()}
                 {onClockStart ? (
                   <DvdTransportKey
                     className="todo-row-clock"
