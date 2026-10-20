@@ -9,6 +9,8 @@
 import { useState } from "react"
 import { Beaker, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APP_NAV_KEYS, readStoredDate } from "@/lib/app-navigation"
+import { fillDemoAround, type DemoFillResult } from "@/lib/demo-day-fill"
 import {
   readDataProfile,
   resetDemoProfile,
@@ -18,6 +20,7 @@ import {
 
 export function DataProfileField() {
   const [profile] = useState<DataProfile>(() => readDataProfile())
+  const [filled, setFilled] = useState<DemoFillResult | null>(null)
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
@@ -56,6 +59,24 @@ export function DataProfileField() {
         <Button type="button" variant="outline" size="sm" onClick={() => resetDemoProfile()}>
           Reset Demo vault
         </Button>
+      ) : null}
+      {profile === "demo" ? (
+        <div className="space-y-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="demo-fill-day"
+            onClick={() => setFilled(fillDemoAround(readStoredDate(APP_NAV_KEYS.homeDate) ?? new Date()))}
+          >
+            Fill around the day I'm on
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {filled
+              ? `Added ${filled.days} days: ${filled.logs} log rows (spent, food, drink, events, thoughts, notes, switches), ${filled.tasks} items, ${filled.events} calendar events.`
+              : "Adds invented past, present and future days: schedule, intake, spending, restaurants, places and links. Safe to press again."}
+          </p>
+        </div>
       ) : null}
     </div>
   )

@@ -28,6 +28,7 @@ import {
 import { TASK_STORE_PERSIST_VERSION } from "@/lib/task-store"
 import { DEFAULT_GRID_STEP } from "@/lib/time-entries"
 import { enrichDemoSeed } from "@/lib/demo-corpus/enrich"
+import { demoCycleMarks } from "@/lib/demo-corpus/cycle"
 import { defaultScopes, defaultTags, scopesWithDetails } from "@/lib/time-tracking-store"
 import type { Folder, Goal, List, Objective, PeriodReview, Task } from "@/lib/types"
 import { TaskType } from "@/lib/types"
@@ -721,6 +722,7 @@ function seedDemoVault(): void {
       confirmedEventIds: [],
     }),
   )
+  put(persistKey("cycle-marks"), wrap(1, { marks: demoCycleMarks(now) }))
   put(persistKey("tracking-day-notes"), JSON.stringify(seed.dayNotes))
   put(persistKey("sleep-store"), wrap(1, { nights: seed.nights, targetMinutes: 480 }))
   put(
