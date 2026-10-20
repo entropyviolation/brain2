@@ -832,7 +832,8 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle.is-on {
 
 .hab95 .hab-bar-tools {
   display: flex;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: nowrap;
   gap: 2px 4px;
@@ -3129,4 +3130,111 @@ body.win95-app .hab-grade-sheet.is-output {
   color: var(--hab-grade-ink) !important;
   background: var(--hab-grade-metal) !important;
   box-shadow: var(--hab-grade-raised) !important;
+}
+
+/* Views band: compact cockpit rockers. The OFF/ON engraving is dropped;
+   the throw and the jewel carry the state, and the caption gets the room
+   (it may wrap to two lines instead of clipping). */
+.hab-control-band[data-band="views"] {
+  gap: 8px;
+}
+
+.hab-control-band[data-band="views"] .hab-sort-bay {
+  gap: 0;
+  padding: 1px 6px;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker {
+  display: flex;
+  min-height: 24px;
+  padding: 3px 0;
+  gap: 7px;
+  justify-content: flex-start;
+  white-space: normal;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker + .hab-rocker {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.hab-control-band[data-band="views"] .hab-rocker-plate {
+  height: 16px;
+  gap: 3px;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker-plate::before,
+.hab-control-band[data-band="views"] .hab-rocker-plate::after {
+  content: none;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker-throw {
+  width: 14px;
+  height: 10px;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker-jewel {
+  width: 6px;
+  height: 6px;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker-caption {
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: normal;
+  letter-spacing: 0;
+  color: #1c1e20;
+}
+
+.hab-control-band[data-band="views"] .hab-rocker[aria-checked="true"] .hab-rocker-caption {
+  font-weight: 700;
+}
+
+/* Order plate: Edit default order + SORT: stacked in the panel. */
+.hab-control-band[data-band="views"] .hab-priority {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.hab-control-band[data-band="views"] .hab-bar-tools {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+
+.hab-control-band[data-band="views"] .hab-priority-text {
+  align-self: flex-start;
+  font-size: 10px;
+}
+
+.hab-control-band[data-band="views"] .hab-priority-sort {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+
+/* Panel foot: the scrolling stack gives way first, so New habit and the
+   gems plate never get clipped under it. */
+.hab-control-panel > .hab-control-new,
+.hab-control-panel > .hab-willpower-gems {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.hab-control-panel > .hab-control-new {
+  z-index: 4;
+  margin-top: 4px;
+  box-shadow: 0 -6px 6px -4px var(--hab-metal, #c0c0c0);
+}
+
+.hab-control-panel > .hab-control-stack {
+  min-height: 120px;
+  padding-bottom: 10px;
 }

@@ -100,6 +100,30 @@ export function HomeDashboard() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   useTrackingUndoHotkey(activeTab === "tracking")
 
+  // Pin the Home tab strip just under the sticky app header.
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>(".b2-app-pin")
+    if (!header) return
+    const set = () =>
+      document.documentElement.style.setProperty("--home-tabs-top", `${header.getBoundingClientRect().height}px`)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(header)
+    return () => ro.disconnect()
+  }, [])
+
+  // Publish the Home tab strip's height so sub-navs (Tracking views) can pin beneath it.
+  useEffect(() => {
+    const tabs = document.querySelector<HTMLElement>(".home-tabs")
+    if (!tabs) return
+    const set = () =>
+      document.documentElement.style.setProperty("--home-tabs-height", `${tabs.getBoundingClientRect().height}px`)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(tabs)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => {
     if (activeTab !== "tracking") return
     let cancelled = false

@@ -101,6 +101,7 @@ describe("WeeklyTaskTracker", () => {
     expect(rail?.textContent).toMatch(/New habit/)
     expect([...rail!.querySelectorAll(".hab-control-band")].map((el) => el.getAttribute("data-band"))).toEqual([
       "meters",
+      "views",
       "sheet",
       "lamps",
     ])
@@ -113,7 +114,7 @@ describe("WeeklyTaskTracker", () => {
     expect(rail?.querySelector('[role="switch"]')).toBeTruthy()
     expect(screen.queryByText("Sort Habits")).not.toBeInTheDocument()
     expect(document.querySelector(".hab-control-panel")?.textContent).not.toMatch(/Sort/)
-    expect(document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")).toBeTruthy()
+    expect(document.querySelector(".hab-control-panel .hab-priority")).toBeTruthy()
     expect(document.querySelector(".hab-well .hab-priority")).toBeNull()
     expect(screen.getByRole("button", { name: "Sort" })).toBeInTheDocument()
     expect(screen.getByRole("switch", { name: "Highlight priorities" })).toHaveAttribute("aria-checked", "false")
@@ -153,7 +154,7 @@ describe("WeeklyTaskTracker", () => {
     const desk = document.querySelector(".hab-desk")
     expect(desk?.children).toHaveLength(2)
     const mast = desk?.querySelector(":scope > .hab-sheet > .hab-sheet-mast")
-    const bar = mast?.querySelector(":scope > .hab-priority")
+    const bar = document.querySelector(".hab-control-panel .hab-priority")
     const mount = mast?.querySelector(":scope > .hab-wand-mount")
     expect(bar).toBeTruthy()
     expect(bar).toHaveAttribute("aria-label", "Control bar")
@@ -162,22 +163,19 @@ describe("WeeklyTaskTracker", () => {
     expect(desk?.querySelector(":scope > .hab-sheet > .hab-well .hab-priority")).toBeNull()
     expect(desk?.querySelector(":scope > .hab-control-panel")).toBeTruthy()
     expect(screen.getByText("SORT:")).toBeInTheDocument()
-    expect(screen.getByRole("switch", { name: "Highlight priorities" })).toHaveClass("hab-bar-rocker")
+    expect(screen.getByRole("switch", { name: "Highlight priorities" })).toHaveClass("hab-rocker")
     expect(document.querySelector(".hab-led-switch")).toBeNull()
     expect(screen.getAllByRole("switch", { name: "Heatmap View" })).toHaveLength(1)
     expect(screen.getAllByRole("switch", { name: "Day View" })).toHaveLength(1)
     expect(screen.getAllByRole("switch", { name: "Hide Done" })).toHaveLength(1)
     expect(screen.getAllByRole("switch", { name: "Mask done and missed" })).toHaveLength(1)
-    const cluster = bar?.querySelector(":scope > .hab-bar-rockers")
     const tools = bar?.querySelector(":scope > .hab-bar-tools")
-    expect(cluster).toBeTruthy()
     expect(tools).toBeTruthy()
     expect(tools?.textContent).toMatch(/SORT:/)
     expect(tools?.textContent).toMatch(/Edit default order/)
-    expect(cluster?.textContent).not.toMatch(/SORT:/)
-    expect(cluster?.querySelector(".hab-bar-rocker")).toBeTruthy()
-    expect(tools?.querySelector(".hab-bar-rocker")).toBeNull()
+    expect(bar?.querySelector(".hab-bar-rockers")).toBeNull()
     const rail = desk?.querySelector(".hab-control-panel")
+    const views = rail?.querySelector('[data-band="views"]')
     for (const name of [
       "Highlight priorities",
       "Streaks and multipliers",
@@ -186,30 +184,24 @@ describe("WeeklyTaskTracker", () => {
       "Hide Done",
       "Mask done and missed",
     ]) {
-      const rocker = cluster?.querySelector(`[aria-label="${name}"]`)
+      const rocker = views?.querySelector(`[aria-label="${name}"]`)
       expect(rocker).toBeTruthy()
-      expect(rocker).toHaveClass("hab-bar-rocker")
-      expect(rail?.querySelector(`[aria-label="${name}"]`)).toBeNull()
-    }
-    for (const rocker of bar?.querySelectorAll(".hab-bar-rocker") ?? []) {
-      expect(rocker.parentElement).toBe(cluster)
+      expect(rocker).toHaveClass("hab-rocker")
+      expect(bar?.querySelector(`[aria-label="${name}"]`)).toBeNull()
     }
     expect(screen.queryByRole("switch", { name: "Week View" })).not.toBeInTheDocument()
     expect(mount).toBeTruthy()
-    expect(bar?.nextElementSibling).toBe(mount)
+    expect(mast).toContainElement(mount as HTMLElement)
     expect(mount?.closest(".hab-well")).toBeNull()
     expect(mount?.closest(".hab-control-panel")).toBeNull()
     expect(mount?.textContent).not.toMatch(/WAND VIEW ON/)
 
     await user.click(screen.getByRole("tab", { name: /Weekly \(/ }))
-    const weekBar = document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")
-    const weekCluster = weekBar?.querySelector(":scope > .hab-bar-rockers")
     const week = screen.getByRole("switch", { name: "Week View" })
     expect(screen.getAllByRole("switch", { name: "Week View" })).toHaveLength(1)
-    expect(week).toHaveClass("hab-bar-rocker")
+    expect(week).toHaveClass("hab-rocker")
     expect(week).toHaveAttribute("aria-checked", "false")
-    expect(weekCluster?.contains(week)).toBe(true)
-    expect(document.querySelector(".hab-control-panel")?.querySelector('[aria-label="Week View"]')).toBeNull()
+    expect(document.querySelector('.hab-control-panel [data-band="views"]')?.contains(week)).toBe(true)
     expect(screen.queryByRole("switch", { name: "Day View" })).not.toBeInTheDocument()
     expect(screen.queryByRole("switch", { name: "Month View" })).not.toBeInTheDocument()
     await user.click(week)
@@ -318,7 +310,7 @@ describe("WeeklyTaskTracker", () => {
     expect(screen.getByRole("switch", { name: "Loading Bar" })).toBeInTheDocument()
     expect(screen.getByRole("switch", { name: "Small LEDs" })).toBeInTheDocument()
     expect(screen.queryByText("Sort Habits")).not.toBeInTheDocument()
-    expect(document.querySelector(".hab-sheet > .hab-sheet-mast > .hab-priority")).toBeTruthy()
+    expect(document.querySelector(".hab-control-panel .hab-priority")).toBeTruthy()
     expect(document.querySelector(".hab-well .hab-priority")).toBeNull()
     expect(document.querySelector(".hab-control-panel")?.textContent).not.toMatch(/Sort/)
     expect(screen.getByRole("switch", { name: "Hide Done" })).toBeInTheDocument()
@@ -469,13 +461,13 @@ describe("WeeklyTaskTracker", () => {
     expect(wands[1]).toHaveAttribute("data-ui-name", "Missed op wand")
     const hideToday = screen.getByRole("switch", { name: "Hide Done" })
     const hideBoth = screen.getByRole("switch", { name: "Mask done and missed" })
-    expect(hideBoth).toHaveClass("hab-bar-rocker")
+    expect(hideBoth).toHaveClass("hab-rocker")
     expect(hideBoth).toHaveAttribute("aria-checked", "false")
     expect(hideToday.compareDocumentPosition(hideBoth) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await user.click(screen.getByRole("button", { name: "Missed op wand" }))
     expect(screen.getByRole("button", { name: "Missed op wand on" })).toHaveAttribute("aria-pressed", "true")
     const missedBanner = screen.getByText("MISSED OPPORTUNITY WAND VIEW ON")
-    expect(missedBanner.closest(".hab-wand-mount")?.previousElementSibling).toHaveClass("hab-priority")
+    expect(missedBanner.closest(".hab-sheet-mast")).toBeTruthy()
     expect(missedBanner.closest(".hab-well")).toBeNull()
     expect(missedBanner.closest(".hab-control-panel")).toBeNull()
     expect(screen.getByRole("button", { name: "Exemption wand" })).toHaveAttribute("aria-pressed", "false")

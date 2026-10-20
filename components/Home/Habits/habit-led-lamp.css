@@ -1,7 +1,7 @@
 /* Recessed panel indicator: flat instrument lamp in a square bezel — not a spherical nipple. */
 
 .hab-lamp {
-  --hab-lamp-tint: #7e14ff;
+  --hab-lamp-tint: #3fae9a;
   --hab-lamp-size: 15px;
   box-sizing: border-box;
   display: inline-grid;
