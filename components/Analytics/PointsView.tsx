@@ -1,9 +1,15 @@
 /**
  * components/Analytics/PointsView.tsx — Daily / cumulative points + source split
+ *
+ * The last plate is the **Points ledger** (`#analytics-points-ledger`): every
+ * award in the range, or the whole ledger, newest first, with a search. A row
+ * opens its breakdown (`components/Home/award-detail.tsx`). Home → Latest
+ * award jumps here through `lib/points-ledger-nav.ts`, with its open row
+ * expanded.
  */
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { usePointsStore } from "@/lib/points-store"
 import { parseLocalDate } from "@/lib/date-utils"
@@ -11,6 +17,140 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { openItemsInLists } from "./open-in-lists"
 import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "./studio-kit"
+import { AwardDetail } from "@/components/Home/award-detail"
+import { awardReason, formatAwardPoints } from "@/lib/habit-points"
+import { AWARD_KIND_LABEL, awardKindOf } from "@/lib/points-award-explain"
+import { POINTS_LEDGER_ANCHOR, openItemDetailPage, takeLedgerFocus } from "@/lib/points-ledger-nav"
+import { useHabitsStore } from "@/lib/habits-store"
+import { useGoalsStore } from "@/lib/goals-store"
+
+const LEDGER_PAGE = 100
+
+function PointsLedger() {
+  const pointsHistory = usePointsStore((s) => s.pointsHistory)
+  const habits = useHabitsStore((s) => s.tasks)
+  const goals = useGoalsStore((s) => s.goals)
+  const range = useAnalyticsRange()
+  const [scope, setScope] = useState<"range" | "all">("range")
+  const [query, setQuery] = useState("")
+  const [limit, setLimit] = useState(LEDGER_PAGE)
+  const [expanded, setExpanded] = useState<number | null>(null)
+  const focusRef = useRef<{ date: string; taskId: string } | null>(null)
+
+  useEffect(() => {
+    const focus = takeLedgerFocus()
+    if (!focus) return
+    focusRef.current = focus
+    if (!range.keySet.has(focus.date)) setScope("all")
+    // The newest matching row is the one Home showed.
+    for (let i = pointsHistory.length - 1; i >= 0; i -= 1) {
+      const e = pointsHistory[i]!
+      if (e.date === focus.date && e.taskId === focus.taskId) {
+        setExpanded(i)
+        break
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (expanded === null || !focusRef.current) return
+    focusRef.current = null
+    const t = window.setTimeout(() => {
+      document.getElementById(`points-ledger-row-${expanded}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [expanded])
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return pointsHistory
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => scope === "all" || range.keySet.has(entry.date))
+      .filter(({ entry }) => {
+        if (!q) return true
+        const kind = AWARD_KIND_LABEL[awardKindOf(entry, { habits, goals })]
+        return `${entry.taskDescription} ${kind} ${entry.date}`.toLowerCase().includes(q)
+      })
+      .sort((a, b) => (a.entry.date < b.entry.date ? 1 : a.entry.date > b.entry.date ? -1 : b.index - a.index))
+  }, [pointsHistory, scope, range.keySet, query, habits, goals])
+  const total = rows.reduce((sum, r) => sum + r.entry.points, 0)
+
+  return (
+    <div id={POINTS_LEDGER_ANCHOR} data-testid="points-ledger">
+      <p className="an-canvas-title">Points ledger</p>
+      <div className="an-ledger-tools">
+        <div role="group" aria-label="Ledger window">
+          <button
+            type="button"
+            className="an-range-chip"
+            aria-pressed={scope === "range"}
+            title="Only awards inside the shared Analytics range"
+            onClick={() => setScope("range")}
+          >
+            {range.label}
+          </button>
+          <button
+            type="button"
+            className="an-range-chip"
+            aria-pressed={scope === "all"}
+            title="Every award ever recorded"
+            onClick={() => setScope("all")}
+          >
+            Whole ledger
+          </button>
+        </div>
+        <input
+          type="search"
+          className="an-ledger-search"
+          placeholder="Search awards"
+          aria-label="Search awards"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setLimit(LEDGER_PAGE)
+          }}
+        />
+        <span className="an-n">
+          n={rows.length} · {Math.round(total * 100) / 100} pts
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <ChartFrame empty emptySentence="No awards match." />
+      ) : (
+        <ul className="an-list an-ledger">
+          {rows.slice(0, limit).map(({ entry, index }) => {
+            const isOpen = expanded === index
+            const kind = AWARD_KIND_LABEL[awardKindOf(entry, { habits, goals })]
+            return (
+              <li key={index} id={`points-ledger-row-${index}`}>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  title="Show multipliers, rules, and the item"
+                  onClick={() => setExpanded(isOpen ? null : index)}
+                >
+                  <span className="an-ledger-date">{entry.date}</span>
+                  <span className="an-ledger-kind">{kind}</span>
+                  <span className="truncate">{awardReason(entry)}</span>
+                  <span className="an-n">
+                    {entry.points < 0 ? `−${Math.abs(entry.points)}` : formatAwardPoints(entry.points)}
+                  </span>
+                </button>
+                {isOpen ? <AwardDetail entry={entry} onOpenItem={openItemDetailPage} /> : null}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {rows.length > limit ? (
+        <button type="button" className="an-range-chip" onClick={() => setLimit((n) => n + LEDGER_PAGE)}>
+          Show {Math.min(LEDGER_PAGE, rows.length - limit)} more
+        </button>
+      ) : null}
+    </div>
+  )
+}
 
 function sourceOf(taskId: string): "habit" | "bonus" | "task" {
   if (taskId.startsWith("habit-grade-bonus:") || taskId.startsWith("habit-raw-day-bonus:")) return "bonus"
@@ -139,6 +279,7 @@ export function PointsView() {
           </>
         )}
       </div>
+      <PointsLedger />
     </div>
   )
 }

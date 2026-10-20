@@ -39,3 +39,33 @@ describe("PointsStats", () => {
     }
   })
 })
+
+describe("PointsPeriodsDetail", () => {
+  const currentDate = new Date("2026-06-20T12:00:00")
+
+  beforeEach(() => {
+    resetAllStores()
+    window.localStorage.removeItem("brain2-home-points-detail-mode")
+    usePointsStore.getState().addPoints("task-1", 42, "Test task", currentDate)
+    usePointsStore.getState().addPoints("task-0", 8, "Earlier", new Date("2026-06-19T12:00:00"))
+  })
+
+  it("draws every period with a New / Cumulative toggle and keeps the possible meter", async () => {
+    const { PointsPeriodsDetail } = await import("./points-detail")
+    const { container } = render(
+      <PointsPeriodsDetail currentDate={currentDate} meters={{ day: { score: "42", sub: "+3 possible", fill: 93 } }} />,
+    )
+    const periods = [...container.querySelectorAll(".home-points-period")].map((n) => n.getAttribute("data-period"))
+    expect(periods).toEqual(["day", "week", "month", "year", "all"])
+    expect(screen.getByText("+3 possible")).toBeInTheDocument()
+
+    const day = container.querySelector('[data-period="day"]') as HTMLElement
+    expect(day.querySelector(".home-points-quote strong")?.textContent).toBe("42")
+    const cumulative = day.querySelector('button[aria-pressed="false"]') as HTMLButtonElement
+    expect(cumulative.textContent).toBe("Cumulative")
+    cumulative.click()
+    await screen.findAllByText("50")
+    expect(day.querySelector(".home-points-line")).toBeTruthy()
+    expect(window.localStorage.getItem("brain2-home-points-detail-mode")).toContain("cumulative")
+  })
+})
