@@ -75,6 +75,6 @@ _Last mapped: 2026-10-20_
 - The date plate's Edit key (`.home-widgets-edit-key`) and style switch
   (`.home-widgets-style-key`) are styled in `../visual-dashboard.css`. Edit
   down lights a phosphor lamp. Each style key shows a swatch of its look, picked by its
-  `data-style`.
+  `data-style` (a `:nth-child(2)` fallback covers keys without it).
 - The 1x1 Language face shortens native word levels (`SAT`, `Rare`) so they
   fit the glass.
