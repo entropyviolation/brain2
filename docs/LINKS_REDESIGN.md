@@ -2,8 +2,7 @@
 
 _Last mapped: 2026-10-16_
 
-> **Planned.** Nothing in this file is built yet unless the status board says
-> so. It picks up where [`PERSON_DETAIL_REDESIGN.md`](PERSON_DETAIL_REDESIGN.md)
+> **Mostly built** (2026-10-16). The status board says what is left. It picks up where [`PERSON_DETAIL_REDESIGN.md`](PERSON_DETAIL_REDESIGN.md)
 > Phases 5–8 stop (the rich Links tab for every item). It takes the deeper
 > ideas from [`KNOWLEDGE_GRAPH_PLAN.md`](KNOWLEDGE_GRAPH_PLAN.md) and gives
 > them a home on item detail. Where an idea has a `KG-…` id there, this file
@@ -67,36 +66,36 @@ edges with reasons, not because anything writes itself.
 | Step | Title | Depends on | Status |
 |------|-------|-----------|--------|
 | L0.1 | Board truth: mark PD 5.2 and 6.1 built | — | ☑ |
-| L0.2 | Ship PD 6.2–6.5 and 8.1 (rich Links tab everywhere) | PD plan | ☐ |
+| L0.2 | Ship PD 6.2–6.5 and 8.1 (rich Links tab everywhere) | PD plan | ◐ panel mounted in popup and page; PD board rows not re-checked |
 | L1.1 | Vocabulary v2 fields on `RelationDef` | — | ☑ |
 | L1.2 | Relation lattice helpers (`lib/graph/relation-lattice.ts`) | L1.1 | ☑ |
 | L1.3 | Seed hierarchy for built-ins and person seeds | L1.2 | ☑ |
 | L1.4 | Persist bump that carries `relations` | L1.1 | ☑ |
 | L2.1 | Relations library tab in `ItemTypesLibrary` | L1.1 | ☑ |
-| L2.2 | Relation sheet (edit, traits, phrases, usage) | L2.1 | ☐ |
-| L2.3 | Merge as alias (no link rewrite) | L2.2 | ☐ |
-| L2.4 | Relation schematic (hierarchy diagram) | L1.2, L2.1 | ☐ |
-| L3.1 | Rule records + store | L1.4 | ☐ |
-| L3.2 | Ego reasoner with proofs (`lib/graph/ego-reason.ts`) | L1.2, L3.1 | ☐ |
-| L3.3 | Derived edges on the tab + **with derived** switch | L3.2, L0.2 | ☐ |
-| L3.4 | "Why is this here?" proof card | L3.3 | ☐ |
-| L3.5 | Rule editor + dry run | L3.2, L2.1 | ☐ |
-| L4.1 | Suggestion core (`lib/graph/densify.ts`) | L0.2 | ☐ |
-| L4.2 | Deterministic sources (reciprocal, triad, co-member, mention, co-time) | L4.1 | ☐ |
-| L4.3 | Suggestions shelf + dismiss + mute a source | L4.1 | ☐ |
-| L4.4 | Density readout (degree, clustering, open triads) | L4.1 | ☐ |
-| L5.1 | Checks: scope, functional, acyclic, irreflexive, disjoint | L1.2 | ☐ |
-| L5.2 | Checks on the ledger and in the composer | L5.1, L0.2 | ☐ |
-| L6.1 | Matrix view | L0.2 | ☐ |
-| L6.2 | Path between two items | L1.2 | ☐ |
-| L6.3 | Edge inspector sheet | L0.2 | ☐ |
-| L7.1 | Ego patterns → smart list (bridge to KG-Q1/Q6) | L3.2 | ☐ |
-| L8.1 | Proposal inbox (store + review UI) | L4.3 | ☐ |
-| L8.2 | Graph snapshot export + proposal file import | L8.1 | ☐ |
+| L2.2 | Relation sheet (edit, traits, phrases, usage) | L2.1 | ☑ |
+| L2.3 | Merge as alias (no link rewrite) | L2.2 | ☑ |
+| L2.4 | Relation schematic (hierarchy diagram) | L1.2, L2.1 | ☑ |
+| L3.1 | Rule records + store | L1.4 | ☑ |
+| L3.2 | Ego reasoner with proofs (`lib/graph/ego-reason.ts`) | L1.2, L3.1 | ☑ |
+| L3.3 | Derived edges on the tab + **with derived** switch | L3.2, L0.2 | ☑ |
+| L3.4 | "Why is this here?" proof card | L3.3 | ☑ |
+| L3.5 | Rule editor + dry run | L3.2, L2.1 | ☑ |
+| L4.1 | Suggestion core (`lib/graph/densify.ts`) | L0.2 | ☑ |
+| L4.2 | Deterministic sources (reciprocal, triad, co-member, mention, co-time) | L4.1 | ◐ co-time not wired to tracking |
+| L4.3 | Suggestions shelf + dismiss + mute a source | L4.1 | ☑ |
+| L4.4 | Density readout (degree, clustering, open triads) | L4.1 | ☑ |
+| L5.1 | Checks: scope, functional, acyclic, irreflexive, disjoint | L1.2 | ☑ |
+| L5.2 | Checks on the ledger and in the composer | L5.1, L0.2 | ☑ |
+| L6.1 | Matrix view | L0.2 | ☑ |
+| L6.2 | Path between two items | L1.2 | ☑ |
+| L6.3 | Edge inspector sheet | L0.2 | ☑ |
+| L7.1 | Ego patterns → smart list (bridge to KG-Q1/Q6) | L3.2 | ☑ |
+| L8.1 | Proposal inbox (store + review UI) | L4.3 | ☑ |
+| L8.2 | Graph snapshot export + proposal file import | L8.1 | ☑ |
 | L8.3 | Model tier B proposer | L8.1 | ⏸ deferred (§15, 2026-10-16) |
-| L9.1 | Weekly graph review section | L4.2, L8.1 | ☐ |
-| L9.2 | Density over time | L4.4 | ☐ |
-| L10.1 | Docs sweep + screenshots | all | ☐ |
+| L9.1 | Weekly graph review section | L4.2, L8.1 | ☑ |
+| L9.2 | Density over time | L4.4 | ☑ |
+| L10.1 | Docs sweep + screenshots | all | ◐ READMEs done; screenshots not taken |
 
 ---
 
@@ -145,6 +144,18 @@ membership, list-to-list links, dependencies, item-valued attributes, pen
 parents, pen "always means" links, `checklist-of` deriving deadlines,
 `supported-by` feeding `lib/belief-strength.ts`. This plan leaves them in
 their stores. KG-D1 (vault edge view) reads them later.
+
+**Graph layer** _Last mapped: 2026-10-16_ (L3–L9). Pure code in `lib/graph/` (see `lib/README.md`). The Links tab reads it through `components/ItemDetail/links/use-links-graph.ts`. Library views in `components/Analytics/relations/`. Weekly section in `components/Reviews/GraphReviewSection.tsx`.
+
+Where the build differs from the text below:
+
+- Per-viewer settings (with derived, muted sources) live in `brain2-links-view`, not `user-settings-store`.
+- The inbox UI sits in the Relations library (**Inbox** view), not Settings → Data. Accept writes through `commitItemDraft` with the proposal origin as source; `model:` origins land `inferred`.
+- The composer's cycle question is `window.confirm`, not `CycleConfirmDialog`.
+- `reciprocal` skips symmetric relations: one stored link says it both ways.
+- Edge inspector shows no created date yet (needs a per-link read of `lib/item-activity.ts`).
+- Density over time (L9.2) is link edits per week from the ledger. Mean clustering and linkability show for now only; there are no snapshots to chart them over time.
+- L7.1 `link` condition: `applyMembershipRulesToTasks` sees backlinks; a single-task apply reads the item's own links only.
 
 **Status board drift.** Fixed (L0.1): the PD board shows 5.2 and 6.1 as ☑.
 
@@ -949,3 +960,4 @@ _Append one line per finished step: `YYYY-MM-DD · step · who · result`._
 2026-10-16 · L1.3 · Claude · `person-relations.ts`: new seed `family-of` (sym), `SEED_PARENTS`, and every seed gets `parent` (default `related`) and `origin: "seed"`. No id or label changed. `builtin-traits.ts` filled: part-of / has-part / subgoal-of / has-subgoal transitive + acyclic, phase-of ⊑ part-of, blocks acyclic, evidence pairs disjoint, reviews quiet, mother-of / father-of inverse-functional 1, married-to functional 1. The lattice over `allRelations()` has no cycles and no unexplained inverses. `components/People/person-pipelines.test.tsx` "double-clicking a joined pen" fails on the uncommitted People edits. It is not links work.
 2026-10-16 · L2.1 · Claude · `ItemTypesLibrary` now has Types / Relations tabs. `components/Analytics/relations/RelationsLibrary.tsx`: by family or tree (lattice `parentOf`), label ⇄ inverse, scope, usage (`lib/graph/relation-usage.ts`, cached by tasks identity), origin badge (built-in · seed · yours · proposed), archived folded.
 2026-10-16 · side · Claude · Built-in **Location** type (`lib/location-types.ts`). Place seeds `born-in` / `birthplace-of`, `grew-up-in` / `where-grew-up` (person → location), `located-in` / `location-of` (location ↔ location, transitive + acyclic). Composer target search ends with Create "<query>": a store write at once (type = relation's first `toTypes`, else item); the link stays a draft. Native `<select>`s in the composer and library now use `components/ui/native-select.tsx` (drop-in over the Radix select). Pre-existing failures outside links: enhanced-analytics, habit, session-plan, task-store titles, iPhone notes, person-pipelines.
+2026-10-16 · L2.2–L2.4, L3.1–L3.5, L4.1–L4.4, L5.1–L5.2, L6.1–L6.3, L7.1, L8.1–L8.2, L9.1–L9.2 · Claude · Built in one pass. Libs in `lib/graph/` with `graph-core.test.ts` and `graph-library.test.ts` (16 tests). UI test `components/ItemDetail/links/links-graph-ui.test.tsx` (shelf accept, dismiss, with derived + proof, sheet override, merge/unmerge). `relationRules`, `mergeRelation`, `unmergeRelation` on `useItemTypeStore`. New keys `brain2-graph-inbox`, `brain2-links-view` in backup and declared in `vault-coverage.test.ts`. Left: co-time wiring, created date in the inspector, screenshots (L10.1), PD board ticks for 6.2–8.1. Failures outside links not touched: enhanced-analytics, enhanced-list-view, habit counts, iPhone notes, item-title-reads, next-step, session-plan, task-store titles.

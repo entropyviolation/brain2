@@ -346,3 +346,34 @@
   margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Fold motion ── a branch unfolds like a paper strip: rows drop in from the
+   fold line on a spring, staggered; folding away runs it back bottom-up, quicker.
+   The caret turns with a little overshoot. */
+.step-tree-caret { display: inline-block; transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.step-tree-fold[aria-expanded="true"] .step-tree-caret { transform: rotate(90deg); }
+.step-tree-fold-count { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.step-tree-fold:active .step-tree-fold-count { transform: scale(0.8); }
+.step-tree-item.is-fold-in,
+.step-tree-add.is-fold-in {
+  transform-origin: 50% 0;
+  animation: step-unfold 0.52s cubic-bezier(0.2, 1.25, 0.35, 1) both;
+  animation-delay: calc(var(--fold-i, 0) * 26ms);
+}
+.step-tree-item.is-fold-out,
+.step-tree-add.is-fold-out {
+  transform-origin: 50% 0;
+  animation: step-fold 0.2s cubic-bezier(0.5, 0, 0.75, 0) both;
+  animation-delay: calc(var(--fold-i, 0) * 9ms);
+}
+@keyframes step-unfold {
+  0% { opacity: 0; transform: perspective(600px) rotateX(-62deg) translateY(-6px) scale(0.98); filter: blur(1.5px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes step-fold {
+  to { opacity: 0; transform: perspective(600px) rotateX(48deg) translateY(-4px) scale(0.98); filter: blur(1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-tree-caret, .step-tree-item, .step-tree-add { transition: none; animation: none !important; }
+}

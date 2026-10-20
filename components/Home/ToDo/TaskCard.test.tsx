@@ -57,9 +57,19 @@ describe("TaskCard", () => {
     render(<TaskCard host={host()} />)
     expect(screen.queryByText("Finish CDs")).toBeNull()
     act(() => openTaskCard("t1"))
-    expect(screen.getByText("Finish CDs")).toBeInTheDocument()
+    expect(screen.getAllByText("Finish CDs").length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole("button", { name: "↗ Item" }))
     expect(itemLayers().map((l) => l.taskId)).toEqual(["t1"])
+  })
+
+  it("shows the completion math: ρ and σ over the top-level parts", () => {
+    seed()
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const fig = screen.getByRole("figure", { name: "Completion math" })
+    expect(fig.textContent).toContain("n = 3")
+    expect(fig.textContent).toContain("L = 3")
+    expect(fig.textContent).toContain("by ends")
   })
 
   it("Points visible off: no steps N and no Points column; on: task · steps", () => {
@@ -85,15 +95,15 @@ describe("TaskCard", () => {
     expect(steps().map((x) => x.estimatedDuration)).toEqual([undefined, undefined, undefined])
   })
 
-  it("Session with this seeds a session; quick points override and clear", () => {
+  it("Session with this seeds a session; the points dial sets and returns to the rule", () => {
     seed()
     render(<TaskCard host={host()} />)
     act(() => openTaskCard("t1"))
     fireEvent.click(screen.getByRole("button", { name: "Session with this" }))
     expect(useSessionOpenStore.getState().request?.seed).toEqual([{ taskId: "t1" }])
-    fireEvent.change(screen.getByLabelText("Quick points"), { target: { value: "10" } })
+    fireEvent.change(screen.getByLabelText("On done"), { target: { value: "10" } })
     expect(screen.getByTestId("task-card-points").textContent).toContain("task 10")
-    fireEvent.click(screen.getByRole("button", { name: "Back to the rule" }))
+    fireEvent.click(screen.getByRole("button", { name: /Back to the rule/ }))
     expect(useTaskStore.getState().tasks[0].pointsOverride).toBeUndefined()
   })
 
@@ -101,10 +111,32 @@ describe("TaskCard", () => {
     seed({ daysPushed: 3 })
     render(<TaskCard host={host()} />)
     act(() => openTaskCard("t1"))
-    const input = screen.getByLabelText("Notice answer")
+    const input = screen.getByLabelText("Note")
     fireEvent.change(input, { target: { value: "too big" } })
-    fireEvent.keyDown(input, { key: "Enter" })
+    fireEvent.keyDown(input, { key: "Enter", metaKey: true })
     expect(screen.getByText("too big")).toBeInTheDocument()
-    expect(screen.queryByLabelText("Notice answer")).toBeNull()
+    // The log stays open for more notes.
+    fireEvent.change(screen.getByLabelText("Note"), { target: { value: "start smaller" } })
+    fireEvent.click(screen.getByRole("button", { name: "Log note" }))
+    expect(screen.getByText("start smaller")).toBeInTheDocument()
+    // The log folds.
+    fireEvent.click(screen.getByRole("button", { name: /Notes/ }))
+    expect(screen.queryByLabelText("Note")).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: /Notes/ }))
+  })
+
+  it("shows only needs in use, and adds one by kind", () => {
+    seed()
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    expect(screen.queryByText("Resources")).toBeNull()
+    expect(screen.getByText("Needs nothing yet.")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Add need/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Resource" }))
+    const input = screen.getByLabelText("Search items and lists…")
+    fireEvent.change(input, { target: { value: "Drill" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(screen.getByText("Resources")).toBeInTheDocument()
+    expect(screen.getByText("Drill")).toBeInTheDocument()
   })
 })

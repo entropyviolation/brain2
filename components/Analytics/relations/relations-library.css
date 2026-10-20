@@ -14,3 +14,19 @@
 .rel-usage { text-align: right; }
 .rel-origin { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid currentColor; padding: 0 4px; justify-self: start; opacity: 0.7; }
 .rel-origin[data-origin="proposed"] { border-style: dashed; }
+.rel-row[data-open="true"] { background: var(--rule, rgba(0, 0, 0, 0.05)); }
+.rel-sheet { border: 1px solid var(--rule, rgba(0, 0, 0, 0.2)); padding: 8px 10px; font-size: 12px; }
+.rel-sheet-head { display: flex; justify-content: space-between; align-items: center; }
+.rel-sheet-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 8px 0; }
+.rel-sheet-grid dt { opacity: 0.65; }
+.rel-traits { display: flex; flex-direction: column; gap: 2px; }
+.rel-note { font-size: 11px; opacity: 0.7; }
+.rel-row-usage, .rel-rule-row, .rel-inbox-row { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; }
+.rel-inbox-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, 2fr) auto auto; }
+.rel-rule-form { display: flex; flex-direction: column; gap: 4px; font-size: 12px; margin-top: 8px; }
+.rel-rule-form p { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.rel-schematic { overflow: auto; max-width: 100%; }
+.rel-sch-edge { fill: none; stroke: currentColor; stroke-opacity: 0.35; }
+.rel-sch-inverse { fill: none; stroke: currentColor; stroke-opacity: 0.3; stroke-dasharray: 3 3; }
+.rel-sch-node { cursor: pointer; font-size: 11px; fill: currentColor; }
+.rel-sch-node:hover text { text-decoration: underline; }

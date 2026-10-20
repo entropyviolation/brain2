@@ -133,6 +133,7 @@ The widget grid above the sub-tabs is the **Visual dashboard** (it was the Home 
 - **Milled** is the look the strip had before: the satin handheld bodies, nameplates, and CRTs of `home-widget-face.css`. A vault that already had a saved strip opens on Milled.
 - **Dash** is the new car-dash look, on a grid of small cells. A fresh vault opens on Dash.
 - Each style keeps its own order and sizes, so switching never loses the other layout.
+- Both styles are permanent options. Keep Dash and Milled working in every future version; never remove either, and new kinds should draw in both (a kind with no Dash face falls back to its Milled tile).
 - The Dash faces are in `dash/` (`dash-faces.tsx`, registered through `widgets/dash-face-registry.ts`); see [`dash/README.md`](dash/README.md). The Milled / Dash switch is in the Widgets popover.
 
 **Edit mode.**

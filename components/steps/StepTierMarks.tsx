@@ -7,7 +7,8 @@
  */
 "use client"
 
-import type { Subtask } from "@/lib/types"
+import { startTransition, useState } from "react"
+import type { StepTier, Subtask } from "@/lib/types"
 import {
   STEP_TIER_LABEL,
   STEP_TIER_SHORT,
@@ -27,8 +28,11 @@ export function StepTierMarks({
   steps: Subtask[]
   onChange: (next: Subtask[]) => void
 }) {
-  const own = isStepTier(step.tier) ? step.tier : undefined
-  const shown = own ?? effectiveTier(steps, step.id) ?? "goal"
+  // Optimistic: the tag flips on click; the tree write runs as a transition so the paint never waits on it.
+  const [pending, setPending] = useState<{ from: StepTier | undefined; to: StepTier | undefined } | null>(null)
+  const saved = isStepTier(step.tier) ? step.tier : undefined
+  const own = pending && pending.from === saved ? pending.to : saved
+  const shown = own ?? (pending && pending.from === saved ? undefined : effectiveTier(steps, step.id)) ?? "goal"
   const next = nextTierInCycle(own)
   const sparked = !!step.sparkedAt
   return (
@@ -40,7 +44,10 @@ export function StepTierMarks({
         className={`step-tier-tag is-${shown}${own ? "" : " is-inherited"}`}
         title={`${STEP_TIER_LABEL[shown]}${own ? "" : " (inherited)"}. Click for ${next ? STEP_TIER_LABEL[next] : "inherit"}.`}
         aria-label={`Tier of ${step.description}: ${STEP_TIER_LABEL[shown]}${own ? "" : ", inherited"}`}
-        onClick={() => onChange(cycleStepTier(steps, step.id, own))}
+        onClick={() => {
+          setPending({ from: saved, to: next })
+          startTransition(() => onChange(cycleStepTier(steps, step.id, own)))
+        }}
       >
         {STEP_TIER_SHORT[shown]}
       </button>

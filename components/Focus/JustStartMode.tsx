@@ -162,7 +162,7 @@ export default function JustStartMode({
   const clockSession = usePenColorSessionStore((s) => s.session)
   const onClock = !!task && clockSession?.taskId === task.id
   const taskClock = useTaskClockStarter()
-  const hasPen = !!clockPenFor(task)
+  const hasPen = !!clockPenFor(task, step?.id)
 
   // Each step shown rides the pen clock when the task already has one running or a pen to paint with.
   useEffect(() => {
@@ -170,7 +170,7 @@ export default function JustStartMode({
     const live = usePenColorSessionStore.getState().session
     const riding = live?.taskId === task.id
     if (riding && live?.stepId === step.id) return
-    if (riding || clockPenFor(task)) startTaskClock(task.id, { stepId: step.id })
+    if (riding || clockPenFor(task, step.id)) startTaskClock(task.id, { stepId: step.id })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id, step?.id])
 
@@ -319,7 +319,7 @@ export default function JustStartMode({
   const pct = timesUp ? 100 : Math.min(100, Math.round((elapsed / targetSeconds) * 100))
 
   return (
-    <div className="just-start" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
+    <div className="just-start" data-item-layer="" data-ui-name="Just Start" data-ui-docs="components/Focus/README.md">
       <Button variant="ghost" size="icon" onClick={exit} className="just-start-exit" aria-label="Exit focus mode">
         <X className="h-5 w-5" />
       </Button>

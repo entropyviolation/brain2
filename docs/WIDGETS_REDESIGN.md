@@ -10,6 +10,8 @@ What is built is described in [`components/Home/README.md`](../components/Home/R
 
 **Rule for every phase: break nothing.** Every widget, setting, and saved layout keeps working. Today's look stays available as the **Milled** style.
 
+**Dash is permanent.** Athena chose Dash as a lasting option (2026-10-20). Every future version keeps both the Dash and Milled styles and the switch between them.
+
 ### How the build differs from the plan
 
 _Last mapped: 2026-10-20_

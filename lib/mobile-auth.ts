@@ -4,6 +4,9 @@
  * Hardcoded local credentials for now (admin / admin). Session is stored in
  * sessionStorage so closing the tab/app requires login again; never touches
  * desktop localStorage keys or app data stores.
+ *
+ * Placeholder, not auth. Replace before serving beyond localhost — see
+ * `docs/PEOPLE_AND_KEYS.md`.
  */
 
 import { persistKey } from "@/lib/storage-keys"

@@ -32,6 +32,7 @@ import { normalizeAttributeType } from "@/lib/attribute-utils"
 import { pointsRuleValue } from "@/lib/points-rules-live"
 import type { AttributeDefinition } from "@/lib/types"
 import { computeFormulaValue } from "@/lib/formula"
+import { activeTierPoints } from "@/lib/completion-tiers"
 import { isClearedFromWork } from "@/lib/completion-status"
 
 /**
@@ -451,6 +452,12 @@ export function resolveCompletionPoints(
         }
       }
     }
+  }
+
+  // Phase 10: with no list Points rule, the step level reached pays the house tier amount.
+  if (!resolvedFromPointsAttr && task.tierReached) {
+    const amounts = activeTierPoints()
+    return task.tierReached === "min" ? amounts.bareMin : task.tierReached === "goal" ? amounts.goal : amounts.exceptional
   }
 
   // Non-next-action items may also set rewardValue directly (including 0).

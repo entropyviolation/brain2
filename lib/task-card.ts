@@ -181,9 +181,23 @@ export function stepPointsKey(taskId: string, stepId: string): string {
   return `step:${taskId}:${stepId}`
 }
 
+/** Each step's points: its own `points`, else the nearest `stepPoints` above it (a step, then the task). */
+export function effectiveStepPoints(steps: readonly Subtask[] | undefined, taskDefault?: number): Map<string, number> {
+  const out = new Map<string, number>()
+  const walk = (list: readonly Subtask[] | undefined, inherited: number | undefined) => {
+    for (const s of list ?? []) {
+      out.set(s.id, s.points ?? inherited ?? 0)
+      walk(s.subtasks, s.stepPoints ?? inherited)
+    }
+  }
+  walk(steps, taskDefault)
+  return out
+}
+
 /** Step points earned: the sum over ticked steps. */
-export function stepPointsEarned(steps: readonly Subtask[] | undefined): number {
-  return flattenSteps(steps).reduce((sum, s) => sum + (s.completed && s.points ? s.points : 0), 0)
+export function stepPointsEarned(steps: readonly Subtask[] | undefined, taskDefault?: number): number {
+  const pts = effectiveStepPoints(steps, taskDefault)
+  return flattenSteps(steps).reduce((sum, s) => sum + (s.completed && !hasTierPoints(s) ? (pts.get(s.id) ?? 0) : 0), 0)
 }
 
 export interface StepPointChange {
@@ -192,22 +206,31 @@ export interface StepPointChange {
   paid: boolean
 }
 
+/** True when the step pays by level (`Subtask.tierPoints`) instead of `points`. */
+export function hasTierPoints(step: Pick<Subtask, "tierPoints"> | undefined): boolean {
+  return !!step?.tierPoints && Object.values(step.tierPoints).some((v) => (v ?? 0) > 0)
+}
+
 /** Steps with points whose tick changed between two trees. */
-export function stepPointChanges(prev: readonly Subtask[] | undefined, next: readonly Subtask[] | undefined): StepPointChange[] {
+export function stepPointChanges(prev: readonly Subtask[] | undefined, next: readonly Subtask[] | undefined, taskDefault?: number): StepPointChange[] {
   const before = new Map(flattenSteps(prev).map((s) => [s.id, s]))
+  const ptsBefore = effectiveStepPoints(prev, taskDefault)
+  const ptsAfter = effectiveStepPoints(next, taskDefault)
   const out: StepPointChange[] = []
   for (const step of flattenSteps(next)) {
     const was = before.get(step.id)
-    const pts = step.points ?? was?.points ?? 0
-    if (!(pts > 0)) continue
+    if (hasTierPoints(step) || hasTierPoints(was)) continue
     const wasDone = !!was?.completed
-    if (step.completed && !wasDone) out.push({ step, paid: true })
+    // Pay what it is worth now; take back what it was worth when ticked.
+    const pts = step.completed && !wasDone ? (ptsAfter.get(step.id) ?? 0) : (ptsBefore.get(step.id) ?? ptsAfter.get(step.id) ?? 0)
+    if (!(pts > 0)) continue
+    if (step.completed && !wasDone) out.push({ step: { ...step, points: pts }, paid: true })
     else if (!step.completed && wasDone) out.push({ step: { ...step, points: pts, completedAt: was?.completedAt }, paid: false })
   }
   // A ticked step with points that was deleted takes its points back too.
   const nextIds = new Set(flattenSteps(next).map((s) => s.id))
   for (const [id, was] of before) {
-    if (!nextIds.has(id) && was.completed && (was.points ?? 0) > 0) out.push({ step: was, paid: false })
+    if (!nextIds.has(id) && was.completed && !hasTierPoints(was) && (ptsBefore.get(id) ?? 0) > 0) out.push({ step: { ...was, points: ptsBefore.get(id) }, paid: false })
   }
   return out
 }

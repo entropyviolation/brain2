@@ -1,7 +1,7 @@
 /**
  * Current moment — the top of the Now dialog, on both panes.
  * Activity, Location, Mood, and Company, plus the Metrics key, Working on,
- * Events, and Thought process. Estimated facts wear `~` and the dashed est.
+ * Intake, Events, and Thought process. Estimated facts wear `~` and the dashed est.
  * treatment. Update state opens from a lane and writes on either pane.
  * Metrics is the same wellbeing logger the header used to open.
  */
@@ -25,6 +25,7 @@ import { useWorkSessionStore } from "@/lib/work-session-store"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { EstMark } from "@/components/header-tracking/est-mark"
+import { NowIntake } from "@/components/header-tracking/now-intake"
 import { NowLogLists } from "@/components/header-tracking/now-log-lists"
 import { UpdateState } from "@/components/header-tracking/update-state"
 
@@ -116,19 +117,26 @@ export function CurrentMoment({
   )
 }
 
-/** Working-now first; paint lanes / Update state behind Paint…. Stays mounted across panes. */
+/**
+ * Working on, then the four lanes with Metrics at the end of that band —
+ * always up. Clicking a lane opens Update state under the band; clicking the
+ * same lane again closes it. Intake, Events, and Thought process follow.
+ * Stays mounted across panes.
+ */
 export function CurrentMomentDeck() {
   const { today, lanes } = useCurrentMomentLanes()
   const [selected, setSelected] = useState<string | null>(null)
   const [nowName, setNowName] = useState("")
-  const [paintOpen, setPaintOpen] = useState(false)
   const lane = lanes.find((item) => item.scopeId === selected) ?? null
 
   function selectLane(scopeId: string) {
+    if (selected === scopeId) {
+      setSelected(null)
+      return
+    }
     const next = lanes.find((item) => item.scopeId === scopeId)
     setSelected(scopeId)
     setNowName(next && next.kind !== "empty" ? next.name : "")
-    setPaintOpen(true)
   }
 
   return (
@@ -137,21 +145,23 @@ export function CurrentMomentDeck() {
       <div className="htk-working" data-testid="htk-working-now">
         <WorkingNowStrip />
       </div>
-      <div className="htk-moment-band htk-moment-band-metrics">
-        <MetricLoggerButton className="htk-metrics" />
-      </div>
-      <details className="htk-paint" open={paintOpen} onToggle={(e) => setPaintOpen((e.target as HTMLDetailsElement).open)}>
-        <summary className="htk-paint-sum">Paint…</summary>
-        <div className="htk-paint-body">
+      <div className="htk-state">
+        <div className="htk-moment-band">
           <CurrentMoment selected={selected} onSelect={selectLane} />
-          {lane ? (
-            <UpdateState lane={lane} today={today} nowName={nowName} onName={setNowName} />
-          ) : (
-            <p className="htk-hint">Pick a view to add what is true now, or a recent sequence.</p>
-          )}
+          <MetricLoggerButton className="htk-metrics" />
         </div>
-      </details>
-      <NowLogLists dayKey={today} />
+        {lane ? (
+          <div className="htk-state-panel">
+            <UpdateState lane={lane} today={today} nowName={nowName} onName={setNowName} />
+          </div>
+        ) : (
+          <p className="htk-hint htk-state-hint">Pick a view to add what is true now, or a recent sequence.</p>
+        )}
+      </div>
+      <div className="trk95 trk-logbook htk-logs">
+        <NowIntake dayKey={today} />
+        <NowLogLists dayKey={today} />
+      </div>
     </section>
   )
 }
