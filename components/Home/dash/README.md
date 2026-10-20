@@ -60,5 +60,21 @@ line. Saved `amber` reads as violet.
 | `tracking` (Tracking now) | `lane` activity, location, mood, company | The lane on the glass; the others on the foot. `update` has no Dash effect. |
 | `solar` (Solar remainder) | `place`, `target` auto, sunset, sunrise | Time to the chosen event; `2x1` adds a sunrise-to-sunset arc with the sun's block lit. |
 
-**Planned:** Widget gallery page visuals (samples at each size in a
-`.dash-sample` strip) once the gallery's class names are in the contract file.
+## Widget gallery and date plate
+
+_Last mapped: 2026-10-20_
+
+- The gallery dialog keeps its milled frame. Its root
+  `.home-catalog.vdg[data-style]` carries the dashboard's style. On `dash`,
+  `dash.css` turns the page (`.vdg-detail`) into cluster glass with LCD words
+  and the rail (`.vdg-rail .vdg-pick`) into dark keys with phosphor lamps.
+  Milled gallery rules are in `../visual-dashboard.css` under `.vdg`.
+- `section.vdg-samples[data-style]` has its own Dash/Milled switch. Dash
+  samples are real faces in `.dash-sample-cell` sized by `--cols`/`--rows`;
+  the default size's label is lit.
+- The date plate's Edit key (`.home-widgets-edit-key`) and style switch
+  (`.home-widgets-style-key`) are styled in `../visual-dashboard.css`. Edit
+  down lights a phosphor lamp. Each style key shows a swatch of its look, picked by its
+  `data-style` (a `:nth-child(2)` fallback covers keys without it).
+- The 1x1 Language face shortens native word levels (`SAT`, `Rare`) so they
+  fit the glass.
