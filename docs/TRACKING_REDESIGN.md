@@ -35,7 +35,7 @@ Every band on the current screen, top to bottom. **Keep**, **move**,
 
 ### Above the room (global, not this plan)
 
-Home overview strip, Home tabs, BRAIN2 header (Nav / Friend / Rituals /
+Visual dashboard (was the Home overview strip), Home tabs, BRAIN2 header (Nav / Friend / Rituals /
 System / Capture-Now), app tabs. Untouched. One note: the header's
 Capture-Now well already shows the pen line, `11:39`, and Objectives. The
 room's Now strip must not be a second copy of it (see 2).
@@ -259,7 +259,7 @@ Each phase ships alone, passes tests, and leaves the room pleasing.
 
 ## Open questions
 
-- Dark screen vs the pale Home overview above it: the case stays silver,
+- Dark screen vs the pale Visual dashboard above it: the case stays silver,
   only the screen is dark, so the room still belongs to Home. Confirm by
   mockup before phase 4.
 - Do Activity Log, Day Log, and Tracking log also get the dark screen, or
