@@ -12,7 +12,7 @@ Each installed Language study copy holds one language. The copy's `key` and `set
 - **Detail.** The Vocab detail for that language only: word of the day, **1000 words**, **Flashcards**, and **Look up**, plus the dictionary fold, **Say it**, Translate, and Earlier this week. The language switcher is gone inside a copy, because another language is another copy.
 - **Gear.** `components/Home/widgets/language-study-settings.tsx`: the role, the CEFR level, the placement quiz, what the face shows, and the mode. Then the shared face, day, and copy settings. **Remove** keeps favorites, shuffles, and known words, so installing the language again picks up where you left off.
 - **Guide.** Four cards on first open: one per language, levels, placement quiz, and Vocab mode.
-- **Gallery.** Language study asks for the language, and whether it is native or studied, before it installs (`hasSetup`). **Planned:** the setup step itself, with the Widget gallery.
+- **Gallery.** Installing from the Widget gallery asks for the language (a hidden copy is shown again), the role, and a CEFR level, then can run the placement quiz (`widgets/gallery/install-setup.tsx`). The kind's page adds a CEFR × exam table.
 
 ## Roles
 
@@ -41,7 +41,7 @@ Optional, from the gear. Its format follows the real exam for that language, and
 
 The questions are written for Brain2 in the exam's format; no exam content is copied. The result sets the level, and you can change it any time. The copy keeps when it was placed and the score (`placedAt`, `placedScore`).
 
-**Planned:** the quiz itself, in its own thread. It will live in `components/Home/language-study/` and register through `registerPlacementQuiz` (`components/Home/widgets/placement-registry.ts`). Until then the gear says the quiz is not in this build, and the level is set by hand.
+The quiz is `components/Home/language-study/placement-quiz.tsx`. Its banks are `lib/language-study/placement/<lang>.ts`: five original questions per CEFR level, in that exam's task formats. It registers through `registerPlacementQuiz` (`components/Home/widgets/placement-registry.ts`) and runs from the gear and from install setup.
 
 ## Modes
 
