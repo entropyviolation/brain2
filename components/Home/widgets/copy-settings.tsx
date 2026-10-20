@@ -18,10 +18,9 @@ import { WIDGET_LAMPS, type WidgetCopy, type WidgetDaySource, type WidgetLamp, t
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
 
 export const LAMP_LABEL: Record<WidgetLamp, string> = {
-  phosphor: "Phosphor",
-  amber: "Amber",
+  phosphor: "Phosphor green",
   blue: "Prius blue",
-  red: "Night red",
+  violet: "Violet",
   white: "Cold white",
 }
 

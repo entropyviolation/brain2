@@ -24,6 +24,7 @@ import { DashboardCell } from "@/components/Home/widgets/dashboard-cell"
 import { WidgetCopyProvider } from "@/components/Home/widgets/copy-context"
 import { renderWidgetTile, UnknownWidgetFace } from "@/components/Home/widgets/registry"
 import { useDashboardEditMode } from "@/components/Home/widgets/edit-mode"
+import { dashFaceFor } from "@/components/Home/widgets/dash-face-registry"
 import type { ReviewPeriod } from "@/lib/types"
 import type { WidgetCopy } from "@/lib/widgets/types"
 
@@ -128,6 +129,9 @@ export function HomeOverview({ currentDate, viewedDate, onStartReview, onOpenHom
             onMoveTo={moveTo}
             onStep={(direction) => stepCopy(copy.id, direction)}
             onResize={(size) => resizeCopy(copy.id, size)}
+            dashFace={style === "dash" ? dashFaceFor(copy.kind) : undefined}
+            currentDate={dayFor(copy)}
+            onHide={() => hideCopy(copy.id)}
           >
             <WidgetCopyProvider
               frame={{

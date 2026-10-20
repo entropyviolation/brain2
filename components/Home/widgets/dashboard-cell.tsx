@@ -12,7 +12,8 @@
  */
 "use client"
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
+import { useRef, useState, type ComponentType, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
+import type { DashFaceProps } from "@/components/Home/widgets/dash-face-registry"
 import { parseSize, snapWidgetSize, widgetKind } from "@/lib/widgets/kinds"
 import type { DashboardStyle, MilledSize, WidgetCopy, WidgetSize } from "@/lib/widgets/types"
 import { cn } from "@/lib/utils"
@@ -28,6 +29,9 @@ export function DashboardCell({
   onMoveTo,
   onStep,
   onResize,
+  dashFace: DashFace,
+  currentDate,
+  onHide,
   children,
 }: {
   copy: WidgetCopy
@@ -39,6 +43,11 @@ export function DashboardCell({
   onMoveTo: (id: string, before: string | null, after: boolean) => void
   onStep: (direction: -1 | 1) => void
   onResize: (size: WidgetSize) => void
+  /** The kind's Dash face; the tile then stays mounted out of sight for its detail. */
+  dashFace?: ComponentType<DashFaceProps>
+  currentDate?: Date
+  /** Hide key for a Dash face, whose tile × sits out of sight. */
+  onHide?: () => void
   children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -172,7 +181,31 @@ export function DashboardCell({
         setPreview(null)
       }}
     >
-      {children}
+      {DashFace && shown ? (
+        <>
+          <button
+            type="button"
+            className="vd-face"
+            aria-label={`Open ${name}`}
+            onClick={() => {
+              const host = ref.current?.querySelector(".vd-host")
+              host?.querySelector<HTMLButtonElement>(".home-tile-open, .home-weather-open")?.click()
+            }}
+          >
+            <DashFace
+              size={shown}
+              currentDate={currentDate ?? new Date()}
+              settings={copy.settings}
+              copy={{ id: copy.id, kind: copy.kind, key: copy.key, title: copy.title, lamp: copy.lamp, showFoot: copy.showFoot }}
+            />
+          </button>
+          <div className="vd-host" hidden>
+            {children}
+          </div>
+        </>
+      ) : (
+        children
+      )}
       {editing ? (
         <>
           <span className="vd-grip" aria-hidden="true" title="Drag to move">
@@ -187,6 +220,11 @@ export function DashboardCell({
             onPointerUp={endDrag}
           />
           {preview ? <span className="vd-size-badge">{preview}</span> : null}
+          {DashFace && onHide ? (
+            <button type="button" className="vd-hide vd-edit-key" aria-label={`Hide ${name}`} onClick={onHide}>
+              ×
+            </button>
+          ) : null}
         </>
       ) : null}
     </div>
