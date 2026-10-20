@@ -27,8 +27,9 @@ function awardDateLabel(dateKey: string): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
 
-function rowKey(entry: { date: string; taskId: string; taskDescription: string }): string {
-  return `${entry.date}:${entry.taskId}:${entry.taskDescription}`
+/** The index keeps a task completed twice on one day as two rows. */
+function rowKey(entry: { date: string; taskId: string; taskDescription: string }, index: number): string {
+  return `${entry.date}:${entry.taskId}:${entry.taskDescription}:${index}`
 }
 
 /**
@@ -42,7 +43,7 @@ export function AwardTile({ onHide }: { onHide: () => void }) {
   const latest = latestPointAward(history)
   const face = awardFace(latest)
   const recent = recentPointAwards(history, 12)
-  const openEntry = recent.find((entry) => rowKey(entry) === expanded)
+  const openEntry = recent.find((entry, i) => rowKey(entry, i) === expanded)
   const [openItemId, setOpenItemId] = useState<string | null>(null)
   const ItemPopup = useItemDetailPopup(openItemId)
 
@@ -69,8 +70,8 @@ export function AwardTile({ onHide }: { onHide: () => void }) {
           <p className="home-widget-lead">No points yet.</p>
         ) : (
           <div className="home-award-list">
-            {recent.map((entry) => {
-              const key = rowKey(entry)
+            {recent.map((entry, i) => {
+              const key = rowKey(entry, i)
               const isOpen = expanded === key
               return (
                 <div key={key}>
