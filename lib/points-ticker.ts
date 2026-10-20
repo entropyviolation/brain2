@@ -167,7 +167,7 @@ export interface PointsPeriodSeries {
   period: PointsDetailPeriod
   mode: PointsSeriesMode
   buckets: PointsSeriesBucket[]
-  /** Last bucket's value. */
+  /** Last bucket's value, except All time in New mode, which is the whole window's total. */
   value: number
   /** The bucket before it (new), or the running total before this period began (cumulative). */
   previous: number
