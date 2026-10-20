@@ -76,6 +76,8 @@ interface TaskGridProps {
   ritualMultiplier?: number
   /** Streaks and × under the name. Off hides them. */
   showStreakMarks?: boolean
+  /** false mixes every kind into one sorted list with no category bands. */
+  groupByKind?: boolean
   /** While set, pointer-dragging a row reorders the visible ids. */
   onReorder?: (visibleIds: string[]) => void
 }
@@ -102,6 +104,7 @@ export function TaskGrid({
   ritualIds = [],
   ritualMultiplier = 0,
   showStreakMarks = true,
+  groupByKind = true,
   onReorder,
 }: TaskGridProps) {
   const weekStart = weekDates[0] ?? new Date()
@@ -138,6 +141,9 @@ export function TaskGrid({
   ])
 
   const habitKindGroups = useMemo(() => {
+    if (!groupByKind) {
+      return filteredTasks.length > 0 ? [{ kind: "all" as const, label: "", tasks: filteredTasks }] : []
+    }
     const buckets = new Map<(typeof HABIT_KIND_ORDER)[number], Task[]>()
     for (const kind of HABIT_KIND_ORDER) buckets.set(kind, [])
     for (const task of filteredTasks) {
@@ -149,7 +155,7 @@ export function TaskGrid({
     return HABIT_KIND_ORDER.map((kind) => ({ kind, label: HABIT_KIND_LABEL[kind], tasks: buckets.get(kind)! })).filter(
       (group) => group.tasks.length > 0,
     )
-  }, [filteredTasks])
+  }, [filteredTasks, groupByKind])
 
   const handleBooleanChange = useCallback((taskId: string, date: Date, checked: boolean) => {
     onUpdateTaskCompletion(taskId, date, { completed: checked })

@@ -4,7 +4,7 @@
  * Three bands inside HabitsControlPanel. Meters report the sheet (grade tubes,
  * one shared through line, good-period plate). Sheet changes the sheet (window,
  * Tools wands). Heatmap View, Day View, Week View, Month View, Season View,
- * Hide Done, and Mask done and missed live once on the control bar. Lamps are
+ * Hide Done, Mask done and missed, Highlight priorities, and Streaks and multipliers live in the Views band. Lamps are
  * Loading Bar and Small LEDs.
  * New habit sits in the foot, above the gem oval. Grade numbers and store
  * writes stay at the habit-tracker call site.
@@ -13,6 +13,7 @@
 
 import type { ReactNode } from "react"
 import { Plus } from "lucide-react"
+import type { HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
 import { ExemptionWandButton } from "@/components/Home/Habits/exemption-wand-button"
 import { MissedOpWandButton } from "@/components/Home/Habits/missed-op-wand-button"
@@ -76,6 +77,10 @@ function ControlPlate({ legend, children }: { legend: string; children: ReactNod
 export type HabitsTabToggleId = "loadingBar" | "smallLeds"
 
 export interface HabitsTabControlsProps {
+  /** Sheet view and display rockers, in order. Moved here from the control bar. */
+  viewToggles?: HabitControlToggle[]
+  /** Edit default order and SORT: (the control bar), so nothing sits above the sheet. */
+  sortTools?: ReactNode
   gradeLabel: string
   gradeValueText: string
   gradeThrough: string | null
@@ -119,6 +124,8 @@ export interface HabitsTabControlsProps {
 }
 
 export function HabitsTabControls({
+  viewToggles = [],
+  sortTools,
   gradeLabel,
   gradeValueText,
   gradeThrough,
@@ -226,6 +233,22 @@ export function HabitsTabControls({
             </div>
           )}
         </div>
+        {viewToggles.length > 0 && (
+          <div className="hab-control-band" data-band="views">
+            <ControlPlate legend="Views">
+              {viewToggles.map((t) => (
+                <CockpitSwitch
+                  key={t.id}
+                  id={t.id}
+                  checked={t.checked}
+                  onCheckedChange={t.onCheckedChange}
+                  label={t.label}
+                />
+              ))}
+            </ControlPlate>
+            {sortTools && <ControlPlate legend="Order">{sortTools}</ControlPlate>}
+          </div>
+        )}
         <div className="hab-control-band" data-band="sheet">
           {monthWindow}
           {weekWindow}

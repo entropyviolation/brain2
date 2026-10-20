@@ -119,6 +119,7 @@ function bodiesFor(
   world: WillpowerWorld,
   prev: WillpowerBody[],
   params: WillpowerPhysicsParams,
+  spots?: Record<string, [number, number]>,
 ): WillpowerBody[] {
   const crystal = makeWillpowerCrystal(world)
   const orbit = restOrbit(
@@ -131,7 +132,11 @@ function bodiesFor(
   const byId = new Map(prev.map((b) => [b.id, b]))
   const satellites = stones.map((stone, i) => {
     const rest = orbit[i] ?? { x: world.cx, y: world.cy - 28 }
-    return makeWillpowerGem(stone.id, rest.x, rest.y, world, params, byId.get(stone.id))
+    const spot = spots?.[stone.id]
+    const last =
+      byId.get(stone.id) ??
+      (spot ? ({ x: spot[0] * world.width, y: spot[1] * world.height } as WillpowerBody) : undefined)
+    return makeWillpowerGem(stone.id, rest.x, rest.y, world, params, last)
   })
   return resolveWillpowerOverlaps([crystal, ...satellites], params)
 }
@@ -1047,6 +1052,9 @@ function WillpowerGemsStage({
   const [slowMo, setSlowMo] = useState(false)
   const [bounces, setBounces] = useState(0)
   const persistTimer = useRef(0)
+  const storeSpots = useHabitsStore((s) => s.willpowerGemSpots)
+  const setSpots = useHabitsStore((s) => s.setWillpowerGemSpots)
+  const spotsRef = useRef<Record<string, [number, number]>>(storeSpots ?? {})
   const paintRef = useRef(0)
   const slowMoRef = useRef(false)
   const onPhysicsChange = useCallback(
@@ -1066,7 +1074,16 @@ function WillpowerGemsStage({
     paramsRef.current = DEFAULT_WILLPOWER_PHYSICS
     setKnobs(DEFAULT_WILLPOWER_PHYSICS)
     setParams(DEFAULT_WILLPOWER_PHYSICS)
-  }, [setParams])
+    spotsRef.current = {}
+    setSpots({})
+    bodiesRef.current = []
+    const el = stageRef.current
+    if (el) {
+      worldRef.current = worldFor(el, worldRef.current)
+      bodiesRef.current = bodiesFor(stones, worldRef.current, [], DEFAULT_WILLPOWER_PHYSICS)
+      setPose(bodiesRef.current)
+    }
+  }, [setParams, setSpots, stones])
 
   hudRef.current = hud
   paramsRef.current = knobs
@@ -1130,6 +1147,17 @@ function WillpowerGemsStage({
       paintRef.current = 0
       setStirring(false)
       setPose(next)
+      const w = worldRef.current
+      if (w.width > 0 && w.height > 0) {
+        const spots: Record<string, [number, number]> = {}
+        for (const b of next) {
+          if (!b.pinned && Number.isFinite(b.x) && Number.isFinite(b.y)) {
+            spots[b.id] = [Number((b.x / w.width).toFixed(4)), Number((b.y / w.height).toFixed(4))]
+          }
+        }
+        spotsRef.current = spots
+        setSpots(spots)
+      }
     }
   }
 
@@ -1241,7 +1269,7 @@ function WillpowerGemsStage({
     const el = stageRef.current
     if (!el) return
     worldRef.current = worldFor(el, worldRef.current)
-    bodiesRef.current = bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current)
+    bodiesRef.current = bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current, spotsRef.current)
     setPose(bodiesRef.current)
   }, [stones])
 
@@ -1253,7 +1281,7 @@ function WillpowerGemsStage({
       const nextWorld = worldFor(el, prev)
       bodiesRef.current = resolveWillpowerOverlaps(
         scaleWillpowerBodies(
-          bodiesFor(stones, nextWorld, bodiesRef.current, paramsRef.current),
+          bodiesFor(stones, nextWorld, bodiesRef.current, paramsRef.current, spotsRef.current),
           prev,
           nextWorld,
         ),
@@ -1287,7 +1315,7 @@ function WillpowerGemsStage({
     const sim = toSim(el, clientX, clientY, worldRef.current)
     worldRef.current = worldFor(stageRef.current ?? el, worldRef.current)
     bodiesRef.current = stirWillpower(
-      bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current),
+      bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current, spotsRef.current),
       worldRef.current,
       sim.x,
       sim.y,

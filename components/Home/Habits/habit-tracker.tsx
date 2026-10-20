@@ -258,6 +258,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
   const sortDescending = effectiveSortDescending(habitSortMode, habitSortDirection)
   const setHabitSortMode = useHabitsStore((s) => s.setHabitSortMode)
   const highlightHabitPriorities = useHabitsStore((s) => s.highlightHabitPriorities)
+  const groupHabitsByKind = useHabitsStore((s) => s.groupHabitsByKind)
+  const setGroupHabitsByKind = useHabitsStore((s) => s.setGroupHabitsByKind)
   const setHighlightHabitPriorities = useHabitsStore((s) => s.setHighlightHabitPriorities)
   const showStreakMarks = useHabitsStore((s) => s.showStreakMarks)
   const setShowStreakMarks = useHabitsStore((s) => s.setShowStreakMarks)
@@ -813,7 +815,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
       return { frequency, ids: mergeVisibleOrder(prev.ids, visibleIds) }
     })
   }
-  const priorityBar = (frequency: HabitFrequency, rows: Task[], sortId: string) => {
+  const viewToggles = (frequency: HabitFrequency): HabitControlToggle[] => {
     const suffix =
       frequency === "weekly"
         ? "-weekly"
@@ -822,9 +824,28 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
           : frequency === "quarterly"
             ? "-season"
             : ""
-    const toggles: HabitControlToggle[] = []
+    const toggles: HabitControlToggle[] = [
+      {
+        id: `highlight-priorities${suffix}`,
+        label: "Highlight priorities",
+        checked: highlightHabitPriorities,
+        onCheckedChange: setHighlightHabitPriorities,
+      },
+      {
+        id: `streak-marks${suffix}`,
+        label: "Streaks and multipliers",
+        checked: showStreakMarks,
+        onCheckedChange: setShowStreakMarks,
+      },
+    ]
     if (frequency === "daily") {
       toggles.push(
+        {
+          id: "group-by-kind",
+          label: "Group by category",
+          checked: groupHabitsByKind,
+          onCheckedChange: setGroupHabitsByKind,
+        },
         {
           id: "heatmap-view",
           label: "Heatmap View",
@@ -874,25 +895,25 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         onCheckedChange: setHideCompletedAndMissed,
       },
     )
+    return toggles
+  }
+  const sortTools = (frequency: HabitFrequency, rows: Task[], sortId: string) => (
+    <HabitControlBar
+      frequency={frequency}
+      sortId={sortId}
+      sortMode={habitSortMode}
+      sortDirection={habitSortDirection}
+      onSortMode={setHabitSortMode}
+      onSortDirection={setHabitSortDirection}
+      editing={editingFrequency === frequency}
+      onEditOrder={() => beginOrder(rows, frequency)}
+      onSaveOrder={saveOrder}
+      onCancelOrder={() => setOrderDraft(null)}
+    />
+  )
+  const priorityBar = () => {
     return (
       <div className="hab-sheet-mast">
-        <HabitControlBar
-          frequency={frequency}
-          sortId={sortId}
-          highlight={highlightHabitPriorities}
-          onHighlight={setHighlightHabitPriorities}
-          showMarks={showStreakMarks}
-          onShowMarks={setShowStreakMarks}
-          sortMode={habitSortMode}
-          sortDirection={habitSortDirection}
-          onSortMode={setHabitSortMode}
-          onSortDirection={setHabitSortDirection}
-          editing={editingFrequency === frequency}
-          onEditOrder={() => beginOrder(rows, frequency)}
-          onSaveOrder={saveOrder}
-          onCancelOrder={() => setOrderDraft(null)}
-          toggles={toggles}
-        />
         <div className="hab-wand-mount" data-testid="habit-wand-banner-mount">
           <HabitWandBanner
             view={exemptionWand ? "exemption" : missedOpWand ? "missed" : null}
@@ -1131,7 +1152,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         <TabsContent value="daily" className="hab-pane">
           <div className="hab-desk">
             <div className="hab-sheet">
-              {priorityBar("daily", dailyShown, "habit-sort")}
+              {priorityBar()}
             <div className="hab-well">
               {!hydrated ? (
                 <div className="habit-grid-wrap" aria-busy="true">
@@ -1162,6 +1183,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
                 />
               ) : (
                 <TaskGrid
+                  groupByKind={groupHabitsByKind}
                   tasks={dailyRows}
                   weeklyData={weeklyData}
                   weekDates={weekDates}
@@ -1199,6 +1221,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
             </div>
             <HabitsControlPanel stones={willpowerStones}>
               <HabitsTabControls
+                viewToggles={viewToggles("daily")}
+                sortTools={sortTools("daily", dailyShown, "habit-sort")}
                 gradeLabel={gradeLabel}
                 gradeValueText={gradeDaysReady === 0 ? "—" : `${shownGrade.toFixed(0)}%`}
                 gradeThrough={gradeThrough}
@@ -1247,7 +1271,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         <TabsContent value="weekly" className="hab-pane">
           <div className="hab-desk">
             <div className="hab-sheet">
-              {priorityBar("weekly", weeklyShown, "habit-sort-weekly")}
+              {priorityBar()}
             <div className="hab-well">
               {!hydrated ? (
                 <div className="habit-grid-wrap" aria-busy="true">
@@ -1293,6 +1317,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
             </div>
             <HabitsControlPanel stones={willpowerStones}>
               <HabitsTabControls
+                viewToggles={viewToggles("weekly")}
+                sortTools={sortTools("weekly", weeklyShown, "habit-sort-weekly")}
                 gradeLabel={gradeLabel}
                 gradeValueText={gradeDaysReady === 0 ? "—" : `${shownGrade.toFixed(0)}%`}
                 gradeThrough={gradeThrough}
@@ -1339,7 +1365,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         <TabsContent value="monthly" className="hab-pane">
           <div className="hab-desk">
             <div className="hab-sheet">
-              {priorityBar("monthly", monthlyShown, "habit-sort-monthly")}
+              {priorityBar()}
             <div className="hab-well">
               {!hydrated ? (
                 <div className="habit-grid-wrap" aria-busy="true">
@@ -1385,6 +1411,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
             </div>
             <HabitsControlPanel stones={willpowerStones}>
               <HabitsTabControls
+                viewToggles={viewToggles("monthly")}
+                sortTools={sortTools("monthly", monthlyShown, "habit-sort-monthly")}
                 gradeLabel={gradeLabel}
                 gradeValueText={gradeDaysReady === 0 ? "—" : `${shownGrade.toFixed(0)}%`}
                 gradeThrough={gradeThrough}
@@ -1436,7 +1464,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         <TabsContent value="quarterly" className="hab-pane" data-season={seasonSlug(seasonOfDate(currentQuarter))}>
           <div className="hab-desk">
             <div className="hab-sheet">
-              {priorityBar("quarterly", quarterlyShown, "habit-sort-season")}
+              {priorityBar()}
             <div className="hab-well">
               {!hydrated ? (
                 <div className="habit-grid-wrap" aria-busy="true">
@@ -1486,6 +1514,8 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
             </div>
             <HabitsControlPanel stones={willpowerStones}>
               <HabitsTabControls
+                viewToggles={viewToggles("quarterly")}
+                sortTools={sortTools("quarterly", quarterlyShown, "habit-sort-season")}
                 gradeLabel={gradeLabel}
                 gradeValueText={gradeDaysReady === 0 ? "—" : `${shownGrade.toFixed(0)}%`}
                 gradeThrough={gradeThrough}
