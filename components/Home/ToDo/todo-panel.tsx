@@ -33,6 +33,7 @@ import { pushTask } from "@/lib/services/scheduling-service"
 import { assimilateUndoneFields, discardUndoneFields, pushUndoneFields } from "@/lib/scheduling"
 import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { resolveCompletionPoints } from "@/lib/item-utils"
+import type { StepTier } from "@/lib/types"
 import { usePointsStore } from "@/lib/points-store"
 import { emitTaskCompleted } from "@/lib/completion-events"
 import { completionWindow } from "@/lib/completion-window"
@@ -476,14 +477,14 @@ export function TodoPanel({
     return true
   }
 
-  const handleComplete = (todoId: string) => {
+  const handleComplete = (todoId: string, level?: StepTier) => {
     if (openRitual(todoId)) return
     const finish = () => {
       setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, completed: true } : item)))
       const todo = todoItems.find((item) => item.id === todoId)
       // The store stamps `completedDate` on this transition, so the row lands in
       // today's "Done" list no matter which day it was scheduled for.
-      completeTask(todo?.taskId ?? todoId)
+      completeTask(todo?.taskId ?? todoId, { level })
       setOpenRowId((id) => (id === todoId ? null : id))
       setFlockingId(null)
     }

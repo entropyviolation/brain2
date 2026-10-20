@@ -658,16 +658,16 @@ _Last mapped: 2026-10-16._ Less pressure, more visible time, smaller first steps
 | F | Estimate rule everywhere, default estimate, Operations totals | 6 | E | S | Built 2026-10-16 |
 | L | `stepSpentMinutes`, est · parts · spent, `lib/estimate-pace.ts`, ghost figure, padded fit gauge, Operations naming a task | 6 | D, E | M | Built 2026-10-16; task card placement with O |
 | K | `StepTree`, no blanks, ▶ kept, drag + multi-select, Hide locked, Show next only, calm line | 9 | C, D | L | Built 2026-10-16; cross-task drag (Decision 9) and Paste as log (I) left; step ↗ came with M |
-| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags came with M; Done-at-level and level points with O |
+| N | Step tiers, weighted percent, levels, gauge, Tier filter, sparks | 10 | K | M | Built 2026-10-16; item-detail tags came with M; Done-at-level and level points built with O |
 | M | Step items, stacked item detail | 11 | K | M | Built 2026-10-16; card / session ↗ with O and P |
-| O | Task card | 12 | K, L, N (M for ↗) | L | In progress: card, row Card, draft name → card built 2026-10-16; left: More… on Add new, Move to task…, Done at level, unlock-value node size, item-detail step points |
+| O | Task card | 12 | K, L, N (M for ↗) | L | In progress: card, row Card, draft name → card built 2026-10-16; Done at level and level points built; left: More… on Add new, Move to task…, unlock-value node size, item-detail step points |
 | P | Branch drag-in, carve-outs, `sessionOnly` with Persist | 13 | H, K, N | M | Planned |
 | S | Locked vs incomplete words; unlock value; formula; blocker first; inherited due date; step unlock rank | 14 A–D | C (N for level weights) | M | Task half built 2026-10-16; step half (step unlock rank in `lib/next-step.ts`, D) next |
 | S2 | Prerequisites met at a level | 14 E | N, S | M | Later (Decision 11) |
 | I | `work-log-parse`, Paste as log, live `heading:` lines, `now:` ingest phrase | — | C, D | M | Planned |
 | T | Rites additions: Put the day down, weekly check-in | 8 | J (I for the parser) | S | Planned |
 | U | Just Start choices, Pull me, time-box ring, end-of-sitting strip | 15 A | B, D (N for sparks) | M | Built 2026-10-16 |
-| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps on Done rows still to wire (N is in) |
+| V | No-should audit and rule, Done well line, notice dot | 15 B | — (L for the attention line) | S | Built 2026-10-16; tier lamps on Done rows built with O |
 | W | Waiting shelf | 15 C | — (O for Shrink) | S | Planned |
 | X | Points visible switch | 15 D | — | S | Switch built 2026-10-16; hiding figures waits for O |
 | R | Look pass | 7 | each slice | S | Ongoing |

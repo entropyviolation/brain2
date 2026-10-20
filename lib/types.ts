@@ -622,6 +622,8 @@ export interface Task extends Item {
   parentTaskId?: string // For subtasks
   /** Phase 12: the task card's quick points. Set, it wins over the list rule; cleared, the rule returns. */
   pointsOverride?: number
+  /** Phase 10: the step level reached when it was marked Done (Done at Bare minimum / Goal, or the top level). Cleared on reopen. */
+  tierReached?: StepTier
   /** Phase 11: this item is a step's item (`Subtask.itemId`). Never a To Do row, lens, list or search hit (`isStepItem`). */
   stepOf?: { taskId: string; stepId: string }
   subtasks?: Subtask[] // Array of subtask objects

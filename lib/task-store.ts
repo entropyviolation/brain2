@@ -48,6 +48,8 @@ import { dispatchItemMutation } from "@/lib/workflow-hooks"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { reviewPointsTaskId } from "@/lib/completion-review"
 import { usePointsStore } from "@/lib/points-store"
+import { hasStepTiers } from "@/lib/step-tiers"
+import { levelReached } from "@/lib/step-progress"
 import {
   resolveCompletionPoints,
   applyItemRules,
@@ -407,6 +409,13 @@ export const useTaskStore = create<TaskState>()(
             const prev = state.tasks[index]
             const justCompleted = !prev.completed && updatedTask.completed
             const justReopened = prev.completed && !updatedTask.completed
+            // Phase 10: Done records the step level reached; reopening clears it.
+            if (justCompleted && !updatedTask.tierReached && hasStepTiers(updatedTask)) {
+              const level = levelReached(updatedTask, true)
+              if (level !== "none") updatedTask = { ...updatedTask, tierReached: level }
+            } else if (justReopened && updatedTask.tierReached) {
+              updatedTask = { ...updatedTask, tierReached: undefined }
+            }
             if (justCompleted) {
               basePoints = resolveCompletionPoints(updatedTask, state.lists, state.folders)
             }

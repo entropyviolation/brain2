@@ -275,6 +275,24 @@ describe("TodoPanel", () => {
     expect(updated.completedDate).toBeTruthy()
   })
 
+  it("offers Done at Bare minimum once that level is reached, and records it", () => {
+    const [t] = useTaskStore.getState().tasks
+    useTaskStore.getState().updateTask({
+      ...t,
+      subtasks: [
+        { id: "a", description: "a", completed: true, tier: "min" },
+        { id: "b", description: "b", completed: false, tier: "goal" },
+      ],
+    })
+    render(<TodoPanel />)
+    expect(screen.queryByRole("button", { name: "Done at Goal" })).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Done at Bare minimum" }))
+    vi.advanceTimersByTime(500)
+    const updated = useTaskStore.getState().tasks[0]
+    expect(updated.completed).toBe(true)
+    expect(updated.tierReached).toBe("min")
+  })
+
   it("files a task as a missed opportunity instead of completing it", () => {
     render(<TodoPanel />)
     fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
