@@ -464,11 +464,12 @@ describe("HomeOverview", () => {
     expect(moon).toHaveTextContent(/days until (full|new) moon|Full moon today|New moon today/)
   })
 
-  it("saves a Days Until date and label", async () => {
+  it("saves a Countdown date and label from its gear", async () => {
     const user = userEvent.setup()
     render(<HomeOverview currentDate={currentDate} />)
     expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Set a date")
-    await user.click(screen.getByRole("button", { name: "Open Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Open Countdown" }))
+    await user.click(screen.getByRole("button", { name: /Settings for Countdown/ }))
     await user.type(screen.getByLabelText("Label"), "Birth Day")
     await user.type(screen.getByLabelText("Date"), "2027-10-01")
     expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Until Birth Day")
@@ -490,7 +491,7 @@ describe("HomeOverview", () => {
     expect(await screen.findByText(/What is true right now/)).toBeInTheDocument()
   })
 
-  it("shows a live Days Until countdown and format choice", async () => {
+  it("shows a live Countdown and its units choice", async () => {
     const user = userEvent.setup()
     useHomeDaysUntilStore.getState().setCountdown({
       label: "Launch",
@@ -505,7 +506,8 @@ describe("HomeOverview", () => {
     )
     const tile = screen.getByTestId("home-daysuntil-tile")
     expect(tile).toHaveTextContent("Until Launch")
-    await user.click(screen.getByRole("button", { name: "Open Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Open Countdown" }))
+    await user.click(screen.getByRole("button", { name: /Settings for Countdown/ }))
     expect(screen.getByLabelText(/Time/)).toBeInTheDocument()
     await user.click(screen.getByRole("radio", { name: /Decimal/ }))
     expect(useHomeDaysUntilStore.getState().items[0]?.format).toBe("decimal")
