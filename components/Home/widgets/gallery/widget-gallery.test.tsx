@@ -7,6 +7,7 @@ import { useHomeDaysUntilStore } from "@/lib/home-days-until-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useVocabStore } from "@/lib/vocab-store"
 import { HomeWidgetCatalog } from "@/components/Home/home-widget-catalog"
+import "@/components/Home/dash/dash-faces"
 
 vi.mock("@/lib/city-search", async (original) => ({
   ...(await original<typeof import("@/lib/city-search")>()),
@@ -44,6 +45,16 @@ describe("Widget gallery", () => {
     expect(screen.getByText("Period keys on the face")).toBeInTheDocument()
     expect(screen.getByText("As many as you like")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Installed copies" })).toBeInTheDocument()
+  })
+
+  it("draws the kind's Dash face at every size it can take", async () => {
+    const user = userEvent.setup()
+    renderGallery()
+    await user.click(pick("Moon"))
+    await user.click(screen.getByRole("button", { name: "Dash" }))
+    const cells = document.querySelectorAll(".dash-sample-cell")
+    expect(cells.length).toBe(4)
+    for (const cell of cells) expect(cell.querySelector(".vdg-static")).toBeNull()
   })
 
   it("installs another Points copy with its guide waiting", async () => {
