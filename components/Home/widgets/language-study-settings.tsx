@@ -26,7 +26,11 @@ import { useVocabStore } from "@/lib/vocab-store"
 import { VOCAB_LANG_LABEL, vocabLevelsFor } from "@/lib/vocab-words"
 import type { VocabLang } from "@/lib/vocab/types"
 import type { WidgetCopy } from "@/lib/widgets/types"
-import { placementQuiz } from "@/components/Home/widgets/placement-registry"
+import { placementQuiz, registerPlacementQuiz } from "@/components/Home/widgets/placement-registry"
+import { PlacementQuiz } from "@/components/Home/language-study/placement-quiz"
+import "@/components/Home/language-study/placement-quiz.css"
+
+registerPlacementQuiz(PlacementQuiz)
 
 /** Set a studied copy's CEFR level, and point Vocab's word pool at it. */
 export function applyCefrLevel(copyId: string, lang: VocabLang, level: CefrLevel, placement?: { correct: number; total: number }) {
