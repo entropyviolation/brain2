@@ -27,6 +27,31 @@ import type {
   Task,
 } from "@/lib/types"
 import { isLinkableListId } from "@/lib/list-links"
+import { linkIndexOf, type LinkIndex } from "@/lib/graph/link-index"
+import { buildLattice, type RelationLattice } from "@/lib/graph/relation-lattice"
+import { allRelations } from "@/lib/relation-registry"
+import { relationLabel } from "@/lib/links"
+
+/**
+ * Set while `applyMembershipRulesToTasks` runs, so `link` conditions see
+ * backlinks. A single-task apply reads the item's own links only.
+ */
+let linkScope: { links: LinkIndex; lattice: RelationLattice } | null = null
+
+function matchLink(task: Task, c: Extract<MembershipCondition, { kind: "link" }>): boolean {
+  if (!c.relation) return false
+  const lattice = linkScope?.lattice ?? buildLattice(allRelations())
+  const steps = linkScope
+    ? linkScope.links.steps(task.id)
+    : (task.links ?? []).map((l) => ({ from: task.id, relation: l.relation, to: l.targetId }))
+  const typeOk = (id: string) => {
+    if (!c.targetTypeIds?.length) return true
+    const t = linkScope?.links.byId.get(id)?.type as string | undefined
+    return !!t && c.targetTypeIds.includes(t)
+  }
+  const hit = steps.some((s) => lattice.isSubrelation(s.relation, c.relation) && (!c.targetId || s.to === c.targetId) && typeOk(s.to))
+  return c.mode === "hasNot" ? !hit : hit
+}
 
 const DAY = 86_400_000
 
@@ -123,6 +148,8 @@ function matchCondition(task: Task, membership: Set<string>, c: MembershipCondit
     }
     case "done":
       return task.completed === c.done
+    case "link":
+      return matchLink(task, c)
     default:
       return false
   }
@@ -193,13 +220,19 @@ export function applyMembershipRulesToTasks(tasks: Task[], lists: List[], now: D
   if (!lists.some((l) => activeMembershipRules(l).length > 0) && !tasks.some((t) => t.listRuleAddedIds?.length)) {
     return tasks
   }
+  const needsLinks = lists.some((l) => activeMembershipRules(l).some((r) => r.conditions.some((c) => c.kind === "link")))
+  linkScope = needsLinks ? { links: linkIndexOf(tasks), lattice: buildLattice(allRelations()) } : null
   let changed = false
-  const next = tasks.map((t) => {
-    const applied = applyMembershipRulesToTask(t, lists, now)
-    if (applied !== t) changed = true
-    return applied
-  })
-  return changed ? next : tasks
+  try {
+    const next = tasks.map((t) => {
+      const applied = applyMembershipRulesToTask(t, lists, now)
+      if (applied !== t) changed = true
+      return applied
+    })
+    return changed ? next : tasks
+  } finally {
+    linkScope = null
+  }
 }
 
 export function rulesChanged(a: List | undefined, b: List | undefined): boolean {
@@ -256,6 +289,10 @@ export function describeCondition(
       return `${c.mode === "none" ? "no tag" : "tag"} ${c.tags.join(c.mode === "all" ? " and " : " or ") || "…"}`
     case "done":
       return c.done ? "is done" : "is not done"
+    case "link": {
+      const to = c.targetId ? ` ${c.targetId}` : c.targetTypeIds?.length ? ` any ${c.targetTypeIds.map(names.type).join(" or ")}` : ""
+      return `${c.mode === "hasNot" ? "has no" : "has"} ${relationLabel(c.relation || "…")}${to}`
+    }
   }
 }
 

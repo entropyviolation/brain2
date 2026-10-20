@@ -3,6 +3,8 @@
  *
  * Every relation: label ⇄ inverse, scope, usage, origin. Grouped by family,
  * or as the hierarchy tree (`parent`, root `related`). Archived rows fold.
+ * A row opens its sheet (L2.2, merge L2.3). Also: Schematic (L2.4), Rules
+ * (L3.5), and Inbox (snapshot export, proposal import, review; L8.1–8.2).
  */
 "use client"
 
@@ -13,7 +15,13 @@ import { allRelations } from "@/lib/relation-registry"
 import { buildLattice, LATTICE_ROOT } from "@/lib/graph/relation-lattice"
 import { relationUsage } from "@/lib/graph/relation-usage"
 import type { RelationDef, RelationFamily } from "@/lib/links"
+import { GraphInbox } from "./GraphInbox"
+import { RelationSchematic } from "./RelationSchematic"
+import { RelationSheet } from "./RelationSheet"
+import { RuleEditor } from "./RuleEditor"
 import "./relations-library.css"
+
+const VIEW_LABEL = { list: "By family", tree: "Tree", schematic: "Schematic", rules: "Rules", inbox: "Inbox" } as const
 
 const FAMILY_ORDER: RelationFamily[] = ["family", "friend", "romance", "work", "group", "place", "task", "evidence", "other"]
 
@@ -29,7 +37,8 @@ export function RelationsLibrary() {
   const overrides = useItemTypeStore((s) => s.relationOverrides)
   const types = useItemTypeStore((s) => s.types)
   const tasks = useTaskStore((s) => s.tasks)
-  const [view, setView] = useState<"list" | "tree">("list")
+  const [view, setView] = useState<"list" | "tree" | "schematic" | "rules" | "inbox">("list")
+  const [openId, setOpenId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
 
   // Store slices are deps so the registry read refreshes on change.
@@ -45,7 +54,14 @@ export function RelationsLibrary() {
     const origin = relationOrigin(def)
     const n = usage.get(def.id) ?? 0
     return (
-      <li key={def.id} className="rel-row" data-testid={`relation-row-${def.id}`} style={{ paddingLeft: 8 + depth * 16 }}>
+      <li
+        key={def.id}
+        className="rel-row"
+        data-testid={`relation-row-${def.id}`}
+        data-open={openId === def.id ? "true" : undefined}
+        style={{ paddingLeft: 8 + depth * 16, cursor: "pointer" }}
+        onClick={() => setOpenId(def.id)}
+      >
         <span className="rel-label">
           {def.label}
           {def.inverse !== def.id ? <span className="rel-inverse"> ⇄ {def.inverseLabel}</span> : <span className="rel-inverse"> (both ways)</span>}
@@ -107,14 +123,19 @@ export function RelationsLibrary() {
           <p className="an-canvas-kicker">{`${live.length} relation${live.length === 1 ? "" : "s"} · ${archived.length} archived`}</p>
         </div>
         <div className="an-library-filters" role="group" aria-label="Relation view">
-          {(["list", "tree"] as const).map((v) => (
+          {(["list", "tree", "schematic", "rules", "inbox"] as const).map((v) => (
             <button key={v} type="button" className="an-chip" aria-pressed={view === v} onClick={() => setView(v)}>
-              {v === "list" ? "By family" : "Tree"}
+              {VIEW_LABEL[v]}
             </button>
           ))}
         </div>
       </header>
-      {view === "list" ? listView() : treeView()}
+      {openId ? <RelationSheet id={openId} onClose={() => setOpenId(null)} /> : null}
+      {view === "list" ? listView() : null}
+      {view === "tree" ? treeView() : null}
+      {view === "schematic" ? <RelationSchematic defs={live} onOpen={setOpenId} /> : null}
+      {view === "rules" ? <RuleEditor /> : null}
+      {view === "inbox" ? <GraphInbox /> : null}
       {archived.length > 0 && (
         <section className="rel-group">
           <button type="button" className="an-chip" aria-expanded={showArchived} onClick={() => setShowArchived((o) => !o)}>

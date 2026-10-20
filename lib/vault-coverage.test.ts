@@ -54,6 +54,8 @@ function vaultId(name: string): string {
 const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-theme-store": "window gray, plate, hues — appearanceRev decides these",
   "cogs-user-settings": "one settings object",
+  "cogs-links-view": "Links tab switch and muted suggestion sources",
+  "cogs-graph-inbox": "a review queue of proposals; Clear closed and the 500 cap shrink it on purpose",
   "cogs-lists-ui": "window layout and filters; Deselect all empties them on purpose",
   "cogs-screentime-prefs": "app allow/deny lists the user curates",
   "cogs-work-session": "one in-flight session, cleared when it ends",

@@ -138,3 +138,15 @@ describe("task store", () => {
     expect(useTaskStore.getState().tasks[0].listMembershipExclusions).toContain("books")
   })
 })
+
+describe("link condition (LINKS_REDESIGN L7.1)", () => {
+  it("joins items that have a relation, read both ways and down the lattice", async () => {
+    await import("@/lib/person-relations")
+    const { applyMembershipRulesToTasks: apply } = await import("@/lib/list-membership-rules")
+    const list = { id: "fam", name: "Family", color: "#000", createdAt: new Date(), membershipRules: [{ id: "r", match: "all", conditions: [{ kind: "link", relation: "family-of", mode: "has" }] }], membershipRulesSync: true } as unknown as import("@/lib/types").List
+    const mk = (id: string, links: { relation: string; targetId: string }[] = []) =>
+      ({ id, title: id, lists: [], links: links.map((l, i) => ({ id: `${id}${i}`, ...l })) }) as unknown as import("@/lib/types").Task
+    const out = apply([mk("mom", [{ relation: "mother-of", targetId: "kid" }]), mk("kid"), mk("loner")], [list], new Date())
+    expect(out.map((t) => t.lists.includes("fam"))).toEqual([true, true, false])
+  })
+})
