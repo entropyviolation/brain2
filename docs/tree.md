@@ -139,11 +139,11 @@ while the draft matches the stored item, pink **Unsaved changes** while it does 
 
 ### Home
 
-Default tab — date + hidable overview squares (points, progress, review, optional affirmation/weather) + **Habits · Plan · To Do · Goals · Tracking**. The strip is shared by every sub-tab.
+Default tab — date + the **Visual dashboard** (installed widget copies: points, progress, review, Countdown, Language study, optional affirmation/weather, …) + **Habits · Plan · To Do · Goals · Tracking**. The dashboard is shared by every sub-tab. Parts in `components/Home/widgets/`; model in `lib/widgets/`.
 
 | Area                        | Key files                                                                                      | Store(s)                       |
 | --------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
-| Root                        | `home-dashboard.tsx`, `home-overview.tsx`, `home-widgets-menu.tsx`, `home-widget-catalog.tsx`, `home-widget-dialog.tsx`, `home-award-tile.tsx`, `home-screen-pet.tsx`, `home-next-tile.tsx`, `home-day-lamp.tsx`, `home-days-until.tsx`, `home-moon-tile.tsx`, `home-moon-sprite.tsx`, `home-moon-phase.tsx`, `home-moon-orrery.tsx`, `naked-eye-stars.ts`, `star-identify.tsx`, `sky-galaxy.tsx`, `home-sky-scale.tsx`, `home-sky-motion.tsx`, `MOON_SKY_MOTION.md`, `home-solar-tile.tsx`, `home-tracking-tile.tsx`, `home-glance-tiles.tsx`, `home-reading-tiles.tsx`, `home-day-stats.ts`, `weather-instrument.tsx`, `points-stats.tsx`, `daily-progress-quickview.tsx`, `home-review-banner.tsx` | points, task, reviews, events, sleep, `home-widgets-store`, `home-weather-store`, `home-days-until-store`, `sky-motion-store`, `sun-times-store`, time-tracking |
+| Root                        | `home-dashboard.tsx`, `home-overview.tsx`, `home-widgets-menu.tsx`, `home-widget-catalog.tsx`, `home-widget-dialog.tsx`, `home-award-tile.tsx`, `home-screen-pet.tsx`, `home-next-tile.tsx`, `home-day-lamp.tsx`, `home-days-until.tsx` (Countdown), `home-vocab-tile.tsx` (Language study), `widgets/`, `home-moon-tile.tsx`, `home-moon-sprite.tsx`, `home-moon-phase.tsx`, `home-moon-orrery.tsx`, `naked-eye-stars.ts`, `star-identify.tsx`, `sky-galaxy.tsx`, `home-sky-scale.tsx`, `home-sky-motion.tsx`, `MOON_SKY_MOTION.md`, `home-solar-tile.tsx`, `home-tracking-tile.tsx`, `home-glance-tiles.tsx`, `home-reading-tiles.tsx`, `home-day-stats.ts`, `weather-instrument.tsx`, `points-stats.tsx`, `daily-progress-quickview.tsx`, `home-review-banner.tsx` | points, task, reviews, events, sleep, `widgets/dashboard-store`, `home-widgets-store`, `vocab-store`, `home-weather-store`, `home-days-until-store`, `sky-motion-store`, `sun-times-store`, time-tracking |
 | [Goals/](#homegoals)        | `goals-tracker.tsx`                                                                            | `goals-store`                  |
 | [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-completion-cell.tsx`, `habits-tab-controls.tsx`, `hab-grade-sheet.tsx`, `habit-row-name.tsx`, `habit-heatmap.tsx`, `habit-priority-bar.tsx`, `habit-sort-control.tsx`, `habit-month-window-control.tsx`, `habit-week-window-control.tsx`, `habit-led-lamp.tsx`, `percent-led.tsx`, `percent-led-bar.tsx`, `habit-percent-readout.tsx`, `habit-grid.css`, `habit-chrome.css`, `habit-gems.tsx`, `gem-picker.tsx`, `habits-control-panel.tsx`, `exemption-wand-button.tsx`, `missed-op-wand-button.tsx`, `habit-wand-banner.tsx`, `habit-wand-banner.css`, `willpower-gems.tsx`, `noble-gas-tube.tsx`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `good-days-dialog.tsx`, `priority-math.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `PriorityReasonDialog.tsx`, `habit-tag-catalog.tsx`, `habit-list-popup.tsx`, `habit-sources-field.tsx`, `habit-source-detail.tsx`, `habit-period-breakdown.tsx`, `habit-span-breakdown.tsx`, `habit-completion-detail.tsx`, `habit-value-field.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store`, `time-tracking-store` (auto-fill tags) |
 | [Plan/](#homeplan)          | `plan-panel.tsx`, `plan-period-nav.tsx`, `plan-chrome.css`, `plan-theme.ts`, `plan-gem-mode.ts`, `plan-gem-mode-toggle.tsx`, `plan-gem-day.ts`, `plan-gem-day-body.tsx`, `plan-chip.tsx`, `plan-capacity.ts`, `plan-text-log.tsx`, `plan-tracked-ghosts.ts`, `season-view.tsx`, `month/week/day-view.tsx`, `agenda-grid.tsx`, `planned-tasks-sidebar.tsx`, `use-plan-rail-drag.ts`, `planned-action-dialog.tsx`, `event-dialog.tsx`, `paste-events-dialog.tsx`, `settings-dialog.tsx` | task, event, planned-action, plan-text, sleep-sync, time-tracking, unsaved-changes |
@@ -698,15 +698,18 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `workflows-store.ts` | Authored per-module workflows |
 | `item-type-store.ts` | Item type registry |
 | `lists-ui-store.ts` | Lists UI prefs, orb gallery, and list Icons desktop (persist v7) |
-| `home-widgets-store.ts` | Home overview square visibility, order, and Follow the clock |
+| `widgets/dashboard-store.ts` | Visual dashboard: installed widget copies, style, and layouts (`brain2-home-dashboard`) |
+| `home-widgets-store.ts` | Old strip order, hidden kinds, and Follow the clock; the dashboard mirrors into it |
 | `home-weather-store.ts` | Home weather widget city and beach |
-| `home-days-until-store.ts` | Days Until / Days Since marks (`items[]`, mode, optional Plan event) |
-| `home-days-until-event.ts` | Optional all-day Plan event link for a Days Until mark |
+| `home-days-until-store.ts` | Countdown marks (`items[]`, mode, units, repeat, start, optional Plan event) |
+| `home-days-until-event.ts` | Optional all-day Plan event link for a Countdown mark |
 | `sky-motion-store.ts` | Moon chart view width and time rate. Handoff `components/Home/MOON_SKY_MOTION.md` |
 | `home-weather.ts` | Rain copy, advisories, human forecast, place sanitize |
 | `home-widgets.ts` | Catalog, sanitize, Widget catalog blurbs, and the 3-stop Habits gradient |
 | `home-glances.ts` | Night well, Harvest leftover, Inbox mill, Already flowing, and Plan and lived faces (prospective plan vs retrospective waking paint) |
 | `solar-remainder.ts` | Solar remainder phases for the Home sun tile |
+| `countdown.ts` | Countdown face for one mark: units, repeats, progress, milestones |
+| `widgets/kinds.ts`, `widgets/types.ts`, `widgets/dashboard.ts`, `widgets/language-levels.ts` | Widget kinds, installed copies, migration from the old strip, and Language study levels |
 | `tracking-presence.ts` | Current vs last-known lanes; Now popup now-stamp (`open` extends, `minute` starts a second block) and recent sequence |
 | `header-tracking-plan.ts` | Header popup plan → tasks, placements, day plan log |
 | `theme-store.ts` | Theme colors, chrome warmth, Bouba/Kiki corner mix, and `pcbMode`. Persist v5 |
@@ -1044,8 +1047,9 @@ these; Lists / Plan / Scheduler window chrome may not.
 | `cyberneticsbrain2.md` | Steersman plan (CY-1 … CY-11). Not built. One derived gap, three speeds, silence inside a band. Product chrome never names the book |
 | `brain2taoism.md` | Source essay: *Taoism: An Essential Guide* read against Brain2. Parallels, five practices, five room changes. Not a work order |
 | `FRIEND_COMPANION.md` | Today's-friend companion plan (picker/Details/rewards started; clock later) |
-| `FUTURE_WIDGET_IDEAS.md` | Potential Home overview squares; Solar remainder, Tracking now, Night well, Harvest leftover, and Inbox mill shipped; Jung / Korzybski sketches are plans only |
-| `widget-improvement/` | Research reports on the Home overview widgets and Module cards, from the live vault on 9 Oct 2026 ([`widget-improvement/README.md`](widget-improvement/README.md)). Implementation plans live in `widget-improvement/plan/`. |
+| `FUTURE_WIDGET_IDEAS.md` | Potential Visual dashboard kinds; Solar remainder, Tracking now, Night well, Harvest leftover, and Inbox mill shipped; Jung / Korzybski sketches are plans only |
+| `widget-improvement/` | Research reports on the Visual dashboard widgets and Module cards, from the live vault on 9 Oct 2026 ([`widget-improvement/README.md`](widget-improvement/README.md)). Implementation plans live in `widget-improvement/plan/`. |
+| `WIDGETS_REDESIGN.md` | Visual dashboard plan: widget kinds and installed copies, Milled and Dash styles, gear, edit mode, gallery, Countdown, Language study |
 | `UI_NEXT.md` | Ranked UI executable list (subordinate to the plan) |
 | `UI_CRITIQUE.md` | Unranked per-tab observations — do not execute top to bottom |
 | `CANONICAL_FIELDS.md` | Canonical `Item`/data-model field reference (cleanup is step 1, not last). Defines temporal polarity beside orders of abstraction |

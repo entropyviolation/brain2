@@ -8,7 +8,7 @@ The square compares a day’s scheduled minutes with painted Tracking minutes an
 
 Hub `data/shared-persist.json` the same evening matches lived (**1,136**). Its plan is **1,097** (18h 17m), 35 minutes higher, because it still has two scheduled to-dos local does not: Popup dishes (20) and Popup floor (15). Shared rows match. The word would still be Close. **Live LevelDB is the snapshot below.**
 
-**Layout.** `brain2-home-widgets` persist v9. `paint` is in the order and in `hidden`, with affirmation, next, days until, night, harvest, inbox, and flow. The square is not on the strip. `widgetsFollowClock` is true, so if it were shown the overview would read the wall clock (9 Oct), not `brain2-home-date` (`2026-09-24`). `brain2-home-date-follows-today` is `0`.
+**Layout.** `brain2-home-widgets` persist v9. `paint` is in the order and in `hidden`, with affirmation, next, daysuntil (Countdown), night, harvest, inbox, and flow. The square is not on the strip. `widgetsFollowClock` is true, so if it were shown the overview would read the wall clock (9 Oct), not `brain2-home-date` (`2026-09-24`). `brain2-home-date-follows-today` is `0`.
 
 **What the tile would claim for today (9 Oct 2026).** Caption **Lived**. CRT **Close**. Footer **plan 17h 42m · lived 18h 56m**. Detail lead **Close**. Wells **Plan 1062m** and **Lived 1136m**. Note: “Painted minutes sit near the plan, within about a fifth either way.” Ratio 1136/1062 = 1.07, inside 0.8–1.2. Short would be under 850 lived minutes; Over would be above 1,274.
 

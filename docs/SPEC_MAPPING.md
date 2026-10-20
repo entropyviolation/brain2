@@ -579,7 +579,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   picks among those cards. Gallery text fields use navy focus.
   Gallery **Remove** confirms; dismissed friends stay gone. Plan + remaining
   clock / trinkets: [`FRIEND_COMPANION.md`](FRIEND_COMPANION.md).
-- **TOP strip** (large weekday + Review due + one Points tile + **Today's Progress** + screen pet + Days Until / Days Since marks — many countdown or count-up tiles, optional Plan all-day link — + **Moon**) — ✅
+- **TOP strip** (large weekday + Review due + one Points tile + **Today's Progress** + screen pet + **Countdown** copies (was Days Until / Days Since; one per mark, optional Plan all-day link) + **Moon** + **Language study**). The strip is now the **Visual dashboard** of installed widget copies ([`WIDGETS_REDESIGN.md`](WIDGETS_REDESIGN.md)) — ✅
   shared by **all five** Home tabs. Equal-height tiles (caption + CRT + footer)
   flex up to 200px. Optional affirmation / weather / Next / Day lamp /
   Solar remainder / Tracking now / Night well / Harvest leftover / Inbox mill /
@@ -635,7 +635,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   push when the period ends. Open rows show `waiting Nd` from the priority
   date (live scheduled day, or an earlier Undone start, or an earlier deadline).
 - §8.7 Review entry points — ✅ header Review button with a pending badge
-  **plus** a Home overview **Review due** square
+  **plus** a Visual dashboard **Review due** square
   (`components/Home/home-review-banner.tsx`) with Start review / Dismiss.
 
 ## §9 Habit Tracker — ✅/🟡

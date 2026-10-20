@@ -11,7 +11,7 @@ The hub file `data/shared-persist.json` (source `electron`, updated 9 Oct 2026, 
 
 Phase math is `moonGlance` in `lib/lunar.ts` (Meeus, *Astronomical Algorithms*, ch. 49; terrestrial time treated as UTC). Chart places are a separate Kepler set in `lib/solar-system.ts`. Saved chart prefs are `brain2-sky-motion` persist v1 (`viewWidthLog`, `rateIndex` only). Layout is `brain2-home-widgets` persist v9.
 
-**Layout.** Moon is showing. Visible strip, in order: Rituals, Points, Latest award, Today's Progress, Weather, Screen pet, Day lamp, **Moon**, Solar remainder, Tracking now. In the full order it sits after Days Until (hidden) and before Solar remainder. `widgetsFollowClock` is **true**, so the square reads the wall clock (`homeWidgetDate`), then `MoonTile` uses that same local day and its own minute tick. The pinned home cursor is `2026-09-24` with `brain2-home-date-follows-today` = `0`. That cursor does not reach the Moon while Follow the clock is on.
+**Layout.** Moon is showing. Visible strip, in order: Rituals, Points, Latest award, Today's Progress, Weather, Screen pet, Day lamp, **Moon**, Solar remainder, Tracking now. In the full order it sits after Countdown (hidden) and before Solar remainder. `widgetsFollowClock` is **true**, so the square reads the wall clock (`homeWidgetDate`), then `MoonTile` uses that same local day and its own minute tick. The pinned home cursor is `2026-09-24` with `brain2-home-date-follows-today` = `0`. That cursor does not reach the Moon while Follow the clock is on.
 
 **Saved sky motion.** `viewWidthLog` **3** (the slider minimum; the code default is 3.5). `rateIndex` **0**, real time. `motionReadout(3, 0)` says:
 
