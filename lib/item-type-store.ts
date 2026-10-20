@@ -23,6 +23,7 @@ import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withFilmType } from "@/lib/film-types"
 import type { RelationDef } from "@/lib/links"
+import { cleanRules, type RelationRule } from "@/lib/graph/relation-rules"
 import { pickOverridable, registerCustomRelations, registerRelationOverrides } from "@/lib/relation-registry"
 
 interface ItemTypeState {
@@ -57,6 +58,16 @@ interface ItemTypeState {
   /** Merge a patch into one relation's override. Non-overridable keys are dropped. */
   setRelationOverride: (id: string, patch: Partial<RelationDef>) => void
   clearRelationOverride: (id: string) => void
+  /** Chain rules (L3.1). Derive on read; never write links. */
+  relationRules: RelationRule[]
+  addRule: (rule: RelationRule) => void
+  updateRule: (rule: RelationRule) => void
+  toggleRule: (id: string) => void
+  removeRule: (id: string) => void
+  /** Read `id` as `targetId` (L2.3). Archives it; links keep their id. */
+  mergeRelation: (id: string, targetId: string) => void
+  /** Undo a merge. */
+  unmergeRelation: (id: string) => void
 }
 
 /**
@@ -67,8 +78,7 @@ interface ItemTypeState {
 export const ITEM_TYPE_STORE_PERSIST_VERSION = 3
 
 type MigratedItemTypeState = Pick<ItemTypeState, "types" | "relations" | "relationOverrides"> & {
-  /** **Planned** (L3.1): typed as `RelationRule[]` once rules land. Carried as-is. */
-  relationRules?: unknown[]
+  relationRules?: RelationRule[]
 }
 
 /**
@@ -109,9 +119,9 @@ function cleanRelationOverrides(value: unknown): Record<string, Partial<Relation
   return out
 }
 
-function cleanRelationRules(value: unknown): unknown[] | undefined {
+function cleanRelationRules(value: unknown): RelationRule[] | undefined {
   if (!Array.isArray(value)) return undefined
-  return value.filter((r) => !!r && typeof r === "object" && typeof (r as { id?: unknown }).id === "string")
+  return cleanRules(value)
 }
 
 export const useItemTypeStore = create<ItemTypeState>()(
@@ -120,6 +130,26 @@ export const useItemTypeStore = create<ItemTypeState>()(
       types: getBuiltinItemTypes(),
       relations: [],
       relationOverrides: {},
+      relationRules: [],
+
+      addRule: (rule) => set((state) => (state.relationRules.some((r) => r.id === rule.id) ? state : { relationRules: [...state.relationRules, rule] })),
+      updateRule: (rule) => set((state) => ({ relationRules: state.relationRules.map((r) => (r.id === rule.id ? rule : r)) })),
+      toggleRule: (id) => set((state) => ({ relationRules: state.relationRules.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)) })),
+      removeRule: (id) => set((state) => ({ relationRules: state.relationRules.filter((r) => r.id !== id) })),
+
+      mergeRelation: (id, targetId) =>
+        set((state) => {
+          if (id === targetId || !state.relations.some((r) => r.id === id)) return state
+          return { relations: state.relations.map((r) => (r.id === id ? { ...r, aliasOf: targetId, archived: true as const } : r)) }
+        }),
+      unmergeRelation: (id) =>
+        set((state) => ({
+          relations: state.relations.map((r) => {
+            if (r.id !== id) return r
+            const { aliasOf: _a, archived: _b, ...rest } = r
+            return rest
+          }),
+        })),
 
       setRelationOverride: (id, patch) =>
         set((state) => {
@@ -216,6 +246,7 @@ export const useItemTypeStore = create<ItemTypeState>()(
           state.types = mergeTypeRegistry(state.types ?? [])
           state.relations = cleanRelations(state.relations)
           state.relationOverrides = cleanRelationOverrides(state.relationOverrides)
+          state.relationRules = cleanRules(state.relationRules)
           registerCustomRelations(state.relations)
           registerRelationOverrides(state.relationOverrides)
         }

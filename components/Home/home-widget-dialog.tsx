@@ -1,14 +1,16 @@
 /**
- * components/Home/home-widget-dialog.tsx — Click-open instrument for overview tiles
+ * components/Home/home-widget-dialog.tsx — A widget's detail: the silver handheld
  *
  * The hide key stays outside the open button. × asks Are you sure? before
- * removing the square. Clicking the rest of the tile opens a silver handheld:
- * a caption, dark wells, and one scroll. Settings appear only when the widget
- * has any.
+ * hiding the face. Clicking the rest of the face opens a silver handheld: a
+ * caption, dark wells, and one scroll. On the Visual dashboard the caption
+ * carries a gear: it swaps the detail for that installed copy's own settings
+ * (`widgets/copy-settings.tsx`), and Done returns. A kind with a first-run
+ * guide shows it the first time a copy's detail opens.
  */
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import {
   Dialog,
   DialogContent,
@@ -17,8 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { HOME_WIDGET_LABEL, type HomeWidgetId } from "@/lib/home-widgets"
+import { HOME_WIDGET_LABEL } from "@/lib/home-widgets"
+import { useDashboardStore } from "@/lib/widgets/dashboard-store"
+import { widgetKind } from "@/lib/widgets/kinds"
+import { copyDisplayName } from "@/lib/widgets/dashboard"
+import { useWidgetFrame } from "@/components/Home/widgets/copy-context"
+import { CopySettingsPanel } from "@/components/Home/widgets/copy-settings"
+import { WidgetGuide } from "@/components/Home/widgets/widget-guide"
 import { cn } from "@/lib/utils"
+
+type DetailView = "detail" | "settings" | "guide"
 
 export function HomeWidgetDialog({
   open,
@@ -27,6 +37,9 @@ export function HomeWidgetDialog({
   children,
   className,
   modal = true,
+  settings,
+  onRemoveCopy,
+  removeNote,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -35,15 +48,43 @@ export function HomeWidgetDialog({
   className?: string
   /** False while an item detail popup is stacked on top, so it can take focus and clicks. */
   modal?: boolean
+  /** The kind's own settings panel, drawn above the shared gear fields. */
+  settings?: ReactNode
+  /** Remove for kinds whose copy owns a record (Countdown's mark). */
+  onRemoveCopy?: () => void
+  removeNote?: string
 }) {
+  const frame = useWidgetFrame()
+  const copyId = frame?.copy.id
+  const copy = useDashboardStore((s) => (copyId ? s.copies.find((entry) => entry.id === copyId) : undefined))
+  const markGuideSeen = useDashboardStore((s) => s.markGuideSeen)
+  const kind = copy ? widgetKind(copy.kind) : undefined
+  const [view, setView] = useState<DetailView>("detail")
+
+  useEffect(() => {
+    if (!open) {
+      setView("detail")
+      return
+    }
+    if (kind?.guide && copy && !copy.guideSeen) setView("guide")
+    // Only on open: a guide finished mid-dialog must not reopen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   // Clicks in the stacked popup land outside this dialog; they must not close it.
   const holdOutside = (event: Event) => {
     if (!modal) event.preventDefault()
+  }
+  const caption = copy?.title.trim() ? copy.title.trim() : title
+  const finishGuide = () => {
+    if (copy) markGuideSeen(copy.id)
+    setView("detail")
   }
   return (
     <Dialog open={open} modal={modal} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn("home-widget-dialog home-widget-instrument", className)}
+        data-style={frame?.style ?? "milled"}
         aria-describedby={undefined}
         hideClose
         onPointerDownOutside={holdOutside}
@@ -54,11 +95,60 @@ export function HomeWidgetDialog({
         </button>
         <DialogHeader className="home-widget-caption">
           <span className="home-widget-power" aria-hidden="true" />
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{view === "settings" ? `${caption} · Settings` : caption}</DialogTitle>
+          {copy ? (
+            <button
+              type="button"
+              className={cn("vd-gear", view === "settings" && "is-on")}
+              aria-label={view === "settings" ? `Back to ${caption}` : `Settings for ${copyDisplayName(copy)}`}
+              aria-pressed={view === "settings"}
+              title={view === "settings" ? "Done" : "Settings for this widget"}
+              onClick={() => setView((current) => (current === "settings" ? "detail" : "settings"))}
+            >
+              <GearGlyph />
+            </button>
+          ) : null}
         </DialogHeader>
-        <div className="home-widget-detail">{children}</div>
+        <div className="home-widget-detail" data-view={view}>
+          {copy && view === "guide" && kind?.guide ? (
+            <WidgetGuide cards={kind.guide} onDone={finishGuide} />
+          ) : copy && view === "settings" ? (
+            <>
+              <CopySettingsPanel
+                copyId={copy.id}
+                custom={settings}
+                removeNote={removeNote}
+                onShowGuide={kind?.guide ? () => setView("guide") : undefined}
+                onRemoved={() => {
+                  onOpenChange(false)
+                  if (onRemoveCopy) onRemoveCopy()
+                  else useDashboardStore.getState().removeCopy(copy.id)
+                }}
+              />
+              <div className="home-widget-actions vd-settings-done">
+                <button type="button" className="home-review-key is-on" onClick={() => setView("detail")}>
+                  Done
+                </button>
+              </div>
+            </>
+          ) : (
+            children
+          )}
+        </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function GearGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M7 1h2l.4 1.9c.5.1 1 .3 1.4.6l1.6-1.1 1.4 1.4-1.1 1.6c.3.4.5.9.6 1.4L15 7v2l-1.9.4c-.1.5-.3 1-.6 1.4l1.1 1.6-1.4 1.4-1.6-1.1c-.4.3-.9.5-1.4.6L9 15H7l-.4-1.9c-.5-.1-1-.3-1.4-.6l-1.6 1.1-1.4-1.4 1.1-1.6c-.3-.4-.5-.9-.6-1.4L1 9V7l1.9-.4c.1-.5.3-1 .6-1.4L2.4 3.6 3.8 2.2l1.6 1.1c.4-.3.9-.5 1.4-.6zM8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"
+      />
+    </svg>
   )
 }
 
@@ -103,7 +193,7 @@ export function HideWidgetConfirm({
         <DialogHeader className="home-widget-caption">
           <span className="home-widget-power is-amber" aria-hidden="true" />
           <DialogTitle>Are you sure?</DialogTitle>
-          <DialogDescription>Hide {label}? You can add it again from Widgets.</DialogDescription>
+          <DialogDescription>Hide {label}? It stays installed; show it again from Widgets.</DialogDescription>
         </DialogHeader>
         <DialogFooter className="home-widget-hide-actions">
           <button type="button" className="home-review-key" onClick={onCancel}>
@@ -122,11 +212,15 @@ export function TileHide({
   id,
   onHide,
 }: {
-  id: HomeWidgetId
+  /** Kind id (or a legacy per-mark id); the copy's own name wins on the dashboard. */
+  id: string
   onHide: () => void
 }) {
   const [ask, setAsk] = useState(false)
-  const label = HOME_WIDGET_LABEL[id]
+  const frame = useWidgetFrame()
+  const label = frame
+    ? copyDisplayName(frame.copy)
+    : ((HOME_WIDGET_LABEL as Record<string, string>)[id] ?? id)
   return (
     <>
       <button

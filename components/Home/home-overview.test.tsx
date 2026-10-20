@@ -395,7 +395,7 @@ describe("HomeOverview", () => {
     expect(getComputedStyle(overview).overflowX).not.toBe("auto")
     expect(getComputedStyle(overview).overflowX).not.toBe("scroll")
     expect(getComputedStyle(body).overflowX).toBe("hidden")
-    const tiles = [...container.querySelectorAll(".home-overview > .home-tile, .home-overview > .hab-score-well")] as HTMLElement[]
+    const tiles = [...container.querySelectorAll(".home-overview > .vd-cell > .home-tile, .home-overview > .vd-cell > .hab-score-well")] as HTMLElement[]
     expect(tiles.length).toBeGreaterThan(4)
     const h = getComputedStyle(tiles[0]).height
     for (const tile of tiles) {
@@ -464,11 +464,12 @@ describe("HomeOverview", () => {
     expect(moon).toHaveTextContent(/days until (full|new) moon|Full moon today|New moon today/)
   })
 
-  it("saves a Days Until date and label", async () => {
+  it("saves a Countdown date and label from its gear", async () => {
     const user = userEvent.setup()
     render(<HomeOverview currentDate={currentDate} />)
     expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Set a date")
-    await user.click(screen.getByRole("button", { name: "Open Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Open Countdown" }))
+    await user.click(screen.getByRole("button", { name: /Settings for Countdown/ }))
     await user.type(screen.getByLabelText("Label"), "Birth Day")
     await user.type(screen.getByLabelText("Date"), "2027-10-01")
     expect(screen.getByTestId("home-daysuntil-tile")).toHaveTextContent("Until Birth Day")
@@ -490,7 +491,7 @@ describe("HomeOverview", () => {
     expect(await screen.findByText(/What is true right now/)).toBeInTheDocument()
   })
 
-  it("shows a live Days Until countdown and format choice", async () => {
+  it("shows a live Countdown and its units choice", async () => {
     const user = userEvent.setup()
     useHomeDaysUntilStore.getState().setCountdown({
       label: "Launch",
@@ -505,13 +506,14 @@ describe("HomeOverview", () => {
     )
     const tile = screen.getByTestId("home-daysuntil-tile")
     expect(tile).toHaveTextContent("Until Launch")
-    await user.click(screen.getByRole("button", { name: "Open Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Open Countdown" }))
+    await user.click(screen.getByRole("button", { name: /Settings for Countdown/ }))
     expect(screen.getByLabelText(/Time/)).toBeInTheDocument()
     await user.click(screen.getByRole("radio", { name: /Decimal/ }))
     expect(useHomeDaysUntilStore.getState().items[0]?.format).toBe("decimal")
   })
 
-  it("adds a second Days Until tile from the widgets menu", async () => {
+  it("adds a second Countdown tile from the widgets menu", async () => {
     const user = userEvent.setup()
     render(
       <div className="home95">
@@ -521,7 +523,40 @@ describe("HomeOverview", () => {
     )
     expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Widgets" }))
-    await user.click(screen.getByRole("button", { name: "Add another Days Until" }))
+    await user.click(screen.getByRole("button", { name: "Add another Countdown" }))
     expect(screen.getAllByTestId("home-daysuntil-tile")).toHaveLength(2)
+  })
+
+  it("turns edit mode on and off from the Edit key", async () => {
+    const user = userEvent.setup()
+    render(
+      <div className="home95">
+        <HomeWidgetsMenu />
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    await user.click(screen.getByRole("button", { name: "Edit" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-editing", "true")
+    expect(screen.getByTestId("dashboard-edit-banner")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("button", { name: "Done" }))
+    expect(screen.queryByTestId("dashboard-edit-banner")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("switches between Milled and Dash from the Widgets key", async () => {
+    const user = userEvent.setup()
+    render(
+      <div className="home95">
+        <HomeWidgetsMenu />
+        <HomeOverview currentDate={currentDate} />
+      </div>,
+    )
+    await user.click(screen.getByRole("button", { name: "Widgets" }))
+    expect(screen.getByRole("radio", { name: "Milled" })).toHaveAttribute("aria-checked", "true")
+    await user.click(screen.getByRole("radio", { name: "Dash" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-style", "dash")
+    await user.click(screen.getByRole("radio", { name: "Milled" }))
+    expect(screen.getByTestId("home-overview")).toHaveAttribute("data-style", "milled")
   })
 })

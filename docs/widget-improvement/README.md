@@ -1,12 +1,20 @@
 # Widget improvement
 
-Readings of the Home overview widgets and the Module cards against the vault as it is.
+Readings of the Visual dashboard widgets and the Module cards against the vault as it is.
 
-These are research reports from the live Electron localStorage vault (origin `http://localhost:3000`, userData `~/Library/Application Support/cogs`) on 9 Oct 2026. Implementation plans are in [`plan/`](plan/). The Home and Modules catalogs record those readings. Hidden widgets stay hidden, the milled face stays, and overview type is not resized again there. Each problem below is the first item in that report’s “Biggest problems right now.”
+## Kinds and installed copies
 
-## Home overview widgets
+_Last mapped: 2026-10-20_
 
-| Widget | File | Biggest problem right now |
+The Home widget row is now the **Visual dashboard** ([`WIDGETS_REDESIGN.md`](../WIDGETS_REDESIGN.md), built parts in [`components/Home/README.md`](../../components/Home/README.md#visual-dashboard)). Each page below is about one widget **kind**: the app, as the Widget gallery lists it. What sits on the dashboard is an **installed copy** of a kind, with its own settings behind a gear in its detail. A kind installs `once`, once per key (`perKey`: one Language study per language, one Weather per place), or `many` times (Countdown, Points).
+
+Names changed with the redesign: **Countdown** was Days Until (id `daysuntil`), and **Language study** was Vocab (id `vocab`). Ids did not change. The readings below are from 9 Oct 2026, before copies existed, so they speak of one square per id.
+
+These are research reports from the live Electron localStorage vault (origin `http://localhost:3000`, userData `~/Library/Application Support/cogs`) on 9 Oct 2026. Implementation plans are in [`plan/`](plan/). The redesign that turns these squares into installable kinds is [`../WIDGETS_REDESIGN.md`](../WIDGETS_REDESIGN.md) (planned). The Home and Modules catalogs record those readings. Hidden widgets stay hidden, the milled face stays, and overview type is not resized again there. Each problem below is the first item in that report’s “Biggest problems right now.”
+
+## Visual dashboard kinds
+
+| Kind | File | Biggest problem right now |
 | --- | --- | --- |
 | Rituals | [`home-widget-review.md`](home-widget-review.md) | The CRT number is a backlog, and the footer calls it today. |
 | Points | [`home-widget-points.md`](home-widget-points.md) | The square adds unlike things into one integer-looking score, then annotates a different scale. |
@@ -17,7 +25,8 @@ These are research reports from the live Electron localStorage vault (origin `ht
 | Screen pet | [`home-widget-pet.md`](home-widget-pet.md) | The square hides a 25% day inside a sleep face. |
 | Next | [`home-widget-next.md`](home-widget-next.md) | The hit is an untimed inbox cue, and the calendar gap is silent. |
 | Day lamp | [`home-widget-daylamp.md`](home-widget-daylamp.md) | The word is an unweighted mean of two percents, and tonight that mean is a bad picture of the day. |
-| Days Until | [`home-widget-daysuntil.md`](home-widget-daysuntil.md) | Many countdown / count-up marks (v3 `items[]`), optional Plan all-day link; family may still be hidden in a vault. |
+| Countdown (was Days Until) | [`home-widget-countdown.md`](home-widget-countdown.md) | Built: one copy per mark, units, repeats, progress, milestones, what happens when it passes, and install setup. |
+| Language study (was Vocab) | [`home-widget-language-study.md`](home-widget-language-study.md) | Built: one copy per language, studied or native, CEFR levels, and placement quizzes. More modes are still planned. |
 | Moon | [`home-widget-moon.md`](home-widget-moon.md) | The tile says the new moon is both now and tomorrow. |
 | Solar remainder | [`home-widget-solar.md`](home-widget-solar.md) | The number on the glass changes meaning at sunset. |
 | Tracking now | [`home-widget-tracking.md`](home-widget-tracking.md) | The square says `last known` and never says when. |

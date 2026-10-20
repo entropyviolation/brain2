@@ -31,8 +31,8 @@ import { quarterKey, quarterLabel, quarterStartDate, seasonSlug, seasonOfDate, s
 import { completeTask, markMissedOpportunity } from "@/lib/services/completion-service"
 import { pushTask } from "@/lib/services/scheduling-service"
 import { assimilateUndoneFields, discardUndoneFields, pushUndoneFields } from "@/lib/scheduling"
-import { DEFAULT_PRIORITY_WEIGHTS } from "@/lib/priority"
 import { resolveCompletionPoints } from "@/lib/item-utils"
+import type { StepTier } from "@/lib/types"
 import { usePointsStore } from "@/lib/points-store"
 import { emitTaskCompleted } from "@/lib/completion-events"
 import { completionWindow } from "@/lib/completion-window"
@@ -104,6 +104,10 @@ import { DoneTodoSection } from "./DoneTodoSection"
 import { MissedTodoSection } from "./MissedTodoSection"
 import { UndoneTodoSection } from "./UndoneTodoSection"
 import { TodoFilters } from "./todo-filters"
+import { TodoSettingsDialog } from "./TodoSettingsDialog"
+import { PriorityFormulaPanel } from "./PriorityFormulaPanel"
+import { TodoRangeNav, TodoRangeSheet, useTodoRanges } from "./TodoRangeSheet"
+import { todoTitle, tasksInRange } from "./todo-ranges"
 import { WaitingLine } from "@/components/steps/WaitingLine"
 import { useTodoPrefs, setTodoPrefs } from "./todo-prefs"
 import { useRitesSun } from "./use-rites-sun"
@@ -133,15 +137,7 @@ import { openStepItem } from "@/lib/step-item-stack"
 import "./todo-chrome.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
-const PRIORITY_WEIGHT_FIELDS: { key: keyof PriorityWeights; label: string; hint: string }[] = [
-  { key: "urgency", label: "Urgency", hint: "Higher urgency ranks sooner" },
-  { key: "importance", label: "Importance", hint: "Higher importance ranks sooner" },
-  { key: "cognitiveLoad", label: "Quick win", hint: "Lower cognitive load ranks sooner" },
-  { key: "entropy", label: "Entropy", hint: "Vaguer tasks surface for clarification" },
-  { key: "unlocks", label: "Unlocks", hint: "Work that other tasks wait on rises" },
-]
-
-const TODO_TABS = ["day", "week", "month", "quarter"] as const
+const TODO_TABS = ["day", "week", "month", "quarter", "other"] as const
 type TodoTab = (typeof TODO_TABS)[number]
 
 /** Assumed length for work logged after the fact, until the user says otherwise. */
@@ -168,7 +164,6 @@ export function TodoPanel({
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
   const priorityWeights = useTaskStore((s) => s.priorityWeights)
-  const updatePriorityWeights = useTaskStore((s) => s.updatePriorityWeights)
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [ritualWalk, setRitualWalk] = useState<RitualTodoPlacement | null>(null)
@@ -179,6 +174,8 @@ export function TodoPanel({
   const [prereqTaskId, setPrereqTaskId] = useState<string | null>(null)
   const [sessionOpen, setSessionOpen] = useState<false | "session" | "shelves" | "list">(false)
   const [activeTodoTab, setActiveTodoTab] = usePersistedTab(APP_NAV_KEYS.homeTodoTab, TODO_TABS, "day")
+  // Other (custom ranges) has its own sheet; the period machinery below keeps reading a period.
+  const periodTab: Exclude<TodoTab, "other"> = activeTodoTab === "other" ? "day" : activeTodoTab
   // Uncontrolled fallback for unit tests. The day sheet reads the prop itself
   // when Home passes one, so midnight catch-up is not a copy taken at mount.
   const [internalDate, setInternalDate] = useState(new Date())
@@ -190,20 +187,22 @@ export function TodoPanel({
   const [monthDate, setMonthDate] = useState<Date | null>(null)
   const [seasonDate, setSeasonDate] = useState<Date | null>(null)
   const focusedDate =
-    activeTodoTab === "week"
+    periodTab === "week"
       ? (weekDate ?? currentDate)
-      : activeTodoTab === "month"
+      : periodTab === "month"
         ? (monthDate ?? currentDate)
-        : activeTodoTab === "quarter"
+        : periodTab === "quarter"
           ? (seasonDate ?? currentDate)
           : currentDate
   const setFocusedDate = (date: Date) => {
-    if (activeTodoTab === "week") setWeekDate(date)
-    else if (activeTodoTab === "month") setMonthDate(date)
-    else if (activeTodoTab === "quarter") setSeasonDate(date)
+    if (periodTab === "week") setWeekDate(date)
+    else if (periodTab === "month") setMonthDate(date)
+    else if (periodTab === "quarter") setSeasonDate(date)
     else setCurrentDate(date)
   }
-  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin, hideLocked } = useTodoPrefs()
+  const todoPrefs = useTodoPrefs()
+  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin, hideLocked } = todoPrefs
+  const todoRanges = useTodoRanges()
   // Peek at what Hide locked and the sun rule keep off the list, without turning them off (UI-5).
   const [peekHidden, setPeekHidden] = useState(false)
   const lockFilterOn = availableNow || (hideLocked && !peekHidden)
@@ -243,19 +242,19 @@ export function TodoPanel({
   const sessionPeriod = useMemo(() => {
     if (!sessionOpen) return { label: "", tasks: [] as Task[] }
     const open = tasks.filter((t) => !t.completed && !isClearedFromWork(t))
-    if (activeTodoTab === "day") {
+    if (periodTab === "day") {
       return { label: "This day", tasks: open.filter((t) => taskScheduledOnDay(t, focusedDate)) }
     }
-    if (activeTodoTab === "week") {
+    if (periodTab === "week") {
       const week = getWeekString(focusedDate)
       return { label: "This week", tasks: open.filter((t) => taskScheduledInWeek(t, week)) }
     }
-    if (activeTodoTab === "month") {
+    if (periodTab === "month") {
       const month = formatLocalMonthKey(focusedDate)
       return { label: "This month", tasks: open.filter((t) => taskScheduledInMonth(t, month)) }
     }
     return { label: "All open tasks", tasks: open }
-  }, [sessionOpen, tasks, activeTodoTab, focusedDate])
+  }, [sessionOpen, tasks, periodTab, focusedDate])
 
   const focusedDayKey = localDayKey(focusedDate)
   const ritualBoard = useMemo(
@@ -386,8 +385,8 @@ export function TodoPanel({
       createScheduledTodoTask({
         description: draft.description,
         tier: draft.tier,
-        period: activeTodoTab === "quarter" ? "month" : activeTodoTab,
-        date: activeTodoTab === "quarter" ? quarterStartDate(focusedDate) : focusedDate,
+        period: periodTab === "quarter" ? "month" : periodTab,
+        date: periodTab === "quarter" ? quarterStartDate(focusedDate) : focusedDate,
       }),
     )
   }
@@ -439,8 +438,8 @@ export function TodoPanel({
       minimumChunkSize: 15,
     }
 
-    const loggedPeriod: TodoPeriod = activeTodoTab === "quarter" ? "month" : activeTodoTab
-    const loggedDate = activeTodoTab === "quarter" ? quarterStartDate(focusedDate) : refDate
+    const loggedPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
+    const loggedDate = periodTab === "quarter" ? quarterStartDate(focusedDate) : refDate
     scheduleTaskForPeriod(task, loggedPeriod, loggedDate)
     addTask(task)
 
@@ -476,14 +475,14 @@ export function TodoPanel({
     return true
   }
 
-  const handleComplete = (todoId: string) => {
+  const handleComplete = (todoId: string, level?: StepTier) => {
     if (openRitual(todoId)) return
     const finish = () => {
       setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, completed: true } : item)))
       const todo = todoItems.find((item) => item.id === todoId)
       // The store stamps `completedDate` on this transition, so the row lands in
       // today's "Done" list no matter which day it was scheduled for.
-      completeTask(todo?.taskId ?? todoId)
+      completeTask(todo?.taskId ?? todoId, { level })
       setOpenRowId((id) => (id === todoId ? null : id))
       setFlockingId(null)
     }
@@ -514,8 +513,8 @@ export function TodoPanel({
       apply: (reason) => {
         setTodoItems((items) => items.filter((item) => item.id !== todoId))
         markMissedOpportunity(taskId, undefined, reason)
-        if (activeTodoTab !== "quarter") {
-          setMissedSectionsOpen((prev) => ({ ...prev, [activeTodoTab]: true }))
+        if (periodTab !== "quarter") {
+          setMissedSectionsOpen((prev) => ({ ...prev, [periodTab]: true }))
         }
       },
     })
@@ -556,7 +555,7 @@ export function TodoPanel({
     const settled = todoTime.settle(task, subtasks)
     updateTask({ ...task, subtasks: settled })
     // Phase 12: step points paid on tick, taken back on untick (lid and card).
-    settleStepPoints({ id: task.id, description: itemTitleOrUntitled(task) }, task.subtasks, settled)
+    settleStepPoints({ id: task.id, description: itemTitleOrUntitled(task), stepPoints: task.stepPoints }, task.subtasks, settled)
   }
   useEffect(() => registerTaskCardHost(), [])
 
@@ -621,7 +620,7 @@ export function TodoPanel({
   }
 
   // Phase 12: the task card borrows the panel's handlers for the lens it opened on.
-  const cardPeriod: TodoPeriod = activeTodoTab === "week" ? "week" : activeTodoTab === "day" ? "day" : "month"
+  const cardPeriod: TodoPeriod = periodTab === "week" ? "week" : periodTab === "day" ? "day" : "month"
   const cardPeriodKey = todoPeriodKey(cardPeriod, focusedDate)
   const taskCardHost: TaskCardHost = {
     period: cardPeriod,
@@ -1011,7 +1010,7 @@ export function TodoPanel({
 
   // Open / required / assigned / estimate only for the season tab. Day, week, and month skip this.
   const season = useMemo(() => {
-    if (activeTodoTab !== "quarter") return null
+    if (periodTab !== "quarter") return null
     const seasonKey = quarterKey(focusedDate)
     const seasonOpen = tasks.filter(
       (task) => isOpen(task) && !task.hiddenFromTodo && taskTouchesQuarter(task, seasonKey),
@@ -1047,7 +1046,7 @@ export function TodoPanel({
       seasonBand,
       seasonAssignedVisible,
     }
-  }, [activeTodoTab, assignedQuery, estimateScope, focusedDate, tasks])
+  }, [periodTab, assignedQuery, estimateScope, focusedDate, tasks])
 
   const renderSeasonRow = (task: Task) => {
     if (!season) return null
@@ -1122,33 +1121,37 @@ export function TodoPanel({
     )
   }
   const seasonLabel = season ? quarterLabel(season.seasonKey) : ""
+  const activeRange = todoRanges.find((r) => r.range.id === todoPrefs.activeRangeId) ?? todoRanges[0]
+  const todoHeading = todoTitle(activeTodoTab, focusedDate, todoPrefs, activeRange?.name)
   const periodLabel =
-    activeTodoTab === "quarter"
+    periodTab === "quarter"
       ? "Season view"
-      : activeTodoTab === "day"
+      : periodTab === "day"
         ? "Day view"
-        : activeTodoTab === "week"
+        : periodTab === "week"
           ? "Week view"
           : "Month view"
-  const viewingPast = activeTodoTab === "quarter" ? false : isPastTodoPeriod(activeTodoTab, focusedDate)
+  const viewingPast = periodTab === "quarter" ? false : isPastTodoPeriod(periodTab, focusedDate)
   const undoneIds =
-    activeTodoTab === "quarter"
+    periodTab === "quarter"
       ? new Set<string>()
-      : new Set(undoneByPeriod[activeTodoTab].map((todo) => todo.taskId ?? todo.id))
+      : new Set(undoneByPeriod[periodTab].map((todo) => todo.taskId ?? todo.id))
   const openCount =
-    activeTodoTab === "quarter"
+    activeTodoTab === "other"
+      ? activeRange ? tasksInRange(tasks, activeRange.range.id).filter((t) => !t.completed).length : 0
+      : periodTab === "quarter"
       ? (season?.seasonOpen.length ?? 0)
       : viewingPast
-        ? filteredByPeriod[activeTodoTab].filter((todo) => !undoneIds.has(todo.taskId ?? todo.id)).length
-        : filteredByPeriod[activeTodoTab].length
-  const undoneCount = activeTodoTab === "quarter" ? 0 : undoneByPeriod[activeTodoTab].length
+        ? filteredByPeriod[periodTab].filter((todo) => !undoneIds.has(todo.taskId ?? todo.id)).length
+        : filteredByPeriod[periodTab].length
+  const undoneCount = periodTab === "quarter" ? 0 : undoneByPeriod[periodTab].length
 
   return (
     <div
       className="todo95"
       data-ui-name="To Do"
       data-ui-help="Day, week, month, and season tasks. Season lists work scheduled in that quarter."
-      data-season={activeTodoTab === "quarter" ? seasonSlug(seasonOfDate(focusedDate)) : undefined}
+      data-season={periodTab === "quarter" ? seasonSlug(seasonOfDate(focusedDate)) : undefined}
       data-ui-docs="components/Home/ToDo/README.md"
     >
       <div className="todo-window">
@@ -1172,13 +1175,27 @@ export function TodoPanel({
             data-ui-docs="components/Home/ToDo/README.md"
             data-ui-docs-anchor="instrument-layout"
           >
-            <div className="todo-fascia-row">
+            <div className="todo-fascia-row is-title">
               <div className="todo-mark">
                 <img src={orbFor("home-todo")} alt="" className="todo-title-orb" />
-                <h2>To Do</h2>
-                <span className="todo-mark-count">{openCount}</span>
+                <h2>{todoHeading}</h2>
+                <span className="todo-mark-count" title="Open">{openCount}</span>
               </div>
-              {activeTodoTab === "quarter" ? (
+              <TodoSettingsDialog
+                paceSlot={
+                  <PaceSettings
+                    samples={todoTime.samples}
+                    overrides={todoTime.paceOverrides}
+                    ghosts={todoTime.paceGhosts}
+                    scopes={todoTime.scopes}
+                  />
+                }
+              />
+            </div>
+            <div className="todo-fascia-row is-nav">
+              {activeTodoTab === "other" ? (
+                <TodoRangeNav />
+              ) : periodTab === "quarter" ? (
                 <div
                   className="todo-period-nav"
                   data-ui-name="Period nameplate"
@@ -1196,21 +1213,17 @@ export function TodoPanel({
                 </div>
               ) : (
                 <TodoPeriodNav
-                  period={activeTodoTab}
+                  period={periodTab}
                   focusedDate={focusedDate}
                   onFocusedDateChange={setFocusedDate}
-                  listName={periodTodoListName(activeTodoTab, todoPeriodValue(activeTodoTab, focusedDate))}
-                  onOpenList={() => openPeriodTodoList(activeTodoTab, todoPeriodValue(activeTodoTab, focusedDate))}
+                  listName={periodTodoListName(periodTab, todoPeriodValue(periodTab, focusedDate))}
+                  onOpenList={() => openPeriodTodoList(periodTab, todoPeriodValue(periodTab, focusedDate))}
                 />
               )}
-              <AddTodoDialog onAdd={handleAddTodo} />
-              <SessionKey onOpen={() => setSessionOpen("session")} />
-              <SessionsKey onOpen={() => setSessionOpen("shelves")} />
-              <PickListKey onOpen={() => setSessionOpen("list")} />
               <TabsList
                 className="todo-view-keys"
                 data-ui-name="Period keys"
-                data-ui-help="Day, week, month, and season."
+                data-ui-help="Day, week, month, season, and Other (your own named ranges)."
                 data-ui-docs="components/Home/ToDo/README.md"
                 data-ui-docs-anchor="data"
               >
@@ -1218,14 +1231,21 @@ export function TodoPanel({
                 <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
                 <TabsTrigger value="quarter">Season</TabsTrigger>
+                <TabsTrigger value="other">Other</TabsTrigger>
               </TabsList>
-              {activeTodoTab !== "quarter" && (
+              <div className="todo-actions" role="group" aria-label="Task actions">
+                {activeTodoTab !== "other" && <AddTodoDialog onAdd={handleAddTodo} />}
+                <SessionKey onOpen={() => setSessionOpen("session")} />
+                <SessionsKey onOpen={() => setSessionOpen("shelves")} />
+                <PickListKey onOpen={() => setSessionOpen("list")} />
+              </div>
+            </div>
+            {activeTodoTab !== "other" && periodTab !== "quarter" && (
+              <div className="todo-fascia-row is-strip">
                 <TodoFilters
-                  period={activeTodoTab}
+                  period={periodTab}
                   availableNow={availableNow}
                   onAvailableNowChange={(value) => setTodoPrefs({ availableNow: value })}
-                  ritesFollowSun={ritesFollowSun}
-                  onRitesFollowSunChange={(value) => setTodoPrefs({ ritesFollowSun: value })}
                   showAllTasks={showAllTasks}
                   onShowAllTasksChange={setShowAllTasks}
                   statusFilter={statusFilter}
@@ -1238,21 +1258,9 @@ export function TodoPanel({
                   sortOrder={sortOrder}
                   onSortOrderChange={setSortOrder}
                   onToggleFormula={() => setShowFormula((v) => !v)}
-                  wipLimit={wipLimit}
-                  onWipLimitChange={(value) => setTodoPrefs({ wipLimit: value })}
-                  defaultEstimateMin={defaultEstimateMin}
-                  onDefaultEstimateChange={(value) => setTodoPrefs({ defaultEstimateMin: value })}
-                  paceSlot={
-                    <PaceSettings
-                      samples={todoTime.samples}
-                      overrides={todoTime.paceOverrides}
-                      ghosts={todoTime.paceGhosts}
-                      scopes={todoTime.scopes}
-                    />
-                  }
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {wipWarning && (
@@ -1268,60 +1276,18 @@ export function TodoPanel({
             </p>
           )}
 
-          {showFormula && (
-            <div
-              className="todo-formula"
-              data-ui-name="Priority formula"
-              data-ui-help="Weights for urgency, importance, quick win, and entropy."
-              data-ui-docs="components/Home/ToDo/README.md"
-              data-ui-docs-anchor="tier-system--sorting"
-            >
-              <div className="todo-formula-head">
-                <div>
-                  <h3>Priority formula</h3>
-                  <p className="todo-hint">
-                    score = w·urgency + w·importance + w·(quick win) + w·entropy + w·unlocks. Set a weight to 0 to ignore that
-                    signal.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="todo-btn"
-                  onClick={() => updatePriorityWeights({ ...DEFAULT_PRIORITY_WEIGHTS })}
-                >
-                  Reset
-                </button>
-              </div>
-              <div className="todo-formula-grid">
-                {PRIORITY_WEIGHT_FIELDS.map(({ key, label, hint }) => (
-                  <label key={key}>
-                    <div className="todo-label">{label}</div>
-                    <input
-                      id={`pw-${key}`}
-                      type="number"
-                      min="0"
-                      step="0.25"
-                      value={priorityWeights[key] ?? 1}
-                      onChange={(e) => {
-                        const n = Number.parseFloat(e.target.value)
-                        updatePriorityWeights({
-                          ...priorityWeights,
-                          [key]: Number.isFinite(n) && n >= 0 ? n : 0,
-                        })
-                      }}
-                    />
-                    <p className="todo-hint">{hint}</p>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+          {showFormula && <PriorityFormulaPanel />}
 
           <div className="todo-stage">
             <div className="todo-body">
-              <TabsContent value="day">{activeTodoTab === "day" ? renderTab("day") : null}</TabsContent>
-              <TabsContent value="week">{activeTodoTab === "week" ? renderTab("week") : null}</TabsContent>
-              <TabsContent value="month">{activeTodoTab === "month" ? renderTab("month") : null}</TabsContent>
+              <TabsContent value="day">{periodTab === "day" ? renderTab("day") : null}</TabsContent>
+              <TabsContent value="week">{periodTab === "week" ? renderTab("week") : null}</TabsContent>
+              <TabsContent value="month">{periodTab === "month" ? renderTab("month") : null}</TabsContent>
+              <TabsContent value="other">
+                {activeTodoTab === "other" ? (
+                  <TodoRangeSheet onOpenTask={openTask} onComplete={(id) => completeTask(id)} />
+                ) : null}
+              </TabsContent>
               <TabsContent value="quarter">
                 {season ? (
                 <div
@@ -1425,7 +1391,9 @@ export function TodoPanel({
           data-ui-docs-anchor="instrument-layout"
         >
           <span>
-            {activeTodoTab === "quarter" ? `${periodLabel} · ${seasonLabel}` : `${periodLabel} · ${getPeriodNavLabel(activeTodoTab, focusedDate)}`}
+            {activeTodoTab === "other"
+              ? `Other view · ${activeRange ? `before ${activeRange.name}` : "no range yet"}`
+              : periodTab === "quarter" ? `${periodLabel} · ${seasonLabel}` : `${periodLabel} · ${getPeriodNavLabel(periodTab, focusedDate)}`}
           </span>
           <span className="todo-status-count">
             {openCount} open{viewingPast ? ` · ${undoneCount} undone` : ""}

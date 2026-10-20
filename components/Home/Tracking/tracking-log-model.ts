@@ -25,11 +25,12 @@ import type { CyclePhase } from "@/lib/cycle-phase"
 import { applyNote } from "@/lib/ingest/apply-note"
 import { applyScopeSwitch, applyThoughtProcess, ensureLocationPen, THOUGHT_PROCESS_KIND } from "@/lib/ingest/apply-discrete-event"
 import { stablePenColor, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
-import { SPEND_EVENT_KIND, compactSpend, isSpendEntry } from "@/lib/spend"
+import { SPEND_EVENT_KIND, compactSpend, formatSpendAmount, isSpendEntry } from "@/lib/spend"
 import {
   entryClockCertainty,
   eventKindSlug,
   minutesToLabel,
+  timeStringToMinutes,
   type IntakeClass,
   type TrackingClockCertainty,
 } from "@/lib/time-entries"
@@ -438,4 +439,71 @@ export function submitTrackingLog(input: {
     stampComposerClock(id, input.clock, input.minute)
     return id
   })
+}
+
+const FLAG_KIND: Record<LogComposerMode, string> = {
+  event: "Event",
+  switch: "Switch",
+  intake: "Intake",
+  spend: "Spent",
+  note: "Note",
+  thought: "Thought process",
+}
+
+/** "COFFEE · DRINK INTAKE LOGGED · 2:43 PM" for the bottom-right flag. */
+export function loggedFlag(
+  mode: LogComposerMode,
+  intake: IntakeClass,
+  name: string,
+  clock: LogClockChoice,
+  timeValue: string,
+  spendCents?: number | null,
+): string {
+  const firstLine = name.trim().split("\n")[0] ?? ""
+  const short = firstLine.length > 40 ? `${firstLine.slice(0, 39)}…` : firstLine
+  const subject = mode === "spend" && spendCents != null ? `${formatSpendAmount(spendCents)} ${short}` : short
+  const kind = mode === "intake" ? `${intake} intake` : FLAG_KIND[mode]
+  const minute = timeStringToMinutes(timeValue)
+  let when = "time unknown"
+  if (clock !== "unknown" && minute != null) {
+    const h = Math.floor(minute / 60)
+    const m = minute % 60
+    const label = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
+    when = clock === "estimated" ? `~${label}` : label
+  }
+  return [subject.toUpperCase(), `${kind.toUpperCase()} LOGGED`, when].filter(Boolean).join(" · ")
+}
+
+export type IntakeRecent = { title: string; count: number; last: string }
+
+/**
+ * Most-used intake names per class, across every day (most used first, then
+ * most recent). The Tracking log's Recent row and the Now intake row read this.
+ */
+export function recentIntakeByClass(
+  entries: readonly TimeEntry[],
+  penName: ReadonlyMap<string, string>,
+  limit = 8,
+): Record<IntakeClass, IntakeRecent[]> {
+  const out: Record<IntakeClass, IntakeRecent[]> = { food: [], drink: [], drug: [] }
+  const counts = new Map<string, IntakeRecent & { cls: IntakeClass }>()
+  for (const entry of entries) {
+    const row = classifyLogBookRow(entry, penName.get(entry.penId))
+    if (!row || (row.list !== "food" && row.list !== "drink" && row.list !== "drug")) continue
+    const title = (row.title ?? "").trim()
+    if (!title) continue
+    const when = `${entry.date} ${String(entry.startMin).padStart(4, "0")}`
+    const key = `${row.list}:${title.toLowerCase()}`
+    const hit = counts.get(key)
+    if (hit) {
+      hit.count += 1
+      if (when > hit.last) hit.last = when
+    } else counts.set(key, { cls: row.list, title, count: 1, last: when })
+  }
+  for (const { cls, ...hit } of counts.values()) out[cls].push(hit)
+  for (const cls of Object.keys(out) as IntakeClass[]) {
+    out[cls].sort((a, b) => b.count - a.count || b.last.localeCompare(a.last))
+    out[cls] = out[cls].slice(0, limit)
+  }
+  return out
 }

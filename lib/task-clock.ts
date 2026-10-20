@@ -14,7 +14,7 @@
  *
  * Stop is the pen clock's Stop: the span is logged on the task there.
  */
-import type { Task } from "@/lib/types"
+import type { Subtask, Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
@@ -42,9 +42,36 @@ function penExists(penId: string): { scopeId: string } | null {
   return null
 }
 
-/** The task's clock pen: its first linked pen that still exists. */
-export function clockPenFor(task: Pick<Task, "penLinks"> | undefined): { scopeId: string; penId: string } | undefined {
-  for (const link of task?.penLinks ?? []) {
+type PenLink = { scopeId: string; penId: string }
+
+/**
+ * A step's pens: its own, else the nearest parent step's, else the task's.
+ * `from` names where they came from (`null` = the task). Pure.
+ */
+export function stepPenLinks(
+  task: Pick<Task, "penLinks" | "subtasks"> | undefined,
+  stepId: string | undefined,
+): { links: PenLink[]; from: Subtask | null; own: boolean } {
+  const trail: Subtask[] = []
+  const walk = (list: readonly Subtask[] | undefined): boolean => {
+    for (const s of list ?? []) {
+      trail.push(s)
+      if (s.id === stepId || walk(s.subtasks)) return true
+      trail.pop()
+    }
+    return false
+  }
+  if (stepId) walk(task?.subtasks)
+  for (let i = trail.length - 1; i >= 0; i--) {
+    const links = trail[i].penLinks
+    if (links) return { links, from: trail[i], own: i === trail.length - 1 }
+  }
+  return { links: task?.penLinks ?? [], from: null, own: !stepId }
+}
+
+/** The clock pen: the first linked pen that still exists, on the step (inherited) or the task. */
+export function clockPenFor(task: Pick<Task, "penLinks" | "subtasks"> | undefined, stepId?: string): { scopeId: string; penId: string } | undefined {
+  for (const link of stepPenLinks(task, stepId).links) {
     const found = penExists(link.penId)
     if (found) return { scopeId: found.scopeId, penId: link.penId }
   }
@@ -78,7 +105,7 @@ export function startTaskClock(
   const step = options.stepId ? findPlacedStep(task.subtasks, options.stepId)?.step : undefined
 
   const live = usePenColorSessionStore.getState().session
-  const penId = options.penId ?? clockPenFor(task)?.penId ?? live?.penId
+  const penId = options.penId ?? clockPenFor(task, options.stepId)?.penId ?? live?.penId
   if (!penId) return { kind: "needs-pen" }
   if (options.penId && options.rememberPen) rememberTaskPen(taskId, options.penId)
 

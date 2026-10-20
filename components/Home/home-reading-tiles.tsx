@@ -8,6 +8,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
 import { useMemo, useState } from "react"
 import { plannedMinutesForDay } from "@/components/Home/Plan/plan-capacity"
@@ -56,6 +58,9 @@ export function AlreadyFlowingTile({
     [tasks, currentDate, stats.habit.completed],
   )
   const face = alreadyFlowingFace(counts.flowing, counts.pushed)
+  const flowReadout = useCopySetting<string>("readout", "word")
+  const flowCrt = flowReadout === "counts" ? `${counts.flowing} / ${counts.pushed}` : face.crt
+  const flowFoot = flowReadout === "counts" ? `already / new · ${face.word}` : face.footer
 
   return (
     <>
@@ -63,13 +68,15 @@ export function AlreadyFlowingTile({
         <TileHide id="flow" onHide={onHide} />
         <TileOpen label="Already flowing" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Flowing</span>
+            <span>
+              <CopyCaption>Flowing</CopyCaption>
+            </span>
           </div>
           <div className="home-crt">
-            <span className="home-daylamp-word">{face.crt}</span>
+            <span className="home-daylamp-word">{flowCrt}</span>
           </div>
           <div className="home-tile-foot">
-            <p className="hab-score-sub">{face.footer}</p>
+            <p className="hab-score-sub">{flowFoot}</p>
           </div>
         </TileOpen>
       </div>
@@ -109,6 +116,16 @@ export function PlanAndLivedTile({
     const lived = livedPaintMinutes(entries, formatLocalDateKey(currentDate))
     return { ...planAndLivedFace(planned, lived), planned, lived }
   }, [currentDate, tasks, events, actions, entries, defaultEstimateMin])
+  const paintReadout = useCopySetting<string>("readout", "word")
+  const hm = (minutes: number) => {
+    const h = Math.floor(minutes / 60)
+    const m = Math.round(minutes % 60)
+    return h > 0 ? `${h}h ${m}m` : `${m}m`
+  }
+  const paintCrt =
+    paintReadout === "plan" ? hm(face.planned) : paintReadout === "lived" ? hm(face.lived) : face.crt
+  const paintFoot =
+    paintReadout === "plan" ? `planned · ${face.word}` : paintReadout === "lived" ? `lived · ${face.word}` : face.footer
 
   return (
     <>
@@ -116,13 +133,15 @@ export function PlanAndLivedTile({
         <TileHide id="paint" onHide={onHide} />
         <TileOpen label="Plan and lived" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>Lived</span>
+            <span>
+              <CopyCaption>Lived</CopyCaption>
+            </span>
           </div>
           <div className="home-crt">
-            <span className="home-daylamp-word">{face.crt}</span>
+            <span className="home-daylamp-word">{paintCrt}</span>
           </div>
           <div className="home-tile-foot">
-            <p className="hab-score-sub">{face.footer}</p>
+            <p className="hab-score-sub">{paintFoot}</p>
           </div>
         </TileOpen>
       </div>

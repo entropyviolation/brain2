@@ -8,6 +8,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useMemo, useRef, useState } from "react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { minutesPastMidnight } from "@/lib/ingest/times"
@@ -44,7 +46,12 @@ export function TrackingNowTile({ onHide }: { onHide: () => void }) {
     scopes,
     live,
   })
-  const activity = snap.lanes.find((lane) => lane.scopeId === "activity") ?? snap.activity
+  const leadLane = useCopySetting<string>("lane", "activity")
+  const showUpdate = useCopySetting<boolean>("update", true)
+  const activity =
+    snap.lanes.find((lane) => lane.scopeId === leadLane && lane.kind !== "empty") ??
+    snap.lanes.find((lane) => lane.scopeId === "activity") ??
+    snap.activity
   const location = snap.lanes.find((lane) => lane.scopeId === "location")
   const mood = snap.lanes.find((lane) => lane.scopeId === "mood")
   const company = snap.lanes.find((lane) => lane.scopeId === "company")
@@ -70,7 +77,9 @@ export function TrackingNowTile({ onHide }: { onHide: () => void }) {
         <TileHide id="tracking" onHide={onHide} />
         <TileOpen label="Tracking now" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span>{snap.caption}</span>
+            <span>
+              <CopyCaption>{snap.caption}</CopyCaption>
+            </span>
           </div>
           <div className="home-crt home-presence-crt">
             <p className="home-presence-activity" title={activity.name}>
@@ -88,9 +97,11 @@ export function TrackingNowTile({ onHide }: { onHide: () => void }) {
         </TileOpen>
         <div className="home-tile-foot home-presence-foot">
           <p className="hab-score-sub">{snap.caption === "Now" ? "live" : "last known"}</p>
-          <button type="button" className="home-presence-update" onClick={openUpdate}>
-            Update
-          </button>
+          {showUpdate ? (
+            <button type="button" className="home-presence-update" onClick={openUpdate}>
+              Update
+            </button>
+          ) : null}
         </div>
       </div>
       <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Tracking now">
