@@ -13,7 +13,7 @@ Each installed Countdown copy counts one mark. The copy holds `settings.markId`;
 - **Gear.** `CountdownSettings`: label, date, optional time, mode, units, repeat, start date, milestones, when it passes, attach a Plan event, and **Schedule as an all-day event**. **Remove** deletes the mark and its copy.
 - **×** hides only that copy. The family is no longer one visibility bit.
 - **Guide.** Two cards on first open: one mark per copy, and count up too.
-- **Gallery.** Countdown asks for a label and date before it installs (`hasSetup`). **Planned:** the setup step itself, with the Widget gallery.
+- **Gallery.** Installing from the Widget gallery asks for a name, date, direction, and repeat (`widgets/gallery/install-setup.tsx`). Removing a copy there also deletes its mark.
 
 ## Shape (v3, with the Countdown fields)
 

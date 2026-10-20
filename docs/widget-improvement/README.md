@@ -25,8 +25,8 @@ These are research reports from the live Electron localStorage vault (origin `ht
 | Screen pet | [`home-widget-pet.md`](home-widget-pet.md) | The square hides a 25% day inside a sleep face. |
 | Next | [`home-widget-next.md`](home-widget-next.md) | The hit is an untimed inbox cue, and the calendar gap is silent. |
 | Day lamp | [`home-widget-daylamp.md`](home-widget-daylamp.md) | The word is an unweighted mean of two percents, and tonight that mean is a bad picture of the day. |
-| Countdown (was Days Until) | [`home-widget-countdown.md`](home-widget-countdown.md) | Built: one copy per mark, units, repeats, progress, milestones, and what happens when it passes. The Widget gallery setup step is still planned. |
-| Language study (was Vocab) | [`home-widget-language-study.md`](home-widget-language-study.md) | Built: one copy per language, studied or native, CEFR levels. The placement quiz and more modes are still planned. |
+| Countdown (was Days Until) | [`home-widget-countdown.md`](home-widget-countdown.md) | Built: one copy per mark, units, repeats, progress, milestones, what happens when it passes, and install setup. |
+| Language study (was Vocab) | [`home-widget-language-study.md`](home-widget-language-study.md) | Built: one copy per language, studied or native, CEFR levels, and placement quizzes. More modes are still planned. |
 | Moon | [`home-widget-moon.md`](home-widget-moon.md) | The tile says the new moon is both now and tomorrow. |
 | Solar remainder | [`home-widget-solar.md`](home-widget-solar.md) | The number on the glass changes meaning at sunset. |
 | Tracking now | [`home-widget-tracking.md`](home-widget-tracking.md) | The square says `last known` and never says when. |
