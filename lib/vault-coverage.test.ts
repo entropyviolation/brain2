@@ -62,6 +62,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-pen-color-session": "one in-flight pen-color timer, cleared when it ends",
   "cogs-ingest-store": "trimmed event log; pendingByChat drains as clarifications are answered",
   "cogs-home-widgets": "overview tile order; reset is allowed to restore the default set",
+  "cogs-home-dashboard": "Visual dashboard: installed widget copies, their settings, the style, and each style's layout; rebuilt from the old strip when empty",
   "cogs-home-weather": "one place object for the Home weather instrument",
   "cogs-home-days-until": "countdown / count-up tiles: label, date, optional time, format, mode, optional Plan event link and all-day schedule",
   "cogs-sky-motion": "Moon chart view width and time rate; reset restores real time",

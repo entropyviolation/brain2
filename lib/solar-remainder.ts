@@ -71,3 +71,27 @@ export function solarRemainderFace(nowMin: number, sun: SolarClock | null | unde
     footer: `after sunset · ${sun.sunsetLabel}`,
   }
 }
+
+/**
+ * Solar remainder with a fixed target (a Solar remainder copy's Counts to
+ * setting): the time left until the next sunset, or the next sunrise, from
+ * any hour. Tomorrow's event uses today's clock, which is close enough for
+ * a glance.
+ */
+export function solarTargetFace(
+  nowMin: number,
+  sun: SolarClock | null | undefined,
+  target: "auto" | "sunset" | "sunrise",
+): SolarRemainderFace {
+  if (target === "auto" || !sun) return solarRemainderFace(nowMin, sun)
+  const now = ((Math.floor(nowMin) % 1440) + 1440) % 1440
+  const at = ((Math.round(target === "sunset" ? sun.sunsetMinutes : sun.sunriseMinutes) % 1440) + 1440) % 1440
+  const label = target === "sunset" ? sun.sunsetLabel : sun.sunriseLabel
+  if (now === at) return { phase: target, crt: target === "sunset" ? "Sunset" : "Sunrise", footer: label }
+  const left = at > now ? at - now : 1440 - now + at
+  return {
+    phase: target === "sunset" ? "to-sunset" : "until-sunrise",
+    crt: formatRemainSpan(left),
+    footer: `${target === "sunset" ? "to sunset" : "until sunrise"} · ${label}`,
+  }
+}

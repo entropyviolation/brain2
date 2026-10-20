@@ -1,0 +1,1358 @@
+/**
+ * components/Home/dash/dash.css — The Dash style of the Visual dashboard
+ *
+ * Everything here is scoped to `[data-style="dash"]`, so Milled (today's
+ * satin handhelds in `home-widget-face.css`) is untouched. Drawn from two
+ * clusters (photos in the project uploads; notes in `DESIGN_STYLE.md` → Dash):
+ *
+ * - 1980s Oldsmobile VFD: one long smoked-glass panel under a gray molded
+ *   hood. Cyan segment digits with the unlit 8s still faintly there, arcs of
+ *   separate blocks, tiny engraved legends (FUEL, VOLTS, RPM × 100).
+ * - 2011 Prius multi-display: soft white-blue LCD words, a boxed P R N D
+ *   selector, stair meters, thin line pictograms, a clock in the corner.
+ *
+ * The panel is one instrument. Pods are printed on the same glass, not
+ * floating cards. A face is a glance; depth lives in the detail.
+ */
+
+/* ---- Tokens ------------------------------------------------------------ */
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"],
+.home-widget-dialog[data-style="dash"],
+.home-catalog.vdg[data-style="dash"],
+.dash-sample {
+  --dash-glass: #020708;
+  --dash-glass-2: #061214;
+  --dash-hood: #3b4044;
+  --dash-hood-hi: #6b7175;
+  --dash-cell-w: 88px;
+  --dash-cell-h: 60px;
+  --dash-gap: 6px;
+  /* VFD ink per lamp. Green, blue, purple, white: no amber light (DESIGN_STYLE → DSi lights). */
+  --dash-ink: #5cf2d6;
+  --dash-lcd: #cdeeff;
+  --dash-seg-font: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
+  --dash-dot-font: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+}
+
+/*
+ * Derived from the ink. A custom property resolves where it is declared, so
+ * these are declared on every element in the scope: a face that changes
+ * `--dash-ink` gets its own ghost, legend, and glow.
+ */
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"],
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] *,
+.home-widget-dialog[data-style="dash"],
+.home-widget-dialog[data-style="dash"] *,
+.home-catalog.vdg[data-style="dash"],
+.home-catalog.vdg[data-style="dash"] *,
+.dash-sample,
+.dash-sample * {
+  --dash-legend: color-mix(in srgb, var(--dash-ink) 72%, #9fb8bd);
+  --dash-ghost: color-mix(in srgb, var(--dash-ink) 8%, transparent);
+  --dash-glow: drop-shadow(0 0 1.5px color-mix(in srgb, var(--dash-ink) 85%, transparent))
+    drop-shadow(0 0 5px color-mix(in srgb, var(--dash-ink) 45%, transparent));
+  --dash-text-glow: 0 0 1px color-mix(in srgb, var(--dash-ink) 90%, transparent),
+    0 0 7px color-mix(in srgb, var(--dash-ink) 45%, transparent);
+}
+
+/* Lamp choice tints the whole face's ink, so it is visible at a glance. */
+.dash-face[data-lamp="phosphor"],
+.vd-cell[data-lamp="phosphor"] { --dash-ink: #5cf2d6; }
+.dash-face[data-lamp="blue"],
+.vd-cell[data-lamp="blue"] { --dash-ink: #8fd3ff; }
+.dash-face[data-lamp="violet"],
+.vd-cell[data-lamp="violet"],
+.dash-face[data-lamp="amber"],
+.vd-cell[data-lamp="amber"] { --dash-ink: #b39cff; }
+.dash-face[data-lamp="white"],
+.vd-cell[data-lamp="white"] { --dash-ink: #e4f3ff; }
+.dash-face[data-lamp="red"],
+.vd-cell[data-lamp="red"] { --dash-ink: #5cf2d6; }
+
+/* ---- The panel ---------------------------------------------------------- */
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--dash-cell-w));
+  grid-auto-rows: var(--dash-cell-h);
+  grid-auto-flow: row dense;
+  justify-content: center;
+  gap: var(--dash-gap);
+  padding: 12px 12px 12px;
+  border-radius: 10px;
+  color: var(--dash-ink);
+  background:
+    /* hood shade falling onto the glass */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0, transparent 22px),
+    /* faint lift in the middle, where the gauges sit */
+    radial-gradient(120% 90% at 50% 40%, var(--dash-glass-2) 0%, var(--dash-glass) 70%);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 2px 10px rgba(0, 0, 0, 0.8),
+    0 0 0 4px var(--dash-hood),
+    0 -1px 0 4px var(--dash-hood-hi),
+    0 6px 0 4px #24282b,
+    0 10px 18px rgba(0, 0, 0, 0.35);
+  margin: 8px 6px 14px;
+  overflow: hidden;
+}
+
+/* A soft glare across the glass, like the photos. Not interactive. */
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 0 38%,
+    rgba(180, 230, 240, 0.035) 44%,
+    rgba(180, 230, 240, 0.05) 47%,
+    transparent 53%
+  );
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 6px;
+  /* printed pod outline on the glass */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 9%, transparent);
+}
+
+/* The button the backend wraps a face in: no chrome of its own. */
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face:hover {
+  background: color-mix(in srgb, var(--dash-ink) 4%, transparent);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face:focus-visible {
+  outline: 1px dotted var(--dash-ink);
+  outline-offset: -2px;
+}
+
+/* × only in edit mode on Dash. */
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .home-tile-hide {
+  display: none;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] .home-tile-hide {
+  display: grid;
+}
+
+/* A kind this build does not know. */
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .home-tile.is-unknown {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font: 9px/1.2 var(--dash-seg-font);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--dash-ink) 45%, transparent);
+  background: none;
+  box-shadow: none;
+}
+
+/* ---- Face --------------------------------------------------------------- */
+
+.dash-face {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 4px 6px 4px;
+  color: var(--dash-ink);
+  overflow: hidden;
+  text-align: left;
+}
+
+.dash-face[data-lit="off"] .dash-body,
+.dash-face[data-lit="off"] .dash-foot {
+  opacity: 0.55;
+}
+
+.dash-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  font: 400 7px/1 var(--dash-seg-font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dash-legend);
+  white-space: nowrap;
+}
+
+.dash-legend > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-aside {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  overflow: visible !important;
+}
+
+.dash-legend .dash-picto {
+  width: 9px;
+  height: 9px;
+}
+
+.dash-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dash-foot {
+  margin: 0;
+  padding-top: 2px;
+  border-top: 1px dotted color-mix(in srgb, var(--dash-ink) 22%, transparent);
+  font: 400 9px/1.15 var(--dash-dot-font);
+  color: color-mix(in srgb, var(--dash-lcd) 78%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Segment digits ----------------------------------------------------- */
+
+.dash-seg {
+  display: block;
+  height: 24px;
+  width: auto;
+  overflow: visible;
+}
+
+.dash-seg .dash-seg-on {
+  fill: var(--dash-ink);
+  filter: var(--dash-glow);
+}
+
+.dash-seg .dash-seg-off {
+  fill: var(--dash-ghost);
+}
+
+.dash-face[data-size="2x1"] .dash-seg,
+.dash-face[data-size="3x1"] .dash-seg,
+.dash-face[data-size="1x2"] .dash-seg {
+  height: 26px;
+}
+
+.dash-face[data-size="2x2"] .dash-seg,
+.dash-face[data-size="3x2"] .dash-seg,
+.dash-face[data-size="1x3"] .dash-seg {
+  height: 34px;
+}
+
+.dash-reading {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.dash-unit {
+  font: 400 7px/1 var(--dash-seg-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-legend);
+  padding-bottom: 1px;
+}
+
+.dash-reading > .dash-unit {
+  font-size: 9px;
+}
+
+/* ---- Words (Prius LCD) -------------------------------------------------- */
+
+.dash-word {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
+  overflow: hidden;
+  font: 400 14px/1.1 var(--dash-dot-font);
+  color: var(--dash-lcd);
+  text-align: center;
+  text-shadow: var(--dash-text-glow);
+  overflow-wrap: anywhere;
+}
+
+.dash-face[data-size="1x1"] .dash-word {
+  font-size: 12px;
+}
+
+.dash-face[data-size="2x2"] .dash-word,
+.dash-face[data-size="3x2"] .dash-word {
+  font-size: 18px;
+  -webkit-line-clamp: 3;
+}
+
+/* ---- Arcs, bars, stairs -------------------------------------------------- */
+
+.dash-arc {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 120px;
+  height: 100%;
+  min-height: 0;
+}
+
+.dash-arc > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dash-arc .dash-seg-on {
+  fill: var(--dash-ink);
+  filter: var(--dash-glow);
+}
+
+.dash-arc .dash-seg-off {
+  fill: var(--dash-ghost);
+}
+
+.dash-arc-end {
+  font: 400 8px var(--dash-seg-font);
+  fill: var(--dash-legend);
+}
+
+.dash-arc-center {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+}
+
+.dash-arc-center .dash-seg {
+  height: 16px;
+}
+
+.dash-face[data-size="2x2"] .dash-arc-center .dash-seg {
+  height: 22px;
+}
+
+.dash-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.dash-bar {
+  display: flex;
+  gap: 1.5px;
+  width: 100%;
+  min-width: 24px;
+  height: 6px;
+}
+
+.dash-bar > i {
+  flex: 1;
+  border-radius: 0.5px;
+  background: var(--dash-ghost);
+}
+
+.dash-bar > i.is-on {
+  background: var(--dash-ink);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--dash-ink) 55%, transparent);
+}
+
+.dash-stair {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.5px;
+  width: 22px;
+}
+
+.dash-stair > i {
+  display: block;
+  height: 3px;
+  background: var(--dash-ghost);
+}
+
+.dash-stair > i.is-on {
+  background: var(--dash-ink);
+  box-shadow: 0 0 3px color-mix(in srgb, var(--dash-ink) 55%, transparent);
+}
+
+.dash-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.dash-row > b {
+  font: 400 7px/1 var(--dash-seg-font);
+  color: var(--dash-legend);
+}
+
+.dash-face .dash-row .dash-seg {
+  height: 11px;
+}
+
+/* ---- Selector (P R N D), lamps, pictograms ------------------------------ */
+
+.dash-selector {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dash-selector.is-column {
+  flex-direction: column;
+}
+
+.dash-selector > b {
+  padding: 1px 2px;
+  border-radius: 1px;
+  font: 400 8px/1 var(--dash-seg-font);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--dash-lcd) 38%, transparent);
+}
+
+.dash-selector > b.is-on {
+  color: var(--dash-glass, #020708);
+  background: var(--dash-lcd);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dash-lcd) 55%, transparent);
+}
+
+.dash-face[data-size="2x2"] .dash-selector > b,
+.dash-face[data-size="3x1"] .dash-selector > b {
+  font-size: 10px;
+  padding: 2px 3px;
+}
+
+.dash-lamp {
+  display: inline-block;
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dash-ghost);
+}
+
+.dash-lamp.is-on {
+  background: var(--dash-ink);
+  box-shadow: 0 0 4px var(--dash-ink);
+}
+
+.dash-picto {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: square;
+  stroke-linejoin: round;
+}
+
+.dash-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+
+/* ---- Per-kind layouts --------------------------------------------------- */
+
+.dash-points {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-trace {
+  width: 100%;
+  height: 22px;
+  flex: none;
+}
+
+.dash-trace-line {
+  fill: none;
+  stroke: var(--dash-ink);
+  stroke-width: 1.3;
+  filter: var(--dash-glow);
+}
+
+.dash-trace-prev {
+  stroke: var(--dash-legend);
+  stroke-width: 1;
+  stroke-dasharray: 1 3;
+}
+
+.dash-pet-plate,
+.dash-moon-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 0;
+}
+
+.dash-pet-plate.is-stacked,
+.dash-moon-plate.is-stacked {
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dash-pet {
+  height: 30px;
+  width: 30px;
+  flex: none;
+}
+
+.dash-face[data-size="1x2"] .dash-pet {
+  height: 44px;
+  width: 44px;
+}
+
+.dash-pet-body rect {
+  fill: var(--dash-ink);
+  filter: var(--dash-glow);
+}
+
+.dash-pet-mark rect {
+  fill: var(--dash-glass, #020708);
+}
+
+.dash-pet-z rect,
+rect.dash-pet-z {
+  fill: var(--dash-lcd);
+}
+
+.dash-moon {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+
+.dash-face[data-size="1x2"] .dash-moon,
+.dash-face[data-size="1x3"] .dash-moon {
+  width: 40px;
+  height: 40px;
+}
+
+.dash-moon-rim {
+  fill: none;
+  stroke: color-mix(in srgb, var(--dash-ink) 45%, transparent);
+  stroke-width: 2;
+}
+
+.dash-moon-lit {
+  fill: var(--dash-ink);
+  filter: var(--dash-glow);
+}
+
+.dash-moon-count {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.dash-moon-next {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin: 0;
+  font: 400 9px var(--dash-dot-font);
+  color: var(--dash-lcd);
+  text-align: center;
+}
+
+.dash-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dash-face.is-milestone .dash-seg .dash-seg-on {
+  filter: drop-shadow(0 0 2px var(--dash-ink)) drop-shadow(0 0 9px var(--dash-ink));
+}
+
+.dash-level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-level-word {
+  font-size: 18px !important;
+}
+
+.dash-vocab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dash-vocab-word {
+  -webkit-line-clamp: 1;
+  font-size: 17px;
+}
+
+.dash-vocab-reading {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 9px var(--dash-dot-font);
+  color: var(--dash-legend);
+}
+
+.dash-vocab-level {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 80%;
+  margin-top: 4px;
+  font: 400 9px var(--dash-seg-font);
+  color: var(--dash-lcd);
+}
+
+.dash-face .dash-affirm-line {
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.dash-weather {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.dash-weather-range {
+  display: grid;
+  grid-template-columns: auto 52px auto;
+  align-items: center;
+  gap: 3px;
+  font: 400 7px var(--dash-seg-font);
+  color: var(--dash-legend);
+}
+
+.dash-next {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dash-next-time {
+  flex: none;
+}
+
+.dash-next-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 12px;
+}
+
+.dash-daylamp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-daylamp.is-stacked {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-daylamp-cells {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* Four bars that climb, like a signal meter: Dim, Warm, Bright, Full. */
+.dash-daylamp-cells > i {
+  display: block;
+  width: 4px;
+  background: var(--dash-ghost);
+}
+
+.dash-daylamp-cells > i:nth-child(1) { height: 5px; }
+.dash-daylamp-cells > i:nth-child(2) { height: 8px; }
+.dash-daylamp-cells > i:nth-child(3) { height: 11px; }
+.dash-daylamp-cells > i:nth-child(4) { height: 14px; }
+
+.dash-daylamp-cells > i.is-on {
+  background: var(--dash-ink);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--dash-ink) 60%, transparent);
+}
+
+.dash-harvest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-tracking.is-small {
+  font-size: 11px;
+}
+
+/* ---- Edit mode ---------------------------------------------------------- */
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] > .vd-cell {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 35%, transparent);
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dash-ink) 4%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"][data-editing="true"] > .vd-cell > .vd-face {
+  cursor: grab;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell.is-dragging {
+  opacity: 0.45;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell.is-resizing {
+  box-shadow: inset 0 0 0 1px var(--dash-ink), 0 0 10px color-mix(in srgb, var(--dash-ink) 35%, transparent);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before,
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--dash-ink);
+  box-shadow: 0 0 6px var(--dash-ink);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="before"]::before { left: -4px; }
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell[data-drop="after"]::after { right: -4px; }
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-grip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  font: 9px/1 monospace;
+  color: var(--dash-ink);
+  opacity: 0.75;
+  cursor: grab;
+  pointer-events: none;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-hide {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  font: 11px/1 var(--dash-seg-font);
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+  cursor: pointer;
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-resize {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  border: 0;
+  padding: 0;
+  cursor: nwse-resize;
+  background:
+    linear-gradient(135deg, transparent 45%, var(--dash-ink) 45% 55%, transparent 55% 70%, var(--dash-ink) 70% 80%, transparent 80%);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-size-badge {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 3;
+  padding: 1px 3px;
+  font: 400 8px/1 var(--dash-seg-font);
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-edit-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 8px/1 var(--dash-seg-font);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dash-lcd);
+}
+
+:is(body, body.win95-app .home95) .home-overview[data-style="dash"] .vd-edit-lamp {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dash-ink);
+  box-shadow: 0 0 5px var(--dash-ink);
+}
+
+/* ---- Detail popup ------------------------------------------------------- */
+
+/*
+ * Same frame and keys as Milled; the frame turns to the gray hood and the
+ * body becomes a lit cluster screen. The house dialog face in `win95.css`
+ * paints from `--fascia-dialog-face` and `--fascia-dialog-ring`, so the hood
+ * is set through those tokens rather than by out-ranking that rule.
+ */
+body:is(*, .win95-app) .home-widget-dialog.home-widget-instrument[data-style="dash"] {
+  --friend-glow: var(--dash-ink);
+  --friend-lcd: var(--dash-glass-2);
+  --friend-nixie: #8fd3ff;
+  --chrome-face: #33383c;
+  --fascia-dialog-face: linear-gradient(180deg, var(--dash-hood-hi) 0, var(--dash-hood) 16px, #2a2e31 100%);
+  --fascia-dialog-ring: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 1px #111, 0 8px 0 #1c1f22,
+    0 18px 30px rgba(0, 0, 0, 0.45);
+  color: var(--dash-lcd);
+  background-color: var(--chrome-face);
+  background-image: var(--fascia-dialog-face);
+  box-shadow: var(--fascia-dialog-ring);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-caption h2 {
+  font: 400 10px/1 var(--dash-seg-font);
+  letter-spacing: 0.12em;
+  color: #e7eef0;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-power {
+  background: var(--dash-ink);
+  box-shadow: 0 0 6px var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-detail {
+  padding: 10px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0, transparent 14px),
+    radial-gradient(120% 90% at 50% 30%, var(--dash-glass-2), var(--dash-glass) 75%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-lead {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 18%, transparent);
+  color: var(--dash-lcd);
+  font: 400 18px/1.2 var(--dash-dot-font);
+  text-shadow: var(--dash-text-glow);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-note {
+  color: color-mix(in srgb, var(--dash-lcd) 70%, transparent);
+  font-size: 11px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-well,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-row,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-points-detail {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-well-label {
+  font: 400 7px/1 var(--dash-seg-font);
+  letter-spacing: 0.1em;
+  color: var(--dash-legend);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-glow {
+  color: var(--dash-ink);
+  text-shadow: var(--dash-text-glow);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-review-key {
+  background: linear-gradient(180deg, #4a5054, #2c3034);
+  color: var(--dash-lcd);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 0 #000;
+  font: 400 9px/1 var(--dash-seg-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-review-key.is-on {
+  background: var(--dash-lcd);
+  color: var(--dash-glass);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 50%, transparent);
+}
+
+/* The gear: a square cap the size of the close key, in either style. */
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-gear {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dash-lcd);
+  background: linear-gradient(180deg, #4a5054, #2a2e31);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 0 #000;
+  cursor: pointer;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-gear[aria-pressed="true"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-detail[data-view="settings"] ~ * .vd-gear {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-ink) 55%, transparent);
+}
+
+/* ---- Settings view ------------------------------------------------------ */
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 14%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group h4 {
+  margin: 0;
+  font: 400 8px/1 var(--dash-seg-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dash-legend);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings label,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings .home-widget-field {
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input[type="text"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input[type="date"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings input:not([type]),
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings .native-select {
+  color: var(--dash-lcd);
+  background: var(--dash-glass);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamps,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 3px;
+  font: 400 8px/1 var(--dash-seg-font);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--dash-lcd) 60%, transparent);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 20%, transparent);
+  cursor: pointer;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice:has(input:checked),
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button[aria-pressed="true"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-size-keys > button.is-on {
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dash-ink);
+  box-shadow: 0 0 5px var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="phosphor"] { --dash-ink: #5cf2d6; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="blue"] { --dash-ink: #8fd3ff; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="violet"] { --dash-ink: #b39cff; }
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-lamp-choice[data-lamp="white"] { --dash-ink: #e4f3ff; }
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch .hab-rocker {
+  --hab-rocker-ink: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-switch .hab-rocker-caption {
+  font: 400 12px/1.2 var(--dash-dot-font);
+  color: var(--dash-lcd);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-remove-confirm {
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-lcd) 30%, transparent);
+  font: 400 12px/1.3 var(--dash-dot-font);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-done {
+  align-self: flex-end;
+}
+
+/* Fields, choices, and fieldsets inside a Dash detail. */
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-fieldset {
+  border: 0;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 14%, transparent);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-fieldset legend,
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-field {
+  font: 400 8px/1.2 var(--dash-seg-font);
+  letter-spacing: 0.1em;
+  color: var(--dash-legend);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice {
+  font: 400 12px/1.3 var(--dash-dot-font);
+  color: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice input[type="radio"],
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-choice input[type="checkbox"] {
+  accent-color: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .home-widget-field input {
+  font: 400 13px var(--dash-dot-font);
+  letter-spacing: 0;
+  color: var(--dash-lcd);
+  background: var(--dash-glass);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group > h4 {
+  color: var(--dash-legend);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-settings-group {
+  border-top: 0;
+}
+
+/* ---- First-run guide ---------------------------------------------------- */
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips {
+  display: flex;
+  gap: 4px;
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i {
+  width: 14px;
+  height: 3px;
+  background: var(--dash-ghost);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-done {
+  background: color-mix(in srgb, var(--dash-ink) 45%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-pips > i.is-on {
+  background: var(--dash-ink);
+  box-shadow: 0 0 5px var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-title {
+  margin: 0;
+  font: 400 20px/1.15 var(--dash-dot-font);
+  color: var(--dash-lcd);
+  text-shadow: var(--dash-text-glow);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-body {
+  margin: 0;
+  font: 400 13px/1.45 var(--dash-dot-font);
+  color: color-mix(in srgb, var(--dash-lcd) 85%, transparent);
+}
+
+body:is(*, .win95-app) .home-widget-dialog[data-style="dash"] .vd-guide-keys {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* ---- Gallery samples ---------------------------------------------------- */
+
+/* A face drawn outside the dashboard (gallery pages): a strip of glass. */
+.dash-sample {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: var(--dash-gap);
+  align-items: start;
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--dash-ink);
+  background: radial-gradient(120% 90% at 50% 40%, var(--dash-glass-2), var(--dash-glass) 70%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 0 3px var(--dash-hood);
+}
+
+.dash-sample-cell {
+  width: calc(var(--cols, 1) * var(--dash-cell-w) + (var(--cols, 1) - 1) * var(--dash-gap));
+  height: calc(var(--rows, 1) * var(--dash-cell-h) + (var(--rows, 1) - 1) * var(--dash-gap));
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 9%, transparent);
+}
+
+.dash-sample-size {
+  display: block;
+  margin-top: 3px;
+  font: 400 7px/1 var(--dash-seg-font);
+  color: var(--dash-legend);
+  text-align: center;
+}
+
+/* ---- Widget gallery in Dash --------------------------------------------- */
+
+/*
+ * The gallery dialog keeps its milled frame. When the dashboard is on Dash,
+ * the gallery root carries `data-style="dash"`: the page becomes a sheet of
+ * cluster glass with LCD words, and the rail becomes a column of dark keys
+ * with phosphor lamps. The sample switch can still show Milled faces.
+ */
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail-head {
+  font: 400 8px/1 var(--dash-seg-font);
+  letter-spacing: 0.14em;
+  color: #2a2c2e;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick {
+  color: var(--dash-lcd);
+  background: linear-gradient(180deg, #3e4448, #262a2d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 0 #000;
+  font: 400 12px/1.2 var(--dash-dot-font);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick[aria-selected="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 45%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick .home-widgets-lamp[data-on="true"] {
+  background: var(--dash-ink);
+  box-shadow: 0 0 5px var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-rail .vdg-pick-count {
+  color: var(--dash-ink);
+  background: var(--dash-glass);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail {
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--dash-lcd);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0, transparent 14px),
+    radial-gradient(120% 90% at 50% 20%, var(--dash-glass-2), var(--dash-glass) 75%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 0 3px var(--dash-hood);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--dash-ink) 22%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-group, .vdg-section > h4, .vdg-setup-title, .vdg-installed-mark, .vdg-table th, .vdg-setting > dt, .vdg-rules > dt) {
+  font-family: var(--dash-seg-font);
+  font-weight: 400;
+  color: var(--dash-legend);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-name {
+  font: 400 26px/1.1 var(--dash-dot-font);
+  letter-spacing: 0.02em;
+  color: var(--dash-ink);
+  text-shadow: var(--dash-text-glow);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-section > p, .vdg-how > li, .vdg-guide-list > li, .vdg-setting > dd, .vdg-rules > dd, .vdg-copy-name, .vdg-table td, .vdg-setup-form, .vdg-faces[data-style="milled"] figcaption) {
+  color: var(--dash-lcd);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-setting-help, .vdg-copy-meta, .vdg-options) {
+  color: color-mix(in srgb, var(--dash-lcd) 62%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-how, .vdg-guide-list) > li::before {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dash-ink) 50%, transparent);
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-chip {
+  font-family: var(--dash-seg-font);
+  font-weight: 400;
+  font-size: 8px;
+  color: var(--dash-legend);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-chip[data-default="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-notice, .vdg-copy, .vdg-setup, .vdg-table-wrap, .vdg-settings-list, .vdg-place-hits) {
+  color: var(--dash-lcd);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-table :is(th, td) {
+  border-color: color-mix(in srgb, var(--dash-ink) 14%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-table td[data-mine="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] :is(.vdg-link, .vdg-reset) {
+  color: var(--dash-ink);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-place-hit[aria-selected="true"] {
+  color: var(--dash-glass);
+  background: var(--dash-lcd);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail :is(input[type="text"], input[type="date"], input[type="search"], input:not([type]), .native-select) {
+  color: var(--dash-lcd);
+  background: var(--dash-glass);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 30%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail .home-review-key {
+  background: linear-gradient(180deg, #4a5054, #2c3034);
+  color: var(--dash-lcd);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 0 #000;
+  font: 400 9px/1 var(--dash-seg-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-detail .home-review-key:is(.is-on, [aria-pressed="true"], [aria-checked="true"]) {
+  background: var(--dash-lcd);
+  color: var(--dash-glass);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dash-lcd) 50%, transparent);
+}
+
+body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-faces.dash-sample {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 16%, transparent);
+}
+
+/* ---- Small screens and motion ------------------------------------------- */
+
+@media (max-width: 520px) {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
+    --dash-cell-w: 76px;
+    --dash-cell-h: 56px;
+    --dash-gap: 5px;
+    padding: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] * {
+    transition: none !important;
+  }
+}

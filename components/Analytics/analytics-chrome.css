@@ -2178,3 +2178,47 @@
 .fm98.an95 .an-phase-table tr:last-child td {
   border-bottom: none;
 }
+
+/* Points ledger (PointsView.tsx): window keys, search, one row per award. */
+.an95 .an-ledger-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.an95 .an-ledger-search {
+  min-width: 160px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.an95 .an-ledger button {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  width: 100%;
+  text-align: left;
+}
+
+.an95 .an-ledger-date {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.an95 .an-ledger-kind {
+  flex: none;
+  min-width: 96px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+.an95 .an-ledger .an-n {
+  margin-left: auto;
+  flex: none;
+}

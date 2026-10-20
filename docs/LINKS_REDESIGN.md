@@ -648,7 +648,7 @@ the existing rooms do the rest.
   `see-also` (symmetric). SKOS words in house labels (KG-PT1, KG-PT4).
   Tags stay strings. A tag can be addressed as `tag:<normalized>` once
   KG-I1 lands. Until then, taxonomy links run between items.
-- **Lexical pack** for the vocab rooms (`lib/vocab-words.ts`,
+- **Lexical pack** for Language study (`lib/vocab-words.ts`,
   `lib/vocab-dictionary.ts`): `translation-of` (symmetric), `synonym-of`
   (symmetric), `antonym-of` (symmetric, disjoint with synonym-of),
   `root-of` / `derived-from`, `false-friend-of`. Only for items that exist

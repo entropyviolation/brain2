@@ -7,6 +7,8 @@
  */
 "use client"
 
+import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-context"
+
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { petPose, type PetPose } from "@/lib/home-widgets"
@@ -38,6 +40,10 @@ export function ScreenPetTile({
   const time = format(clock, "h:mm")
   const night = clock.getHours() < 6 || clock.getHours() >= 22
   const [open, setOpen] = useState(false)
+  const captionMode = useCopySetting<string>("caption", "clock")
+  const petName = useCopySetting<string>("name", "").trim()
+  const caption =
+    captionMode === "name" ? petName || "Pet" : captionMode === "mood" ? POSE_FOOT[pose] : time
   const poseLine =
     pose === "pleased"
       ? "Pleased — today's habits are complete."
@@ -55,7 +61,9 @@ export function ScreenPetTile({
         <TileHide id="pet" onHide={onHide} />
         <TileOpen label="Screen pet" onOpen={() => setOpen(true)}>
           <div className="hab-score-caption">
-            <span className="home-pet-clock">{time}</span>
+            <span className="home-pet-clock" data-caption={captionMode}>
+              <CopyCaption>{caption}</CopyCaption>
+            </span>
           </div>
           <div className="home-crt home-pet-crt" data-pose={pose} data-night={night ? "yes" : "no"}>
             <PetSprite pose={pose} night={night} />
@@ -65,7 +73,7 @@ export function ScreenPetTile({
           </div>
         </TileOpen>
       </div>
-      <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Screen pet">
+      <HomeWidgetDialog open={open} onOpenChange={setOpen} title={petName || "Screen pet"}>
         <div className="home-widget-lead home-widget-pet-plate">
           <PetSprite pose={pose} night={night} className="home-widget-pet" />
           <span>{poseLine}</span>

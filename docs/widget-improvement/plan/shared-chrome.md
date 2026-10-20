@@ -12,13 +12,13 @@ These show up in the layout notes for more than one tile. Each widget’s data b
 
 **The plate, the dialog, and the catalog sample use different names.** Latest on the glass, Latest award on the dialog, Award on the sample. Left / Harvest leftover. Flowing / Already flowing. Lived / Plan and lived. Night / Night well. Inbox / Inbox mill. Rituals due / Rituals. Tracking’s plate is Now or Last, and the instrument’s name is only the button label. `HOME_WIDGET_LABEL` in `lib/home-widgets.ts` is already the dialog title for some tiles and a local string for others. A larger plate makes the wrong word easier to see.
 
-**A footer is engraved as a nameplate.** Detail wells still use `.home-widget-well-label`: 9px, uppercase, tracked. That size is the short engraved word from `docs/DESIGN_STYLE.md`. Days Until, Night well, Solar remainder, and Harvest leftover pass `face.footer` into it, so the sentence the square already showed becomes something like `1 LEFT OF 465`. The overview type pass does not touch this rule. Tracking’s well labels do the same with `Mood (last known)`.
+**A footer is engraved as a nameplate.** Detail wells still use `.home-widget-well-label`: 9px, uppercase, tracked. That size is the short engraved word from `docs/DESIGN_STYLE.md`. Countdown, Night well, Solar remainder, and Harvest leftover pass `face.footer` into it, so the sentence the square already showed becomes something like `1 LEFT OF 465`. The overview type pass does not touch this rule. Tracking’s well labels do the same with `Mood (last known)`.
 
-**The CRT changes color when it opens.** The square is phosphor on `#040a08`. The handheld paints the same figure `--friend-nixie` (`#4a7fd4`) because that well is `tone="nixie"`. Points does it for all four lines. Night, Harvest’s opening digit, Solar’s remainder, and Days Until do it for the one number the tile exists to show. Day lamp paints Dim, Warm, Bright, and Full with the habit-tube stops, including navy `#25366a` on the glass, while the detail lead uses a different amber scale. The award caption pip is that same navy stop, so the lamp reads unlit on silver. Larger type does not fix a value that changes material.
+**The CRT changes color when it opens.** The square is phosphor on `#040a08`. The handheld paints the same figure `--friend-nixie` (`#4a7fd4`) because that well is `tone="nixie"`. Points does it for all four lines. Night, Harvest’s opening digit, Solar’s remainder, and Countdown do it for the one number the tile exists to show. Day lamp paints Dim, Warm, Bright, and Full with the habit-tube stops, including navy `#25366a` on the glass, while the detail lead uses a different amber scale. The award caption pip is that same navy stop, so the lamp reads unlit on silver. Larger type does not fix a value that changes material.
 
 **Open does not open the thing.** `.home-tile-open`, `.home-weather-open`, and the overview `.home-review-key` use `cursor: default`, so the square looks like furniture. Rituals Open and `handleStartReview` in `home-dashboard.tsx` click `[data-rituals-entry]` / `[data-home-review-entry]`, which is the header dropdown trigger. Inbox “Open Inbox” clicks `[data-inbox-entry]`. The square opens a handheld. The key opens a menu, or nothing if that button is missing. Next already calls `onOpenHomeTab`, and that only switches the Home tab.
 
-**The handheld repeats the tile.** Affirmation’s dialog is the same line, larger, with label tracking (`letter-spacing: 0.03em` on `.home-widget-lead`). Night well is one well of the footer plus the CRT. Solar and Days Until put the footer in the nameplate and the CRT in nixie, then stop. Harvest’s first well is that pair again. A second copy stays hard to read after the strip type grows, because the dialog puts the sentence in the word slot and the figure in the other color.
+**The handheld repeats the tile.** Affirmation’s dialog is the same line, larger, with label tracking (`letter-spacing: 0.03em` on `.home-widget-lead`). Night well is one well of the footer plus the CRT. Solar and Countdown put the footer in the nameplate and the CRT in nixie, then stop. Harvest’s first well is that pair again. A second copy stays hard to read after the strip type grows, because the dialog puts the sentence in the word slot and the figure in the other color.
 
 **A missing square and a hidden square look the same.** `hidden` in `lib/home-widgets-store.ts` is the user’s choice, confirmed, and reversible from Widgets. Rituals also returns nothing when the due count is 0, so the bay leaves the row without being hidden. Session Dismiss is a third way off the strip, and it already expires next session.
 
@@ -42,9 +42,9 @@ Weather keeps the city on the plate. The catalog name stays Weather, and the sam
 
 ### 2. A well label is a word. The footer stays a sentence.
 
-**Change.** `WidgetWell`’s `label` is one or two words. Days Until, Night well, Solar remainder, and Harvest leftover stop passing `face.footer`. The sentence renders in `.home-widget-note` under the well.
+**Change.** `WidgetWell`’s `label` is one or two words. Countdown, Night well, Solar remainder, and Harvest leftover stop passing `face.footer`. The sentence renders in `.home-widget-note` under the well.
 
-Days Until’s word follows the count: Until, Since, or Today. Night’s word is Hours. Solar’s word is the phase (After sunset is the long one; Rise and Set stay the clock labels). Harvest’s hero word is Left, under the plate Harvest leftover from step 1.
+Countdown’s word follows the count: Until, Since, or Today. Night’s word is Hours. Solar’s word is the phase (After sunset is the long one; Rise and Set stay the clock labels). Harvest’s hero word is Left, under the plate Harvest leftover from step 1.
 
 Tracking’s four labels are Activity, Location, Mood, and Company. The “(last known)” clause leaves the label. Putting the clock on the value is the tracking plan.
 
@@ -54,11 +54,11 @@ Tracking’s four labels are Activity, Location, Mood, and Company. The “(last
 
 **Files.** `components/Home/home-widget-dialog.tsx` (say so on `WidgetWell`). `home-days-until.tsx`, `home-glance-tiles.tsx` (night and harvest), `home-solar-tile.tsx`, `home-tracking-tile.tsx`. `home-chrome.css` for `.home-widget-lead` letter-spacing.
 
-**How to check.** Days Until: Add, open it, the label is one word, and the arrival sentence is body copy under the figure. Hide it again. Night well: Add, open it, the label is Hours, and the asleep/woke sentence is the note. Hide it again.
+**How to check.** Countdown: Add, open it, the label is one word, and the arrival sentence is body copy under the figure. Hide it again. Night well: Add, open it, the label is Hours, and the asleep/woke sentence is the note. Hide it again.
 
 ### 3. The figure you clicked stays green
 
-**Change.** A well that repeats the CRT figure uses the default glow, `--hab-crt-green`. Remove `tone="nixie"` from that well: Points’ four lines, Night’s duration, Harvest’s opening digit, Solar’s remainder, Days Until’s countdown.
+**Change.** A well that repeats the CRT figure uses the default glow, `--hab-crt-green`. Remove `tone="nixie"` from that well: Points’ four lines, Night’s duration, Harvest’s opening digit, Solar’s remainder, Countdown’s countdown.
 
 Nixie stays available for a sibling that is a different quantity. The pet’s Clock is a clock. Harvest’s Still possible can stay nixie beside Earned. Rise and Set on Solar share one tone with each other; they are a pair of clocks, and the remainder above them matches the CRT green.
 
@@ -94,7 +94,7 @@ The rest of the square still opens the handheld. That is the shared click. The k
 
 **Files.** `components/Home/home-review-banner.tsx`.
 
-**How to check.** Rituals: a day or a fixture with no due slot still shows the tile with 0. Days Until: still absent while it is tucked; the catalog still says Hidden; Add and Hide still ask, and Hide writes `hidden`. Leave it Hidden when the check is done.
+**How to check.** Rituals: a day or a fixture with no due slot still shows the tile with 0. Countdown: still absent while it is tucked; the catalog still says Hidden; Add and Hide still ask, and Hide writes `hidden`. Leave it Hidden when the check is done.
 
 ### 6. The dialog names the day it read
 
