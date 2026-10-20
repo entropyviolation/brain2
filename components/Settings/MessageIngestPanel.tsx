@@ -54,6 +54,8 @@ export function MessageIngestPanel() {
   const removeDiscreteEventTrigger = useIngestStore((s) => s.removeDiscreteEventTrigger)
   const phoneHubUrl = useIngestStore((s) => s.phoneHubUrl)
   const setPhoneHubUrl = useIngestStore((s) => s.setPhoneHubUrl)
+  const phoneHubToken = useIngestStore((s) => s.phoneHubToken)
+  const setPhoneHubToken = useIngestStore((s) => s.setPhoneHubToken)
 
   const [token, setToken] = useState("")
   const [hasToken, setHasToken] = useState(false)
@@ -182,7 +184,7 @@ export function MessageIngestPanel() {
   const handlePushVault = async () => {
     const target = normalizeHubUrl(phoneHubUrl) || (typeof window !== "undefined" ? window.location.origin : "")
     setHubStatus("Pushing vault…")
-    const result = await pushVaultToHub(target)
+    const result = await pushVaultToHub(target, phoneHubToken)
     setHubStatus(
       result.ok ? `Pushed ${result.keyCount} keys to ${target}` : result.error || "Push failed",
     )
@@ -366,6 +368,18 @@ export function MessageIngestPanel() {
         <p className="text-xs text-muted-foreground">
           Default local hub is port 8787. Sync copies this profile’s lists to the hub file so{" "}
           <code className="text-foreground">groc</code> at the store sees today’s grocery list.
+        </p>
+        <Input
+          id="phone-hub-token"
+          type="password"
+          autoComplete="off"
+          aria-label="Hub token"
+          placeholder="Hub token (only for a public host)"
+          value={phoneHubToken}
+          onChange={(e) => setPhoneHubToken(e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Must match <code className="text-foreground">COGS_PHONE_HUB_TOKEN</code> on the host.
         </p>
         {hubStatus && <p className="text-xs text-muted-foreground">{hubStatus}</p>}
       </div>

@@ -7,6 +7,7 @@
  * Token: gitignored `.env.local` / COGS_TELEGRAM_BOT_TOKEN
  * Poll is the default. Webhook: COGS_TELEGRAM_WEBHOOK=https://host/telegram/webhook
  * Port (persist + webhook): COGS_PHONE_HUB_PORT=8787
+ * Vault API token (set on any public host): COGS_PHONE_HUB_TOKEN
  *
  * Desktop Electron yields when data/phone-hub-status.json is fresh so Telegram
  * is not consumed twice. Push the vault from Settings → Sync vault.
@@ -21,6 +22,7 @@ import { dumpLocalStorage, fillLocalStorage, installPhoneHubGlobals } from "./ph
 import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./persist-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
 import { flushScheduledPersist } from "../lib/persist-storage"
+import { hubRequestAuthorized, isGatedHubPath } from "../lib/ingest/hub-auth"
 import { createChatQueue } from "../lib/ingest/chat-queue"
 import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates"
 import { createDeferredAlbum } from "../lib/ingest/deferred-album"
@@ -51,6 +53,8 @@ const STATUS_FILE = join(ROOT, "data", "phone-hub-status.json")
 const OFFSET_FILE = join(ROOT, "data", "telegram-offset.json")
 const PORT = Number(process.env.COGS_PHONE_HUB_PORT || 8787)
 const WEBHOOK = String(process.env.COGS_TELEGRAM_WEBHOOK || "").trim()
+/** Bearer token for the vault API. Empty = open (localhost only!). */
+const HUB_TOKEN = String(process.env.COGS_PHONE_HUB_TOKEN || "").trim()
 const WEBHOOK_SECRET = String(process.env.COGS_TELEGRAM_WEBHOOK_SECRET || "").trim()
 
 function tokenFromEnvFiles() {
@@ -363,7 +367,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown) {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(json),
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Accept, X-Telegram-Bot-Api-Secret-Token",
+    "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Telegram-Bot-Api-Secret-Token",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
   })
   res.end(json)
@@ -420,6 +424,10 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
     }
     return
   }
+  if (isGatedHubPath(pathname) && !hubRequestAuthorized(HUB_TOKEN, req.headers.authorization)) {
+    sendJson(res, 401, { ok: false, error: "hub token required" })
+    return
+  }
   const handled = await handlePersistApi(req, res, pathname)
   if (handled) return
   sendJson(res, 404, { ok: false, error: "not found" })
@@ -462,6 +470,9 @@ async function main() {
   })
   await new Promise<void>((resolve) => server.listen(PORT, "0.0.0.0", resolve))
   console.log(`[phone-hub] persist + status on http://127.0.0.1:${PORT}`)
+  if (!HUB_TOKEN) {
+    console.warn("[phone-hub] COGS_PHONE_HUB_TOKEN is unset: the vault API is open to anyone who can reach this port. Set it on any public host.")
+  }
 
   try {
     await registerCommandMenu()

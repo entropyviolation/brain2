@@ -34,7 +34,7 @@ export function normalizeHubUrl(url: string): string {
   return url.trim().replace(/\/+$/, "")
 }
 
-export async function pushVaultToHub(baseUrl: string): Promise<{ ok: boolean; error?: string; keyCount?: number }> {
+export async function pushVaultToHub(baseUrl: string, token = ""): Promise<{ ok: boolean; error?: string; keyCount?: number }> {
   const origin = normalizeHubUrl(baseUrl)
   if (!origin) return { ok: false, error: "No hub URL" }
   const items = collectVaultItems()
@@ -43,7 +43,10 @@ export async function pushVaultToHub(baseUrl: string): Promise<{ ok: boolean; er
   try {
     const res = await fetch(`${origin}/api/persist`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token.trim() ? { Authorization: `Bearer ${token.trim()}` } : {}),
+      },
       body: JSON.stringify({ items, source: "phone-push" }),
     })
     if (!res.ok) {

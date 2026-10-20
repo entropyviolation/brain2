@@ -74,6 +74,8 @@ interface IngestState {
   seenIngestKeys: string[]
   /** Optional always-on hub origin, e.g. http://127.0.0.1:8787 */
   phoneHubUrl: string
+  /** Bearer token for the hub vault API (COGS_PHONE_HUB_TOKEN on the host). */
+  phoneHubToken: string
   livePins: Record<string, LivePin>
 
   setEnabled: (enabled: boolean) => void
@@ -96,6 +98,7 @@ interface IngestState {
   hasSeenIngestKey: (key: string) => boolean
   rememberIngestKey: (key: string) => void
   setPhoneHubUrl: (url: string) => void
+  setPhoneHubToken: (token: string) => void
   setLivePin: (kind: string, pin: LivePin | null) => void
 }
 
@@ -126,6 +129,7 @@ export const useIngestStore = create<IngestState>()(
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
       seenIngestKeys: [],
       phoneHubUrl: "",
+      phoneHubToken: "",
       livePins: {},
 
       setEnabled: (enabled) => set({ enabled }),
@@ -225,6 +229,7 @@ export const useIngestStore = create<IngestState>()(
           }
         }),
       setPhoneHubUrl: (phoneHubUrl) => set({ phoneHubUrl: phoneHubUrl.trim() }),
+      setPhoneHubToken: (phoneHubToken) => set({ phoneHubToken: phoneHubToken.trim() }),
       setLivePin: (kind, pin) =>
         set((state) => {
           const livePins = { ...state.livePins }
@@ -250,6 +255,7 @@ export const useIngestStore = create<IngestState>()(
           events,
           shortcuts: remapRetiredGroceryShortcuts(rawShortcuts),
           phoneHubUrl: typeof p.phoneHubUrl === "string" ? p.phoneHubUrl : "",
+          phoneHubToken: typeof p.phoneHubToken === "string" ? p.phoneHubToken : "",
           livePins: p.livePins && typeof p.livePins === "object" ? p.livePins : {},
           revokedChatIds: Array.isArray(p.revokedChatIds) ? p.revokedChatIds : [],
           allowlistRev: typeof p.allowlistRev === "number" ? p.allowlistRev : 0,
@@ -305,6 +311,7 @@ export const useIngestStore = create<IngestState>()(
         discreteEventTriggers: state.discreteEventTriggers,
         seenIngestKeys: state.seenIngestKeys,
         phoneHubUrl: state.phoneHubUrl,
+        phoneHubToken: state.phoneHubToken,
         livePins: state.livePins,
       }),
     },

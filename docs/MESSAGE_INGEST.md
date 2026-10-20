@@ -147,8 +147,11 @@ Token from gitignored `.env.local` / `COGS_TELEGRAM_BOT_TOKEN` (never committed)
 | `COGS_PHONE_HUB_PORT` | HTTP port for persist + status + webhook (default **8787**) |
 | `COGS_TELEGRAM_WEBHOOK` | Public URL, e.g. `https://host/telegram/webhook` — skip long-poll |
 | `COGS_TELEGRAM_WEBHOOK_SECRET` | `X-Telegram-Bot-Api-Secret-Token` |
+| `COGS_PHONE_HUB_TOKEN` | Bearer token required on `/api/persist` and `/api/recovery-backups`. Unset = open (localhost only) |
 
-A VPS / NAS / always-on Mac is enough. Settings → **Always-on hub URL** + **Sync
+A VPS / NAS / always-on Mac is enough. Where to host it, the alternatives, and
+the plan: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md). Set
+`COGS_PHONE_HUB_TOKEN` on any public host (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
 vault** copies today’s lists onto that host. Pairing still happens in Settings;
 the hub hydrates the allowlist from the vault.
 
