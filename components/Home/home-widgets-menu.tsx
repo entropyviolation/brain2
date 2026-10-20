@@ -60,7 +60,7 @@ export function HomeWidgetsMenu() {
     return () => document.removeEventListener("mousedown", onDoc)
   }, [open, pendingHide, catalog])
 
-  const rows = orderedCopies({ style, copies, milled, dash, unknown })
+  const rows = orderedCopies({ style, copies, milled, dash, unknown, legacy: null })
   const nameOf = (copy: WidgetCopy) => {
     if (copy.kind === "daysuntil" && !copy.title.trim()) {
       const mark = marks.find((item) => item.id === copy.settings.markId)
