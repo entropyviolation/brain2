@@ -27,6 +27,18 @@ The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from
 - **Phase 14.** Only prerequisites (`dependencies`, `dependsOn`) **lock**; open steps leave a task **incomplete**, never locked. New `lib/unlock-value.ts` adds an `unlocks` signal to the Priority formula, so a prerequisite of valuable work rises. A blocker sorts above its locked row, and a prerequisite inherits the earliest deadline of what waits on it. A task with nothing waiting on it ranks as today. Later, a prerequisite can be met at a level (Decision 11).
 - **Phase 15.** Less pressure: Just Start offers two or three choices, a time-box ring, an end-of-sitting strip; neutral words (no "should", warm red only for overruns); a quiet attention-given line on Done; a notice dot on rows pushed 3+ times; a **Waiting** shelf after 5 pushes (`waitingShelfAfter`, 0 = off); step points hidden behind **Points visible**. Also added to earlier phases: a future-self note and **Just 25** sessions (4), your own pace ghost (6), **Show next only** and the "waiting, not forgotten" line (9), spark marks (10).
 
+## Three ways to edit a task stay separate
+
+_Last mapped: 2026-10-21_
+
+**Do not merge the three ways to edit a task.** Item detail → Subtasks, the To do tab's drawer, and the task card each edit the same task on purpose. They have different jobs, so they have different UI and components.
+
+- **Item detail → Subtasks** is the item's whole record, across all time: every field, notes, resources and links.
+- **The To do drawer** (the lid in `TodoTable.tsx`) is for quick changes inside the list for this period: verbs, marks, estimate and steps, without leaving the list.
+- **The task card** (`TaskCard.tsx`) is for planning this period's work on one task: the full step tree, mass edit, needs and order, points, and this-period figures.
+
+They share store functions (`updateTask`, `lib/todo-steps.ts`, `lib/prereqs.ts`) so they always agree. They do not share UI. A change that merges them, or makes one mirror another, needs allie's yes first. Recorded as Decision 15 in [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md#decisions).
+
 ## Public door
 
 Home mounts **`TodoPanel`** from `todo-panel.tsx` (`components/Home/home-dashboard.tsx`).
@@ -69,7 +81,7 @@ build/filter logic is unit-testable.
 | `SessionDock.tsx` | The planner for ways in outside To Do (focus bar, Plan, header). Loaded by the header Now box when `lib/session-open-store.ts` holds a request |
 | `todo-chrome.css` | `.todo95` cool silver fascia (a whisper of grain), wrapping load strip (Casio / comfort needle / scope lamps / POWER lamp / via channel), one cool ledger well, short rounded task cards, padded names, clamshell lids, rounded step cards, Done/Missed/Undone aftermath wells, `.todo-desk-plate`, status bar, `.todo95-dialog` |
 | `todo-utils.ts` | **Pure helpers**: `getTierFromTask`, `tierToUrgencyImportance`, `createScheduledTodoTask`, `getScheduleLabel`, `buildTodoItems` (drops done **and** missed), `buildDoneTodoItems` (`countsInDone`: Tasks **or** implied-action logs), `buildMissedTodoItems` (too-late rows by `missedAt`), `buildUndoneTodoItems` (past periods: each missed period on its own, including after a later push), `filterAndSortTodos`, `filterTodosByStatus`, `filterTodosAvailableNow` (`lib/available-tasks` unmet-dep predicate), `toggleTodoActiveLamp` (active ↔ partial; both stay on Open), `countInProgress` / `formatWipWarning`, overdue from `priorityDateOf`, `pinPrioritizedFirst`, plus the `priority` sort path (`computePriorityScore` from `lib/priority.ts`) and `TodoSortMode` (`"tier"` \| `"priority"`). Unit-tested in `todo-utils.test.ts` |
-| `TodoTable.tsx` | Table-head legend for **Pushes** (what a push is + which period the tube counts). Closed rows: padded name, nixie tier **menu** (A+…D, not a cycle), active lamp (toggles active ↔ partial), completion percent (`todoCompletionPercent`, 0 when nothing is finished), step chip, engraved verbs — **Done** primary, Start/Push quieter, Delete hover-reveal. Click / Enter opens one clamshell lid. The header name is the only edit field. **Flags** (Required / Prioritized / Missed / View, right-aligned), **Time**, and **Steps** each fold; the choice persists in `lidCollapsed`. Keyboard: arrows, D/M/P/R, Enter, Esc (ignored while focus is in an input or select). |
+| `TodoTable.tsx` | _Last mapped: 2026-10-21._ Table-head legend for **Pushes** (what a push is + which period the tube counts). Closed rows: padded name, nixie tier **menu** (A+…D, not a cycle) in a fixed-width column, active lamp (toggles active ↔ partial), completion percent (`todoCompletionPercent`, 0 when nothing is finished), step chip, and two keys: **Card** (pop-out icon, "Open task card") and the CD transport ▶ (`DvdTransportKey`). The push count is the dark square tube. Click / Enter opens one clamshell lid. The header name is the only edit field. The lid's **Actions** line (`Drawer actions` toolbar) holds Done (primary), Done at B/G, Start, Just 25, Push, Missed, then Needs…, View, Delete. **Flags** (Required / Prioritized as willpower gems from `public/gems-removebackground/`), **Time**, and **Steps** each fold; the choice persists in `lidCollapsed`. Keyboard: arrows, D/M/P/R, Enter, Esc (ignored while focus is in an input or select), so Done stays one key away on a closed row. |
 | `TodoBreakdown.tsx` | _Last mapped: 2026-10-16_ Inside the open lid (`data-ui-name="Steps"`): **Time** is one segmented control (+15, −5, 5, 15, 30, 60) with the minutes field beside it; **counts** and **0/n · n%** sit on their own readout row. **Steps** is the shared `StepTree` (`components/steps/`) with the lid's columns (`LidStepColumns`: Needs…, ▶, minutes, spent, counts, progress, delete). Hide locked and Show next only come from `todo-prefs`; each move calls `rememberWorld` first (one undo). Optional "Ask the glass" first-step prompt under **Add the first step** (no network). `TodoLidSection` is the shared fold. |
 | `TodoLoadPanel.tsx` | Period load strip (`data-ui-name="Period load"`): Casio LCDs (days left on week / month / season only, working hours, **Est hours of work remaining**), Hofstadter comfort needle, scope latch lamps, in-progress POWER lamp, Habits `PercentLedBar` for estimate vs working hours. Unestimated count scrolls the first bare task open. |
 | `TaskPrereqDialog.tsx` | **Needs…** for a whole task (`data-ui-name="Needs"`): `EventPrereqPicker` over open tasks, writing `Task.dependencies`, with loops refused through `addTaskPrereq` / `findCyclePath` |
@@ -82,15 +94,32 @@ build/filter logic is unit-testable.
 
 ## Instrument layout
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-21_
 
-Fascia has three rows.
+Redesign 2026-10-21: the header is a held machine, a screen above and a key field below. Mockup: `docs/mockups/todo-redesign.html` (published at https://claude.ai/artifact/AhZ7M3tfBx1ahrGzTG4xH6). Styles are the "Redesign 2026-10-21" blocks at the end of `todo-chrome.css`.
 
-- **To do list title** (`is-title`): a row to itself. The live title from `todoTitle()` in `todo-ranges.ts`: "To do today", "To do tomorrow", "To do this week", "To do next month", "To do this season", "To do before album release". Past or far dates read "To do on Tue, Oct 27", "To do in March 2027". Open count beside it. The gear (`TodoSettingsDialog.tsx`) sits at the right.
-- **Nav** (`is-nav`): the period nameplate (‹ date › Today Open list), or the range picker on Other. Then Day / Week / Month / Season / Other. Then the actions (`todo-actions`: Add task, Session, Sessions, Pick list).
-- **Strip** (`is-strip`): the filter strip. Hidden on Season and Other.
+- **Screen** (`is-screen`): one dark CRT glass (`.todo-screen`) with a faint green dot-matrix and a green hairline. Left: the live title from `todoTitle()` and the open count as an LED digit. Right, in the same glass: the one-line load readout (`working hours left · estimate · fits`), a needle, a violet lamp when in progress passes the cap, and ▾. The ▾ toggles `loadOpen` in `todo-prefs.ts` (default closed) and shows the load instrument (`TodoLoadPanel.tsx`) at the top of the sheet. Outside the glass: the settings key, which is the globe photo `public/todo/settings-globe.jpg` with no key face (`TodoSettingsDialog.tsx`).
+- **Key field** (`is-keys`): the period nameplate (‹ date › Today), or the range picker on Other. The span keys: Day, Week, Month, Season and Other as Tek time-base keys under a SPAN legend, each with a lamp and the span it covers (`spanSubLabel` in `todo-panel.tsx`). Then **+ Add task ▾** (the one primary key), Session · Sessions, **Show** (lamp and a count of active filters) and the sort key (`TodoSortKeys` in `todo-filters.tsx`). Show and sort hide on Season and Other.
+- **Show tray** (`.todo-fascia-tray`): `TodoFilters` (Available now, All tasks, Tier, Hide locked, Show next only, Status, Formula) and **Open list**. Open or closed is `showTrayOpen` in `todo-prefs.ts`. The tray stays in the DOM while closed (`hidden`).
+- **Add task** (`AddTodoDialog.tsx`): the name and tier as before, plus **From lists**, a search over open tasks that are not on this period (Next Actions items included). Picking one schedules that task here (`pickExistingTask`, `scheduleTaskForPeriod`). **Pick list…** opens the Session planner's flat list, which used to be its own fascia key.
+- **Keycaps.** Word keys use the house keycap (`.todo-cap`, `--todo-cap-*` tokens): pale silver word caps, darker grey modifier caps, a navy legend and lamp on the primary keys. See [`docs/DESIGN_STYLE.md` → Keycaps](../../../docs/DESIGN_STYLE.md#keycaps).
+- **Phone** (under 720px): the header stacks (screen and globe, nameplate, five equal span keys, three action keys, Show and sort), every key at least 44px. Rows take two lines (name with Card and ▶, then tier · state · time · steps · pushes). The drawer's verbs sit in a grid of three. The load wells stack. The Show tray is a bottom sheet. See [`docs/DESIGN_STYLE.md` → Phone layout](../../../docs/DESIGN_STYLE.md#phone-layout).
 
-Styles are the "Header redesign" blocks at the end of `todo-chrome.css`.
+### Load instrument
+
+_Last mapped: 2026-10-21_
+
+`TodoLoadPanel.tsx`, opened from the ▾ in the header glass. One milled bezel, three wells:
+
+- **Time:** an engraved scale. On Day it runs 8 to 23 with past hours hatched, a violet now tick, hours left in green and the estimate in blue; a warm red tail marks an estimate that runs past the day. On longer lenses it counts working days left. Under it an LCD row: working hours left, estimate (and task count), and time already spent on these open tasks. Days left shows on week, month and season. The unestimated count still opens the first bare task.
+- **Comfort:** a black CRT dial in a chrome bezel with a silver shoulder. Pixel LED segments light up to the ratio (green to 1.0, ice blue to 10, violet past it), a pearl marks it, and the ratio sits in the middle (`comfortDialT`). Beside it, a `fits · Xh spare` or `needs Xh more` LCD and the band legend.
+- **Scope:** three pearl toggles for what counts toward load, pixel pips for in progress against the cap (violet past it), and Required / Assigned hours in two small LCDs.
+
+### Empty bands
+
+_Last mapped: 2026-10-21_
+
+A band with nothing in it is not drawn: Required (day, week, month and season), Done, Missed and Undone. Required appears the moment a row's Required gem is lit. **Log done** also sits on the Assigned composer, so it stays reachable while Done is hidden.
 
 ### Global settings (the gear)
 

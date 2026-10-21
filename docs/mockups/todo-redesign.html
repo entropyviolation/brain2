@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To do redesign</title>
+<!-- Static mockup for the Home → To do redesign. Not app code. Images load from ../../designrefs and ../../public. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family: "w95fa"; src: url("refs/w95fa.woff") format("woff"); }
+
+:root {
+  --face: #c0c0c0;
+  --sheen: #d4d8dc;
+  --shade: #969a9e;
+  --ring: #5c6064;
+  --ring-deep: #4a4e52;
+  --ink: #2a2c2e;
+  --ink-soft: #55595d;
+  --card: #e6e8eb;
+  --ledger: #c8ccd0;
+  --crt-bg: #050b09;
+  --crt: #7dffc4;
+  --crt-dim: #3f9c74;
+  --crt-glow: 0 0 3px #7dffc4, 0 0 9px rgba(125,255,196,.35);
+  --green: #3dff8a;
+  --ice: #9ad7ff;
+  --violet: #a35cff;
+  --warm: #d2493a;
+  --pixel: "w95fa", ui-monospace, monospace;
+  --phos: "VT323", "w95fa", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--pixel);
+  font-size: 13px;
+  color: var(--ink);
+  background: #7fb5aa url("../../public/mint.jpg") center / 900px repeat;
+  padding: 18px 16px 40px;
+  -webkit-font-smoothing: none;
+}
+h1 { font-size: 18px; margin: 0 0 4px; letter-spacing: .06em; }
+.lede { margin: 0 0 16px; max-width: 760px; line-height: 1.45; }
+.sheet { background: rgba(232,234,236,.92); border: 1px solid var(--ring-deep); border-radius: 3px; padding: 12px 14px; box-shadow: 2px 2px 0 rgba(0,0,0,.25); }
+
+/* ---------- frames ---------- */
+.frames { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.frame { background: #eef0f2; border: 1px solid var(--ring-deep); border-radius: 4px; padding: 10px; box-shadow: 3px 3px 0 rgba(0,0,0,.28); min-width: 0; }
+.frame.a { flex: 1 1 820px; }
+.frame.b { flex: 0 0 410px; }
+.frame.c { flex: 1 1 300px; max-width: 360px; }
+.flabel { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+.flabel b { background: #000080; color: #fff; padding: 1px 6px; letter-spacing: .06em; }
+.flabel span { font-weight: 400; letter-spacing: .02em; text-transform: none; color: var(--ink-soft); }
+@media (max-width: 900px) { .frame.a, .frame.b, .frame.c { flex: 1 1 100%; max-width: none; } .frame.b .phone { margin: 0 auto; } }
+
+/* ---------- materials ---------- */
+.mill {
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--sheen), var(--face) 55%, #b4b8bc);
+  border: 1px solid var(--ring);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 var(--shade), inset 0 0 6px rgba(0,0,0,.06);
+}
+.machine { padding: 8px; display: grid; gap: 7px; }
+.row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.grow { flex: 1 1 auto; }
+
+/* CRT glass */
+.crt {
+  background: radial-gradient(ellipse at 30% 30%, #0c1a14, var(--crt-bg) 70%);
+  border: 2px solid #1d2022; border-radius: 5px;
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 10px rgba(0,0,0,.9), 0 1px 0 #fff;
+  color: var(--crt); font-family: var(--phos); text-shadow: var(--crt-glow);
+  position: relative; overflow: hidden;
+}
+.crt::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
+.crt .title { font-size: 26px; letter-spacing: .08em; line-height: 1; }
+.count { display: inline-block; border: 1px solid var(--crt-dim); padding: 0 5px; font-size: 20px; line-height: 1.1; margin-left: 8px; }
+.load { font-size: 17px; color: var(--crt); opacity: .92; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.load .dim { color: var(--crt-dim); text-shadow: none; }
+.needle { width: 26px; height: 14px; display: inline-block; }
+.caret { border: 1px solid var(--crt-dim); padding: 0 4px; font-size: 15px; line-height: 1.1; }
+
+/* keys */
+.key {
+  font-family: var(--pixel); font-size: 12px; color: var(--ink);
+  min-height: 26px; padding: 3px 9px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  background: linear-gradient(180deg, #eceef0, #cdd1d5 60%, #bfc3c7);
+  border: 1px solid var(--ring); border-radius: 4px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9ea2a6, 0 1px 0 rgba(0,0,0,.25);
+  white-space: nowrap; cursor: default;
+}
+.key.primary { background: linear-gradient(180deg, #3b4b8f, #22306c 70%, #1a2556); color: #fff; border-color: #0f1638; box-shadow: inset 0 1px 0 #6b7bc4, inset 0 -2px 0 #111a44, 0 1px 0 rgba(0,0,0,.3); }
+.key.quiet { background: linear-gradient(180deg, #e2e5e8, #c9cdd1); font-size: 11px; color: var(--ink-soft); min-height: 24px; padding: 2px 7px; }
+.key.sunk { background: #b9bdc1; color: #7d8185; box-shadow: inset 1px 1px 0 #8b8f93, inset -1px -1px 0 #dfe2e5; }
+.key.gear { width: 48px; height: 34px; padding: 2px; border-radius: 4px; }
+.key.gear img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 2px; }
+.key.gear:hover img { filter: brightness(1.08); }
+.key.play { width: 26px; height: 26px; padding: 0 0 0 2px; border-radius: 50%; font-size: 10px; }
+.key.link { background: none; border: 1px dashed var(--ring); box-shadow: none; color: #000080; text-decoration: underline; }
+.trio { display: inline-flex; gap: 0; }
+.trio .key { border-radius: 0; margin-left: -1px; }
+.trio .key:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.trio .key:last-child { border-radius: 0 4px 4px 0; }
+
+/* keycap cluster */
+.caps { display: inline-grid; grid-template-columns: repeat(5, 28px); gap: 3px; padding: 3px; background: #9da1a5; border-radius: 5px; box-shadow: inset 1px 1px 0 #7d8185, inset -1px -1px 0 #e3e6e9; }
+.cap { height: 28px; display: grid; place-items: center; position: relative; font-size: 12px; font-weight: 700;
+  background: linear-gradient(160deg, #f1f3f5, #c6cace); border: 1px solid var(--ring); border-radius: 4px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9ea2a6; }
+.cap.on { background: linear-gradient(160deg, #e6ebe8, #bcc4bf); }
+.cap.on::before { content: ""; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green), 0 0 1px #000; }
+
+/* time-base keys (Tek 465B latching keys: engraved legend, full word, what it covers, one lamp) */
+.tb { display: inline-flex; flex-direction: column; gap: 1px; }
+.tb-legend { font-size: 8px; letter-spacing: .14em; color: var(--ink-soft); text-transform: uppercase; padding-left: 4px; }
+.tb .caps { grid-template-columns: repeat(5, auto); }
+.tb .cap { height: 30px; padding: 0 9px 0 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; line-height: 1.05; font-size: 11.5px; }
+.tb .cap small { font-size: 9px; font-weight: 400; color: var(--ink-soft); letter-spacing: 0; }
+.tb .cap::after { content: ""; position: absolute; left: 6px; top: 50%; margin-top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #7f8589; box-shadow: inset 0 1px 1px #000; }
+.tb .cap.on::before { display: none; }
+.tb .cap.on { box-shadow: inset 0 2px 3px rgba(0,0,0,.35); }
+.tb .cap.on::after { background: var(--green); box-shadow: 0 0 5px var(--green), 0 0 1px #000; }
+.phone .tb { width: 100%; }
+.phone .tb .caps { grid-template-columns: repeat(5, 1fr); }
+.phone .tb .cap { height: 44px; padding: 0 4px 0 15px; font-size: 12.5px; }
+/* nameplate */
+.plate { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--ring-deep); border-radius: 4px; background: linear-gradient(180deg, #2b2e31, #1a1c1e); color: #e9ecef; box-shadow: inset 0 1px 0 #4a4e52; }
+.plate span { padding: 3px 9px; letter-spacing: .1em; font-size: 12px; text-transform: uppercase; }
+.plate i { font-style: normal; padding: 3px 7px; color: #b9bec3; border-left: 1px solid #000; border-right: 1px solid #000; }
+.plate i:first-child { border-left: 0; } .plate i:last-child { border-right: 0; }
+
+/* lamps */
+.lamp { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; border: 1px solid rgba(0,0,0,.45); }
+.lamp.g { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.lamp.b { background: var(--ice); box-shadow: 0 0 5px var(--ice); }
+.lamp.v { background: var(--violet); box-shadow: 0 0 5px var(--violet); }
+.lamp.off { background: #8d9195; box-shadow: inset 0 1px 1px rgba(0,0,0,.4); }
+
+/* drawer tray */
+.tray { position: relative; margin: 0 10px; padding: 9px 10px 8px; background: linear-gradient(180deg, #b7bbbf, #caced2 14px, #d1d5d9); border: 1px solid var(--ring); border-top: 0; border-radius: 0 0 6px 6px; box-shadow: inset 0 6px 6px -6px rgba(0,0,0,.5); display: grid; gap: 6px; }
+.tray .lab { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); min-width: 52px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; font-size: 11px; border: 1px solid var(--ring); border-radius: 10px; background: #e3e6e9; box-shadow: inset 0 1px 0 #fff; }
+.chip.on { background: #f3f5f6; border-color: var(--ring-deep); }
+.seg { display: inline-flex; border: 1px solid var(--ring); border-radius: 4px; overflow: hidden; }
+.seg span { padding: 2px 8px; font-size: 11px; background: #dfe2e5; border-left: 1px solid var(--ring); }
+.seg span:first-child { border-left: 0; }
+.seg span.on { background: #f6f7f8; box-shadow: inset 0 -2px 0 var(--green); }
+.cap-note { font-size: 11px; color: var(--ink-soft); border: 1px dashed #7d8185; padding: 1px 6px; border-radius: 3px; background: rgba(255,255,255,.45); display: inline-block; }
+.tray .cap-note { position: absolute; right: 8px; bottom: -11px; background: #eef0f2; }
+
+/* ledger */
+.ledger { margin-top: 12px; background: var(--ledger); border: 1px solid var(--ring-deep); border-radius: 5px; padding: 8px; box-shadow: inset 1px 1px 0 #9fa3a7, inset -1px -1px 0 #e3e6e9; display: grid; gap: 5px; }
+.band { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; padding: 0 2px 2px; }
+.band::after { content: ""; flex: 1; border-top: 1px solid #9fa3a7; border-bottom: 1px solid #e3e6e9; }
+.task { background: var(--card); border: 1px solid #8e9296; border-radius: 7px; box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(0,0,0,.12); }
+.task.open { border-color: var(--ring-deep); }
+.trow { display: grid; grid-template-columns: 1fr 56px 16px 36px 44px 40px 28px 30px 24px; align-items: center; gap: 8px; padding: 5px 8px; min-height: 36px; }
+.name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nixie { color: #b9ffd9; text-shadow: 0 0 4px rgba(125,255,196,.7); background: radial-gradient(#0f2219, #050b09); }
+.meta { font-size: 11px; color: var(--ink-soft); text-align: right; }
+.over { color: var(--warm); }
+.steps { font-size: 11px; padding: 1px 6px; border: 1px solid #8e9296; border-radius: 8px; background: #f2f3f5; }
+.tube { font-family: var(--phos); font-size: 15px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2a2350, #0d0b1c); color: #d6c2ff; text-shadow: 0 0 4px var(--violet); border: 1px solid #000; }
+.tube.zero { color: #4e4a66; text-shadow: none; }
+.drawer { border-top: 1px solid #b0b4b8; margin: 0 6px; padding: 7px 4px 8px; display: grid; gap: 7px; }
+.flags { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+.jewel { display: inline-flex; align-items: center; gap: 5px; }
+/* willpower gems: photographed stones from public/gems-removebackground/, same family as Habits */
+.jewel::before { content: ""; width: 20px; height: 20px; background: center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0,0,0,.45)); }
+.jewel.g::before { background-image: url("refs/gem-required.png"); }
+.jewel.v::before { background-image: url("refs/gem-prioritized.png"); }
+.phone .jewel::before { width: 24px; height: 24px; }
+.fold { font-size: 12px; color: var(--ink); display: flex; gap: 16px; }
+.fold span { border-bottom: 1px dotted var(--ink-soft); }
+.composer { display: flex; gap: 6px; margin-top: 4px; }
+.field { flex: 1; min-height: 28px; padding: 5px 8px; font-size: 12px; color: #7d8185; background: #fbfcfc; border: 1px solid var(--ring); border-radius: 4px; box-shadow: inset 1px 1px 0 #9fa3a7; }
+.donewell { margin-top: 6px; display: flex; align-items: center; gap: 8px; padding: 5px 8px; font-size: 12px; background: #bfc3c7; border: 1px solid #8e9296; border-radius: 5px; }
+.foot { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+/* phone */
+.phone { width: 390px; max-width: 100%; border: 10px solid #26292c; border-radius: 30px; background: #d9dcdf; padding: 10px 8px 16px; box-shadow: inset 0 0 0 1px #000, 0 2px 0 #000; }
+.phone .key { min-height: 44px; font-size: 13px; }
+.phone .caps { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; gap: 4px; }
+.phone .cap { height: 44px; font-size: 14px; }
+.phone .plate { display: flex; width: 100%; }
+.phone .plate i { padding: 0 14px; min-height: 42px; display: grid; place-items: center; font-size: 15px; }
+.phone .plate span { flex: 1; text-align: center; font-size: 13px; }
+.prow { padding: 7px 8px; display: grid; gap: 4px; }
+.pl1 { display: grid; grid-template-columns: 1fr auto 44px; gap: 6px; align-items: center; }
+.pl1 .name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+.phone .key.play { width: 44px; height: 44px; font-size: 13px; }
+.phone .key.cardk { min-height: 44px; padding: 0 10px; }
+.pl2 { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-soft); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+/* current */
+.cur { transform-origin: top left; font-size: 10px; }
+.cur .key { font-size: 9px; min-height: 18px; padding: 1px 4px; border-radius: 3px; }
+.cur .mill { padding: 5px; display: grid; gap: 4px; }
+.cur .crt .title { font-size: 16px; }
+.cur .card1 { background: var(--card); border: 1px solid #8e9296; border-radius: 6px; padding: 4px; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.x { color: var(--warm); font-size: 11px; line-height: 1.4; margin: 6px 0 0; padding-left: 14px; }
+
+
+/* load instrument (expanded) */
+.ldi-wrap { position: relative; margin: 24px 10px 0; }
+.ldi { padding: 6px; display: grid; grid-template-columns: 1.55fr 1fr 1.1fr; gap: 6px; align-items: stretch; border-color: var(--ring-deep); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 var(--shade), 0 2px 0 rgba(0,0,0,.25); }
+.well { background: linear-gradient(180deg, #a9adb1, #c3c7cb 30%, #cfd3d7); border: 1px solid var(--ring); border-radius: 5px; box-shadow: inset 1px 1px 0 #7d8185, inset -1px -1px 0 #e6e9ec, inset 0 2px 6px rgba(0,0,0,.18); padding: 5px 7px; min-width: 0; display: flex; flex-direction: column; gap: 4px; height: 146px; justify-content: space-between; }
+.well .lab { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); display: flex; justify-content: space-between; }
+.scale { width: 100%; height: 44px; display: block; background: linear-gradient(180deg, #e9ebed, #d6d9dc); border: 1px solid #8e9296; border-radius: 3px; box-shadow: inset 0 1px 0 #fff; }
+.rd { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 6px; padding: 3px 6px 4px; font-size: 16px; line-height: .95; }
+.rd small { display: block; font-size: 11px; color: var(--crt-dim); text-shadow: none; letter-spacing: .04em; }
+.rd .ghost { grid-column: 1 / -1; color: var(--crt-dim); text-shadow: none; font-size: 12px; display: flex; justify-content: space-between; border-top: 1px dotted #1f4a38; padding-top: 2px; }
+.pchip { font-size: 11px; padding: 1px 7px; border: 1px solid var(--ring); border-radius: 9px; background: #f3f5f6; color: var(--ink); text-decoration: underline; box-shadow: inset 0 1px 0 #fff, 0 1px 0 rgba(0,0,0,.2); white-space: nowrap; cursor: pointer; }
+.meter { flex: 1; display: grid; place-items: center; }
+.meter svg { width: 100%; max-width: 190px; height: 104px; }
+.crtm { flex: 1; min-height: 0; display: flex; align-items: center; gap: 7px; }
+.crtd { width: 100px; height: 100px; flex: none; overflow: visible; }
+.crtd .lit { filter: drop-shadow(0 0 1.4px currentColor); }
+.crt-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.crt-lcd { display: block; font-family: VT323, monospace; font-size: 13px; line-height: 1; padding: 3px 4px; background: #030806; color: #9dffc2; text-shadow: 0 0 3px #3dff8a, 0 0 8px rgba(61,255,138,.35); border: 1px solid #2a2c2e; border-radius: 3px; box-shadow: inset 0 1px 3px rgba(0,0,0,.8), 0 1px 0 #e6e9ec; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crt-leg { list-style: none; margin: 0; padding: 4px 5px; display: grid; gap: 2px; background: #0b0d0f; border: 1px solid #2a2c2e; border-radius: 3px; box-shadow: inset 0 1px 3px rgba(0,0,0,.8); }
+.crt-leg li { display: flex; align-items: center; gap: 5px; font-family: VT323, monospace; font-size: 12px; line-height: 1; color: #5f666d; white-space: nowrap; }
+.crt-leg i { width: 6px; height: 6px; flex: none; background: var(--c); opacity: .3; }
+.crt-leg li.on { color: #d9f2ff; text-shadow: 0 0 4px rgba(154,215,255,.6); }
+.crt-leg li.on i { opacity: 1; box-shadow: 0 0 4px var(--c), 0 0 9px var(--c); }
+@media (prefers-reduced-motion: no-preference) {
+  .crt-halo { animation: crt-breathe 4.5s ease-in-out infinite; }
+  .crt-sweep { transform-box: view-box; transform-origin: 60px 60px; animation: crt-spin 90s linear infinite; }
+}
+@keyframes crt-breathe { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes crt-spin { to { transform: rotate(360deg); } }
+
+.rot { display: grid; margin-top: 2px; grid-template-columns: 46px 1fr; gap: 6px; align-items: center; }
+.rot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 11px; }
+.rot li { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.rot li.off { color: var(--ink-soft); }
+.pips { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.split { font-size: 11px; color: var(--ink-soft); border-top: 1px solid #9fa3a7; padding-top: 3px; display: flex; gap: 8px; white-space: nowrap; }
+.split b { color: var(--ink); font-weight: 400; }
+.pearls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; text-align: center; }
+.pearl { display: block; width: 20px; height: 20px; border-radius: 50%; margin: 0 auto 3px; background: radial-gradient(circle at 35% 30%, #fff 0 16%, #eef0f2 30%, #c6cacf 65%, #8e9296 100%); box-shadow: 0 1px 0 rgba(0,0,0,.35), inset 0 -2px 3px rgba(0,0,0,.15); }
+.pearls .on .pearl { background: radial-gradient(circle at 35% 30%, #fff 0 14%, #d9ffe8 30%, #7cf2ad 65%, #2c9e5a 100%); box-shadow: 0 0 6px rgba(61,255,138,.75), 0 0 12px rgba(61,255,138,.35), 0 1px 0 rgba(0,0,0,.35); }
+.pearls span { display: block; font-family: VT323, monospace; font-size: 13px; line-height: .85; color: var(--ink-soft); }
+.pearls .on span { color: var(--ink); }
+.pips .plab { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); margin-right: 2px; }
+.pip { display: block; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0 18%, #d6d9dc 50%, #8e9296 100%); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
+.pip.on { background: radial-gradient(circle at 35% 30%, #fff 0 15%, #7cf2ad 55%, #2c9e5a 100%); box-shadow: 0 0 5px rgba(61,255,138,.8); }
+.pips .pnum { margin-left: auto; font-family: VT323, monospace; font-size: 14px; }
+.lcds { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-top: 1px solid #9fa3a7; padding-top: 3px; }
+.lcds small { display: block; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.lcd { display: block; font-family: VT323, monospace; font-weight: 400; font-size: 16px; line-height: 1; padding: 1px 5px; background: var(--crt-bg); color: var(--crt); text-shadow: var(--crt-glow); border: 1px solid var(--ring); border-radius: 3px; box-shadow: inset 0 1px 3px rgba(0,0,0,.6); text-align: right; }
+.ldi-wrap > .cap-note { position: absolute; left: 8px; top: -10px; background: #eef0f2; }
+
+/* stills */
+.stills { margin-top: 22px; }
+.srcgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.src { background: #fff; border: 1px solid #404040; padding: 5px; font-size: 11px; line-height: 1.35; }
+.src img { width: 100%; height: 110px; object-fit: cover; display: block; margin-bottom: 4px; border: 1px solid #808080; background: #ccc; }
+.notes { margin: 8px 0 0; padding-left: 16px; line-height: 1.5; font-size: 12px; }
+
+/* round 2: tier column, Card icon key, CD transport play key, square push count (owner prefers the old ones) */
+.trow .nixie { justify-self: stretch; text-align: center; padding: 3px 8px; border-radius: 3px; }
+.phone .nixie { padding: 1px 6px; border-radius: 3px; min-width: 30px; text-align: center; display: inline-block; }
+.key.cardi { width: 28px; height: 26px; padding: 0; display: grid; place-items: center; }
+.phone .key.cardi { width: 44px; height: 44px; }
+.key.play { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: grid; place-items: center; font-size: 0; color: transparent; position: relative;
+  background: radial-gradient(circle, #1b1d20 0 2px, #c9ccd0 2.5px 5px, #e9ebee 5.5px 100%), #dfe2e5;
+  border: 1px solid #6e7276; box-shadow: inset 0 1px 0 #fff, inset 0 -2px 3px rgba(0,0,0,.18), 0 1px 0 rgba(0,0,0,.35); }
+.key.play::before { content: ""; position: absolute; left: 50%; top: 50%; margin: -5px 0 0 -3px; border-left: 9px solid #15171a; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.key.play { background: radial-gradient(circle at 50% 45%, #f4f5f7, #cdd1d5 70%, #b4b8bc); }
+.phone .key.play { width: 44px; height: 44px; }
+.phone .key.play::before { margin: -7px 0 0 -4px; border-left-width: 13px; border-top-width: 7px; border-bottom-width: 7px; }
+.tube { width: 18px; height: 18px; border-radius: 2px; font-family: inherit; font-size: 10px; font-weight: 700; background: #121826; color: #9eb6e0; text-shadow: none; box-shadow: inset 0 0 0 1px #2a3a58; border: 0; }
+.tube.zero { color: #4a5670; opacity: .55; }
+
+/* round 3: pyramid glass + terminal keycaps (refs/inspo-*) */
+/* header glass: dot-matrix under black glass, green facet hairline */
+.crt.glass { background:
+    radial-gradient(circle, rgba(125,255,196,.10) 0 .9px, transparent 1.3px) 0 0 / 5px 5px,
+    radial-gradient(ellipse at 30% 30%, #0c1a14, var(--crt-bg) 70%);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 10px rgba(0,0,0,.9), 0 0 0 1px rgba(61,255,138,.55), 0 1px 0 2px rgba(255,255,255,.5); }
+.crt.glass::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 0 62%, rgba(255,255,255,.05) 62% 63%, transparent 63%); }
+/* open count as an LED matrix digit */
+.crt.glass .count { position: relative; }
+.crt.glass .count::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 2px, rgba(5,11,9,.6) 2px 3px), repeating-linear-gradient(0deg, transparent 0 2px, rgba(5,11,9,.6) 2px 3px); }
+
+/* ortholinear keycap family (house key shape): pale silver word caps, darker grey modifier caps. Colors follow the app's cool metal, not cream. */
+:where(.frame:not(.c)) :where(.key, .cap, .chip) { --top: #f1f3f5; --top2: #dfe2e6; --skirt: #b3b8be; --edge: #6e7378; --leg: #1f2226; }
+.frame:not(.c) .key:not(.play):not(.cardi):not(.link):not(.sunk):not(.gear),
+.frame:not(.c) .tb .cap, .frame:not(.c) .chip {
+  background: linear-gradient(180deg, var(--top), var(--top2)) padding-box;
+  border: 1px solid var(--edge); border-radius: 4px; color: var(--leg); font-weight: 700;
+  box-shadow: inset 2px 0 0 var(--skirt), inset -2px 0 0 var(--skirt), inset 0 -4px 0 var(--skirt), inset 0 1px 0 rgba(255,255,255,.85), 0 1px 0 rgba(0,0,0,.35);
+  padding-bottom: 5px; }
+.frame:not(.c) .key.quiet, .frame:not(.c) .key.mod {
+  --top: #c9ccd0; --top2: #b9bdc1; --skirt: #969a9f; --edge: #55595d; --leg: #25282b; }
+.frame:not(.c) .key.gear { width: 76px; height: 54px; background: none; border: 0; box-shadow: none; outline: 0; padding: 0; }
+.frame:not(.c) .key.gear img { border-radius: 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.frame:not(.c) .key.gear:hover img { filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)) brightness(1.08); }
+/* primary: silver cap, navy legend, navy lamp */
+.frame:not(.c) .key.primary { --leg: #1a2556; --edge: #2a3570; letter-spacing: .02em; }
+.frame:not(.c) .key.primary::before { content: ""; width: 7px; height: 7px; border-radius: 1px; background: #22306c; box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154,215,255,.55); flex: none; }
+.frame:not(.c) .key.primary { outline: 2px solid #22306c; outline-offset: 1px; }
+/* span caps keep their lamp and lit state */
+.frame:not(.c) .tb .caps { background: #9da1a5; }
+.frame:not(.c) .tb .cap small { color: #5d6267; font-weight: 400; }
+.frame:not(.c) .tb .cap.on { --top: #e0e4e8; --top2: #d0d5da; box-shadow: inset 0 2px 3px rgba(0,0,0,.3), inset 0 -2px 0 var(--skirt); padding-bottom: 2px; }
+/* chips: small square caps */
+.frame:not(.c) .chip { border-radius: 3px; padding: 2px 8px 4px; font-weight: 400; }
+.frame:not(.c) .chip:not(.on) { --top: #e4e6e9; --top2: #d6d9dd; --leg: #55595d; }
+/* comfort dial: silver terminal shoulder around the round glass */
+.crtm .crtd { border-radius: 50%; box-shadow: 0 0 0 4px #e3e6e9, 0 0 0 5px #8b9095, 0 3px 5px 5px rgba(0,0,0,.22); }
+/* in-progress pips as LED matrix pixels */
+.frame:not(.c) .pip { width: 8px; height: 8px; border-radius: 1px; background: #1a1f1d; box-shadow: inset 0 0 0 1px #000, 0 1px 0 #e6e9ec; }
+.frame:not(.c) .pip.on { background: var(--green); box-shadow: 0 0 4px var(--green), inset 0 0 0 1px rgba(0,0,0,.35); }
+/* comfort: wider pixel face */
+.crt-lcd, .crt-leg li { font-family: var(--pixel); font-size: 11px; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+
+<div class="sheet" style="margin-bottom:16px">
+  <h1>Home → To do · redesign mockup</h1>
+  <p class="lede">The header becomes a held machine: a screen above, a key field below. Two rows, not three. Rows keep two keys closed; everything else lives in the drawer. Code today: <code>components/Home/ToDo/</code>.</p>
+</div>
+
+<div class="frames">
+
+<!-- ================= A. DESKTOP ================= -->
+<section class="frame a">
+  <div class="flabel"><b>A</b> Desktop <span>header + list, proposed</span></div>
+
+  <div class="mill machine">
+    <!-- Row 1: screen -->
+    <div class="row">
+      <div class="crt glass grow" style="display:flex;align-items:center;gap:14px;padding:7px 12px">
+        <span class="title">TO DO TODAY</span><span class="count">5</span>
+        <span class="grow"></span>
+        <span class="load">
+          <svg class="needle" viewBox="0 0 26 14" aria-hidden="true"><path d="M2 13 A11 11 0 0 1 24 13" fill="none" stroke="#3f9c74" stroke-width="1.5"/><path d="M13 13 L18 5" stroke="#7dffc4" stroke-width="1.6"/><circle cx="13" cy="13" r="1.6" fill="#7dffc4"/></svg>
+          4h10 left <span class="dim">·</span> 2h30 est <span class="dim">·</span> fits
+          <span class="caret">▾</span>
+        </span>
+      </div>
+      <span class="key gear" title="To do settings" aria-label="To do settings"><img src="refs/settings-globe.jpg" alt=""></span>
+    </div>
+    <!-- Row 2: key field -->
+    <div class="row">
+      <span class="plate"><i>‹</i><span>Tue, Oct 20</span><i>›</i></span>
+      <span class="key sunk">Today</span>
+      <span class="tb" title="Tek 465B time base: what span the list covers"><span class="tb-legend">Span</span><span class="caps"><span class="cap on">Day<small>Tue 20</small></span><span class="cap">Week<small>Oct 19–25</small></span><span class="cap">Month<small>October</small></span><span class="cap">Season<small>Autumn</small></span><span class="cap">Other<small>named ranges</small></span></span></span>
+      <span class="grow"></span>
+      <span class="key primary" title="New task, or search your lists for one that already exists">+ Add task ▾</span>
+      <span class="trio"><span class="key quiet">Session</span><span class="key quiet">Sessions</span></span>
+      <span class="key mod"><span class="lamp g"></span>Show 2</span>
+      <span class="key quiet">Priority ↓</span>
+    </div>
+  </div>
+
+  <!-- Show drawer, open -->
+  <div class="tray">
+    <div class="row"><span class="lab">View</span>
+      <span class="chip on"><span class="lamp g"></span>Available now</span>
+      <span class="chip"><span class="lamp off"></span>All tasks</span>
+      <span class="chip on"><span class="lamp b"></span>Hide locked</span>
+      <span class="chip"><span class="lamp off"></span>Show next only</span>
+    </div>
+    <div class="row"><span class="lab">Tier</span>
+      <span class="seg"><span class="on">All</span><span>B</span><span>G</span><span>E</span></span>
+      <span class="lab" style="margin-left:10px">Status</span>
+      <span class="seg"><span class="on">Any</span><span>Started</span><span>Fresh</span></span>
+      <span class="lab" style="margin-left:10px">Formula</span>
+      <span class="seg"><span class="on">Any</span><span>On</span><span>Off</span></span>
+      <span class="grow"></span>
+      <span class="key link">Open list</span>
+    </div>
+    <span class="cap-note">opens from Show</span>
+  </div>
+
+  <!-- Load instrument, expanded -->
+  <div class="ldi-wrap">
+    <div class="mill ldi">
+      <div class="well">
+        <div class="lab"><span>Time · working day</span><span>now 13:50</span></div>
+        <svg class="scale" viewBox="0 0 300 50" preserveAspectRatio="none" aria-label="Working day scale, 9 to 18">
+          <rect x="119.3" y="9" width="40.9" height="12" fill="url(#hatch)" stroke="#8e9296" stroke-width=".6"/>
+          <rect x="160.2" y="7" width="127.8" height="16" fill="rgba(61,255,138,.28)" stroke="#2c9e5a" stroke-width=".8"/>
+          <rect x="160.2" y="11" width="76.7" height="8" fill="#9ad7ff" stroke="#3d7fa8" stroke-width=".8"/>
+          <line x1="12" y1="24" x2="288" y2="24" stroke="#2a2c2e" stroke-width=".9"/>
+          <g stroke="#2a2c2e" stroke-width=".7"><line x1="12.0" y1="24" x2="12.0" y2="33"/><line x1="19.7" y1="24" x2="19.7" y2="27"/><line x1="27.3" y1="24" x2="27.3" y2="30"/><line x1="35.0" y1="24" x2="35.0" y2="27"/><line x1="42.7" y1="24" x2="42.7" y2="33"/><line x1="50.3" y1="24" x2="50.3" y2="27"/><line x1="58.0" y1="24" x2="58.0" y2="30"/><line x1="65.7" y1="24" x2="65.7" y2="27"/><line x1="73.3" y1="24" x2="73.3" y2="33"/><line x1="81.0" y1="24" x2="81.0" y2="27"/><line x1="88.7" y1="24" x2="88.7" y2="30"/><line x1="96.3" y1="24" x2="96.3" y2="27"/><line x1="104.0" y1="24" x2="104.0" y2="33"/><line x1="111.7" y1="24" x2="111.7" y2="27"/><line x1="119.3" y1="24" x2="119.3" y2="30"/><line x1="127.0" y1="24" x2="127.0" y2="27"/><line x1="134.7" y1="24" x2="134.7" y2="33"/><line x1="142.3" y1="24" x2="142.3" y2="27"/><line x1="150.0" y1="24" x2="150.0" y2="30"/><line x1="157.7" y1="24" x2="157.7" y2="27"/><line x1="165.3" y1="24" x2="165.3" y2="33"/><line x1="173.0" y1="24" x2="173.0" y2="27"/><line x1="180.7" y1="24" x2="180.7" y2="30"/><line x1="188.3" y1="24" x2="188.3" y2="27"/><line x1="196.0" y1="24" x2="196.0" y2="33"/><line x1="203.7" y1="24" x2="203.7" y2="27"/><line x1="211.3" y1="24" x2="211.3" y2="30"/><line x1="219.0" y1="24" x2="219.0" y2="27"/><line x1="226.7" y1="24" x2="226.7" y2="33"/><line x1="234.3" y1="24" x2="234.3" y2="27"/><line x1="242.0" y1="24" x2="242.0" y2="30"/><line x1="249.7" y1="24" x2="249.7" y2="27"/><line x1="257.3" y1="24" x2="257.3" y2="33"/><line x1="265.0" y1="24" x2="265.0" y2="27"/><line x1="272.7" y1="24" x2="272.7" y2="30"/><line x1="280.3" y1="24" x2="280.3" y2="27"/><line x1="288.0" y1="24" x2="288.0" y2="33"/></g>
+          <g font-family="w95fa, monospace" font-size="7" fill="#55595d" text-anchor="middle"><text x="12.0" y="44">9</text><text x="42.7" y="44">10</text><text x="73.3" y="44">11</text><text x="104.0" y="44">12</text><text x="134.7" y="44">13</text><text x="165.3" y="44">14</text><text x="196.0" y="44">15</text><text x="226.7" y="44">16</text><text x="257.3" y="44">17</text><text x="288.0" y="44">18</text></g>
+          <path d="M160.2 2 L160.2 34" stroke="#a35cff" stroke-width="1.4"/><path d="M157.2 1 L163.2 1 L160.2 5 Z" fill="#a35cff"/>
+          <defs><pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#8e9296" stroke-width="1.2"/></pattern></defs>
+        </svg>
+        <div class="crt rd">
+          <span>4h10<small>hours left</small></span><span>2h30<small>est remaining</small></span><span>1h20<small>spent today</small></span>
+          <span class="ghost"><span>12 days left in month</span><span>week/month/season only</span></span>
+        </div>
+        <div class="row" style="gap:5px;font-size:10px;color:var(--ink-soft)"><span class="lamp g"></span>left<span class="lamp b"></span>est<span class="lamp v"></span>now<span class="grow"></span><span class="pchip">3 without an estimate</span></div>
+      </div>
+      <div class="well">
+        <div class="lab"><span>Comfort</span><span>manageable</span></div>
+        <div class="crtm">
+          <svg class="crtd" viewBox="0 0 120 120" aria-label="Comfort dial reading 0.6, est over left, manageable">
+            <defs>
+              <linearGradient id="mil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef1f3"/><stop offset=".35" stop-color="#8e9399"/><stop offset=".55" stop-color="#d4d8dc"/><stop offset="1" stop-color="#3c4044"/></linearGradient>
+              <radialGradient id="glass" cx="42%" cy="36%" r="70%"><stop offset="0" stop-color="#0d1614"/><stop offset=".7" stop-color="#030605"/><stop offset="1" stop-color="#000"/></radialGradient>
+              <radialGradient id="prl" cx="36%" cy="32%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#eef0f6"/><stop offset=".65" stop-color="#c3c6d4"/><stop offset=".88" stop-color="#9ea6bd"/><stop offset="1" stop-color="#d9e6f2"/></radialGradient>
+              <filter id="blm" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="1.6"/></filter>
+            </defs>
+            <circle cx="60" cy="60" r="58.5" fill="url(#mil)" stroke="#2a2c2e" stroke-width="1"/>
+            <circle cx="60" cy="60" r="55" fill="none" stroke="#5c6064" stroke-width="2.4" stroke-dasharray=".8 1.1" opacity=".55"/>
+            <circle cx="60" cy="60" r="52.5" fill="url(#glass)" stroke="#1a1c1e" stroke-width="1.2"/>
+            <circle cx="60" cy="60" r="50.6" fill="none" stroke="#9ad7ff" stroke-width=".5" opacity=".35"/>
+            <g class="crt-sweep" fill="none" stroke="#9ad7ff" stroke-width=".35" opacity=".22"><circle cx="66" cy="60" r="30"/><circle cx="54" cy="60" r="30"/><circle cx="60" cy="60" r="34" stroke-dasharray="1 5"/></g>
+            <g shape-rendering="crispEdges"><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-131.6 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-124.9 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-118.1 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-111.4 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-104.6 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-97.9 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-91.1 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-84.4 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-77.6 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-70.9 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-64.1 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-57.4 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-50.6 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-43.9 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-37.1 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-30.4 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-23.6 60 60)" fill="#5dff9a" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-16.9 60 60)" fill="#9ad7ff" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-10.1 60 60)" fill="#9ad7ff" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-3.4 60 60)" fill="#9ad7ff" class="lit"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(3.4 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(10.1 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(16.9 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(23.6 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(30.4 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(37.1 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(43.9 60 60)" fill="#1a3343"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(50.6 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(57.4 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(64.1 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(70.9 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(77.6 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(84.4 60 60)" fill="#2b2142"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(91.1 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(97.9 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(104.6 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(111.4 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(118.1 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(124.9 60 60)" fill="#25282b"/><rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(131.6 60 60)" fill="#25282b"/></g>
+            <g class="crt-halo"><circle cx="60.0" cy="17.0" r="8" fill="#cfe9ff" opacity=".45" filter="url(#blm)"/></g>
+            <circle cx="60.0" cy="17.0" r="5.4" fill="url(#prl)" stroke="#5c6470" stroke-width=".4"/>
+            <circle cx="58.2" cy="15.1" r="1.2" fill="#fff" opacity=".9"/>
+            <text x="60" y="66" text-anchor="middle" font-family="w95fa, monospace" font-size="18" letter-spacing=".5" fill="#5dff9a" filter="url(#blm)" opacity=".7">0.6×</text>
+            <text x="60" y="66" text-anchor="middle" font-family="w95fa, monospace" font-size="18" letter-spacing=".5" fill="#b9ffd6">0.6×</text>
+            <text x="60" y="77" text-anchor="middle" font-family="w95fa, monospace" font-size="7" letter-spacing=".3" fill="#3f9c74" letter-spacing=".3">est ÷ left</text>
+            <ellipse cx="48" cy="34" rx="22" ry="9" fill="#fff" opacity=".05" transform="rotate(-28 48 34)"/>
+          </svg>
+          <div class="crt-side">
+            <span class="crt-lcd">fits · 1h40 spare</span>
+            <ul class="crt-leg">
+              <li><i style="--c:#5dff9a"></i>easy</li>
+              <li class="on"><i style="--c:#9ad7ff"></i>manageable</li>
+              <li><i style="--c:#b48cff"></i>tight</li>
+              <li><i style="--c:#9aa0a6"></i>more than fits</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="well">
+        <div class="lab"><span>Scope</span><span>counts toward load</span></div>
+        <div class="pearls" role="radiogroup" aria-label="Scope">
+          <div class="on" role="radio" aria-checked="true"><i class="pearl"></i><span>All<br>assigned</span></div>
+          <div role="radio" aria-checked="false"><i class="pearl"></i><span>Required</span></div>
+          <div role="radio" aria-checked="false"><i class="pearl"></i><span>Required +<br>prioritized</span></div>
+        </div>
+        <div class="pips"><span class="plab">In progress</span><i class="pip on"></i><i class="pip"></i><i class="pip"></i><span class="pnum">1 of cap 3</span></div>
+        <div class="lcds"><div><small>Required</small><b class="lcd">0h</b></div><div><small>Assigned</small><b class="lcd">2h30</b></div></div>
+      </div>
+    </div>
+    <span class="cap-note">opens from ▾</span>
+  </div>
+
+  <!-- List -->
+  <div class="ledger">
+    <div class="band">Assigned <span class="cap-note" style="letter-spacing:0;text-transform:none;font-weight:400">Required band hidden while empty</span></div>
+
+    <div class="task"><div class="trow">
+      <span class="name">Draft grant budget table</span><span class="nixie">A</span><span class="lamp g"></span>
+      <span class="meta">40%</span><span class="meta">45m</span><span class="steps">2/4</span>
+      <span class="key cardi" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span><span class="tube zero">0</span>
+    </div></div>
+
+    <div class="task open"><div class="trow">
+      <span class="name">Reply to Dana re: lab schedule</span><span class="nixie">A/B</span><span class="lamp b"></span>
+      <span class="meta">20%</span><span class="meta">30m</span><span class="steps">2/5</span>
+      <span class="key cardi" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span><span class="tube">1</span>
+    </div>
+      <div class="drawer">
+        <div class="row">
+          <span class="key primary">Done</span><span class="key">Start</span><span class="key">Just 25</span><span class="key">Push</span><span class="key">Missed</span>
+          <span class="grow"></span>
+          <span class="key quiet">Needs…</span><span class="key quiet">View</span><span class="key quiet">Delete</span>
+        </div>
+        <div class="flags"><span class="lab" style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)">Flags</span><span class="jewel g">Required</span><span class="jewel v">Prioritized</span></div>
+        <div class="fold"><span>Time ▸</span><span>Steps ▸ 2/5</span></div>
+      </div>
+    </div>
+
+    <div class="task"><div class="trow">
+      <span class="name">Clean up reading notes, ch. 4</span><span class="nixie">B</span><span class="lamp off"></span>
+      <span class="meta">0%</span><span class="meta">25m</span><span class="steps">0/3</span>
+      <span class="key cardi" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span><span class="tube zero">0</span>
+    </div></div>
+
+    <div class="task"><div class="trow">
+      <span class="name">Refill prescriptions</span><span class="nixie">A</span><span class="lamp off"></span>
+      <span class="meta">0%</span><span class="meta">10m</span><span class="steps">0/1</span>
+      <span class="key cardi" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span><span class="tube">2</span>
+    </div></div>
+
+    <div class="task"><div class="trow">
+      <span class="name">Sketch tracking legend</span><span class="nixie">B</span><span class="lamp v"></span>
+      <span class="meta">90%</span><span class="meta over">40m / 30m</span><span class="steps">4/5</span>
+      <span class="key cardi" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span><span class="tube zero">0</span>
+    </div></div>
+
+    <div class="composer"><span class="field">Add a task…</span><span class="key">Add</span><span class="key quiet">Log done</span></div>
+    <div class="donewell"><span>▸</span> Done Oct 20 <span class="steps">3</span></div>
+    <div class="foot"><span class="cap-note">Missed and Undone hidden while empty</span><span class="cap-note">warm red only on estimate overrun (row 5)</span></div>
+  </div>
+</section>
+
+<!-- ================= B. PHONE ================= -->
+<section class="frame b">
+  <div class="flabel"><b>B</b> Phone <span>390px, 44px targets</span></div>
+  <div class="phone">
+    <div class="mill machine" style="padding:6px;gap:6px">
+      <div class="row" style="flex-wrap:nowrap">
+        <div class="crt glass grow" style="padding:6px 10px">
+          <div style="display:flex;align-items:center"><span class="title" style="font-size:24px">TO DO TODAY</span><span class="count">5</span></div>
+          <div class="load" style="font-size:15px;margin-top:2px">
+            <svg class="needle" viewBox="0 0 26 14" aria-hidden="true"><path d="M2 13 A11 11 0 0 1 24 13" fill="none" stroke="#3f9c74" stroke-width="1.5"/><path d="M13 13 L18 5" stroke="#7dffc4" stroke-width="1.6"/><circle cx="13" cy="13" r="1.6" fill="#7dffc4"/></svg>
+            4h10 left · 2h30 est · fits ▾
+          </div>
+        </div>
+        <span class="key gear" style="width:76px;height:54px" title="To do settings" aria-label="To do settings"><img src="refs/settings-globe.jpg" alt=""></span>
+      </div>
+      <span class="plate"><i>‹</i><span>Tue, Oct 20</span><i>›</i></span>
+      <span class="tb"><span class="tb-legend">Span</span><span class="caps"><span class="cap on">Day</span><span class="cap">Week</span><span class="cap">Month</span><span class="cap">Season</span><span class="cap">Other</span></span></span>
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:5px">
+        <span class="key primary">+ Add task</span><span class="key quiet" style="min-height:44px">Session</span><span class="key quiet" style="min-height:44px">Sessions</span><span class="key mod"><span class="lamp g"></span>Show 2</span>
+      </div>
+    </div>
+
+    <div class="ledger" style="padding:6px">
+      <div class="band">Assigned</div>
+      <div class="task prow">
+        <div class="pl1"><span class="name">Draft grant budget table</span><span class="key cardi cardk" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span></div>
+        <div class="pl2"><span class="nixie">A</span>45m · 2/4</div>
+      </div>
+      <div class="task open prow">
+        <div class="pl1"><span class="name">Reply to Dana re: lab schedule and the shared bench rota</span><span class="key cardi cardk" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span></div>
+        <div class="pl2"><span class="nixie">A/B</span><span class="lamp b"></span>30m · 2/5 · pushed ×1</div>
+        <div class="drawer" style="margin:2px 0 0;padding:7px 0 2px">
+          <div class="grid3">
+            <span class="key primary">Done</span><span class="key">Start</span><span class="key">Just 25</span>
+            <span class="key">Push</span><span class="key">Missed</span><span class="key quiet" style="min-height:44px">More…</span>
+          </div>
+          <div class="flags"><span class="jewel g">Required</span><span class="jewel v">Prioritized</span></div>
+          <div class="fold"><span>Time ▸</span><span>Steps ▸ 2/5</span></div>
+        </div>
+      </div>
+      <div class="task prow">
+        <div class="pl1"><span class="name">Clean up reading notes, ch. 4</span><span class="key cardi cardk" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span></div>
+        <div class="pl2"><span class="nixie">B</span>25m · 0/3</div>
+      </div>
+      <div class="task prow">
+        <div class="pl1"><span class="name">Refill prescriptions</span><span class="key cardi cardk" title="Open task card" aria-label="Open task card"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span><span class="key play">▶</span></div>
+        <div class="pl2"><span class="nixie">A</span>10m · 0/1 · pushed ×2</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= C. CURRENT ================= -->
+<section class="frame c">
+  <div class="flabel"><b>C</b> Current <span>for comparison</span></div>
+  <div class="cur">
+    <div class="mill">
+      <div class="row"><div class="crt grow" style="padding:3px 7px"><span class="title">TO DO TODAY</span><span class="count" style="font-size:13px">5</span></div><span class="key">⚙</span></div>
+      <div class="row"><span class="key">‹</span><span class="key">Tue Oct 20</span><span class="key">›</span><span class="key">Today</span><span class="key">D</span><span class="key">W</span><span class="key">M</span><span class="key">S</span><span class="key">O</span><span class="key">Load</span></div>
+      <div class="row"><span class="key">+ Add</span><span class="key">Session</span><span class="key">Sessions</span><span class="key">Pick list</span><span class="key">Avail</span><span class="key">All</span><span class="key">Locked</span><span class="key">Next</span><span class="key">Tier</span><span class="key">Status</span><span class="key">Sort</span></div>
+    </div>
+    <div class="ledger" style="padding:5px;margin-top:6px">
+      <div class="card1"><span style="flex:1 1 100%">Reply to Dana re: lab schedule</span>
+        <span class="key">Done</span><span class="key">Done at B</span><span class="key">▶</span><span class="key">Start</span><span class="key">Just 25</span><span class="key">Card</span><span class="key">Push</span><span class="key">Delete</span></div>
+      <div class="card1" style="opacity:.6"><span style="flex:1 1 100%">Draft grant budget table</span>
+        <span class="key">Done</span><span class="key">Done at B</span><span class="key">▶</span><span class="key">Start</span><span class="key">Just 25</span><span class="key">Card</span><span class="key">Push</span><span class="key">Delete</span></div>
+    </div>
+    <ul class="x" style="color:var(--ink)">
+      <li>3 fascia rows, ~20 controls, all equal weight.</li>
+      <li>8 keys per row repeat down the list.</li>
+      <li>Filters sit open all the time.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<!-- ================= Stills ================= -->
+<section class="sheet stills">
+  <div class="flabel"><b>Stills</b> <span>from <code>designrefs/</code>. Steal the thought, not the pixels.</span></div>
+  <div class="srcgrid">
+    <div class="src"><img src="../../designrefs/0021-593982638400537475.jpg" alt="">Sharp electronic dictionary: screen above, key field below. The two-row header.</div>
+    <div class="src"><img src="../../designrefs/0110-593982638387228849.jpg" alt="">Keycap cluster: tight square caps for D W M S O, one lamp lit.</div>
+    <div class="src"><img src="../../designrefs/a898e04c534aeed3017938c701efdb2f.jpg" alt="">Tek 465B scope: green phosphor in a black bezel. The Comfort dial's glass.</div>
+    <div class="src"><img src="../../designrefs/0042-593982638400537428.jpg" alt="">Black eclipse with a fine halo. The dark ring the comfort LEDs run on.</div>
+    <div class="src"><img src="../../designrefs/0049-593982638400537398.jpg" alt="">Overlapping fine circles. The slow sweep behind the Comfort glass.</div>
+    <div class="src"><img src="../../designrefs/0105-593982638387228915.jpg" alt="">Pearls on a string: round, soft, one catches the light. The scope toggles and work pips.</div>
+    <div class="src"><img src="../../designrefs/36bc1715c629f42e163d54abe8741ac6.jpg" alt="">Pocket PC: a held device with few big keys. The phone frame's 44px grid.</div>
+    <div class="src"><img src="../../designrefs/0007-593982638400537496.jpg" alt="">Engraved umbra scale: one ruled day with bands laid on it. The time well of the load instrument.</div>
+    <div class="src"><img src="refs/inspo-pyramid-black.jpg" alt="">Black pyramid game: a dot matrix under black glass, green facet edges. The header glass and the LED count.</div>
+    <div class="src"><img src="refs/inspo-pyramid-white.jpg" alt="">White pyramid: square grey keys, one cream START key, a thin accent line. Grey modifier caps.</div>
+    <div class="src"><img src="refs/inspo-round-terminal.jpg" alt="">Round terminal: cream letter caps, grey modifiers, a round screen in a thick bezel. The key family and the Comfort shoulder.</div>
+  </div>
+  <ul class="notes">
+    <li>Closed row shows two keys: Card and play. Done, Start and the rest open in the drawer.</li>
+    <li>Filters fold into Show; its lamp and count say a filter is on.</li>
+    <li>Lamps stay green, ice blue or violet. Warm red marks only an estimate overrun.</li>
+  </ul>
+</section>
+
+</body>
+</html>

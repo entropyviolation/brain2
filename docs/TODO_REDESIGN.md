@@ -49,6 +49,7 @@ Phase numbers are fixed, because other READMEs link to them. Parts group them by
 | 12 | How unlock value fades along a chain | One link away counts in full, two links 70%, three 49%. One constant in `lib/unlock-value.ts` |
 | 13 | How loud are points? (Phase 15 D) | Points keep accruing everywhere. **Step points** are hidden by default behind a **Points visible** setting. Task, tier and session points show as today |
 | 14 | Waiting shelf (Phase 15 C) | **On, after 5 pushes**, with a Pace-bay setting (0 turns it off). Required and Prioritized rows never move |
+| 15 | Merge item detail → Subtasks, the To do drawer and the task card? | **No. Never merge them.** They edit the same task on purpose and have different jobs, so they keep different UI and components. See [the room README](../components/Home/ToDo/README.md#three-ways-to-edit-a-task-stay-separate). A change that merges them, or makes one mirror another, needs allie's yes first |
 
 Open, with a proposal that the plan builds behind:
 

@@ -2,9 +2,11 @@
  * components/Home/ToDo/TodoTable.tsx — Period to-do ledger
  *
  * Closed rows show the name (padded), a tier menu, the active lamp, completion
- * percent, and the verb keys Done / Start / Just 25 (a timebox session) / Push / Delete. Click / Enter opens
- * one clamshell lid: the header name is the only edit field; Flags, Time, and
- * Steps fold independently. Mutations stay on the orchestrator.
+ * percent, and two keys: Card (opens the task card) and ▶ (the pen clock).
+ * Click / Enter opens one clamshell lid: the header name is the only edit
+ * field. The lid's Actions line holds every other verb (Done, Done at B/G,
+ * Start, Just 25, Push, Missed, Needs…, View, Delete); Flags (the willpower
+ * gems), Time, and Steps fold independently. Mutations stay on the orchestrator.
  */
 "use client"
 
@@ -30,6 +32,10 @@ import { openTaskCard } from "@/lib/task-card"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const COLLAPSE_THRESHOLD = 8
+
+/** Willpower gems for the lid's Flags (same family as Habits). */
+const GEM_REQUIRED = "/gems-removebackground/gem5.png"
+const GEM_PRIORITIZED = "/gems-removebackground/e7a4b25a506e2ab9c20179cbc56da911.png"
 
 const TIERS: TodoItem["tier"][] = ["A+", "A", "A/B", "B", "C", "D"]
 
@@ -526,30 +532,22 @@ export function TodoTable({
                   <>
                 <button
                   type="button"
-                  className="todo-verb is-complete is-primary"
-                  title="Mark complete"
-                  onClick={() => onComplete(todo.id)}
+                  className="todo-card-key"
+                  data-no95
+                  title="Open task card"
+                  aria-label={`Open task card for ${name}`}
+                  onClick={() => openTaskCard(todo.taskId || todo.id)}
                 >
-                  Done
+                  <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                    <path
+                      d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="square"
+                    />
+                  </svg>
                 </button>
-                {(() => {
-                  // Phase 10: Done at the level reached, when it is below the top level.
-                  if (!hasStepTiers(steps)) return null
-                  const lvl = levelReached({ subtasks: steps })
-                  if (lvl === "none" || lvl === "exceptional" || lvl === levelReached({ subtasks: steps }, true)) return null
-                  const word = lvl === "min" ? "Bare minimum" : "Goal"
-                  return (
-                    <button
-                      type="button"
-                      className="todo-verb is-complete is-quiet"
-                      title={`Mark complete at ${word}: the rest of the steps stay as they are`}
-                      aria-label={`Done at ${word}`}
-                      onClick={() => onComplete(todo.id, lvl)}
-                    >
-                      Done at {lvl === "min" ? "B" : "G"}
-                    </button>
-                  )
-                })()}
                 {onClockStart ? (
                   <DvdTransportKey
                     className="todo-row-clock"
@@ -559,50 +557,6 @@ export function TodoTable({
                     onClick={() => (onClock ? onClockStop?.() : onClockStart(clockId))}
                   />
                 ) : null}
-                <button
-                  type="button"
-                  className="todo-verb is-quiet"
-                  title="Just start — focus on the smallest next step"
-                  onClick={() => onJustStart(todo.taskId || todo.id)}
-                >
-                  Start
-                </button>
-                <button
-                  type="button"
-                  className="todo-verb is-quiet"
-                  title="Just 25 minutes on this: the clock is the commitment"
-                  aria-label={`Just 25 on ${name}`}
-                  onClick={() => openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: todo.taskId || todo.id }] })}
-                >
-                  Just 25
-                </button>
-                <button
-                  type="button"
-                  className="todo-verb is-quiet"
-                  title="Plan this period's work on it: the task card"
-                  aria-label={`Card for ${name}`}
-                  onClick={() => openTaskCard(todo.taskId || todo.id)}
-                >
-                  Card
-                </button>
-                <button
-                  type="button"
-                  className="todo-verb is-push is-quiet"
-                  title={`Push to ${pushLabel}`}
-                  onClick={() => onPush(todo.id, period)}
-                >
-                  Push
-                </button>
-                <span className="todo-verb-delete-slot">
-                  <TodoDeleteButton
-                    prompt={
-                      stepCount > 0
-                        ? `Delete "${name}" and its ${stepCount} steps?`
-                        : `Delete "${name}"?`
-                    }
-                    onDelete={() => onDelete(todo.id)}
-                  />
-                </span>
                   </>
                 )}
               </div>
@@ -625,28 +579,57 @@ export function TodoTable({
                   {getScheduleLabel(todo)}
                   {todo.daysOverdue > 0 ? ` · ${waitingSinceLabel(todo.daysOverdue)}` : ""}
                 </div>
-                <TodoLidSection id="flags" label="Flags" layout="flags">
+                <div className="todo-lid-actions" role="toolbar" aria-label="Drawer actions">
                   <button
                     type="button"
-                    className="todo-jewel is-required"
-                    aria-pressed={required}
-                    aria-label="Required"
-                    title="Required — you marked this one for this period"
-                    onClick={() => onToggleRequired(todo.id)}
+                    className="todo-verb is-complete is-primary"
+                    title="Mark complete"
+                    onClick={() => onComplete(todo.id)}
                   >
-                    <span className="todo-jewel-glass" aria-hidden />
-                    <span className="todo-jewel-word">Required</span>
+                    Done
+                  </button>
+                  {(() => {
+                    // Phase 10: Done at the level reached, when it is below the top level.
+                    if (!hasStepTiers(steps)) return null
+                    const lvl = levelReached({ subtasks: steps })
+                    if (lvl === "none" || lvl === "exceptional" || lvl === levelReached({ subtasks: steps }, true)) return null
+                    const word = lvl === "min" ? "Bare minimum" : "Goal"
+                    return (
+                      <button
+                        type="button"
+                        className="todo-verb is-complete"
+                        title={`Mark complete at ${word}: the rest of the steps stay as they are`}
+                        aria-label={`Done at ${word}`}
+                        onClick={() => onComplete(todo.id, lvl)}
+                      >
+                        Done at {lvl === "min" ? "B" : "G"}
+                      </button>
+                    )
+                  })()}
+                  <button
+                    type="button"
+                    className="todo-verb"
+                    title="Just start — focus on the smallest next step"
+                    onClick={() => onJustStart(todo.taskId || todo.id)}
+                  >
+                    Start
                   </button>
                   <button
                     type="button"
-                    className="todo-jewel is-prioritized"
-                    aria-pressed={prioritized}
-                    aria-label="Prioritized"
-                    title="Prioritized — stays on Assigned, marked"
-                    onClick={() => onTogglePrioritized(todo.id)}
+                    className="todo-verb"
+                    title="Just 25 minutes on this: the clock is the commitment"
+                    aria-label={`Just 25 on ${name}`}
+                    onClick={() => openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: todo.taskId || todo.id }] })}
                   >
-                    <span className="todo-jewel-glass" aria-hidden />
-                    <span className="todo-jewel-word">Prioritized</span>
+                    Just 25
+                  </button>
+                  <button
+                    type="button"
+                    className="todo-verb is-push"
+                    title={`Push to ${pushLabel}`}
+                    onClick={() => onPush(todo.id, period)}
+                  >
+                    Push
                   </button>
                   <button
                     type="button"
@@ -656,31 +639,57 @@ export function TodoTable({
                   >
                     Missed
                   </button>
-                  {onNeeds ? (
+                  <span className="todo-lid-actions-rest">
+                    {onNeeds ? (
+                      <button
+                        type="button"
+                        className="todo-verb is-quiet"
+                        title="Tasks that have to be done first"
+                        onClick={() => onNeeds(clockId)}
+                      >
+                        Needs…
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      className="todo-verb"
-                      title="Tasks that have to be done first"
-                      onClick={() => onNeeds(clockId)}
+                      className="todo-verb is-quiet"
+                      title="View details"
+                      onClick={() => onTaskClick(todo.taskId || todo.id)}
                     >
-                      Needs…
+                      View
                     </button>
-                  ) : null}
+                    <TodoDeleteButton
+                      prompt={
+                        stepCount > 0
+                          ? `Delete "${name}" and its ${stepCount} steps?`
+                          : `Delete "${name}"?`
+                      }
+                      onDelete={() => onDelete(todo.id)}
+                    />
+                  </span>
+                </div>
+                <TodoLidSection id="flags" label="Flags" layout="flags">
                   <button
                     type="button"
-                    className="todo-verb"
-                    title="View details"
-                    onClick={() => onTaskClick(todo.taskId || todo.id)}
+                    className="todo-jewel todo-gem is-required"
+                    aria-pressed={required}
+                    aria-label="Required"
+                    title="Required — you marked this one for this period"
+                    onClick={() => onToggleRequired(todo.id)}
                   >
-                    View
+                    <img className="todo-gem-stone" src={GEM_REQUIRED} alt="" aria-hidden />
+                    <span className="todo-jewel-word">Required</span>
                   </button>
                   <button
                     type="button"
-                    className="todo-verb"
-                    title="Plan this period's work on it: the task card"
-                    onClick={() => openTaskCard(todo.taskId || todo.id)}
+                    className="todo-jewel todo-gem is-prioritized"
+                    aria-pressed={prioritized}
+                    aria-label="Prioritized"
+                    title="Prioritized — stays on Assigned, marked"
+                    onClick={() => onTogglePrioritized(todo.id)}
                   >
-                    Card
+                    <img className="todo-gem-stone" src={GEM_PRIORITIZED} alt="" aria-hidden />
+                    <span className="todo-jewel-word">Prioritized</span>
                   </button>
                 </TodoLidSection>
                 <TodoBreakdown

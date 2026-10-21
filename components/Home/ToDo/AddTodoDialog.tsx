@@ -21,9 +21,32 @@ const emptyDraft = (): NewTodoDraft => ({
   tier: "A",
 })
 
-export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void }) {
+/** An existing task that Add task can schedule here instead of making a new one. */
+export interface ExistingTaskHit {
+  id: string
+  title: string
+  /** Where it lives now, such as "Next Actions" or "on Oct 22". */
+  hint?: string
+}
+
+export function AddTodoDialog({
+  onAdd,
+  searchExisting,
+  onPickExisting,
+  onOpenPickList,
+}: {
+  onAdd: (draft: NewTodoDraft) => void
+  /** From lists: open tasks and Next Actions items matching the words. */
+  searchExisting?: (query: string) => ExistingTaskHit[]
+  /** Schedules that task on the focused period. */
+  onPickExisting?: (taskId: string) => void
+  /** The Session planner's flat step list (the old Pick list key). */
+  onOpenPickList?: () => void
+}) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NewTodoDraft>(emptyDraft)
+  const [query, setQuery] = useState("")
+  const hits = searchExisting && query.trim() ? searchExisting(query.trim()).slice(0, 8) : []
 
   const submit = () => {
     if (!draft.description.trim()) return
@@ -35,8 +58,12 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" className="todo-btn">
-          Add Task
+        <button
+          type="button"
+          className="todo-btn todo-cap is-primary todo-add-key"
+          title="New task, or find one in your lists that already exists"
+        >
+          + Add task ▾
         </button>
       </DialogTrigger>
       <DialogContent
@@ -74,7 +101,58 @@ export function AddTodoDialog({ onAdd }: { onAdd: (draft: NewTodoDraft) => void 
             <option value="D">D (Very Low)</option>
           </NativeSelect>
 
+          {searchExisting && onPickExisting ? (
+            <div className="todo-from-lists" data-ui-name="From lists" data-ui-help="Schedules a task that already exists on this period.">
+              <label htmlFor="todo-from-lists">From lists (optional)</label>
+              <input
+                id="todo-from-lists"
+                type="search"
+                value={query}
+                placeholder="Search tasks and Next Actions"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query.trim() ? (
+                hits.length ? (
+                  <ul className="todo-from-lists-hits" aria-label="Matching tasks">
+                    {hits.map((hit) => (
+                      <li key={hit.id}>
+                        <button
+                          type="button"
+                          className="todo-btn todo-from-lists-hit"
+                          title="Schedule this task here"
+                          onClick={() => {
+                            onPickExisting(hit.id)
+                            setQuery("")
+                            setOpen(false)
+                          }}
+                        >
+                          <span className="todo-from-lists-title">{hit.title}</span>
+                          {hit.hint ? <span className="todo-from-lists-hint">{hit.hint}</span> : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="todo-hint">Nothing matches.</p>
+                )
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="todo-dialog-actions">
+            {onOpenPickList ? (
+              <button
+                type="button"
+                className="todo-btn todo-dialog-aside"
+                title="The Session planner's flat list of steps"
+                onClick={() => {
+                  setOpen(false)
+                  onOpenPickList()
+                }}
+              >
+                Pick list…
+              </button>
+            ) : null}
             <button type="button" className="todo-btn" onClick={() => setOpen(false)}>
               Cancel
             </button>
