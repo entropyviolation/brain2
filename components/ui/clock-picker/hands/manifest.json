@@ -1,0 +1,134 @@
+[
+  {
+    "id": "chrome-01",
+    "hour": "chrome-01-hour.png",
+    "minute": "chrome-01-minute.png",
+    "label": "Chrome 1"
+  },
+  {
+    "id": "chrome-02",
+    "hour": "chrome-02-hour.png",
+    "minute": "chrome-02-minute.png",
+    "label": "Chrome 2"
+  },
+  {
+    "id": "chrome-03",
+    "hour": "chrome-03-hour.png",
+    "minute": "chrome-03-minute.png",
+    "label": "Chrome 3"
+  },
+  {
+    "id": "chrome-04",
+    "hour": "chrome-04-hour.png",
+    "minute": "chrome-04-minute.png",
+    "label": "Chrome 4"
+  },
+  {
+    "id": "chrome-05",
+    "hour": "chrome-05-hour.png",
+    "minute": "chrome-05-minute.png",
+    "label": "Chrome 5"
+  },
+  {
+    "id": "chrome-06",
+    "hour": "chrome-06-hour.png",
+    "minute": "chrome-06-minute.png",
+    "label": "Chrome 6"
+  },
+  {
+    "id": "chrome-07",
+    "hour": "chrome-07-hour.png",
+    "minute": "chrome-07-minute.png",
+    "label": "Chrome 7"
+  },
+  {
+    "id": "chrome-08",
+    "hour": "chrome-08-hour.png",
+    "minute": "chrome-08-minute.png",
+    "label": "Chrome 8"
+  },
+  {
+    "id": "chrome-09",
+    "hour": "chrome-09-hour.png",
+    "minute": "chrome-09-minute.png",
+    "label": "Chrome 9"
+  },
+  {
+    "id": "chrome-10",
+    "hour": "chrome-10-hour.png",
+    "minute": "chrome-10-minute.png",
+    "label": "Chrome 10"
+  },
+  {
+    "id": "chrome-11",
+    "hour": "chrome-11-hour.png",
+    "minute": "chrome-11-minute.png",
+    "label": "Chrome 11"
+  },
+  {
+    "id": "chrome-12",
+    "hour": "chrome-12-hour.png",
+    "minute": "chrome-12-minute.png",
+    "label": "Chrome 12"
+  },
+  {
+    "id": "chrome-13",
+    "hour": "chrome-13-hour.png",
+    "minute": "chrome-13-minute.png",
+    "label": "Chrome 13"
+  },
+  {
+    "id": "chrome-14",
+    "hour": "chrome-14-hour.png",
+    "minute": "chrome-14-minute.png",
+    "label": "Chrome 14"
+  },
+  {
+    "id": "chrome-15",
+    "hour": "chrome-15-hour.png",
+    "minute": "chrome-15-minute.png",
+    "label": "Chrome 15"
+  },
+  {
+    "id": "chrome-16",
+    "hour": "chrome-16-hour.png",
+    "minute": "chrome-16-minute.png",
+    "label": "Chrome 16"
+  },
+  {
+    "id": "chrome-17",
+    "hour": "chrome-17-hour.png",
+    "minute": "chrome-17-minute.png",
+    "label": "Chrome 17"
+  },
+  {
+    "id": "chrome-18",
+    "hour": "chrome-18-hour.png",
+    "minute": "chrome-18-minute.png",
+    "label": "Chrome 18"
+  },
+  {
+    "id": "chrome-19",
+    "hour": "chrome-19-hour.png",
+    "minute": "chrome-19-minute.png",
+    "label": "Chrome 19"
+  },
+  {
+    "id": "chrome-20",
+    "hour": "chrome-20-hour.png",
+    "minute": "chrome-20-minute.png",
+    "label": "Chrome 20"
+  },
+  {
+    "id": "chrome-21",
+    "hour": "chrome-21-hour.png",
+    "minute": "chrome-21-minute.png",
+    "label": "Chrome 21"
+  },
+  {
+    "id": "chrome-22",
+    "hour": "chrome-22-hour.png",
+    "minute": "chrome-22-minute.png",
+    "label": "Chrome 22"
+  }
+]

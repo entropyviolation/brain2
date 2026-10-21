@@ -202,9 +202,16 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   align-items: stretch;
   gap: 6px;
   width: 14rem;
-  padding: 6px;
-  background: var(--fascia-bay, #c5c8cb);
-  box-shadow: var(--fascia-bay-ring, 0 0 0 1px var(--chrome-ring-deep));
+  padding: 8px;
+  border-radius: 10px;
+  background:
+    linear-gradient(rgba(120, 140, 160, 0.14) 1px, transparent 1px) 0 0 / 100% 8px,
+    linear-gradient(90deg, rgba(120, 140, 160, 0.14) 1px, transparent 1px) 0 0 / 8px 100%,
+    linear-gradient(180deg, #eef2f6, #d9e0e7);
+  box-shadow:
+    0 0 0 1px var(--chrome-ring-deep, #7d868f),
+    inset 0 1px 0 #fff,
+    0 8px 22px rgba(30, 40, 52, 0.28);
   color: #1c1e20;
 }
 
@@ -212,7 +219,13 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 50% 0%, #0e1a16, var(--fascia-scope, #070c0a) 72%);
+  box-shadow:
+    inset 0 0 0 1px #1d2824,
+    inset 0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 .clock-picker-stack {
@@ -229,7 +242,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   text-transform: uppercase;
   text-align: center;
   line-height: 1;
-  color: #1c1e20;
+  color: rgba(125, 255, 196, 0.5);
 }
 
 .clock-picker-col {
@@ -237,14 +250,14 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   flex-direction: column;
   gap: 2px;
   padding: 3px;
-  background: var(--fascia-scope, #070c0a);
-  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #141816);
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .clock-picker-col[data-active="true"] {
-  box-shadow:
-    0 0 0 1px var(--hab-crt-green, #7dffc4),
-    var(--fascia-crt-ring, inset 0 0 0 1px #141816);
+  background: rgba(125, 255, 196, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.55);
 }
 
 .clock-picker-colon {
@@ -253,7 +266,8 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
-  color: #1c1e20;
+  color: var(--hab-crt-green, #7dffc4);
+  text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
 }
 
 .clock-picker-period {
@@ -298,11 +312,12 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 }
 
 .clock-picker-panel button.clock-picker-cell.is-cursor {
-  background-color: var(--fascia-scope, #070c0a);
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 58%);
+  background-color: rgba(125, 255, 196, 0.06);
+  background-image: none;
+  border-radius: 5px;
   color: var(--hab-crt-green, #7dffc4);
   text-shadow: var(--hab-crt-glow, 0 0 3px #7dffc4);
-  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #9aa09c);
+  box-shadow: inset 0 0 0 1px rgba(125, 255, 196, 0.2);
 }
 
 .clock-picker-panel button.clock-picker-cell.is-caret::before {
@@ -388,8 +403,11 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 .clock-picker-analog {
   position: relative;
   align-self: center;
-  width: 9.5rem;
+  width: 12.5rem;
+  max-width: 100%;
   aspect-ratio: 1;
+  cursor: pointer;
+  touch-action: none;
 }
 
 .clock-picker-face,
@@ -407,17 +425,16 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 
 .clock-picker-well {
   position: absolute;
-  left: 26%;
-  top: 26%;
+  inset: 0;
   z-index: 1;
-  width: 48%;
-  height: 48%;
   overflow: hidden;
   border-radius: 50%;
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 1px rgba(90, 70, 40, 0.2),
-    inset 0 0 10px rgba(40, 30, 16, 0.28);
+    0 0 0 1px rgba(60, 66, 74, 0.55),
+    0 3px 9px rgba(30, 36, 44, 0.35),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+    inset 0 0 12px rgba(20, 24, 30, 0.35);
 }
 
 .clock-picker-painting {
