@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TodoSettingsDialog.tsx — Global To Do settings (the gear by the title)
+ * components/Home/ToDo/TodoSettingsDialog.tsx — Global To Do settings (the globe key by the header glass)
  *
  * Everything that holds for every view: title words, sun rites, the
  * in-progress cap, default estimate, your pace, and saved priority formulas. Writes `todo-prefs` only.
@@ -30,8 +30,8 @@ export function TodoSettingsDialog({ paceSlot }: { paceSlot?: ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" className="todo-gear" aria-label="To Do settings" title="To Do settings (every view)">
-          ⚙
+        <button type="button" className="todo-gear" data-no95 aria-label="To Do settings" title="To do settings (every view)">
+          <img className="todo-gear-globe" src="/todo/settings-globe.jpg" alt="" aria-hidden />
         </button>
       </DialogTrigger>
       <DialogContent
