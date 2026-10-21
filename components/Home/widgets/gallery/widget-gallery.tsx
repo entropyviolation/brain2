@@ -1,7 +1,7 @@
 /**
  * components/Home/widgets/gallery/widget-gallery.tsx — The Widget gallery
  *
- * A rail of every kind, grouped (Day, Score, Sky, Clock, Capture, Study), with
+ * A rail of every kind, grouped (Day, Score, Sky, Clock, Capture, Study, Money), with
  * a lamp that is lit while any copy shows and a count of installed copies.
  * The first entry explains how widgets work (`gallery-about.tsx`); each kind
  * has its own page (`gallery-page.tsx`). Arrow keys step through the rail
@@ -16,7 +16,7 @@ import type { WidgetKind } from "@/lib/widgets/types"
 import { GalleryAbout } from "@/components/Home/widgets/gallery/gallery-about"
 import { GalleryKindPage } from "@/components/Home/widgets/gallery/gallery-page"
 
-const GROUPS: WidgetKind["group"][] = ["Day", "Score", "Clock", "Sky", "Study", "Capture"]
+const GROUPS: WidgetKind["group"][] = ["Day", "Score", "Clock", "Sky", "Study", "Money", "Capture"]
 const ABOUT = "about"
 
 export function WidgetGallery({ open, initialKind }: { open: boolean; initialKind?: string }) {

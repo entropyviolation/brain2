@@ -36,6 +36,7 @@
  */
 "use client"
 
+import { penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,6 +47,7 @@ import { companionsFor, suggestedCompanions } from "@/lib/entry-links"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { discreteLogInstants, penNameById } from "@/components/Home/Tracking/discrete-log-instants"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
+import { CompanyPicker } from "@/components/Home/Tracking/company-picker"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 
 interface CompanionSectionProps {
@@ -122,11 +124,23 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
     if (penId === other.penId || (other.secondaryPenIds ?? []).includes(penId)) return
     updateEntry(other.id, { secondaryPenIds: [...(other.secondaryPenIds ?? []), penId] })
     mirror(other.scopeId)
-    setAddingTo(null)
   }
 
   const removePerson = (other: TimeEntry, penId: string) => {
-    updateEntry(other.id, { secondaryPenIds: (other.secondaryPenIds ?? []).filter((id) => id !== penId) })
+    updateEntry(other.id, {
+      secondaryPenIds: (other.secondaryPenIds ?? []).filter((id) => id !== penId),
+      talkingPenIds: (other.talkingPenIds ?? []).filter((id) => id !== penId),
+    })
+  }
+
+  const toggleTalking = (other: TimeEntry, penId: string) => {
+    const now = other.talkingPenIds ?? []
+    updateEntry(other.id, { talkingPenIds: now.includes(penId) ? now.filter((id) => id !== penId) : [...now, penId] })
+  }
+
+  const createPerson = (name: string): string | undefined => {
+    const scope = scopes.find((s) => s.id === COMPANY_SCOPE_ID)
+    return addPen(COMPANY_SCOPE_ID, { name, color: penColorFor(scope?.pens.length ?? 0) }) || undefined
   }
 
   const createAndAttach = (scopeId: string) => {
@@ -200,12 +214,17 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                             name: penName(scope.id, id),
                             color: scope.pens.find((p) => p.id === id)?.color,
                           })),
-                          candidates: scope.pens.filter(
-                            (p) => p.id !== other.penId && !(other.secondaryPenIds ?? []).includes(p.id),
-                          ),
+                          pens: scope.pens,
+                          talking: other.talkingPenIds ?? [],
+                          onToggleTalking: (penId) => toggleTalking(other, penId),
+                          onToggle: (penId) =>
+                            (other.secondaryPenIds ?? []).includes(penId) ? removePerson(other, penId) : addPerson(other, penId),
+                          onCreate: (name) => {
+                            const id = createPerson(name)
+                            if (id) addPerson(other, id)
+                          },
                           adding: addingTo === other.id,
                           onStartAdding: () => setAddingTo(addingTo === other.id ? null : other.id),
-                          onAdd: (penId) => addPerson(other, penId),
                           onRemove: (penId) => removePerson(other, penId),
                         }
                       : undefined
@@ -240,11 +259,18 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                   {picking ? (
                     <div className="flex w-full flex-wrap items-center gap-1.5">
                       {scope.id === COMPANY_SCOPE_ID ? (
-                        <p className="w-full text-[11px] text-muted-foreground">
-                          Pick everyone who was there, then Attach — one Company block, all of them on it.
-                        </p>
-                      ) : null}
-                      {scope.pens.map((pen) => {
+                        <CompanyPicker
+                          pens={scope.pens}
+                          selected={picked}
+                          onToggle={(id) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))}
+                          onCreate={(name) => {
+                            const id = createPerson(name)
+                            if (id) setPicked((cur) => [...cur, id])
+                          }}
+                        />
+                      ) : (
+                        <>
+                        {scope.pens.map((pen) => {
                         const multi = scope.id === COMPANY_SCOPE_ID
                         const on = picked.includes(pen.id)
                         return (
@@ -289,6 +315,8 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                           <span className="sr-only">Add and attach pen</span>
                         </Button>
                       </span>
+                        </>
+                      )}
                       {scope.id === COMPANY_SCOPE_ID ? (
                         <Button
                           type="button"
@@ -354,6 +382,23 @@ export function logKind(log: TimeEntry, penName: string): string {
   return penName || "Log"
 }
 
+/** Talking with this person, or just present. */
+function TalkKey({ on, name, onClick }: { on: boolean; name: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      data-no95=""
+      aria-pressed={on}
+      aria-label={`${name}: ${on ? "talking with" : "present"}`}
+      title={on ? "Talking with — click for just present" : "Just present — click for talking with"}
+      onClick={onClick}
+      className="rounded border px-1.5 text-[10px]"
+    >
+      {on ? "talking" : "present"}
+    </button>
+  )
+}
+
 /** One companion block: what it is, plus its detail, editable in place. */
 function CompanionRow({
   entry,
@@ -375,19 +420,31 @@ function CompanionRow({
   /** Company only: the extra people on this block, and a way to add more. */
   people?: {
     extra: { id: string; name: string; color?: string }[]
-    candidates: TrackPen[]
+    pens: TrackPen[]
+    talking: string[]
+    onToggleTalking: (penId: string) => void
+    onToggle: (penId: string) => void
+    onCreate: (name: string) => void
     adding: boolean
     onStartAdding: () => void
-    onAdd: (penId: string) => void
     onRemove: (penId: string) => void
   }
 }) {
   return (
     <div className="mt-1.5 rounded bg-muted/40 p-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: pen?.color }} />
-        <span className="text-xs font-medium">{pen?.name ?? "Unknown pen"}</span>
+        <span
+          className="inline-flex cursor-pointer items-center gap-1.5"
+          title="Double-click to open pen settings"
+          onDoubleClick={penColorDoubleClick(entry.scopeId, entry.penId)}
+        >
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: pen?.color }} />
+          <span className="text-xs font-medium">{pen?.name ?? "Unknown pen"}</span>
+        </span>
         <span className="text-[11px] text-muted-foreground">{formatDuration(minutes)} of this block</span>
+        {people ? (
+          <TalkKey on={people.talking.includes(entry.penId)} name={pen?.name ?? "them"} onClick={() => people.onToggleTalking(entry.penId)} />
+        ) : null}
         <Button
           type="button"
           variant="ghost"
@@ -410,8 +467,15 @@ function CompanionRow({
         <div className="trk-company-people" role="group" aria-label="People on this Company block">
           {people.extra.map((person) => (
             <span key={person.id} className="trk-company-person">
-              <span className="inline-block h-2 w-2 rounded-full" style={{ background: person.color }} aria-hidden />
-              {person.name}
+              <span
+                className="inline-flex cursor-pointer items-center gap-1"
+                title="Double-click to open pen settings"
+                onDoubleClick={penColorDoubleClick(entry.scopeId, person.id)}
+              >
+                <span className="inline-block h-2 w-2 rounded-full" style={{ background: person.color }} aria-hidden />
+                {person.name}
+              </span>
+              <TalkKey on={people.talking.includes(person.id)} name={person.name} onClick={() => people.onToggleTalking(person.id)} />
               <button type="button" data-no95="" aria-label={`Remove ${person.name}`} onClick={() => people.onRemove(person.id)}>
                 ×
               </button>
@@ -421,23 +485,13 @@ function CompanionRow({
             + Someone
           </button>
           {people.adding ? (
-            <div className="trk-company-candidates">
-              {people.candidates.length === 0 ? (
-                <span className="text-[11px] text-muted-foreground">Everyone in Company is already here.</span>
-              ) : (
-                people.candidates.map((candidate) => (
-                  <button
-                    key={candidate.id}
-                    type="button"
-                    data-no95=""
-                    style={{ borderColor: candidate.color }}
-                    onClick={() => people.onAdd(candidate.id)}
-                  >
-                    {candidate.name}
-                  </button>
-                ))
-              )}
-            </div>
+            <CompanyPicker
+              pens={people.pens}
+              selected={[entry.penId, ...people.extra.map((p) => p.id)]}
+              locked={[entry.penId]}
+              onToggle={people.onToggle}
+              onCreate={people.onCreate}
+            />
           ) : null}
         </div>
       ) : null}

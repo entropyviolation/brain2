@@ -115,15 +115,18 @@ export async function searchAddresses(
   const q = query.trim()
   if (q.length < 3) return []
   const bias = near ? `&lat=${near.lat.toFixed(3)}&lon=${near.lng.toFixed(3)}` : ""
-  const photon = await cached(`addr:${q}:${bias}`, TTL.PLACE, async () => {
+  const photonPromise = cached(`addr:${q}:${bias}`, TTL.PLACE, async () => {
     const data = await getJson<{ features?: PhotonFeature[] }>(
       `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=en${bias}`,
     )
     return (data?.features ?? []).map(fromFeature).filter((s): s is AddressSuggestion => s !== null)
   })
   const hasGoogle = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY)
-  if (!hasGoogle) return photon
-  const google = await searchPlaces(q, near ? { cityLat: near.lat, cityLng: near.lng, limit: 4 } : { limit: 4 }).catch(() => [])
+  if (!hasGoogle) return photonPromise
+  const [photon, google] = await Promise.all([
+    photonPromise,
+    searchPlaces(q, near ? { cityLat: near.lat, cityLng: near.lng, limit: 4 } : { limit: 4 }).catch(() => []),
+  ])
   const fromGoogle: AddressSuggestion[] = google
     .filter((place) => place.source === "google")
     .map((place) => ({

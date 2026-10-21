@@ -17,13 +17,33 @@ import { subscribePenSettings, type PenSettingsTarget } from "@/components/Home/
 type PenSettingsGateProps = {
   target: PenSettingsTarget
   onClear: () => void
+  nav?: PenSettingsNav
+}
+
+export interface PenSettingsNav {
+  canBack: boolean
+  canForward: boolean
+  back: () => void
+  forward: () => void
 }
 
 export function PenSettingsHost() {
-  const [target, setTarget] = useState<PenSettingsTarget | null>(null)
+  const [trail, setTrail] = useState<{ stops: PenSettingsTarget[]; at: number }>({ stops: [], at: -1 })
+  const target = trail.stops[trail.at] ?? null
   const [Gate, setGate] = useState<ComponentType<PenSettingsGateProps> | null>(null)
 
-  useEffect(() => subscribePenSettings(setTarget), [])
+  useEffect(
+    () =>
+      subscribePenSettings((next) =>
+        setTrail((cur) => {
+          const here = cur.stops[cur.at]
+          if (here && here.scopeId === next.scopeId && here.penId === next.penId) return cur
+          const stops = [...cur.stops.slice(0, cur.at + 1), next]
+          return { stops, at: stops.length - 1 }
+        }),
+      ),
+    [],
+  )
 
   useEffect(() => {
     if (!target || Gate) return
@@ -37,5 +57,11 @@ export function PenSettingsHost() {
   }, [target, Gate])
 
   if (!target || !Gate) return null
-  return <Gate target={target} onClear={() => setTarget(null)} />
+  const nav: PenSettingsNav = {
+    canBack: trail.at > 0,
+    canForward: trail.at < trail.stops.length - 1,
+    back: () => setTrail((cur) => (cur.at > 0 ? { ...cur, at: cur.at - 1 } : cur)),
+    forward: () => setTrail((cur) => (cur.at < cur.stops.length - 1 ? { ...cur, at: cur.at + 1 } : cur)),
+  }
+  return <Gate target={target} nav={nav} onClear={() => setTrail({ stops: [], at: -1 })} />
 }

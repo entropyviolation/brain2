@@ -14,6 +14,7 @@
  */
 "use client"
 
+import { runSync } from "@/lib/defer-sync"
 import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
@@ -278,7 +279,7 @@ export function startKeywordSync(): () => void {
       })
       const unEntries = useTimeTrackingStore.subscribe((state, prev) => {
         if (isRestoring()) return
-        if (state.entries !== prev.entries) syncKeywordHabits()
+        if (state.entries !== prev.entries) runSync(syncKeywordHabits)
       })
       const unHabits = useHabitsStore.subscribe((state, prev) => {
         if (isRestoring() || habitWriteIsQuiet()) return

@@ -23,6 +23,7 @@
  */
 "use client"
 
+import { runSync } from "@/lib/defer-sync"
 import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
 import {
@@ -279,7 +280,7 @@ export function startHabitCoverageSync(): () => void {
         if (isRestoring()) return
         if (state.entries === prev.entries) return
         const changed = changedEntryDates(prev.entries ?? [], state.entries ?? [])
-        if (changed.length) syncHabitCoverageLinks(changed)
+        if (changed.length) runSync(() => syncHabitCoverageLinks(changed))
       })
       const unHabits = useHabitsStore.subscribe((state, prev) => {
         if (isRestoring() || habitWriteIsQuiet()) return

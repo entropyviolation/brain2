@@ -1,7 +1,7 @@
 /**
- * components/Home/Tracking/tracking-tool-mode.ts — Draw / Erase / Scissors
+ * components/Home/Tracking/tracking-tool-mode.ts — Draw / Erase / Scissors / Point
  *
- * Three mutually exclusive paint tools. Hide / View / Tags are independent
+ * Four mutually exclusive paint tools. Hide / View / Tags are independent
  * and do not live here. The pen tray (search, beads, new pen, selected strip)
  * is Draw-only: `showPenTray(tool)` is the parent visibility rule.
  *
@@ -10,21 +10,29 @@
  */
 export const ERASE = "ERASE"
 export const SCISSORS = "SCISSORS"
+/** Point: click opens blocks, nothing ever paints. */
+export const POINTER = "POINTER"
 
-export const TRACKING_PAINT_TOOLS = ["draw", "erase", "scissors"] as const
+export const TRACKING_PAINT_TOOLS = ["draw", "erase", "scissors", "point"] as const
 export type TrackingPaintTool = (typeof TRACKING_PAINT_TOOLS)[number]
 
 let lastDrawPenId: string | null = null
 
 export function isTrackingPaintSentinel(id: string | null | undefined): boolean {
-  return id === ERASE || id === SCISSORS
+  return id === ERASE || id === SCISSORS || id === POINTER
 }
 
 /** Null or a real pen is Draw so first-open still has the tray. */
 export function trackingPaintTool(selectedPenId: string | null | undefined): TrackingPaintTool {
   if (selectedPenId === ERASE) return "erase"
   if (selectedPenId === SCISSORS) return "scissors"
+  if (selectedPenId === POINTER) return "point"
   return "draw"
+}
+
+/** No pen in hand, or Point: a press may open a block but never paints. */
+export function noPaint(id: string | null | undefined): boolean {
+  return id == null || id === POINTER
 }
 
 export function showPenTray(tool: TrackingPaintTool): boolean {
@@ -48,6 +56,7 @@ export function nextPaintPenId(
   rememberDrawPenId(currentId)
   if (tool === "erase") return ERASE
   if (tool === "scissors") return SCISSORS
+  if (tool === "point") return POINTER
   if (currentId && !isTrackingPaintSentinel(currentId)) return currentId
   return lastDrawPenId ?? fallbackPenId
 }

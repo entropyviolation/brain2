@@ -158,6 +158,11 @@ export interface TimeEntry {
    */
   secondaryPenIds?: string[]
   /**
+   * Company blocks: the people (pen ids on this block) you were actively
+   * talking with. Everyone else on the block was present. Omitted = all present.
+   */
+  talkingPenIds?: string[]
+  /**
    * Omitted = an ordinary interval (old vaults). `"instant"` is a discrete
    * event at `startMin` with no duration — occupancy and untracked gaps ignore
    * it. The same event can later be named as the start or end of an interval
@@ -255,6 +260,8 @@ export interface TimeEntry {
   endJoinId?: string
   startJoinId?: string
   transitMin?: number
+  /** The user set this transit block's length by hand; the drive time no longer refits it. */
+  transitManual?: boolean
   /**
    * Optional ends of one Switch. Omitted on older rows — no migration.
    * Activity `st:` / `switch:` still uses the Switch pen and a `started …`
@@ -301,6 +308,7 @@ export interface TimeEntry {
 const DETAIL_KEYS = [
   "title",
   "notes",
+  "talkingPenIds",
   "nowObjectives",
   "project",
   "books",
@@ -310,6 +318,7 @@ const DETAIL_KEYS = [
   "endEventId",
   "startJoinId",
   "endJoinId",
+  "transitManual",
   "moodReading",
   "taskId",
   "stepId",
@@ -870,6 +879,23 @@ export function formatDuration(minutes: number): string {
   const m = total % 60
   if (h === 0) return `${m}m`
   return m === 0 ? `${h}h` : `${h}h ${m}m`
+}
+
+/**
+ * Minutes from typed duration text: `90`, `1:30`, `1h30`, `1h 30m`, `1.5h`, `45m`.
+ * A bare number is minutes. Null when it is not a positive length.
+ */
+export function parseDurationInput(text: string): number | null {
+  const t = text.trim().toLowerCase()
+  if (!t) return null
+  let minutes: number | null = null
+  let m: RegExpMatchArray | null
+  if ((m = t.match(/^(\d+):(\d{1,2})$/))) minutes = Number(m[1]) * 60 + Number(m[2])
+  else if ((m = t.match(/^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?)(?:\s*(\d+)\s*(?:m|min|mins|minutes?)?)?$/))) minutes = Number(m[1]) * 60 + Number(m[2] ?? 0)
+  else if ((m = t.match(/^(\d+(?:\.\d+)?)\s*(?:m|min|mins|minutes?)?$/))) minutes = Number(m[1])
+  if (minutes === null || !Number.isFinite(minutes)) return null
+  const rounded = Math.round(minutes)
+  return rounded > 0 ? rounded : null
 }
 
 let counter = 0

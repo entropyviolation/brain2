@@ -63,7 +63,7 @@ export function PenPlaceEditor({ scopeId, penId }: { scopeId: string; penId: str
         setResults(rows)
         setSearching(false)
       })
-    }, 300)
+    }, 180)
     return () => {
       cancelled = true
       window.clearTimeout(timer)
@@ -79,9 +79,12 @@ export function PenPlaceEditor({ scopeId, penId }: { scopeId: string; penId: str
   const pick = async (suggestion: AddressSuggestion) => {
     setResults([])
     setQuery("")
+    // Pin the address at once; fill the neighborhood/city/state after the lookup.
+    const pinned = { ...place, address: suggestion.label, lat: suggestion.lat, lng: suggestion.lng, parts: suggestion.parts, zip: place.zip ?? suggestion.parts.postcode }
+    write(pinned)
     setStatus("Looking up the neighborhood, city, state…")
     const full = await withParts(suggestion)
-    write({ ...place, address: full.label, lat: full.lat, lng: full.lng, parts: full.parts, zip: place.zip ?? full.parts.postcode })
+    write({ ...pinned, parts: full.parts, zip: pinned.zip ?? full.parts.postcode })
     const filed = fileUnderAddress(scopeId, penId, full.parts)
     setStatus(filed.length ? `Filed under ${filed.join(" › ")}.` : "Pinned. No level pens to file under — add Neighborhood, City… in Tracking settings.")
   }

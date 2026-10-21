@@ -14,7 +14,7 @@ import { arrivalWindow, edgeOf, nearbyInstants, neighborBlock, nextBlock, resolv
 import { isInstant, minutesToLabel, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import type { TrackScope } from "@/lib/time-tracking-store"
 import { isLocationScope, pinOf, transitPenOf } from "@/lib/transit-suggest"
-import { transitEnabled, travelMinutes } from "@/lib/transit-time"
+import { travelMinutes } from "@/lib/transit-time"
 
 const LEVELS: { id: TrackingClockCertainty; label: string; hint: string }[] = [
   { id: "exact", label: "Exact", hint: "You know this time" },
@@ -55,6 +55,7 @@ const edgeText = (st: EdgeState) => `${minutesToLabel(st.min % 1440)}${certMark(
 export function EdgeAnchor({
   edge,
   entries,
+  scopes,
   entry,
   own,
   eventId,
@@ -66,6 +67,7 @@ export function EdgeAnchor({
 }: {
   edge: Edge
   entries: TimeEntry[]
+  scopes: TrackScope[]
   entry: TimeEntry
   own: EdgeState
   eventId: string | undefined
@@ -84,7 +86,8 @@ export function EdgeAnchor({
   const neighbor = neighborBlock(entries, entry, edge)
   const block = neighbor && neighbor.id !== partner?.id ? neighbor : null
   if (!partner && !events.length && !block) return null
-  const name = (e: TimeEntry) => e.title || e.eventKind || (isInstant(e) ? "Event" : "Block")
+  const name = (e: TimeEntry) =>
+    e.title || scopes.find((s) => s.id === e.scopeId)?.pens.find((p) => p.id === e.penId)?.name || e.eventKind || (isInstant(e) ? "Event" : "Block")
   return (
     <div className="trk-section trk-edge-event" data-testid={`entry-${edge}-anchor`}>
       <Label className="trk-section-title">{edge === "start" ? "Start anchor" : "End anchor"}</Label>
@@ -92,7 +95,7 @@ export function EdgeAnchor({
         <div className="trk-edge-chip">
           <Link2 size={13} aria-hidden />
           <span>
-            {eventId ? "Event" : edge === "start" ? "Ends where this starts:" : "Starts where this ends:"} {name(partner)} · {edgeText(theirs)}
+            {eventId ? "Event" : edge === "start" ? "Previous timeblock, ends where this starts:" : "Next timeblock, starts where this ends:"} {name(partner)} · {edgeText(theirs)}
           </span>
           <button type="button" onClick={onUnlink} aria-label="Unlink">
             <Unlink size={13} aria-hidden />
@@ -165,6 +168,19 @@ export function NextBlockSection({ entries, entry, scope, onOpen }: { entries: T
   )
 }
 
+/** Transit block only: price the drive between its two neighbours and fill the length and Activity. */
+export function DriveCommuteSection({ ready, busy, message, onCalculate }: { ready: boolean; busy: boolean; message: string; onCalculate: () => void }) {
+  return (
+    <div className="trk-section trk-edge-transit" data-testid="entry-drive-commute">
+      <Label className="trk-section-title">Driving commute</Label>
+      <p className="trk-help">{message || (ready ? "Work out the drive between the blocks on either side, then set this block's length and mark Activity as driving." : "Anchor this block to a block with an address on each side first.")}</p>
+      <Button type="button" size="sm" disabled={!ready || busy} onClick={onCalculate}>
+        {busy ? "Calculating…" : "Calculate driving commute"}
+      </Button>
+    </div>
+  )
+}
+
 /** Location only: price the trip to the next place and add it as a self-fitting block. */
 export function TransitSection({
   entries,
@@ -224,9 +240,7 @@ export function TransitSection({
   return (
     <div className="trk-section trk-edge-transit" data-testid="entry-transit">
       <Label className="trk-section-title">Transit to {next.entry.title || toPen!.name}</Label>
-      {!transitEnabled() ? (
-        <p className="trk-help">Add a Google Maps key to price the trip.</p>
-      ) : !asked ? (
+      {!asked ? (
         <p className="trk-help">Pricing the trip for {minutesToLabel(endMin)}…</p>
       ) : minutes == null ? (
         <p className="trk-help">No route found.</p>
