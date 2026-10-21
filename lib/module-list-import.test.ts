@@ -426,7 +426,7 @@ describe("Trip itinerary → Module Lists", () => {
     const breakfast = plan.items.find((t) => t.title === "Breakfast in Barranco")!
     expect(breakfast.scheduledTime).toBe("09:00")
     expect(breakfast.lists).toEqual([day!.id])
-    const flight = plan.items.find((t) => t.title.includes("LA 4090"))!
+    const flight = plan.items.find((t) => t.title?.includes("LA 4090"))!
     expect(flight.type).toBe("flight")
     expect(flight.attributes?.flightNumber).toBe("LA4090")
     expect(plan.items.some((t) => t.title === "Hotel B")).toBe(true)

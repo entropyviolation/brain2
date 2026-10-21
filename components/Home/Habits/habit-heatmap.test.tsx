@@ -32,7 +32,7 @@ describe("heatmapColumnBand", () => {
     ] as const
     for (const [scrollLeft, clientWidth, count] of samples) {
       const band = heatmapColumnBand(scrollLeft, clientWidth, count, { cell, gap, label })
-      let first = count
+      let first: number = count
       let last = -1
       for (let i = 0; i < count; i++) {
         const left = origin + i * pitch

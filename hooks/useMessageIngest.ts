@@ -118,7 +118,15 @@ export function useMessageIngest() {
         })
       } else {
         const text = result.status === "ignored" ? result.reply : result.reply
-        if (text) await postHubReply(payload.chatId, text, "", inlineKeyboardForResult(result))
+        const keyboard = inlineKeyboardForResult(result)
+        const markup = keyboard
+          ? {
+              inline_keyboard: keyboard.inline_keyboard.map((row) =>
+                row.filter((button): button is NonNullable<typeof button> => button !== null),
+              ),
+            }
+          : undefined
+        if (text) await postHubReply(payload.chatId, text, "", markup)
       }
       flushScheduledPersist()
       confirmWrite(payload)

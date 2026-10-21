@@ -53,7 +53,7 @@ export async function deliverIngestReply(
   const pinKind =
     result.status === "ok" || result.status === "needs_clarify" ? result.pinKind ?? "grocery" : "grocery"
   const replyChunks = chunkTelegramText(reply || "")
-  const markup = inlineKeyboardForResult(result)
+  const markup = inlineKeyboardForResult(result) as IngestReplyMarkup | undefined
   const sentIds: number[] = []
   const cardId = ritualCardId(result)
   const ritualPending = result.status === "needs_clarify" && result.pending.kind === "ritual" ? result.pending : null

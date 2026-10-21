@@ -5,7 +5,7 @@ import { renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetScreenTimeSyncSessionForTests, useScreenTimeSync } from "./use-screentime-sync"
 
-const syncScreenTime = vi.fn(async () => ({ ok: true, days: 0, blocks: 0 }))
+const syncScreenTime = vi.fn(async (..._args: unknown[]) => ({ ok: true, days: 0, blocks: 0 }))
 
 vi.mock("@/lib/screentime/sync", () => ({
   syncScreenTime: (...args: unknown[]) => syncScreenTime(...args),

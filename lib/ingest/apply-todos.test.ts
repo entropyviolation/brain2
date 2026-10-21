@@ -163,8 +163,9 @@ describe("applyTodoPinReply", () => {
     expect(isEstimated(five?.estimates, "completedDate")).toBe(true)
     expect(one?.completedDate?.getHours()).toBe(15)
     expect(five?.completedDate?.getHours()).toBe(16)
-    expect(result.pinText).toMatch(/~3:00 PM/)
-    expect(result.pinText).toMatch(/~4:00 PM/)
+    const pinText = result.status === "ok" ? result.pinText : undefined
+    expect(pinText).toMatch(/~3:00 PM/)
+    expect(pinText).toMatch(/~4:00 PM/)
     expect(result.reply).toMatch(/~3:00 PM/)
     expect(result.reply).toMatch(/~4:00 PM/)
   })

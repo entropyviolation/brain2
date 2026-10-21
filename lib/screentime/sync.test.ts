@@ -335,7 +335,7 @@ describe("syncScreenTime", () => {
       },
     )
     expect(result).toMatchObject({ ok: true, days: 1, blocks: 0, windowEvents: 0 })
-    expect(result.error).toBeUndefined()
+    expect("error" in result).toBe(false)
     expect(result.note).toMatch(/no recorded windows yet/)
     expect(result.note).toMatch(/cannot import Apple Screen Time/)
     expect(loadScreenTimePrefs().lastSuccessAt).toBeTruthy()
@@ -372,7 +372,7 @@ describe("describeScreenTimeSync", () => {
     )
     expect(describeScreenTimeSync({ ok: true, blocks: 0, windowEvents: 0 })).toMatch(/no recorded windows yet/)
     expect(describeScreenTimeSync({ ok: true, blocks: 0, windowEvents: 8, minDurationSec: 15 })).toMatch(
-      /8 window event\(s\).*shorter than 15s/s,
+      /8 window event\(s\)[\s\S]*shorter than 15s/,
     )
   })
 })

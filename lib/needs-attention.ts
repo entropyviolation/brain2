@@ -208,7 +208,7 @@ function lastLinkedWorkDate(itemId: string, actions: ActionRecord[]): Date | nul
     if (!action.completed) continue
     const serves = (action.links ?? []).some((link) => link.targetId === itemId)
     if (!serves) continue
-    const d = safeToDate(action.completedDate)
+    const d = safeToDate(action.completedDate ?? undefined)
     latest = laterDate(latest, d)
   }
   return latest
@@ -362,7 +362,7 @@ export function getNeedsAttention(
   }
 
   if (enabled.has("neglected") && (opts.goals?.length ?? 0) > 0) {
-    const staleGoals = goalsNeedingAttention(opts.goals, actions, { now, staleDays: neglectDays })
+    const staleGoals = goalsNeedingAttention(opts.goals ?? [], actions, { now, staleDays: neglectDays })
     for (const row of staleGoals) {
       if (!isPastNeglectWindow(row.lastActionDate, row.goal.createdAt, now, neglectDays)) continue
       const existingTask = tasks.find((t) => t.id === row.goal.id)

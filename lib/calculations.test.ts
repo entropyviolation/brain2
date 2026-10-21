@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { TaskType, type WeeklyTask } from "@/lib/types"
+import { TaskType, type WeeklyData, type WeeklyTask } from "@/lib/types"
 import { averageWeekGradeAcrossWeeksWithData, calculateDayPercentageAV, calculateTaskPercentage, calculateWeekToDateGrade, calculateWeekToDateOutputGrade, calculatePeriodColumnPercentage, calculatePeriodGrade, calculatePeriodOutputGrade, calculatePeriodTaskPercentage, gradeAsOfForVisibleWindow, weekToDateDays } from "./calculations"
 import { getWeekString } from "./date-utils"
 
@@ -325,7 +325,7 @@ describe("weekly/monthly period scores", () => {
   })
 
   it("builds a span grade from elapsed week columns", () => {
-    const data = {
+    const data: WeeklyData = {
       [periods[0].key]: { w1: { completed: true }, w2: { value: 60 } },
       [periods[1].key]: { w1: { completed: true } },
     }
@@ -337,7 +337,7 @@ describe("weekly/monthly period scores", () => {
   })
 
   it("builds output from elapsed habit rows", () => {
-    const data = {
+    const data: WeeklyData = {
       [periods[0].key]: { w1: { completed: true }, w2: { value: 60 } },
       [periods[1].key]: { w1: { completed: true } },
     }

@@ -382,7 +382,7 @@ export const useListsUiStore = create<ListsUiState>()(
       name: persistKey("lists-ui"),
       version: 10,
       storage: createCogsJSONStorage(),
-      migrate: (persistedState, version) => migrateListsUiPersisted(persistedState, version) as ListsUiState,
+      migrate: (persistedState, version) => migrateListsUiPersisted(persistedState, version) as unknown as ListsUiState,
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<ListsUiState>),

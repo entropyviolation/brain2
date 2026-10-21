@@ -127,7 +127,7 @@ describe("Instagram export parser", () => {
       },
     ]
     const parsed = parseInstagramExport([
-      followingFile([row("ada", ""), { ...row("bea"), follower_count: 80 }]),
+      followingFile([row("ada", ""), row("bea", "", { follower_count: 80 })]),
     ])
     const changes = planInstagramImport(existing, parsed, {
       followingListId: FOLLOWING_ID,
@@ -164,6 +164,7 @@ describe("Instagram export parser", () => {
       followingFile([
         {
           title: "",
+          media_list_data: [],
           string_list_data: [{ href: "https://www.instagram.com/linus", value: "", timestamp: 1 }],
         },
       ]),

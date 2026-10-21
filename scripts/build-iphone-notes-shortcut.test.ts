@@ -137,8 +137,8 @@ describe("buildWorkflow", () => {
         action.WFWorkflowActionIdentifier === "is.workflow.actions.gettext",
     )
     const attachments = text?.WFWorkflowActionParameters.WFTextActionText.Value.attachmentsByRange
-    const props = Object.values(attachments ?? {}).flatMap(
-      (a: { Aggrandizements?: { PropertyName?: string }[] }) =>
+    const props = Object.values((attachments ?? {}) as Record<string, { Aggrandizements?: { PropertyName?: string }[] }>).flatMap(
+      (a) =>
         (a.Aggrandizements ?? []).map((ag) => ag.PropertyName),
     )
     expect(props).toEqual(expect.arrayContaining(["Name", "Folder", "Last Modified Date", "Body"]))

@@ -91,7 +91,7 @@ describe("enableCycleTracking persist", () => {
       { gridStep: 10, enableCycleTracking: true, penSort: "alphabetical" },
       15,
     )
-    expect(kept.cycleDetailsOpen).toBeUndefined()
+    expect((kept as { cycleDetailsOpen?: boolean }).cycleDetailsOpen).toBeUndefined()
     expect(kept.enableCycleTracking).toBe(true)
     expect(kept.gridStep).toBe(10)
     expect(kept.penSort).toBe("alphabetical")
