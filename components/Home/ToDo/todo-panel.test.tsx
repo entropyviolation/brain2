@@ -10,6 +10,7 @@ import { readListsNavigation } from "@/lib/app-navigation"
 import { periodTodoListName } from "@/lib/scheduled-lists-sync"
 import { TodoPanel } from "./todo-panel"
 import { pickOption } from "@/tests/native-select"
+import { useReviewsStore } from "@/lib/reviews-store"
 
 vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
@@ -766,5 +767,30 @@ describe("TodoPanel", () => {
     const row = screen.getByText("Star Lord ritual · New moon").closest(".todo-row") as HTMLElement
     fireEvent.click(within(row).getByRole("button", { name: "Open" }))
     expect(screen.getByRole("dialog")).toHaveAttribute("data-ui-name", "Star Lord Report")
+  })
+
+  it("adds a season task on this month while the season is current", () => {
+    render(<TodoPanel />)
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Season" }))
+    fireEvent.click(screen.getByRole("button", { name: "Add Task" }))
+    fireEvent.change(screen.getByPlaceholderText("Task description"), { target: { value: "Season goal" } })
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add Task" }))
+    const added = useTaskStore.getState().tasks.find((t) => t.description === "Season goal")
+    expect(added?.scheduledMonth).toBe("2026-06")
+  })
+
+  it("drops a deleted morning priority instead of showing its id", () => {
+    useReviewsStore.getState().saveMorningReview("2026-06-20", { priorityTaskIds: ["gone-id", "todo-1"] })
+    render(<TodoPanel />)
+    const strip = document.querySelector(".todo-morning-priorities") as HTMLElement
+    expect(within(strip).getByRole("button", { name: "Finish slides" })).toBeInTheDocument()
+    expect(within(strip).queryByText("gone-id")).not.toBeInTheDocument()
+  })
+
+  it("clears the assigned search when the lens changes", () => {
+    render(<TodoPanel />)
+    fireEvent.change(screen.getByLabelText("Search assigned tasks"), { target: { value: "nope" } })
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Week" }))
+    expect(screen.getByLabelText("Search assigned tasks")).toHaveValue("")
   })
 })

@@ -4,7 +4,7 @@ The Home **To Do** sub-tab in **Brain2**. Day / week / month scoped task lists, 
 
 The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from the dashboard). Previous day, next day, and Today on that nameplate call `setCurrentDate`, so the overview, Plan, and Tracking move with it. Week, month, and season nameplates keep a **lens offset** inside To Do — local state that pages the sheet, not a second shell day. Previous, next, and Today on those nameplates do not call `setCurrentDate` and do not move Plan or Tracking. Until a coarse nameplate is used, that lens shows the period that contains the shared Home day (`lib/use-current-date.ts`). Leaving To Do forgets a paged week, month, or season; the shared day stays with Home.
 
-**Open list** opens that period's To do list in Lists (`To do 8/31`, `To do 8/31-9/6`, `To do September 2026`). Season lists open tasks (active or partial) whose day, week, or month already falls in the quarter (`lib/seasons.ts`); missed, cancelled, deferred, and done stay off that list. Adding a task there schedules the first month of the quarter. There is no quarter placement on the period ledger. The same folder also holds **Done** and, once the period has ended, **Undone** — the same rows as this panel. **To do** here is the period ledger’s narrow **prospective** set (`tasksProspectiveForPeriod` — open scheduled work); **Done** is retrospective completion during the period ([`docs/TEMPORAL_POLARITY.md`](../../../docs/TEMPORAL_POLARITY.md)). Default sort is **priority**; prioritized Assigned rows always lead. Language: [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_STYLE.md#milled-fascia).
+**Open list** opens that period's To do list in Lists (`To do 8/31`, `To do 8/31-9/6`, `To do September 2026`). Season lists open tasks (active or partial) whose day, week, or month already falls in the quarter (`lib/seasons.ts`); missed, cancelled, deferred, and done stay off that list. Adding a task there schedules this month while the season is current, else the season's first month (`seasonMonthDate` in `todo-panel.tsx`). There is no quarter placement on the period ledger. The same folder also holds **Done** and, once the period has ended, **Undone** — the same rows as this panel. **To do** here is the period ledger’s narrow **prospective** set (`tasksProspectiveForPeriod` — open scheduled work); **Done** is retrospective completion during the period ([`docs/TEMPORAL_POLARITY.md`](../../../docs/TEMPORAL_POLARITY.md)). Default sort is **priority**; prioritized Assigned rows always lead. Language: [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_STYLE.md#milled-fascia).
 
 **Planned (2026-10-15):** [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) covers a one-grid ledger with Pushes pinned right, marks that survive a push, a readability fix, a new Just Start picker, Now working, step prerequisites, session plans, and pens on items. Phase 0 shipped 2026-10-15:
 - **One grid.** The head and every closed row share one column set: Task · Tier · State · Done · Time · Steps · Actions · Pushes. Rows are CSS subgrids of `.todo-table`, with fixed widths where subgrid is missing. Every cell always renders (a `–` when empty, a dim `0` push tube), so no column moves. Pushes is the last column. Under 720px, Done, Time and Steps fold away and Pushes stays last.
@@ -365,7 +365,7 @@ _Last mapped: 2026-10-16._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Blocker goes first.** `blockersFirst` then moves an open prerequisite on the list to just above the first row waiting on it. Required / Assigned split and `pinPrioritizedFirst` run after, so this holds within each partition and Prioritized stays pinned.
 - `sortTodos` takes optional `now` and `markedIds`. The panel passes Required + Prioritized ids for the period; those count as full value. `filterAndSortTodos` is unchanged: the priority path already had the whole task list, so it needed no all-tasks argument.
 - **Row.** `TodoTable` takes `unlockOf`: an **unlocks N** chip (plain ink, no padlock, hover = `unlockBreakdown` label) and a neutral "due Thu for *X*" when something waiting has a deadline. Styles: `.todo-row-unlocks`, `.todo-row-inherited-due` in `todo-chrome.css`.
-- **Formula.** The panel's `PRIORITY_WEIGHT_FIELDS` (`todo-panel.tsx`, not `todo-filters.tsx`) has a fifth **Unlocks** field.
+- **Formula.** _Last mapped: 2026-10-21._ The field list in `PriorityFormulaPanel.tsx` (~28) has a fifth **Unlocks** field.
 - **Planned.** "needs *X* · not scheduled" with **Schedule *X* today**; (the task card shows the inherited due since slice O); step unlock rank in `lib/next-step.ts` and Phase 14 D (slice N); E (met at a level).
 
 ## Task card
@@ -446,9 +446,19 @@ Wave 13 (GS-9) keeps goal-complete and grade so partial work is credited.
 
 ## Options
 
-- **Show / Sort / Pace** — always on the fascia: Available now, Show all tasks, Rites follow the sun (day lens), Status, Sort + direction, Formula, in-progress cap.
+- **Show / Sort** — on the fascia: Available now, Show all tasks, Rites follow the sun (day lens), Status, Sort + direction, Formula, in-progress cap. Pace moved to the gear on 2026-10-20. _Last mapped: 2026-10-21._ All tasks, Status, Sort and direction persist in `todo-prefs.ts` like Available now. Changing lens clears the Assigned search and closes Formula.
 - **Show all tasks** — includes unscheduled tasks when enabled.
 - Collapse long lists after 8 rows with "Show more".
+
+## Panel fixes (2026-10-21)
+
+_Last mapped: 2026-10-21._
+- The ledger rows are a `useMemo` over the task store, not a copy in state, so the first paint is not empty.
+- The task card's Required and Prioritized follow the lens. On Season they flip season marks, the same as the season lid, and the card plate reads **This season**. Push counts still read the month.
+- Morning priorities skip tasks that no longer exist and dim done ones.
+- The Other lens counts open the same way as the others (`isOpen`, not cleared from work).
+- Done ignores a second click during the 380ms flock; flock and fold timers clear on unmount.
+- Split and polish are planned in the project research note, not built.
 
 ## Related
 
