@@ -2912,3 +2912,221 @@ body.win95-app .todo95 .todo-view-keys [role="tab"] { min-height: 26px; padding:
 .todo95-dialog.todo-settings { max-width: min(920px, 96vw); max-height: 90vh; overflow-y: auto; }
 :is(.todo95, .todo95-dialog) .todo-formula-presets .todo-chiclet { min-height: 22px; padding: 2px 10px; border: 0; border-radius: 11px; font: inherit; font-size: 10px; font-weight: 700; letter-spacing: .06em; cursor: pointer; background: linear-gradient(180deg, var(--chrome-key-sheen, #f2f3f4), var(--chrome-mill-soft, #d4d7da)); box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 0 0 1px var(--chrome-ring-deep, #8a8f94); }
 :is(.todo95, .todo95-dialog) .todo-math-card.is-wide .todo-math-svg { max-width: 640px; }
+
+/* ==== Redesign 2026-10-21: keycaps (house key shape, docs/DESIGN_STYLE.md → Keycaps) ==== */
+
+.todo95 {
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-mod-top: #c9ccd0;
+  --todo-cap-mod-top2: #b9bdc1;
+  --todo-cap-mod-skirt: #969a9f;
+  --todo-cap-mod-edge: #55595d;
+  --todo-cap-navy: #22306c;
+}
+
+/* One skin for every word key the redesign touches. The body.win95-app twin beats the global Win95 button skin. */
+.todo95 .todo-cap,
+body.win95-app .todo95 button.todo-cap[type="button"]:not([hidden]),
+.todo95 .todo-lid-actions .todo-verb,
+body.win95-app .todo95 .todo-lid-actions button.todo-verb[type="button"]:not([hidden]) {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--todo-cap-leg);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) padding-box;
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.todo95 .todo-cap.is-mod,
+.todo95 .todo-cap.is-quiet,
+body.win95-app .todo95 button.todo-cap.is-mod[type="button"]:not([hidden]),
+.todo95 .todo-lid-actions .todo-verb.is-quiet,
+body.win95-app .todo95 .todo-lid-actions button.todo-verb.is-quiet[type="button"]:not([hidden]) {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  color: #25282b;
+}
+
+.todo95 .todo-cap.is-primary,
+body.win95-app .todo95 button.todo-cap.is-primary[type="button"]:not([hidden]),
+.todo95 .todo-lid-actions .todo-verb.is-primary,
+body.win95-app .todo95 .todo-lid-actions button.todo-verb.is-primary[type="button"]:not([hidden]) {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--todo-cap-navy);
+  outline-offset: 1px;
+}
+
+.todo95 .todo-cap.is-primary::before,
+.todo95 .todo-lid-actions .todo-verb.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--todo-cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+.todo95 .todo-cap:active:not(:disabled),
+.todo95 .todo-cap[aria-pressed="true"],
+.todo95 .todo-cap.is-on,
+.todo95 .todo-lid-actions .todo-verb:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.todo95 .todo-cap:disabled {
+  color: #7d8185;
+  cursor: default;
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+}
+
+.todo95 .todo-cap:focus-visible,
+.todo95 .todo-lid-actions .todo-verb:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* ==== Redesign 2026-10-21: rows keep Card and ▶; everything else is in the drawer ==== */
+
+.todo95 .todo-table {
+  --todo-cols: minmax(0, 1fr) 3.6rem auto auto 3.4rem auto auto 2rem;
+}
+
+.todo95 .todo-table .todo-cell-tier {
+  justify-content: stretch;
+  padding: 0 2px;
+}
+
+.todo95 .todo-table .todo-cell-tier .todo-nixie,
+.todo95 .todo-table .todo-cell-tier select {
+  width: 100%;
+  text-align: center;
+  text-align-last: center;
+}
+
+.todo95 .todo-row-verbs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.todo95 .todo-card-key,
+body.win95-app .todo95 button.todo-card-key[type="button"] {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  padding: 0 0 3px;
+  color: #25282b;
+  background: linear-gradient(180deg, var(--todo-cap-mod-top), var(--todo-cap-mod-top2));
+  border: 1px solid var(--todo-cap-mod-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--todo-cap-mod-skirt),
+    inset -2px 0 0 var(--todo-cap-mod-skirt),
+    inset 0 -3px 0 var(--todo-cap-mod-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.todo95 .todo-card-key:active {
+  transform: translateY(1px);
+}
+
+.todo95 .todo-card-key:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* The drawer's Actions line: one row of keycaps, the quiet ones to the right. */
+.todo95 .todo-lid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 4px;
+}
+
+.todo95 .todo-lid-actions-rest {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.todo95 .todo-lid-actions .todo-verb.is-delete .todo-verb-word {
+  display: inline;
+}
+
+/* Flags: willpower gems (public/gems-removebackground/), the same family as Habits. */
+.todo95 .todo-jewel.todo-gem,
+body.win95-app .todo95 button.todo-jewel.todo-gem[type="button"]:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: none;
+  background-image: none;
+  border: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.todo95 .todo-gem-stone {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: grayscale(0.85) brightness(0.9) opacity(0.55) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  transition: filter 120ms ease;
+}
+
+.todo95 .todo-gem[aria-pressed="true"] .todo-gem-stone {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 4px rgba(125, 255, 196, 0.45));
+}
+
+.todo95 .todo-gem.is-prioritized[aria-pressed="true"] .todo-gem-stone {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 4px rgba(163, 92, 255, 0.5));
+}
+
+.todo95 .todo-gem:hover .todo-gem-stone {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
