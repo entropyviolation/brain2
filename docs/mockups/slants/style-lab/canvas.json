@@ -1,0 +1,27 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-10-21T06:52:00Z"},"title":"To do style lab","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":880,"h":560,"title":"0a · Obelisk on the time well"},
+"L0b-Lamps.dc.html":{"x":960,"y":0,"w":880,"h":560,"title":"0b · DSKY caution lamps"},
+"L0c-GoTwo.dc.html":{"x":1920,"y":0,"w":880,"h":560,"title":"0c · Go 2 empty band, stickers, frame numbers"},
+"L1a-SkyCRT.dc.html":{"x":0,"y":960,"w":880,"h":560,"title":"1a · Sky in the CRT, escalator up-next"},
+"L1b-Felt.dc.html":{"x":960,"y":960,"w":880,"h":560,"title":"1b · Felt console load drawer"},
+"L1c-Bridge.dc.html":{"x":1920,"y":960,"w":880,"h":560,"title":"1c · Tinney printout bridge, Week"},
+"L2a-Scope.dc.html":{"x":0,"y":1920,"w":880,"h":560,"title":"2a · Cream scope, one orange key"},
+"L2b-Hello.dc.html":{"x":960,"y":1920,"w":880,"h":560,"title":"2b · 1984 hello, serif and bitmap"},
+"L2c-Aibo.dc.html":{"x":1920,"y":1920,"w":880,"h":560,"title":"2c · Y2K pearl, which first?"},
+"L3a-LCARS.dc.html":{"x":0,"y":2880,"w":880,"h":560,"title":"3a · LCARS elbows"},
+"L3b-Nostromo.dc.html":{"x":960,"y":2880,"w":880,"h":560,"title":"3b · Nostromo cassette futurism"},
+"L3c-Esper.dc.html":{"x":1920,"y":2880,"w":880,"h":560,"title":"3c · Esper zoom, amber"},
+"L4a-Cow.dc.html":{"x":0,"y":3840,"w":880,"h":560,"title":"4a · A cow in a field, no text"},
+"L4b-Robot.dc.html":{"x":960,"y":3840,"w":880,"h":560,"title":"4b · The arm through the screen"},
+"L4c-Shrine.dc.html":{"x":1920,"y":3840,"w":880,"h":560,"title":"4c · Shrine in the rack"}
+},
+"order":["Main.dc.html","L0b-Lamps.dc.html","L0c-GoTwo.dc.html","L1a-SkyCRT.dc.html","L1b-Felt.dc.html","L1c-Bridge.dc.html","L2a-Scope.dc.html","L2b-Hello.dc.html","L2c-Aibo.dc.html","L3a-LCARS.dc.html","L3b-Nostromo.dc.html","L3c-Esper.dc.html","L4a-Cow.dc.html","L4b-Robot.dc.html","L4c-Shrine.dc.html"],
+"notes":{
+"r0":{"x":0,"y":-260,"text":"0 · Keeps every house rule","kind":"title1","maxW":2800},
+"r1":{"x":0,"y":700,"text":"1 · Legal new furniture, breaks nothing","kind":"title1","maxW":2800},
+"r2":{"x":0,"y":1660,"text":"2 · Breaks a few: orange, amber, serif, a face","kind":"title1","maxW":2800},
+"r3":{"x":0,"y":2620,"text":"3 · Breaks most: whole-tab re-skins","kind":"title1","maxW":2800},
+"r4":{"x":0,"y":3580,"text":"4 · Breaks everything","kind":"title1","maxW":2800}
+},
+"designSystems":[]}

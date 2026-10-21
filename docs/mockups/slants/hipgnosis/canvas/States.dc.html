@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To do states, Hipgnosis slant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&amp;family=Cormorant+Garamond:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0d0c}
+.st{position:relative;width:880px;height:940px;overflow:hidden;background:#0e0d0c;color:#ece6da;font-family:'Archivo',system-ui,sans-serif;font-size:14px;line-height:1.4;padding:36px}
+.st *{box-sizing:border-box}
+.lbl{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#a39c90}
+.note{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#cfc6b6;margin:0}
+.cell{display:flex;flex-direction:column;gap:10px}
+.plate{position:relative;height:200px;overflow:hidden}
+.develop{animation:develop 3s ease-out infinite alternate}
+@keyframes develop{0%{filter:brightness(2.4) contrast(.25) sepia(1) blur(4px)}70%,100%{filter:none}}
+@media (prefers-reduced-motion:reduce){.develop{animation:none}}
+</style>
+</helmet>
+<div class="st">
+  <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.22;mix-blend-mode:overlay"><filter id="grainS"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="100%" height="100%" filter="url(#grainS)"></rect></svg>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 36px">
+
+    <!-- 1 empty band: the splashless diver -->
+    <div class="cell">
+      <span class="lbl">Empty band · Required</span>
+      <div class="plate" style="background:linear-gradient(180deg,#d9d6cc 0%,#c9c6bd 46%,#7d8a8e 47%,#4b5b62 70%,#2a3337 100%)">
+        <svg aria-hidden="true" viewBox="0 0 400 200" style="position:absolute;inset:0;width:100%;height:100%">
+          <g transform="translate(200 70) rotate(180)"><circle cx="0" cy="-30" r="4" fill="#111"></circle><path d="M-3 -26 L3 -26 L4 -4 L2 22 L0 22 L0 0 L-2 22 L-4 22 L-4 -4 Z" fill="#111"></path><path d="M-3 -24 L-10 -46 M3 -24 L10 -46" stroke="#111" stroke-width="2.4"></path></g>
+          <line x1="0" y1="94" x2="400" y2="94" stroke="#d9d6cc" stroke-width=".6" opacity=".6"></line>
+        </svg>
+      </div>
+      <p class="note">Required. Not a ripple.</p>
+    </div>
+
+    <!-- 2 empty day: the cow, no text on the front -->
+    <div class="cell">
+      <span class="lbl">Empty day · nothing planned</span>
+      <div class="plate" style="background:linear-gradient(180deg,#cdd3d2 0%,#dfe0d8 40%,#9fb08c 41%,#6f8a5c 100%)">
+        <svg aria-hidden="true" viewBox="0 0 400 200" style="position:absolute;inset:0;width:100%;height:100%">
+          <g transform="translate(222 118)">
+            <rect x="-6" y="18" width="5" height="26" fill="#1a1a1a"></rect><rect x="4" y="18" width="5" height="26" fill="#1a1a1a"></rect><rect x="44" y="18" width="5" height="26" fill="#1a1a1a"></rect><rect x="54" y="18" width="5" height="26" fill="#1a1a1a"></rect>
+            <rect x="-10" y="-14" width="74" height="36" rx="10" fill="#f2efe8"></rect>
+            <path d="M8 -14 Q22 -6 18 8 Q12 20 -4 14 L-10 6 L-10 -6 Q-4 -14 8 -14 Z" fill="#1a1a1a"></path>
+            <path d="M40 -14 L58 -14 Q64 -10 64 0 Q52 6 44 -2 Z" fill="#1a1a1a"></path>
+            <path d="M64 -12 Q80 -14 84 0 L82 14 Q74 22 66 12 Z" fill="#f2efe8"></path>
+            <path d="M70 -12 Q80 -12 82 -2 L74 2 Z" fill="#1a1a1a"></path>
+            <circle cx="76" cy="16" r="5" fill="#d9b4ad"></circle>
+          </g>
+        </svg>
+      </div>
+      <p class="note">Sunday. Nothing planned, and no caption to say so.</p>
+    </div>
+
+    <!-- 3 missed: the smeared polaroid -->
+    <div class="cell">
+      <span class="lbl">Missed</span>
+      <div class="plate" style="display:grid;place-items:center">
+        <figure style="margin:0;width:210px;padding:10px 10px 44px;background:#efe8da;transform:rotate(3deg);box-shadow:0 14px 30px rgba(0,0,0,.55);position:relative">
+          <div style="height:140px;background:linear-gradient(180deg,#9a9a94,#7a5a8c 55%,#3b2a1e);position:relative;overflow:hidden">
+            <div aria-hidden="true" style="position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 6px,rgba(239,232,218,.35) 6px 9px,transparent 9px 18px);filter:blur(2px);transform:skewX(-14deg) scaleX(1.3)"></div>
+            <span style="position:absolute;left:12px;bottom:12px;font-size:18px;color:#efe8da;filter:blur(1.4px);transform:skewX(-18deg)">Refill prescriptions</span>
+          </div>
+          <figcaption class="note" style="position:absolute;left:12px;bottom:10px;color:#2a221d;font-size:15px">pushed twice, then missed</figcaption>
+        </figure>
+      </div>
+      <p class="note">A missed task smears, like a Polaroid rubbed while it develops.</p>
+    </div>
+
+    <!-- 4 overrun: the frame catches fire -->
+    <div class="cell">
+      <span class="lbl">Over the estimate</span>
+      <div class="plate" style="display:flex;align-items:center;padding:0 22px;background:#1c1712">
+        <div style="position:relative;width:100%;display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:center;min-height:64px;border-top:1px solid #2b251f;border-bottom:1px solid #2b251f">
+          <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse at 100% 100%,rgba(226,85,43,.75),rgba(226,85,43,.18) 32%,transparent 60%);box-shadow:inset -4px 0 0 #e2552b"></div>
+          <span style="position:relative;font-size:12px;letter-spacing:.2em;color:#d68a46">05</span>
+          <span style="position:relative;font-size:17px">Sketch tracking legend</span>
+          <span style="position:relative;color:#f08a4b">40m of 30m</span>
+        </div>
+      </div>
+      <p class="note">Only overrun burns. The flame is the one hot colour on the page.</p>
+    </div>
+
+    <!-- 5 done, under shrink-wrap -->
+    <div class="cell">
+      <span class="lbl">Done, sealed</span>
+      <div class="plate" style="background:#16161a;display:grid;place-items:center">
+        <div style="position:relative;width:300px;height:150px;background:linear-gradient(135deg,#0b0b0c,#1d1d22 45%,#0b0b0c 55%,#141418);box-shadow:inset 0 0 0 1px #2a2a30">
+          <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.08) 38%,transparent 46%)"></div>
+          <div style="position:absolute;right:22px;top:24px;width:78px;height:78px;border-radius:50%;background:#efe8da;color:#141210;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(8deg)">
+            <span style="font-size:26px;font-weight:800;line-height:.9">3</span><span style="font-size:7px;letter-spacing:.2em;text-transform:uppercase">done today</span>
+          </div>
+        </div>
+      </div>
+      <p class="note">The done list sits in black shrink-wrap. Open it and the wrap slides off.</p>
+    </div>
+
+    <!-- 6 loading: a print developing -->
+    <div class="cell">
+      <span class="lbl">Loading</span>
+      <div class="plate" style="display:grid;place-items:center">
+        <figure class="develop" style="margin:0;width:180px;padding:9px 9px 36px;background:#efe8da;transform:rotate(-2deg);box-shadow:0 12px 26px rgba(0,0,0,.5)">
+          <div aria-hidden="true" style="height:130px;background:linear-gradient(180deg,#d9d6cc 0%,#d9a9a6 58%,#211a16 60%,#120f0d 100%)"></div>
+        </figure>
+      </div>
+      <p class="note">No spinner. The list develops in, like a print in the tray.</p>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

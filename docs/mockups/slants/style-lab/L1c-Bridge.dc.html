@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>1c Printout bridge week</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.seg{position:absolute;width:112px;height:150px;box-sizing:border-box;padding:8px 16px;background:#f7f6f0;border:1px solid #c9c6b8;font:9.5px/1.35 'IBM Plex Mono',monospace;color:#1c1c1c;box-shadow:0 6px 10px rgba(0,0,0,.25)}
+.seg::before,.seg::after{content:"";position:absolute;top:0;bottom:0;width:8px;background:radial-gradient(circle,#c9c6b8 2.2px,transparent 2.6px) 0 4px/8px 12px repeat-y}
+.seg::before{left:3px}.seg::after{right:3px}
+.seg b{display:block;font-weight:600;font-size:11px;margin-bottom:4px;letter-spacing:.06em}
+</style>
+</helmet>
+<div style="position:relative;width:880px;height:560px;overflow:hidden;background:linear-gradient(180deg,#9cb7c9 0%,#c9d6d6 34%,#dfe2d6 44%)">
+  <svg aria-hidden="true" viewBox="0 0 880 560" style="position:absolute;inset:0;width:100%;height:100%">
+    <polygon points="0,250 120,150 210,210 330,90 470,220 560,140 700,200 880,120 880,300 0,300" fill="#8a8c86"></polygon>
+    <polygon points="300,112 330,90 362,118 345,124 330,108 318,122" fill="#f2f2ee"></polygon>
+    <polygon points="840,140 880,120 880,150" fill="#f2f2ee"></polygon>
+    <path d="M0 290 Q220 240 440 280 T880 260 V560 H0 Z" fill="#4f7b48"></path>
+    <path d="M0 360 Q300 310 600 350 T880 340 V560 H0 Z" fill="#3d6a3a"></path>
+    <path d="M380 296 Q420 300 400 312 T430 330" fill="none" stroke="#e8efe6" stroke-width="2"></path>
+    <g fill="#2f5a2e" opacity=".8"><circle cx="40" cy="420" r="22"></circle><circle cx="90" cy="440" r="26"></circle><circle cx="160" cy="470" r="30"></circle><circle cx="720" cy="430" r="26"></circle><circle cx="790" cy="455" r="30"></circle><circle cx="850" cy="420" r="24"></circle><circle cx="260" cy="500" r="28"></circle><circle cx="620" cy="500" r="30"></circle></g>
+  </svg>
+  <div style="position:absolute;left:22px;top:18px;font:11px 'Silkscreen',monospace;letter-spacing:.2em;color:#1c2a33">WEEK · OCT 19–25 · 14 TASKS</div>
+  <div style="position:absolute;right:22px;top:18px;font:11px 'IBM Plex Mono',monospace;color:#1c2a33">The bridge is built as days are done.</div>
+
+  <div class="seg" style="left:30px;top:300px;transform:rotate(-14deg)"><b>MON 19 ✓</b>Email Priya slides<br>Water plants<br>Book dentist</div>
+  <div class="seg" style="left:140px;top:236px;transform:rotate(-9deg)"><b>TUE 20</b>Reply to Dana<br>Grant budget table<br>Notes ch. 4<br>Refill prescriptions<br>Tracking legend</div>
+  <div class="seg" style="left:252px;top:206px;transform:rotate(-3deg)"><b>WED 21</b>Collect quotes<br>Lab meeting prep</div>
+  <div class="seg" style="left:364px;top:200px;transform:rotate(2deg)"><b>THU 22</b>Bench 3, after 2<br>Budget justification</div>
+  <div class="seg" style="left:478px;top:236px;transform:rotate(9deg);opacity:.96"><b>FRI 23</b>Submit draft</div>
+  <div class="seg" style="left:600px;top:390px;transform:rotate(-24deg);height:110px"><b>SAT 24</b>Nothing planned</div>
+  <div class="seg" style="left:730px;top:420px;transform:rotate(18deg);height:100px"><b>SUN 25</b>Weekly review</div>
+  <div style="position:absolute;left:22px;bottom:16px;font:11px 'IBM Plex Mono',monospace;color:#f2f2ee">Sat and Sun lie unplaced in the forest until planned.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
