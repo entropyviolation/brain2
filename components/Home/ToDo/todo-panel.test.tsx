@@ -858,6 +858,7 @@ describe("TodoPanel", () => {
 
   it("still completes a task when the panel unmounts mid-flock", () => {
     const { unmount } = render(<TodoPanel />)
+    fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
     screen.getByTitle("Mark complete").click()
     expect(useTaskStore.getState().tasks.find((t) => t.id === "todo-1")?.completed).toBe(false)
     unmount()
