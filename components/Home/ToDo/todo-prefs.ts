@@ -71,6 +71,10 @@ export type TodoPrefs = {
   /** Filter strip: Sort and its direction. */
   sortMode: TodoSortMode
   sortOrder: TodoSortOrder
+  /** Header ▾: the load instrument under the glass is open. Default closed. */
+  loadOpen: boolean
+  /** Header Show key: the filter tray is open. Default closed. */
+  showTrayOpen: boolean
 }
 
 export type SavedFormula = { id: string; name: string; weights: PriorityWeights }
@@ -107,6 +111,8 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   statusFilter: "open",
   sortMode: "priority",
   sortOrder: DEFAULT_TODO_SORT_ORDER.priority,
+  loadOpen: false,
+  showTrayOpen: false,
 }
 
 export function normalizeStatusFilter(value: unknown): TodoStatusFilter {
@@ -228,6 +234,8 @@ function load(): TodoPrefs {
         parsed.sortOrder === "asc" || parsed.sortOrder === "desc"
           ? parsed.sortOrder
           : DEFAULT_TODO_SORT_ORDER[normalizeSortMode(parsed.sortMode)],
+      loadOpen: parsed.loadOpen === true,
+      showTrayOpen: parsed.showTrayOpen === true,
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -263,7 +271,9 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.showAllTasks === false &&
       snapshot.statusFilter === DEFAULT_TODO_PREFS.statusFilter &&
       snapshot.sortMode === DEFAULT_TODO_PREFS.sortMode &&
-      snapshot.sortOrder === DEFAULT_TODO_PREFS.sortOrder
+      snapshot.sortOrder === DEFAULT_TODO_PREFS.sortOrder &&
+      snapshot.loadOpen === false &&
+      snapshot.showTrayOpen === false
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -301,6 +311,8 @@ export function setTodoPrefs(
     statusFilter: patch.statusFilter !== undefined ? normalizeStatusFilter(patch.statusFilter) : snapshot.statusFilter,
     sortMode: patch.sortMode !== undefined ? normalizeSortMode(patch.sortMode) : snapshot.sortMode,
     sortOrder: patch.sortOrder === "asc" || patch.sortOrder === "desc" ? patch.sortOrder : snapshot.sortOrder,
+    loadOpen: patch.loadOpen ?? snapshot.loadOpen,
+    showTrayOpen: patch.showTrayOpen ?? snapshot.showTrayOpen,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

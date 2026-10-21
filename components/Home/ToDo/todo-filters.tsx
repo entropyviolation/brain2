@@ -1,8 +1,10 @@
 /**
- * components/Home/ToDo/todo-filters.tsx — Filters and sort, always on the fascia
+ * components/Home/ToDo/todo-filters.tsx — The Show tray and the sort key
  *
- * One slim strip: show chips, tier, status, sort, formula. Global knobs
- * (sun rites, in-progress cap, default estimate, pace) live behind the gear.
+ * `TodoFilters` is the Show tray under the key field: show chips, tier,
+ * status, formula, and Open list. `TodoSortKeys` (sort and its direction)
+ * stays on the key field beside Show. Global knobs (sun rites, in-progress
+ * cap, default estimate, pace) live behind the globe settings key.
  */
 "use client"
 
@@ -74,11 +76,9 @@ export function TodoFilters({
   onShowAllTasksChange,
   statusFilter,
   onStatusFilterChange,
-  sortMode,
-  onSortModeChange,
-  sortOrder,
-  onSortOrderChange,
   onToggleFormula,
+  listName,
+  onOpenList,
 }: {
   period: TodoPeriod
   availableNow: boolean
@@ -87,11 +87,10 @@ export function TodoFilters({
   onShowAllTasksChange: (value: boolean) => void
   statusFilter: TodoStatusFilter
   onStatusFilterChange: (value: TodoStatusFilter) => void
-  sortMode: TodoSortMode
-  onSortModeChange: (value: TodoSortMode) => void
-  sortOrder: TodoSortOrder
-  onSortOrderChange: (value: TodoSortOrder) => void
   onToggleFormula: () => void
+  /** Period To do list in Lists, such as `To do 8/31-9/6`. */
+  listName?: string
+  onOpenList?: () => void
 }) {
   const chip = (label: string, checked: boolean, onChange: (v: boolean) => void, title?: string, id?: string) => (
     <label className="todo-chip" title={title}>
@@ -104,7 +103,7 @@ export function TodoFilters({
       className="todo-filters"
       aria-label="Filters and sort"
       data-ui-name="Show / Sort / Pace"
-      data-ui-help="One strip: show chips, tier, status, sort, and the priority formula."
+      data-ui-help="The Show tray: show chips, tier, status, the priority formula, and Open list."
       data-ui-docs="components/Home/ToDo/README.md"
       data-ui-docs-anchor="options"
     >
@@ -132,6 +131,41 @@ export function TodoFilters({
         </NativeSelect>
       </label>
 
+      <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
+        Formula
+      </button>
+
+      {listName && onOpenList ? (
+        <button
+          type="button"
+          className="todo-btn todo-open-list"
+          title={`Open ${listName} in Lists`}
+          aria-label={`Open ${listName} in Lists`}
+          onClick={onOpenList}
+        >
+          Open list
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+/** Sort and its direction, on the key field beside Show. */
+export function TodoSortKeys({
+  period,
+  sortMode,
+  onSortModeChange,
+  sortOrder,
+  onSortOrderChange,
+}: {
+  period: TodoPeriod
+  sortMode: TodoSortMode
+  onSortModeChange: (value: TodoSortMode) => void
+  sortOrder: TodoSortOrder
+  onSortOrderChange: (value: TodoSortOrder) => void
+}) {
+  return (
+    <div className="todo-sort-keys" role="group" aria-label="Sort order">
       <label className="todo-inline-field">
         <span className="todo-label" id="todo-sort-label">Sort</span>
         <NativeSelect
@@ -158,9 +192,6 @@ export function TodoFilters({
         {sortOrder === "asc" ? "↑" : "↓"}
       </button>
 
-      <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
-        Formula
-      </button>
     </div>
   )
 }

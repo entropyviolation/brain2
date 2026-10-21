@@ -14,3 +14,7 @@ When you map a module in depth (by reading it or through a subagent), write back
 Design language is in `docs/DESIGN_STYLE.md`. Redesign plans live in `docs/*_REDESIGN.md`.
 
 Style slants (Hipgnosis, retrofuturism) live in `docs/mockups/slants/`. Use one only when asked for it by name. A slant never changes the house style.
+
+## Do not merge the three task editors
+
+Item detail → Subtasks, the To do drawer and the To do task card all edit one task on purpose. They have different jobs, so they keep different UI and components. Do not merge them or make one mirror another without allie's yes. Why: `components/Home/ToDo/README.md` → "Three ways to edit a task stay separate".
