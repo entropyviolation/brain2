@@ -14,6 +14,8 @@ import {
   shouldAwaitPersistHub,
   wroteWhileHubLoaded,
   staleAgainstLocalVault,
+  hubPostKeys,
+  resetPersistWriteCache,
 } from "@/lib/persist-storage"
 import { nextAppearanceRev } from "@/lib/appearance-rev"
 
@@ -25,6 +27,7 @@ describe("persist-storage", () => {
   beforeEach(() => {
     localStorage.clear()
     resetPersistStatus()
+    resetPersistWriteCache()
   })
 
   afterEach(() => {
@@ -360,5 +363,73 @@ describe("persist-storage", () => {
     }
     expect(stored.state?.tasks?.map((task) => task.id).sort()).toEqual(["old", "tg-inbox"])
     expect(getPersistStatus().ok).toBe(true)
+  })
+  describe("one parse per setItem", () => {
+    const taskBlob = (ids: string[]) =>
+      JSON.stringify({
+        state: { tasks: ids.map((id) => ({ id, stage: "next", createdAt: "2026-09-01T00:00:00.000Z" })), lists: [], folders: [] },
+        version: 12,
+      })
+    const ids = (key: string) =>
+      (JSON.parse(localStorage.getItem(key) ?? "{}") as { state: { tasks: { id: string }[] } }).state.tasks
+        .map((t) => t.id)
+        .sort()
+
+    it("parses an unguarded vault zero times", () => {
+      const spy = vi.spyOn(JSON, "parse")
+      cogsStateStorage().setItem("brain2-sleep-store", '{"state":{"a":1}}')
+      cogsStateStorage().setItem("brain2-sleep-store", '{"state":{"a":2}}')
+      const sleepParses = spy.mock.calls.filter(([text]) => String(text).includes('"a"'))
+      expect(sleepParses).toHaveLength(0)
+    })
+
+    it("parses a task edit's incoming blob once when this tab wrote the stored copy", () => {
+      const storage = cogsStateStorage()
+      storage.setItem("brain2-task-storage", taskBlob(["a", "b"]))
+      const next = taskBlob(["a", "b", "c"])
+      const spy = vi.spyOn(JSON, "parse")
+      storage.setItem("brain2-task-storage", next)
+      const taskParses = spy.mock.calls.filter(([text]) => String(text).includes('"tasks"'))
+      expect(taskParses).toHaveLength(1)
+      expect(ids("brain2-task-storage")).toEqual(["a", "b", "c"])
+    })
+
+    it("still unions when another writer changed the key under this tab", () => {
+      const storage = cogsStateStorage()
+      storage.setItem("brain2-task-storage", taskBlob(["a", "b"]))
+      // Another window adds "z" straight to disk.
+      localStorage.setItem("brain2-task-storage", taskBlob(["a", "b", "z"]))
+      storage.setItem("brain2-task-storage", taskBlob(["a", "b", "c"]))
+      expect(ids("brain2-task-storage")).toEqual(["a", "b", "c", "z"])
+    })
+
+    it("still unions when the record count dropped, even if this tab wrote the stored copy", () => {
+      const storage = cogsStateStorage()
+      storage.setItem("brain2-task-storage", taskBlob(["a", "b", "c"]))
+      // A stale rehydrate writes two rows with no tombstone for "c".
+      storage.setItem("brain2-task-storage", taskBlob(["a", "b"]))
+      expect(ids("brain2-task-storage")).toEqual(["a", "b", "c"])
+    })
+
+    it("still refuses a habits write older than the stored contentRev", () => {
+      const storage = cogsStateStorage()
+      const habits = (contentRev: number, title: string) =>
+        JSON.stringify({ state: { contentRev, habits: [{ id: "h", title }] }, version: 1 })
+      storage.setItem("brain2-habits-store", habits(5, "new"))
+      storage.setItem("brain2-habits-store", habits(3, "old"))
+      expect(localStorage.getItem("brain2-habits-store")).toBe(habits(5, "new"))
+    })
+  })
+
+  describe("hubPostKeys", () => {
+    it("sends one POST key for a prefixed vault, whichever prefix the store used", () => {
+      expect(hubPostKeys("brain2-task-storage")).toEqual(["brain2-task-storage"])
+      expect(hubPostKeys("cogs-task-storage")).toEqual(["brain2-task-storage"])
+    })
+
+    it("keeps a separate key for a bare plan-text vault the hub does not twin", () => {
+      const keys = hubPostKeys("monthPlan-2026-10")
+      expect(keys).toEqual(["monthPlan-2026-10", "brain2-monthPlan-2026-10"])
+    })
   })
 })

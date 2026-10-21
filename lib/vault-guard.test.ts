@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { formatAppendLog } from "./append-log"
-import { applyAppearancePins, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots } from "./vault-guard.js"
+import { applyAppearancePins, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, overlayHabitCompletions, overlayHabitCompletionsParsed, overlayIngestAllowlist, overlayIngestAllowlistParsed, stampAppearancePinsParsed } from "./vault-guard.js"
 
 function tasks(n: number) {
   return JSON.stringify({
@@ -1030,5 +1030,76 @@ describe("telegram feed vault", () => {
       state: { rows: { id: string }[] }
     }
     expect(merged.state.rows.map((r) => r.id).sort()).toEqual(["a", "b", "c"])
+  })
+})
+
+describe("parsed guard variants match the string guards", () => {
+  const blob = (state: object) => JSON.stringify({ state, version: 1 })
+
+  it("unionPersistSnapshotsParsed equals unionPersistSnapshots and mutates the incoming object", () => {
+    const incoming = blob({ tasks: [{ id: "a" }], lists: [], folders: [] })
+    const existing = blob({ tasks: [{ id: "a" }, { id: "b" }], lists: [], folders: [] })
+    const expected = unionPersistSnapshots(incoming, existing, "brain2-task-storage")
+    const incObj = JSON.parse(incoming)
+    const got = unionPersistSnapshotsParsed(incoming, existing, incObj, JSON.parse(existing), "brain2-task-storage")
+    expect(got).toBe(expected)
+    expect(JSON.parse(got as string)).toEqual(incObj)
+  })
+
+  it("overlayHabitCompletionsParsed equals overlayHabitCompletions", () => {
+    const chosen = blob({ contentRev: 2, weeklyData: { d1: { h: 1 } } })
+    const other = blob({ contentRev: 1, weeklyData: { d1: { h: 1 }, d2: { h: 2 } } })
+    expect(overlayHabitCompletionsParsed(chosen, other, JSON.parse(chosen), JSON.parse(other), "brain2-habits-store")).toBe(
+      overlayHabitCompletions(chosen, other, "brain2-habits-store"),
+    )
+  })
+
+  it("downgrade guards agree on parsed roots", () => {
+    const rich = blob({ appearanceRev: 3, pcbMode: "mint", contentRev: 4 })
+    const seed = blob({ appearanceRev: 0, pcbMode: "teal", contentRev: 1 })
+    expect(shouldRejectAppearanceDowngradeParsed("brain2-theme-store", JSON.parse(seed), JSON.parse(rich))).toBe(
+      shouldRejectAppearanceDowngrade("brain2-theme-store", seed, rich),
+    )
+    expect(shouldRejectAppearanceDowngradeParsed("brain2-theme-store", JSON.parse(seed), JSON.parse(rich))).toBe(true)
+    expect(shouldRejectContentDowngradeParsed("brain2-habits-store", JSON.parse(seed), JSON.parse(rich))).toBe(true)
+    expect(shouldRejectContentDowngradeParsed("brain2-habits-store", JSON.parse(rich), JSON.parse(seed))).toBe(false)
+    const paired = blob({ allowlistRev: 2, allowedChats: [{ chatId: "1" }], events: [] })
+    const emptySeed = blob({ allowlistRev: 0, allowedChats: [], events: [] })
+    expect(shouldRejectIngestDowngradeParsed("brain2-ingest-store", JSON.parse(emptySeed), JSON.parse(paired))).toBe(
+      shouldRejectIngestDowngrade("brain2-ingest-store", emptySeed, paired),
+    )
+    expect(shouldRejectIngestDowngradeParsed("brain2-ingest-store", JSON.parse(emptySeed), JSON.parse(paired))).toBe(true)
+  })
+
+  it("overlayIngestAllowlistParsed equals overlayIngestAllowlist", () => {
+    const chosen = blob({ allowlistRev: 1, allowedChats: [], events: [] })
+    const other = blob({ allowlistRev: 1, allowedChats: [{ chatId: "9" }], events: [] })
+    expect(overlayIngestAllowlistParsed(chosen, other, JSON.parse(chosen), JSON.parse(other), "brain2-ingest-store")).toBe(
+      overlayIngestAllowlist(chosen, other, "brain2-ingest-store"),
+    )
+  })
+})
+
+describe("stampAppearancePins early return", () => {
+  it("does not parse a vault that stamps nothing", () => {
+    const spy = vi.spyOn(JSON, "parse")
+    stampAppearancePins('{"state":{"pcbMode":"mint","appearanceRev":2}}', "brain2-task-storage")
+    stampAppearancePins('{"state":{"pcbMode":"mint","appearanceRev":2}}', "brain2-sleep-store")
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it("still stamps theme and habits pins", () => {
+    localStorage.clear()
+    stampAppearancePins('{"state":{"pcbMode":"mint","appearanceRev":2}}', "brain2-theme-store")
+    expect(localStorage.getItem("brain2-pcb-mode")).toBe("mint")
+    stampAppearancePinsParsed({ state: { pcbMode: "xray", appearanceRev: 3 } }, "brain2-theme-store")
+    expect(localStorage.getItem("brain2-pcb-mode")).toBe("xray")
+  })
+
+  it("flags which vaults need parsed guards", () => {
+    expect(vaultNeedsParsedGuards("brain2-task-storage")).toBe(true)
+    expect(vaultNeedsParsedGuards("brain2-habits-store")).toBe(true)
+    expect(vaultNeedsParsedGuards("brain2-sleep-store")).toBe(false)
   })
 })
