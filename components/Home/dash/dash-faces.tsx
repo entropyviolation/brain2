@@ -749,7 +749,7 @@ function BudgetFace(props: DashFaceProps) {
   const face = useMemo(() => monthTotals(budgetRows(entries, lines), monthKey), [entries, lines, monthKey])
   const foot =
     face.aheadAll !== 0
-      ? `maybe ${budgetShort(face.aheadAll)}`
+      ? `${budgetShort(face.aheadAll)} with maybes`
       : `earned ${formatSpendAmount(face.earned)} · spent ${formatSpendAmount(face.spent)}`
   return (
     <DashFace props={props} legend="Budget" picto="budget" lit={face.net !== 0} foot={foot}>
