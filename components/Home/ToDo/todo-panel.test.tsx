@@ -793,4 +793,12 @@ describe("TodoPanel", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Week" }))
     expect(screen.getByLabelText("Search assigned tasks")).toHaveValue("")
   })
+
+  it("still completes a task when the panel unmounts mid-flock", () => {
+    const { unmount } = render(<TodoPanel />)
+    screen.getByTitle("Mark complete").click()
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "todo-1")?.completed).toBe(false)
+    unmount()
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "todo-1")?.completed).toBe(true)
+  })
 })

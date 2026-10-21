@@ -109,7 +109,7 @@ export function GravitySettingsDialog({ open, onOpenChange }: GravitySettingsDia
                   aria-valuetext={`${formatGain(value)}`}
                   title={row.hint}
                   onChange={(e) =>
-                    setField({ sources: { [row.key]: Number(e.target.value) } as Partial<GravitySourceGains> })
+                    setField({ sources: { ...sources, [row.key]: Number(e.target.value) } })
                   }
                 />
                 <p className="fm-gravity-settings-hint">{row.hint}</p>

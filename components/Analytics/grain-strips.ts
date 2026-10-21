@@ -44,6 +44,7 @@ function tally(
   scopeId: string,
   bucketOf: (date: string) => string,
 ): Map<string, Map<string, number>> {
+  const treePens = [...pens]
   const byBucket = new Map<string, Map<string, number>>()
   for (const date of dateKeys) {
     const bucket = bucketOf(date)
@@ -56,7 +57,7 @@ function tally(
     for (let minute = 0; minute < MINUTES_PER_DAY; minute++) {
       const owner = owners[minute]
       if (!owner) continue
-      const shown = penAtDepth(pens, owner.penId, depth)
+      const shown = penAtDepth(treePens, owner.penId, depth)
       const penId = shown?.id ?? owner.penId
       counts.set(penId, (counts.get(penId) ?? 0) + 1)
     }

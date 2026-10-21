@@ -1,6 +1,6 @@
 # `components/Home/ToDo/` — To-Do Panel
 
-The Home **To Do** sub-tab in **Brain2**. Day / week / month scoped task lists, plus a **Season** lens, under a milled fascia (CRT title, period nameplate, Day/Week/Month/Season keys, **Open list** on day/week/month, Show / Sort / Pace bays — Habits brushed metal, CRT glass, milled keys with room to breathe) and a readable instrument strip.
+The Home **To Do** sub-tab in **Brain2**. Day / week / month scoped task lists, plus a **Season** lens, under a milled fascia (CRT title, period nameplate, Day/Week/Month/Season keys, **Open list** on day/week/month, Show / Sort bays — Habits brushed metal, CRT glass, milled keys with room to breathe) and a readable instrument strip.
 
 The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from the dashboard). Previous day, next day, and Today on that nameplate call `setCurrentDate`, so the overview, Plan, and Tracking move with it. Week, month, and season nameplates keep a **lens offset** inside To Do — local state that pages the sheet, not a second shell day. Previous, next, and Today on those nameplates do not call `setCurrentDate` and do not move Plan or Tracking. Until a coarse nameplate is used, that lens shows the period that contains the shared Home day (`lib/use-current-date.ts`). Leaving To Do forgets a paged week, month, or season; the shared day stays with Home.
 
@@ -56,7 +56,7 @@ build/filter logic is unit-testable.
 
 | File | Purpose |
 |------|---------|
-| `todo-panel.tsx` | **Orchestrator** (`data-ui-name="To Do"`). Names mode also stamps the inner desks: **To Do fascia**, **Period nameplate** (season nav here; day/week/month on `TodoPeriodNav.tsx`), **Period keys**, **Period sheet**, **Season list**, **Morning priorities**, **Required**, **Assigned**, **Assigned composer**, **WIP warning**, **Priority formula**, **Status bar**, **To Do plate**. Milled fascia — CRT **To Do** + open count, period nameplate, **Open list**, **Add Task**, Day/Week/Month/Season keys, Show / Sort / Pace — then the list stage (full width), WIP lace warning, status bar, task detail popup. **Open list** opens Lists on that period's To do list. Under the window, on the page scroll, the title jewel (`orbFor("home-todo")`, the dove) sits centered, at most 40rem wide (`.todo-desk-plate`) so the bottom of the desktop is that picture. Day tab shows **Morning priorities** (3–5 ids from today's morning review). Open rows share **one ledger**: Required (gunmetal/pearl band) then Assigned. Completing a row is Cmd/Ctrl-Z undoable via `completeTask` → `lib/action-history.ts`; the completion popup **Undo** also reopens the row. **Missed opportunity** (`markMissedOpportunity`) is the too-late twin: same undo stack, no points, no completion popup. Period tab change uses a short fold (skipped under `prefers-reduced-motion`). |
+| `todo-panel.tsx` | **Orchestrator** (`data-ui-name="To Do"`). Names mode also stamps the inner desks: **To Do fascia**, **Period nameplate** (season nav here; day/week/month on `TodoPeriodNav.tsx`), **Period keys**, **Period sheet**, **Season list**, **Morning priorities**, **Required**, **Assigned**, **Assigned composer**, **WIP warning**, **Priority formula**, **Status bar**, **To Do plate**. Milled fascia — CRT **To Do** + open count, period nameplate, **Open list**, **Add Task**, Day/Week/Month/Season keys, Show / Sort — then the list stage (full width), WIP lace warning, status bar, task detail popup. **Open list** opens Lists on that period's To do list. Under the window, on the page scroll, the title jewel (`orbFor("home-todo")`, the dove) sits centered, at most 40rem wide (`.todo-desk-plate`) so the bottom of the desktop is that picture. Day tab shows **Morning priorities** (3–5 ids from today's morning review). Open rows share **one ledger**: Required (gunmetal/pearl band) then Assigned. Completing a row is Cmd/Ctrl-Z undoable via `completeTask` → `lib/action-history.ts`; the completion popup **Undo** also reopens the row. **Missed opportunity** (`markMissedOpportunity`) is the too-late twin: same undo stack, no points, no completion popup. Period tab change uses a short fold (skipped under `prefers-reduced-motion`). |
 | `todo-filters.tsx` | **Show / Sort** strip on fascia row 3 (_Last mapped: 2026-10-20_): LED chips (Available now, All tasks, Hide locked, Show next only), Tier, Status, Sort + direction, Formula. Sun rites, the in-progress cap, default estimate and pace moved to the gear. |
 | `TodoSettingsDialog.tsx` | The gear: global To Do settings (title, sun rites, pace, priority formula). |
 | `PriorityFormulaPanel.tsx` | Weights, saved formulas, and the optional math view. |
@@ -359,13 +359,13 @@ On **Assigned**, `pinPrioritizedFirst` always puts prioritized rows first; the c
 
 ### What waits on a row (Phase 14, task half)
 
-_Last mapped: 2026-10-16._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), task half. Built, not committed.
+_Last mapped: 2026-10-21._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), task half. Built, not committed.
 
 - **Priority sort only.** `sortTodosByPriority` (`todo-utils.ts`) reads `unlockContextFor` from `lib/unlock-value.ts` over the whole task list, so a waiting task counts even when it is not on this list. It adds the fifth `unlocks` signal and an urgency floor from the inherited due date. A row with nothing waiting scores exactly as before.
 - **Blocker goes first.** `blockersFirst` then moves an open prerequisite on the list to just above the first row waiting on it. Required / Assigned split and `pinPrioritizedFirst` run after, so this holds within each partition and Prioritized stays pinned.
 - `sortTodos` takes optional `now` and `markedIds`. The panel passes Required + Prioritized ids for the period; those count as full value. `filterAndSortTodos` is unchanged: the priority path already had the whole task list, so it needed no all-tasks argument.
 - **Row.** `TodoTable` takes `unlockOf`: an **unlocks N** chip (plain ink, no padlock, hover = `unlockBreakdown` label) and a neutral "due Thu for *X*" when something waiting has a deadline. Styles: `.todo-row-unlocks`, `.todo-row-inherited-due` in `todo-chrome.css`.
-- **Formula.** _Last mapped: 2026-10-21._ The field list in `PriorityFormulaPanel.tsx` (~28) has a fifth **Unlocks** field.
+- **Formula.** The field list in `PriorityFormulaPanel.tsx` (~28) has a fifth **Unlocks** field.
 - **Planned.** "needs *X* · not scheduled" with **Schedule *X* today**; (the task card shows the inherited due since slice O); step unlock rank in `lib/next-step.ts` and Phase 14 D (slice N); E (met at a level).
 
 ## Task card
@@ -446,7 +446,7 @@ Wave 13 (GS-9) keeps goal-complete and grade so partial work is credited.
 
 ## Options
 
-- **Show / Sort** — on the fascia: Available now, Show all tasks, Rites follow the sun (day lens), Status, Sort + direction, Formula, in-progress cap. Pace moved to the gear on 2026-10-20. _Last mapped: 2026-10-21._ All tasks, Status, Sort and direction persist in `todo-prefs.ts` like Available now. Changing lens clears the Assigned search and closes Formula.
+- **Show / Sort** — _Last mapped: 2026-10-21._ On the fascia: Available now, Show all tasks, Status, Sort + direction, Formula. Rites follow the sun, the in-progress cap and Pace are in the gear. All tasks, Status, Sort and direction persist in `todo-prefs.ts` like Available now. Changing lens clears the Assigned search and closes Formula.
 - **Show all tasks** — includes unscheduled tasks when enabled.
 - Collapse long lists after 8 rows with "Show more".
 

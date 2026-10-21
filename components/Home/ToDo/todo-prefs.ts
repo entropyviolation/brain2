@@ -114,7 +114,7 @@ export function normalizeStatusFilter(value: unknown): TodoStatusFilter {
 }
 
 export function normalizeSortMode(value: unknown): TodoSortMode {
-  return typeof value === "string" && value in DEFAULT_TODO_SORT_ORDER ? (value as TodoSortMode) : "priority"
+  return typeof value === "string" && Object.hasOwn(DEFAULT_TODO_SORT_ORDER, value) ? (value as TodoSortMode) : "priority"
 }
 
 export type TodoTierView = "all" | StepTier

@@ -149,7 +149,7 @@ function rootContainer(lists: List[], folders: Folder[]): NavRef[] {
       tie: list.name,
     })),
   ]
-  rows.sort((a, b) => a.order - b.order || byName(a, b))
+  rows.sort((a, b) => a.order - b.order || byName({ name: a.tie }, { name: b.tie }))
   return rows.map((row) => row.ref)
 }
 

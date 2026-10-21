@@ -5,10 +5,9 @@
  * a scan actually arrives.
  */
 
-let workerPromise: Promise<{
-  recognize: (image: string, opts?: { rectangle?: unknown }) => Promise<{ data: { text?: string } }>
-  setParameters: (params: Record<string, string>) => Promise<void>
-}> | null = null
+import type { PSM, Worker } from "tesseract.js"
+
+let workerPromise: Promise<Worker> | null = null
 
 async function getWorker() {
   if (!workerPromise) {
@@ -26,7 +25,7 @@ export async function ocrImage(dataUrl: string, mode: "receipt" | "page" = "page
   try {
     const worker = await getWorker()
     await worker.setParameters({
-      tessedit_pageseg_mode: mode === "receipt" ? "4" : "6",
+      tessedit_pageseg_mode: (mode === "receipt" ? "4" : "6") as PSM,
     })
     const { data } = await worker.recognize(dataUrl)
     return String(data.text || "")

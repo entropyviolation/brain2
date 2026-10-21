@@ -52,6 +52,7 @@ describe("baby animal greeting", () => {
         displayName: "baby bunny",
         firstSeenAt: "2026-09-14T00:00:00.000Z",
         lastAssignedAt: "2026-09-14T00:00:00.000Z",
+        wearCount: 1,
       },
     ]
     const again = noteFriendAssignment({

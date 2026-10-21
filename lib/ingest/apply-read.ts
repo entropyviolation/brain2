@@ -450,7 +450,7 @@ function formatFolder(folder: Folder): string {
   }
   const owned = (folder.listIds ?? [])
     .map((id) => lists.find((list) => list.id === id))
-    .filter((list): list is List => Boolean(list) && !isFolderAllItemsCategoryId(list.id))
+    .filter((list): list is List => list !== undefined && !isFolderAllItemsCategoryId(list.id))
   if (owned.length === 0 && childFolders.length === 0) {
     lines.push("(empty)")
     return lines.join("\n")
@@ -480,7 +480,7 @@ function formatListsCatalog(): string {
       lines.push(`${indent}${node.folder.name}`)
       const owned = (node.folder.listIds ?? [])
         .map((id) => lists.find((list) => list.id === id))
-        .filter((list): list is List => Boolean(list) && !isFolderAllItemsCategoryId(list.id))
+        .filter((list): list is List => list !== undefined && !isFolderAllItemsCategoryId(list.id))
       for (const list of owned) {
         const counts = listCounts(list)
         lines.push(`${indent}  • ${list.name} (${counts.open})`)

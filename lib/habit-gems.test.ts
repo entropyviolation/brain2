@@ -76,7 +76,7 @@ describe("habit gems catalog", () => {
   it("ensureTaskGem persists a random gem and leaves a custom one", () => {
     const custom = ensureTaskGem({ id: "kept", type: TaskType.BOOLEAN, gem: "/gems-removebackground/gem.png" })
     expect(custom.gem).toBe("/gems-removebackground/gem.png")
-    const assigned = ensureTaskGem({ id: "new", type: TaskType.BOOLEAN }, () => 0.1)
+    const assigned = ensureTaskGem<Pick<WeeklyTask, "gem">>({}, () => 0.1)
     expect(GEM_PATHS).toContain(assigned.gem)
     expect(assigned.gem).not.toBe(defaultHabitGem("boolean"))
     expect(ensureTaskGem(assigned, () => 0.9).gem).toBe(assigned.gem)

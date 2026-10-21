@@ -7,9 +7,9 @@
  * month inside that season the task actually sits on, and the season's other
  * months that held it are marked pushed too — one schedule step, not three.
  */
-import type { ReviewPeriod, Task } from "@/lib/types"
+import type { ReviewPeriod, SchedulePlacement, Task } from "@/lib/types"
 import { pushCardWorkingQueue } from "@/components/Scheduler/schedule-card-detail"
-import { recordPushedPlacement, taskWasScheduledForPeriod, type SchedulePlacement } from "@/lib/scheduling"
+import { recordPushedPlacement, taskWasScheduledForPeriod } from "@/lib/scheduling"
 
 function monthsInQuarter(key: string): string[] {
   const [year, quarter] = key.split("-Q")

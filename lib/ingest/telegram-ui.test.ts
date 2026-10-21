@@ -48,13 +48,13 @@ describe("inline question buttons", () => {
         ],
       },
     })
-    expect(markup?.inline_keyboard.map((row) => row[0].callback_data)).toEqual(["n:1", "n:2"])
-    expect(markup?.inline_keyboard[0][0].text).toBe("1. Read")
+    expect(markup?.inline_keyboard.map((row) => row[0]?.callback_data)).toEqual(["n:1", "n:2"])
+    expect(markup?.inline_keyboard[0][0]?.text).toBe("1. Read")
     expect(JSON.stringify(markup)).not.toMatch(/habit-very-long/)
     expect(JSON.stringify(markup)).not.toMatch(/reply_keyboard/)
     for (const row of markup?.inline_keyboard || []) {
       for (const button of row) {
-        expect(new TextEncoder().encode(button.callback_data).length).toBeLessThanOrEqual(64)
+        expect(new TextEncoder().encode(button!.callback_data).length).toBeLessThanOrEqual(64)
       }
     }
   })
@@ -64,7 +64,7 @@ describe("inline question buttons", () => {
       status: "needs_clarify",
       pending: { kind: "duplicate", candidates: [] },
     })
-    expect(markup?.inline_keyboard.map((row) => row[0].callback_data)).toEqual([
+    expect(markup?.inline_keyboard.map((row) => row[0]?.callback_data)).toEqual([
       "w:see",
       "w:again",
       "w:dismiss",
@@ -79,7 +79,7 @@ describe("inline question buttons", () => {
         candidates: [{ id: "line", name: "Oats" }],
       },
     })
-    const data = markup?.inline_keyboard.flat().map((button) => button.callback_data)
+    const data = markup?.inline_keyboard.flat().map((button) => button?.callback_data)
     expect(data).toEqual(["n:1", "w:inv", "w:skip"])
   })
 

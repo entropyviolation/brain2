@@ -170,7 +170,7 @@ export function DocumentEditor({
     const el = surfaceRef.current
     if (!el || !docId) return
     const slot = docsScrollSlot(docId)
-    let zeroTimer: ReturnType<typeof setTimeout> | null = null
+    let zeroTimer: number | null = null
     const persist = () => {
       if (!canPersistScroller(el) || (el.scrollTop === 0 && pendingScroll.current > 0)) {
         if (pendingScroll.current > 0) writeScrollOffset(slot, pendingScroll.current)

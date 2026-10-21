@@ -54,7 +54,7 @@ describe("Tracking tools tray", () => {
     expect(tools).toBeTruthy()
     expect(row?.lastElementChild).toBe(rail)
     expect(pens?.nextElementSibling).toBe(rail)
-    expect(rail?.contains(tools)).toBe(true)
+    expect(rail?.contains(tools ?? null)).toBe(true)
     expect(rail?.contains(detail as Node)).toBe(true)
     expect(getComputedStyle(rail as HTMLElement).marginLeft).toBe("auto")
 

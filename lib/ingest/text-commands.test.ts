@@ -605,8 +605,8 @@ describe("log intake switch transit", () => {
     expect(parseMessage("thought process opening the editor").kind).toBe("capture")
     expect(parseMessage("log: left room").kind).toBe("event-log")
     expect(INGEST_HELP.toLowerCase()).toContain("thought process")
-    expect(ingestIncoming(sim("help"), PROCESSED).reply.toLowerCase()).toContain("thought process")
-    expect(ingestIncoming(sim("info"), PROCESSED).reply.toLowerCase()).toContain("thought process")
+    expect(ingestIncoming(sim("help"), PROCESSED).reply?.toLowerCase()).toContain("thought process")
+    expect(ingestIncoming(sim("info"), PROCESSED).reply?.toLowerCase()).toContain("thought process")
 
     const thought = ingestIncoming(sim("tp: opening the editor to fix the clock\nso the military clock stays"), PROCESSED)
     expect(thought.status).toBe("ok")

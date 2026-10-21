@@ -87,6 +87,7 @@ export function ObjectiveDetailDialog({
   }
 
   const togglePriority = (period: PriorityPeriod) => {
+    if (!objective) return
     const key = periodKeyFor(period)
     if (isObjectivePrioritized(objective, period)) {
       clearObjectivePriority(objective.id, period, key)
@@ -101,6 +102,7 @@ export function ObjectiveDetailDialog({
   }
 
   const setMultiplier = (period: PriorityPeriod, multiplier: number) => {
+    if (!objective) return
     const key = periodKeyFor(period)
     setObjectivePriority(objective.id, { period, periodKey: key, multiplier: Math.max(1, multiplier) })
   }
