@@ -145,10 +145,11 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
     fireEvent.click(screen.getByRole("button", { name: "Completed" }))
     expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.completed).toBe(false)
-    expect(screen.getByRole("heading", { name: "Task completed" })).toBeInTheDocument()
+    // The dialog chunk loads on the first completion event.
+    expect(await screen.findByRole("heading", { name: "Task completed" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Undo completion" }))
     expect(useTaskStore.getState().tasks.find((t) => t.id === "task-1")?.completed).toBe(false)
   })
@@ -167,9 +168,9 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
     fireEvent.click(screen.getByRole("button", { name: "Completed" }))
-    fireEvent.click(screen.getByRole("button", { name: "Skip" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Skip" }))
     await waitFor(() => {
       const t = useTaskStore.getState().tasks.find((x) => x.id === "task-1")
       expect(t?.completed).toBe(true)
@@ -205,10 +206,10 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
-    expect(screen.queryByRole("button", { name: "Kanban" })).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Default" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Checklist" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Spreadsheet" })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: "Kanban" })).not.toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Default" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Checklist" })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: "Spreadsheet" })).toBeInTheDocument()
   })
 
   it("uses Default reading rows, the list name as the inner caption, and inspector facts without Delete", async () => {
@@ -548,7 +549,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
     expect(useTaskStore.getState().lists.map((c) => c.id)).toEqual(expect.arrayContaining(["list-1", "list-2"]))
 
-    fireEvent.click(screen.getByRole("button", { name: "Details" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Details" }))
     await waitFor(() => {
       expect(screen.getByText("item b")).toBeInTheDocument()
     })
@@ -610,7 +611,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(screen.getByText("item a")).toBeInTheDocument()
     expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.lists).toEqual(["__all-items__folder1"])
 
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
     await waitFor(() => {
       expect(screen.getByText("item a")).toBeInTheDocument()
     })
@@ -687,7 +688,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
     expect(useTaskStore.getState().folders.map((f) => f.id)).toEqual(expect.arrayContaining(["folder1", "folder2"]))
 
-    fireEvent.click(screen.getByRole("button", { name: "Details" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Details" }))
     await waitFor(() => {
       expect(screen.getByText("item b")).toBeInTheDocument()
     })
@@ -751,7 +752,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
     expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.lists).toEqual([])
 
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
     await waitFor(() => {
       expect(screen.getByText("item a")).toBeInTheDocument()
     })
@@ -814,7 +815,7 @@ describe("EnhancedCategoryView Integration", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.id === "a")?.lists).toEqual(["list-1"])
     expect(useTaskStore.getState().tasks.find((t) => t.id === "u")?.lists).toEqual([])
 
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
     await waitFor(() => {
       expect(screen.getByText("uncategorized item")).toBeInTheDocument()
     })
@@ -918,7 +919,7 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByText("list 2"))
 
     await waitFor(() => expect(screen.getByText("2 selected")).toBeInTheDocument())
-    expect(screen.getByRole("button", { name: "→ folder2" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "→ folder2" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("radio", { name: "Move from this folder" }))
 
     fireEvent.click(screen.getByRole("button", { name: "Add to New Folder" }))
@@ -960,7 +961,7 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select" }))
     fireEvent.click(screen.getByText("list 1"))
     fireEvent.click(screen.getByRole("radio", { name: "Move from this folder" }))
-    fireEvent.click(screen.getByRole("button", { name: "→ folder2" }))
+    fireEvent.click(screen.getByRole("option", { name: "→ folder2" }))
 
     await waitFor(() => {
       expect(useTaskStore.getState().folders.find((f) => f.id === "folder2")?.listIds).toContain("list-1")
@@ -992,7 +993,7 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select" }))
     fireEvent.click(screen.getByText("list 1"))
     expect(screen.getByRole("radio", { name: "Keep in this folder" })).toBeChecked()
-    fireEvent.click(screen.getByRole("button", { name: "→ folder2" }))
+    fireEvent.click(screen.getByRole("option", { name: "→ folder2" }))
 
     await waitFor(() => {
       expect(useTaskStore.getState().folders.find((f) => f.id === "folder2")?.listIds).toContain("list-1")
@@ -1200,7 +1201,7 @@ describe("EnhancedCategoryView Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "List" }))
     fireEvent.dblClick(screen.getByText(/Work Tasks/))
     await waitFor(() => expect(screen.getByText("Complete project")).toBeInTheDocument())
-    fireEvent.click(screen.getByRole("button", { name: "Checklist" }))
+    fireEvent.click(screen.getByRole("radio", { name: "Checklist" }))
 
     fireEvent.click(screen.getByRole("button", { name: "Select" }))
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Complete project" }))

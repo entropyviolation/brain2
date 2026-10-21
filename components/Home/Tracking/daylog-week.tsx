@@ -21,6 +21,7 @@ import {
 import { useTaskStore } from "@/lib/task-store"
 import { tasksForDayLog } from "@/lib/item-slices"
 import { useEventStore } from "@/lib/event-store"
+import { itemTitle } from "@/lib/item-utils"
 import { trackedAgendaBlocks } from "@/components/Home/Tracking/tracked-agenda-blocks"
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -150,10 +151,10 @@ export function DayLogWeek({
                 key={task.id}
                 type="button"
                 className="daylog-week-chip daylog-week-chip--planned"
-                title={task.description}
+                title={itemTitle(task)}
                 onClick={() => onTaskClick(task, col.date)}
               >
-                {task.description}
+                {itemTitle(task)}
               </button>
             ))}
           </div>
@@ -261,14 +262,14 @@ export function DayLogWeek({
                   key={task.id}
                   type="button"
                   className="daylog-week-block daylog-week-block--planned"
-                  title={`${task.scheduledTime} ${task.description}`}
+                  title={`${task.scheduledTime} ${itemTitle(task)}`}
                   style={{
                     top: (start / 60) * HOUR_H,
                     height: Math.max(10, (duration / 60) * HOUR_H),
                   }}
                   onClick={() => onTaskClick(task, col.date)}
                 >
-                  <span className="daylog-week-block-title">{task.description}</span>
+                  <span className="daylog-week-block-title">{itemTitle(task)}</span>
                   {(task.estimatedDuration ?? 0) > 0 ? (
                     <span className="daylog-week-block-sub">{task.estimatedDuration}m</span>
                   ) : null}

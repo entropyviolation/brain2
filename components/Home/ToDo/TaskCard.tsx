@@ -304,8 +304,8 @@ function TaskCardBody({
             {trail.slice(0, -1).map((t) => (
               <span key={t.id}>
                 <i aria-hidden>›</i>
-                <button type="button" title={`Open ${t.description} as the card's root`} onClick={() => openSubCard(task.id, t.id)}>
-                  {t.description}
+                <button type="button" title={`Open ${itemTitleOrUntitled(t)} as the card's root`} onClick={() => openSubCard(task.id, t.id)}>
+                  {itemTitleOrUntitled(t)}
                 </button>
               </span>
             ))}

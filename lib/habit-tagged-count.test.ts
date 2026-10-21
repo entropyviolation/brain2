@@ -103,7 +103,7 @@ describe("tagged task count", () => {
     expect(cell?.completed).toBe(true)
     const logged = useTaskStore.getState().tasks.find((task) => task.id === habitDoneLogId(cook.id, getWeekStartDate(NOW)))
     expect(logged?.description).toBe("cooked 2 times")
-    expect(logged?.tags).toEqual(["habit"])
+    expect(logged?.tags).toEqual(["habit", "cooking"])
 
     useTaskStore.getState().deleteTask("breakfast")
     syncTaggedTaskCounts(NOW)

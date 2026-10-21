@@ -120,7 +120,7 @@ describe("drafting a session", () => {
     const ts = tasks()
     let plan = emptySession(T0, 180)
     plan = addLine(plan, "min", { taskId: "cds", stepId: "save and export" }, ts)
-    expect(missingPrereqs(plan, ts)).toEqual([{ lineId: plan.tiers.min[0].id, needs: "remove extra text" }])
+    expect(missingPrereqs(plan, ts)).toEqual([{ lineId: plan.tiers.min[0].id, needs: "remove extra text", ref: { taskId: "cds", stepId: "remove extra text" } }])
     plan = addLine(plan, "goal", { taskId: "cds", stepId: "remove extra text" }, ts)
     plan = orderByPrereqs(plan, ts)
     expect(plan.tiers.min.map((l) => l.stepId)).toEqual(["remove extra text", "save and export"])

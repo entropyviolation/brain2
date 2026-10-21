@@ -15,6 +15,10 @@
 
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react"
 import { format } from "date-fns"
+import { short as budgetShort } from "@/components/Home/home-budget-tile"
+import { budgetRows, monthTotals } from "@/lib/budget-math"
+import { useBudgetStore } from "@/lib/budget-store"
+import { formatSpendAmount } from "@/lib/spend"
 import { useHomeDayStats, type HomeDayCount } from "@/components/Home/home-day-stats"
 import { useHomePeriodStats } from "@/components/Home/home-period-stats"
 import { useTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
@@ -735,6 +739,25 @@ function InboxFace(props: DashFaceProps) {
   )
 }
 
+/* ---- Budget ------------------------------------------------------------- */
+
+function BudgetFace(props: DashFaceProps) {
+  const { currentDate } = props
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const lines = useBudgetStore((s) => s.lines)
+  const monthKey = formatLocalDateKey(currentDate).slice(0, 7)
+  const face = useMemo(() => monthTotals(budgetRows(entries, lines), monthKey), [entries, lines, monthKey])
+  const foot =
+    face.aheadAll !== 0
+      ? `${budgetShort(face.aheadAll)} with maybes`
+      : `earned ${formatSpendAmount(face.earned)} · spent ${formatSpendAmount(face.spent)}`
+  return (
+    <DashFace props={props} legend="Budget" picto="budget" lit={face.net !== 0} foot={foot}>
+      <DashReading text={budgetShort(face.net)} />
+    </DashFace>
+  )
+}
+
 /* ---- Night well --------------------------------------------------------- */
 
 function NightFace(props: DashFaceProps) {
@@ -934,6 +957,7 @@ export const DASH_FACES: Record<string, ComponentType<DashFaceProps>> = {
   paint: PaintFace,
   tracking: TrackingFace,
   solar: SolarFace,
+  budget: BudgetFace,
 }
 
 registerDashFaces(DASH_FACES)
