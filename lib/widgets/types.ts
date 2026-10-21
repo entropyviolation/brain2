@@ -120,5 +120,5 @@ export type WidgetKind = {
   /** True when installing asks a few questions first (Setup). */
   hasSetup?: boolean
   /** Short group name in the gallery. */
-  group: "Day" | "Score" | "Sky" | "Clock" | "Capture" | "Study"
+  group: "Day" | "Score" | "Sky" | "Clock" | "Capture" | "Study" | "Money"
 }

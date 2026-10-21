@@ -12,6 +12,7 @@ import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { ensureLocationPen } from "@/lib/ingest/apply-discrete-event"
 import { submitTrackingLog } from "@/components/Home/Tracking/tracking-log-model"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { useBudgetStore } from "@/lib/budget-store"
 import { useEventStore } from "@/lib/event-store"
 import { isDemoProfile } from "@/lib/storage-keys"
 import { useTaskStore } from "@/lib/task-store"
@@ -22,7 +23,9 @@ const RESTAURANTS = ["Juniper Table", "Corner Noodle Bar", "Salt & Fig", "The Co
 const PLACES = ["Cedar Stacks Library", "Kiln Studio", "Ferry Landing", "Market Square", "Harbor Park", "Home", "Oak Hill Trail"]
 const FOODS = ["oatmeal with pears", "lentil soup", "noodle bowl", "fig toast", "veggie tacos", "dumplings", "scone and jam", "rice and greens"]
 const DRINKS = ["oat latte", "green tea", "sparkling water", "orange juice", "chai"]
-const SPENDS: [string, number, string][] = [["coffee", 475, "card"], ["lunch", 1420, "card"], ["bakery", 690, "cash"], ["ferry fare", 925, "card"], ["groceries", 4872, "account"], ["paperback", 1599, "card"], ["bus pass", 6000, "account"], ["print shop", 1240, "card"]]
+// Demo money is aspirational on purpose: abundance, generosity, a mansion with a view.
+const SPENDS: [string, number, string][] = [["oceanview mansion payment", 18500000, "estate account"], ["private chef dinner", 480000, "black card"], ["gift: dream trip for mom", 1250000, "black card"], ["studio build-out", 3200000, "estate account"], ["gallery art purchase", 2750000, "estate account"], ["donation: community garden", 500000, "giving fund"], ["sailboat tune-up", 640000, "black card"], ["flowers for everyone", 18500, "cash"], ["scholarship gift", 2500000, "giving fund"], ["first-class flights", 920000, "black card"]]
+const EARNINGS: [string, number, string][] = [["book royalties", 48500000, "royalties"], ["studio licensing deal", 125000000, "business"], ["dividends: index + real estate", 31200000, "investments"], ["sold the app", 850000000, "business"], ["speaking fee", 9500000, "business"], ["rental income: the lake house", 2800000, "investments"], ["surprise bonus", 15000000, "paycheck"], ["course sales", 6400000, "business"]]
 const THOUGHTS = ["Choosing the quiet route home\nThen soup, relieved the day was small and kind.", "Why 3pm slips\nEnergy dips after lunch, so heavy tasks go before noon.", "Two drafts, one reader\nLead with the short one, link the long one."]
 const TASKS = ["Return library books", "Glaze test tiles", "Renew ferry pass", "Plan coast weekend", "Draft studio newsletter", "Book dentist", "Water the herbs", "Pack tote for market", "Reply to the print shop", "Sketch poster layout"]
 const EVENTS: [string, string, string, string][] = [["Pottery class", "18:00", "20:00", "Kiln Studio"], ["Book club", "19:00", "20:30", "Cedar Stacks Library"], ["Farmers market", "09:00", "10:30", "Market Square"], ["Dinner out", "19:30", "21:00", "Juniper Table"], ["Ferry to the coast", "08:30", "10:00", "Ferry Landing"]]
@@ -96,6 +99,8 @@ export function fillDemoAround(anchor: Date, radius = 10): DemoFillResult {
       for (const [what, cents, src] of [pick(SPENDS), pick(SPENDS)]) {
         log({ date: key, title: what, mode: "spend", clock: r() < 0.15 ? "estimated" : "exact", minute: minute(450, 1200), spendAmount: cents, spendOn: what, spendSource: src })
       }
+      const [earnName, earnCents, earnSource] = pick(EARNINGS)
+      useBudgetStore.getState().addLines([{ date: key, name: earnName, cents: earnCents, kind: "earning", source: earnSource }])
       log({ date: key, title: pick(FOODS), mode: "intake", intakeClass: "food", clock: "exact", minute: minute(420, 1260) })
       log({ date: key, title: pick(FOODS), mode: "intake", intakeClass: "food", clock: "exact", minute: minute(720, 1260) })
       log({ date: key, title: pick(DRINKS), mode: "intake", intakeClass: "drink", clock: "exact", minute: minute(400, 900) })

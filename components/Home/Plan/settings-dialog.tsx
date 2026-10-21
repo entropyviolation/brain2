@@ -9,7 +9,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,8 +29,17 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { tasks, lists: categories, folders, setTasks, setLists, setFolders, clearAllData } = useTaskStore()
-  const { events, setEvents } = useEventStore()
+  // Counts only: subscribing to the arrays re-rendered this dialog (and scanned
+  // localStorage) on every task edit even while closed.
+  const taskCount = useTaskStore((s) => s.tasks.length)
+  const listCount = useTaskStore((s) => s.lists.length)
+  const folderCount = useTaskStore((s) => s.folders.length)
+  const setTasks = useTaskStore((s) => s.setTasks)
+  const setLists = useTaskStore((s) => s.setLists)
+  const setFolders = useTaskStore((s) => s.setFolders)
+  const clearAllData = useTaskStore((s) => s.clearAllData)
+  const eventCount = useEventStore((s) => s.events.length)
+  const setEvents = useEventStore((s) => s.setEvents)
   const [importData, setImportData] = useState("")
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle")
   const [importMessage, setImportMessage] = useState("")
@@ -55,6 +64,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Export all data as JSON
   const exportData = () => {
+    const { tasks, lists: categories, folders } = useTaskStore.getState()
+    const { events } = useEventStore.getState()
     const exportObject = {
       version: "1.0",
       exportDate: new Date().toISOString(),
@@ -186,12 +197,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }
 
+  const planCount = useMemo(
+    () => (open ? Object.keys(getAllPlanData()).length : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, importStatus],
+  )
   const dataStats = {
-    tasks: tasks.length,
-    lists: categories.length,
-    folders: folders.length,
-    events: events.length,
-    plans: Object.keys(getAllPlanData()).length,
+    tasks: taskCount,
+    lists: listCount,
+    folders: folderCount,
+    events: eventCount,
+    plans: planCount,
   }
 
   const isDirty = importData.trim() !== ""

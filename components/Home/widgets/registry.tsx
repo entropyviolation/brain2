@@ -21,6 +21,7 @@ import { SolarRemainderTile } from "@/components/Home/home-solar-tile"
 import { TrackingNowTile } from "@/components/Home/home-tracking-tile"
 import { HarvestTile, InboxMillTile, NightWellTile } from "@/components/Home/home-glance-tiles"
 import { AlreadyFlowingTile, PlanAndLivedTile } from "@/components/Home/home-reading-tiles"
+import { BudgetTile } from "@/components/Home/home-budget-tile"
 import { VocabTile } from "@/components/Home/home-vocab-tile"
 import { ScreenPetTile } from "@/components/Home/home-screen-pet"
 import { NextTile } from "@/components/Home/home-next-tile"
@@ -63,6 +64,7 @@ const TILES: Record<string, TileRenderer> = {
   vocab: ({ copy, currentDate, onHide }) => (
     <VocabTile currentDate={currentDate} onHide={onHide} lang={isVocabLang(copy.key) ? copy.key : undefined} />
   ),
+  budget: ({ currentDate, onHide }) => <BudgetTile currentDate={currentDate} onHide={onHide} />,
   pet: ({ currentDate, onHide }) => <ScreenPetTile currentDate={currentDate} onHide={onHide} />,
   next: ({ currentDate, onHide, onOpenHomeTab }) => (
     <NextTile currentDate={currentDate} onHide={onHide} onOpenHomeTab={onOpenHomeTab} />

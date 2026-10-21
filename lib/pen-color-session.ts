@@ -19,6 +19,7 @@ import {
   sessionActiveEnd,
   splitIntoDaySlices,
   WORK_SESSION_TICK_MS,
+  liveEntryUpToDate,
   type WorkDaySlice,
 } from "@/lib/operation-work-session"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
@@ -228,7 +229,9 @@ export function tickPenColorSession(now = new Date()): PenColorSession | null {
       usePenColorSessionStore.getState().clearSession()
       return null
     }
-    const ids = extendLiveEntry(session, sessionActiveEnd(session, now))
+    const end = sessionActiveEnd(session, now)
+    if (liveEntryUpToDate(session, end)) return session
+    const ids = extendLiveEntry(session, end)
     const next = { ...session, trackingEntryIds: ids }
     usePenColorSessionStore.getState().setSession(next)
     syncSliceDays(ids, [])

@@ -321,6 +321,33 @@ function patchWorkNowObjectives(
   return next
 }
 
+/**
+ * True when the painted Tracking block already ends at the rounded active end,
+ * so a tick would rewrite identical data (store writes persist the whole blob).
+ * Any drift (user moved the block, pen changed, entry missing) returns false.
+ */
+export function liveEntryUpToDate(
+  session: Pick<WorkSession, "startedAt" | "penId" | "scopeId" | "trackingEntryIds">,
+  end: Date,
+): boolean {
+  const ids = session.trackingEntryIds ?? []
+  if (ids.length === 0) return false
+  const slices = splitIntoDaySlices(new Date(session.startedAt), end)
+  if (slices.length !== ids.length) return false
+  const last = slices[slices.length - 1]
+  const entries = useTimeTrackingStore.getState().entries
+  const live = entries.find(
+    (e) => e.date === last.date && ids.includes(e.id),
+  )
+  return Boolean(
+    live &&
+      live.penId === session.penId &&
+      live.scopeId === session.scopeId &&
+      live.startMin === last.startMin &&
+      live.endMin === last.endMin,
+  )
+}
+
 function extendLiveEntry(session: WorkSession, now: Date): string[] {
   const slices = splitIntoDaySlices(new Date(session.startedAt), now)
   const tracking = useTimeTrackingStore.getState()
@@ -465,7 +492,9 @@ export function tickWorkSession(now = new Date()): WorkSession | null {
   const session = useWorkSessionStore.getState().session
   if (!session || isRestoring()) return session ?? null
   if (!session.penId) return session
-  const ids = extendLiveEntry(session, sessionActiveEnd(session, now))
+  const end = sessionActiveEnd(session, now)
+  if (liveEntryUpToDate(session, end)) return session
+  const ids = extendLiveEntry(session, end)
   const next = { ...session, trackingEntryIds: ids }
   useWorkSessionStore.getState().setSession(next)
   syncTrackedHabits([...new Set(ids.flatMap((id) => {

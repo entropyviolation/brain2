@@ -12,6 +12,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    // Barrel imports (lucide-react alone is 127 importing files) are rewritten to
+    // per-module imports, so dev compiles and the bundle only pull icons in use.
+    optimizePackageImports: ["lucide-react", "date-fns", "recharts", "@radix-ui/react-select", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tooltip"],
+  },
   images: {
     unoptimized: true,
   },

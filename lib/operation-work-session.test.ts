@@ -168,6 +168,31 @@ describe("operation work session (stores)", () => {
     expect(useTaskStore.getState().tasks.some((t) => t.loggedAction)).toBe(false)
   })
 
+  it("skips the tick write when the rounded end has not changed", () => {
+    startWorkingOnOperation("op_1")
+    vi.setSystemTime(new Date(2026, 5, 20, 14, 50, 10))
+    tickWorkSession()
+    const session = useWorkSessionStore.getState().session
+    const entries = useTimeTrackingStore.getState().entries
+    vi.setSystemTime(new Date(2026, 5, 20, 14, 50, 40))
+    tickWorkSession()
+    expect(useWorkSessionStore.getState().session).toBe(session)
+    expect(useTimeTrackingStore.getState().entries).toBe(entries)
+    vi.setSystemTime(new Date(2026, 5, 20, 14, 51, 5))
+    tickWorkSession()
+    expect(useTimeTrackingStore.getState().entries[0]?.endMin).toBe(14 * 60 + 51)
+  })
+
+  it("repaints on tick if the block drifted from the session end", () => {
+    startWorkingOnOperation("op_1")
+    vi.setSystemTime(new Date(2026, 5, 20, 14, 50, 10))
+    tickWorkSession()
+    const live = useTimeTrackingStore.getState().entries[0]!
+    useTimeTrackingStore.getState().moveEntryTo(live.id, live.startMin, live.endMin - 5)
+    tickWorkSession()
+    expect(useTimeTrackingStore.getState().entries[0]?.endMin).toBe(14 * 60 + 50)
+  })
+
   it("pauses elapsed and does not paint while paused; resume continues", () => {
     startWorkingOnOperation("op_1")
     vi.setSystemTime(new Date(2026, 5, 20, 14, 40, 0))
