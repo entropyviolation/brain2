@@ -52,17 +52,15 @@ describe("planned-action-store", () => {
   })
 
   it("drag-create persist remount stays a free action, not an event", async () => {
-    const created = usePlannedActionStore.getState().addAction
-      ? usePlannedActionStore.getState().upsertSourcePlacement(
-          placementFromDragRange({
-            date: "2026-09-21",
-            startMinutes: 14 * 60,
-            endMinutes: 15 * 60,
-            title: "Deep work",
-            notes: "no meetings",
-          }),
-        )
-      : null
+    const created = usePlannedActionStore.getState().upsertSourcePlacement(
+      placementFromDragRange({
+        date: "2026-09-21",
+        startMinutes: 14 * 60,
+        endMinutes: 15 * 60,
+        title: "Deep work",
+        notes: "no meetings",
+      }),
+    )
     expect(created?.source).toBe("free")
 
     await Promise.resolve()

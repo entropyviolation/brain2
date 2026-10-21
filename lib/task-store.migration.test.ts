@@ -284,7 +284,7 @@ describe("task-store v17 migrateUtcMidnightScheduleDates", () => {
       ],
     })
 
-    const shifted = next.tasks?.[0] as {
+    const shifted = next.tasks?.[0] as unknown as {
       description: string
       lists: string[]
       createdAt: string

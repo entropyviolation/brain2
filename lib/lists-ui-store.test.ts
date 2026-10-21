@@ -86,7 +86,7 @@ describe("lists ui desktop mode persist", () => {
     setIconPosition("home", "list-abc", 10, 20)
     setListIconsDesktop("list-abc", true)
     setListIconsGravity("list-abc", true)
-    setListIconsGravityField({ globalG: 1.4, sources: { tag: 1.1 } })
+    setListIconsGravityField({ globalG: 1.4, sources: { ...DEFAULT_GRAVITY_FIELD_PARAMS.sources, tag: 1.1 } })
     setListIconsDesktop("all-root", false)
     const location = listItemsIconLocation("list-abc")
     commitIconLayout(location, { "task-1": { x: 30, y: 40 } }, "freeform")

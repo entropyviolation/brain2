@@ -5,6 +5,7 @@
  * weekly / monthly / season maps). Does not write cells or change week windows.
  */
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
+import { incrementalDataForTask } from "@/lib/incremental-habits"
 import { isGoalType, isHabitGoalMet, normalizeTaskType } from "@/lib/habit-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
 import { TaskType, type HabitFrequency, type TaskCompletion, type WeeklyData, type WeeklyTask } from "@/lib/types"
@@ -86,7 +87,7 @@ export function habitGoalLabel(habit: WeeklyTask): string {
   if (type === TaskType.BOOLEAN) return "Yes / No"
   if (type === TaskType.TEXT) return "A note"
   if (type === TaskType.INCREMENTAL) {
-    const data = habit.incrementalData
+    const data = incrementalDataForTask(habit)
     if (!data) return "Climb"
     const unit = habit.unit ? ` ${habit.unit}` : ""
     return data.cadence === "weekly"

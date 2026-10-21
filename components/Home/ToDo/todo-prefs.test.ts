@@ -38,7 +38,7 @@ describe("todo-prefs", () => {
     setTodoPrefs({ sortMode: "name", sortOrder: "asc", statusFilter: "partial", showAllTasks: true })
     resetTodoPrefsForTests()
     expect(getTodoPrefs()).toMatchObject({ sortMode: "name", sortOrder: "asc", statusFilter: "partial", showAllTasks: true })
-    localStorage.setItem(TODO_PREFS_KEY, JSON.stringify({ sortMode: "bogus", statusFilter: 7 }))
+    localStorage.setItem(TODO_PREFS_KEY, JSON.stringify({ sortMode: "toString", statusFilter: 7 }))
     resetTodoPrefsForTests()
     expect(getTodoPrefs()).toMatchObject({ sortMode: "priority", sortOrder: "desc", statusFilter: "open" })
   })

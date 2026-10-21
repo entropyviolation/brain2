@@ -391,7 +391,9 @@ export function TodoPanel({
   }
 
   const handleAddDone = (description: string) => {
-    const refDate = toLocalCalendarDate(focusedDate)
+    // On Season the log lands on this month (today) or the season's first month; the completion window uses the same day.
+    const loggedPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
+    const refDate = toLocalCalendarDate(periodTab === "quarter" ? seasonMonthDate() : focusedDate)
     // Retroactive capture knows the day but not the hour, so derive a plausible
     // window (just now for today, otherwise that night's bedtime or the day
     // anchor) and flag it — an assumed time the user can settle later beats a
@@ -437,9 +439,7 @@ export function TodoPanel({
       minimumChunkSize: 15,
     }
 
-    const loggedPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
-    const loggedDate = periodTab === "quarter" ? seasonMonthDate() : refDate
-    scheduleTaskForPeriod(task, loggedPeriod, loggedDate)
+    scheduleTaskForPeriod(task, loggedPeriod, refDate)
     addTask(task)
 
     const points = resolveCompletionPoints(task, categories, folders)
@@ -475,8 +475,9 @@ export function TodoPanel({
   }
 
   // Pending flock and fold timers, cleared on unmount. A second Done during the flock is ignored.
+  // A Done still mid-flock at unmount is completed then, so leaving the tab never drops it.
   const timers = useRef(new Set<number>())
-  const flocking = useRef(new Set<string>())
+  const flocking = useRef(new Map<string, () => void>())
   const later = useCallback((fn: () => void, ms: number) => {
     const id = window.setTimeout(() => {
       timers.current.delete(id)
@@ -486,17 +487,22 @@ export function TodoPanel({
   }, [])
   useEffect(() => {
     const pending = timers.current
-    return () => pending.forEach((id) => window.clearTimeout(id))
+    const unfinished = flocking.current
+    return () => {
+      pending.forEach((id) => window.clearTimeout(id))
+      unfinished.forEach((complete) => complete())
+    }
   }, [])
 
   const handleComplete = (todoId: string, level?: StepTier) => {
     if (openRitual(todoId)) return
     if (flocking.current.has(todoId)) return
+    // The store stamps `completedDate` on this transition, so the row lands in
+    // today's "Done" list no matter which day it was scheduled for.
+    const complete = () => completeTask(todoId, { level })
     const finish = () => {
       flocking.current.delete(todoId)
-      // The store stamps `completedDate` on this transition, so the row lands in
-      // today's "Done" list no matter which day it was scheduled for.
-      completeTask(todoId, { level })
+      complete()
       setOpenRowId((id) => (id === todoId ? null : id))
       setFlockingId(null)
     }
@@ -504,7 +510,7 @@ export function TodoPanel({
       finish()
       return
     }
-    flocking.current.add(todoId)
+    flocking.current.set(todoId, complete)
     setFlockingId(todoId)
     later(finish, 380)
   }

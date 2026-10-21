@@ -82,10 +82,10 @@ export function buildMergedList(lists: List[], plan: ListMergePlan): List | null
     ? [...new Set(sources.flatMap((l) => l.sheetConfig?.columnIds ?? []))]
     : survivor.sheetConfig?.columnIds
   const sheetConfig =
-    plan.preserveAttributes && (survivor.sheetConfig || sources.some((l) => l.sheetConfig) || sheetColumnIds.length)
+    plan.preserveAttributes && (survivor.sheetConfig || sources.some((l) => l.sheetConfig) || sheetColumnIds?.length)
       ? {
           ...(survivor.sheetConfig ?? {}),
-          ...(sheetColumnIds.length ? { columnIds: sheetColumnIds } : {}),
+          ...(sheetColumnIds?.length ? { columnIds: sheetColumnIds } : {}),
         }
       : survivor.sheetConfig
   return {

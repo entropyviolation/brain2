@@ -380,12 +380,10 @@ function samplesFrom(payload: string, fallback: Date): GpsSample[] {
 export function applyGps(payload: string, now = new Date()): ApplyResult {
   const trimmed = payload.trim()
   if (!trimmed || isSharedPlace(trimmed)) {
-    return {
-      status: trimmed && isSharedPlace(trimmed) ? "ignored" : "error",
-      kind: "gps",
-      reply: trimmed && isSharedPlace(trimmed) ? undefined : "Where? gps: Home or a Telegram location pin.",
-      summary: trimmed && isSharedPlace(trimmed) ? "Shared place, not where you are" : undefined,
+    if (trimmed && isSharedPlace(trimmed)) {
+      return { status: "ignored", kind: "gps", summary: "Shared place, not where you are" }
     }
+    return { status: "error", kind: "gps", reply: "Where? gps: Home or a Telegram location pin." }
   }
 
   const samples = samplesFrom(trimmed, now)

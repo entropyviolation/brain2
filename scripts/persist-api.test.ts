@@ -139,6 +139,7 @@ describe("hub in-memory copy (isolated tmp file)", () => {
     return file
   }
   const disk = (f: string) => JSON.parse(readFileSync(f, "utf8"))
+  const readItems = () => readSharedPersist().items as Record<string, string>
   afterEach(() => {
     _resetSharedPersistForTests()
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
@@ -146,19 +147,19 @@ describe("hub in-memory copy (isolated tmp file)", () => {
 
   it("reads an old double-aliased file once and answers either alias", () => {
     const file = setup({ updatedAt: "x", source: "old", items: { "brain2-a": "1", "cogs-a": "1", "friend-pic:z": "img", legacy: "L" } })
-    const items = readSharedPersist().items
+    const items = readItems()
     expect(items["brain2-a"]).toBe("1")
     expect(items["cogs-a"]).toBe("1")
     expect(items.legacy).toBe("L")
     expect(items["friend-pic:z"]).toBeUndefined()
     // Second read does not touch the file: change it behind our back with an identical sig is impossible, so just check memory stays.
-    expect(readSharedPersist().items["cogs-a"]).toBe("1")
+    expect(readItems()["cogs-a"]).toBe("1")
     expect(existsSync(file)).toBe(true)
   })
 
   it("keeps brain2-* when a twin pair disagrees", () => {
     setup({ items: { "cogs-a": "old", "brain2-a": "new" } })
-    expect(readSharedPersist().items["cogs-a"]).toBe("new")
+    expect(readItems()["cogs-a"]).toBe("new")
   })
 
   it("does not write per POST; debounces one atomic write that keeps both aliases", async () => {
@@ -169,7 +170,7 @@ describe("hub in-memory copy (isolated tmp file)", () => {
     upsertSharedPersistItem("brain2-b", "4", "t")
     expect(disk(file).items["brain2-a"]).toBe("1") // not yet
     expect(statSync(file).mtimeMs).toBe(before)
-    expect(readSharedPersist().items["brain2-a"]).toBe("2") // memory is current, either alias
+    expect(readItems()["brain2-a"]).toBe("2") // memory is current, either alias
     await flushSharedPersist()
     const d = disk(file)
     expect(d.items).toMatchObject({ "brain2-a": "2", "cogs-a": "2", "brain2-b": "4", "cogs-b": "4" })
@@ -220,7 +221,7 @@ describe("hub in-memory copy (isolated tmp file)", () => {
     const file = setup({ items: { "brain2-a": "1", "cogs-a": "1" } })
     readSharedPersist()
     writeFileSync(file, JSON.stringify({ items: { "brain2-a": "1", "brain2-tg": "phone" }, source: "phone-hub" }) + " ", "utf8")
-    expect(readSharedPersist().items["brain2-tg"]).toBe("phone")
+    expect(readItems()["brain2-tg"]).toBe("phone")
     upsertSharedPersistItem("brain2-mine", "m")
     writeFileSync(file, JSON.stringify({ items: { "brain2-a": "1", "brain2-tg": "phone", "brain2-late": "L" }, source: "phone-hub" }) + "  ", "utf8")
     await flushSharedPersist()
