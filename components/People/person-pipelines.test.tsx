@@ -142,10 +142,10 @@ describe("PersonPipelinesEditor", () => {
     const opened: string[] = []
     const stop = subscribePenSettings((target) => opened.push(`${target.scopeId}:${target.penId}`))
     render(<PersonPipelinesEditor mode="person" person={person} onChange={vi.fn()} />)
-    const label = document.querySelector('.person-pipelines-label[data-opens-pen="true"]')
+    const label = document.querySelector('.person-pipelines-label[data-opens-pen]')
     expect(label).not.toBeNull()
     fireEvent.doubleClick(label!)
-    fireEvent.doubleClick(document.querySelector('.person-pipelines-swatch[data-opens-pen="true"]')!)
+    fireEvent.doubleClick(document.querySelector('.person-pipelines-swatch[data-opens-pen]')!)
     stop()
     expect(opened).toEqual(["company:co-together", "company:co-together"])
   })

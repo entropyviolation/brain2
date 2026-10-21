@@ -250,6 +250,7 @@ export function PointsBoard({ currentDate, onHide }: { currentDate: Date; onHide
               </span>
               <div
                 className={cn("hab-score-readout home-ticker-value", points.todayFlash && "is-flash")}
+                data-centered="true"
                 suppressHydrationWarning
               >
                 {mounted ? formatTickerPoints(ticker.value) : "—"}

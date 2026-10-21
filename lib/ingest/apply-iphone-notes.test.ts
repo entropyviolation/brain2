@@ -80,7 +80,8 @@ describe("applyIphoneNotes", () => {
     expect(lists.some((l) => l.id === IPHONE_NOTES_STORE_LIST_ID)).toBe(true)
     expect(tasks).toHaveLength(1)
     expect(tasks[0].title).toBe("Grocery")
-    expect(tasks[0].description).toContain("milk")
+    expect(tasks[0].description).toBe("Grocery")
+    expect(tasks[0].body).toContain("milk")
     expect(tasks[0].body).toContain("eggs")
     expect(tasks[0].lists).toContain(IPHONE_NOTES_STORE_LIST_ID)
     expect(tasks[0].attributes?.source).toBe(IPHONE_NOTES_STORE_SOURCE)
@@ -112,7 +113,7 @@ describe("applyIphoneNotes", () => {
     if (third.status !== "ok") return
     expect(third.reply).toMatch(/Parked in iPhone Notes Store: Journal/)
     const task = useTaskStore.getState().tasks[0]
-    expect(task.body).toBe("Hello there, world")
-    expect(task.description).toContain("Hello there, world")
+    expect(task.body).toBe("Journal\n\nHello there, world")
+    expect(task.description).toBe("Journal")
   })
 })

@@ -8,6 +8,7 @@ import { TaskType } from "@/lib/types"
 import { WeeklyTaskTracker } from "./habit-tracker"
 import { plasmaClipWidth } from "./noble-gas-tube"
 import { appendPlanEntry, getPlanEntries } from "@/lib/plan-text"
+import { APP_NAV_KEYS, writeStoredDate } from "@/lib/app-navigation"
 import { formatLocalDateKey } from "@/lib/date-utils"
 
 vi.mock("@/components/Home/Habits/task-grid", () => ({
@@ -412,10 +413,13 @@ describe("WeeklyTaskTracker", () => {
   })
 
   it("still paints week and output tubes when Home calendar date is outside the visible week", () => {
-    const weekDay = new Date("2026-09-22T12:00:00")
+    // The viewed week follows Home's date unless a lens pages it elsewhere, so
+    // page the lens to a week that excludes the Home date.
+    const weekDay = new Date("2026-09-16T12:00:00")
     const planPast = new Date("2026-08-05T12:00:00")
     vi.useFakeTimers()
-    vi.setSystemTime(weekDay)
+    vi.setSystemTime(new Date("2026-09-22T12:00:00"))
+    writeStoredDate(APP_NAV_KEYS.homeHabitsWeek, weekDay)
     useHabitsStore.getState().updateCompletion("d1", weekDay, { completed: true })
     render(<WeeklyTaskTracker currentDate={planPast} />)
     const week = screen.getByRole("progressbar", { name: "Week grade" })

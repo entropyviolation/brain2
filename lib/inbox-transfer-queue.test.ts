@@ -130,7 +130,8 @@ describe("inbox log transfer queue", () => {
     const disk = persistedTaskState()
     expect(disk.tasks.map((task) => task.id)).toContain("early")
     expect(disk.removedTaskIds ?? []).not.toContain("early")
-    expect(disk.restoredTaskIds).toBeUndefined()
+    // The restore is baked into the payload so the vault union does not strip it.
+    expect(disk.restoredTaskIds).toEqual(["early"])
   })
 
   it("undo after the write drops the note, and redo does not duplicate it", () => {

@@ -1,7 +1,7 @@
 /**
  * app/page.tsx — pin bar stays mounted with item detail; desk stays warm for Lists.
  */
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -76,7 +76,8 @@ describe("app page shell", () => {
     expect(await screen.findByTestId("item-detail")).toHaveTextContent("pin-item-1")
     // Desk stays in the document (hidden) so Lists can remain warm.
     expect(screen.getByTestId("app-desk")).toHaveAttribute("aria-hidden", "true")
-    expect(screen.queryByRole("tab", { name: "Home" })).not.toBeInTheDocument()
+    // The tab keys live in the pinned header now, so they stay with it.
+    expect(within(screen.getByTestId("app-header")).getByRole("tab", { name: "Home" })).toBeInTheDocument()
   })
 
   it("shows the pin bar with the tab strip when no item is open", async () => {

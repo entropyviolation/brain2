@@ -182,7 +182,7 @@ describe("printed goal amounts", () => {
       completionSources: ["manual", "listSent"],
       listSentLink: { listId: "texts", grace: 100, measure: "sent", target: "listLength" },
     }
-    expect(printedGoalAmounts(habit, { value: 90 }, items, now)).toEqual({ shown: 1, goal: 5 })
+    expect(printedGoalAmounts(habit, { value: 90 }, items, now, now)).toEqual({ shown: 1, goal: 5 })
   })
 
   it("prints a finished list week as sent over the frozen length", () => {

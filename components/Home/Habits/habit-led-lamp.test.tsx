@@ -199,9 +199,9 @@ describe("HabitLedLamp", () => {
     const glass = lamp.querySelector(".hab-lamp-glass") as HTMLElement
     const bloom = lamp.querySelector(".hab-lamp-bloom") as HTMLElement
     expect(lamp).toHaveAttribute("data-fill", "true")
-    expect(window.getComputedStyle(bezel).borderRadius).toBe("2px")
-    expect(window.getComputedStyle(glass).borderRadius).toBe("1px")
-    expect(window.getComputedStyle(bloom).borderRadius).toBe("1px")
+    expect(window.getComputedStyle(bezel).borderRadius).toBe("var(--r-2, 2px)")
+    expect(window.getComputedStyle(glass).borderRadius).toBe("var(--r-1, 1px)")
+    expect(window.getComputedStyle(bloom).borderRadius).toBe("var(--r-1, 1px)")
     expect(window.getComputedStyle(bezel).borderRadius).not.toBe("50%")
     expect(window.getComputedStyle(glass).borderRadius).not.toBe("50%")
   })

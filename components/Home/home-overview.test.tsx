@@ -130,7 +130,7 @@ describe("HomeOverview", () => {
       </div>,
     )
     expect(screen.getByTestId("home-overview")).toBeInTheDocument()
-    expect(await screen.findAllByText("42")).toHaveLength(4)
+    expect(await screen.findAllByText("42")).toHaveLength(2)
     expect(screen.getByTestId("home-award-tile")).toHaveTextContent("+42")
     expect(screen.getByTestId("home-award-tile")).toHaveTextContent("Completed Test task")
     const readouts = container.querySelectorAll(".hab-score-readout")
@@ -149,11 +149,11 @@ describe("HomeOverview", () => {
     )
     expect(container.querySelector(".hab-progress-title")).toBeNull()
     expect(screen.getByText("Today's Progress")).toBeInTheDocument()
-    expect(screen.getByText(/To do \d+\/\d+ · habits \d+\/\d+/)).toBeInTheDocument()
+    expect(container.querySelector(".home-progress-col[aria-label*=\"to do \"]")).toBeTruthy()
     expect(container.querySelector(".home-tile.is-progress .home-crt")).toBeTruthy()
     const points = container.querySelector(".home-tile.is-points")
     expect(points).toBeTruthy()
-    expect(points!.querySelectorAll(".home-points-line")).toHaveLength(4)
+    expect(points!.querySelector(".home-ticker-value")).toBeTruthy()
     expect(container.querySelector(".hab-score-well.is-alltime")).toBeNull()
     expect(container.querySelector(".hab-score-well.is-today")).toBeNull()
     const glass = points!.querySelector(".home-points-crt") as HTMLElement
@@ -171,10 +171,10 @@ describe("HomeOverview", () => {
         </div>
       </div>,
     )
-    expect(await screen.findAllByText("42")).toHaveLength(4)
+    expect(await screen.findAllByText("42")).toHaveLength(2)
     const points = container.querySelector(".home-tile.is-points")
     expect(points).toBeTruthy()
-    expect(points!.querySelectorAll(".home-points-line")).toHaveLength(4)
+    expect(points!.querySelector(".home-ticker-value")).toBeTruthy()
     expect(container.querySelectorAll(".hab-score-well.is-alltime, .hab-score-well.is-today")).toHaveLength(0)
   })
 

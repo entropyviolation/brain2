@@ -365,6 +365,7 @@ export type DashPictoName =
   | "tracking"
   | "night"
   | "sunset"
+  | "budget"
 
 /** One stroke weight, 16px box, square caps: Prius line icons. */
 const PICTO: Record<DashPictoName, ReactNode> = {
@@ -450,6 +451,12 @@ const PICTO: Record<DashPictoName, ReactNode> = {
   sunset: (
     <>
       <path d="M1.5 12.5h13M4.5 12.5a3.5 3.5 0 0 1 7 0M8 3.5v3M5.8 6.2L8 8.5l2.2-2.3" />
+    </>
+  ),
+  budget: (
+    <>
+      <path d="M1.5 4.5h13v8h-13zM1.5 7.5h13" />
+      <path d="M10.5 10h2" />
     </>
   ),
 }
