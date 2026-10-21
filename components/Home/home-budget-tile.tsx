@@ -19,7 +19,7 @@ import { formatSpendAmount } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
 /** $1,234,567 reads as $1.2M on the square so it fits. */
-function short(cents: number): string {
+export function short(cents: number): string {
   const abs = Math.abs(cents) / 100
   const sign = cents < 0 ? "-" : "+"
   if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(1)}B`

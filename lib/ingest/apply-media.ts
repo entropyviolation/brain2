@@ -4,6 +4,7 @@
  * Downloads already happened in the poller. This module OCRs, deskews, and
  * writes Zustand the same way the text executor does.
  */
+import { itemTitle } from "@/lib/item-utils"
 import { escapeHtmlText, sanitizeDocHtml } from "@/lib/doc-html"
 import { pdfArrayBufferToHtml } from "@/lib/pdf-to-html"
 import { applyReceiptText } from "./apply-receipt"
@@ -49,14 +50,14 @@ export async function applyMedia(message: IncomingMessage, now = new Date()): Pr
   if (pdfs.length) {
     for (const pdf of pdfs) {
       const doc = await ingestPdfAttachment(pdf, titleHint, now)
-      replies.push(`Docs: ${doc.description}`)
+      replies.push(`Docs: ${itemTitle(doc)}`)
       ids.push(doc.id)
     }
   }
 
   if (photos.length) {
     const doc = await ingestJournalPhotos(photos, titleHint || defaultJournalTitle(now), now, message.ocrText)
-    replies.push(`Docs: ${doc.description} (${photos.length} page${photos.length === 1 ? "" : "s"})`)
+    replies.push(`Docs: ${itemTitle(doc)} (${photos.length} page${photos.length === 1 ? "" : "s"})`)
     ids.push(doc.id)
   }
 
@@ -233,8 +234,8 @@ export function applyJournalText(payload: string, now = new Date()): ApplyResult
   return {
     status: "ok",
     kind: "journal",
-    reply: `Docs: ${doc.description}`,
-    summary: `Journal “${doc.description}”`,
+    reply: `Docs: ${itemTitle(doc)}`,
+    summary: `Journal “${itemTitle(doc)}”`,
     itemIds: [doc.id],
   }
 }

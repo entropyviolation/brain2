@@ -186,7 +186,9 @@ describe("QuickAdd", () => {
     const task = useTaskStore.getState().tasks[0]
     expect(task.description).toBe("go home tomorrow at 3pm")
     expect(task.scheduledTime).toBe("15:00")
-    expect(task.scheduledDate).toBeInstanceOf(Date)
+    // A bare date is attached, not scheduled (lib/smart-parse.ts, 2026-10-20).
+    expect(task.attachedDate).toBeInstanceOf(Date)
+    expect(task.scheduledDate).toBeUndefined()
     expect(task.stage).toBe("inbox")
   })
 

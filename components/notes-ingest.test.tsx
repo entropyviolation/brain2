@@ -90,9 +90,10 @@ describe("NotesIngest", () => {
       expect(lists.some((l) => l.name === NOTES_TO_INGEST_LIST_NAME)).toBe(true)
       expect(folders.some((f) => f.name === "Mac Notes")).toBe(true)
       expect(tasks).toHaveLength(1)
-      expect(tasks[0].description).toContain("Milk")
-      expect(tasks[0].description).toContain("Eggs")
+      // Parked items carry the note title; the full text lives on the body.
+      expect(tasks[0].description).toBe("Weekend")
       expect(tasks[0].body).toContain("Milk")
+      expect(tasks[0].body).toContain("Eggs")
     })
     expect(screen.getByText(/Saved 1 note/)).toBeInTheDocument()
   })

@@ -104,9 +104,9 @@ describe("timebox (FN-3, Just 25)", () => {
 describe("floor suggestion (FN-4)", () => {
   it("offers the smallest ready step and respects locks", () => {
     const ts = tasks()
-    // Draft with cds in Goal: spines (5m) is locked behind wood, so photos (10m) is offered.
+    // Draft with cds in Goal: Just Start's pick is wood (first ready step in order); spines (5m) is locked behind it.
     const plan = addLine(emptySession(T0), "goal", { taskId: "cds" }, ts)
-    expect(floorSuggestion(plan, ts)).toMatchObject({ taskId: "cds", stepId: "photos", minutes: 10 })
+    expect(floorSuggestion(plan, ts)).toMatchObject({ taskId: "cds", stepId: "wood", minutes: 20 })
   })
 
   it("reads the lens when the draft is empty, never a task that waits", () => {

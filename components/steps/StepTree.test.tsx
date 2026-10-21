@@ -164,14 +164,18 @@ describe("StepTree in the lid", () => {
 })
 
 describe("both hosts", () => {
-  it("draw the same tree", () => {
+  it("draw the same outline (names and nesting) even though the detail tab is its own tree", () => {
     const steps = [s("a", { subtasks: [s("a1")] }), s("b")]
     const { unmount } = render(<TodoBreakdown steps={steps} onEstimateChange={() => {}} onStepsChange={() => {}} />)
-    const lid = screen.getAllByRole("treeitem").map((r) => [r.getAttribute("aria-level"), r.getAttribute("aria-label")])
+    const lid = screen.getAllByRole("treeitem").map((r) => [Number(r.getAttribute("aria-level")) - 1, r.getAttribute("aria-label")])
     unmount()
-    render(<SubtaskTree steps={steps} onChange={() => {}} />)
-    const detail = screen.getAllByRole("treeitem").map((r) => [r.getAttribute("aria-level"), r.getAttribute("aria-label")])
+    const { container } = render(<SubtaskTree steps={steps} onChange={() => {}} />)
+    // SubtaskTree is its own outline (nested lists, not treeitems): read depth and name off each row.
+    const detail = [...container.querySelectorAll("li.id-sub-item")].map((li) => [
+      Number(li.getAttribute("data-depth")),
+      (li.querySelector("input.id-sub-name") as HTMLInputElement).value,
+    ])
     expect(detail).toEqual(lid)
-    expect(lid).toEqual([["1", "a"], ["2", "a1"], ["1", "b"]])
+    expect(lid).toEqual([[0, "a"], [1, "a1"], [0, "b"]])
   })
 })

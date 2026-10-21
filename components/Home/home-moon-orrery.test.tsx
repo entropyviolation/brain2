@@ -273,7 +273,7 @@ describe("moon chart date", () => {
     } finally {
       clock.restore()
     }
-  })
+  }, 15_000) // Walks Sun, Jupiter, moons and globe with real renders; ~6s alone, so the 5s default is too tight.
 
   it("plays the epoch backward without changing the saved rate", () => {
     const clock = installFrames()

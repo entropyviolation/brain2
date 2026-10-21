@@ -130,7 +130,7 @@ describe("step items (Phase 11)", () => {
     const item = get(id)
     useTaskStore.getState().updateTask({ ...item, scheduledDate: new Date(`${DAY}T00:00:00`), lists: ["l1"] })
     const all = tasks()
-    expect(tasksForLedgerKind(all, "todo", "day", DAY).map((t) => t.id)).toEqual(["cds"])
+    expect(tasksForLedgerKind(all, "todo", "day", DAY, [], new Date(`${DAY}T12:00:00`)).map((t) => t.id)).toEqual(["cds"])
     expect(tasksForLedgerKind(all, "undone", "day", DAY, [], new Date("2026-10-20T12:00:00")).map((t) => t.id)).not.toContain(id)
     expect(getTasksForPeriod(all, "day", DAY, new Date(`${DAY}T12:00:00`)).map((t) => t.id)).not.toContain(id)
     expect(getTasksForPeriod(all, "always", undefined, new Date()).map((t) => t.id)).not.toContain(id)

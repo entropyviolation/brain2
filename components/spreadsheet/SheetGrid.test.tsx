@@ -313,12 +313,13 @@ describe("SheetGrid", () => {
     expect(setData.mock.calls[0][1]).toMatch(/Apple.*\nBanana/)
   })
 
-  it("shows attributes held on items even when they are not in displayedAttributes", () => {
+  it("keeps the lean schema: attributes held on items but not in the list schema get no column", () => {
     const apple: Task = { ...makeTask("a", "Apple", 10), attributes: { cost: 10, rating: 5 } }
     useTaskStore.getState().setLists([CATEGORY])
     useTaskStore.getState().setTasks([apple])
     render(<SheetGrid categoryId="list1" tasks={[apple]} enableAddRow={false} enableAddColumn={false} />)
-    expect(screen.getByRole("button", { name: /Sort Rating/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Sort Cost/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Sort Rating/ })).not.toBeInTheDocument()
   })
 
   it("respects per-list columnIds from viewConfig", () => {
