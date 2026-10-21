@@ -3130,3 +3130,26 @@ body.win95-app .todo95 button.todo-jewel.todo-gem[type="button"]:not([hidden]) {
 .todo95 .todo-gem:hover .todo-gem-stone {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
+
+/* ==== Redesign 2026-10-21: empty bands are not drawn; Log done also sits on the composer ==== */
+
+.todo95 .todo-composer .todo-log-done,
+body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"]:not([hidden]) {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-weight: 700;
+  color: #25282b;
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
