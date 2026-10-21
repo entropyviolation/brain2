@@ -58,8 +58,16 @@ export interface SmartSuggestion {
   folderPath?: string[]
   /** List-name hint (not an id) — callers resolve/create the list. */
   category?: string
-  /** Local-midnight date for the recognized day, if any. */
+  /**
+   * Local-midnight date found in the text with no intent word. It is attached
+   * to the item and nothing else: not scheduled, not due. The words stay in
+   * `description`.
+   */
+  attachedDate?: Date
+  /** Local-midnight day named with `on` / `schedule(d)` / `do`. */
   scheduledDate?: Date
+  /** Local-midnight day named with `due` / `by` / `before` / `until` / `deadline`. */
+  deadline?: Date
   /** 24h "HH:mm" time-of-day, if any. */
   scheduledTime?: string
   /** 1-5 urgency, if a priority marker implied it. */
@@ -102,6 +110,7 @@ interface Candidate {
   category?: string
   folderName?: string
   date?: Date
+  dateIntent?: "attached" | "scheduled" | "due"
   time?: string
   urgency?: number
   importance?: number
@@ -295,7 +304,7 @@ function titleFromCuts(
 function nameContainsSchedule(name: string): boolean {
   if (!/\d/.test(name)) return false
   const { suggestion } = parseSmartCapture(name)
-  return Boolean(suggestion.scheduledDate || suggestion.scheduledTime || suggestion.estimatedDuration)
+  return Boolean(suggestion.scheduledDate || suggestion.attachedDate || suggestion.deadline || suggestion.scheduledTime || suggestion.estimatedDuration)
 }
 
 /** Consume `folder: folder: list:` prefixes at the start of a capture line. */
@@ -333,6 +342,20 @@ const MONTH_INDEX: Record<string, number> = {
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0")
+}
+
+/**
+ * Whether a date is only mentioned, scheduled, or due. A bare date is just
+ * attached; it takes an intent word right before it (or inside the match, as in `by fri`).
+ */
+function dateIntentAt(input: string, start: number, matched: string): "attached" | "scheduled" | "due" {
+  const lead = `${input.slice(Math.max(0, start - 24), start)}${matched}`
+  const head = /^(due|by|before|until|till|on)\b/i.exec(matched)?.[1]?.toLowerCase()
+  if (head === "on") return "scheduled"
+  if (head) return "due"
+  if (/\b(?:due|deadline|by|before|until|till)(?:\s+on)?[:\s]*$/i.test(lead.slice(0, lead.length - matched.length))) return "due"
+  if (/\b(?:on|schedule(?:d)?(?:\s+(?:for|on))?|do(?:\s+on)?)\s*$/i.test(lead.slice(0, lead.length - matched.length))) return "scheduled"
+  return "attached"
 }
 
 /** Build a local-midnight Date, rolling a no-year date forward if already past. */
@@ -566,6 +589,9 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
   }
 
   // --- Resolve overlaps: earliest start wins; ties → longest span ---
+  for (const c of candidates) {
+    if (c.type === "date") c.dateIntent = dateIntentAt(input, c.start, input.slice(c.start, c.end))
+  }
   candidates.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start))
   const selected: Candidate[] = []
   let lastEnd = -1
@@ -582,7 +608,10 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
   for (const c of selected) {
     if (c.type === "folder" && c.folderName) folders.push(c.folderName)
     if (c.category && suggestion.category === undefined) suggestion.category = c.category
-    if (c.date && suggestion.scheduledDate === undefined) suggestion.scheduledDate = c.date
+    if (c.date) {
+      const field = c.dateIntent === "due" ? "deadline" : c.dateIntent === "scheduled" ? "scheduledDate" : "attachedDate"
+      if (suggestion[field] === undefined) suggestion[field] = c.date
+    }
     if (c.time && suggestion.scheduledTime === undefined) suggestion.scheduledTime = c.time
     if (c.duration && suggestion.estimatedDuration === undefined) suggestion.estimatedDuration = c.duration
     if (c.urgency) suggestion.urgency = Math.max(suggestion.urgency ?? 0, c.urgency)

@@ -18,6 +18,7 @@
  */
 "use client"
 
+import { runSync } from "@/lib/defer-sync"
 import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
 import { taskRepository } from "@/lib/data/task-repository"
@@ -286,7 +287,7 @@ export function startTaggedTaskSync(): () => void {
       const unTrack = useTimeTrackingStore.subscribe((state, prev) => {
         if (isRestoring()) return
         if (state.entries === prev.entries && state.scopes === prev.scopes && state.tags === prev.tags) return
-        syncTaggedTaskCounts()
+        runSync(syncTaggedTaskCounts)
       })
       const unTasks = useTaskStore.subscribe((state, prev) => {
         if (isRestoring() || syncing) return

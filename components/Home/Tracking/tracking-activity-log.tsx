@@ -53,7 +53,7 @@ import { buildDoneTodoItems } from "@/components/Home/ToDo/todo-utils"
 import { proposeDoneEstimates } from "@/lib/estimate-proposals"
 import { getTaskCompletionDate } from "@/lib/completion-status"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
-import { ERASE } from "@/components/Home/Tracking/tracking-tool-mode"
+import { isTrackingPaintSentinel } from "@/components/Home/Tracking/tracking-tool-mode"
 import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 
 function dateKey(d: Date) {
@@ -254,7 +254,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
                     aria-label={`Note for untracked ${minutesToLabel(row.startMin)} to ${minutesToLabel(row.endMin)}`}
                     onChange={(e) => setUntrackedNote(dk, scope.id, row.startMin, row.endMin, e.target.value)}
                   />
-                  {selectedPenId && selectedPenId !== "ERASE" && selectedPenId !== "SCISSORS" && (
+                  {selectedPenId && !isTrackingPaintSentinel(selectedPenId) && (
                     <button
                       type="button"
                       className="trk-gap-fill"
@@ -420,7 +420,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
             {doneItems.map((item) => {
               const proposal = proposals.find((row) => row.sourceId === item.id)
               const placed = dayEntries.find((entry) => entry.estimateOf?.kind === "done" && entry.estimateOf.id === item.id)
-              const penId = selectedPenId && selectedPenId !== ERASE ? selectedPenId : scope.pens[0]?.id
+              const penId = selectedPenId && !isTrackingPaintSentinel(selectedPenId) ? selectedPenId : scope.pens[0]?.id
               return (
                 <li key={item.id} className="flex items-baseline gap-2 text-sm">
                   <span className="min-w-0 flex-1 truncate">{item.description}</span>

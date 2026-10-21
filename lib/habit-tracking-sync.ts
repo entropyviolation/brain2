@@ -28,6 +28,7 @@
  */
 "use client"
 
+import { runSync } from "@/lib/defer-sync"
 import { useEffect } from "react"
 import { isRestoring } from "@/lib/action-history"
 import { startHabitConnectionSync } from "@/lib/habit-connection-sync"
@@ -173,8 +174,8 @@ export function startHabitTrackingSync(): () => void {
         const paletteChanged = state.scopes !== previous.scopes || state.tags !== previous.tags
         const changedDays = state.entries === previous.entries ? [] : changedDateKeys(previous.entries, state.entries)
         previous = state
-        if (paletteChanged) syncTrackedHabits()
-        else if (changedDays.length > 0) syncTrackedHabits(changedDays)
+        if (paletteChanged) runSync(() => syncTrackedHabits())
+        else if (changedDays.length > 0) runSync(() => syncTrackedHabits(changedDays))
       })
       syncTrackedHabits(openWeekDateKeys())
       const cancelIdle = scheduleIdle(() => syncTrackedHabits())

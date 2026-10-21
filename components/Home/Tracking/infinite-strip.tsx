@@ -20,6 +20,7 @@
  */
 "use client"
 
+import { deferSyncs } from "@/lib/defer-sync"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { discreteLogInstants, overlayTicksBeside, penNameById, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
@@ -33,6 +34,7 @@ import {
   minutesToLabel,
 } from "@/lib/time-entries"
 import { formatLocalDateKey } from "@/lib/date-utils"
+import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
@@ -276,7 +278,7 @@ const InfiniteDayRow = memo(function InfiniteDayRow({
           focusTrackingPlot(plotRef.current)
           const cell = minuteFromPointer(e.target)
           if (!cell) return
-          if (selectedPenId === null) {
+          if (noPaint(selectedPenId)) {
             const existing = painted?.[cell.minute]
             if (existing) onOpenEntry(existing.id)
             return
@@ -524,15 +526,15 @@ export function InfiniteStrip({
 
   const commitPaint = useCallback(
     (date: string, from: number, to: number) => {
-      if (!scope || selectedPenId === null || selectedPenId === SCISSORS) return
-      paintMinutes(
+      if (!scope || noPaint(selectedPenId) || selectedPenId === SCISSORS) return
+      deferSyncs(() => paintMinutes(
         date,
         scope.id,
         Math.min(from, to),
         Math.max(from, to),
         selectedPenId === ERASE ? null : selectedPenId,
         selectedVariantIds,
-      )
+      ))
     },
     [scope, selectedPenId, selectedVariantIds, paintMinutes],
   )

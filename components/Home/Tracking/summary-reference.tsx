@@ -14,6 +14,7 @@ import { entryDisplayName, entriesOnDate, formatDuration, minutesToLabel } from 
 import { penNameById } from "./discrete-log-instants"
 import { feedOutcomeLabel, feedRowDayKey, feedRowMinute } from "@/lib/ingest/telegram-feed"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { asLogEntry, classifyLogBookRow, compareLogRows, logClockLabel, switchLogCopy } from "./tracking-log-model"
 
 type Shelf = "plans" | "events" | "thoughts" | "log" | "telegram"
@@ -43,6 +44,25 @@ export function SummaryReference({ dateKey }: { dateKey: string }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const feed = useTelegramFeedStore((s) => s.rows)
+  const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
+  const [notesOpen, setNotesOpen] = useState(false)
+
+  const blockNotes = useMemo(() => {
+    const penName = penNameById(scopes)
+    const view = scopes.find((scope) => scope.id === activeScopeId)
+    const blocks = entriesOnDate(entries, dateKey)
+      .filter((entry) => entry.kind !== "instant" && entry.scopeId === activeScopeId)
+      .sort((a, b) => a.startMin - b.startMin)
+      .map((entry) => ({
+        key: entry.id,
+        when: `${minutesToLabel(entry.startMin)}–${minutesToLabel(entry.endMin % 1440)}`,
+        name: entryDisplayName(entry, penName(entry.penId)),
+        length: formatDuration(entry.endMin - entry.startMin),
+        notes: entry.notes?.trim() ?? "",
+      }))
+    return { viewName: view?.name ?? "this view", blocks }
+  }, [entries, scopes, activeScopeId, dateKey])
+  const notedCount = blockNotes.blocks.filter((b) => b.notes).length
 
   const shelves = useMemo(() => {
     const penName = penNameById(scopes)
@@ -102,7 +122,36 @@ export function SummaryReference({ dateKey }: { dateKey: string }) {
             {label} · {shelves[id].length}
           </button>
         ))}
+        <button type="button" aria-haspopup="dialog" onClick={() => setNotesOpen(true)}>
+          Timeblock notes · {notedCount}
+        </button>
       </div>
+      <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
+        <DialogContent className="trk-dialog max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Timeblock notes · {blockNotes.viewName}</DialogTitle>
+          </DialogHeader>
+          {blockNotes.blocks.length === 0 ? (
+            <p>No timeblocks tracked on this day in this view.</p>
+          ) : (
+            <ul className="space-y-3">
+              {blockNotes.blocks.map((block) => (
+                <li key={block.key}>
+                  <div className="text-xs opacity-70">
+                    {block.when} · {block.length}
+                  </div>
+                  <div className="font-medium">{block.name}</div>
+                  {block.notes ? (
+                    <p className="whitespace-pre-wrap text-sm">{block.notes}</p>
+                  ) : (
+                    <p className="text-sm opacity-50">No notes.</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
       {open.length > 0 ? (
         <div className="trk-sumref-shelves">
           {SHELVES.filter(({ id }) => open.includes(id)).map(({ id, label }) => (

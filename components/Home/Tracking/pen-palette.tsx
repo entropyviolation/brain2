@@ -189,6 +189,8 @@ export function PenPalette({
                   ? "Erasing — pick a pen to paint again"
                   : paintTool === "scissors"
                     ? "Scissors — pick a pen to paint again"
+                    : paintTool === "point"
+                      ? "Point — clicks open blocks, nothing paints"
                     : "Pick a pen"}
               </span>
             )}
@@ -517,6 +519,8 @@ export function PenPalette({
                 ? " · erase — drag to clear minutes"
                 : paintTool === "scissors"
                   ? " · scissors — click a minute to split"
+                  : paintTool === "point"
+                    ? " · point — click opens a block, never paints"
                   : ""}
           </span>
           <span>sorted {PEN_SORT_LABELS[sortMode].toLowerCase()}</span>

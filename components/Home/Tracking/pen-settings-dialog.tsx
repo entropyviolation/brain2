@@ -59,6 +59,7 @@ function cleanFields(fields: PenField[]): PenField[] | undefined {
   return kept.length ? kept : undefined
 }
 import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
+import type { PenSettingsNav } from "@/components/Home/Tracking/pen-settings-host"
 import "./tracking-chrome.css"
 
 interface PenSettingsDialogProps {
@@ -66,9 +67,10 @@ interface PenSettingsDialogProps {
   pen: TrackPen
   onClose: () => void
   onDeleted?: () => void
+  nav?: PenSettingsNav
 }
 
-export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted }: PenSettingsDialogProps) {
+export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted, nav }: PenSettingsDialogProps) {
   usePenActionSync()
   const tags = useTimeTrackingStore((s) => s.tags)
   const updatePen = useTimeTrackingStore((s) => s.updatePen)
@@ -78,7 +80,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   const setPenParents = useTimeTrackingStore((s) => s.setPenParents)
   const habits = useHabitsStore((s) => s.tasks)
 
-  const [editingId, setEditingId] = useState(openedPen.id)
+  const [editingId] = useState(openedPen.id)
   const livePen = useTimeTrackingStore(
     (s) => s.scopes.find((sc) => sc.id === scopeId)?.pens.find((p) => p.id === editingId),
   )
@@ -135,7 +137,12 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
   const openPen = (id: string) => {
     if (id === editingId) return
     flush()
-    setEditingId(id)
+    openPenSettings(scopeId, id)
+  }
+
+  const step = (go: () => void) => {
+    flush()
+    go()
   }
 
   const createVariant = () => {
@@ -193,7 +200,19 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted 
     <Dialog open onOpenChange={guard.handleOpenChange}>
       <DialogContent className="trk95 trk-dialog trk-pen-settings sm:max-w-lg max-h-[85vh] overflow-y-auto" data-ui-name="Pen settings" data-ui-docs="components/Home/Tracking/README.md" {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader className="trk-dialog-head">
-          <DialogTitle>Pen · {name || pen.name}</DialogTitle>
+          <DialogTitle>
+            {nav ? (
+              <span className="mr-2 inline-flex gap-1 align-middle">
+                <button type="button" data-no95="" aria-label="Previous pen" disabled={!nav.canBack} onClick={() => step(nav.back)}>
+                  ‹
+                </button>
+                <button type="button" data-no95="" aria-label="Next pen" disabled={!nav.canForward} onClick={() => step(nav.forward)}>
+                  ›
+                </button>
+              </span>
+            ) : null}
+            Pen · {name || pen.name}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="trk-pen-mast">

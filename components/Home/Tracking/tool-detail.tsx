@@ -15,6 +15,7 @@ export const TRACKING_TOOL_DETAIL: Record<
   draw: { name: "Draw", howTo: "Paint with the selected pen" },
   erase: { name: "Erase", howTo: "Drag to clear minutes" },
   scissors: { name: "Scissors", howTo: "Click a minute to split" },
+  point: { name: "Point", howTo: "Click opens a block — never paints" },
 }
 
 export function ToolDetail({ paintTool }: { paintTool: TrackingPaintTool }) {

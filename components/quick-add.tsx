@@ -142,6 +142,10 @@ export function SuggestionChips({ suggestion }: { suggestion: SmartSuggestion })
   } else if (suggestion.category) {
     chips.push({ key: "cat", icon: <Tag className="h-3 w-3" />, label: suggestion.category })
   }
+  if (suggestion.attachedDate)
+    chips.push({ key: "attached", icon: <CalendarDays className="h-3 w-3" />, label: `${format(suggestion.attachedDate, "EEE MMM d")} (attached)` })
+  if (suggestion.deadline)
+    chips.push({ key: "due", icon: <CalendarDays className="h-3 w-3" />, label: `due ${format(suggestion.deadline, "EEE MMM d")}` })
   if (suggestion.scheduledDate)
     chips.push({ key: "date", icon: <CalendarDays className="h-3 w-3" />, label: format(suggestion.scheduledDate, "EEE MMM d") })
   if (suggestion.scheduledTime)

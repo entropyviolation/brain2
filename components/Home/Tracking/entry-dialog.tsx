@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Scissors, Trash2 } from "lucide-react"
+import { runAsAction } from "@/lib/action-history"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
@@ -42,6 +43,7 @@ import {
   entriesForSpan,
   entryDisplayName,
   formatDuration,
+  parseDurationInput,
   isInstant,
   isSleepBlock,
   minutesToLabel,
@@ -76,17 +78,17 @@ import {
 } from "@/lib/now-objective"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
-import { parseLocalDate } from "@/lib/date-utils"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
 import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
 import "./entry-dialog.css"
 import "./tracking-settings.css"
-import { CertaintyToggle, EndEventSection, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
-import { certaintyOf, certaintyPatch, refitTransit, worseOf } from "@/lib/entry-edges"
+import { CertaintyToggle, DriveCommuteSection, EdgeAnchor, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
+import { certaintyPatch, edgeOf, surer, refitTransit, settleAnchors, worseOf, type EdgeState } from "@/lib/entry-edges"
 import { transitPenOf } from "@/lib/transit-suggest"
 import { travelMinutes } from "@/lib/transit-time"
-import { pinOf } from "@/lib/transit-suggest"
+import { isLocationScope, pinOf } from "@/lib/transit-suggest"
 
 interface EntryDialogProps {
   entry: TimeEntry
@@ -170,12 +172,15 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
   // Per-end certainty. An older block that only has a block-wide value reads as both ends.
-  const [startC, setStartC] = useState(entry.startCertainty ?? entry.clockCertainty ?? "exact")
-  const [endC, setEndC] = useState(entry.endCertainty ?? entry.clockCertainty ?? "exact")
+  const [startC, setStartC] = useState(edgeOf(entry, "start").c)
+  const [endC, setEndC] = useState(edgeOf(entry, "end").c)
   // Re-clicking the lit button clears the mark; a cleared edge saves as the default, exact.
   const [startOff, setStartOff] = useState(false)
   const [endOff, setEndOff] = useState(false)
   const [endEventId, setEndEventId] = useState(entry.endEventId)
+  const [startEventId, setStartEventId] = useState(entry.startEventId)
+  const [startJoinId, setStartJoinId] = useState(entry.startJoinId)
+  const [endJoinId, setEndJoinId] = useState(entry.endJoinId)
   const [alsoOthers, setAlsoOthers] = useState(true)
   const spendEntry = isSpendEntry(entry)
   const [amountText, setAmountText] = useState(spendAmountInput(entry.spendAmount))
@@ -244,7 +249,8 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     return created || penId
   }
 
-  const save = () => {
+  const save = () => runAsAction("edit block", saveNow)
+  const saveNow = () => {
     const startMin = timeStringToMinutes(from)
     if (startMin === null) return
     if (!isInstant(entry) && timeStringToMinutes(to) === null) return
@@ -291,11 +297,14 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         ...moodPatch,
         ...spendPatch,
       })
+      settle()
       onClose()
       return
     }
     const parsedEnd = timeStringToMinutes(to)
     if (parsedEnd === null) return
+    // After Calculate the store holds the priced length; a different length is the user's own.
+    const liveOrigin = useTimeTrackingStore.getState().entries.find((e) => e.id === origin.id) ?? origin
     const sameDay = toDate === fromDate
     const endMin = sameDay && parsedEnd === 0 ? 1440 : parsedEnd
     const wrapEndDate = sameDay ? undefined : toDate
@@ -315,7 +324,15 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         nowObjectives,
         ...certaintyPatch(startC, endC),
         precision: assumed || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+        startEventId,
         endEventId,
+        startJoinId,
+        endJoinId,
+        ...(origin.transitMin != null || origin.transitFrom || origin.penId === (scope && transitPenOf(scope)?.id)
+          ? endMin - startMin !== (liveOrigin.transitMin ?? liveOrigin.endMin - liveOrigin.startMin)
+            ? { transitManual: true, transitMin: endMin - startMin }
+            : {}
+          : {}),
         ...moodPatch,
         ...spendPatch,
       },
@@ -327,34 +344,145 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     onClose()
   }
 
-  /** The linked event follows the end; other-view blocks that shared the old end follow too; transit refits. */
+  /** Anchored events and joined blocks agree with the saved ends; other-view blocks sharing the old end follow; transit refits. */
   const afterEndsSaved = (endMin: number) => {
     const live = useTimeTrackingStore.getState().entries
     const moved = { id: origin.id, startMin: timeStringToMinutes(from) ?? origin.startMin, endMin }
-    if (endEventId) {
-      const ev = live.find((e) => e.id === endEventId)
-      if (ev && ev.startMin !== endMin) updateEntry(ev.id, { startMin: endMin, endMin })
-      if (alsoOthers) {
-        for (const o of overlapping) updateEntry(o.id, { endEventId, endMin })
-      }
+    // A seam is stored on both blocks; unlinking here clears the other side too.
+    for (const [prev, next, back] of [
+      [origin.endJoinId, endJoinId, "startJoinId"],
+      [origin.startJoinId, startJoinId, "endJoinId"],
+    ] as const) {
+      if (prev && prev !== next && live.find((e) => e.id === prev)?.[back] === origin.id) updateEntry(prev, { [back]: undefined })
+      if (next) updateEntry(next, { [back]: origin.id })
     }
-    const patches = refitTransit(live, moved)
+    if (endEventId && alsoOthers) {
+      for (const o of overlapping) updateEntry(o.id, { endEventId, endMin })
+    }
+    settle()
+    const patches = refitTransit(useTimeTrackingStore.getState().entries, moved)
     for (const [id, patch] of Object.entries(patches)) updateEntry(id, patch)
     void repriceTransit(moved)
   }
 
-  /** Refit moves a transit block at once; Google then corrects its length for the new time of day. */
-  const repriceTransit = async (moved: { id: string; startMin: number; endMin: number }) => {
-    const live = useTimeTrackingStore.getState().entries
-    for (const t of live.filter((e) => e.transitFrom === moved.id)) {
-      const from = pinOf(scope?.pens.find((p) => p.id === live.find((e) => e.id === t.transitFrom)?.penId))
-      const to = pinOf(scope?.pens.find((p) => p.id === live.find((e) => e.id === t.transitTo)?.penId))
-      if (!from || !to) continue
-      const mins = await travelMinutes(from, to, t.date, moved.endMin)
-      if (mins == null || mins === t.transitMin) continue
-      const patch = refitTransit(useTimeTrackingStore.getState().entries, moved, () => mins)[t.id]
-      if (patch) updateEntry(t.id, patch)
+  const settle = () => {
+    for (const [id, patch] of Object.entries(settleAnchors(useTimeTrackingStore.getState().entries, origin.id))) updateEntry(id, patch)
+  }
+
+  /** Anchor an edge to an event or a neighbouring block; the surer side's time and certainty win. */
+  const linkEdge = (edge: "start" | "end", kind: "event" | "join", partner: TimeEntry) => {
+    const theirs = edgeOf(partner, kind === "event" || edge === "end" ? "start" : "end")
+    const mine: EdgeState = { min: (timeStringToMinutes(edge === "start" ? from : to) ?? 0) || (edge === "end" ? 1440 : 0), c: edge === "start" ? startC : endC }
+    if (mine.c === theirs.c && mine.min === theirs.min) {
+      /* already agrees */
+    } else if (surer(theirs.c, mine.c) || (mine.min === theirs.min && theirs.c !== mine.c)) takeEdge(edge, theirs)
+    if (edge === "start") {
+      setStartEventId(kind === "event" ? partner.id : undefined)
+      setStartJoinId(kind === "join" ? partner.id : undefined)
+    } else {
+      setEndEventId(kind === "event" ? partner.id : undefined)
+      setEndJoinId(kind === "join" ? partner.id : undefined)
     }
+  }
+  const unlinkEdge = (edge: "start" | "end") => {
+    if (edge === "start") {
+      setStartEventId(undefined)
+      setStartJoinId(undefined)
+    } else {
+      setEndEventId(undefined)
+      setEndJoinId(undefined)
+    }
+  }
+  const takeEdge = (edge: "start" | "end", to: EdgeState) => {
+    if (edge === "start") {
+      setFrom(minutesToTimeString(to.min % 1440))
+      setStartC(to.c)
+      setStartOff(false)
+    } else {
+      setTo(minutesToTimeString(to.min % 1440))
+      setEndC(to.c)
+      setEndOff(false)
+    }
+  }
+
+  /**
+   * A Location transit block between two pinned places takes the drive time as its
+   * length, unless the user set it by hand. Runs for blocks touching `moved`.
+   */
+  const repriceTransit = async (moved: { id: string; startMin: number; endMin: number }) => {
+    const transitPen = scope && isLocationScope(scope) ? transitPenOf(scope) : undefined
+    if (!scope || !transitPen) return
+    const live = useTimeTrackingStore.getState().entries
+    for (const t of live) {
+      if (t.penId !== transitPen.id || t.scopeId !== entry.scopeId || t.transitManual || isInstant(t)) continue
+      const aId = t.transitFrom ?? t.startJoinId
+      const bId = t.transitTo ?? t.endJoinId
+      if (![t.id, aId, bId].includes(moved.id)) continue
+      const a = live.find((e) => e.id === aId)
+      const b = live.find((e) => e.id === bId)
+      const from = pinOf(scope.pens.find((p) => p.id === a?.penId))
+      const to = pinOf(scope.pens.find((p) => p.id === b?.penId))
+      if (!a || !b || !from || !to) continue
+      const start = a.id === moved.id ? moved.endMin : a.endMin
+      const cap = b.id === moved.id ? moved.startMin : b.startMin
+      const mins = await travelMinutes(from, to, t.date, start)
+      if (mins == null || cap <= start) continue
+      const len = Math.max(1, Math.round(mins))
+      const end = Math.min(start + len, cap)
+      const now = useTimeTrackingStore.getState().entries.find((e) => e.id === t.id)
+      if (!now || (now.startMin === start && now.endMin === end && now.transitMin === len)) continue
+      updateEntry(t.id, { startMin: start, endMin: end, transitMin: len })
+    }
+  }
+
+  const [driveBusy, setDriveBusy] = useState(false)
+  const [driveMsg, setDriveMsg] = useState("")
+  const transitPenId = scope && isLocationScope(scope) ? transitPenOf(scope)?.id : undefined
+  const driveEnds = (() => {
+    if (!scope || !transitPenId || entry.penId !== transitPenId || isInstant(entry)) return null
+    const a = allEntries.find((e) => e.id === (entry.transitFrom ?? entry.startJoinId))
+    const b = allEntries.find((e) => e.id === (entry.transitTo ?? entry.endJoinId))
+    const from = pinOf(scope.pens.find((p) => p.id === a?.penId))
+    const to = pinOf(scope.pens.find((p) => p.id === b?.penId))
+    return a && b && from && to ? { a, b, from, to } : null
+  })()
+
+  /** Drive time between the neighbours becomes this block's length; empty Activity minutes in it read as driving. */
+  const calculateDrive = async () => {
+    if (!driveEnds) return
+    setDriveBusy(true)
+    setDriveMsg("")
+    const { a, b, from, to } = driveEnds
+    const mins = await travelMinutes(from, to, entry.date, a.endMin)
+    setDriveBusy(false)
+    if (mins == null) return setDriveMsg("No route found.")
+    const start = a.endMin
+    const end = Math.min(start + Math.max(1, Math.round(mins)), b.startMin)
+    if (end <= start) return setDriveMsg("No room between the two blocks.")
+    runAsAction("calculate driving commute", () => {
+      const st = useTimeTrackingStore.getState()
+      st.updateEntry(entry.id, { startMin: start, endMin: end, transitMin: Math.round(mins), transitManual: undefined, ...certaintyPatch(edgeOf(a, "end").c, edgeOf(b, "start").c), precision: "estimated" })
+      const act = useTimeTrackingStore.getState().scopes.find((s) => s.id === "activity")
+      if (!act) return
+      const penId = act.pens.find((p) => /^driving$/i.test(p.name.trim()))?.id ?? st.addPen(act.id, { name: "Driving", color: "#64748b" } as never)
+      if (!penId) return
+      const taken = useTimeTrackingStore
+        .getState()
+        .entries.filter((e) => e.date === entry.date && e.scopeId === "activity" && !isInstant(e) && e.endMin > start && e.startMin < end)
+        .sort((x, y) => x.startMin - y.startMin)
+      let at = start
+      for (const e of taken) {
+        if (e.startMin > at) useTimeTrackingStore.getState().paintMinutes(entry.date, "activity", at, e.startMin, penId, [], undefined, "estimated")
+        at = Math.max(at, e.endMin)
+      }
+      if (at < end) useTimeTrackingStore.getState().paintMinutes(entry.date, "activity", at, end, penId, [], undefined, "estimated")
+    })
+    setFrom(minutesToTimeString(start))
+    setTo(minutesToTimeString(end % 1440))
+    const clipped = Math.round(mins) > end - start
+    setDriveMsg(
+      `About ${Math.round(mins)} min leaving ${minutesToLabel(start)}${clipped ? `, but only ${end - start} min fit between the blocks` : ""}. Edit Start, End or Duration to set your own.`,
+    )
   }
 
   const addTransit = ({ from: a, to: b, minutes, label }: { from: TimeEntry; to: TimeEntry; minutes: number; label: string }) => {
@@ -367,8 +495,75 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     const made = useTimeTrackingStore
       .getState()
       .entries.find((e) => e.date === a.date && e.scopeId === a.scopeId && e.penId === pen.id && e.startMin === endMin)
-    if (made) updateEntry(made.id, { transitFrom: a.id, transitTo: b.id, transitMin: Math.round(minutes) })
+    if (made) {
+      // Anchored both ways: the trip leaves where this block ends and arrives where the next one starts.
+      updateEntry(made.id, {
+        transitFrom: a.id,
+        transitTo: b.id,
+        transitMin: Math.round(minutes),
+        startJoinId: a.id,
+        endJoinId: b.id,
+        ...certaintyPatch(endC, edgeOf(b, "start").c),
+        precision: endC === "exact" && edgeOf(b, "start").c === "exact" ? undefined : "estimated",
+      })
+      updateEntry(a.id, { endJoinId: made.id })
+      updateEntry(b.id, { startJoinId: made.id })
+    }
     onClose()
+  }
+
+  // Duration is derived from Start/End. Typing one moves the free end: End normally,
+  // Start when only the end is linked to an event or neighbour. Unknown ends have no length.
+  const [durDraft, setDurDraft] = useState<string | null>(null)
+  const startLinked = Boolean(startEventId || startJoinId)
+  const endLinked = Boolean(endEventId || endJoinId)
+  const durationApplies = !isInstant(entry) && (startOff || startC !== "unknown") && (endOff || endC !== "unknown")
+  const draftDurationMin = (() => {
+    const s = timeStringToMinutes(from)
+    const e = timeStringToMinutes(to)
+    if (s === null || e === null) return null
+    const a = parseLocalDate(fromDate)
+    const b = parseLocalDate(toDate)
+    const days = a && b ? Math.round((b.getTime() - a.getTime()) / 86_400_000) : 0
+    const end = days === 0 && e === 0 ? 1440 : e + days * 1440
+    return end > s ? end - s : null
+  })()
+  const durationSource = startLinked && endLinked ? "linked" : startLinked || endLinked ? "partly linked" : "from start and end"
+  const commitDuration = () => {
+    const text = durDraft
+    setDurDraft(null)
+    const d = text === null ? null : parseDurationInput(text)
+    const s = timeStringToMinutes(from)
+    const e = timeStringToMinutes(to)
+    if (d === null || s === null || e === null) return
+    const a = parseLocalDate(fromDate)
+    // Both ends linked: your typed length wins, so the end lets go of its link.
+    if (startLinked && endLinked) {
+      setEndEventId(undefined)
+      setEndJoinId(undefined)
+    }
+    const b = parseLocalDate(toDate)
+    if (endLinked && !startLinked) {
+      const days = a && b ? Math.round((b.getTime() - a.getTime()) / 86_400_000) : 0
+      const endAbs = (e === 0 && days === 0 ? 1440 : e) + days * 1440
+      const startAbs = endAbs - d
+      const dayShift = Math.floor(startAbs / 1440)
+      if (a && dayShift !== 0) {
+        const moved = new Date(a)
+        moved.setDate(moved.getDate() + dayShift)
+        setFromDate(formatLocalDateKey(moved))
+      }
+      setFrom(minutesToTimeString(((startAbs % 1440) + 1440) % 1440))
+      return
+    }
+    const endAbs = s + d
+    const dayShift = Math.floor((endAbs === 1440 ? 0 : endAbs) / 1440)
+    if (a) {
+      const moved = new Date(a)
+      moved.setDate(moved.getDate() + dayShift)
+      setToDate(formatLocalDateKey(moved))
+    }
+    setTo(minutesToTimeString(endAbs % 1440))
   }
 
   const splitHere = () => {
@@ -409,6 +604,9 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     startC,
     endC,
     endEventId,
+    startEventId,
+    startJoinId,
+    endJoinId,
     amountText,
     spentOn,
     spentSource,
@@ -424,7 +622,15 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     },
     isDirty,
     onSave: () => {
-      save()
+      // Saving from the unsaved-changes prompt: close first so the 1000-line form (and the
+      // prompt) are not re-rendered by every store write the save makes, then save on the
+      // next task. A spend block validates in the dialog, so it saves in place.
+      if (spendEntry) {
+        save()
+        return
+      }
+      onClose()
+      window.setTimeout(save, 0)
     },
   })
 
@@ -504,6 +710,37 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             <CertaintyToggle edge="start" value={startOff ? null : startC} onChange={(v) => { setStartOff(v === null); setStartC(v ?? "exact") }} />
             {!isInstant(entry) ? <CertaintyToggle edge="end" value={endOff ? null : endC} onChange={(v) => { setEndOff(v === null); setEndC(v ?? "exact") }} /> : <span />}
           </div>
+
+          {durationApplies ? (
+            <div className="trk-section trk-duration-edit">
+              <Label htmlFor="entry-duration" className="trk-section-title">
+                Duration
+              </Label>
+              <Input
+                id="entry-duration"
+                aria-label="Duration"
+                inputMode="text"
+                placeholder="1h 30m, 90, 1:30"
+                value={durDraft ?? (draftDurationMin === null ? "" : formatDuration(draftDurationMin))}
+                onFocus={(e) => e.currentTarget.select()}
+                onChange={(e) => setDurDraft(e.target.value)}
+                onBlur={commitDuration}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    commitDuration()
+                  }
+                }}
+              />
+              <p className="trk-help">
+                {durDraft !== null && parseDurationInput(durDraft) === null
+                  ? "Use minutes or hours, such as 45, 1:30 or 1h 30m."
+                  : startLinked && endLinked
+                    ? "Linked at both ends — typing a length unlinks End."
+                    : `Calculated ${durationSource}. Type a length to move ${endLinked && !startLinked ? "Start" : "End"}${startLinked || endLinked ? "; the linked end stays put" : ""}.`}
+              </p>
+            </div>
+          ) : null}
 
           {spendEntry ? (
             <div className="trk-section trk-spend-edit">
@@ -591,21 +828,42 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           </div>
 
           {!isInstant(entry) && (
-            <EndEventSection
-              entries={allEntries}
-              entry={entry}
-              endMin={timeStringToMinutes(to) ?? last.endMin}
-              linkedId={endEventId}
-              onLink={(ev) => {
-                setEndEventId(ev?.id)
-                if (ev) setTo(minutesToTimeString(ev.startMin))
-              }}
-              alsoOthers={alsoOthers}
-              onAlsoOthers={setAlsoOthers}
-              othersCount={overlapping.length}
-            />
+            <>
+              <EdgeAnchor
+                edge="start"
+                entries={allEntries}
+                scopes={scopes}
+                entry={entry}
+                own={{ min: startForSentence, c: startC }}
+                eventId={startEventId}
+                joinId={startJoinId}
+                onLink={(kind, p) => linkEdge("start", kind, p)}
+                onUnlink={() => unlinkEdge("start")}
+                onTake={(st) => takeEdge("start", st)}
+              />
+              <EdgeAnchor
+                edge="end"
+                entries={allEntries}
+                scopes={scopes}
+                entry={entry}
+                own={{ min: timeStringToMinutes(to) ?? last.endMin, c: endC }}
+                eventId={endEventId}
+                joinId={endJoinId}
+                onLink={(kind, p) => linkEdge("end", kind, p)}
+                onUnlink={() => unlinkEdge("end")}
+                onTake={(st) => takeEdge("end", st)}
+              >
+                {endEventId && overlapping.length > 0 && (
+                  <label className="trk-edge-also">
+                    <input type="checkbox" checked={alsoOthers} onChange={(e) => setAlsoOthers(e.target.checked)} />
+                    Also end {overlapping.length} overlapping block{overlapping.length === 1 ? "" : "s"} in other views here
+                  </label>
+                )}
+              </EdgeAnchor>
+            </>
           )}
           <NextBlockSection entries={allEntries} entry={last} scope={scope} onOpen={(e) => onOpenEntry?.(e)} />
+          {driveEnds && <DriveCommuteSection ready busy={driveBusy} message={driveMsg} onCalculate={() => void calculateDrive()} />}
           <TransitSection
             entries={allEntries}
             entry={last}
