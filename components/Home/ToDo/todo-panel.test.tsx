@@ -267,8 +267,30 @@ describe("TodoPanel", () => {
     expect(zeta.compareDocumentPosition(alpha) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it("keeps only Card and the clock key on a closed row; the other verbs live in the drawer", () => {
+    render(<TodoPanel />)
+    const row = screen.getByText("Finish slides").closest(".todo-row") as HTMLElement
+    expect(within(row).getByRole("button", { name: "Open task card for Finish slides" })).toBeInTheDocument()
+    for (const verb of ["Mark complete", "Push to next day"]) expect(within(row).queryByTitle(verb)).toBeNull()
+    expect(within(row).queryByRole("button", { name: "Delete" })).toBeNull()
+    fireEvent.click(within(row).getByRole("button", { name: "Finish slides" }))
+    const actions = within(row).getByRole("toolbar", { name: "Drawer actions" })
+    for (const name of ["Done", "Start", "Just 25 on Finish slides", "Push", "Missed", "View", "Delete"]) {
+      expect(within(actions).getByRole("button", { name })).toBeInTheDocument()
+    }
+  })
+
+  it("still completes a closed, selected row with the D key", () => {
+    render(<TodoPanel />)
+    const row = screen.getByText("Finish slides").closest(".todo-row") as HTMLElement
+    fireEvent.keyDown(row, { key: "d" })
+    vi.advanceTimersByTime(500)
+    expect(useTaskStore.getState().tasks[0].completed).toBe(true)
+  })
+
   it("marks a task complete when the complete action is clicked", () => {
     render(<TodoPanel />)
+    fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
     screen.getByTitle("Mark complete").click()
     vi.advanceTimersByTime(500)
     const updated = useTaskStore.getState().tasks[0]
@@ -286,6 +308,7 @@ describe("TodoPanel", () => {
       ],
     })
     render(<TodoPanel />)
+    fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
     expect(screen.queryByRole("button", { name: "Done at Goal" })).toBeNull()
     fireEvent.click(screen.getByRole("button", { name: "Done at Bare minimum" }))
     vi.advanceTimersByTime(500)
