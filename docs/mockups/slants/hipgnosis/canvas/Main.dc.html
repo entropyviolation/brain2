@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To do, desktop, Hipgnosis slant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&amp;family=Cormorant+Garamond:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0d0c}
+a{color:#e9c9a8}a:hover{color:#ece6da}
+.hp{position:relative;background:#0e0d0c;color:#ece6da;font-family:'Archivo',system-ui,sans-serif;font-size:14px;line-height:1.4;overflow:hidden}
+.hp *{box-sizing:border-box}
+.hp button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.hp button:focus-visible,.hp input:focus-visible{outline:1px solid #ece6da;outline-offset:3px}
+.lbl{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#a39c90;font-stretch:112%}
+.note{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;line-height:1.3;color:#cfc6b6}
+.quiet{color:#a39c90;font-size:13px;letter-spacing:.04em;min-height:44px;display:inline-flex;align-items:center;gap:6px;border-bottom:1px solid transparent;transition:color .6s,border-color .6s}
+.quiet:hover{color:#ece6da;border-bottom-color:#5a534a}
+.sticker{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;background:#ece6da;color:#0e0d0c;font-weight:600;letter-spacing:.06em;box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 6px 14px rgba(0,0,0,.45)}
+.ghostpill{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid #4a443c;color:#cfc6b6;font-size:13px}
+.ghostpill.on{background:#ece6da;color:#0e0d0c;border-color:#ece6da}
+.frame{position:relative;border-top:1px solid #2b251f;transition:background .9s cubic-bezier(.2,.7,.1,1)}
+.frame:hover{background:#1a1611}
+.reveal{opacity:0;transition:opacity .7s}
+.frame:hover .reveal,.frame:focus-within .reveal,.frame.open .reveal{opacity:1}
+.gate{animation:unfold 1.1s cubic-bezier(.2,.7,.1,1) both;transform-origin:left center}
+.develop{animation:develop 2.4s ease-out both}
+.slide{animation:slide .9s cubic-bezier(.2,.7,.1,1) both}
+.sun{animation:drift 14s ease-in-out infinite alternate}
+.beam{animation:hum 6s ease-in-out infinite alternate}
+@keyframes unfold{from{opacity:0;transform:perspective(1200px) rotateY(-70deg)}to{opacity:1;transform:none}}
+@keyframes develop{0%{filter:brightness(2.2) contrast(.3) sepia(1) blur(3px)}100%{filter:none}}
+@keyframes slide{from{opacity:0;transform:translateY(-28px)}to{opacity:1;transform:none}}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(6px,-3px)}}
+@keyframes hum{from{opacity:.75}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.gate,.develop,.slide,.sun,.beam{animation:none}}
+.prism-wide{display:block}
+.prism-narrow{display:none}
+@media (max-width:760px){.prism-wide{display:none}.prism-narrow{display:flex}.load-grid{grid-template-columns:1fr !important}.gatefold{grid-template-columns:1fr !important}.trow{grid-template-columns:44px 1fr 44px !important}.trow .hide-sm{display:none}}
+</style>
+</helmet>
+
+<div class="hp">
+
+  <!-- grain over everything -->
+  <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.22;mix-blend-mode:overlay;z-index:5">
+    <filter id="grainA"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+    <rect width="100%" height="100%" filter="url(#grainA)"></rect>
+  </svg>
+
+  <div style="max-width:1280px;margin:0 auto">
+
+  <!-- ============ THE SLEEVE: header as one staged photograph ============ -->
+  <section aria-label="To do header" style="position:relative;height:420px;overflow:hidden;background:linear-gradient(180deg,#c9c3b7 0%,#d9c6bd 34%,#d9a9a6 54%,#b9787e 63.6%,#211a16 64%,#120f0d 100%)">
+    <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 45%,rgba(10,8,6,.55) 100%)"></div>
+    <div class="sun" aria-hidden="true" style="position:absolute;left:56%;top:31%;width:26px;height:26px;border-radius:50%;background:#f6f1e7;box-shadow:0 0 30px 12px rgba(246,241,231,.55)"></div>
+
+    <!-- obelisk: height is what you promised, shadow is what is left -->
+    <button onClick="{{toggleLoad}}" aria-expanded="{{loadOpenStr}}" aria-label="Load: 2h30 promised, 4h10 left, it fits. Show the load instrument." style="position:absolute;left:17%;top:calc(64% - 150px);width:340px;height:200px;text-align:left">
+      <span aria-hidden="true" style="position:absolute;left:30px;top:156px;width:290px;height:16px;background:linear-gradient(90deg,rgba(0,0,0,.9),rgba(0,0,0,.25));clip-path:polygon(0 0,100% 55%,100% 100%,0 100%)"></span>
+      <span aria-hidden="true" style="position:absolute;left:0;top:0;width:38px;height:168px;background:linear-gradient(90deg,#030303,#1d1c1b 58%,#070707);box-shadow:6px 0 18px rgba(0,0,0,.35)"></span>
+      <span style="position:absolute;left:50px;top:2px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#2a211d">2h30 promised</span>
+      <span style="position:absolute;left:236px;top:178px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#cfc6b6;white-space:nowrap">4h10 left</span>
+    </button>
+
+    <!-- a figure, seen from behind -->
+    <svg aria-hidden="true" viewBox="0 0 14 40" style="position:absolute;left:74%;top:calc(64% - 37px);width:14px;height:40px"><circle cx="7" cy="4" r="3.4" fill="#0b0908"></circle><path d="M2 10 Q7 7 12 10 L12.5 26 L10 26 L9.5 40 L7.6 40 L7 28 L6.4 40 L4.5 40 L4 26 L1.5 26 Z" fill="#0b0908"></path></svg>
+
+    <!-- shrink-wrap sticker: the count -->
+    <div aria-label="5 things to do" style="position:absolute;right:40px;top:30px;width:104px;height:104px;border-radius:50%;background:#efe8da;color:#141210;transform:rotate(-9deg);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1px 0 #fff inset,0 10px 24px rgba(0,0,0,.25)">
+      <span style="font-size:46px;font-weight:800;line-height:.9;font-stretch:80%">5</span>
+      <span style="font-size:9px;letter-spacing:.24em;text-transform:uppercase;margin-top:4px">to do today</span>
+    </div>
+
+    <button aria-label="Settings" style="position:absolute;left:28px;top:24px;width:44px;height:44px;display:grid;place-items:center;color:#2a211d">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>
+    </button>
+
+    <!-- title, placed defensively in the corner -->
+    <div style="position:absolute;left:32px;bottom:26px;display:flex;flex-direction:column;gap:6px">
+      <span class="lbl" style="color:#a39c90">To do</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button aria-label="Previous day" style="width:44px;height:44px;display:grid;place-items:center;color:#a39c90"><svg aria-hidden="true" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1 L3 6 L8 11"></path></svg></button>
+        <span style="font-size:22px;font-weight:300;letter-spacing:.02em;font-stretch:90%">Tuesday 20 October</span>
+        <button aria-label="Next day" style="width:44px;height:44px;display:grid;place-items:center;color:#a39c90"><svg aria-hidden="true" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 1 L9 6 L4 11"></path></svg></button>
+      </div>
+    </div>
+
+    <button class="quiet" onClick="{{toggleLoad}}" aria-expanded="{{loadOpenStr}}" style="position:absolute;right:32px;bottom:26px;color:#cfc6b6">4h10 left · 2h30 promised · it fits <span aria-hidden="true">{{loadCaret}}</span></button>
+  </section>
+
+  <!-- ============ LOAD, unfolded from the obelisk ============ -->
+  <sc-if value="{{loadOpen}}" hint-placeholder-val="{{ true }}">
+    <section class="slide" aria-label="Load" style="padding:28px 32px 8px;background:#0e0d0c">
+      <div class="load-grid" style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:40px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span class="lbl">The day, 9 to 18</span>
+          <svg role="img" aria-label="Working day. Now 13:50. Spent 1h20. Promised runs to about 16:20. Day ends 18:00." viewBox="0 0 360 90" style="width:100%;height:auto;display:block">
+            <defs><linearGradient id="dsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3029"></stop><stop offset="1" stop-color="#b9787e"></stop></linearGradient></defs>
+            <rect x="20" y="8" width="320" height="42" fill="url(#dsky)" opacity=".55"></rect>
+            <rect x="192" y="8" width="148" height="42" fill="#d9a9a6" opacity=".55"></rect>
+            <rect x="174" y="50" width="18" height="7" fill="#8a6a4a"></rect>
+            <polygon points="192,50 281,53 281,57 192,57" fill="#000"></polygon>
+            <line x1="20" y1="50" x2="340" y2="50" stroke="#cfc6b6" stroke-width=".8"></line>
+            <circle cx="192" cy="30" r="7" fill="#f6f1e7"></circle>
+            <g fill="#a39c90" font-family="Archivo, sans-serif" font-size="8" text-anchor="middle"><text x="20" y="72">9</text><text x="91" y="72">11</text><text x="162" y="72">13</text><text x="233" y="72">15</text><text x="304" y="72">17</text><text x="340" y="72">18</text></g>
+          </svg>
+          <div style="display:flex;gap:28px;flex-wrap:wrap">
+            <div><div style="font-size:30px;font-weight:300">4h10</div><div class="lbl" style="letter-spacing:.16em">left</div></div>
+            <div><div style="font-size:30px;font-weight:300">2h30</div><div class="lbl" style="letter-spacing:.16em">promised</div></div>
+            <div><div style="font-size:30px;font-weight:300;color:#c9a27a">1h20</div><div class="lbl" style="letter-spacing:.16em">spent today</div></div>
+          </div>
+          <button class="quiet" style="align-self:flex-start;text-decoration:underline;text-underline-offset:4px">3 tasks have no estimate</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span class="lbl">Tide</span>
+          <svg role="img" aria-label="Comfort 0.6 times: manageable" viewBox="0 0 220 120" style="width:100%;max-width:260px;height:auto;display:block">
+            <defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b5b62"></stop><stop offset="1" stop-color="#151b1e"></stop></linearGradient></defs>
+            <rect x="96" y="6" width="10" height="110" fill="#6b5544"></rect>
+            <g stroke="#cfc6b6" stroke-width="1"><line x1="90" y1="62" x2="112" y2="62"></line><line x1="90" y1="40" x2="112" y2="40"></line><line x1="90" y1="25" x2="112" y2="25"></line></g>
+            <path d="M0 55 Q14 52 28 55 T56 55 T84 55 T112 55 T140 55 T168 55 T196 55 T224 55 L224 120 L0 120 Z" fill="url(#sea)" opacity=".92"></path>
+            <g font-family="Archivo, sans-serif" font-size="9" fill="#cfc6b6" letter-spacing="1"><text x="118" y="16">more than fits</text><text x="118" y="34">tight</text><text x="118" y="52">manageable</text><text x="118" y="86" fill="#a39c90">easy</text></g>
+            <text x="6" y="40" font-family="Cormorant Garamond, serif" font-style="italic" font-size="26" fill="#ece6da">0.6×</text>
+          </svg>
+          <span class="note" style="font-size:15px">Water at manageable. Promised ÷ left.</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lbl">What counts</span>
+          <sc-for list="{{scopes}}" as="s" hint-placeholder-count="3">
+            <button onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="display:flex;align-items:center;gap:10px;min-height:36px;color:{{s.color}}"><span aria-hidden="true" style="width:9px;height:9px;border-radius:50%;border:1px solid #a39c90;background:{{s.dot}}"></span>{{s.label}}</button>
+          </sc-for>
+          <span class="lbl" style="margin-top:10px">Work</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg aria-hidden="true" viewBox="0 0 60 26" width="60" height="26"><g stroke="#5a534a"><line x1="10" y1="0" x2="10" y2="8"></line><line x1="30" y1="0" x2="30" y2="8"></line><line x1="50" y1="0" x2="50" y2="8"></line></g><circle cx="10" cy="15" r="6" fill="#f2d27a"></circle><circle cx="10" cy="15" r="10" fill="#f2d27a" opacity=".18"></circle><circle cx="30" cy="15" r="6" fill="none" stroke="#5a534a"></circle><circle cx="50" cy="15" r="6" fill="none" stroke="#5a534a"></circle></svg>
+            <span style="font-size:13px;color:#cfc6b6">1 in progress · cap 3</span>
+          </div>
+          <span style="font-size:13px;color:#a39c90">Required 0h · Assigned 2h30</span>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ SPAN: one beam of time, split by a prism ============ -->
+  <section aria-label="Span" style="padding:24px 32px 0">
+    <div class="prism-wide" style="position:relative;width:100%;aspect-ratio:1200/260">
+      <svg aria-hidden="true" viewBox="0 0 1200 260" style="position:absolute;inset:0;width:100%;height:100%">
+        <defs><filter id="glow"><feGaussianBlur stdDeviation="2.4"></feGaussianBlur></filter></defs>
+        <g class="beam"><line x1="0" y1="150" x2="285" y2="118" stroke="#f6f1e7" stroke-width="5" filter="url(#glow)"></line><line x1="0" y1="150" x2="285" y2="118" stroke="#fff" stroke-width="1.6"></line></g>
+        <polygon points="285,118 372,112 382,132" fill="#f6f1e7" opacity=".14"></polygon>
+        <sc-for list="{{spans}}" as="s" hint-placeholder-count="5">
+          <polygon points="{{s.pts}}" fill="{{s.color}}" opacity="{{s.op}}"></polygon>
+        </sc-for>
+        <polygon points="330,30 240,206 420,206" fill="rgba(236,230,218,.04)" stroke="#ece6da" stroke-width="1.6"></polygon>
+      </svg>
+      <sc-for list="{{spans}}" as="s" hint-placeholder-count="5">
+        <button onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="position:absolute;left:66%;top:{{s.top}};transform:translateY(-50%);display:flex;align-items:baseline;gap:14px;min-height:44px;text-align:left;color:{{s.text}}">
+          <span style="font-size:20px;font-weight:{{s.weight}};letter-spacing:.14em;text-transform:uppercase;font-stretch:118%">{{s.name}}</span>
+          <span class="note" style="font-size:16px;color:{{s.text}}">{{s.sub}}</span>
+        </button>
+      </sc-for>
+      <span class="lbl" style="position:absolute;left:0;top:4%">Span</span>
+    </div>
+    <div class="prism-narrow" style="gap:6px;flex-wrap:wrap">
+      <sc-for list="{{spans}}" as="s" hint-placeholder-count="5">
+        <button onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="min-height:44px;padding:0 12px;border-bottom:3px solid {{s.color}};color:{{s.text}};opacity:{{s.op}}">{{s.name}}</button>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ============ the few controls left ============ -->
+  <section style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 22px;padding:10px 32px 18px">
+    <button class="sticker" onClick="{{toggleAdd}}" aria-expanded="{{addOpenStr}}"><span aria-hidden="true" style="font-size:18px;line-height:1">+</span>Add task</button>
+    <span style="flex:1 1 auto"></span>
+    <button class="quiet">Session</button>
+    <button class="quiet">Sessions</button>
+    <button class="quiet" onClick="{{toggleShow}}" aria-expanded="{{showOpenStr}}"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:#ece6da"></span>Show · 2</button>
+    <button class="quiet">Priority ↓</button>
+  </section>
+
+  <!-- Add task: an inner sleeve slides out. New, or pulled from a list. -->
+  <sc-if value="{{addOpen}}" hint-placeholder-val="{{ false }}">
+    <section class="slide" aria-label="Add task" style="margin:0 32px 18px;padding:22px 24px;background:#e9e2d3;color:#151210;box-shadow:0 18px 40px rgba(0,0,0,.5)">
+      <label for="addq" class="lbl" style="color:#4a423a">Name it, or find it on a list</label>
+      <input id="addq" value="budget" style="display:block;width:100%;margin:8px 0 14px;padding:10px 0;font:inherit;font-size:22px;font-weight:300;background:transparent;border:0;border-bottom:1px solid #151210;color:#151210">
+      <div style="display:flex;flex-direction:column">
+        <button style="display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;border-top:1px solid #c9bfae;text-align:left"><span>Collect budget quotes</span><span class="note" style="color:#4a423a;font-size:15px">on Grant, not planned</span></button>
+        <button style="display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;border-top:1px solid #c9bfae;text-align:left"><span>Budget justification, first pass</span><span class="note" style="color:#4a423a;font-size:15px">on Grant, planned Thu</span></button>
+        <button style="display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;border-top:1px solid #c9bfae;text-align:left;font-weight:600"><span>+ Make “budget” a new task for Tue 20</span><span aria-hidden="true">↵</span></button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- Show: filters, as stickers -->
+  <sc-if value="{{showOpen}}" hint-placeholder-val="{{ false }}">
+    <section class="slide" aria-label="Show" style="margin:0 32px 18px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="lbl" style="width:76px">View</span><button class="ghostpill on" aria-pressed="true">Available now</button><button class="ghostpill" aria-pressed="false">All tasks</button><button class="ghostpill on" aria-pressed="true">Hide locked</button><button class="ghostpill" aria-pressed="false">Show next only</button></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="lbl" style="width:76px">Tier</span><button class="ghostpill on">All</button><button class="ghostpill">B</button><button class="ghostpill">G</button><button class="ghostpill">E</button><span class="lbl" style="margin-left:18px">Status</span><button class="ghostpill on">Any</button><button class="ghostpill">Started</button><button class="ghostpill">Fresh</button><span class="lbl" style="margin-left:18px">Formula</span><button class="ghostpill on">Any</button><button class="ghostpill">On</button><button class="ghostpill">Off</button><a href="#" style="margin-left:auto;font-size:13px">Open list</a></div>
+    </section>
+  </sc-if>
+
+  <!-- ============ CONTACT SHEET: the list ============ -->
+  <section aria-label="Tasks" style="position:relative;margin:0 32px;padding:0 30px;background:#1c1712">
+    <div aria-hidden="true" style="position:absolute;left:7px;top:0;bottom:0;width:12px;background:repeating-linear-gradient(180deg,transparent 0 8px,#0a0908 8px 18px)"></div>
+    <div aria-hidden="true" style="position:absolute;right:7px;top:0;bottom:0;width:12px;background:repeating-linear-gradient(180deg,transparent 0 8px,#0a0908 8px 18px)"></div>
+    <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 4px 10px;font-size:10px;letter-spacing:.3em;color:#d68a46;text-transform:uppercase;flex-wrap:wrap">
+      <span>Brain2 safety film · assigned</span><span class="hide-sm">▸ 20 Oct ▸ 5 frames</span>
+    </div>
+    <p class="note" style="margin:0 4px 10px;font-size:15px;color:#a39c90">Required: still water. Nothing in it.</p>
+
+    <sc-for list="{{tasks}}" as="t" hint-placeholder-count="5">
+      <div class="frame {{t.cls}}">
+        <sc-if value="{{t.over}}" hint-placeholder-val="{{ false }}">
+          <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 100% 100%,rgba(224,98,47,.55),rgba(224,98,47,.12) 30%,transparent 55%);box-shadow:inset -3px 0 0 #e0622f"></div>
+        </sc-if>
+        <div class="trow" style="position:relative;display:grid;grid-template-columns:54px 1fr auto auto auto 44px;align-items:center;gap:18px;min-height:64px;padding:6px 4px">
+          <span style="position:relative;font-size:12px;letter-spacing:.2em;color:#d68a46;text-align:center">
+            {{t.num}}
+            <sc-if value="{{t.prio}}" hint-placeholder-val="{{ false }}">
+              <svg aria-label="Prioritized" role="img" viewBox="0 0 54 34" style="position:absolute;left:0;top:-9px;width:54px;height:34px;overflow:visible"><path d="M8 18 C6 6 44 2 48 14 C52 28 12 32 7 21 C5 15 14 9 22 8" fill="none" stroke="#e04a3a" stroke-width="2.2" stroke-linecap="round"></path></svg>
+            </sc-if>
+          </span>
+          <button onClick="{{t.toggle}}" aria-expanded="{{t.expanded}}" style="text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center;min-width:0">
+            <span style="font-size:17px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}</span>
+            <span class="reveal" style="font-size:12px;color:#a39c90;letter-spacing:.06em">{{t.sub}}</span>
+          </button>
+          <span class="hide-sm" style="font-size:14px;color:{{t.estColor}};white-space:nowrap">{{t.est}}</span>
+          <span class="hide-sm" aria-label="{{t.stepsLabel}}" style="display:flex;gap:3px">
+            <sc-for list="{{t.pips}}" as="p" hint-placeholder-count="4"><span style="width:7px;height:10px;border:1px solid #6d655a;background:{{p.bg}}"></span></sc-for>
+          </span>
+          <button class="reveal hide-sm quiet" style="font-size:12px;letter-spacing:.18em;text-transform:uppercase">Card</button>
+          <button aria-label="{{t.playLabel}}" style="width:44px;height:44px;border-radius:50%;border:1px solid #6d655a;display:grid;place-items:center"><svg aria-hidden="true" viewBox="0 0 10 12" width="10" height="12"><path d="M1 1 L9 6 L1 11 Z" fill="#ece6da"></path></svg></button>
+        </div>
+
+        <!-- the gatefold: richer detail, unfolds sideways -->
+        <sc-if value="{{t.open}}" hint-placeholder-val="{{ false }}">
+          <div class="gate gatefold" style="display:grid;grid-template-columns:250px 1fr;gap:32px;padding:10px 4px 28px 72px">
+            <figure class="develop" style="margin:0;padding:10px 10px 38px;background:#efe8da;transform:rotate(-2deg);box-shadow:0 14px 30px rgba(0,0,0,.55);align-self:start;position:relative">
+              <div aria-hidden="true" style="position:relative;height:180px;overflow:hidden;background:linear-gradient(180deg,#bcb6aa 0%,#d6b3ad 52%,#a76f74 60%,#2a221c 60.4%,#15110e 100%)">
+                <div style="position:absolute;left:0;top:60%;height:3px;width:{{t.pct}};background:#e9c9a8;box-shadow:0 0 10px #e9c9a8"></div>
+                <svg viewBox="0 0 10 28" style="position:absolute;left:{{t.pct}};top:calc(60% - 24px);width:9px;height:26px"><circle cx="5" cy="3" r="2.6" fill="#0b0908"></circle><path d="M1 7 L9 7 L9 18 L7 18 L7 28 L3 28 L3 18 L1 18 Z" fill="#0b0908"></path></svg>
+                <div style="position:absolute;right:16px;top:calc(60% - 46px);width:14px;height:52px;background:#060505"></div>
+              </div>
+              <figcaption class="note" style="position:absolute;left:12px;bottom:8px;color:#2a221d;font-size:16px">{{t.pct}} of the way</figcaption>
+            </figure>
+            <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+              <div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center">
+                <button class="sticker">Done</button>
+                <button class="quiet" style="color:#ece6da">Start</button>
+                <button class="quiet" style="color:#ece6da">Just 25</button>
+                <button class="quiet" style="color:#ece6da">Push</button>
+                <button class="quiet" style="color:#ece6da">Missed</button>
+                <span style="flex:1 1 auto"></span>
+                <button class="quiet">Needs…</button><button class="quiet">View</button><button class="quiet">Delete</button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 32px">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span class="lbl">Time</span>
+                  <span>{{t.d.time}}</span>
+                  <span style="color:#a39c90;font-size:13px">{{t.d.pushed}}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span class="lbl">Flags</span>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <sc-for list="{{t.d.flags}}" as="f" hint-placeholder-count="2"><span class="ghostpill" style="min-height:30px">{{f}}</span></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span class="lbl" style="margin-bottom:4px">Steps · {{t.stepsShort}}</span>
+                  <sc-for list="{{t.d.steps}}" as="s" hint-placeholder-count="4">
+                    <label style="display:flex;gap:10px;align-items:center;min-height:32px;color:{{s.color}}"><input type="checkbox" checked="{{s.done}}" style="accent-color:#ece6da;width:16px;height:16px">{{s.label}}</label>
+                  </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span class="lbl">Notes</span>
+                  <p class="note" style="margin:0">{{t.d.notes}}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+
+    <div style="display:flex;gap:14px;align-items:center;border-top:1px solid #2b251f;padding:16px 4px;flex-wrap:wrap">
+      <label for="compose" class="lbl" style="letter-spacing:.2em">Add</label>
+      <input id="compose" placeholder="A task, in a few words" style="flex:1 1 220px;min-height:44px;font:inherit;font-size:16px;background:transparent;border:0;border-bottom:1px solid #5a534a;color:#ece6da">
+      <button class="quiet" style="color:#ece6da">Add</button>
+      <button class="quiet">Log done</button>
+    </div>
+  </section>
+
+  <!-- ============ DONE: polaroids, developing ============ -->
+  <section style="padding:30px 32px 56px;display:flex;flex-direction:column;gap:18px">
+    <button onClick="{{toggleDone}}" aria-expanded="{{doneOpenStr}}" style="display:flex;align-items:center;gap:20px;align-self:flex-start;min-height:60px">
+      <span aria-hidden="true" style="position:relative;width:58px;height:58px">
+        <span style="position:absolute;inset:0;background:#d9d1c1;transform:rotate(-8deg)"></span>
+        <span style="position:absolute;inset:0;background:#e3dbcb;transform:rotate(5deg)"></span>
+        <span style="position:absolute;inset:0;background:#efe8da;padding:5px 5px 14px"><span style="display:block;width:100%;height:100%;background:linear-gradient(180deg,#bdb5a6,#7d6c62)"></span></span>
+      </span>
+      <span style="display:flex;flex-direction:column;text-align:left"><span class="lbl">Done, 20 Oct</span><span class="note">Three, so far {{doneCaret}}</span></span>
+    </button>
+    <sc-if value="{{doneOpen}}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:22px;flex-wrap:wrap">
+        <sc-for list="{{done}}" as="d" hint-placeholder-count="3">
+          <figure class="develop" style="margin:0;width:170px;padding:9px 9px 40px;background:#efe8da;color:#2a221d;transform:rotate({{d.rot}});box-shadow:0 12px 26px rgba(0,0,0,.5);position:relative">
+            <div aria-hidden="true" style="height:120px;background:{{d.bg}}"></div>
+            <figcaption class="note" style="position:absolute;left:10px;right:8px;bottom:8px;font-size:15px;color:#2a221d">{{d.name}}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </sc-if>
+  </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { span: 'day', open: 2, loadOpen: true, addOpen: false, showOpen: false, doneOpen: false, scope: 'all' };
+  }
+  renderVals() {
+    const st = this.state;
+    const ex = (y) => 330 + 90 * (y - 30) / 176;
+    const spanDefs = [
+      ['day', 'Day', 'Tue 20', '#d0453a'],
+      ['week', 'Week', 'Oct 19–25', '#e08a3a'],
+      ['month', 'Month', 'October', '#e2c24c'],
+      ['season', 'Season', 'Autumn', '#5fa36c'],
+      ['other', 'Other', 'named ranges', '#5a7fc4']
+    ];
+    const spans = spanDefs.map(([id, name, sub, color], i) => {
+      const y = 34 + 48 * i, a = 112 + 4 * i, b = 116 + 4 * i;
+      const on = st.span === id;
+      return {
+        name, sub, color,
+        pts: ex(a).toFixed(1) + ',' + a + ' 770,' + (y - 24) + ' 770,' + (y + 24) + ' ' + ex(b).toFixed(1) + ',' + b,
+        op: on ? 0.95 : 0.24,
+        top: (y / 260 * 100).toFixed(2) + '%',
+        text: on ? '#ece6da' : '#a39c90',
+        weight: on ? 600 : 300,
+        pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ span: id })
+      };
+    });
+    const pushedTxt = (n) => n === 0 ? 'never pushed' : n === 1 ? 'pushed once' : 'pushed twice';
+    const raw = [
+      { id: 1, name: 'Draft grant budget table', tier: 'A', pct: 40, est: '45m', done: 2, total: 4, pushed: 0, prio: false, over: false,
+        d: { time: '45m promised · 18m spent', flags: ['Assigned'], notes: 'Two columns left: equipment and travel.',
+          steps: [['Pull last year’s figures', 1], ['Personnel rows', 1], ['Equipment rows', 0], ['Travel rows', 0]] } },
+      { id: 2, name: 'Reply to Dana re: lab schedule', tier: 'A/B', pct: 20, est: '30m', done: 2, total: 5, pushed: 1, prio: true, over: false,
+        d: { time: '30m promised · 6m spent', flags: ['Required', 'Prioritized'], notes: 'Dana asked about Thursday. Bench 3 is free after two.',
+          steps: [['Read Dana’s message', 1], ['Check the bench rota', 1], ['Draft the reply', 0], ['Confirm the Thursday slot', 0], ['Send', 0]] } },
+      { id: 3, name: 'Clean up reading notes, ch. 4', tier: 'B', pct: 0, est: '25m', done: 0, total: 3, pushed: 0, prio: false, over: false,
+        d: { time: '25m promised · not started', flags: ['Assigned'], notes: 'Margins first, then the index cards.',
+          steps: [['Margins', 0], ['Index cards', 0], ['File under Ch. 4', 0]] } },
+      { id: 4, name: 'Refill prescriptions', tier: 'A', pct: 0, est: '10m', done: 0, total: 1, pushed: 2, prio: false, over: false,
+        d: { time: '10m promised · not started', flags: ['Assigned'], notes: 'It keeps coming back.',
+          steps: [['Call the pharmacy', 0]] } },
+      { id: 5, name: 'Sketch tracking legend', tier: 'B', pct: 90, est: '40m of 30m', done: 4, total: 5, pushed: 0, prio: true, over: true,
+        d: { time: '30m promised · 40m spent, over by 10', flags: ['Prioritized'], notes: 'Nearly there. The last swatch is the hard one.',
+          steps: [['Swatches', 1], ['Labels', 1], ['Order', 1], ['Spacing', 1], ['Last swatch', 0]] } }
+    ];
+    const tasks = raw.map((t, i) => {
+      const open = st.open === t.id;
+      return {
+        num: String(i + 1).padStart(2, '0'),
+        name: t.name, est: t.est, prio: t.prio, over: t.over, open,
+        cls: open ? 'open' : '',
+        expanded: open ? 'true' : 'false',
+        sub: t.tier + ' · ' + t.pct + '% · ' + pushedTxt(t.pushed),
+        estColor: t.over ? '#f08a4b' : '#cfc6b6',
+        pct: t.pct + '%',
+        stepsShort: t.done + '/' + t.total,
+        stepsLabel: t.done + ' of ' + t.total + ' steps done',
+        playLabel: 'Start timer for ' + t.name,
+        pips: Array.from({ length: t.total }, (_, k) => ({ bg: k < t.done ? '#ece6da' : 'transparent' })),
+        d: {
+          time: t.d.time, flags: t.d.flags, notes: t.d.notes,
+          pushed: t.pushed === 0 ? 'Never pushed.' : t.pushed === 1 ? 'Pushed once. It came back.' : 'Pushed twice. It came back twice.',
+          steps: t.d.steps.map(([label, dn]) => ({ label, done: !!dn, color: dn ? '#a39c90' : '#ece6da' }))
+        },
+        toggle: () => this.setState({ open: open ? null : t.id })
+      };
+    });
+    const scopes = [['all', 'All assigned'], ['req', 'Required'], ['reqp', 'Required + prioritized']].map(([id, label]) => {
+      const on = st.scope === id;
+      return { label, pressed: on ? 'true' : 'false', color: on ? '#ece6da' : '#a39c90', dot: on ? '#ece6da' : 'transparent', pick: () => this.setState({ scope: id }) };
+    });
+    return {
+      spans, tasks, scopes,
+      loadOpen: st.loadOpen, loadOpenStr: st.loadOpen ? 'true' : 'false', loadCaret: st.loadOpen ? '▴' : '▾',
+      addOpen: st.addOpen, addOpenStr: st.addOpen ? 'true' : 'false',
+      showOpen: st.showOpen, showOpenStr: st.showOpen ? 'true' : 'false',
+      doneOpen: st.doneOpen, doneOpenStr: st.doneOpen ? 'true' : 'false', doneCaret: st.doneOpen ? '▴' : '▾',
+      done: [
+        { name: 'Email Priya the slides', rot: '-3deg', bg: 'linear-gradient(180deg,#c7c0b2,#d6b3ad 55%,#2a221c 56%)' },
+        { name: 'Water the plants', rot: '2deg', bg: 'linear-gradient(180deg,#a9b3ad,#7f8f86 60%,#1d1a16 61%)' },
+        { name: 'Book the dentist', rot: '-1deg', bg: 'linear-gradient(180deg,#d9d3c7,#b9787e 64%,#120f0d 64.5%)' }
+      ],
+      toggleLoad: () => this.setState({ loadOpen: !st.loadOpen }),
+      toggleAdd: () => this.setState({ addOpen: !st.addOpen }),
+      toggleShow: () => this.setState({ showOpen: !st.showOpen }),
+      toggleDone: () => this.setState({ doneOpen: !st.doneOpen })
+    };
+  }
+}
+</script>
+</body>
+</html>

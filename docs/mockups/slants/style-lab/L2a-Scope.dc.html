@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2a Cream scope with one orange key</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.st{font:8px 'Michroma',sans-serif;letter-spacing:.12em;color:#3b382f;text-transform:uppercase}
+.kc{height:34px;min-width:52px;padding:0 10px;border:1px solid #9c9585;border-radius:5px;background:linear-gradient(180deg,#f3efe3,#d9d3c3);box-shadow:0 2px 0 #8d8676,inset 0 1px 0 #fff;font:9px 'Michroma';color:#3b382f;cursor:pointer}
+.lmp{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width:880px;height:560px;box-sizing:border-box;padding:28px;background:#d8d4ca;font-family:'Share Tech Mono',monospace">
+  <div style="height:100%;box-sizing:border-box;border-radius:22px;background:linear-gradient(180deg,#f1ede2,#e2dccd);box-shadow:0 18px 30px rgba(60,50,30,.25),inset 0 2px 0 #fff,inset 0 -4px 0 #c8c1af;padding:24px;display:grid;grid-template-columns:1.35fr 1fr;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between"><span class="st">Brain2 · TD-1 load scope</span><span class="st">CH1 est · CH2 cap</span></div>
+      <div style="position:relative;flex:1;border-radius:14px;background:radial-gradient(ellipse at 40% 40%,#c9f25a,#9ed12c 70%,#7fb01d);box-shadow:inset 0 3px 12px rgba(0,0,0,.45),0 0 0 8px #2d2b27">
+        <svg role="img" aria-label="Estimated minutes per day for the week against a capacity line. Thursday goes above capacity." viewBox="0 0 400 240" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+          <g stroke="#2f4a0c" stroke-width=".5" opacity=".5"><line x1="0" y1="60" x2="400" y2="60"></line><line x1="0" y1="120" x2="400" y2="120"></line><line x1="0" y1="180" x2="400" y2="180"></line><line x1="57" y1="0" x2="57" y2="240"></line><line x1="114" y1="0" x2="114" y2="240"></line><line x1="171" y1="0" x2="171" y2="240"></line><line x1="228" y1="0" x2="228" y2="240"></line><line x1="285" y1="0" x2="285" y2="240"></line><line x1="342" y1="0" x2="342" y2="240"></line></g>
+          <line x1="0" y1="90" x2="400" y2="90" stroke="#1d2e08" stroke-width="1.5" stroke-dasharray="6 4"></line>
+          <polyline points="0,170 57,150 114,120 171,104 228,60 285,140 342,200 400,180" fill="none" stroke="#1d2e08" stroke-width="2.4"></polyline>
+          <polyline points="200,90 228,60 256,90" fill="none" stroke="#e8761d" stroke-width="3"></polyline>
+        </svg>
+        <div style="position:absolute;left:14px;top:10px;font-size:15px;color:#1d2e08">MON TUE WED THU FRI SAT SUN</div>
+        <div style="position:absolute;right:14px;bottom:10px;font-size:15px;color:#1d2e08">THU 6h40 / cap 6h</div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center">
+        <span class="st">Coupling</span>
+        <button class="kc">Priority</button><button class="kc" style="background:#cfc8b6;box-shadow:inset 0 2px 3px rgba(0,0,0,.25)">Time</button><button class="kc">Manual</button>
+        <span style="flex:1"></span>
+        <span class="lmp" style="background:#3bd16f;box-shadow:0 0 6px #3bd16f"></span><span class="lmp" style="background:#f1c232"></span><span class="lmp" style="background:#5e584b"></span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:#2d2b27;border-radius:10px;padding:12px 14px;color:#c9f25a">
+        <div><div style="font-size:44px;line-height:1">40%</div><div class="st" style="color:#a8a291">done · week</div></div>
+        <div><div style="font-size:44px;line-height:1">83%</div><div class="st" style="color:#a8a291">load · week</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:#2d2b27">
+        <span class="st">Queue 05</span>
+        <span>01  Reply to Dana re: lab schedule ......30m</span>
+        <span>02  Draft grant budget table ............45m</span>
+        <span>03  Clean up reading notes, ch. 4 .......25m</span>
+        <span>04  Refill prescriptions ................10m</span>
+        <span>05  Sketch tracking legend ........40/30m</span>
+      </div>
+      <div style="margin-top:auto;display:flex;gap:8px;align-items:center">
+        <button class="kc">Span</button><button class="kc">Show</button><button class="kc">Sort</button>
+        <span style="flex:1"></span>
+        <button class="kc" style="background:linear-gradient(180deg,#ff9a3c,#e8761d);border-color:#b85a10;box-shadow:0 2px 0 #9c4a0b,inset 0 1px 0 #ffd2a6;color:#2d1606;min-width:90px;font-size:11px">+ ADD</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

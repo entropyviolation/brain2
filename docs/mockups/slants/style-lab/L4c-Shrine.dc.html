@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>4c Shrine in the rack</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Cormorant+Garamond:ital,wght@1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cand{display:flex;flex-direction:column;align-items:center;gap:4px;width:118px}
+.glass{position:relative;width:46px;border-radius:4px 4px 2px 2px;background:linear-gradient(90deg,rgba(255,255,255,.25),rgba(255,255,255,.05) 40%,rgba(255,255,255,.2));border:1px solid rgba(255,255,255,.35);display:flex;align-items:flex-end;justify-content:center;height:96px}
+.wax{width:36px;background:linear-gradient(90deg,#efe6d2,#fffaf0 40%,#d8ccb2);border-radius:2px}
+.cap{font:italic 500 13px/1.15 'Cormorant Garamond',serif;color:#f1ede4;text-align:center}
+</style>
+</helmet>
+<div style="position:relative;width:880px;height:560px;overflow:hidden;background:#8fa3d6">
+  <div style="position:absolute;left:150px;top:24px;width:580px;height:500px;border:6px solid #b9bcc0;box-shadow:inset 0 0 0 2px #6d7075,8px 10px 0 rgba(0,0,0,.18);background:#0f1712">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,#1d6b3a 0 40px,#145a2f 40px 44px,#2b7d47 44px 90px,#0f1712 90px 96px);opacity:.75"></div>
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 60px,rgba(0,0,0,.6) 60px 66px)"></div>
+    <svg aria-hidden="true" viewBox="0 0 580 500" style="position:absolute;inset:0;width:100%;height:100%"><g fill="none" stroke-width="1.4"><path d="M10 40 C120 90 60 200 200 160 S300 60 420 120" stroke="#e33"></path><path d="M20 300 C140 250 160 380 300 330" stroke="#36f"></path><path d="M560 60 C460 140 520 260 380 300" stroke="#ff0"></path><path d="M30 120 C200 220 380 30 560 200" stroke="#eee"></path><path d="M60 460 C180 400 280 470 540 380" stroke="#f60"></path></g><rect x="30" y="200" width="70" height="56" fill="#9a3fc0"></rect><rect x="440" y="420" width="110" height="50" fill="#2a63c9"></rect></svg>
+    <svg role="img" aria-label="A veiled statue stands in the middle of the rack" viewBox="0 0 120 300" style="position:absolute;left:220px;top:40px;width:120px;height:300px"><path d="M60 8 C80 8 86 30 84 46 C100 60 108 110 104 170 C102 230 110 270 112 296 L8 296 C10 270 18 230 16 170 C12 110 20 60 36 46 C34 30 40 8 60 8 Z" fill="#ece8dc"></path><path d="M60 22 C70 22 74 34 72 46 C70 58 50 58 48 46 C46 34 50 22 60 22 Z" fill="#d9cbb4"></path><path d="M44 120 C52 112 62 110 68 118" stroke="#b9ad98" stroke-width="2" fill="none"></path><path d="M30 60 C40 120 34 200 40 290 M90 60 C82 120 88 200 82 290" stroke="#cfc6b2" stroke-width="2" fill="none"></path></svg>
+    <div style="position:absolute;right:26px;top:70px;width:150px;height:120px;border:6px solid #b9bcc0;background:#0d3a22;color:#7dff8a;font:22px/1 'VT323',monospace;padding:10px;box-sizing:border-box;text-shadow:0 0 4px #7dff8a">TO DO<br>TUE 20<br><span style="font-size:40px">5</span> lit<br><span style="font-size:16px">4h10 of wick</span></div>
+    <div style="position:absolute;left:12px;right:12px;bottom:10px;height:150px;background:rgba(10,14,12,.82);border-top:4px solid #b9bcc0;display:flex;justify-content:space-around;align-items:flex-end;padding:0 6px 8px">
+      <div class="cand"><div class="glass"><span style="position:absolute;top:24px;width:6px;height:12px;border-radius:50% 50% 40% 40%;background:#ffd37a;box-shadow:0 0 14px 6px rgba(255,200,100,.6)"></span><div class="wax" style="height:54px"></div></div><span class="cap">Reply to Dana<br>30m</span></div>
+      <div class="cand"><div class="glass"><div class="wax" style="height:80px"></div></div><span class="cap">Grant budget<br>45m</span></div>
+      <div class="cand"><div class="glass"><div class="wax" style="height:46px"></div></div><span class="cap">Notes ch. 4<br>25m</span></div>
+      <div class="cand"><div class="glass"><div class="wax" style="height:18px"></div></div><span class="cap">Prescriptions<br>10m</span></div>
+      <div class="cand"><div class="glass"><div class="wax" style="height:4px;background:#c8281e"></div><span style="position:absolute;bottom:0;left:6px;width:34px;height:10px;background:radial-gradient(ellipse,#c8281e,transparent 70%)"></span></div><span class="cap">Tracking legend<br>burned past 30m</span></div>
+    </div>
+  </div>
+  <button style="position:absolute;left:28px;bottom:28px;width:96px;height:96px;border-radius:50%;border:4px solid #b9bcc0;background:radial-gradient(circle at 40% 35%,#fff7e0,#e8d9b0);font:italic 500 16px 'Cormorant Garamond',serif;cursor:pointer">light a<br>new one</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
