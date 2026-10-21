@@ -40,5 +40,5 @@ _Last mapped: 2026-10-20_ One vocabulary for the whole control. Class names foll
    - **Digital display** (`.clock-picker-drums`). One scope with Hour, Min, Day. Each is three rows tall, so the cursor row of all three sits on one line (the Day column pads with a blank slot).
    - **Now** (`.clock-picker-now`). Writes the current time at once.
    - **Analog face** (`.clock-picker-analog`): face or painting, **ticks**, **hands**, nub. Click or drag sets the minute. **Planned**: a spinning-hands animation when the time jumps.
-   - **Clock settings** (`.clock-picker-settings`). Dial select, Shuffle, Edit, Hands select, Shuffle, and a **Ticks** checkbox. A button above them hides or shows the group. Both choices persist: `brain2.clock-settings-open`, `brain2.clock-ticks`.
+   - **Clock settings** (`.clock-picker-settings`). Dial select, Shuffle, Edit, Hands select, Shuffle, and a **Ticks** checkbox (off hides the tick ring and the rim circle). A button above them hides or shows the group. Both choices persist: `brain2.clock-settings-open`, `brain2.clock-ticks`.
    - **Confirm / Cancel** (`.clock-picker-actions`).

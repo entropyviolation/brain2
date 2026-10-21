@@ -1102,6 +1102,7 @@ function AnalogFace({
       data-minute={minute}
       data-period={period}
       data-dial={dialId}
+      data-ticks={ticks ? "on" : "off"}
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture?.(event.pointerId)
         pointMinute(event)

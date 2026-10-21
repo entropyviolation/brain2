@@ -556,3 +556,8 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 .clock-picker-mini:active {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--chrome-pressed);
 }
+
+/* Ticks off also drops the rim circle. */
+.clock-picker-analog[data-ticks="off"] .clock-picker-well {
+  box-shadow: none;
+}

@@ -487,6 +487,19 @@ pictograms, a clock in the corner.
 Motion stays a verb. Nothing on a face blinks or scrolls. A Countdown that
 reaches a milestone glows brighter and holds still.
 
+### Dash readouts outside the dashboard
+
+_Last mapped: 2026-10-20_ The Dash cluster is the house answer for any figure the person reads and sometimes edits, not only the Home row. Reach for it before a bordered box, a serif numeral, or a round button.
+
+- **One glass, no boxes.** Related readouts share a single smoked panel (`#020708`–`#061214`, top-edge hood shadow, faint glare). Readouts are printed on it, split by a fading 1px hairline. No per-readout border, ring, or fill.
+- **Segment digits.** Use `SegDigits` (`components/Home/dash/dash-primitives.tsx`) with `cells` set so the ghost 8s show and the width never jumps. Phosphor `#5cf2d6` for the main figure, blue `#8fd3ff` for a secondary one. A value inherited from a rule shows dimmer.
+- **Type.** Silkscreen for legends and − +, DotGothic16 for captions and links. Digits are never Georgia or a UI mono.
+- **Keys are glyphs.** − and + are bare glowing characters, 50% until hover. No round or boxed keys.
+- **Equal pods.** Peers in one panel get equal width, digit height, and row height. A lone one spans the panel.
+- **Editable tube.** Put a transparent input over the digits (`caret-color` is the ink) rather than restyling the input.
+
+Shipped example: `PointsDial` in `components/Home/ToDo/TaskCardSide.tsx`, styled at the end of `task-card.css`. Do the same next for other steppers and counters (estimate cells, count ticks, habit targets). **Planned.**
+
 ### Transport keys
 
 This is the Pause, Play, and Stop the house likes. Reuse it whenever a clock
@@ -912,3 +925,7 @@ orb. It may also be an object that room invented.
 _Added 2026-10-20_
 
 Where a screen computes something, offer the math. Typeset the formula, plot the quantities, and keep it data rich, in the spirit of 3Blue1Brown. Keep it optional: behind a settings switch or a "Show the math" key, never in the daily path. First instance: `components/Home/ToDo/PriorityFormulaPanel.tsx`.
+
+## Metal: silver, never gold
+
+_Last mapped: 2026-10-20_ Metal is always silver mirror chrome. Never choose gold or brass (hand caps, pivots, rivets, trim) unless forced. The clock picker's center cap is a small chrome nub.
