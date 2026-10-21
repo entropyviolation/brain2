@@ -82,12 +82,19 @@ import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
 import "./entry-dialog.css"
 import "./tracking-settings.css"
+import { CertaintyToggle, EndEventSection, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
+import { certaintyOf, certaintyPatch, refitTransit, worseOf } from "@/lib/entry-edges"
+import { transitPenOf } from "@/lib/transit-suggest"
+import { travelMinutes } from "@/lib/transit-time"
+import { pinOf } from "@/lib/transit-suggest"
 
 interface EntryDialogProps {
   entry: TimeEntry
   onClose: () => void
   /** Extra DialogContent classes (e.g. Analytics `an-popup` for crisp titles). */
   contentClassName?: string
+  /** Open another block in this same dialog (the "Next timeblock" link). */
+  onOpenEntry?: (entry: TimeEntry) => void
 }
 
 /** "the night ending Thu, Sep 17" — sleep is keyed by the morning it ended. */
@@ -99,10 +106,14 @@ function nightLabel(date: string): string {
 export function EntryDialog(props: EntryDialogProps) {
   // A new block must remount the draft. The same instance would keep the
   // previous block's fields when the grid click only swaps `entry`.
-  return <EntryDialogForm key={props.entry.id} {...props} />
+  // "Next timeblock" jumps to that block in place; closing returns to the grid.
+  const [jumpId, setJumpId] = useState<string | null>(null)
+  const jumped = useTimeTrackingStore((s) => (jumpId ? s.entries.find((e) => e.id === jumpId) : undefined))
+  const entry = jumped ?? props.entry
+  return <EntryDialogForm key={entry.id} {...props} entry={entry} onOpenEntry={(e) => setJumpId(e.id)} />
 }
 
-function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps) {
+function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: EntryDialogProps) {
   // Sleep / pen-action sync lives on the Tracking views, not on this click path.
   // Deriving every night here made the dialog lag ~1s and minted new Sleep ids.
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -158,6 +169,14 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
   const [nowObjectives, setNowObjectives] = useState<NowObjective[] | undefined>(entry.nowObjectives)
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
+  // Per-end certainty. An older block that only has a block-wide value reads as both ends.
+  const [startC, setStartC] = useState(entry.startCertainty ?? entry.clockCertainty ?? "exact")
+  const [endC, setEndC] = useState(entry.endCertainty ?? entry.clockCertainty ?? "exact")
+  // Re-clicking the lit button clears the mark; a cleared edge saves as the default, exact.
+  const [startOff, setStartOff] = useState(false)
+  const [endOff, setEndOff] = useState(false)
+  const [endEventId, setEndEventId] = useState(entry.endEventId)
+  const [alsoOthers, setAlsoOthers] = useState(true)
   const spendEntry = isSpendEntry(entry)
   const [amountText, setAmountText] = useState(spendAmountInput(entry.spendAmount))
   const [spentOn, setSpentOn] = useState(entry.spendOn ?? (spendEntry ? (entry.title ?? "") : ""))
@@ -267,7 +286,8 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         ...fieldsPatch(),
         notes: notes.trim() || undefined,
         nowObjectives,
-        precision: assumed ? "estimated" : undefined,
+        ...certaintyPatch(startC, startC),
+        precision: assumed || startC !== "exact" ? "estimated" : undefined,
         ...moodPatch,
         ...spendPatch,
       })
@@ -293,14 +313,61 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
         ...fieldsPatch(),
         notes: notes.trim() || undefined,
         nowObjectives,
-        precision: assumed ? "estimated" : undefined,
+        ...certaintyPatch(startC, endC),
+        precision: assumed || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+        endEventId,
         ...moodPatch,
         ...spendPatch,
       },
       wrapEndDate,
     )
+    afterEndsSaved(endMin)
     // Cross-view details and the views they name agree over the saved window.
     if (!wrapEndDate) mirrorDetails({ date: fromDate, scopeId: entry.scopeId, startMin, endMin })
+    onClose()
+  }
+
+  /** The linked event follows the end; other-view blocks that shared the old end follow too; transit refits. */
+  const afterEndsSaved = (endMin: number) => {
+    const live = useTimeTrackingStore.getState().entries
+    const moved = { id: origin.id, startMin: timeStringToMinutes(from) ?? origin.startMin, endMin }
+    if (endEventId) {
+      const ev = live.find((e) => e.id === endEventId)
+      if (ev && ev.startMin !== endMin) updateEntry(ev.id, { startMin: endMin, endMin })
+      if (alsoOthers) {
+        for (const o of overlapping) updateEntry(o.id, { endEventId, endMin })
+      }
+    }
+    const patches = refitTransit(live, moved)
+    for (const [id, patch] of Object.entries(patches)) updateEntry(id, patch)
+    void repriceTransit(moved)
+  }
+
+  /** Refit moves a transit block at once; Google then corrects its length for the new time of day. */
+  const repriceTransit = async (moved: { id: string; startMin: number; endMin: number }) => {
+    const live = useTimeTrackingStore.getState().entries
+    for (const t of live.filter((e) => e.transitFrom === moved.id)) {
+      const from = pinOf(scope?.pens.find((p) => p.id === live.find((e) => e.id === t.transitFrom)?.penId))
+      const to = pinOf(scope?.pens.find((p) => p.id === live.find((e) => e.id === t.transitTo)?.penId))
+      if (!from || !to) continue
+      const mins = await travelMinutes(from, to, t.date, moved.endMin)
+      if (mins == null || mins === t.transitMin) continue
+      const patch = refitTransit(useTimeTrackingStore.getState().entries, moved, () => mins)[t.id]
+      if (patch) updateEntry(t.id, patch)
+    }
+  }
+
+  const addTransit = ({ from: a, to: b, minutes, label }: { from: TimeEntry; to: TimeEntry; minutes: number; label: string }) => {
+    const pen = scope ? transitPenOf(scope) : undefined
+    const endMin = timeStringToMinutes(to) ?? a.endMin
+    if (!pen) return
+    const stop = Math.min(endMin + Math.max(1, Math.round(minutes)), b.startMin)
+    const paint = useTimeTrackingStore.getState().paintMinutes
+    paint(a.date, a.scopeId, endMin, stop, pen.id, [], undefined, endC === "exact" ? "definite" : "estimated", { title: label })
+    const made = useTimeTrackingStore
+      .getState()
+      .entries.find((e) => e.date === a.date && e.scopeId === a.scopeId && e.penId === pen.id && e.startMin === endMin)
+    if (made) updateEntry(made.id, { transitFrom: a.id, transitTo: b.id, transitMin: Math.round(minutes) })
     onClose()
   }
 
@@ -316,6 +383,16 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     ? startForSentence
     : (timeStringToMinutes(to) ?? last.endMin % 1440)
 
+  const overlapping = useMemo(
+    () =>
+      endEventId
+        ? allEntries.filter(
+            (e) => e.date === entry.date && e.scopeId !== entry.scopeId && !isInstant(e) && e.endMin === last.endMin && e.endEventId !== endEventId,
+          )
+        : [],
+    [allEntries, endEventId, entry.date, entry.scopeId, last.endMin],
+  )
+
   const draft = {
     penId,
     secondaryPenIds,
@@ -329,6 +406,9 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
     nowObjectives,
     reading,
     assumed,
+    startC,
+    endC,
+    endEventId,
     amountText,
     spentOn,
     spentSource,
@@ -420,6 +500,10 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
               />
             )}
           </div>
+          <div className="grid grid-cols-2 gap-2 trk-edge-row">
+            <CertaintyToggle edge="start" value={startOff ? null : startC} onChange={(v) => { setStartOff(v === null); setStartC(v ?? "exact") }} />
+            {!isInstant(entry) ? <CertaintyToggle edge="end" value={endOff ? null : endC} onChange={(v) => { setEndOff(v === null); setEndC(v ?? "exact") }} /> : <span />}
+          </div>
 
           {spendEntry ? (
             <div className="trk-section trk-spend-edit">
@@ -505,6 +589,31 @@ function EntryDialogForm({ entry, onClose, contentClassName }: EntryDialogProps)
             </div>
             <Switch id="entry-assumed" checked={assumed} onCheckedChange={setAssumed} />
           </div>
+
+          {!isInstant(entry) && (
+            <EndEventSection
+              entries={allEntries}
+              entry={entry}
+              endMin={timeStringToMinutes(to) ?? last.endMin}
+              linkedId={endEventId}
+              onLink={(ev) => {
+                setEndEventId(ev?.id)
+                if (ev) setTo(minutesToTimeString(ev.startMin))
+              }}
+              alsoOthers={alsoOthers}
+              onAlsoOthers={setAlsoOthers}
+              othersCount={overlapping.length}
+            />
+          )}
+          <NextBlockSection entries={allEntries} entry={last} scope={scope} onOpen={(e) => onOpenEntry?.(e)} />
+          <TransitSection
+            entries={allEntries}
+            entry={last}
+            scope={scope}
+            endMin={timeStringToMinutes(to) ?? last.endMin}
+            endCertainty={endC}
+            onAdd={addTransit}
+          />
 
           {scope && (
             <BlockPenSection
