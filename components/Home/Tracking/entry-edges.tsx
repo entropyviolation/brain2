@@ -6,11 +6,11 @@
  */
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link2, Unlink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { arrivalWindow, nearbyInstants, nextBlock } from "@/lib/entry-edges"
+import { arrivalWindow, edgeOf, nearbyInstants, neighborBlock, nextBlock, resolveEdge, type Edge, type EdgeState } from "@/lib/entry-edges"
 import { isInstant, minutesToLabel, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import type { TrackScope } from "@/lib/time-tracking-store"
 import { isLocationScope, pinOf, transitPenOf } from "@/lib/transit-suggest"
@@ -45,60 +45,97 @@ export function CertaintyToggle({ edge, value, onChange }: { edge: "start" | "en
 
 const gapText = (gap: number) => (gap <= 0 ? "back to back" : gap < 60 ? `${gap} min later` : `${Math.floor(gap / 60)}h ${gap % 60 ? `${gap % 60}m ` : ""}later`)
 
-/** Link the end to a logged event ("left Chickfila 3pm"), and any overlapping blocks in other views. */
-export function EndEventSection({
+const certMark = (c: TrackingClockCertainty) => (c === "exact" ? "" : c === "estimated" ? " ~" : " ?")
+const edgeText = (st: EdgeState) => `${minutesToLabel(st.min % 1440)}${certMark(st.c)}`
+
+/**
+ * Anchor one end of a block to a logged event or to the neighbouring block's
+ * edge. The more certain side wins; equal certainty at different times asks.
+ */
+export function EdgeAnchor({
+  edge,
   entries,
   entry,
-  endMin,
-  linkedId,
+  own,
+  eventId,
+  joinId,
   onLink,
-  alsoOthers,
-  onAlsoOthers,
-  othersCount,
+  onUnlink,
+  onTake,
+  children,
 }: {
+  edge: Edge
   entries: TimeEntry[]
   entry: TimeEntry
-  endMin: number
-  linkedId: string | undefined
-  onLink: (event: TimeEntry | null) => void
-  alsoOthers: boolean
-  onAlsoOthers: (v: boolean) => void
-  othersCount: number
+  own: EdgeState
+  eventId: string | undefined
+  joinId: string | undefined
+  onLink: (kind: "event" | "join", partner: TimeEntry) => void
+  onUnlink: () => void
+  onTake: (to: EdgeState) => void
+  children?: ReactNode
 }) {
-  const linked = linkedId ? entries.find((e) => e.id === linkedId) : undefined
-  const options = nearbyInstants(entries, entry.date, endMin).filter((e) => e.id !== linkedId)
-  if (!linked && !options.length) return null
+  const [kept, setKept] = useState(false)
+  const partner = entries.find((e) => e.id === (eventId ?? joinId))
+  const theirs = partner ? edgeOf(partner, eventId ? "start" : edge === "start" ? "end" : "start") : null
+  const res = theirs ? resolveEdge(own, theirs) : null
+  useEffect(() => setKept(false), [partner?.id, theirs?.min, theirs?.c])
+  const events = nearbyInstants(entries, entry.date, own.min).filter((e) => e.id !== entry.id && e.id !== partner?.id)
+  const neighbor = neighborBlock(entries, entry, edge)
+  const block = neighbor && neighbor.id !== partner?.id ? neighbor : null
+  if (!partner && !events.length && !block) return null
+  const name = (e: TimeEntry) => e.title || e.eventKind || (isInstant(e) ? "Event" : "Block")
   return (
-    <div className="trk-section trk-edge-event" data-testid="entry-end-event">
-      <Label className="trk-section-title">Ends at event</Label>
-      {linked ? (
+    <div className="trk-section trk-edge-event" data-testid={`entry-${edge}-anchor`}>
+      <Label className="trk-section-title">{edge === "start" ? "Start anchor" : "End anchor"}</Label>
+      {partner && theirs ? (
         <div className="trk-edge-chip">
           <Link2 size={13} aria-hidden />
           <span>
-            {linked.title || linked.eventKind || "Event"} · {minutesToLabel(linked.startMin)}
+            {eventId ? "Event" : edge === "start" ? "Ends where this starts:" : "Starts where this ends:"} {name(partner)} · {edgeText(theirs)}
           </span>
-          <button type="button" onClick={() => onLink(null)} aria-label="Unlink event">
+          <button type="button" onClick={onUnlink} aria-label="Unlink">
             <Unlink size={13} aria-hidden />
           </button>
         </div>
       ) : (
         <>
-          <p className="trk-help">Tie the end to something you logged. The end time snaps to it, and moves it if you retime.</p>
+          <p className="trk-help">Tie this {edge} to an event you logged or to the neighbouring block. They stay one moment; the surer time wins.</p>
           <div className="trk-edge-options">
-            {options.map((e) => (
-              <button key={e.id} type="button" className="trk-edge-option" onClick={() => onLink(e)}>
-                {e.title || e.eventKind || "Event"} · {minutesToLabel(e.startMin)}
+            {block && (
+              <button type="button" className="trk-edge-option" onClick={() => onLink("join", block)}>
+                {edge === "start" ? "After" : "Before"} {name(block)} · {edgeText(edgeOf(block, edge === "start" ? "end" : "start"))}
+              </button>
+            )}
+            {events.map((e) => (
+              <button key={e.id} type="button" className="trk-edge-option" onClick={() => onLink("event", e)}>
+                {name(e)} · {edgeText(edgeOf(e, "start"))}
               </button>
             ))}
           </div>
         </>
       )}
-      {linked && othersCount > 0 && (
-        <label className="trk-edge-also">
-          <input type="checkbox" checked={alsoOthers} onChange={(e) => onAlsoOthers(e.target.checked)} />
-          Also end {othersCount} overlapping block{othersCount === 1 ? "" : "s"} in other views here
-        </label>
+      {partner && theirs && res?.kind === "snap" && (
+        <p className="trk-help trk-edge-conflict">
+          The other side is surer.{" "}
+          <button type="button" className="trk-edge-option" onClick={() => onTake(res.to)}>
+            Take {edgeText(res.to)}
+          </button>
+        </p>
       )}
+      {partner && theirs && res?.kind === "conflict" && !kept && (
+        <p className="trk-help trk-edge-conflict" role="alert">
+          Both sure, different times.{" "}
+          <button type="button" className="trk-edge-option" onClick={() => onTake(theirs)}>
+            Use {edgeText(theirs)}
+          </button>{" "}
+          <button type="button" className="trk-edge-option" onClick={() => setKept(true)}>
+            Keep {edgeText(own)}
+          </button>
+        </p>
+      )}
+      {partner && theirs && (res?.kind === "keep" || kept) && theirs.min !== own.min && <p className="trk-help">The other side follows when you save.</p>}
+      {children}
     </div>
   )
 }
@@ -113,7 +150,10 @@ export function NextBlockSection({ entries, entry, scope, onOpen }: { entries: T
       <Label className="trk-section-title">Next timeblock</Label>
       {next ? (
         <button type="button" className="trk-edge-next-row" onClick={() => onOpen(next.entry)}>
-          <strong>{next.entry.title || pen?.name || "Block"}</strong>
+          <strong>
+            {next.entry.title || pen?.name || "Block"}
+            {entry.endJoinId === next.entry.id ? " · joined" : ""}
+          </strong>
           <span>
             {minutesToLabel(next.entry.startMin)} – {minutesToLabel(next.entry.endMin % 1440)} · {gapText(next.gap)}
           </span>
