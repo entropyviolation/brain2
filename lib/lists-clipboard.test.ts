@@ -17,6 +17,7 @@ const folder = (partial: Partial<Folder> & Pick<Folder, "id" | "name">): Folder 
 const list = (id: string, name: string): List => ({
   id,
   name,
+  color: "#3B82F6",
   createdAt: new Date(),
   order: 0,
 })

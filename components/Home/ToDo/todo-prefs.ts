@@ -1,7 +1,7 @@
 /**
  * components/Home/ToDo/todo-prefs.ts — To Do view prefs
  *
- * Available-now filter (default off), the soft WIP cap (default 3), and which
+ * Available-now filter (default off), the filter strip's All tasks, Status and Sort, the soft WIP cap (default 3), and which
  * open-lid sections are collapsed (flags / time / steps, default all open).
  * Same localStorage snapshot pattern as Tracking view prefs. Not a second store.
  */
@@ -12,6 +12,7 @@ import { useSyncExternalStore } from "react"
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { DEFAULT_ESTIMATE_MIN } from "@/lib/todo-steps"
+import { DEFAULT_TODO_SORT_ORDER, TODO_STATUS_FILTERS, type TodoSortMode, type TodoSortOrder, type TodoStatusFilter } from "./todo-utils"
 
 export const TODO_PREFS_KEY = persistKey("todo-prefs")
 
@@ -63,6 +64,13 @@ export type TodoPrefs = {
   formulas: SavedFormula[]
   /** Settings → Show the math: the formula panel opens its plots. */
   showMath: boolean
+  /** Filter strip: every scheduled task, not just this period's. */
+  showAllTasks: boolean
+  /** Filter strip: Status. */
+  statusFilter: TodoStatusFilter
+  /** Filter strip: Sort and its direction. */
+  sortMode: TodoSortMode
+  sortOrder: TodoSortOrder
 }
 
 export type SavedFormula = { id: string; name: string; weights: PriorityWeights }
@@ -95,6 +103,18 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   activeRangeId: null,
   formulas: [],
   showMath: false,
+  showAllTasks: false,
+  statusFilter: "open",
+  sortMode: "priority",
+  sortOrder: DEFAULT_TODO_SORT_ORDER.priority,
+}
+
+export function normalizeStatusFilter(value: unknown): TodoStatusFilter {
+  return TODO_STATUS_FILTERS.some((f) => f.value === value) ? (value as TodoStatusFilter) : "open"
+}
+
+export function normalizeSortMode(value: unknown): TodoSortMode {
+  return typeof value === "string" && Object.hasOwn(DEFAULT_TODO_SORT_ORDER, value) ? (value as TodoSortMode) : "priority"
 }
 
 export type TodoTierView = "all" | StepTier
@@ -201,6 +221,13 @@ function load(): TodoPrefs {
       activeRangeId: typeof parsed.activeRangeId === "string" ? parsed.activeRangeId : null,
       formulas: normalizeFormulas(parsed.formulas),
       showMath: parsed.showMath === true,
+      showAllTasks: parsed.showAllTasks === true,
+      statusFilter: normalizeStatusFilter(parsed.statusFilter),
+      sortMode: normalizeSortMode(parsed.sortMode),
+      sortOrder:
+        parsed.sortOrder === "asc" || parsed.sortOrder === "desc"
+          ? parsed.sortOrder
+          : DEFAULT_TODO_SORT_ORDER[normalizeSortMode(parsed.sortMode)],
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -232,7 +259,11 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.ranges.length === 0 &&
       snapshot.activeRangeId === null &&
       snapshot.formulas.length === 0 &&
-      snapshot.showMath === false
+      snapshot.showMath === false &&
+      snapshot.showAllTasks === false &&
+      snapshot.statusFilter === DEFAULT_TODO_PREFS.statusFilter &&
+      snapshot.sortMode === DEFAULT_TODO_PREFS.sortMode &&
+      snapshot.sortOrder === DEFAULT_TODO_PREFS.sortOrder
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -266,6 +297,10 @@ export function setTodoPrefs(
     activeRangeId: patch.activeRangeId !== undefined ? patch.activeRangeId : snapshot.activeRangeId,
     formulas: patch.formulas !== undefined ? normalizeFormulas(patch.formulas) : snapshot.formulas,
     showMath: patch.showMath ?? snapshot.showMath,
+    showAllTasks: patch.showAllTasks ?? snapshot.showAllTasks,
+    statusFilter: patch.statusFilter !== undefined ? normalizeStatusFilter(patch.statusFilter) : snapshot.statusFilter,
+    sortMode: patch.sortMode !== undefined ? normalizeSortMode(patch.sortMode) : snapshot.sortMode,
+    sortOrder: patch.sortOrder === "asc" || patch.sortOrder === "desc" ? patch.sortOrder : snapshot.sortOrder,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

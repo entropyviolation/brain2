@@ -219,8 +219,8 @@ describe("perfect output and span grade", () => {
       frequency: "weekly",
       completionPipelines: [{ id: "pipe", kind: "habitsStats", sources: [], statBinding: binding }],
     }
-    expect(statBackedGoalShown(task, { value: 59.9 }, full)).toBe(after.value)
-    expect(statBackedGoalShown(task, { value: 59.9, handCompleted: true }, full)).toBeNull()
+    expect(statBackedGoalShown(task, {}, full)).toBe(after.value)
+    expect(statBackedGoalShown(task, { handCompleted: true }, full)).toBeNull()
   })
 
   it("returns curved or raw for perfect output and week grade", () => {

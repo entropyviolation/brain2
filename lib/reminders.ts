@@ -609,10 +609,11 @@ export function dismissReminder(taskId: string, now: Date = new Date()): boolean
 
   const sitting = reminderInstant(task)
   const sittingKey = sitting ? reminderOccurrenceKey(sitting) : null
-  const recurring = isRecurringReminderRepeat(task.reminder.repeat)
+  const repeat = task.reminder.repeat
+  const recurring = isRecurringReminderRepeat(repeat)
   const scheduledDate =
     sittingKey === occurrence.key && recurring
-      ? nextReminderDate(task.reminder.repeat, occurrence.at, now)
+      ? nextReminderDate(repeat, occurrence.at, now)
       : task.scheduledDate
   const scheduledTime =
     sittingKey === occurrence.key && recurring
@@ -698,9 +699,10 @@ export async function deliverDueReminders(
         }
       }
 
-      const recurring = isRecurringReminderRepeat(fresh.reminder.repeat)
+      const freshRepeat = fresh.reminder.repeat
+      const recurring = isRecurringReminderRepeat(freshRepeat)
       const scheduledDate = recurring
-        ? nextReminderDate(fresh.reminder.repeat, slot.at, now)
+        ? nextReminderDate(freshRepeat, slot.at, now)
         : fresh.scheduledDate
       const scheduledTime = recurring ? nextScheduledTime(fresh, fresh.reminder.repeat) : fresh.scheduledTime
 

@@ -92,9 +92,6 @@ import {
   createScheduledTodoTask,
   DEFAULT_TODO_SORT_ORDER,
   type TodoPeriod,
-  type TodoSortMode,
-  type TodoSortOrder,
-  type TodoStatusFilter,
 } from "./todo-utils"
 import { TodoTable } from "./TodoTable"
 import { TodoLoadPanel } from "./TodoLoadPanel"
@@ -164,7 +161,6 @@ export function TodoPanel({
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
   const priorityWeights = useTaskStore((s) => s.priorityWeights)
-  const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [ritualWalk, setRitualWalk] = useState<RitualTodoPlacement | null>(null)
   const [justStartTaskId, setJustStartTaskId] = useState<string | null>(null)
@@ -201,17 +197,14 @@ export function TodoPanel({
     else setCurrentDate(date)
   }
   const todoPrefs = useTodoPrefs()
-  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin, hideLocked } = todoPrefs
+  const { availableNow, wipLimit, ritesFollowSun, defaultEstimateMin, hideLocked, showAllTasks, statusFilter, sortMode, sortOrder } =
+    todoPrefs
   const todoRanges = useTodoRanges()
   // Peek at what Hide locked and the sun rule keep off the list, without turning them off (UI-5).
   const [peekHidden, setPeekHidden] = useState(false)
   const lockFilterOn = availableNow || (hideLocked && !peekHidden)
   const todoTime = useTodoTime(tasks)
   const ritesSun = useRitesSun(ritesFollowSun)
-  const [showAllTasks, setShowAllTasks] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>("open")
-  const [sortMode, setSortMode] = useState<TodoSortMode>("priority")
-  const [sortOrder, setSortOrder] = useState<TodoSortOrder>(DEFAULT_TODO_SORT_ORDER.priority)
   const [showFormula, setShowFormula] = useState(false)
   const [estimateScope, setEstimateScope] = useState<EstimateScope>("all")
   const [assignedQuery, setAssignedQuery] = useState("")
@@ -273,10 +266,13 @@ export function TodoPanel({
   const morningPriorities = useReviewsStore(
     (s) => s.getMorningReview(focusedDayKey)?.priorityTaskIds ?? EMPTY_PRIORITY_IDS,
   )
+  // A priority whose task was since deleted drops off the strip instead of showing its id.
+  const morningTasks = useMemo(
+    () => morningPriorities.flatMap((id) => tasks.find((t) => t.id === id) ?? []),
+    [morningPriorities, tasks],
+  )
 
-  useEffect(() => {
-    setTodoItems(buildTodoItems(tasks, showAllTasks, focusedDate))
-  }, [tasks, showAllTasks, focusedDate])
+  const todoItems = useMemo(() => buildTodoItems(tasks, showAllTasks, focusedDate), [tasks, showAllTasks, focusedDate])
 
   const filteredByPeriod = useMemo(() => {
     // Required / Prioritized this period count as full value for what they wait on (Phase 14).
@@ -378,21 +374,26 @@ export function TodoPanel({
     }
   }
 
+  // A season task lands on this month while the season is current, else on its first month.
+  const seasonMonthDate = () =>
+    quarterKey(focusedDate) === quarterKey(new Date()) ? new Date() : quarterStartDate(focusedDate)
+
   const handleAddTodo = (draft: NewTodoDraft) => {
     // Same factory the Plan day sidebar uses — one task record, both views.
-    // A season todo lands on the first month of the quarter so it shows in that season.
     addTask(
       createScheduledTodoTask({
         description: draft.description,
         tier: draft.tier,
         period: periodTab === "quarter" ? "month" : periodTab,
-        date: periodTab === "quarter" ? quarterStartDate(focusedDate) : focusedDate,
+        date: periodTab === "quarter" ? seasonMonthDate() : focusedDate,
       }),
     )
   }
 
   const handleAddDone = (description: string) => {
-    const refDate = toLocalCalendarDate(focusedDate)
+    // On Season the log lands on this month (today) or the season's first month; the completion window uses the same day.
+    const loggedPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
+    const refDate = toLocalCalendarDate(periodTab === "quarter" ? seasonMonthDate() : focusedDate)
     // Retroactive capture knows the day but not the hour, so derive a plausible
     // window (just now for today, otherwise that night's bedtime or the day
     // anchor) and flag it — an assumed time the user can settle later beats a
@@ -404,7 +405,7 @@ export function TodoPanel({
       awake: awakeWindowFor(formatLocalDateKey(refDate)),
     })
     const completedAt = window.completedAt
-    const id = `done-${Date.now()}`
+    const id = `done-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
     const task: Task = {
       id,
@@ -438,9 +439,7 @@ export function TodoPanel({
       minimumChunkSize: 15,
     }
 
-    const loggedPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
-    const loggedDate = periodTab === "quarter" ? quarterStartDate(focusedDate) : refDate
-    scheduleTaskForPeriod(task, loggedPeriod, loggedDate)
+    scheduleTaskForPeriod(task, loggedPeriod, refDate)
     addTask(task)
 
     const points = resolveCompletionPoints(task, categories, folders)
@@ -475,14 +474,35 @@ export function TodoPanel({
     return true
   }
 
+  // Pending flock and fold timers, cleared on unmount. A second Done during the flock is ignored.
+  // A Done still mid-flock at unmount is completed then, so leaving the tab never drops it.
+  const timers = useRef(new Set<number>())
+  const flocking = useRef(new Map<string, () => void>())
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      timers.current.delete(id)
+      fn()
+    }, ms)
+    timers.current.add(id)
+  }, [])
+  useEffect(() => {
+    const pending = timers.current
+    const unfinished = flocking.current
+    return () => {
+      pending.forEach((id) => window.clearTimeout(id))
+      unfinished.forEach((complete) => complete())
+    }
+  }, [])
+
   const handleComplete = (todoId: string, level?: StepTier) => {
     if (openRitual(todoId)) return
+    if (flocking.current.has(todoId)) return
+    // The store stamps `completedDate` on this transition, so the row lands in
+    // today's "Done" list no matter which day it was scheduled for.
+    const complete = () => completeTask(todoId, { level })
     const finish = () => {
-      setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, completed: true } : item)))
-      const todo = todoItems.find((item) => item.id === todoId)
-      // The store stamps `completedDate` on this transition, so the row lands in
-      // today's "Done" list no matter which day it was scheduled for.
-      completeTask(todo?.taskId ?? todoId, { level })
+      flocking.current.delete(todoId)
+      complete()
       setOpenRowId((id) => (id === todoId ? null : id))
       setFlockingId(null)
     }
@@ -490,8 +510,9 @@ export function TodoPanel({
       finish()
       return
     }
+    flocking.current.set(todoId, complete)
     setFlockingId(todoId)
-    window.setTimeout(finish, 380)
+    later(finish, 380)
   }
 
   const handleRename = (todoId: string, description: string) => {
@@ -505,14 +526,11 @@ export function TodoPanel({
 
   const handleMissed = (todoId: string) => {
     if (isRitualTodoId(todoId)) return
-    const todo = todoItems.find((item) => item.id === todoId)
-    const taskId = todo?.taskId ?? todoId
-    const task = tasks.find((row) => row.id === taskId)
+    const task = tasks.find((row) => row.id === todoId)
     setReasonAsk({
-      subject: itemTitleOrUntitled(task ?? todo),
+      subject: itemTitleOrUntitled(task),
       apply: (reason) => {
-        setTodoItems((items) => items.filter((item) => item.id !== todoId))
-        markMissedOpportunity(taskId, undefined, reason)
+        markMissedOpportunity(todoId, undefined, reason)
         if (periodTab !== "quarter") {
           setMissedSectionsOpen((prev) => ({ ...prev, [periodTab]: true }))
         }
@@ -522,9 +540,7 @@ export function TodoPanel({
 
   const handleTierChange = (todoId: string, tier: TodoItem["tier"]) => {
     if (isRitualTodoId(todoId)) return
-    setTodoItems((items) => items.map((item) => (item.id === todoId ? { ...item, tier } : item)))
-    const todo = todoItems.find((item) => item.id === todoId)
-    const task = tasks.find((t) => t.id === (todo?.taskId ?? todoId))
+    const task = tasks.find((t) => t.id === todoId)
     if (task) updateTask({ ...task, ...tierToUrgencyImportance(tier) })
   }
 
@@ -620,22 +636,25 @@ export function TodoPanel({
   }
 
   // Phase 12: the task card borrows the panel's handlers for the lens it opened on.
-  const cardPeriod: TodoPeriod = periodTab === "week" ? "week" : periodTab === "day" ? "day" : "month"
-  const cardPeriodKey = todoPeriodKey(cardPeriod, focusedDate)
+  // Push counts read a ledger period (season reads month); Required and Prioritized
+  // follow the lens itself, so the card and the season lid flip the same marks.
+  const cardPeriod: TodoPeriod = periodTab === "quarter" ? "month" : periodTab
+  const markPeriod = periodTab
+  const markKey = todoPeriodKey(markPeriod, focusedDate)
   const taskCardHost: TaskCardHost = {
     period: cardPeriod,
-    periodLabel: cardPeriod === "day" ? "This day" : cardPeriod === "week" ? "This week" : "This month",
+    periodLabel: { day: "This day", week: "This week", month: "This month", quarter: "This season" }[markPeriod],
     focusedDate,
     isRequired: (id) => {
       const t = tasks.find((x) => x.id === id)
-      return !!t && taskIsRequired(t, cardPeriod, cardPeriodKey)
+      return !!t && taskIsRequired(t, markPeriod, markKey)
     },
     isPrioritized: (id) => {
       const t = tasks.find((x) => x.id === id)
-      return !!t && taskIsPrioritized(t, cardPeriod, cardPeriodKey, cardPeriod === "day" ? morningPriorities : undefined)
+      return !!t && taskIsPrioritized(t, markPeriod, markKey, markPeriod === "day" ? morningPriorities : undefined)
     },
-    onToggleRequired: (id) => handleCommitment(id, cardPeriod, "required"),
-    onTogglePrioritized: (id) => handleCommitment(id, cardPeriod, "prioritized"),
+    onToggleRequired: (id) => handleCommitment(id, markPeriod, "required"),
+    onTogglePrioritized: (id) => handleCommitment(id, markPeriod, "prioritized"),
     onStepsChange: handleSteps,
     onJustStart: (id) => setJustStartTaskId(id),
     onNeeds: setPrereqTaskId,
@@ -813,7 +832,7 @@ export function TodoPanel({
         wipLimit={wipLimit}
         onUnestimatedClick={openUnestimated}
       />
-      {period === "day" && morningPriorities.length > 0 && (
+      {period === "day" && morningTasks.length > 0 && (
         <div
           className="todo-morning-priorities"
           data-ui-name="Morning priorities"
@@ -822,20 +841,14 @@ export function TodoPanel({
         >
           <p className="todo-morning-label">Morning priorities</p>
           <ol className="todo-morning-list">
-            {morningPriorities.map((id) => {
-              const task = tasks.find((t) => t.id === id)
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    className="todo-btn"
-                    onClick={() => setSelectedTaskId(id)}
-                  >
-                    {task ? itemTitleOrUntitled(task) : id}
-                  </button>
-                </li>
-              )
-            })}
+            {morningTasks.map((task) => (
+              <li key={task.id} className={task.completed ? "is-done" : undefined}>
+                <button type="button" className="todo-btn" onClick={() => setSelectedTaskId(task.id)}>
+                  {itemTitleOrUntitled(task)}
+                </button>
+                {task.completed ? <span className="todo-visually-hidden"> (done)</span> : null}
+              </li>
+            ))}
           </ol>
         </div>
       )}
@@ -1138,7 +1151,7 @@ export function TodoPanel({
       : new Set(undoneByPeriod[periodTab].map((todo) => todo.taskId ?? todo.id))
   const openCount =
     activeTodoTab === "other"
-      ? activeRange ? tasksInRange(tasks, activeRange.range.id).filter((t) => !t.completed).length : 0
+      ? activeRange ? tasksInRange(tasks, activeRange.range.id).filter((t) => isOpen(t) && !isClearedFromWork(t)).length : 0
       : periodTab === "quarter"
       ? (season?.seasonOpen.length ?? 0)
       : viewingPast
@@ -1163,9 +1176,13 @@ export function TodoPanel({
             if (next === activeTodoTab) return
             setActiveTodoTab(next)
             setOpenRowId(null)
+            setSelectedRowId(null)
+            // One search box and one formula panel serve every lens; neither follows you to the next one.
+            setAssignedQuery("")
+            setShowFormula(false)
             if (prefersReduced()) return
             setPeriodFolding(true)
-            window.setTimeout(() => setPeriodFolding(false), 180)
+            later(() => setPeriodFolding(false), 180)
           }}
         >
           <div
@@ -1247,16 +1264,13 @@ export function TodoPanel({
                   availableNow={availableNow}
                   onAvailableNowChange={(value) => setTodoPrefs({ availableNow: value })}
                   showAllTasks={showAllTasks}
-                  onShowAllTasksChange={setShowAllTasks}
+                  onShowAllTasksChange={(value) => setTodoPrefs({ showAllTasks: value })}
                   statusFilter={statusFilter}
-                  onStatusFilterChange={setStatusFilter}
+                  onStatusFilterChange={(value) => setTodoPrefs({ statusFilter: value })}
                   sortMode={sortMode}
-                  onSortModeChange={(mode) => {
-                    setSortMode(mode)
-                    setSortOrder(DEFAULT_TODO_SORT_ORDER[mode])
-                  }}
+                  onSortModeChange={(mode) => setTodoPrefs({ sortMode: mode, sortOrder: DEFAULT_TODO_SORT_ORDER[mode] })}
                   sortOrder={sortOrder}
-                  onSortOrderChange={setSortOrder}
+                  onSortOrderChange={(order) => setTodoPrefs({ sortOrder: order })}
                   onToggleFormula={() => setShowFormula((v) => !v)}
                 />
               </div>
@@ -1276,7 +1290,7 @@ export function TodoPanel({
             </p>
           )}
 
-          {showFormula && <PriorityFormulaPanel />}
+          {showFormula && activeTodoTab !== "other" && periodTab !== "quarter" && <PriorityFormulaPanel />}
 
           <div className="todo-stage">
             <div className="todo-body">
@@ -1367,7 +1381,7 @@ export function TodoPanel({
                             ? "Nothing matches."
                             : season.seasonRequired.length > 0
                               ? "Nothing else assigned."
-                              : "Nothing scheduled in this season yet. Add a task to place it on the first month."}
+                              : "Nothing scheduled in this season yet. Add a task to place it on this month, or the season's first month."}
                         </p>
                       ) : (
                         <ul className="todo-season-list">

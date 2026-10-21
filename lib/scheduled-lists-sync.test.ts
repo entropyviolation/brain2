@@ -193,7 +193,7 @@ describe("scheduled-lists-sync", () => {
         description: "String day",
         stage: "list",
         completed: false,
-        scheduledDate: "2026-07-08",
+        scheduledDate: "2026-07-08" as unknown as Date,
         lists: [],
         createdAt: new Date(),
       },

@@ -11,7 +11,7 @@ import {
 function mod(house: HouseCleaningState): ModuleInstance {
   return {
     id: "mod-tidy",
-    type: "custom",
+    type: "workspace",
     title: "Tidy",
     kind: "workspace",
     config: { houseCleaning: house },

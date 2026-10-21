@@ -625,7 +625,8 @@ type Expr =
   | { type: "num"; value: number }
   | { type: "name"; name: string }
   | { type: "cmp"; op: string; left: Expr; right: Expr }
-  | { type: "and" | "or"; left: Expr; right: Expr }
+  | { type: "and"; left: Expr; right: Expr }
+  | { type: "or"; left: Expr; right: Expr }
 
 class ParseError extends Error {}
 

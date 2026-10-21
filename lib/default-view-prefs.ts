@@ -119,7 +119,7 @@ export function setDefaultViewSort(
   return sanitizeListDefaultView({ ...rest, sort })
 }
 
-export function isCustomDefaultView(prefs: ListDefaultView | undefined): boolean {
+export function isCustomDefaultView(prefs: ListDefaultView | undefined): prefs is ListDefaultView {
   return prefs?.custom === true
 }
 

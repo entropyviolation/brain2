@@ -933,15 +933,16 @@ export function advanceRitual(pending: PendingClarify, text: string, now = new D
   }
 
   // Legacy shape: flow was the period name.
-  const legacyPeriod = raw.flow as ReviewPeriod
+  const legacy = raw as unknown as { flow: string; periodKey: string; step: string; draft: unknown }
+  const legacyPeriod = legacy.flow as ReviewPeriod
   if (["day", "week", "month", "quarter", "year"].includes(legacyPeriod)) {
     return advancePeriod(
       {
         flow: "period",
-        periodKey: raw.periodKey,
+        periodKey: legacy.periodKey,
         period: legacyPeriod,
-        step: raw.step as PeriodStep,
-        draft: raw.draft as PeriodRitualDraft["draft"],
+        step: legacy.step as PeriodStep,
+        draft: legacy.draft as PeriodRitualDraft["draft"],
       },
       text,
       now,
