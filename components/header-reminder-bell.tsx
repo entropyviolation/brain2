@@ -33,7 +33,9 @@ export function HeaderReminderBell({ onTaskSelect }: { onTaskSelect: (taskId: st
 
   useEffect(() => {
     const tick = () => setNow(new Date())
-    const id = window.setInterval(tick, 15_000)
+    const id = window.setInterval(() => {
+      if (!document.hidden) tick()
+    }, 15_000)
     const onVisible = () => {
       if (document.visibilityState === "visible") tick()
     }

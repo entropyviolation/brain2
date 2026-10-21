@@ -49,6 +49,7 @@ export function useScreenTimeSync(): void {
 
     let firstPoll = true
     const timer = window.setInterval(() => {
+      if (document.hidden) return
       const full = firstPoll && !fullOnMount
       firstPoll = false
       run(full)

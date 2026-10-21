@@ -82,7 +82,10 @@ describe("dashboardFromLegacy", () => {
     }
     expect(data.unknown).toEqual([])
     expect(data.style).toBe("milled")
-    expect(legacyViewOf(data)).toEqual({ order: DEFAULT_HOME_WIDGET_ORDER, hidden: [...DEFAULT_HOME_WIDGET_HIDDEN].sort((a, b) => DEFAULT_HOME_WIDGET_ORDER.indexOf(a as never) - DEFAULT_HOME_WIDGET_ORDER.indexOf(b as never)) })
+    // Kinds that never had a legacy square (Budget) are not part of the old strip.
+    const view = legacyViewOf(data)
+    const old = (ids: string[]) => ids.filter((id) => id !== "budget")
+    expect({ order: old(view.order), hidden: old(view.hidden) }).toEqual({ order: DEFAULT_HOME_WIDGET_ORDER, hidden: [...DEFAULT_HOME_WIDGET_HIDDEN].sort((a, b) => DEFAULT_HOME_WIDGET_ORDER.indexOf(a as never) - DEFAULT_HOME_WIDGET_ORDER.indexOf(b as never)) })
   })
 
   it("keeps the old reading order for the showing copies", () => {

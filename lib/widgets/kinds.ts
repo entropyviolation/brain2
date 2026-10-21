@@ -3,7 +3,7 @@
  *
  * One plain manifest per kind: name, install rule, the sizes its Dash face can
  * draw, its gear settings, its gallery page, and an optional first-run guide.
- * Twenty kinds ship. Countdown replaced Days Until (`daysuntil`) and Language
+ * Twenty-one kinds ship. Countdown replaced Days Until (`daysuntil`) and Language
  * study replaced Vocab (`vocab`); the old ids stay as the kind ids, so a saved
  * layout keeps its widgets. A future user-made kind registers through the
  * same `registerWidgetKind` call under a `user:<slug>` id. Plan:
@@ -616,6 +616,28 @@ const BUILT_IN_KINDS: WidgetKind[] = [
       { title: "Placement quiz", body: "Not sure of your level? The gear has a short quiz in the format of that language's real exam. You can always set the level yourself." },
       { title: "Vocab mode", body: "Word of the day, 1000 words, flashcards of your favorites, and look-up. More modes will join here." },
     ],
+  },
+  {
+    id: "budget",
+    name: "Budget",
+    group: "Money",
+    version: 1,
+    installs: "once",
+    sizes: ["1x1", "2x1", "2x2"],
+    defaultSize: "2x1",
+    milledSize: "2x2",
+    startsShowing: false,
+    settings: [],
+    gallery: {
+      what: "This month's money in one square: net after what came in and what went out, with expected money kept apart.",
+      how: [
+        "Earned and Spent count received money only. Spending comes from the Tracking log; earnings come from the budget.",
+        "Expected (🔮) money shows on its own line, sure and with maybes, and never changes the net.",
+        "Click the square for the month's breakdown. Add and edit lines in Tracking log → Spent → Budget.",
+      ],
+      useful: "A glance at the month's money without opening the budget.",
+      preview: { caption: "Budget", crt: "+$1.2M", footer: "earned $1.9M · spent $0.7M" },
+    },
   },
 ]
 

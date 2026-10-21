@@ -116,9 +116,14 @@ export function HomeDashboard() {
   useEffect(() => {
     const tabs = document.querySelector<HTMLElement>(".home-tabs")
     if (!tabs) return
-    const set = () =>
-      document.documentElement.style.setProperty("--home-tabs-height", `${tabs.getBoundingClientRect().height}px`)
+    const set = () => {
+      const box = tabs.getBoundingClientRect()
+      const root = document.documentElement.style
+      root.setProperty("--home-tabs-height", `${box.height}px`)
+      root.setProperty("--home-tabs-width", `${box.width}px`)
+    }
     set()
+    if (typeof ResizeObserver === "undefined") return
     const ro = new ResizeObserver(set)
     ro.observe(tabs)
     return () => ro.disconnect()
