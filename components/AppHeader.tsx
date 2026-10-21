@@ -27,7 +27,7 @@
  */
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, type ReactNode } from "react"
 import { APP_NAME } from "@/lib/app-brand"
 import { CognitiveState } from "@/components/cognitive-state"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
@@ -101,6 +101,7 @@ export function AppHeader({
   onCaptureOpenChange,
   captureSeed,
   onOpenSearch,
+  tabs,
 }: {
   onTaskSelect: (taskId: string) => void
   captureOpen?: boolean
@@ -109,6 +110,8 @@ export function AppHeader({
   captureSeed?: string
   /** Opens the existing Cmd/Ctrl-K search palette. */
   onOpenSearch?: () => void
+  /** App tab strip (a Radix `TabsList`), seated beside Nav. */
+  tabs?: ReactNode
 }) {
   useEffect(() => {
     performance.mark("brain2-shell-ready")
@@ -130,6 +133,12 @@ export function AppHeader({
       </div>
       <div className="b2-shell-body">
         <HeaderNavButtons />
+        {tabs ? (
+          <fieldset className="b2-shell-group b2-shell-tabs">
+            <legend>Go</legend>
+            {tabs}
+          </fieldset>
+        ) : null}
         <div className="b2-shell-stage">
         <fieldset className="b2-shell-brand">
           <legend>Friend</legend>

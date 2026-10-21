@@ -37,6 +37,7 @@ import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVE
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
+import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, ChartLine } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { AppHeader } from "@/components/AppHeader"
@@ -323,27 +324,44 @@ export default function Home() {
             onCaptureOpenChange={capture.setOpen}
             captureSeed={capture.seed}
             onOpenSearch={() => setSearchOpen(true)}
+            tabs={
+              <TabsList
+                className="flex w-full"
+                data-ui-name="App tabs"
+                data-ui-docs="components/README.md"
+                data-ui-docs-anchor="top-level-tabs-from-apppagetsx"
+              >
+                <TabsTrigger value="home" data-tab="home" aria-label="Home" title="Home">
+                  <House aria-hidden="true" />
+                  <span className="b2-tab-label">Home</span>
+                </TabsTrigger>
+                <TabsTrigger value="categories" data-tab="categories" aria-label="Lists" title="Lists">
+                  <ListChecks aria-hidden="true" />
+                  <span className="b2-tab-label">Lists</span>
+                </TabsTrigger>
+                <TabsTrigger value="docs" data-tab="docs" aria-label="Docs" title="Docs">
+                  <FileText aria-hidden="true" />
+                  <span className="b2-tab-label">Docs</span>
+                </TabsTrigger>
+                <TabsTrigger value="scheduler" data-tab="scheduler" aria-label="Scheduler" title="Scheduler">
+                  <CalendarClock aria-hidden="true" />
+                  <span className="b2-tab-label">Scheduler</span>
+                </TabsTrigger>
+                <TabsTrigger value="operations" data-tab="operations" aria-label="Operations" title="Operations">
+                  <Workflow aria-hidden="true" />
+                  <span className="b2-tab-label">Operations</span>
+                </TabsTrigger>
+                <TabsTrigger value="modules" data-tab="modules" aria-label="Modules" title="Modules">
+                  <Blocks aria-hidden="true" />
+                  <span className="b2-tab-label">Modules</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" data-tab="analytics" aria-label="Analytics" title="Analytics">
+                  <ChartLine aria-hidden="true" />
+                  <span className="b2-tab-label">Analytics</span>
+                </TabsTrigger>
+              </TabsList>
+            }
           />
-          <div
-            className={selectedTaskId ? "hidden" : "container mx-auto px-6 sm:px-8 lg:px-12"}
-            hidden={selectedTaskId ? true : undefined}
-            aria-hidden={selectedTaskId ? true : undefined}
-          >
-            <TabsList
-              className="flex w-full"
-              data-ui-name="App tabs"
-              data-ui-docs="components/README.md"
-              data-ui-docs-anchor="top-level-tabs-from-apppagetsx"
-            >
-              <TabsTrigger value="home" data-tab="home">Home</TabsTrigger>
-              <TabsTrigger value="categories" data-tab="categories">Lists</TabsTrigger>
-              <TabsTrigger value="docs" data-tab="docs">Docs</TabsTrigger>
-              <TabsTrigger value="scheduler" data-tab="scheduler">Scheduler</TabsTrigger>
-              <TabsTrigger value="operations" data-tab="operations">Operations</TabsTrigger>
-              <TabsTrigger value="modules" data-tab="modules">Modules</TabsTrigger>
-              <TabsTrigger value="analytics" data-tab="analytics">Analytics</TabsTrigger>
-            </TabsList>
-          </div>
         </div>
       <div className={`container mx-auto px-6 sm:px-8 lg:px-12 ${selectedTaskId ? "py-6" : "pb-6"}`}>
         <PersistStatusBanner />
