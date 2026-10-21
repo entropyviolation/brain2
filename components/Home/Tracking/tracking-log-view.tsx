@@ -36,7 +36,9 @@ import { addDays, addWeeks, format, subDays, subWeeks } from "date-fns"
 import { CountStatusesSection } from "@/components/Home/Tracking/count-statuses-section"
 import { CycleLogSection } from "@/components/Home/Tracking/cycle-log-section"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { SpendingDialog } from "@/components/Home/Tracking/spending-dialog"
 import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log-week"
+import { TelegramFeedWell } from "@/components/Home/Tracking/telegram-feed-well"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
 import {
   LOCATION_SCOPE_ID,
@@ -367,6 +369,7 @@ function LogListWell({
   metaFor,
   leadFor,
   face,
+  onTitleOpen,
   onOpen,
   onRemove,
 }: {
@@ -379,13 +382,22 @@ function LogListWell({
   leadFor?: (entry: LogBookEntry) => ReactNode
   /** `steel` — the light well with black text, as in the Now popup. Default is the CRT shelf. */
   face?: "steel"
+  /** Makes the heading a button, such as Spent opening the Spending dialog. */
+  onTitleOpen?: () => void
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
   return (
     <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"} data-face={face}>
       <h3 className="trk-logbook-heading">
-        {title}
+        {onTitleOpen ? (
+          <button type="button" className="trk-logbook-heading-open" onClick={onTitleOpen} aria-label={`${title} detail`} title={`Open ${title.toLowerCase()} detail`}>
+            {title}
+            <span aria-hidden="true"> ›</span>
+          </button>
+        ) : (
+          title
+        )}
         {rows.length > 0 ? (
           <span className="trk-logbook-count" aria-hidden="true">
             {rows.length}
@@ -476,6 +488,7 @@ export function TrackingLogView({
   const [timeValue, setTimeValue] = useState(() => defaultClock(currentDate))
   const [locationPenId, setLocationPenId] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
+  const [spendingOpen, setSpendingOpen] = useState(false)
   const nameFieldRef = useRef<HTMLInputElement | null>(null)
   const [span, setSpan] = useState<"day" | "week">(() => getTrackingViewPrefs().logSpan)
   const isWeek = lockDate ? false : span === "week"
@@ -921,6 +934,7 @@ export function TrackingLogView({
             note="Amount, what it was spent on, and the source."
             rows={grouped.spend}
             extra={<SpendLedger rows={grouped.spend} />}
+            onTitleOpen={() => setSpendingOpen(true)}
             copyFor={(entry) => entry.spendOn?.trim() || entry.title?.trim() || "Untitled"}
             metaFor={(entry) => entry.spendSource?.trim() || ""}
             leadFor={(entry) =>
@@ -980,11 +994,36 @@ export function TrackingLogView({
               onRemove={removeEntry}
             />
           ) : null}
+
+          <TelegramFeedWell dayKey={dateKey} />
         </div>
       )}
 
       <CycleLogSection date={dateKey} />
 
+      <SpendingDialog
+        open={spendingOpen}
+        onOpenChange={setSpendingOpen}
+        dayLabel={currentDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+        ledger={<SpendLedger rows={grouped.spend} />}
+        list={
+          grouped.spend.length === 0 ? (
+            <p className="trk-spending-note">Nothing spent this day.</p>
+          ) : (
+            <ul className="trk-spending-rows">
+              {grouped.spend.map((row) => (
+                <li key={row.id} data-keep="true">
+                  <span className="trk-spending-name">{row.spendOn?.trim() || row.title?.trim() || "Untitled"}</span>
+                  <span className="trk-spending-date">{row.spendSource?.trim() || ""}</span>
+                  <span className="trk-spending-amount">
+                    {typeof row.spendAmount === "number" ? formatSpendAmount(row.spendAmount) : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      />
       {openEntry ? <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} /> : null}
     </div>
   )

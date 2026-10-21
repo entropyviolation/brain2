@@ -211,3 +211,29 @@
   text-transform: uppercase;
   color: #804000;
 }
+
+/* Telegram feed lines: muted, read-only, and wrapped so the whole text shows. */
+.trk95 .trk-log-week-row.is-telegram {
+  cursor: default;
+  background: rgba(0, 0, 0, 0.035);
+  border-left: 2px solid #3b6ea5;
+}
+
+.trk95 .trk-log-week-row.is-telegram .trk-log-week-copy {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.trk95 .trk-log-week-row.is-telegram .trk-log-week-tag {
+  color: #3b6ea5;
+}
+
+.trk95 .trk-log-week-badge.is-outcome {
+  color: #606060;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}

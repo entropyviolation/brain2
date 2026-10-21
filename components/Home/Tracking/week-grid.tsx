@@ -34,6 +34,8 @@
  */
 "use client"
 
+import { useTransitSuggestionsFor } from "@/components/Home/Tracking/use-transit-suggestions"
+import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
@@ -413,6 +415,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
     return byDay
   }, [dateKeys, entries, scope])
 
+  const transit = useTransitSuggestionsFor(entries, dateKeys, scope)
+  // Suggestions are drawn only; painting and totals keep reading the real `maps`.
+  const shownMaps = useMemo(() => {
+    if (!transit.length) return maps
+    const byDay: Record<string, (TimeEntry | null)[]> = {}
+    for (const key of dateKeys) byDay[key] = overlaySuggestions(maps[key] ?? [], transit.filter((t) => t.date === key))
+    return byDay
+  }, [maps, transit, dateKeys])
+
   const overlayMaps = useMemo(
     () =>
       ghosts.map((ghost) => {
@@ -430,7 +441,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
       const byDay: Record<string, TimeEntry | null> = {}
       const overlays: Record<string, TimeEntry | null>[] = overlayMaps.map(() => ({}))
       for (const key of dateKeys) {
-        byDay[key] = dominantEntry(maps[key] ?? [], minute, weekStep)
+        byDay[key] = dominantEntry(shownMaps[key] ?? [], minute, weekStep)
         overlayMaps.forEach((ghostMaps, g) => {
           overlays[g][key] = ghostMaps[key] ? dominantEntry(ghostMaps[key], minute, weekStep) : null
         })
@@ -438,7 +449,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
       out.push({ byDay, overlays })
     }
     return out
-  }, [maps, overlayMaps, dateKeys, weekStep, rowBand.start, rowBand.end])
+  }, [shownMaps, overlayMaps, dateKeys, weekStep, rowBand.start, rowBand.end])
 
   const dayTotals = useMemo(() => {
     const covered = uniqueMinutesByDate(weekEntries)
@@ -562,6 +573,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
   }
 
   const blockOnCell = (day: string, minute: number) => dominantEntry(maps[day] ?? [], minute, weekStep)
+
+  // A tentative transit tile is accepted with a click: no pen in hand, or the Transit pen itself.
+  const acceptAtCell = (day: string, minute: number) => {
+    const s = dominantEntry(shownMaps[day] ?? [], minute, weekStep)
+    if (!isSuggestion(s) || blockOnCell(day, minute)) return false
+    if (selectedPenId !== null && selectedPenId !== s.penId) return false
+    acceptSuggestion(s, paintMinutes)
+    return true
+  }
 
   const beginDrag = (cell: { day: string; minute: number }, originY: number | null) => {
     dragRef.current = { day: cell.day, anchor: cell.minute, head: cell.minute, moved: false, originY }
@@ -702,6 +722,10 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
             focusTrackingPlot(gridRef.current)
             const cell = cellFromEvent(e.target)
             if (!cell) return
+            if (acceptAtCell(cell.day, cell.minute)) {
+              e.preventDefault()
+              return
+            }
             if (selectedPenId === null) {
               const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)
@@ -719,6 +743,10 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
             focusTrackingPlot(gridRef.current)
             const cell = cellFromEvent(e.target)
             if (!cell) return
+            if (acceptAtCell(cell.day, cell.minute)) {
+              e.preventDefault()
+              return
+            }
             if (selectedPenId === null) {
               const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)

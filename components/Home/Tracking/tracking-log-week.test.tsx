@@ -5,6 +5,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { submitTrackingLog } from "./tracking-log-model"
 import { TrackingLogWeek } from "./tracking-log-week"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 
 describe("TrackingLogWeek", () => {
   const currentDate = new Date(2026, 5, 17, 12, 0, 0) // Wednesday
@@ -138,5 +139,44 @@ describe("TrackingLogWeek", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /coffee/ }))
     expect(onOpenEntry).toHaveBeenCalledWith(id)
+  })
+
+  it("shows texts to BIM in their day column, even a link that made no tracking row", () => {
+    useTelegramFeedStore.setState({
+      rows: [
+        {
+          id: "tg:99:1",
+          at: new Date(2026, 5, 17, 9, 5, 0).toISOString(),
+          chatId: "99",
+          text: "https://www.instagram.com/reel/abc/",
+          outcome: { kind: "link", status: "applied", summary: "Saved link" },
+          recordedAt: new Date(2026, 5, 17, 9, 5, 0).toISOString(),
+          origin: "live",
+        },
+        {
+          id: "tg:99:2",
+          at: new Date(2026, 5, 20, 22, 0, 0).toISOString(),
+          chatId: "99",
+          text: "Saturday thought",
+          recordedAt: new Date(2026, 5, 20, 22, 0, 0).toISOString(),
+          origin: "live",
+        },
+      ],
+    })
+    render(
+      <div className="trk95">
+        <TrackingLogWeek
+          currentDate={currentDate}
+          onOpenDay={vi.fn()}
+          onOpenEntry={vi.fn()}
+          onRemoveEntry={vi.fn()}
+        />
+      </div>,
+    )
+    const wed = screen.getByLabelText("Log for Wednesday, Jun 17")
+    expect(within(wed).getByText("https://www.instagram.com/reel/abc/")).toBeInTheDocument()
+    expect(within(wed).getByText("→ Inbox link")).toBeInTheDocument()
+    const sat = screen.getByLabelText("Log for Saturday, Jun 20")
+    expect(within(sat).getByText("Saturday thought")).toBeInTheDocument()
   })
 })
