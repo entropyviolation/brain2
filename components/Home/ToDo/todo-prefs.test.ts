@@ -27,11 +27,20 @@ describe("todo-prefs", () => {
 
   it("persists available-now and clamps the WIP cap", () => {
     setTodoPrefs({ availableNow: true, wipLimit: 0 })
-    expect(getTodoPrefs()).toEqual({ availableNow: true, wipLimit: 1, lidCollapsed: { flags: false, time: false, steps: false }, ritesFollowSun: true, defaultEstimateMin: 30, paceOverrides: {}, paceGhosts: true, sessionPadded: true, hideLocked: false, showNextOnly: false, tierView: "all", titleBase: "To do", titleByView: {}, ranges: [], activeRangeId: null, formulas: [], showMath: false })
+    expect(getTodoPrefs()).toEqual({ ...DEFAULT_TODO_PREFS, availableNow: true, wipLimit: 1 })
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}")).toMatchObject({
       availableNow: true,
       wipLimit: 1,
     })
+  })
+
+  it("persists the filter strip's sort, direction, status and All tasks, and drops junk", () => {
+    setTodoPrefs({ sortMode: "name", sortOrder: "asc", statusFilter: "partial", showAllTasks: true })
+    resetTodoPrefsForTests()
+    expect(getTodoPrefs()).toMatchObject({ sortMode: "name", sortOrder: "asc", statusFilter: "partial", showAllTasks: true })
+    localStorage.setItem(TODO_PREFS_KEY, JSON.stringify({ sortMode: "bogus", statusFilter: 7 }))
+    resetTodoPrefsForTests()
+    expect(getTodoPrefs()).toMatchObject({ sortMode: "priority", sortOrder: "desc", statusFilter: "open" })
   })
 
   it("keeps a default estimate of 30, clamps it, and lets 0 mean none", () => {

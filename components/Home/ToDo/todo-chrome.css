@@ -2119,6 +2119,11 @@ body.win95-app .todo95 .todo-segment button.todo-chiclet {
   font-size: 11px;
 }
 
+.todo95 .todo-morning-list li.is-done .todo-btn {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
 .todo95 .todo-legend {
   display: flex;
   flex-wrap: wrap;
