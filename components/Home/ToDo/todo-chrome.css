@@ -4146,3 +4146,26 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
   .todo95 .todo-load-readout { font-size: 14px; gap: 4px; }
   .todo95 .todo-load-needle { width: 20px; }
 }
+
+/* Comfort well: the wider pixel face (w95fa) instead of the narrow VT323 (allie, 2026-10-21). */
+.todo95 .todo-ldi-crt-lcd,
+.todo95 .todo-ldi-crt-legend li {
+  font-family: "w95fa", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* Phone: keep the Done cell (percent, or the B / G / E level gauge) on the meta line. */
+@media (max-width: 720px) {
+  .todo95 .todo-table .todo-row-closed,
+  .todo95 .todo-row-closed {
+    grid-template-columns: auto auto auto auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name name name name name name name keys"
+      "tier state time steps push . . keys"
+      "done done done done done done done keys";
+  }
+  .todo95 .todo-row.is-ritual .todo-row-closed { grid-template-areas: "name name name name name name name keys"; }
+  .todo95 .todo-table .todo-row-closed .todo-cell-done { grid-area: done; display: flex; justify-content: flex-start; min-width: 0; }
+  .todo95 .todo-row.is-ritual .todo-row-closed .todo-cell-done { display: none; }
+}
