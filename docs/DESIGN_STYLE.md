@@ -245,6 +245,22 @@ Precious marks stay small, about 12–16px, so they do not become a second
 caption. A pressable jewel may be a little larger (the Habits row edit stone
 is 18px) and still not a toolbar icon.
 
+### Phone layout
+
+_Last mapped: 2026-10-21_
+
+Guidance for new and redesigned rooms. No existing room changes because of it. The model is the To do tab (`components/Home/ToDo/todo-chrome.css`, "Redesign 2026-10-21" blocks).
+
+Under 720px a room gets its own layout, not a shrunk desktop.
+
+- **Header as a held machine.** The screen strip (title, count, one-line readout) sits on top, the settings key beside it. Then full-width rows: the nameplate, then the view keys as equal word keys, then the action keys in one even row.
+- **Keys at least 44px tall.** Peers share one row and one width. No orphan on a second line; drop a key into its sibling's menu instead.
+- **Rows in two lines.** Name first (up to two lines), with at most two keys at the right. Then one small meta line.
+- **Verbs in the drawer, in an even grid** (3 × 2), with the rest under More….
+- **Wells stack one per row.** Empty ones are hidden.
+- **Trays open as a bottom sheet.**
+- Same materials as desktop: phosphor glass, milled keys, small lamps.
+
 ### Laying out a room
 
 1. Name each region and its one job.
@@ -499,6 +515,21 @@ _Last mapped: 2026-10-20_ The Dash cluster is the house answer for any figure th
 - **Editable tube.** Put a transparent input over the digits (`caret-color` is the ink) rather than restyling the input.
 
 Shipped example: `PointsDial` in `components/Home/ToDo/TaskCardSide.tsx`, styled at the end of `task-card.css`. Do the same next for other steppers and counters (estimate cells, count ticks, habit targets). **Planned.**
+
+### Keycaps
+
+_Last mapped: 2026-10-21_
+
+Word keys use the ortholinear keycap, from a round-screen terminal allie picked. The cap is nearly square with a 3–4px corner. It has a flat top face with a soft top-to-bottom gradient, a darker skirt along the bottom and sides drawn with inset shadows (4px at the bottom, 2px at the sides), a 1px edge line, and a dark legend.
+
+- **Default cap:** pale silver. Top `#f1f3f5` → `#dfe2e6`, skirt `#b3b8be`, edge `#6e7378`, legend `#1f2226`.
+- **Modifier cap** (Session, Sessions, Show, sort, Needs…, View, Delete): darker grey. Top `#c9ccd0` → `#b9bdc1`, skirt `#969a9f`, edge `#55595d`.
+- **Primary cap** (+ Add task, Done): the silver cap with a navy legend, a small navy lamp before the word, and a 2px navy ring.
+- **Latching keys** (the span keys): a lamp at the left, lit green and sunken when current.
+- A pressed or on key drops by about 2px and its skirt shrinks.
+- Never cream or yellow caps by default.
+
+Code: the `--todo-cap-*` tokens and `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class.
 
 ### Transport keys
 
