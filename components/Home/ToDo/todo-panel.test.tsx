@@ -62,11 +62,12 @@ describe("TodoPanel", () => {
     expect(container.querySelector(".todo-filters")).toHaveAttribute("data-ui-name", "Show / Sort / Pace")
     expect(container.querySelector(".todo-sheet")).toHaveAttribute("data-ui-name", "Period sheet")
     expect(container.querySelector(".todo-load")).toHaveAttribute("data-ui-name", "Period load")
-    expect(container.querySelector(".todo-band.is-required")).toHaveAttribute("data-ui-name", "Required")
+    // Empty bands are not drawn: no Required marks, nothing done or missed yet.
+    expect(container.querySelector(".todo-band.is-required")).toBeNull()
     expect(container.querySelector(".todo-band.is-assigned")).toHaveAttribute("data-ui-name", "Assigned")
     expect(container.querySelector(".todo-composer")).toHaveAttribute("data-ui-name", "Assigned composer")
-    expect(container.querySelector(".todo-section.is-done")).toHaveAttribute("data-ui-name", "Done")
-    expect(container.querySelector(".todo-section.is-missed")).toHaveAttribute("data-ui-name", "Missed")
+    expect(container.querySelector(".todo-section.is-done")).toBeNull()
+    expect(container.querySelector(".todo-section.is-missed")).toBeNull()
     expect(container.querySelector(".todo-status")).toHaveAttribute("data-ui-name", "Status bar")
     expect(container.querySelector(".todo-desk-plate")).toHaveAttribute("data-ui-name", "To Do plate")
     const plate = container.querySelector("[data-desk-plate='todo'] img")
@@ -359,6 +360,14 @@ describe("TodoPanel", () => {
     expect(screen.getByText("(1)")).toBeInTheDocument()
   })
 
+  it("hides empty Done and Missed wells but keeps Log done on the composer", () => {
+    render(<TodoPanel />)
+    expect(screen.queryByText("Done Today")).not.toBeInTheDocument()
+    expect(screen.queryByText("Missed opportunities today")).not.toBeInTheDocument()
+    const composer = screen.getByLabelText("Add a task").closest(".todo-composer") as HTMLElement
+    expect(within(composer).getByRole("button", { name: "Log done" })).toBeInTheDocument()
+  })
+
   it("creates To-Do tasks that are scheduleable so they surface in the Scheduler", () => {
     useTaskStore.getState().setTasks([])
     render(<TodoPanel />)
@@ -500,7 +509,7 @@ describe("TodoPanel", () => {
     expect(within(load).getByText(/manageable/)).toBeInTheDocument()
     expect(within(load).getByRole("button", { name: "All assigned" })).toBeInTheDocument()
     expect(within(load).getByRole("button", { name: "Required + prioritized" })).toBeInTheDocument()
-    expect(screen.getByText("Nothing required.")).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: "Required" })).not.toBeInTheDocument()
     expect(within(screen.getByRole("region", { name: "Assigned" })).getByText("Finish slides")).toBeInTheDocument()
 
     const assignedDay = screen.getByRole("region", { name: "Assigned" })

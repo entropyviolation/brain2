@@ -96,6 +96,7 @@ import {
 import { TodoTable } from "./TodoTable"
 import { TodoLoadPanel } from "./TodoLoadPanel"
 import { AddTodoDialog, type NewTodoDraft } from "./AddTodoDialog"
+import { AddDoneDialog } from "./AddDoneDialog"
 import { TodoPeriodNav } from "./TodoPeriodNav"
 import { DoneTodoSection } from "./DoneTodoSection"
 import { MissedTodoSection } from "./MissedTodoSection"
@@ -853,6 +854,8 @@ export function TodoPanel({
         </div>
       )}
       <div className="todo-ledger">
+        {/* Hidden while empty (dead instruments are hidden); it appears when a row's Required gem lights. */}
+        {required.length > 0 && (
         <section
           className="todo-band is-required"
           role="region"
@@ -865,10 +868,7 @@ export function TodoPanel({
           <h4 className="todo-list-title is-required">
             Required <span className="todo-list-count">{required.length}</span>
           </h4>
-          {required.length === 0 ? (
-            <p className="todo-empty-inline">Nothing required.</p>
-          ) : (
-            <TodoTable
+          <TodoTable
               {...tableProps}
               todos={required}
               isExpanded={!!expandedPeriods[`required-${period}`]}
@@ -876,8 +876,8 @@ export function TodoPanel({
                 setExpandedPeriods((prev) => ({ ...prev, [`required-${period}`]: !prev[`required-${period}`] }))
               }
             />
-          )}
         </section>
+        )}
         <section
           className="todo-band is-assigned"
           role="region"
@@ -974,6 +974,8 @@ export function TodoPanel({
             >
               Add
             </button>
+            {/* Log done lives here too, so it stays reachable while the Done well is hidden. */}
+            <AddDoneDialog onAdd={handleAddDone} />
           </div>
         </section>
       </div>
@@ -981,7 +983,7 @@ export function TodoPanel({
         className={`todo-aftermath${aftermathCount > 1 ? " is-columns" : ""}`}
         style={aftermathCount > 1 ? { ["--todo-aftermath-cols" as string]: String(aftermathCount) } : undefined}
       >
-      {past && (
+      {past && undoneByPeriod[period].length > 0 && (
         <UndoneTodoSection
           todos={undoneByPeriod[period]}
           tasks={tasks}
@@ -995,6 +997,7 @@ export function TodoPanel({
           onDiscard={(taskId) => resolveUndone(taskId, period, "discard")}
         />
       )}
+      {doneByPeriod[period].length > 0 && (
       <DoneTodoSection
         title={getTodoDoneTitle(period, focusedDate)}
         todos={doneByPeriod[period]}
@@ -1007,6 +1010,8 @@ export function TodoPanel({
         onConfirmTimes={handleConfirmTimes}
         refDate={focusedDate}
       />
+      )}
+      {missedByPeriod[period].length > 0 && (
       <MissedTodoSection
         title={getTodoMissedTitle(period, focusedDate)}
         todos={missedByPeriod[period]}
@@ -1016,6 +1021,7 @@ export function TodoPanel({
         onOpenChange={(open) => setMissedSectionsOpen((prev) => ({ ...prev, [period]: open }))}
         onTaskClick={openTask}
       />
+      )}
       </div>
     </div>
     )
@@ -1331,6 +1337,7 @@ export function TodoPanel({
                     wipLimit={wipLimit}
                   />
                   <div className="todo-ledger">
+                    {season.seasonRequired.length > 0 && (
                     <section
                       className="todo-band is-required"
                       role="region"
@@ -1343,14 +1350,11 @@ export function TodoPanel({
                       <h4 className="todo-list-title is-required">
                         Required <span className="todo-list-count">{season.seasonRequired.length}</span>
                       </h4>
-                      {season.seasonRequired.length === 0 ? (
-                        <p className="todo-empty-inline">Nothing required.</p>
-                      ) : (
-                        <ul className="todo-season-list">
-                          {season.seasonRequired.map((task) => renderSeasonRow(task))}
-                        </ul>
-                      )}
+                      <ul className="todo-season-list">
+                        {season.seasonRequired.map((task) => renderSeasonRow(task))}
+                      </ul>
                     </section>
+                    )}
                     <section
                       className="todo-band is-assigned"
                       role="region"
