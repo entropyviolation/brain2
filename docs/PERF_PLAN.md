@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-16_
 
-Reload, load, closing dialogs, and saving all feel slow and glitchy. This maps where that time goes, checked against the code at `f1848fc`. Status: **Planned**. Nothing here is done yet. The CI side is in [`CI_GREEN_PLAN.md`](CI_GREEN_PLAN.md). Phase 3 below depends on it.
+Reload, load, closing dialogs, and saving all feel slow and glitchy. This maps where that time goes, checked against the code at `f1848fc`. Status: **Planned**, except Step 1, which is done in code (2026-10-20). The CI side is in [`CI_GREEN_PLAN.md`](CI_GREEN_PLAN.md). Phase 3 below depends on it.
 
 I have not profiled a live vault. Numbers below come from a jsdom benchmark of the real `cogsStateStorage().setItem` on synthetic blobs. Step 0 measures the real thing.
 
@@ -80,12 +80,20 @@ Optionally, add a dev-only `console.warn` in `setItem` when one write takes over
 
 ### Step 1 — Quick wins in the save path (small, low risk)
 
-1. **One hub POST per edit.** Send `persistKey(name)` once, not once per alias. The hub already fans out to twins.
-2. **`stampAppearancePins`: check the store name before parsing.** Return early unless the store is habits or theme.
-3. **Parse each blob once per `setItem`.** Parse `value` and `previous` once at the top and pass the objects to the guards. The guards in `lib/vault-guard.js` take strings today, so add object-taking variants and keep the string ones for the hub and tests.
-4. **Skip the read-back.** Keep the last string this tab wrote per key in memory. When localStorage still holds that exact string, the union with "previous" is a no-op. That covers most edits, since only another window changes it underneath.
+_Last mapped: 2026-10-20_
 
-Each step needs a test that keeps the guard's behavior (`lib/persist-storage*.test.ts`, `lib/vault-guard*.test.*`). These guards exist because data was lost before. Don't loosen what they refuse.
+**Status: done in code, not yet measured on the real vault.** Tests: `npx vitest run lib/persist-storage lib/vault-guard lib/vault-coverage` (90 pass). Run Step 0 before and after to get real numbers. A jsdom spot check on a 3.5 MB task blob (long repeated strings, so parse is unrealistically cheap) showed about 3 ms per `setItem`. That is not comparable to the table above.
+
+1. **One hub POST per edit. Done.** `postHub` now sends `hubPostKeys(name)` (`lib/persist-storage.ts`). `writeVaultItem` (`scripts/persist-api.mjs:~142`) writes every `persistAliases(name)` from one POST, which I checked. One exception: a bare plan-text key (`monthPlan-…`) has no twin in the hub's `persistAliases`, so it keeps a second POST for its `brain2-` key. `cogs-` is covered by that one.
+2. **`stampAppearancePins` returns before parsing. Done.** Only habits, theme, and the friend gallery stamp anything.
+3. **Parse once. Done.** `setItem` parses `value` once, and `previous` at most once, and only for vaults in `vaultNeedsParsedGuards` (unioned vaults, habits, theme, friend gallery). Sleep, Metrics, and the like are never parsed. `lib/vault-guard.js` has `…Parsed` / `…Root` variants of the union, habit overlay, appearance/content/ingest downgrade guards, ingest overlay, stamp, and record-count functions. The string functions delegate to them, so the hub and the tests behave as before. An identical write returns before any parse.
+4. **Skip the read-back union. Done, with a stricter rule than "string matches".** `lastWritten` keeps the last string and record count this tab wrote for timegrid, task, planned-actions, and telegram-feed. The union is skipped only when localStorage still holds that exact string **and** the new blob's record count did not drop. A smaller count (a delete, or a stale rehydrate) still takes the full union path. Habits, theme, and ingest never skip: their other guards need the stored copy.
+
+**Risk to know.** With the skip on, a write that swaps rows (same count, different ids, no tombstone) is no longer healed by the union. That needs a stale writer inside the same tab after it has already written once. Boot-time seed writes have no cache entry, so they take the full path.
+
+Left for later: `staleAgainstLocalVault` still parses the value and the local copy once per hub POST, 250 ms after the edit.
+
+Each step has a test in `lib/persist-storage.test.ts` or `lib/vault-guard.test.ts`. These guards exist because data was lost before. Nothing they refuse was loosened.
 
 Expected result: a task edit drops from about 200 ms toward about 40 ms (one parse, one stringify, one write).
 
@@ -97,6 +105,15 @@ Expected result: a task edit drops from about 200 ms toward about 40 ms (one par
 
 Keep the shrink and resurrection guards and `journalVaultDrop` as they are.
 
+**Status: done in `scripts/persist-api.mjs`** (not yet run in the live dev server).
+_Last mapped: 2026-10-20_
+
+- The hub file is read once. Memory is the source of truth. A POST/PUT only mutates memory and schedules one write ~1 s later (`fs.promises.writeFile` to a unique `.tmp`, then `rename`). Edits during a write get the next window.
+- Memory holds one copy per vault, under the `brain2-*` name. **Disk and the API still carry both** `brain2-*` and `cogs-*`: the Electron preload, `lib/persist-storage.ts`, and the phone hub look up either name, and old files have twins. Reads expand the one copy to both. If a twin pair disagrees on disk, `brain2-*` wins (same as every merge before).
+- Other processes (phone hub, `dump-chrome-localstorage.mjs`) write the same file. Each read or write stats the file; if it changed, memory reloads. With unwritten edits, the disk copy is reloaded and those edits are merged back through the hub guards. A window of up to ~1 s of staleness between two long-lived hub processes remains.
+- Flush on `exit`, `SIGINT`, `SIGTERM`, `SIGHUP` (sync write). `SIGKILL` or a crash loses at most ~1 s of edits.
+- Unchanged writes no longer rewrite the file or bump its mtime (`mergeSharedPersistItems` used to always write). Guards and `journalVaultDrop` are unchanged. New exports: `flushSharedPersist`, `flushSharedPersistSync`, `_resetSharedPersistForTests`.
+
 ### Step 3 — A production mode that keeps the vault
 
 Depends on `next build` passing ([`CI_GREEN_PLAN.md`](CI_GREEN_PLAN.md) Phase 1).
@@ -107,9 +124,36 @@ This is probably the single largest win for reload and open/close lag. Do it onl
 
 ### Step 4 — Calm the timers
 
-- Skip the 15 s session tick write when the rounded end time has not changed.
-- Make the 1 s browser ingest poll back off to about 5 s when the queue is empty.
+_Last mapped: 2026-10-20_ — **Done** (not committed).
+
+- Done: `tickWorkSession` and `tickPenColorSession` skip the write when the live Tracking block already ends at the rounded active end (`liveEntryUpToDate` in `lib/operation-work-session.ts`). A moved or missing block still repaints.
+- Done: `hooks/useMessageIngest.ts` browser hub poll is a self-scheduling timeout: 1 s while messages arrive, 5 s when the queue is empty, paused while the tab is hidden, and snapped to an immediate poll when it becomes visible.
+- Done: hidden-tab guards added to the 1 s tick in `components/Home/ToDo/SessionPlanner.tsx`, the 15 s tick in `components/header-reminder-bell.tsx`, and the 2 min poll in `hooks/use-screentime-sync.ts`.
+- Left alone (cheap or intentional): `components/Home/home-dashboard.tsx` 60 s clock (only with Follow the clock), `TidyView.tsx` 1 s tick (returns early unless a timer runs), `JustStartMode.tsx` 1 s (focus screen), Settings face fields at 200 ms (only on that screen), `dash-faces.tsx`, the 15-60 s clocks in `append-log`, `home-days-until`, `home-solar-tile`, `home-moon-tile`, `home-overview`, `day-view`, `agenda-grid`, `time-grid`, `week-grid`, `trk-time-markers`, `FriendDetailsPanel`. Each re-renders one component, but none pause while hidden. Candidates for a shared `useNow` hook that pauses when hidden.
 
 ### Later — Stop rewriting whole stores (**Do not start** without a design pass)
 
 The root cost is one localStorage blob per store, rewritten whole on every edit. Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
+
+---
+
+## Render and load audit
+
+_Last mapped: 2026-10-20_
+
+Static read of the React side. No profile taken. Short version: rendering is mostly healthy (tab panels lazy, Analytics views lazy, selectors used, `todo-panel.tsx` memoizes its period lists). The slow feel is dominated by dev mode and the save path above, not React.
+
+### Fixed in this pass
+
+- `components/Home/Plan/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
+- `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
+
+### Not fixed, ranked by payoff
+
+1. **Dev mode** (section 1 above) remains the largest cost. Estimated payoff: large.
+2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts:~11`): 17 PNGs, about 13 MB, all statically imported. Next emits URLs, not inlined data, so they load only when painted, but the dev compiler still processes them and the picker may preload. Resize or convert to WebP, and import only the chosen dial. Payoff: medium (dev compile, memory).
+3. **`katex`** is statically imported in `components/Home/Habits/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
+4. **129 files subscribe to `s.tasks`** (`useTaskStore((s) => s.tasks)`). Each task edit re-renders all mounted ones. Fine while only one tab is mounted. Item detail keeps the tab desk mounted (hidden) (`app/page.tsx` header), so hidden tabs still re-render. Consider unmounting or `Activity`/deferring hidden tabs. Payoff: medium, needs care (scroll and state restore).
+5. **`app/page.tsx` eager imports**: `PenSettingsHost`, `TagSettingsHost`, `StepItemStack`, `CaptureDoorHost` load on first paint. Convert the settings hosts to `lazy` mounted on first open. Payoff: small to medium on first load.
+6. **Startup idle hooks** (`useSystemHomeListPins`, `usePeopleIKnowList`, instagram lists) run after `brain2-nav-ready`, each scanning task and list arrays. Merge into one idle pass. Payoff: small.
+7. **Many small `localStorage.getItem` reads in render paths** (`ToDo/CardSection.tsx:17`, `TaskCardSide.tsx:734`, `NeedsAttention.tsx:66`). They are inside lazy initializers or effects, so cheap. Leave.

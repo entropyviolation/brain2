@@ -63,17 +63,51 @@ function mergeIntoHub(existing, value, name) {
 export { vaultRecordCount, shouldRejectVaultShrink, mergePersistSnapshots }
 
 const ROOT = path.resolve(__dirname, "..")
-const DATA_DIR = path.join(ROOT, "data")
-const DATA_FILE = path.join(DATA_DIR, "shared-persist.json")
-const RECOVERY_DIR = path.join(DATA_DIR, "recovery-backups")
+const DEFAULT_DATA_FILE = path.join(ROOT, "data", "shared-persist.json")
+const RECOVERY_DIR = path.join(ROOT, "data", "recovery-backups")
 const SAFE_RECOVERY_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*\.json$/
 
+/** Debounce for the disk write. The in-memory copy is always current. */
+const DEFAULT_FLUSH_MS = 1000
+
+/**
+ * The hub vault lives in memory. The file is read once (and again only if another
+ * process changed it), writes are debounced and atomic, and exit flushes.
+ *
+ * In memory each vault is stored once, under its `brain2-*` name (`items`). On
+ * disk and over the wire both `brain2-*` and `cogs-*` are still emitted: the
+ * Electron preload, `lib/persist-storage.ts` and the phone hub look keys up by
+ * either name, and an old file with twin keys must keep loading. Reads expand
+ * the one copy back to both names. If a twin pair ever disagrees on disk, the
+ * `brain2-*` copy wins, as it already did for every merge.
+ */
+const hub = {
+  file: DEFAULT_DATA_FILE,
+  flushMs: DEFAULT_FLUSH_MS,
+  loaded: false,
+  updatedAt: null,
+  source: null,
+  /** canonical key -> value */
+  items: {},
+  /** Canonical keys changed since the last successful write. */
+  dirty: new Set(),
+  version: 0,
+  /** mtimeMs:size of the file as we last read or wrote it. */
+  sig: null,
+  timer: null,
+  flushing: null,
+  syncGen: 0,
+  tmpSeq: 0,
+  hooked: false,
+}
+
 export function sharedPersistPath() {
-  return DATA_FILE
+  return hub.file
 }
 
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+  const dir = path.dirname(hub.file)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 }
 
 function stripFriendPicItems(items) {
@@ -85,42 +119,242 @@ function stripFriendPicItems(items) {
   return next
 }
 
-export function readSharedPersist() {
-  ensureDataDir()
-  if (!fs.existsSync(DATA_FILE)) {
-    return { updatedAt: null, source: null, items: {} }
+/** `cogs-x` and `brain2-x` are one vault; the canonical name is `brain2-x`. */
+function canonKey(name) {
+  if (typeof name !== "string") return name
+  if (name.startsWith("cogs-")) return "brain2-" + name.slice(5)
+  return name
+}
+
+/** One copy per vault. `brain2-*` beats a `cogs-*` twin that disagrees. */
+function collapseAliases(items) {
+  const out = {}
+  for (const key of Object.keys(items)) {
+    if (!key.startsWith("cogs-")) out[key] = items[key]
   }
+  for (const key of Object.keys(items)) {
+    if (!key.startsWith("cogs-")) continue
+    const ck = canonKey(key)
+    if (!(ck in out)) out[ck] = items[key]
+  }
+  return out
+}
+
+/** Both names for every vault: the shape on disk and over the wire. */
+function expandAliases(items) {
+  const out = {}
+  for (const key of Object.keys(items)) {
+    out[key] = items[key]
+    if (key.startsWith("brain2-")) out["cogs-" + key.slice(7)] = items[key]
+  }
+  return out
+}
+
+function fileSig() {
   try {
-    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"))
+    const st = fs.statSync(hub.file)
+    return `${st.mtimeMs}:${st.size}`
+  } catch {
+    return null
+  }
+}
+
+function parseDisk() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(hub.file, "utf8"))
     return {
       updatedAt: parsed.updatedAt ?? null,
       source: parsed.source ?? null,
-      items: stripFriendPicItems(parsed.items && typeof parsed.items === "object" ? parsed.items : {}),
+      items: collapseAliases(stripFriendPicItems(parsed.items && typeof parsed.items === "object" ? parsed.items : {})),
     }
   } catch {
     return { updatedAt: null, source: null, items: {} }
   }
 }
 
-export function writeSharedPersist(next) {
+/**
+ * Bring memory up to date with the file. Reads the file only when it is not
+ * loaded yet or another process (phone hub, Chrome dump) changed it. Unwritten
+ * local changes are re-applied through the merge guards on top of the disk copy.
+ */
+function syncFromDisk() {
   ensureDataDir()
-  const payload = {
-    updatedAt: new Date().toISOString(),
-    source: next.source ?? readSharedPersist().source ?? "hub",
-    items: stripFriendPicItems(next.items && typeof next.items === "object" ? next.items : {}),
+  const sig = fileSig()
+  if (hub.loaded && sig === hub.sig) return
+  if (hub.loaded && sig === null) return // file removed under us: keep memory, next flush recreates it
+  const disk = sig === null ? { updatedAt: null, source: null, items: {} } : parseDisk()
+  if (hub.loaded && hub.dirty.size) {
+    for (const key of hub.dirty) {
+      const ours = hub.items[key]
+      if (typeof ours !== "string") {
+        delete disk.items[key]
+        continue
+      }
+      const theirs = disk.items[key]
+      if (typeof theirs === "string" && theirs !== ours) {
+        const merged = mergeIntoHub(theirs, ours, key)
+        disk.items[key] = typeof merged === "string" ? merged : ours
+      } else {
+        disk.items[key] = ours
+      }
+    }
+    hub.updatedAt = new Date().toISOString()
+  } else {
+    hub.updatedAt = disk.updatedAt
+    hub.source = disk.source
   }
-  const tmp = `${DATA_FILE}.${process.pid}.tmp`
-  fs.writeFileSync(tmp, JSON.stringify(payload), "utf8")
-  fs.renameSync(tmp, DATA_FILE)
-  return payload
+  hub.items = disk.items
+  hub.loaded = true
+  hub.sig = sig
 }
 
-function persistAliases(name) {
-  if (typeof name !== "string") return []
-  if (name.includes("friend-pic:")) return [name]
-  if (name.startsWith("brain2-")) return [name, "cogs-" + name.slice(7)]
-  if (name.startsWith("cogs-")) return ["brain2-" + name.slice(5), name]
-  return [name]
+function serialize() {
+  return JSON.stringify({ updatedAt: hub.updatedAt, source: hub.source ?? "hub", items: expandAliases(hub.items) })
+}
+
+function hubTmpPath() {
+  return `${hub.file}.${process.pid}.${++hub.tmpSeq}.tmp`
+}
+
+function clearTimer() {
+  if (hub.timer) {
+    clearTimeout(hub.timer)
+    hub.timer = null
+  }
+}
+
+/** Write the file now, synchronously. For exit, signals, and the legacy `writeSharedPersist`. */
+export function flushSharedPersistSync() {
+  clearTimer()
+  if (!hub.loaded || !hub.dirty.size) return false
+  try {
+    syncFromDisk()
+    ensureDataDir()
+    const tmp = hubTmpPath()
+    hub.syncGen++
+    fs.writeFileSync(tmp, serialize(), "utf8")
+    fs.renameSync(tmp, hub.file)
+    hub.dirty.clear()
+    hub.sig = fileSig()
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Debounced async write: temp file + atomic rename. Resolves when the file is current. */
+export function flushSharedPersist() {
+  clearTimer()
+  if (hub.flushing) return hub.flushing
+  const run = (async () => {
+    if (!hub.loaded || !hub.dirty.size) return
+    syncFromDisk()
+    const version = hub.version
+    const gen = hub.syncGen
+    const tmp = hubTmpPath()
+    try {
+      await fs.promises.writeFile(tmp, serialize(), "utf8")
+      if (gen !== hub.syncGen) {
+        // A sync flush (exit) wrote a newer copy meanwhile; do not rename an older one over it.
+        await fs.promises.rm(tmp, { force: true })
+        return
+      }
+      await fs.promises.rename(tmp, hub.file)
+    } catch {
+      await fs.promises.rm(tmp, { force: true }).catch(() => {})
+      return // dirty keys stay; rescheduled below
+    }
+    hub.sig = fileSig()
+    if (version === hub.version) hub.dirty.clear()
+  })()
+  // Clear after the promise settles (an async body with no await would otherwise clear first).
+  // Anything still dirty (failed write, or edits made mid-write) gets the next debounce window.
+  const tracked = run.finally(() => {
+    if (hub.flushing === tracked) hub.flushing = null
+    if (hub.dirty.size) scheduleFlush()
+  })
+  hub.flushing = tracked
+  return tracked
+}
+
+function onProcessSignal(signal) {
+  flushSharedPersistSync()
+  // Only we listen: restore the default "die on signal" we suppressed.
+  if (process.listenerCount(signal) <= 1) process.exit(128 + (signal === "SIGINT" ? 2 : signal === "SIGHUP" ? 1 : 15))
+}
+
+function hookProcessExit() {
+  if (hub.hooked) return
+  hub.hooked = true
+  process.on("exit", flushSharedPersistSync)
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, () => onProcessSignal(signal))
+}
+
+function scheduleFlush() {
+  hookProcessExit()
+  if (hub.timer || hub.flushing) return
+  hub.timer = setTimeout(() => {
+    hub.timer = null
+    void flushSharedPersist()
+  }, hub.flushMs)
+  hub.timer.unref?.()
+}
+
+function touch(key, source) {
+  hub.dirty.add(key)
+  hub.version++
+  hub.updatedAt = new Date().toISOString()
+  hub.source = source ?? hub.source ?? "hub"
+  scheduleFlush()
+}
+
+function expandedKeyCount() {
+  const keys = Object.keys(hub.items)
+  return keys.length + keys.filter((k) => k.startsWith("brain2-")).length
+}
+
+/** Result of a read or write: lazy `items` so a POST does not expand 12 MB it never uses. */
+function view(extra) {
+  return {
+    updatedAt: hub.updatedAt,
+    source: hub.source,
+    keyCount: expandedKeyCount(),
+    get items() {
+      return expandAliases(hub.items)
+    },
+    ...extra,
+  }
+}
+
+export function readSharedPersist() {
+  syncFromDisk()
+  return { updatedAt: hub.updatedAt, source: hub.source, items: expandAliases(hub.items) }
+}
+
+/** Replace the whole hub copy and write it now. Kept for scripts; the API paths use the merge functions. */
+export function writeSharedPersist(next) {
+  syncFromDisk()
+  const items = collapseAliases(stripFriendPicItems(next.items && typeof next.items === "object" ? next.items : {}))
+  hub.items = items
+  hub.dirty = new Set(Object.keys(items))
+  hub.version++
+  hub.updatedAt = new Date().toISOString()
+  hub.source = next.source ?? hub.source ?? "hub"
+  flushSharedPersistSync()
+  return { updatedAt: hub.updatedAt, source: hub.source, items: expandAliases(hub.items) }
+}
+
+/** Test hook: point the hub at another file, drop the in-memory copy. */
+export function _resetSharedPersistForTests(file = DEFAULT_DATA_FILE, opts = {}) {
+  clearTimer()
+  hub.file = file
+  hub.flushMs = opts.flushMs ?? DEFAULT_FLUSH_MS
+  hub.loaded = false
+  hub.updatedAt = null
+  hub.source = null
+  hub.items = {}
+  hub.dirty = new Set()
+  hub.sig = null
 }
 
 function isFriendPicPersistName(name) {
@@ -132,49 +366,44 @@ function isPlanTextPersistName(name) {
   return /^(day|week|month)Plan-/.test(bare)
 }
 
-function existingVaultItem(items, name) {
-  for (const key of persistAliases(name)) {
-    if (typeof items[key] === "string") return items[key]
-  }
-  return undefined
+function existingVaultItem(name) {
+  const v = hub.items[canonKey(name)]
+  return typeof v === "string" ? v : undefined
 }
 
-function writeVaultItem(items, name, value) {
-  if (isFriendPicPersistName(name)) {
-    for (const key of persistAliases(name)) delete items[key]
-    return
+/** Set or drop one vault in memory. Returns true when the stored copy changed. */
+function writeVaultItem(name, value, source) {
+  const key = canonKey(name)
+  if (isFriendPicPersistName(name) || (isPlanTextPersistName(name) && typeof value === "string" && value === "")) {
+    if (!(key in hub.items)) return false
+    delete hub.items[key]
+    touch(key, source)
+    return true
   }
-  if (isPlanTextPersistName(name) && typeof value === "string" && value === "") {
-    for (const key of persistAliases(name)) delete items[key]
-    return
-  }
-  for (const key of persistAliases(name)) items[key] = value
+  if (hub.items[key] === value) return false
+  hub.items[key] = value
+  touch(key, source)
+  return true
 }
 
 export function mergeSharedPersistItems(incoming, source) {
-  const current = readSharedPersist()
-  const items = { ...current.items }
+  syncFromDisk()
   let skipped = 0
-  for (const key of Object.keys(items)) {
-    if (!isFriendPicPersistName(key)) continue
-    delete items[key]
-    skipped++
-  }
   for (const [name, value] of Object.entries(incoming || {})) {
     if (typeof name !== "string" || typeof value !== "string") continue
     if (isFriendPicPersistName(name)) {
-      for (const key of persistAliases(name)) delete items[key]
+      writeVaultItem(name, value, source)
       skipped++
       continue
     }
-    const existing = existingVaultItem(items, name)
+    const existing = existingVaultItem(name)
     const merged = mergeIntoHub(existing, value, name)
     if (typeof merged !== "string") {
       skipped++
       continue
     }
     if (existing === value) {
-      writeVaultItem(items, name, merged)
+      writeVaultItem(name, merged, source)
       continue
     }
     if (merged === existing && existing !== value) {
@@ -183,40 +412,33 @@ export function mergeSharedPersistItems(incoming, source) {
       continue
     }
     journalVaultDrop(name, existing, merged, false)
-    writeVaultItem(items, name, merged)
+    writeVaultItem(name, merged, source)
   }
-  const stored = writeSharedPersist({ items, source: source ?? current.source ?? "hub" })
-  return { ...stored, skipped }
+  return view({ skipped })
 }
 
 export function upsertSharedPersistItem(name, value, source) {
+  syncFromDisk()
   if (isFriendPicPersistName(name)) {
-    const current = readSharedPersist()
-    const items = { ...current.items }
-    for (const key of persistAliases(name)) delete items[key]
-    if (JSON.stringify(items) === JSON.stringify(current.items)) return { ...current, skipped: "friend-pic" }
-    return { ...writeSharedPersist({ items, source: source ?? current.source ?? "hub" }), skipped: "friend-pic" }
+    writeVaultItem(name, value, source)
+    return view({ skipped: "friend-pic" })
   }
-  const current = readSharedPersist()
-  const existing = existingVaultItem(current.items, name)
+  const existing = existingVaultItem(name)
   const merged = mergeIntoHub(existing, value, name)
   if (typeof merged !== "string") {
-    return { ...current, skipped: "empty" }
+    return view({ skipped: "empty" })
   }
   if (existing === value) {
-    const items = { ...current.items }
-    writeVaultItem(items, name, merged)
-    if (JSON.stringify(items) === JSON.stringify(current.items)) return current
-    return writeSharedPersist({ items, source: source ?? current.source ?? "hub" })
+    writeVaultItem(name, merged, source)
+    return view()
   }
   if (merged === existing && existing !== value) {
     journalVaultDrop(name, existing, value, true)
-    return { ...current, skipped: "shrink" }
+    return view({ skipped: "shrink" })
   }
   journalVaultDrop(name, existing, merged, false)
-  const items = { ...current.items }
-  writeVaultItem(items, name, merged)
-  return writeSharedPersist({ items, source: source ?? current.source ?? "hub" })
+  writeVaultItem(name, merged, source)
+  return view()
 }
 
 function sendJson(res, status, body) {
@@ -403,10 +625,11 @@ export async function handlePersistApi(req, res, pathname) {
   }
 
   if (pathname === "/api/persist/health" && req.method === "GET") {
-    const store = readSharedPersist()
+    syncFromDisk()
+    const store = view()
     sendJson(res, 200, {
       ok: true,
-      keyCount: Object.keys(store.items).length,
+      keyCount: store.keyCount,
       updatedAt: store.updatedAt,
       source: store.source,
     })
@@ -429,7 +652,7 @@ export async function handlePersistApi(req, res, pathname) {
       sendJson(res, 200, {
         ok: true,
         updatedAt: stored.updatedAt,
-        keyCount: Object.keys(stored.items).length,
+        keyCount: stored.keyCount,
         skipped: stored.skipped,
       })
     } catch (err) {

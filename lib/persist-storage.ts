@@ -67,7 +67,7 @@
  */
 import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
-import { overlayHabitCompletions, overlayIngestAllowlist, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, shouldRejectVaultShrink, stampAppearancePins, unionPersistSnapshots, vaultRecordCount } from "@/lib/vault-guard.js"
+import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
 import {
   ensureLegacyPersistCopied,
   isPlanTextStorageKey,
@@ -383,7 +383,7 @@ function postHub(name: string, value: string) {
     if (count != null && count <= PERSIST_SEED_MAX_RECORDS) return
   }
   if (!value) return
-  for (const key of persistKeyAliases(name)) {
+  for (const key of hubPostKeys(name)) {
     const prev = hubPostTimers.get(key)
     if (prev) clearTimeout(prev)
     hubPostTimers.set(
@@ -405,6 +405,67 @@ function postHub(name: string, value: string) {
       }, 250),
     )
   }
+}
+
+/** Mirrors `persistAliases` in `scripts/persist-api.mjs`: the keys one hub POST writes. */
+function hubFanOut(key: string): string[] {
+  if (key.includes("friend-pic:")) return [key]
+  if (key.startsWith("brain2-")) return [key, "cogs-" + key.slice(7)]
+  if (key.startsWith("cogs-")) return ["brain2-" + key.slice(5), key]
+  return [key]
+}
+
+/**
+ * Keys to POST for one edit. The hub's `writeVaultItem` writes both the
+ * `brain2-` and `cogs-` twin from a single POST, so a prefixed vault needs one
+ * request, not one per alias. A bare plan-text key has no twin on the hub, so
+ * it keeps its own POST beside the prefixed one.
+ */
+export function hubPostKeys(name: string): string[] {
+  const covered = new Set<string>()
+  const out: string[] = []
+  for (const key of persistKeyAliases(name)) {
+    if (covered.has(key)) continue
+    out.push(key)
+    for (const twin of hubFanOut(key)) covered.add(twin)
+  }
+  return out
+}
+
+function parseRoot(text: string): unknown {
+  try {
+    const parsed = JSON.parse(text)
+    return parsed && typeof parsed === "object" ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Last string this tab wrote per union-only vault, with its record count.
+ * When localStorage still holds exactly that string, the stored copy is ours,
+ * so `setItem` can skip parsing it and unioning against it (see `setItem`).
+ * Any other writer changes the string and sends the next save down the full path.
+ */
+const lastWritten = new Map<string, { str: string; count: number }>()
+
+/** Reset the in-memory last-written cache (tests). */
+export function resetPersistWriteCache(): void {
+  lastWritten.clear()
+}
+
+/** Vaults whose only `setItem` guard is the union, so the skip loses nothing else. */
+const SKIP_UNION_IDS = new Set(["cogs-timegrid-store", "cogs-task-storage", "cogs-planned-actions", "cogs-telegram-feed"])
+
+/** Vaults with a downgrade guard that compares against the stored copy. */
+const PREVIOUS_GUARD_IDS = new Set(["cogs-habits-store", "cogs-theme-store", "cogs-ingest-store"])
+
+function vaultKind(name: string): string {
+  return name.startsWith("brain2-demo-")
+    ? "cogs-" + name.slice("brain2-demo-".length)
+    : name.startsWith("brain2-")
+      ? "cogs-" + name.slice(7)
+      : name
 }
 
 /** StateStorage that never throws out of setItem — quota becomes persist status. */
@@ -441,11 +502,43 @@ export function cogsStateStorage(): StateStorage {
         } catch {
           previous = null
         }
+        // Same bytes already stored: every guard below would return "no change".
+        if (previous === value) return
+        // Parse the incoming blob (and the stored one) at most once. Vaults
+        // without a JSON guard (Sleep, Metrics, ...) are never parsed.
+        const parsedGuards = vaultNeedsParsedGuards(name)
+        let valueObj: any = null
+        let previousObj: any = null
+        let previousParsed = false
+        const readPreviousObj = () => {
+          if (!previousParsed) {
+            previousParsed = true
+            previousObj = previous ? parseRoot(previous) : null
+          }
+          return previousObj
+        }
+        if (parsedGuards && value) valueObj = parseRoot(value)
         if (previous && value) {
-          const united = unionPersistSnapshots(value, previous, name)
-          if (typeof united === "string") value = united
-          const habits = overlayHabitCompletions(value, previous, name)
-          if (typeof habits === "string") value = habits
+          if (!parsedGuards) {
+            // Plan-text vaults union as strings; everything else returns null.
+            const united = unionPersistSnapshots(value, previous, name)
+            if (typeof united === "string") value = united
+          } else if (previous !== value) {
+            const cached = lastWritten.get(name)
+            const count = vaultRecordCountRoot(name, valueObj)
+            // This tab wrote `previous` itself and nothing has touched the key
+            // since, so this write is the next step of the same store state.
+            // The union can only matter if rows went missing: skip it when the
+            // record count did not drop.
+            const unchanged =
+              cached != null && cached.str === previous && count != null && count >= cached.count
+            if (!unchanged || !SKIP_UNION_IDS.has(vaultKind(name))) {
+              const united = unionPersistSnapshotsParsed(value, previous, valueObj, readPreviousObj(), name)
+              if (typeof united === "string") value = united
+              const habits = overlayHabitCompletionsParsed(value, previous, valueObj, readPreviousObj(), name)
+              if (typeof habits === "string") value = habits
+            }
+          }
         }
         if (previous === value) {
           return
@@ -458,23 +551,18 @@ export function cogsStateStorage(): StateStorage {
               /* ignore */
             }
           }
+          lastWritten.delete(name)
           recordPersistSuccess(name)
           return
         }
-        if (shouldRejectAppearanceDowngrade(name, value, previous)) {
-          return
-        }
-        if (previous && shouldRejectContentDowngrade(name, value, previous)) {
-          return
-        }
-        if (previous && shouldRejectIngestDowngrade(name, value, previous)) {
-          return
-        }
-        if (previous) {
-          const kept = overlayIngestAllowlist(value, previous, name)
+        if (parsedGuards && previous && PREVIOUS_GUARD_IDS.has(vaultKind(name))) {
+          if (shouldRejectAppearanceDowngradeParsed(name, valueObj, readPreviousObj())) return
+          if (shouldRejectContentDowngradeParsed(name, valueObj, readPreviousObj())) return
+          if (shouldRejectIngestDowngradeParsed(name, valueObj, readPreviousObj())) return
+          const kept = overlayIngestAllowlistParsed(value, previous, valueObj, readPreviousObj(), name)
           if (typeof kept === "string") value = kept
         }
-        stampAppearancePins(value, name)
+        if (parsedGuards) stampAppearancePinsParsed(valueObj, name)
         try {
           writeAliasedLocal(name, value)
         } catch (error) {
@@ -486,9 +574,15 @@ export function cogsStateStorage(): StateStorage {
             throw error
           }
         }
+        if (parsedGuards && SKIP_UNION_IDS.has(vaultKind(name))) {
+          const count = vaultRecordCountRoot(name, valueObj)
+          if (count != null) lastWritten.set(name, { str: value, count })
+          else lastWritten.delete(name)
+        }
         recordPersistSuccess(name)
         postHub(name, value)
       } catch (error) {
+        lastWritten.delete(name)
         recordPersistFailure(error, name)
       }
     },
