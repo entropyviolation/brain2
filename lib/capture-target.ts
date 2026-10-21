@@ -207,6 +207,8 @@ export function ensureCaptureTarget(
 export function applySuggestionFields(task: Task, suggestion: SmartSuggestion): Task {
   return {
     ...task,
+    ...(suggestion.attachedDate ? { attachedDate: suggestion.attachedDate } : {}),
+    ...(suggestion.deadline ? { deadline: suggestion.deadline } : {}),
     ...(suggestion.scheduledDate ? { scheduledDate: suggestion.scheduledDate } : {}),
     ...(suggestion.scheduledTime ? { scheduledTime: suggestion.scheduledTime } : {}),
     ...(suggestion.estimatedDuration ? { estimatedDuration: suggestion.estimatedDuration } : {}),

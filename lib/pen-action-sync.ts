@@ -18,6 +18,7 @@
  */
 "use client"
 
+import { runSync } from "@/lib/defer-sync"
 import { useEffect } from "react"
 import { isRestoring } from "@/lib/action-history"
 import { taskRepository } from "@/lib/data/task-repository"
@@ -206,7 +207,7 @@ export function startPenActionSync(): () => void {
     const entriesChanged = state.entries !== previous.entries
     const scopesChanged = state.scopes !== previous.scopes
     previous = state
-    if (entriesChanged || scopesChanged) syncPenActions()
+    if (entriesChanged || scopesChanged) runSync(syncPenActions)
   })
   unsubscribe = () => {
     stop()

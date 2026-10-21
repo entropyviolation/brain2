@@ -122,6 +122,7 @@ export function LogActivityDialog({
   const scope = scopes.find((s) => s.id === scopeId)
   const initialPen =
     selectedPenId &&
+    selectedPenId !== "POINTER" &&
     selectedPenId !== "ERASE" &&
     selectedPenId !== "SCISSORS" &&
     scope?.pens.some((p) => p.id === selectedPenId)

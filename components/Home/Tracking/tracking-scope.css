@@ -2268,8 +2268,14 @@ body.win95-app .trk95 .trk-logbook-chip[aria-pressed="true"] {
 
 .trk95 .trk-logbook-board .trk-log-row,
 body.win95-app .trk95 .trk-logbook-board .trk-log-row {
-  min-height: 26px;
-  padding: 3px 10px;
+  /* The log is a column flexbox with a height cap: without flex: none the rows
+     shrink to min-height and long text paints over the next row. */
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 28px;
+  padding: 6px 10px;
+  line-height: 1.4;
   border: 0;
   border-bottom: 1px solid rgba(125, 255, 196, 0.08);
   border-radius: 0;
@@ -2290,6 +2296,7 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
 
 .trk95 .trk-logbook-board .trk-log-when {
   width: 5.5rem;
+  padding-top: 1px;
   color: var(--scope-crt) !important;
   text-shadow: 0 0 3px rgba(125, 255, 196, 0.55);
 }
@@ -2366,10 +2373,15 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
 
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row,
 body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row {
-  padding: 3px 8px;
+  padding: 6px 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   color: #111;
   font-size: 13px;
+}
+
+.trk95 .trk-logbook-board .trk-log-copy {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row:hover,
@@ -2567,4 +2579,80 @@ body.win95-app .trk95 .trk-logbook .trk-log-week-row {
   .trk95 .trk-logbook-inputs {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ── Hipgnosis pass (2026-10-20) ─────────────────────────────────────────
+   Paint only: no size, order, hit target or behavior changes. Stark
+   composition, one calm cool field, wide-set geometric caps, one horizon
+   line, a black lacquer well that holds a pale graded sky. Plan:
+   docs/TRACKING_TIMEGRID_REDESIGN.md. */
+
+/* Type floor: engraved plates and rails read at a glance. */
+.trk95 .trk-silk,
+.trk95 .trk-module .trk-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+
+/* Hour column: a bare ruled margin, not a chrome slab. */
+.trk95 .trk-hour-bezel,
+.trk95 .trk-grid .trk-hour-bezel {
+  background: linear-gradient(90deg, #e9edf0, #f4f6f7);
+  border-right: 1px solid #1c2a3a;
+  box-shadow: none;
+  text-shadow: none;
+  color: #1c2a3a;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
+.trk95 .trk-time-axis .trk-hour-bezel {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #1c2a3a;
+}
+
+/* The field: pale graded sky behind the grid. Painted blocks stay opaque. */
+.trk95 .trk-grid {
+  background: linear-gradient(180deg, #dfe8ef 0%, #eef2f5 38%, #f7f6f2 100%);
+}
+
+.trk95 .trk-hour-row:nth-child(odd) .trk-plot {
+  background-color: rgba(28, 42, 58, 0.035);
+}
+
+/* Horizon: one hard rule where the grid meets its frame. */
+.trk95 .trk-screen-bezel > .trk-grid {
+  box-shadow:
+    inset 0 2px 0 #1c2a3a,
+    inset 0 0 0 1px #000,
+    0 0 0 2px #2b2f33;
+}
+
+/* The bezel is black lacquer with a single cool reflection, like a dark lens. */
+.trk95 .trk-screen-bezel {
+  background:
+    radial-gradient(60% 50% at 50% -10%, rgba(154, 215, 255, 0.16), transparent 70%),
+    radial-gradient(120% 80% at 50% 0%, #2a2d30, #0b0c0d 72%);
+}
+
+/* The date: wide-set caps, a Hipgnosis sleeve title. */
+.trk95 .trk-period-title h3 {
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.trk95 .trk-period-meta {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* Clear day: same key, quieter voice. */
+.trk95 .trk-period-trailing .trk-micro-danger {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(28, 42, 58, 0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 11px;
 }

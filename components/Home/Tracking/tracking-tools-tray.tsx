@@ -139,6 +139,13 @@ export function TrackingToolsTray({
           title="Split a block at the minute you click"
           label="Scissors"
         />
+        <ToolKey
+          bank="paint"
+          pressed={paintTool === "point"}
+          onClick={() => onSelectPaintTool("point")}
+          title="Click opens a block — nothing paints"
+          label="Point"
+        />
       </div>
       <ToolDetail paintTool={paintTool} />
     </div>

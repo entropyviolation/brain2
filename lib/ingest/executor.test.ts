@@ -241,7 +241,8 @@ describe("ingestIncoming", () => {
     const task = useTaskStore.getState().tasks.find((row) => row.description === "go home tomorrow at 3pm")
     expect(task?.stage).toBe("inbox")
     expect(task?.scheduledTime).toBe("15:00")
-    expect(task?.scheduledDate).toBeInstanceOf(Date)
+    expect(task?.attachedDate).toBeInstanceOf(Date)
+    expect(task?.scheduledDate).toBeUndefined()
   })
 
   it("stores -p and -plain as written with no list or clock", () => {

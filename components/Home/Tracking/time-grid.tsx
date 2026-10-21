@@ -35,6 +35,7 @@
  */
 "use client"
 
+import { deferSyncs } from "@/lib/defer-sync"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { addDays, subDays } from "date-fns"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
@@ -65,6 +66,7 @@ import {
 } from "@/lib/time-entries"
 import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
 import { ERASE, SCISSORS, PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
 import { SuperimposeBar } from "@/components/Home/Tracking/superimpose-bar"
@@ -506,15 +508,15 @@ export function TimeGrid({
 
   const commitPaint = useCallback(
     (from: number, to: number) => {
-      if (!scope || selectedPenId === null) return
-      paintMinutes(
+      if (!scope || noPaint(selectedPenId)) return
+      deferSyncs(() => paintMinutes(
         dk,
         scope.id,
         Math.min(from, to),
         Math.max(from, to),
         selectedPenId === ERASE ? null : selectedPenId,
         selectedVariantIds,
-      )
+      ))
     },
     [scope, selectedPenId, selectedVariantIds, paintMinutes, dk],
   )
@@ -583,7 +585,7 @@ export function TimeGrid({
   }, [endDrag])
 
   const showStroke = (anchor: number, head: number) => {
-    if (selectedPenId === null || selectedPenId === SCISSORS) return
+    if (noPaint(selectedPenId) || selectedPenId === SCISSORS) return
     const lo = Math.min(anchor, head)
     const hi = Math.min(MINUTES_PER_DAY, Math.max(anchor, head) + gridStep)
     setStroke((prev) => (prev?.lo === lo && prev.hi === hi ? prev : { lo, hi }))
@@ -610,15 +612,15 @@ export function TimeGrid({
   }
 
   const applyFillRange = (from: number, parsedTo: number) => {
-    if (!scope || selectedPenId === null) return
-    paintMinutes(
+    if (!scope || noPaint(selectedPenId)) return
+    deferSyncs(() => paintMinutes(
       dk,
       scope.id,
       from,
       parsedTo,
       selectedPenId === ERASE ? null : selectedPenId,
       selectedVariantIds,
-    )
+    ))
     flashStroke(from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo)
     playTrkMotion(gridRef.current, "fill", from, parsedTo <= from && parsedTo !== 0 ? MINUTES_PER_DAY : parsedTo || MINUTES_PER_DAY)
   }
@@ -739,7 +741,7 @@ export function TimeGrid({
               e.preventDefault()
               return
             }
-            if (selectedPenId === null) {
+            if (noPaint(selectedPenId)) {
               const existing = map[minute]
               if (existing) setOpenEntryId(existing.id)
               return
@@ -760,7 +762,7 @@ export function TimeGrid({
               e.preventDefault()
               return
             }
-            if (selectedPenId === null) {
+            if (noPaint(selectedPenId)) {
               const existing = map[minute]
               if (existing) setOpenEntryId(existing.id)
               return
@@ -962,6 +964,12 @@ export function TimeGrid({
                   pressed={!fillArmed && paintTool === "scissors"}
                   onClick={() => selectTool("scissors")}
                   title="Split a block at the minute you click"
+                />
+                <PushKey
+                  label="Point"
+                  pressed={!fillArmed && paintTool === "point"}
+                  onClick={() => selectTool("point")}
+                  title="Click opens a block — nothing ever paints"
                 />
                 <PushKey
                   label="Fill"

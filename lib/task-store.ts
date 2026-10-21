@@ -86,6 +86,7 @@ const DATE_KEYS = new Set([
   "createdAt",
   "deadline",
   "scheduledDate",
+  "attachedDate",
   "completedDate",
   "missedAt",
   "startedAt",
