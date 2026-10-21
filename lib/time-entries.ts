@@ -241,6 +241,13 @@ export interface TimeEntry {
    * placement and does not mean that minute was observed.
    */
   clockCertainty?: TrackingClockCertainty
+  /** How sure each end is. Omitted = exact. `clockCertainty` / `precision` follow the worse of the two. */
+  startCertainty?: TrackingClockCertainty
+  endCertainty?: TrackingClockCertainty
+  /** A transit block that refits itself: the blocks it sits between, and its priced length. */
+  transitFrom?: string
+  transitTo?: string
+  transitMin?: number
   /**
    * Optional ends of one Switch. Omitted on older rows — no migration.
    * Activity `st:` / `switch:` still uses the Switch pen and a `started …`

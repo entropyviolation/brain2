@@ -12,14 +12,17 @@ import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { entryDisplayName, entriesOnDate, formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { penNameById } from "./discrete-log-instants"
+import { feedOutcomeLabel, feedRowDayKey, feedRowMinute } from "@/lib/ingest/telegram-feed"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { asLogEntry, classifyLogBookRow, compareLogRows, logClockLabel, switchLogCopy } from "./tracking-log-model"
 
-type Shelf = "plans" | "events" | "thoughts" | "log"
+type Shelf = "plans" | "events" | "thoughts" | "log" | "telegram"
 const SHELVES: { id: Shelf; label: string }[] = [
   { id: "plans", label: "Plans" },
   { id: "events", label: "Events" },
   { id: "thoughts", label: "Thoughts" },
   { id: "log", label: "Log" },
+  { id: "telegram", label: "Telegram log" },
 ]
 
 interface Row {
@@ -39,10 +42,11 @@ export function SummaryReference({ dateKey }: { dateKey: string }) {
   const actions = usePlannedActionStore((s) => s.actions)
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
+  const feed = useTelegramFeedStore((s) => s.rows)
 
   const shelves = useMemo(() => {
     const penName = penNameById(scopes)
-    const out: Record<Shelf, Row[]> = { plans: [], events: [], thoughts: [], log: [] }
+    const out: Record<Shelf, Row[]> = { plans: [], events: [], thoughts: [], log: [], telegram: [] }
     out.plans = actions
       .filter((a) => a.date === dateKey)
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -75,8 +79,17 @@ export function SummaryReference({ dateKey }: { dateKey: string }) {
         text: entryDisplayName(entry, penName(entry.penId)),
         note: formatDuration(entry.endMin - entry.startMin),
       }))
+    out.telegram = feed
+      .filter((row) => feedRowDayKey(row) === dateKey)
+      .sort((a, b) => a.at.localeCompare(b.at))
+      .map((row) => ({
+        key: row.id,
+        when: minutesToLabel(feedRowMinute(row)),
+        text: row.text,
+        note: feedOutcomeLabel(row.outcome),
+      }))
     return out
-  }, [actions, entries, scopes, dateKey])
+  }, [actions, entries, scopes, feed, dateKey])
 
   const toggle = (id: Shelf) => setOpen((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
 

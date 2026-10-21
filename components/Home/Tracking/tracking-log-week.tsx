@@ -23,6 +23,8 @@ import { formatLocalDateKey, getWeekDates, getWeekStartDate, sameCalendarDay } f
 import { formatSpendAmount, summarizeSpend } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useLiveToday } from "@/lib/use-current-date"
+import { feedRowDayKey, feedRowMinute, type TelegramFeedRow } from "@/lib/ingest/telegram-feed"
+import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/telegram-feed-well"
 import "./tracking-log-week.css"
 
 const SHELF_TAG: Record<LogBookList, string> = {
@@ -101,6 +103,24 @@ function WeekLogRow({
   )
 }
 
+type WeekItem = { entry: LogBookEntry; telegram?: undefined } | { telegram: TelegramFeedRow; entry?: undefined }
+
+/**
+ * Texts to BIM sit among the day's log lines by the minute they were sent.
+ * Lines with an unknown clock stay at the end, as they do without the feed.
+ */
+function interleaveTelegram(rows: LogBookEntry[], telegram: TelegramFeedRow[]): WeekItem[] {
+  const timed: { at: number; item: WeekItem }[] = []
+  const tail: WeekItem[] = []
+  for (const entry of rows) {
+    if (logClockLabel(entry).badge === "Unknown") tail.push({ entry })
+    else timed.push({ at: entry.startMin, item: { entry } })
+  }
+  for (const row of telegram) timed.push({ at: feedRowMinute(row), item: { telegram: row } })
+  timed.sort((a, b) => a.at - b.at)
+  return [...timed.map((t) => t.item), ...tail]
+}
+
 export function TrackingLogWeek({
   currentDate,
   onOpenDay,
@@ -118,6 +138,8 @@ export function TrackingLogWeek({
   const weekStart = getWeekStartDate(currentDate)
   const weekDates = getWeekDates(weekStart)
   const weekKeys = useMemo(() => new Set(weekDates.map((d) => formatLocalDateKey(d))), [weekDates])
+
+  const feed = useTelegramFeedForDays(weekKeys)
 
   const penName = useMemo(() => {
     const map = new Map<string, string>()
@@ -137,15 +159,16 @@ export function TrackingLogWeek({
         if (row) rows.push(row)
       }
       rows.sort(compareLogRows)
+      const telegram = feed.filter((row) => feedRowDayKey(row) === dayKey)
       return {
         date,
         dayKey,
-        rows,
+        rows: interleaveTelegram(rows, telegram),
         isToday: sameCalendarDay(date, today),
         isSelected: sameCalendarDay(date, currentDate),
       }
     })
-  }, [weekDates, entries, penName, today, currentDate])
+  }, [weekDates, entries, penName, today, currentDate, feed])
 
   const weekSpend = useMemo(() => {
     const spend: LogBookEntry[] = []
@@ -196,15 +219,19 @@ export function TrackingLogWeek({
                   —
                 </p>
               ) : (
-                col.rows.map((entry) => (
-                  <WeekLogRow
-                    key={entry.id}
-                    entry={entry}
-                    penName={penName}
-                    onOpen={onOpenEntry}
-                    onRemove={onRemoveEntry}
-                  />
-                ))
+                col.rows.map((item) =>
+                  item.telegram ? (
+                    <TelegramWeekRow key={item.telegram.id} row={item.telegram} />
+                  ) : (
+                    <WeekLogRow
+                      key={item.entry.id}
+                      entry={item.entry}
+                      penName={penName}
+                      onOpen={onOpenEntry}
+                      onRemove={onRemoveEntry}
+                    />
+                  ),
+                )
               )}
             </div>
           </div>

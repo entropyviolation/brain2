@@ -42,6 +42,8 @@ import { overlayTicksBeside, penNameById, scopeTicksWithDiscreteLogs, tickPen, w
 import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
+import { useTransitSuggestions } from "@/components/Home/Tracking/use-transit-suggestions"
+import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
 import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
 import {
   GRID_SPANS,
@@ -451,6 +453,9 @@ export function TimeGrid({
     () => (scope ? minuteMap(entries, dk, scope.id) : new Array(MINUTES_PER_DAY).fill(null)),
     [entries, dk, scope],
   )
+  const transit = useTransitSuggestions(entries, dk, scope)
+  // Suggestions are drawn only; painting, totals and the fill logic keep reading the real `map`.
+  const shownMap = useMemo(() => overlaySuggestions(map, transit), [map, transit])
   const ghosts = useGhostScopes(scope, scopes)
   const overlayMaps = useMemo(
     () => ghosts.map((ghost) => minuteMap(entries, dk, ghost.scope.id)),
@@ -479,14 +484,14 @@ export function TimeGrid({
         if (event.startMin >= start && event.startMin < end) overInstants.push(event)
       }
       bands.push({
-        map: map.slice(start, end),
+        map: shownMap.slice(start, end),
         overlays: overlayMaps.map((ghostMap) => ghostMap.slice(start, end)),
         instants,
         overlayInstants: overInstants,
       })
     }
     return bands
-  }, [map, overlayMaps, dayInstants, overlayInstants])
+  }, [shownMap, overlayMaps, dayInstants, overlayInstants])
 
   const isToday = dk === dateKey(now)
   const { nowMinute, sun } = useTrackingDayMarkers(date)
@@ -512,6 +517,18 @@ export function TimeGrid({
       )
     },
     [scope, selectedPenId, selectedVariantIds, paintMinutes, dk],
+  )
+
+  // A tentative transit tile is accepted with a click: no pen in hand, or the Transit pen itself.
+  const acceptAt = useCallback(
+    (minute: number) => {
+      const s = shownMap[minute]
+      if (!isSuggestion(s) || map[minute]) return false
+      if (selectedPenId !== null && selectedPenId !== s.penId) return false
+      acceptSuggestion(s, paintMinutes)
+      return true
+    },
+    [shownMap, map, selectedPenId, paintMinutes],
   )
 
   // Drag is resolved on release so one stroke becomes one block, rather than a
@@ -718,6 +735,10 @@ export function TimeGrid({
             focusTrackingPlot(gridRef.current)
             const minute = minuteFromEvent(e.target)
             if (minute === null) return
+            if (acceptAt(minute)) {
+              e.preventDefault()
+              return
+            }
             if (selectedPenId === null) {
               const existing = map[minute]
               if (existing) setOpenEntryId(existing.id)
@@ -735,6 +756,10 @@ export function TimeGrid({
             focusTrackingPlot(gridRef.current)
             const minute = minuteFromEvent(e.target)
             if (minute === null) return
+            if (acceptAt(minute)) {
+              e.preventDefault()
+              return
+            }
             if (selectedPenId === null) {
               const existing = map[minute]
               if (existing) setOpenEntryId(existing.id)

@@ -123,9 +123,13 @@
   z-index: 25;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0 0 2px;
-  padding: 10px;
+  gap: 0;
+  /* Same edges as the app and Home tab bays above: Tracking itself bleeds wider
+     than the page column, so inset the bar back to the Home tab strip's width. */
+  width: var(--home-tabs-width, auto);
+  box-sizing: border-box;
+  margin: 0 auto 6px;
+  padding: 6px;
   border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
@@ -139,17 +143,17 @@
 
 .trk95 .trk-fascia-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
 }
 
 .trk95 .trk-mark {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 4px 10px 4px 6px;
+  min-height: 36px;
+  padding: 2px 12px 2px 8px;
   border-radius: var(--r-2, 2px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(125, 255, 196, 0.14), transparent 46%),
@@ -163,7 +167,7 @@
 .trk95 .trk-mark h2 {
   margin: 0;
   color: var(--t-crt) !important;
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -5810,3 +5814,352 @@ body.win95-app .trk95 .trk-ribbon-basis button[aria-pressed="true"] {
   font: inherit;
   font-size: 11px;
 }
+
+/* Telegram feed shelf (Tracking log, Day): read-only rows, long texts wrap. */
+.trk95 .trk-log-row.is-telegram {
+  cursor: default;
+  align-items: flex-start;
+}
+
+.trk95 .trk-log-row.is-telegram .trk-log-copy {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Telegram shelf rows: clock on the left, text beside it, outcome under the text. */
+.trk95 .trk-log-row.is-telegram {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 6px 8px;
+}
+
+.trk95 .trk-log-row.is-telegram .trk-log-when {
+  width: auto;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.trk95 .trk-log-row.is-telegram .trk-log-copy {
+  grid-column: 2;
+  grid-row: 1;
+  line-height: 1.35;
+}
+
+.trk95 .trk-log-row.is-telegram .trk-log-scope {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Tracking view keys match the Home tab keys: same height, one bay, gear flush at the end. */
+.trk95 .trk-fascia .trk-view-keys [role="tab"],
+body.win95-app .trk95 .trk-fascia .trk-view-keys [role="tab"] {
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.trk95 .trk-fascia .trk-view-bay {
+  align-self: stretch;
+}
+.trk95 .trk-fascia .trk-settings-gear,
+body.win95-app .trk95 .trk-fascia .trk-settings-gear {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+@media (max-width: 640px) {
+  .trk95 .trk-fascia .trk-mark h2 {
+    display: none;
+  }
+}
+
+/* Spent shelf heading opens the Spending dialog. */
+.trk95 .trk-logbook-heading-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.trk95 .trk-logbook-heading-open:hover,
+.trk95 .trk-logbook-heading-open:focus-visible {
+  text-decoration: underline;
+}
+
+/* Spending dialog: day summary, then statement import with a previewed line list. */
+.trk-spending h3 {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.trk-spending-import-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.trk-spending-import-bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.trk-spending-import-bar label input {
+  width: 8rem;
+  padding: 3px 6px;
+}
+.trk-spending-note {
+  margin: 6px 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.trk-spending-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.trk-spending-rows li {
+  display: grid;
+  grid-template-columns: auto 5.5rem minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.05);
+}
+.trk-spending-rows li[data-keep="false"] {
+  opacity: 0.5;
+}
+.trk-spending-rows li:not(:has(input[type="checkbox"])) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.trk-spending-name {
+  min-width: 0;
+}
+.trk-spending-rows input.trk-spending-name {
+  padding: 2px 4px;
+}
+.trk-spending-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.trk-spending-rows em {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.trk-spending-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.trk-spending-foot button {
+  padding: 4px 14px;
+  font-weight: 700;
+}
+
+/* Spending dialog tabs and the Budget view: mint for money in, rose for money out. */
+.trk-spending-tabs,
+.trk-budget-sorts,
+.trk-budget-chips,
+.trk-budget-add,
+.trk-budget-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.trk-spending-tabs button,
+.trk-budget-sorts button,
+.trk-budget-chips button,
+.trk-budget-nav button,
+.trk-budget-add button,
+.trk-budget-rows button,
+.trk-spending-kind {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: #eef1ef;
+  cursor: pointer;
+}
+.trk-spending-tabs button[aria-selected="true"],
+.trk-budget-sorts button[aria-pressed="true"],
+.trk-budget-chips button[aria-pressed="true"] {
+  background: #bfe8d0;
+  border-color: #3d7a5c;
+  font-weight: 700;
+}
+.trk-budget-chips button[aria-pressed="false"] {
+  opacity: 0.5;
+}
+.trk-budget-chips small {
+  margin-left: 6px;
+  opacity: 0.75;
+}
+.trk-budget-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.trk-budget-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #e6f4ec;
+}
+.trk-budget-hero p {
+  margin: 0;
+  font-size: 12px;
+}
+.trk-budget-face {
+  font-size: 38px;
+  line-height: 1;
+}
+.trk-budget-net {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1f6b46;
+}
+.trk-budget-net[data-neg="true"] {
+  color: #a8344a;
+}
+.trk-budget-bar {
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: #f3c4cc;
+  overflow: hidden;
+}
+.trk-budget-bar i {
+  display: block;
+  height: 100%;
+  background: #7fd0a4;
+  transition: width 0.3s;
+}
+.trk-budget-legend {
+  justify-content: space-between;
+}
+.trk-budget-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+.trk-budget-rows li {
+  display: grid;
+  grid-template-columns: auto 3rem minmax(0, 1fr) 6rem 5rem auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: #f6e3e6;
+}
+.trk-budget-rows li[data-kind="earning"] {
+  background: #e3f3ea;
+}
+.trk-budget-rows li.trk-budget-empty {
+  display: block;
+  background: none;
+  opacity: 0.7;
+}
+.trk-budget-rows input,
+.trk-budget-add input {
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+}
+.trk-budget-rows input:focus,
+.trk-budget-add input:focus {
+  border-color: #3d7a5c;
+}
+.trk-budget-amt {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.trk-budget-add input:nth-of-type(1) {
+  flex: 1 1 8rem;
+}
+.trk-budget-add .trk-budget-src {
+  width: 6rem;
+}
+.trk-budget-add .trk-budget-amt {
+  width: 5rem;
+}
+
+.trk-budget-rows li { grid-template-columns: auto 3rem minmax(0, 1fr) 6rem 5rem auto auto auto auto; }
+.trk-budget-rows li[data-expected="true"] { background: transparent; border: 1px dashed #7a8f84; }
+.trk-budget-more { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.trk-budget-more input { flex: 1 1 9rem; }
+.trk-budget-ahead { margin: 4px 0; font-size: 12px; }
+.trk-budget-add button[aria-pressed="true"] { background: #d7e4ff; border-color: #5a74b8; }
+.trk-budget-months { display: flex; gap: 6px; margin: 8px 0; }
+.trk-budget-months button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border-radius: 10px; border: 1px solid rgba(0,0,0,.2); background: #eef1ef; font-size: 11px; cursor: pointer; }
+.trk-budget-months button[aria-pressed="true"] { background: #bfe8d0; border-color: #3d7a5c; font-weight: 700; }
+.trk-budget-mbars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+.trk-budget-mbars i { width: 8px; border-radius: 3px 3px 0 0; min-height: 2px; }
+.trk-budget-mbars i[data-k="in"] { background: #5fbf8a; }
+.trk-budget-mbars i[data-k="out"] { background: #e58b9b; }
+.trk-budget-breaks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0; }
+.trk-budget-breaks h4 { margin: 0 0 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.trk-budget-brk { position: relative; display: flex; justify-content: space-between; gap: 6px; padding: 2px 6px; font-size: 12px; border-radius: 6px; overflow: hidden; }
+.trk-budget-brk i { position: absolute; inset: 0 auto 0 0; background: #cfe9da; z-index: 0; }
+.trk-budget-brk > span, .trk-budget-brk > b { position: relative; z-index: 1; }
+.trk-budget-warn { margin: 4px 0; font-size: 12px; color: #a8344a; }
+
+/* Entry dialog: block ends (certainty, linked event, next block, transit) */
+.trk95 .trk-edge-row { margin-top: -4px; }
+.trk95 .trk-edge-certainty { display: flex; gap: 0; }
+.trk95 .trk-edge-certainty button {
+  flex: 1; padding: 2px 4px; font-size: 11px; cursor: pointer;
+  background: #d4d6da; border: 1px solid #111; border-left-width: 0;
+}
+.trk95 .trk-edge-certainty button:first-child { border-left-width: 1px; }
+.trk95 .trk-edge-certainty button[aria-checked="true"] { background: #1f3a37; color: #8ff0d8; }
+.trk95 .trk-edge-certainty button[data-level="estimated"][aria-checked="true"],
+.trk95 .trk-edge-certainty button[data-level="unknown"][aria-checked="true"] {
+  background: repeating-linear-gradient(135deg, #1f3a37 0 4px, #2c5650 4px 8px);
+}
+.trk95 .trk-edge-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;
+  background: #0a1a1b; color: #8ff0d8; border: 1px solid #111; font-size: 12px;
+}
+.trk95 .trk-edge-chip button { background: none; border: 0; color: inherit; cursor: pointer; display: inline-flex; }
+.trk95 .trk-edge-options { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.trk95 .trk-edge-option { padding: 3px 8px; font-size: 12px; cursor: pointer; background: #d4d6da; border: 1px solid #111; }
+.trk95 .trk-edge-option:hover { background: #e6e8ec; }
+.trk95 .trk-edge-also { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; }
+.trk95 .trk-edge-next-row {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+  padding: 6px 8px; text-align: left; cursor: pointer; background: #0a1a1b; color: #8ff0d8; border: 1px solid #111;
+}
+.trk95 .trk-edge-next-row span { font-size: 11px; opacity: 0.8; }
