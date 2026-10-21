@@ -61,7 +61,11 @@ describe("TodoPanel", () => {
     expect(container.querySelector(".todo-view-keys")).toHaveAttribute("data-ui-name", "Period keys")
     expect(container.querySelector(".todo-filters")).toHaveAttribute("data-ui-name", "Show / Sort / Pace")
     expect(container.querySelector(".todo-sheet")).toHaveAttribute("data-ui-name", "Period sheet")
-    expect(container.querySelector(".todo-load")).toHaveAttribute("data-ui-name", "Period load")
+    // The load instrument waits behind the ▾ on the header glass; the glass shows one line.
+    expect(container.querySelector(".todo-load")).toBeNull()
+    expect(screen.getByRole("button", { name: /^Load: .+ left · .+ est · / })).toHaveAttribute("aria-expanded", "false")
+    expect(screen.getByRole("button", { name: "To Do settings" }).querySelector("img")).toHaveAttribute("src", "/todo/settings-globe.jpg")
+    for (const word of ["Day", "Week", "Month", "Season", "Other"]) expect(screen.getByRole("tab", { name: word })).toBeInTheDocument()
     // Empty bands are not drawn: no Required marks, nothing done or missed yet.
     expect(container.querySelector(".todo-band.is-required")).toBeNull()
     expect(container.querySelector(".todo-band.is-assigned")).toHaveAttribute("data-ui-name", "Assigned")
@@ -368,6 +372,28 @@ describe("TodoPanel", () => {
     expect(within(composer).getByRole("button", { name: "Log done" })).toBeInTheDocument()
   })
 
+  it("counts active filters on the Show key and keeps the tray open across renders", () => {
+    render(<TodoPanel />)
+    const show = screen.getByRole("button", { name: /^Show filters/ })
+    expect(show).toHaveAttribute("aria-expanded", "false")
+    fireEvent.click(show)
+    fireEvent.click(screen.getByLabelText("Available now"))
+    fireEvent.click(screen.getByLabelText("Hide locked"))
+    expect(screen.getByRole("button", { name: "Show filters, 2 on" })).toHaveAttribute("aria-expanded", "true")
+  })
+
+  it("schedules an existing task here from Add task → From lists", () => {
+    const [t] = useTaskStore.getState().tasks
+    useTaskStore.getState().addTask({ ...t, id: "elsewhere", description: "Water the ferns", scheduledDate: undefined, scheduledWeek: undefined, scheduledMonth: undefined })
+    render(<TodoPanel />)
+    expect(screen.queryByText("Water the ferns")).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "+ Add task ▾" }))
+    fireEvent.change(screen.getByLabelText("From lists (optional)"), { target: { value: "ferns" } })
+    fireEvent.click(within(screen.getByRole("list", { name: "Matching tasks" })).getByRole("button", { name: /Water the ferns/ }))
+    expect(screen.getByText("Water the ferns")).toBeInTheDocument()
+    expect(useTaskStore.getState().tasks.find((task) => task.id === "elsewhere")?.scheduledDate).toBeTruthy()
+  })
+
   it("creates To-Do tasks that are scheduleable so they surface in the Scheduler", () => {
     useTaskStore.getState().setTasks([])
     render(<TodoPanel />)
@@ -491,6 +517,8 @@ describe("TodoPanel", () => {
 
   it("opens the focused period's To do list in Lists", () => {
     render(<TodoPanel />)
+    expect(screen.queryByRole("button", { name: "Open To do 6/20 in Lists" })).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: /^Show filters/ }))
     expect(screen.getByRole("button", { name: "Open To do 6/20 in Lists" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Open To do 6/20 in Lists" }))
     const list = useTaskStore.getState().lists.find((item) => item.name === "To do 6/20")
@@ -501,12 +529,13 @@ describe("TodoPanel", () => {
 
   it("splits required tasks out and shows the period load", () => {
     render(<TodoPanel />)
+    fireEvent.click(screen.getByRole("button", { name: /^Load: / }))
     const load = screen.getByLabelText("Period load")
     expect(within(load).queryByText("Days left")).not.toBeInTheDocument()
     expect(within(load).getByText("Est hours of work remaining")).toBeInTheDocument()
     expect(within(load).getByText(/11h/)).toBeInTheDocument()
     expect(within(load).getByTitle(/Clock hours left \(not used by comfort\): 12h/)).toBeInTheDocument()
-    expect(within(load).getByText(/manageable/)).toBeInTheDocument()
+    expect(within(load).getAllByText(/manageable/).length).toBeGreaterThan(0)
     expect(within(load).getByRole("button", { name: "All assigned" })).toBeInTheDocument()
     expect(within(load).getByRole("button", { name: "Required + prioritized" })).toBeInTheDocument()
     expect(screen.queryByRole("region", { name: "Required" })).not.toBeInTheDocument()
@@ -532,7 +561,7 @@ describe("TodoPanel", () => {
       "true",
     )
     fireEvent.click(within(load).getByRole("button", { name: "Required" }))
-    expect(within(load).getByText("1h")).toBeInTheDocument()
+    expect(load.querySelector(".todo-load-estimate")).toHaveTextContent(/^1h/)
   })
 
   it("searches assigned tasks, adds a step, and deletes from the row", () => {
@@ -565,6 +594,7 @@ describe("TodoPanel", () => {
 
   it("hides days left on the day lens and names the remaining-work estimate", () => {
     render(<TodoPanel />)
+    fireEvent.click(screen.getByRole("button", { name: /^Load: / }))
     expect(screen.queryByText("Days left")).not.toBeInTheDocument()
     expect(screen.getByText("Est hours of work remaining")).toBeInTheDocument()
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Week" }))
@@ -804,7 +834,7 @@ describe("TodoPanel", () => {
   it("adds a season task on this month while the season is current", () => {
     render(<TodoPanel />)
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Season" }))
-    fireEvent.click(screen.getByRole("button", { name: "Add Task" }))
+    fireEvent.click(screen.getByRole("button", { name: "+ Add task ▾" }))
     fireEvent.change(screen.getByPlaceholderText("Task description"), { target: { value: "Season goal" } })
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add Task" }))
     const added = useTaskStore.getState().tasks.find((t) => t.description === "Season goal")
