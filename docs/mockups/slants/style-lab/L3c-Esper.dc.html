@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3c Esper zoom</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.rd{font:13px 'Share Tech Mono';color:#f2a541;letter-spacing:.08em}
+.zb{position:absolute;border:1px solid rgba(242,165,65,.8)}
+</style>
+</helmet>
+<div style="position:relative;width:880px;height:560px;background:#06090f;overflow:hidden;font-family:'Share Tech Mono',monospace">
+  <div style="position:absolute;left:24px;top:24px;width:600px;height:512px;background:radial-gradient(ellipse at 60% 40%,#2b3a4f,#0d1420 70%);overflow:hidden">
+    <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;opacity:.5;mix-blend-mode:screen"><filter id="g3"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2"></feTurbulence><feColorMatrix type="matrix" values="0 0 0 0 .95  0 0 0 0 .65  0 0 0 0 .25  0 0 0 .5 0"></feColorMatrix></filter><rect width="100%" height="100%" filter="url(#g3)"></rect></svg>
+    <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(242,165,65,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(242,165,65,.18) 1px,transparent 1px);background-size:40px 40px"></div>
+    <div class="zb" style="left:30px;top:30px;width:540px;height:452px"><span class="rd" style="position:absolute;left:6px;top:4px;opacity:.6">OCTOBER · 41</span></div>
+    <div class="zb" style="left:120px;top:110px;width:380px;height:300px"><span class="rd" style="position:absolute;left:6px;top:4px;opacity:.75">WEEK OCT 19–25 · 14</span></div>
+    <div class="zb" style="left:170px;top:160px;width:300px;height:220px;border-width:2px;background:rgba(6,9,15,.72);padding:28px 16px 12px;box-sizing:border-box">
+      <span class="rd" style="position:absolute;left:8px;top:6px">DAY TUE 20 · 05</span>
+      <div class="rd" style="display:flex;flex-direction:column;gap:5px;font-size:14px;color:#ffd7a1">
+        <span>Reply to Dana ............ 30m</span>
+        <span>Grant budget table ....... 45m</span>
+        <span>Reading notes ch. 4 ...... 25m</span>
+        <span>Refill prescriptions ..... 10m</span>
+        <span style="color:#ff6a4d">Tracking legend .... 40/30m</span>
+      </div>
+    </div>
+    <div style="position:absolute;left:316px;top:0;bottom:0;width:1px;background:rgba(242,165,65,.6)"></div>
+    <div style="position:absolute;top:268px;left:0;right:0;height:1px;background:rgba(242,165,65,.6)"></div>
+  </div>
+  <div style="position:absolute;left:648px;top:24px;right:24px;bottom:24px;display:flex;flex-direction:column;gap:10px">
+    <span class="rd" style="font-size:22px">ESPER · TO DO</span>
+    <span class="rd">ZOOM 31:1</span>
+    <span class="rd">TRACK 45 · CENTER TUE 20</span>
+    <span class="rd" style="opacity:.6">────────────</span>
+    <button class="rd" style="text-align:left;background:none;border:1px solid #f2a541;padding:10px;cursor:pointer">ENHANCE ▸ DAY</button>
+    <button class="rd" style="text-align:left;background:none;border:1px solid rgba(242,165,65,.4);padding:10px;cursor:pointer;opacity:.7">PULL BACK ▸ WEEK</button>
+    <button class="rd" style="text-align:left;background:none;border:1px solid rgba(242,165,65,.4);padding:10px;cursor:pointer;opacity:.7">PULL BACK ▸ MONTH</button>
+    <button class="rd" style="text-align:left;background:none;border:1px solid rgba(242,165,65,.4);padding:10px;cursor:pointer;opacity:.7">PULL BACK ▸ SEASON</button>
+    <span class="rd" style="margin-top:auto;line-height:1.5">LEFT 4H10<br>EST 2H30<br>RATIO 0.6</span>
+    <button class="rd" style="background:#f2a541;color:#06090f;border:0;padding:12px;cursor:pointer">+ ADD TASK</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

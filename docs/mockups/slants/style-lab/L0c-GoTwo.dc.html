@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>0c Go 2 empty band and stickers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Pixelify+Sans:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.crt{background:radial-gradient(ellipse at 30% 30%,#0c1a14,#050b09 70%);border:2px solid #1d2022;border-radius:5px;box-shadow:inset 0 2px 10px rgba(0,0,0,.9);color:#7dffc4;font-family:'VT323',monospace;text-shadow:0 0 3px #7dffc4,0 0 9px rgba(125,255,196,.35)}
+.band{display:flex;align-items:center;gap:8px;font:10px 'Silkscreen',monospace;letter-spacing:.16em;text-transform:uppercase}
+.band::after{content:"";flex:1;border-top:1px solid #9fa3a7;border-bottom:1px solid #e3e6e9}
+.row{position:relative;display:grid;grid-template-columns:40px 1fr auto auto;gap:12px;align-items:center;background:#e6e8eb;border:1px solid #8e9296;border-radius:7px;padding:8px 10px;min-height:44px}
+.fn{font:11px 'Silkscreen',monospace;color:#55595d;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+.stk{font:9px 'Silkscreen',monospace;letter-spacing:.08em;padding:3px 7px;background:#fbf7e4;color:#2a2c2e;border:1px solid #b9b49c;transform:rotate(-2deg);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+</style>
+</helmet>
+<div style="width:880px;height:560px;box-sizing:border-box;padding:18px;background:#7fb5aa;font-family:'Pixelify Sans',monospace;color:#2a2c2e">
+  <div style="background:#c8ccd0;border:1px solid #4a4e52;border-radius:5px;padding:12px;display:flex;flex-direction:column;gap:7px;height:100%;box-sizing:border-box">
+    <div class="band">Required</div>
+    <div class="crt" style="padding:12px 16px;font-size:20px;line-height:1.25">This is the REQUIRED band. Nothing is in it.<br>This writing is the DESIGN upon the empty band.<br>Mark a task Required <span style="border:1px solid #3f9c74;padding:0 4px">R</span> to put it here.</div>
+    <div class="band" style="margin-top:6px">Assigned</div>
+    <div class="row"><span class="fn">01</span><span>Draft grant budget table</span><span style="font-size:12px;color:#55595d">45m · 2/4</span><span style="font-size:12px">▶</span></div>
+    <div class="row">
+      <span class="fn" style="position:relative">02<svg aria-label="Prioritized" role="img" viewBox="0 0 44 30" style="position:absolute;left:-2px;top:-9px;width:44px;height:30px;overflow:visible"><path d="M6 16 C4 5 36 2 40 12 C43 25 10 28 5 18 C4 13 12 8 18 7" fill="none" stroke="#7e14ff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+      <span style="display:flex;align-items:center;gap:10px">Reply to Dana re: lab schedule <span class="stk">REQUIRED · you marked 18 Oct</span></span>
+      <span style="font-size:12px;color:#55595d">30m · 2/5</span><span style="font-size:12px">▶</span>
+    </div>
+    <div class="row"><span class="fn">03</span><span>Clean up reading notes, ch. 4</span><span style="font-size:12px;color:#55595d">25m · 0/3</span><span style="font-size:12px">▶</span></div>
+    <div class="row"><span class="fn">04</span><span style="display:flex;align-items:center;gap:10px">Refill prescriptions <span class="stk" style="transform:rotate(1.5deg)">PUSHED ×2 · since Oct 16</span></span><span style="font-size:12px;color:#55595d">10m · 0/1</span><span style="font-size:12px">▶</span></div>
+    <div class="row">
+      <span class="fn" style="position:relative">05<svg aria-label="Prioritized" role="img" viewBox="0 0 44 30" style="position:absolute;left:-2px;top:-9px;width:44px;height:30px;overflow:visible"><path d="M7 15 C5 4 37 3 39 13 C41 26 9 27 6 17 C5 11 13 8 20 8" fill="none" stroke="#7e14ff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+      <span>Sketch tracking legend</span><span style="font-size:12px;color:#c22f20">40m / 30m</span><span style="font-size:12px">▶</span>
+    </div>
+    <div style="margin-top:auto;display:flex;gap:8px;align-items:center;font-size:11px;color:#2a2c2e"><span class="stk" style="transform:none">paper, not light</span>Stickers are printed marks. Frame numbers are engraved. The ring is violet grease pencil.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
