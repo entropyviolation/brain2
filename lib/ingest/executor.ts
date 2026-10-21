@@ -35,6 +35,8 @@ import {
 } from "./phone-undo"
 import { applyCapture } from "./apply-capture"
 import { applyLink } from "./apply-link"
+import { feedRowFromIncoming } from "./telegram-feed"
+import { useTelegramFeedStore } from "./telegram-feed-store"
 import { telegramCaptureOrigin } from "@/lib/capture-origin"
 import { applyBulk, isDuplicateFollowup, resolveDuplicateClarify } from "./apply-bulk"
 import { applyHabit, writeHabit } from "./apply-habit"
@@ -161,7 +163,46 @@ function holdMorningNoise(message: IncomingMessage, _now: Date): ApplyResult | n
   return null
 }
 
+/**
+ * The Telegram feed keeps every text from a paired chat, before anything reads
+ * it. It sits outside routing: a throw here must never stop the message from
+ * being applied, and the feed never decides what happens to the text.
+ */
+let feedBackfilled = false
+
+function recordInFeed(message: IncomingMessage, now: Date): void {
+  try {
+    // Once per process: lines the 200-line ingest log still holds from before the feed existed.
+    if (!feedBackfilled) {
+      feedBackfilled = true
+      useTelegramFeedStore.getState().backfillFromIngestLog(useIngestStore.getState().events, UNPAIRED_SUMMARY)
+    }
+    const row = feedRowFromIncoming(message, now)
+    if (!row) return
+    const store = useIngestStore.getState()
+    const { source } = message
+    if (source.isGroup && !store.allowGroups) return
+    const allowed =
+      store.isAllowed(source.chatId) ||
+      (source.userId != null && source.userId !== "" && store.isAllowed(source.userId))
+    if (!allowed) return
+    useTelegramFeedStore.getState().record(row)
+  } catch {
+    /* the feed is a courtesy copy; routing goes on */
+  }
+}
+
+function markFeedOutcome(message: IncomingMessage, outcome: { kind: string; status: IngestEvent["status"]; summary: string }): void {
+  try {
+    const row = feedRowFromIncoming(message)
+    if (row) useTelegramFeedStore.getState().markOutcome(row.id, outcome)
+  } catch {
+    /* see recordInFeed */
+  }
+}
+
 export function ingestIncoming(message: IncomingMessage, now = new Date()): ApplyResult {
+  recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
@@ -173,6 +214,7 @@ export function ingestIncoming(message: IncomingMessage, now = new Date()): Appl
 }
 
 export async function ingestIncomingAsync(message: IncomingMessage, now = new Date()): Promise<ApplyResult> {
+  recordInFeed(message, now)
   const when = messageSentAt(message, now)
   const blocked = authorizeIncoming(message, when)
   if (blocked) return blocked
@@ -790,5 +832,6 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
   // or rewrite the persist hub on every Live Location tick.
   if (isGpsTrackingLogEvent(event)) useGpsIngestLog.getState().push(event)
   else useIngestStore.getState().appendEvent(event)
+  markFeedOutcome(message, { kind: result.kind, status, summary })
   return result
 }

@@ -27,6 +27,14 @@ import {
 import { fetchPhoneHubStatus, normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
 import { flushScheduledPersist } from "@/lib/persist-storage"
 
+export const HUB_POLL_FAST_MS = 1000
+export const HUB_POLL_IDLE_MS = 5000
+
+/** Next browser-hub poll delay: fast after traffic, slow when the queue is empty. */
+export function nextHubPollDelay(gotMessages: boolean): number {
+  return gotMessages ? HUB_POLL_FAST_MS : HUB_POLL_IDLE_MS
+}
+
 export function useMessageIngest() {
   const enabled = useIngestStore((s) => s.enabled)
   const setPollStatus = useIngestStore((s) => s.setPollStatus)
@@ -43,6 +51,7 @@ export function useMessageIngest() {
     let hubTimer: number | undefined
     let pushTimer: number | undefined
     let yieldedToHub = false
+    let onVisible: (() => void) | undefined
 
     const hubOrigin = normalizeHubUrl(phoneHubUrl) || "http://127.0.0.1:8787"
 
@@ -154,17 +163,17 @@ export function useMessageIngest() {
           setPollStatus(Boolean(status.ok), "electron", status.error)
         })
       } else {
-        const tick = async () => {
+        const tick = async (): Promise<boolean> => {
           const hub = await fetchPhoneHubStatus(hubOrigin)
-          if (cancelled) return
+          if (cancelled) return false
           if (hub.ok && hub.polling) {
             setPollStatus(true, "phone-hub")
-            return
+            return false
           }
           const status = await fetchHubStatus()
-          if (cancelled) return
+          if (cancelled) return false
           setPollStatus(status.ok, "hub", status.ok ? null : "ingest hub offline")
-          if (!status.ok) return
+          if (!status.ok) return false
           const pending = [...(await fetchHubPending())].sort((a, b) => {
             const at = Date.parse(a.receivedAt || "") || 0
             const bt = Date.parse(b.receivedAt || "") || 0
@@ -175,11 +184,39 @@ export function useMessageIngest() {
             if (cancelled) break
             albums.push(payload)
           }
+          return pending.length > 0
         }
-        void tick()
-        hubTimer = window.setInterval(() => {
-          void tick()
-        }, 1000)
+        // Self-scheduling poll: 1 s while messages flow, 5 s when idle, paused
+        // while the tab is hidden, and snapped back to fast on becoming visible.
+        let polling = false
+        const schedule = (delay: number) => {
+          if (hubTimer) window.clearTimeout(hubTimer)
+          if (cancelled || document.hidden) return
+          hubTimer = window.setTimeout(run, delay)
+        }
+        const run = async () => {
+          if (cancelled || polling) return
+          polling = true
+          let got = false
+          try {
+            got = await tick()
+          } catch {
+            got = false
+          } finally {
+            polling = false
+          }
+          schedule(nextHubPollDelay(got))
+        }
+        onVisible = () => {
+          if (document.hidden) {
+            if (hubTimer) window.clearTimeout(hubTimer)
+            hubTimer = undefined
+            return
+          }
+          schedule(0)
+        }
+        document.addEventListener("visibilitychange", onVisible)
+        if (!document.hidden) void run()
       }
     })()
 
@@ -194,7 +231,8 @@ export function useMessageIngest() {
       albums.dispose()
       unsubMessage?.()
       unsubStatus?.()
-      if (hubTimer) window.clearInterval(hubTimer)
+      if (onVisible) document.removeEventListener("visibilitychange", onVisible)
+      if (hubTimer) window.clearTimeout(hubTimer)
       if (pushTimer) window.clearInterval(pushTimer)
       if (desktop) void desktop.stop()
     }

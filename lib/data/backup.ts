@@ -64,6 +64,7 @@ import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useHomeWidgetsStore } from "@/lib/home-widgets-store"
 import { useHomeWeatherStore } from "@/lib/home-weather-store"
@@ -182,6 +183,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("metrics-store"), rehydrate: persistRehydrate(useMetricsStore) },
   { key: "regret-store", rehydrate: persistRehydrate(useRegretStore) },
   { key: persistKey("ingest-store"), rehydrate: persistRehydrate(useIngestStore) },
+  { key: persistKey("telegram-feed"), rehydrate: persistRehydrate(useTelegramFeedStore) },
   { key: persistKey("baby-animals-store"), rehydrate: persistRehydrate(useBabyAnimalsStore) },
   { key: persistKey("home-widgets"), rehydrate: persistRehydrate(useHomeWidgetsStore) },
   { key: persistKey("home-weather"), rehydrate: persistRehydrate(useHomeWeatherStore) },
@@ -248,6 +250,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "regret-store": "Regret",
   [persistKey("ingest-store")]: "Message ingest",
   "cogs-ingest-store": "Message ingest",
+  [persistKey("telegram-feed")]: "Telegram feed",
+  "cogs-telegram-feed": "Telegram feed",
   [persistKey("baby-animals-store")]: "Today's friend",
   "cogs-baby-animals-store": "Today's friend",
   [persistKey("home-widgets")]: "Home layout",
@@ -515,6 +519,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("metrics-store")]: asLiveStore(useMetricsStore),
   "regret-store": asLiveStore(useRegretStore),
   [persistKey("ingest-store")]: asLiveStore(useIngestStore),
+  [persistKey("telegram-feed")]: asLiveStore(useTelegramFeedStore),
   [persistKey("baby-animals-store")]: asLiveStore(useBabyAnimalsStore),
   [persistKey("home-widgets")]: asLiveStore(useHomeWidgetsStore),
   [persistKey("home-weather")]: asLiveStore(useHomeWeatherStore),

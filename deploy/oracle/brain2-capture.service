@@ -1,0 +1,26 @@
+# Files the VM needs in /opt/brain2-capture (copy from scripts/):
+#   capture-box.mjs  sealed-box.mjs  capture-filter.mjs
+[Unit]
+Description=Brain2 sealed capture box (BIM)
+After=network-online.target tailscaled.service
+Wants=network-online.target tailscaled.service
+
+[Service]
+User=brain2
+EnvironmentFile=/etc/brain2-capture.env
+WorkingDirectory=/opt/brain2-capture
+# Wait (up to ~2 min) until tailscale0 holds the address in COGS_CAPTURE_BIND.
+# If it never appears the unit fails and Restart=always tries again.
+ExecStartPre=/bin/sh -c 'i=0; while [ $$i -lt 60 ]; do ip -4 -o addr show dev tailscale0 | grep -q "inet $COGS_CAPTURE_BIND/" && exit 0; i=$$((i+1)); sleep 2; done; echo "tailnet address $COGS_CAPTURE_BIND not up" >&2; exit 1'
+TimeoutStartSec=150
+ExecStart=/usr/bin/node /opt/brain2-capture/capture-box.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/brain2-capture
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

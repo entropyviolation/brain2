@@ -134,6 +134,20 @@ iPhone Screen Time / Calls / Texts use the same AirDrop pattern:
 [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut).
 The mobile hub (`data/mobile-sync.json`) is the sibling on-disk queue.
 
+## Telegram feed (every text, kept)
+
+_Last mapped: 2026-10-20_
+
+The Tracking log shows a **Telegram** feed: every text a paired chat sent BIM,
+on the day it was sent, whatever BIM did with it. It sits beside the other
+shelves (Day) and among the log lines (Week); it replaces nothing. Why it exists:
+the Tracking log only shows what a verb painted. A message that starts with a
+link goes to Inbox → Links and paints nothing on the log, and the ingest log
+(Settings → Message ingest) keeps only 200 lines. Texts were applied, then
+looked missing. Telegram's 24-hour hold only matters when nothing polls; it was
+not the cause. Store, guarantees, and hub behavior:
+[`lib/ingest/README.md`](../lib/ingest/README.md) (`telegram-feed.ts`).
+
 ## Always-on hub
 
 ```bash
@@ -151,7 +165,8 @@ Token from gitignored `.env.local` / `COGS_TELEGRAM_BOT_TOKEN` (never committed)
 
 A VPS / NAS / always-on Mac is enough. Where to host it, the alternatives, and
 the plan: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md). Set
-`COGS_PHONE_HUB_TOKEN` on any public host (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
+`COGS_PHONE_HUB_TOKEN` on any public host. For a cloud host that must not read your data, use the
+sealed capture box instead ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md); `COGS_CAPTURE_BOX_URL` + `COGS_CAPTURE_TOKEN` switch `phone:hub` to drain it) (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
 vault** copies today’s lists onto that host. Pairing still happens in Settings;
 the hub hydrates the allowlist from the vault.
 
