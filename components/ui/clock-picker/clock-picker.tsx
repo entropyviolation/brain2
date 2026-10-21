@@ -234,6 +234,13 @@ export function ClockPicker({
   const [hiddenDialIds, setHiddenDialIds] = useState<string[]>([])
   const [dialsEditing, setDialsEditing] = useState(false)
   const [handsId, setHandsId] = useState(DEFAULT_HANDS_ID)
+  const [settingsOpen, setSettingsOpen] = useState(true)
+  const [ticksOn, setTicksOn] = useState(true)
+  const savePref = (key: string, on: boolean) => {
+    try {
+      window.localStorage.setItem(key, on ? "1" : "0")
+    } catch {}
+  }
   const draftRef = useRef(draft)
   draftRef.current = draft
   const openRef = useRef(open)
@@ -347,6 +354,10 @@ export function ClockPicker({
     setHiddenDialIds(hiddenIds)
     setDialId(readSelectedDialId(visible))
     setHandsId(readSelectedHandsId(handPairs().map((pair) => pair.id)))
+    try {
+      setSettingsOpen(window.localStorage.getItem("brain2.clock-settings-open") !== "0")
+      setTicksOn(window.localStorage.getItem("brain2.clock-ticks") !== "0")
+    } catch {}
   }, [])
 
   useEffect(() => {
@@ -700,7 +711,10 @@ export function ClockPicker({
                 <div className="clock-picker-stack clock-picker-period">
                   <span className="clock-picker-kicker">Day</span>
                   <div className="clock-picker-col" data-active={column === "period" ? "true" : "false"}>
-                    {(["AM", "PM"] as const).map((period) => (
+                    {((parts.period === "AM" ? [null, "AM", "PM"] : ["AM", "PM", null]) as (Period | null)[]).map((period, slot) =>
+                      period === null ? (
+                        <span key={`gap-${slot}`} className="clock-picker-cell clock-picker-gap" aria-hidden />
+                      ) : (
                       <button
                         key={period}
                         type="button"
@@ -720,7 +734,8 @@ export function ClockPicker({
                       >
                         {period}
                       </button>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </div>
               </div>
@@ -736,12 +751,38 @@ export function ClockPicker({
                 ceramicSrc={ceramicSrc}
                 painting={dial.placement === "center" ? dial.src : null}
                 handPair={handPair}
+                ticks={ticksOn}
                 onMinute={(minute) => {
                   setColumn("minute")
                   const current = splitClock(draftRef.current || "08:00")
                   setDraftTime(joinClock(current.hour, minute, current.period))
                 }}
               />
+              <button
+                type="button"
+                className="clock-picker-mini clock-picker-settings-toggle"
+                data-no95
+                aria-expanded={settingsOpen}
+                onClick={() => {
+                  setSettingsOpen(!settingsOpen)
+                  savePref("brain2.clock-settings-open", !settingsOpen)
+                }}
+              >
+                {settingsOpen ? "Hide clock settings" : "Clock settings"}
+              </button>
+              {settingsOpen ? (
+                <div className="clock-picker-settings">
+                  <label className="clock-picker-dial-line">
+                    <input
+                      type="checkbox"
+                      checked={ticksOn}
+                      onChange={(event) => {
+                        setTicksOn(event.target.checked)
+                        savePref("brain2.clock-ticks", event.target.checked)
+                      }}
+                    />
+                    Ticks
+                  </label>
               <div className="clock-picker-dials">
                 <NativeSelect
                   className="clock-picker-dial"
@@ -815,6 +856,8 @@ export function ClockPicker({
                       {item.label}
                     </label>
                   ))}
+                </div>
+              ) : null}
                 </div>
               ) : null}
               <div className="clock-picker-actions">
@@ -1024,6 +1067,7 @@ function AnalogFace({
   ceramicSrc,
   painting,
   handPair,
+  ticks,
   onMinute,
 }: {
   hour: number
@@ -1033,6 +1077,7 @@ function AnalogFace({
   ceramicSrc: string
   painting: string | null
   handPair: { hour: string; minute: string } | null
+  ticks: boolean
   onMinute: (minute: number) => void
 }) {
   const minuteAngle = minute * 6
@@ -1094,7 +1139,7 @@ function AnalogFace({
             <feDropShadow dx="0" dy="0.4" stdDeviation="0.45" floodColor="#2c261c" floodOpacity="0.4" />
           </filter>
         </defs>
-        {painting
+        {painting && ticks
           ? Array.from({ length: 12 }, (_, i) => (
               <line key={i} x1="60" y1="2.2" x2="60" y2={i % 3 === 0 ? 7 : 4.6} stroke="#1c1e20" strokeOpacity="0.55" strokeWidth={i % 3 === 0 ? 1.1 : 0.6} transform={`rotate(${i * 30} 60 60)`} />
             ))

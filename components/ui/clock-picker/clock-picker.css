@@ -262,7 +262,7 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 
 .clock-picker-colon {
   align-self: center;
-  margin-bottom: 22px;
+  margin-bottom: calc(2.775rem - 3px);
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
@@ -271,8 +271,21 @@ body.win95-app input.clock-picker-field:not([type="checkbox"]):not([type="radio"
 }
 
 .clock-picker-period {
-  align-self: center;
-  margin-bottom: 2px;
+  align-self: flex-end;
+}
+
+.clock-picker-gap {
+  pointer-events: none;
+}
+
+.clock-picker-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clock-picker-settings-toggle {
+  width: 100%;
 }
 
 .clock-picker-panel button.clock-picker-cell {

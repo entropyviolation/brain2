@@ -29,3 +29,16 @@ Pass `className` when a caller needs a different size or a room’s field class 
 ## Look and face
 
 _Last mapped: 2026-10-20_ The drums share one dark scope container with the colon; the armed drum glows inside it. The panel is cool paper with a graph rule. A center painting now fills the whole round face (no ceramic plate behind it) and gets 12 tick marks. Ceramic still shows its plate. Click or drag on the face to set the minute from the angle.
+
+## Parts and names
+
+_Last mapped: 2026-10-20_ One vocabulary for the whole control. Class names follow it.
+
+1. **Entry** (`.clock-picker-field`, `.clock-picker-open`). The typed field. It parses sloppy input (`1pm`, `4.02pm`, `0915`, `16:02`) and commits `HH:MM` on blur or Enter. Start and End are two separate pickers and never share state.
+2. **Certainty buttons** (`CertaintyToggle` in `components/Home/Tracking/entry-edges.tsx`, `.trk-edge-certainty`). Exact, ~ Est., ? for each edge, one at a time. Click the lit button again to clear it; a cleared edge saves as exact. The end-event link (`EndEventSection`) lives beside them. **Planned**: attach known values and events to an edge more directly from this row.
+3. **Picker popup** (`.clock-picker-panel`), top to bottom:
+   - **Digital display** (`.clock-picker-drums`). One scope with Hour, Min, Day. Each is three rows tall, so the cursor row of all three sits on one line (the Day column pads with a blank slot).
+   - **Now** (`.clock-picker-now`). Writes the current time at once.
+   - **Analog face** (`.clock-picker-analog`): face or painting, **ticks**, **hands**, nub. Click or drag sets the minute. **Planned**: a spinning-hands animation when the time jumps.
+   - **Clock settings** (`.clock-picker-settings`). Dial select, Shuffle, Edit, Hands select, Shuffle, and a **Ticks** checkbox. A button above them hides or shows the group. Both choices persist: `brain2.clock-settings-open`, `brain2.clock-ticks`.
+   - **Confirm / Cancel** (`.clock-picker-actions`).
