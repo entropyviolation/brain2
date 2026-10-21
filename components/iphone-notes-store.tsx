@@ -128,6 +128,8 @@ export function IphoneNotesStore({ hideTrigger = false }: { hideTrigger?: boolea
         const base = withCategoryDefaults(createListItem(description, [list.id]), list)
         addTask({
           ...base,
+          ...(suggestion.attachedDate ? { attachedDate: suggestion.attachedDate } : {}),
+          ...(suggestion.deadline ? { deadline: suggestion.deadline } : {}),
           ...(suggestion.scheduledDate ? { scheduledDate: suggestion.scheduledDate } : {}),
           ...(suggestion.scheduledTime ? { scheduledTime: suggestion.scheduledTime } : {}),
           ...(suggestion.estimatedDuration ? { estimatedDuration: suggestion.estimatedDuration } : {}),

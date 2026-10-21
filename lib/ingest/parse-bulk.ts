@@ -45,8 +45,9 @@ export function parseDueBeforeHeader(line: string, now = new Date()): Date | nul
   const rest = match[1].trim()
   if (!rest) return null
   const { suggestion } = parseSmartCapture(rest, { now, stripScheduleWords: true })
-  if (!suggestion.scheduledDate || suggestion.description) return null
-  return suggestion.scheduledDate
+  const date = suggestion.scheduledDate ?? suggestion.deadline ?? suggestion.attachedDate
+  if (!date || suggestion.description) return null
+  return date
 }
 
 /** True when a multi-line message is a list dump (header, then items). */

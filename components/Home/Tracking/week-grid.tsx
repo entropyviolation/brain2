@@ -34,6 +34,7 @@
  */
 "use client"
 
+import { deferSyncs } from "@/lib/defer-sync"
 import { useTransitSuggestionsFor } from "@/components/Home/Tracking/use-transit-suggestions"
 import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
@@ -53,6 +54,7 @@ import {
 import { entriesInRange, penTotals, tagTotals as tagTotalsOf, totalsFor, uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
@@ -503,15 +505,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
 
   const commitPaint = useCallback(
     (day: string, from: number, to: number) => {
-      if (!scope || selectedPenId === null) return
-      paintMinutes(
+      if (!scope || noPaint(selectedPenId)) return
+      deferSyncs(() => paintMinutes(
         day,
         scope.id,
         Math.min(from, to),
         Math.max(from, to),
         selectedPenId === ERASE ? null : selectedPenId,
         selectedVariantIds,
-      )
+      ))
     },
     [scope, selectedPenId, selectedVariantIds, paintMinutes],
   )
@@ -610,15 +612,15 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
     if (from === null || parsedTo === null) return
     runAsAction("fill days", () => {
       for (const day of fillDays) {
-        if (!scope || selectedPenId === null) return
-        paintMinutes(
+        if (!scope || noPaint(selectedPenId)) return
+        deferSyncs(() => paintMinutes(
           day,
           scope.id,
           from,
           parsedTo,
           selectedPenId === ERASE ? null : selectedPenId,
           selectedVariantIds,
-        )
+        ))
       }
     })
     const end = parsedTo <= from ? MINUTES_PER_DAY : parsedTo
@@ -691,7 +693,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
         <button
           type="button"
           onClick={applyTypedRange}
-          disabled={selectedPenId === null || fillDays.length === 0}
+          disabled={noPaint(selectedPenId) || fillDays.length === 0}
         >
           {`Fill ${fillDays.length} ${fillDays.length === 1 ? "day" : "days"} with ${
             selectedPenId === ERASE ? "erase" : selectedPen?.name || "selected pen"
@@ -726,7 +728,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
               e.preventDefault()
               return
             }
-            if (selectedPenId === null) {
+            if (noPaint(selectedPenId)) {
               const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)
               return
@@ -747,7 +749,7 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
               e.preventDefault()
               return
             }
-            if (selectedPenId === null) {
+            if (noPaint(selectedPenId)) {
               const existing = blockOnCell(cell.day, cell.minute)
               if (existing) setOpenEntryId(existing.id)
               return

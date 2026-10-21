@@ -929,3 +929,18 @@ Where a screen computes something, offer the math. Typeset the formula, plot the
 ## Metal: silver, never gold
 
 _Last mapped: 2026-10-20_ Metal is always silver mirror chrome. Never choose gold or brass (hand caps, pivots, rivets, trim) unless forced. The clock picker's center cap is a small chrome nub.
+
+## Web-design laws, applied
+
+_Last mapped: 2026-10-20_ Short checks drawn from the usual UX laws. They sit on top of the rules above and lose to them on a conflict.
+
+- **Hick / Miller.** A row holds about 7 peers. More than that is grouped, or the rare ones move behind a disclosure (the tracking view-key row, the toolbars).
+- **Von Restorff / Fitts.** One primary action per region, distinct and large (START). Destructive keys (CLEAR DAY) sit apart and wear a quieter fascia.
+- **Proximity / Similarity.** Same-role controls share one fascia. A control that acts on a region lives beside it.
+- **Doherty.** Every press answers within 400 ms: key depth, a lit lamp, or a skeleton.
+- **Recognition over recall.** Icon-only keys carry a label or tooltip. The active mode is named in words, not only by a lamp.
+- **Progressive disclosure.** Advanced knobs (time base, ghost layers) start collapsed.
+- **Empty states.** A blank grid says what fills it and offers the one action that does.
+- **Contrast.** Small caps text on a metal fascia meets WCAG AA. Dim labels (GHOST, MIN) are checked, not assumed.
+- **8pt rhythm.** Gaps and paddings are multiples of 8 (4 for tight pairs).
+- **Focus and motion.** A visible focus ring on every key, and reduced motion snaps to the end state.

@@ -579,6 +579,8 @@ export interface Task extends Item {
   why?: string // Why this task needs to be done
   consequences?: string // What happens if not done
   scheduledDate?: Date // When task is scheduled
+  /** A date found in the text (quick add, BIM) with no `due` / `on` word. Attached only; schedules nothing. */
+  attachedDate?: Date
   scheduledTime?: string // Time of day if scheduled
   /**
    * Timed reminder clock. The fire instant is `scheduledDate` (local day) plus

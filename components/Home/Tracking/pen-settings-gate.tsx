@@ -9,14 +9,17 @@
 
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { PenSettingsDialog } from "@/components/Home/Tracking/pen-settings-dialog"
+import type { PenSettingsNav } from "@/components/Home/Tracking/pen-settings-host"
 import type { PenSettingsTarget } from "@/components/Home/Tracking/open-pen-settings"
 
 export function PenSettingsGate({
   target,
   onClear,
+  nav,
 }: {
   target: PenSettingsTarget
   onClear: () => void
+  nav?: PenSettingsNav
 }) {
   const pen = useTimeTrackingStore((s) =>
     s.scopes.find((scope) => scope.id === target.scopeId)?.pens.find((item) => item.id === target.penId),
@@ -30,6 +33,7 @@ export function PenSettingsGate({
       pen={pen}
       onClose={onClear}
       onDeleted={onClear}
+      nav={nav}
     />
   )
 }
