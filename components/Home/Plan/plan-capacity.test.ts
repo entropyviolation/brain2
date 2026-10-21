@@ -80,9 +80,9 @@ describe("plan-capacity", () => {
         scheduledDate: date,
         estimatedDuration: 20,
         subtasks: [
-          { id: "s1", name: "a", completed: false, estimatedDuration: 30 },
-          { id: "s2", name: "b", completed: false, estimatedDuration: 15 },
-        ] as Task["subtasks"],
+          { id: "s1", description: "a", completed: false, estimatedDuration: 30 },
+          { id: "s2", description: "b", completed: false, estimatedDuration: 15 },
+        ],
       }),
       task({ id: "bare", description: "No estimate", scheduledDate: date, estimatedDuration: undefined as never }),
     ]

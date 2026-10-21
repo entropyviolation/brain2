@@ -110,7 +110,7 @@ describe("TaskGrid", () => {
     expect(meta).toBeTruthy()
     expect(meta?.textContent).toMatch(/×/)
     expect(meta?.textContent).toMatch(/2d/)
-    expect(title?.compareDocumentPosition(meta as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(title!.compareDocumentPosition(meta as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(container.querySelectorAll("img.habit-gem")).toHaveLength(1)
   })
 
@@ -656,7 +656,7 @@ describe("TaskGrid", () => {
       onEditTask: vi.fn(),
       calculateTaskPercentage: () => 0,
       calculateDayPercentage: () => 0,
-      exemptionKindFor: (task: (typeof tasks)[number], key: string) =>
+      exemptionKindFor: (task: { id: string }, key: string) =>
         task.id === "h1" && key === "2026-06-18" ? ("waved" as const) : ("required" as const),
     }
     const { rerender } = render(<TaskGrid {...props} hideCompletedAndMissed />)
@@ -687,7 +687,7 @@ describe("TaskGrid", () => {
       goal: 30,
       unit: "minutes",
       frequency: "daily" as const,
-      completionSources: ["manual", "tags", "keywords"] as const,
+      completionSources: ["manual" as const, "tags" as const, "keywords" as const],
     }
     const short = {
       id: "short",
@@ -695,7 +695,7 @@ describe("TaskGrid", () => {
       type: TaskType.GOAL,
       goal: 30,
       frequency: "daily" as const,
-      completionSources: ["manual", "tags", "keywords"] as const,
+      completionSources: ["manual" as const, "tags" as const, "keywords" as const],
     }
     render(
       <TaskGrid

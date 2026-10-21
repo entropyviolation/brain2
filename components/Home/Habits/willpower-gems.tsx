@@ -566,7 +566,7 @@ function PhysicsLab({
   const speed = tracked ? Math.hypot(tracked.vx, tracked.vy, tracked.vz) : 0
   const ke = tracked ? 0.5 * tracked.mass * speed * speed : 0
   const pot = tracked && crystal
-    ? bodyPotentialParts(tracked, crystal, params)
+    ? bodyPotentialParts(tracked, { cx: crystal.x, cy: crystal.y }, params)
     : { grav: 0, dish: 0, total: 0 }
   const tel = willpowerTelemetry(pose, {
     width: 0,

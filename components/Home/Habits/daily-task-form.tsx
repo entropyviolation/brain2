@@ -1020,11 +1020,11 @@ export function TaskForm({ onSubmit, onCancel, onDelete, initialTask, defaultFre
     setTask((current) => {
       const linkNow = current.trackingLink ?? { tagIds: [] }
       const tagIds = on ? linkNow.tagIds.filter((tag) => tag !== id) : [...linkNow.tagIds, id]
-      const order =
+      const order: HabitCompletionSourceId[] =
         sourcesLocked && Array.isArray(current.completionSources)
           ? current.completionSources
           : deriveCompletionSources(current)
-      const completionSources = tagIds.length
+      const completionSources: HabitCompletionSourceId[] = tagIds.length
         ? order.includes("tags")
           ? order
           : [...order, "tags"]

@@ -82,7 +82,7 @@ export function ancestorChains(pens: TreePen[], penId: string): TreePen[][] {
   const walk = (node: TreePen, stack: TreePen[], seen: Set<string>) => {
     const parents = penParentIds(node)
       .map((id) => byId.get(id))
-      .filter((parent): parent is TreePen => Boolean(parent) && !seen.has(parent.id))
+      .filter((parent): parent is TreePen => parent !== undefined && !seen.has(parent.id))
     if (!parents.length) {
       chains.push([...stack].reverse())
       return

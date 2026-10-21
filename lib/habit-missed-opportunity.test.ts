@@ -145,20 +145,20 @@ describe("printed goal amounts", () => {
         },
       ],
     }
-    expect(printedGoalAmounts(pages, { value: 98.2, goal: 70, habitSumValue: 98.2 })).toEqual({
+    expect(printedGoalAmounts(pages, { value: 98.2, habitSumValue: 98.2 })).toEqual({
       shown: 98.2,
       goal: 70,
     })
   })
 
   it("prints a sourced amount under the target", () => {
-    const completion = { value: 40, goal: 70, coverageCompleted: false }
+    const completion = { value: 40, coverageCompleted: false }
     expect(printedGoalAmounts(occupancy, completion)).toEqual({ shown: 40, goal: 70 })
     expect(habitCompletionDetail({ task: occupancy, completion }).amount).toBe("40 / 70")
   })
 
   it("keeps a hand-typed number", () => {
-    expect(printedGoalAmounts(occupancy, { value: 12, manualValue: 12, goal: 70 })).toEqual({
+    expect(printedGoalAmounts(occupancy, { value: 12, manualValue: 12 })).toEqual({
       shown: 12,
       goal: 70,
     })
@@ -182,7 +182,7 @@ describe("printed goal amounts", () => {
       completionSources: ["manual", "listSent"],
       listSentLink: { listId: "texts", grace: 100, measure: "sent", target: "listLength" },
     }
-    expect(printedGoalAmounts(habit, { value: 90, goal: 100 }, items, now)).toEqual({ shown: 1, goal: 5 })
+    expect(printedGoalAmounts(habit, { value: 90 }, items, now)).toEqual({ shown: 1, goal: 5 })
   })
 
   it("prints a finished list week as sent over the frozen length", () => {
@@ -213,7 +213,7 @@ describe("printed goal amounts", () => {
       listSentLink: { listId: "texts", grace: 100, measure: "sent", target: "listLength" },
     }
     expect(printedGoalAmounts(habit, undefined, items, finishedWeek, clock)).toEqual({ shown: 1, goal: 5 })
-    expect(habitCompletionDetail({ task: habit, items, now: finishedWeek, clock }).amount).toBe("1 / 5")
+    expect(habitCompletionDetail({ task: habit, completion: undefined, items, now: finishedWeek, clock }).amount).toBe("1 / 5")
     const earlier = printedGoalAmounts(habit, undefined, items, earlierWeek, clock)
     expect(earlier).not.toEqual({ shown: 1, goal: 5 })
     expect(earlier.shown).toBe(0)

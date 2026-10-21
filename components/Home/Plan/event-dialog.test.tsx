@@ -28,7 +28,7 @@ function EventHarness({
   initial = baseNewEvent,
 }: {
   editingEvent?: CalendarEvent | null
-  initial?: typeof baseNewEvent
+  initial?: typeof baseNewEvent & { color?: string }
 }) {
   const [open, setOpen] = useState(true)
   const [event, setEvent] = useState(editingEvent)

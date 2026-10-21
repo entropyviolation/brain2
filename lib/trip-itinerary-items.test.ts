@@ -30,7 +30,7 @@ function sampleTrip(): TripItineraryData {
 function mod(trip: TripItineraryData): ModuleInstance {
   return {
     id: "mod-trip",
-    type: "custom",
+    type: "workspace",
     title: "Portugal 2026",
     kind: "workspace",
     config: { tripItinerary: trip },

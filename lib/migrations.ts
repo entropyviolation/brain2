@@ -85,9 +85,7 @@ export function migrateModulePlatform<T extends Record<string, unknown>>(state: 
  *
  * Nothing here is ever cleared or overwritten — only absent values are filled.
  */
-export function migrateTitleAsFieldOfRecord<T extends { tasks?: unknown[] } & Record<string, unknown>>(
-  state: T,
-): T {
+export function migrateTitleAsFieldOfRecord<T extends { tasks?: unknown[] } & Record<string, unknown>>(state: T): T {
   if (!Array.isArray(state.tasks)) return state
   return {
     ...state,
@@ -160,7 +158,9 @@ export function inferMissingItemType(
  * `operation` / `note` / catalog / already-written `"task"` / `"item"`, and it
  * never deletes `description`.
  */
-export function migrateHonestItemTypes<T extends { tasks?: unknown[] } & Record<string, unknown>>(
+export function migrateHonestItemTypes<
+  T extends { tasks?: unknown[]; folders?: unknown[] } & Record<string, unknown>,
+>(
   state: T,
 ): T {
   if (!Array.isArray(state.tasks)) return state

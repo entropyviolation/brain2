@@ -94,7 +94,7 @@ export function resetAllStores() {
     hideCompletedAndMissed: false,
     exemptionWand: false,
     missedOpWand: false,
-    habitExemptions: { daily: {}, weekly: {}, monthly: {} },
+    habitExemptions: { daily: {}, weekly: {}, monthly: {}, quarterly: {} },
     habitViewMode: "grid",
     habitSortMode: "default",
     habitMonthWindow: "yearToDate",

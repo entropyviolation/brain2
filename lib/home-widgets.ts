@@ -520,7 +520,7 @@ export function weatherLaterGlance(
 ): string {
   const condition = (opts.condition || "Weather").trim() || "Weather"
   if (!hours.length) return condition
-  const future = opts.nowHour == null ? hours : hours.filter((h) => h.hour > opts.nowHour)
+  const future = opts.nowHour == null ? hours : hours.filter((h) => h.hour > opts.nowHour!)
   const series = future.length > 0 ? future : hours
   const peak = series.reduce((best, h) => (h.tempF > best.tempF ? h : best))
   const last = series[series.length - 1]!

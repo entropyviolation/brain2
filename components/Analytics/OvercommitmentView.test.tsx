@@ -27,7 +27,7 @@ function task(overrides: Partial<Task>): Task {
   return {
     id: "t1",
     description: "Task",
-    stage: "active",
+    stage: "scheduled",
     createdAt: new Date(),
     completed: false,
     lists: ["list-1"],

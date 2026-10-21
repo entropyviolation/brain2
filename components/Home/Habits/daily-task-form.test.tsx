@@ -668,7 +668,7 @@ describe("TaskForm", () => {
     expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Add source" }))
-    await user.click(screen.getByRole("button", { name: "Tags", exact: true }))
+    await user.click(screen.getByRole("button", { name: "Tags" }))
     expect(screen.getByLabelText("Tagged task tag")).toBeInTheDocument()
     expect(screen.queryByText("Auto-fill from Tracking")).not.toBeInTheDocument()
     expect(screen.getByText(/Counts Done = Tags/)).toBeInTheDocument()
@@ -680,11 +680,11 @@ describe("TaskForm", () => {
     ).toBeInTheDocument()
     expect(screen.queryByText(/Counts Done:/)).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "Remove Tags", exact: true }))
+    await user.click(screen.getByRole("button", { name: "Remove Tags" }))
     expect(screen.queryByLabelText("Tagged task tag")).not.toBeInTheDocument()
     expect(screen.queryByText(/Counts Done = Tags/)).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Add source" }))
-    await user.click(screen.getByRole("button", { name: "Tags", exact: true }))
+    await user.click(screen.getByRole("button", { name: "Tags" }))
 
     await user.type(screen.getByLabelText("Tagged task tag"), "cooking")
     await user.click(screen.getByRole("button", { name: "Update Habit" }))
@@ -1052,7 +1052,7 @@ describe("TaskForm", () => {
       {
         id: "pipe-stats-1",
         kind: "habitsStats" as const,
-        sources: [] as const,
+        sources: [] as never[],
         stats: {
           set: "daily" as const,
           points: [
@@ -1135,21 +1135,21 @@ describe("TaskForm", () => {
       expect(screen.getByLabelText("Count tracked time as")).toHaveValue("minutes")
       expect(screen.getByLabelText("Combine with manual entries")).toHaveValue("add")
       expect(screen.getByText("Tracked time tops up what you log by hand.")).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: "Remove Tags", exact: true })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Remove Tags" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Remove Tracking tags" })).toBeInTheDocument()
       expect(screen.getByLabelText("Tagged task tag")).toHaveValue("studying")
 
       const count = screen.getByRole("group", { name: "Tags, shared with Auto-fill from Tracking" })
       const minutes = screen.getByRole("group", { name: "Tracking tags, shared with Tags" })
       expect(within(minutes).getByRole("button", { name: "Work, minutes" })).toHaveAttribute("aria-pressed", "true")
-      expect(within(count).getByRole("button", { name: "Work", exact: true })).toHaveAttribute("aria-pressed", "false")
+      expect(within(count).getByRole("button", { name: "Work" })).toHaveAttribute("aria-pressed", "false")
       expect(within(minutes).getByRole("button", { name: "Work, minutes" }).textContent).toMatch(/minutes/)
       expect(within(count).queryByText("counts")).not.toBeInTheDocument()
 
       fireEvent.change(within(count).getByLabelText("New tag"), { target: { value: "Deep work" } })
       await user.click(within(count).getByRole("button", { name: "Create tag" }))
       expect(within(count).getByRole("button", { name: "Deep work, counts" })).toHaveAttribute("aria-pressed", "true")
-      expect(within(minutes).getByRole("button", { name: "Deep work", exact: true })).toHaveAttribute("aria-pressed", "false")
+      expect(within(minutes).getByRole("button", { name: "Deep work" })).toHaveAttribute("aria-pressed", "false")
       expect(screen.getByText(/Counts Done: deep work · Fills minutes: Work/)).toBeInTheDocument()
 
       await user.click(within(count).getByRole("button", { name: "Edit tag Deep work" }))
@@ -1170,9 +1170,9 @@ describe("TaskForm", () => {
         await user.click(focusOnCount)
       }
       expect(within(count).getByRole("button", { name: "Focus, counts" })).toHaveAttribute("aria-pressed", "true")
-      expect(within(minutes).getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "false")
+      expect(within(minutes).getByRole("button", { name: "Focus" })).toHaveAttribute("aria-pressed", "false")
       const focus = useTimeTrackingStore.getState().tags.find((tag) => tag.name === "Focus")
-      expect(within(minutes).getByRole("button", { name: "Focus", exact: true }).querySelector(".habit95-tag-dot")?.getAttribute("style")).toMatch(/17,\s*34,\s*51/)
+      expect(within(minutes).getByRole("button", { name: "Focus" }).querySelector(".habit95-tag-dot")?.getAttribute("style")).toMatch(/17,\s*34,\s*51/)
 
       await user.click(within(minutes).getByRole("button", { name: "Edit tag Focus" }))
       await waitFor(() => {
@@ -1184,10 +1184,10 @@ describe("TaskForm", () => {
         expect(useTimeTrackingStore.getState().tags.find((tag) => tag.id === focus?.id)?.color).toBe("#abcdef")
       })
       const countDot = within(count).getByRole("button", { name: "Focus, counts" }).querySelector(".habit95-tag-dot")?.getAttribute("style")
-      const minuteDot = within(minutes).getByRole("button", { name: "Focus", exact: true }).querySelector(".habit95-tag-dot")?.getAttribute("style")
+      const minuteDot = within(minutes).getByRole("button", { name: "Focus" }).querySelector(".habit95-tag-dot")?.getAttribute("style")
       expect(countDot).toBe(minuteDot)
 
-      await user.click(within(minutes).getByRole("button", { name: "Exercise", exact: true }))
+      await user.click(within(minutes).getByRole("button", { name: "Exercise" }))
       expect(screen.getByLabelText("Tagged task tag")).toHaveValue("focus")
       expect(screen.getByText(/Counts Done: focus · Fills minutes: Work, Exercise/)).toBeInTheDocument()
       await user.click(screen.getByRole("button", { name: "Update Habit" }))

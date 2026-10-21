@@ -188,7 +188,7 @@ function finishReceipt(session: ReceiptSession): ApplyResult {
   }
 }
 
-function pickIndex(text: string, candidates: { id: string }[]) {
+function pickIndex<T extends { id: string }>(text: string, candidates: T[]): T | null {
   const n = Number(text.trim())
   if (!Number.isInteger(n) || n < 1 || n > candidates.length) return null
   return candidates[n - 1]

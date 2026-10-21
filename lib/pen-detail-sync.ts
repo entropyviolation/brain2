@@ -114,7 +114,7 @@ export function syncScopeDetails(pens: TrackPen[], mint: DetailMint): DetailSync
 
       const id = mint("pen")
       const color = variant.color || parent.color
-      next.push(assignParents({ id, name, color }, [parent.id]))
+      next.push(assignParents<TrackPen>({ id, name, color }, [parent.id]))
       variant.penId = id
       variant.color = color
       claimed.add(id)

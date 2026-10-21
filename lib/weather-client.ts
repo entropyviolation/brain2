@@ -462,7 +462,7 @@ export function parseHomeDayWeather(
   const hourlyIn = data.hourly
   const hourly: HomeHourlyPoint[] = []
   const times = hourlyIn?.time
-  if (times?.length) {
+  if (hourlyIn && times?.length) {
     for (let i = 0; i < times.length; i++) {
       const time = times[i]
       if (!time || !time.startsWith(date)) continue

@@ -90,7 +90,7 @@ export function openFriendHabits(
 export function openFriendTodos(tasks: Task[], now: Date): Task[] {
   const rows = filterAndSortTodos(buildTodoItems(tasks, false, now), "day", false, now)
   const byId = new Map(tasks.map((task) => [task.id, task]))
-  return rows.map((row) => byId.get(row.taskId)).filter((task): task is Task => Boolean(task && !isClearedFromWork(task)))
+  return rows.map((row) => (row.taskId ? byId.get(row.taskId) : undefined)).filter((task): task is Task => Boolean(task && !isClearedFromWork(task)))
 }
 
 function listScore(personality: FriendPersonality, listIds: string[]): number {

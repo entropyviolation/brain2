@@ -43,7 +43,7 @@ describe("merge tombstones via setTasks / setLists", () => {
     useTaskStore.getState().setLists([list({ id: "home", name: "Home" }), list({ id: "work", name: "Work" })])
     useTaskStore.getState().setTasks([a, b])
 
-    const plan = defaultItemMergePlan([a, b], useTaskStore.getState().lists)
+    const plan = defaultItemMergePlan([a, b], useTaskStore.getState().lists)!
     const merged = applyItemMerge(useTaskStore.getState().tasks, plan)
     useTaskStore.getState().setTasks(merged, { tombstoneIds: plan.discardedIds })
 
@@ -83,7 +83,7 @@ describe("merge tombstones via setTasks / setLists", () => {
     useTaskStore.getState().setFolders(folders)
     useTaskStore.getState().setTasks(tasks)
 
-    const plan = defaultMergePlan(lists, folders)
+    const plan = defaultMergePlan(lists, folders)!
     const next = applyListMerge({ lists, folders, tasks }, plan)
     useTaskStore.getState().setLists(next.lists, { tombstoneIds: plan.discardedIds })
     useTaskStore.getState().setFolders(next.folders)

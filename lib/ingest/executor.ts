@@ -526,7 +526,7 @@ function finishIngest(message: IncomingMessage, result: ApplyResult): ApplyResul
       }
     }
   }
-  const keepRitual = prev?.kind === "ritual" && result.summary === "Undo refused during ritual"
+  const keepRitual = prev?.kind === "ritual" && "summary" in result && result.summary === "Undo refused during ritual"
   if (next.status === "needs_clarify") {
     store.setPending(message.source.channel, message.source.chatId, next.pending)
   } else if (keepRitual) {
@@ -766,7 +766,6 @@ function resolveClarify(pending: PendingClarify, text: string, now: Date): Apply
     return applyPenById(pending.kind, pending.scopeId, named.id, pending.remainder ?? "", now)
   }
 
-  if (pending.kind === "habit") return applyHabit(trimmed, now)
   if (pending.kind === "location") return applyLocation(trimmed, now)
   if (pending.kind === "mood") return applyMood(trimmed, now)
   if (pending.kind === "track") return applyTrack(`${trimmed} ${pending.remainder ?? ""}`.trim(), now)
