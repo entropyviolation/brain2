@@ -7,6 +7,9 @@
  * Token: gitignored `.env.local` / COGS_TELEGRAM_BOT_TOKEN
  * Poll is the default. Webhook: COGS_TELEGRAM_WEBHOOK=https://host/telegram/webhook
  * Port (persist + webhook): COGS_PHONE_HUB_PORT=8787
+ * Capture box (Oracle VM keeps sealed texts, this drains them): COGS_CAPTURE_BOX_URL + COGS_CAPTURE_TOKEN
+ * Drain extras: COGS_DRAIN_STALE_MINUTES (default 30; older texts get a "(from 3h ago)" reply line),
+ *   COGS_DRAIN_HEALTHCHECK_URL (pinged <= 1/min after a good fetch, `/fail` on fetch or decrypt errors)
  * Vault API token (set on any public host): COGS_PHONE_HUB_TOKEN
  *
  * Desktop Electron yields when data/phone-hub-status.json is fresh so Telegram
@@ -16,10 +19,12 @@
  */
 import { readFileSync, writeFileSync, existsSync, watch, mkdirSync, statSync } from "node:fs"
 import { createServer, type IncomingMessage as HttpRequest, type ServerResponse } from "node:http"
+import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { dumpLocalStorage, fillLocalStorage, installPhoneHubGlobals } from "./phone-hub-polyfill.mjs"
 import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./persist-api.mjs"
+import { open as openSealed } from "./sealed-box.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
 import { flushScheduledPersist } from "../lib/persist-storage"
 import { hubRequestAuthorized, isGatedHubPath } from "../lib/ingest/hub-auth"
@@ -27,6 +32,8 @@ import { createChatQueue } from "../lib/ingest/chat-queue"
 import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates"
 import { createDeferredAlbum } from "../lib/ingest/deferred-album"
 import { compareSentOrder } from "../lib/ingest/message-time"
+import { createDrainHeartbeat } from "../lib/ingest/drain-heartbeat"
+import { drainStaleMinutes, prefixStaleReply, staleReplyNote } from "../lib/ingest/drain-stale"
 import {
   allowedUpdatesParam,
   callbackQueryToIncoming,
@@ -51,10 +58,37 @@ installPhoneHubGlobals()
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const STATUS_FILE = join(ROOT, "data", "phone-hub-status.json")
 const OFFSET_FILE = join(ROOT, "data", "telegram-offset.json")
+/** Let gitignored .env.local / .env supply any COGS_* setting the shell did not. */
+function loadEnvFiles() {
+  for (const name of [".env.local", ".env"]) {
+    const file = join(ROOT, name)
+    if (!existsSync(file)) continue
+    try {
+      for (const row of readFileSync(file, "utf8").split(/\r?\n/)) {
+        const m = /^\s*(COGS_[A-Z0-9_]+)\s*=\s*(.*)$/.exec(row)
+        if (!m || process.env[m[1]!] !== undefined) continue
+        const value = m[2]!.trim().replace(/^["']|["']$/g, "")
+        if (value) process.env[m[1]!] = value
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+loadEnvFiles()
+
 const PORT = Number(process.env.COGS_PHONE_HUB_PORT || 8787)
 const WEBHOOK = String(process.env.COGS_TELEGRAM_WEBHOOK || "").trim()
 /** Bearer token for the vault API. Empty = open (localhost only!). */
 const HUB_TOKEN = String(process.env.COGS_PHONE_HUB_TOKEN || "").trim()
+/** Capture-box mode: pull sealed updates from the Oracle VM instead of polling Telegram. */
+const CAPTURE_URL = String(process.env.COGS_CAPTURE_BOX_URL || "").trim().replace(/\/+$/, "")
+const CAPTURE_TOKEN = String(process.env.COGS_CAPTURE_TOKEN || "").trim()
+const CAPTURE_KEY_FILE =
+  String(process.env.COGS_CAPTURE_PRIVATE_KEY_FILE || "").trim() || join(homedir(), ".brain2", "capture-private.key")
+const CAPTURE_STATE_FILE = join(ROOT, "data", "capture-drain.json")
+const DRAIN_STALE_MINUTES = drainStaleMinutes(process.env.COGS_DRAIN_STALE_MINUTES)
+const DRAIN_HEALTHCHECK_URL = String(process.env.COGS_DRAIN_HEALTHCHECK_URL || "").trim()
 const WEBHOOK_SECRET = String(process.env.COGS_TELEGRAM_WEBHOOK_SECRET || "").trim()
 
 function tokenFromEnvFiles() {
@@ -112,7 +146,7 @@ function writeStatus(extra: Record<string, unknown> = {}) {
     ok: true,
     polling: true,
     hub: true,
-    mode: WEBHOOK ? "webhook" : "poll",
+    mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll",
     pid: process.pid,
     port: PORT,
     at: new Date().toISOString(),
@@ -236,7 +270,25 @@ const transport: IngestTransport = {
   },
 }
 
-async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false) {
+/** Drained texts only: the first chunk of a late reply says how old the question was. */
+function lateTransport(note: string): IngestTransport {
+  let noted = false
+  return {
+    ...transport,
+    async send(chatId, text, markup) {
+      const body = noted ? text : prefixStaleReply(text, note)
+      noted = true
+      return transport.send(chatId, body, markup)
+    },
+    async edit(chatId, messageId, text, markup) {
+      const body = noted ? text : prefixStaleReply(text, note)
+      noted = true
+      return transport.edit!(chatId, messageId, body, markup)
+    },
+  }
+}
+
+async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false, drained = false) {
   // Rehydrate once per poll batch, not before every text. A per-message
   // reload was reading the vault from before this turn's persist flush and
   // dropping the open ritual, so the next line looked like a new command.
@@ -252,7 +304,8 @@ async function handlePayload(payload: IncomingTelegramPayload, rehydrate = false
     return
   }
   const result = await ingestIncomingAsync(incomingFromTelegram(payload))
-  await deliverIngestReply(payload.chatId, result, transport)
+  const note = drained ? staleReplyNote(payload.receivedAt, Date.now(), DRAIN_STALE_MINUTES) : ""
+  await deliverIngestReply(payload.chatId, result, note ? lateTransport(note) : transport)
   flushVault()
 }
 
@@ -263,7 +316,7 @@ const album = createDeferredAlbum((payload: IncomingTelegramPayload) => handlePa
  * Vault writes for one poll batch. Text stays in send order. Album parts share
  * one write. Confirmation follows update id order so a failed write leaves a hole.
  */
-async function applyHydrated(rows: PollRow[]) {
+async function applyHydrated(rows: PollRow[], drained = false) {
   const orderedIds = rows.map((row) => Number(row.update && row.update.update_id) || 0)
   const doneById = new Map<number, Promise<boolean>>()
   let textChain: Promise<void> = Promise.resolve()
@@ -276,7 +329,7 @@ async function applyHydrated(rows: PollRow[]) {
       doneById.set(id, album.push(row.payload).then(() => true, () => false))
       continue
     }
-    const run = textChain.then(() => handlePayload(row.payload, Boolean(row.payload.rehydrateHub)))
+    const run = textChain.then(() => handlePayload(row.payload, Boolean(row.payload.rehydrateHub), drained))
     textChain = run.then(
       () => undefined,
       () => undefined,
@@ -308,7 +361,11 @@ async function payloadFromUpdate(update: TelegramUpdate): Promise<IncomingTelegr
   if (payload) return payload as IncomingTelegramPayload
   const query = update && update.callback_query
   if (!query || !query.id) return null
-  await telegramApi("answerCallbackQuery", { callback_query_id: query.id })
+  try {
+    await telegramApi("answerCallbackQuery", { callback_query_id: query.id })
+  } catch {
+    /* a drained tap can be too old to answer; still apply it */
+  }
   const tapped = callbackQueryToIncoming(update)
   if (!tapped) return null
   if (tapped.clearMarkup && tapped.clearMarkup.messageId != null) {
@@ -361,6 +418,84 @@ async function pollLoop() {
   }
 }
 
+/**
+ * Capture-box drain. The VM stores sealed updates; this device opens them with
+ * the private key and applies them through the same path as a live poll. The
+ * box is told to forget a text only after its vault write finished.
+ */
+async function drainLoop() {
+  let privateKey = ""
+  try {
+    privateKey = readFileSync(CAPTURE_KEY_FILE, "utf8").trim()
+  } catch {
+    console.error(`[phone-hub] capture box: no private key at ${CAPTURE_KEY_FILE} (node scripts/capture-keygen.mjs)`)
+    process.exit(1)
+  }
+  let seq = 0
+  try {
+    seq = Number(JSON.parse(readFileSync(CAPTURE_STATE_FILE, "utf8")).seq) || 0
+  } catch {
+    seq = 0
+  }
+  const headers = { Authorization: `Bearer ${CAPTURE_TOKEN}` }
+  const heartbeat = createDrainHeartbeat(DRAIN_HEALTHCHECK_URL)
+  let queued = 0
+  let lastError = ""
+  while (true) {
+    let idle = true
+    try {
+      const res = await fetch(`${CAPTURE_URL}/queue?after=${seq}&limit=100`, { headers, signal: AbortSignal.timeout(20000) })
+      if (!res.ok) throw new Error(`capture box HTTP ${res.status}`)
+      const items = ((await res.json()).items || []) as { seq: number; sealed: string }[]
+      queued = items.length
+      void heartbeat.ok()
+      if (items.length) {
+        idle = false
+        const rows: PollRow[] = []
+        const seqByUpdate = new Map<number, number>()
+        for (const item of items) {
+          const update = JSON.parse(openSealed(privateKey, item.sealed).toString("utf8")) as TelegramUpdate
+          // Undecryptable data throws above: stop and keep it queued rather than drop it.
+          seqByUpdate.set(Number(update.update_id) || 0, item.seq)
+          try {
+            rows.push({ update, payload: await payloadFromUpdate(update), failed: false })
+          } catch {
+            rows.push({ update, payload: null, failed: true })
+          }
+        }
+        if (rows.some((row) => row.payload)) await rehydrateFromDisk()
+        const { orderedIds, confirmed } = await applyHydrated(rows, true)
+        let upto = seq
+        for (let i = 0; i < items.length; i++) {
+          const id = orderedIds[i]!
+          if (!confirmed.has(id)) break
+          upto = Math.max(upto, seqByUpdate.get(id) ?? items[i]!.seq)
+        }
+        if (upto > seq) {
+          seq = upto
+          writeFileSync(CAPTURE_STATE_FILE, JSON.stringify({ seq }), "utf8")
+          await fetch(`${CAPTURE_URL}/ack`, {
+            method: "POST",
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: JSON.stringify({ upto }),
+            signal: AbortSignal.timeout(20000),
+          })
+        } else {
+          idle = true
+        }
+      }
+      lastError = ""
+      writeStatus({ mode: "capture-box", captureSeq: seq, queued, lastError: null })
+    } catch (err) {
+      console.error("[phone-hub] capture drain", err instanceof Error ? err.message : err)
+      lastError = err instanceof Error ? err.message : "drain failed"
+      void heartbeat.fail()
+      writeStatus({ mode: "capture-box", captureSeq: seq, queued, error: lastError, lastError })
+    }
+    await new Promise((r) => setTimeout(r, idle ? 5000 : 200))
+  }
+}
+
 function sendJson(res: ServerResponse, status: number, body: unknown) {
   const json = JSON.stringify(body)
   res.writeHead(status, {
@@ -390,11 +525,11 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
     return
   }
   if (pathname === "/health" && req.method === "GET") {
-    sendJson(res, 200, { ok: true, hub: true, mode: WEBHOOK ? "webhook" : "poll" })
+    sendJson(res, 200, { ok: true, hub: true, mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll" })
     return
   }
   if (pathname === "/api/ingest/status" && req.method === "GET") {
-    sendJson(res, 200, { ok: true, polling: true, hub: true, pending: 0, mode: WEBHOOK ? "webhook" : "poll" })
+    sendJson(res, 200, { ok: true, polling: true, hub: true, pending: 0, mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll" })
     return
   }
   if (pathname === "/telegram/webhook" && req.method === "POST") {
@@ -480,7 +615,14 @@ async function main() {
     console.error("[phone-hub] commands", err instanceof Error ? err.message : err)
   }
 
-  if (WEBHOOK) {
+  if (CAPTURE_URL) {
+    if (!CAPTURE_TOKEN) {
+      console.error("[phone-hub] COGS_CAPTURE_BOX_URL needs COGS_CAPTURE_TOKEN")
+      process.exit(1)
+    }
+    console.log(`[phone-hub] capture-box drain from ${CAPTURE_URL} — the VM polls Telegram; do not also poll here or run Electron ingest`)
+    void drainLoop()
+  } else if (WEBHOOK) {
     await telegramApi("setWebhook", {
       url: WEBHOOK,
       secret_token: WEBHOOK_SECRET || undefined,

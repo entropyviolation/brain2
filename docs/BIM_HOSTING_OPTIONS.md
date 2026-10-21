@@ -50,14 +50,21 @@ open. Settings → Message ingest → **Hub token** sends it on Sync vault. The 
 warns at startup when the token is unset. Alternative: bind to a private network
 (Tailscale) and skip public exposure.
 
+## Decision
+
+_2026-10-20:_ start on the Oracle Free VM as a **sealed capture box** so the
+provider holds only encrypted texts and never the vault or private key. Details,
+threat table and setup: [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md). Down
+alerts: Healthchecks.io messaging Telegram. Move to an owned device as soon as possible.
+
 ## Plan
 
 See [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md) for how the hub works. Steps:
 
-1. **Pick the host** (open question: Oracle free VM vs a Pi at home).
+1. **Pick the host.** Done: Oracle Free VM, sealed capture box.
 2. **Auth on the vault API.** Done in code, 2026-10-20 (`COGS_PHONE_HUB_TOKEN`).
-3. **Package it.** A `systemd` unit or `pm2` file, plus `Dockerfile` if Fly.io. **Planned.**
-4. **Seed the host.** Copy `data/shared-persist.json`, set env, start, Sync vault from Settings.
+3. **Package it.** Done for Oracle: `deploy/oracle/` systemd unit and env example. Dockerfile for Fly.io stays **Planned**.
+4. **Stand it up.** You: Oracle account, VM, Healthchecks. Steps in `ORACLE_CAPTURE_BOX.md`. No vault is copied to the VM.
 5. **Verify.** Close the laptop, text `groc`, expect a reply. Text something, reopen the laptop, Sync vault, expect it in the Inbox.
 6. **Back up.** Nightly copy of `data/` off the host. **Planned.**
-7. **Watch.** A heartbeat (BIM texts you when the hub restarts, or an uptime ping on `/health`). **Planned.**
+7. **Watch.** Done: the box pings Healthchecks.io, which messages you when pings stop.

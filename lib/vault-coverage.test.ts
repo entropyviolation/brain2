@@ -34,6 +34,7 @@ import { useRegretStore } from "@/lib/regret-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 
 const { SHRINK_PROTECTED, VAULT_RECORD_FIELDS, vaultRecordCount } = require("./vault-guard.js") as {
   SHRINK_PROTECTED: Set<string>
@@ -95,6 +96,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "regret-store": () => useRegretStore.getState(),
   "cogs-session-plans": () => useSessionPlanStore.getState(),
   "cogs-affirmation-log": () => useAffirmationLogStore.getState(),
+  "cogs-telegram-feed": () => useTelegramFeedStore.getState(),
 }
 
 describe("vault coverage", () => {

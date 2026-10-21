@@ -1015,3 +1015,20 @@ describe("vault-guard", () => {
     expect(picked.state?.tasks).toHaveLength(30)
   })
 })
+
+describe("telegram feed vault", () => {
+  const feed = (...ids: string[]) =>
+    JSON.stringify({ state: { rows: ids.map((id, i) => ({ id, at: `2026-10-1${i}T00:00:00.000Z`, text: id })) }, version: 1 })
+
+  it("refuses a hub write that drops a received text", () => {
+    expect(shouldRejectHubLogShrink("brain2-telegram-feed", feed("a"), feed("a", "b"))).toBe(true)
+    expect(shouldRejectHubLogShrink("brain2-telegram-feed", feed("a", "b", "c"), feed("a", "b"))).toBe(false)
+  })
+
+  it("unions two snapshots by id so neither side loses a text", () => {
+    const merged = JSON.parse(unionPersistSnapshots(feed("a", "b"), feed("a", "c"), "brain2-telegram-feed") ?? "{}") as {
+      state: { rows: { id: string }[] }
+    }
+    expect(merged.state.rows.map((r) => r.id).sort()).toEqual(["a", "b", "c"])
+  })
+})
