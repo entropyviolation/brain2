@@ -18,9 +18,14 @@ The closed field accepts `8:00 AM`, `08:00`, `16:02`, `4.02pm`, `1pm`, and `1:00
 |------|---------|
 | `clock-picker.tsx` | `ClockPicker`. The closed field takes a typed time (`09:15`, `16:02`, `1pm`, `4:02 PM`, `4.02pm`) and commits `HH:MM` on blur or Enter. The clock mark opens the panel. Arrow keys, digits, and `a`/`p` change the open drums without writing the field. **Now** is inside the panel and writes at once. **Confirm** writes the drums. **Cancel**, Escape, and a click outside leave the field. An armed hour or minute holds page scroll and takes the wheel. Double-click that drum to type the part. The layer keeps its own clicks inside a dialog. |
 | `clock-dials.ts` | Loads `backgrounds/manifest.json`. Ceramic is the rim and the default. Other entries are center paintings. Hide/restore and the selected id persist in `localStorage`. |
+| `clock-hands.ts` | _Last mapped: 2026-10-20_ Loads `hands/manifest.json`: chrome hour/minute PNG pairs cut from hand sheets (480px, pointing at 12, pivot at center). A **Hands** select and Shuffle under the dial row swap them in for the drawn filigree hands (the default). Selected id lives in `localStorage` `brain2.clock-hands`. |
 | `ceramic-face.png` | The analog face. Cream ceramic rim and metal 12, 3, 6, and 9. Live hands are drawn in the component. Center paintings sit in the well. |
 | `backgrounds/` | Isolated dial paintings on transparency. `manifest.json` lists `{ id, file, label }` for each, plus ceramic (`../ceramic-face.png`). |
 | `clock-picker.css` | Milled bay, cream field, CRT drums, Now, Confirm, Cancel, dial control, ceramic face, silver hands. |
 | `clock-picker.test.tsx` | Open from the clock mark, Confirm the `HH:MM` sent to `onChange`. Cancel and Escape leave it. A click outside closes. Typed `1:00 PM` commits `13:00`. Now is inside the popup and writes at once. The popup’s pointer events and z-index sit above `.trk-entry`. An armed minute wheel steps the minute and does not scroll the page. Hand angles for 1:00 and 6:30. Ceramic is the default dial. |
 
 Pass `className` when a caller needs a different size or a room’s field class (`itinerary-time-input`, `habit95-input`). Do not add a second picker.
+
+## Look and face
+
+_Last mapped: 2026-10-20_ The drums share one dark scope container with the colon; the armed drum glows inside it. The panel is cool paper with a graph rule. A center painting now fills the whole round face (no ceramic plate behind it) and gets 12 tick marks. Ceramic still shows its plate. Click or drag on the face to set the minute from the angle.

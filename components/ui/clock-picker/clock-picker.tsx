@@ -34,6 +34,7 @@ import {
   writeHiddenDialIds,
   writeSelectedDialId,
 } from "./clock-dials"
+import { DEFAULT_HANDS_ID, handPairs, readSelectedHandsId, writeSelectedHandsId } from "./clock-hands"
 import "./clock-picker.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
@@ -232,6 +233,7 @@ export function ClockPicker({
   const [dialId, setDialId] = useState(DEFAULT_DIAL_ID)
   const [hiddenDialIds, setHiddenDialIds] = useState<string[]>([])
   const [dialsEditing, setDialsEditing] = useState(false)
+  const [handsId, setHandsId] = useState(DEFAULT_HANDS_ID)
   const draftRef = useRef(draft)
   draftRef.current = draft
   const openRef = useRef(open)
@@ -344,6 +346,7 @@ export function ClockPicker({
     const visible = visibleDials(clockDials(), hiddenIds).map((dial) => dial.id)
     setHiddenDialIds(hiddenIds)
     setDialId(readSelectedDialId(visible))
+    setHandsId(readSelectedHandsId(handPairs().map((pair) => pair.id)))
   }, [])
 
   useEffect(() => {
@@ -563,6 +566,13 @@ export function ClockPicker({
   const dial = shownDials.find((item) => item.id === dialId) ?? shownDials[0]
   const ceramicSrc = (dials.find((item) => item.id === DEFAULT_DIAL_ID) ?? dials[0]).src
 
+  const hands = handPairs()
+  const handPair = hands.find((item) => item.id === handsId) ?? null
+  const chooseHands = (id: string) => {
+    setHandsId(id)
+    writeSelectedHandsId(id)
+  }
+
   const chooseDial = (id: string) => {
     setDialId(id)
     writeSelectedDialId(id)
@@ -725,6 +735,12 @@ export function ClockPicker({
                 dialId={dial.id}
                 ceramicSrc={ceramicSrc}
                 painting={dial.placement === "center" ? dial.src : null}
+                handPair={handPair}
+                onMinute={(minute) => {
+                  setColumn("minute")
+                  const current = splitClock(draftRef.current || "08:00")
+                  setDraftTime(joinClock(current.hour, minute, current.period))
+                }}
               />
               <div className="clock-picker-dials">
                 <NativeSelect
@@ -757,6 +773,33 @@ export function ClockPicker({
                   onClick={() => setDialsEditing((current) => !current)}
                 >
                   Edit
+                </button>
+              </div>
+              <div className="clock-picker-dials">
+                <NativeSelect
+                  className="clock-picker-dial"
+                  aria-label="Hands"
+                  value={handPair ? handPair.id : DEFAULT_HANDS_ID}
+                  onChange={(event) => chooseHands(event.target.value)}
+                >
+                  <option value={DEFAULT_HANDS_ID}>Filigree hands</option>
+                  {hands.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <button
+                  type="button"
+                  className="clock-picker-mini"
+                  data-no95
+                  aria-label="Shuffle hands"
+                  onClick={() => {
+                    const ids = [DEFAULT_HANDS_ID, ...hands.map((item) => item.id)].filter((id) => id !== (handPair?.id ?? DEFAULT_HANDS_ID))
+                    chooseHands(ids[Math.floor(Math.random() * ids.length)])
+                  }}
+                >
+                  Shuffle
                 </button>
               </div>
               {dialsEditing ? (
@@ -980,6 +1023,8 @@ function AnalogFace({
   dialId,
   ceramicSrc,
   painting,
+  handPair,
+  onMinute,
 }: {
   hour: number
   minute: number
@@ -987,8 +1032,16 @@ function AnalogFace({
   dialId: string
   ceramicSrc: string
   painting: string | null
+  handPair: { hour: string; minute: string } | null
+  onMinute: (minute: number) => void
 }) {
   const minuteAngle = minute * 6
+  /** Click or drag on the face to set the minute from the angle. */
+  const pointMinute = (event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const angle = (Math.atan2(event.clientX - (rect.left + rect.width / 2), rect.top + rect.height / 2 - event.clientY) * 180) / Math.PI
+    onMinute((Math.round((angle + 360) / 6) % 60 + 60) % 60)
+  }
   const hourAngle = (hour % 12) * 30 + minute * 0.5
   const uid = useId().replace(/:/g, "")
   const silver = `silver-${uid}`
@@ -1004,8 +1057,15 @@ function AnalogFace({
       data-minute={minute}
       data-period={period}
       data-dial={dialId}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture?.(event.pointerId)
+        pointMinute(event)
+      }}
+      onPointerMove={(event) => {
+        if (event.buttons === 1) pointMinute(event)
+      }}
     >
-      <img className="clock-picker-face" src={ceramicSrc} alt="" draggable={false} />
+      {painting ? null : <img className="clock-picker-face" src={ceramicSrc} alt="" draggable={false} />}
       {painting ? (
         <div className="clock-picker-well">
           <img className="clock-picker-painting" src={painting} alt="" draggable={false} />
@@ -1025,23 +1085,37 @@ function AnalogFace({
             <stop offset="100%" stopColor="#8e959c" />
           </linearGradient>
           <radialGradient id={brass} cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#fff1c9" />
-            <stop offset="45%" stopColor="#e0b85a" />
-            <stop offset="100%" stopColor="#7a5a22" />
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="40%" stopColor="#dfe3e8" />
+            <stop offset="70%" stopColor="#8e959c" />
+            <stop offset="100%" stopColor="#f2f4f6" />
           </radialGradient>
           <filter id={shade} x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="0.4" stdDeviation="0.45" floodColor="#2c261c" floodOpacity="0.4" />
           </filter>
         </defs>
+        {painting
+          ? Array.from({ length: 12 }, (_, i) => (
+              <line key={i} x1="60" y1="2.2" x2="60" y2={i % 3 === 0 ? 7 : 4.6} stroke="#1c1e20" strokeOpacity="0.55" strokeWidth={i % 3 === 0 ? 1.1 : 0.6} transform={`rotate(${i * 30} 60 60)`} />
+            ))
+          : null}
         <g data-hand="minute" data-angle={minuteAngle} transform={`rotate(${minuteAngle} 60 60)`} filter={`url(#${shade})`}>
-          <path d={MINUTE_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
+          {handPair ? (
+            <image href={handPair.minute} x="0" y="0" width="120" height="120" />
+          ) : (
+            <path d={MINUTE_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
+          )}
         </g>
         <g data-hand="hour" data-angle={hourAngle} transform={`rotate(${hourAngle} 60 60)`} filter={`url(#${shade})`}>
-          <path d={HOUR_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
+          {handPair ? (
+            <image href={handPair.hour} x="0" y="0" width="120" height="120" />
+          ) : (
+            <path d={HOUR_HAND} fill={`url(#${silver})`} fillRule="evenodd" stroke="#6a7076" strokeWidth="0.45" />
+          )}
         </g>
-        <circle cx="60" cy="60" r="4.15" fill="#5c4318" />
-        <circle cx="60" cy="60" r="3.35" fill={`url(#${brass})`} />
-        <circle cx="58.9" cy="58.7" r="0.9" fill="#fff6d8" opacity="0.9" />
+        <circle cx="60" cy="60" r="2.5" fill="#5c6269" />
+        <circle cx="60" cy="60" r="2" fill={`url(#${brass})`} />
+        <circle cx="59.4" cy="59.3" r="0.55" fill="#fff" opacity="0.95" />
       </svg>
     </div>
   )
