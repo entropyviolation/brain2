@@ -27,6 +27,18 @@ The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from
 - **Phase 14.** Only prerequisites (`dependencies`, `dependsOn`) **lock**; open steps leave a task **incomplete**, never locked. New `lib/unlock-value.ts` adds an `unlocks` signal to the Priority formula, so a prerequisite of valuable work rises. A blocker sorts above its locked row, and a prerequisite inherits the earliest deadline of what waits on it. A task with nothing waiting on it ranks as today. Later, a prerequisite can be met at a level (Decision 11).
 - **Phase 15.** Less pressure: Just Start offers two or three choices, a time-box ring, an end-of-sitting strip; neutral words (no "should", warm red only for overruns); a quiet attention-given line on Done; a notice dot on rows pushed 3+ times; a **Waiting** shelf after 5 pushes (`waitingShelfAfter`, 0 = off); step points hidden behind **Points visible**. Also added to earlier phases: a future-self note and **Just 25** sessions (4), your own pace ghost (6), **Show next only** and the "waiting, not forgotten" line (9), spark marks (10).
 
+## Three ways to edit a task stay separate
+
+_Last mapped: 2026-10-21_
+
+**Do not merge the three ways to edit a task.** Item detail → Subtasks, the To do tab's drawer, and the task card each edit the same task on purpose. They have different jobs, so they have different UI and components.
+
+- **Item detail → Subtasks** is the item's whole record, across all time: every field, notes, resources and links.
+- **The To do drawer** (the lid in `TodoTable.tsx`) is for quick changes inside the list for this period: verbs, marks, estimate and steps, without leaving the list.
+- **The task card** (`TaskCard.tsx`) is for planning this period's work on one task: the full step tree, mass edit, needs and order, points, and this-period figures.
+
+They share store functions (`updateTask`, `lib/todo-steps.ts`, `lib/prereqs.ts`) so they always agree. They do not share UI. A change that merges them, or makes one mirror another, needs allie's yes first. Recorded as Decision 15 in [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md#decisions).
+
 ## Public door
 
 Home mounts **`TodoPanel`** from `todo-panel.tsx` (`components/Home/home-dashboard.tsx`).
