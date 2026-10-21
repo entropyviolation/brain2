@@ -9,7 +9,7 @@ const STAMPS: [string, string, string][] = [
   ["components/header-reminder-bell.tsx", 'data-ui-name="Reminders"', 'data-ui-docs="components/README.md"'],
   ["components/AppHeader.tsx", 'data-ui-name="Capture"', 'data-ui-docs="components/README.md"'],
   ["components/baby-animal-nest.tsx", 'data-ui-name="Today\'s friend"', 'data-ui-docs="docs/FRIEND_COMPANION.md"'],
-  ["components/Home/home-overview.tsx", 'data-ui-name="Home overview"', 'data-ui-docs="components/Home/README.md"'],
+  ["components/Home/home-overview.tsx", 'data-ui-name="Visual dashboard"', 'data-ui-docs="components/Home/README.md"'],
   ["components/Home/NeedsAttention.tsx", 'data-ui-name="Needs Attention"', 'data-ui-docs="components/Home/README.md"'],
   ["components/Home/Habits/habit-tracker.tsx", 'data-ui-name="Habits"', 'data-ui-docs="components/Home/Habits/README.md"'],
   [
@@ -36,7 +36,7 @@ const STAMPS: [string, string, string][] = [
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Assigned"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Assigned composer"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="WIP warning"', 'data-ui-docs="components/Home/ToDo/README.md"'],
-  ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Priority formula"', 'data-ui-docs="components/Home/ToDo/README.md"'],
+  ["components/Home/ToDo/PriorityFormulaPanel.tsx", 'data-ui-name="Priority formula"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Status bar"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="To Do plate"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/TodoPeriodNav.tsx", 'data-ui-name="Period nameplate"', 'data-ui-docs="components/Home/ToDo/README.md"'],
@@ -50,7 +50,7 @@ const STAMPS: [string, string, string][] = [
   ["components/Home/ToDo/AddDoneDialog.tsx", 'data-ui-name="Log done"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/Goals/goals-tracker.tsx", 'data-ui-name="Goals"', 'data-ui-docs="components/Home/Goals/README.md"'],
   ["components/Home/home-dashboard.tsx", 'data-ui-name="Home tabs"', 'data-ui-docs="components/Home/README.md"'],
-  ["components/Home/home-dashboard.tsx", 'data-ui-name="Tracking"', 'data-ui-docs="components/Home/Tracking/README.md"'],
+  ["components/Home/Tracking/tracking-desk.tsx", 'data-ui-name="Tracking"', 'data-ui-docs="components/Home/Tracking/README.md"'],
   [
     "components/Home/Tracking/pen-palette.tsx",
     'data-ui-name="Tracking control panel"',
@@ -91,7 +91,7 @@ const STAMPS: [string, string, string][] = [
   ["components/Home/Tracking/pen-settings-dialog.tsx", 'data-ui-name="Pen settings"', 'data-ui-docs="components/Home/Tracking/README.md"'],
   [
     "components/Home/Tracking/tracking-view-settings-dialog.tsx",
-    'data-ui-name="Tracking view settings"',
+    'data-ui-name="Tracking settings"',
     'data-ui-docs="components/Home/Tracking/README.md"',
   ],
   ["components/Home/Tracking/log-activity-dialog.tsx", 'data-ui-name="Log activity"', 'data-ui-docs="components/Home/Tracking/README.md"'],

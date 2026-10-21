@@ -87,7 +87,7 @@ describe("EnhancedAnalytics", () => {
     expect(within(views).getByRole("tab", { name: "Streaks" })).toBeInTheDocument()
     expect(screen.queryByText("Item Types live in Settings")).not.toBeInTheDocument()
     expect(await screen.findByText(/Nothing in the last 30 days to total yet/)).toBeInTheDocument()
-    expect(screen.getByText("Daily habit completion heatmap")).toBeInTheDocument()
+    expect(screen.getByText("Daily habit completion")).toBeInTheDocument()
   })
 
   it("restores Item Types as a Library view", async () => {

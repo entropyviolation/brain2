@@ -39,23 +39,24 @@ describe("task-store keeps title as the field of record", () => {
   })
 
   it("does not rename a parked note when its body text changes", () => {
-    // Parked Apple Notes keep their full text in `description` so search can
-    // find them; the short `title` is the name and must survive a body edit.
+    // Parked Apple Notes keep their prose in `body`; the short `title` is the
+    // name (and `description` mirrors it) and must survive a body edit.
     const store = useTaskStore.getState()
-    store.addTask(task({ id: "a", title: "Weekend", description: "Weekend\nMilk" }))
+    store.addTask(task({ id: "a", title: "Weekend", description: "Weekend", body: "Milk" }))
     store.updateTask({
       ...useTaskStore.getState().tasks[0],
-      description: "Weekend\nMilk\nEggs",
+      body: "Milk\nEggs",
     })
 
     const after = useTaskStore.getState().tasks[0]
     expect(after.title).toBe("Weekend")
-    expect(after.description).toBe("Weekend\nMilk\nEggs")
+    expect(after.description).toBe("Weekend")
+    expect(after.body).toBe("Milk\nEggs")
   })
 
-  it("never rewrites description from title", () => {
+  it("mirrors title into description and leaves prose to body", () => {
     const store = useTaskStore.getState()
     store.addTask(task({ id: "a", title: "Short name", description: "The whole body" }))
-    expect(useTaskStore.getState().tasks[0].description).toBe("The whole body")
+    expect(useTaskStore.getState().tasks[0].description).toBe("Short name")
   })
 })

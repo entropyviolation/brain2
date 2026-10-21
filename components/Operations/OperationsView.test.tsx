@@ -48,7 +48,8 @@ describe("OperationsView", () => {
     expect(screen.getByRole("heading", { name: "Operations — Command Center" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "New Operation" })).toBeDisabled()
     expect(screen.getByLabelText("Shape")).toBeInTheDocument()
-    expect(screen.getByText(/No operations yet/i)).toBeInTheDocument()
+    // An empty board offers pickable preset objects instead of a blank line.
+    expect(screen.getByRole("group", { name: "Operation shapes" })).toBeInTheDocument()
   })
 
   it("creates an operation from a preset and opens the workspace", async () => {

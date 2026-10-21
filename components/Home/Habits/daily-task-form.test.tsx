@@ -1095,6 +1095,8 @@ describe("TaskForm", () => {
 
   it("keeps one catalog across the count row and auto-fill, and keeps both selections", async () => {
     resetAllStores()
+    // The host loads the dialog lazily; warm it so the cold import is not inside the waitFor.
+    await import("@/components/Home/Tracking/tag-settings-gate")
     const user = userEvent.setup()
     const onSubmit = vi.fn()
     try {
@@ -1132,8 +1134,8 @@ describe("TaskForm", () => {
         screen.getByText("May be a name not in the catalog; chips pick from the catalog. Same string either way."),
       ).toBeInTheDocument()
       expect(screen.getByText(/Counts Done: studying · Fills minutes: Work/)).toBeInTheDocument()
-      expect(screen.getByLabelText("Count tracked time as")).toHaveValue("minutes")
-      expect(screen.getByLabelText("Combine with manual entries")).toHaveValue("add")
+      expect(screen.getByLabelText("Count tracked blocks as")).toHaveTextContent("Minutes")
+      expect(screen.getByLabelText("Combine with manual entries")).toHaveTextContent("Add")
       expect(screen.getByText("Tracked time tops up what you log by hand.")).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Remove Tags" })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: "Remove Tracking tags" })).toBeInTheDocument()
@@ -1206,7 +1208,7 @@ describe("TaskForm", () => {
     } finally {
       resetAllStores()
     }
-  })
+  }, 20000)
 
   it("keeps a free-text count name that is not in the catalog", async () => {
     resetAllStores()
@@ -1264,8 +1266,8 @@ describe("TaskForm", () => {
       const minutes = screen.getByRole("group", { name: "Tracking tags, shared with Tags" })
       expect(within(minutes).getByRole("button", { name: "Cleaning, minutes" })).toHaveAttribute("aria-pressed", "true")
       expect(screen.getByText(/Counts Done: cooking · Fills minutes: Cleaning/)).toBeInTheDocument()
-      expect(screen.getByLabelText("Count tracked time as")).toHaveValue("hours")
-      expect(screen.getByLabelText("Combine with manual entries")).toHaveValue("max")
+      expect(screen.getByLabelText("Count tracked blocks as")).toHaveTextContent("Hours")
+      expect(screen.getByLabelText("Combine with manual entries")).toHaveTextContent("Higher of the two")
       expect(screen.getByRole("checkbox", { name: "Auto-fill is on" })).not.toBeChecked()
       await user.click(screen.getByRole("button", { name: "Update Habit" }))
       expect(onSubmit).toHaveBeenCalledWith(

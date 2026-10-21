@@ -56,7 +56,7 @@ export function doneTaskDateKey(task: { completedDate?: Date | string }): string
 
 /** Done tasks with `tag` whose done time is on an already-happened day in `dayKeys`. */
 export function countTaggedDoneTasks(
-  tasks: readonly { tags?: string[]; completed?: boolean; completedDate?: Date | string }[],
+  tasks: readonly { id?: string; tags?: string[]; completed?: boolean; completedDate?: Date | string }[],
   tag: string,
   dayKeys: readonly string[],
   todayKey: string,
@@ -67,6 +67,8 @@ export function countTaggedDoneTasks(
   let count = 0
   for (const task of tasks) {
     if (task.completed !== true) continue
+    // A habit's own Done line carries the tag too; it must not count itself.
+    if (task.id?.startsWith("habit-done-")) continue
     if (!taskCarriesTag(task, tag)) continue
     const key = doneTaskDateKey(task)
     if (key && open.has(key)) count += 1

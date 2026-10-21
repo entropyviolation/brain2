@@ -59,6 +59,7 @@ line. Saved `amber` reads as violet.
 | `paint` (Plan and lived) | `readout` word, plan, lived | The boxed Short Close Over, or minutes. |
 | `tracking` (Tracking now) | `lane` activity, location, mood, company | The lane on the glass; the others on the foot. `update` has no Dash effect. |
 | `solar` (Solar remainder) | `place`, `target` auto, sunset, sunrise | Time to the chosen event; `2x1` adds a sunrise-to-sunset arc with the sun's block lit. |
+| `budget` | — | _Last mapped: 2026-10-21._ The viewed month's net as a signed short amount (`short` from `home-budget-tile.tsx`); foot shows the maybes, or earned and spent. |
 
 ## Widget gallery and date plate
 

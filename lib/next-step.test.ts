@@ -62,7 +62,8 @@ describe("pickStartStep", () => {
     expect(pick.kind === "step" && pick.step.id).not.toBe("save and export")
     steps = setStepDependsOn(steps, "back", ["get better wood"])
     pick = pickStartStep({ subtasks: steps })
-    expect(pick.kind === "step" && pick.step.id).toBe("look at new templates")
+    // Waiting on "get better wood" unlocks the most, so it beats the shorter loose step.
+    expect(pick.kind === "step" && pick.step.id).toBe("get better wood")
   })
 
   it("breaks ties with isMolecular, then tree order", () => {
