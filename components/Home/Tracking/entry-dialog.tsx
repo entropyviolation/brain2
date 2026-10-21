@@ -82,8 +82,8 @@ import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
 import "./entry-dialog.css"
 import "./tracking-settings.css"
-import { CertaintyToggle, EndEventSection, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
-import { certaintyOf, certaintyPatch, refitTransit, worseOf } from "@/lib/entry-edges"
+import { CertaintyToggle, EdgeAnchor, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
+import { certaintyPatch, edgeOf, surer, refitTransit, settleAnchors, worseOf, type EdgeState } from "@/lib/entry-edges"
 import { transitPenOf } from "@/lib/transit-suggest"
 import { travelMinutes } from "@/lib/transit-time"
 import { pinOf } from "@/lib/transit-suggest"
@@ -170,12 +170,15 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
   // Per-end certainty. An older block that only has a block-wide value reads as both ends.
-  const [startC, setStartC] = useState(entry.startCertainty ?? entry.clockCertainty ?? "exact")
-  const [endC, setEndC] = useState(entry.endCertainty ?? entry.clockCertainty ?? "exact")
+  const [startC, setStartC] = useState(edgeOf(entry, "start").c)
+  const [endC, setEndC] = useState(edgeOf(entry, "end").c)
   // Re-clicking the lit button clears the mark; a cleared edge saves as the default, exact.
   const [startOff, setStartOff] = useState(false)
   const [endOff, setEndOff] = useState(false)
   const [endEventId, setEndEventId] = useState(entry.endEventId)
+  const [startEventId, setStartEventId] = useState(entry.startEventId)
+  const [startJoinId, setStartJoinId] = useState(entry.startJoinId)
+  const [endJoinId, setEndJoinId] = useState(entry.endJoinId)
   const [alsoOthers, setAlsoOthers] = useState(true)
   const spendEntry = isSpendEntry(entry)
   const [amountText, setAmountText] = useState(spendAmountInput(entry.spendAmount))
@@ -291,6 +294,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         ...moodPatch,
         ...spendPatch,
       })
+      settle()
       onClose()
       return
     }
@@ -315,7 +319,10 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         nowObjectives,
         ...certaintyPatch(startC, endC),
         precision: assumed || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+        startEventId,
         endEventId,
+        startJoinId,
+        endJoinId,
         ...moodPatch,
         ...spendPatch,
       },
@@ -327,20 +334,65 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     onClose()
   }
 
-  /** The linked event follows the end; other-view blocks that shared the old end follow too; transit refits. */
+  /** Anchored events and joined blocks agree with the saved ends; other-view blocks sharing the old end follow; transit refits. */
   const afterEndsSaved = (endMin: number) => {
     const live = useTimeTrackingStore.getState().entries
     const moved = { id: origin.id, startMin: timeStringToMinutes(from) ?? origin.startMin, endMin }
-    if (endEventId) {
-      const ev = live.find((e) => e.id === endEventId)
-      if (ev && ev.startMin !== endMin) updateEntry(ev.id, { startMin: endMin, endMin })
-      if (alsoOthers) {
-        for (const o of overlapping) updateEntry(o.id, { endEventId, endMin })
-      }
+    // A seam is stored on both blocks; unlinking here clears the other side too.
+    for (const [prev, next, back] of [
+      [origin.endJoinId, endJoinId, "startJoinId"],
+      [origin.startJoinId, startJoinId, "endJoinId"],
+    ] as const) {
+      if (prev && prev !== next && live.find((e) => e.id === prev)?.[back] === origin.id) updateEntry(prev, { [back]: undefined })
+      if (next) updateEntry(next, { [back]: origin.id })
     }
-    const patches = refitTransit(live, moved)
+    if (endEventId && alsoOthers) {
+      for (const o of overlapping) updateEntry(o.id, { endEventId, endMin })
+    }
+    settle()
+    const patches = refitTransit(useTimeTrackingStore.getState().entries, moved)
     for (const [id, patch] of Object.entries(patches)) updateEntry(id, patch)
     void repriceTransit(moved)
+  }
+
+  const settle = () => {
+    for (const [id, patch] of Object.entries(settleAnchors(useTimeTrackingStore.getState().entries, origin.id))) updateEntry(id, patch)
+  }
+
+  /** Anchor an edge to an event or a neighbouring block; the surer side's time and certainty win. */
+  const linkEdge = (edge: "start" | "end", kind: "event" | "join", partner: TimeEntry) => {
+    const theirs = edgeOf(partner, kind === "event" || edge === "end" ? "start" : "end")
+    const mine: EdgeState = { min: (timeStringToMinutes(edge === "start" ? from : to) ?? 0) || (edge === "end" ? 1440 : 0), c: edge === "start" ? startC : endC }
+    if (mine.c === theirs.c && mine.min === theirs.min) {
+      /* already agrees */
+    } else if (surer(theirs.c, mine.c) || (mine.min === theirs.min && theirs.c !== mine.c)) takeEdge(edge, theirs)
+    if (edge === "start") {
+      setStartEventId(kind === "event" ? partner.id : undefined)
+      setStartJoinId(kind === "join" ? partner.id : undefined)
+    } else {
+      setEndEventId(kind === "event" ? partner.id : undefined)
+      setEndJoinId(kind === "join" ? partner.id : undefined)
+    }
+  }
+  const unlinkEdge = (edge: "start" | "end") => {
+    if (edge === "start") {
+      setStartEventId(undefined)
+      setStartJoinId(undefined)
+    } else {
+      setEndEventId(undefined)
+      setEndJoinId(undefined)
+    }
+  }
+  const takeEdge = (edge: "start" | "end", to: EdgeState) => {
+    if (edge === "start") {
+      setFrom(minutesToTimeString(to.min % 1440))
+      setStartC(to.c)
+      setStartOff(false)
+    } else {
+      setTo(minutesToTimeString(to.min % 1440))
+      setEndC(to.c)
+      setEndOff(false)
+    }
   }
 
   /** Refit moves a transit block at once; Google then corrects its length for the new time of day. */
@@ -367,7 +419,20 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     const made = useTimeTrackingStore
       .getState()
       .entries.find((e) => e.date === a.date && e.scopeId === a.scopeId && e.penId === pen.id && e.startMin === endMin)
-    if (made) updateEntry(made.id, { transitFrom: a.id, transitTo: b.id, transitMin: Math.round(minutes) })
+    if (made) {
+      // Anchored both ways: the trip leaves where this block ends and arrives where the next one starts.
+      updateEntry(made.id, {
+        transitFrom: a.id,
+        transitTo: b.id,
+        transitMin: Math.round(minutes),
+        startJoinId: a.id,
+        endJoinId: b.id,
+        ...certaintyPatch(endC, edgeOf(b, "start").c),
+        precision: endC === "exact" && edgeOf(b, "start").c === "exact" ? undefined : "estimated",
+      })
+      updateEntry(a.id, { endJoinId: made.id })
+      updateEntry(b.id, { startJoinId: made.id })
+    }
     onClose()
   }
 
@@ -409,6 +474,9 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     startC,
     endC,
     endEventId,
+    startEventId,
+    startJoinId,
+    endJoinId,
     amountText,
     spentOn,
     spentSource,
@@ -591,19 +659,37 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           </div>
 
           {!isInstant(entry) && (
-            <EndEventSection
-              entries={allEntries}
-              entry={entry}
-              endMin={timeStringToMinutes(to) ?? last.endMin}
-              linkedId={endEventId}
-              onLink={(ev) => {
-                setEndEventId(ev?.id)
-                if (ev) setTo(minutesToTimeString(ev.startMin))
-              }}
-              alsoOthers={alsoOthers}
-              onAlsoOthers={setAlsoOthers}
-              othersCount={overlapping.length}
-            />
+            <>
+              <EdgeAnchor
+                edge="start"
+                entries={allEntries}
+                entry={entry}
+                own={{ min: startForSentence, c: startC }}
+                eventId={startEventId}
+                joinId={startJoinId}
+                onLink={(kind, p) => linkEdge("start", kind, p)}
+                onUnlink={() => unlinkEdge("start")}
+                onTake={(st) => takeEdge("start", st)}
+              />
+              <EdgeAnchor
+                edge="end"
+                entries={allEntries}
+                entry={entry}
+                own={{ min: timeStringToMinutes(to) ?? last.endMin, c: endC }}
+                eventId={endEventId}
+                joinId={endJoinId}
+                onLink={(kind, p) => linkEdge("end", kind, p)}
+                onUnlink={() => unlinkEdge("end")}
+                onTake={(st) => takeEdge("end", st)}
+              >
+                {endEventId && overlapping.length > 0 && (
+                  <label className="trk-edge-also">
+                    <input type="checkbox" checked={alsoOthers} onChange={(e) => setAlsoOthers(e.target.checked)} />
+                    Also end {overlapping.length} overlapping block{overlapping.length === 1 ? "" : "s"} in other views here
+                  </label>
+                )}
+              </EdgeAnchor>
+            </>
           )}
           <NextBlockSection entries={allEntries} entry={last} scope={scope} onOpen={(e) => onOpenEntry?.(e)} />
           <TransitSection

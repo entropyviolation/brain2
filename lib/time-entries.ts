@@ -247,6 +247,13 @@ export interface TimeEntry {
   /** A transit block that refits itself: the blocks it sits between, and its priced length. */
   transitFrom?: string
   transitTo?: string
+  /**
+   * Seams: the block (same view) that starts where this one ends, and the one
+   * that ends where this one starts. Stored on both sides; the more certain
+   * edge wins (`lib/entry-edges.ts`). An edge holds a join or an event, not both.
+   */
+  endJoinId?: string
+  startJoinId?: string
   transitMin?: number
   /**
    * Optional ends of one Switch. Omitted on older rows — no migration.
@@ -301,6 +308,8 @@ const DETAIL_KEYS = [
   "fieldValues",
   "startEventId",
   "endEventId",
+  "startJoinId",
+  "endJoinId",
   "moodReading",
   "taskId",
   "stepId",
