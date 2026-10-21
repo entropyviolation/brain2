@@ -2427,11 +2427,10 @@ body.win95-app .todo95 .todo-section.is-done button.todo-log-done {
 .todo95 .todo-desk-plate img {
   display: block;
   width: 100%;
-  max-width: 100%;
+  max-width: min(100%, 40rem);
   height: auto;
-  /* Portrait dove scales with the To Do window — substantially larger than the
-   * earlier ~483×736 letterbox; still contain, still on the page scroll. */
-  min-width: min(100%, 56rem);
+  /* Portrait dove, capped at 40rem wide so it sits under the list without
+   * taking over the page; still contain, still on the page scroll. */
   object-fit: contain;
   object-position: center bottom;
   background: none;

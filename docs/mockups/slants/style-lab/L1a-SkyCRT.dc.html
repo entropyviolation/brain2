@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>1a Sky in the CRT and escalator</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Pixelify+Sans:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mill{background:repeating-linear-gradient(0deg,rgba(255,255,255,.16) 0 1px,transparent 1px 3px),linear-gradient(180deg,#d4d8dc,#c0c0c0 55%,#b4b8bc);border:1px solid #5c6064;border-radius:6px;box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #969a9e}
+.lab{font:9px 'Silkscreen',monospace;letter-spacing:.14em;color:#55595d;text-transform:uppercase}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;background:#e6e8eb;border:1px solid #8e9296;border-radius:7px;padding:8px 10px}
+</style>
+</helmet>
+<div style="width:880px;height:560px;box-sizing:border-box;padding:18px;background:#7fb5aa;font-family:'Pixelify Sans',monospace;color:#2a2c2e;display:flex;flex-direction:column;gap:12px">
+  <div class="mill" style="padding:8px">
+    <div style="position:relative;height:150px;border:2px solid #1d2022;border-radius:5px;overflow:hidden;background:linear-gradient(180deg,#1a2350 0 18%,#3b3f86 18% 32%,#7a5bb0 32% 44%,#c27aa6 44% 54%,#f0b3a8 54% 62%,#0d1a14 62%)">
+      <svg aria-hidden="true" viewBox="0 0 840 150" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;shape-rendering:crispEdges">
+        <path d="M0 93 H60 V84 H96 V76 H128 V70 H150 V78 H190 V88 H260 V80 H300 V72 H320 V66 H340 V74 H380 V93 H840 V150 H0 Z" fill="#0b120e"></path>
+        <rect x="560" y="78" width="14" height="14" fill="#f6f1e7"></rect>
+        <rect x="556" y="82" width="22" height="6" fill="#f6f1e7"></rect>
+        <rect x="0" y="97" width="840" height="2" fill="#7dffc4" opacity=".25"></rect>
+      </svg>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 1px,transparent 1px 3px)"></div>
+      <div style="position:absolute;left:14px;top:10px;font:28px 'VT323',monospace;color:#e9f6ff;text-shadow:0 0 6px rgba(233,246,255,.6);letter-spacing:.08em">TO DO TODAY <span style="border:1px solid rgba(233,246,255,.6);padding:0 5px;font-size:22px">5</span></div>
+      <div style="position:absolute;right:14px;bottom:10px;font:20px 'VT323',monospace;color:#7dffc4;text-shadow:0 0 4px #7dffc4">sun at 13:50 · dusk at 18:00 · 4h10 of light left</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 230px;gap:12px;flex:1;min-height:0">
+    <div style="background:#c8ccd0;border:1px solid #4a4e52;border-radius:5px;padding:8px;display:flex;flex-direction:column;gap:5px;font-size:14px">
+      <div class="row"><span>Reply to Dana re: lab schedule</span><span style="font-size:12px;color:#55595d">30m · 2/5</span><span>▶</span></div>
+      <div class="row"><span>Draft grant budget table</span><span style="font-size:12px;color:#55595d">45m · 2/4</span><span>▶</span></div>
+      <div class="row"><span>Clean up reading notes, ch. 4</span><span style="font-size:12px;color:#55595d">25m · 0/3</span><span>▶</span></div>
+      <div class="row"><span>Refill prescriptions</span><span style="font-size:12px;color:#55595d">10m · 0/1</span><span>▶</span></div>
+      <div class="row"><span>Sketch tracking legend</span><span style="font-size:12px;color:#c22f20">40m / 30m</span><span>▶</span></div>
+    </div>
+    <div class="mill" style="padding:10px;display:flex;flex-direction:column;gap:6px">
+      <span class="lab">Up next · escalator</span>
+      <div style="position:relative;flex:1;background:radial-gradient(ellipse at 30% 30%,#0c1a14,#050b09 70%);border:2px solid #1d2022;border-radius:5px;overflow:hidden">
+        <svg aria-hidden="true" viewBox="0 0 200 260" style="position:absolute;inset:0;width:100%;height:100%"><g stroke="#7dffc4" stroke-width="1" opacity=".55">
+          <line x1="10" y1="250" x2="190" y2="20"></line><line x1="30" y1="250" x2="190" y2="46"></line>
+          <path d="M18 240 h20 v-26 h20 v-26 h20 v-26 h20 v-26 h20 v-26 h20 v-26 h20 v-26 h20" fill="none"></path></g></svg>
+        <div style="position:absolute;right:8px;top:18px;font:17px 'VT323',monospace;color:#7dffc4;text-shadow:0 0 4px #7dffc4;text-align:right;line-height:1.05">1 ▸ Reply to Dana</div>
+        <div style="position:absolute;right:40px;top:96px;font:17px 'VT323',monospace;color:#7dffc4;opacity:.8;text-align:right">2 ▸ Grant budget</div>
+        <div style="position:absolute;right:76px;top:172px;font:17px 'VT323',monospace;color:#7dffc4;opacity:.6;text-align:right">3 ▸ Notes ch. 4</div>
+      </div>
+      <span style="font-size:11px">Finishing one moves the stair one step.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
