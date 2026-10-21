@@ -215,7 +215,7 @@ export function trackingPresenceSnapshot(input: {
   scopes: TrackScope[]
   live?: LivePresenceHint[]
 }): PresenceSnapshot {
-  const lanes = PRESENCE_SCOPE_IDS.map((scopeId) => presenceLaneForScope(scopeId, { ...input, scopeId }))
+  const lanes = PRESENCE_SCOPE_IDS.map((scopeId) => presenceLaneForScope(scopeId, input))
   const activity = lanes.find((lane) => lane.scopeId === "activity") ?? {
     scopeId: "activity" as const,
     kind: "empty" as const,

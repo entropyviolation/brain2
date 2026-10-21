@@ -509,7 +509,7 @@ function asStringArray(value: AttributeValue): string[] {
       .map((s) => s.trim())
       .filter(Boolean)
   }
-  if (value == null || value === "") return []
+  if (value == null) return []
   return [String(value)]
 }
 

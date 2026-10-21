@@ -63,7 +63,7 @@ export function CalibrationView() {
     const groups = new Map<string, typeof points>()
     for (const p of points) {
       const task = tasks.find((t) => t.id === p.taskId)
-      const key = String(task?.itemTypeId ?? "untyped")
+      const key = String(task?.type ?? "untyped")
       const bucket = groups.get(key) ?? []
       bucket.push(p)
       groups.set(key, bucket)

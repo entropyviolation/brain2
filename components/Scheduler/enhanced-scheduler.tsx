@@ -404,7 +404,9 @@ export function EnhancedScheduler() {
         onDrop={
           detail.period === "eventually"
             ? handleDropEventually
-            : (event) => handleDrop(event, detail.period, detail.value)
+            : (event) => {
+                if (detail.period !== "eventually") handleDrop(event, detail.period, detail.value)
+              }
         }
         renderTaskItem={renderTaskItem}
         grain={detail.period === "eventually" ? undefined : detail.period}
@@ -419,7 +421,9 @@ export function EnhancedScheduler() {
         onOpenList={
           detail.period === "eventually"
             ? undefined
-            : () => openPeriodTodoList(detail.period, detail.value)
+            : () => {
+                if (detail.period !== "eventually") openPeriodTodoList(detail.period, detail.value)
+              }
         }
       />
     ) : null

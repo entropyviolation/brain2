@@ -46,7 +46,7 @@ export async function applyMedia(message: IncomingMessage, now = new Date()): Pr
   const replies: string[] = []
   const ids: string[] = []
 
-  if (pdfs.length && forced !== "receipt") {
+  if (pdfs.length) {
     for (const pdf of pdfs) {
       const doc = await ingestPdfAttachment(pdf, titleHint, now)
       replies.push(`Docs: ${doc.description}`)
@@ -54,7 +54,7 @@ export async function applyMedia(message: IncomingMessage, now = new Date()): Pr
     }
   }
 
-  if (photos.length && forced !== "receipt") {
+  if (photos.length) {
     const doc = await ingestJournalPhotos(photos, titleHint || defaultJournalTitle(now), now, message.ocrText)
     replies.push(`Docs: ${doc.description} (${photos.length} page${photos.length === 1 ? "" : "s"})`)
     ids.push(doc.id)

@@ -178,7 +178,7 @@ describe("migrateHonestItemTypes (v12)", () => {
         { id: "rug", description: "big area rug", stage: "list", lists: ["furniture"] },
       ],
     })
-    expect(result.tasks.map((t: { id: string; type: string }) => [t.id, t.type])).toEqual([
+    expect(result.tasks.map((t: { id: string; type?: string }) => [t.id, t.type])).toEqual([
       ["na", "task"],
       ["inbox", "task"],
       ["rug", "item"],

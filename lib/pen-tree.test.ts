@@ -57,7 +57,7 @@ describe("pen tree", () => {
   })
 
   it("follows the display parent for Show as and lists every chain for rollup", () => {
-    const walk = assignParents(
+    const walk = assignParents<TreePen>(
       { id: "walk", name: "Walk to the beach", color: "#22c55e" },
       ["exercise", "out"],
     )

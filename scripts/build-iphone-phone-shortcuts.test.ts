@@ -68,7 +68,7 @@ describe("buildScreenTimeWorkflow", () => {
     expectTelegramSend(workflow)
     expect(textBlob(workflow)).toMatch(/^screen: /)
     expect(workflow.WFWorkflowName).toBe("Screen Time to Brain2")
-    expect(workflow.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask")).toBe(
+    expect(workflow.WFWorkflowActions.some((a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask")).toBe(
       true,
     )
   })
@@ -135,7 +135,7 @@ describe("buildLocationWorkflow", () => {
       (a: { WFWorkflowActionParameters: { WFTextActionText?: { Value: { string: string } } } }) =>
         a.WFWorkflowActionParameters.WFTextActionText?.Value.string ?? "",
     )
-    expect(texts.some((text) => text.startsWith("gps-log:\n"))).toBe(true)
+    expect(texts.some((text: string) => text.startsWith("gps-log:\n"))).toBe(true)
     expect(
       workflow.WFWorkflowActions.some(
         (a: { WFWorkflowActionIdentifier: string }) => a.WFWorkflowActionIdentifier === "is.workflow.actions.file.append",

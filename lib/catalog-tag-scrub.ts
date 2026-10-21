@@ -31,7 +31,7 @@ export function scrubDeletedCatalogTag(tagId: string): void {
   const items = useTaskStore.getState().tasks
   let itemsChanged = false
   const nextItems = items.map((item) => {
-    const raw = item.attributes?.[OPERATION_ATTR.trackingTagIds]
+    const raw: unknown = item.attributes?.[OPERATION_ATTR.trackingTagIds]
     if (!Array.isArray(raw) || !raw.includes(tagId)) return item
     itemsChanged = true
     const ids = raw.filter((entry): entry is string => typeof entry === "string" && entry !== tagId)

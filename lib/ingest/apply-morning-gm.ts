@@ -195,8 +195,9 @@ function ensureAffirmationPool(): string[] {
   const store = useTaskStore.getState()
   let list = findAffirmationsCategory(store.lists)
   if (!list) {
-    const id = store.addList(AFFIRMATIONS_LIST_NAME)
-    list = store.lists.find((l) => l.id === id)
+    const id = `affirmations-${Date.now()}`
+    store.addList({ id, name: AFFIRMATIONS_LIST_NAME, color: "#a855f7", createdAt: new Date() })
+    list = useTaskStore.getState().lists.find((l) => l.id === id)
     if (list) {
       for (const line of DEFAULT_AFFIRMATIONS) {
         store.addTask({
