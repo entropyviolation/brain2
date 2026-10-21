@@ -21,6 +21,7 @@ import { SplitGauge } from "@/components/steps/TreeMath"
 import { tierSplit } from "@/lib/tree-math"
 import { externalWaits, needCount } from "@/lib/node-needs"
 import { isStepLocked } from "@/components/steps/step-tree-view"
+import { TaskCardPeriod } from "./TaskCardPeriod"
 import { LogNotes, NeedsEditor, NodeDetail, OpenItemKey, SelectionSummary, TaskPens, TaskPoints, TaskUnlocks } from "./TaskCardSide"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { useTaskStore } from "@/lib/task-store"
@@ -115,25 +116,7 @@ const COLUMN_LABEL: Record<CardColumn, string> = {
   clock: "▶",
 }
 const COLS_KEY = "brain2-task-card-cols"
-const DEFAULT_COLS: CardColumn[] = ["tier", "pct", "est", "spent", "needs", "lock", "clock"]
-
-function loadCols(): CardColumn[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(COLS_KEY) ?? "null")
-    if (Array.isArray(raw)) return raw.filter((c): c is CardColumn => (CARD_COLUMNS as readonly string[]).includes(c))
-  } catch {
-    /* view state only */
-  }
-  return DEFAULT_COLS
-}
-
-function saveCols(cols: CardColumn[]): void {
-  try {
-    localStorage.setItem(COLS_KEY, JSON.stringify(cols))
-  } catch {
-    /* view state only */
-  }
-}
+const DEFAULT_COLS: CardColumn[] = ["tier", "est", "lock", "clock"]
 
 const inOtherLayer = (event: Event) => {
   const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as Element | null
@@ -211,8 +194,8 @@ function TaskCardBody({
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => (focusStepId ? new Set([focusStepId]) : new Set()))
   const [visibleIds, setVisibleIds] = useState<string[]>([])
-  const [cols, setCols] = useState<CardColumn[]>(loadCols)
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [cols, setCols] = useState<CardColumn[]>(DEFAULT_COLS)
+  const [moreBar, setMoreBar] = useState(false)
   const [tier, setTier] = useState<StepTier | undefined>()
   const [hideLocked, setHideLocked] = useState(false)
   const [nextOnly, setNextOnly] = useState(false)
@@ -231,11 +214,6 @@ function TaskCardBody({
 
   const shownCols = cols.filter((c) => c !== "points" || pointsVisible)
   const has = (c: CardColumn) => shownCols.includes(c)
-  const toggleCol = (c: CardColumn) => {
-    const next = cols.includes(c) ? cols.filter((x) => x !== c) : [...cols, c]
-    setCols(next)
-    saveCols(next)
-  }
 
   const writeSteps = (label: string, next: Subtask[]) => runAsAction(label, () => host.onStepsChange(task.id, next))
   const sel = selected
@@ -494,20 +472,6 @@ function TaskCardBody({
             <button type="button" className="task-card-key" title="Clear the selection (Esc)" disabled={!sel.size} onClick={() => setSelected(new Set())}>
               Deselect all
             </button>
-            <span className="task-card-picker">
-              <button type="button" className="task-card-key" title="Choose which columns each step row shows" aria-expanded={pickerOpen} onClick={() => setPickerOpen((o) => !o)}>
-                Columns
-              </button>
-              {pickerOpen ? (
-                <span className="task-card-picker-menu" role="group" aria-label="Columns">
-                  {CARD_COLUMNS.filter((c) => c !== "points" || pointsVisible).map((c) => (
-                    <label key={c}>
-                      <input type="checkbox" checked={cols.includes(c)} onChange={() => toggleCol(c)} /> {COLUMN_LABEL[c]}
-                    </label>
-                  ))}
-                </span>
-              ) : null}
-            </span>
           </div>
 
           {columnsView ? (
@@ -536,18 +500,24 @@ function TaskCardBody({
           {sel.size > 0 ? (
             <div className="task-card-bar" role="toolbar" aria-label="Mass edit">
               <span className="task-card-num">{sel.size} selected</span>
-              <MinutesSet onSet={(m) => writeSteps("Set estimate", massEstimate(steps, sel, { set: m }))} />
-              {[-15, -5, 5, 15].map((d) => (
-                <button key={d} type="button" title={`${d > 0 ? "Add" : "Take"} ${Math.abs(d)} minutes on each selected step`} onClick={bar("Estimate", (s) => massEstimate(s, sel, { delta: d }))}>
-                  {d > 0 ? `+${d}` : d}
-                </button>
-              ))}
               {STEP_TIERS.map((t) => (
                 <button key={t} type="button" title={`Set selected steps to ${STEP_TIER_LABEL[t]}`} onClick={bar("Tier", (s) => massTier(s, sel, t))}>
                   {STEP_TIER_SHORT[t]}
                 </button>
               ))}
-              <button type="button" title="Clear their own level; they take their parent's" onClick={bar("Tier", (s) => massTier(s, sel, undefined))}>
+              <button type="button" title="Tick the selected steps" onClick={bar("Done", (s) => massDone(s, sel, true))}>Done</button>
+              <button type="button" className="task-card-key" aria-expanded={moreBar} title="More edits for the selected steps" onClick={() => setMoreBar((v) => !v)}>
+                {moreBar ? "Fewer" : "More…"}
+              </button>
+              {moreBar ? (
+                <span className="task-card-bar-more">
+                  <MinutesSet onSet={(m) => writeSteps("Set estimate", massEstimate(steps, sel, { set: m }))} />
+              {[-15, -5, 5, 15].map((d) => (
+                <button key={d} type="button" title={`${d > 0 ? "Add" : "Take"} ${Math.abs(d)} minutes on each selected step`} onClick={bar("Estimate", (s) => massEstimate(s, sel, { delta: d }))}>
+                  {d > 0 ? `+${d}` : d}
+                </button>
+              ))}
+                                          <button type="button" title="Clear their own level; they take their parent's" onClick={bar("Tier", (s) => massTier(s, sel, undefined))}>
                 inherit
               </button>
               {pointsVisible ? <MinutesSet label="pts" onSet={(p) => writeSteps("Step points", massPoints(steps, sel, p))} /> : null}
@@ -572,8 +542,7 @@ function TaskCardBody({
                 Chain
               </button>
               <button type="button" title="Drop the step needs of the selected steps" onClick={bar("Clear needs", (s) => clearNeeds(s, sel))}>Clear needs</button>
-              <button type="button" title="Tick the selected steps" onClick={bar("Done", (s) => massDone(s, sel, true))}>Done</button>
-              <button type="button" title="Untick the selected steps" onClick={bar("Not done", (s) => massDone(s, sel, false))}>Not done</button>
+                            <button type="button" title="Untick the selected steps" onClick={bar("Not done", (s) => massDone(s, sel, false))}>Not done</button>
               <NativeSelect
                 aria-label="Move under"
                 title="Nest the selected steps inside another step"
@@ -607,6 +576,8 @@ function TaskCardBody({
               >
                 Session with these
               </button>
+                </span>
+              ) : null}
             </div>
           ) : null}
           </CardSection>
@@ -661,48 +632,33 @@ function TaskCardBody({
             ) : null}
           </section>
 
-          <section aria-label="This period">
-            <h3>This {host.period}</h3>
-            <dl className="task-card-dl">
-              <dt>Marks</dt>
-              <dd>
-                {[host.isRequired(task.id) ? "Required" : null, host.isPrioritized(task.id) ? "Prioritized" : null].filter(Boolean).join(" · ") || "—"}
-              </dd>
-              <dt>Pushes</dt>
-              <dd>
-                pushed ×{task[pushKey] ?? 0} · in {pushes.in} · out {pushes.out}
-              </dd>
-              <dt>Spent</dt>
-              <dd>
-                {attention.minutes}m this {host.period} · {spent}m all time
-                {time?.penPool ? <small className="is-quiet" title="Time on this task's pen that is not tagged to this task"> · pen overall {time.penPool}m</small> : null}
-              </dd>
-              <dt>Left for {STEP_TIER_LABEL[chosenLevel]}</dt>
-              <dd className={remaining > dayLeftMin ? "is-over" : undefined}>
-                {remaining}m · {dayLeftMin}m left today
-              </dd>
-              <dt>Level</dt>
-              <dd>
-                {reached === "none" ? "none yet" : STEP_TIER_LABEL[reached]} ·{" "}
-                {STEP_TIERS.map((t) => `${STEP_TIER_SHORT[t]} ${formatPercent(levels[t]?.split ?? null)}`).join(" · ")}
-              </dd>
-              <dt>Sessions</dt>
-              <dd>
-                {sessions.length
-                  ? sessions
-                      .slice(-5)
-                      .map((p) => `${p.title || "Session"}${p.reachedTier && p.reachedTier !== "none" ? ` (${STEP_TIER_LABEL[p.reachedTier]})` : ""}`)
-                      .join(", ")
-                  : "—"}
-              </dd>
-            </dl>
-            {attentionGivenLabel(attention) ? <p className="is-quiet">{attentionGivenLabel(attention)}</p> : null}
-          </section>
+          <TaskCardPeriod
+            period={host.period}
+            required={host.isRequired(task.id)}
+            prioritized={host.isPrioritized(task.id)}
+            onToggleRequired={() => host.onToggleRequired(task.id)}
+            onTogglePrioritized={() => host.onTogglePrioritized(task.id)}
+            pushed={task[pushKey] ?? 0}
+            pushesIn={pushes.in}
+            pushesOut={pushes.out}
+            periodMinutes={attention.minutes}
+            allTimeMinutes={spent}
+            penPool={time?.penPool}
+            level={chosenLevel}
+            reached={reached}
+            split={Object.fromEntries(STEP_TIERS.map((t) => [t, levels[t]?.split ?? null]))}
+            remaining={remaining}
+            dayLeft={dayLeftMin}
+            sessions={sessions.map((p) => ({ title: p.title, tier: p.reachedTier }))}
+            attentionNote={attentionGivenLabel(attention) || undefined}
+            aimed={tier}
+            onAim={setTier}
+          />
 
           </>
           )}
 
-          <LogNotes task={task} />
+          <LogNotes task={task} nodeId={sel.size === 1 ? [...sel][0] : undefined} nodeName={(id) => flat.find((x) => x.id === id)?.description} />
         </aside>
       </div>
     </div>

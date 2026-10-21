@@ -148,8 +148,15 @@ function useNow(active: boolean): Date {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     if (!active) return
-    const id = window.setInterval(() => setNow(new Date()), 1000)
-    return () => window.clearInterval(id)
+    const tick = () => {
+      if (!document.hidden) setNow(new Date())
+    }
+    const id = window.setInterval(tick, 1000)
+    document.addEventListener("visibilitychange", tick)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener("visibilitychange", tick)
+    }
   }, [active])
   return now
 }

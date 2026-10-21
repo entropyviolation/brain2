@@ -905,6 +905,8 @@ export interface ItemNoteEntry {
   editedAt?: string
   /** `notice`: an answer to the To Do notice dot (`lib/notice-dot.ts`). */
   tag?: "notice"
+  /** The step this note was written on (a To Do card's log). Absent: the task itself. */
+  nodeId?: string
   /** Total pushes on the task when a `notice` entry was written. The dot stays quiet until the next push. */
   pushCount?: number
 }
