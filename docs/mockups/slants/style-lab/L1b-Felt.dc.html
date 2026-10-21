@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>1b Felt console load drawer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Pixelify+Sans:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.well{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 45% 40%,#0f2219,#030806 70%);box-shadow:inset 0 4px 10px rgba(0,0,0,.9),0 2px 0 rgba(255,255,255,.35),0 0 0 6px #8f9096,0 0 0 7px #6f7076;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#7dffc4;font-family:'VT323',monospace;text-shadow:0 0 4px #7dffc4}
+.lab{font:9px 'Silkscreen',monospace;letter-spacing:.16em;color:#2a2b30;text-transform:uppercase}
+</style>
+</helmet>
+<div style="position:relative;width:880px;height:560px;box-sizing:border-box;background:#0a0a0b;font-family:'Pixelify Sans',monospace;overflow:hidden">
+  <div style="position:absolute;left:40px;top:40px;right:40px;bottom:40px;border-radius:140px 220px 180px 120px;background:radial-gradient(ellipse at 40% 30%,#b9b8bf,#9a99a1 60%,#7d7c84);box-shadow:inset 0 -18px 40px rgba(0,0,0,.35),inset 0 10px 24px rgba(255,255,255,.25),0 30px 60px rgba(0,0,0,.6)">
+    <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;opacity:.35;mix-blend-mode:multiply;border-radius:inherit"><filter id="felt"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="3"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="100%" height="100%" filter="url(#felt)"></rect></svg>
+    <div style="position:absolute;left:70px;top:60px;display:flex;flex-direction:column;gap:4px">
+      <span class="lab">Load · Tue 20 Oct</span>
+      <span style="font-size:22px;color:#1d1e22">4h10 left, 2h30 est. It fits.</span>
+    </div>
+    <div style="position:absolute;left:80px;top:140px;display:flex;gap:48px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div class="well"><span style="font-size:36px">4h10</span><span style="font-size:14px;color:#3f9c74;text-shadow:none">left</span></div><span class="lab">Time</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div class="well"><span style="font-size:36px">0.6×</span><span style="font-size:14px;color:#3f9c74;text-shadow:none">manageable</span></div><span class="lab">Comfort</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px"><div class="well" style="color:#9ad7ff;text-shadow:0 0 4px #9ad7ff"><span style="font-size:24px">ALL</span><span style="font-size:14px;opacity:.7;text-shadow:none">assigned</span></div><span class="lab">Scope</span></div>
+    </div>
+    <div style="position:absolute;right:70px;top:100px;width:230px;height:180px;border-radius:14px;background:#0b1210;box-shadow:inset 0 3px 12px rgba(0,0,0,.9),0 0 0 8px #8f9096,0 0 0 9px #66676d">
+      <svg role="img" aria-label="Vector day grid: est work fills 13:50 to 16:20" viewBox="0 0 230 180" style="width:100%;height:100%"><g stroke="#9ad7ff" stroke-width=".6" opacity=".5"><line x1="20" y1="150" x2="210" y2="150"></line><line x1="20" y1="150" x2="115" y2="30"></line><line x1="210" y1="150" x2="115" y2="30"></line><line x1="60" y1="150" x2="115" y2="30"></line><line x1="170" y1="150" x2="115" y2="30"></line><line x1="45" y1="118" x2="185" y2="118"></line><line x1="70" y1="86" x2="160" y2="86"></line></g><polygon points="125,150 165,150 140,118 118,118" fill="#7dffc4" opacity=".35"></polygon><line x1="125" y1="150" x2="115" y2="30" stroke="#7e14ff" stroke-width="1.6"></line><text x="16" y="172" font-family="VT323" font-size="14" fill="#7dffc4">9          13:50          18</text></svg>
+    </div>
+    <div style="position:absolute;left:120px;bottom:70px;display:flex;gap:10px">
+      <button style="width:54px;height:30px;border-radius:15px;border:0;background:linear-gradient(180deg,#f1f0ea,#c9c8c1);font:10px 'Silkscreen';box-shadow:0 2px 0 #55565c">ALL</button>
+      <button style="width:54px;height:30px;border-radius:15px;border:0;background:linear-gradient(180deg,#d8d7d0,#aeada6);font:10px 'Silkscreen';box-shadow:0 2px 0 #55565c">REQ</button>
+      <button style="width:54px;height:30px;border-radius:15px;border:0;background:linear-gradient(180deg,#d8d7d0,#aeada6);font:10px 'Silkscreen';box-shadow:0 2px 0 #55565c">R+P</button>
+      <span style="width:12px"></span>
+      <span style="display:flex;align-items:center;gap:6px;font:11px 'Pixelify Sans';color:#1d1e22"><span style="width:10px;height:10px;border-radius:50%;background:#7dffc4;box-shadow:0 0 6px #7dffc4"></span><span style="width:10px;height:10px;border-radius:50%;background:#55565c"></span><span style="width:10px;height:10px;border-radius:50%;background:#55565c"></span>1 in progress · cap 3</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

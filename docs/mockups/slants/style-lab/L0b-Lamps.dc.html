@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>0b DSKY caution lamps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Pixelify+Sans:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mill{background:repeating-linear-gradient(0deg,rgba(255,255,255,.16) 0 1px,transparent 1px 3px),linear-gradient(180deg,#d4d8dc,#c0c0c0 55%,#b4b8bc);border:1px solid #5c6064;border-radius:6px;box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #969a9e}
+.crt{background:radial-gradient(ellipse at 30% 30%,#0c1a14,#050b09 70%);border:2px solid #1d2022;border-radius:5px;box-shadow:inset 0 2px 10px rgba(0,0,0,.9);color:#7dffc4;font-family:'VT323',monospace;text-shadow:0 0 3px #7dffc4,0 0 9px rgba(125,255,196,.35)}
+.lab{font:9px 'Silkscreen',monospace;letter-spacing:.14em;color:#55595d;text-transform:uppercase}
+.lampk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:52px;border:1px solid #2a2c2e;border-radius:3px;font:10px 'Silkscreen',monospace;letter-spacing:.08em;cursor:pointer}
+.off{background:#3a3d40;color:#8d9195}
+.rock{width:40px;height:20px;border:1px solid #4a4e52;border-radius:3px;background:linear-gradient(180deg,#e6e8ea,#a8acb0);box-shadow:inset 0 1px 0 #fff}
+</style>
+</helmet>
+<div style="width:880px;height:560px;box-sizing:border-box;padding:18px;background:#7fb5aa;font-family:'Pixelify Sans',monospace;color:#2a2c2e;display:grid;grid-template-columns:1.2fr 1fr;gap:12px">
+  <div class="mill" style="padding:10px;display:flex;flex-direction:column;gap:10px">
+    <span class="lab">Span · verb 01 noun 05</span>
+    <div class="crt" style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;padding:10px 14px;align-items:baseline">
+      <span style="font-size:14px;color:#3f9c74;text-shadow:none">PROG</span><span style="font-size:40px;letter-spacing:.2em">01</span>
+      <span style="font-size:14px;color:#3f9c74;text-shadow:none">SPAN</span><span style="font-size:30px;letter-spacing:.14em">DAY · TUE 20</span>
+      <span style="font-size:14px;color:#3f9c74;text-shadow:none">OPEN</span><span style="font-size:30px;letter-spacing:.14em"><span style="opacity:.1">8</span>05</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px">
+      <button style="height:40px;font:12px 'Pixelify Sans';background:#b9bdc1;border:1px solid #5c6064;border-radius:4px;box-shadow:inset 1px 1px 0 #8b8f93">Day</button>
+      <button style="height:40px;font:12px 'Pixelify Sans';background:linear-gradient(180deg,#eceef0,#c6cace);border:1px solid #5c6064;border-radius:4px">Week</button>
+      <button style="height:40px;font:12px 'Pixelify Sans';background:linear-gradient(180deg,#eceef0,#c6cace);border:1px solid #5c6064;border-radius:4px">Month</button>
+      <button style="height:40px;font:12px 'Pixelify Sans';background:linear-gradient(180deg,#eceef0,#c6cace);border:1px solid #5c6064;border-radius:4px">Season</button>
+      <button style="height:40px;font:12px 'Pixelify Sans';background:linear-gradient(180deg,#eceef0,#c6cace);border:1px solid #5c6064;border-radius:4px">Other</button>
+    </div>
+    <span class="lab" style="margin-top:4px">Coupling · group by</span>
+    <div style="display:flex;gap:18px;align-items:center">
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="rock" style="background:linear-gradient(180deg,#a8acb0,#e6e8ea)"></span>Priority</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="rock"></span>Time</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="rock"></span>Manual</span>
+    </div>
+    <div style="margin-top:auto;background:#c8ccd0;border:1px solid #4a4e52;border-radius:5px;padding:6px;display:flex;flex-direction:column;gap:4px;font-size:13px">
+      <div style="background:#e6e8eb;border:1px solid #8e9296;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between"><span>Reply to Dana re: lab schedule</span><span style="color:#55595d">30m</span></div>
+      <div style="background:#e6e8eb;border:1px solid #8e9296;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between"><span>Draft grant budget table</span><span style="color:#55595d">45m</span></div>
+      <div style="background:#e6e8eb;border:1px solid #8e9296;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between"><span>Refill prescriptions</span><span style="color:#55595d">10m · pushed ×2</span></div>
+    </div>
+  </div>
+  <div class="mill" style="padding:10px;display:flex;flex-direction:column;gap:10px">
+    <span class="lab">Caution panel · click a lamp to filter</span>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px;background:#1d2022;border-radius:5px">
+      <button class="lampk off">REQUIRED<span style="font-size:16px">0</span></button>
+      <button class="lampk" style="background:#cfeaff;color:#0d3350;box-shadow:0 0 12px rgba(154,215,255,.6)">PUSHED<span style="font-size:16px">2</span></button>
+      <button class="lampk" style="background:#e3d4ff;color:#2b1060;box-shadow:0 0 12px rgba(126,20,255,.45)">NO EST.<span style="font-size:16px">3</span></button>
+      <button class="lampk off">LOCKED<span style="font-size:16px">0</span></button>
+      <button class="lampk" style="background:#b9ffe0;color:#0b3a26;box-shadow:0 0 12px rgba(125,255,196,.6)">IN PROGRESS<span style="font-size:16px">1</span></button>
+      <button class="lampk" style="background:#ffc9c2;color:#5a0f07;box-shadow:0 0 12px rgba(210,73,58,.55)">OVER EST.<span style="font-size:16px">1</span></button>
+    </div>
+    <span class="lab">Load</span>
+    <div class="crt" style="padding:8px 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));font-size:40px;line-height:1">
+      <span>40%<span style="display:block;font-size:13px;color:#3f9c74;text-shadow:none">done this span</span></span>
+      <span>0.6×<span style="display:block;font-size:13px;color:#3f9c74;text-shadow:none">est ÷ left</span></span>
+    </div>
+    <p style="margin:0;font-size:11px;color:#2a2c2e">Lamps light from counts. Off reads as dark glass, never a warning.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

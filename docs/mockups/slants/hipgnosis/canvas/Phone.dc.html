@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To do, phone, Hipgnosis slant</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&amp;family=Cormorant+Garamond:ital,wght@1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e0d0c}
+.ph{position:relative;width:390px;height:844px;overflow:hidden;background:#0e0d0c;color:#ece6da;font-family:'Archivo',system-ui,sans-serif;font-size:14px;line-height:1.4}
+.ph *{box-sizing:border-box}
+.ph button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.lbl{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#a39c90}
+.note{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;color:#cfc6b6}
+.qk{min-height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #4a443c;border-radius:999px;font-size:13px}
+.gate{animation:unfold 1.1s cubic-bezier(.2,.7,.1,1) both;transform-origin:left center}
+@keyframes unfold{from{opacity:0;transform:perspective(900px) rotateY(-70deg)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.gate{animation:none}}
+</style>
+</helmet>
+<div class="ph">
+  <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.22;mix-blend-mode:overlay;z-index:5"><filter id="grainP"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="100%" height="100%" filter="url(#grainP)"></rect></svg>
+
+  <!-- sleeve -->
+  <section aria-label="To do header" style="position:relative;height:230px;overflow:hidden;background:linear-gradient(180deg,#c9c3b7 0%,#d9c6bd 34%,#d9a9a6 54%,#b9787e 63.6%,#211a16 64%,#120f0d 100%)">
+    <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 45%,rgba(10,8,6,.55) 100%)"></div>
+    <div aria-hidden="true" style="position:absolute;left:58%;top:30%;width:16px;height:16px;border-radius:50%;background:#f6f1e7;box-shadow:0 0 20px 8px rgba(246,241,231,.5)"></div>
+    <button aria-label="Load: 2h30 promised, 4h10 left, it fits" style="position:absolute;left:14%;top:calc(64% - 84px);width:200px;height:110px">
+      <span aria-hidden="true" style="position:absolute;left:18px;top:88px;width:160px;height:10px;background:linear-gradient(90deg,rgba(0,0,0,.9),rgba(0,0,0,.25));clip-path:polygon(0 0,100% 55%,100% 100%,0 100%)"></span>
+      <span aria-hidden="true" style="position:absolute;left:0;top:0;width:22px;height:96px;background:linear-gradient(90deg,#030303,#1d1c1b 58%,#070707)"></span>
+    </button>
+    <div aria-label="5 things to do" style="position:absolute;right:20px;top:20px;width:70px;height:70px;border-radius:50%;background:#efe8da;color:#141210;transform:rotate(-9deg);display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <span style="font-size:30px;font-weight:800;line-height:.9;font-stretch:80%">5</span><span style="font-size:7px;letter-spacing:.2em;text-transform:uppercase">to do today</span>
+    </div>
+    <div style="position:absolute;left:8px;bottom:6px;right:12px;display:flex;align-items:center">
+      <button aria-label="Previous day" style="width:44px;height:44px;color:#a39c90">‹</button>
+      <span style="font-size:18px;font-weight:300">Tue 20 October</span>
+      <button aria-label="Next day" style="width:44px;height:44px;color:#a39c90">›</button>
+      <span style="flex:1"></span>
+      <button aria-label="Show load" style="font-size:12px;color:#cfc6b6;min-height:44px">4h10 left · fits ▾</button>
+    </div>
+  </section>
+
+  <!-- prism: rays fall into the span keys -->
+  <section aria-label="Span" style="position:relative;height:120px">
+    <svg aria-hidden="true" viewBox="0 0 390 120" style="position:absolute;inset:0;width:100%;height:100%">
+      <line x1="0" y1="14" x2="182" y2="30" stroke="#fff" stroke-width="1.6"></line>
+      <polygon points="186,58 39,120 78,120 188,58" fill="#d0453a" opacity=".95"></polygon>
+      <polygon points="188,58 78,120 156,120 191,58" fill="#e08a3a" opacity=".24"></polygon>
+      <polygon points="191,58 156,120 234,120 194,58" fill="#e2c24c" opacity=".24"></polygon>
+      <polygon points="194,58 234,120 312,120 197,58" fill="#5fa36c" opacity=".24"></polygon>
+      <polygon points="197,58 312,120 390,120 200,58" fill="#5a7fc4" opacity=".24"></polygon>
+      <polygon points="195,6 168,58 222,58" fill="rgba(236,230,218,.05)" stroke="#ece6da" stroke-width="1.3"></polygon>
+    </svg>
+  </section>
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:0 4px">
+    <button aria-pressed="true" style="min-height:44px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Day</button>
+    <button aria-pressed="false" style="min-height:44px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a39c90">Week</button>
+    <button aria-pressed="false" style="min-height:44px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a39c90">Month</button>
+    <button aria-pressed="false" style="min-height:44px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a39c90">Season</button>
+    <button aria-pressed="false" style="min-height:44px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a39c90">Other</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;padding:10px 14px 14px">
+    <button style="min-height:44px;border-radius:999px;background:#ece6da;color:#0e0d0c;font-weight:600">+ Add task</button>
+    <button class="qk">Session</button>
+    <button class="qk">Show · 2</button>
+  </div>
+
+  <!-- contact sheet -->
+  <section aria-label="Tasks" style="position:relative;margin:0 10px;padding:0 22px;background:#1c1712">
+    <div aria-hidden="true" style="position:absolute;left:5px;top:0;bottom:0;width:9px;background:repeating-linear-gradient(180deg,transparent 0 7px,#0a0908 7px 15px)"></div>
+    <div aria-hidden="true" style="position:absolute;right:5px;top:0;bottom:0;width:9px;background:repeating-linear-gradient(180deg,transparent 0 7px,#0a0908 7px 15px)"></div>
+    <div style="padding:8px 2px 4px;font-size:9px;letter-spacing:.28em;color:#d68a46;text-transform:uppercase">Brain2 safety film · assigned</div>
+
+    <div style="border-top:1px solid #2b251f;display:grid;grid-template-columns:1fr 44px;align-items:center;gap:10px;min-height:58px">
+      <button style="text-align:left;min-height:44px"><span style="display:block;font-size:16px">Draft grant budget table</span><span style="font-size:11px;color:#a39c90">A · 45m · 2/4</span></button>
+      <button aria-label="Start timer" style="width:44px;height:44px;border-radius:50%;border:1px solid #6d655a;color:#ece6da">▸</button>
+    </div>
+
+    <div style="border-top:1px solid #2b251f;background:#1a1611">
+      <div style="display:grid;grid-template-columns:1fr 44px;align-items:center;gap:10px;min-height:58px">
+        <button aria-expanded="true" style="text-align:left;min-height:44px"><span style="display:block;font-size:16px">Reply to Dana re: lab schedule and the bench rota</span><span style="font-size:11px;color:#a39c90">A/B · 30m · 2/5 · pushed once</span></button>
+        <button aria-label="Start timer" style="width:44px;height:44px;border-radius:50%;border:1px solid #6d655a;color:#ece6da">▸</button>
+      </div>
+      <div class="gate" style="display:flex;flex-direction:column;gap:10px;padding:4px 0 14px">
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+          <button style="min-height:44px;border-radius:999px;background:#ece6da;color:#0e0d0c;font-weight:600">Done</button>
+          <button class="qk">Start</button><button class="qk">Just 25</button>
+          <button class="qk">Push</button><button class="qk">Missed</button><button class="qk" style="color:#a39c90">More…</button>
+        </div>
+        <span class="note" style="font-size:15px">Dana asked about Thursday. Bench 3 is free after two.</span>
+        <div style="display:flex;gap:6px"><span class="qk" style="min-height:28px;padding:0 10px;font-size:11px">Required</span><span class="qk" style="min-height:28px;padding:0 10px;font-size:11px">Prioritized</span></div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #2b251f;display:grid;grid-template-columns:1fr 44px;align-items:center;gap:10px;min-height:58px">
+      <button style="text-align:left;min-height:44px"><span style="display:block;font-size:16px">Clean up reading notes, ch. 4</span><span style="font-size:11px;color:#a39c90">B · 25m · 0/3</span></button>
+      <button aria-label="Start timer" style="width:44px;height:44px;border-radius:50%;border:1px solid #6d655a;color:#ece6da">▸</button>
+    </div>
+    <div style="position:relative;border-top:1px solid #2b251f;display:grid;grid-template-columns:1fr 44px;align-items:center;gap:10px;min-height:58px">
+      <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 100% 100%,rgba(224,98,47,.5),transparent 55%)"></div>
+      <button style="text-align:left;min-height:44px;position:relative"><span style="display:block;font-size:16px">Sketch tracking legend</span><span style="font-size:11px;color:#f08a4b">B · 40m of 30m · 4/5</span></button>
+      <button aria-label="Start timer" style="position:relative;width:44px;height:44px;border-radius:50%;border:1px solid #6d655a;color:#ece6da">▸</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
