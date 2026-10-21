@@ -189,13 +189,13 @@ function ComfortDial({ ratio, ratioText, band }: { ratio: number; ratioText: str
       </g>
       <circle cx={px} cy={py} r="5.4" fill="url(#todo-dial-pearl)" stroke="#5c6470" strokeWidth=".4" />
       <circle cx={px - 1.8} cy={py - 1.9} r="1.2" fill="#fff" opacity=".9" />
-      <text x="60" y="66" textAnchor="middle" fontFamily="VT323, monospace" fontSize="22" fill="#5dff9a" filter="url(#todo-dial-bloom)" opacity=".7">
+      <text x="60" y="66" textAnchor="middle" fontFamily="w95fa, monospace" fontSize="17" letterSpacing=".5" fill="#5dff9a" filter="url(#todo-dial-bloom)" opacity=".7">
         {ratioText}×
       </text>
-      <text x="60" y="66" textAnchor="middle" fontFamily="VT323, monospace" fontSize="22" fill="#b9ffd6">
+      <text x="60" y="66" textAnchor="middle" fontFamily="w95fa, monospace" fontSize="17" letterSpacing=".5" fill="#b9ffd6">
         {ratioText}×
       </text>
-      <text x="60" y="77" textAnchor="middle" fontFamily="VT323, monospace" fontSize="8.5" fill="#3f9c74">
+      <text x="60" y="77" textAnchor="middle" fontFamily="w95fa, monospace" fontSize="7" letterSpacing=".3" fill="#3f9c74">
         est×2 ÷ left
       </text>
     </svg>
