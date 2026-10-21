@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>0a Obelisk on the time well</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Pixelify+Sans:wght@400;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mill{background:repeating-linear-gradient(0deg,rgba(255,255,255,.16) 0 1px,transparent 1px 3px),linear-gradient(180deg,#d4d8dc,#c0c0c0 55%,#b4b8bc);border:1px solid #5c6064;border-radius:6px;box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #969a9e}
+.crt{background:radial-gradient(ellipse at 30% 30%,#0c1a14,#050b09 70%);border:2px solid #1d2022;border-radius:5px;box-shadow:inset 0 2px 10px rgba(0,0,0,.9);color:#7dffc4;font-family:'VT323',monospace;text-shadow:0 0 3px #7dffc4,0 0 9px rgba(125,255,196,.35)}
+.key{font:13px 'Pixelify Sans',monospace;color:#2a2c2e;min-height:30px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(180deg,#eceef0,#cdd1d5 60%,#bfc3c7);border:1px solid #5c6064;border-radius:4px;box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 #9ea2a6;cursor:pointer}
+.key.on{background:#b9bdc1;box-shadow:inset 1px 1px 0 #8b8f93}
+.lab{font:9px 'Silkscreen',monospace;letter-spacing:.14em;color:#55595d;text-transform:uppercase}
+.lamp{width:8px;height:8px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.45)}
+</style>
+</helmet>
+<div style="width:880px;height:560px;box-sizing:border-box;padding:18px;background:#7fb5aa;font-family:'Pixelify Sans',monospace;color:#2a2c2e;display:flex;flex-direction:column;gap:10px">
+  <div class="mill" style="padding:8px;display:flex;flex-direction:column;gap:7px">
+    <div class="crt" style="display:flex;align-items:center;gap:14px;padding:6px 12px">
+      <span style="font-size:26px;letter-spacing:.08em">TO DO TODAY</span><span style="font-size:20px;border:1px solid #3f9c74;padding:0 5px">5</span>
+      <span style="flex:1"></span><span style="font-size:17px">4h10 left · 2h30 est · fits</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="key">‹</span><span class="key">Tue, Oct 20</span><span class="key">›</span>
+      <span class="key on"><span class="lamp" style="background:#3dff8a;box-shadow:0 0 5px #3dff8a"></span>Day</span><span class="key">Week</span><span class="key">Month</span><span class="key">Season</span><span class="key">Other</span>
+      <span style="flex:1"></span>
+      <button class="key" style="background:linear-gradient(180deg,#3b4b8f,#22306c 70%);color:#fff;border-color:#0f1638">+ Add task ▾</button>
+    </div>
+  </div>
+
+  <div class="mill" style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between"><span class="lab">Time · working day</span><span class="lab">now 13:50</span></div>
+    <svg role="img" aria-label="Day scale 9 to 18. A black obelisk stands at now, 13:50. Its shadow runs to 16:20, the end of the estimated work." viewBox="0 0 820 110" style="width:100%;height:110px;background:linear-gradient(180deg,#e9ebed,#d6d9dc);border:1px solid #8e9296;border-radius:3px">
+      <rect x="320" y="70" width="60" height="8" fill="#9ea2a6"></rect>
+      <rect x="380" y="62" width="400" height="16" fill="rgba(61,255,138,.25)" stroke="#2c9e5a" stroke-width=".8"></rect>
+      <polygon points="392,78 590,72 590,78" fill="#111" opacity=".85"></polygon>
+      <rect x="375" y="14" width="12" height="64" fill="#0b0b0c"></rect>
+      <rect x="375" y="14" width="4" height="64" fill="#2b2b2e"></rect>
+      <line x1="40" y1="78" x2="780" y2="78" stroke="#2a2c2e"></line>
+      <g stroke="#2a2c2e"><line x1="40" y1="78" x2="40" y2="88"></line><line x1="122" y1="78" x2="122" y2="84"></line><line x1="204" y1="78" x2="204" y2="88"></line><line x1="286" y1="78" x2="286" y2="84"></line><line x1="368" y1="78" x2="368" y2="88"></line><line x1="451" y1="78" x2="451" y2="84"></line><line x1="533" y1="78" x2="533" y2="88"></line><line x1="615" y1="78" x2="615" y2="84"></line><line x1="697" y1="78" x2="697" y2="88"></line><line x1="780" y1="78" x2="780" y2="88"></line></g>
+      <g font-family="Silkscreen, monospace" font-size="10" fill="#55595d" text-anchor="middle"><text x="40" y="102">9</text><text x="204" y="102">11</text><text x="368" y="102">13</text><text x="533" y="102">15</text><text x="697" y="102">17</text><text x="780" y="102">18</text></g>
+      <text x="398" y="24" font-family="Silkscreen, monospace" font-size="9" fill="#2a2c2e">NOW</text>
+      <text x="596" y="70" font-family="Silkscreen, monospace" font-size="9" fill="#2a2c2e">SHADOW · 2H30 EST</text>
+    </svg>
+    <div class="crt" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:6px 12px;font-size:24px;line-height:1">
+      <span>4h10<span style="display:block;font-size:13px;color:#3f9c74;text-shadow:none">hours left</span></span>
+      <span>2h30<span style="display:block;font-size:13px;color:#3f9c74;text-shadow:none">est remaining</span></span>
+      <span>1h20<span style="display:block;font-size:13px;color:#3f9c74;text-shadow:none">spent today</span></span>
+    </div>
+  </div>
+
+  <div style="background:#c8ccd0;border:1px solid #4a4e52;border-radius:5px;padding:8px;display:flex;flex-direction:column;gap:5px">
+    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;background:#e6e8eb;border:1px solid #8e9296;border-radius:7px;padding:6px 10px"><span>Draft grant budget table</span><span style="font-size:12px;color:#55595d">45m · 2/4</span><span class="key">Card</span><span class="key" style="border-radius:50%;width:30px;padding:0;justify-content:center">▶</span></div>
+    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;background:#e6e8eb;border:1px solid #8e9296;border-radius:7px;padding:6px 10px"><span>Reply to Dana re: lab schedule</span><span style="font-size:12px;color:#55595d">30m · 2/5</span><span class="key">Card</span><span class="key" style="border-radius:50%;width:30px;padding:0;justify-content:center">▶</span></div>
+    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;background:#e6e8eb;border:1px solid #8e9296;border-radius:7px;padding:6px 10px"><span>Sketch tracking legend</span><span style="font-size:12px;color:#c22f20">40m / 30m</span><span class="key">Card</span><span class="key" style="border-radius:50%;width:30px;padding:0;justify-content:center">▶</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
