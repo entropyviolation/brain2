@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
+import { DashReading } from "../dash/dash-primitives"
 import { TreeMath } from "@/components/steps/TreeMath"
 import { splitStats, type TierSplit } from "@/lib/tree-math"
 import { formatPercent } from "@/lib/step-progress"
@@ -224,7 +225,9 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
             onClick={() => setOpen(open === c.id ? null : c.id)}
           >
             <span className="tcs-stat-label">{c.label}</span>
-            <span className="tcs-stat-value">{c.value}</span>
+            <span className="tcs-stat-value">
+              <DashReading text={c.value} />
+            </span>
             <span className="tcs-stat-sub">{c.sub ?? " "}</span>
           </button>
           {open === c.id ? (

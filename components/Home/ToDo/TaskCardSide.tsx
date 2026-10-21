@@ -24,7 +24,7 @@ import { stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { LIST_REF, eventHappened, patchStep, toggleId } from "@/lib/node-needs"
 import { leafTally, splitStats } from "@/lib/tree-math"
 import { NOTICE_PROMPT, needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
-import { noticeAnswers, taskPointsWithSource } from "@/lib/task-card"
+import { taskPointsWithSource } from "@/lib/task-card"
 import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { Mosaic } from "@/components/steps/TreeMath"
 import { ItemPenLinksField } from "@/components/ItemDetail/ItemPenTime"
@@ -32,7 +32,9 @@ import { stepPenLinks } from "@/lib/task-clock"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
 import { openSubCard, setEstimate } from "@/lib/task-card"
 import { partsMinutes } from "@/lib/tracked-time"
+import { makeNoteEntry } from "@/lib/item-notes"
 import { EstimateCell } from "./EstimateCell"
+import { SegDigits } from "../dash/dash-primitives"
 
 type Write = (label: string, next: Subtask[]) => void
 interface Option {
@@ -138,7 +140,10 @@ export function PointsDial({ label, title, value, fallback, onChange, caption, s
         <button type="button" tabIndex={-1} aria-label={`${label} minus one`} disabled={base <= 0} onClick={() => onChange(Math.max(0, base - 1))}>
           −
         </button>
-        <input type="number" min={0} inputMode="numeric" aria-label={label} value={value ?? ""} placeholder={fallback != null ? String(fallback) : "—"} onChange={(e) => onChange(toPoints(e.target.value))} />
+        <span className="tcs-dial-tube">
+          <SegDigits value={String(value ?? fallback ?? 0)} cells={4} label="" />
+          <input type="number" min={0} inputMode="numeric" aria-label={label} value={value ?? ""} placeholder={fallback != null ? String(fallback) : "—"} onChange={(e) => onChange(toPoints(e.target.value))} />
+        </span>
         <button type="button" tabIndex={-1} aria-label={`${label} plus one`} onClick={() => onChange(base + 1)}>
           +
         </button>
@@ -740,21 +745,25 @@ function noteDate(date: string): string {
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) })
 }
 
-/** A running log of notes on the task: fold, write, ⌘↩, newest first. */
-export function LogNotes({ task }: { task: Task }) {
+/** A running log of notes. Written on the node in focus (a step, else the task); "All" shows every node's notes. */
+export function LogNotes({ task, nodeId, nodeName }: { task: Task; nodeId?: string; nodeName?: (id: string) => string | undefined }) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const [draft, setDraft] = useState("")
   const [open, setOpen] = useState(readOpen)
-  const answers = noticeAnswers(task)
+  const [all, setAll] = useState(false)
   const due = needsNotice(task)
-  // A note written but not logged is kept when the card is left.
+  const log = (task.noteLog ?? []).filter((e) => e.tag === "notice" || e.nodeId)
+  const here = log.filter((e) => (e.nodeId ?? undefined) === nodeId)
+  const answers = (all ? log : here).slice().reverse()
+  const where = nodeId ? (nodeName?.(nodeId) ?? "this step") : "this task"
+  // A note written but not logged is kept when the card is left (task-level only).
   const left = useRef(draft)
   left.current = draft
   useEffect(
     () => () => {
       const text = left.current.trim()
       const fresh = useTaskStore.getState().tasks.find((t) => t.id === task.id)
-      if (text && fresh) useTaskStore.getState().updateTask(withNoticeAnswer(fresh, text))
+      if (text && fresh && !nodeId) useTaskStore.getState().updateTask(withNoticeAnswer(fresh, text))
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [task.id],
@@ -769,7 +778,10 @@ export function LogNotes({ task }: { task: Task }) {
   }
   const add = () => {
     if (!draft.trim()) return
-    updateTask(withNoticeAnswer(task, draft))
+    if (nodeId) {
+      const entry = makeNoteEntry(draft)
+      if (entry) updateTask({ ...task, noteLog: [...(task.noteLog ?? []), { ...entry, nodeId }] })
+    } else updateTask(withNoticeAnswer(task, draft))
     left.current = ""
     setDraft("")
   }
@@ -778,17 +790,25 @@ export function LogNotes({ task }: { task: Task }) {
       <button type="button" className="tcs-fold" aria-expanded={open} title={open ? "Fold the notes" : "Open the notes"} onClick={toggle}>
         <span className="tcs-fold-caret" aria-hidden />
         Notes
-        {answers.length ? <span className="tcs-count">{answers.length}</span> : null}
+        {here.length ? <span className="tcs-count">{here.length}</span> : null}
         {due ? <span className="tcs-due" title="Pushed 3+ times. A note here quiets the dot." /> : null}
       </button>
       {open ? (
         <div className="tcs-notes-body">
+          <div className="tcs-notes-scope" role="group" aria-label="Which notes">
+            <button type="button" aria-pressed={!all} onClick={() => setAll(false)} title={`Only notes written on ${where}`}>
+              {nodeId ? "This step" : "This task"}
+            </button>
+            <button type="button" aria-pressed={all} onClick={() => setAll(true)} title="Every note on the task and its steps">
+              All · {log.length}
+            </button>
+          </div>
           <div className="tcs-compose">
             <textarea
               data-draft=""
               aria-label="Note"
               rows={2}
-              placeholder={due ? NOTICE_PROMPT : "A note on this task…"}
+              placeholder={due && !nodeId ? NOTICE_PROMPT : `A note on ${where}…`}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -803,7 +823,10 @@ export function LogNotes({ task }: { task: Task }) {
             <ol className="tcs-timeline">
               {answers.map((a) => (
                 <li key={a.id}>
-                  <time dateTime={a.date}>{noteDate(a.date)}</time>
+                  <time dateTime={a.date}>
+                    {noteDate(a.date)}
+                    {all ? <em> · {a.nodeId ? (nodeName?.(a.nodeId) ?? "a step") : "task"}</em> : null}
+                  </time>
                   <p>{a.text}</p>
                 </li>
               ))}

@@ -121,7 +121,7 @@ export function ItemPenLinksField({
           />
           <ul className="ipt-options" role="listbox" aria-label="Pens">
             {options.length === 0 && !query.trim() && <li className="ipt-quiet">No pens match.</li>}
-            {query.trim() && scopes[0] && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) && (
+            {scopes[0] && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) && (
               <li>
                 <button
                   type="button"
@@ -131,7 +131,7 @@ export function ItemPenLinksField({
                   onClick={() => {
                     const scopeId = parentPen ? parent!.scopeId : scopes[0].id
                     const penId = addPen(scopeId, {
-                      name: query.trim(),
+                      name: query.trim() || "New pen",
                       color: `hsl(${Math.round(Math.random() * 360)} 45% 50%)`,
                       ...(parentPen ? { parentId: parentPen.id, parentIds: [parentPen.id] } : {}),
                     })
@@ -139,7 +139,7 @@ export function ItemPenLinksField({
                     openPenSettings(scopeId, penId)
                   }}
                 >
-                  <Plus className="h-3 w-3" /> New pen “{query.trim()}”
+                  <Plus className="h-3 w-3" /> {query.trim() ? `New pen “${query.trim()}”` : "Create a new pen"}
                 </button>
               </li>
             )}

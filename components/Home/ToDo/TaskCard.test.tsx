@@ -88,6 +88,7 @@ describe("TaskCard", () => {
     render(<TaskCard host={host()} />)
     act(() => openTaskCard("t1"))
     fireEvent.click(screen.getByRole("button", { name: "Select all open" }))
+    fireEvent.click(screen.getByRole("button", { name: "More…" }))
     fireEvent.click(screen.getByRole("button", { name: "+15" }))
     expect(steps().map((x) => x.estimatedDuration)).toEqual([15, 15, 15])
     act(() => {
@@ -103,7 +104,7 @@ describe("TaskCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Session with this" }))
     expect(useSessionOpenStore.getState().request?.seed).toEqual([{ taskId: "t1" }])
     fireEvent.change(screen.getByLabelText("On done"), { target: { value: "10" } })
-    expect(screen.getByTestId("task-card-points").textContent).toContain("10")
+    expect(screen.getByTestId("task-card-points").querySelector("[aria-label]")?.getAttribute("aria-label")).toContain("10")
     fireEvent.click(screen.getByRole("button", { name: /Back to the rule/ }))
     expect(useTaskStore.getState().tasks[0].pointsOverride).toBeUndefined()
   })
