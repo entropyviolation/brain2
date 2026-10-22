@@ -624,9 +624,9 @@ async function main() {
     console.log(`[phone-hub] capture-box drain from ${CAPTURE_URL} — the VM polls Telegram; do not also poll here or run Electron ingest`)
     void drainLoop()
     // iPhone location batches (POST /upload on the box), sealed by the app.
-    const { startLocationDrain } = await import("../lib/phone-sync/location-drain")
-    const { openPhoneArchive } = await import("../lib/phone-sync/archive")
     try {
+      const { startLocationDrain } = await import("../lib/phone-sync/location-drain")
+      const { openPhoneArchive } = await import("../lib/phone-sync/archive")
       startLocationDrain({
         boxUrl: CAPTURE_URL,
         token: CAPTURE_TOKEN,

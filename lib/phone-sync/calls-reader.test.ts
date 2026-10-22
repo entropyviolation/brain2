@@ -66,6 +66,19 @@ describe("callsReader", () => {
     expect(cursor).toBe(`${T + 1}|E`)
   })
 
+  it("never lets a row with no id become the cursor", () => {
+    const file = fakeCallHistory([
+      ["A", T, 10, 0, 1, "1"],
+      ["", T + 1, 10, 0, 1, "2"],
+      ["B", T + 2, 10, 0, 1, "3"],
+    ])
+    const db = new DatabaseSync(file, { readOnly: true })
+    const first = readCallPage(db, undefined, 1)
+    const second = readCallPage(db, first.cursor, 1)
+    db.close()
+    expect([...first.records, ...second.records].map((r) => r.sourceId)).toEqual(["A", "B"])
+  })
+
   it("keeps the cursor when nothing is new", async () => {
     vi.stubEnv("COGS_CALLS_DB", fakeCallHistory([["A", T, 10, 0, 1, "1"]]))
     expect(await callsReader.read(`${T}|A`)).toEqual({ records: [], cursor: `${T}|A` })

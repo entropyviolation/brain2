@@ -266,9 +266,19 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         return dir.appendingPathComponent("brain2-location-queue.json")
     }
 
-    private func readQueue() -> [QueuedLocationEvent] {
-        guard let data = try? Data(contentsOf: queueURL) else { return [] }
-        return (try? JSONDecoder().decode([QueuedLocationEvent].self, from: data)) ?? []
+    /// Events that arrived while the queue file could not be read (locked phone). Merged on the next write.
+    private var pending: [QueuedLocationEvent] = []
+
+    /// nil means the file is there but cannot be read now; callers must not overwrite it.
+    /// A file that reads but will not decode is moved aside, so it is kept, not wiped.
+    private func readQueue() -> [QueuedLocationEvent]? {
+        let url = queueURL
+        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        if let events = try? JSONDecoder().decode([QueuedLocationEvent].self, from: data) { return events }
+        let aside = url.deletingLastPathComponent().appendingPathComponent("brain2-location-queue.bad-\(Self.ms(Date())).json")
+        try? FileManager.default.moveItem(at: url, to: aside)
+        return []
     }
 
     private func writeQueue(_ events: [QueuedLocationEvent]) {
@@ -280,7 +290,13 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     private func enqueue(_ events: [QueuedLocationEvent]) {
         guard !events.isEmpty else { return }
         work.async {
-            var queue = self.readQueue() + events
+            guard let existing = self.readQueue() else {
+                self.pending += events
+                if self.pending.count > Self.maxQueued { self.pending.removeFirst(self.pending.count - Self.maxQueued) }
+                return
+            }
+            var queue = existing + self.pending + events
+            self.pending = []
             if queue.count > Self.maxQueued {
                 let over = queue.count - Self.maxQueued
                 queue.removeFirst(over)
@@ -300,7 +316,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     /// Sends one batch. On success, sends the next until the queue is empty.
     private func flushOnWorkQueue(_ done: ((Bool) -> Void)?) {
         guard !uploading else { done?(false); return }
-        let queue = readQueue()
+        guard let queue = readQueue() else { done?(false); return }
         guard !queue.isEmpty else { done?(true); return }
         guard isConfigured,
               let url = URL(string: defaults.string(forKey: Key.uploadUrl) ?? ""),
@@ -340,8 +356,9 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
                 let ok = (200..<300).contains(status)
                 if ok {
                     let sent = Set(batch.map { $0.id })
-                    let rest = self.readQueue().filter { !sent.contains($0.id) }
-                    self.writeQueue(rest)
+                    // Unreadable now: leave the file; the sent events go again and the hub's ids dedupe them.
+                    let rest = (self.readQueue() ?? []).filter { !sent.contains($0.id) }
+                    if self.readQueue() != nil { self.writeQueue(rest) }
                     self.defaults.set(Self.ms(Date()), forKey: Key.lastUploadAt)
                     self.defaults.removeObject(forKey: Key.lastError)
                     if !rest.isEmpty { self.flushOnWorkQueue(nil) }
@@ -368,7 +385,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
                     "permission": permission,
                     "recording": self.defaults.bool(forKey: Key.enabled),
                     "configured": self.isConfigured,
-                    "queued": self.readQueue().count,
+                    "queued": (self.readQueue()?.count ?? 0) + self.pending.count,
                     "dropped": self.defaults.integer(forKey: Key.dropped),
                 ]
                 let last = self.defaults.double(forKey: Key.lastUploadAt)

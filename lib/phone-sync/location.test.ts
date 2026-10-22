@@ -73,6 +73,15 @@ describe("locationEventToEntries", () => {
     expect(new Set(rows.map((r) => r.id)).size).toBe(2)
   })
 
+  it("ends a visit at the wall clock on a DST change day", () => {
+    // US fall-back is Nov 1, 2026: that day has 25 hours (tests run in America/Los_Angeles).
+    const rows = locationEventToEntries({ type: "visit", arriveAt: at(22, 30, 31), departAt: new Date(2026, 10, 1, 7, 15).getTime(), ...CAFE }, targets)
+    expect(rows.map((r) => [r.date, r.startMin, r.endMin])).toEqual([
+      ["2026-10-31", 22 * 60 + 30, 1440],
+      ["2026-11-01", 0, 7 * 60 + 15],
+    ])
+  })
+
   it("makes a half-known visit an instant", () => {
     const [arrived] = locationEventToEntries({ type: "visit", arriveAt: at(10), ...CAFE }, targets)
     const [left] = locationEventToEntries({ type: "visit", departAt: at(12), ...CAFE }, targets)

@@ -31,7 +31,11 @@ async function openDb(file: string): Promise<DatabaseSync> {
   }
   // getBuiltinModule, not import: bundlers (vite, Electron builds) choke on node:sqlite.
   const Database = process.getBuiltinModule?.("node:sqlite")?.DatabaseSync
-  if (!Database) throw new Error("Texts sync needs Node 22.5 or newer (node:sqlite).")
+  // readOnly landed in 22.12; older builds may ignore it and open chat.db read-write.
+  const [major, minor] = process.versions.node.split(".").map(Number)
+  if (!Database || major! < 22 || (major === 22 && minor! < 13)) {
+    throw new Error("Texts sync needs Node 22.13 or newer (node:sqlite with a read-only open).")
+  }
   try {
     return new Database(file, { readOnly: true })
   } catch (err) {

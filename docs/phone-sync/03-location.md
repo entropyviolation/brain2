@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built, not yet switched on.** The code is in. Two shared files still need their hook lines, and the app has not been built in Xcode yet.
+**Built, not yet switched on.** The code is in and wired. The box needs the new file and token, and the app has not been built in Xcode yet.
 
 | Piece | File | State |
 | --- | --- | --- |
@@ -17,8 +17,8 @@ _Last mapped: 2026-10-22_
 | Relaunch | `ios/App/App/AppDelegate.swift` | Built. `resumeIfEnabled()` at launch, `flush()` when the app comes forward. |
 | Info.plist | `ios/App/App/Info.plist` | Built. Both usage strings and `UIBackgroundModes` → `location`. |
 | JS bridge | `lib/mobile/location-bridge.ts` | Built. No-op off the phone. `locationChip` gives the chip words; no screen shows it yet. |
-| Box upload | `scripts/capture-upload.mjs` | Built as its own file. `capture-box.mjs` does not mount it yet (core owns that file). |
-| Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` does not start it yet (core owns that file). |
+| Box upload | `scripts/capture-upload.mjs` | Built as its own file, mounted by `capture-box.mjs`. An ack names its kind, so it never drops another kind's rows. |
+| Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` starts it when `COGS_CAPTURE_BOX_URL` is set. |
 | Rows | `lib/phone-sync/location.ts` | Built. See [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md) → Location. |
 
 Changes from the brief:
@@ -42,8 +42,8 @@ Honest gaps:
 
 To switch it on:
 
-1. Core adds the mount lines to `scripts/capture-box.mjs` (top of `scripts/capture-upload.mjs` has them), sets `COGS_CAPTURE_UPLOAD_TOKEN` on the VM, and copies `capture-upload.mjs` next to the other box files.
-2. Core starts `startLocationDrain` from `scripts/phone-hub.ts` when `COGS_CAPTURE_BOX_URL` is set.
+1. On the VM, copy `capture-upload.mjs` next to the other box files, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box.
+2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
 3. In Xcode: build to the phone, allow location, pick "Always" when iOS offers it, then configure and start from the app.
 
 ## Job

@@ -88,7 +88,7 @@ export async function drainLocationOnce(deps: LocationDrainDeps): Promise<PhoneS
   await doFetch(`${deps.boxUrl}/uploads/ack`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ upto }),
+    body: JSON.stringify({ upto, kind: LOCATION_SOURCE }),
     signal: AbortSignal.timeout(20000),
   })
 
