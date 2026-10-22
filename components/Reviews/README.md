@@ -23,7 +23,7 @@ Other rooms may import:
 
 This room writes **`lib/reviews-store.ts`** (`useReviewsStore`: `saveReview`, `replaceMorningReview`, `replaceStartRitual`). `PostMortemDialog` saves the task reflection through `saveCompletionReview` in `lib/services/completion-service.ts`.
 
-Interiors stay in this room: `MorningReviewDialog`, `MorningReview`, `StartRitualDialog`, `ReviewDialog`, `StarLordReportDialog`, `AffirmationsDialog`, `CommitmentMarkList`, `DayReviewTomorrowSection`, `NightTimeGlance`, `WhyBlockedControl`, `PeriodReviewStudio`, `AssumedTimesSection`, and `pendingAssumedTasks`.
+Interiors stay in this room: `MorningReviewDialog`, `MorningReview`, `StartRitualDialog`, `ReviewDialog`, `StarLordReportDialog`, `AffirmationsDialog`, `CommitmentMarkList`, `DayReviewTomorrowSection`, `NightTimeGlance`, `WhyBlockedControl`, `PeriodReviewStudio`, `AssumedTimesSection`, and `pendingAssumedTasks` (re-exported; the logic is in `lib/assumed-tasks.ts` so the phone hub can load it in Node).
 
 This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Reports.
 
