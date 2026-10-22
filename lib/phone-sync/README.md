@@ -61,4 +61,6 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 
 ## Hub
 
-`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). It logs each run and calls `flushVault` after a run that wrote rows.
+`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushVault` after a run that wrote rows.
+
+_Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.

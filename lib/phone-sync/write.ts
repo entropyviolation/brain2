@@ -54,9 +54,38 @@ function ensureScope(scopes: TrackScope[], find: (s: TrackScope[]) => TrackScope
   return { scope, scopes: [...scopes, scope] }
 }
 
+export const DEFAULT_TEXT_DAYS = 30
+
+/**
+ * Texts older than `textDays` stay in the disk archive only. Tracking lives in
+ * localStorage (~5 MB for every key), and years of texts would fill it. Calls
+ * are few, so they always count. `textDays` 0 keeps every text out.
+ */
+export function inTrackWindow(record: PhoneRecord, now: number, textDays: number): boolean {
+  if (record.type !== "message") return true
+  return textDays > 0 && record.at >= now - textDays * 86_400_000
+}
+
+/** Days of texts Tracking keeps, from `COGS_PHONE_SYNC_TEXT_DAYS` (default 30). */
+export function textDaysFromEnv(raw: string | undefined): number {
+  const n = Number(raw)
+  return raw !== undefined && raw.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : DEFAULT_TEXT_DAYS
+}
+
+export interface ApplyPhoneOptions {
+  textDays?: number
+  now?: number
+}
+
 /** Apply records to the tracking store. `people` defaults to People I Know. */
-export function applyPhoneRecords(records: readonly PhoneRecord[], people: readonly PhonePerson[] = phonePeople()): ApplyPhoneResult {
-  if (records.length === 0) return { read: 0, written: 0, skipped: 0 }
+export function applyPhoneRecords(
+  all: readonly PhoneRecord[],
+  people: readonly PhonePerson[] = phonePeople(),
+  { textDays = DEFAULT_TEXT_DAYS, now = Date.now() }: ApplyPhoneOptions = {},
+): ApplyPhoneResult {
+  const records = all.filter((record) => inTrackWindow(record, now, textDays))
+  const outside = all.length - records.length
+  if (records.length === 0) return { read: all.length, written: 0, skipped: outside }
   const state = useTimeTrackingStore.getState()
   let scopes = state.scopes
   const texts = ensureScope(scopes, findIphoneTextsScope, defaultIphoneTextsScope)
@@ -81,12 +110,12 @@ export function applyPhoneRecords(records: readonly PhoneRecord[], people: reado
   const incoming = records.flatMap((record) => recordToEntries(record, targets))
   const merged = mergePhoneEntries(state.entries, state.removedEntryIds ?? [], incoming)
   if (merged.added === 0 && newPens.size === 0 && scopes === state.scopes) {
-    return { read: records.length, written: 0, skipped: merged.skipped }
+    return { read: all.length, written: 0, skipped: merged.skipped + outside }
   }
   const nextScopes = scopes.map((scope) => {
     const add = newPens.get(scope.id)
     return add?.length ? { ...scope, pens: [...scope.pens, ...add] } : scope
   })
   useTimeTrackingStore.setState({ entries: merged.entries, scopes: nextScopes })
-  return { read: records.length, written: merged.added, skipped: merged.skipped }
+  return { read: all.length, written: merged.added, skipped: merged.skipped + outside }
 }
