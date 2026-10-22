@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built and on the phone, not yet switched on.** The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, and the app needs `configure` (upload URL, upload token, capture public key) and the Always permission. No screen calls the bridge yet.
+**Built and on the phone, not yet switched on.** The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
 
 | Piece | File | State |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ _Last mapped: 2026-10-22_
 | Registration | `ios/App/App/AppViewController.swift`, `Main.storyboard`, `project.pbxproj` | Built. The storyboard uses `AppViewController`, which registers the plugin in `capacitorDidLoad`. |
 | Relaunch | `ios/App/App/AppDelegate.swift` | Built. `resumeIfEnabled()` at launch, `flush()` when the app comes forward. |
 | Info.plist | `ios/App/App/Info.plist` | Built. Both usage strings and `UIBackgroundModes` → `location`. |
-| JS bridge | `lib/mobile/location-bridge.ts` | Built. No-op off the phone. `locationChip` gives the chip words; no screen shows it yet. |
+| JS bridge | `lib/mobile/location-bridge.ts` | Built. No-op off the phone. `locationChip` gives the chip words, shown on the Location card. |
 | Box upload | `scripts/capture-upload.mjs` | Built as its own file, mounted by `capture-box.mjs`. An ack names its kind, so it never drops another kind's rows. |
 | Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` starts it when `COGS_CAPTURE_BOX_URL` is set. |
 | Rows | `lib/phone-sync/location.ts` | Built. See [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md) → Location. |
@@ -38,13 +38,12 @@ Honest gaps:
 - The token sits in the app's `UserDefaults`, not the Keychain.
 - App Transport Security may refuse a plain `http://` upload URL. The safe choice is HTTPS through `tailscale serve` on the box. A bare `http://100.x.y.z:8788/upload` is untested.
 - Visit blocks can overlap a hand-made Location block in the same minutes.
-- No screen yet sets the upload URL, token and key, or shows the chip. Until one does, call `configureLocationUpload` once from the web inspector.
 
 To switch it on:
 
 1. On the VM, copy `capture-upload.mjs` next to the other box files, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box.
 2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
-3. In Xcode: build to the phone, allow location, pick "Always" when iOS offers it, then configure and start from the app.
+3. In Xcode: build to the phone, allow location, pick "Always" when iOS offers it, then fill in Upload setup on the Location card and tap Turn on.
 
 ## Job
 
