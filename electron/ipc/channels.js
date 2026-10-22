@@ -65,6 +65,11 @@ const COGS_IPC_CHANNELS = {
   telegramMessage: "cogs:telegram:message",
   telegramPollStatus: "cogs:telegram:pollStatus",
   telegramAck: "cogs:telegram:ack",
+  // Analytics → Texts: the loopback texts report server (electron/texts-report.js).
+  // Bridged as `window.desktop.texts.{ ensureServer, status, refresh }`.
+  textsEnsureServer: "cogs:texts:ensureServer",
+  textsStatus: "cogs:texts:status",
+  textsRefresh: "cogs:texts:refresh",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */
