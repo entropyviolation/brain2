@@ -129,6 +129,7 @@ let dropLocationDuringRitual: ExecutorModule["dropLocationDuringRitual"] | undef
 let deliverIngestReply: typeof import("../lib/ingest/deliver-reply")["deliverIngestReply"]
 let incomingFromTelegram: typeof import("../lib/ingest/telegram-bridge")["incomingFromTelegram"]
 let stores: HydratedStore[] = []
+let trackingKey = ""
 let flushing = false
 let ignoreWatch = false
 let lastPersistMtime = 0
@@ -204,6 +205,7 @@ async function loadStores() {
     penNow.usePenColorSessionStore,
   ]
   await Promise.all(stores.map(waitHydrated))
+  trackingKey = tracking.useTimeTrackingStore.persist.getOptions().name ?? ""
   ingestIncomingAsync = exec.ingestIncomingAsync
   dropLocationDuringRitual = exec.dropLocationDuringRitual
   deliverIngestReply = deliver.deliverIngestReply
@@ -223,13 +225,16 @@ async function rehydrateFromDisk() {
   )
 }
 
-function flushVault() {
+/** Push the hub's localStorage to the vault. `onlyKeys` limits it to those keys. */
+function flushVault(onlyKeys?: string[]) {
   if (flushing) return
   flushing = true
   ignoreWatch = true
   try {
     flushScheduledPersist()
-    mergeSharedPersistItems(dumpLocalStorage(), "phone-hub")
+    const items = dumpLocalStorage() as Record<string, string>
+    const pushed = onlyKeys ? Object.fromEntries(onlyKeys.filter((k) => k in items).map((k) => [k, items[k]])) : items
+    mergeSharedPersistItems(pushed, "phone-hub")
   } finally {
     flushing = false
     setTimeout(() => {
@@ -634,7 +639,7 @@ async function main() {
         open: openSealed,
         archive: openPhoneArchive(join(ROOT, "data")),
         beforeApply: rehydrateFromDisk,
-        onWrote: flushVault,
+        onWrote: flushTracking,
       })
     } catch (err) {
       console.error(`[phone-hub] location drain off: ${err instanceof Error ? err.message : err}`)
@@ -687,7 +692,7 @@ async function startPhoneSync() {
         // Pick up edits the app made since the last read. A stale copy that lacks
         // a newer Tracking block is refused whole by the vault guard, phone rows too.
         await rehydrateFromDisk()
-        const runs = await runPhoneSync({ archive, apply, onWrote: flushVault }, readers)
+        const runs = await runPhoneSync({ archive, apply, onWrote: flushTracking }, readers)
         for (const run of runs) {
           if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
           else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
@@ -704,6 +709,15 @@ async function startPhoneSync() {
     tick().catch((err) => console.error(`[phone-hub] phone sync tick: ${err instanceof Error ? err.message : err}`))
   void runTick()
   setInterval(() => void runTick(), PHONE_SYNC_MS)
+}
+
+/**
+ * Phone sync and location only change Tracking. Pushing every key would send
+ * the hub's copy of stores the app changed since the last read, and the vault
+ * guard refuses those as stale.
+ */
+function flushTracking() {
+  flushVault(trackingKey ? [trackingKey] : undefined)
 }
 
 function shutdown() {
