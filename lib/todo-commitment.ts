@@ -7,7 +7,7 @@
  * time, hours left, working hours left, and comfort (Hofstadter padding).
  */
 import { differenceInDays, format } from "date-fns"
-import type { Task, TodoMarkPeriod, TodoPeriodMark } from "@/lib/types"
+import type { StepTier, Task, TodoMarkPeriod, TodoPeriodMark } from "@/lib/types"
 import {
   canonicalWeekKey,
   formatLocalDateKey,
@@ -93,7 +93,8 @@ function sameMarks(a: TodoPeriodMark[] | undefined, b: TodoPeriodMark[] | undefi
       mark.period === other?.period &&
       mark.periodKey === other?.periodKey &&
       !!mark.required === !!other?.required &&
-      !!mark.prioritized === !!other?.prioritized
+      !!mark.prioritized === !!other?.prioritized &&
+      mark.tier === other?.tier
     )
   })
 }
@@ -103,16 +104,17 @@ export function withTodoCommitment(
   task: Task,
   period: TodoMarkPeriod,
   periodKey: string,
-  flags: { required: boolean; prioritized: boolean },
+  flags: { required: boolean; prioritized: boolean; tier?: StepTier },
 ): Task {
   const key = markKey(period, periodKey)
   const marks = (task.todoMarks ?? []).filter((mark) => !(mark.period === period && markKey(period, mark.periodKey) === key))
-  if (flags.required || flags.prioritized) {
+  if (flags.required || flags.prioritized || flags.tier) {
     marks.push({
       period,
       periodKey: key,
       ...(flags.required ? { required: true } : {}),
       ...(flags.prioritized ? { prioritized: true } : {}),
+      ...(flags.tier ? { tier: flags.tier } : {}),
     })
   }
   const todoMarks = marks.length ? marks : undefined
@@ -137,12 +139,13 @@ export function carryTodoMarksPatch(
   const from = findTodoMark(task, period, fromKey)
   const required = !!from?.required
   const prioritized = !!from?.prioritized || alsoPrioritized
-  if (!required && !prioritized) return {}
+  if (!required && !prioritized && !from?.tier) return {}
   if (markKey(period, fromKey) === markKey(period, toKey)) return {}
   const dest = findTodoMark(task, period, toKey)
   const next = withTodoCommitment(task, period, toKey, {
     required: required || !!dest?.required,
     prioritized: prioritized || !!dest?.prioritized,
+    tier: dest?.tier ?? from?.tier,
   })
   return next === task ? {} : { todoMarks: next.todoMarks }
 }
@@ -152,13 +155,23 @@ export function patchTodoCommitment(
   task: Task,
   period: TodoMarkPeriod,
   periodKey: string,
-  patch: { required?: boolean; prioritized?: boolean },
+  patch: { required?: boolean; prioritized?: boolean; tier?: StepTier },
 ): Task {
   const current = findTodoMark(task, period, periodKey)
   return withTodoCommitment(task, period, periodKey, {
     required: patch.required ?? !!current?.required,
     prioritized: patch.prioritized ?? !!current?.prioritized,
+    tier: patch.tier ?? current?.tier,
   })
+}
+
+/** The tier a task holds on one list. No mark, or a mark with no tier, reads Goal. */
+export function todoMarkTier(
+  task: { todoMarks?: TodoPeriodMark[] },
+  period: TodoMarkPeriod,
+  periodKey: string,
+): StepTier {
+  return findTodoMark(task, period, periodKey)?.tier ?? "goal"
 }
 
 /**
@@ -182,6 +195,7 @@ export function tasksWithCommitment(
     const next = withTodoCommitment(task, period, periodKey, {
       required: required.has(task.id),
       prioritized: prioritized.has(task.id),
+      tier: findTodoMark(task, period, periodKey)?.tier,
     })
     if (next !== task) changed.push(next)
   }
@@ -434,4 +448,11 @@ export function splitByCommitment<T>(items: readonly T[], isRequired: (item: T) 
     else assigned.push(item)
   }
   return { required, assigned }
+}
+
+/** Splits rows into the three B/G/E sections of one list, keeping each row's order. */
+export function splitByTier<T>(items: readonly T[], tierOf: (item: T) => StepTier): Record<StepTier, T[]> {
+  const out: Record<StepTier, T[]> = { min: [], goal: [], exceptional: [] }
+  for (const item of items) out[tierOf(item)].push(item)
+  return out
 }

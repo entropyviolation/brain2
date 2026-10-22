@@ -7,6 +7,7 @@
  * `all: item` is still a list named all. Callers then attach those list ids
  * on the captured task.
  */
+import { parseLinkMessage } from "@/lib/saved-links"
 import type { CaptureOrigin, Folder, List, Task } from "@/lib/types"
 import {
   folderAllItemsCategoryId,
@@ -258,6 +259,16 @@ export function buildCapturedTask(opts: {
       entropy: task.entropy ?? 0.5,
       allowPartialCompletion: task.allowPartialCompletion ?? false,
       minimumChunkSize: task.minimumChunkSize ?? 15,
+    }
+    // A line that starts with a link is a saved link (Inbox → Links), from any door.
+    const saved = monkey ? null : parseLinkMessage(opts.fallbackText)
+    if (saved) {
+      task = {
+        ...task,
+        description: saved.link.url,
+        savedLink: saved.link,
+        ...(saved.note ? { notes: saved.note } : {}),
+      }
     }
   }
   return task

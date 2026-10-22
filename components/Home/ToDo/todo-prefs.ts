@@ -75,6 +75,8 @@ export type TodoPrefs = {
   loadOpen: boolean
   /** Header Show key: the filter tray is open. Default closed. */
   showTrayOpen: boolean
+  /** Settings → B/G/E mode: each list splits into Bare minimum / Goal / Exceptional (`TodoPeriodMark.tier`) and scores on that scale. */
+  bgeTiers: boolean
 }
 
 export type SavedFormula = { id: string; name: string; weights: PriorityWeights }
@@ -113,6 +115,7 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   sortOrder: DEFAULT_TODO_SORT_ORDER.priority,
   loadOpen: false,
   showTrayOpen: false,
+  bgeTiers: false,
 }
 
 export function normalizeStatusFilter(value: unknown): TodoStatusFilter {
@@ -236,6 +239,7 @@ function load(): TodoPrefs {
           : DEFAULT_TODO_SORT_ORDER[normalizeSortMode(parsed.sortMode)],
       loadOpen: parsed.loadOpen === true,
       showTrayOpen: parsed.showTrayOpen === true,
+      bgeTiers: parsed.bgeTiers === true,
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -273,7 +277,8 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.sortMode === DEFAULT_TODO_PREFS.sortMode &&
       snapshot.sortOrder === DEFAULT_TODO_PREFS.sortOrder &&
       snapshot.loadOpen === false &&
-      snapshot.showTrayOpen === false
+      snapshot.showTrayOpen === false &&
+      snapshot.bgeTiers === false
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -313,6 +318,7 @@ export function setTodoPrefs(
     sortOrder: patch.sortOrder === "asc" || patch.sortOrder === "desc" ? patch.sortOrder : snapshot.sortOrder,
     loadOpen: patch.loadOpen ?? snapshot.loadOpen,
     showTrayOpen: patch.showTrayOpen ?? snapshot.showTrayOpen,
+    bgeTiers: patch.bgeTiers ?? snapshot.bgeTiers,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

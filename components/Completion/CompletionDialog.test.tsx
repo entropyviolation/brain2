@@ -349,7 +349,6 @@ describe("CompletionDialog", () => {
     usePointsStore.getState().addPoints("t1", 5, "INVOICE NOWWW", completedDate)
 
     render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
-    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
     fireEvent.change(screen.getByLabelText("Done date"), { target: { value: "2026-06-18" } })
     await user.click(screen.getByRole("button", { name: "Save" }))
 
@@ -374,5 +373,23 @@ describe("CompletionDialog", () => {
     expect(saved?.completedDate).toEqual(completedDate)
     expect(saved?.completedCertainty).toBeUndefined()
     expect(formatLocalDateKey(saved!.completedDate!)).toBe("2026-06-20")
+  })
+
+  it("corrects the finish day without opening the reflection", async () => {
+    const user = userEvent.setup()
+    const completedDate = new Date(2026, 5, 20, 12, 0, 0, 0)
+    useTaskStore.getState().setTasks([makeTask({ id: "t1", description: "INVOICE NOWWW", completedDate })])
+
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+    await user.click(screen.getByRole("button", { name: "Yesterday" }))
+    await user.click(screen.getByRole("button", { name: "Estimated finish" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    expect(formatLocalDateKey(saved!.completedDate!)).toBe(formatLocalDateKey(yesterday))
+    expect(saved?.completedCertainty).toBe("estimated")
+    expect(saved?.completionReview).toBeUndefined()
   })
 })

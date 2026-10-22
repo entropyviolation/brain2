@@ -372,6 +372,11 @@ export interface TodoPeriodMark {
   required?: boolean
   /** Highlighted on the Assigned list. */
   prioritized?: boolean
+  /**
+   * Bare minimum / Goal / Exceptional for this task on this one list (To Do → B/G/E mode).
+   * Missing reads as Goal. The same task can hold a different tier on another list.
+   */
+  tier?: StepTier
 }
 
 /**

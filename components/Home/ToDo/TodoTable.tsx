@@ -74,6 +74,12 @@ export function waitingSinceLabel(daysWaiting: number, now: Date = new Date()): 
   return `Waiting since ${word}`
 }
 
+const BGE_KEYS: { tier: StepTier; short: string; title: string }[] = [
+  { tier: "min", short: "B", title: "Bare minimum on this list: must be done at the very least" },
+  { tier: "goal", short: "G", title: "Goal on this list: what you aim for" },
+  { tier: "exceptional", short: "E", title: "Exceptional on this list: above and beyond" },
+]
+
 export function TodoTable({
   todos,
   period,
@@ -99,6 +105,8 @@ export function TodoTable({
   isPrioritized,
   onToggleRequired,
   onTogglePrioritized,
+  bgeTierOf,
+  onBgeTierChange,
   onRename,
   openRowId,
   onOpenRowIdChange,
@@ -146,6 +154,9 @@ export function TodoTable({
   isPrioritized: (todoId: string) => boolean
   onToggleRequired: (todoId: string) => void
   onTogglePrioritized: (todoId: string) => void
+  /** B/G/E mode: this row's tier on this list. With `onBgeTierChange`, the Flags line gets the B · G · E keys. */
+  bgeTierOf?: (todoId: string) => StepTier
+  onBgeTierChange?: (todoId: string, tier: StepTier) => void
   onRename?: (todoId: string, description: string) => void
   openRowId: string | null
   onOpenRowIdChange: (id: string | null) => void
@@ -691,6 +702,23 @@ export function TodoTable({
                     <img className="todo-gem-stone" src={GEM_PRIORITIZED} alt="" aria-hidden />
                     <span className="todo-jewel-word">Prioritized</span>
                   </button>
+                  {bgeTierOf && onBgeTierChange && !walk ? (
+                    <div className="todo-segment todo-bge-keys" role="radiogroup" aria-label="Tier on this list">
+                      {BGE_KEYS.map(({ tier, short, title }) => (
+                        <button
+                          key={tier}
+                          type="button"
+                          role="radio"
+                          aria-checked={bgeTierOf(todo.id) === tier}
+                          className={`todo-chiclet${bgeTierOf(todo.id) === tier ? " is-on" : ""}`}
+                          title={title}
+                          onClick={() => onBgeTierChange(todo.id, tier)}
+                        >
+                          {short}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </TodoLidSection>
                 <TodoBreakdown
                   estimate={estimate}
