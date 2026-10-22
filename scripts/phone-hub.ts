@@ -699,8 +699,11 @@ async function startPhoneSync() {
     }
   }
   console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s`)
-  void tick()
-  setInterval(() => void tick(), PHONE_SYNC_MS)
+  // A disk error in one tick is logged; the next interval tries again.
+  const runTick = () =>
+    tick().catch((err) => console.error(`[phone-hub] phone sync tick: ${err instanceof Error ? err.message : err}`))
+  void runTick()
+  setInterval(() => void runTick(), PHONE_SYNC_MS)
 }
 
 function shutdown() {
