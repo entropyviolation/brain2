@@ -38,9 +38,12 @@ export function ParkingLotStage({
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const pickRef = useRef(onPick)
-  pickRef.current = onPick
   const latest = useRef({ cars, selectedId })
-  latest.current = { cars, selectedId }
+  // Synced after commit, ahead of the effects below, so the async loader never reads an abandoned render.
+  useEffect(() => {
+    pickRef.current = onPick
+    latest.current = { cars, selectedId }
+  })
 
   useEffect(() => {
     const host = hostRef.current

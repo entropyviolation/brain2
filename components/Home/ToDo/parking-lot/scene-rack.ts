@@ -322,6 +322,7 @@ export const mount: MountLot = (host, { onPick, reducedMotion }) => {
   raf = requestAnimationFrame(loop)
 
   const timers = new Set<ReturnType<typeof setTimeout>>()
+  const pendingResolves = new Set<() => void>()
   const later = (ms: number, fn: () => void) => {
     const t = setTimeout(() => {
       timers.delete(t)
@@ -368,11 +369,15 @@ export const mount: MountLot = (host, { onPick, reducedMotion }) => {
       }
       c.press = true
       return new Promise<void>((resolve) => {
+        pendingResolves.add(resolve)
         later(PRESS_MS, () => {
           c.press = false
           pwrTarget = 1
         })
-        later(RESUME_MS, resolve)
+        later(RESUME_MS, () => {
+          pendingResolves.delete(resolve)
+          resolve()
+        })
       })
     },
     dispose() {
@@ -380,6 +385,8 @@ export const mount: MountLot = (host, { onPick, reducedMotion }) => {
       cancelAnimationFrame(raf)
       for (const t of timers) clearTimeout(t)
       timers.clear()
+      for (const r of pendingResolves) r()
+      pendingResolves.clear()
       ro.disconnect()
       canvas.removeEventListener("pointerdown", onDown)
       clear()
