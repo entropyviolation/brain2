@@ -357,7 +357,7 @@ export function ViewModeCards({
 
 /* ---------- swatches: list color without the platform picker as the only door ---------- */
 
-const SWATCHES = ["#7e14ff", "#a35cff", "#2a6ad8", "#3b82f6", "#9ad7ff", "#1a8a6a", "#22c55e", "#7dffc4", "#c8b860", "#ef4444", "#e86aa8", "#5a5e62", "#111111"]
+const SWATCHES = ["#7d6bb8", "#a35cff", "#2a6ad8", "#3b82f6", "#9ad7ff", "#1a8a6a", "#22c55e", "#7dffc4", "#c8b860", "#ef4444", "#e86aa8", "#5a5e62", "#111111"]
 
 export function ColorSwatches({ value, onChange }: { value: string; onChange: (color: string) => void }) {
   const current = (value || "").toLowerCase()

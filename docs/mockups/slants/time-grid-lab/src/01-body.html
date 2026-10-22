@@ -1,0 +1,56 @@
+<header class="mast"><div class="wrap">
+  <p class="eyebrow">Brain2 · Home · Tracking · Time Grid</p>
+  <h1>Time Grid studio</h1>
+  <p class="lede">Eighteen redesigns of one screen, from <b>keeps every house rule</b> to <b>keeps only the data</b>. Each board is a Hipgnosis idea, a retrofuturist instrument, or both, and each one runs on the same sample week: the Mon Oct 19 and Tue Oct 20 records from the real screen.</p>
+  <p class="lede">Use the bench below. Switching Day or Week, the cell size, the view key or the day redraws every board, so you can compare how each design carries the same minutes. Click a board's keys, pens and tools. Clear day asks first, then offers Undo.</p>
+</div></header>
+
+<nav class="bench" aria-label="Lab bench"><div class="wrap">
+  <div class="bg"><span>Span</span><button class="chip" data-set="span:day">Day</button><button class="chip" data-set="span:week">Week</button></div>
+  <div class="bg"><span>Cell</span><span id="cellchips" class="bg"></span></div>
+  <div class="bg"><span>View</span><button class="chip" data-set="view:activity">Activity</button><button class="chip" data-set="view:location">Location</button><button class="chip" data-set="view:mood">Mood</button><button class="chip" data-set="view:screen">Screen</button><button class="chip" data-set="view:company">Company</button></div>
+  <div class="bg"><span>Day</span><button class="chip" data-act="prev" aria-label="Previous day">‹</button><span id="daylab" style="min-width:74px;text-align:center;color:var(--ink)"></span><button class="chip" data-act="next" aria-label="Next day">›</button></div>
+  <label class="sw"><input type="checkbox" id="mathsw"> Show the math</label>
+</div></nav>
+
+<div class="wrap">
+  <div class="idx" id="idx"></div>
+  <section aria-labelledby="dialh">
+    <h2 id="dialh">The rule-break dial</h2>
+    <p class="lede">Every board states its level. House rules in play are the cool paper and graph rule, silver chrome, no yellow, one color family, doors visible, three type sizes.</p>
+    <div class="dial">
+      <div><b>0</b><p>Keeps every house rule. A Hipgnosis or retro idea in house materials.</p></div>
+      <div><b>1</b><p>New furniture the house allows. A new way to read the same minutes.</p></div>
+      <div><b>2</b><p>Breaks a few named rules and lists them. Warm light, serif, a face, a diagonal.</p></div>
+      <div><b>3</b><p>Re-skins the whole tab. Layout and every control stay.</p></div>
+      <div><b>4</b><p>Breaks everything. Only the data, the actions and the states survive.</p></div>
+    </div>
+    <div class="row" style="gap:8px;margin-bottom:26px"><span class="lab" style="font-size:10px">Filter</span><span id="filters" class="bg"></span></div>
+  </section>
+
+  <main id="boards"></main>
+
+  <section class="sect" id="parts" aria-labelledby="partsh">
+    <h2 id="partsh">Parts bin: every button, eight ways</h2>
+    <p class="lede">The same control set in eight families: view keys, span, cell, paint tools, flags, date and Clear day with its confirm. Mix them into any board above. All of them are live.</p>
+    <div id="partsgrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:18px"></div>
+  </section>
+
+  <section class="sect" id="research" aria-labelledby="resh">
+    <h2 id="resh">New research this round</h2>
+    <p class="lede">Beyond the two slant files. Each find says what it is, then which board uses it. Sources are linked. Items marked from memory were not looked up.</p>
+    <div class="rs" id="rs"></div>
+  </section>
+
+  <section class="sect" id="shelf" aria-labelledby="shelfh">
+    <h2 id="shelfh">Ideas on the shelf</h2>
+    <p class="lede">Smaller ideas that did not get a board. Each could be borrowed by any of them.</p>
+    <div class="shelf" id="shelfbody"></div>
+  </section>
+
+  <footer>Sample data only. Nothing here writes to Brain2. Source and notes live in <code>docs/mockups/slants/time-grid-lab/</code>.</footer>
+</div>
+
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status"></div>
+<div id="focus" role="dialog" aria-label="Board at full size"><div class="bar"><span id="focuslab"></span><button data-act="closefocus">Close (Esc)</button></div><div class="fs" id="fs"></div></div>

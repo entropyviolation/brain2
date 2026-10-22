@@ -1,0 +1,3 @@
+#!/bin/sh
+# Builds chemistry-lab.html from this folder plus the shared tube engine in ../../slants/time-grid-lab/src.
+cd "$(dirname "$0")" && L=../../slants/time-grid-lab/src && cat $L/00-head.html src/chem-body.html $L/02-engine.js $L/24-sim.js $L/26-tubeview.js src/50-chem.js src/51-chemlab.js > chemistry-lab.html && printf '<script>\nconst ms=document.createElement("label");\ndocument.getElementById("mathsw").addEventListener("change",e=>document.body.classList.toggle("math",e.target.checked));\nchemToggle(true);\n</script>\n' >> chemistry-lab.html && sed -i.bak "s/<title>Time Grid Studio/<title>Chemistry Lab/" chemistry-lab.html && rm -f chemistry-lab.html.bak

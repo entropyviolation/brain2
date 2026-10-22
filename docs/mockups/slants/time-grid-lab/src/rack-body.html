@@ -1,0 +1,24 @@
+<header class="mast"><div class="wrap">
+  <p class="eyebrow">Brain2 · Tracking · Time Grid · optional fidget view</p>
+  <h1>Day Tubes</h1>
+  <p class="lede">Any day can become a graduated tube of liquid or sand, and turn back into the real grid with one key. It is decorative and optional. The grid keeps every tool and stays the default.</p>
+  <p class="lede">Use Grid, Liquid and Sand above each day. All grid reverts the week. Layers sort by pen, or by time of day so the sand settles like sediment. This mock opens with Mon as sand and Tue as liquid to show it.</p>
+</div></header>
+<nav class="bench" aria-label="Controls"><div class="wrap">
+  <div class="bg"><span>Span</span><button class="chip" data-set="span:day">Day</button><button class="chip" data-set="span:week">Week</button></div>
+  <div class="bg"><span>Cell</span><span id="cellchips" class="bg"></span></div>
+  <div class="bg"><span>View</span><button class="chip" data-set="view:activity">Activity</button><button class="chip" data-set="view:location">Location</button><button class="chip" data-set="view:mood">Mood</button><button class="chip" data-set="view:company">Company</button><button class="chip" data-set="view:events">Discrete events</button></div>
+  <div class="bg"><span>Day</span><button class="chip" data-act="prev" aria-label="Previous day">‹</button><span id="daylab" style="min-width:74px;text-align:center"></span><button class="chip" data-act="next" aria-label="Next day">›</button></div>
+  <label class="sw"><input type="checkbox" id="mathsw"> Show the math</label>
+</div></nav>
+<div class="wrap" style="padding-block:28px 40px">
+  <div class="stagewrap" id="w-1d"><div class="stage" id="st-1d"></div></div>
+  <div class="notes">
+    <div><h4>How it reads</h4><p>The side scale is 0 to 24 h. Fill height is tracked minutes over 1440. Layer height is each pen's minutes, or each block in time order. The dashed red line on today's tube is now.</p></div>
+    <div><h4>Staying a grid</h4><p>Days left as Grid keep the paint tools, flags, cell size and Clear day with its confirm. Only the days you turn over change.</p></div>
+    <div><h4>Physics</h4><p>The contents are a real particle simulation in the tube frame. They pour in, settle, slosh when you tilt or shake the tube, and settle again. Turn on Show the math for the equations.</p></div>
+    <div><h4>Status</h4><p>Planned. Not built. Sample week only. Part of the Time Grid studio.</p></div>
+  </div>
+  <p class="mathnote" id="mathnote"></p>
+</div>
+<div id="tip" role="tooltip"></div><div id="toast" role="status"></div>

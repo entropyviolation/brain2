@@ -5,6 +5,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { closeTaskCard, openTaskCard } from "@/lib/task-card"
 import { resetPointsVisibilityForTests, setPointsVisibility } from "@/lib/points-visibility"
 import { undoLastAction } from "@/lib/action-history"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSessionOpenStore } from "@/lib/session-open-store"
 import { itemLayers, clearItemLayers } from "@/lib/step-item-stack"
 import type { Subtask, Task } from "@/lib/types"
@@ -60,6 +61,23 @@ describe("TaskCard", () => {
     expect(screen.getAllByText("Finish CDs").length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole("button", { name: "↗ Item" }))
     expect(itemLayers().map((l) => l.taskId)).toEqual(["t1"])
+  })
+
+  it("the Spent card lists the tagged blocks and edits their clock span", () => {
+    seed()
+    useTimeTrackingStore.setState({
+      entries: [{ id: "e1", date: "2026-10-20", scopeId: "s", penId: "p", startMin: 540, endMin: 570, taskId: "t1", stepId: "insert" }],
+    } as never)
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    fireEvent.click(document.querySelector('[data-stat="spent"]')!)
+    expect(screen.getByRole("list", { name: "Blocks of time spent" })).toBeTruthy()
+    const end = screen.getByLabelText("End of the block on 2026-10-20") as HTMLInputElement
+    expect(end.value).toBe("9:30")
+    fireEvent.change(end, { target: { value: "10:00" } })
+    fireEvent.keyDown(end, { key: "Enter" })
+    const e = useTimeTrackingStore.getState().entries.find((x) => x.id === "e1")!
+    expect([e.startMin, e.endMin]).toEqual([540, 600])
   })
 
   it("the Progress card opens the completion math: ρ and σ over the top-level parts; Esc closes it", () => {

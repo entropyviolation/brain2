@@ -70,7 +70,7 @@ build/filter logic is unit-testable.
 |------|---------|
 | `todo-panel.tsx` | **Orchestrator** (`data-ui-name="To Do"`). Names mode also stamps the inner desks: **To Do fascia**, **Period nameplate** (season nav here; day/week/month on `TodoPeriodNav.tsx`), **Period keys**, **Period sheet**, **Season list**, **Morning priorities**, **Required**, **Assigned**, **Assigned composer**, **WIP warning**, **Priority formula**, **Status bar**, **To Do plate**. Milled fascia — CRT **To Do** + open count, period nameplate, **Open list**, **Add Task**, Day/Week/Month/Season keys, Show / Sort — then the list stage (full width), WIP lace warning, status bar, task detail popup. **Open list** opens Lists on that period's To do list. Under the window, on the page scroll, the title jewel (`orbFor("home-todo")`, the dove) sits centered, at most 40rem wide (`.todo-desk-plate`) so the bottom of the desktop is that picture. Day tab shows **Morning priorities** (3–5 ids from today's morning review). Open rows share **one ledger**: Required (gunmetal/pearl band) then Assigned. Completing a row is Cmd/Ctrl-Z undoable via `completeTask` → `lib/action-history.ts`; the completion popup **Undo** also reopens the row. **Missed opportunity** (`markMissedOpportunity`) is the too-late twin: same undo stack, no points, no completion popup. Period tab change uses a short fold (skipped under `prefers-reduced-motion`). |
 | `todo-filters.tsx` | **Show / Sort** strip on fascia row 3 (_Last mapped: 2026-10-20_): LED chips (Available now, All tasks, Hide locked, Show next only), Tier, Status, Sort + direction, Formula. Sun rites, the in-progress cap, default estimate and pace moved to the gear. |
-| `TodoSettingsDialog.tsx` | The gear: global To Do settings (title, sun rites, pace, priority formula). |
+| `TodoSettingsDialog.tsx` | The gear: global To Do settings (title, sun rites, tiers, pace, priority formula). |
 | `PriorityFormulaPanel.tsx` | Weights, saved formulas, and the optional math view. |
 | `todo-ranges.ts` / `TodoRangeSheet.tsx` | Other view: custom done-before ranges backed by Lists, and the live title. |
 | `todo-prefs.ts` | Persisted To Do prefs (live key `brain2-todo-prefs`, legacy alias `cogs-todo-prefs`): `availableNow` (default off), `wipLimit` (default 3), `lidCollapsed` (flags / time / steps, default all open), `ritesFollowSun` (default on), `defaultEstimateMin` (default 30, 0–600, 0 = none; _Last mapped: 2026-10-16_), `hideLocked` and `showNextOnly` (both default off; Phase 9). The default is never written to a task. A row with no estimate and no steps shows it as a dim `~30` in the Time cell; the load strip still counts that row as unestimated, and Open unestimated still finds it. Plan's drop and capacity count it. `paceOverrides` (by `paceKey`, clamped 0.5–4) and `paceGhosts` (default on) feed your pace. |
@@ -130,7 +130,20 @@ _Last mapped: 2026-10-20_
 - **Title**: the title word (`titleBase`, default "To do") and an optional full title per view (`titleByView`).
 - **Sun rites** (`ritesFollowSun`). This left the strip.
 - **Pace**: in-progress cap, default estimate, your pace and pace ghosts (`todo-pace.tsx`).
+- **Tiers** (`bgeTiers`, default off): "Enable B/G/E tier sorting". See [B/G/E tiers](#bge-tiers).
 - **Priority formula**: the same `PriorityFormulaPanel` the strip's Formula key opens, and "Show the math by default" (`showMath`).
+
+### B/G/E tiers
+
+_Last mapped: 2026-10-22_
+
+Off by default (`bgeTiers` in `todo-prefs.ts`, switched in the gear → Tiers). Not the same as the A+…D nixie (urgency × importance) or the step tiers inside a task (`Subtask.tier`).
+
+- **Per list.** A task's tier lives on its mark for that list: `TodoPeriodMark.tier` (`min` / `goal` / `exceptional`, `lib/types.ts`), next to Required and Prioritized. The same task can be Bare minimum on the week and Goal on one day. No mark, or a mark with no tier, reads **Goal** (`todoMarkTier`, `lib/todo-commitment.ts`). A push carries the tier with the other marks (`carryTodoMarksPatch`).
+- **Meaning.** Bare minimum is what you assign yourself as the least that day (or week, or month) must hold. Goal is what you aim for. Exceptional is above and beyond.
+- **Sections.** With the mode on, the Assigned band holds three sub-bands (Bare minimum, Goal, Exceptional) in place of one table (`splitByTier`). The separate Required band is not drawn in this mode; those rows sit in their tier and keep the Required gem. Order inside a tier is the usual sort, Prioritized first. Move a row with the **B · G · E** keys on the lid's Flags line (`bgeTierOf` / `onBgeTierChange` on `TodoTable`). Derived rite rows have no task and always sit in Goal.
+- **Score** (`lib/bge-score.ts`, strip above the ledger, `data-ui-name="B/G/E score"`). Bare minimum is worth 70, Goal 30. Each is the share of that tier finished. Every finished Exceptional adds one Goal task's worth (30 ÷ Goal count) on top, so the score can pass 100: 5 Goal tasks, 2 done, 2 Exceptional done = 12 + 12 = 24 of the 30. A tier with nothing in it counts as met. With no Goal tasks, Exceptional adds nothing (no rate to pay it at). It counts every real task on the list: open, done and missed. Plain done / total sits beside it; the other completion figures are unchanged.
+- **Planned:** a Sort mode and a tier key on the closed row; the same score on the Home day lamp (`home-day-lamp.tsx`) and Analytics; Season lens sections.
 
 ### Other: custom ranges
 
@@ -170,6 +183,21 @@ _Last mapped: 2026-10-16._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Fascia key.** The **Session** key carries the running clock, and a dim `⏸n` when sessions are parked.
 - **Analytics.** The fit gauge reads your own pace (`useTodoTime` → `paceFor`, `lib/estimate-pace.ts`): finished steps plus closed lines from `history`, or your override. Drafts and parked sessions never skew it. The note reads "You usually run ×N your estimates". Finishing a line or step in a session settles spent like the ledger does.
 - **Park in the focus bar** and **Save as template**: built in slice H2, below.
+
+## Sessions: the run view
+
+_Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyView.tsx`, `plan-run`).
+
+- **Top.** A big clock with Time left / Paused / Over time, a ⏸ / ▶ disc for the whole session, then **+15**, **Park**, **End**. Under it: planned minutes, worked time, lines done, and the three tier lamps.
+- **Now.** The line you are on: its path, the next step as a heading, **Est** vs **Actual** with a hairline bar (rose past the estimate), ⏸ ▶ ■, **Step done**, **Task done**, **Just start**, **Paint on Tracking**. With nothing current it reads "Pick what's next."
+- **Tiers.** Bare minimum, Goal and Exceptional as wells, each head showing est, actual and done. Every line shows Est, Actual (live on the current one) and "3m under" / "+5m over" once there is something to compare. ▶ on any line makes it current (`playLine`); ■ lets go of it, keeps its time, and the session clock keeps going (`stopLine`); **Done** ticks a line without moving you off the current one (`finishLine` only moves on when the current line finishes).
+- **Suggestions.** **Random task** (`randomLine`) and **Next shortest task** (`shortestLine`, fewest open minutes, unestimated last) offer one open, unblocked line other than the current one. **Another** gives a different one until they run out. Nothing starts until you press **▶ Start this**.
+- **Keys.** Word keys are house keycaps at 40px with wide padding (`.ses-key` in `session-planner.css`); ▶ ⏸ ■ are `DvdTransportKey` discs sized to 38px (52px on the clock). Every `todo-verb` and `todo-btn` in the popup also got more padding.
+
+- **Follow-ups.** _Last mapped: 2026-10-22._ The session name is an input on the clock face. Click any Est to change it: a leaf writes the task or step estimate, a line with steps keeps its own session estimate (`setLineEstimate`). A line with steps has ▸ to show them, each with ▶ / ⏸ / ■, Est, Actual and Done. ▶ on a step makes it the line's `focusStepId`, and its time goes to `stepSec` (`playStep`, `stepSeconds`). ▶ on a line starts on Just Start's pick, so that step is timed too. The popup caption has no **Pick list** key now (Add task → **Pick list…** still opens it). The park note reads "Note to you later".
+- **Settings.** **Settings** on the clock face: timer colour (any colour, default Plan's opal mint `#8cd4a5`; paused dims it instead of turning violet), Hide finished tasks, Estimate bars. Kept per device in localStorage (`brain2.sessionView`).
+
+- **Pen clock link.** _Last mapped: 2026-10-22._ A painting session and the Tracking pen clock move together (`linkSessionAndPen` in `lib/session-pen.ts`, started by `FocusBarDock`). Pause or resume either and the other follows. Parking pauses the pen, so the focus bar stays. Stopping the pen lets go of the session's line. ■ on a line, End, and a session bumped by another still stop the pen. The focus bar stays clickable over the Session popup.
 
 ## Sessions: ways in, templates, timebox (slice H2)
 
@@ -513,6 +541,9 @@ _Last mapped: 2026-10-20_
 - **Zones.** Header band (title, state, stat cards, actions); left column = **Order** (collapsible) then **Steps** (toolbar, tree, mass-edit bar); right = detail panel with a sticky title. Both use `CardSection.tsx` (title bar, count, hairline). Detail order: Estimate → Inside → Points → Pen → Needs → This period → Notes.
 - **Order toggle.** The whole title row toggles (`aria-expanded`). Saved in localStorage `brain2-task-card-order-open`, default open, guarded. Collapsed shows "N steps · M in sequence" (M = steps that wait). No lane, no section.
 - **Stat cards** (`TaskCardStats.tsx`, under the title): Estimate, Parts, Spent, Points, Progress. Each opens one popover (Esc or outside click closes it; focus returns). Progress holds the completion math (`TreeMath`); the old **Show math** key is gone. In a sub-card they describe the root step. `guardEscape` lets Esc close the popover first, not the card.
+- **Spent blocks.** _Last mapped: 2026-10-22._ The Spent popover lists the blocks behind the number (`SpentBlocks.tsx`): date, start and end, minutes, step. Start and end are `H:MM` fields (Enter or blur saves, Esc backs out) that call `updateEntry`; × then `delete?` calls `removeEntry`. A sub-card shows only blocks on its root step and what is inside it. Typed `timeLogs` with no block are listed read-only under them. **Planned:** edit typed logs; jump to the block in the time grid.
+- **Points dial, inherited value.** _Last mapped: 2026-10-22._ The input's placeholder must stay transparent: the win95 `.is-fallback` placeholder rule out-ranked the tube rule and drew the inherited number a second time over the segment digits. The tube rule now matches its specificity.
+- **Inside (substep preview) font.** _Last mapped: 2026-10-22._ Step names use Karla 14px/500 (`.tcs-kid-name`), no longer Fraunces.
 - **Orb selects, key opens.** The tree orb selects the step (⌘/Shift add); it no longer opens the item. **Open item** (window-arrow key, `OpenItemKey` in `TaskCardSide.tsx`) sits by the node name in the detail header and, for the whole task, calls `pushItemLayer`. The old bottom "↗ Step item" button is removed; the row hover ↗ stays.
 
 ### Task card is its own UI (not item detail's)

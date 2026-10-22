@@ -111,6 +111,7 @@ import { DEFAULT_TODO_PREFS, useTodoPrefs, setTodoPrefs } from "./todo-prefs"
 import { useRitesSun } from "./use-rites-sun"
 import { useTodoTime } from "./use-todo-time"
 import { PaceSettings } from "./todo-pace"
+import { bgeScore, type BgeEntry } from "@/lib/bge-score"
 import {
   comfortBand,
   comfortRatio,
@@ -121,7 +122,9 @@ import {
   nextPriorityIds,
   patchTodoCommitment,
   splitByCommitment,
+  splitByTier,
   summedEstimate,
+  todoMarkTier,
   taskIsPrioritized,
   taskIsRequired,
   todoPeriodKey,
@@ -160,6 +163,12 @@ function spanSubLabel(tab: TodoTab, date: Date): string {
   if (tab === "quarter") return seasonOfDate(date).replace(/^./, (c) => c.toUpperCase())
   return "named ranges"
 }
+
+const BGE_SECTIONS: { tier: StepTier; title: string }[] = [
+  { tier: "min", title: "Bare minimum" },
+  { tier: "goal", title: "Goal" },
+  { tier: "exceptional", title: "Exceptional" },
+]
 
 export function TodoPanel({
   currentDate: controlledDate,
@@ -227,6 +236,7 @@ export function TodoPanel({
     sortOrder,
     loadOpen,
     showTrayOpen,
+    bgeTiers,
     showNextOnly,
     tierView,
   } = todoPrefs
@@ -772,8 +782,34 @@ export function TodoPanel({
       const task = taskFor(todo.taskId ?? todo.id)
       return taskMatchesAssignedQuery(itemTitleOrUntitled(task ?? todo), task?.subtasks, assignedQuery)
     })
+    const bgeTierOf = (todoId: string): StepTier => {
+      const task = taskFor(todoId)
+      return task ? todoMarkTier(task, period, periodKey) : "goal"
+    }
+    const bgeSections = bgeTiers
+      ? splitByTier(pinPrioritizedFirst([...required, ...assigned], (todo) => prioritizedOf(todo.taskId ?? todo.id)).filter((todo) => {
+          const task = taskFor(todo.taskId ?? todo.id)
+          return taskMatchesAssignedQuery(itemTitleOrUntitled(task ?? todo), task?.subtasks, assignedQuery)
+        }), (todo) => bgeTierOf(todo.taskId ?? todo.id))
+      : null
+    // Score reads every real task on this list: open, done and missed. Rites are derived rows, not tasks, so they stay out.
+    const bgeEntries: BgeEntry[] = bgeTiers
+      ? [
+          ...openTodos.map((todo) => ({ todo, done: false })),
+          ...doneByPeriod[period].map((todo) => ({ todo, done: true })),
+          ...missedByPeriod[period].map((todo) => ({ todo, done: false })),
+        ].flatMap(({ todo, done }) => (taskFor(todo.taskId ?? todo.id) ? [{ tier: bgeTierOf(todo.taskId ?? todo.id), done }] : []))
+      : []
+    const bge = bgeTiers ? bgeScore(bgeEntries) : null
     const tableProps = {
       period,
+      bgeTierOf: bgeTiers ? bgeTierOf : undefined,
+      onBgeTierChange: bgeTiers
+        ? (todoId: string, tier: StepTier) => {
+            const task = taskFor(todoId)
+            if (task) updateTask(patchTodoCommitment(task, period, periodKey, { tier }))
+          }
+        : undefined,
       onComplete: handleComplete,
       onMissed: handleMissed,
       onPush: handlePush,
@@ -935,9 +971,31 @@ export function TodoPanel({
           </ol>
         </div>
       )}
+      {bge && bgeEntries.length > 0 && (
+        <div
+          className="todo-bge-score"
+          data-ui-name="B/G/E score"
+          data-ui-help="Bare minimum 70%, Goal 30%, Exceptional done adds what a Goal task is worth."
+          data-ui-docs="components/Home/ToDo/README.md"
+          data-ui-docs-anchor="bge-tiers"
+        >
+          <span className="todo-bge-score-num" title="Bare minimum is 70%, Goal 30%. Each Exceptional done adds one Goal task's share on top.">
+            {Math.round(bge.points)}
+            <small>%</small>
+          </span>
+          <span className="todo-bge-score-label">B/G/E {period} score</span>
+          <span className="todo-bge-score-parts">
+            B {bge.min.done}/{bge.min.total} · G {bge.goal.done}/{bge.goal.total} · E {bge.exceptional.done}/{bge.exceptional.total}
+            {bge.bonus > 0 ? ` · +${Math.round(bge.bonus)} bonus` : ""}
+          </span>
+          <span className="todo-bge-score-plain">
+            {bgeEntries.filter((e) => e.done).length} of {bgeEntries.length} tasks done
+          </span>
+        </div>
+      )}
       <div className="todo-ledger">
         {/* Hidden while empty (dead instruments are hidden); it appears when a row's Required gem lights. */}
-        {required.length > 0 && (
+        {required.length > 0 && !bgeTiers && (
         <section
           className="todo-band is-required"
           role="region"
@@ -984,6 +1042,22 @@ export function TodoPanel({
               />
             </label>
           </div>
+          {bgeSections ? (
+            BGE_SECTIONS.map(({ tier, title }) => (
+              <div key={tier} className={`todo-bge-band is-${tier}`} role="group" aria-label={title} data-ui-name={`${title} tier`}>
+                <h5 className="todo-bge-title">
+                  {title} <span className="todo-list-count">{bgeSections[tier].length}</span>
+                </h5>
+                <TodoTable
+                  {...tableProps}
+                  todos={bgeSections[tier]}
+                  emptyLabel={assignedQuery.trim() ? "Nothing matches." : `Nothing at ${title} yet.`}
+                  isExpanded={!!expandedPeriods[`${tier}-${period}`]}
+                  onToggleExpand={() => setExpandedPeriods((prev) => ({ ...prev, [`${tier}-${period}`]: !prev[`${tier}-${period}`] }))}
+                />
+              </div>
+            ))
+          ) : (
           <TodoTable
             {...tableProps}
             todos={visibleAssigned}
@@ -997,6 +1071,7 @@ export function TodoPanel({
             isExpanded={!!expandedPeriods[period]}
             onToggleExpand={() => setExpandedPeriods((prev) => ({ ...prev, [period]: !prev[period] }))}
           />
+          )}
           <WaitingLine
             hidden={lockedHiddenByPeriod[period] + (period === "day" ? sunHiddenCount : 0)}
             peeking={peekHidden}

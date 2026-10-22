@@ -163,4 +163,27 @@ describe("Also happening", () => {
     expect(screen.getByText(/Save the new start and end first/)).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /Attach activity/ })).not.toBeInTheDocument()
   })
+
+  it("lists a Company block's people in one roster with a Present | Talking switch", () => {
+    const store = useTimeTrackingStore.getState()
+    const oey = store.addPen("company", { name: "oey", color: "#39f" })
+    const aba = store.addPen("company", { name: "aba", color: "#963" })
+    store.paintMinutes(KEY, "company", 780, 1020, oey)
+    const block = useTimeTrackingStore.getState().entriesFor(KEY, "company")[0]
+    useTimeTrackingStore.getState().updateEntry(block.id, { secondaryPenIds: [aba] })
+    const { entry } = paintIan()
+
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    const roster = screen.getByRole("group", { name: "People on this Company block" })
+    expect(roster).toHaveTextContent("oey")
+    expect(roster).toHaveTextContent("aba")
+    // The main person cannot be removed here; the extra can.
+    expect(screen.queryByRole("button", { name: "Remove oey" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("group", { name: "aba: present" }).querySelectorAll("button")[1]!)
+    expect(useTimeTrackingStore.getState().entriesFor(KEY, "company")[0].talkingPenIds).toEqual([aba])
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove aba" }))
+    expect(useTimeTrackingStore.getState().entriesFor(KEY, "company")[0].secondaryPenIds ?? []).toEqual([])
+  })
 })
