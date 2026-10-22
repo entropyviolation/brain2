@@ -74,7 +74,8 @@ export function installPhoneHubGlobals() {
   globalThis.localStorage = localStorage
   globalThis.window = windowLike
   globalThis.document = windowLike.document
-  globalThis.navigator = windowLike.navigator
+  // Node 21+ has a getter-only navigator global; plain assignment throws.
+  Object.defineProperty(globalThis, "navigator", { value: windowLike.navigator, configurable: true, writable: true })
   globalThis.self = windowLike
   globalThis.__cogsPhoneHubGlobals = true
   return localStorage
