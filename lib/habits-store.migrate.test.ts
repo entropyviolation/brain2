@@ -312,7 +312,7 @@ describe("habits store rehydrate from older persist versions", () => {
   })
 
   it("does not let a stale purple LED pin overwrite a newer blob tint on refresh", async () => {
-    writeAliasedLocal("cogs-habit-led-tint", "#7e14ff")
+    writeAliasedLocal("cogs-habit-led-tint", "#7d6bb8")
     await rehydrate(15, {
       ...v9State(),
       percentLedTint: "#00cc88",
@@ -326,11 +326,11 @@ describe("habits store rehydrate from older persist versions", () => {
     writeAliasedLocal(
       "cogs-habits-store",
       JSON.stringify({
-        state: { ...v9State(), percentLedTint: "#7e14ff", appearanceRev: 6 },
+        state: { ...v9State(), percentLedTint: "#7d6bb8", appearanceRev: 6 },
         version: HABITS_STORE_PERSIST_VERSION,
       }),
     )
-    writeAliasedLocal("cogs-habit-led-tint", "#7e14ff")
+    writeAliasedLocal("cogs-habit-led-tint", "#7d6bb8")
     useHabitsStore.setState({ percentLedTint: DEFAULT_PERCENT_LED_TINT, appearanceRev: 0 })
 
     useHabitsStore.getState().setPercentLedTint("#00cc88")
@@ -344,7 +344,7 @@ describe("habits store rehydrate from older persist versions", () => {
   it("does not roll a live LED tint back when a later snapshot rehydrates", async () => {
     await rehydrate(15, {
       ...v9State(),
-      percentLedTint: "#7e14ff",
+      percentLedTint: "#7d6bb8",
       appearanceRev: 2,
     })
     useHabitsStore.getState().setPercentLedTint("#00cc88")
@@ -353,7 +353,7 @@ describe("habits store rehydrate from older persist versions", () => {
       JSON.stringify({
         state: {
           ...v9State(),
-          percentLedTint: "#7e14ff",
+          percentLedTint: "#7d6bb8",
           appearanceRev: 9,
         },
         version: HABITS_STORE_PERSIST_VERSION,

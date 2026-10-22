@@ -103,7 +103,7 @@
  * keys — it never replaces `tasks` or completions with `[]` / `{}` because a
  * field is new, and it never replaces a present `percentLedTint` /
  * `gradeTubeColor` / `outputGradeTubeColor` with the Home overview defaults
- * (`#7e14ff` / `#508b51` / `#25366a`).
+ * (`#7d6bb8` / `#508b51` / `#25366a`).
  * `appearanceRev` is bumped on each hue pick so a late hub rehydrate cannot
  * roll tubes / LEDs back to an older snapshot. `cogs-habit-led-tint` (and the
  * tube pins) are written from a successful persist of that pick; a stale pin
@@ -1970,7 +1970,7 @@ export const useHabitsStore = create<HabitsState>()(
             : {}),
           contentRev: Math.max(liveContentRev, persistedContentRev),
           appearanceRev: Math.max(liveRev, persistedRev),
-          percentLedTint: sessionLed ?? pick(current.percentLedTint, p.percentLedTint, ledPin),
+          percentLedTint: sanitizePercentLedTint(sessionLed ?? pick(current.percentLedTint, p.percentLedTint, ledPin)),
           gradeTubeColor: pick(current.gradeTubeColor, p.gradeTubeColor, gradePin),
           outputGradeTubeColor: pick(current.outputGradeTubeColor, p.outputGradeTubeColor, outputPin),
         }
