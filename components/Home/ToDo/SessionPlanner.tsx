@@ -1067,6 +1067,12 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
     onChange(playLine(plan, lineId, new Date()))
   }
 
+  /** ■: let go of the line. A painting session also lets go of the Tracking pen clock. */
+  const stop = () => {
+    releasePenClock([plan])
+    onChange(stopLine(plan, new Date()))
+  }
+
   const holdOrGo = () => onChange(paused ? resumeSession(plan, new Date()) : pauseSession(plan, new Date()))
 
   const offer = (kind: Suggestion["kind"], again = false) => {
@@ -1217,7 +1223,7 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
           <EstBar estMin={currentEst} actualSec={currentSec} />
           <div className="ses-now-keys">
             <DvdTransportKey className="ses-dvd" mark={paused ? "play" : "pause"} label={paused ? "Resume this task" : "Pause this task"} onClick={holdOrGo} />
-            <DvdTransportKey className="ses-dvd" mark="stop" label="Stop this task" onClick={() => onChange(stopLine(plan, new Date()))} />
+            <DvdTransportKey className="ses-dvd" mark="stop" label="Stop this task" onClick={stop} />
             <button type="button" data-no95 className="ses-key is-primary" disabled={!focusStep} onClick={stepDone}>
               Step done
             </button>
@@ -1338,7 +1344,7 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
                           ) : isCurrent ? (
                             <>
                               <DvdTransportKey className="ses-dvd" mark={paused ? "play" : "pause"} label={paused ? `Resume ${name}` : `Pause ${name}`} onClick={holdOrGo} />
-                              <DvdTransportKey className="ses-dvd" mark="stop" label={`Stop ${name}`} onClick={() => onChange(stopLine(plan, new Date()))} />
+                              <DvdTransportKey className="ses-dvd" mark="stop" label={`Stop ${name}`} onClick={stop} />
                             </>
                           ) : (
                             <DvdTransportKey className="ses-dvd" mark="play" label={`Start ${name}`} disabled={blocked} onClick={() => play(line.id)} />
