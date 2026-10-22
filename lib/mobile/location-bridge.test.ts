@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  appExpiryWarning,
   configureLocationUpload,
   flushLocationQueue,
   getLocationStatus,
@@ -34,5 +35,22 @@ describe("locationChip", () => {
     expect(locationChip({ ...on, queued: 4, lastError: "offline" }).label).toBe("Location: 4 waiting")
     expect(locationChip({ ...on, lastUploadAt: now - 5 * 60000 }, now).label).toBe("Location: sent 5 min ago")
     expect(locationChip(on).label).toBe("Location: on")
+  })
+})
+
+describe("appExpiryWarning", () => {
+  const base: LocationStatus = { available: true, permission: "always", recording: true, configured: true, queued: 0, dropped: 0 }
+  const now = Date.parse("2026-10-22T12:00:00Z")
+  const inDays = (d: number) => now + d * 86400000
+
+  it("stays quiet without a date or with more than two days left", () => {
+    expect(appExpiryWarning(base, now)).toBeNull()
+    expect(appExpiryWarning({ ...base, appExpiresAt: inDays(2.5) }, now)).toBeNull()
+  })
+
+  it("warns in the last two days and after expiry", () => {
+    expect(appExpiryWarning({ ...base, appExpiresAt: inDays(1.5) }, now)).toMatch(/stops opening in 1 day,/)
+    expect(appExpiryWarning({ ...base, appExpiresAt: inDays(0.5) }, now)).toMatch(/stops opening today/)
+    expect(appExpiryWarning({ ...base, appExpiresAt: inDays(-1) }, now)).toMatch(/has expired/)
   })
 })
