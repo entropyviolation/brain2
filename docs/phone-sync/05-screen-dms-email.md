@@ -15,7 +15,7 @@ No iOS API hands raw usage to an app. Add a Shortcuts **personal automation** pe
 
 ## Email
 
-IMAP read by the hub. Gmail needs an app password, stored only on the Mac. Store from, to, subject, time, and body. Owns `lib/phone-sync/email.ts` and `scripts/email-reader.mjs`.
+IMAP read by the hub. Gmail needs an app password, stored only on the Mac. Store from, to, subject, and time by default. Bodies only when the person turns them on in Settings (off by default), matching the plan. The "keep bodies" decision of 2026-10-22 was about texts. Owns `lib/phone-sync/email.ts` and `scripts/email-reader.mjs`.
 
 ## Done
 
