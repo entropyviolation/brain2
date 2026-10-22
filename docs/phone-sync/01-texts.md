@@ -4,6 +4,8 @@ _Last mapped: 2026-10-22_
 
 **Wave 1.** Needs `00-core.md`.
 
+Status: **built.** `_Last mapped: 2026-10-22_` The `attributedBody` decoder lives in `messages.ts`, not a separate `attributed-body.ts`. Tapbacks are skipped for now: `MessageRecord` has no field to attach them to. **Planned:** the one-line registration in `readers.ts` (the lead adds it).
+
 ## Job
 
 Read every iMessage and SMS from the Mac's Messages database and return them as `MessageRecord`s. The core archives bodies and writes the vault ([`lib/phone-sync/README.md`](../../lib/phone-sync/README.md)).

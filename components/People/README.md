@@ -50,9 +50,10 @@ neighborhood, state, or country precision, an interaction log, gift notes,
 and Close. Dated notes are the item's Notes tab now (see above). Relation and Close live on the profile so a Person
 type already saved still shows them. How long known, time since last seen, and
 days until the next birthday are derived when the person is open. Last seen
-counts an interaction marked Saw them, plus a Company block painted with a
-joined pen. A stored block join from before still counts. A call left unmarked
-stays a call.
+counts an interaction marked Saw them, a Company block painted with a
+joined pen, and a synced iPhone call on their call pen (phone sync,
+`personTimePenIds`). A stored block join from before still counts. A call
+interaction left unmarked stays a call.
 
 **Close** (`personProfile.close`, off when absent) makes a Gift ideas list:
 one Lists folder named Gift ideas, and inside it a list named
@@ -88,7 +89,7 @@ A later kind stays on the row. Adding a kind is a new `kind` in
 | `person-log.tsx` | `Log`: a dated log with an optional flag per row (Interactions, Saw them). The composer's text is local state. |
 | `person-nicknames.tsx` | `NicknameField`: chips inside one sunken field. Enter or a comma adds, Backspace on empty removes the last, blur adds what was typed. |
 | `person-gift-ideas.tsx` | `GiftIdeasList` (items on the person's Gift ideas list, quick add, Open list key) and `GiftLog` (quick gift notes on `personProfile.giftIdeas`). **Planned** (3.4): one wide key that opens a small popup holding both, and a rename-safe list name. See [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md). |
-| `person-time-together.tsx` | **Time together** inside the person detail, after the biography grid (memoized on name + `personPipelines`): `personTimeStats` (`lib/person-time.ts`) over the joined Company pens — all time, last 30 / 90 days, per week, last together, rhythm (median days between days together), longest, weekday bars and hour strip, Where / Doing / Also there, and recent times. Counts Company blocks that name them (extra pens, details, groups) and Social “Who with?” ticks, once. Last saw now reads the same minutes. |
+| `person-time-together.tsx` | _Last mapped: 2026-10-22._ **Time together** inside the person detail, after the biography grid (memoized on name + `personPipelines`): `personTimeStats` (`lib/person-time.ts`) over the joined Company pens — all time, last 30 / 90 days, per week, last together, rhythm (median days between days together), longest, weekday bars and hour strip, Where / Doing / Also there, and recent times. Counts Company blocks that name them (extra pens, details, groups), Social “Who with?” ticks, and synced iPhone calls on their call pen (`personTimePenIds`, phone sync), once. Last saw now reads the same minutes. The join hint shows only when there are no joined pens and no time. |
 | `lib/people-sync.ts` + `lib/people-sync-runner.ts` | Started from `usePeopleIKnowList`. Keeps one person in three places matched by name: a who-pen detail gets a Company pen (Person level); a Company person gets a cross-view detail on every who pen; every Company person pen gets a People I Know item joined by `company-pen` (existing pipeline, else same name, else new). Out of undo. One-time backfill (`brain2-people-backfill-v1`) mirrors existing Social ↔ Company blocks (blank minutes only). |
 | `person-notes.tsx` | Person Notes tab: dated log, standing note on the `notes` attribute, Captured `Task.notes` with Move into standing note. Used by both item detail shells. |
 | `person-notes.test.tsx` | Old dated notes fold on the first edit; standing note writes the attribute; Captured moves without loss. |
