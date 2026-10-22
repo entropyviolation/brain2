@@ -19,7 +19,7 @@
   --o-crt-glow: var(--hab-crt-glow, 0 0 3px #7dffc4);
   --o-scope: #070c0a;
   --o-phosphor: var(--hab-crt-green, #7dffc4);
-  --o-led: #7e14ff;
+  --o-led: #7d6bb8;
   --o-week: #508b51;
   --o-perfect: #25366a;
   --o-raised: inset -1px -1px var(--o-frame), inset 1px 1px var(--o-highlight),

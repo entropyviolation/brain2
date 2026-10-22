@@ -66,6 +66,7 @@ import {
 } from "@/lib/time-entries"
 import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { DayTubesDialog } from "@/components/Home/Tracking/day-tubes-dialog"
 import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
 import { ERASE, SCISSORS, PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
@@ -407,6 +408,7 @@ export function TimeGrid({
   const [internalDate, setInternalDate] = useState(() => new Date())
   const date = controlledDate ?? internalDate
   const setDate = setControlledDate ?? setInternalDate
+  const [tubesOpen, setTubesOpen] = useState(false)
   const span = lockDate ? "day" : gridSpan
   const scrolling = lockDate ? false : infiniteScroll
   const dk = dateKey(date)
@@ -1060,6 +1062,13 @@ export function TimeGrid({
                 onChange={(next) => setScreenFace(spanKey, next)}
               />
               {findControl}
+              <PushKey
+                label="Day tubes"
+                pressed={tubesOpen}
+                onClick={() => setTubesOpen(true)}
+                title="Your tracked week as tubes of liquid or sand, or as hourglasses. Optional."
+              />
+              <DayTubesDialog open={tubesOpen} onOpenChange={setTubesOpen} date={date} setDate={setDate} />
             </ScopeSection>
 
             <ScopeSection band="Flags">
@@ -1186,6 +1195,18 @@ export function TimeGrid({
               <CellSizeKeys key="day" steps={GRID_STEPS} value={gridStep} onChange={setGridStep} />
             )}
             {findControl}
+            <div className="trk-module">
+              <span className="trk-silk">Tubes</span>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                title="Your tracked week as tubes of liquid or sand, or as hourglasses. Optional."
+                onClick={() => setTubesOpen(true)}
+              >
+                Day tubes
+              </button>
+            </div>
+            <DayTubesDialog open={tubesOpen} onOpenChange={setTubesOpen} date={date} setDate={setDate} />
             {!scrolling && span === "day" && fillControl}
             {!scrolling && span === "day" && (
               <div className="trk-occ-well">

@@ -2,7 +2,7 @@
    fixed width so "0%" and "100%" cannot shrink the glass. */
 
 .hab-pled-bar {
-  --hab-led-tint: #7e14ff;
+  --hab-led-tint: #7d6bb8;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;

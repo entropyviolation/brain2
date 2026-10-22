@@ -1,13 +1,15 @@
 /**
  * components/Modules/workspace/ModuleBuilderDialog.tsx — New module chooser
  *
- * The entry point for building a module. Three paths:
+ * The entry point for building a module. Four paths:
  *   1. **From scratch** — author a brand-new `ModuleDefinition` (name, bound
  *      lists, views, plan-sync) in `ModuleSettingsDialog`, then instantiate it
  *      into a runnable workspace.
  *   2. **Workspace template** — Itinerary, House Cleaning (Tidy), Budget, Book Tasting, Film DNA, GradSearch, or Blank — which
  *      scaffolds the supporting lists + views in one click.
- *   3. **Dashboard widget** — a classic single card.
+ *   3. **Upload HTML file** — any `.html` page runs as a module in a sandboxed
+ *      frame, optionally attached to lists (`html/HtmlUploadDialog.tsx`).
+ *   4. **Dashboard widget** — a classic single card.
  *
  * Saved definitions can also be re-instantiated into a fresh workspace.
  */
@@ -16,7 +18,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap } from "lucide-react"
+import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/lib/module-definitions"
 import { ModuleSettingsDialog } from "./ModuleSettingsDialog"
 import { itemTitle } from "@/lib/item-utils"
+import { HtmlUploadDialog } from "./html/HtmlUploadDialog"
 
 // Partial map (+ fallback) so templates added by sibling workstreams still render.
 const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ className?: string }>>> = {
@@ -52,6 +55,7 @@ export function ModuleBuilderDialog({
   const definitions = useModuleDefinitionsStore((s) => s.definitions)
   const addModuleDefinition = useModuleDefinitionsStore((s) => s.addModuleDefinition)
   const [draftDef, setDraftDef] = useState<ModuleDefinition | null>(null)
+  const [uploadingHtml, setUploadingHtml] = useState(false)
 
   const chooseTemplate = (id: ModuleTemplateId) => {
     const moduleId = instantiateModuleTemplate(id)
@@ -96,6 +100,23 @@ export function ModuleBuilderDialog({
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Define your own module: bind lists, add views, set plan-sync, and attach workflows.
+              </p>
+            </button>
+
+            {/* Upload HTML */}
+            <button
+              onClick={() => {
+                setUploadingHtml(true)
+                onClose()
+              }}
+              className="w-full text-left border rounded-lg p-3 hover:border-primary hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-center gap-2 font-medium">
+                <FileCode className="h-4 w-4 shrink-0" />
+                Upload HTML file
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Bring any HTML page (a data tool, a lesson, a game) and run it as a module. Optionally attach it to your lists.
               </p>
             </button>
 
@@ -170,6 +191,8 @@ export function ModuleBuilderDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      <HtmlUploadDialog open={uploadingHtml} onClose={() => setUploadingHtml(false)} onOpenWorkspace={onOpenWorkspace} />
 
       {draftDef && (
         <ModuleSettingsDialog

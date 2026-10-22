@@ -129,6 +129,7 @@ let dropLocationDuringRitual: ExecutorModule["dropLocationDuringRitual"] | undef
 let deliverIngestReply: typeof import("../lib/ingest/deliver-reply")["deliverIngestReply"]
 let incomingFromTelegram: typeof import("../lib/ingest/telegram-bridge")["incomingFromTelegram"]
 let stores: HydratedStore[] = []
+let trackingKey = ""
 let flushing = false
 let ignoreWatch = false
 let lastPersistMtime = 0
@@ -204,6 +205,7 @@ async function loadStores() {
     penNow.usePenColorSessionStore,
   ]
   await Promise.all(stores.map(waitHydrated))
+  trackingKey = tracking.useTimeTrackingStore.persist.getOptions().name ?? ""
   ingestIncomingAsync = exec.ingestIncomingAsync
   dropLocationDuringRitual = exec.dropLocationDuringRitual
   deliverIngestReply = deliver.deliverIngestReply
@@ -223,13 +225,16 @@ async function rehydrateFromDisk() {
   )
 }
 
-function flushVault() {
+/** Push the hub's localStorage to the vault. `onlyKeys` limits it to those keys. */
+function flushVault(onlyKeys?: string[]) {
   if (flushing) return
   flushing = true
   ignoreWatch = true
   try {
     flushScheduledPersist()
-    mergeSharedPersistItems(dumpLocalStorage(), "phone-hub")
+    const items = dumpLocalStorage() as Record<string, string>
+    const pushed = onlyKeys ? Object.fromEntries(onlyKeys.filter((k) => k in items).map((k) => [k, items[k]])) : items
+    mergeSharedPersistItems(pushed, "phone-hub")
   } finally {
     flushing = false
     setTimeout(() => {
@@ -623,6 +628,22 @@ async function main() {
     }
     console.log(`[phone-hub] capture-box drain from ${CAPTURE_URL} — the VM polls Telegram; do not also poll here or run Electron ingest`)
     void drainLoop()
+    // iPhone location batches (POST /upload on the box), sealed by the app.
+    try {
+      const { startLocationDrain } = await import("../lib/phone-sync/location-drain")
+      const { openPhoneArchive } = await import("../lib/phone-sync/archive")
+      startLocationDrain({
+        boxUrl: CAPTURE_URL,
+        token: CAPTURE_TOKEN,
+        privateKey: readFileSync(CAPTURE_KEY_FILE, "utf8").trim(),
+        open: openSealed,
+        archive: openPhoneArchive(join(ROOT, "data")),
+        beforeApply: rehydrateFromDisk,
+        onWrote: flushTracking,
+      })
+    } catch (err) {
+      console.error(`[phone-hub] location drain off: ${err instanceof Error ? err.message : err}`)
+    }
   } else if (WEBHOOK) {
     await telegramApi("setWebhook", {
       url: WEBHOOK,
@@ -657,25 +678,46 @@ async function startPhoneSync() {
   if (readers.length === 0) return
   const { openPhoneArchive } = await import("../lib/phone-sync/archive")
   const { runPhoneSync } = await import("../lib/phone-sync/runner")
-  const { applyPhoneRecords } = await import("../lib/phone-sync/write")
+  const { applyPhoneRecords, textDaysFromEnv } = await import("../lib/phone-sync/write")
+  const textDays = textDaysFromEnv(process.env.COGS_PHONE_SYNC_TEXT_DAYS)
   const archive = openPhoneArchive(join(ROOT, "data"))
   let running = false
   const tick = async () => {
     if (running) return
     running = true
     try {
-      const runs = await runPhoneSync({ archive, apply: (records) => applyPhoneRecords(records), onWrote: flushVault }, readers)
-      for (const run of runs) {
-        if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
-        else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
+      const apply = (records: Parameters<typeof applyPhoneRecords>[0]) => applyPhoneRecords(records, undefined, { textDays })
+      // Catch up in one go: keep reading while a source still hands back rows (first run reads years of texts).
+      for (let pass = 0; pass < 1000; pass++) {
+        // Pick up edits the app made since the last read. A stale copy that lacks
+        // a newer Tracking block is refused whole by the vault guard, phone rows too.
+        await rehydrateFromDisk()
+        const runs = await runPhoneSync({ archive, apply, onWrote: flushTracking }, readers)
+        for (const run of runs) {
+          if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
+          else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
+        }
+        if (!runs.some((run) => !run.error && run.read > 0)) break
       }
     } finally {
       running = false
     }
   }
   console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s`)
-  void tick()
-  setInterval(() => void tick(), PHONE_SYNC_MS)
+  // A disk error in one tick is logged; the next interval tries again.
+  const runTick = () =>
+    tick().catch((err) => console.error(`[phone-hub] phone sync tick: ${err instanceof Error ? err.message : err}`))
+  void runTick()
+  setInterval(() => void runTick(), PHONE_SYNC_MS)
+}
+
+/**
+ * Phone sync and location only change Tracking. Pushing every key would send
+ * the hub's copy of stores the app changed since the last read, and the vault
+ * guard refuses those as stale.
+ */
+function flushTracking() {
+  flushVault(trackingKey ? [trackingKey] : undefined)
 }
 
 function shutdown() {

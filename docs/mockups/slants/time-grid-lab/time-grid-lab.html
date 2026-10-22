@@ -54,6 +54,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pill{font:600 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--ink);padding:2px 7px;border-radius:99px;white-space:nowrap}
 .pill.l{border-color:var(--dim);color:var(--dim)}
 .full{margin-left:auto;font:500 11px var(--mono);border:1px solid var(--rule);background:var(--paper);color:var(--ink);padding:5px 9px;cursor:pointer;border-radius:3px}
+.stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.stage svg text{pointer-events:none}
 .stagewrap{position:relative;width:100%;overflow:hidden;border:1px solid var(--rule);box-shadow:0 10px 30px var(--shadow);background:#000}
 .stage{position:absolute;left:0;top:0;width:1040px;transform-origin:0 0}
 .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 24px;margin-top:14px}
@@ -266,9 +267,9 @@ const toHex=a=>'#'+a.map(x=>Math.round(Math.max(0,Math.min(255,x))).toString(16)
 const mix=(a,b,t)=>{const A=hex(a),B=hex(b);return toHex(A.map((x,i)=>x+(B[i]-x)*t))};
 const lum=c=>{const [r,g,b]=hex(c);return .299*r+.587*g+.114*b};
 const gray=(c,tint='#8a6a4a',t=.22)=>{const l=lum(c);return mix(toHex([l,l,l]),tint,t)};
-const dayLab=d=>`${DAYS[d][0]}, ${DAYS[d][1]}, 2026`;
+const dayLab=d=>`${DAYS[d][0]}, ${DAYS[d][1]}, ${WK0.getFullYear()}`;
 const spanDays=()=>S.span==='week'?[0,1,2,3,4,5,6]:[S.day];
-const spanLab=()=>S.span==='week'?'Oct 19 – Oct 25, 2026':dayLab(S.day);
+const spanLab=()=>S.span==='week'?wkDate(0)+' – '+wkDate(0,6)+', '+WK0.getFullYear():dayLab(S.day);
 const pal=()=>PAL[S.view]||{};
 const isToday=d=>d===NOW.day;
 
@@ -612,7 +613,7 @@ class TubePhysics{
     if(this.tl)this.buildHeld();
     /* layers differ a little in density, the lowest layer densest, so mixed liquid separates again (buoyancy) */
     const nl=o.layers.length;this.dens=o.layers.map((l,i)=>1+0.14*(nl-1-i)/Math.max(1,nl-1)+(nl===1?0:0));
-    this.g=620;this.rest=0;this.asleep=false;this.maxv=0;
+    this.g=this.mat==='sand'?880:620;this.rest=0;this.asleep=false;this.maxv=0;
     this.mixK=o.mix==null?1:o.mix<=0?0:Math.pow(4,(o.mix-50)/50);this.zg=o.zg||null;this.zy=o.zg?new Float32Array(N):null;
     if(this.mat!=='sand'){this.initLiquid();this.zg?this.placeZG():this.prefill();if(this.v2)this.initV2(o)}
     if(this.v2&&this.mat==='sand'){const g=()=>{let u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)};this.rad=new Float32Array(N);this.ang=new Float32Array(N);this.sh=new Float32Array(N);this.mj=new Float32Array(N);this.gauss=g}
@@ -676,10 +677,11 @@ class TubePhysics{
     const sp=this.d*1.05,lat=[];
     for(let j=0;lat.length<this.N&&j<4000;j++){
       const y=this.H/2-this.pr*1.3-j*sp*.866;if(y<this.ymin)break;
-      const hw=this.prof.at(y)-this.pr;if(hw<0)continue;
-      const off=(j&1)*sp/2;let x=this.r-hw+off;if(hw<sp/2)x=this.r;
-      for(;x<=this.r+hw+1e-6&&lat.length<this.N;x+=sp)lat.push([x,y]);
-      if(hw<sp/2&&lat.length<this.N){/* neck-wide row holds one grain */}
+      const hw=this.prof.at(y)-this.pr*.8;if(hw<0)continue;
+      if(hw<sp/2){lat.push([this.r,y]);continue}
+      /* each row is stretched to touch both walls, so the pile has no thin ragged edge */
+      const c=Math.floor(2*hw/sp)+1,st=c>1?2*hw/(c-1):0;
+      for(let q=0;q<c&&lat.length<this.N;q++)lat.push([this.r-hw+q*st,y]);
     }
     this.lat=lat;this.hx=new Float32Array(this.N);this.hy=new Float32Array(this.N);
     for(let k=0;k<this.N;k++){const q=lat[Math.min(k,lat.length-1)];this.hx[k]=q[0];this.hy[k]=q[1]}
@@ -702,7 +704,7 @@ class TubePhysics{
         for(let q=Math.max(0,this.n-6);q<this.n;q++){const ex=this.x[q]-x,ey=this.y[q]-y;if(ex*ex+ey*ey<d*d*.36){ok=false;break}}
         if(!ok)break;
         const i=this.n++;this.spawnK++;made++;this.grain(i);
-        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=140;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
+        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=210;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
       }
       this.shown=(this.spawnK<this.N&&this.mins[this.spawnK]<=this.clock)?this.mins[Math.max(0,this.spawnK-1)]:this.clock;
       this.updateHeld();return;
@@ -881,7 +883,7 @@ class SandCA{
     this.tt++;if(this.spawnK<this.N)this.spawn();
     const k=150,c=13;let a=k*(this.tth-this.th)-c*this.w;a=Math.max(-150,Math.min(150,a));this.al=a;this.w=Math.max(-8,Math.min(8,this.w+a*dt));this.th+=this.w*dt;
     const ky=130,cy=14;let ay=ky*(this.tty-this.ty)-cy*this.vyf;ay=Math.max(-1400,Math.min(1400,ay));this.vyf+=ay*dt;this.ty+=this.vyf*dt;this.ay=ay;
-    const passes=Math.max(2,Math.min(9,Math.round(6/this.c))),jp=Math.min(.6,(Math.abs(this.w)*.12+Math.abs(this.al)*.003+Math.abs(ay)*.0006))*0.35;
+    const passes=Math.max(3,Math.min(12,Math.round(8.5/this.c))),jp=Math.min(.6,(Math.abs(this.w)*.12+Math.abs(this.al)*.003+Math.abs(ay)*.0006))*0.35;
     let mv=0;for(let p=0;p<passes;p++)mv+=this.pass(jp);
     this.moved=mv;this.par^=1;
     const still=this.spawnK>=this.N&&mv===0&&jp<.01&&Math.abs(this.w)<.03&&Math.abs(this.th-this.tth)<.004&&Math.abs(this.ty-this.tty)<.4;
@@ -896,10 +898,10 @@ class SandCA{
     const mv=(i,x,y,dx,dy)=>{const nx=x+dx,ny=y+dy;if(!free(nx,ny))return false;const j=ny*gw+nx;cell[j]=cell[i];vr[j]=vr[i];cell[i]=0;moved++;return true};
     const one=(x,y)=>{
       const i=y*gw+x;if(!cell[i])return;
-      if(this.depth[i]>this.flow&&Math.random()>.002)return;
-      if(jp>0&&Math.random()<jp){const d=D[(Math.random()*8)|0];if(mv(i,x,y,d[0],d[1]))return}
       const dn=D[(k0+(Math.random()<tt?1:0))&7],sx=-dn[1],sy=dn[0];
-      if(mv(i,x,y,dn[0],dn[1]))return;
+      if(mv(i,x,y,dn[0],dn[1]))return;   /* a grain with air straight below it always falls, locked or not, so nothing hangs on a shelf */
+      if(this.depth[i]>this.flow&&Math.random()>.012)return;
+      if(jp>0&&Math.random()<jp){const d=D[(Math.random()*8)|0];if(mv(i,x,y,d[0],d[1]))return}
       const sg=Math.random()<.5?1:-1;
       for(let t=0;t<2;t++){
         const s2=t?-sg:sg,ox=x+s2*sx,oy=y+s2*sy;if(!free(ox,oy))continue;
@@ -932,11 +934,11 @@ const WK0=new Date(2026,9,19),mon3=['Jan','Feb','Mar','Apr','May','Jun','Jul','A
 const wkDate=(off,add=0)=>{const x=new Date(WK0.getTime()+(off*7+add)*864e5);return mon3[x.getMonth()]+' '+x.getDate()};
 const hsh=(a,b)=>{const x=Math.sin(a*127.1+b*311.7)*43758.5453;return x-Math.floor(x)};
 const wkF=(off,k)=>off===0?1:(.55+.8*hsh(off,0))*(.6+.8*hsh(off,String(k).length*7+String(k).charCodeAt(0)));
-let TUBEN=0;
+let TUBEN=0;const MOFF=()=>window.WKDATA?[-3,-2,-1,0]:[-2,-1,0,1];
 const clockLabel=(T,m)=>{m=Math.max(0,Math.min(T-1,Math.floor(m)));const d=Math.floor(m/1440),h=hhmm(m%1440);return T<=1440?h:T<=10080?DAYS[d][0]+' '+h:'Wk '+(Math.floor(d/7)+1)+' '+DAYS[d%7][0]+' '+h};
 /* every tracked run in a period, with its minute counted from the start of the period (a) and a scale for the mock weeks (f) */
 function periodRuns(view,offs,days){
-  const out=[];offs.forEach((o,wi)=>days.forEach((d,di)=>rawRuns(view,d).forEach(q=>out.push({k:q.k,s:q.s,e:q.e,a:(wi*days.length+di)*1440+q.s,f:wkF(o,q.k),dl:DAYS[d][0]+', '+wkDate(o,d)}))));
+  const out=[],real=!!window.WKDATA,rr=(o,d)=>real&&o!==0?((WKDATA[o]&&WKDATA[o][view]||[])[d]||[]).map(([s,e,k])=>({s,e,k})):rawRuns(view,d);offs.forEach((o,wi)=>days.forEach((d,di)=>rr(o,d).forEach(q=>out.push({k:q.k,s:q.s,e:q.e,a:(wi*days.length+di)*1440+q.s,f:real?1:wkF(o,q.k),dl:DAYS[d][0]+', '+wkDate(o,d)}))));
   return out.sort((x,y)=>x.a-y.a);
 }
 function layersOf(view,runs){   /* grouped by pen (largest first) or kept in time order */
@@ -959,8 +961,8 @@ function scopeSpecs(){
   VS.forEach(v=>{
     if(sc==='days')out.push(mkScope(v,[0],[S.day],{lab:pre(v)+DAYS[S.day][0]+' '+DAYS[S.day][1],abbr:DAYS[S.day][0].toUpperCase(),ticks:hrTicks,tw,W,tl:true}));
     else if(sc==='week')out.push(mkScope(v,[0],ALLD,{lab:pre(v)+wl(0),abbr:'WEEK',ticks:wkTicks,tw,W,tl:true}));
-    else if(sc==='weeks')[-2,-1,0,1].forEach(o=>out.push(mkScope(v,[o],ALLD,{lab:wl(o),abbr:'WK',ticks:wkTicks,tw:56,W:230})));
-    else if(sc==='month')out.push(mkScope(v,[-2,-1,0,1],ALLD,{lab:pre(v)+mo([-2,-1,0,1]),abbr:'MONTH',ticks:moTicks,tw,W,tl:true}));
+    else if(sc==='weeks')MOFF().forEach(o=>out.push(mkScope(v,[o],ALLD,{lab:wl(o),abbr:'WK',ticks:wkTicks,tw:56,W:230})));
+    else if(sc==='month')out.push(mkScope(v,MOFF(),ALLD,{lab:pre(v)+mo(MOFF()),abbr:'MONTH',ticks:moTicks,tw,W,tl:true}));
     else[-2,-1,0].forEach(m=>{const o=[0,1,2,3].map(i=>m*4-2+i);out.push(mkScope(v,o,ALLD,{lab:mo(o),abbr:'MONTH',ticks:moTicks,tw:60,W:300}))});
   });
   return out;
@@ -991,11 +993,11 @@ function tube(d,mat,W,Hh,o){
   if(tl&&sum){   /* hourglass replay: one grain per tracked minute (or per few minutes in a long period), coloured by that minute's pen */
     const pens=[...new Set(o.runs.map(q=>q.k))],idx={};
     spec.layers=pens.map((k,i)=>{idx[k]=i;const bl=o.runs.filter(q=>q.k===k).map(q=>({s:q.s,e:q.e,dl:q.dl,a:q.a}));return{c:mix(P[k][1],'#c9b89a',.25),v:0,n:P[k][0],m:bl.reduce((a,q)=>a+(q.e-q.s)*q.f,0),blocks:bl}});
-    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?900:2200));if(gm>1)gm=Math.ceil(gm);
+    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?1200:3800));if(gm>1)gm=Math.ceil(gm);
     o.runs.forEach(q=>{const st=gm/q.f;for(let m=0;m<q.e-q.s;m+=st)pr.push([q.a+m,idx[q.k]])});
     pr.sort((x,y)=>x[0]-y[0]);
     spec.timeline={layer:pr.map(x=>x[1]),mins:pr.map(x=>x[0]),start:S.hg.start||0,T:o.T,gm};
-    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(1.2,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
+    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(.95,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
   }
   const prof=makeProfile(spec.shape,closed,tw,bodyH,spec.d||3.3),poly=prof.poly();
   let ticks='';if(o&&!hg)o.ticks.forEach(t=>{const yy=top+bodyH-r-t.f*ih;ticks+=`<line x1="${tx-9}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="1.2"/>${t.l?`<text x="${tx-12}" y="${yy+(t.f<1?-3:3)}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${t.l}</text>`:''}`});else if(!hg&&!o)for(let hr=0;hr<=24;hr++){const yy=top+bodyH-r-hr/24*ih,mj=hr%6===0;ticks+=`<line x1="${tx-(mj?9:5)}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="${mj?1.2:.7}"/>${mj?`<text x="${tx-12}" y="${yy+3}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${hr}h</text>`:''}`}
@@ -1046,7 +1048,7 @@ B({id:'1d',code:'1D',title:'Day Tubes',dial:1,lead:'blend',h:716,
    ${ab(16,10,1010,0,`<div class="row">${viewKeys(true,5)}</div>`)}
    ${ab(16,48,1010,0,`<div style="display:flex;gap:10px 22px;flex-wrap:wrap;align-items:center">${navBar(!anyGrid)}${sc==='days'&&!mu?`<div class="row">${kb('Day',S.span==='day','data-set="span:day"')}${kb('Week',S.span==='week','data-set="span:week"')}</div>`:''}${S.shape==='hourglass'?'':`<div class="row" style="gap:6px"><span class="lab">Gravity</span>${kb('Normal',!S.zg,'data-set="zg:0"')}${kb('Zero-g',!!S.zg,'data-set="zg:1"','Blocks float at their time of day on the ruler, with no gravity')}</div><div class="row" style="gap:6px"><span class="lab">Ends</span>${kb('Closed',S.ends!=='open','data-set="ends:closed"')}${kb('Open',S.ends==='open','data-set="ends:open"')}</div>`}<div style="margin-left:auto">${kb('Reset',false,'data-act="reset"','Pour everything in again and stand the tubes upright')}</div></div>`)}
    ${ab(16,84,1010,0,`<div style="display:flex;gap:6px 0;flex-wrap:wrap;align-items:flex-end;padding:6px 0 8px;border-top:1px solid #9fb0bf;border-bottom:1px solid #9fb0bf">${[
-     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
+     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].filter(q=>!document.body.classList.contains('app')||q[0]==='days'||q[0]==='week'||q[0]==='month').map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
      ['Views',kb('One',!mu,'data-set="multi:0"')+kb('All views',mu,'data-set="multi:1"','Show one tube for each view type, side by side')],
      sc!=='days'||mu?['Fill',kb('Liquid',sm==='liquid','data-set="sm:liquid"')+kb('Sand',sm==='sand','data-set="sm:sand"')]:['Every day',kb('Grid',false,'data-fid="all:grid"','Revert every day to the grid')+kb('Liquid',false,'data-fid="all:liquid"')+kb('Sand',false,'data-fid="all:sand"')],
      ['Shape',kb('Tube',S.shape!=='hourglass','data-set="shape:tube"')+kb('Hourglass',S.shape==='hourglass','data-set="shape:hourglass"')]
@@ -1125,7 +1127,7 @@ class TubeView{
     const {ph,sc,cw,ch,A,R,G,B,img}=this,n=ph.n;A.fill(0);R.fill(0);G.fill(0);B.fill(0);
     const rk=2.8*ph.d*sc,rk2=rk*rk,pc=ph.pcol;
     /* neon: the picked ink colour glows wherever it currently is */
-    let tg=null;if(S.ink){const c0=(PAL[this.spec.view||S.view]||{})[S.ink],L=c0&&this.spec.layers.find(l=>l.n===c0[0]);if(L)tg=[parseInt(L.c.slice(1,3),16),parseInt(L.c.slice(3,5),16),parseInt(L.c.slice(5,7),16)]}
+    let tg=null;if(S.ink&&S.glow!==false){const c0=(PAL[this.spec.view||S.view]||{})[S.ink],L=c0&&this.spec.layers.find(l=>l.n===c0[0]);if(L)tg=[parseInt(L.c.slice(1,3),16),parseInt(L.c.slice(3,5),16),parseInt(L.c.slice(5,7),16)]}
     const GL=tg?(this.GL||(this.GL=new Float32Array(cw*ch))):null;if(GL)GL.fill(0);
     for(let i=0;i<n;i++){
       const cx=ph.x[i]*sc,cy=ph.y[i]*sc,r0=pc[i*3],g0=pc[i*3+1],b0=pc[i*3+2];let gi=0;if(tg){const dr=r0-tg[0],dg=g0-tg[1],db=b0-tg[2];gi=Math.max(0,1-Math.sqrt(dr*dr+dg*dg+db*db)/70)}
@@ -1785,7 +1787,7 @@ function setState(k,v){
   else if(k==='cell')S.cell=+v;
   else if(k==='view'){S.view=v;S.pen=null}
   else if(k==='day')S.day=+v;
-  else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink')S.ink=v;else if(k==='sm')S.sm=v;
+  else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink'){if(S.ink===v)S.glow=S.glow===false;else{S.ink=v;S.glow=true}}else if(k==='sm')S.sm=v;
 }
 function act(a){
   const[n,arg]=[a.split(':')[0],a.slice(a.indexOf(':')+1)];

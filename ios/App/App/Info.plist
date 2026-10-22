@@ -45,6 +45,14 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BRAIN2 records the places you visit so Location fills itself in.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>BRAIN2 records significant moves and visits in the background, so Location fills in while the phone is in your pocket. Batches are encrypted before they leave the phone.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

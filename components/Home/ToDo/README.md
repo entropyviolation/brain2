@@ -194,6 +194,21 @@ _Last mapped: 2026-10-22._ The parked popup has four view keys above the detail:
 - **Cars.** Night garage builds nine cars in code (Oldsmobile, Volvo 240, Mercedes SL, Jeep Cherokee, Bronco, Vanagon, Panda, R5, Samurai), assigned by index. Textures are canvas-generated; no model files.
 - Mockups and their history: project files `parking-lot-mockups/`.
 
+## Sessions: the draft
+
+_Last mapped: 2026-10-22._ Redesigned after allie's mockup: a cuter head, one container for the fit, and lines as tiles. Kept from before: the pick list with its Min / Goal / Exc push keys, folds and filters.
+
+- **Head.** Three groupboxes with Silkscreen legends: **Session** (name), **Time**, **Start from** (template). Time has latching caps (30m, 1h, 2h, 3h; 10m, 25m, 50m on a timebox), the Timebox check, Breaks, and `TimeTube`: a Dash tube with `SegDigits` and a typed field over them. It takes `90`, `1:30`, `1h30`, `1.5h`, `2h` (`parseLength`, exported). Enter or leaving sets it; Esc drops the typing.
+- **Fit.** `FitGlass` is one bar for the whole session, not one gauge per tier. The bar is the length less breaks. B, G and E fill it in turn at padded minutes (`minutes × pace`). Past the length the scale grows, a white wall marks the length, and the spill is hatched warm red. The Hofstadter tick sits at the total doubled (▸ when it runs off the end). Foot: B, G, E minutes, "free" or "over", and Hofstadter %. The head reads `paddedLabel` and "you run ~N% long", or "raw estimates". `sessionFit` is unchanged; it was already cumulative.
+- **Tiers.** Wells with a lit lamp in the tier ink, the band word ("tight with padding" when your pace is above ×1), and the tier's minutes. Lines are tiles: grip, name (opens the breakdown), needs on their own row, %, `step` tag, minutes or the estimate field. ▲ ▼, the tier select, ✎ and × are still there, shown on hover or focus (always on touch).
+- **Drag.** A tile drags within or across tiers (`moveLine` with an index; a navy line shows where it lands). A pick-list task or step row drags in as a new line (`addLine`, then `moveLine` to the drop point). Payloads are `LINE_MIME` and `REF_MIME` in `SessionPlanner.tsx`.
+- **Pick list.** A column head (`{period} · N open`, `Est · add to`). Steps keep their depth (18px a level, with a corner guide). The task name is `data-no95` so the Win95 skin does not box it.
+- **Tier keys latch.** Min / Goal / Exc are small silver caps that drop and squash on press and land lit with a short bounce (`ses-latch`). Pressing the lit one again takes the line out (`toggle` in `DraftView`). The **Add** keys (floor suggestion, a missing prerequisite) use the same cap (`.todo-session-tierkey.is-add`).
+- **No Order by needs key.** Removed 2026-10-22. `orderByPrereqs` stays in `lib/session-plan.ts`; drafts are not reordered by hand any more.
+- **Footer.** House keycaps (`.todo-session .todo-session-draft button.ses-key`; it needs that weight to beat `.todo95-dialog .todo-dialog-actions button` in `todo-chrome.css`); **▶ Start** is the primary cap.
+- **Caption keys.** **Sessions** is a small silver modifier cap (`.ses-caption-key`) with a lamp that lights while the shelves are open, and a violet `⏸ n` pill when sessions are parked. × is the house close key (`.b2-close-key`), as in every other captioned dialog.
+- **Inks.** On glass: B `#5cf2d6`, G `#8fd3ff`, E `#b39cff`, overrun `#ff8a9c`. No amber.
+
 ## Sessions: the run view
 
 _Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyView.tsx`, `plan-run`).
@@ -204,8 +219,10 @@ _Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyVi
 - **Suggestions.** **Random task** (`randomLine`) and **Next shortest task** (`shortestLine`, fewest open minutes, unestimated last) offer one open, unblocked line other than the current one. **Another** gives a different one until they run out. Nothing starts until you press **▶ Start this**.
 - **Keys.** Word keys are house keycaps at 40px with wide padding (`.ses-key` in `session-planner.css`); ▶ ⏸ ■ are `DvdTransportKey` discs sized to 38px (52px on the clock). Every `todo-verb` and `todo-btn` in the popup also got more padding.
 
-- **Follow-ups.** _Last mapped: 2026-10-22._ The session name is an input on the clock face. Click any Est to change it: a leaf writes the task or step estimate, a line with steps keeps its own session estimate (`setLineEstimate`). A line with steps has ▸ to show them, each with ▶ / ⏸ / ■, Est, Actual and Done. ▶ on a step makes it the line's `focusStepId`, and its time goes to `stepSec` (`playStep`, `stepSeconds`). ▶ on a line starts on Just Start's pick, so that step is timed too. The popup caption has no **Pick list** key now (Add task → **Pick list…** still opens it). The park note reads "Note to you later".
-- **Settings.** **Settings** on the clock face: timer colour (any colour, default Plan's opal mint `#8cd4a5`; paused dims it instead of turning violet), Hide finished tasks, Estimate bars. Kept per device in localStorage (`brain2.sessionView`).
+- **Follow-ups.** _Last mapped: 2026-10-22._ The session name is set in **Settings** (first field), not on the clock face; the caption shows it. ▶ ⏸ ■ and **Done** sit on a line's top row beside its name (`align-items: flex-start`, name row 38px tall), also on steps. Click any Est to change it: a leaf writes the task or step estimate, a line with steps keeps its own session estimate (`setLineEstimate`). A line with steps has ▸ to show them, each with ▶ / ⏸ / ■, Est, Actual and Done. ▶ on a step makes it the line's `focusStepId`, and its time goes to `stepSec` (`playStep`, `stepSeconds`). ▶ on a line starts on Just Start's pick, so that step is timed too. The popup caption has no **Pick list** key now (Add task → **Pick list…** still opens it). The park note reads "Note to you later".
+- **Settings.** **Settings** on the clock face: the session name, timer colour (any colour, default Plan's opal mint `#8cd4a5`; paused dims it instead of turning violet), Hide finished tasks, Estimate bars. Kept per device in localStorage (`brain2.sessionView`).
+
+- **Pen clock link.** _Last mapped: 2026-10-22._ A painting session and the Tracking pen clock move together (`linkSessionAndPen` in `lib/session-pen.ts`, started by `FocusBarDock`). Pause or resume either and the other follows. Parking pauses the pen, so the focus bar stays. Stopping the pen lets go of the session's line. ■ on a line, End, and a session bumped by another still stop the pen. The focus bar stays clickable over the Session popup.
 
 ## Sessions: ways in, templates, timebox (slice H2)
 

@@ -57,6 +57,7 @@ import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/Tri
 import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
 import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
 import { GradSearchView } from "@/components/Modules/workspace/gradsearch/GradSearchView"
+import { HtmlModuleView } from "@/components/Modules/workspace/html/HtmlModuleView"
 import type { ModuleInstance } from "@/lib/modules-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import {
@@ -132,6 +133,8 @@ export function ModuleViewBody({
       return <TidyView module={module} />
     case "grad-search":
       return <GradSearchView />
+    case "html":
+      return <HtmlModuleView view={view} onOpenItem={onOpenItem} />
     case "decision-matrix":
       return <DecisionMatrixView view={view} onOpenItem={onOpenItem} />
     case "kanban":

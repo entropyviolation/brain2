@@ -63,7 +63,7 @@ class TubeView{
     const {ph,sc,cw,ch,A,R,G,B,img}=this,n=ph.n;A.fill(0);R.fill(0);G.fill(0);B.fill(0);
     const rk=2.8*ph.d*sc,rk2=rk*rk,pc=ph.pcol;
     /* neon: the picked ink colour glows wherever it currently is */
-    let tg=null;if(S.ink){const c0=(PAL[this.spec.view||S.view]||{})[S.ink],L=c0&&this.spec.layers.find(l=>l.n===c0[0]);if(L)tg=[parseInt(L.c.slice(1,3),16),parseInt(L.c.slice(3,5),16),parseInt(L.c.slice(5,7),16)]}
+    let tg=null;if(S.ink&&S.glow!==false){const c0=(PAL[this.spec.view||S.view]||{})[S.ink],L=c0&&this.spec.layers.find(l=>l.n===c0[0]);if(L)tg=[parseInt(L.c.slice(1,3),16),parseInt(L.c.slice(3,5),16),parseInt(L.c.slice(5,7),16)]}
     const GL=tg?(this.GL||(this.GL=new Float32Array(cw*ch))):null;if(GL)GL.fill(0);
     for(let i=0;i<n;i++){
       const cx=ph.x[i]*sc,cy=ph.y[i]*sc,r0=pc[i*3],g0=pc[i*3+1],b0=pc[i*3+2];let gi=0;if(tg){const dr=r0-tg[0],dg=g0-tg[1],db=b0-tg[2];gi=Math.max(0,1-Math.sqrt(dr*dr+dg*dg+db*db)/70)}

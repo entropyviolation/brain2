@@ -7,11 +7,11 @@ const WK0=new Date(2026,9,19),mon3=['Jan','Feb','Mar','Apr','May','Jun','Jul','A
 const wkDate=(off,add=0)=>{const x=new Date(WK0.getTime()+(off*7+add)*864e5);return mon3[x.getMonth()]+' '+x.getDate()};
 const hsh=(a,b)=>{const x=Math.sin(a*127.1+b*311.7)*43758.5453;return x-Math.floor(x)};
 const wkF=(off,k)=>off===0?1:(.55+.8*hsh(off,0))*(.6+.8*hsh(off,String(k).length*7+String(k).charCodeAt(0)));
-let TUBEN=0;
+let TUBEN=0;const MOFF=()=>window.WKDATA?[-3,-2,-1,0]:[-2,-1,0,1];
 const clockLabel=(T,m)=>{m=Math.max(0,Math.min(T-1,Math.floor(m)));const d=Math.floor(m/1440),h=hhmm(m%1440);return T<=1440?h:T<=10080?DAYS[d][0]+' '+h:'Wk '+(Math.floor(d/7)+1)+' '+DAYS[d%7][0]+' '+h};
 /* every tracked run in a period, with its minute counted from the start of the period (a) and a scale for the mock weeks (f) */
 function periodRuns(view,offs,days){
-  const out=[];offs.forEach((o,wi)=>days.forEach((d,di)=>rawRuns(view,d).forEach(q=>out.push({k:q.k,s:q.s,e:q.e,a:(wi*days.length+di)*1440+q.s,f:wkF(o,q.k),dl:DAYS[d][0]+', '+wkDate(o,d)}))));
+  const out=[],real=!!window.WKDATA,rr=(o,d)=>real&&o!==0?((WKDATA[o]&&WKDATA[o][view]||[])[d]||[]).map(([s,e,k])=>({s,e,k})):rawRuns(view,d);offs.forEach((o,wi)=>days.forEach((d,di)=>rr(o,d).forEach(q=>out.push({k:q.k,s:q.s,e:q.e,a:(wi*days.length+di)*1440+q.s,f:real?1:wkF(o,q.k),dl:DAYS[d][0]+', '+wkDate(o,d)}))));
   return out.sort((x,y)=>x.a-y.a);
 }
 function layersOf(view,runs){   /* grouped by pen (largest first) or kept in time order */
@@ -34,8 +34,8 @@ function scopeSpecs(){
   VS.forEach(v=>{
     if(sc==='days')out.push(mkScope(v,[0],[S.day],{lab:pre(v)+DAYS[S.day][0]+' '+DAYS[S.day][1],abbr:DAYS[S.day][0].toUpperCase(),ticks:hrTicks,tw,W,tl:true}));
     else if(sc==='week')out.push(mkScope(v,[0],ALLD,{lab:pre(v)+wl(0),abbr:'WEEK',ticks:wkTicks,tw,W,tl:true}));
-    else if(sc==='weeks')[-2,-1,0,1].forEach(o=>out.push(mkScope(v,[o],ALLD,{lab:wl(o),abbr:'WK',ticks:wkTicks,tw:56,W:230})));
-    else if(sc==='month')out.push(mkScope(v,[-2,-1,0,1],ALLD,{lab:pre(v)+mo([-2,-1,0,1]),abbr:'MONTH',ticks:moTicks,tw,W,tl:true}));
+    else if(sc==='weeks')MOFF().forEach(o=>out.push(mkScope(v,[o],ALLD,{lab:wl(o),abbr:'WK',ticks:wkTicks,tw:56,W:230})));
+    else if(sc==='month')out.push(mkScope(v,MOFF(),ALLD,{lab:pre(v)+mo(MOFF()),abbr:'MONTH',ticks:moTicks,tw,W,tl:true}));
     else[-2,-1,0].forEach(m=>{const o=[0,1,2,3].map(i=>m*4-2+i);out.push(mkScope(v,o,ALLD,{lab:mo(o),abbr:'MONTH',ticks:moTicks,tw:60,W:300}))});
   });
   return out;
@@ -66,11 +66,11 @@ function tube(d,mat,W,Hh,o){
   if(tl&&sum){   /* hourglass replay: one grain per tracked minute (or per few minutes in a long period), coloured by that minute's pen */
     const pens=[...new Set(o.runs.map(q=>q.k))],idx={};
     spec.layers=pens.map((k,i)=>{idx[k]=i;const bl=o.runs.filter(q=>q.k===k).map(q=>({s:q.s,e:q.e,dl:q.dl,a:q.a}));return{c:mix(P[k][1],'#c9b89a',.25),v:0,n:P[k][0],m:bl.reduce((a,q)=>a+(q.e-q.s)*q.f,0),blocks:bl}});
-    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?900:2200));if(gm>1)gm=Math.ceil(gm);
+    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?1200:3800));if(gm>1)gm=Math.ceil(gm);
     o.runs.forEach(q=>{const st=gm/q.f;for(let m=0;m<q.e-q.s;m+=st)pr.push([q.a+m,idx[q.k]])});
     pr.sort((x,y)=>x[0]-y[0]);
     spec.timeline={layer:pr.map(x=>x[1]),mins:pr.map(x=>x[0]),start:S.hg.start||0,T:o.T,gm};
-    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(1.2,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
+    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(.95,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
   }
   const prof=makeProfile(spec.shape,closed,tw,bodyH,spec.d||3.3),poly=prof.poly();
   let ticks='';if(o&&!hg)o.ticks.forEach(t=>{const yy=top+bodyH-r-t.f*ih;ticks+=`<line x1="${tx-9}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="1.2"/>${t.l?`<text x="${tx-12}" y="${yy+(t.f<1?-3:3)}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${t.l}</text>`:''}`});else if(!hg&&!o)for(let hr=0;hr<=24;hr++){const yy=top+bodyH-r-hr/24*ih,mj=hr%6===0;ticks+=`<line x1="${tx-(mj?9:5)}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="${mj?1.2:.7}"/>${mj?`<text x="${tx-12}" y="${yy+3}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${hr}h</text>`:''}`}
@@ -121,7 +121,7 @@ B({id:'1d',code:'1D',title:'Day Tubes',dial:1,lead:'blend',h:716,
    ${ab(16,10,1010,0,`<div class="row">${viewKeys(true,5)}</div>`)}
    ${ab(16,48,1010,0,`<div style="display:flex;gap:10px 22px;flex-wrap:wrap;align-items:center">${navBar(!anyGrid)}${sc==='days'&&!mu?`<div class="row">${kb('Day',S.span==='day','data-set="span:day"')}${kb('Week',S.span==='week','data-set="span:week"')}</div>`:''}${S.shape==='hourglass'?'':`<div class="row" style="gap:6px"><span class="lab">Gravity</span>${kb('Normal',!S.zg,'data-set="zg:0"')}${kb('Zero-g',!!S.zg,'data-set="zg:1"','Blocks float at their time of day on the ruler, with no gravity')}</div><div class="row" style="gap:6px"><span class="lab">Ends</span>${kb('Closed',S.ends!=='open','data-set="ends:closed"')}${kb('Open',S.ends==='open','data-set="ends:open"')}</div>`}<div style="margin-left:auto">${kb('Reset',false,'data-act="reset"','Pour everything in again and stand the tubes upright')}</div></div>`)}
    ${ab(16,84,1010,0,`<div style="display:flex;gap:6px 0;flex-wrap:wrap;align-items:flex-end;padding:6px 0 8px;border-top:1px solid #9fb0bf;border-bottom:1px solid #9fb0bf">${[
-     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
+     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].filter(q=>!document.body.classList.contains('app')||q[0]==='days'||q[0]==='week'||q[0]==='month').map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
      ['Views',kb('One',!mu,'data-set="multi:0"')+kb('All views',mu,'data-set="multi:1"','Show one tube for each view type, side by side')],
      sc!=='days'||mu?['Fill',kb('Liquid',sm==='liquid','data-set="sm:liquid"')+kb('Sand',sm==='sand','data-set="sm:sand"')]:['Every day',kb('Grid',false,'data-fid="all:grid"','Revert every day to the grid')+kb('Liquid',false,'data-fid="all:liquid"')+kb('Sand',false,'data-fid="all:sand"')],
      ['Shape',kb('Tube',S.shape!=='hourglass','data-set="shape:tube"')+kb('Hourglass',S.shape==='hourglass','data-set="shape:hourglass"')]

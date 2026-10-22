@@ -7,6 +7,7 @@
  * generated batch that a fresher snapshot left out, and a per-source batch
  * would let a desktop that saw fewer messages delete the rest.
  */
+import { slugApp } from "@/lib/screentime/app-categories"
 import type { PhoneSyncSource } from "./types"
 
 export const PHONE_SYNC_KIND = "phone-sync" as const
@@ -33,4 +34,13 @@ export function phoneEntryId(source: PhoneSyncSource, sourceId: string, part = 0
 
 export function phoneStamp(source: PhoneSyncSource, sourceId: string): { kind: typeof PHONE_SYNC_KIND; id: string } {
   return { kind: PHONE_SYNC_KIND, id: sourceKey(source, sourceId) }
+}
+
+/**
+ * Pen id for a person (or a bare number) on iPhone Texts / iPhone Calls. Same
+ * ids as the BIM `text:` / `call:` verbs. People I Know uses the call pen to
+ * count synced calls as time together (`personTimePenIds`).
+ */
+export function phonePenId(kind: "text" | "call", name: string): string {
+  return `iphone-${kind}-${slugApp(name)}`
 }
