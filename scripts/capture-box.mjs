@@ -7,12 +7,13 @@
  * it stores can be read on this machine. Your own device pulls the queue,
  * decrypts it, and applies it (`COGS_CAPTURE_BOX_URL` on `npm run phone:hub`).
  *
- * Needs only Node 20+ and three files: capture-box.mjs, sealed-box.mjs, capture-filter.mjs. No npm install.
+ * Needs only Node 20+ and four files: capture-box.mjs, sealed-box.mjs, capture-filter.mjs, capture-upload.mjs. No npm install.
  *
  * Env:
  *   COGS_TELEGRAM_BOT_TOKEN   bot token (the one secret this machine holds)
  *   COGS_CAPTURE_PUBLIC_KEY   from `node scripts/capture-keygen.mjs`
  *   COGS_CAPTURE_TOKEN        bearer token your device sends to pull/ack
+ *   COGS_CAPTURE_UPLOAD_TOKEN bearer token the iPhone app sends to POST /upload (add only)
  *   COGS_CAPTURE_CHAT_IDS     REQUIRED, comma list of your chat id(s): other chats are dropped
  *                             (offset still advances). Groups/channels are kept only if listed.
  *   COGS_CAPTURE_ALLOW_ANY_CHAT  set 1 to start with no list (keeps any private chat; loud warning)
@@ -28,6 +29,7 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import http from "node:http"
 import path from "node:path"
+import { createUploadRoutes } from "./capture-upload.mjs"
 import { checkConfig, parseChatIds, shouldKeep } from "./capture-filter.mjs"
 import { seal } from "./sealed-box.mjs"
 
@@ -185,9 +187,12 @@ const readBody = (req) =>
     req.on("error", reject)
   })
 
+const uploads = createUploadRoutes({ dir: DIR, uploadToken: env("COGS_CAPTURE_UPLOAD_TOKEN"), pullToken: TOKEN })
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", "http://x")
+    if (await uploads.handle(req, res, url)) return
     if (url.pathname === "/health" && req.method === "GET") {
       const healthy = !lastError && Date.now() - lastPollAt < 90000
       return send(res, healthy ? 200 : 503, { ok: healthy, queued: readQueue().length, lastPollAt, error: lastError || undefined })

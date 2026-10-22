@@ -12,7 +12,7 @@
 
 import { memo, useMemo } from "react"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
-import { joinedCompanyPenIds } from "@/lib/people-i-know"
+import { joinedCompanyPenIds, personTimePenIds } from "@/lib/people-i-know"
 import { cadenceSentence, personTimeStats, type PenShare } from "@/lib/person-time"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Task } from "@/lib/types"
@@ -27,11 +27,12 @@ function dayLabel(date: string): string {
 function PersonTimeTogetherView({ person, todayIso }: { person: Task; todayIso: string }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  const penIds = useMemo(() => joinedCompanyPenIds(person.personPipelines), [person.personPipelines])
+  const penIds = useMemo(() => personTimePenIds(person), [person])
+  const joined = useMemo(() => joinedCompanyPenIds(person.personPipelines), [person.personPipelines])
   const stats = useMemo(() => personTimeStats(entries, scopes, penIds, todayIso), [entries, scopes, penIds, todayIso])
   const name = person.title || person.description || "them"
 
-  if (!penIds.length) {
+  if (!joined.length && !stats.totalMinutes) {
     return (
       <section className="person-time" aria-label="Time together" data-testid="person-time">
         <p className="person-time-title">Time together</p>
