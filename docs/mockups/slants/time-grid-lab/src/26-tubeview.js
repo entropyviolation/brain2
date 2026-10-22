@@ -131,7 +131,7 @@ new MutationObserver(mountTubes).observe(document.body,{childList:true,subtree:t
       const tls=[];SIMS.forEach(v=>{if(v.ph.tl&&v.canvas.isConnected)tls.push(v)});
       if(tls.length&&S.hg.playing){   /* one clock for every hourglass; it waits while any of them still has a grain due */
         const T=tls[0].ph.T;
-        if(S.hg.clock<T&&!tls.some(v=>v.ph.spawnK<v.ph.N&&v.ph.mins[v.ph.spawnK]<=S.hg.clock))S.hg.clock=Math.min(T,S.hg.clock+S.hg.speed*(T/1440)/60);
+        if(S.hg.clock<T&&!tls.some(v=>v.ph.spawnK<v.ph.N&&v.ph.mins[v.ph.spawnK]<=S.hg.clock)){const nx=tls.reduce((m,v)=>v.ph.spawnK<v.ph.N?Math.min(m,v.ph.mins[v.ph.spawnK]):m,T),gap=nx-S.hg.clock,busy=tls.some(v=>v.ph.maxv>40&&v.ph.n>v.ph.nsl);S.hg.clock=Math.min(T,S.hg.clock+S.hg.speed*(T/1440)/60*(gap>20&&!busy?Math.min(8,gap/10):1))}
         const m=Math.floor(Math.min(T-1,S.hg.clock));
         if(m!==S.hg._lm){S.hg._lm=m;const el=document.getElementById('hgclock');if(el){const big=el.firstElementChild&&el.querySelector('svg')?+el.querySelector('svg').getAttribute('height')>40:true;el.innerHTML=seg7(hhmm(m%1440),big?{w:26,h:44,gap:9,sw:4,on:'#0b5a4a',off:'#0b5a4a18'}:{w:18,h:32,gap:7,sw:3,on:'#0b5a4a',off:'#0b5a4a18'})}
           const dl=document.getElementById('hgday');if(dl&&T>1440)dl.textContent=clockLabel(T,m).replace(/ \d\d:\d\d$/,'');
