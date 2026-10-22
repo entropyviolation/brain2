@@ -6,7 +6,7 @@
  * global metadata, and imports global + module chrome stylesheets (so Fast Refresh
  * cannot drop lazy-tab CSS). `win95.css` owns `--chrome-*`; `chrome-patina.css`
  * remaps module aliases onto that family; `pcb-backdrop.css` paints the
- * desktop field (teal by default, optional PCB photos); `baby-animal-nest.css` skins the header CRT companion;
+ * desktop field (Snowflake PCB plate by default; teal and other plates optional); `baby-animal-nest.css` skins the header CRT companion;
  * `machine-loading.css` skins the wait instrument (phosphor sine + screen pet);
  * `win95.css` also sets navy `#000080` text-field and checkbox/radio focus (never WebKit orange);
  * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `UiNamesHost` stamps

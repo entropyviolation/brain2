@@ -15,7 +15,7 @@ import {
 
 describe("pcb-backdrop modes", () => {
   it("defaults to teal and rejects unknown ids", () => {
-    expect(DEFAULT_PCB_MODE).toBe("teal")
+    expect(DEFAULT_PCB_MODE).toBe("mint")
     expect(parsePcbMode("mint")).toBe("mint")
     expect(parsePcbMode("nope")).toBe(DEFAULT_PCB_MODE)
     expect(parsePcbMode(null)).toBe(DEFAULT_PCB_MODE)

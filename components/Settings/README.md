@@ -272,23 +272,25 @@ may be faster than 30 seconds or slower than a week. Clamp custom to 1 second
 
 ## Desktop
 
+_Last mapped: 2026-10-22_
+
 The field behind every window. One `pcbMode` on the theme store, painted by
-`app/pcb-backdrop.css`. Fresh installs are plain Win95 teal. Photographs in
-`public/pcb/` stay opt-in. A saved ceramic (or other) plate is never rewritten
-to teal.
+`app/pcb-backdrop.css`. Fresh installs get the Snowflake plate (`mint`).
+Teal and the other photographs in `public/pcb/` are picked in Settings. A
+saved teal, ceramic (or other) plate is never rewritten to the new default.
 
 | Mode | Plate | Ink |
 |------|-------|-----|
-| `teal` (default) | Solid `#008080` — no photograph | Dark |
+| `teal` | Solid `#008080` — no photograph | Dark |
 | `ceramic` | Silver / white ceramic board | Dark |
-| `mint` | Pale mint snowflake-circuitry | Dark |
+| `mint` (default) | Pale mint snowflake-circuitry | Dark |
 | `ice` | Inverted icy blue | Dark |
 | `xray` | Black substrate, lime traces | Light |
 | `fr4` | Classic dark-green FR4 | Light |
 
 `lib/pcb-backdrop.ts` names the modes. `app/pcb-backdrop.tsx` stamps
 `data-pcb-mode` / `data-pcb-ink` on `<html>` only after persist hydration
-(never seed teal over the boot script). A blocking boot script in
+(never a seed plate over the boot script). A blocking boot script in
 `app/layout.tsx` reads **`brain2-pcb-mode`** (then **`cogs-pcb-mode`**), then
 the theme blob, before first paint. Electron restamps that pin from a saved
 theme blob (`appearanceRev` > 0) so a stale hub pin cannot roll the plate

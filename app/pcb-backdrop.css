@@ -1,8 +1,8 @@
 /**
  * app/pcb-backdrop.css — Photoreal PCB desktop behind the Win95 shell
  *
- * Replaces nothing — teal is the default estate; photographed plates are
- * opt-in in Settings. `data-pcb-mode` / `data-pcb-ink` are stamped on `<html>`
+ * Replaces nothing — the Snowflake plate (`mint`) is the default estate; teal
+ * and the other photographed plates are picked in Settings. `data-pcb-mode` / `data-pcb-ink` are stamped on `<html>`
  * by `pcb-backdrop.tsx`. Windows, glass, and widgets stay on top — this file
  * only paints the field behind them.
  *
