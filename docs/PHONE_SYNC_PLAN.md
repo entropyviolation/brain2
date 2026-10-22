@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Goal: Brain2 fills itself from the phone. Texts, calls and location come first. Health, Screen Time, DMs and email follow. Today every phone record is typed or shared by hand through BIM ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)). This plan makes it automatic.
 
-Status: **Planned.** Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). No code yet.
+Status: Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). Wave 0, the shared core, is built: [`lib/phone-sync/`](../lib/phone-sync/README.md). Readers (Wave 1) are **Planned**.
 
 Build style: parallel agents, one per source, with fixed file owners. Same rules as [`analytics-plan/12-waves.md`](analytics-plan/12-waves.md): agents in one wave do not edit each other's files.
 
@@ -38,8 +38,8 @@ Every source writes through the same vault paths BIM uses, so Analytics, People 
 - Texts and calls become **iPhone Texts** instants and **iPhone Calls** intervals, matched to People I Know by phone number or handle. Calls count as company time for that person.
 - Location becomes Location instants, same as `gps:`. Known places become Location pens.
 - Health becomes Tracking metrics by day.
-- Each record carries a stable source id (message `ROWID` + GUID, call `Z_PK` + unique id, sample UUID) so re-reads never duplicate.
-- Each record carries a new stamp, for example `generatedBy.kind === "phone-sync"` with `source: "messages" | "calls" | …`. The Phone room's allow-list ([`analytics-plan/07-phone.md`](analytics-plan/07-phone.md)) gains this stamp.
+- Each record carries one stable `sourceId` per source, so re-reads never duplicate: messages `message.guid`, calls `ZUNIQUE_ID`, Health samples their UUID. Cursors are separate and never part of identity: messages `ROWID`, calls `(ZDATE, ZUNIQUE_ID)`.
+- Each record carries the stamp `generatedBy: { kind: "phone-sync", id: "<source>:<sourceId>" }`. The Phone room's allow-list ([`analytics-plan/07-phone.md`](analytics-plan/07-phone.md)) gains this stamp.
 
 ## Agents and file owners
 
@@ -48,8 +48,8 @@ Wave 1 (texts, calls, location) runs in parallel. Wave 2 follows.
 | Agent | Wave | Owns (new files unless noted) |
 | --- | --- | --- |
 | Sync core | 0 | `lib/phone-sync/` (record types, id + stamp helpers, people matcher, write-to-vault adapter), Settings → Phone sync panel. Lands first so the others build on it. |
-| Texts | 1 | `electron/messages-db.js`, `lib/phone-sync/messages.ts` + tests |
-| Calls | 1 | `electron/call-history.js`, `lib/phone-sync/calls.ts` + tests |
+| Texts | 1 | `lib/phone-sync/messages-reader.ts`, `lib/phone-sync/messages.ts` + tests |
+| Calls | 1 | `lib/phone-sync/calls-reader.ts`, `lib/phone-sync/calls.ts` + tests |
 | Location | 1 | iOS location plugin under `ios/App/App/`, `lib/phone-sync/location.ts`, hub endpoint |
 | Health | 2 | iOS HealthKit plugin, `lib/phone-sync/health.ts` |
 | Screen Time + DMs + email | 2 | Shortcuts automation in `scripts/build-iphone-phone-shortcuts.mjs` (edit), `lib/phone-sync/email.ts`, DM import |
@@ -61,7 +61,7 @@ The sync core agent alone edits shared files (`lib/vault-guard.js`, Settings, th
 
 1. **Source map.** This doc. ✅
 2. **Agent briefs.** One brief per agent under [`phone-sync/`](phone-sync/README.md). ✅
-3. **Wave 0 + 1.** Sync core, then texts, calls and location in parallel.
+3. **Wave 0 + 1.** Sync core (✅ built), then texts, calls and location in parallel.
 4. **Wave 2.** Health, Screen Time, DMs, email, phone plates.
 
 ## Decisions

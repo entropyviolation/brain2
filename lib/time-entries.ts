@@ -197,11 +197,12 @@ export interface TimeEntry {
   /**
    * Set when another record produced this block rather than a brush stroke —
    * the sleep log (`lib/sleep-sync.ts`) or Screen Time sync (`lib/screentime/sync.ts`).
-   * `id` is the local calendar day (`YYYY-MM-DD`). Each generator replaces only
+   * `id` is the local calendar day (`YYYY-MM-DD`). Phone sync (`lib/phone-sync/`) is the
+   * exception: its `id` is one source record (`messages:<guid>`), never a day. Each generator replaces only
    * its own kind+id, so re-deriving is idempotent and can never quietly delete
    * time the user painted by hand.
    */
-  generatedBy?: { kind: "sleep" | "screentime" | "text"; id: string }
+  generatedBy?: { kind: "sleep" | "screentime" | "text" | "phone-sync"; id: string }
   /**
    * Links calendar-day slices of one continuous block. Painting 11 PM–2 AM
    * stores Thursday 23:00–24:00 and Friday 00:00–02:00 with the same id, so the

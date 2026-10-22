@@ -52,7 +52,11 @@ export function dirSize(dir) {
   return total
 }
 
-/** The backup public key from the env or ~/.brain2/backup-public.key, or null. */
+/**
+ * The backup public key from the env or ~/.brain2/backup-public.key, or null.
+ * @param {Record<string, string | undefined>} [env]
+ * @param {string} [file]
+ */
 export function readBackupPublicKey(env = process.env, file = BACKUP_PUBLIC_KEY_PATH) {
   const fromEnv = (env.COGS_BACKUP_PUBLIC_KEY || "").trim()
   if (fromEnv) return fromEnv

@@ -132,7 +132,6 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   stepOf: true,
   priorityLog: true,
   priorityRefreshedOn: true,
-  attachedDate: true,
 }
 
 const ORDERS = new Set<ItemActivityOrder>(["observed", "recorded", "derived", "inferred"])

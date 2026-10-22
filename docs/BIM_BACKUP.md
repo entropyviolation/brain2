@@ -38,6 +38,8 @@ Decided 2026-10-22, before synced message bodies land in the vault. Backups are 
 
 ```bash
 node scripts/backup-data.mjs /tmp/b2-test
+# With a backup key the file ends in .b2enc. Open it first (skip this line without a key):
+node scripts/backup-open.mjs /tmp/b2-test/brain2-data-*.tar.gz.b2enc
 tar -tzf /tmp/b2-test/brain2-data-*.tar.gz | head
 ```
 

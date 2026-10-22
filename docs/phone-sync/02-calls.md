@@ -10,14 +10,14 @@ Read the call history the Mac receives from the iPhone, and pick up iOS call rec
 
 ## Owns
 
-- `electron/call-history.js`: open `~/Library/Application Support/CallHistoryDB/CallHistory.storedata` read-only.
-- `lib/phone-sync/calls.ts`: map rows to `call` records. Pure, tested.
+- `lib/phone-sync/calls-reader.ts` (Node only): a `PhoneReader` with `source: "calls"`. Open `~/Library/Application Support/CallHistoryDB/CallHistory.storedata` read-only. Register it with one line in `lib/phone-sync/readers.ts`.
+- `lib/phone-sync/calls.ts`: map rows to `CallRecord`. Pure, tested. Company time for the matched person is this agent's job, through the existing Company pipelines (`lib/people-i-know.ts`).
 - `lib/phone-sync/call-recordings.ts`: find iOS call-recording notes in the Apple Notes read (`electron/apple-notes.js` already exists; call it, do not edit it) and link each to its call by time.
 
 ## Read
 
 - Table `ZCALLRECORD`: `ZADDRESS` (number), `ZNAME`, `ZDATE` (seconds since 2001-01-01), `ZDURATION`, `ZORIGINATED` (outgoing), `ZANSWERED`, `ZCALLTYPE` (phone, FaceTime audio/video), `ZUNIQUE_ID`.
-- Id: `ZUNIQUE_ID`. Cursor: `ZDATE`.
+- Id (`sourceId`): `ZUNIQUE_ID`. Cursor: the pair `(ZDATE, ZUNIQUE_ID)`, stored as `"<ZDATE>|<ZUNIQUE_ID>"`. Read `WHERE ZDATE > :d OR (ZDATE = :d AND ZUNIQUE_ID > :id) ORDER BY ZDATE, ZUNIQUE_ID`, so two calls with the same timestamp are neither skipped nor read twice.
 - Missed calls are instants. Answered calls are intervals of `ZDURATION`.
 - A call is company time for the matched person.
 

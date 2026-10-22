@@ -6,6 +6,8 @@ launchd job for the nightly vault backup. See `docs/BIM_BACKUP.md` for what is a
 
 ## Install
 
+_Last mapped: 2026-10-22_
+
 The plist has four placeholders: `__NODE_PATH__`, `__REPO_PATH__`, `__BACKUP_DIR__`, `__HOME__`.
 
 ```bash

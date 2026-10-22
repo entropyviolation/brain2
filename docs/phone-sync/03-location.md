@@ -6,7 +6,7 @@ _Last mapped: 2026-10-22_
 
 ## Job
 
-Know where allie is at all times, including when the Mac is asleep.
+Record every significant move and every visit (arrive / leave), including while the Mac is asleep. This is not continuous GPS: iOS wakes the app on a move of roughly 500 m or more and on visits, so short trips and indoor moves can leave gaps.
 
 ## Owns
 
@@ -32,4 +32,4 @@ The Oracle box never sees coordinates in the clear. Over Tailscale only; the pho
 
 ## Done
 
-- A day with the phone in a pocket and the laptop shut paints Location for every place visited, once the hub drains.
+- A day with the phone in a pocket and the laptop shut paints Location for the visits iOS reported, once the hub drains. Gaps stay gaps; nothing is filled in.

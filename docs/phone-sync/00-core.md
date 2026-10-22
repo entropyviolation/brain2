@@ -4,6 +4,8 @@ _Last mapped: 2026-10-22_
 
 **Wave 0.** Lands before every other agent starts.
 
+**Status: built 2026-10-22** except the Settings panel (**Planned**, after Wave 1 so it has readers to show). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record.
+
 ## Job
 
 The shared plumbing every source uses: record types, ids, stamps, people matching, the vault write, the run log, and the Settings panel.
@@ -20,7 +22,7 @@ The shared plumbing every source uses: record types, ids, stamps, people matchin
 
 ## Message storage
 
-Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Analytics see it. Full bodies live in a new persist key (`cogs-phone-messages`) so they do not bloat the tracking store.
+Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Analytics see it. Full bodies live on disk in `data/phone-sync/messages.jsonl`, not in a persist key (see the status note above), so they do not bloat the tracking store or the ~5 MB localStorage.
 
 ## Done
 
