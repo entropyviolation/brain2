@@ -119,6 +119,18 @@ describe("SessionPlanner", () => {
     expect(screen.getByRole("button", { name: "Stop this task" })).toBeInTheDocument()
   })
 
+  it("edits an estimate and the session name while running", () => {
+    startQuick()
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit estimate for process inbox" })[1])
+    const field = screen.getByRole("spinbutton", { name: "Estimate for process inbox in minutes" })
+    fireEvent.change(field, { target: { value: "40" } })
+    fireEvent.keyDown(field, { key: "Enter" })
+    expect(task("inbox").estimatedDuration).toBe(40)
+    expect(plan().tiers.min[0].estMin).toBe(40)
+    fireEvent.change(screen.getByRole("textbox", { name: "Session name" }), { target: { value: "Morning push" } })
+    expect(plan().title).toBe("Morning push")
+  })
+
   it("Park keeps the line and the time left; Resume picks it up", () => {
     startQuick()
     act(() => {

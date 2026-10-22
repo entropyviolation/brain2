@@ -64,6 +64,10 @@ export interface SessionLine {
   estMin?: number
   /** Active seconds while this line was current. */
   actualSec?: number
+  /** A step inside the line picked with ▶ (2026-10-22). Omitted = Just Start's pick. */
+  focusStepId?: string
+  /** Active seconds per step inside the line, while it was the focus step. */
+  stepSec?: Record<string, number>
   /** ISO, when the line was finished in this session. */
   doneAt?: string
   /** What the review decided for an unfinished line. */
@@ -508,7 +512,15 @@ function commitActive(plan: SessionPlan, now: Date): SessionPlan {
   if (!plan.activeLineId) return plan
   const add = activeSeconds(plan, now)
   const next = add
-    ? mapLines(plan, (line) => (line.id === plan.activeLineId ? { ...line, actualSec: (line.actualSec ?? 0) + add } : line))
+    ? mapLines(plan, (line) =>
+        line.id !== plan.activeLineId
+          ? line
+          : {
+              ...line,
+              actualSec: (line.actualSec ?? 0) + add,
+              ...(line.focusStepId ? { stepSec: { ...line.stepSec, [line.focusStepId]: (line.stepSec?.[line.focusStepId] ?? 0) + add } } : {}),
+            },
+      )
     : plan
   return { ...next, activeSince: plan.clock?.running ? now.toISOString() : undefined }
 }
@@ -703,6 +715,33 @@ export function playLine(plan: SessionPlan, lineId: string, now = new Date()): S
   return resumeSession(focusLine(plan, lineId, now), now)
 }
 
+/** Point a line at one of its steps (`undefined` = Just Start's pick) and make it current. The clock is left as it is. */
+export function focusLineStep(plan: SessionPlan, lineId: string, stepId: string | undefined, now = new Date()): SessionPlan {
+  const committed = commitActive(plan, now)
+  return focusLine(
+    mapLines(committed, (line) => (line.id === lineId ? { ...line, focusStepId: stepId } : line)),
+    lineId,
+    now,
+  )
+}
+
+/** Press ▶ on a step inside a line: that step is what you are on, and the clock runs. */
+export function playStep(plan: SessionPlan, lineId: string, stepId: string, now = new Date()): SessionPlan {
+  return resumeSession(focusLineStep(plan, lineId, stepId, now), now)
+}
+
+/** Seconds spent on one step inside a line in this session (live for the focus step). */
+export function stepSeconds(plan: SessionPlan, line: SessionLine, stepId: string, now = new Date()): number {
+  const live = plan.activeLineId === line.id && line.focusStepId === stepId ? activeSeconds(plan, now) : 0
+  return (line.stepSec?.[stepId] ?? 0) + live
+}
+
+/** Change a line's estimate for this session (minutes; 0 clears it). */
+export function setLineEstimate(plan: SessionPlan, lineId: string, minutes: number): SessionPlan {
+  const m = Math.max(0, Math.round(minutes))
+  return mapLines(plan, (line) => (line.id === lineId ? { ...line, estMin: m || undefined } : line))
+}
+
 /** Press ■ on the current line: its time is kept, nothing is current, the session clock keeps going. */
 export function stopLine(plan: SessionPlan, now = new Date()): SessionPlan {
   return focusLine(plan, undefined, now)
@@ -737,6 +776,12 @@ export function finishLine(plan: SessionPlan, lineId: string, tasks: readonly Ta
 export function lineFocusStep(line: SessionLine, tasks: readonly Task[]): StartPick | null {
   const { task, step } = lineTarget(line, tasks)
   if (!task) return null
+  if (line.focusStepId) {
+    const picked = findPlacedStep(step ? step.subtasks : task.subtasks, line.focusStepId)
+    if (picked && !picked.step.completed && !picked.step.subtasks?.some((s) => !s.completed)) {
+      return { kind: "step", step: picked.step, path: picked.path, minutes: picked.step.estimatedDuration ?? 0, ready: 1 }
+    }
+  }
   if (step && !(step.subtasks?.length)) {
     return step.completed
       ? { kind: "all-done" }

@@ -28,7 +28,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { Task } from "@/lib/types"
@@ -78,7 +78,11 @@ import {
   parkSession,
   parkedLong,
   pauseSession,
+  focusLineStep,
   playLine,
+  playStep,
+  setLineEstimate,
+  stepSeconds,
   randomLine,
   shortestLine,
   stopLine,
@@ -234,11 +238,6 @@ export function SessionPlanner({
     if (view === "shelves" && !plan) newDraft()
     setView(view === "shelves" ? "session" : "shelves")
   }
-  const showList = () => {
-    setDoneId(null)
-    if (view === "list" && !plan) newDraft()
-    setView(view === "list" ? "session" : "list")
-  }
   const openFromShelf = (id: string) => {
     useSessionPlanStore.getState().focus(id)
     setDoneId(null)
@@ -273,9 +272,6 @@ export function SessionPlanner({
         <div className="todo-dialog-caption">
           <DialogTitle>{title}</DialogTitle>
           <span className="todo-session-caption-keys">
-            <button type="button" className={`todo-verb${view === "list" ? " is-on" : ""}`} aria-pressed={view === "list"} onClick={showList}>
-              Pick list
-            </button>
             <button type="button" className={`todo-verb${view === "shelves" ? " is-on" : ""}`} aria-pressed={view === "shelves"} onClick={showShelves}>
               Sessions
             </button>
@@ -370,8 +366,8 @@ function FutureNoteInput({ value, onChange }: { value: string; onChange: (text: 
     <input
       className="todo-session-futurenote-input"
       value={value}
-      aria-label="Note to tomorrow-you"
-      placeholder="Note to tomorrow-you (optional)"
+      aria-label="Note to you later"
+      placeholder="Note to you later (optional)"
       onChange={(e) => onChange(e.target.value)}
     />
   )
@@ -972,6 +968,46 @@ function lineEst(line: SessionLine, tasks: Task[]): number {
   return line.estMin ?? lineMinutes(line, tasks)
 }
 
+/** An estimate you can click to change (minutes). Enter or leaving the field saves; Esc cancels. */
+function EstEdit({ minutes, label, onSave }: { minutes: number; label: string; onSave: (minutes: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  if (draft === null) {
+    return (
+      <button type="button" data-no95 className="ses-est" aria-label={`Edit estimate for ${label}`} title="Edit estimate" onClick={() => setDraft(minutes ? String(Math.round(minutes)) : "")}>
+        {minutes ? fmtMinutes(minutes) : "–"}
+      </button>
+    )
+  }
+  const commit = () => {
+    const n = Number(draft)
+    if (draft.trim() !== "" && Number.isFinite(n) && n >= 0) onSave(n)
+    setDraft(null)
+  }
+  return (
+    <span className="ses-est-field">
+      <input
+        className="ses-est-input"
+        type="number"
+        min={0}
+        step={1}
+        autoFocus
+        aria-label={`Estimate for ${label} in minutes`}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit()
+          if (e.key === "Escape") {
+            e.stopPropagation()
+            setDraft(null)
+          }
+        }}
+      />
+      m
+    </span>
+  )
+}
+
 /** Estimate vs actual in plain words: "3m under", "+5m over", "on the nose". Warm red only for overruns. */
 function EstDelta({ estMin, actualSec, done }: { estMin: number; actualSec: number; done: boolean }) {
   if (!estMin || (!done && actualSec < estMin * 60)) return null
@@ -990,6 +1026,46 @@ function EstBar({ estMin, actualSec }: { estMin: number; actualSec: number }) {
       <span className={`ses-bar-fill${ratio > 1 ? " is-over" : ""}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
     </span>
   )
+}
+
+/** Session view settings (2026-10-22). Per device, in localStorage; the page works without it. */
+interface SessionViewPrefs {
+  clockColor: string
+  hideDone: boolean
+  showBars: boolean
+}
+
+/** Plan's opal mint (`--p-opal-mint`), soft on the dark clock glass. */
+export const SESSION_CLOCK_DEFAULT = "#8cd4a5"
+const SESSION_VIEW_KEY = "brain2.sessionView"
+const SESSION_VIEW_DEFAULTS: SessionViewPrefs = { clockColor: SESSION_CLOCK_DEFAULT, hideDone: false, showBars: true }
+
+function readSessionView(): SessionViewPrefs {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(SESSION_VIEW_KEY) ?? "{}") as Partial<SessionViewPrefs>
+    return {
+      clockColor: typeof raw.clockColor === "string" && /^#[0-9a-f]{6}$/i.test(raw.clockColor) ? raw.clockColor : SESSION_CLOCK_DEFAULT,
+      hideDone: raw.hideDone === true,
+      showBars: raw.showBars !== false,
+    }
+  } catch {
+    return SESSION_VIEW_DEFAULTS
+  }
+}
+
+function useSessionView(): [SessionViewPrefs, (patch: Partial<SessionViewPrefs>) => void] {
+  const [prefs, setPrefs] = useState<SessionViewPrefs>(() => (typeof window === "undefined" ? SESSION_VIEW_DEFAULTS : readSessionView()))
+  const update = (patch: Partial<SessionViewPrefs>) =>
+    setPrefs((old) => {
+      const next = { ...old, ...patch }
+      try {
+        window.localStorage.setItem(SESSION_VIEW_KEY, JSON.stringify(next))
+      } catch {
+        // Private window or blocked storage: the change holds for this sitting.
+      }
+      return next
+    })
+  return [prefs, update]
 }
 
 type Suggestion = { kind: "random" | "shortest"; lineId: string; seen: string[] }
@@ -1035,23 +1111,42 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan.paint, current?.id, focusStep?.id, paused])
 
-  const advanceIfDone = (next: SessionPlan) => {
+  /** Tick one step inside a line. On the step you are on, you move to the next step (or the next line when this one is done). */
+  const finishStepOf = (line: SessionLine, stepId: string) => {
+    const task = tasks.find((t) => t.id === line.taskId)
+    if (!task) return
+    const row = penSession?.taskId === task.id ? activeNowObjectives(penSession.nowObjectives).find((o) => o.stepId === stepId) : undefined
+    if (row) togglePenColorNowObjectiveComplete(row.id)
+    else updateTask({ ...task, subtasks: settle(task, finishStep(task.subtasks, stepId, undefined)) })
     const latest = useTaskStore.getState().tasks
-    const line = allLines(next).find(({ line }) => line.id === next.activeLineId)?.line
-    if (line && lineIsDone(line, latest)) onChange(finishLine(next, line.id, latest, new Date()))
-    else onChange(next)
+    if (lineIsDone(line, latest)) return onChange(finishLine(plan, line.id, latest, new Date()))
+    if (line.id !== plan.activeLineId || focusStep?.id !== stepId) return onChange(plan)
+    const next = lineFocusStep({ ...line, focusStepId: undefined }, latest)
+    onChange(focusLineStep(plan, line.id, next?.kind === "step" ? next.step.id : undefined, new Date()))
   }
 
   const stepDone = () => {
-    if (!current || !focusStep) return
-    const task = tasks.find((t) => t.id === current.taskId)
-    if (!task) return
-    const row =
-      penSession?.taskId === task.id ? activeNowObjectives(penSession.nowObjectives).find((o) => o.stepId === focusStep.id) : undefined
-    if (row) togglePenColorNowObjectiveComplete(row.id)
-    else updateTask({ ...task, subtasks: settle(task, finishStep(task.subtasks, focusStep.id, undefined)) })
-    advanceIfDone(plan)
+    if (current && focusStep) finishStepOf(current, focusStep.id)
   }
+
+  /** A leaf's estimate lives on the task; a line with steps keeps its own session estimate. */
+  const saveLineEst = (line: SessionLine, minutes: number) => {
+    const { task, step } = lineTarget(line, tasks)
+    if (task && !(step ? step.subtasks : task.subtasks)?.length) {
+      if (step) updateTask({ ...task, subtasks: updateNestedStep(task.subtasks, step.id, { estimatedDuration: minutes || undefined }) })
+      else updateTask({ ...task, estimatedDuration: minutes || undefined })
+    }
+    onChange(setLineEstimate(plan, line.id, minutes))
+  }
+
+  const saveStepEst = (line: SessionLine, stepId: string, minutes: number) => {
+    const task = tasks.find((t) => t.id === line.taskId)
+    if (task) updateTask({ ...task, subtasks: updateNestedStep(task.subtasks, stepId, { estimatedDuration: minutes || undefined }) })
+  }
+
+  const [openSteps, setOpenSteps] = useState<Record<string, boolean>>({})
+  const [view, setView] = useSessionView()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   /** Tick a whole line: the current one moves you on, any other leaves you where you are. */
   const lineDone = (line: SessionLine) => {
@@ -1062,9 +1157,12 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
     onChange(finishLine(plan, line.id, useTaskStore.getState().tasks, new Date()))
   }
 
+  /** ▶ on a line: you start on its next step (Just Start's pick), so that step is timed too. */
   const play = (lineId: string) => {
     if (suggest?.lineId === lineId) setSuggest(null)
-    onChange(playLine(plan, lineId, new Date()))
+    const line = lines.find(({ line }) => line.id === lineId)?.line
+    const pick = line ? lineFocusStep({ ...line, focusStepId: undefined }, tasks) : null
+    onChange(pick?.kind === "step" ? playStep(plan, lineId, pick.step.id, new Date()) : playLine(plan, lineId, new Date()))
   }
 
   /** ■: let go of the line. A painting session also lets go of the Tracking pen clock. */
@@ -1111,8 +1209,9 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   const currentEst = current ? lineEst(current, tasks) : 0
 
   return (
-    <div className="todo-session-run">
+    <div className="todo-session-run" style={{ "--ses-clock": view.clockColor } as CSSProperties}>
       <section className={`ses-hero${left < 0 ? " is-over" : ""}${paused ? " is-paused" : ""}`} aria-label="Session clock">
+        <input className="ses-title" value={plan.title} placeholder="Name this session" aria-label="Session name" onChange={(e) => onChange({ ...plan, title: e.target.value })} />
         <div className="ses-clock" aria-live="off">
           {fmtClock(left)}
         </div>
@@ -1135,7 +1234,31 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
           <button type="button" data-no95 className="ses-key is-mod" onClick={endToStrip}>
             End
           </button>
+          <button type="button" data-no95 className={`ses-key is-mod${settingsOpen ? " is-on" : ""}`} aria-pressed={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}>
+            Settings
+          </button>
         </div>
+        {settingsOpen ? (
+          <div className="ses-settings" role="group" aria-label="Session settings">
+            <label className="ses-setting">
+              Timer colour
+              <input type="color" value={view.clockColor} aria-label="Timer colour" onChange={(e) => setView({ clockColor: e.target.value })} />
+            </label>
+            {view.clockColor !== SESSION_CLOCK_DEFAULT ? (
+              <button type="button" data-no95 className="ses-key is-mod is-small" onClick={() => setView({ clockColor: SESSION_CLOCK_DEFAULT })}>
+                Back to mint
+              </button>
+            ) : null}
+            <label className="ses-setting">
+              <input type="checkbox" checked={view.hideDone} onChange={(e) => setView({ hideDone: e.target.checked })} />
+              Hide finished tasks
+            </label>
+            <label className="ses-setting">
+              <input type="checkbox" checked={view.showBars} onChange={(e) => setView({ showBars: e.target.checked })} />
+              Estimate bars
+            </label>
+          </div>
+        ) : null}
         <div className="ses-summary">
           <span>
             Planned <b>{fmtMinutes(plannedMin)}</b>
@@ -1205,22 +1328,26 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
           <div className="ses-now-numbers">
             <span className="ses-num">
               <span className="ses-num-label">Est</span>
-              <span className="ses-num-val">{currentEst ? fmtMinutes(currentEst) : "–"}</span>
+              <span className="ses-num-val">
+                <EstEdit minutes={currentEst} label={lineLabel(current, tasks)} onSave={(m) => saveLineEst(current, m)} />
+              </span>
             </span>
             <span className="ses-num">
               <span className="ses-num-label">Actual</span>
               <span className={`ses-num-val is-live${currentEst && currentSec > currentEst * 60 ? " is-over" : ""}`}>{fmtClock(currentSec)}</span>
             </span>
-            {focusStep?.estimatedDuration ? (
+            {focusStep && focusStep.id !== current.stepId ? (
               <span className="ses-num">
                 <span className="ses-num-label">This step</span>
-                <span className="ses-num-val">{fmtMinutes(focusStep.estimatedDuration)}</span>
+                <span className="ses-num-val">
+                  <EstEdit minutes={focusStep.estimatedDuration ?? 0} label={focusStep.description} onSave={(m) => saveStepEst(current, focusStep.id, m)} />
+                </span>
               </span>
             ) : null}
             <EstDelta estMin={currentEst} actualSec={currentSec} done={false} />
             {penSession?.taskId === current.taskId ? <span className="ses-now-pen">on the pen clock</span> : null}
           </div>
-          <EstBar estMin={currentEst} actualSec={currentSec} />
+          {view.showBars ? <EstBar estMin={currentEst} actualSec={currentSec} /> : null}
           <div className="ses-now-keys">
             <DvdTransportKey className="ses-dvd" mark={paused ? "play" : "pause"} label={paused ? "Resume this task" : "Pause this task"} onClick={holdOrGo} />
             <DvdTransportKey className="ses-dvd" mark="stop" label="Stop this task" onClick={stop} />
@@ -1326,11 +1453,16 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
                   {tierLines.map((line) => {
                     const name = lineLabel(line, tasks)
                     const done = lineIsDone(line, tasks)
+                    if (done && view.hideDone) return null
                     const blocked = !done && lineIsBlocked(line, tasks)
                     const isCurrent = line.id === plan.activeLineId
                     const sec = lineSeconds(plan, line, now)
                     const lineEstMin = lineEst(line, tasks)
                     const pct = done ? null : linePercent(line, tasks)
+                    const target = lineTarget(line, tasks)
+                    const kids = target.step ? target.step.subtasks : target.task?.subtasks
+                    const hasSteps = !!kids?.length
+                    const stepsOpen = hasSteps && (openSteps[line.id] ?? isCurrent)
                     return (
                       <li
                         key={line.id}
@@ -1351,10 +1483,24 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
                           )}
                         </span>
                         <span className="ses-line-body">
-                          <span className="ses-line-name">{name}</span>
+                          <span className="ses-line-name">
+                            {hasSteps ? (
+                              <button
+                                type="button"
+                                data-no95
+                                className="ses-twisty"
+                                aria-expanded={stepsOpen}
+                                aria-label={`${stepsOpen ? "Hide" : "Show"} steps of ${name}`}
+                                onClick={() => setOpenSteps((o) => ({ ...o, [line.id]: !stepsOpen }))}
+                              >
+                                {stepsOpen ? "▾" : "▸"}
+                              </button>
+                            ) : null}
+                            {name}
+                          </span>
                           <span className="ses-line-meta">
                             <span>
-                              Est <b>{lineEstMin ? fmtMinutes(lineEstMin) : "–"}</b>
+                              Est <EstEdit minutes={lineEstMin} label={name} onSave={(m) => saveLineEst(line, m)} />
                             </span>
                             {isCurrent || sec >= 1 ? (
                               <span>
@@ -1365,7 +1511,67 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
                             {pct !== null && pct > 0 ? <span>{formatPercent(pct)} of steps</span> : null}
                             {blocked ? <span className="ses-line-wait">waiting on another task</span> : null}
                           </span>
-                          {!done && (isCurrent || sec >= 1) ? <EstBar estMin={lineEstMin} actualSec={sec} /> : null}
+                          {view.showBars && !done && (isCurrent || sec >= 1) ? <EstBar estMin={lineEstMin} actualSec={sec} /> : null}
+                          {stepsOpen && target.task ? (
+                            <ul className="ses-steps" aria-label={`Steps of ${name}`}>
+                              {placeSteps(kids).map(({ step: st, path }) => {
+                                const leaf = !st.subtasks?.length
+                                const onIt = isCurrent && focusStep?.id === st.id
+                                const stSec = stepSeconds(plan, line, st.id, now)
+                                const ready = isStepAvailable(target.task!.subtasks, st.id)
+                                return (
+                                  <li
+                                    key={st.id}
+                                    className={`ses-step${st.completed ? " is-done" : ""}${onIt ? " is-current" : ""}${leaf ? "" : " is-group"}`}
+                                    style={{ paddingLeft: 8 + path.length * 18 }}
+                                  >
+                                    <span className="ses-line-ctl">
+                                      {!leaf ? null : st.completed ? (
+                                        <span className="ses-line-check is-small" role="img" aria-label="Done">
+                                          ✓
+                                        </span>
+                                      ) : onIt ? (
+                                        <>
+                                          <DvdTransportKey className="ses-dvd is-small" mark={paused ? "play" : "pause"} label={paused ? `Resume ${st.description}` : `Pause ${st.description}`} onClick={holdOrGo} />
+                                          <DvdTransportKey className="ses-dvd is-small" mark="stop" label={`Stop ${st.description}`} onClick={stop} />
+                                        </>
+                                      ) : (
+                                        <DvdTransportKey
+                                          className="ses-dvd is-small"
+                                          mark="play"
+                                          label={`Start ${st.description}`}
+                                          disabled={!ready || blocked}
+                                          onClick={() => onChange(playStep(plan, line.id, st.id, new Date()))}
+                                        />
+                                      )}
+                                    </span>
+                                    <span className="ses-line-body">
+                                      <span className="ses-step-name">{st.description}</span>
+                                      {leaf ? (
+                                        <span className="ses-line-meta">
+                                          <span>
+                                            Est <EstEdit minutes={st.estimatedDuration ?? 0} label={st.description} onSave={(m) => saveStepEst(line, st.id, m)} />
+                                          </span>
+                                          {onIt || stSec >= 1 ? (
+                                            <span>
+                                              Actual <b className={onIt && !paused ? "is-live" : ""}>{fmtClock(stSec)}</b>
+                                            </span>
+                                          ) : null}
+                                          <EstDelta estMin={st.estimatedDuration ?? 0} actualSec={stSec} done={!!st.completed} />
+                                          {!st.completed && !ready ? <span className="ses-line-wait">waiting on another step</span> : null}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {leaf && !st.completed ? (
+                                      <button type="button" data-no95 className="ses-key is-mod is-small" aria-label={`Done: ${st.description}`} onClick={() => finishStepOf(line, st.id)}>
+                                        Done
+                                      </button>
+                                    ) : null}
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          ) : null}
                         </span>
                         {!done ? (
                           <button type="button" data-no95 className="ses-key is-mod ses-line-done" aria-label={`Done: ${name}`} title="Mark done" onClick={() => lineDone(line)}>
