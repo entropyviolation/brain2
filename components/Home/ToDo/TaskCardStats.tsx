@@ -17,6 +17,7 @@ import { formatPercent } from "@/lib/step-progress"
 import { effectiveDurationMinutes } from "@/lib/todo-steps"
 import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
 import type { StepTier, Subtask } from "@/lib/types"
+import { SpentBlocks, type SpentBlocksScope } from "./SpentBlocks"
 
 export interface TaskCardStatsData {
   view: readonly Subtask[]
@@ -29,6 +30,8 @@ export interface TaskCardStatsData {
   parts: number
   spent: number
   periodSpent: number
+  /** Which blocks count as spent here; the Spent popover lists and edits them. */
+  spentScope?: SpentBlocksScope
   periodLabel: string
   penPool?: number
   pts: { points: number; source: string }
@@ -168,6 +171,12 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
           <h4>Pace against the estimate</h4>
           <p className="tcs-formula">spent / est = {d.spent} / {d.est} = <b>{d.est ? pct(d.spent, d.est) : "—"}</b></p>
           <R k={left >= 0 ? "Left" : "Over"}>{d.est ? `${Math.abs(left)}m` : "no estimate to pace against"}</R>
+          {d.spentScope ? (
+            <>
+              <h4>Blocks counted as spent</h4>
+              <SpentBlocks scope={d.spentScope} />
+            </>
+          ) : null}
           <p className="is-quiet">Only blocks tagged with this task count as spent.</p>
         </>
       ),
@@ -218,6 +227,7 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
           <button
             type="button"
             className="tcs-stat"
+            data-no95
             data-stat={c.id}
             data-testid={c.testId}
             aria-expanded={open === c.id}
@@ -231,7 +241,7 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
             <span className="tcs-stat-sub">{c.sub ?? " "}</span>
           </button>
           {open === c.id ? (
-            <div id={`tcs-pop-${c.id}`} className={`tcs-stat-pop${c.wide ? " is-wide" : ""}`} role="group" aria-label={`${c.label} detail`}>
+            <div id={`tcs-pop-${c.id}`} className={`tcs-stat-pop${c.wide || c.id === "spent" ? " is-wide" : ""}`} role="group" aria-label={`${c.label} detail`}>
               {c.body}
             </div>
           ) : null}

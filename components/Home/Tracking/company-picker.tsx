@@ -5,6 +5,9 @@
  * Enter to toggle, and a name that matches nobody offers "+ Add". Alone,
  * Together and In conversation are the block's company status, not people, so
  * they are not listed here. The picker stays open so several people go in a row.
+ *
+ * `hideSelected` is for a block that already lists its people above: only the
+ * people not on it are offered, so the picker never repeats the list.
  */
 "use client"
 
@@ -20,16 +23,20 @@ interface CompanyPickerProps {
   selected: string[]
   /** Selected and not removable here (the block's primary pen). */
   locked?: string[]
+  /** Offer only people who are not selected yet. */
+  hideSelected?: boolean
   onToggle: (penId: string) => void
   /** Make a person pen from a typed name, then select it. */
   onCreate: (name: string) => void
 }
 
-export function CompanyPicker({ pens, selected, locked = [], onToggle, onCreate }: CompanyPickerProps) {
+export function CompanyPicker({ pens, selected, locked = [], hideSelected = false, onToggle, onCreate }: CompanyPickerProps) {
   const [query, setQuery] = useState("")
   const q = query.trim().toLowerCase()
   const people = pens.filter((pen) => !isCompanyStatusPen(pen))
-  const shown = people.filter((pen) => !q || pen.name.toLowerCase().includes(q))
+  const shown = people.filter(
+    (pen) => (!q || pen.name.toLowerCase().includes(q)) && !(hideSelected && selected.includes(pen.id)),
+  )
   const exact = people.some((pen) => pen.name.trim().toLowerCase() === q)
 
   const toggle = (pen: TrackPen) => {
@@ -45,7 +52,7 @@ export function CompanyPicker({ pens, selected, locked = [], onToggle, onCreate 
   }
 
   return (
-    <div className="trk-company-picker flex w-full flex-col gap-1.5">
+    <div className="trk-company-picker">
       <input
         type="search"
         autoFocus
@@ -56,11 +63,10 @@ export function CompanyPicker({ pens, selected, locked = [], onToggle, onCreate 
           event.preventDefault()
           submit()
         }}
-        placeholder="Search people, Enter to add or create…"
+        placeholder="Search people — Enter adds or creates"
         aria-label="Search people"
-        className="h-7 w-full rounded border bg-white px-2 text-[12px] text-black"
       />
-      <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto" role="group" aria-label="People">
+      <div className="trk-company-candidates" role="group" aria-label="People">
         {shown.map((pen) => {
           const on = selected.includes(pen.id)
           return (
@@ -71,8 +77,7 @@ export function CompanyPicker({ pens, selected, locked = [], onToggle, onCreate 
               aria-pressed={on}
               disabled={locked.includes(pen.id)}
               onClick={() => toggle(pen)}
-              className={`rounded border px-2 py-0.5 text-[11px] ${on ? "bg-foreground text-background" : "hover:bg-muted"}`}
-              style={{ borderColor: pen.color }}
+              style={{ borderLeftColor: pen.color }}
             >
               {on ? "✓ " : ""}
               {pen.name}
@@ -80,11 +85,15 @@ export function CompanyPicker({ pens, selected, locked = [], onToggle, onCreate 
           )
         })}
         {q && !exact ? (
-          <button type="button" data-no95="" className="rounded border border-dashed px-2 py-0.5 text-[11px]" onClick={submit}>
-            + Add “{query.trim()}”
+          <button type="button" data-no95="" className="trk-company-new" onClick={submit}>
+            + Create “{query.trim()}”
           </button>
         ) : null}
-        {shown.length === 0 && !q ? <span className="text-[11px] text-muted-foreground">No people yet — type a name.</span> : null}
+        {shown.length === 0 && !q ? (
+          <span className="trk-company-empty">
+            {hideSelected && people.length > 0 ? "Everyone you know is here. Type a name to add someone new." : "No people yet — type a name."}
+          </span>
+        ) : null}
       </div>
     </div>
   )

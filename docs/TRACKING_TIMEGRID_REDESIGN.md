@@ -129,3 +129,9 @@ _Last mapped: 2026-10-20._ Not scheduled. Each needs a look at the running scree
 - **Small-label contrast.** Fold into Phase 1: check GHOST, MIN, TRACKED, OF DAY and the hour column against AA while raising size.
 
 Dropped: making the START buttons "win" (the disabled state is deliberate, see Phase 4), an 8px spacing sweep (low value alone), and dimming the side panels for focus (conflicts with one color family and the instrument-column design).
+
+---
+
+## Style explorations
+
+_Last mapped: 2026-10-21._ **Planned.** Not built. A slant lab of 17 Time Grid mockups (Hipgnosis, retrofuturism, and both), from keeping every house rule to keeping only the data, lives in [`mockups/slants/time-grid-lab/`](mockups/slants/time-grid-lab/README.md). It mocks the Clear day confirm and Undo from Phase 2, names the active view in words, and groups the view keys. Slants never change the house style. Anything taken from it into the app goes through this plan first.
