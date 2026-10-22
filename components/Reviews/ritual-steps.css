@@ -613,3 +613,12 @@
 .rst[data-tone] .mr-lede {
   font-style: italic;
 }
+
+/* Partial: started, not finished. Half-lit, not counted in the tally. */
+.rst-lamp[data-answered="partial"] {
+  background: linear-gradient(90deg, var(--hpp-crt, #7dffc4) 50%, #0f2a20 50%);
+  box-shadow: 0 0 3px rgba(125, 255, 196, 0.5);
+}
+.rst-index-row[data-answered="partial"] .rst-index-lamp {
+  background: linear-gradient(90deg, var(--hpp-crt, #7dffc4) 50%, #9aa5a8 50%);
+}

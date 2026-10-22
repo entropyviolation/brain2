@@ -139,3 +139,14 @@ describe("morning gm habit / walk / plan", () => {
     expect(tasks.some((t) => t.description === "buy milk")).toBe(false)
   })
 })
+
+describe("morning gm deadlines", () => {
+  it("opens with counts of what is due within a week and what is overdue", () => {
+    const add = (id: string, deadline: Date) =>
+      useTaskStore.getState().addTask({ id, description: id, stage: "scheduled", createdAt: NOW, completed: false, lists: [], deadline } as never)
+    add("invoice", new Date(2026, 8, 25, 9))
+    add("passport", new Date(2026, 8, 20, 9))
+    const step = ingestIncoming(sim("gm"), NOW)
+    expect(step.reply).toMatch(/Deadlines: 1 due within a week \(next: invoice, 2d\) · 1 overdue/)
+  })
+})

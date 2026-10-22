@@ -113,7 +113,7 @@ Footer: `n done · n pushed · n missed`.
 
 ## Phase 3 — Night: assumed times (done)
 
-_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. **Planned:** Analytics reading `timeNegligible` as zero time.
+_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. Analytics needs no change for `timeNegligible` (checked 2026-10-22): no view flags a missing duration, and Velocity already skips zero-length rows.
 
 1. Fields are **Start · Duration · Finish**, in that order. Editing any one
    recomputes the others: start + duration → finish (default); finish edits
@@ -136,7 +136,7 @@ read that period's Start ritual.
 
 ## Phase 5 — Morning: look ahead (done)
 
-_Last mapped: 2026-10-17_ Built as three steps (`components/Reviews/LookAheadSection.tsx`, `lib/ritual-due.ts`). Overdue rows have Do today and Missed (no Push: an overdue task has no obvious next slot). Telegram `gm` counts are **Planned**.
+_Last mapped: 2026-10-17_ Built as three steps (`components/Reviews/LookAheadSection.tsx`, `lib/ritual-due.ts`). Overdue rows have Do today and Missed (no Push: an overdue task has no obvious next slot). Telegram `gm` opens with `Deadlines: n due within a week (next: …, 2d) · n overdue` (`carryPreface` in `lib/ingest/apply-morning-gm.ts`).
 
 New steps, after **To do for today**:
 
@@ -165,7 +165,7 @@ _Last mapped: 2026-10-17_ End rites already share `ReviewDialog`, so Phases 2–
 
 ## Phase 7 — Make it beautiful (partly done)
 
-_Last mapped: 2026-10-17_ **Built:** tone per rite on `RitualStepper` (`tone` prop), unfinished / assumed rows as cards (`.rv-row`), look-back and look-ahead cards, CRT tally and countdowns. Checked at 1280px in the app. **Planned:** the widget face below, a partial lamp, dark mode pass.
+_Last mapped: 2026-10-17_ **Built:** tone per rite on `RitualStepper` (`tone` prop), unfinished / assumed rows as cards (`.rv-row`), look-back and look-ahead cards, CRT tally and countdowns. Checked at 1280px in the app. Partial lamp built 2026-10-22: `RitualStep.answered` may be `"partial"` (half-lit, not counted); night uses it on Unfinished items and Reflection. **Planned:** the widget face (another session is changing widget faces; wait for it), dark mode pass (the `.hpp95` shell is light-only today).
 
 - One rite shell: milled fascia header with the period nameplate, the rail on
   the left, a single question card in the middle, ‹ › and Save on a key bar.

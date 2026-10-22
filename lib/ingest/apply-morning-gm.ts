@@ -47,6 +47,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { ritualPriorityUpdates } from "@/lib/habit-priority"
 import { nightCarryForMorning } from "@/lib/ritual-carry"
 import { useTaskStore } from "@/lib/task-store"
+import { countdown, dueWithin, overdue } from "@/lib/ritual-due"
 import { patchTodoCommitment, taskIsRequired } from "@/lib/todo-commitment"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { PeriodReview, Task } from "@/lib/types"
@@ -280,6 +281,15 @@ function carryPreface(now: Date): string {
       .goals.filter((goal) => carry.focusGoalIds.includes(goal.id))
       .map((goal) => goal.title)
     if (names.length) lines.push(`Goals in focus: ${names.join(", ")}`)
+  }
+  const tasks = useTaskStore.getState().tasks
+  const due = dueWithin(tasks, now, 7)
+  const late = overdue(tasks, now)
+  if (due.length || late.length) {
+    const parts = []
+    if (due.length) parts.push(`${due.length} due within a week (next: ${itemTitleOrUntitled(due[0])}, ${countdown(due[0].deadline!, now)})`)
+    if (late.length) parts.push(`${late.length} overdue`)
+    lines.push(`Deadlines: ${parts.join(" · ")}. The app's morning ritual lists them.`)
   }
   return lines.length ? `${lines.join("\n\n")}\n\n` : ""
 }

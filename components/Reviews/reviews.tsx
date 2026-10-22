@@ -337,7 +337,12 @@ function ReviewDialog({
     {
       id: "unfinished",
       label: "Unfinished items",
-      answered: visibleUnfinished.length === 0 || unfinishedTouched,
+      answered:
+        visibleUnfinished.length === 0 || unfinishedTouched
+          ? true
+          : resolved.length + pushed.length + missed.length + Object.keys(blockedReasons).length > 0
+            ? "partial"
+            : false,
       body: (
         <section className="space-y-2">
           <p className="mr-lede">
@@ -533,7 +538,11 @@ function ReviewDialog({
     {
       id: "reflection",
       label: "Reflection",
-      answered: REFLECTIONS.some((r) => !!reflections[r.id]?.trim()),
+      answered: REFLECTIONS.every((r) => !!reflections[r.id]?.trim())
+        ? true
+        : REFLECTIONS.some((r) => !!reflections[r.id]?.trim())
+          ? "partial"
+          : false,
       body: (
         <section className="space-y-3">
           {REFLECTIONS.map((r) => (
