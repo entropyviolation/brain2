@@ -171,7 +171,7 @@ _Last mapped: 2026-10-22._
 
 Build a module → **Upload HTML file** turns any `.html` file into a workspace with one `html` view. The page may use lists or ignore them.
 
-- **Storage.** The file lives in `lib/module-html-store.ts` (`brain2-module-html`, in backup), not on `module.config`. The view config keeps `htmlDocId`, `htmlListIds` and `htmlCanWrite`. Removing the module removes its file. Replace the file from the view's editor.
+- **Storage.** The file lives in `lib/module-html-store.ts` (`brain2-module-html`, in backup), not on `module.config`. _Last mapped: 2026-10-22_ The `docs` map is record-guarded in `lib/vault-guard.js` (curated, like `cogs-modules-store`), so a thin snapshot cannot wipe uploaded files. The view config keeps `htmlDocId`, `htmlListIds` and `htmlCanWrite`. Removing the module removes its file. Replace the file from the view's editor.
 - **Sandbox.** `sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"`, never `allow-same-origin`. The page cannot read Brain2's DOM or storage. It may still load CDN scripts and fetch from the network.
 - **`window.brain2`** (injected by `buildSrcDoc`): `ready`, `lists()`, `items(listId?)`, `onChange(fn)`, `openItem(id)`, `createItem(listId, {title, attributes})`, `updateItem(id, {title, completed, attributes})`, `canWrite`, `listIds`, `storage.get/set/remove/keys`. There is no delete.
 - **Grants.** A page sees only the lists ticked at upload. Writes need "Allow edits" and an item on a ticked list. `handleBridgeCall` enforces both in the parent, so the page cannot widen them.
