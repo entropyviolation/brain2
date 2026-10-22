@@ -229,7 +229,7 @@ export function SessionPlanner({
     } else onClose()
   }
   const parkAndClose = () => {
-    if (plan) putSession(parkSession(plan, new Date(), parkNote), [plan])
+    if (plan) putSession(parkSession(plan, new Date(), parkNote))
     setAsking(false)
     onClose()
   }
@@ -264,6 +264,10 @@ export function SessionPlanner({
       <DialogContent
         className="todo95-dialog todo-session"
         hideClose
+        // The focus bar (pen clock) stays usable over the popup; a click on it is not a click outside.
+        onInteractOutside={(e) => {
+          if ((e.target as Element | null)?.closest?.(".focus-bar")) e.preventDefault()
+        }}
         aria-describedby={undefined}
         data-ui-name="Session"
         data-ui-help="Plan a time box in three tiers, work it with a clock, and review it."
@@ -394,13 +398,14 @@ function newDraft(): void {
 }
 
 /**
- * Store a session. A session parked to make room (or parked by hand, passed
- * as `parking`) lets go of the Tracking pen clock if it was painting there;
- * the time so far is written as on Stop. Returns the id.
+ * Store a session. A session parked to make room for another lets go of the
+ * Tracking pen clock if it was painting there (the time so far is written as
+ * on Stop). One parked by hand only pauses the pen (`lib/session-pen.ts`).
+ * Returns the id.
  */
-function putSession(next: SessionPlan, parking: SessionPlan[] = []): string {
+function putSession(next: SessionPlan): string {
   const bumped = useSessionPlanStore.getState().put(next, new Date())
-  releasePenClock([...parking, ...bumped])
+  releasePenClock(bumped)
   return next.id
 }
 
@@ -1187,7 +1192,7 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   }
 
   const park = () => {
-    putSession(parkSession(plan, new Date(), parking ?? undefined), [plan])
+    putSession(parkSession(plan, new Date(), parking ?? undefined))
     setParking(null)
   }
 

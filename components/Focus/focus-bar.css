@@ -12,6 +12,8 @@
   left: 50%;
   bottom: 12px;
   z-index: 60;
+  /* A modal (the Session popup) sets pointer-events: none on body; the bar stays pressable. */
+  pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 8px;

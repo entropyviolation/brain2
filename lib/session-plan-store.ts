@@ -161,8 +161,8 @@ export function migrateSessionBlob(persisted: unknown): SessionBlob {
 
 /**
  * Park the running session from outside the popup (the focus bar). Returns
- * the parked plan, or null when nothing runs. The caller lets go of the pen
- * clock (`releasePenClock` in `lib/session-pen.ts`).
+ * the parked plan, or null when nothing runs. A painting session's pen clock
+ * pauses with it (`linkSessionAndPen` in `lib/session-pen.ts`).
  */
 export function parkLiveSession(now = new Date(), futureNote?: string): SessionPlan | null {
   const store = useSessionPlanStore.getState()
