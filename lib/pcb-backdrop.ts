@@ -1,16 +1,16 @@
 /**
  * lib/pcb-backdrop.ts — Photoreal PCB desktop modes
  *
- * The app-level field behind every window. Classic Win95 teal (no photo) is
- * the fresh default; photographed plates from `designrefs/` (copied to
- * `public/pcb/`) stay available. Settings writes `pcbMode` on `theme-store`
+ * The app-level field behind every window. The Snowflake plate (`mint`) is
+ * the fresh default; classic Win95 teal (no photo) and the other photographed
+ * plates from `designrefs/` (copied to `public/pcb/`) stay available. Settings writes `pcbMode` on `theme-store`
  * and pins it on `brain2-pcb-mode` so a refresh cannot lose a saved plate if
- * the theme blob is overwritten with seed teal before rehydrate.
+ * the theme blob is overwritten with a seed plate before rehydrate.
  * A plate picked this page is also remembered on `brain2-pcb-pick` (sessionStorage)
  * so Fast Refresh / a late hub rehydrate cannot roll the desktop back.
  * `app/pcb-backdrop.tsx` stamps `data-pcb-mode` / `data-pcb-ink` on `<html>`.
- * CSS paints the field. Existing ceramic (or other) picks are never migrated
- * onto teal.
+ * CSS paints the field. Existing teal, ceramic (or other) picks are never
+ * migrated onto the new default.
  */
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
@@ -22,7 +22,7 @@ export type PcbMode = (typeof PCB_MODES)[number]
 export type PcbInk = "light" | "dark"
 
 /** Fresh installs and Reset. Saved blobs keep their own `pcbMode`. */
-export const DEFAULT_PCB_MODE: PcbMode = "teal"
+export const DEFAULT_PCB_MODE: PcbMode = "mint"
 
 /** Pre-teal seed. Persist blobs that never stored `pcbMode` stay on this plate. */
 export const LEGACY_DEFAULT_PCB_MODE: PcbMode = "ceramic"

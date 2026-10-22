@@ -177,7 +177,7 @@ not a DSi photograph.
 
 | When | Surface | Who | Steal from (nicknames below) |
 |------|---------|-----|------------------------------|
-| **Now (shipped)** | App-wide desktop field | — | Default **teal** (classic Win95). Optional photoreal PCB plates: ceramic, mint snowflake, ice, x-ray, FR4. Settings → **Desktop**. Copies in `public/pcb/`. Saved plates are never migrated onto teal. |
+| **Now (shipped)** | App-wide desktop field | — | Default **mint snowflake** plate. Also: classic Win95 teal, and photoreal ceramic, ice, x-ray, FR4. Settings → **Desktop**. Copies in `public/pcb/`. Saved plates (teal included) are never migrated onto the new default. |
 | **Now (shipped)** | Daily Habits interior — one room that turned out well, not a template | Fawn | Jewel PCB, TENO console, gadget wall, Tek scope, silver book, iridescent bloom, crystal-ball cat, EQ sliders. Lightning-seraph *gesture* on 100% bars only — not a seraph logo. **Willpower gems shipped** (satellites, invert, pin, stir, PNG occlusion, Settings-only crystal; **Small LEDs** rocker) |
 | **Parallel (shipped)** | App-wide gunmetal gray (slow slider on the swatch path) | Colt | IRIX olive, TENO, Pocket PC silver, gadget wall, flower CRTs, Display Properties `#c0c0c0` — those hexes, not a red/blue filter |
 | **Later** | Home TOP leftover **square widgets** (review, affirmation, **weather instrument**, user add/hide) | Home lane | IRIX cattle + gadget wall: **equal-height modules**; analog meters as weather, not a forecast card. See [Visual language to APPLY](#visual-language-to-apply) |
