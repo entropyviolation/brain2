@@ -813,3 +813,607 @@ body.win95-app .todo-session-pickname.is-card {
   outline: 1px dotted #7d6bb8;
   outline-offset: 1px;
 }
+
+/* ==== Run, redesign 2026-10-22 (after Tidy's "Working the plan") ====
+ * A calm clock on top, the line you are on, then every line in its tier
+ * with Est and Actual side by side. Word keys are the house keycap
+ * (docs/DESIGN_STYLE.md → Keycaps) with room to press; ▶ ⏸ ■ are the
+ * house transport discs (DvdTransportKey), sized up here.
+ */
+
+/* Every key in the Session popup gets more room. Beats the bare Win95 skin. */
+body.win95-app .todo-session button.todo-verb,
+body.win95-app .todo-session button.todo-btn,
+.todo-session button.todo-verb,
+.todo-session button.todo-btn {
+  min-height: 32px;
+  padding: 6px 14px;
+}
+
+.todo-session-run {
+  --ses-cap-top: #f1f3f5;
+  --ses-cap-top2: #dfe2e6;
+  --ses-cap-skirt: #b3b8be;
+  --ses-cap-edge: #6e7378;
+  --ses-navy: #22306c;
+  --ses-rose: #b0283f;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 4px 10px;
+}
+
+.todo-session-run .ses-key {
+  --cap-top: var(--ses-cap-top);
+  --cap-top2: var(--ses-cap-top2);
+  --cap-skirt: var(--ses-cap-skirt);
+  --cap-edge: var(--ses-cap-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 18px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: #1f2226;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.todo-session-run .ses-key.is-mod {
+  --cap-top: #c9ccd0;
+  --cap-top2: #b9bdc1;
+  --cap-skirt: #969a9f;
+  --cap-edge: #55595d;
+}
+
+.todo-session-run .ses-key.is-primary {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  outline: 2px solid var(--ses-navy);
+  outline-offset: 1px;
+}
+
+.todo-session-run .ses-key:active:not(:disabled),
+.todo-session-run .ses-key.is-on {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.todo-session-run .ses-key:disabled {
+  color: #7d8185;
+  cursor: default;
+  outline: 0;
+}
+
+.todo-session-run .ses-key:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* Transport discs, sized up from the house 28px. */
+body.win95-app .todo-session-run button.dvd-key.ses-dvd:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+.todo-session-run button.dvd-key.ses-dvd {
+  flex: 0 0 38px;
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-big:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+.todo-session-run button.dvd-key.ses-dvd.is-big {
+  flex-basis: 52px;
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  height: 52px;
+  min-height: 52px;
+}
+
+.todo-session-run .ses-dvd svg {
+  width: 15px;
+  height: 15px;
+}
+
+.todo-session-run .ses-dvd.is-big svg {
+  width: 20px;
+  height: 20px;
+}
+
+.todo-session-run .ses-dvd:disabled {
+  opacity: 0.4;
+}
+
+/* ---- Hero clock ---- */
+
+.ses-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 16px 18px;
+  border-radius: 12px;
+  background: #c8ccd0;
+  box-shadow: inset 1px 1px 0 #8a8e92, inset -1px -1px 0 #f2f4f5;
+}
+
+.ses-clock {
+  min-width: 6ch;
+  padding: 8px 28px;
+  border-radius: 6px;
+  background: #0a0c0e;
+  color: #7dffc4;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(125, 255, 196, 0.45);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85), 0 0 0 1px #2c3236;
+}
+
+.ses-hero.is-paused .ses-clock {
+  color: #b7a6ff;
+  text-shadow: none;
+}
+
+.ses-hero.is-over .ses-clock {
+  color: #ff8a9c;
+  text-shadow: 0 0 10px rgba(255, 138, 156, 0.4);
+}
+
+.ses-clock-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.ses-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.ses-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 22px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #3a3e42;
+}
+
+.ses-summary b {
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.ses-lamps {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.ses-lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.ses-lamp-glass {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5a5e62 0 30%, #1a1c1e 100%);
+  box-shadow: 0 0 0 1px #2a2c2e;
+}
+
+.ses-lamp.is-lit .ses-lamp-glass {
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow: 0 0 6px rgba(125, 255, 196, 0.8), 0 0 0 1px #0b4a32;
+}
+
+/* ---- Now ---- */
+
+.ses-now {
+  padding: 16px 20px 18px;
+  border-radius: 12px;
+  background: #eef0f3;
+  border-left: 5px solid var(--ses-min);
+  box-shadow: 0 0 0 1px #b3b8be, 0 0 0 4px rgba(125, 255, 196, 0.22);
+}
+
+.ses-now.is-paused {
+  box-shadow: 0 0 0 1px #b3b8be, 0 0 0 4px rgba(183, 166, 255, 0.25);
+}
+
+.ses-now.is-idle {
+  border-left-color: #8a8e92;
+  box-shadow: 0 0 0 1px #b3b8be;
+  text-align: center;
+}
+
+.ses-now-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #4a4e52;
+}
+
+.ses-now-step {
+  margin: 6px 0 10px;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111;
+}
+
+.ses-now.is-idle .ses-now-step {
+  margin-bottom: 4px;
+}
+
+.ses-now-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #4a4e52;
+}
+
+.ses-now-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+}
+
+.ses-num {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ses-num-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a5e62;
+}
+
+.ses-num-val {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1f2226;
+}
+
+.ses-num-val.is-live {
+  color: #1a6b48;
+}
+
+.ses-num-val.is-over {
+  color: var(--ses-rose);
+}
+
+.ses-now-pen {
+  font-size: 12px;
+  color: #0a3d2a;
+}
+
+.ses-now .ses-bar {
+  margin-top: 10px;
+  height: 6px;
+}
+
+.ses-now-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ses-now.is-idle .ses-now-keys {
+  justify-content: center;
+}
+
+.ses-paint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* ---- Estimate vs actual ---- */
+
+.ses-bar {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #d4d7da;
+  overflow: hidden;
+}
+
+.ses-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3fd197;
+}
+
+.ses-bar-fill.is-over {
+  background: var(--ses-rose);
+}
+
+.ses-delta {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ses-delta.is-under {
+  color: #0b4a32;
+  background: rgba(63, 209, 151, 0.22);
+}
+
+.ses-delta.is-over {
+  color: var(--ses-rose);
+  background: rgba(176, 40, 63, 0.12);
+}
+
+/* ---- Suggestions ---- */
+
+.ses-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ses-suggest-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3a3e42;
+}
+
+.ses-suggest-card {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #eef0f3;
+  box-shadow: 0 0 0 1px #9ad7ff, 0 0 0 4px rgba(154, 215, 255, 0.3);
+}
+
+.ses-suggest-text {
+  flex: 1 1 14rem;
+  font-size: 14px;
+  color: #1f2226;
+}
+
+/* ---- Tiers ---- */
+
+.ses-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ses-tier {
+  --tier: var(--ses-min);
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  background: #c8ccd0;
+  border-left: 5px solid var(--tier);
+  box-shadow: inset 1px 1px 0 #8a8e92, inset -1px -1px 0 #f2f4f5;
+}
+
+.ses-tier.is-goal {
+  --tier: var(--ses-goal);
+}
+
+.ses-tier.is-exceptional {
+  --tier: var(--ses-exc);
+}
+
+.ses-tier-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  padding: 2px 4px 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #a9adb2;
+}
+
+.ses-tier-head h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.ses-tier-figs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: #3a3e42;
+}
+
+.ses-tier-figs b {
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.ses-tier-reached {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--tier);
+}
+
+.ses-tier-empty {
+  margin: 0;
+  padding: 6px 4px;
+  font-size: 13px;
+  color: #4a4e52;
+}
+
+.ses-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ses-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef0f3;
+  box-shadow: 0 0 0 1px #b3b8be;
+}
+
+.ses-line.is-current {
+  background: #f4fff9;
+  box-shadow: 0 0 0 1px #1a6b48, 0 0 0 4px rgba(125, 255, 196, 0.3);
+}
+
+.ses-line.is-suggested {
+  box-shadow: 0 0 0 1px #2a5aa0, 0 0 0 4px rgba(154, 215, 255, 0.4);
+}
+
+.ses-line.is-done {
+  background: #e3e5e8;
+  opacity: 0.75;
+}
+
+.ses-line.is-done .ses-line-name {
+  color: #6a6e72;
+  text-decoration: line-through;
+}
+
+.ses-line.is-blocked {
+  opacity: 0.7;
+}
+
+.ses-line-ctl {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 38px;
+}
+
+.ses-line-check {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0b4a32;
+  background: rgba(63, 209, 151, 0.22);
+}
+
+.ses-line-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ses-line-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+
+.ses-line-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #4a4e52;
+}
+
+.ses-line-meta b {
+  color: #1f2226;
+  font-variant-numeric: tabular-nums;
+}
+
+.ses-line-meta b.is-live {
+  color: #1a6b48;
+}
+
+.ses-line-wait {
+  font-style: italic;
+}
+
+.ses-line .ses-line-done {
+  flex: none;
+}
+
+@media (max-width: 560px) {
+  .ses-clock {
+    font-size: 48px;
+  }
+
+  .ses-line {
+    flex-wrap: wrap;
+  }
+
+  .ses-paint {
+    margin-left: 0;
+  }
+}

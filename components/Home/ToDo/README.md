@@ -184,6 +184,16 @@ _Last mapped: 2026-10-16._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Analytics.** The fit gauge reads your own pace (`useTodoTime` → `paceFor`, `lib/estimate-pace.ts`): finished steps plus closed lines from `history`, or your override. Drafts and parked sessions never skew it. The note reads "You usually run ×N your estimates". Finishing a line or step in a session settles spent like the ledger does.
 - **Park in the focus bar** and **Save as template**: built in slice H2, below.
 
+## Sessions: the run view
+
+_Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyView.tsx`, `plan-run`).
+
+- **Top.** A big clock with Time left / Paused / Over time, a ⏸ / ▶ disc for the whole session, then **+15**, **Park**, **End**. Under it: planned minutes, worked time, lines done, and the three tier lamps.
+- **Now.** The line you are on: its path, the next step as a heading, **Est** vs **Actual** with a hairline bar (rose past the estimate), ⏸ ▶ ■, **Step done**, **Task done**, **Just start**, **Paint on Tracking**. With nothing current it reads "Pick what's next."
+- **Tiers.** Bare minimum, Goal and Exceptional as wells, each head showing est, actual and done. Every line shows Est, Actual (live on the current one) and "3m under" / "+5m over" once there is something to compare. ▶ on any line makes it current (`playLine`); ■ lets go of it, keeps its time, and the session clock keeps going (`stopLine`); **Done** ticks a line without moving you off the current one (`finishLine` only moves on when the current line finishes).
+- **Suggestions.** **Random task** (`randomLine`) and **Next shortest task** (`shortestLine`, fewest open minutes, unestimated last) offer one open, unblocked line other than the current one. **Another** gives a different one until they run out. Nothing starts until you press **▶ Start this**.
+- **Keys.** Word keys are house keycaps at 40px with wide padding (`.ses-key` in `session-planner.css`); ▶ ⏸ ■ are `DvdTransportKey` discs sized to 38px (52px on the clock). Every `todo-verb` and `todo-btn` in the popup also got more padding.
+
 ## Sessions: ways in, templates, timebox (slice H2)
 
 _Last mapped: 2026-10-16._ Slice H2 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, "Not built yet" and "Additions"). Built, not committed.
