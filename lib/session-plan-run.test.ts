@@ -1,7 +1,7 @@
 /** Run view picks (2026-10-22): Random task, Next shortest task, ▶ and ■ on a line. */
 import { describe, expect, it } from "vitest"
 import type { Subtask, Task } from "@/lib/types"
-import { addLine, allLines, emptySession, finishLine, lineSeconds, pauseSession, pickableLines, playLine, randomLine, remainingSec, shortestLine, startSession, stopLine } from "./session-plan"
+import { addLine, allLines, emptySession, finishLine, lineFocusStep, lineSeconds, pauseSession, pickableLines, playLine, playStep, randomLine, remainingSec, setLineEstimate, shortestLine, startSession, stepSeconds, stopLine } from "./session-plan"
 
 const T0 = new Date(2026, 9, 22, 9, 0, 0)
 const at = (min: number) => new Date(T0.getTime() + min * 60_000)
@@ -82,5 +82,41 @@ describe("▶ and ■ on a line", () => {
     // Not done, so it can still be picked.
     expect(pickableLines(stopped, ts).some((l) => l.id === rug)).toBe(true)
     expect(finishLine(playLine(stopped, rug, at(6)), rug, ts, at(8)).tiers.min[0].actualSec).toBe(360)
+  })
+})
+
+describe("steps inside a line", () => {
+  it("▶ on a step makes it the focus and times it on its own", () => {
+    const { ts, plan } = running()
+    const wall = idOf(plan, "wall")
+    const onRight = playStep(plan, wall, "right", at(2))
+    const line = () => allLines(onRight).find(({ line }) => line.id === wall)!.line
+    expect(onRight.activeLineId).toBe(wall)
+    const pick = lineFocusStep(line(), ts)
+    expect(pick?.kind === "step" && pick.step.id).toBe("right")
+    expect(stepSeconds(onRight, line(), "right", at(5))).toBe(180)
+    const onLeft = playStep(onRight, wall, "left", at(5))
+    const after = allLines(onLeft).find(({ line }) => line.id === wall)!.line
+    expect(after.stepSec).toEqual({ right: 180 })
+    expect(stepSeconds(onLeft, after, "left", at(6))).toBe(60)
+    expect(lineSeconds(onLeft, after, at(6))).toBe(240)
+  })
+
+  it("a done focus step falls back to Just Start's pick", () => {
+    const { ts, plan } = running()
+    const wall = idOf(plan, "wall")
+    const p = playStep(plan, wall, "right", at(1))
+    const done = ts.map((t) => (t.id === "wall" ? { ...t, subtasks: t.subtasks!.map((s) => (s.id === "right" ? { ...s, completed: true } : s)) } : t))
+    const pick = lineFocusStep(allLines(p).find(({ line }) => line.id === wall)!.line, done)
+    expect(pick?.kind === "step" && pick.step.id).toBe("left")
+  })
+})
+
+describe("estimates", () => {
+  it("setLineEstimate changes the session estimate; 0 clears it", () => {
+    const { plan } = running()
+    const rug = idOf(plan, "rug")
+    expect(setLineEstimate(plan, rug, 25).tiers.min[0].estMin).toBe(25)
+    expect(setLineEstimate(plan, rug, 0).tiers.min[0].estMin).toBeUndefined()
   })
 })
