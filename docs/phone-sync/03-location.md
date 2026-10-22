@@ -43,7 +43,7 @@ To switch it on:
 
 1. On the VM, copy `capture-upload.mjs` next to the other box files, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box.
 2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
-3. In Xcode: build to the phone, allow location, pick "Always" when iOS offers it, then fill in Upload setup on the Location card and tap Turn on.
+3. In Xcode: build to the phone. On the Location card, fill in and save Upload setup, then tap Turn on. Allow location, and pick "Always" when iOS offers it. iOS may grant "While Using" first and offer "Always" later; recording starts either way, and the chip says "set to Always" until then.
 
 ## Job
 

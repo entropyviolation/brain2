@@ -78,6 +78,10 @@ export function MobileLocationCard() {
       if (permission === "denied" || permission === "restricted") {
         return "Location is off for Brain2. Turn it on in iPhone Settings → Brain2 → Location → Always."
       }
+      // iOS often grants While Using first and offers Always later, so that one still starts.
+      if (permission !== "always" && permission !== "whenInUse") {
+        return "No location answer yet. Tap Turn on again, or set iPhone Settings → Brain2 → Location → Always."
+      }
       await startLocationRecording()
       return permission === "always" ? "Recording." : "Recording. Choose Always in iPhone Settings so the day has no gaps."
     })
