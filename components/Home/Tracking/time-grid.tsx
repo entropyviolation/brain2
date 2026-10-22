@@ -1062,6 +1062,13 @@ export function TimeGrid({
                 onChange={(next) => setScreenFace(spanKey, next)}
               />
               {findControl}
+              <PushKey
+                label="Day tubes"
+                pressed={tubesOpen}
+                onClick={() => setTubesOpen(true)}
+                title="Your tracked week as tubes of liquid or sand, or as hourglasses. Optional."
+              />
+              <DayTubesDialog open={tubesOpen} onOpenChange={setTubesOpen} date={date} setDate={setDate} />
             </ScopeSection>
 
             <ScopeSection band="Flags">

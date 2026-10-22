@@ -11,13 +11,14 @@
     const key=JSON.stringify(p);if(key===last)return;last=key;const first=!P;P=p;
     VIEWS.length=0;[PAL,DATA,VNAME].forEach(o=>Object.keys(o).forEach(k=>delete o[k]));
     p.views.forEach(v=>{VIEWS.push([v.id,v.name,v.name]);VNAME[v.id]=v.name;PAL[v.id]={};v.pens.forEach(q=>PAL[v.id][q.id]=[q.name,hexOf(q.color)]);DATA[v.id]=p.days.map(d=>v.runs[d.date]||[])});
+    window.WKDATA={};(p.prior||[]).forEach(w=>{WKDATA[w.off]={};p.views.forEach(v=>WKDATA[w.off][v.id]=w.dates.map(dt=>v.runs[dt]||[]))});
     DAYS.length=0;p.days.forEach(d=>DAYS.push([d.wd,d.md]));
     NOW.day=p.todayIdx;NOW.min=p.nowMin;WK0.setTime(new Date(p.days[0].date+'T00:00:00').getTime());
     if(first||p.date!==lastDate){lastDate=p.date;S.day=p.selected}
     if(first){S.fid={};for(let i=0;i<7;i++)S.fid[i]='liquid'}
     if(!PAL[S.view]){S.view=VIEWS[0]?VIEWS[0][0]:S.view;S.pen=null}
     $('#viewchips').innerHTML=VIEWS.map(v=>`<button class="chip" data-set="view:${esc(v[0])}">${esc(v[1])}</button>`).join('');
-    document.body.classList.toggle('none',!VIEWS.some(v=>totals(p.days.map((_,i)=>i),v[0]).sum>0));
+    document.body.classList.toggle('none',!p.views.some(v=>Object.values(v.runs).some(r=>r.length)));
     document.body.classList.add('live');
     renderAll();
   }

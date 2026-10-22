@@ -1432,23 +1432,6 @@ body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-big:not([role="tab"])
   box-shadow: none;
 }
 
-.todo-session-run .ses-title {
-  width: min(28rem, 100%);
-  min-height: 34px;
-  padding: 4px 10px;
-  font-size: 18px;
-  font-weight: 800;
-  text-align: center;
-  color: #111;
-  background: transparent;
-  box-shadow: none;
-  border-bottom: 1px dashed #8a8e92;
-}
-
-.todo-session-run .ses-title:focus {
-  background: #fff;
-}
-
 .todo-session-run .ses-est {
   display: inline-flex;
   align-items: center;
@@ -1599,4 +1582,982 @@ body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-small:not([role="tab"
   min-height: 0;
   padding: 2px;
   cursor: pointer;
+}
+
+/* ==== Draft, redesign 2026-10-22 (after allie's "new mockup") ====
+ * Groupboxes with small pixel legends (Session, Time, Start from). The
+ * length is a Dash tube you type into. One fit glass is the whole session:
+ * B, G, E fill a single container, padded by your pace, with a wall at the
+ * length. Lines sit in their tier wells as tiles you drag. The pick list
+ * keeps its Min / Goal / Exc push keys, with more room.
+ */
+
+.todo-session-draft {
+  --ses-ink-min: #5cf2d6;
+  --ses-ink-goal: #8fd3ff;
+  --ses-ink-exc: #b39cff;
+  --ses-ink-over: #ff8a9c;
+  --ses-pixel: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
+  --ses-dot: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  --dash-ink: var(--ses-ink-min);
+  --dash-ghost: color-mix(in srgb, var(--dash-ink) 8%, transparent);
+  --dash-glow: drop-shadow(0 0 1.5px color-mix(in srgb, var(--dash-ink) 85%, transparent))
+    drop-shadow(0 0 5px color-mix(in srgb, var(--dash-ink) 45%, transparent));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---- Head: three groupboxes ---- */
+
+.ses-draft-head {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(11rem, auto);
+  gap: 8px;
+  align-items: stretch;
+}
+
+@media (max-width: 980px) {
+  .ses-draft-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ses-group {
+  min-width: 0;
+  margin: 0;
+  padding: 6px 10px 9px;
+  border: 0;
+  border-radius: 10px;
+  background: #d4d7db;
+  box-shadow: inset 1px 1px 0 #8a8e92, inset -1px -1px 0 #f2f4f5, inset 0 0 0 3px #d4d7db, inset 2px 2px 0 2px #eef0f2;
+}
+
+.ses-group > legend {
+  float: left;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
+  font: 400 8px/1 var(--ses-pixel);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #4a4f55;
+}
+
+.ses-group > legend + * {
+  clear: both;
+}
+
+.ses-group.is-from {
+  display: flex;
+  flex-direction: column;
+}
+
+.ses-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ses-field > span {
+  font-size: 11px;
+  color: #3a3e42;
+}
+
+.ses-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.ses-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.ses-presets {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ses-time-opts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+/* Little latching caps: a lamp at the left, lit and sunk when chosen. */
+.todo-session .ses-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 10px 7px 8px;
+  border: 1px solid #6e7378;
+  border-radius: 6px;
+  font: 400 9px/1 var(--ses-pixel);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1f2226;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.todo-session .ses-cap > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8a8e92;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.todo-session .ses-cap:active,
+.todo-session .ses-cap.is-on {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -1px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.22);
+}
+
+.todo-session .ses-cap.is-on > i {
+  background: #7dffc4;
+  box-shadow: 0 0 5px rgba(125, 255, 196, 0.9), 0 0 0 1px #0b4a32;
+}
+
+.todo-session .ses-cap:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 1px;
+}
+
+/* ---- The length tube ---- */
+
+.ses-tube {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 8px;
+  border-radius: 8px;
+  background: linear-gradient(115deg, rgba(190, 240, 255, 0.07), transparent 34%), linear-gradient(#020708, #061214);
+  box-shadow: inset 0 6px 8px -5px #000, 0 0 0 1px #2c3236, 0 1px 0 #f2f4f5;
+}
+
+.ses-tube-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 30px;
+  min-width: 4.4rem;
+}
+
+.ses-tube-face .dash-seg {
+  height: 26px;
+}
+
+.ses-tube.is-typing .dash-seg {
+  visibility: hidden;
+}
+
+body.win95-app .todo-session .ses-tube input.ses-tube-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+.todo-session .ses-tube input.ses-tube-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  color: transparent;
+  caret-color: var(--dash-ink);
+  text-align: right;
+  font: 400 20px/1 var(--ses-dot);
+  cursor: text;
+}
+
+body.win95-app .todo-session .ses-tube.is-typing input.ses-tube-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+.todo-session .ses-tube.is-typing input.ses-tube-input {
+  color: var(--dash-ink);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--dash-ink) 50%, transparent);
+}
+
+.ses-tube:focus-within {
+  box-shadow: inset 0 6px 8px -5px #000, 0 0 0 1px #2c3236, 0 0 0 3px rgba(92, 242, 214, 0.35);
+}
+
+.ses-tube-unit {
+  display: grid;
+  gap: 3px;
+  font: 400 8px/1 var(--ses-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--dash-ink) 72%, #9fb8bd);
+}
+
+.ses-tube-unit b {
+  font: 400 10px/1 var(--ses-dot);
+  letter-spacing: 0;
+  text-transform: none;
+  color: #cdeeff;
+  opacity: 0.65;
+}
+
+/* ---- Pick list: column head, roomier push keys, drag rows ---- */
+
+.ses-pick-cols {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px 4px;
+  font: 400 8px/1 var(--ses-pixel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4a4f55;
+}
+
+.todo-session-draft .todo-session-picklist {
+  gap: 4px;
+}
+
+.todo-session-draft .todo-session-pickline {
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 8px;
+}
+
+.todo-session-draft .todo-session-pickline[draggable="true"] {
+  cursor: grab;
+}
+
+.todo-session-draft .todo-session-tierkeys {
+  gap: 4px;
+}
+
+.todo-session-draft .todo-session-tierkey {
+  min-width: 3.4em;
+  min-height: 26px;
+  padding: 4px 8px 6px;
+  border: 1px solid #6e7378;
+  border-radius: 5px;
+  font-size: 11px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 60ms ease;
+}
+
+.todo-session-draft .todo-session-tierkey:active,
+.todo-session-draft .todo-session-tierkey.is-on {
+  transform: translateY(1px);
+}
+
+.todo-session-draft .todo-session-tierkey.is-min.is-on,
+.todo-session-draft .todo-session-tierkey.is-goal.is-on,
+.todo-session-draft .todo-session-tierkey.is-exceptional.is-on {
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- Fit glass: the whole session as one container ---- */
+
+.ses-fit {
+  display: grid;
+  gap: 7px;
+  padding: 9px 12px 10px;
+  border-radius: 10px;
+  background: linear-gradient(115deg, rgba(190, 240, 255, 0.07), transparent 34%), linear-gradient(#020708, #061214);
+  box-shadow: inset 0 7px 9px -6px #000, 0 0 0 1px #2c3236, 0 1px 0 #f2f4f5;
+}
+
+.ses-fit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.ses-fit-leg {
+  font: 400 8px/1 var(--ses-pixel);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ses-ink-min) 72%, #9fb8bd);
+}
+
+.ses-fit-leg.is-right {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--ses-ink-goal) 70%, #9fb8bd);
+}
+
+.ses-fit-bar {
+  position: relative;
+  display: flex;
+  height: 20px;
+  padding: 2px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, rgba(205, 238, 255, 0.05) 0 1px, transparent 1px 10%), #0b1517;
+  box-shadow: inset 0 0 0 1px rgba(92, 242, 214, 0.14);
+}
+
+.ses-fit-seg {
+  flex: none;
+  height: 100%;
+  background: var(--ses-ink-min);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ses-ink-min) 55%, transparent);
+  transition: width 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.ses-fit-seg:first-child {
+  border-radius: 2px 0 0 2px;
+}
+
+.ses-fit-seg + .ses-fit-seg {
+  border-left: 1px solid #061214;
+}
+
+.ses-fit-seg.is-goal {
+  background: var(--ses-ink-goal);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ses-ink-goal) 55%, transparent);
+}
+
+.ses-fit-seg.is-exceptional {
+  background: var(--ses-ink-exc);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ses-ink-exc) 55%, transparent);
+}
+
+/* Past the length: hatched warm red over whatever spills. */
+.ses-fit-over {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  margin-left: 2px;
+  background: repeating-linear-gradient(135deg, rgba(255, 138, 156, 0.75) 0 3px, rgba(6, 18, 20, 0.55) 3px 6px);
+}
+
+.ses-fit-wall {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: 1px;
+  background: #e4f3ff;
+  box-shadow: 0 0 6px rgba(228, 243, 255, 0.8);
+}
+
+.ses-fit-hof {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: #cdeeff;
+  opacity: 0.85;
+}
+
+.ses-fit-hof[data-off] {
+  background: var(--ses-ink-over);
+}
+
+.ses-fit-hof[data-off]::after {
+  content: "▸";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--ses-ink-over);
+}
+
+.ses-fit-read {
+  font: 400 9px/1 var(--ses-pixel);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ses-ink-min);
+  text-shadow: 0 0 6px color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.ses-fit-read b {
+  font-weight: 400;
+}
+
+.ses-fit-read.is-goal {
+  color: var(--ses-ink-goal);
+}
+
+.ses-fit-read.is-exceptional {
+  color: var(--ses-ink-exc);
+}
+
+.ses-fit-read.is-left {
+  margin-left: auto;
+  color: #cdeeff;
+  opacity: 0.75;
+}
+
+.ses-fit-read.is-hof {
+  color: #e4f3ff;
+}
+
+.ses-fit-read.is-over {
+  color: var(--ses-ink-over);
+  opacity: 1;
+}
+
+.ses-fit[data-band="empty"] .ses-fit-leg,
+.ses-fit[data-band="empty"] .ses-fit-read {
+  opacity: 0.55;
+}
+
+/* ---- Tier wells and tiles ---- */
+
+.todo-session-draft .ses-well {
+  padding: 8px 10px 10px;
+  border-left: 0;
+  border-radius: 10px;
+  transition: box-shadow 0.15s;
+}
+
+.todo-session-draft .ses-well.is-drop {
+  box-shadow: inset 1px 1px 0 #8a8e92, inset -1px -1px 0 #f2f4f5, 0 0 0 2px #000080;
+}
+
+.todo-session-draft .ses-well .todo-session-tier-head {
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ses-well-lamp {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, var(--ses-ink-min) 45%, #0b4a32 100%);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--ses-ink-min) 70%, transparent), 0 0 0 1px #0b4a32;
+}
+
+.ses-well.is-goal .ses-well-lamp {
+  background: radial-gradient(circle at 35% 30%, #f4fbff 0 16%, var(--ses-ink-goal) 45%, #1d4a72 100%);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--ses-ink-goal) 70%, transparent), 0 0 0 1px #1d4a72;
+}
+
+.ses-well.is-exceptional .ses-well-lamp {
+  background: radial-gradient(circle at 35% 30%, #faf6ff 0 16%, var(--ses-ink-exc) 45%, #3a2878 100%);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--ses-ink-exc) 70%, transparent), 0 0 0 1px #3a2878;
+}
+
+.todo-session-draft .ses-well .todo-session-tier-name {
+  font: 400 9px/1 var(--ses-pixel);
+  letter-spacing: 0.2em;
+}
+
+.ses-well-band {
+  font-size: 11px;
+  color: #3a3e42;
+}
+
+.ses-well-band.is-tight {
+  color: #3a2878;
+}
+
+.ses-well-band.is-over {
+  color: var(--ses-over);
+  font-weight: 700;
+}
+
+.ses-well-mins {
+  margin-left: auto;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #111;
+}
+
+.todo-session-draft .ses-tiles {
+  gap: 4px;
+}
+
+.todo-session-draft .ses-tile {
+  position: relative;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid #a9aeb4;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f7f8f9, #e9ecef);
+  box-shadow: inset 0 -2px 0 #c9cdd2, 0 1px 0 rgba(0, 0, 0, 0.12);
+  cursor: grab;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.todo-session-draft .ses-tile:hover {
+  border-color: #6e7378;
+}
+
+.todo-session-draft .ses-tile:active {
+  cursor: grabbing;
+}
+
+.todo-session-draft .ses-tile.is-dragging {
+  opacity: 0.4;
+}
+
+.todo-session-draft .ses-tile.is-drop-before::before,
+.todo-session-draft .ses-tile.is-drop-after::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: #000080;
+}
+
+.todo-session-draft .ses-tile.is-drop-before::before {
+  top: -4px;
+}
+
+.todo-session-draft .ses-tile.is-drop-after::after {
+  bottom: -4px;
+}
+
+.ses-tile-grip {
+  flex: none;
+  width: 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: #8a8e92;
+}
+
+.ses-tile:hover .ses-tile-grip {
+  color: #3a3e42;
+}
+
+.todo-session-draft .ses-tile .todo-session-line-name {
+  font-weight: 600;
+}
+
+.ses-tile-tag {
+  flex: none;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #4a4f55;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Row tools stay, quiet until the tile is hovered or focused. */
+.ses-tile-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ses-tile:hover .ses-tile-tools,
+.ses-tile:focus-within .ses-tile-tools {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .ses-tile-tools {
+    opacity: 1;
+  }
+}
+
+.todo-session-draft .ses-tile .todo-session-mins {
+  min-width: 2.8em;
+}
+
+/* ---- Footer keys ---- */
+
+.todo-session-draft .todo-session-actions {
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.todo-session .todo-session-draft button.ses-key {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 16px 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #1f2226;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 5px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.todo-session .todo-session-draft button.ses-key:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.todo-session .todo-session-draft button.ses-key.is-primary {
+  --cap-edge: #2a3570;
+  min-width: 7.5rem;
+  color: #1a2556;
+  outline: 2px solid #22306c;
+  outline-offset: 1px;
+}
+
+.todo-session .todo-session-draft button.ses-key:disabled {
+  color: #7d8185;
+  outline-color: #9aa0a5;
+  cursor: default;
+}
+
+.todo-session .todo-session-draft button.ses-key:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 1px;
+}
+
+/* Caption: Sessions as a little cap, parked count dim. */
+.todo-session .todo-session-caption-keys .ses-parked {
+  margin-left: 6px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ses-fit-seg,
+  .todo-session .ses-cap,
+  .todo-session .todo-session-draft button.ses-key,
+  .todo-session-draft .ses-tile {
+    transition: none;
+  }
+}
+
+/* A missing prerequisite sits on its own line under the tile name. */
+.todo-session-draft .ses-tile {
+  flex-wrap: wrap;
+}
+
+.todo-session-draft .ses-tile .todo-session-needs {
+  order: 10;
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 2px 0 2px 16px;
+  font-size: 11px;
+}
+
+.todo-session-draft .ses-tile .todo-session-needs .todo-verb {
+  min-height: 24px;
+  padding: 2px 10px;
+}
+
+.todo-session-draft .todo-session-padded {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- 2026-10-22 follow-ups: nested steps, springy tier keys ---- */
+
+/* Steps keep their depth: the draft row padding above had flattened them. */
+.todo-session-draft .todo-session-pickline.is-step {
+  position: relative;
+  padding-left: calc(14px + var(--todo-depth, 1) * 18px);
+}
+
+.todo-session-draft .todo-session-pickline.is-step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(8px + (var(--todo-depth, 1) - 1) * 18px);
+  width: 8px;
+  border-left: 1px solid #b3b8be;
+  border-bottom: 1px solid #b3b8be;
+  height: 50%;
+  border-bottom-left-radius: 4px;
+}
+
+.todo-session-draft .todo-session-pickline.is-step .todo-session-pickname {
+  font-weight: 400;
+}
+
+/* Tier keys: a notch smaller, with a real throw. Pressing drops the cap and
+ * squashes its skirt; latching lands with a small bounce and a lit lamp line;
+ * pressing a lit one again lets it spring back up (the line comes out). */
+.todo-session-draft .todo-session-tierkey {
+  --cap-skirt: #b3b8be;
+  position: relative;
+  min-width: 2.9em;
+  min-height: 22px;
+  padding: 3px 7px 6px;
+  border: 1px solid #6e7378;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #2a2d31;
+  background: linear-gradient(180deg, #f6f7f8, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+  transform: translateY(0);
+  transition:
+    transform 0.22s cubic-bezier(0.3, 1.8, 0.5, 1),
+    box-shadow 0.12s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.todo-session-draft .todo-session-tierkey:hover {
+  background: linear-gradient(180deg, #ffffff, #e6e9ec);
+  transform: translateY(-1px);
+}
+
+.todo-session-draft .todo-session-tierkey:active {
+  transform: translateY(3px) scale(0.97);
+  transition-duration: 0.05s;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -1px 0 var(--cap-skirt),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.todo-session-draft .todo-session-tierkey.is-on {
+  color: #fff;
+  transform: translateY(2px);
+  animation: ses-latch 0.32s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.todo-session-draft .todo-session-tierkey.is-min.is-on {
+  --cap-skirt: #0e4a31;
+  background: linear-gradient(180deg, #2b8a5f, var(--ses-min));
+}
+
+.todo-session-draft .todo-session-tierkey.is-goal.is-on {
+  --cap-skirt: #1a3d72;
+  background: linear-gradient(180deg, #3d73c2, var(--ses-goal));
+}
+
+.todo-session-draft .todo-session-tierkey.is-exceptional.is-on {
+  --cap-skirt: #3a2878;
+  background: linear-gradient(180deg, #7458cf, var(--ses-exc));
+}
+
+.todo-session-draft .todo-session-tierkey.is-min.is-on,
+.todo-session-draft .todo-session-tierkey.is-goal.is-on,
+.todo-session-draft .todo-session-tierkey.is-exceptional.is-on {
+  border-color: rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.35),
+    0 0 6px color-mix(in srgb, var(--cap-skirt) 45%, transparent);
+}
+
+.todo-session-draft .todo-session-tierkey.is-on:hover {
+  transform: translateY(2px);
+  filter: brightness(1.08);
+}
+
+.todo-session-draft .todo-session-tierkey.is-on:active {
+  transform: translateY(3px) scale(0.97);
+}
+
+.todo-session-draft .todo-session-tierkey:focus-visible {
+  outline: 2px solid #000080;
+  outline-offset: 1px;
+}
+
+@keyframes ses-latch {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(4px) scale(0.96);
+  }
+  100% {
+    transform: translateY(2px);
+  }
+}
+
+/* The Add keys (floor suggestion, a missing prerequisite) are the same small cap. */
+.todo-session-draft .todo-session-tierkey.is-add {
+  min-width: 0;
+  margin-left: 4px;
+  padding: 3px 9px 6px;
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-session-draft .todo-session-tierkey {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ---- Caption keys (2026-10-22) ----
+ * Sessions is a small silver modifier cap that sits in the title bar, with a
+ * lamp that lights while the shelves are open. × is the house close key
+ * (`.b2-close-key`, app/win95.css). */
+
+.todo-session .todo-session-caption-keys {
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.todo-session button.ses-caption-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 2px 10px 4px 8px;
+  border: 1px solid #55595d;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1f2226;
+  background: linear-gradient(180deg, #e3e6e9, #c9ccd0);
+  box-shadow:
+    inset 2px 0 0 #a9adb2,
+    inset -2px 0 0 #a9adb2,
+    inset 0 -3px 0 #969a9f,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.1s ease;
+}
+
+.todo-session button.ses-caption-key:hover {
+  background: linear-gradient(180deg, #eef0f2, #d3d6da);
+}
+
+.todo-session button.ses-caption-key:active,
+.todo-session button.ses-caption-key.is-on {
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 0 0 #a9adb2,
+    inset -2px 0 0 #a9adb2,
+    inset 0 -1px 0 #969a9f,
+    inset 0 2px 3px rgba(0, 0, 0, 0.28);
+}
+
+.todo-session button.ses-caption-key:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.ses-caption-lamp {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7d8185;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.ses-caption-key.is-on .ses-caption-lamp {
+  background: #7dffc4;
+  box-shadow: 0 0 5px rgba(125, 255, 196, 0.9), 0 0 0 1px #0b4a32;
+}
+
+.todo-session .todo-session-caption-keys .ses-parked {
+  margin-left: 2px;
+  padding: 2px 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #3a2878;
+  background: rgba(90, 63, 176, 0.14);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-session button.ses-caption-key {
+    transition: none;
+  }
+}
+
+/* ---- Run follow-ups (2026-10-22) ----
+ * The name is set in Settings now, not on the clock face. On a line, ▶ ⏸ ■
+ * and Done sit on the top row, beside the task name, not halfway down a
+ * line whose steps are open. */
+
+.ses-setting.is-name {
+  flex: 1 1 100%;
+  justify-content: center;
+}
+
+.todo95-dialog.todo-session .ses-setting.is-name input {
+  width: min(22rem, 100%);
+  font-weight: 700;
+}
+
+.ses-line,
+.ses-step {
+  align-items: flex-start;
+}
+
+/* The name line is as tall as the keys, so the two read as one row. */
+.ses-line-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+}
+
+.ses-step .ses-step-name {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.ses-step.is-group .ses-step-name {
+  min-height: 0;
+  padding-top: 4px;
+}
+
+.ses-step .ses-key.is-small {
+  margin-top: -1px;
 }

@@ -115,7 +115,7 @@ function setState(k,v){
   else if(k==='cell')S.cell=+v;
   else if(k==='view'){S.view=v;S.pen=null}
   else if(k==='day')S.day=+v;
-  else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink')S.ink=v;else if(k==='sm')S.sm=v;
+  else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink'){if(S.ink===v)S.glow=S.glow===false;else{S.ink=v;S.glow=true}}else if(k==='sm')S.sm=v;
 }
 function act(a){
   const[n,arg]=[a.split(':')[0],a.slice(a.indexOf(':')+1)];

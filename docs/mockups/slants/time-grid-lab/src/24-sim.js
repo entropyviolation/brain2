@@ -55,7 +55,7 @@ class TubePhysics{
     if(this.tl)this.buildHeld();
     /* layers differ a little in density, the lowest layer densest, so mixed liquid separates again (buoyancy) */
     const nl=o.layers.length;this.dens=o.layers.map((l,i)=>1+0.14*(nl-1-i)/Math.max(1,nl-1)+(nl===1?0:0));
-    this.g=620;this.rest=0;this.asleep=false;this.maxv=0;
+    this.g=this.mat==='sand'?880:620;this.rest=0;this.asleep=false;this.maxv=0;
     this.mixK=o.mix==null?1:o.mix<=0?0:Math.pow(4,(o.mix-50)/50);this.zg=o.zg||null;this.zy=o.zg?new Float32Array(N):null;
     if(this.mat!=='sand'){this.initLiquid();this.zg?this.placeZG():this.prefill();if(this.v2)this.initV2(o)}
     if(this.v2&&this.mat==='sand'){const g=()=>{let u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)};this.rad=new Float32Array(N);this.ang=new Float32Array(N);this.sh=new Float32Array(N);this.mj=new Float32Array(N);this.gauss=g}
@@ -146,7 +146,7 @@ class TubePhysics{
         for(let q=Math.max(0,this.n-6);q<this.n;q++){const ex=this.x[q]-x,ey=this.y[q]-y;if(ex*ex+ey*ey<d*d*.36){ok=false;break}}
         if(!ok)break;
         const i=this.n++;this.spawnK++;made++;this.grain(i);
-        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=140;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
+        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=210;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
       }
       this.shown=(this.spawnK<this.N&&this.mins[this.spawnK]<=this.clock)?this.mins[Math.max(0,this.spawnK-1)]:this.clock;
       this.updateHeld();return;

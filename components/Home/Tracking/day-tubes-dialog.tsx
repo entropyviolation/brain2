@@ -51,7 +51,12 @@ export function DayTubesDialog({
       const d = addDays(mon, i)
       return { date: formatLocalDateKey(d), wd: WEEKDAYS[d.getDay()], md: `${MONTHS[d.getMonth()]} ${d.getDate()}` }
     })
-    const byDate = new Map(days.map((d) => [d.date, d]))
+    /* the three weeks before this one, so the month tube holds four real weeks */
+    const prior = [-3, -2, -1].map((off) => ({
+      off,
+      dates: Array.from({ length: 7 }, (_, i) => formatLocalDateKey(addDays(mon, off * 7 + i))),
+    }))
+    const byDate = new Set([...days.map((d) => d.date), ...prior.flatMap((w) => w.dates)])
     const todayKey = formatLocalDateKey(new Date())
     const now = new Date()
     const views = scopes
@@ -79,6 +84,7 @@ export function DayTubesDialog({
       nowMin: now.getHours() * 60 + now.getMinutes(),
       selected: Math.max(0, days.findIndex((d) => d.date === dateKey)),
       days,
+      prior,
       views,
     }
   }, [open, date, dateKey, scopes, entries])
