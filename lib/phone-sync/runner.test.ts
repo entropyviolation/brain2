@@ -39,6 +39,18 @@ describe("runPhoneSync", () => {
     expect(onWrote).toHaveBeenCalledTimes(1)
   })
 
+  it("flushes the vault before the cursor moves, so a failed flush re-reads", async () => {
+    const archive = openPhoneArchive(fs.mkdtempSync(path.join(os.tmpdir(), "b2-ps-")))
+    const reader: PhoneReader = { source: "messages", read: async () => ({ records: [msg("a")], cursor: "1" }) }
+    const apply = () => ({ read: 1, written: 1, skipped: 0 })
+    const onWrote = () => {
+      throw new Error("vault write failed")
+    }
+    const [run] = await runPhoneSync({ archive, apply, onWrote }, [reader])
+    expect(run.error).toBe("vault write failed")
+    expect(archive.getCursor("messages")).toBeUndefined()
+  })
+
   it("logs a reader error and leaves the cursor where it was", async () => {
     const archive = openPhoneArchive(fs.mkdtempSync(path.join(os.tmpdir(), "b2-ps-")))
     archive.setCursor("calls", "5")

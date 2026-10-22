@@ -51,8 +51,9 @@ export async function runPhoneSync(deps: RunDeps, list: PhoneReader[] = register
       const { records, cursor } = await reader.read(deps.archive.getCursor(reader.source))
       deps.archive.appendMessages(records)
       const result = deps.apply(records)
-      if (cursor !== undefined) deps.archive.setCursor(reader.source, cursor)
+      // Flush before the cursor moves: a crash in between re-reads instead of skipping.
       if (result.written > 0) deps.onWrote?.()
+      if (cursor !== undefined) deps.archive.setCursor(reader.source, cursor)
       run = { source: reader.source, startedAt, finishedAt: now(), ...result }
     } catch (err) {
       run = {
