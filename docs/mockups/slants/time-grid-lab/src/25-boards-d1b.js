@@ -66,8 +66,8 @@ function tube(d,mat,W,Hh,o){
   if(tl&&sum){   /* hourglass replay: one grain per tracked minute (or per few minutes in a long period), coloured by that minute's pen */
     const pens=[...new Set(o.runs.map(q=>q.k))],idx={};
     spec.layers=pens.map((k,i)=>{idx[k]=i;const bl=o.runs.filter(q=>q.k===k).map(q=>({s:q.s,e:q.e,dl:q.dl,a:q.a}));return{c:mix(P[k][1],'#c9b89a',.25),v:0,n:P[k][0],m:bl.reduce((a,q)=>a+(q.e-q.s)*q.f,0),blocks:bl}});
-    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),gm=Math.max(1,Math.ceil(tot/(S.multi?900:2200))),pr=[];
-    o.runs.forEach(q=>{const st=Math.max(1,gm/q.f);for(let m=0;m<q.e-q.s;m+=st)pr.push([Math.floor(q.a+m),idx[q.k]])});
+    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?900:2200));if(gm>1)gm=Math.ceil(gm);
+    o.runs.forEach(q=>{const st=gm/q.f;for(let m=0;m<q.e-q.s;m+=st)pr.push([q.a+m,idx[q.k]])});
     pr.sort((x,y)=>x[0]-y[0]);
     spec.timeline={layer:pr.map(x=>x[1]),mins:pr.map(x=>x[0]),start:S.hg.start||0,T:o.T,gm};
     const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(1.2,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
