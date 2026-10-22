@@ -93,9 +93,20 @@ export function installPhoneHubGlobals() {
 export function fillLocalStorage(items) {
   const ls = installPhoneHubGlobals()
   if (!items || typeof items !== "object") return
+  // Keys the last snapshot gave us. One gone from the next snapshot was deleted on
+  // disk, so drop it here too, or the next dump writes it back. Keys the hub made
+  // itself were never in a snapshot and stay. On globalThis: two module copies.
+  const prev = globalThis.__cogsPhoneHubSnapshotKeys instanceof Set ? globalThis.__cogsPhoneHubSnapshotKeys : new Set()
+  const next = new Set()
   for (const [name, value] of Object.entries(items)) {
-    if (typeof name === "string" && typeof value === "string") ls.setItem(name, value)
+    if (typeof name === "string" && typeof value === "string") {
+      ls.setItem(name, value)
+      next.add(name)
+    }
   }
+  // An empty snapshot is a failed read, not a wipe: keep what is here.
+  if (next.size > 0) for (const name of prev) if (!next.has(name)) ls.removeItem(name)
+  globalThis.__cogsPhoneHubSnapshotKeys = next
 }
 
 export function dumpLocalStorage() {
