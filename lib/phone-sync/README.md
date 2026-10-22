@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status: Wave 0 (this core) is built. No reader is registered yet, so the hub runs nothing. **Planned:** the Mac Messages and call-history readers (Wave 1), the iOS location upload, and the Settings → Phone sync panel.
+Status: Wave 0 (this core) is built. No reader is registered yet, so the hub runs nothing. **Planned:** the Mac Messages and call-history readers (Wave 1) and the Settings → Phone sync panel. The iOS location upload is built (see Location below) but the hub does not start its drain yet.
 
 ## Flow
 
@@ -32,6 +32,8 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `COGS_CALLS_DB` overrides the path. Not in `readers.ts` yet. |
 | `messages.ts` | `chat.db` row → `MessageRecord`. Apple time (nanoseconds since 2001, or seconds on old rows), `attributedBody` typedstream → text, group members. Tapbacks and group events map to null. Pure. Built 2026-10-22. |
 | `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `COGS_MESSAGES_DB` overrides the path. Not in `readers.ts` yet. |
+| `location.ts` | iPhone location batches → Location rows. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
+| `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks. Not started by the hub yet. |
 
 ## Rules that keep it safe
 
@@ -39,6 +41,23 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 - **The stamp id is per record.** `lib/vault-guard.js` drops rows of a generated batch that a fresher snapshot left out. A per-day or per-source batch would let a desktop that saw fewer texts delete the rest.
 - **Deleted stays deleted.** A row in `removedEntryIds` is never written again.
 - **Synced rows are exact.** No `precision: "estimated"`. The BIM verbs stay estimated.
+
+## Location
+
+_Last mapped: 2026-10-22_
+
+Brief: [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md).
+
+```
+LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upload (Oracle, scripts/capture-upload.mjs)
+                                                         └► location-drain.ts ─► applyLocationBatch ─► flushVault ─► ack
+```
+
+- Location does not go through `runner.ts`: `PhoneRecord` has no location type and `applyPhoneRecords` writes only texts and calls. The drain keeps its cursor and run log in the same `archive.ts` files, under the `location` source.
+- Ids come from the event (`pt:<ms>:<lat>,<lon>`, `visit:<arrive>:<leave>:<lat>,<lon>`), so a batch the phone re-sends writes nothing new.
+- The arrival and the closed visit are two events with two ids. iOS reports both, so a visit you left shows an "arrived" instant plus the block.
+- Visit blocks are added beside existing Location blocks, not painted over them. A hand-made block in the same minutes stays, and the two overlap.
+- A new visit feeds the repeated-place clusters (`lib/ingest/gps-places.ts`). Moves do not; they are too coarse.
 
 ## Hub
 
