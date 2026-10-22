@@ -1224,38 +1224,138 @@
 
 .trk95 .trk-company-people {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.trk95 .trk-company-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .trk95 .trk-company-person {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 22px;
   align-items: center;
-  gap: 4px;
-  padding: 1px 2px 1px 6px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 2px 4px 2px 8px;
+  font-size: 12px;
   background: #fff;
   box-shadow: var(--t-field, var(--t-sunken));
 }
 
-.trk95 .trk-company-person > button {
-  min-height: 16px;
-  padding: 0 4px;
+.trk95 .trk-company-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trk95 .trk-company-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.trk95 .trk-company-main {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6a6f73;
+}
+
+/* Present | Talking: one switch, the lit half is the answer. */
+.trk95 .trk-company-presence {
+  display: inline-flex;
+  gap: 0;
+}
+
+.trk95 .trk-company-presence > button {
+  min-height: 20px;
+  padding: 0 8px;
   font-size: 10px;
+}
+
+.trk95 .trk-company-presence > button + button {
+  margin-left: 1px;
+}
+
+.trk95 .trk-company-presence > button[aria-pressed="true"] {
+  color: var(--t-crt, #7dffc4);
+  background: #20262a;
+  box-shadow: var(--t-sunken), 0 0 0 1px var(--chrome-ring-deep, #555);
+}
+
+.trk95 .trk-company-x {
+  min-height: 20px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.trk95 .trk-company-add {
+  align-self: flex-start;
+}
+
+.trk95 .trk-company-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: var(--t-sunken);
+}
+
+.trk95 .trk-company-picker > input {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: #000;
+  background: #fff;
+  box-shadow: var(--t-field, var(--t-sunken));
 }
 
 .trk95 .trk-company-candidates {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
-  width: 100%;
+  max-height: 112px;
+  overflow-y: auto;
 }
 
 .trk95 .trk-company-candidates > button {
   font-weight: 400;
-  border-left: 3px solid;
+  border-left: 4px solid transparent;
+}
+
+.trk95 .trk-company-candidates > .trk-company-new {
+  font-weight: 700;
+}
+
+.trk95 .trk-company-empty {
+  font-size: 11px;
+  color: #6a6f73;
+}
+
+.trk95 .trk-company-details {
+  margin-top: 6px;
+}
+
+.trk95 .trk-company-details-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6a6f73;
 }
 
 .trk95 .trk-block-logs {

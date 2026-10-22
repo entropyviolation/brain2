@@ -83,6 +83,21 @@ export function TodoSettingsDialog({ paceSlot }: { paceSlot?: ReactNode }) {
           </fieldset>
 
           <fieldset className="todo-settings-group">
+            <legend>Tiers</legend>
+            <label
+              className="todo-chip"
+              title="Split each list into Bare minimum, Goal and Exceptional sections, and score the day on that scale."
+            >
+              <input type="checkbox" checked={prefs.bgeTiers} onChange={(e) => setTodoPrefs({ bgeTiers: e.target.checked })} />
+              Enable B/G/E tier sorting (bare minimum, goal, exceptional)
+            </label>
+            <p className="todo-hint">
+              Each list gets its own tiers, so a task can be Bare minimum this week and Goal on one day. Score: Bare minimum is
+              70%, Goal 30%, and each Exceptional done adds what one Goal task is worth.
+            </p>
+          </fieldset>
+
+          <fieldset className="todo-settings-group">
             <legend>Pace</legend>
             <label className="todo-inline-field">
               <span className="todo-label" id="todo-wip-limit-label">In progress cap</span>

@@ -362,6 +362,12 @@ function TaskCardBody({
               parts: partsMinutes(view),
               spent,
               periodSpent: attention.minutes,
+              spentScope: {
+                taskId: task.id,
+                stepIds: root ? new Set(flattenSteps([root]).map((x) => x.id)) : undefined,
+                names: new Map(flat.map((x) => [x.id, x.description])),
+                logs: task.timeLogs,
+              },
               periodLabel: host.period,
               penPool: time?.penPool,
               pts,

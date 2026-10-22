@@ -466,9 +466,11 @@ body.win95-app .todo95 .todo-view-keys [role="tab"][data-state="active"] {
 
 .todo95 .todo-sheet-title {
   margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-family: "w95fa", var(--w95-font, Tahoma, sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
@@ -2932,7 +2934,9 @@ body.win95-app .todo95 .todo-view-keys [role="tab"] { min-height: 26px; padding:
 .todo95 .todo-cap,
 body.win95-app .todo95 button.todo-cap[type="button"]:not([hidden]),
 .todo95 .todo-lid-actions .todo-verb,
-body.win95-app .todo95 .todo-lid-actions button.todo-verb[type="button"]:not([hidden]) {
+body.win95-app .todo95 .todo-lid-actions button.todo-verb[type="button"]:not([hidden]),
+.todo95 .todo-row-closed .todo-verb,
+body.win95-app .todo95 .todo-row-closed button.todo-verb[type="button"]:not([hidden]) {
   --cap-top: var(--todo-cap-top);
   --cap-top2: var(--todo-cap-top2);
   --cap-skirt: var(--todo-cap-skirt);
@@ -4169,3 +4173,34 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
   .todo95 .todo-table .todo-row-closed .todo-cell-done { grid-area: done; display: flex; justify-content: flex-start; min-width: 0; }
   .todo95 .todo-row.is-ritual .todo-row-closed .todo-cell-done { display: none; }
 }
+
+/* B/G/E tier mode (2026-10-22): three tier bands inside Assigned, and the score strip. */
+.todo95 .todo-bge-band { margin-top: 10px; }
+.todo95 .todo-bge-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--todo-cap-legend, #2b3a55);
+}
+.todo95 .todo-bge-band.is-min .todo-bge-title { border-left: 3px solid #2b3a55; padding-left: 6px; }
+.todo95 .todo-bge-band.is-goal .todo-bge-title { border-left: 3px solid #7d8794; padding-left: 6px; }
+.todo95 .todo-bge-band.is-exceptional .todo-bge-title { border-left: 3px solid #c3c9d1; padding-left: 6px; }
+.todo95 .todo-bge-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border: 1px solid #aeb4bc;
+  background: #d5d9de;
+}
+.todo95 .todo-bge-score-num { font: 600 26px/1 ui-monospace, monospace; color: #1f2d44; }
+.todo95 .todo-bge-score-num small { font-size: 13px; margin-left: 1px; }
+.todo95 .todo-bge-score-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.todo95 .todo-bge-score-parts, .todo95 .todo-bge-score-plain { font: 12px ui-monospace, monospace; color: #4a5260; }
+.todo95 .todo-bge-keys { margin-left: 8px; }

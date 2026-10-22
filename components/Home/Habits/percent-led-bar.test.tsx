@@ -19,7 +19,7 @@ describe("PercentLedBar", () => {
     expect(meter.querySelector(".hab-pled-bar-glass")).toBeTruthy()
     expect((meter.querySelector(".hab-pled-bar-mercury") as HTMLElement).style.width).toBe("50%")
     expect(meter.textContent).toContain("50%")
-    expect(meter).toHaveStyle({ "--hab-led-tint": "#7e14ff" })
+    expect(meter).toHaveStyle({ "--hab-led-tint": "#7d6bb8" })
   })
 
   it("uses the stored tint", () => {

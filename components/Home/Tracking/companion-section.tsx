@@ -48,6 +48,7 @@ import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { discreteLogInstants, penNameById } from "@/components/Home/Tracking/discrete-log-instants"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { CompanyPicker } from "@/components/Home/Tracking/company-picker"
+import { CompanyRoster } from "@/components/Home/Tracking/company-roster"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 
 interface CompanionSectionProps {
@@ -382,23 +383,6 @@ export function logKind(log: TimeEntry, penName: string): string {
   return penName || "Log"
 }
 
-/** Talking with this person, or just present. */
-function TalkKey({ on, name, onClick }: { on: boolean; name: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      data-no95=""
-      aria-pressed={on}
-      aria-label={`${name}: ${on ? "talking with" : "present"}`}
-      title={on ? "Talking with — click for just present" : "Just present — click for talking with"}
-      onClick={onClick}
-      className="rounded border px-1.5 text-[10px]"
-    >
-      {on ? "talking" : "present"}
-    </button>
-  )
-}
-
 /** One companion block: what it is, plus its detail, editable in place. */
 function CompanionRow({
   entry,
@@ -417,7 +401,7 @@ function CompanionRow({
   onToggleAlways: () => void
   onToggleVariant: (variantId: string) => void
   onCreateVariant: (name: string) => void
-  /** Company only: the extra people on this block, and a way to add more. */
+  /** Company only: the people on this block after the main one, and a way to add more. */
   people?: {
     extra: { id: string; name: string; color?: string }[]
     pens: TrackPen[]
@@ -430,81 +414,75 @@ function CompanionRow({
     onRemove: (penId: string) => void
   }
 }) {
+  const always_ = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className={`ml-auto h-6 gap-1 px-1.5 text-[11px] ${always ? "text-primary" : "text-muted-foreground"}`}
+      aria-pressed={always}
+      onClick={onToggleAlways}
+      title={
+        always
+          ? "This pairing is a standing rule — click to stop applying it to new blocks"
+          : "Apply this pairing automatically whenever this pen is painted"
+      }
+    >
+      {always ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
+      {always ? "Always" : "Make it always"}
+    </Button>
+  )
+
   return (
     <div className="mt-1.5 rounded bg-muted/40 p-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span
-          className="inline-flex cursor-pointer items-center gap-1.5"
-          title="Double-click to open pen settings"
-          onDoubleClick={penColorDoubleClick(entry.scopeId, entry.penId)}
-        >
-          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: pen?.color }} />
-          <span className="text-xs font-medium">{pen?.name ?? "Unknown pen"}</span>
-        </span>
+        {people ? null : (
+          <span
+            className="inline-flex cursor-pointer items-center gap-1.5"
+            title="Double-click to open pen settings"
+            onDoubleClick={penColorDoubleClick(entry.scopeId, entry.penId)}
+          >
+            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: pen?.color }} />
+            <span className="text-xs font-medium">{pen?.name ?? "Unknown pen"}</span>
+          </span>
+        )}
         <span className="text-[11px] text-muted-foreground">{formatDuration(minutes)} of this block</span>
-        {people ? (
-          <TalkKey on={people.talking.includes(entry.penId)} name={pen?.name ?? "them"} onClick={() => people.onToggleTalking(entry.penId)} />
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={`ml-auto h-6 gap-1 px-1.5 text-[11px] ${always ? "text-primary" : "text-muted-foreground"}`}
-          aria-pressed={always}
-          onClick={onToggleAlways}
-          title={
-            always
-              ? "This pairing is a standing rule — click to stop applying it to new blocks"
-              : "Apply this pairing automatically whenever this pen is painted"
-          }
-        >
-          {always ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
-          {always ? "Always" : "Make it always"}
-        </Button>
+        {always_}
       </div>
 
       {people ? (
-        <div className="trk-company-people" role="group" aria-label="People on this Company block">
-          {people.extra.map((person) => (
-            <span key={person.id} className="trk-company-person">
-              <span
-                className="inline-flex cursor-pointer items-center gap-1"
-                title="Double-click to open pen settings"
-                onDoubleClick={penColorDoubleClick(entry.scopeId, person.id)}
-              >
-                <span className="inline-block h-2 w-2 rounded-full" style={{ background: person.color }} aria-hidden />
-                {person.name}
-              </span>
-              <TalkKey on={people.talking.includes(person.id)} name={person.name} onClick={() => people.onToggleTalking(person.id)} />
-              <button type="button" data-no95="" aria-label={`Remove ${person.name}`} onClick={() => people.onRemove(person.id)}>
-                ×
-              </button>
-            </span>
-          ))}
-          <button type="button" data-no95="" className="trk-company-add" onClick={people.onStartAdding}>
-            + Someone
-          </button>
-          {people.adding ? (
-            <CompanyPicker
-              pens={people.pens}
-              selected={[entry.penId, ...people.extra.map((p) => p.id)]}
-              locked={[entry.penId]}
-              onToggle={people.onToggle}
-              onCreate={people.onCreate}
-            />
-          ) : null}
-        </div>
+        <CompanyRoster
+          scopeId={entry.scopeId}
+          people={[{ id: entry.penId, name: pen?.name ?? "Unknown", color: pen?.color }, ...people.extra]}
+          talking={people.talking}
+          onToggleTalking={people.onToggleTalking}
+          onRemove={people.onRemove}
+          adding={people.adding}
+          onToggleAdding={people.onStartAdding}
+        >
+          <CompanyPicker
+            pens={people.pens}
+            selected={[entry.penId, ...people.extra.map((p) => p.id)]}
+            locked={[entry.penId]}
+            hideSelected
+            onToggle={people.onToggle}
+            onCreate={people.onCreate}
+          />
+        </CompanyRoster>
       ) : null}
 
       {pen && (
-        <VariantChips
-          className="mt-1"
-          size="sm"
-          pen={pen}
-          selected={entry.variantIds ?? []}
-          onToggle={onToggleVariant}
-          onCreate={onCreateVariant}
-        />
+        <div className="trk-company-details">
+          {people ? <span className="trk-company-details-label">Details</span> : null}
+          <VariantChips
+            className="mt-1"
+            size="sm"
+            pen={pen}
+            selected={entry.variantIds ?? []}
+            onToggle={onToggleVariant}
+            onCreate={onCreateVariant}
+          />
+        </div>
       )}
     </div>
   )

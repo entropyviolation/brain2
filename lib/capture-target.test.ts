@@ -180,3 +180,31 @@ describe("ensureCaptureTarget", () => {
     expect(target.list?.scheduleable).toBe(true)
   })
 })
+
+describe("buildCapturedTask links", () => {
+  const build = (text: string, sendToInbox: boolean) => {
+    const { suggestion } = parseSmartCapture(text, { plain: true })
+    const target = ensureCaptureTarget(suggestion, () => ({
+      lists: useTaskStore.getState().lists,
+      folders: useTaskStore.getState().folders,
+      addList: useTaskStore.getState().addList,
+      addFolder: useTaskStore.getState().addFolder,
+      addListToFolder: useTaskStore.getState().addListToFolder,
+      updateList: useTaskStore.getState().updateList,
+      updateFolder: useTaskStore.getState().updateFolder,
+    }))
+    return buildCapturedTask({ suggestion, fallbackText: text, sendToInbox, target, folders: useTaskStore.getState().folders })
+  }
+
+  it("makes an inbox line that starts with a link a saved link with its note", () => {
+    const task = build("https://www.instagram.com/reel/Dc4KccLs5hR/ try this", true)
+    expect(task.stage).toBe("inbox")
+    expect(task.savedLink).toEqual({ url: "https://www.instagram.com/reel/Dc4KccLs5hR/", kind: "instagram" })
+    expect(task.notes).toBe("try this")
+  })
+
+  it("leaves a link alone when the capture is filed to a list", () => {
+    expect(build("https://example.com/a", false).savedLink).toBeUndefined()
+  })
+})
+

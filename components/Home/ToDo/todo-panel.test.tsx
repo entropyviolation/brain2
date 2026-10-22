@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { getScheduleableCategoryIds, isTaskScheduleable } from "@/components/Scheduler/scheduler-utils"
-import { TODO_PREFS_KEY, getTodoPrefs, resetTodoPrefsForTests } from "./todo-prefs"
+import { TODO_PREFS_KEY, getTodoPrefs, resetTodoPrefsForTests, setTodoPrefs } from "./todo-prefs"
 import { orbFor } from "@/components/Icons"
 import { getWeekString } from "@/lib/date-utils"
 import { readListsNavigation } from "@/lib/app-navigation"
@@ -50,6 +50,22 @@ describe("TodoPanel", () => {
   afterEach(() => {
     resetTodoPrefsForTests()
     vi.useRealTimers()
+  })
+
+  it("B/G/E mode sections the list by this list's tier and scores the day", () => {
+    setTodoPrefs({ bgeTiers: true })
+    const { container } = render(<TodoPanel />)
+    // No mark reads Goal.
+    const goal = container.querySelector(".todo-bge-band.is-goal") as HTMLElement
+    expect(within(goal).getByText("Finish slides")).toBeInTheDocument()
+    expect(container.querySelector(".todo-band.is-required")).toBeNull()
+    expect(container.querySelector(".todo-bge-score-num")).toHaveTextContent("0%")
+    // Move it to Bare minimum on this day only.
+    fireEvent.click(screen.getByText("Finish slides"))
+    fireEvent.click(screen.getByRole("radio", { name: "B" }))
+    const min = container.querySelector(".todo-bge-band.is-min") as HTMLElement
+    expect(within(min).getByDisplayValue("Finish slides")).toBeInTheDocument()
+    expect(useTaskStore.getState().tasks[0].todoMarks).toEqual([{ period: "day", periodKey: "2026-06-20", tier: "min" }])
   })
 
   it("renders todo panel header and day tab", () => {

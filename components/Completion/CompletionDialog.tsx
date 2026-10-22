@@ -6,10 +6,10 @@
  * morning, or start). Lets
  * the user record which Objectives and Goals the finished task contributed to,
  * or create a new one of either without leaving the popup. An optional quick
- * review records how long the work took, when it started, and when it finished.
+ * review records how long the work took and when it started.
  * Length and start are each exact, estimated, or unknown. Unknown stores no
- * minutes and no start time. The finish is any day and time, exact or
- * estimated. A few
+ * minutes and no start time. The finish ("Done at") is always shown, outside
+ * the reflection: any day and time, exact or estimated, for tasks ticked late. A few
  * 1–10 reflections and notes follow. Agreeing to that review
  * awards 3 points plus 0.1 per word. **Undo** reopens the task; **Skip** keeps
  * the completion without a contribution.
@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { CheckCircle2, Search, Star, Target, Trophy, Undo2 } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { uncompleteTask, completeTask } from "@/lib/services/completion-service"
 import {
   useGoalsStore,
@@ -311,6 +312,13 @@ export function CompletionDialog({
     })
     setGoalIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
     setGoalDraft("")
+  }
+
+  const pickDoneDay = (daysBack: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() - daysBack)
+    setDoneDate(formatLocalDateKey(d))
+    if (doneCertainty === "unspecified") setDoneCertainty("exact")
   }
 
   const handleSave = () => {
@@ -639,33 +647,19 @@ export function CompletionDialog({
             </p>
           )}
 
-          <div className="flex items-center justify-between">
-            <Label className="text-sm" htmlFor="quick-review-switch">Add a quick reflection</Label>
-            <Switch id="quick-review-switch" checked={showReflection} onCheckedChange={setShowReflection} aria-label="Add a quick reflection" />
-          </div>
-          <p className="text-xs text-muted-foreground -mt-3" data-testid="review-points-preview">
-            {showReflection ? (
-              <>
-                Quick review awards <span className="font-semibold text-foreground">{formatReviewPoints(reviewPoints)}</span> points
-                {" "}— 3 for agreeing, plus 0.1 × {words} {words === 1 ? "word" : "words"}.
-              </>
-            ) : (
-              <>Agreeing to a quick review awards 3 points, plus 0.1 per word you write.</>
-            )}
-          </p>
-          {showReflection && (
-            <div className="space-y-3 rounded-md border p-3">
-              <ClockCertaintyField
-                legend="Done at"
-                groupLabel="When this was finished"
-                choices={doneChoices}
-                value={doneCertainty}
-                onChange={(id) => {
-                  if (id === "exact" || id === "estimated") setDoneCertainty(id)
-                }}
-                unknownHint=""
-                estimatedHint="Approximate finish. The day and the time stay editable."
-                control={
+          <div className="rounded-md border p-3" data-testid="completion-done-at">
+            <ClockCertaintyField
+              legend="Done at"
+              groupLabel="When this was finished"
+              choices={doneChoices}
+              value={doneCertainty}
+              onChange={(id) => {
+                if (id === "exact" || id === "estimated") setDoneCertainty(id)
+              }}
+              unknownHint=""
+              estimatedHint="Approximate finish. The day and the time stay editable."
+              control={
+                <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <Input
                       type="date"
@@ -688,9 +682,43 @@ export function CompletionDialog({
                       className="h-8"
                     />
                   </div>
-                }
-              />
+                  <div className="flex gap-1">
+                    {[
+                      { label: "Today", back: 0 },
+                      { label: "Yesterday", back: 1 },
+                      { label: "A week ago", back: 7 },
+                    ].map(({ label, back }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => pickDoneDay(back)}
+                        className="h-7 rounded border bg-background px-2 text-xs hover:bg-muted"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              }
+            />
+          </div>
 
+          <div className="flex items-center justify-between">
+            <Label className="text-sm" htmlFor="quick-review-switch">Add a quick reflection</Label>
+            <Switch id="quick-review-switch" checked={showReflection} onCheckedChange={setShowReflection} aria-label="Add a quick reflection" />
+          </div>
+          <p className="text-xs text-muted-foreground -mt-3" data-testid="review-points-preview">
+            {showReflection ? (
+              <>
+                Quick review awards <span className="font-semibold text-foreground">{formatReviewPoints(reviewPoints)}</span> points
+                {" "}— 3 for agreeing, plus 0.1 × {words} {words === 1 ? "word" : "words"}.
+              </>
+            ) : (
+              <>Agreeing to a quick review awards 3 points, plus 0.1 per word you write.</>
+            )}
+          </p>
+          {showReflection && (
+            <div className="space-y-3 rounded-md border p-3">
               <ClockCertaintyField
                 legend="How long"
                 groupLabel="How long this took"
