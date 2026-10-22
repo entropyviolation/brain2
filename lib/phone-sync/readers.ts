@@ -9,7 +9,7 @@ import type { PhoneReader } from "./runner"
 
 export async function loadPhoneReaders(): Promise<PhoneReader[]> {
   const readers: PhoneReader[] = []
-  // Wave 1: texts  → readers.push((await import("./messages-reader")).messagesReader)
-  // Wave 1: calls  → readers.push((await import("./calls-reader")).callsReader)
+  readers.push((await import("./messages-reader")).messagesReader)
+  readers.push((await import("./calls-reader")).callsReader)
   return readers
 }
