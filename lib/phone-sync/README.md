@@ -50,7 +50,7 @@ Brief: [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md).
 
 ```
 LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upload (Oracle, scripts/capture-upload.mjs)
-                                                         └► location-drain.ts ─► applyLocationBatch ─► flushVault ─► ack
+                                                         └► location-drain.ts ─► applyLocationBatch ─► flushTracking ─► ack
 ```
 
 - Location does not go through `runner.ts`: `PhoneRecord` has no location type and `applyPhoneRecords` writes only texts and calls. The drain keeps its cursor and run log in the same `archive.ts` files, under the `location` source.
@@ -61,8 +61,10 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 
 ## Hub
 
-`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushVault` after a run that wrote rows.
+`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows.
 
 _Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
 
 _Last mapped: 2026-10-22_ **Hub storage.** `scripts/phone-hub.mjs` loads `phone-hub-polyfill.mjs` natively, and `phone-hub.ts` loads it again through jiti. That makes two module copies. `fillLocalStorage` and `dumpLocalStorage` must use the installed `globalThis.localStorage`; before this fix, the stores started empty and nothing the hub wrote reached the vault. Each sync pass also calls `rehydrateFromDisk()` first, so app edits made in between are not refused by the vault guard.
+
+_Last mapped: 2026-10-22_ **Tracking key only.** Phone sync and the location drain flush through `flushTracking()`, which pushes only the Tracking persist key (`timegrid-store`). The hub fills every store from disk, and a full dump would send its copy of stores the app changed in the meantime. The vault guard refused those (tasks, points, baby-animals) on the first run with the dev app open. Telegram ingest still flushes every key, since it can touch several stores.
