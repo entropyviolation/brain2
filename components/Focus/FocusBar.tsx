@@ -38,7 +38,6 @@ import {
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useSessionPlanStore, parkLiveSession } from "@/lib/session-plan-store"
 import { openSession } from "@/lib/session-open-store"
-import { releasePenClock } from "@/lib/session-pen"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import JustStartMode from "./JustStartMode"
 import SittingEnd from "./SittingEnd"
@@ -118,9 +117,9 @@ export default function FocusBar() {
             type="button"
             className="focus-bar-key is-primary"
             onClick={() => {
-              const parked = parkLiveSession(new Date(), parkNote)
+              // The pen pauses with it (lib/session-pen.ts), so this bar stays.
+              parkLiveSession(new Date(), parkNote)
               setParkNote(null)
-              if (parked) releasePenClock([parked])
             }}
           >
             Park

@@ -197,6 +197,8 @@ _Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyVi
 - **Follow-ups.** _Last mapped: 2026-10-22._ The session name is an input on the clock face. Click any Est to change it: a leaf writes the task or step estimate, a line with steps keeps its own session estimate (`setLineEstimate`). A line with steps has ▸ to show them, each with ▶ / ⏸ / ■, Est, Actual and Done. ▶ on a step makes it the line's `focusStepId`, and its time goes to `stepSec` (`playStep`, `stepSeconds`). ▶ on a line starts on Just Start's pick, so that step is timed too. The popup caption has no **Pick list** key now (Add task → **Pick list…** still opens it). The park note reads "Note to you later".
 - **Settings.** **Settings** on the clock face: timer colour (any colour, default Plan's opal mint `#8cd4a5`; paused dims it instead of turning violet), Hide finished tasks, Estimate bars. Kept per device in localStorage (`brain2.sessionView`).
 
+- **Pen clock link.** _Last mapped: 2026-10-22._ A painting session and the Tracking pen clock move together (`linkSessionAndPen` in `lib/session-pen.ts`, started by `FocusBarDock`). Pause or resume either and the other follows. Parking pauses the pen, so the focus bar stays. Stopping the pen lets go of the session's line. ■ on a line, End, and a session bumped by another still stop the pen. The focus bar stays clickable over the Session popup.
+
 ## Sessions: ways in, templates, timebox (slice H2)
 
 _Last mapped: 2026-10-16._ Slice H2 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, "Not built yet" and "Additions"). Built, not committed.
