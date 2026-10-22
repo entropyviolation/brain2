@@ -16,6 +16,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { useModuleHtmlStore } from "@/lib/module-html-store"
 import type { HouseCleaningState } from "@/lib/house-cleaning"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
@@ -69,6 +70,8 @@ export type ModuleViewKind =
   | "house-cleaning"
   /** GradSearch program explorer (bundled catalog; personal marks in localStorage). */
   | "grad-search"
+  /** An uploaded .html file run in a sandboxed frame with the `window.brain2` bridge. */
+  | "html"
 
 /**
  * A weighted criterion for the `decision-matrix` view. Each criterion binds to a
@@ -172,6 +175,13 @@ export interface ModuleViewConfig {
   entriesCategoryId?: string
   /** trip-map: City Places wishlist list id (falls back to categoryId). */
   placesCategoryId?: string
+  // ---- html ----
+  /** html: key into `lib/module-html-store.ts` holding the uploaded file. */
+  htmlDocId?: string
+  /** html: lists the page may read (and write when `htmlCanWrite`). Empty = none. */
+  htmlListIds?: string[]
+  /** html: the user allowed the page to create and edit items on those lists. */
+  htmlCanWrite?: boolean
 }
 
 export interface ModuleView {
@@ -307,7 +317,14 @@ export const useModulesStore = create<ModulesState>()(
       addModule: (m) => set((state) => ({ modules: [...state.modules, { ...m, id: `mod-${Date.now()}` }] })),
       addModuleInstance: (m) =>
         set((state) => (state.modules.some((x) => x.id === m.id) ? state : { modules: [...state.modules, m] })),
-      removeModule: (id) => set((state) => ({ modules: state.modules.filter((m) => m.id !== id) })),
+      removeModule: (id) =>
+        set((state) => {
+          // An uploaded page is the module's own code: it goes with the module.
+          for (const v of state.modules.find((m) => m.id === id)?.views ?? []) {
+            if (v.config.htmlDocId) useModuleHtmlStore.getState().removeDoc(v.config.htmlDocId)
+          }
+          return { modules: state.modules.filter((m) => m.id !== id) }
+        }),
       updateModule: (id, patch) =>
         set((state) => ({
           modules: state.modules.map((m) => {

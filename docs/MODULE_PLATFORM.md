@@ -177,6 +177,14 @@ built.
 
 ---
 
+## Uploaded HTML (shipped, bridge-lite)
+
+_Last mapped: 2026-10-22._
+
+An `html` view runs a user-uploaded `.html` file in a sandboxed frame with a small `window.brain2` bridge: read the lists the user attached, write them only if the user allowed edits, and keep page memory in a per-module kv. It is the first outside code that runs without a port, so its door is narrow on purpose: items only, no delete, no tracking/habits/points yet. Those arrive as manifest `bridges` grants in rung 2. Details: [`components/Modules/README.md`](../components/Modules/README.md) → "Uploaded HTML modules".
+
+---
+
 ## Custom views are welcome; custom databases are not
 
 A module may ship one (or a few) **custom components** with their own CSS and
