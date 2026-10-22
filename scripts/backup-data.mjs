@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Nightly backup of data/ into a timestamped tar.gz. Node built-ins plus the system `tar`.
 // Usage: node scripts/backup-data.mjs [destDir]   (or COGS_BACKUP_DIR; default ~/Brain2Backups)
-// Env: COGS_BACKUP_KEEP (default 14), COGS_BACKUP_SRC (default <repo>/data)
+// Env: COGS_BACKUP_KEEP (default 14), COGS_BACKUP_SRC (default <repo>/data),
+//      COGS_BACKUP_PUBLIC_KEY (else ~/.brain2/backup-public.key). With a key the tar is encrypted (.b2enc).
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { ENCRYPTED_SUFFIX, encryptFile } from "./backup-crypt.mjs"
 
 export const BACKUP_PREFIX = "brain2-data-"
 export const BACKUP_SUFFIX = ".tar.gz"
@@ -14,8 +16,10 @@ export const DEFAULT_KEEP = 14
 /** chrome-idb-snapshot is included only if it is smaller than this. */
 export const IDB_SNAPSHOT_MAX_BYTES = 50 * 1024 * 1024
 export const PRIVATE_KEY_PATH = path.join(os.homedir(), ".brain2", "capture-private.key")
+export const BACKUP_PUBLIC_KEY_PATH = path.join(os.homedir(), ".brain2", "backup-public.key")
+export const BACKUP_PRIVATE_KEY_PATH = path.join(os.homedir(), ".brain2", "backup-private.key")
 /** Never archived, wherever they sit under data/. */
-export const ALWAYS_EXCLUDE = ["node_modules", ".DS_Store", "capture-private.key", "*.partial"]
+export const ALWAYS_EXCLUDE = ["node_modules", ".DS_Store", "capture-private.key", "backup-private.key", "*.partial"]
 
 const pad = (n) => String(n).padStart(2, "0")
 
@@ -27,13 +31,14 @@ export function backupName(date = new Date()) {
 }
 
 export function isBackupName(name) {
-  return /^brain2-data-\d{8}-\d{6}\.tar\.gz$/.test(name)
+  return /^brain2-data-\d{8}-\d{6}\.tar\.gz(\.b2enc)?$/.test(name)
 }
 
-/** Returns the backup names to delete: everything but the newest `keep`. Ignores other files. */
+/** Returns the backup names to delete: everything but the newest `keep`. Plain and encrypted count alike. Ignores other files. */
 export function pruneList(names, keep = DEFAULT_KEEP) {
   const k = Math.max(1, Math.floor(Number(keep)) || DEFAULT_KEEP)
-  const mine = names.filter(isBackupName).sort().reverse()
+  const stamp = (n) => n.slice(BACKUP_PREFIX.length, BACKUP_PREFIX.length + 15)
+  const mine = names.filter(isBackupName).sort((a, b) => (stamp(a) < stamp(b) ? 1 : stamp(a) > stamp(b) ? -1 : 0))
   return mine.slice(k)
 }
 
@@ -47,8 +52,15 @@ export function dirSize(dir) {
   return total
 }
 
-/** @param {{ src?: string, destDir?: string, keep?: number, now?: Date, idbMax?: number, log?: (...args: any[]) => void }} [opts] */
-export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(), idbMax = IDB_SNAPSHOT_MAX_BYTES, log = console.log } = {}) {
+/** The backup public key from the env or ~/.brain2/backup-public.key, or null. */
+export function readBackupPublicKey(env = process.env, file = BACKUP_PUBLIC_KEY_PATH) {
+  const fromEnv = (env.COGS_BACKUP_PUBLIC_KEY || "").trim()
+  if (fromEnv) return fromEnv
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf8").trim() || null : null
+}
+
+/** @param {{ src?: string, destDir?: string, keep?: number, now?: Date, idbMax?: number, publicKey?: string | null, log?: (...args: any[]) => void }} [opts] */
+export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(), idbMax = IDB_SNAPSHOT_MAX_BYTES, publicKey = null, log = console.log } = {}) {
   const persist = path.join(src, "shared-persist.json")
   if (!fs.existsSync(persist) || fs.statSync(persist).size === 0) {
     throw new Error(`Refusing to back up: ${persist} is missing or empty.`)
@@ -63,8 +75,10 @@ export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(),
   }
 
   const name = backupName(now)
-  const final = path.join(destDir, name)
-  const partial = `${final}.partial`
+  const tarPath = path.join(destDir, name)
+  const final = publicKey ? `${tarPath}${ENCRYPTED_SUFFIX}` : tarPath
+  const partial = `${tarPath}.partial`
+  const encPartial = `${final}.partial`
   fs.rmSync(partial, { force: true })
   const args = ["-czf", partial, ...excludes.flatMap((e) => ["--exclude", e]), "-C", path.dirname(src), path.basename(src)]
   const r = spawnSync("tar", args, { encoding: "utf8" })
@@ -72,7 +86,20 @@ export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(),
     fs.rmSync(partial, { force: true })
     throw new Error(`tar failed: ${r.stderr || r.error}`)
   }
-  fs.renameSync(partial, final)
+  if (publicKey) {
+    // The plain tar never gets a real name: it lives only as .partial until encrypted, then goes.
+    try {
+      encryptFile(publicKey, partial, encPartial)
+    } catch (e) {
+      fs.rmSync(encPartial, { force: true })
+      throw new Error(`encrypt failed: ${e.message}`)
+    } finally {
+      fs.rmSync(partial, { force: true })
+    }
+    fs.renameSync(encPartial, final)
+  } else {
+    fs.renameSync(partial, final)
+  }
 
   // Clear leftovers from crashed runs, then prune old backups.
   for (const f of fs.readdirSync(destDir)) {
@@ -81,8 +108,8 @@ export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(),
   const pruned = pruneList(fs.readdirSync(destDir), keep)
   for (const f of pruned) fs.rmSync(path.join(destDir, f), { force: true })
 
-  log(`Backed up ${src} -> ${final} (${(fs.statSync(final).size / 1048576).toFixed(1)} MB). Pruned ${pruned.length}.`)
-  return { path: final, pruned, excludes }
+  log(`Backed up ${src} -> ${final} (${(fs.statSync(final).size / 1048576).toFixed(1)} MB${publicKey ? ", encrypted" : ""}). Pruned ${pruned.length}.`)
+  return { path: final, pruned, excludes, encrypted: Boolean(publicKey) }
 }
 
 function main() {
@@ -90,8 +117,12 @@ function main() {
   const src = path.resolve(process.env.COGS_BACKUP_SRC || path.join(repo, "data"))
   const destDir = path.resolve(process.argv[2] || process.env.COGS_BACKUP_DIR || path.join(os.homedir(), "Brain2Backups"))
   const keep = Number(process.env.COGS_BACKUP_KEEP) || DEFAULT_KEEP
+  const publicKey = readBackupPublicKey()
+  if (!publicKey) {
+    console.warn("WARNING: no backup key, so this backup is NOT encrypted. Run: node scripts/backup-keygen.mjs")
+  }
   try {
-    runBackup({ src, destDir, keep })
+    runBackup({ src, destDir, keep, publicKey })
   } catch (e) {
     console.error(e.message)
     process.exitCode = 1
@@ -99,6 +130,9 @@ function main() {
   }
   if (fs.existsSync(PRIVATE_KEY_PATH)) {
     console.log(`Reminder: ${PRIVATE_KEY_PATH} is NOT in this backup. Keep a separate offline copy.`)
+  }
+  if (publicKey && fs.existsSync(BACKUP_PRIVATE_KEY_PATH)) {
+    console.log(`Reminder: ${BACKUP_PRIVATE_KEY_PATH} opens these backups. Keep an offline copy; lose it and they stay locked.`)
   }
 }
 
