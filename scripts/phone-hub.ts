@@ -59,6 +59,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const STATUS_FILE = join(ROOT, "data", "phone-hub-status.json")
 const OFFSET_FILE = join(ROOT, "data", "telegram-offset.json")
 const PHONE_SYNC_MS = Math.max(15, Number(process.env.COGS_PHONE_SYNC_SECONDS) || 60) * 1000
+/** Phone sync keeps only the last N days (default 30). 0 keeps all history. */
+const PHONE_SYNC_SINCE_DAYS = (() => {
+  const raw = String(process.env.COGS_PHONE_SYNC_SINCE_DAYS ?? "").trim()
+  const n = raw === "" ? 30 : Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : 0
+})()
 /** Let gitignored .env.local / .env supply any COGS_* setting the shell did not. */
 function loadEnvFiles() {
   for (const name of [".env.local", ".env"]) {
@@ -680,7 +686,15 @@ async function startPhoneSync() {
     if (running) return
     running = true
     try {
-      const runs = await runPhoneSync({ archive, apply: (records) => applyPhoneRecords(records), onWrote: flushVault }, readers)
+      const runs = await runPhoneSync(
+        {
+          archive,
+          apply: (records) => applyPhoneRecords(records),
+          onWrote: flushVault,
+          sinceMs: () => (PHONE_SYNC_SINCE_DAYS ? Date.now() - PHONE_SYNC_SINCE_DAYS * 86_400_000 : undefined),
+        },
+        readers,
+      )
       for (const run of runs) {
         if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
         else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
@@ -689,7 +703,7 @@ async function startPhoneSync() {
       running = false
     }
   }
-  console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s`)
+  console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s, ${PHONE_SYNC_SINCE_DAYS ? `last ${PHONE_SYNC_SINCE_DAYS} days` : "all history"}`)
   void tick()
   setInterval(() => void tick(), PHONE_SYNC_MS)
 }

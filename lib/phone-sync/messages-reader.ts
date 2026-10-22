@@ -5,14 +5,15 @@
  * `node:sqlite`, so the hub needs no native build. Each run reads the next
  * 1000 rows past the cursor (`message.ROWID`, which only grows), oldest first.
  * The first run starts at 0, so history loads one batch per tick and the same
- * cursor carries on into live sync. Mapping lives in `messages.ts`.
+ * cursor carries on into live sync. With `sinceMs` the first run jumps to the
+ * first row on or after it instead (the hub's 30-day window). Mapping lives in `messages.ts`.
  * `COGS_MESSAGES_DB` points it at another file (tests).
  * Brief: docs/phone-sync/01-texts.md.
  */
 import os from "node:os"
 import path from "node:path"
 import type { DatabaseSync } from "node:sqlite"
-import { rowToMessage, type MessageRow } from "./messages"
+import { APPLE_EPOCH_MS, rowToMessage, type MessageRow } from "./messages"
 import type { PhoneReader } from "./runner"
 import type { MessageRecord } from "./types"
 
@@ -85,15 +86,31 @@ function groupBy(rows: { key: number; value: string | null }[]): Map<number, str
   return out
 }
 
+/**
+ * The ROWID just before the first message on or after `sinceMs`. ROWIDs are
+ * not in date order (iCloud backfills old rows late), so the runner still
+ * drops older records that come after it. Old seconds-style dates are tiny
+ * next to nanoseconds, so they fall before the cutoff as they should.
+ */
+function startRowid(db: DatabaseSync, sinceMs: number): number {
+  const cutoff = BigInt(Math.max(0, sinceMs - APPLE_EPOCH_MS)) * BigInt(1e6)
+  const q = db.prepare("SELECT MIN(ROWID) AS first, (SELECT MAX(ROWID) FROM message) AS last FROM message WHERE date >= ?")
+  q.setReadBigInts(true)
+  const { first, last } = q.get(cutoff) as { first: bigint | null; last: bigint | null }
+  if (first != null) return Number(first) - 1
+  return Number(last ?? 0)
+}
+
 /** Read one batch past `cursor`. Exported for tests; the hub uses `messagesReader`. */
 export async function readMessagesBatch(
   cursor: string | undefined,
   file = messagesDbPath(),
   limit = MESSAGES_BATCH,
+  sinceMs?: number,
 ): Promise<{ records: MessageRecord[]; cursor?: string }> {
-  const after = Number(cursor ?? 0) || 0
   const db = await openDb(file)
   try {
+    const after = cursor === undefined && sinceMs !== undefined ? startRowid(db, sinceMs) : Number(cursor ?? 0) || 0
     // message.date in nanoseconds passes 2^53, and node:sqlite throws on it
     // unless integers come back as bigints. Everything but the date is small.
     const batch = db.prepare(BATCH_SQL)
@@ -104,7 +121,7 @@ export async function readMessagesBatch(
           Object.entries(raw).map(([k, v]) => [k, typeof v === "bigint" && k !== "date" ? Number(v) : v]),
         ) as unknown as RawRow,
     )
-    if (rows.length === 0) return { records: [], cursor }
+    if (rows.length === 0) return { records: [], cursor: cursor ?? (after ? String(after) : undefined) }
 
     const ids = rows.map((r) => r.rowid)
     const chatIds = [...new Set(rows.map((r) => r.chatId).filter((id): id is number => id != null))]
@@ -162,5 +179,5 @@ export async function readMessagesBatch(
 
 export const messagesReader: PhoneReader = {
   source: "messages",
-  read: (cursor) => readMessagesBatch(cursor),
+  read: (cursor, opts) => readMessagesBatch(cursor, messagesDbPath(), MESSAGES_BATCH, opts?.sinceMs),
 }

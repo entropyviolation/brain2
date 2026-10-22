@@ -62,3 +62,5 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 ## Hub
 
 `scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). It logs each run and calls `flushVault` after a run that wrote rows.
+
+_Last mapped: 2026-10-22_ — **30-day window.** `COGS_PHONE_SYNC_SINCE_DAYS` (default 30, `0` keeps all history) becomes `RunDeps.sinceMs`. The runner drops records older than that before archiving or writing, and still moves the cursor past them. Readers get `{ sinceMs }` as a second `read` argument. `messages-reader.ts` uses it on the first run (no cursor) to jump to the first ROWID on or after the cutoff, so it skips about 300 pages of history. ROWIDs are not in date order, because iCloud backfills old rows late; the runner filter catches those. `calls-reader.ts` ignores it, since the Mac keeps only about 5 months of calls.
