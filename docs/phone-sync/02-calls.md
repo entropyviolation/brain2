@@ -4,6 +4,22 @@ _Last mapped: 2026-10-22_
 
 **Wave 1.** Needs `00-core.md`.
 
+## Status
+
+_Last mapped: 2026-10-22_
+
+**Built:** `lib/phone-sync/calls.ts` and `lib/phone-sync/calls-reader.ts`, with tests. The reader reads `ZCALLRECORD` read-only through `node:sqlite` (`process.getBuiltinModule`, so bundlers leave it alone), 1000 rows a run. `COGS_CALLS_DB` points it at another file.
+
+- An outgoing call often keeps `ZANSWERED` at 0 after it connects. Any `ZDURATION` above 0 counts as answered.
+- `service` is `phone`, `facetime-audio`, `facetime-video`, or the VoIP app's bundle id from `ZSERVICE_PROVIDER`. `ZNAME`, `ZCALLTYPE` and `ZSERVICE_PROVIDER` are read only when the table has them.
+
+- `lib/phone-sync/readers.ts` loads `callsReader`, so the hub runs it.
+- Calls count as time together. `personTimePenIds` (`lib/people-i-know.ts`) adds the person's `iphone-call-<slug>` pen, and `personMinuteMasks` (`lib/person-time.ts`) counts iPhone Calls intervals on it. The pen is keyed by name, so a rename starts a new pen and two people with one name share one.
+
+**Planned:**
+
+- `lib/phone-sync/call-recordings.ts`.
+
 ## Job
 
 Read the call history the Mac receives from the iPhone, and pick up iOS call recordings.

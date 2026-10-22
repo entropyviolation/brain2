@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Goal: Brain2 fills itself from the phone. Texts, calls and location come first. Health, Screen Time, DMs and email follow. Today every phone record is typed or shared by hand through BIM ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)). This plan makes it automatic.
 
-Status: Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). Wave 0, the shared core, is built: [`lib/phone-sync/`](../lib/phone-sync/README.md). Readers (Wave 1) are **Planned**.
+Status: Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). Wave 0, the shared core, is built: [`lib/phone-sync/`](../lib/phone-sync/README.md). Wave 1 (texts, calls, location) is built and waits on a first run on the Mac and the phone. Wave 2 is **Planned**.
 
 Build style: parallel agents, one per source, with fixed file owners. Same rules as [`analytics-plan/12-waves.md`](analytics-plan/12-waves.md): agents in one wave do not edit each other's files.
 
@@ -61,7 +61,7 @@ The sync core agent alone edits shared files (`lib/vault-guard.js`, Settings, th
 
 1. **Source map.** This doc. ✅
 2. **Agent briefs.** One brief per agent under [`phone-sync/`](phone-sync/README.md). ✅
-3. **Wave 0 + 1.** Sync core (✅ built), then texts, calls and location in parallel.
+3. **Wave 0 + 1.** Sync core, then texts, calls and location in parallel. ✅ (Calls also count as time together: `personTimePenIds` in `lib/people-i-know.ts`.)
 4. **Wave 2.** Health, Screen Time, DMs, email, phone plates.
 
 ## Decisions

@@ -1,5 +1,5 @@
 # Files the VM needs in /opt/brain2-capture (copy from scripts/):
-#   capture-box.mjs  sealed-box.mjs  capture-filter.mjs
+#   capture-box.mjs  sealed-box.mjs  capture-filter.mjs  capture-upload.mjs
 [Unit]
 Description=Brain2 sealed capture box (BIM)
 After=network-online.target tailscaled.service

@@ -18,6 +18,7 @@
  */
 import { createListItem } from "@/lib/item-utils"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
+import { phonePenId } from "@/lib/phone-sync/ids"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, PersonPipeline, Task } from "@/lib/types"
 
@@ -173,6 +174,15 @@ export function joinedCompanyPenIds(pipelines: readonly PersonPipeline[] | undef
     if (isCompanyPenPipeline(row) && !ids.includes(row.penId)) ids.push(row.penId)
   }
   return ids
+}
+
+/**
+ * Pens whose time counts as time with this person: joined Company pens, plus
+ * their iPhone Calls pen, so synced calls count too (`lib/person-time.ts`).
+ */
+export function personTimePenIds(person: Pick<Task, "title" | "description" | "id" | "personPipelines">): string[] {
+  const name = person.title || person.description || person.id
+  return [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
 }
 
 /**
