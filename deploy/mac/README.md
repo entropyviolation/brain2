@@ -16,6 +16,12 @@ sed -e "s|__NODE_PATH__|$(command -v node)|" -e "s|__REPO_PATH__|$HOME/brain2|g"
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brain2.backup.plist
 ```
 
+Make the backup key once so runs are encrypted (`docs/BIM_BACKUP.md` → Encryption):
+
+```bash
+node scripts/backup-keygen.mjs
+```
+
 Run it once now to check:
 
 ```bash

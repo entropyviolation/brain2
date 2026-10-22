@@ -72,8 +72,8 @@ _Last mapped: 2026-10-22_
 - **Oracle stays the front door.** It cannot read Apple data, but it catches Telegram and the phone app's location and Health uploads while the Mac sleeps, all sealed to the public key.
 - **Sideloading from Xcode** is OK.
 - **Message bodies are kept**, in the local vault only.
+- **Backups are encrypted** before bodies land (built 2026-10-22, [`BIM_BACKUP.md`](BIM_BACKUP.md) → Encryption).
 
 ## Open questions
 
-- Encrypt backups ([`BIM_BACKUP.md`](BIM_BACKUP.md)) before message bodies land? Recommended yes.
 - Free Apple ID (re-sign every 7 days) or paid developer account (a year)?
