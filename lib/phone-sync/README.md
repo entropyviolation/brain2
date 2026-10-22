@@ -10,10 +10,10 @@ Status (_Last mapped: 2026-10-22_): the core, the Mac Messages and call-history 
 
 ```
 reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on disk)
-                                 └► applyPhoneRecords (Tracking rows) ─► cursor moves ─► hub flushes the vault
+                                 └► applyPhoneRecords (Tracking rows) ─► hub flushes the vault ─► cursor moves
 ```
 
-`runner.ts` does that order on purpose: archive, then vault, then cursor. A crash re-reads; it never skips.
+`runner.ts` does that order on purpose: archive, then apply and flush to the vault, then cursor. A crash re-reads; it never skips.
 
 ## Files
 
