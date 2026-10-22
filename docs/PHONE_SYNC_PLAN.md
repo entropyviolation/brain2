@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Goal: Brain2 fills itself from the phone. Texts, calls and location come first. Health, Screen Time, DMs and email follow. Today every phone record is typed or shared by hand through BIM ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)). This plan makes it automatic.
 
-Status: **Planned.** Step 1 (this source map) is written. Nothing below is built yet.
+Status: **Planned.** Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). No code yet.
 
 Build style: parallel agents, one per source, with fixed file owners. Same rules as [`analytics-plan/12-waves.md`](analytics-plan/12-waves.md): agents in one wave do not edit each other's files.
 
@@ -60,13 +60,20 @@ The sync core agent alone edits shared files (`lib/vault-guard.js`, Settings, th
 ## Steps
 
 1. **Source map.** This doc. ✅
-2. **Agent briefs.** One brief per agent under `docs/phone-sync/`, each with files, inputs, the vault write, tests, and a done line.
+2. **Agent briefs.** One brief per agent under [`phone-sync/`](phone-sync/README.md). ✅
 3. **Wave 0 + 1.** Sync core, then texts, calls and location in parallel.
 4. **Wave 2.** Health, Screen Time, DMs, email, phone plates.
 
+## Decisions
+
+_Last mapped: 2026-10-22_
+
+- **Machines.** No always-on Mac yet. A Mac mini (not a Mac Studio; any Apple silicon is enough) becomes the always-on reader and hub. Until then the laptop reads Messages and call history whenever it is open; the Mac keeps full history, so each run catches up and nothing is lost.
+- **Oracle stays the front door.** It cannot read Apple data, but it catches Telegram and the phone app's location and Health uploads while the Mac sleeps, all sealed to the public key.
+- **Sideloading from Xcode** is OK.
+- **Message bodies are kept**, in the local vault only.
+
 ## Open questions
 
-- Is there a Mac that stays on and is signed into the same Apple ID? Texts and calls depend on it.
-- Is sideloading the iOS app from Xcode OK? Location and Health depend on it. A free Apple ID re-signs every 7 days; a paid developer account lasts a year.
-- Keep message bodies, or only who/when? Default plan: keep bodies, stored only in the local vault.
-- Privacy: the vault becomes very sensitive. The capture box already encrypts in transit ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md)). Backups ([`BIM_BACKUP.md`](BIM_BACKUP.md)) should be encrypted before this lands.
+- Encrypt backups ([`BIM_BACKUP.md`](BIM_BACKUP.md)) before message bodies land? Recommended yes.
+- Free Apple ID (re-sign every 7 days) or paid developer account (a year)?
