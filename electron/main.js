@@ -60,6 +60,10 @@ const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 // ActivityWatch screen time. MUST match `fetchScreenTime` in electron/ipc/channels.js +
 // `window.desktop.fetchScreenTime` in electron/preload.js.
 const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
+// Analytics → Texts. MUST match the preload and electron/ipc/channels.js.
+const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
+const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
+const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
 
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -337,6 +341,17 @@ function registerScreenTimeIpcHandlers() {
   })
 }
 
+/** Analytics → Texts: start the loopback report server, read status, refresh. Weekly run. */
+function registerTextsIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const texts = require("./texts-report")
+  ipcMain.handle(TEXTS_ENSURE_SERVER_IPC_CHANNEL, () => texts.ensureTextsServer())
+  ipcMain.handle(TEXTS_STATUS_IPC_CHANNEL, () => texts.textsStatus())
+  ipcMain.handle(TEXTS_REFRESH_IPC_CHANNEL, () => texts.refreshTexts())
+  texts.startTextsWeeklySchedule()
+  app.on("will-quit", () => texts.stopTextsServer())
+}
+
 /** Linked resources: pick, stat, follow a move, open, reveal, text, preview. */
 function registerFileLinkIpcHandlers() {
   // eslint-disable-next-line global-require
@@ -393,6 +408,7 @@ app.whenReady().then(async () => {
     registerScreenTimeIpcHandlers,
     registerTelegramIpcHandlers,
     registerFileLinkIpcHandlers,
+    registerTextsIpcHandlers,
   ]) {
     try {
       register()
