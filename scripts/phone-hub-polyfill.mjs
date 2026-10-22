@@ -42,8 +42,17 @@ function removeEventListener(type, fn) {
   )
 }
 
+/**
+ * The installed localStorage. phone-hub.mjs imports this file natively and
+ * phone-hub.ts imports it again through jiti, so there are two module copies.
+ * Fill and dump must use the one the stores see, not this copy's own map.
+ */
+function installedLocalStorage() {
+  return globalThis.__cogsPhoneHubGlobals && globalThis.localStorage ? globalThis.localStorage : localStorage
+}
+
 export function installPhoneHubGlobals() {
-  if (globalThis.__cogsPhoneHubGlobals) return localStorage
+  if (globalThis.__cogsPhoneHubGlobals) return installedLocalStorage()
   const windowLike = {
     localStorage,
     location: { protocol: "file:", hostname: "", href: "file:///", origin: "file://" },
@@ -82,19 +91,20 @@ export function installPhoneHubGlobals() {
 }
 
 export function fillLocalStorage(items) {
-  installPhoneHubGlobals()
+  const ls = installPhoneHubGlobals()
   if (!items || typeof items !== "object") return
   for (const [name, value] of Object.entries(items)) {
-    if (typeof name === "string" && typeof value === "string") localStorage.setItem(name, value)
+    if (typeof name === "string" && typeof value === "string") ls.setItem(name, value)
   }
 }
 
 export function dumpLocalStorage() {
+  const ls = installedLocalStorage()
   const items = {}
-  for (let i = 0; i < localStorage.length; i += 1) {
-    const name = localStorage.key(i)
+  for (let i = 0; i < ls.length; i += 1) {
+    const name = ls.key(i)
     if (!name) continue
-    const value = localStorage.getItem(name)
+    const value = ls.getItem(name)
     if (typeof value === "string") items[name] = value
   }
   return items
