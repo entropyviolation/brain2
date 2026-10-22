@@ -6,6 +6,8 @@ launchd job for the nightly vault backup. See `docs/BIM_BACKUP.md` for what is a
 
 ## Install
 
+_Last mapped: 2026-10-22_
+
 The plist has four placeholders: `__NODE_PATH__`, `__REPO_PATH__`, `__BACKUP_DIR__`, `__HOME__`.
 
 ```bash
@@ -14,6 +16,12 @@ sed -e "s|__NODE_PATH__|$(command -v node)|" -e "s|__REPO_PATH__|$HOME/brain2|g"
 
 ```bash
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brain2.backup.plist
+```
+
+Make the backup key once so runs are encrypted (`docs/BIM_BACKUP.md` → Encryption):
+
+```bash
+node scripts/backup-keygen.mjs
 ```
 
 Run it once now to check:

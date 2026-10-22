@@ -1,9 +1,12 @@
+import crypto from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { describe, expect, it } from "vitest"
-import { backupName, pruneList, runBackup } from "./backup-data.mjs"
+import { encryptFile, decryptFile } from "./backup-crypt.mjs"
+import { backupName, pruneList, readBackupPublicKey, runBackup } from "./backup-data.mjs"
+import { generateKeyPair } from "./sealed-box.mjs"
 
 describe("backup helpers", () => {
   it("names backups by local time so they sort", () => {
@@ -56,5 +59,75 @@ describe("runBackup", () => {
     expect(listing).not.toContain("capture-private.key")
     expect(listing).not.toContain("node_modules")
     expect(listing).not.toContain("chrome-idb-snapshot/big.bin")
+  })
+})
+
+describe("encrypted backups", () => {
+  const mk = () => fs.mkdtempSync(path.join(os.tmpdir(), "b2-backup-enc-"))
+  const quiet = () => {}
+
+  it("writes only an encrypted file that opens back to the same tar", () => {
+    const root = mk()
+    const src = path.join(root, "data")
+    fs.mkdirSync(src)
+    fs.writeFileSync(path.join(src, "shared-persist.json"), '{"messages":"secret body"}')
+    fs.writeFileSync(path.join(src, "backup-private.key"), "SECRET")
+    const destDir = path.join(root, "out")
+    const { publicKey, privateKey } = generateKeyPair()
+
+    const res = runBackup({ src, destDir, publicKey, log: quiet })
+    expect(res.encrypted).toBe(true)
+    expect(fs.readdirSync(destDir)).toEqual([path.basename(res.path)])
+    expect(res.path.endsWith(".tar.gz.b2enc")).toBe(true)
+    expect(fs.readFileSync(res.path).includes("secret body")).toBe(false)
+
+    const tar = res.path.slice(0, -".b2enc".length)
+    decryptFile(privateKey, res.path, tar)
+    const listing = spawnSync("tar", ["-tzf", tar], { encoding: "utf8" }).stdout
+    expect(listing).toContain("data/shared-persist.json")
+    expect(listing).not.toContain("backup-private.key")
+  })
+
+  it("refuses the wrong key and leaves no output", () => {
+    const root = mk()
+    const plain = path.join(root, "a.bin")
+    fs.writeFileSync(plain, Buffer.alloc(3 * 1024 * 1024, 7))
+    const enc = `${plain}.b2enc`
+    encryptFile(generateKeyPair().publicKey, plain, enc)
+    const out = path.join(root, "b.bin")
+    expect(() => decryptFile(generateKeyPair().privateKey, enc, out)).toThrow()
+    expect(fs.existsSync(out)).toBe(false)
+    expect(fs.existsSync(`${out}.partial`)).toBe(false)
+  })
+
+  it("round-trips a file larger than one chunk and rejects tampering", () => {
+    const root = mk()
+    const plain = path.join(root, "a.bin")
+    fs.writeFileSync(plain, crypto.randomBytes(2.5 * 1024 * 1024))
+    const { publicKey, privateKey } = generateKeyPair()
+    const enc = `${plain}.b2enc`
+    encryptFile(publicKey, plain, enc)
+    const out = path.join(root, "b.bin")
+    decryptFile(privateKey, enc, out)
+    expect(fs.readFileSync(out).equals(fs.readFileSync(plain))).toBe(true)
+
+    const bytes = fs.readFileSync(enc)
+    bytes[bytes.length - 100] ^= 1
+    fs.writeFileSync(enc, bytes)
+    expect(() => decryptFile(privateKey, enc, path.join(root, "c.bin"))).toThrow()
+  })
+
+  it("prunes plain and encrypted backups by date together", () => {
+    const names = ["brain2-data-20261001-030000.tar.gz", "brain2-data-20261002-030000.tar.gz.b2enc", "brain2-data-20261003-030000.tar.gz.b2enc"]
+    expect(pruneList(names, 2)).toEqual(["brain2-data-20261001-030000.tar.gz"])
+  })
+
+  it("reads the public key from the env first, then the file", () => {
+    const root = mk()
+    const file = path.join(root, "backup-public.key")
+    expect(readBackupPublicKey({}, file)).toBeNull()
+    fs.writeFileSync(file, "FROMFILE\n")
+    expect(readBackupPublicKey({}, file)).toBe("FROMFILE")
+    expect(readBackupPublicKey({ COGS_BACKUP_PUBLIC_KEY: "FROMENV" }, file)).toBe("FROMENV")
   })
 })

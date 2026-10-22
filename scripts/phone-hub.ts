@@ -58,6 +58,7 @@ installPhoneHubGlobals()
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const STATUS_FILE = join(ROOT, "data", "phone-hub-status.json")
 const OFFSET_FILE = join(ROOT, "data", "telegram-offset.json")
+const PHONE_SYNC_MS = Math.max(15, Number(process.env.COGS_PHONE_SYNC_SECONDS) || 60) * 1000
 /** Let gitignored .env.local / .env supply any COGS_* setting the shell did not. */
 function loadEnvFiles() {
   for (const name of [".env.local", ".env"]) {
@@ -640,6 +641,41 @@ async function main() {
   }
 
   watchPersist()
+  void startPhoneSync().catch((err) => {
+    console.error("[phone-hub] phone sync", err instanceof Error ? err.message : err)
+  })
+}
+
+/**
+ * Phone sync (docs/PHONE_SYNC_PLAN.md): run every registered reader on a timer,
+ * archive message bodies under data/phone-sync/, and flush the vault after a
+ * run that wrote rows. No readers registered means nothing runs.
+ */
+async function startPhoneSync() {
+  const { loadPhoneReaders } = await import("../lib/phone-sync/readers")
+  const readers = await loadPhoneReaders()
+  if (readers.length === 0) return
+  const { openPhoneArchive } = await import("../lib/phone-sync/archive")
+  const { runPhoneSync } = await import("../lib/phone-sync/runner")
+  const { applyPhoneRecords } = await import("../lib/phone-sync/write")
+  const archive = openPhoneArchive(join(ROOT, "data"))
+  let running = false
+  const tick = async () => {
+    if (running) return
+    running = true
+    try {
+      const runs = await runPhoneSync({ archive, apply: (records) => applyPhoneRecords(records), onWrote: flushVault }, readers)
+      for (const run of runs) {
+        if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
+        else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
+      }
+    } finally {
+      running = false
+    }
+  }
+  console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s`)
+  void tick()
+  setInterval(() => void tick(), PHONE_SYNC_MS)
 }
 
 function shutdown() {
