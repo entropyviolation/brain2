@@ -80,4 +80,19 @@ describe("MobileLocationCard", () => {
     await screen.findByText(/Location is off for Brain2/)
     expect(bridge.start).not.toHaveBeenCalled()
   })
+
+  it("starts on While Using but not without an answer", async () => {
+    bridge.status = { ...bridge.status, configured: true }
+    bridge.request.mockResolvedValueOnce("notDetermined").mockResolvedValueOnce("whenInUse")
+    render(<MobileLocationCard />)
+    const on = await screen.findByRole("button", { name: "Turn on" })
+    await waitFor(() => expect(on).toBeEnabled())
+    fireEvent.click(on)
+    await screen.findByText(/No location answer yet/)
+    expect(bridge.start).not.toHaveBeenCalled()
+    await waitFor(() => expect(on).toBeEnabled())
+    fireEvent.click(on)
+    await screen.findByText(/Choose Always in iPhone Settings/)
+    expect(bridge.start).toHaveBeenCalledTimes(1)
+  })
 })
