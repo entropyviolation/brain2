@@ -15,7 +15,8 @@ import { useEffect, useState, type ReactNode } from "react"
 import { ChevronLeft, ChevronRight, ListTree } from "lucide-react"
 import "./ritual-steps.css"
 
-export type RitualStep = { id: string; label: string; answered: boolean }
+/** `"partial"`: started but not finished (half-lit lamp; not counted in the tally). */
+export type RitualStep = { id: string; label: string; answered: boolean | "partial" }
 
 const NAV_PREF_KEY = "brain2-ritual-nav-open"
 const NAV_WIDE_QUERY = "(min-width: 720px)"
@@ -87,7 +88,7 @@ export function RitualStepper({
     })
 
   const step = steps[index]
-  const answered = steps.filter((s) => s.answered).length
+  const answered = steps.filter((s) => s.answered === true).length
   const last = index === steps.length - 1
   const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -113,10 +114,10 @@ export function RitualStepper({
             key={s.id}
             type="button"
             aria-current={i === index ? "step" : undefined}
-            aria-label={`Go to ${s.label}${s.answered ? " (answered)" : ""}`}
+            aria-label={`Go to ${s.label}${s.answered === true ? " (answered)" : s.answered ? " (started)" : ""}`}
             title={s.label}
             className="rst-lamp rst-own"
-            data-answered={s.answered ? "true" : undefined}
+            data-answered={s.answered === true ? "true" : s.answered ? "partial" : undefined}
             data-current={i === index ? "true" : undefined}
             onClick={() => onStep(i)}
           />
@@ -153,7 +154,7 @@ export function RitualStepper({
                 key={s.id}
                 type="button"
                 className="rst-index-row rst-own"
-                data-answered={s.answered ? "true" : undefined}
+                data-answered={s.answered === true ? "true" : s.answered ? "partial" : undefined}
                 data-current={i === index ? "true" : undefined}
                 aria-current={i === index ? "step" : undefined}
                 onClick={() => onStep(i)}
