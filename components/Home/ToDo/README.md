@@ -184,6 +184,16 @@ _Last mapped: 2026-10-16._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 - **Analytics.** The fit gauge reads your own pace (`useTodoTime` → `paceFor`, `lib/estimate-pace.ts`): finished steps plus closed lines from `history`, or your override. Drafts and parked sessions never skew it. The note reads "You usually run ×N your estimates". Finishing a line or step in a session settles spent like the ledger does.
 - **Park in the focus bar** and **Save as template**: built in slice H2, below.
 
+## Sessions: parking lot view modes
+
+_Last mapped: 2026-10-22._ The parked popup has four view keys above the detail: **Classic**, **Cartridge rack**, **Scrying well** and **Night garage**. The choice is `parkingLotMode` in `todo-prefs.ts` (default `classic`).
+
+- **Where.** `parking-lot/ParkingLot.tsx` holds the keys (`ParkingLotModeKeys`) and the stage (`ParkingLotStage`). It lazy-loads three.js and one scene, so Classic loads nothing. The scenes are `scene-rack.ts`, `scene-well.ts` and `scene-garage.ts` (cars in `garage-cars.ts`). The contract is `parking-lot/types.ts` (`MountLot`, `LotScene`, `LotCar`).
+- **What it shows.** Every parked session is an object: a cartridge, a crystal or a car. Clicking one focuses that session (`focus(id)`), and the house detail and Resume keys sit under the stage, skinned per mode (`parking-lot.css`).
+- **Resume.** With a scene up, Resume plays the scene's motion first (`playResume`), then resumes. Classic resumes at once. Reduced motion skips the motion.
+- **Cars.** Night garage builds nine cars in code (Oldsmobile, Volvo 240, Mercedes SL, Jeep Cherokee, Bronco, Vanagon, Panda, R5, Samurai), assigned by index. Textures are canvas-generated; no model files.
+- Mockups and their history: project files `parking-lot-mockups/`.
+
 ## Sessions: the run view
 
 _Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyView.tsx`, `plan-run`).
