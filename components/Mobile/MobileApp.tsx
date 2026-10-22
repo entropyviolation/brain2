@@ -17,6 +17,7 @@ import { IphoneNotesStore } from "@/components/iphone-notes-store"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
+import { MobileLocationCard } from "@/components/Mobile/MobileLocationCard"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { APP_NAME } from "@/lib/app-brand"
@@ -87,6 +88,7 @@ export function MobileApp() {
       <main className="cogs-mobile-body">
         <PersistStatusBanner />
         <MobilePullCard />
+        <MobileLocationCard />
         {tab === "home" ? (
           <HomeDashboard />
         ) : (
