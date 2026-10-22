@@ -5,6 +5,7 @@ import {
   booleanLampState,
   percentBarLitCount,
   percentLedText,
+  readStoredPercentLedTint,
   sanitizePercentLedTint,
   writeStoredPercentLedTint,
 } from "./habit-led"
@@ -23,9 +24,16 @@ describe("habit-led", () => {
     expect(sanitizePercentLedTint(null)).toBe(DEFAULT_PERCENT_LED_TINT)
   })
 
+  it("reads the retired LED purple as the dusty violet default", () => {
+    expect(sanitizePercentLedTint("#7E14FF")).toBe(DEFAULT_PERCENT_LED_TINT)
+    localStorage.setItem(PERCENT_LED_TINT_STORAGE_KEY, "#7e14ff")
+    expect(readStoredPercentLedTint()).toBe(DEFAULT_PERCENT_LED_TINT)
+    localStorage.removeItem(PERCENT_LED_TINT_STORAGE_KEY)
+  })
+
   it("pins a sanitized hex so refresh can re-read it", () => {
-    writeStoredPercentLedTint("#7E14FF")
-    expect(localStorage.getItem(PERCENT_LED_TINT_STORAGE_KEY)).toBe("#7e14ff")
+    writeStoredPercentLedTint("#AA33CC")
+    expect(localStorage.getItem(PERCENT_LED_TINT_STORAGE_KEY)).toBe("#aa33cc")
     writeStoredPercentLedTint("#00cc88")
     expect(localStorage.getItem(PERCENT_LED_TINT_STORAGE_KEY)).toBe("#00cc88")
     localStorage.removeItem(PERCENT_LED_TINT_STORAGE_KEY)

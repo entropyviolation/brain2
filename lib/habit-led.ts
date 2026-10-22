@@ -10,7 +10,10 @@
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 
-export const DEFAULT_PERCENT_LED_TINT = "#7e14ff"
+export const DEFAULT_PERCENT_LED_TINT = "#7d6bb8"
+
+/** The old default (loud LED purple). A saved copy now reads as the default. */
+const RETIRED_PERCENT_LED_TINTS = new Set(["#7e14ff"])
 
 /** Tiny pin next to the habits blob — refresh / hub merge read this first. */
 export const PERCENT_LED_TINT_STORAGE_KEY = persistKey("habit-led-tint")
@@ -20,18 +23,20 @@ export const PERCENT_LED_SESSION_KEY = "brain2-led-pick"
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/
 
+function hexOrNull(value: unknown): string | null {
+  if (typeof value !== "string" || !HEX6.test(value.trim())) return null
+  const hex = value.trim().toLowerCase()
+  return RETIRED_PERCENT_LED_TINTS.has(hex) ? DEFAULT_PERCENT_LED_TINT : hex
+}
+
 export function sanitizePercentLedTint(value: unknown): string {
-  if (typeof value === "string" && HEX6.test(value.trim())) {
-    return value.trim().toLowerCase()
-  }
-  return DEFAULT_PERCENT_LED_TINT
+  return hexOrNull(value) ?? DEFAULT_PERCENT_LED_TINT
 }
 
 export function readStoredPercentLedTint(): string | null {
   if (typeof localStorage === "undefined") return null
   try {
-    const raw = readAliasedLocal(PERCENT_LED_TINT_STORAGE_KEY)
-    return typeof raw === "string" && HEX6.test(raw.trim()) ? raw.trim().toLowerCase() : null
+    return hexOrNull(readAliasedLocal(PERCENT_LED_TINT_STORAGE_KEY))
   } catch {
     return null
   }
@@ -40,8 +45,7 @@ export function readStoredPercentLedTint(): string | null {
 export function readSessionPercentLedTint(): string | null {
   if (typeof sessionStorage === "undefined") return null
   try {
-    const raw = sessionStorage.getItem(PERCENT_LED_SESSION_KEY)
-    return typeof raw === "string" && HEX6.test(raw.trim()) ? raw.trim().toLowerCase() : null
+    return hexOrNull(sessionStorage.getItem(PERCENT_LED_SESSION_KEY))
   } catch {
     return null
   }

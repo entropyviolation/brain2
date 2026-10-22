@@ -128,7 +128,7 @@
    * House milled fascia (docs/DESIGN_STYLE.md#milled-fascia). Defaults in this
    * file use these so unskinned dialogs / keys / tab strips pick up the mill.
    * Module skins (`.set95`, `.inbox-dialog`, `.hpp95`, …) keep private aliases
-   * and win via later import + higher specificity — do not paint LED #7e14ff /
+   * and win via later import + higher specificity — do not paint LED #7d6bb8 /
    * grade #508b51 / output #25366a here.
    */
   --hab-crt-green: #7dffc4;
