@@ -105,6 +105,10 @@ export interface PersonProfile {
   dateMet?: string
   dateMetEstimated?: boolean
   instagram?: string
+  /** Phone numbers as typed. Phone sync matches calls and texts by these (`lib/phone-sync/people.ts`). */
+  phones?: string[]
+  /** Email addresses. Phone sync matches iMessage-by-email and mail by these. */
+  emails?: string[]
   address?: PersonAddress
   noteLog?: PersonDatedNote[]
   interactions?: PersonInteraction[]
@@ -402,6 +406,17 @@ function cleanGifts(rows: unknown): PersonGiftIdea[] | undefined {
   return out.length > 0 ? out : undefined
 }
 
+/** Trimmed, de-duplicated (case-insensitive) strings; empty → absent. */
+function cleanHandleList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const out: string[] = []
+  for (const row of value) {
+    const s = typeof row === "string" ? row.trim() : ""
+    if (s && !out.some((other) => other.toLowerCase() === s.toLowerCase())) out.push(s)
+  }
+  return out.length > 0 ? out : undefined
+}
+
 function assembleProfile(
   raw: PersonProfile,
   text: (value: unknown) => string | undefined,
@@ -415,6 +430,8 @@ function assembleProfile(
     : []
   const dateMet = cleanDate(raw.dateMet)
   const instagram = instagramOf(raw.instagram)
+  const phones = cleanHandleList(raw.phones)
+  const emails = cleanHandleList(raw.emails)
   const address = cleanAddress(raw.address, text)
   const relation = text(raw.relation)
   const noteLog = cleanNotes(raw.noteLog)
@@ -431,6 +448,8 @@ function assembleProfile(
     if (raw.dateMetEstimated) next.dateMetEstimated = true
   }
   if (instagram) next.instagram = instagram
+  if (phones) next.phones = phones
+  if (emails) next.emails = emails
   if (address) next.address = address
   if (noteLog) next.noteLog = noteLog
   if (interactions) next.interactions = interactions
