@@ -152,13 +152,17 @@ export function createUploadRoutes(opts) {
     if (url.pathname === "/uploads/ack" && req.method === "POST") {
       if (!tokenMatches(req, opts.pullToken)) return reply(res, 401, { ok: false })
       let upto
+      let kind = ""
       try {
-        upto = Number(JSON.parse((await readBody(req, 4096)) || "{}").upto)
+        const ack = JSON.parse((await readBody(req, 4096)) || "{}")
+        upto = Number(ack.upto)
+        kind = typeof ack.kind === "string" ? ack.kind : ""
       } catch {
         return reply(res, 400, { ok: false })
       }
       if (!Number.isFinite(upto)) return reply(res, 400, { ok: false })
-      const keep = readRows().filter((r) => r.seq > upto)
+      // With a kind, only that kind's rows go: a location ack never drops a Health row.
+      const keep = readRows().filter((r) => r.seq > upto || (kind !== "" && r.kind !== kind))
       const tmp = file + ".tmp"
       fs.writeFileSync(tmp, keep.map((r) => JSON.stringify(r) + "\n").join(""), { mode: 0o600 })
       fs.renameSync(tmp, file)

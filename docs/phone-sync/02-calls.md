@@ -13,10 +13,11 @@ _Last mapped: 2026-10-22_
 - An outgoing call often keeps `ZANSWERED` at 0 after it connects. Any `ZDURATION` above 0 counts as answered.
 - `service` is `phone`, `facetime-audio`, `facetime-video`, or the VoIP app's bundle id from `ZSERVICE_PROVIDER`. `ZNAME`, `ZCALLTYPE` and `ZSERVICE_PROVIDER` are read only when the table has them.
 
+- `lib/phone-sync/readers.ts` loads `callsReader`, so the hub runs it.
+- Calls count as time together. `personTimePenIds` (`lib/people-i-know.ts`) adds the person's `iphone-call-<slug>` pen, and `personMinuteMasks` (`lib/person-time.ts`) counts iPhone Calls intervals on it. The pen is keyed by name, so a rename starts a new pen and two people with one name share one.
+
 **Planned:**
 
-- The one line in `lib/phone-sync/readers.ts` (core-owned file; the lead adds it).
-- Company time. Today Company time is Company-scope blocks painted with a joined pen (`companyBlocksForPerson` in `lib/people-i-know.ts`). Synced calls land on iPhone Calls with pen `iphone-call-<slug>`, so they do not count yet. It needs a change in shared files.
 - `lib/phone-sync/call-recordings.ts`.
 
 ## Job

@@ -52,6 +52,16 @@ describe("capture upload routes", () => {
     expect((await (await get("/uploads?after=0", "pull-token")).json()).items).toEqual([])
   })
 
+  it("acks only the kind it names", async () => {
+    await start()
+    const sealed = seal(generateKeyPair().publicKey, "x")
+    await post("/upload", "up-token", { kind: "health", sealed })
+    await post("/upload", "up-token", { kind: "location", sealed })
+    expect(await (await post("/uploads/ack", "pull-token", { upto: 2, kind: "location" })).json()).toEqual({ ok: true, remaining: 1 })
+    const left = (await (await get("/uploads?after=0", "pull-token")).json()).items
+    expect(left.map((r: { kind: string }) => r.kind)).toEqual(["health"])
+  })
+
   it("keeps the two tokens apart", async () => {
     await start()
     const sealed = seal(generateKeyPair().publicKey, "x")

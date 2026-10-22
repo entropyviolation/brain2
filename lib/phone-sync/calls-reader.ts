@@ -51,7 +51,9 @@ export function readCallPage(db: Db, cursor: string | undefined, limit = CALLS_P
   if (have.size === 0) throw new Error("Call history has no ZCALLRECORD table. Is this CallHistory.storedata?")
   const columns = [...BASE_COLUMNS, ...OPTIONAL_COLUMNS.filter((c) => have.has(c))].join(", ")
   const from = decodeCallCursor(cursor)
-  const where = from ? "WHERE ZDATE > :d OR (ZDATE = :d AND ZUNIQUE_ID > :u)" : "WHERE ZDATE IS NOT NULL"
+  // Rows with no id are left out before LIMIT, so one can never become the cursor.
+  const valid = "ZDATE IS NOT NULL AND ZUNIQUE_ID IS NOT NULL AND ZUNIQUE_ID <> ''"
+  const where = from ? `WHERE ${valid} AND (ZDATE > :d OR (ZDATE = :d AND ZUNIQUE_ID > :u))` : `WHERE ${valid}`
   const sql = `SELECT ${columns} FROM ZCALLRECORD ${where} ORDER BY ZDATE, ZUNIQUE_ID LIMIT :limit`
   const params: Record<string, number | string> = from ? { d: from.date, u: from.uniqueId, limit } : { limit }
   const rows = db.prepare(sql).all(params) as unknown as CallHistoryRow[]

@@ -50,9 +50,10 @@ neighborhood, state, or country precision, an interaction log, gift notes,
 and Close. Dated notes are the item's Notes tab now (see above). Relation and Close live on the profile so a Person
 type already saved still shows them. How long known, time since last seen, and
 days until the next birthday are derived when the person is open. Last seen
-counts an interaction marked Saw them, plus a Company block painted with a
-joined pen. A stored block join from before still counts. A call left unmarked
-stays a call.
+counts an interaction marked Saw them, a Company block painted with a
+joined pen, and a synced iPhone call on their call pen (phone sync,
+`personTimePenIds`). A stored block join from before still counts. A call
+interaction left unmarked stays a call.
 
 **Close** (`personProfile.close`, off when absent) makes a Gift ideas list:
 one Lists folder named Gift ideas, and inside it a list named

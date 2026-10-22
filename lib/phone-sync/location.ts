@@ -128,6 +128,12 @@ function localMinute(ms: number): { date: string; min: number; dayStart: number 
   return { date: formatLocalDateKey(d), min: d.getHours() * 60 + d.getMinutes(), dayStart }
 }
 
+/** Wall-clock minute of `ms`, rounded up, so DST days line up with `localMinute`. */
+function wallMinuteUp(ms: number): number {
+  const d = new Date(ms)
+  return d.getHours() * 60 + d.getMinutes() + (d.getSeconds() || d.getMilliseconds() ? 1 : 0)
+}
+
 const accText = (m?: number) => (m !== undefined ? ` ±${Math.round(m)} m` : "")
 
 function instant(event: LocationEvent, at: number, title: string, t: LocationTargets): TimeEntry {
@@ -159,7 +165,7 @@ function visitBlocks(event: LocationVisit & { arriveAt: number; departAt: number
     const day = new Date(dayStart)
     const nextMidnight = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime()
     const sliceEnd = Math.min(event.departAt, nextMidnight)
-    let endMin = sliceEnd === nextMidnight ? MINUTES_PER_DAY : Math.ceil((sliceEnd - dayStart) / 60000)
+    let endMin = sliceEnd === nextMidnight ? MINUTES_PER_DAY : wallMinuteUp(sliceEnd)
     if (endMin <= min) endMin = min + 1
     out.push({
       id: phoneEntryId(LOCATION_SOURCE, sourceId, part),

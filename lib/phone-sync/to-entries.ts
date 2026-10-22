@@ -34,6 +34,12 @@ function localMinute(ms: number): { date: string; min: number; dayStart: number 
   return { date: formatLocalDateKey(d), min: d.getHours() * 60 + d.getMinutes(), dayStart }
 }
 
+/** Wall-clock minute of `ms`, rounded up, so DST days line up with `localMinute`. */
+function wallMinuteUp(ms: number): number {
+  const d = new Date(ms)
+  return d.getHours() * 60 + d.getMinutes() + (d.getSeconds() || d.getMilliseconds() ? 1 : 0)
+}
+
 function messageEntry(record: MessageRecord, t: EntryTargets): TimeEntry {
   const { date, min } = localMinute(record.at)
   const arrow = record.direction === "out" ? "→" : "←"
@@ -82,7 +88,7 @@ function callEntries(record: CallRecord, t: EntryTargets): TimeEntry[] {
     const nextMidnight = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime()
     const sliceEnd = Math.min(end, nextMidnight)
     // Round the end up so a 20-second call still fills its minute.
-    let endMin = sliceEnd === nextMidnight ? MINUTES_PER_DAY : Math.ceil((sliceEnd - dayStart) / 60000)
+    let endMin = sliceEnd === nextMidnight ? MINUTES_PER_DAY : wallMinuteUp(sliceEnd)
     if (endMin <= min) endMin = min + 1
     out.push({
       id: phoneEntryId(record.source, record.sourceId, part),
