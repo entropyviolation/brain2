@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Goal: Brain2 fills itself from the phone. Texts, calls and location come first. Health, Screen Time, DMs and email follow. Today every phone record is typed or shared by hand through BIM ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)). This plan makes it automatic.
 
-Status: Steps 1 and 2 are written (this map and the briefs in [`phone-sync/`](phone-sync/README.md)). Wave 0, the shared core, is built: [`lib/phone-sync/`](../lib/phone-sync/README.md). Wave 1 (texts, calls, location) is built and waits on a first run on the Mac and the phone. Wave 2 is **Planned**.
+Status: Wave 0 (core) and Wave 1 (texts, calls, location) are built. Texts and calls run live on allie's MacBook. Location is built and installed on the iPhone but does not record yet: it waits on the Oracle box update. Wave 2 is **Planned**. Full state and next steps: **Status and handoff** below.
 
 Build style: parallel agents, one per source, with fixed file owners. Same rules as [`analytics-plan/12-waves.md`](analytics-plan/12-waves.md): agents in one wave do not edit each other's files.
 
@@ -14,7 +14,7 @@ Build style: parallel agents, one per source, with fixed file owners. Same rules
 - Telegram Live Location paints Location while a share is running.
 - The Mac already reads two local sources from Electron: Apple Notes (`electron/apple-notes.js`, via `osascript`) and ActivityWatch (`electron/activitywatch.js`). New Mac readers follow that pattern.
 - `npm run phone:hub` keeps the vault live. Hub merge unions Inbox and Plan entries by id (`lib/vault-guard.js`), so a new writer that stamps stable ids cannot drop or duplicate records.
-- The iOS app (`ios/`, Capacitor, `com.cogs.mobile`) is a web shell. It has no native plugins yet.
+- The iOS app (`ios/`, Capacitor, `com.cogs.mobile`) opens `/mobile/`. It has one native plugin, `BrainLocation` (`ios/App/App/LocationPlugin.swift`).
 
 ## Source map
 
@@ -74,6 +74,45 @@ _Last mapped: 2026-10-22_
 - **Message bodies are kept**, in the local vault only.
 - **Backups are encrypted** before bodies land (built 2026-10-22, [`BIM_BACKUP.md`](BIM_BACKUP.md) → Encryption).
 
+## Status and handoff
+
+_Last mapped: 2026-10-22_
+
+Notes for the next agent. Read this before touching phone sync.
+
+### Done
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Sync core | Built. Readers return records plus a cursor. The runner archives, applies, flushes the vault, then moves the cursor, so a crash re-reads and never skips. | `lib/phone-sync/runner.ts`, `README.md` there |
+| Texts | **Live** on allie's MacBook (`~/brain2`). The Mac holds 302k texts back to 2018. Every text is archived to `data/phone-sync/messages.jsonl`; Tracking keeps only the last 30 days (`COGS_PHONE_SYNC_TEXT_DAYS`), because localStorage holds about 5 MB. | `lib/phone-sync/messages*.ts`, `write.ts` |
+| Calls | **Live.** 997 calls (since 2026-05-25). Calls count as time together with the person (`personTimePenIds`). | `lib/phone-sync/calls*.ts`, `lib/person-time.ts` |
+| Hub | `npm run phone:hub` runs phone sync every 60 s and catches up in one tick. It fills localStorage from the vault, and phone sync and location push **only the Tracking key** back (`flushTracking`). Pushing every key sent stale copies of other stores, which the vault guard refused. | `scripts/phone-hub.ts`, `scripts/phone-hub-polyfill.mjs` |
+| Location, phone side | Built, compiles in Xcode 26.6 with no changes, installed on the iPhone (free personal team). Significant-change plus visits, an offline queue, and sealed uploads. **On by default:** once the upload is set up and location is allowed, it starts and stays on across launches until Turn off. Each time the app comes to the front it asks for Always again while only While Using is granted. | `ios/App/App/LocationPlugin.swift`, `AppDelegate.swift` |
+| Location card | On the phone's Home (`/mobile/`), iOS build only. Paste the upload URL, upload token and public key, then Save; it asks for location and starts. **Set to Always** opens iPhone Settings. | `components/Mobile/MobileLocationCard.tsx`, `lib/mobile/location-bridge.ts` |
+| Location, hub side | Built. `startLocationDrain` pulls `GET /uploads?kind=location` from the box, opens with the private key, writes Location rows, then acks. Runs only when `COGS_CAPTURE_BOX_URL` is set. | `lib/phone-sync/location-drain.ts`, `location.ts` |
+| Box upload route | Built in the repo: `POST /upload` (phone, add-only token), `GET /uploads` and `POST /uploads/ack` (hub token). **Not deployed yet.** | `scripts/capture-upload.mjs`, `scripts/capture-box.mjs` |
+| CI | Runs on Node 22 (the SQLite readers need `node:sqlite`). | `.github/workflows/ci.yml` |
+
+### To do, in order
+
+1. **Deploy the upload route to Oracle** (allie, or the Mac session over SSH with allie's yes). Copy `capture-box.mjs` and `capture-upload.mjs` to `/opt/brain2-capture/`, add `COGS_CAPTURE_UPLOAD_TOKEN` (`openssl rand -hex 32`) to `/etc/brain2-capture.env`, restart `brain2-capture`. Steps: [`phone-sync/03-location.md`](phone-sync/03-location.md) → To switch it on. If the box was never set up, do [`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md) → Setup first.
+2. **Tailscale on the iPhone.** The box listens on the tailnet only, so the phone must be on the tailnet to upload. Same account as the Mac. The upload URL is `http://brain2-capture:8788/upload` (or the 100.x address).
+3. **Hub drain on.** The Mac's `.env.local` needs `COGS_CAPTURE_BOX_URL`, `COGS_CAPTURE_TOKEN`, and `~/.brain2/capture-private.key`. Restart `npm run phone:hub`; it logs `location drain` at start.
+4. **Reinstall the app** from the Mac (it now has the card and on-by-default). Fill in the card, allow location, pick Always.
+5. **Check:** walk somewhere, open the app, tap Send now, and see a Location row in Tracking.
+6. **Keep it installed.** A free Apple ID build stops opening after 7 days, and then location stops too. See Open questions.
+7. **Wave 2:** Health, Screen Time, DMs, email, phone plates, and the Settings → Phone sync panel (briefs `04`–`06`).
+
+### Known issues and watch items
+
+- **Call pen is keyed by name** (`iphone-call-<slug(name)>`). A rename starts a new pen, and two people with one name share one. Follow-up: key it on a stable person id. See [`phone-sync/02-calls.md`](phone-sync/02-calls.md).
+- **Renderer localStorage is near its limit.** The task store alone is about 3.7 MB. Tracking went from 0.8 to 1.5 MB with 30 days of texts. Do not raise the text window without moving Tracking off localStorage.
+- **CI is red on main** from a slow test, not phone sync: `components/Home/home-moon-orrery.test.tsx` times out at 5 s on the runner. Fix: an explicit timeout of about 20 s on its two heavy tests.
+- **Mac disk.** The iOS platform takes about 8 GB. The MacBook ran out of space once; keep 10 GB or more free for the hub, the vault and Xcode.
+- **Swiping the app away** in the app switcher may stop iOS from relaunching it for location until it is opened again. Leave it in the background.
+- **Keys.** `~/.brain2/capture-private.key` stays on the Mac (the hub needs it), backed up offline. `~/.brain2/backup-private.key` should be copied offline and deleted from the Mac.
+
 ## Open questions
 
-- Free Apple ID (re-sign every 7 days) or paid developer account (a year)?
+- **Keeping the app installed.** A free Apple ID build expires every 7 days. Options: the paid Apple Developer Program ($99 a year, builds last a year), or a weekly reinstall from the Mac. Waiting on allie.

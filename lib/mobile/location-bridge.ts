@@ -13,6 +13,12 @@
  * Permission: iOS asks "While Using" first, then offers "Always" later. The
  * plugin asks for both in that order. Without "Always", iOS stops waking the
  * app in the background and the day has gaps.
+ *
+ * On by default: once set up and allowed, the native side starts recording
+ * and keeps it on across launches until the person taps Turn off. Each time
+ * the app comes to the front it asks for "Always" again while only "While
+ * Using" is granted; after iOS stops showing that prompt, `openLocationSettings`
+ * is the way to Always.
  */
 import { Capacitor, registerPlugin } from "@capacitor/core"
 
@@ -49,6 +55,7 @@ interface BrainLocationPlugin {
   start(): Promise<void>
   stop(): Promise<void>
   flush(): Promise<{ ok: boolean }>
+  openSettings(): Promise<void>
 }
 
 const BrainLocation = registerPlugin<BrainLocationPlugin>("BrainLocation")
@@ -103,6 +110,13 @@ export async function stopLocationRecording(): Promise<boolean> {
 export async function flushLocationQueue(): Promise<boolean> {
   if (!isLocationPluginAvailable()) return false
   return (await BrainLocation.flush()).ok
+}
+
+/** Open Brain2's page in iPhone Settings, where Location can be set to Always. */
+export async function openLocationSettings(): Promise<boolean> {
+  if (!isLocationPluginAvailable()) return false
+  await BrainLocation.openSettings()
+  return true
 }
 
 export interface LocationChip {
