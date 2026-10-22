@@ -223,6 +223,14 @@ export const mount: MountLot = (host, { onPick, reducedMotion: RM }) => {
     l.className = "pl-well-left"
     Object.assign(l.style, { fontSize: "11px", opacity: "0.7" })
     el.append(t, l)
+    el.setAttribute("role", "button")
+    el.tabIndex = 0
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        onPick(el.dataset.id ?? "")
+      }
+    })
     el.addEventListener("click", (e) => {
       e.stopPropagation()
       onPick(el.dataset.id ?? "")

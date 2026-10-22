@@ -1649,7 +1649,10 @@ function ParkedView({
           mode={parkingLotMode}
           cars={cars}
           selectedId={plan.id}
-          onPick={(id) => useSessionPlanStore.getState().focus(id)}
+          onPick={(id) => {
+            // A pick mid-resume would show one session while the old one resumes.
+            if (!leaving) useSessionPlanStore.getState().focus(id)
+          }}
           sceneRef={sceneRef}
         />
       ) : null}
