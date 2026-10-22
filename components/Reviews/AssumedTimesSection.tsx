@@ -23,40 +23,16 @@ import { useTaskStore } from "@/lib/task-store"
 import {
   describeEstimates,
   formatDurationMinutes,
-  hasUnconfirmedEstimates,
   unconfirmedEstimates,
   estimatedFieldLabel,
 } from "@/lib/estimated-values"
 import { confirmAllTaskTimes, confirmTaskTimes } from "@/lib/services/completion-time-service"
-import {
-  taskCompletedInMonth,
-  taskCompletedInWeek,
-  taskCompletedOnDay,
-} from "@/components/Home/ToDo/todo-utils"
-import { dateFromPeriodKey } from "@/lib/reviews-store"
 import { itemTitle } from "@/lib/item-utils"
 import { fromClock, linkTimes, toClock, type TimeField, type TimeTriple } from "@/lib/assumed-time-math"
 
-export function pendingAssumedTasks(tasks: Task[], period: ReviewPeriod, periodKey: string): Task[] {
-  return tasks
-    .filter((task) => task.completed && hasUnconfirmedEstimates(task) && completedInPeriod(task, period, periodKey))
-    .sort((a, b) => (a.completedDate?.getTime() ?? 0) - (b.completedDate?.getTime() ?? 0))
-}
+import { pendingAssumedTasks } from "@/lib/assumed-tasks"
 
-function completedInPeriod(task: Task, period: ReviewPeriod, key: string): boolean {
-  const ref = dateFromPeriodKey(period, key)
-  switch (period) {
-    case "day":
-      return taskCompletedOnDay(task, ref)
-    case "week":
-      return taskCompletedInWeek(task, key)
-    case "month":
-      return taskCompletedInMonth(task, key)
-    default:
-      // Quarter/year reviews are too coarse for minute-level confirmation.
-      return false
-  }
-}
+export { pendingAssumedTasks }
 
 function AssumedTimeRow({ task, period }: { task: Task; period: ReviewPeriod }) {
   const updateTask = useTaskStore((s) => s.updateTask)
