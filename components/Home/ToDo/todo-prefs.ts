@@ -12,7 +12,12 @@ import { useSyncExternalStore } from "react"
 
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
 import { DEFAULT_ESTIMATE_MIN } from "@/lib/todo-steps"
+import { PARKING_LOT_MODES, type ParkingLotMode } from "./parking-lot/types"
 import { DEFAULT_TODO_SORT_ORDER, TODO_STATUS_FILTERS, type TodoSortMode, type TodoSortOrder, type TodoStatusFilter } from "./todo-utils"
+
+export function normalizeParkingLotMode(value: unknown): ParkingLotMode {
+  return PARKING_LOT_MODES.some((m) => m.id === value) ? (value as ParkingLotMode) : "classic"
+}
 
 export const TODO_PREFS_KEY = persistKey("todo-prefs")
 
@@ -77,6 +82,8 @@ export type TodoPrefs = {
   showTrayOpen: boolean
   /** Settings → B/G/E mode: each list splits into Bare minimum / Goal / Exceptional (`TodoPeriodMark.tier`) and scores on that scale. */
   bgeTiers: boolean
+  /** Parked popup: how the parking lot draws (`parking-lot/types.ts`). Classic is the plain list. */
+  parkingLotMode: ParkingLotMode
 }
 
 export type SavedFormula = { id: string; name: string; weights: PriorityWeights }
@@ -116,6 +123,7 @@ export const DEFAULT_TODO_PREFS: TodoPrefs = {
   loadOpen: false,
   showTrayOpen: false,
   bgeTiers: false,
+  parkingLotMode: "classic",
 }
 
 export function normalizeStatusFilter(value: unknown): TodoStatusFilter {
@@ -240,6 +248,7 @@ function load(): TodoPrefs {
       loadOpen: parsed.loadOpen === true,
       showTrayOpen: parsed.showTrayOpen === true,
       bgeTiers: parsed.bgeTiers === true,
+      parkingLotMode: normalizeParkingLotMode(parsed.parkingLotMode),
     }
   } catch {
     return { ...DEFAULT_TODO_PREFS }
@@ -278,7 +287,8 @@ export function getTodoPrefs(): TodoPrefs {
       snapshot.sortOrder === DEFAULT_TODO_PREFS.sortOrder &&
       snapshot.loadOpen === false &&
       snapshot.showTrayOpen === false &&
-      snapshot.bgeTiers === false
+      snapshot.bgeTiers === false &&
+      snapshot.parkingLotMode === "classic"
     if (!same) snapshot = { ...DEFAULT_TODO_PREFS }
   }
   return snapshot
@@ -319,6 +329,7 @@ export function setTodoPrefs(
     loadOpen: patch.loadOpen ?? snapshot.loadOpen,
     showTrayOpen: patch.showTrayOpen ?? snapshot.showTrayOpen,
     bgeTiers: patch.bgeTiers ?? snapshot.bgeTiers,
+    parkingLotMode: patch.parkingLotMode !== undefined ? normalizeParkingLotMode(patch.parkingLotMode) : snapshot.parkingLotMode,
   }
   try {
     writeAliasedLocal(TODO_PREFS_KEY, JSON.stringify(snapshot))

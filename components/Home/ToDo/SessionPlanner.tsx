@@ -28,7 +28,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { Task } from "@/lib/types"
@@ -131,6 +131,8 @@ import { useTodoTime } from "./use-todo-time"
 import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
 import { paddedLabel, sessionPaceFactor } from "@/lib/estimate-pace"
 import "./session-planner.css"
+import { ParkingLotModeKeys, ParkingLotStage } from "./parking-lot/ParkingLot"
+import type { LotCar, LotScene } from "./parking-lot/types"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const TIER_LABEL: Record<SessionTier, string> = { min: "Bare minimum", goal: "Goal", exceptional: "Exceptional" }
@@ -1614,9 +1616,44 @@ function ParkedView({
   const now = new Date()
   const stale = parkedLong(plan, now)
   const remembered = allLines(plan).find(({ line }) => line.id === plan.activeLineId)?.line
-  const resume = (mode: "as-was" | "fresh") => onChange(resumeParked(plan, useTaskStore.getState().tasks, new Date(), mode))
+  const { parkingLotMode } = useTodoPrefs()
+  const open = useSessionPlanStore((s) => s.open)
+  const sceneRef = useRef<LotScene | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const cars: LotCar[] = open
+    .filter((p) => p.phase === "parked")
+    .map((p) => {
+      const lines = allLines(p)
+      const at = lines.find(({ line }) => line.id === p.activeLineId) ?? lines[0]
+      return { id: p.id, title: p.title, leftLabel: `${fmtClock(remainingSec(p, now))} left`, tier: at?.tier ?? "min" }
+    })
+  const resumeNow = (mode: "as-was" | "fresh") => onChange(resumeParked(plan, useTaskStore.getState().tasks, new Date(), mode))
+  // A scene plays its resume motion first; Classic resumes at once.
+  const resume = async (mode: "as-was" | "fresh") => {
+    const scene = sceneRef.current
+    if (!scene) return resumeNow(mode)
+    if (leaving) return
+    setLeaving(true)
+    try {
+      await scene.playResume(plan.id)
+    } finally {
+      setLeaving(false)
+    }
+    resumeNow(mode)
+  }
   return (
-    <div className="todo-session-parked">
+    <div className={`todo-session-parked pl-skin-${parkingLotMode}`}>
+      <ParkingLotModeKeys mode={parkingLotMode} onChange={(m) => setTodoPrefs({ parkingLotMode: m })} />
+      {parkingLotMode !== "classic" ? (
+        <ParkingLotStage
+          mode={parkingLotMode}
+          cars={cars}
+          selectedId={plan.id}
+          onPick={(id) => useSessionPlanStore.getState().focus(id)}
+          sceneRef={sceneRef}
+        />
+      ) : null}
+      <div className="pl-detail">
       <FutureNoteBanner note={plan.futureNote} />
       <p className="todo-session-parked-head">
         <span className="todo-session-clock is-paused">{fmtClock(remainingSec(plan, now))}</span>
@@ -1650,6 +1687,7 @@ function ParkedView({
           )
         })}
       </ol>
+      </div>
       <div className="todo-dialog-actions">
         <button type="button" className="todo-btn" onClick={onShelves}>
           Sessions
@@ -1657,15 +1695,15 @@ function ParkedView({
         {stale ? (
           <>
             <span className="todo-session-reason">Parked over a day ago.</span>
-            <button type="button" className="todo-btn" onClick={() => resume("fresh")}>
+            <button type="button" className="todo-btn" disabled={leaving} onClick={() => void resume("fresh")}>
               Fresh clock, same lines
             </button>
-            <button type="button" className="todo-btn is-primary" onClick={() => resume("as-was")}>
+            <button type="button" className="todo-btn is-primary" disabled={leaving} onClick={() => void resume("as-was")}>
               Resume as was
             </button>
           </>
         ) : (
-          <button type="button" className="todo-btn is-primary" onClick={() => resume("as-was")}>
+          <button type="button" className="todo-btn is-primary" disabled={leaving} onClick={() => void resume("as-was")}>
             Resume
           </button>
         )}
