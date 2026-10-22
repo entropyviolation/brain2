@@ -119,10 +119,11 @@ class TubePhysics{
     const sp=this.d*1.05,lat=[];
     for(let j=0;lat.length<this.N&&j<4000;j++){
       const y=this.H/2-this.pr*1.3-j*sp*.866;if(y<this.ymin)break;
-      const hw=this.prof.at(y)-this.pr;if(hw<0)continue;
-      const off=(j&1)*sp/2;let x=this.r-hw+off;if(hw<sp/2)x=this.r;
-      for(;x<=this.r+hw+1e-6&&lat.length<this.N;x+=sp)lat.push([x,y]);
-      if(hw<sp/2&&lat.length<this.N){/* neck-wide row holds one grain */}
+      const hw=this.prof.at(y)-this.pr*.8;if(hw<0)continue;
+      if(hw<sp/2){lat.push([this.r,y]);continue}
+      /* each row is stretched to touch both walls, so the pile has no thin ragged edge */
+      const c=Math.floor(2*hw/sp)+1,st=c>1?2*hw/(c-1):0;
+      for(let q=0;q<c&&lat.length<this.N;q++)lat.push([this.r-hw+q*st,y]);
     }
     this.lat=lat;this.hx=new Float32Array(this.N);this.hy=new Float32Array(this.N);
     for(let k=0;k<this.N;k++){const q=lat[Math.min(k,lat.length-1)];this.hx[k]=q[0];this.hy[k]=q[1]}

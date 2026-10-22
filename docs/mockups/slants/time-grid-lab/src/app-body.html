@@ -1,0 +1,23 @@
+<style>
+body.app{background:#0f1419;overflow-x:hidden}
+body.app .bench{position:static;box-shadow:none}
+body.app .bench .wrap{padding-block:7px}
+body.app .wrap{max-width:none}
+body.app:not(.live) #w-1d{visibility:hidden}
+#cellchips{display:none}
+.appempty{display:none;padding:48px 24px;text-align:center;color:#9fb0c0;font:14px/1.5 var(--sans)}
+body.app.none .appempty{display:block}body.app.none #w-1d{display:none}
+</style>
+<nav class="bench" aria-label="Controls"><div class="wrap">
+  <div class="bg"><span>Span</span><button class="chip" data-set="span:day">Day</button><button class="chip" data-set="span:week">Week</button></div>
+  <div class="bg"><span>View</span><span id="viewchips" class="bg"></span></div>
+  <div class="bg"><span>Day</span><button class="chip" data-act="prev" aria-label="Previous">‹</button><span id="daylab" style="min-width:74px;text-align:center"></span><button class="chip" data-act="next" aria-label="Next">›</button><button class="chip" data-act="today">Today</button></div>
+  <span id="cellchips"></span>
+  <label class="sw"><input type="checkbox" id="mathsw"> Show the math</label>
+</div></nav>
+<div class="wrap" style="padding-block:14px 18px">
+  <div class="stagewrap" id="w-1d"><div class="stage" id="st-1d"></div></div>
+  <p class="appempty">No tracked time this week in any view. Paint some on the Time Grid and the tubes fill.</p>
+  <p class="mathnote" id="mathnote"></p>
+</div>
+<div id="tip" role="tooltip"></div><div id="toast" role="status"></div>

@@ -66,11 +66,11 @@ function tube(d,mat,W,Hh,o){
   if(tl&&sum){   /* hourglass replay: one grain per tracked minute (or per few minutes in a long period), coloured by that minute's pen */
     const pens=[...new Set(o.runs.map(q=>q.k))],idx={};
     spec.layers=pens.map((k,i)=>{idx[k]=i;const bl=o.runs.filter(q=>q.k===k).map(q=>({s:q.s,e:q.e,dl:q.dl,a:q.a}));return{c:mix(P[k][1],'#c9b89a',.25),v:0,n:P[k][0],m:bl.reduce((a,q)=>a+(q.e-q.s)*q.f,0),blocks:bl}});
-    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?900:2200));if(gm>1)gm=Math.ceil(gm);
+    const tot=o.runs.reduce((a,q)=>a+(q.e-q.s)*q.f,0),pr=[];let gm=Math.max(.2,tot/(S.multi?1200:3800));if(gm>1)gm=Math.ceil(gm);
     o.runs.forEach(q=>{const st=gm/q.f;for(let m=0;m<q.e-q.s;m+=st)pr.push([q.a+m,idx[q.k]])});
     pr.sort((x,y)=>x[0]-y[0]);
     spec.timeline={layer:pr.map(x=>x[1]),mins:pr.map(x=>x[0]),start:S.hg.start||0,T:o.T,gm};
-    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(1.2,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
+    const A=makeProfile('hourglass',true,tw,bodyH,3).lowerArea();spec.d=Math.max(.95,Math.min(3,Math.sqrt(.6*A/(0.93*Math.max(1,pr.length)))));
   }
   const prof=makeProfile(spec.shape,closed,tw,bodyH,spec.d||3.3),poly=prof.poly();
   let ticks='';if(o&&!hg)o.ticks.forEach(t=>{const yy=top+bodyH-r-t.f*ih;ticks+=`<line x1="${tx-9}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="1.2"/>${t.l?`<text x="${tx-12}" y="${yy+(t.f<1?-3:3)}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${t.l}</text>`:''}`});else if(!hg&&!o)for(let hr=0;hr<=24;hr++){const yy=top+bodyH-r-hr/24*ih,mj=hr%6===0;ticks+=`<line x1="${tx-(mj?9:5)}" x2="${tx}" y1="${yy}" y2="${yy}" stroke="#4a5a6a" stroke-width="${mj?1.2:.7}"/>${mj?`<text x="${tx-12}" y="${yy+3}" text-anchor="end" font-size="9" fill="#4a5a6a" font-family="IBM Plex Mono">${hr}h</text>`:''}`}
@@ -121,7 +121,7 @@ B({id:'1d',code:'1D',title:'Day Tubes',dial:1,lead:'blend',h:716,
    ${ab(16,10,1010,0,`<div class="row">${viewKeys(true,5)}</div>`)}
    ${ab(16,48,1010,0,`<div style="display:flex;gap:10px 22px;flex-wrap:wrap;align-items:center">${navBar(!anyGrid)}${sc==='days'&&!mu?`<div class="row">${kb('Day',S.span==='day','data-set="span:day"')}${kb('Week',S.span==='week','data-set="span:week"')}</div>`:''}${S.shape==='hourglass'?'':`<div class="row" style="gap:6px"><span class="lab">Gravity</span>${kb('Normal',!S.zg,'data-set="zg:0"')}${kb('Zero-g',!!S.zg,'data-set="zg:1"','Blocks float at their time of day on the ruler, with no gravity')}</div><div class="row" style="gap:6px"><span class="lab">Ends</span>${kb('Closed',S.ends!=='open','data-set="ends:closed"')}${kb('Open',S.ends==='open','data-set="ends:open"')}</div>`}<div style="margin-left:auto">${kb('Reset',false,'data-act="reset"','Pour everything in again and stand the tubes upright')}</div></div>`)}
    ${ab(16,84,1010,0,`<div style="display:flex;gap:6px 0;flex-wrap:wrap;align-items:flex-end;padding:6px 0 8px;border-top:1px solid #9fb0bf;border-bottom:1px solid #9fb0bf">${[
-     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
+     ['Scope',[['days','Days'],['week','Week'],['weeks','Weeks'],['month','Month'],['months','Months']].filter(q=>!document.body.classList.contains('app')||q[0]==='days'||q[0]==='week').map(q=>kb(q[1],sc===q[0],`data-set="scope:${q[0]}"`)).join('')],
      ['Views',kb('One',!mu,'data-set="multi:0"')+kb('All views',mu,'data-set="multi:1"','Show one tube for each view type, side by side')],
      sc!=='days'||mu?['Fill',kb('Liquid',sm==='liquid','data-set="sm:liquid"')+kb('Sand',sm==='sand','data-set="sm:sand"')]:['Every day',kb('Grid',false,'data-fid="all:grid"','Revert every day to the grid')+kb('Liquid',false,'data-fid="all:liquid"')+kb('Sand',false,'data-fid="all:sand"')],
      ['Shape',kb('Tube',S.shape!=='hourglass','data-set="shape:tube"')+kb('Hourglass',S.shape==='hourglass','data-set="shape:hourglass"')]
