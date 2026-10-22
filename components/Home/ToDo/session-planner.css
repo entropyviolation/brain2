@@ -961,19 +961,20 @@ body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-big:not([role="tab"])
   padding: 8px 28px;
   border-radius: 6px;
   background: #0a0c0e;
-  color: #7dffc4;
+  color: var(--ses-clock, #8cd4a5);
   font-size: 64px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   text-align: center;
-  text-shadow: 0 0 12px rgba(125, 255, 196, 0.45);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--ses-clock, #8cd4a5) 45%, transparent);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85), 0 0 0 1px #2c3236;
 }
 
+/* Paused: the same colour, dimmed, so the clock never changes hue under you. */
 .ses-hero.is-paused .ses-clock {
-  color: #b7a6ff;
+  opacity: 0.6;
   text-shadow: none;
 }
 
@@ -1416,4 +1417,186 @@ body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-big:not([role="tab"])
   .ses-paint {
     margin-left: 0;
   }
+}
+
+/* ==== Follow-ups 2026-10-22: checkbox, name, estimates, steps ==== */
+
+/* `.todo95-dialog input` paints every input as a full-width text well; a checkbox stays a checkbox. */
+.todo95-dialog.todo-session input[type="checkbox"] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.todo-session-run .ses-title {
+  width: min(28rem, 100%);
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  color: #111;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px dashed #8a8e92;
+}
+
+.todo-session-run .ses-title:focus {
+  background: #fff;
+}
+
+.todo-session-run .ses-est {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 700;
+  color: #1f2226;
+  background: none;
+  cursor: text;
+}
+
+.todo-session-run .ses-est:hover,
+.todo-session-run .ses-est:focus-visible {
+  border-color: #6e7378;
+  background: #fff;
+}
+
+.todo-session-run .ses-est-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.todo-session-run .ses-est-field input.ses-est-input {
+  width: 4.5rem;
+  min-height: 26px;
+}
+
+.todo-session-run .ses-twisty {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #3a3e42;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.todo-session-run .ses-twisty:hover {
+  background: #dfe2e6;
+}
+
+.ses-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ses-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #e6e8eb;
+}
+
+.ses-step.is-group {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  background: none;
+}
+
+.ses-step.is-group .ses-step-name {
+  font-size: 12px;
+  color: #4a4e52;
+}
+
+.ses-step.is-current {
+  background: #f4fff9;
+  box-shadow: 0 0 0 1px #1a6b48;
+}
+
+.ses-step.is-done .ses-step-name {
+  color: #6a6e72;
+  text-decoration: line-through;
+}
+
+.ses-step-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+
+.ses-step .ses-line-ctl {
+  min-width: 32px;
+}
+
+body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-small:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+.todo-session-run button.dvd-key.ses-dvd.is-small {
+  flex-basis: 32px;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  min-height: 32px;
+}
+
+.ses-line-check.is-small {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+
+.todo-session-run .ses-key.is-small {
+  min-height: 34px;
+  padding: 6px 14px 9px;
+  font-size: 12px;
+}
+
+.ses-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 22px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #eef0f3;
+  box-shadow: 0 0 0 1px #b3b8be;
+}
+
+.ses-setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2226;
+}
+
+.todo95-dialog.todo-session .ses-setting input[type="color"] {
+  width: 44px;
+  height: 30px;
+  min-height: 0;
+  padding: 2px;
+  cursor: pointer;
 }

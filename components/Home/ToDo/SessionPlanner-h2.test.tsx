@@ -76,7 +76,7 @@ describe("SessionPlanner, slice H2", () => {
       draft.put(startSession(focused(), tasks, T0))
     })
     fireEvent.click(screen.getByRole("button", { name: "Park" }))
-    fireEvent.change(screen.getByLabelText("Note to tomorrow-you"), { target: { value: "wood first" } })
+    fireEvent.change(screen.getByLabelText("Note to you later"), { target: { value: "wood first" } })
     fireEvent.click(screen.getByRole("button", { name: "Park now" }))
     expect(focused()).toMatchObject({ phase: "parked", futureNote: { text: "wood first" } })
     expect(screen.getByRole("note")).toHaveTextContent("wood first")
