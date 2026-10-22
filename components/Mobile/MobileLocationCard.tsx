@@ -5,7 +5,9 @@
  * (`lib/mobile/location-bridge.ts`). Setup takes the capture box's upload URL,
  * the upload-only token and the capture public key. The plugin keeps them on
  * the phone, so this card stores nothing itself. Turn on asks for "While
- * Using", then "Always", then starts recording.
+ * Using", then "Always", then starts recording. After setup, the app also
+ * turns it on by itself at every open (`lib/mobile/location-autostart.ts`)
+ * unless Turn off was the last choice.
  */
 "use client"
 
@@ -22,6 +24,7 @@ import {
   stopLocationRecording,
   type LocationStatus,
 } from "@/lib/mobile/location-bridge"
+import { ensureLocationOn, setLocationUserOff } from "@/lib/mobile/location-autostart"
 
 const POLL_MS = 15000
 
@@ -69,11 +72,13 @@ export function MobileLocationCard() {
       await configureLocationUpload({ uploadUrl: uploadUrl.trim(), token: token.trim(), publicKey: publicKey.trim() })
       setToken("")
       setSetupOpen(false)
+      await ensureLocationOn()
       return "Upload saved on this phone."
     })
 
   const turnOn = () =>
     run("Asking for location…", async () => {
+      setLocationUserOff(false)
       const permission = await requestAlwaysLocation()
       if (permission === "denied" || permission === "restricted") {
         return "Location is off for Brain2. Turn it on in iPhone Settings → Brain2 → Location → Always."
@@ -86,7 +91,12 @@ export function MobileLocationCard() {
       return permission === "always" ? "Recording." : "Recording. Choose Always in iPhone Settings so the day has no gaps."
     })
 
-  const turnOff = () => run("Stopping…", async () => (await stopLocationRecording(), "Location is off."))
+  const turnOff = () =>
+    run("Stopping…", async () => {
+      setLocationUserOff(true)
+      await stopLocationRecording()
+      return "Location is off. It stays off until you tap Turn on."
+    })
 
   const sendNow = () =>
     run("Sending…", async () => ((await flushLocationQueue()) ? "Sent." : "Not sent. Check the upload setup and your connection."))
