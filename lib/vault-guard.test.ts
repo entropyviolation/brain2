@@ -263,7 +263,7 @@ describe("vault-guard", () => {
   })
 
   it("hub merge keeps a newer LED tint from the incoming write", () => {
-    const stored = habits(30, 47, { percentLedTint: "#7e14ff", appearanceRev: 1 })
+    const stored = habits(30, 47, { percentLedTint: "#7d6bb8", appearanceRev: 1 })
     const incoming = habits(30, 47, { percentLedTint: "#00cc88", appearanceRev: 4 })
     const merged = JSON.parse(mergePersistSnapshots(stored, incoming, "cogs-habits-store") ?? "{}") as {
       state?: { percentLedTint?: string; appearanceRev?: number }
@@ -735,7 +735,7 @@ describe("vault-guard", () => {
       outputGradeTubeColor: "#11ccdd",
     })
     const hub = habits(30, 47, {
-      percentLedTint: "#7e14ff",
+      percentLedTint: "#7d6bb8",
       gradeTubeColor: "#508b51",
       outputGradeTubeColor: "#25366a",
     })
@@ -747,7 +747,7 @@ describe("vault-guard", () => {
   })
 
   it("does not stamp seed LED defaults over a customized hub vault", () => {
-    const local = habits(15, 6, { percentLedTint: "#7e14ff", gradeTubeColor: "#508b51" })
+    const local = habits(15, 6, { percentLedTint: "#7d6bb8", gradeTubeColor: "#508b51" })
     const hub = habits(30, 47, { percentLedTint: "#ff00aa", gradeTubeColor: "#112233" })
     const picked = JSON.parse(pickPersistItem(local, hub, "cogs-habits-store") ?? "{}") as {
       state?: { percentLedTint?: string; gradeTubeColor?: string; tasks?: unknown[] }
@@ -806,7 +806,7 @@ describe("vault-guard", () => {
 
   it("paints the LED pin onto a richer hub blob that still has the old purple", () => {
     localStorage.setItem("cogs-habit-led-tint", "#00cc88")
-    const hub = habits(30, 47, { percentLedTint: "#7e14ff" })
+    const hub = habits(30, 47, { percentLedTint: "#7d6bb8" })
     const picked = JSON.parse(pickPersistItem(null, hub, "cogs-habits-store") ?? "{}") as {
       state?: { percentLedTint?: string; tasks?: unknown[] }
     }
@@ -816,7 +816,7 @@ describe("vault-guard", () => {
   })
 
   it("stamps a new LED tint onto the pin without keeping the old purple", () => {
-    localStorage.setItem("cogs-habit-led-tint", "#7e14ff")
+    localStorage.setItem("cogs-habit-led-tint", "#7d6bb8")
     stampAppearancePins(
       JSON.stringify({
         state: { percentLedTint: "#00cc88", appearanceRev: 4 },
@@ -827,7 +827,7 @@ describe("vault-guard", () => {
     expect(localStorage.getItem("cogs-habit-led-tint")).toBe("#00cc88")
     const painted = JSON.parse(
       applyAppearancePins(
-        JSON.stringify({ state: { percentLedTint: "#7e14ff" }, version: 15 }),
+        JSON.stringify({ state: { percentLedTint: "#7d6bb8" }, version: 15 }),
         "cogs-habits-store",
       ) ?? "{}",
     ) as { state?: { percentLedTint?: string } }
@@ -836,7 +836,7 @@ describe("vault-guard", () => {
   })
 
   it("does not paint a stale LED pin over a blob the user just saved", () => {
-    localStorage.setItem("cogs-habit-led-tint", "#7e14ff")
+    localStorage.setItem("cogs-habit-led-tint", "#7d6bb8")
     const saved = JSON.stringify({
       state: { percentLedTint: "#00cc88", appearanceRev: 4 },
       version: 15,

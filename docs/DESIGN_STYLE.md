@@ -392,7 +392,7 @@ Lights already in the house, to make more of:
 
 **LED colors: green, blue, purple. No orange.** A lamp, LED, meter, or
 glowing indicator lights in phosphor green (`--hab-crt-green`, `#7dffc4`),
-ice blue (`#9ad7ff`), or purple / violet (`#7e14ff`, `#7d6bb8`). Red is
+ice blue (`#9ad7ff`), or dusty violet (`#7d6bb8`). Red is
 kept for the now line and for a true fault. Do not use orange or amber
 light: no amber LED, no amber “ghost” or “warning” lamp, no orange plasma.
 Keep orange out of chrome as much as possible. A pen color the person
@@ -757,7 +757,7 @@ Habit **Tags** and **Auto-fill** chips are one catalog: pressed chips wear a qui
 settings dialog as the Tracking Tags library (not an inline rename field).
 Sort sits on the control bar above the grid. Grade plasma hues are set
 on each grade’s sheet (`.hab-grade-sheet`). Defaults: week-grade green
-`#508b51`, perfect-output navy `#25366a`, percent LED `#7e14ff`. Today’s
+`#508b51`, perfect-output navy `#25366a`, percent LED `#7d6bb8`. Today’s
 column is a solid mint fill. Furniture metal is `--chrome-face` /
 `--hab-metal`. The packing notes for this room stay in
 [`components/Home/Habits/README.md`](../components/Home/Habits/README.md).

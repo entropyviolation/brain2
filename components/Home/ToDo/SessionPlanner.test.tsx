@@ -61,8 +61,11 @@ describe("SessionPlanner", () => {
 
     fireEvent.click(within(screen.getByRole("group", { name: "Add process inbox to" })).getByRole("button", { name: "Goal" }))
     fireEvent.click(screen.getByRole("button", { name: "1h" }))
-    expect(screen.getByText("10m · 10m of 1h")).toBeInTheDocument()
-    expect(screen.getByText("20m · 30m of 1h")).toBeInTheDocument()
+    // One container: Bare minimum and Goal fill the same hour.
+    const fitGlass = screen.getByRole("group", { name: "Fit" })
+    expect(fitGlass).toHaveTextContent("B 10m")
+    expect(fitGlass).toHaveTextContent("G 20m")
+    expect(fitGlass).toHaveTextContent("30m free")
 
     fireEvent.click(screen.getByRole("button", { name: "Start" }))
     expect(plan().phase).toBe("run")
@@ -127,6 +130,9 @@ describe("SessionPlanner", () => {
     fireEvent.keyDown(field, { key: "Enter" })
     expect(task("inbox").estimatedDuration).toBe(40)
     expect(plan().tiers.min[0].estMin).toBe(40)
+    // The name lives in the run view's Settings, not on the clock face.
+    expect(screen.queryByRole("textbox", { name: "Session name" })).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }))
     fireEvent.change(screen.getByRole("textbox", { name: "Session name" }), { target: { value: "Morning push" } })
     expect(plan().title).toBe("Morning push")
   })

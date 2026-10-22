@@ -6,6 +6,7 @@ import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { addPenColorNowObjective } from "@/lib/pen-color-session"
 import { startTaskClock } from "@/lib/task-clock"
 import type { Task } from "@/lib/types"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import FocusBar from "./FocusBar"
 import { useTaskClockStarter } from "./TaskClockStarter"
 
@@ -53,6 +54,29 @@ describe("task clock UI", () => {
     expect(usePenColorSessionStore.getState().session).toMatchObject({ taskId: "cds", stepId: "spines", penId: "act-exercise" })
     expect(task().penLinks?.[0].penId).toBe("act-exercise")
     expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
+  it("stacks over an open dialog: Escape and Cancel close only the picker", () => {
+    seed()
+    let outerOpen = true
+    render(
+      <Dialog open onOpenChange={(open) => (outerOpen = open)}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Session</DialogTitle>
+          <StarterHarness />
+        </DialogContent>
+      </Dialog>,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "go" }))
+    const picker = screen.getByRole("dialog", { name: "Pen for Finish CDs" })
+    expect(picker).toContainElement(document.activeElement as HTMLElement) // focus moved into the picker
+    fireEvent.keyDown(picker, { key: "Escape" })
+    expect(screen.queryByRole("dialog", { name: "Pen for Finish CDs" })).toBeNull()
+    expect(outerOpen).toBe(true)
+    fireEvent.click(screen.getByRole("button", { name: "go" }))
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.queryByRole("dialog", { name: "Pen for Finish CDs" })).toBeNull()
+    expect(outerOpen).toBe(true)
   })
 
   it("the focus bar shows Task › step and the estimate, and Stop asks about free objectives", () => {

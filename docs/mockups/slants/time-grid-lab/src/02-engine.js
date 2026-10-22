@@ -38,9 +38,9 @@ const toHex=a=>'#'+a.map(x=>Math.round(Math.max(0,Math.min(255,x))).toString(16)
 const mix=(a,b,t)=>{const A=hex(a),B=hex(b);return toHex(A.map((x,i)=>x+(B[i]-x)*t))};
 const lum=c=>{const [r,g,b]=hex(c);return .299*r+.587*g+.114*b};
 const gray=(c,tint='#8a6a4a',t=.22)=>{const l=lum(c);return mix(toHex([l,l,l]),tint,t)};
-const dayLab=d=>`${DAYS[d][0]}, ${DAYS[d][1]}, 2026`;
+const dayLab=d=>`${DAYS[d][0]}, ${DAYS[d][1]}, ${WK0.getFullYear()}`;
 const spanDays=()=>S.span==='week'?[0,1,2,3,4,5,6]:[S.day];
-const spanLab=()=>S.span==='week'?'Oct 19 – Oct 25, 2026':dayLab(S.day);
+const spanLab=()=>S.span==='week'?wkDate(0)+' – '+wkDate(0,6)+', '+WK0.getFullYear():dayLab(S.day);
 const pal=()=>PAL[S.view]||{};
 const isToday=d=>d===NOW.day;
 

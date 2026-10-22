@@ -55,7 +55,7 @@ class TubePhysics{
     if(this.tl)this.buildHeld();
     /* layers differ a little in density, the lowest layer densest, so mixed liquid separates again (buoyancy) */
     const nl=o.layers.length;this.dens=o.layers.map((l,i)=>1+0.14*(nl-1-i)/Math.max(1,nl-1)+(nl===1?0:0));
-    this.g=620;this.rest=0;this.asleep=false;this.maxv=0;
+    this.g=this.mat==='sand'?880:620;this.rest=0;this.asleep=false;this.maxv=0;
     this.mixK=o.mix==null?1:o.mix<=0?0:Math.pow(4,(o.mix-50)/50);this.zg=o.zg||null;this.zy=o.zg?new Float32Array(N):null;
     if(this.mat!=='sand'){this.initLiquid();this.zg?this.placeZG():this.prefill();if(this.v2)this.initV2(o)}
     if(this.v2&&this.mat==='sand'){const g=()=>{let u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*v)};this.rad=new Float32Array(N);this.ang=new Float32Array(N);this.sh=new Float32Array(N);this.mj=new Float32Array(N);this.gauss=g}
@@ -119,10 +119,11 @@ class TubePhysics{
     const sp=this.d*1.05,lat=[];
     for(let j=0;lat.length<this.N&&j<4000;j++){
       const y=this.H/2-this.pr*1.3-j*sp*.866;if(y<this.ymin)break;
-      const hw=this.prof.at(y)-this.pr;if(hw<0)continue;
-      const off=(j&1)*sp/2;let x=this.r-hw+off;if(hw<sp/2)x=this.r;
-      for(;x<=this.r+hw+1e-6&&lat.length<this.N;x+=sp)lat.push([x,y]);
-      if(hw<sp/2&&lat.length<this.N){/* neck-wide row holds one grain */}
+      const hw=this.prof.at(y)-this.pr*.8;if(hw<0)continue;
+      if(hw<sp/2){lat.push([this.r,y]);continue}
+      /* each row is stretched to touch both walls, so the pile has no thin ragged edge */
+      const c=Math.floor(2*hw/sp)+1,st=c>1?2*hw/(c-1):0;
+      for(let q=0;q<c&&lat.length<this.N;q++)lat.push([this.r-hw+q*st,y]);
     }
     this.lat=lat;this.hx=new Float32Array(this.N);this.hy=new Float32Array(this.N);
     for(let k=0;k<this.N;k++){const q=lat[Math.min(k,lat.length-1)];this.hx[k]=q[0];this.hy[k]=q[1]}
@@ -145,7 +146,7 @@ class TubePhysics{
         for(let q=Math.max(0,this.n-6);q<this.n;q++){const ex=this.x[q]-x,ey=this.y[q]-y;if(ex*ex+ey*ey<d*d*.36){ok=false;break}}
         if(!ok)break;
         const i=this.n++;this.spawnK++;made++;this.grain(i);
-        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=140;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
+        this.x[i]=x;this.y[i]=y;this.vx[i]=0;this.vy[i]=210;this.layer[i]=this.queue[k];this.var[i]=k%5;this.minute[i]=this.mins[k];
       }
       this.shown=(this.spawnK<this.N&&this.mins[this.spawnK]<=this.clock)?this.mins[Math.max(0,this.spawnK-1)]:this.clock;
       this.updateHeld();return;

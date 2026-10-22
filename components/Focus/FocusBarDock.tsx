@@ -6,12 +6,18 @@
  */
 "use client"
 
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { linkSessionAndPen } from "@/lib/session-pen"
 
 const FocusBar = lazy(() => import("./FocusBar"))
 
 export function FocusBarDock() {
+  // A painting session and the pen clock pause, resume and stop together.
+  // Linked for the life of the app, not just this mount.
+  useEffect(() => {
+    linkSessionAndPen()
+  }, [])
   const onClock = usePenColorSessionStore((s) => Boolean(s.session?.taskId))
   if (!onClock) return null
   return (

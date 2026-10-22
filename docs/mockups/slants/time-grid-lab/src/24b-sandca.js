@@ -32,7 +32,7 @@ class SandCA{
     this.tt++;if(this.spawnK<this.N)this.spawn();
     const k=150,c=13;let a=k*(this.tth-this.th)-c*this.w;a=Math.max(-150,Math.min(150,a));this.al=a;this.w=Math.max(-8,Math.min(8,this.w+a*dt));this.th+=this.w*dt;
     const ky=130,cy=14;let ay=ky*(this.tty-this.ty)-cy*this.vyf;ay=Math.max(-1400,Math.min(1400,ay));this.vyf+=ay*dt;this.ty+=this.vyf*dt;this.ay=ay;
-    const passes=Math.max(2,Math.min(9,Math.round(6/this.c))),jp=Math.min(.6,(Math.abs(this.w)*.12+Math.abs(this.al)*.003+Math.abs(ay)*.0006))*0.35;
+    const passes=Math.max(3,Math.min(12,Math.round(8.5/this.c))),jp=Math.min(.6,(Math.abs(this.w)*.12+Math.abs(this.al)*.003+Math.abs(ay)*.0006))*0.35;
     let mv=0;for(let p=0;p<passes;p++)mv+=this.pass(jp);
     this.moved=mv;this.par^=1;
     const still=this.spawnK>=this.N&&mv===0&&jp<.01&&Math.abs(this.w)<.03&&Math.abs(this.th-this.tth)<.004&&Math.abs(this.ty-this.tty)<.4;
@@ -47,10 +47,10 @@ class SandCA{
     const mv=(i,x,y,dx,dy)=>{const nx=x+dx,ny=y+dy;if(!free(nx,ny))return false;const j=ny*gw+nx;cell[j]=cell[i];vr[j]=vr[i];cell[i]=0;moved++;return true};
     const one=(x,y)=>{
       const i=y*gw+x;if(!cell[i])return;
-      if(this.depth[i]>this.flow&&Math.random()>.002)return;
-      if(jp>0&&Math.random()<jp){const d=D[(Math.random()*8)|0];if(mv(i,x,y,d[0],d[1]))return}
       const dn=D[(k0+(Math.random()<tt?1:0))&7],sx=-dn[1],sy=dn[0];
-      if(mv(i,x,y,dn[0],dn[1]))return;
+      if(mv(i,x,y,dn[0],dn[1]))return;   /* a grain with air straight below it always falls, locked or not, so nothing hangs on a shelf */
+      if(this.depth[i]>this.flow&&Math.random()>.012)return;
+      if(jp>0&&Math.random()<jp){const d=D[(Math.random()*8)|0];if(mv(i,x,y,d[0],d[1]))return}
       const sg=Math.random()<.5?1:-1;
       for(let t=0;t<2;t++){
         const s2=t?-sg:sg,ox=x+s2*sx,oy=y+s2*sy;if(!free(ox,oy))continue;

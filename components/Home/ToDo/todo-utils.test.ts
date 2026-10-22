@@ -248,6 +248,38 @@ describe("sortTodos", () => {
       "high",
     ])
   })
+
+  it("sorts by duration, counts step estimates, and puts no estimate last both ways", () => {
+    const tasks = [
+      task({ id: "none", scheduledDate: now }),
+      task({ id: "long", scheduledDate: now, estimatedDuration: 90 }),
+      task({ id: "zero", scheduledDate: now, estimatedDuration: 0 }),
+      task({ id: "short", scheduledDate: now, estimatedDuration: 15 }),
+      task({
+        id: "steps",
+        scheduledDate: now,
+        subtasks: [
+          { id: "s1", description: "a", completed: false, estimatedDuration: 20 },
+          { id: "s2", description: "b", completed: false, estimatedDuration: 25 },
+        ],
+      }),
+    ]
+    const items = buildTodoItems(tasks, true, now)
+    expect(sortTodos(items, { mode: "duration", order: "asc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "short",
+      "steps",
+      "long",
+      "none",
+      "zero",
+    ])
+    expect(sortTodos(items, { mode: "duration", order: "desc", period: "day", tasks, weights }).map((i) => i.id)).toEqual([
+      "long",
+      "steps",
+      "short",
+      "none",
+      "zero",
+    ])
+  })
 })
 
 describe("pinPrioritizedFirst", () => {

@@ -275,12 +275,12 @@ describe("persist-storage", () => {
   })
 
   it("persists a new LED tint even when the pin still has the old purple", () => {
-    localStorage.setItem("cogs-habit-led-tint", "#7e14ff")
+    localStorage.setItem("cogs-habit-led-tint", "#7d6bb8")
     const previous = JSON.stringify({
       state: {
         tasks: Array.from({ length: 30 }, (_, i) => ({ id: String(i) })),
         weeklyData: { "2026-09-01": {} },
-        percentLedTint: "#7e14ff",
+        percentLedTint: "#7d6bb8",
         appearanceRev: 1,
       },
       version: 15,

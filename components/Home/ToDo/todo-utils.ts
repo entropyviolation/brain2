@@ -38,9 +38,10 @@ import {
 
 export { getTaskCompletionDate }
 import { formatLocalMonthKey } from "@/lib/date-utils"
+import { effectiveDurationMinutes } from "@/lib/todo-steps"
 
 export type TodoPeriod = "day" | "week" | "month"
-export type TodoSortMode = "tier" | "priority" | "name" | "created" | "added" | "pushed"
+export type TodoSortMode = "tier" | "priority" | "name" | "created" | "added" | "pushed" | "duration"
 export type TodoSortOrder = "asc" | "desc"
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
@@ -50,6 +51,7 @@ export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
   { value: "created", label: "Date created" },
   { value: "added", label: "Date added" },
   { value: "pushed", label: "Days pushed" },
+  { value: "duration", label: "Duration" },
 ]
 
 /** Natural direction for each sort key — matches the previous Tier / Priority defaults. */
@@ -60,6 +62,7 @@ export const DEFAULT_TODO_SORT_ORDER: Record<TodoSortMode, TodoSortOrder> = {
   created: "asc",
   added: "asc",
   pushed: "desc",
+  duration: "asc",
 }
 
 export function getTodoSortOptionLabel(mode: TodoSortMode, period: TodoPeriod): string {
@@ -462,6 +465,13 @@ export function sortTodos(
   }
 
   const pushedKey = pushedKeyForPeriod(period)
+  const taskById = mode === "duration" ? new Map(tasks.map((t) => [t.id, t])) : undefined
+  // Duration: the task's estimate, steps included (same as the card). No estimate sorts last either way.
+  const minutesOf = (todo: TodoItem): number | undefined => {
+    const t = taskById?.get(todo.taskId ?? todo.id)
+    const m = t ? effectiveDurationMinutes(t.estimatedDuration, t.subtasks) : (todo.estimatedDuration ?? 0)
+    return m > 0 ? m : undefined
+  }
   return [...todos]
     .map((todo, index) => ({ todo, index }))
     .sort((a, b) => {
@@ -481,6 +491,13 @@ export function sortTodos(
         case "pushed":
           primary = compareSortValues(a.todo[pushedKey], b.todo[pushedKey], order)
           break
+        case "duration": {
+          const am = minutesOf(a.todo)
+          const bm = minutesOf(b.todo)
+          if (am === undefined || bm === undefined) primary = am === bm ? 0 : am === undefined ? 1 : -1
+          else primary = compareSortValues(am, bm, order)
+          break
+        }
         case "tier":
         default: {
           const tierDiff = TIER_ORDER[a.todo.tier] - TIER_ORDER[b.todo.tier]

@@ -4,16 +4,16 @@ _Last mapped: 2026-10-22_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status: Wave 0 (this core) is built. No reader is registered yet, so the hub runs nothing. **Planned:** the Mac Messages and call-history readers (Wave 1), the iOS location upload, and the Settings → Phone sync panel.
+Status (_Last mapped: 2026-10-22_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `COGS_CAPTURE_BOX_URL` is set, starts the location drain. **Planned:** the Settings → Phone sync panel.
 
 ## Flow
 
 ```
 reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on disk)
-                                 └► applyPhoneRecords (Tracking rows) ─► cursor moves ─► hub flushes the vault
+                                 └► applyPhoneRecords (Tracking rows) ─► hub flushes the vault ─► cursor moves
 ```
 
-`runner.ts` does that order on purpose: archive, then vault, then cursor. A crash re-reads; it never skips.
+`runner.ts` does that order on purpose: archive, then apply and flush to the vault, then cursor. A crash re-reads; it never skips.
 
 ## Files
 
@@ -28,6 +28,12 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200). |
 | `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. |
 | `readers.ts` | Node only. The list the hub runs. Each Wave 1 agent adds one line. |
+| `calls.ts` | `ZCALLRECORD` row → `CallRecord`. Core Data time (seconds since 2001-01-01), service name, and the cursor `"<ZDATE>\|<ZUNIQUE_ID>"`. Any duration counts as answered. Pure. Built 2026-10-22. |
+| `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `COGS_CALLS_DB` overrides the path. Loaded by `readers.ts`. |
+| `messages.ts` | `chat.db` row → `MessageRecord`. Apple time (nanoseconds since 2001, or seconds on old rows), `attributedBody` typedstream → text, group members. Tapbacks and group events map to null. Pure. Built 2026-10-22. |
+| `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `COGS_MESSAGES_DB` overrides the path. Needs Node 22.13+. Loaded by `readers.ts`. |
+| `location.ts` | iPhone location batches → Location rows. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
+| `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `COGS_CAPTURE_BOX_URL` is set. |
 
 ## Rules that keep it safe
 
@@ -36,6 +42,29 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 - **Deleted stays deleted.** A row in `removedEntryIds` is never written again.
 - **Synced rows are exact.** No `precision: "estimated"`. The BIM verbs stay estimated.
 
+## Location
+
+_Last mapped: 2026-10-22_
+
+Brief: [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md).
+
+```
+LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upload (Oracle, scripts/capture-upload.mjs)
+                                                         └► location-drain.ts ─► applyLocationBatch ─► flushTracking ─► ack
+```
+
+- Location does not go through `runner.ts`: `PhoneRecord` has no location type and `applyPhoneRecords` writes only texts and calls. The drain keeps its cursor and run log in the same `archive.ts` files, under the `location` source.
+- Ids come from the event (`pt:<ms>:<lat>,<lon>`, `visit:<arrive>:<leave>:<lat>,<lon>`), so a batch the phone re-sends writes nothing new.
+- The arrival and the closed visit are two events with two ids. iOS reports both, so a visit you left shows an "arrived" instant plus the block.
+- Visit blocks are added beside existing Location blocks, not painted over them. A hand-made block in the same minutes stays, and the two overlap.
+- A new visit feeds the repeated-place clusters (`lib/ingest/gps-places.ts`). Moves do not; they are too coarse.
+
 ## Hub
 
-`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). It logs each run and calls `flushVault` after a run that wrote rows.
+`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows.
+
+_Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
+
+_Last mapped: 2026-10-22_ **Hub storage.** `scripts/phone-hub.mjs` loads `phone-hub-polyfill.mjs` natively, and `phone-hub.ts` loads it again through jiti. That makes two module copies. `fillLocalStorage` and `dumpLocalStorage` must use the installed `globalThis.localStorage`; before this fix, the stores started empty and nothing the hub wrote reached the vault. Each sync pass also calls `rehydrateFromDisk()` first, so app edits made in between are not refused by the vault guard.
+
+_Last mapped: 2026-10-22_ **Tracking key only.** Phone sync and the location drain flush through `flushTracking()`, which pushes only the Tracking persist key (`timegrid-store`). The hub fills every store from disk, and a full dump would send its copy of stores the app changed in the meantime. The vault guard refused those (tasks, points, baby-animals) on the first run with the dev app open. Telegram ingest still flushes every key, since it can touch several stores.

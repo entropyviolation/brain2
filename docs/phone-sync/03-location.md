@@ -4,6 +4,48 @@ _Last mapped: 2026-10-22_
 
 **Wave 1.** Needs `00-core.md`. Sideloading from Xcode is OK (decided 2026-10-22).
 
+## Status
+
+_Last mapped: 2026-10-22_
+
+**Built, not yet switched on.** The code is in and wired. The box needs the new file and token, and the app has not been built in Xcode yet.
+
+| Piece | File | State |
+| --- | --- | --- |
+| Native plugin | `ios/App/App/LocationPlugin.swift` | Built, never compiled here. `LocationRecorder` does significant-change + `CLVisit`, a queue file (5,000 events, oldest dropped and counted), sealing, upload. The plugin is a thin bridge. |
+| Registration | `ios/App/App/AppViewController.swift`, `Main.storyboard`, `project.pbxproj` | Built. The storyboard uses `AppViewController`, which registers the plugin in `capacitorDidLoad`. |
+| Relaunch | `ios/App/App/AppDelegate.swift` | Built. `resumeIfEnabled()` at launch, `flush()` when the app comes forward. |
+| Info.plist | `ios/App/App/Info.plist` | Built. Both usage strings and `UIBackgroundModes` → `location`. |
+| JS bridge | `lib/mobile/location-bridge.ts` | Built. No-op off the phone. `locationChip` gives the chip words; no screen shows it yet. |
+| Box upload | `scripts/capture-upload.mjs` | Built as its own file, mounted by `capture-box.mjs`. An ack names its kind, so it never drops another kind's rows. |
+| Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` starts it when `COGS_CAPTURE_BOX_URL` is set. |
+| Rows | `lib/phone-sync/location.ts` | Built. See [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md) → Location. |
+
+Changes from the brief:
+
+- **Its own door, not `applyPhoneRecords`.** `types.ts` has a `location` source but no location record, and `write.ts` writes only texts and calls. `location.ts` writes Location itself, with the same ids and stamp helpers.
+- **Visits are blocks, moves are instants.** `gps:` paints a short block ending at each fix. A significant move is not a stay, so it is an instant. A closed visit is a block from arrive to leave. Nothing between events is filled in.
+- **Its own queue on the box.** Uploads go to `uploads.jsonl` with their own sequence numbers, not the Telegram queue, so the Telegram drain is untouched. Routes: `POST /upload`, `GET /uploads`, `POST /uploads/ack`.
+- **Two tokens.** The phone holds `COGS_CAPTURE_UPLOAD_TOKEN`, which can only add. The hub pulls and acks with `COGS_CAPTURE_TOKEN`. A lost phone cannot read or empty the queue.
+- **The phone seals.** Swift CryptoKit builds the same `v1.` sealed form as `scripts/sealed-box.mjs` (X25519, HKDF-SHA256, AES-256-GCM). `scripts/capture-upload.test.ts` builds a seal the Swift way and checks `open` takes it.
+
+Honest gaps:
+
+- iOS wakes the app on a move of roughly 500 m or more and on visits. Short trips, indoor moves, and a phone that sits still leave gaps. Gaps stay gaps.
+- iOS reports visits late, sometimes minutes after you leave, and drops some.
+- Uploads need the phone on the tailnet. With Tailscale off, events wait in the queue and go up later. Past 5,000 waiting events the oldest are dropped; the status shows how many.
+- If the person swipes the app away, iOS still relaunches it for significant changes. If they turn off Background App Refresh or pick "While Using", recording stops in the background.
+- The token sits in the app's `UserDefaults`, not the Keychain.
+- App Transport Security may refuse a plain `http://` upload URL. The safe choice is HTTPS through `tailscale serve` on the box. A bare `http://100.x.y.z:8788/upload` is untested.
+- Visit blocks can overlap a hand-made Location block in the same minutes.
+- No screen yet sets the upload URL, token and key, or shows the chip. Until one does, call `configureLocationUpload` once from the web inspector.
+
+To switch it on:
+
+1. On the VM, copy `capture-upload.mjs` next to the other box files, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box.
+2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
+3. In Xcode: build to the phone, allow location, pick "Always" when iOS offers it, then configure and start from the app.
+
 ## Job
 
 Record every significant move and every visit (arrive / leave), including while the Mac is asleep. This is not continuous GPS: iOS wakes the app on a move of roughly 500 m or more and on visits, so short trips and indoor moves can leave gaps.
