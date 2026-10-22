@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartridge Rack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root{
+  --case:#c4c8cc; --case-hi:#e4e6e8; --stroke:#5c6064; --glass:#040a08;
+  --ph:#7dffc4; --ice:#9ad7ff; --pur:#7e14ff; --pur2:#7d6bb8; --navy:#000080; --ink:#1c1f22;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--case);
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 1px,rgba(0,0,0,.04) 1px 2px);
+  color:var(--ink); font-family:"VT323",monospace; font-size:20px; min-height:100vh;
+  display:flex; align-items:center; justify-content:center; padding:24px 16px; overflow-x:hidden;
+}
+:focus-visible{outline:2px solid var(--navy); outline-offset:2px}
+.case{
+  width:100%; max-width:1060px; display:grid; grid-template-columns:1.25fr 1fr; gap:18px;
+  background:linear-gradient(#d6d9dc,#b8bcc0); border:1px solid var(--stroke);
+  box-shadow:inset 0 1px 0 #fff, inset 0 -1px 0 #8b9095, 0 2px 0 #8b9095, 0 10px 28px rgba(0,0,0,.18);
+  border-radius:6px; padding:16px;
+}
+.cap{grid-column:1/-1; display:flex; justify-content:space-between; align-items:center;
+  font-family:"Silkscreen",monospace; font-size:12px; letter-spacing:.08em; color:#3a3e42;
+  border-bottom:1px solid var(--stroke); box-shadow:0 1px 0 #fff; padding:0 2px 10px}
+.well{background:#0b0d0e; border:1px solid var(--stroke); border-radius:4px; padding:6px;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.7), 0 1px 0 #fff}
+#rack{display:block; width:100%; height:420px; border-radius:2px; cursor:pointer; touch-action:manipulation}
+.hint{font-size:16px; color:#4a4f54; margin:8px 2px 0}
+.crt{background:var(--glass); color:var(--ph); border-radius:10px; padding:18px 18px 16px; position:relative;
+  border:1px solid #000; box-shadow:inset 0 0 0 2px #1a1f1c, inset 0 0 40px rgba(125,255,196,.06), 0 1px 0 #fff;
+  text-shadow:0 0 6px rgba(125,255,196,.45); min-height:420px; overflow:hidden}
+.crt::after{content:""; position:absolute; inset:0; pointer-events:none; border-radius:10px;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),
+  radial-gradient(ellipse at 50% 40%,transparent 60%,rgba(0,0,0,.45))}
+.k{font-family:"Silkscreen",monospace; font-size:11px; letter-spacing:.1em; opacity:.7}
+.clock{font-size:76px; line-height:.9; margin:6px 0 2px; letter-spacing:.02em}
+.sub{opacity:.75}
+.sec{margin-top:14px}
+.row{display:grid; grid-template-columns:14px 44px 1fr auto; gap:8px; align-items:center; padding:3px 0;
+  border-bottom:1px dashed rgba(125,255,196,.14)}
+.row.cur{background:rgba(125,255,196,.07)}
+.lamp{width:10px; height:10px; border-radius:50%; box-shadow:0 0 6px currentColor; background:currentColor}
+.t-min{color:var(--ph)} .t-goal{color:var(--ice)} .t-exc{color:var(--pur2)}
+.t-exc .lamp, .lamp.t-exc{background:var(--pur); box-shadow:0 0 6px var(--pur2)}
+.note{border-left:2px solid rgba(125,255,196,.4); padding-left:10px}
+.btns{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; position:relative; z-index:1}
+button.hw{font:inherit; font-size:22px; color:var(--ink); background:linear-gradient(#eef0f2,#c3c7cb);
+  border:1px solid var(--stroke); border-radius:4px; padding:6px 18px; cursor:pointer;
+  box-shadow:inset 0 1px 0 #fff, 0 2px 0 #6e7378}
+button.hw:active{transform:translateY(2px); box-shadow:inset 0 1px 0 #fff, 0 0 0 #6e7378}
+button.hw .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ph);
+  box-shadow:0 0 5px var(--ph); margin-right:8px; vertical-align:2px}
+button.ghost{background:linear-gradient(#dcdfe2,#b5b9bd)}
+a.reset{color:var(--ph); position:relative; z-index:1}
+.choice{font-size:17px; opacity:.8; margin-top:6px; width:100%}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+.tag{position:fixed; right:10px; bottom:10px; font-family:"Silkscreen",monospace; font-size:10px;
+  background:var(--glass); color:var(--ph); padding:5px 8px; border:1px solid var(--stroke); border-radius:3px; z-index:5}
+.fade{animation:fade .6s ease both} @keyframes fade{from{opacity:0}to{opacity:1}}
+@media (max-width:820px){ .case{grid-template-columns:1fr} #rack{height:270px} .crt{min-height:0} .clock{font-size:60px} }
+@media (prefers-reduced-motion:reduce){ .fade{animation:none} }
+</style>
+</head>
+<body>
+<main class="case">
+  <div class="cap"><span>PARKING LOT · 3 PARKED</span><span id="pwrTxt">PWR · STANDBY</span></div>
+  <section>
+    <div class="well"><canvas id="rack" tabindex="0" aria-label="Cartridge rack. Use left and right arrows to pick a parked session."></canvas></div>
+    <p class="hint">Pick a cartridge. Clock is stopped while it sits in the rack.</p>
+    <div class="sr" id="srList"></div>
+  </section>
+  <section class="crt" id="crt" aria-live="polite"></section>
+</main>
+<div class="tag">CARTRIDGE RACK · BREAKS 0 RULES</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const S=[
+ {name:"Foxtide work",left:10755,budget:10800,bl:"3h",parked:"parked Thu 04:33 AM",was:"Finish CDs",
+  note:"Start with the CD sleeves, the art is done.",
+  lines:[["min","Finish CDs","1m / 4h 35m",1],["goal","New merch designs (shirts, hoodie, tote, hat)","0m / 5h"],["exc","Book Elijah's flights","0m / 30m"]]},
+ {name:"Inbox zero sprint",left:1120,budget:2700,bl:"45m",parked:"parked Wed 9:12 PM",was:"Reply to landlord",note:"",
+  lines:[["min","Reply to landlord","6m / 10m",1],["goal","Archive newsletters","0m / 15m"]]},
+ {name:"Studio reset",left:3900,budget:5400,bl:"1h 30m",parked:"parked 2 days ago",was:"Restring guitar",note:"",old:true,
+  lines:[["goal","Restring guitar","—",1]]}
+];
+const TIER={min:["Min","#7dffc4"],goal:["Goal","#9ad7ff"],exc:["Exc","#7e14ff"]};
+const curTier=s=>(s.lines.find(l=>l[3])||s.lines[0])[0];
+const fmt=t=>{t=Math.max(0,t|0);const h=t/3600|0,m=(t%3600)/60|0,s=t%60,p=n=>String(n).padStart(2,"0");return h?`${h}:${p(m)}:${p(s)}`:`${m}:${p(s)}`};
+const esc=x=>x.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let sel=0, running=false, runLeft=0, timer=null;
+const crt=document.getElementById("crt");
+
+function renderCRT(){
+  const s=S[sel];
+  if(running){
+    const c=s.lines.find(l=>l[3])||s.lines[0];
+    crt.innerHTML=`<div class="fade"><div class="k">RUNNING · ${esc(s.name.toUpperCase())}</div>
+    <div class="clock" id="runClock">${fmt(runLeft)}</div><div class="sub">left of ${s.bl} · clock running</div>
+    <div class="sec"><div class="k">NOW ON</div><div class="row cur t-${c[0]}"><span class="lamp"></span><span>${TIER[c[0]][0]}</span><span>${esc(c[1])}</span><span>${c[2]}</span></div></div>
+    ${s.note?`<div class="sec note"><div class="k">NOTE TO YOU</div>${esc(s.note)}</div>`:""}
+    <div class="btns"><a href="#" class="reset" id="reset">Reset mockup · back to the rack</a></div></div>`;
+    document.getElementById("reset").onclick=e=>{e.preventDefault();park()};
+    return;
+  }
+  const rows=s.lines.map(l=>`<div class="row t-${l[0]}${l[3]?" cur":""}"><span class="lamp"></span><span>${TIER[l[0]][0]}</span><span>${esc(l[1])}</span><span>${l[2]}</span></div>`).join("");
+  crt.innerHTML=`<div class="fade"><div class="k">PARKED · ${esc(s.name.toUpperCase())}</div>
+  <div class="clock">${fmt(s.left)}</div><div class="sub">left of ${s.bl} · ${s.parked}</div>
+  <div class="sec"><div class="k">WAS ON</div>${esc(s.was)}</div>
+  <div class="sec"><div class="k">LINES</div>${rows}</div>
+  ${s.note?`<div class="sec note"><div class="k">NOTE TO YOU LATER</div>${esc(s.note)}</div>`:""}
+  <div class="btns">${s.old
+    ?`<div class="choice">It has been a couple of days. Pick a clock.</div>
+      <button class="hw" data-r="was"><span class="dot"></span>Resume as was · ${fmt(s.left)}</button>
+      <button class="hw ghost" data-r="fresh">Fresh clock, same lines · ${fmt(s.budget)}</button>`
+    :`<button class="hw" data-r="was"><span class="dot"></span>Resume</button>`}</div></div>`;
+  crt.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>resume(b.dataset.r));
+}
+function pick(i){ if(running||i===sel) return; sel=i; renderCRT(); syncSR(); }
+function syncSR(){
+  document.getElementById("srList").innerHTML=S.map((s,i)=>`<button aria-pressed="${i===sel}" onclick="pick(${i})">${esc(s.name)}, ${fmt(s.left)} left</button>`).join("");
+}
+
+/* ---------- three.js rack ---------- */
+const cv=document.getElementById("rack");
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0b0d0e);
+const cam=new THREE.PerspectiveCamera(30,1,.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0x40464c,.85));
+const key=new THREE.DirectionalLight(0xffffff,.75); key.position.set(-3,6,8); scene.add(key);
+
+function tex(w,h,draw){const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");g.imageSmoothingEnabled=false;draw(g,w,h);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.userData={c,g};return t}
+const brushed=tex(512,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,"#dfe2e5");gr.addColorStop(1,"#b3b7bb");g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y++){g.fillStyle=y%2?"rgba(255,255,255,.22)":"rgba(70,75,80,.07)";g.fillRect(0,y,w,1)}});
+const silver=new THREE.MeshStandardMaterial({map:brushed,metalness:.35,roughness:.45});
+const chromeMat=new THREE.MeshStandardMaterial({color:0xe8ebee,metalness:.6,roughness:.18});
+const blackMirror=new THREE.MeshStandardMaterial({color:0x040a08,metalness:.4,roughness:.08});
+const stroke=new THREE.LineBasicMaterial({color:0x5c6064});
+function box(w,h,d,m,x,y,z,edge){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);scene.add(o);
+  if(edge){const e=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry),stroke);o.add(e)}return o}
+
+// fascia (raised case) with white top lip
+box(9.8,2.7,.7,silver,0,-1.35,0,true);
+box(9.8,.035,.7,new THREE.MeshBasicMaterial({color:0xffffff}),0,.02,0);
+const XS=[-3,0,3], HOME=-.55, OUT=.5;
+const carts=[], lamps=[], glows=[];
+function labelTex(i){return tex(256,320,(g,w,h)=>drawLabel(g,w,h,i))}
+function drawLabel(g,w,h,i){const s=S[i],col=TIER[curTier(s)][1];
+  g.fillStyle="#2a2d31";g.fillRect(0,0,w,h);
+  g.fillStyle="#e9ebed";g.fillRect(18,18,w-36,h-120);
+  g.fillStyle=col==="#7e14ff"?"#7d6bb8":col;g.fillRect(18,18,w-36,16);
+  g.fillStyle="#1c1f22";g.font="44px VT323";
+  const words=s.name.toUpperCase().split(" ");let y=86;
+  for(const wd of words){g.fillText(wd,32,y);y+=40}
+  g.font="30px VT323";g.fillStyle="#3a3e42";g.fillText(fmt(s.left)+" LEFT",32,h-118);
+  g.fillStyle="#1d2023";for(let k=0;k<6;k++)g.fillRect(40+k*30,h-62,18,40); // grip ribs
+}
+function plateTex(i){return tex(256,48,(g,w,h)=>{g.fillStyle="#040a08";g.fillRect(0,0,w,h);
+  g.fillStyle="#7dffc4";g.font="34px VT323";g.textAlign="center";g.fillText(S[i].name.toUpperCase(),w/2,34)})}
+
+function buildRack(){
+  S.forEach((s,i)=>{const x=XS[i];
+    box(2.5,.12,.62,chromeMat,x,.07,0,true);           // chrome bay rim
+    box(2.2,.13,.34,blackMirror,x,.075,0);          // black-mirror well
+    const lt=labelTex(i);
+    const body=new THREE.MeshStandardMaterial({color:0x2a2d31,roughness:.55,metalness:.1});
+    const face=new THREE.MeshStandardMaterial({map:lt,emissiveMap:lt,emissive:0xffffff,emissiveIntensity:0,roughness:.5});
+    const c=new THREE.Mesh(new THREE.BoxGeometry(2,2.5,.24),[body,body,body,body,face,body]);
+    c.position.set(x,HOME,0);c.userData={i,face,lt,y:HOME};scene.add(c);carts.push(c);
+    const col=new THREE.Color(TIER[curTier(s)][1]);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.075,16,12),new THREE.MeshBasicMaterial({color:col}));
+    lamp.position.set(x-1.05,-.42,.36);scene.add(lamp);lamps.push(lamp);
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.36),new THREE.MeshBasicMaterial({map:plateTex(i)}));
+    pl.position.set(x+.1,-.42,.351);scene.add(pl);
+    const gl=new THREE.PointLight(col,0,3.2);gl.position.set(x,.9,1.1);scene.add(gl);glows.push(gl);
+  });
+  // power lamp + bezel
+  box(.36,.36,.06,chromeMat,4.45,-.42,.36,true);
+  window.pwr=new THREE.Mesh(new THREE.SphereGeometry(.09,16,12),new THREE.MeshBasicMaterial({color:0x2b3a33}));
+  pwr.position.set(4.45,-.42,.41);scene.add(pwr);
+  const pt=new THREE.Mesh(new THREE.PlaneGeometry(.6,.2),new THREE.MeshBasicMaterial({map:tex(96,32,(g,w,h)=>{g.fillStyle="#c5c9cd";g.fillRect(0,0,w,h);g.fillStyle="#3a3e42";g.font="24px VT323";g.textAlign="center";g.fillText("PWR",w/2,24)})}));
+  pt.position.set(4.45,-.78,.351);scene.add(pt);
+  // fascia hairline vents
+  for(let k=0;k<5;k++)box(9.2,.012,.01,new THREE.MeshBasicMaterial({color:0x8b9095}),0,-1.25-k*.22,.355);
+}
+let pwrOn=0, pwrTarget=0;
+function fit(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;
+  const d=Math.max(12,5.6/(Math.tan(15*Math.PI/180)*cam.aspect));cam.position.set(0,1.6,d);cam.lookAt(0,-.25,0);cam.updateProjectionMatrix()}
+addEventListener("resize",fit);
+
+const ray=new THREE.Raycaster(),pt=new THREE.Vector2();
+cv.addEventListener("pointerdown",e=>{const r=cv.getBoundingClientRect();pt.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(pt,cam);const hit=ray.intersectObjects(carts)[0];if(hit)pick(hit.object.userData.i)});
+cv.addEventListener("keydown",e=>{if(e.key==="ArrowRight")pick((sel+1)%3);if(e.key==="ArrowLeft")pick((sel+2)%3);if(e.key==="Enter"&&!running&&!S[sel].old)resume("was")});
+
+let last=performance.now();
+function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;const k=RM?1:1-Math.exp(-dt*3.2);
+  carts.forEach((c,i)=>{const on=i===sel&&!running;
+    const ty=c.userData.press?HOME-.1:(on?HOME+OUT:HOME);
+    c.position.y+= (ty-c.position.y)*(c.userData.press&&!RM?1-Math.exp(-dt*14):k);
+    const f=c.userData.face; f.emissiveIntensity+=((on?.22:0)-f.emissiveIntensity)*k;
+    glows[i].intensity+=((on?.9:0)-glows[i].intensity)*k;
+    lamps[i].material.color.setStyle(TIER[curTier(S[i])][1]).multiplyScalar(running&&i!==sel?.25:1);
+  });
+  pwrOn+=(pwrTarget-pwrOn)*(RM?1:1-Math.exp(-dt*4));
+  pwr.material.color.setRGB(.17+.32*pwrOn,.23+.77*pwrOn,.2+.57*pwrOn);
+  R.render(scene,cam);requestAnimationFrame(loop)}
+
+function resume(mode){const s=S[sel],c=carts[sel];
+  runLeft=mode==="fresh"?s.budget:s.left;
+  crt.querySelectorAll("button").forEach(b=>b.disabled=true);
+  running=true; c.userData.press=true;               // click home, a touch past the seat
+  setTimeout(()=>{c.userData.press=false;pwrTarget=1;
+    document.getElementById("pwrTxt").textContent="PWR · RUNNING";renderCRT();
+    timer=setInterval(()=>{runLeft--;const el=document.getElementById("runClock");if(el)el.textContent=fmt(runLeft)},1000);
+  },RM?0:420);
+}
+function park(){clearInterval(timer);running=false;pwrTarget=0;document.getElementById("pwrTxt").textContent="PWR · STANDBY";renderCRT();syncSR()}
+
+renderCRT();syncSR();
+Promise.race([document.fonts.load("44px VT323"),new Promise(r=>setTimeout(r,1500))]).then(()=>{buildRack();fit();requestAnimationFrame(loop)});
+</script>
+</body>
+</html>
