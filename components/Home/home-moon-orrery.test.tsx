@@ -145,7 +145,7 @@ describe("moon chart date", () => {
     } finally {
       clock.restore()
     }
-  })
+  }, 15_000) // Zooms through every star with real renders; ~4s alone, over 5s on CI.
 
   it("flies a planet to its orbit, then closer, and keeps the Sun centered on the orbit", async () => {
     const clock = installFrames()

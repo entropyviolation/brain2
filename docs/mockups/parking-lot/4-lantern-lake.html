@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lantern Lake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0d24;--pearl:#ece6f2;--mist:#b9b3d6;--rose:#e9b7c6;--lilac:#b7a8e8;--min:#9fe3c4;--goal:#a9cdf2;--exc:#bfa6f0}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:linear-gradient(#05071a 0%,#0e1030 38%,#1d1d44 56%,#0b0e28 100%);color:var(--pearl);font-family:"Cormorant Garamond",Georgia,serif}
+canvas{position:fixed;inset:0;display:block}
+.sky{position:fixed;left:0;right:0;top:0;padding:clamp(28px,7vh,72px) 16px 0;text-align:center;pointer-events:none;transition:opacity 1.6s ease}
+.sky>*{pointer-events:auto}
+.hide{opacity:0;pointer-events:none!important}
+.hide *{pointer-events:none!important}
+h1{font-weight:300;font-size:clamp(40px,7vw,84px);margin:0;letter-spacing:.01em;line-height:1}
+.say{font-size:clamp(20px,2.6vw,30px);font-weight:300;margin:.5em 0 0;color:var(--mist)}
+.say b{font-weight:400;color:var(--pearl)}
+.note{font-style:italic;font-size:clamp(17px,2vw,22px);color:var(--rose);margin:.7em 0 0;opacity:.9}
+.lines{list-style:none;padding:0;margin:1.1em auto 0;max-width:520px;font-size:clamp(15px,1.7vw,19px);color:var(--mist)}
+.lines li{display:flex;gap:.6em;align-items:baseline;justify-content:center;padding:.12em 0}
+.lines li.cur{color:var(--pearl)}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;transform:translateY(-2px)}
+.t{font-variant:small-caps;letter-spacing:.06em;opacity:.8}
+.acts{margin-top:1.3em;display:flex;gap:1.4em;justify-content:center;flex-wrap:wrap;align-items:baseline}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:.2em .1em}
+button:focus-visible{outline:1px solid var(--pearl);outline-offset:4px;border-radius:2px}
+.go{font-size:clamp(24px,3vw,32px);font-style:italic;color:var(--pearl);border-bottom:1px solid rgba(236,230,242,.5)}
+.go:hover{border-color:var(--pearl);text-shadow:0 0 18px rgba(236,230,242,.6)}
+.soft{font-size:18px;color:var(--mist);opacity:.8}
+.soft:hover{opacity:1}
+.choice{font-size:15px;color:var(--mist);margin-top:1em;font-style:italic}
+.intro h1{font-size:clamp(34px,5.4vw,64px)}
+.run .clock{font-size:clamp(64px,13vw,150px);font-weight:300;letter-spacing:.02em;line-height:1;font-variant-numeric:tabular-nums}
+.shore{position:fixed;left:0;right:0;bottom:clamp(18px,5vh,40px);display:flex;justify-content:center;gap:clamp(10px,3vw,34px);flex-wrap:wrap;padding:0 16px;transition:opacity 1.2s}
+.shore button{font-size:clamp(16px,1.9vw,20px);font-style:italic;color:var(--mist);opacity:.75}
+.shore button:hover,.shore button[aria-pressed=true]{opacity:1;color:var(--pearl)}
+.tag{position:fixed;right:12px;top:10px;font-size:13px;color:var(--mist);opacity:.6;text-align:right;max-width:46vw;line-height:1.2}
+@media (max-width:560px){.tag{font-size:11px;max-width:60vw}.lines li{justify-content:flex-start;text-align:left}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+
+<section class="sky intro" id="intro">
+  <h1>Three lanterns, resting.</h1>
+  <p class="say">Nothing is waiting on you. Touch one when you are ready.</p>
+</section>
+
+<section class="sky hide" id="detail" aria-live="polite">
+  <h1 id="dName"></h1>
+  <p class="say" id="dSay"></p>
+  <p class="note" id="dNote"></p>
+  <ul class="lines" id="dLines"></ul>
+  <div class="acts" id="dActs"></div>
+  <p class="choice" id="dChoice"></p>
+</section>
+
+<section class="sky run hide" id="run" aria-live="polite">
+  <div class="clock" id="rClock">0:00:00</div>
+  <p class="say" id="rSay"></p>
+  <div class="acts"><button class="soft" id="rBack">return to the lake</button></div>
+</section>
+
+<nav class="shore" id="shore" aria-label="Parked sessions"></nav>
+<div class="tag">Lantern Lake<br>breaks nearly every house rule: no chrome, pixel or CRT; off-spec palette (still no amber)</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TIER = {Min:'var(--min)', Goal:'var(--goal)', Exc:'var(--exc)'};
+const S = [
+  {name:'Foxtide work', left:10755, total:'3h', parked:'Thu 04:33 AM', on:'Finish CDs',
+   note:'Start with the CD sleeves, the art is done.', col:0xf2c4d2, pos:[-1.7,-3.2],
+   lines:[['Min','Finish CDs','1m / 4h 35m',1],['Goal','New merch designs (shirts, hoodie, tote, hat)','0m / 5h'],['Exc',"Book Elijah's flights",'0m / 30m']]},
+  {name:'Inbox zero sprint', left:1120, total:'45m', parked:'Wed 9:12 PM', on:'Reply to landlord',
+   note:'', col:0xeee8f6, pos:[1.5,-5.2],
+   lines:[['Min','Reply to landlord','6m / 10m',1],['Goal','Archive newsletters','0m / 15m']]},
+  {name:'Studio reset', left:3900, total:'1h 30m', parked:'2 days ago', on:'Restring guitar', old:true,
+   note:'', col:0xc9bcf2, pos:[-0.3,-8.4],
+   lines:[['Min','Restring guitar','25m / 40m',1],['Goal','Clear the desk','0m / 30m'],['Exc','Label the cables','0m / 20m']]}
+];
+const $ = id => document.getElementById(id);
+const fmt = s => {const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h+':'+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0')};
+const short = s => {const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+':'+String(m).padStart(2,'0'):m+' min'};
+
+/* ---------- three.js scene ---------- */
+const canvas = $('c');
+const R = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x1b1b42, 7, 34);
+const cam = new THREE.PerspectiveCamera(50, 1, .1, 200);
+cam.position.set(0, 1.5, 6.5); cam.lookAt(0, 1.6, -6);
+
+function glowTex(stops, w=128, h=128){
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+  const r=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+  stops.forEach(([o,col])=>r.addColorStop(o,col)); g.fillStyle=r; g.fillRect(0,0,w,h);
+  return new THREE.CanvasTexture(c);
+}
+const T_GLOW = glowTex([[0,'rgba(255,255,255,1)'],[.18,'rgba(255,255,255,.55)'],[.5,'rgba(255,255,255,.12)'],[1,'rgba(255,255,255,0)']]);
+const T_MOON = glowTex([[0,'rgba(246,242,255,1)'],[.12,'rgba(240,236,252,.95)'],[.15,'rgba(200,196,240,.25)'],[.45,'rgba(150,140,220,.07)'],[1,'rgba(0,0,0,0)']]);
+const T_MIST = glowTex([[0,'rgba(200,195,235,.5)'],[.6,'rgba(200,195,235,.15)'],[1,'rgba(200,195,235,0)']]);
+const T_STREAK = (()=>{const c=document.createElement('canvas');c.width=64;c.height=256;const g=c.getContext('2d');
+  for(let y=0;y<256;y+=2){const a=(1-y/256)*.9*(.5+.5*Math.random());const w=(16+y/8)*(.6+.4*Math.random());
+    g.fillStyle=`rgba(255,255,255,${a*.6})`;g.fillRect(32-w/2,y,w,1.4);}
+  return new THREE.CanvasTexture(c);})();
+const add = THREE.AdditiveBlending;
+const sprite = (tex,col,op,fog=true)=>new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:col,transparent:true,opacity:op,blending:add,depthWrite:false,fog}));
+
+// water
+const water = new THREE.Mesh(new THREE.PlaneGeometry(200,200), new THREE.MeshBasicMaterial({color:0x090c26}));
+water.rotation.x = -Math.PI/2; scene.add(water);
+
+// moon + its path on the water
+const moon = sprite(T_MOON,0xffffff,.95,false); moon.position.set(9,13,-60); moon.scale.set(14,14,1); scene.add(moon);
+const moonPath = new THREE.Mesh(new THREE.PlaneGeometry(2.2,40), new THREE.MeshBasicMaterial({map:T_STREAK,color:0x9d97d8,transparent:true,opacity:.35,blending:add,depthWrite:false}));
+moonPath.rotation.x=-Math.PI/2; moonPath.position.set(3.4,.01,-30); scene.add(moonPath);
+
+// stars
+{const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<500;i++){const a=Math.random()*Math.PI-.0,r=90;p.push((Math.random()-.5)*220,6+Math.random()*60,-70-Math.random()*20);}
+ g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+ scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xd8d2f2,size:1.4,sizeAttenuation:false,transparent:true,opacity:.6,fog:false})));}
+
+// mist
+const mists=[]; for(let i=0;i<14;i++){const m=sprite(T_MIST,0xb6b0dc,.10+Math.random()*.08);
+  m.material.blending=THREE.NormalBlending; m.position.set((Math.random()-.5)*26,.35+Math.random()*.5,-2-Math.random()*22);
+  m.scale.set(9+Math.random()*6,1.6+Math.random(),1); m.userData.v=(Math.random()-.5)*.08; scene.add(m); mists.push(m);}
+
+// lanterns
+const hits=[];
+S.forEach((s,i)=>{
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.24,.2,.46,20,1,true),new THREE.MeshBasicMaterial({color:s.col,transparent:true,opacity:.92,side:THREE.DoubleSide}));
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(.13,.24,.06,20),new THREE.MeshBasicMaterial({color:0x2a2346,transparent:true}));
+  cap.position.y=.26; const base=cap.clone(); base.position.y=-.25; base.scale.set(.85,1,.85);
+  const glow=sprite(T_GLOW,s.col,.75); glow.scale.set(2.2,2.2,1);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(.6,8,8),new THREE.MeshBasicMaterial({visible:false})); hit.userData.i=i;
+  g.add(body,cap,base,glow,hit); scene.add(g); hits.push(hit);
+  const refl=new THREE.Mesh(new THREE.PlaneGeometry(.55,2.6),new THREE.MeshBasicMaterial({map:T_STREAK,color:s.col,transparent:true,opacity:.5,blending:add,depthWrite:false}));
+  refl.rotation.x=-Math.PI/2; refl.rotation.z=Math.PI; scene.add(refl);
+  const home=new THREE.Vector3(s.pos[0],.32,s.pos[1]);
+  Object.assign(s,{g,body,cap,base,glow,refl,home,cur:home.clone(),scl:1,mode:'float',ph:i*2.1});
+});
+
+/* ---------- state ---------- */
+let sel=null, running=null, tick=null, t0=performance.now();
+const STAR_SPOTS=[[-5,10,-40],[4.5,12,-44],[-1,14,-46]];
+function targetOf(s,t){
+  if(s.mode==='near') return [new THREE.Vector3(.55,.62,3.6),1];
+  if(s.mode==='star'){const p=STAR_SPOTS[S.indexOf(s)];return [new THREE.Vector3(...p),.35];}
+  const d=RM?0:1;
+  return [new THREE.Vector3(s.home.x+Math.sin(t*.07+s.ph)*.45*d, s.home.y+Math.sin(t*.55+s.ph)*.025*d, s.home.z+Math.cos(t*.05+s.ph)*.3*d),1];
+}
+
+function show(id,on){$(id).classList.toggle('hide',!on)}
+function buildShore(){
+  const n=$('shore'); n.innerHTML='';
+  S.forEach((s,i)=>{if(s.mode==='star')return;const b=document.createElement('button');b.textContent=s.name;
+    b.setAttribute('aria-pressed',sel===s);b.onclick=()=>pick(i);n.appendChild(b);});
+  n.classList.toggle('hide',!!running);
+}
+function pick(i){
+  if(running) return;
+  const s=S[i]; if(sel===s){let_go();return;}
+  if(sel) sel.mode='float';
+  sel=s; s.mode='near';
+  $('dName').textContent=s.name;
+  $('dSay').innerHTML=`<b>${short(s.left)}</b> left of ${s.total} · you were on <b>${s.on}</b>`;
+  $('dNote').textContent=s.note?'“'+s.note+'”':'';
+  $('dNote').hidden=!s.note;
+  $('dLines').innerHTML=s.lines.map(([t,n,m,c])=>`<li class="${c?'cur':''}"><span class="dot" style="background:${TIER[t]};box-shadow:0 0 8px ${TIER[t]}"></span><span class="t">${t}</span><span>${n}</span><span style="opacity:.7">${m}</span></li>`).join('');
+  const a=$('dActs'); a.innerHTML='';
+  const btn=(txt,cls,fn)=>{const b=document.createElement('button');b.className=cls;b.textContent=txt;b.onclick=fn;a.appendChild(b);return b;};
+  if(s.old){btn('Resume as was','go',()=>resume(s,false));btn('Fresh clock, same lines','go',()=>resume(s,true));}
+  else btn('Resume','go',()=>resume(s,false));
+  btn('let it float','soft',let_go);
+  $('dChoice').textContent=`parked ${s.parked}`+(s.old?' · both keep your lines':'');
+  show('intro',false); show('detail',true); buildShore();
+  a.querySelector('.go').focus({preventScroll:true});
+}
+function let_go(){ if(sel) sel.mode='float'; sel=null; show('detail',false); show('intro',true); buildShore(); }
+function resume(s,fresh){
+  running=s; s.runLeft=fresh?{'3h':10800,'45m':2700,'1h 30m':5400}[s.total]:s.left;
+  s.mode='star'; sel=null; show('detail',false); buildShore();
+  $('rClock').textContent=fmt(s.runLeft); $('rSay').innerHTML=`${s.name} · now <b style="font-weight:400;color:var(--pearl)">${s.on}</b>`;
+  setTimeout(()=>{show('run',true); tick=setInterval(()=>{if(s.runLeft>0)s.runLeft--; $('rClock').textContent=fmt(s.runLeft);},1000);}, RM?0:2600);
+}
+$('rBack').onclick=()=>{clearInterval(tick); if(running){running.mode='float';} running=null; show('run',false); show('intro',true); buildShore(); };
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(), mp=new THREE.Vector2();
+function hitAt(e){const r=canvas.getBoundingClientRect();mp.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(mp,cam); const h=ray.intersectObjects(hits)[0]; return h?h.object.userData.i:null;}
+addEventListener('pointermove',e=>{const i=hitAt(e);document.body.style.cursor=(i!==null&&S[i].mode!=='star'&&!running)?'pointer':'';});
+canvas.addEventListener('click',e=>{const i=hitAt(e); if(i!==null&&S[i].mode!=='star') pick(i); else if(sel&&i===null) let_go();});
+
+/* ---------- loop ---------- */
+function resize(){const w=innerWidth,h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;
+  cam.fov=w<600?64:50;cam.updateProjectionMatrix();}
+addEventListener('resize',resize); resize();
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now; const t=(now-t0)/1000;
+  S.forEach(s=>{
+    const [tp,ts]=targetOf(s,t);
+    const rate=s.mode==='star'?.9:s.mode==='near'?1.1:.8, k=RM?1:1-Math.exp(-dt*rate);
+    s.cur.lerp(tp,k); s.scl+=(ts-s.scl)*k;
+    s.g.position.copy(s.cur); s.g.scale.setScalar(s.scl); s.g.rotation.y=RM?0:t*.05+s.ph;
+    // fade paper into a star as it climbs
+    const lift=THREE.MathUtils.clamp((s.cur.y-1)/8,0,1);
+    s.body.material.opacity=.92*(1-lift); s.cap.material.opacity=s.base.material.opacity=1-lift;
+    const tw=s.mode==='star'&&!RM?.85+.15*Math.sin(t*2.3+s.ph):1;
+    s.glow.material.opacity=(.75+lift*.25)*tw; s.glow.scale.setScalar((2.2-lift*1.4)*(1+lift*2));
+    // reflection follows on the water, fades as lantern leaves it
+    const onWater=THREE.MathUtils.clamp(1-(s.cur.y-.32)/1.2,0,1);
+    s.refl.position.set(s.cur.x,.012,s.cur.z+1.35*s.scl); s.refl.scale.set(s.scl,s.scl,1);
+    s.refl.material.opacity=.5*onWater*(RM?1:.85+.15*Math.sin(t*1.7+s.ph));
+  });
+  if(!RM) mists.forEach(m=>{m.position.x+=m.userData.v*dt; if(m.position.x>16)m.position.x=-16; if(m.position.x<-16)m.position.x=16;});
+  R.render(scene,cam); requestAnimationFrame(frame);
+}
+buildShore(); requestAnimationFrame(frame);
+addEventListener('keydown',e=>{if(e.key==='Escape'&&sel) let_go();});
+</script>
+</body>
+</html>
