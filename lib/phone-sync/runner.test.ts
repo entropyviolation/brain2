@@ -39,6 +39,24 @@ describe("runPhoneSync", () => {
     expect(onWrote).toHaveBeenCalledTimes(1)
   })
 
+  it("passes sinceMs to the reader and drops older records", async () => {
+    const archive = openPhoneArchive(fs.mkdtempSync(path.join(os.tmpdir(), "b2-ps-")))
+    const opts: unknown[] = []
+    const reader: PhoneReader = {
+      source: "messages",
+      async read(_cursor, o) {
+        opts.push(o)
+        return { records: [{ ...msg("old"), at: 5 }, { ...msg("new"), at: 20 }], cursor: "2" }
+      },
+    }
+    const apply = vi.fn((records) => ({ read: records.length, written: records.length, skipped: 0 }))
+    await runPhoneSync({ archive, apply, sinceMs: () => 10 }, [reader])
+    expect(opts).toEqual([{ sinceMs: 10 }])
+    expect(apply.mock.calls[0][0].map((r: MessageRecord) => r.sourceId)).toEqual(["new"])
+    expect(archive.readMessages().map((r) => r.sourceId)).toEqual(["new"])
+    expect(archive.getCursor("messages")).toBe("2")
+  })
+
   it("logs a reader error and leaves the cursor where it was", async () => {
     const archive = openPhoneArchive(fs.mkdtempSync(path.join(os.tmpdir(), "b2-ps-")))
     archive.setCursor("calls", "5")

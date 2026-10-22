@@ -75,6 +75,17 @@ describe("readMessagesBatch", () => {
     expect(records[3]).toMatchObject({ direction: "out", party: { handle: "+15550000001" }, members: [{ handle: "+15550000002" }] })
   })
 
+  it("starts the first run at the first row on or after sinceMs", async () => {
+    const at = (sec: number) => APPLE_EPOCH_MS + (700_000_000 + sec) * 1000
+    const a = await readMessagesBatch(undefined, file, 10, at(250))
+    expect([a.records.map((r) => r.sourceId), a.cursor]).toEqual([["G4", "G5"], "5"])
+    const none = await readMessagesBatch(undefined, file, 10, at(9999))
+    expect([none.records, none.cursor]).toEqual([[], "5"])
+    // A saved cursor wins over sinceMs.
+    const later = await readMessagesBatch("1", file, 10, at(9999))
+    expect(later.records.map((r) => r.sourceId)).toEqual(["G2", "G4", "G5"])
+  })
+
   it("pages by ROWID and never reads a row twice", async () => {
     const a = await readMessagesBatch(undefined, file, 2)
     expect([a.records.map((r) => r.sourceId), a.cursor]).toEqual([["G1", "G2"], "2"])
