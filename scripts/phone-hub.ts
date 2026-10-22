@@ -623,6 +623,22 @@ async function main() {
     }
     console.log(`[phone-hub] capture-box drain from ${CAPTURE_URL} — the VM polls Telegram; do not also poll here or run Electron ingest`)
     void drainLoop()
+    // iPhone location batches (POST /upload on the box), sealed by the app.
+    try {
+      const { startLocationDrain } = await import("../lib/phone-sync/location-drain")
+      const { openPhoneArchive } = await import("../lib/phone-sync/archive")
+      startLocationDrain({
+        boxUrl: CAPTURE_URL,
+        token: CAPTURE_TOKEN,
+        privateKey: readFileSync(CAPTURE_KEY_FILE, "utf8").trim(),
+        open: openSealed,
+        archive: openPhoneArchive(join(ROOT, "data")),
+        beforeApply: rehydrateFromDisk,
+        onWrote: flushVault,
+      })
+    } catch (err) {
+      console.error(`[phone-hub] location drain off: ${err instanceof Error ? err.message : err}`)
+    }
   } else if (WEBHOOK) {
     await telegramApi("setWebhook", {
       url: WEBHOOK,

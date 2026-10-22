@@ -19,7 +19,7 @@ Your Mac: npm run phone:hub  (COGS_CAPTURE_BOX_URL) opens with private key → v
 ```
 
 Files on the VM (Node 20, no npm): `scripts/capture-box.mjs`,
-`scripts/sealed-box.mjs`, `scripts/capture-filter.mjs`. On your Mac:
+`scripts/sealed-box.mjs`, `scripts/capture-filter.mjs`, `scripts/capture-upload.mjs`. On your Mac:
 `scripts/capture-keygen.mjs` and the drain in `scripts/phone-hub.ts` (`drainLoop`).
 Deploy files: `deploy/oracle/`.
 
@@ -107,8 +107,8 @@ _Last mapped: 2026-10-20_
    sudo useradd -r -s /usr/sbin/nologin brain2
    sudo mkdir -p /opt/brain2-capture /var/lib/brain2-capture
    sudo chown brain2 /var/lib/brain2-capture
-   # copy these three from scripts/ into /opt/brain2-capture:
-   #   capture-box.mjs  sealed-box.mjs  capture-filter.mjs
+   # copy these four from scripts/ into /opt/brain2-capture:
+   #   capture-box.mjs  sealed-box.mjs  capture-filter.mjs  capture-upload.mjs
    sudo cp deploy/oracle/capture.env.example /etc/brain2-capture.env   # fill it in
    sudo chmod 600 /etc/brain2-capture.env
    ```
