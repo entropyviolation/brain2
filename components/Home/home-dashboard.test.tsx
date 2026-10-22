@@ -4,7 +4,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { format } from "date-fns"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { setTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import { HomeDashboard } from "./home-dashboard"
@@ -57,6 +57,12 @@ vi.mock("@/components/Home/home-overview", () => ({
 
 describe("HomeDashboard", () => {
   const fixedNow = new Date("2026-06-20T14:30:00")
+
+  // Tracking is `lazy()`. A cold import of the desk outruns `findBy`'s 1s
+  // window, so whichever test opens Tracking first failed. Load it once here.
+  beforeAll(async () => {
+    await import("@/components/Home/Tracking/tracking-desk")
+  }, 30_000)
 
   beforeEach(() => {
     resetLocalStorage()
