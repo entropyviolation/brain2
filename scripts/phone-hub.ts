@@ -673,17 +673,23 @@ async function startPhoneSync() {
   if (readers.length === 0) return
   const { openPhoneArchive } = await import("../lib/phone-sync/archive")
   const { runPhoneSync } = await import("../lib/phone-sync/runner")
-  const { applyPhoneRecords } = await import("../lib/phone-sync/write")
+  const { applyPhoneRecords, textDaysFromEnv } = await import("../lib/phone-sync/write")
+  const textDays = textDaysFromEnv(process.env.COGS_PHONE_SYNC_TEXT_DAYS)
   const archive = openPhoneArchive(join(ROOT, "data"))
   let running = false
   const tick = async () => {
     if (running) return
     running = true
     try {
-      const runs = await runPhoneSync({ archive, apply: (records) => applyPhoneRecords(records), onWrote: flushVault }, readers)
-      for (const run of runs) {
-        if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
-        else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
+      const apply = (records: Parameters<typeof applyPhoneRecords>[0]) => applyPhoneRecords(records, undefined, { textDays })
+      // Catch up in one go: keep reading while a source still hands back rows (first run reads years of texts).
+      for (let pass = 0; pass < 1000; pass++) {
+        const runs = await runPhoneSync({ archive, apply, onWrote: flushVault }, readers)
+        for (const run of runs) {
+          if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
+          else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
+        }
+        if (!runs.some((run) => !run.error && run.read > 0)) break
       }
     } finally {
       running = false
