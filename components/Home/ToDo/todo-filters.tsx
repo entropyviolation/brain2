@@ -1,8 +1,8 @@
 /**
  * components/Home/ToDo/todo-filters.tsx — The Show tray and the sort key
  *
- * `TodoFilters` is the Show tray under the key field: show chips, tier,
- * status, formula, and Open list. `TodoSortKeys` (sort and its direction)
+ * `TodoFilters` is the Show tray under the key field, in two rows: the show
+ * chips, then tier, status, formula, and Open list. `TodoSortKeys` (sort and its direction)
  * stays on the key field beside Show. Global knobs (sun rites, in-progress
  * cap, default estimate, pace) live behind the globe settings key.
  */
@@ -47,12 +47,11 @@ function TierKeys() {
   )
 }
 
-/** Hide locked and Show next only (Phase 9), and the Tier filter. Self-wired to `todo-prefs`. */
+/** Hide locked and Show next only (Phase 9). Self-wired to `todo-prefs`. */
 function StepViewKeys() {
   const { hideLocked, showNextOnly } = useTodoPrefs()
   return (
     <>
-      <TierKeys />
       <label
         className="todo-chip"
         title="Hide steps and tasks waiting on an open prerequisite. Unfinished is not locked. They come back when the prerequisite is done."
@@ -107,45 +106,53 @@ export function TodoFilters({
       data-ui-docs="components/Home/ToDo/README.md"
       data-ui-docs-anchor="options"
     >
-      <div className="todo-strip-group" role="group" aria-label="Show">
+      {/* Row 1: what shows. Row 2: how it narrows, then the formula and the list. */}
+      <div className="todo-strip-group todo-filters-row" role="group" aria-label="Show">
+        <span className="todo-label">Show</span>
         {chip("Available now", availableNow, onAvailableNowChange)}
         {chip("All tasks", showAllTasks, onShowAllTasksChange, "Show all tasks", "show-all-tasks")}
         <StepViewKeys />
       </div>
 
-      <span className="todo-strip-rule" aria-hidden />
+      <div className="todo-filters-row is-tune">
+        <TierKeys />
 
-      <label className="todo-inline-field">
-        <span className="todo-label" id="status-filter-label">Status</span>
-        <NativeSelect
-          id="status-filter"
-          aria-labelledby="status-filter-label"
-          value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value as TodoStatusFilter)}
-        >
-          {TODO_STATUS_FILTERS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
+        <span className="todo-strip-rule" aria-hidden />
 
-      <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
-        Formula
-      </button>
+        <label className="todo-inline-field">
+          <span className="todo-label" id="status-filter-label">Status</span>
+          <NativeSelect
+            id="status-filter"
+            aria-labelledby="status-filter-label"
+            value={statusFilter}
+            onChange={(e) => onStatusFilterChange(e.target.value as TodoStatusFilter)}
+          >
+            {TODO_STATUS_FILTERS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </NativeSelect>
+        </label>
 
-      {listName && onOpenList ? (
-        <button
-          type="button"
-          className="todo-btn todo-open-list"
-          title={`Open ${listName} in Lists`}
-          aria-label={`Open ${listName} in Lists`}
-          onClick={onOpenList}
-        >
-          Open list
+        <span className="todo-strip-rule" aria-hidden />
+
+        <button type="button" className="todo-btn" title="View and reweight the priority formula" onClick={onToggleFormula}>
+          Formula
         </button>
-      ) : null}
+
+        {listName && onOpenList ? (
+          <button
+            type="button"
+            className="todo-btn todo-open-list"
+            title={`Open ${listName} in Lists`}
+            aria-label={`Open ${listName} in Lists`}
+            onClick={onOpenList}
+          >
+            Open list
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -189,7 +196,16 @@ export function TodoSortKeys({
         aria-pressed={sortOrder === "desc"}
         onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
       >
-        {sortOrder === "asc" ? "↑" : "↓"}
+        <svg className="todo-sort-arrow" viewBox="0 0 12 14" aria-hidden>
+          <path
+            d={sortOrder === "asc" ? "M6 12.5V2M2 5.5 6 1.5l4 4" : "M6 1.5V12M2 8.5l4 4 4-4"}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
     </div>
