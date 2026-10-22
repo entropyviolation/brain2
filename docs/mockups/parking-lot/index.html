@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parking Lot Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1d2023;--ink:#e8ecef;--muted:#9aa3aa;--rim:#5c6064;--lamp:#7dffc4;--key:#2b2f33}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#d9dcdf;--ink:#111;--muted:#4a5056;--key:#eef0f2}}
+:root[data-theme="dark"]{--bg:#1d2023;--ink:#e8ecef;--muted:#9aa3aa;--key:#2b2f33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:14px 16px 10px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:baseline}
+h1{font:28px/1 VT323,monospace;letter-spacing:.06em;margin:0}
+header p{margin:0;color:var(--muted);flex:1 1 300px}
+nav{display:flex;gap:8px;padding:0 16px 10px;overflow-x:auto}
+nav button{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--key);color:var(--ink);border:1px solid var(--rim);border-radius:6px;padding:8px 12px;cursor:pointer;font:inherit;text-align:left}
+nav button b{font-weight:600}
+nav button small{color:var(--muted);display:flex;gap:6px;align-items:center}
+nav button i{width:8px;height:8px;border-radius:50%;background:#444;display:inline-block}
+nav button[aria-selected="true"]{border-color:var(--lamp);box-shadow:0 0 0 1px var(--lamp) inset}
+nav button[aria-selected="true"] i{background:var(--lamp);box-shadow:0 0 6px var(--lamp)}
+nav button:focus-visible{outline:2px solid #000080;outline-offset:2px}
+main{flex:1;padding:0 16px 16px;display:flex;flex-direction:column;gap:8px}
+.desc{color:var(--muted);margin:0}
+iframe{flex:1;width:100%;min-height:640px;border:1px solid var(--rim);border-radius:6px;background:#000}
+</style>
+</head>
+<body>
+<header>
+  <h1>PARKING LOT</h1>
+  <p>Four ways to show parked sessions, from house style to no rules at all. Click a parked session in each, then press Resume.</p>
+</header>
+<nav role="tablist" id="tabs"></nav>
+<main>
+  <p class="desc" id="desc"></p>
+  <iframe id="frame" title="Mockup"></iframe>
+</main>
+<script>
+const M=[
+ {f:"1-cartridge-rack.html",n:"Cartridge Rack",r:"Breaks no rules",d:"Milled fascia and CRT glass. Each parked session is a DSi cartridge in a chrome bay. Resume clicks it home."},
+ {f:"2-scrying-well.html",n:"Scrying Well",r:"Bends a few",d:"A black-mirror pool in a chrome rim. Sessions rest as glowing crystals. Resume lifts one out."},
+ {f:"3-night-garage.html",n:"Night Garage",r:"Breaks a lot",d:"A tiny rooftop lot at blue hour. Each session is a toy car in a bay. Resume drives it out."},
+ {f:"4-lantern-lake.html",n:"Lantern Lake",r:"Breaks almost all",d:"Paper lanterns on a still night lake. Resume sends one up to become a star."}
+];
+const tabs=document.getElementById('tabs'),frame=document.getElementById('frame'),desc=document.getElementById('desc');
+function pick(i){
+  [...tabs.children].forEach((b,j)=>b.setAttribute('aria-selected',i===j));
+  frame.src=M[i].f;desc.textContent=M[i].d;
+  try{localStorage.setItem('pl-tab',i)}catch(e){}
+}
+M.forEach((m,i)=>{const b=document.createElement('button');b.role='tab';
+  b.innerHTML=`<b>${i+1}. ${m.n}</b><small><i></i>${m.r}</small>`;b.onclick=()=>pick(i);tabs.appendChild(b)});
+let s=0;try{s=+localStorage.getItem('pl-tab')||0}catch(e){}
+pick(Math.min(Math.max(s,0),M.length-1));
+</script>
+</body>
+</html>

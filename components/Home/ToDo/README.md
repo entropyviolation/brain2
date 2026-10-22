@@ -192,7 +192,7 @@ _Last mapped: 2026-10-22._ The parked popup has four view keys above the detail:
 - **What it shows.** Every parked session is an object: a cartridge, a crystal or a car. Clicking one focuses that session (`focus(id)`), and the house detail and Resume keys sit under the stage, skinned per mode (`parking-lot.css`).
 - **Resume.** With a scene up, Resume plays the scene's motion first (`playResume`), then resumes. Classic resumes at once. Reduced motion skips the motion.
 - **Cars.** Night garage builds nine cars in code (Oldsmobile, Volvo 240, Mercedes SL, Jeep Cherokee, Bronco, Vanagon, Panda, R5, Samurai), assigned by index. Textures are canvas-generated; no model files.
-- Mockups and their history: project files `parking-lot-mockups/`.
+- Mockups: `docs/mockups/parking-lot/` (open `index.html`). **Planned:** the Solarpunk sanctuary garage in `docs/mockups/solarpunk-sanctuary/` is a mockup only, not in the app yet.
 
 ## Sessions: the draft
 
