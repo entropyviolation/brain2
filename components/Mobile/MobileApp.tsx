@@ -22,6 +22,7 @@ import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { APP_NAME } from "@/lib/app-brand"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
+import { ensureLocationOn } from "@/lib/mobile/location-autostart"
 import { Button } from "@/components/ui/button"
 import "@/components/Mobile/mobile.css"
 
@@ -36,6 +37,11 @@ export function MobileApp() {
   const [tab, setTab] = useState<MobileTab>("home")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+
+  // Background location comes on at every open, logged in or not. No-op off the phone.
+  useEffect(() => {
+    void ensureLocationOn().catch(() => {})
+  }, [])
 
   useEffect(() => {
     const root = rootRef.current
