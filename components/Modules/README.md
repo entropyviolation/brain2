@@ -90,6 +90,9 @@ Full contract, install ladder, manifest shape, and migration plan:
 | `workspace/module-view-bodies.timer.test.tsx` | Focus-timer complete → Working Now `timeLogs`, or a one-step item prompt |
 | `workspace/ModuleViewEditor.tsx` | Add/edit one bound view (kind, title, source list, group/sum/date attrs, pick count, timer, stat) |
 | `workspace/ModuleBuilderDialog.tsx` | "Build a module" chooser: **build from scratch** (definition-first), saved definitions, workspace templates, or a classic widget |
+| `workspace/html/HtmlModuleView.tsx` | `html` view body: runs an uploaded `.html` in a sandboxed `<iframe srcDoc>` and answers its `window.brain2` calls (`lib/module-html-bridge.ts`). Writes go through `task-store`. |
+| `workspace/html/HtmlUploadDialog.tsx` | **Upload HTML file** from the Build a module dialog: pick a file (2 MB cap), name it, tick lists it may see, optionally allow edits. Creates a workspace with one `html` view. |
+| `workspace/html/HtmlViewFields.tsx` | The list-grant checkboxes + "Allow edits" toggle, shared by the upload dialog and `ModuleViewEditor`. |
 | `workspace/ModuleSettingsDialog.tsx` | **Module definition / settings editor**: name, icon, description, bound lists (+ roles + attribute extensions), views (add/edit/remove/**reorder**), plan-sync + print toggles, attach workflows. Edits a controlled `ModuleDefinition` and reports via `onSave` |
 | `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (category), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |
@@ -154,12 +157,26 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
 | `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Goal / Exceptional plans |
 | `grad-search` | GradSearch program explorer. Search, filters, live scoring, compare, verify, hide/restore, and card or table views. A **Save** control on every card (and **Saved** in the toolbar) keeps favorites on this device. Programs that have a deadline show it on the card, in the table, and at the top of the detail drawer; an application note shows the same way when the record has one. The header scrolls inside the module pane so it stays under the Brain2 window bar. Catalog is the bundled research dataset. Personal marks use the same `gs-*` localStorage keys as the standalone explorer. |
+| `html` | An **uploaded HTML page** (data tool, lesson, game, anything). See "Uploaded HTML modules" below |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable` (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
 | `timeline` | Day-by-day timeline of dated items (`config.dateAttrId`/`timeAttrId`) with time, cost, and booked/finalized badges — the confirmed-trip companion to `agenda` |
 | `matcher` | Batch-links each source-list item to its best candidate in another list (`config.matchTargetCategoryId`, `matchTextAttrId`, `linkRelation`) via `lib/book-match.ts`, showing confidence and flagging unmatched items |
 | `quiz` | "Taste it" guessing game: shows a random snippet from a source item's extracted text and asks you to pick the matching title from N choices (`config.quizSourceCategoryId`, `fileAttrId`, `quizChoiceCount`) |
 | `dashboard` | Grid of headline rollup cards (`config.cards: DashboardCard[]`), each a sum/avg/min/max over a list's numeric attribute with an optional **include** boolean gate and optional subtract (Budget: liquid total, net worth, expected spend) |
+
+### Uploaded HTML modules (`html`)
+
+_Last mapped: 2026-10-22._
+
+Build a module → **Upload HTML file** turns any `.html` file into a workspace with one `html` view. The page may use lists or ignore them.
+
+- **Storage.** The file lives in `lib/module-html-store.ts` (`brain2-module-html`, in backup), not on `module.config`. The view config keeps `htmlDocId`, `htmlListIds` and `htmlCanWrite`. Removing the module removes its file. Replace the file from the view's editor.
+- **Sandbox.** `sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"`, never `allow-same-origin`. The page cannot read Brain2's DOM or storage. It may still load CDN scripts and fetch from the network.
+- **`window.brain2`** (injected by `buildSrcDoc`): `ready`, `lists()`, `items(listId?)`, `onChange(fn)`, `openItem(id)`, `createItem(listId, {title, attributes})`, `updateItem(id, {title, completed, attributes})`, `canWrite`, `listIds`, `storage.get/set/remove/keys`. There is no delete.
+- **Grants.** A page sees only the lists ticked at upload. Writes need "Allow edits" and an item on a ticked list. `handleBridgeCall` enforces both in the parent, so the page cannot widen them.
+- **Page memory.** `localStorage` and `sessionStorage` are shimmed onto the module's `kv` (a sandboxed frame has none), so ordinary saved pages keep their state. Items stay the only home for records (see the platform laws).
+- **Not there yet:** manifest-declared bridges (tracking minutes, habits, points, ingest) and per-list schema mapping. This is a rung between Blueprint and the manifest, see [`docs/MODULE_PLATFORM.md`](../../docs/MODULE_PLATFORM.md).
 
 ### Decision matrix (`decision-matrix`)
 

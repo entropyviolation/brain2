@@ -20,6 +20,9 @@ import type { DashboardCard, DecisionCriterion, ModuleView, ModuleViewKind } fro
 import { MODULE_VIEW_KINDS, STAT_OPTIONS } from "@/components/Modules/module-helpers"
 import { isNumericAttribute } from "@/lib/spreadsheet-utils"
 import { isKanbanGroupable } from "@/components/Lists/list-content/kanban-utils"
+import { MAX_MODULE_HTML_BYTES, useModuleHtmlStore } from "@/lib/module-html-store"
+import { HtmlViewFields } from "./html/HtmlViewFields"
+import { HtmlFilePicker } from "./html/HtmlFilePicker"
 
 const VIEW_KINDS = MODULE_VIEW_KINDS.map((m) => ({ value: m.kind, label: m.label, needsList: m.needsList }))
 
@@ -55,6 +58,11 @@ export function ModuleViewEditor({
   const [fileAttrId, setFileAttrId] = useState<string | undefined>(initial?.config.fileAttrId)
   const [quizChoiceCount, setQuizChoiceCount] = useState(initial?.config.quizChoiceCount ?? 4)
   const [cards, setCards] = useState<DashboardCard[]>(initial?.config.cards ?? [])
+  const [htmlListIds, setHtmlListIds] = useState<string[]>(initial?.config.htmlListIds ?? [])
+  const [htmlCanWrite, setHtmlCanWrite] = useState(!!initial?.config.htmlCanWrite)
+  const [htmlFile, setHtmlFile] = useState<{ name: string; html: string } | null>(null)
+  const [htmlError, setHtmlError] = useState("")
+  const htmlDocId = initial?.config.htmlDocId
 
   useEffect(() => {
     if (!open) return
@@ -77,6 +85,10 @@ export function ModuleViewEditor({
     setFileAttrId(initial?.config.fileAttrId)
     setQuizChoiceCount(initial?.config.quizChoiceCount ?? 4)
     setCards(initial?.config.cards ?? [])
+    setHtmlListIds(initial?.config.htmlListIds ?? [])
+    setHtmlCanWrite(!!initial?.config.htmlCanWrite)
+    setHtmlFile(null)
+    setHtmlError("")
   }, [open, initial])
 
   const meta = VIEW_KINDS.find((k) => k.value === kind)!
@@ -98,7 +110,21 @@ export function ModuleViewEditor({
   const updateCriterion = (attrId: string, patch: Partial<DecisionCriterion>) =>
     setCriteria((prev) => prev.map((c) => (c.attrId === attrId ? { ...c, ...patch } : c)))
 
+  const pickHtml = async (f: File | undefined) => {
+    setHtmlError("")
+    if (!f) return
+    if (!/\.html?$/i.test(f.name)) return setHtmlError("Choose an .html or .htm file.")
+    if (f.size > MAX_MODULE_HTML_BYTES) return setHtmlError(`The limit is ${MAX_MODULE_HTML_BYTES / 1048576} MB.`)
+    setHtmlFile({ name: f.name, html: await f.text() })
+  }
+
   const save = () => {
+    let docId = htmlDocId
+    if (kind === "html" && htmlFile) {
+      const docs = useModuleHtmlStore.getState()
+      if (docId && docs.docs[docId]) docs.replaceDoc(docId, htmlFile.name, htmlFile.html)
+      else docId = docs.addDoc(htmlFile.name, htmlFile.html)
+    }
     const view: ModuleView = {
       id: initial?.id || `view-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       kind,
@@ -121,6 +147,9 @@ export function ModuleViewEditor({
         fileAttrId: kind === "quiz" ? fileAttrId : undefined,
         quizChoiceCount: kind === "quiz" ? Math.max(2, quizChoiceCount) : undefined,
         cards: kind === "dashboard" ? cards : undefined,
+        htmlDocId: kind === "html" ? docId : undefined,
+        htmlListIds: kind === "html" ? htmlListIds : undefined,
+        htmlCanWrite: kind === "html" ? htmlCanWrite && htmlListIds.length > 0 : undefined,
         notesKey: initial?.config.notesKey,
         docId: kind === "doc" ? initial?.config.docId : undefined,
         checklistStyle: kind === "checklist" ? initial?.config.checklistStyle : undefined,
@@ -186,6 +215,16 @@ export function ModuleViewEditor({
             </div>
           )}
 
+          {kind === "html" && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>{htmlDocId ? "Replace HTML file (optional)" : "HTML file"}</Label>
+                <HtmlFilePicker fileName={htmlFile?.name} onPick={(f) => void pickHtml(f)} />
+                {htmlError && <p role="alert" className="text-xs text-destructive">{htmlError}</p>}
+              </div>
+              <HtmlViewFields listIds={htmlListIds} canWrite={htmlCanWrite} onListIds={setHtmlListIds} onCanWrite={setHtmlCanWrite} />
+            </div>
+          )}
           {kind === "summary" && (
             <>
               <AttrSelect label="Group by" attrs={attrs} value={groupAttrId} onChange={setGroupAttrId} />
@@ -360,7 +399,7 @@ export function ModuleViewEditor({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={save} disabled={meta.needsList && !categoryId}>
+          <Button onClick={save} disabled={(meta.needsList && !categoryId) || (kind === "html" && !htmlDocId && !htmlFile)}>
             {initial ? "Save" : "Add view"}
           </Button>
         </DialogFooter>
