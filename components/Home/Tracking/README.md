@@ -502,3 +502,9 @@ _Last mapped: 2026-10-20_
 
 - Paint tools are Draw / Erase / Scissors / **Point** (`POINTER` in `tracking-tool-mode.ts`). Point never paints: a click opens the block under it, a drag does nothing. Grids test `noPaint(selectedPenId)` (null or Point).
 - Grid strokes call `paintMinutes` inside `deferSyncs` (`lib/defer-sync.ts`). Habit, keyword, coverage, tagged-count and pen-action syncs go through `runSync`, so they run after the next paint instead of blocking the erase/paint frame. Outside a stroke `runSync` runs at once.
+
+## Day tubes popup
+
+_Last mapped: 2026-10-22_
+
+Time Grid → Display → **Day tubes** opens `day-tubes-dialog.tsx`: an iframe of `public/day-tubes/index.html`, built by `docs/mockups/slants/time-grid-lab/build-app.sh`. The dialog posts the real Monday-first week from `useTimeTrackingStore` (every view, pens at the shown depth, instants skipped). Stepping past the week edge posts back a date and the grid's date follows. Only Day and Week scopes are live. **Planned:** real Weeks and Month feeds, a test for the dialog.

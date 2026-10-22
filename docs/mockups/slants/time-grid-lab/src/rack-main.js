@@ -12,7 +12,7 @@ function fit(){const w=$('#w-1d'),sc=w.clientWidth/1040;$('#st-1d').style.transf
 function toast(msg,undo){const t=$('#toast');t.innerHTML=esc(msg)+(undo?' <button data-act="undo">Undo</button>':'');t.style.display='flex';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',4800)}
 function setState(k,v){S.confirm=false;
   if(k==='span'){S.span=v;if(!CELLS[v].includes(S.cell))S.cell=v==='week'?60:5}
-  else if(k==='cell')S.cell=+v;else if(k==='view'){S.view=v;S.pen=null}else if(k==='day')S.day=+v;else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink')S.ink=v;else if(k==='sm')S.sm=v}
+  else if(k==='cell')S.cell=+v;else if(k==='view'){S.view=v;S.pen=null}else if(k==='day')S.day=+v;else if(k==='lay')S.lay=v;else if(k==='shape')S.shape=v;else if(k==='eng')S.eng=v;else if(k==='ends')S.ends=v;else if(k==='scope')S.scope=v;else if(k==='zg')S.zg=v==='1';else if(k==='multi')S.multi=v==='1';else if(k==='ink'){if(S.ink===v)S.glow=S.glow===false;else{S.ink=v;S.glow=true}}else if(k==='sm')S.sm=v}
 function act(a){
   const n=a.split(':')[0],arg=a.slice(a.indexOf(':')+1);
   if(n==='prev'||n==='next'){if(S.span==='week')return toast('Only this week is sampled.');S.day=Math.max(0,Math.min(6,S.day+(n==='next'?1:-1)));S.confirm=false}

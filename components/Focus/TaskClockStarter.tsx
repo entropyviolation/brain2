@@ -6,11 +6,16 @@
  * (`lib/task-clock.ts`). A task with no linked pen, while nothing is running,
  * asks once which pen to paint with; **Remember for this task** (on by
  * default) saves it in `Task.penLinks`.
+ *
+ * The picker is a Radix dialog, so it stacks over another open one (the
+ * Session popup): Radix gives the top dialog the clicks, focus and Escape.
+ * A plain portal to `body` sat under the Session dialog's modal layer and
+ * could not be clicked or closed.
  */
 "use client"
 
 import { useMemo, useState } from "react"
-import { createPortal } from "react-dom"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { startTaskClock } from "@/lib/task-clock"
@@ -51,24 +56,18 @@ function TaskPenPicker({
       .slice(0, 40)
   }, [scopes, query])
 
-  if (typeof document === "undefined") return null
-  return createPortal(
-    <div
-      className="task-pen-picker-scrim"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onCancel()
-      }}
-    >
-      <div
+  return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent
         className="task-pen-picker"
-        role="dialog"
+        overlayClassName="task-pen-picker-scrim"
+        hideClose
+        aria-describedby={undefined}
         aria-label={`Pen for ${taskName}`}
         data-ui-name="Task pen"
         data-ui-docs="components/Focus/README.md"
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onCancel()
-        }}
       >
+        <DialogTitle className="sr-only">Pen for {taskName}</DialogTitle>
         <p className="task-pen-picker-title">Which pen is {taskName}?</p>
         <p className="task-pen-picker-hint">Its time paints Tracking with this pen while the clock runs.</p>
         <input
@@ -104,9 +103,8 @@ function TaskPenPicker({
             Cancel
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   )
 }
 

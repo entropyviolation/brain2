@@ -1,12 +1,12 @@
 /** Slice H2 in the popup: floor suggestion, flat list, Just 25, park note, templates. */
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { startSession, type SessionPlan } from "@/lib/session-plan"
 import type { Subtask, Task } from "@/lib/types"
-import { SessionPlanner } from "./SessionPlanner"
+import { SessionPlanner, parseLength } from "./SessionPlanner"
 import { getTodoPrefs } from "./todo-prefs"
 import { useTaskCardStore } from "@/lib/task-card"
 
@@ -94,12 +94,26 @@ describe("SessionPlanner, slice H2", () => {
     const toggle = screen.getByRole("checkbox", { name: /Padded for you/ })
     expect(toggle).toBeChecked()
     expect(screen.getByText("padded for you ×2.0")).toBeInTheDocument()
-    expect(screen.getAllByText(/With Hofstadter ×2: 67% of the time/)).not.toHaveLength(0) // 30 × 2 × 2 ÷ 180
+    const fitGlass = screen.getByRole("group", { name: "Fit" })
+    expect(fitGlass).toHaveTextContent("Hofstadter 67%") // 30 × 2 × 2 ÷ 180
+    expect(fitGlass).toHaveTextContent("B 1h") // 30m padded ×2 fills the one container
     fireEvent.click(toggle)
     expect(getTodoPrefs().sessionPadded).toBe(false)
-    expect(screen.getByText("raw estimates")).toBeInTheDocument()
+    expect(screen.getAllByText("raw estimates")).toHaveLength(2) // the glass and the check
     expect(screen.queryByText("padded for you ×2.0")).toBeNull()
-    expect(screen.getAllByText(/With Hofstadter ×2: 33% of the time/)).not.toHaveLength(0) // 30 × 2 ÷ 180
+    expect(fitGlass).toHaveTextContent("Hofstadter 33%") // 30 × 2 ÷ 180
+  })
+
+  it("takes a line back out when its lit tier key is pressed again", () => {
+    const tasks = seed()
+    render(<SessionPlanner open onClose={() => {}} periodTasks={tasks} periodLabel="This day" />)
+    const keys = () => within(screen.getByRole("group", { name: "Add Finish CDs to" }))
+    fireEvent.click(keys().getByRole("button", { name: "Goal" }))
+    expect(focused().tiers.goal).toHaveLength(1)
+    expect(keys().getByRole("button", { name: "Goal" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(keys().getByRole("button", { name: "Goal" }))
+    expect(focused().tiers.goal).toHaveLength(0)
+    expect(keys().getByRole("button", { name: "Goal" })).toHaveAttribute("aria-pressed", "false")
   })
 
   it("saves the draft as a template", () => {
@@ -111,5 +125,19 @@ describe("SessionPlanner, slice H2", () => {
     expect(useSessionPlanStore.getState().templates.map((t) => t.title)).toEqual(["Evening CDs"])
     fireEvent.click(screen.getByRole("combobox", { name: "Start from template" }))
     expect(screen.getByRole("option", { name: "Evening CDs" })).toBeInTheDocument()
+  })
+})
+
+describe("parseLength", () => {
+  it("reads minutes, clock and h/m forms", () => {
+    expect(parseLength("90")).toBe(90)
+    expect(parseLength("1:30")).toBe(90)
+    expect(parseLength("1h30")).toBe(90)
+    expect(parseLength("1h 30m")).toBe(90)
+    expect(parseLength("1.5h")).toBe(90)
+    expect(parseLength("2h")).toBe(120)
+    expect(parseLength("45m")).toBe(45)
+    expect(parseLength("soon")).toBeNull()
+    expect(parseLength("")).toBeNull()
   })
 })
