@@ -18,6 +18,7 @@ import {
   flushLocationQueue,
   getLocationStatus,
   isLocationPluginAvailable,
+  appExpiryWarning,
   locationChip,
   openLocationSettings,
   requestAlwaysLocation,
@@ -107,6 +108,7 @@ export function MobileLocationCard() {
         <strong>Location</strong>
         <span className={chip.tone === "warn" ? "warn" : chip.tone === "ok" ? "ok" : undefined}>{chip.label}</span>
         {status.lastError ? <span className="warn">Last error: {status.lastError}</span> : null}
+        {appExpiryWarning(status) ? <span className="warn">{appExpiryWarning(status)}</span> : null}
         {note ? <span>{note}</span> : null}
       </div>
 

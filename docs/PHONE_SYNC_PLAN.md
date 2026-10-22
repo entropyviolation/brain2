@@ -92,6 +92,7 @@ Notes for the next agent. Read this before touching phone sync.
 | Location card | On the phone's Home (`/mobile/`), iOS build only. Paste the upload URL, upload token and public key, then Save; it asks for location and starts. **Set to Always** opens iPhone Settings. | `components/Mobile/MobileLocationCard.tsx`, `lib/mobile/location-bridge.ts` |
 | Location, hub side | Built. `startLocationDrain` pulls `GET /uploads?kind=location` from the box, opens with the private key, writes Location rows, then acks. Runs only when `COGS_CAPTURE_BOX_URL` is set. | `lib/phone-sync/location-drain.ts`, `location.ts` |
 | Box upload route | Built in the repo: `POST /upload` (phone, add-only token), `GET /uploads` and `POST /uploads/ack` (hub token). **Not deployed yet.** | `scripts/capture-upload.mjs`, `scripts/capture-box.mjs` |
+| App reinstall | `scripts/ios-reinstall.mjs` plus the launchd job `com.brain2.ios-reinstall` (every 3 h). It reinstalls over Wi-Fi or cable once the install is 4 days old and retries until one works. From day 5 it reminds on the Mac and in Telegram. The Location card warns in the last 2 days (`appExpiresAt` from the build's provisioning profile). **Not installed on the Mac yet.** | `deploy/mac/README.md` |
 | CI | Runs on Node 22 (the SQLite readers need `node:sqlite`). | `.github/workflows/ci.yml` |
 
 ### To do, in order
@@ -101,7 +102,7 @@ Notes for the next agent. Read this before touching phone sync.
 3. **Hub drain on.** The Mac's `.env.local` needs `COGS_CAPTURE_BOX_URL`, `COGS_CAPTURE_TOKEN`, and `~/.brain2/capture-private.key`. Restart `npm run phone:hub`; it logs `location drain` at start.
 4. **Reinstall the app** from the Mac (it now has the card and on-by-default). Fill in the card, allow location, pick Always.
 5. **Check:** walk somewhere, open the app, tap Send now, and see a Location row in Tracking.
-6. **Keep it installed.** A free Apple ID build stops opening after 7 days, and then location stops too. See Open questions.
+6. **Turn on the weekly reinstall.** Tick Connect via network for the iPhone in Xcode once, then install the launchd job. Steps: [`deploy/mac/README.md`](../deploy/mac/README.md) → iPhone app reinstall.
 7. **Wave 2:** Health, Screen Time, DMs, email, phone plates, and the Settings → Phone sync panel (briefs `04`–`06`).
 
 ### Known issues and watch items
@@ -115,4 +116,4 @@ Notes for the next agent. Read this before touching phone sync.
 
 ## Open questions
 
-- **Keeping the app installed.** A free Apple ID build expires every 7 days. Options: the paid Apple Developer Program ($99 a year, builds last a year), or a weekly reinstall from the Mac. Waiting on allie.
+- None open. Decided 2026-10-22: stay on the free Apple ID and keep the app alive with the automatic reinstall plus reminders. The paid Developer Program ($99 a year, builds last a year) stays the fallback if the reinstall proves unreliable.

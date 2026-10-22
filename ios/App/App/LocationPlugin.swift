@@ -411,6 +411,18 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
 
     // MARK: Status
 
+    /// When this sideloaded build stops opening: the profile's ExpirationDate.
+    /// A free Apple ID profile lasts 7 days. Nil for App Store builds and the simulator.
+    static let appExpiresAt: Date? = {
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url),
+              let start = data.range(of: Data("<?xml".utf8)),
+              let end = data.range(of: Data("</plist>".utf8)), start.lowerBound < end.upperBound,
+              let plist = try? PropertyListSerialization.propertyList(from: data.subdata(in: start.lowerBound..<end.upperBound), format: nil) as? [String: Any]
+        else { return nil }
+        return plist["ExpirationDate"] as? Date
+    }()
+
     func status(_ done: @escaping ([String: Any]) -> Void) {
         DispatchQueue.main.async {
             let permission = Self.permissionName(self.manager.authorizationStatus)
@@ -425,6 +437,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
                 let last = self.defaults.double(forKey: Key.lastUploadAt)
                 if last > 0 { out["lastUploadAt"] = last }
                 if let error = self.defaults.string(forKey: Key.lastError) { out["lastError"] = error }
+                if let expires = Self.appExpiresAt { out["appExpiresAt"] = Self.ms(expires) }
                 done(out)
             }
         }
