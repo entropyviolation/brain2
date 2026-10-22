@@ -8,11 +8,11 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built, not yet switched on.** The code is in and wired. The box needs the new file and token, and the app has not been built in Xcode yet.
+**Built and on the phone, not yet switched on.** The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, and the app needs `configure` (upload URL, upload token, capture public key) and the Always permission. No screen calls the bridge yet.
 
 | Piece | File | State |
 | --- | --- | --- |
-| Native plugin | `ios/App/App/LocationPlugin.swift` | Built, never compiled here. `LocationRecorder` does significant-change + `CLVisit`, a queue file (5,000 events, oldest dropped and counted), sealing, upload. The plugin is a thin bridge. |
+| Native plugin | `ios/App/App/LocationPlugin.swift` | Built. Compiles clean (Xcode 26.6) and runs on device. `LocationRecorder` does significant-change + `CLVisit`, a queue file (5,000 events, oldest dropped and counted), sealing, upload. The plugin is a thin bridge. |
 | Registration | `ios/App/App/AppViewController.swift`, `Main.storyboard`, `project.pbxproj` | Built. The storyboard uses `AppViewController`, which registers the plugin in `capacitorDidLoad`. |
 | Relaunch | `ios/App/App/AppDelegate.swift` | Built. `resumeIfEnabled()` at launch, `flush()` when the app comes forward. |
 | Info.plist | `ios/App/App/Info.plist` | Built. Both usage strings and `UIBackgroundModes` → `location`. |
