@@ -684,6 +684,9 @@ async function startPhoneSync() {
       const apply = (records: Parameters<typeof applyPhoneRecords>[0]) => applyPhoneRecords(records, undefined, { textDays })
       // Catch up in one go: keep reading while a source still hands back rows (first run reads years of texts).
       for (let pass = 0; pass < 1000; pass++) {
+        // Pick up edits the app made since the last read. A stale copy that lacks
+        // a newer Tracking block is refused whole by the vault guard, phone rows too.
+        await rehydrateFromDisk()
         const runs = await runPhoneSync({ archive, apply, onWrote: flushVault }, readers)
         for (const run of runs) {
           if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
@@ -696,8 +699,11 @@ async function startPhoneSync() {
     }
   }
   console.log(`[phone-hub] phone sync: ${readers.map((r) => r.source).join(", ")} every ${PHONE_SYNC_MS / 1000}s`)
-  void tick()
-  setInterval(() => void tick(), PHONE_SYNC_MS)
+  // A disk error in one tick is logged; the next interval tries again.
+  const runTick = () =>
+    tick().catch((err) => console.error(`[phone-hub] phone sync tick: ${err instanceof Error ? err.message : err}`))
+  void runTick()
+  setInterval(() => void runTick(), PHONE_SYNC_MS)
 }
 
 function shutdown() {
