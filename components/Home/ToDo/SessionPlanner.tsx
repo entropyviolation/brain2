@@ -6,9 +6,11 @@
  *   all open), three tier wells (Bare minimum / Goal / Exceptional), a duration,
  *   and a fit gauge per tier. Bare minimum must be estimated before Start.
  *   **Break down** opens the lid's steps editor for a task in place.
- * - **Run**: the countdown, tier lamps, and the current line with its next step
- *   (Just Start's picker). Step done / Line done / Skip / Just start, and
- *   optionally the Tracking pen clock on the current step.
+ * - **Run** (redesign 2026-10-22): a big countdown, the line you are on, then
+ *   every line in its tier with Est and Actual side by side. ▶ on any line,
+ *   or **Random task** / **Next shortest task** to be offered one. ⏸ holds the
+ *   clock, ■ lets go of the line, Done ticks it. Optionally the Tracking pen
+ *   clock on the current step.
  * - **Review**: estimate vs actual per line, the tier reached and its points,
  *   and what to do with each unfinished line (keep for next session, push,
  *   leave). Save writes a Plan block for the session and files it in history.
@@ -71,12 +73,15 @@ import {
   missingPrereqs,
   addPrereqAbove,
   moveLine,
-  nextLine,
   nudgeLine,
   orderByPrereqs,
   parkSession,
   parkedLong,
   pauseSession,
+  playLine,
+  randomLine,
+  shortestLine,
+  stopLine,
   elapsedMin,
   ranMinutes,
   resumeParked,
@@ -116,6 +121,7 @@ import { activeNowObjectives } from "@/lib/now-objective"
 import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import JustStartMode from "@/components/Focus/JustStartMode"
 import SittingEnd from "@/components/Focus/SittingEnd"
+import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { TodoBreakdown } from "./TodoBreakdown"
 import { useTodoTime } from "./use-todo-time"
 import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
@@ -961,13 +967,47 @@ function FlatListView({
 
 // ---- Run ----------------------------------------------------------------------
 
+/** A line's estimate: frozen at Start, else what it adds up to now. */
+function lineEst(line: SessionLine, tasks: Task[]): number {
+  return line.estMin ?? lineMinutes(line, tasks)
+}
+
+/** Estimate vs actual in plain words: "3m under", "+5m over", "on the nose". Warm red only for overruns. */
+function EstDelta({ estMin, actualSec, done }: { estMin: number; actualSec: number; done: boolean }) {
+  if (!estMin || (!done && actualSec < estMin * 60)) return null
+  const diff = Math.round(actualSec / 60 - estMin)
+  if (diff > 0) return <span className="ses-delta is-over">+{fmtMinutes(diff)} over</span>
+  if (!done) return null
+  return <span className="ses-delta is-under">{diff === 0 ? "on the nose" : `${fmtMinutes(-diff)} under`}</span>
+}
+
+/** Actual against estimate as a hairline: fills to the estimate, then runs rose past it. */
+function EstBar({ estMin, actualSec }: { estMin: number; actualSec: number }) {
+  if (!estMin) return null
+  const ratio = actualSec / (estMin * 60)
+  return (
+    <span className="ses-bar" aria-hidden>
+      <span className={`ses-bar-fill${ratio > 1 ? " is-over" : ""}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
+    </span>
+  )
+}
+
+type Suggestion = { kind: "random" | "shortest"; lineId: string; seen: string[] }
+
+/**
+ * Run (redesign 2026-10-22, after Tidy's "Working the plan"): a calm clock on
+ * top, what you are on now, then every line in its tier with Est and Actual
+ * side by side. You pick: ▶ on any line, or **Random task** / **Next shortest
+ * task** for a suggestion. ⏸ holds the clock, ■ lets go of the line (its time
+ * is kept), Done ticks it.
+ */
 function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; onChange: (plan: SessionPlan) => void }) {
   const updateTask = useTaskStore((s) => s.updateTask)
   const { settle } = useTodoTime(tasks)
   const now = useNow(true)
-  const [skip, setSkip] = useState<string[]>([])
   const [justStart, setJustStart] = useState<{ taskId: string; stepId?: string } | null>(null)
   const [parking, setParking] = useState<string | null>(null)
+  const [suggest, setSuggest] = useState<Suggestion | null>(null)
   const taskClock = useTaskClockStarter()
   const penSession = usePenColorSessionStore((s) => s.session)
 
@@ -975,13 +1015,16 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   const paused = !plan.clock?.running
   const reached = tierReached(plan, tasks, now)
   const reachedRank = reached === "none" ? -1 : SESSION_TIERS.findIndex((t) => t.id === reached)
-  const current = allLines(plan).find(({ line }) => line.id === plan.activeLineId)?.line
+  const lines = allLines(plan)
+  const current = lines.find(({ line }) => line.id === plan.activeLineId)?.line
   const timebox = isTimebox(plan)
   const due = breakDue(plan, now)
-  // No current line but open ones left: on a break (or every line was skipped past).
-  const waiting = !current ? nextLine(plan, tasks) : undefined
   const focus = current ? lineFocusStep(current, tasks) : null
   const focusStep = focus?.kind === "step" ? focus.step : undefined
+  const open = lines.filter(({ line }) => !lineIsDone(line, tasks))
+  const plannedMin = lines.reduce((sum, { line }) => sum + lineEst(line, tasks), 0)
+  const workedSec = lines.reduce((sum, { line }) => sum + lineSeconds(plan, line, now), 0)
+  const suggested = suggest ? lines.find(({ line }) => line.id === suggest.lineId)?.line : undefined
 
   // The current step rides the pen clock when the session paints.
   useEffect(() => {
@@ -1010,20 +1053,39 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
     advanceIfDone(plan)
   }
 
-  const lineDone = () => {
-    if (!current) return
-    const { task, step } = lineTarget(current, tasks)
+  /** Tick a whole line: the current one moves you on, any other leaves you where you are. */
+  const lineDone = (line: SessionLine) => {
+    const { task, step } = lineTarget(line, tasks)
     if (task && step && !step.completed) updateTask({ ...task, subtasks: settle(task, finishStep(task.subtasks, step.id, undefined)) })
     if (task && !step && !task.completed) completeTask(task.id)
-    onChange(finishLine(plan, current.id, useTaskStore.getState().tasks, new Date()))
+    if (suggest?.lineId === line.id) setSuggest(null)
+    onChange(finishLine(plan, line.id, useTaskStore.getState().tasks, new Date()))
   }
 
-  const skipLine = () => {
-    if (!current) return
-    const nextSkip = [...skip, current.id]
-    setSkip(nextSkip)
-    const next = nextLine(plan, tasks, nextSkip)
-    onChange(focusLine(plan, next?.id, new Date()))
+  const play = (lineId: string) => {
+    if (suggest?.lineId === lineId) setSuggest(null)
+    onChange(playLine(plan, lineId, new Date()))
+  }
+
+  /** ■: let go of the line. A painting session also lets go of the Tracking pen clock. */
+  const stop = () => {
+    releasePenClock([plan])
+    onChange(stopLine(plan, new Date()))
+  }
+
+  const holdOrGo = () => onChange(paused ? resumeSession(plan, new Date()) : pauseSession(plan, new Date()))
+
+  const offer = (kind: Suggestion["kind"], again = false) => {
+    const seen = again && suggest?.kind === kind ? suggest.seen : []
+    const skip = [...seen, ...(plan.activeLineId ? [plan.activeLineId] : [])]
+    let pick = kind === "random" ? randomLine(plan, tasks, skip) : shortestLine(plan, tasks, skip)
+    // Went through them all: start the round again.
+    let nextSeen = seen
+    if (!pick && seen.length) {
+      nextSeen = []
+      pick = kind === "random" ? randomLine(plan, tasks, plan.activeLineId ? [plan.activeLineId] : []) : shortestLine(plan, tasks, plan.activeLineId ? [plan.activeLineId] : [])
+    }
+    setSuggest(pick ? { kind, lineId: pick.id, seen: [...nextSeen, pick.id] } : { kind, lineId: "", seen: [] })
   }
 
   const park = () => {
@@ -1039,46 +1101,62 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
   // End of sitting (Phase 15 A): End pauses, shows "Sat 52m. Left it here:", then ends on Keep or Skip.
   const [sat, setSat] = useState<{ minutes: number; taskId: string } | null>(null)
   const endToStrip = () => {
-    const taskId = (current ?? waiting)?.taskId
+    const taskId = (current ?? open[0]?.line)?.taskId
     if (!taskId || !tasks.some((t) => t.id === taskId)) return end()
     setSat({ minutes: elapsedMin(plan, new Date()), taskId })
     if (!paused) onChange(pauseSession(plan, new Date()))
   }
 
+  const currentSec = current ? lineSeconds(plan, current, now) : 0
+  const currentEst = current ? lineEst(current, tasks) : 0
+
   return (
     <div className="todo-session-run">
-      <div className="todo-session-clockbar">
-        <div className={`todo-session-clock${left < 0 ? " is-over" : ""}${paused ? " is-paused" : ""}`} aria-live="off">
+      <section className={`ses-hero${left < 0 ? " is-over" : ""}${paused ? " is-paused" : ""}`} aria-label="Session clock">
+        <div className="ses-clock" aria-live="off">
           {fmtClock(left)}
         </div>
-        <div className="todo-session-lamps" role="group" aria-label="Tiers reached">
-          {SESSION_TIERS.map(({ id, label }, i) => (
-            <span key={id} className={`todo-session-lamp${i <= reachedRank ? " is-lit" : ""}`} title={i <= reachedRank ? `${label} reached` : label}>
-              <span className="todo-session-lamp-glass" aria-hidden />
-              {label}
-            </span>
-          ))}
-        </div>
-        <div className="todo-session-transport">
-          <button type="button" className="todo-verb" onClick={() => onChange(paused ? resumeSession(plan, new Date()) : pauseSession(plan, new Date()))}>
-            {paused ? "Resume" : "Pause"}
-          </button>
-          <button type="button" className="todo-verb" onClick={() => onChange(extendSession(plan, 15, new Date()))}>
+        <p className="ses-clock-label">{left < 0 ? "Over time" : paused ? "Paused" : "Time left"}</p>
+        <div className="ses-transport">
+          <DvdTransportKey className="ses-dvd is-big" mark={paused ? "play" : "pause"} label={paused ? "Resume session" : "Pause session"} onClick={holdOrGo} />
+          <button type="button" data-no95 className="ses-key is-mod" onClick={() => onChange(extendSession(plan, 15, new Date()))}>
             +15
           </button>
           <button
             type="button"
-            className={`todo-verb${parking !== null ? " is-on" : ""}`}
+            data-no95
+            className={`ses-key is-mod${parking !== null ? " is-on" : ""}`}
+            aria-pressed={parking !== null}
             title="Put it down and take it up later"
             onClick={() => setParking(parking === null ? (plan.futureNote?.text ?? "") : null)}
           >
             Park
           </button>
-          <button type="button" className="todo-verb is-missed" onClick={endToStrip}>
+          <button type="button" data-no95 className="ses-key is-mod" onClick={endToStrip}>
             End
           </button>
         </div>
-      </div>
+        <div className="ses-summary">
+          <span>
+            Planned <b>{fmtMinutes(plannedMin)}</b>
+          </span>
+          <span>
+            Worked <b>{fmtClock(workedSec)}</b>
+          </span>
+          <span>
+            Done <b>{lines.length - open.length}</b>/{lines.length}
+          </span>
+          <span className="ses-lamps" role="group" aria-label="Tiers reached">
+            {SESSION_TIERS.map(({ id, label }, i) => (
+              <span key={id} className={`ses-lamp is-${id}${i <= reachedRank ? " is-lit" : ""}`} title={i <= reachedRank ? `${label} reached` : label}>
+                <span className="ses-lamp-glass" aria-hidden />
+                {label}
+              </span>
+            ))}
+          </span>
+        </div>
+      </section>
+
       {sat ? (
         <SittingEnd
           paper
@@ -1119,77 +1197,192 @@ function RunView({ plan, tasks, onChange }: { plan: SessionPlan; tasks: Task[]; 
       ) : null}
 
       {current ? (
-        <div className="todo-session-current">
-          <p className="todo-session-current-path">{lineLabel(current, tasks)}</p>
-          <h3 className="todo-session-current-step">
+        <section className={`ses-now${paused ? " is-paused" : ""}`} aria-label="Now">
+          <p className="ses-now-eyebrow">{paused ? "Paused on" : "Now"} · {lineLabel(current, tasks)}</p>
+          <h3 className="ses-now-step">
             {focusStep ? focusStep.description : focus?.kind === "needs-estimates" ? "Estimate a step to start" : focus?.kind === "blocked" ? "Every open step is waiting" : "This line is ready to close"}
           </h3>
-          <p className="todo-session-current-meta">
-            {current.estMin ? `${fmtMinutes(current.estMin)} est` : "no estimate"} · {fmtMinutes(lineSeconds(plan, current, now) / 60)} so far
-            {focusStep?.estimatedDuration ? ` · this step ${fmtMinutes(focusStep.estimatedDuration)}` : ""}
-            {penSession?.taskId === current.taskId ? " · on the pen clock" : ""}
-          </p>
-          <div className="todo-session-current-keys">
-            <button type="button" className="todo-verb is-complete is-primary" disabled={!focusStep} onClick={stepDone}>
+          <div className="ses-now-numbers">
+            <span className="ses-num">
+              <span className="ses-num-label">Est</span>
+              <span className="ses-num-val">{currentEst ? fmtMinutes(currentEst) : "–"}</span>
+            </span>
+            <span className="ses-num">
+              <span className="ses-num-label">Actual</span>
+              <span className={`ses-num-val is-live${currentEst && currentSec > currentEst * 60 ? " is-over" : ""}`}>{fmtClock(currentSec)}</span>
+            </span>
+            {focusStep?.estimatedDuration ? (
+              <span className="ses-num">
+                <span className="ses-num-label">This step</span>
+                <span className="ses-num-val">{fmtMinutes(focusStep.estimatedDuration)}</span>
+              </span>
+            ) : null}
+            <EstDelta estMin={currentEst} actualSec={currentSec} done={false} />
+            {penSession?.taskId === current.taskId ? <span className="ses-now-pen">on the pen clock</span> : null}
+          </div>
+          <EstBar estMin={currentEst} actualSec={currentSec} />
+          <div className="ses-now-keys">
+            <DvdTransportKey className="ses-dvd" mark={paused ? "play" : "pause"} label={paused ? "Resume this task" : "Pause this task"} onClick={holdOrGo} />
+            <DvdTransportKey className="ses-dvd" mark="stop" label="Stop this task" onClick={stop} />
+            <button type="button" data-no95 className="ses-key is-primary" disabled={!focusStep} onClick={stepDone}>
               Step done
             </button>
-            <button type="button" className="todo-verb" onClick={lineDone}>
-              Line done
+            <button type="button" data-no95 className="ses-key" onClick={() => lineDone(current)}>
+              Task done
             </button>
-            <button type="button" className="todo-verb is-quiet" onClick={skipLine}>
-              Skip line
-            </button>
-            <button type="button" className="todo-verb is-quiet" onClick={() => setJustStart({ taskId: current.taskId, stepId: focusStep?.id })}>
+            <button type="button" data-no95 className="ses-key is-mod" onClick={() => setJustStart({ taskId: current.taskId, stepId: focusStep?.id })}>
               Just start
             </button>
-            <label className="todo-session-paint">
+            <label className="ses-paint">
               <input type="checkbox" checked={!!plan.paint} onChange={(e) => onChange({ ...plan, paint: e.target.checked })} />
               Paint on Tracking
             </label>
           </div>
-        </div>
-      ) : waiting ? (
-        <div className="todo-session-current">
-          <h3 className="todo-session-current-step">On a break.</h3>
-          <button type="button" className="todo-verb is-primary" onClick={() => onChange(focusLine(plan, waiting.id, new Date()))}>
-            Back to work
-          </button>
-        </div>
-      ) : timebox ? (
-        <div className="todo-session-current">
-          <h3 className="todo-session-current-step">{allLines(plan).length ? "Every line is done. Stay with the clock." : "Stay with it until the clock runs out."}</h3>
-          <p className="todo-session-current-meta">Bare minimum is showing up for {fmtMinutes(plan.durationMin)}.</p>
-        </div>
+        </section>
       ) : (
-        <div className="todo-session-current">
-          <h3 className="todo-session-current-step">Every line is done.</h3>
-          <button type="button" className="todo-verb is-complete is-primary" onClick={end}>
-            End and review
-          </button>
-        </div>
+        <section className="ses-now is-idle" aria-label="Now">
+          <h3 className="ses-now-step">
+            {open.length ? "Pick what's next." : timebox ? "Every line is done. Stay with the clock." : "Every line is done."}
+          </h3>
+          <p className="ses-now-hint">
+            {open.length
+              ? "Press ▶ on any task below, or let a button choose one for you."
+              : timebox
+                ? `Bare minimum is showing up for ${fmtMinutes(plan.durationMin)}.`
+                : "Nice work. End when you are ready to see how it went."}
+          </p>
+          {!open.length && !timebox ? (
+            <div className="ses-now-keys">
+              <button type="button" data-no95 className="ses-key is-primary" onClick={end}>
+                End and review
+              </button>
+            </div>
+          ) : null}
+        </section>
       )}
 
-      <ol className="todo-session-runlist">
-        {allLines(plan).map(({ line, tier }) => {
-          const done = lineIsDone(line, tasks)
-          const blocked = !done && lineIsBlocked(line, tasks)
-          const isCurrent = line.id === plan.activeLineId
-          return (
-            <li key={line.id} className={`todo-session-runline is-${tier}${done ? " is-done" : ""}${isCurrent ? " is-current" : ""}`}>
-              <span className="todo-session-mark" aria-hidden>
-                {done ? "✓" : isCurrent ? "●" : blocked ? "⊘" : "○"}
-              </span>
-              <span className="todo-session-tiertag">{TIER_SHORT[tier]}</span>
-              <button type="button" data-no95 className="todo-session-runname" disabled={done || isCurrent} onClick={() => onChange(focusLine(plan, line.id, new Date()))}>
-                {lineLabel(line, tasks)}
+      {open.length ? (
+        <section className="ses-suggest" aria-label="Suggestions">
+          <span className="ses-suggest-label">Not sure?</span>
+          <button type="button" data-no95 className={`ses-key${suggest?.kind === "random" ? " is-on" : ""}`} onClick={() => offer("random")}>
+            Random task
+          </button>
+          <button type="button" data-no95 className={`ses-key${suggest?.kind === "shortest" ? " is-on" : ""}`} onClick={() => offer("shortest")}>
+            Next shortest task
+          </button>
+          {suggest ? (
+            <div className="ses-suggest-card" role="status">
+              {suggested ? (
+                <>
+                  <span className="ses-suggest-text">
+                    Try <b>{lineLabel(suggested, tasks)}</b>
+                    {lineEst(suggested, tasks) ? ` · Est ${fmtMinutes(lineEst(suggested, tasks))}` : " · no estimate"}
+                  </span>
+                  <button type="button" data-no95 className="ses-key is-primary" onClick={() => play(suggested.id)}>
+                    ▶ Start this
+                  </button>
+                  <button type="button" data-no95 className="ses-key is-mod" onClick={() => offer(suggest.kind, true)}>
+                    Another
+                  </button>
+                </>
+              ) : (
+                <span className="ses-suggest-text">Nothing else is open right now.</span>
+              )}
+              <button type="button" data-no95 className="ses-key is-mod" aria-label="Dismiss suggestion" onClick={() => setSuggest(null)}>
+                ✕
               </button>
-              <span className="todo-session-mins">
-                {fmtMinutes(lineSeconds(plan, line, now) / 60)} / {line.estMin ? fmtMinutes(line.estMin) : "–"}
-              </span>
-            </li>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <div className="ses-tiers">
+        {SESSION_TIERS.map(({ id: tier, label }, i) => {
+          const tierLines = plan.tiers[tier]
+          const est = tierLines.reduce((sum, line) => sum + lineEst(line, tasks), 0)
+          const actual = tierLines.reduce((sum, line) => sum + lineSeconds(plan, line, now), 0)
+          const doneCount = tierLines.filter((line) => lineIsDone(line, tasks)).length
+          return (
+            <section key={tier} className={`ses-tier is-${tier}${i <= reachedRank ? " is-reached" : ""}`} aria-label={label}>
+              <header className="ses-tier-head">
+                <h4>{label}</h4>
+                <span className="ses-tier-figs">
+                  <span>
+                    <b>{fmtMinutes(est)}</b> est
+                  </span>
+                  <span>
+                    <b>{fmtClock(actual)}</b> actual
+                  </span>
+                  {tierLines.length ? (
+                    <span>
+                      <b>{doneCount}</b>/{tierLines.length} done
+                    </span>
+                  ) : null}
+                </span>
+                {i <= reachedRank ? <span className="ses-tier-reached">Reached</span> : null}
+              </header>
+              {tierLines.length ? (
+                <ul className="ses-lines">
+                  {tierLines.map((line) => {
+                    const name = lineLabel(line, tasks)
+                    const done = lineIsDone(line, tasks)
+                    const blocked = !done && lineIsBlocked(line, tasks)
+                    const isCurrent = line.id === plan.activeLineId
+                    const sec = lineSeconds(plan, line, now)
+                    const lineEstMin = lineEst(line, tasks)
+                    const pct = done ? null : linePercent(line, tasks)
+                    return (
+                      <li
+                        key={line.id}
+                        className={`ses-line${done ? " is-done" : ""}${isCurrent ? " is-current" : ""}${blocked ? " is-blocked" : ""}${suggested?.id === line.id ? " is-suggested" : ""}`}
+                      >
+                        <span className="ses-line-ctl">
+                          {done ? (
+                            <span className="ses-line-check" role="img" aria-label="Done">
+                              ✓
+                            </span>
+                          ) : isCurrent ? (
+                            <>
+                              <DvdTransportKey className="ses-dvd" mark={paused ? "play" : "pause"} label={paused ? `Resume ${name}` : `Pause ${name}`} onClick={holdOrGo} />
+                              <DvdTransportKey className="ses-dvd" mark="stop" label={`Stop ${name}`} onClick={stop} />
+                            </>
+                          ) : (
+                            <DvdTransportKey className="ses-dvd" mark="play" label={`Start ${name}`} disabled={blocked} onClick={() => play(line.id)} />
+                          )}
+                        </span>
+                        <span className="ses-line-body">
+                          <span className="ses-line-name">{name}</span>
+                          <span className="ses-line-meta">
+                            <span>
+                              Est <b>{lineEstMin ? fmtMinutes(lineEstMin) : "–"}</b>
+                            </span>
+                            {isCurrent || sec >= 1 ? (
+                              <span>
+                                Actual <b className={isCurrent && !paused ? "is-live" : ""}>{fmtClock(sec)}</b>
+                              </span>
+                            ) : null}
+                            <EstDelta estMin={lineEstMin} actualSec={sec} done={done} />
+                            {pct !== null && pct > 0 ? <span>{formatPercent(pct)} of steps</span> : null}
+                            {blocked ? <span className="ses-line-wait">waiting on another task</span> : null}
+                          </span>
+                          {!done && (isCurrent || sec >= 1) ? <EstBar estMin={lineEstMin} actualSec={sec} /> : null}
+                        </span>
+                        {!done ? (
+                          <button type="button" data-no95 className="ses-key is-mod ses-line-done" aria-label={`Done: ${name}`} title="Mark done" onClick={() => lineDone(line)}>
+                            Done
+                          </button>
+                        ) : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <p className="ses-tier-empty">Nothing in this tier.</p>
+              )}
+            </section>
           )
         })}
-      </ol>
+      </div>
       {taskClock.picker}
       {/* Portaled: the dialog's transform would trap Just Start's fixed overlay. */}
       {justStart && typeof document !== "undefined"
