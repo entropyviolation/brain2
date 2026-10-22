@@ -6,7 +6,6 @@
  * `text:` / `call:` verbs, so a hand-sent text and a synced one share a pen),
  * and adds the rows. Re-applying the same records adds nothing.
  */
-import { slugApp } from "@/lib/screentime/app-categories"
 import { personRecords } from "@/lib/people-i-know"
 import { useTaskStore } from "@/lib/task-store"
 import {
@@ -19,6 +18,7 @@ import {
   type TrackPen,
   type TrackScope,
 } from "@/lib/time-tracking-store"
+import { phonePenId } from "./ids"
 import { matchPerson, type PhonePerson } from "./people"
 import { mergePhoneEntries, recordToEntries } from "./to-entries"
 import type { PhoneRecord } from "./types"
@@ -67,8 +67,7 @@ export function applyPhoneRecords(records: readonly PhoneRecord[], people: reado
   const newPens = new Map<string, TrackPen[]>()
   const penFor = (record: PhoneRecord, scopeId: string): string => {
     const match = matchPerson(record.party, people)
-    const prefix = scopeId === calls.scope.id ? "iphone-call" : "iphone-text"
-    const id = `${prefix}-${slugApp(match.name)}`
+    const id = phonePenId(scopeId === calls.scope.id ? "call" : "text", match.name)
     const scope = scopes.find((s) => s.id === scopeId)
     const pending = newPens.get(scopeId) ?? []
     if (!scope?.pens.some((p) => p.id === id) && !pending.some((p) => p.id === id)) {

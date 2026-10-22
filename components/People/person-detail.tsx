@@ -33,7 +33,7 @@ import { NicknameField } from "@/components/People/person-nicknames"
 import { ensureGiftIdeasForPerson } from "@/lib/gift-ideas"
 import { RELATION_WORD_KEYS } from "@/lib/person-relations"
 import { PERSON_ATTR } from "@/lib/person-types"
-import { COMPANY_SCOPE_ID, joinedCompanyPenIds } from "@/lib/people-i-know"
+import { COMPANY_SCOPE_ID, personTimePenIds } from "@/lib/people-i-know"
 import { personMinuteMasks } from "@/lib/person-time"
 import { PersonTimeTogether } from "@/components/People/person-time-together"
 import {
@@ -140,9 +140,9 @@ export function PersonDetail({
   const scopes = useTimeTrackingStore((s) => s.scopes)
   // Extra pens, ticked details, and Social · "Who with?" ticks count too (`lib/person-time.ts`).
   const trackedLast = useMemo(() => {
-    const masks = personMinuteMasks(entries, scopes, joinedCompanyPenIds(person.personPipelines))
+    const masks = personMinuteMasks(entries, scopes, personTimePenIds(person))
     return [...masks.keys()].sort().at(-1) ?? null
-  }, [entries, scopes, person.personPipelines])
+  }, [entries, scopes, person])
   const storedLast = lastTogetherDate(profile, person.personPipelines, companyEntries)
   const lastSaw = [storedLast, trackedLast].filter(Boolean).sort().at(-1) as typeof storedLast
   const [precision, setPrecision] = useState<AddressPrecision>(profile?.address?.precision ?? "mailing")

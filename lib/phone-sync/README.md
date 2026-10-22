@@ -28,6 +28,10 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200). |
 | `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. |
 | `readers.ts` | Node only. The list the hub runs. Each Wave 1 agent adds one line. |
+| `calls.ts` | `ZCALLRECORD` row → `CallRecord`. Core Data time (seconds since 2001-01-01), service name, and the cursor `"<ZDATE>\|<ZUNIQUE_ID>"`. Any duration counts as answered. Pure. Built 2026-10-22. |
+| `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `COGS_CALLS_DB` overrides the path. Not in `readers.ts` yet. |
+| `messages.ts` | `chat.db` row → `MessageRecord`. Apple time (nanoseconds since 2001, or seconds on old rows), `attributedBody` typedstream → text, group members. Tapbacks and group events map to null. Pure. Built 2026-10-22. |
+| `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `COGS_MESSAGES_DB` overrides the path. Not in `readers.ts` yet. |
 
 ## Rules that keep it safe
 
