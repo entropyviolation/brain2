@@ -16,6 +16,7 @@ const bridge = vi.hoisted(() => ({
   start: vi.fn(async () => true),
   stop: vi.fn(async () => true),
   flush: vi.fn(async () => true),
+  settings: vi.fn(async () => true),
 }))
 
 vi.mock("@/lib/mobile/location-bridge", async (importOriginal) => {
@@ -29,6 +30,7 @@ vi.mock("@/lib/mobile/location-bridge", async (importOriginal) => {
     startLocationRecording: bridge.start,
     stopLocationRecording: bridge.stop,
     flushLocationQueue: bridge.flush,
+    openLocationSettings: bridge.settings,
   }
 })
 
@@ -48,7 +50,7 @@ describe("MobileLocationCard", () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it("saves the upload, then turns recording on with Always", async () => {
+  it("saving the upload goes straight on to asking for location and starting", async () => {
     render(<MobileLocationCard />)
     await screen.findByText("Location: allow access")
     expect(screen.getByRole("button", { name: "Turn on" })).toBeDisabled()
@@ -56,18 +58,15 @@ describe("MobileLocationCard", () => {
     fireEvent.change(screen.getByLabelText("Upload URL"), { target: { value: " http://100.1.2.3:8788/upload " } })
     fireEvent.change(screen.getByLabelText("Upload token"), { target: { value: "tok" } })
     fireEvent.change(screen.getByLabelText("Capture public key"), { target: { value: "MCow" } })
-    bridge.status = { ...bridge.status, configured: true }
+    bridge.status = { ...bridge.status, configured: true, permission: "always", recording: true }
     fireEvent.click(screen.getByRole("button", { name: "Save upload" }))
-    await screen.findByText("Upload saved on this phone.")
+    await screen.findByText("Upload saved. Recording.")
     expect(bridge.configure).toHaveBeenCalledWith({ uploadUrl: "http://100.1.2.3:8788/upload", token: "tok", publicKey: "MCow" })
-    expect(screen.queryByLabelText("Upload token")).toBeNull()
-
-    bridge.status = { ...bridge.status, permission: "always", recording: true }
-    fireEvent.click(screen.getByRole("button", { name: "Turn on" }))
-    await screen.findByText("Recording.")
     expect(bridge.request).toHaveBeenCalled()
     expect(bridge.start).toHaveBeenCalled()
+    expect(screen.queryByLabelText("Upload token")).toBeNull()
     await waitFor(() => expect(screen.getByRole("button", { name: "Turn off" })).toBeEnabled())
+    expect(screen.queryByRole("button", { name: "Set to Always" })).toBeNull()
   })
 
   it("does not start when location is denied", async () => {
@@ -94,5 +93,13 @@ describe("MobileLocationCard", () => {
     fireEvent.click(on)
     await screen.findByText(/Choose Always in iPhone Settings/)
     expect(bridge.start).toHaveBeenCalledTimes(1)
+  })
+
+  it("offers iPhone Settings while only While Using is granted", async () => {
+    bridge.status = { ...bridge.status, configured: true, permission: "whenInUse", recording: true }
+    render(<MobileLocationCard />)
+    const always = await screen.findByRole("button", { name: "Set to Always" })
+    fireEvent.click(always)
+    await waitFor(() => expect(bridge.settings).toHaveBeenCalled())
   })
 })

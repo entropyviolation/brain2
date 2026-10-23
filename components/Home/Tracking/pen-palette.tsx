@@ -149,7 +149,7 @@ export function PenPalette({
                   <span
                     className="trk-rack-swatch"
                     style={{
-                      background: selectedPen.color,
+                      backgroundColor: selectedPen.color,
                       backgroundImage: selectedPen.image ? `url("${selectedPen.image}")` : undefined,
                     }}
                     title={`Double-click to open ${selectedPen.name} settings`}
@@ -414,7 +414,7 @@ export function PenPalette({
                     <span
                       className="trk-selected-swatch"
                       style={{
-                        background: selectedPen.color,
+                        backgroundColor: selectedPen.color,
                         backgroundImage: selectedPen.image ? `url("${selectedPen.image}")` : undefined,
                       }}
                       title={`Double-click to open ${selectedPen.name} settings`}
