@@ -91,6 +91,12 @@ const ScreenTimePanel = lazy(() =>
 const InstagramImportPanel = lazy(() =>
   import("@/components/Settings/InstagramImportPanel").then((m) => ({ default: m.InstagramImportPanel })),
 )
+const InstagramAccountsPanel = lazy(() =>
+  import("@/components/Settings/InstagramAccountsPanel").then((m) => ({ default: m.InstagramAccountsPanel })),
+)
+const SpotifyAccountsPanel = lazy(() =>
+  import("@/components/Settings/SpotifyAccountsPanel").then((m) => ({ default: m.SpotifyAccountsPanel })),
+)
 const ItemTypeList = lazy(() =>
   import("@/components/ItemTypes/ItemTypeList").then((m) => ({ default: m.ItemTypeList })),
 )
@@ -254,6 +260,8 @@ export function SettingsDialog({
                   {selected.id === "settings-messages" ? <MessageIngestPanel /> : null}
                   {selected.id === "settings-screen" ? <ScreenTimePanel /> : null}
                   {selected.id === "settings-instagram" ? <InstagramImportPanel /> : null}
+                  {selected.id === "settings-instagram-accounts" ? <InstagramAccountsPanel /> : null}
+                  {selected.id === "settings-spotify-accounts" ? <SpotifyAccountsPanel /> : null}
                   {selected.id === "settings-types" ? (
                     <div className="space-y-3 rounded-lg border border-dashed p-4">
                       <div className="flex items-center gap-2">
