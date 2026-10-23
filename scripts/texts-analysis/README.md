@@ -11,6 +11,7 @@ Code only. Data, output and the venv live in the home folder, `~/texts-analysis`
 - `texts_home.py` reads `--home` (or `$TEXTS_HOME`, default `~/texts-analysis`). Every script imports it.
 - `analyze.py` copies `chat.db` and Contacts into `data/` (always with `--fresh`), then writes the aggregates to `out/summary.json`.
 - `analyze2.py` builds per-person detail and `out/threads/`.
+- `live.py` adds texts that arrive between full runs. `serve.py` polls it every minute: it reads `chat.db` read-only past `summary.json`'s `meta.max_mid` and keeps totals, per-month, per-day and per-person counts in `out/live.json`. Names come from `out/peers.json`, which `analyze.py` writes. The served page merges these in before it draws (`null/*LIVE*/` in the template). Sentiment, topics, response times and the message browser still update once a day. `COGS_MESSAGES_DB` overrides the source for testing.
 - `calls.py` copies the Mac's call history (`CallHistory.storedata`, the iPhone's calls synced through Continuity) into `data/calls/` and writes `out/calls.json`. No recordings exist. If the Mac has no call history, the report says so and texts still update.
 - `detector_eval.py` scores conflict candidates and learns from your labels.
 - `build_report.py` writes `out/report.html`, inlining `report_extra.js` and `report_app.js`.
