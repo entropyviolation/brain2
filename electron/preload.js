@@ -74,6 +74,12 @@ const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 // electron/ipc/channels.js.
 const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
 
+// Analytics → Texts (electron/texts-report.js). MUST match electron/main.js +
+// electron/ipc/channels.js. Consumed by lib/texts-report.ts.
+const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
+const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
+const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
+
 const TELEGRAM_SET_TOKEN = "cogs:telegram:setToken"
 const TELEGRAM_CLEAR_TOKEN = "cogs:telegram:clearToken"
 const TELEGRAM_HAS_TOKEN = "cogs:telegram:hasToken"
@@ -333,6 +339,12 @@ contextBridge.exposeInMainWorld("desktop", {
   fetchAppleNotes: (range) => ipcRenderer.invoke(FETCH_APPLE_NOTES_IPC_CHANNEL, range),
   // Query local ActivityWatch. Resolves to health or window/afk/web events.
   fetchScreenTime: (req) => ipcRenderer.invoke(FETCH_SCREENTIME_IPC_CHANNEL, req),
+  // Analytics → Texts: loopback report server. Each resolves to `{ ok, … }`.
+  texts: {
+    ensureServer: () => ipcRenderer.invoke(TEXTS_ENSURE_SERVER_IPC_CHANNEL),
+    status: () => ipcRenderer.invoke(TEXTS_STATUS_IPC_CHANNEL),
+    refresh: () => ipcRenderer.invoke(TEXTS_REFRESH_IPC_CHANNEL),
+  },
   // Linked resources: keep a file or folder where it is (docs/RESOURCE_LINKS.md).
   fileLinks: {
     // Electron 32 dropped File.path; webUtils reads it for a dropped or picked File.

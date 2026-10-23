@@ -3,8 +3,8 @@
 /**
  * components/Lists/dialogs/InstagramListsSettings.tsx — Import for the Instagram lists
  *
- * Shown only on People I follow on Instagram and People who follow me on
- * Instagram. The file is the person’s own download from Instagram settings.
+ * Shown on People I follow on Instagram, People who follow me on Instagram,
+ * and the five Instagram analysis lists. The file is the person’s own download from Instagram settings.
  * The full steps live in Settings → Import from Instagram data. This control
  * calls the same importer. Instagram login stays on screen and does not ask
  * for a password: that login does not return who you follow, who follows you,
@@ -55,6 +55,12 @@ export function InstagramListsSettings() {
           number is there, and a number you type is kept. Follows me back stays blank until a followers file is
           included. I follow them back stays blank until a following file is included. One username is one person, and
           that person can sit on both lists.
+        </p>
+        <p className="text-xs text-muted-foreground" data-testid="instagram-analysis-note">
+          summary.json from the Instagram analysis (instagram-analysis/out/) works here too. It fills all seven
+          Instagram lists in the People folder with the report&rsquo;s columns: dates followed, every kind of
+          interaction, and Last I engaged. The per-account counts come from what you did. The export does not say who
+          liked or commented on your posts, and it has no follower counts for other accounts.
         </p>
         <Input
           id="instagram-export-file"
