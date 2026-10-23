@@ -68,7 +68,8 @@ export function setInstagramExportReminder(on: boolean, now: Date = new Date(), 
   const store = useTaskStore.getState()
   const existing = findInstagramExportReminder(store.tasks)
   if (!on) {
-    if (existing) store.deleteTask(existing.id)
+    // Sync can leave more than one generated row; turn them all off.
+    for (const task of store.tasks) if (task.id.startsWith(INSTAGRAM_EXPORT_REMINDER_ID)) store.deleteTask(task.id)
     return false
   }
   if (existing) return true
