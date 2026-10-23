@@ -49,6 +49,8 @@ import { PenLinkedItems } from "@/components/Home/Tracking/pen-linked-items"
 import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
 import { PenLevelPicker } from "@/components/Home/Tracking/pen-level-picker"
 import { PenPlaceEditor } from "@/components/Home/Tracking/pen-place-editor"
+import { PenPersonLink } from "@/components/Home/Tracking/pen-person-link"
+import { PHONE_PEN_SCOPE_IDS } from "@/lib/phone-sync/person-links"
 import { PenFieldsEditor } from "@/components/Home/Tracking/pen-fields-editor"
 import { fieldsForBlock, type PenField } from "@/lib/pen-fields"
 import "./tracking-settings.css"
@@ -118,6 +120,11 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted,
     // Intentionally reset the form when navigating to another pen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, livePen?.id])
+
+  // Linking a phone pen to a person renames it in the store; show that name.
+  useEffect(() => {
+    if (livePen?.personId) setName(livePen.name)
+  }, [livePen?.personId, livePen?.name])
 
   const flush = (target = livePen ?? pen) => {
     updatePen(scopeId, {
@@ -282,6 +289,17 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted,
                 inside one is {name || pen.name}, not something it counts as.
               </p>
               <PenPlaceEditor scopeId={scopeId} penId={pen.id} />
+            </div>
+          ) : null}
+
+          {PHONE_PEN_SCOPE_IDS.includes(scopeId) ? (
+            <div className="trk-section space-y-2">
+              <Label className="trk-section-title">Person</Label>
+              <p className="trk-help">
+                Who this is in People I Know. Linking saves the number on them, and their texts and calls show their
+                name.
+              </p>
+              <PenPersonLink scopeId={scopeId} penId={pen.id} />
             </div>
           ) : null}
 

@@ -355,6 +355,8 @@ def main():
             info["themes"][th] = {"share": r3(sh), "lift": r3(sh / base_theme[th]) if base_theme[th] else None,
                                   "me": r3(gt[gt["side"] == "me"]["th_" + th].mean()), "them": r3(gt[gt["side"] == "them"]["th_" + th].mean())}
         if e["kind"] == "person":
+            # Numbers and emails this person texts from. Brain2 links them to a Person (local only).
+            info["handles"] = sorted({h for h in g["peer_raw"].dropna().unique() if isinstance(h, str)})
             person_metrics(info, g, conflicts, eid, all_months, first_day, last_day, markers)
         detail["entities"][eid] = info
 

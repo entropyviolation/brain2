@@ -30,6 +30,9 @@ import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { GiftIdeasKey } from "@/components/People/person-gift-ideas"
 import { Log } from "@/components/People/person-log"
 import { NicknameField } from "@/components/People/person-nicknames"
+import { splitHandles, unlinkedPhoneHandles } from "@/lib/phone-sync/person-links"
+import { phonePeople } from "@/lib/phone-sync/write"
+import { syncPhonePersonLinks, takeHandlesFromOthers } from "@/lib/phone-person-links"
 import { ensureGiftIdeasForPerson } from "@/lib/gift-ideas"
 import { RELATION_WORD_KEYS } from "@/lib/person-relations"
 import { PERSON_ATTR } from "@/lib/person-types"
@@ -140,7 +143,7 @@ export function PersonDetail({
   const scopes = useTimeTrackingStore((s) => s.scopes)
   // Extra pens, ticked details, and Social · "Who with?" ticks count too (`lib/person-time.ts`).
   const trackedLast = useMemo(() => {
-    const masks = personMinuteMasks(entries, scopes, personTimePenIds(person))
+    const masks = personMinuteMasks(entries, scopes, personTimePenIds(person, scopes))
     return [...masks.keys()].sort().at(-1) ?? null
   }, [entries, scopes, person])
   const storedLast = lastTogetherDate(profile, person.personPipelines, companyEntries)
@@ -181,6 +184,9 @@ export function PersonDetail({
   const writeAttribute = (id: string, value: string) => {
     onChange({ attributes: attributesWith(id, value) })
   }
+
+  // Numbers texts and calls came from that no one has yet, offered as you type.
+  const unlinkedNumbers = useMemo(() => unlinkedPhoneHandles(scopes, phonePeople()), [scopes])
 
   const interactions = profile?.interactions ?? []
   const gifts = profile?.giftIdeas ?? []
@@ -264,6 +270,27 @@ export function PersonDetail({
         <NicknameField
           nicknames={profile?.nicknames ?? []}
           onChange={(nicknames) => writeProfile({ ...current(), nicknames })}
+        />
+        <NicknameField
+          label="Phones and emails"
+          itemLabel="number or email"
+          nicknames={[...(profile?.phones ?? []), ...(profile?.emails ?? [])]}
+          suggestions={unlinkedNumbers}
+          onChange={(handles) => {
+            const { phones, emails } = splitHandles(handles)
+            const next = { ...current(), phones, emails }
+            writeProfile(next)
+            // Texts and calls from these numbers show this person (`lib/phone-person-links.ts`).
+            takeHandlesFromOthers(person.id, handles)
+            const draft = latest()
+            syncPhonePersonLinks({
+              id: person.id,
+              name: draft.title || draft.description || person.id,
+              nicknames: next.nicknames,
+              phones,
+              emails,
+            })
+          }}
         />
         <label className="person-field">
           Relation
