@@ -15,7 +15,7 @@ import { COGS_NAV_RESTORE_EVENT } from "@/lib/screen-location"
 export const INSTAGRAM_UI_KEYS = ["ig-matches", "ig-hide-cols", "ig-photos"] as const
 export type InstagramUiKey = (typeof INSTAGRAM_UI_KEYS)[number]
 
-export const INSTAGRAM_EXPORT_URL = "https://accountscenter.instagram.com/info_and_permissions/dyi/"
+export { INSTAGRAM_EXPORT_URL } from "@/lib/instagram-export-steps"
 
 export interface InstagramStatus {
   hasReport: boolean
@@ -37,9 +37,32 @@ export interface InstagramStatus {
     ok: boolean
   } | null
   watching: string[]
+  /** Google Drive "My Drive" folders also watched for Meta's scheduled export. */
+  drive?: string[]
   handle: string
   reportBase: string
   canIngest?: boolean
+}
+
+/** A DM an earlier export held and a later one does not (`electron/instagram-archive.js`). */
+export interface InstagramRemovedMessage {
+  thread: string
+  title: string
+  participants: string[]
+  sender: string
+  ts: number
+  content?: string
+  media?: string[]
+  share?: { link?: string; text?: string }
+  lastSeen: string
+  removedSince: string
+  kind: "removed" | "edited" | "thread-gone"
+  editedTo?: string
+}
+
+export interface InstagramRemoved {
+  exports: number
+  rows: InstagramRemovedMessage[]
 }
 
 /** `summary.json` of the current build, as text, with the build it came from. */
@@ -53,6 +76,7 @@ export interface DesktopInstagramBridge {
   scan: () => Promise<InstagramStatus>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
   pickFolder: (clear?: boolean) => Promise<InstagramStatus>
+  removed?: () => Promise<InstagramRemoved>
   summary?: () => Promise<InstagramSummary | null>
   onChange: (cb: (s: Omit<InstagramStatus, "reportBase">) => void) => () => void
 }
@@ -65,6 +89,7 @@ export interface InstagramSource {
   pickFolder?: (clear?: boolean) => Promise<InstagramStatus>
   summary: () => Promise<InstagramSummary | null>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
+  removed?: () => Promise<InstagramRemoved>
   onChange?: (cb: () => void) => () => void
 }
 
@@ -95,6 +120,7 @@ export function instagramSource(
         return bridge.summary()
       },
       saveUi: (key, value) => bridge.saveUi(key, value),
+      removed: bridge.removed ? () => bridge.removed!() : undefined,
       onChange: (cb) => bridge.onChange(() => cb()),
     }
   }
@@ -106,6 +132,11 @@ export function instagramSource(
         const r = await fetchImpl("/api/instagram/status", { cache: "no-store" })
         if (!r.ok) throw new Error(`status ${r.status}`)
         return (await r.json()) as InstagramStatus
+      },
+      removed: async () => {
+        const r = await fetchImpl("/api/instagram/removed", { cache: "no-store" })
+        if (!r.ok) throw new Error(`removed ${r.status}`)
+        return (await r.json()) as InstagramRemoved
       },
       summary: async () => {
         const r = await fetchImpl("/api/instagram/summary", { cache: "no-store" })
