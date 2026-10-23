@@ -23,7 +23,9 @@
  * analysis (`lib/instagram-analysis.ts`). It fills both lists with the
  * report's columns and makes five more lists from the report's Network
  * section: mutuals, no follow-back, fans, pending requests and blocked.
- * All seven are filed in the root **People** folder.
+ * Those five are made empty after hydrate too (`useInstagramAnalysisLists`),
+ * so all seven sit on Lists Home before the first import. Delete is refused
+ * on all seven, as on the two built-ins.
  */
 import { createListItem, itemTitle } from "@/lib/item-utils"
 import {
@@ -50,7 +52,7 @@ import {
 import { applyListLinksToTask } from "@/lib/list-links"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useTaskStore } from "@/lib/task-store"
-import type { AttributeDefinition, AttributeValue, Folder, List, Task } from "@/lib/types"
+import type { AttributeDefinition, AttributeValue, List, Task } from "@/lib/types"
 
 export const INSTAGRAM_FOLLOWING_LIST_ID = "people-i-follow-on-instagram"
 export const INSTAGRAM_FOLLOWING_LIST_NAME = "People I follow on Instagram"
@@ -112,9 +114,12 @@ export function isInstagramFollowersList(
 }
 
 export function isInstagramPeopleList(
-  list: { id: string; instagramFollowingList?: boolean; instagramFollowersList?: boolean } | null | undefined,
+  list:
+    | { id: string; instagramFollowingList?: boolean; instagramFollowersList?: boolean; instagramAnalysisList?: string }
+    | null
+    | undefined,
 ): boolean {
-  return isInstagramFollowingList(list) || isInstagramFollowersList(list)
+  return isInstagramFollowingList(list) || isInstagramFollowersList(list) || isInstagramAnalysisList(list)
 }
 
 function withColumns(list: List, defs: AttributeDefinition[], columnIds: readonly string[]): Partial<List> {
@@ -303,9 +308,6 @@ export const INSTAGRAM_ANALYSIS_LIST_IDS: Record<AnalysisOnlyKey, string> = {
   blocked: "instagram-blocked",
 }
 
-export const PEOPLE_FOLDER_ID = "folder-people"
-export const PEOPLE_FOLDER_NAME = "People"
-
 export function findInstagramAnalysisList(lists: List[], key: AnalysisOnlyKey): List | undefined {
   return (
     lists.find((list) => list.id === INSTAGRAM_ANALYSIS_LIST_IDS[key]) ??
@@ -314,7 +316,7 @@ export function findInstagramAnalysisList(lists: List[], key: AnalysisOnlyKey): 
   )
 }
 
-/** One of the five analysis lists. Delete is allowed on these. */
+/** One of the five analysis lists. Delete is refused, as on the two built-ins. */
 export function isInstagramAnalysisList(
   list: { id: string; instagramAnalysisList?: string } | null | undefined,
 ): boolean {
@@ -323,7 +325,7 @@ export function isInstagramAnalysisList(
 }
 
 /** Create or adopt one analysis list. Rename keeps the flag. */
-function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
+export function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
   const store = useTaskStore.getState()
   const spec = IG_ANALYSIS_LISTS[key]
   const existing = findInstagramAnalysisList(store.lists, key)
@@ -361,6 +363,13 @@ function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
   return id
 }
 
+export const INSTAGRAM_ANALYSIS_ONLY_KEYS = Object.keys(INSTAGRAM_ANALYSIS_LIST_IDS) as AnalysisOnlyKey[]
+
+/** Create or adopt all five analysis lists. Returns their ids in report order. */
+export function ensureInstagramAnalysisLists(): string[] {
+  return INSTAGRAM_ANALYSIS_ONLY_KEYS.map((key) => ensureInstagramAnalysisList(key))
+}
+
 /** Add the report's columns a list is missing. A column the person renamed keeps its name. */
 function ensureAnalysisColumns(listId: string, key: IgAnalysisListKey): void {
   const store = useTaskStore.getState()
@@ -369,26 +378,6 @@ function ensureAnalysisColumns(listId: string, key: IgAnalysisListKey): void {
   const defs = igAnalysisColumns(key)
   const patch = withColumns(list, defs, defs.map((def) => def.id))
   if (Object.keys(patch).length) store.updateList({ ...list, ...patch })
-}
-
-/**
- * Root People folder. Adopts a root folder already named People. Each
- * Instagram list that sits in no folder is filed there. A list the person
- * filed somewhere else stays where it is.
- */
-function filePeopleFolder(listIds: string[]): void {
-  const store = useTaskStore.getState()
-  const folder =
-    store.folders.find((f) => f.id === PEOPLE_FOLDER_ID) ??
-    store.folders.find((f) => !f.parentFolderId && sameName(f.name, PEOPLE_FOLDER_NAME))
-  const filed = new Set(store.folders.flatMap((f) => f.listIds))
-  const loose = listIds.filter((id) => !filed.has(id))
-  if (!folder) {
-    const created: Folder = { id: PEOPLE_FOLDER_ID, name: PEOPLE_FOLDER_NAME, createdAt: new Date(), listIds: loose }
-    store.addFolder(created)
-    return
-  }
-  if (loose.length) store.updateFolder({ ...folder, listIds: [...folder.listIds, ...loose] })
 }
 
 function analysisSnapshot(task: Task) {
@@ -411,7 +400,6 @@ export function applyInstagramAnalysisImport(parsed: ParsedInstagramAnalysis): {
     blocked: ensureInstagramAnalysisList("blocked"),
   }
   for (const [key, id] of Object.entries(listIds)) ensureAnalysisColumns(id, key as IgAnalysisListKey)
-  filePeopleFolder(Object.values(listIds))
   const ui = useListsUiStore.getState()
   for (const id of Object.values(listIds)) if (!ui.listDisplay[id]) ui.setListDisplay(id, "table")
 
