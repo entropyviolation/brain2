@@ -74,8 +74,8 @@ reach today:
 A likely combination later: the scheduled export for the full archive, the
 Instagram API for live counts and new comments between exports, and an
 iPhone app as a hand-off point and nudge. Logging into Instagram from Brain2,
-multiple accounts, and the follower-graph ideas are covered by the Instagram
-login work in Settings and its design doc.
+multiple accounts, email-driven requests, and the follower-graph ideas are in
+[`docs/INSTAGRAM_DATA_SOURCES.md`](INSTAGRAM_DATA_SOURCES.md).
 
 ## Sources
 
