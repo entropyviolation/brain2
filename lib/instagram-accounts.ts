@@ -3,7 +3,7 @@
  *
  * The desktop main process (`electron/instagram-accounts.js`) owns the login
  * window and the keychain-sealed sessions. This file only types the public
- * view it returns and reads `window.desktop.instagram`. No cookie or password
+ * view it returns and reads `window.desktop.instagramAccounts`. No cookie or password
  * ever reaches the renderer. Plan: docs/INSTAGRAM_DATA_SOURCES.md.
  */
 
@@ -42,8 +42,8 @@ export type DesktopInstagramBridge = {
 
 export function instagramBridge(): DesktopInstagramBridge | null {
   if (typeof window === "undefined") return null
-  const desktop = (window as unknown as { desktop?: { instagram?: DesktopInstagramBridge } }).desktop
-  return desktop?.instagram ?? null
+  const desktop = (window as unknown as { desktop?: { instagramAccounts?: DesktopInstagramBridge } }).desktop
+  return desktop?.instagramAccounts ?? null
 }
 
 /** Same rules as main: drop @, a profile URL, a trailing path; lower case. */

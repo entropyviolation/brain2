@@ -2,7 +2,7 @@
  * electron/preload.js — Electron preload (context-isolated)
  *
  * Runs in the renderer before the web app loads and exposes a minimal, read-only
- * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagram`, `spotify`, …) via `contextBridge`.
+ * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, …) via `contextBridge`.
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
@@ -95,14 +95,14 @@ const TELEGRAM_ACK = "cogs:telegram:ack"
 
 // Settings → Instagram accounts. MUST match CHANNELS in electron/instagram-accounts.js
 // (sandboxed preload cannot require it). No channel returns a cookie or password.
-const INSTAGRAM_CHANNELS = {
-  status: "cogs:instagram:status",
-  list: "cogs:instagram:list",
-  login: "cogs:instagram:login",
-  update: "cogs:instagram:update",
-  remove: "cogs:instagram:remove",
-  setPassword: "cogs:instagram:setPassword",
-  check: "cogs:instagram:check",
+const INSTAGRAM_ACCOUNT_CHANNELS = {
+  status: "cogs:instagram-accounts:status",
+  list: "cogs:instagram-accounts:list",
+  login: "cogs:instagram-accounts:login",
+  update: "cogs:instagram-accounts:update",
+  remove: "cogs:instagram-accounts:remove",
+  setPassword: "cogs:instagram-accounts:setPassword",
+  check: "cogs:instagram-accounts:check",
 }
 
 // Settings → Spotify accounts. MUST match CHANNELS in electron/spotify-accounts.js.
@@ -385,14 +385,14 @@ contextBridge.exposeInMainWorld("desktop", {
       return () => ipcRenderer.removeListener(TELEGRAM_POLL_STATUS, listener)
     },
   },
-  instagram: {
-    status: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.status),
-    list: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.list),
-    login: (req) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.login, req),
-    update: (id, patch) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.update, id, patch),
-    remove: (id) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.remove, id),
-    setPassword: (id, password) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.setPassword, id, password),
-    check: (id) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.check, id),
+  instagramAccounts: {
+    status: () => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.status),
+    list: () => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.list),
+    login: (req) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.login, req),
+    update: (id, patch) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.update, id, patch),
+    remove: (id) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.remove, id),
+    setPassword: (id, password) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.setPassword, id, password),
+    check: (id) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.check, id),
   },
   spotify: {
     status: () => ipcRenderer.invoke(SPOTIFY_CHANNELS.status),

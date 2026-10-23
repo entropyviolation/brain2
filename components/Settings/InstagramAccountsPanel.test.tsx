@@ -34,7 +34,7 @@ function installBridge(accounts: InstagramAccountView[], encryption = true) {
     setPassword: vi.fn(),
     check: vi.fn(),
   }
-  ;(window as unknown as { desktop?: unknown }).desktop = { instagram: bridge }
+  ;(window as unknown as { desktop?: unknown }).desktop = { instagramAccounts: bridge }
   return bridge
 }
 
