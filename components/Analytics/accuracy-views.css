@@ -1,0 +1,365 @@
+/**
+ * components/Analytics/accuracy-views.css — New plates for the Accuracy group
+ *
+ * Plan, Calibration, Cycle, Regret, Goals. Paper, ink rules, Instrument Sans.
+ * Verdict fills: early (blue), on (green), over (orange). Imported by each
+ * Accuracy view. Docs: docs/analytics/accuracy-*.md.
+ */
+
+.fm98.an95 .an-acc-plate {
+  --acc-early: #5b8fc9;
+  --acc-on: #2f7d55;
+  --acc-over: #c2571a;
+  --acc-open: #b8bec6;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #fbfcfd;
+  box-shadow: 0 0 0 1px var(--at-rule-soft, rgba(20, 23, 28, 0.22));
+  font-family: var(--at-type);
+  color: var(--at-ink, #14171c);
+}
+
+.fm98.an95 .an-acc-plate .an-canvas-title {
+  margin: 0;
+}
+
+.fm98.an95 .an-acc-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 12px;
+}
+
+.fm98.an95 .an-acc-tools label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fm98.an95 .an-acc-tools input[type="range"] {
+  width: 140px;
+  accent-color: var(--at-cyan-deep, #173a7a);
+}
+
+.fm98.an95 .an-acc-tools input[type="number"],
+.fm98.an95 .an-acc-tools input[type="search"] {
+  width: 120px;
+  height: 26px;
+  padding: 0 6px;
+  font: inherit;
+  border: 1px solid var(--at-rule-soft, rgba(20, 23, 28, 0.22));
+  background: #fff;
+}
+
+.fm98.an95 .an-acc-tools input[type="number"] {
+  width: 72px;
+}
+
+.fm98.an95 .an-acc-math {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--at-ink-faint, #69717c);
+}
+
+/* Estimate / plan barcode: one row per group, one cell per item. */
+.fm98.an95 .an-acc-barcode {
+  display: grid;
+  gap: 4px;
+}
+
+.fm98.an95 .an-acc-barcode-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-acc-barcode-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .an-acc-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  min-height: 18px;
+}
+
+.fm98.an95 .an-acc-cell {
+  width: 7px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: var(--acc-open);
+}
+
+.fm98.an95 .an-acc-cell:hover,
+.fm98.an95 .an-acc-cell:focus-visible {
+  outline: 1px solid var(--at-ink, #14171c);
+  outline-offset: 1px;
+}
+
+.fm98.an95 .is-early { background: var(--acc-early); }
+.fm98.an95 .is-on { background: var(--acc-on); }
+.fm98.an95 .is-over { background: var(--acc-over); }
+.fm98.an95 .is-open { background: var(--acc-open); }
+
+.fm98.an95 .an-acc-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--at-ink-soft, #363c45);
+}
+
+.fm98.an95 .an-acc-key i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+/* Mirror split: plan grows left, reality grows right, one row per measure. */
+.fm98.an95 .an-acc-mirror {
+  display: grid;
+  gap: 6px;
+}
+
+.fm98.an95 .an-acc-mirror-row {
+  display: grid;
+  grid-template-columns: 1fr 72px 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-acc-mirror-side {
+  position: relative;
+  height: 16px;
+  background: var(--at-paper, #eef0f1);
+}
+
+.fm98.an95 .an-acc-mirror-side > span {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.fm98.an95 .an-acc-mirror-side.is-plan > span {
+  right: 0;
+  background: repeating-linear-gradient(-45deg, #8b97a6 0 3px, #a9b3bf 3px 6px);
+}
+
+.fm98.an95 .an-acc-mirror-side.is-real > span {
+  left: 0;
+  background: var(--at-cyan-deep, #173a7a);
+}
+
+.fm98.an95 .an-acc-mirror-label {
+  text-align: center;
+  font-weight: 600;
+}
+
+.fm98.an95 .an-acc-mirror-val {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Named peaks: tallest = most pushed. Label sits on top. */
+.fm98.an95 .an-acc-peaks {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 150px;
+  padding-top: 4px;
+  overflow-x: auto;
+}
+
+.fm98.an95 .an-acc-peak {
+  flex: 1 0 56px;
+  max-width: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.fm98.an95 .an-acc-peak-shape {
+  width: 100%;
+  background: var(--acc-over);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.fm98.an95 .an-acc-peak-name {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Unit grid and sized squares. */
+.fm98.an95 .an-acc-units {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.fm98.an95 .an-acc-unit {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.fm98.an95 .an-acc-squares {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.fm98.an95 .an-acc-square-group {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  max-width: 160px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.fm98.an95 .an-acc-square {
+  background: #b0413e;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.fm98.an95 .an-acc-square.is-anchor {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--at-ink, #14171c);
+}
+
+/* Tables with sort headers. */
+.fm98.an95 .an-acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-acc-table th,
+.fm98.an95 .an-acc-table td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--at-rule-soft, rgba(20, 23, 28, 0.22));
+}
+
+.fm98.an95 .an-acc-table th:first-child,
+.fm98.an95 .an-acc-table td:first-child {
+  text-align: left;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .an-acc-table th button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fm98.an95 .an-acc-table td button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+/* Goal pace: progress bar with a tick where a straight line says you should be. */
+.fm98.an95 .an-acc-pace {
+  position: relative;
+  height: 12px;
+  min-width: 80px;
+  background: var(--at-paper, #eef0f1);
+}
+
+.fm98.an95 .an-acc-pace > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--at-cyan-deep, #173a7a);
+}
+
+.fm98.an95 .an-acc-pace > i {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 18px;
+  background: var(--acc-over);
+}
+
+/* Bubbles sized by contributing completions. */
+.fm98.an95 .an-acc-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.fm98.an95 .an-acc-bubble {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.fm98.an95 details.an-acc-fold > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Plan vs Reality: actual sits as a thin bar inside the planned bar, so a
+   larger actual no longer hides the plan (bullet-chart layering). */
+.fm98.an95 .an-pvr-track .an-pvr-actual {
+  top: 25%;
+  height: 50%;
+  opacity: 1;
+}
+
+.fm98.an95 .an-legend i.an-pvr-planned,
+.fm98.an95 .an-legend i.an-pvr-actual {
+  position: static;
+}
