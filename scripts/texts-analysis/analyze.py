@@ -418,6 +418,7 @@ def main():
         "received": int((msgs["is_from_me"] == 0).sum()),
         "group_messages": int(msgs["is_group"].sum()),
         "first": str(df["ts"].min()), "last": str(df["ts"].max()),
+        "max_mid": int(df["mid"].max()),  # live.py adds texts past this ROWID
         "attributedBody_needed": needed,
         "attributedBody_decoded": int(df["decoded"].sum()),
         "attributedBody_decode_rate": round(int(df["decoded"].sum()) / needed, 4) if needed else None,
@@ -426,6 +427,9 @@ def main():
         "messages_without_chat": int(df["chat_id"].isna().sum()),
         "notes": "Rows may be counted twice if a message joins two chats. Words/ngrams floor = 20.",
     }
+
+    # Person key -> report name, so live.py names new texts the same way.
+    (OUT / "peers.json").write_text(json.dumps(names, ensure_ascii=False))
 
     path = OUT / "summary.json"
     path.write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=str))
