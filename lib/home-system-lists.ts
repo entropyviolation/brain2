@@ -32,7 +32,12 @@ import { HABIT_STANDING_LIST_ID } from "@/lib/habit-list-item"
 import { INVENTORY_LIST_ID } from "@/lib/ingest/apply-inventory"
 import { NEEDED_LIST_NAME } from "@/lib/ingest/apply-needed"
 import { useListsUiStore } from "@/lib/lists-ui-store"
-import { findInstagramFollowersList, findInstagramFollowingList } from "@/lib/instagram-lists"
+import {
+  findInstagramAnalysisList,
+  findInstagramFollowersList,
+  findInstagramFollowingList,
+  INSTAGRAM_ANALYSIS_ONLY_KEYS,
+} from "@/lib/instagram-lists"
 import { findPeopleIKnowList } from "@/lib/people-i-know"
 import { findRemindersList } from "@/lib/reminders"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
@@ -66,6 +71,7 @@ export function systemHomeListIds(lists: List[], folders: Folder[]): string[] {
   existingId(lists, findPeopleIKnowList(lists)?.id, ids)
   existingId(lists, findInstagramFollowingList(lists)?.id, ids)
   existingId(lists, findInstagramFollowersList(lists)?.id, ids)
+  for (const key of INSTAGRAM_ANALYSIS_ONLY_KEYS) existingId(lists, findInstagramAnalysisList(lists, key)?.id, ids)
   existingId(lists, findEventuallyList(lists, folders)?.id, ids)
   existingId(lists, resolveArchiveListId(lists, folders, "completed"), ids)
   existingId(lists, resolveArchiveListId(lists, folders, "missed"), ids)
