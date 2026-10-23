@@ -21,22 +21,67 @@ import {
   type InstagramSource,
   type InstagramStatus,
 } from "@/lib/instagram-report"
+import { parseLocalDate } from "@/lib/date-utils"
+import {
+  instagramExportReminderOn,
+  nextInstagramExportReminder,
+  seedInstagramExportReminderOnce,
+  setInstagramExportReminder,
+} from "@/lib/instagram-export-reminder"
+import { INSTAGRAM_EXPORT_STEPS } from "@/lib/instagram-export-steps"
+import { formatReminderWhen } from "@/lib/reminders"
+import { useTaskStore } from "@/lib/task-store"
+import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
 import "./instagram-view.css"
 
 function ExportSteps() {
+  const [first, ...rest] = INSTAGRAM_EXPORT_STEPS
   return (
     <ol className="an-ig-steps">
       <li>
-        Open Accounts Center → Your information and permissions → Download your information (
+        {first.replace(/\.$/, "")} (
         <a href={INSTAGRAM_EXPORT_URL} target="_blank" rel="noreferrer">
           accountscenter.instagram.com
         </a>
         ).
       </li>
-      <li>Create export → Export to device. Pick All time, JSON, and all information.</li>
-      <li>When Meta emails that it is ready (it can take days), download the zip within 4 days into Downloads.</li>
-      <li>Brain2 desktop picks it up from Downloads, copies it into its own data folder, and builds this report.</li>
+      {rest.map((step) => (
+        <li key={step}>{step}</li>
+      ))}
     </ol>
+  )
+}
+
+/**
+ * Monthly "request a new export" switch. The reminder is a row on the
+ * Reminders list (`lib/instagram-export-reminder.ts`), seeded once per device.
+ */
+function ExportReminder({ exportDate, ready }: { exportDate: string | null; ready: boolean }) {
+  const tasks = useTaskStore((s) => s.tasks)
+  const on = instagramExportReminderOn(tasks)
+  const next = nextInstagramExportReminder(tasks)
+  const lastExport = exportDate ? parseLocalDate(exportDate) : null
+
+  // Seed once, after the vault and the report status load, so the first
+  // fire counts from the export date. A later export does not reseed.
+  useEffect(() => {
+    if (!ready) return
+    return afterPersistHydrated(useTaskStore.persist, () => void seedInstagramExportReminderOnce(new Date(), lastExport))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
+  return (
+    <span className="an-ig-field" title="A monthly item on the Reminders list with the export link and steps.">
+      <b>Reminder</b> {on && next ? formatReminderWhen(next) : "off"}{" "}
+      <button
+        type="button"
+        className="an-range-chip"
+        aria-pressed={on}
+        onClick={() => setInstagramExportReminder(!on, new Date(), lastExport)}
+      >
+        {on ? "Turn off" : "Remind me monthly"}
+      </button>
+    </span>
   )
 }
 
@@ -132,6 +177,9 @@ export function InstagramView() {
           The Instagram report is built and shown by the Brain2 desktop app on your computer. This build cannot run
           it.
         </p>
+        <div className="an-ig-bar">
+          <ExportReminder exportDate={null} ready />
+        </div>
       </div>
     )
   }
@@ -156,6 +204,7 @@ export function InstagramView() {
         <span className="an-ig-field" title="When Brain2 last built this report">
           <b>Last updated</b> {current ? formatInstagramStamp(current.builtAt) : "never"}
         </span>
+        <ExportReminder exportDate={current?.exportDate ?? null} ready={status !== null} />
         {status?.running ? <span className="an-ig-field an-ig-running">Building a new report…</span> : null}
         {source.canIngest ? (
           <span className="an-ig-actions">

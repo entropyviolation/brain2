@@ -11,7 +11,7 @@
 export const INSTAGRAM_UI_KEYS = ["ig-matches", "ig-hide-cols", "ig-photos"] as const
 export type InstagramUiKey = (typeof INSTAGRAM_UI_KEYS)[number]
 
-export const INSTAGRAM_EXPORT_URL = "https://accountscenter.instagram.com/info_and_permissions/dyi/"
+export { INSTAGRAM_EXPORT_URL } from "@/lib/instagram-export-steps"
 
 export interface InstagramStatus {
   hasReport: boolean

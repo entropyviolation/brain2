@@ -313,3 +313,26 @@ Do not fill them with made-up numbers:
 Meta has no scheduled or repeating export (checked 2026-10-23,
 `research/instagram-auto-update.md` in the project files). A new export
 still starts with the person asking for one.
+
+### Monthly export reminder
+
+_Last mapped: 2026-10-23_
+
+Everything after the request is automatic; a device export's request is not.
+Accounts Center can also repeat an export to Google Drive or Dropbox on a
+schedule (Meta's deep-link guide, checked 2026-10-23). That route is not
+tested yet; see `docs/INSTAGRAM_AUTO_UPDATE.md`. A monthly row,
+**Request a new Instagram export**, sits on the Reminders list
+(`lib/instagram-export-reminder.ts`). It uses the normal reminder clock in
+`lib/reminders.ts`: Inbox copy, header bell until Dismiss, and a Telegram
+text with the Accounts Center link when Text me is on. Its description holds
+the link and the steps. The steps and link have one copy,
+`lib/instagram-export-steps.ts`, shared with the view's `ExportSteps`.
+
+- The status line shows **Reminder** with the next fire time and a switch. On means the row exists. Off deletes it.
+- The view seeds it once per device, after the report status loads. The first fire is one month after the export date at 10:00, or the next 10:00 when that has passed. A deleted row stays deleted (`brain2-instagram-export-reminder-seeded` in localStorage).
+- Each switch-on gets a new id (`reminder-instagram-export-<ms>`), because a deleted id is tombstoned for sync.
+- Export settings are always JSON, All time, all information. A date-range export leaves whole sections empty.
+
+Later routes (iPhone app, APIs, free tools) and what each can and cannot
+reach are in [`docs/INSTAGRAM_AUTO_UPDATE.md`](../../docs/INSTAGRAM_AUTO_UPDATE.md).

@@ -4,6 +4,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import type { InstagramStatus } from "@/lib/instagram-report"
+import { INSTAGRAM_EXPORT_REMINDER_SEEDED_KEY, instagramExportReminderOn } from "@/lib/instagram-export-reminder"
+import { resetAllStores } from "@/tests/test-utils"
 import { InstagramView } from "./InstagramView"
 
 const base: InstagramStatus = {
@@ -101,5 +103,22 @@ describe("InstagramView", () => {
     expect(bridge.saveUi).toHaveBeenCalledWith("ig-photos", "true")
     expect(bridge.saveUi).toHaveBeenCalledWith("ig-hide-cols", '["dm"]')
     expect(screen.getByText(/Brought over 2 settings/)).toBeInTheDocument()
+  })
+
+  it("seeds the monthly export reminder once and lets it be turned off", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date(2026, 9, 23, 15, 0))
+    resetAllStores()
+    window.localStorage.removeItem(INSTAGRAM_EXPORT_REMINDER_SEEDED_KEY)
+    installBridge(base)
+    render(<InstagramView />)
+    const off = await screen.findByRole("button", { name: "Turn off" })
+    expect(instagramExportReminderOn()).toBe(true)
+    // One month after the Oct 22 export, at 10:00.
+    expect(screen.getByText("Reminder").parentElement?.textContent).toMatch(/Nov 22 · 10:00 AM/)
+    fireEvent.click(off)
+    expect(instagramExportReminderOn()).toBe(false)
+    expect(await screen.findByRole("button", { name: "Remind me monthly" })).toBeInTheDocument()
+    vi.useRealTimers()
   })
 })

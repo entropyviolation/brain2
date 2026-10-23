@@ -1,11 +1,12 @@
 /**
  * lib/instagram-export-steps.ts — Where and how to request an Instagram export
  *
- * Meta has no scheduled or recurring export and no API that returns this
- * data for a personal account (checked 2026-10-23,
- * `docs/INSTAGRAM_AUTO_UPDATE.md`). Each export is one request in Accounts
- * Center. These strings are the one copy of that link and those steps, for
- * the monthly reminder, the Instagram view's empty state, and Settings.
+ * There is no API that returns this data for a personal account. A device
+ * export is one request in Accounts Center. Accounts Center can also repeat
+ * an export to Google Drive or Dropbox on a schedule; that route is in
+ * `docs/INSTAGRAM_AUTO_UPDATE.md` and is not tested yet (checked 2026-10-23).
+ * These strings are the one copy of the link and the device-export steps,
+ * for the monthly reminder and the Instagram view.
  *
  * No imports, so `lib/reminders.ts` can read the link without a cycle.
  */
@@ -21,10 +22,9 @@ export const INSTAGRAM_EXPORT_REMINDER_NAME = "Request a new Instagram export"
  */
 export const INSTAGRAM_EXPORT_STEPS: readonly string[] = [
   "Open Accounts Center → Your information and permissions → Download your information.",
-  "Choose Create export → your Instagram account → Export to device.",
-  "Set Format to JSON, Date range to All time, and Customize information to all info.",
-  "Meta sends an email or notification when the file is ready. The download link works for 4 days.",
-  "Download the zip. Brain2 picks it up from Downloads and rebuilds the report.",
+  "Create export → Export to device. Pick All time, JSON, and all information.",
+  "When Meta emails that it is ready (it can take days), download the zip within 4 days into Downloads.",
+  "Brain2 desktop picks it up from Downloads, copies it into its own data folder, and builds the report.",
 ]
 
 /** One block for a reminder's description: link, then the steps. */
