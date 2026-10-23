@@ -27,7 +27,7 @@ function dayLabel(date: string): string {
 function PersonTimeTogetherView({ person, todayIso }: { person: Task; todayIso: string }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  const penIds = useMemo(() => personTimePenIds(person), [person])
+  const penIds = useMemo(() => personTimePenIds(person, scopes), [person, scopes])
   const joined = useMemo(() => joinedCompanyPenIds(person.personPipelines), [person.personPipelines])
   const stats = useMemo(() => personTimeStats(entries, scopes, penIds, todayIso), [entries, scopes, penIds, todayIso])
   const name = person.title || person.description || "them"

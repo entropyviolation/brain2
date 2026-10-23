@@ -226,6 +226,13 @@ export interface TrackPen {
    * a GPS fix inside one is this pen.
    */
   place?: PenPlace
+  /**
+   * iPhone Texts / iPhone Calls: the People I Know item this pen belongs to.
+   * The pen shows that person's name (`lib/phone-sync/person-links.ts`).
+   */
+  personId?: string
+  /** iPhone Texts / iPhone Calls: the number or email this pen was made for, normalized. */
+  handle?: string
 }
 
 /**

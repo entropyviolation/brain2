@@ -43,3 +43,26 @@ export function textsUpdatedLabel(status: TextsStatus | undefined, locale?: stri
   const when = d.toLocaleString(locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
   return `Updated ${when}`
 }
+
+/** One person as the report sees them: name and every saved number / email. */
+export type ReportPerson = { id: string; name: string; nicknames?: string[]; handles: string[] }
+
+/** What the report frame may ask Brain2 to do (`scripts/texts-analysis/report_app.js`). */
+export type ReportRequest =
+  | { type: "ready" }
+  | { type: "link" | "unlink"; personId: string; handles: string[] }
+  | { type: "open-person"; personId: string }
+
+/** Check a message from the report frame. Anything else is null. */
+export function readReportRequest(data: unknown): ReportRequest | null {
+  if (!data || typeof data !== "object") return null
+  const d = data as Record<string, unknown>
+  if (d.source !== "texts-report") return null
+  if (d.type === "ready") return { type: "ready" }
+  if (typeof d.personId !== "string" || !d.personId) return null
+  if (d.type === "open-person") return { type: "open-person", personId: d.personId }
+  if (d.type !== "link" && d.type !== "unlink") return null
+  if (!Array.isArray(d.handles)) return null
+  const handles = d.handles.filter((h): h is string => typeof h === "string" && h.trim().length > 0 && h.length < 200).slice(0, 20)
+  return handles.length ? { type: d.type, personId: d.personId, handles } : null
+}
