@@ -55,7 +55,11 @@ import { useListMembershipRulesTick } from "@/hooks/use-list-membership-rules-ti
 import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
 import { useCloseGiftIdeas } from "@/hooks/use-close-gift-ideas"
-import { useInstagramFollowersList, useInstagramFollowingList } from "@/hooks/use-instagram-lists"
+import {
+  useInstagramAnalysisLists,
+  useInstagramFollowersList,
+  useInstagramFollowingList,
+} from "@/hooks/use-instagram-lists"
 import { useVocabLanguageLists } from "@/hooks/use-vocab-language-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
@@ -121,6 +125,7 @@ function IdleVaultSeeds() {
   useCloseGiftIdeas()
   useInstagramFollowingList()
   useInstagramFollowersList()
+  useInstagramAnalysisLists()
   useVocabLanguageLists()
   return null
 }
