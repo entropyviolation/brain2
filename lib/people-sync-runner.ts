@@ -21,6 +21,8 @@ import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-k
 import { useTaskStore } from "@/lib/task-store"
 import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { isInstant } from "@/lib/time-entries"
+import { relinkPhonePens } from "@/lib/phone-sync/person-links"
+import { phonePeople } from "@/lib/phone-sync/write"
 
 const BACKFILL_KEY = persistKey("people-backfill-v1")
 const slot: HydratedStoreSyncSlot = { stopper: null }
@@ -70,6 +72,10 @@ export function syncPeopleNow(): void {
           useTaskStore.getState().addTask(withCompanyPen(createPerson(row.name, listId), row.penId))
         }
       }
+      // Phone pens wear the name of the person whose number they are (`lib/phone-sync/person-links.ts`).
+      const scopes = useTimeTrackingStore.getState().scopes
+      const relinked = relinkPhonePens(scopes, phonePeople())
+      if (relinked !== scopes) useTimeTrackingStore.setState({ scopes: relinked })
     })
     backfillOnce()
   } finally {

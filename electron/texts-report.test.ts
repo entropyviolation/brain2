@@ -8,8 +8,8 @@ const nodeRequire = createRequire(import.meta.url)
 type TextsReport = {
   textsHome: (env?: Record<string, string | undefined>) => string
   textsPort: (env?: Record<string, string | undefined>) => number
-  lastWeekClose: (now: Date) => Date
-  weeklyRunDue: (lastRunISO: string | null | undefined, now?: Date) => boolean
+  lastDayClose: (now: Date) => Date
+  dailyRunDue: (lastRunISO: string | null | undefined, now?: Date) => boolean
 }
 const texts = nodeRequire("./texts-report.js") as TextsReport
 
@@ -26,31 +26,30 @@ describe("texts report home and port", () => {
   })
 })
 
-describe("weekly refresh", () => {
-  // Local-time constructors: the week closes Sunday 21:00 on this machine.
-  const wed = new Date(2026, 9, 21, 12, 0) // Wed 21 Oct 2026
-  const sunBefore = new Date(2026, 9, 25, 20, 59)
-  const sunAfter = new Date(2026, 9, 25, 21, 0)
+describe("daily refresh", () => {
+  // Local-time constructors: the day closes at 04:00 on this machine.
+  const noon = new Date(2026, 9, 21, 12, 0)
+  const before = new Date(2026, 9, 22, 3, 59)
+  const after = new Date(2026, 9, 22, 4, 0)
 
-  it("finds the last Sunday 21:00", () => {
-    const close = texts.lastWeekClose(wed)
-    expect(close.getDay()).toBe(0)
-    expect(close.getHours()).toBe(21)
-    expect(close.getDate()).toBe(18)
-    expect(texts.lastWeekClose(sunBefore).getDate()).toBe(18)
-    expect(texts.lastWeekClose(sunAfter).getDate()).toBe(25)
+  it("finds the last 04:00", () => {
+    const close = texts.lastDayClose(noon)
+    expect(close.getHours()).toBe(4)
+    expect(close.getDate()).toBe(21)
+    expect(texts.lastDayClose(before).getDate()).toBe(21)
+    expect(texts.lastDayClose(after).getDate()).toBe(22)
   })
 
   it("is due with no run or a run before the close", () => {
-    expect(texts.weeklyRunDue(null, wed)).toBe(true)
-    expect(texts.weeklyRunDue("not a date", wed)).toBe(true)
-    expect(texts.weeklyRunDue(new Date(2026, 9, 18, 20, 0).toISOString(), wed)).toBe(true)
+    expect(texts.dailyRunDue(null, noon)).toBe(true)
+    expect(texts.dailyRunDue("not a date", noon)).toBe(true)
+    expect(texts.dailyRunDue(new Date(2026, 9, 21, 3, 0).toISOString(), noon)).toBe(true)
   })
 
   it("is not due again until the next close", () => {
-    const ran = new Date(2026, 9, 18, 21, 5).toISOString()
-    expect(texts.weeklyRunDue(ran, wed)).toBe(false)
-    expect(texts.weeklyRunDue(ran, sunBefore)).toBe(false)
-    expect(texts.weeklyRunDue(ran, sunAfter)).toBe(true)
+    const ran = new Date(2026, 9, 21, 9, 5).toISOString()
+    expect(texts.dailyRunDue(ran, noon)).toBe(false)
+    expect(texts.dailyRunDue(ran, before)).toBe(false)
+    expect(texts.dailyRunDue(ran, after)).toBe(true)
   })
 })

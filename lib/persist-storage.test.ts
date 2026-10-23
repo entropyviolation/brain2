@@ -16,6 +16,10 @@ import {
   staleAgainstLocalVault,
   hubPostKeys,
   resetPersistWriteCache,
+  registerPersistRehydrator,
+  mergeHubIntoStores,
+  createHubFocusPull,
+  hubRefusedSave,
 } from "@/lib/persist-storage"
 import { nextAppearanceRev } from "@/lib/appearance-rev"
 
@@ -430,6 +434,68 @@ describe("persist-storage", () => {
     it("keeps a separate key for a bare plan-text vault the hub does not twin", () => {
       const keys = hubPostKeys("monthPlan-2026-10")
       expect(keys).toEqual(["monthPlan-2026-10", "brain2-monthPlan-2026-10"])
+    })
+  })
+
+  describe("hub follow (rows another writer added)", () => {
+    const KEY = "brain2-timegrid-store"
+    const row = (id: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      date: "2026-10-21",
+      scopeId: "iphone-texts",
+      penId: "iphone-text-a",
+      startMin: 600,
+      endMin: 600,
+      kind: "instant",
+      ...extra,
+    })
+    const blob = (entries: unknown[]) =>
+      JSON.stringify({ state: { scopes: [], tags: [], entries, removedEntryIds: [] }, version: 1 })
+    const ids = (value: string | null) => (JSON.parse(value ?? "{}").state?.entries ?? []).map((e: { id: string }) => e.id).sort()
+
+    it("merges hub rows into a running store and keeps this profile's own", async () => {
+      localStorage.setItem(KEY, blob([row("mine")]))
+      const rehydrate = vi.fn()
+      registerPersistRehydrator(KEY, rehydrate)
+      const hub = { items: { [KEY]: blob([row("mine"), row("phone-1", { generatedBy: { kind: "phone-sync", id: "messages:1" } })]) } }
+      const changed = await mergeHubIntoStores(hub)
+      expect(changed).toContain(KEY)
+      expect(ids(localStorage.getItem(KEY))).toEqual(["mine", "phone-1"])
+      expect(rehydrate).toHaveBeenCalledTimes(1)
+    })
+
+    it("keeps a block painted here that the hub does not have yet", async () => {
+      localStorage.setItem(KEY, blob([row("painted-here"), row("old")]))
+      registerPersistRehydrator(KEY, vi.fn())
+      await mergeHubIntoStores({ items: { [KEY]: blob([row("old"), row("phone-2")]) } })
+      expect(ids(localStorage.getItem(KEY))).toEqual(["old", "painted-here", "phone-2"])
+    })
+
+    it("does nothing when the hub has nothing new", async () => {
+      localStorage.setItem(KEY, blob([row("a")]))
+      const rehydrate = vi.fn()
+      registerPersistRehydrator(KEY, rehydrate)
+      expect(await mergeHubIntoStores({ items: { [KEY]: blob([row("a")]) } })).toEqual([])
+      expect(rehydrate).not.toHaveBeenCalled()
+    })
+
+    it("treats only a shrink as a refused save", () => {
+      expect(hubRefusedSave({ ok: true, skipped: "shrink" })).toBe(true)
+      expect(hubRefusedSave({ ok: true, skipped: false })).toBe(false)
+      expect(hubRefusedSave({ ok: true, skipped: "friend-pic" })).toBe(false)
+      expect(hubRefusedSave(null)).toBe(false)
+    })
+
+    it("pulls on focus at most once per window", () => {
+      let t = 0
+      const pull = vi.fn()
+      const onFocus = createHubFocusPull(pull, 10_000, () => t)
+      expect(onFocus()).toBe(true)
+      t = 5_000
+      expect(onFocus()).toBe(false)
+      t = 10_000
+      expect(onFocus()).toBe(true)
+      expect(pull).toHaveBeenCalledTimes(2)
     })
   })
 })

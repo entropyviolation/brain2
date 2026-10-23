@@ -85,6 +85,7 @@ export function migrateAttributeValue(def: AttributeDefinition, value: Attribute
   switch (type) {
     case "multistring":
     case "multiimage":
+    case "phone":
       if (typeof value === "string") return value ? [value] : []
       if (Array.isArray(value)) return value as string[]
       return []
@@ -171,6 +172,7 @@ export const ATTRIBUTE_TYPE_LABELS: Record<AttributeType, string> = {
   multifile: "File list",
   item: "Item reference",
   link: "Link",
+  phone: "Phone number",
   goal: "Goal x / y",
   formula: "Formula",
 }
@@ -189,6 +191,7 @@ export const SCHEMA_ATTRIBUTE_TYPES: AttributeType[] = [
   "multiimage",
   "item",
   "link",
+  "phone",
   "goal",
   "formula",
 ]

@@ -94,7 +94,10 @@ export function NeedsAttention({
   // Persist rehydrate finishes before React hydrates, so a live count (0 on
   // the server, the vault on the client) mismatches. `usePersistHydrated`
   // stays false for the server HTML and the hydration pass, then flips.
-  const vaultReady = usePersistHydrated(useTaskStore.persist) && usePersistHydrated(useGoalsStore.persist)
+  // Call both hooks every render; `a() && b()` would skip the second one.
+  const tasksHydrated = usePersistHydrated(useTaskStore.persist)
+  const goalsHydrated = usePersistHydrated(useGoalsStore.persist)
+  const vaultReady = tasksHydrated && goalsHydrated
   const fallback: HomeNeedsAttentionState = defaultCollapsed ? "collapsed" : "expanded"
   const [panelState, setPanelState] = usePersistedTab(
     APP_NAV_KEYS.homeNeedsAttention,

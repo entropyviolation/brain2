@@ -58,7 +58,7 @@ export function InstagramListsSettings() {
         </p>
         <p className="text-xs text-muted-foreground" data-testid="instagram-analysis-note">
           summary.json from the Instagram analysis (instagram-analysis/out/) works here too. It fills all seven
-          Instagram lists in the People folder with the report&rsquo;s columns: dates followed, every kind of
+          Instagram lists on Lists Home with the report&rsquo;s columns: dates followed, every kind of
           interaction, and Last I engaged. The per-account counts come from what you did. The export does not say who
           liked or commented on your posts, and it has no follower counts for other accounts.
         </p>

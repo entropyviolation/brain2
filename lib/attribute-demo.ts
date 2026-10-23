@@ -24,6 +24,7 @@ export const ATTRIBUTE_DEMO_SCHEMA: AttributeDefinition[] = [
   { id: "author", name: "Author", type: "string" },
   { id: "genres", name: "Genres", type: "multistring" },
   { id: "source_link", name: "Source link", type: "link" },
+  { id: "publisher_phone", name: "Publisher phone", type: "phone" },
   { id: "price", name: "Price", type: "number", unit: "$", allowFloat: true },
   { id: "quantity", name: "Copies", type: "number", allowFloat: false },
   { id: "total", name: "Total spent", type: "formula", formula: "=price * quantity", formatAs: "currency" },
@@ -228,6 +229,7 @@ export function attributeDemoItem(
   const values: Record<string, AttributeValue> = {
     author: "Norbert Wiener",
     genres: ["cybernetics", "systems", "control theory"],
+    publisher_phone: ["+16175551234"],
     source_link: "https://en.wikipedia.org/wiki/Cybernetics:_Or_Control_and_Communication_in_the_Animal_and_the_Machine",
     price: 18.95,
     quantity: 2,
