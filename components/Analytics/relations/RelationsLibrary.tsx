@@ -19,6 +19,8 @@ import { GraphInbox } from "./GraphInbox"
 import { RelationSchematic } from "./RelationSchematic"
 import { RelationSheet } from "./RelationSheet"
 import { RuleEditor } from "./RuleEditor"
+import { LibSearch } from "../library-kit"
+import { StudioCheck } from "../studio-kit"
 import "./relations-library.css"
 
 const VIEW_LABEL = { list: "By family", tree: "Tree", schematic: "Schematic", rules: "Rules", inbox: "Inbox" } as const
@@ -40,6 +42,10 @@ export function RelationsLibrary() {
   const [view, setView] = useState<"list" | "tree" | "schematic" | "rules" | "inbox">("list")
   const [openId, setOpenId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [query, setQuery] = useState("")
+  const [usedOnly, setUsedOnly] = useState(false)
+  // Families the person folded or unfolded; others follow the default below.
+  const [toggled, setToggled] = useState<Set<string>>(new Set())
 
   // Store slices are deps so the registry read refreshes on change.
   const defs = useMemo(() => allRelations(), [relations, overrides]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -79,19 +85,81 @@ export function RelationsLibrary() {
     )
   }
 
-  const listView = () =>
-    FAMILY_ORDER.map((fam) => {
-      const inFam = live.filter((d) => (d.family ?? "other") === fam).sort((a, b) => a.label.localeCompare(b.label))
-      if (!inFam.length) return null
-      return (
-        <section key={fam} className="rel-group" aria-label={`${fam} relations`}>
-          <h3 className="rel-group-head">
-            {fam} <span className="tabular-nums">{inFam.length}</span>
-          </h3>
-          <ul className="rel-list">{inFam.map((d) => row(d))}</ul>
-        </section>
-      )
+  const q = query.trim().toLowerCase()
+  const matches = (d: RelationDef) =>
+    (!usedOnly || (usage.get(d.id) ?? 0) > 0) &&
+    (!q || d.label.toLowerCase().includes(q) || (d.inverseLabel ?? "").toLowerCase().includes(q) || d.id.toLowerCase().includes(q))
+  const families = FAMILY_ORDER.map((fam) => {
+    const all = live.filter((d) => (d.family ?? "other") === fam)
+    const links = all.reduce((sum, d) => sum + (usage.get(d.id) ?? 0), 0)
+    return { fam, all, links, shown: all.filter(matches).sort((a, b) => a.label.localeCompare(b.label)) }
+  }).filter((f) => f.all.length > 0)
+  // Families start open (nothing hidden by default). A search opens every match.
+  const isOpen = (f: (typeof families)[number]) => q !== "" || usedOnly || !toggled.has(f.fam)
+  const flip = (fam: string) =>
+    setToggled((prev) => {
+      const next = new Set(prev)
+      if (next.has(fam)) next.delete(fam)
+      else next.add(fam)
+      return next
     })
+  const maxFam = Math.max(1, ...families.map((f) => f.all.length))
+
+  const listView = () => (
+    <>
+      <div className="rel-tools">
+        <LibSearch value={query} onChange={setQuery} label="Search relations" />
+        <StudioCheck id="rel-used-only" checked={usedOnly} onChange={setUsedOnly} title="Hide relations no link uses yet">
+          Used only
+        </StudioCheck>
+        <button
+          type="button"
+          className="an-chip"
+          onClick={() => setToggled(toggled.size ? new Set() : new Set(families.map((f) => f.fam)))}
+        >
+          {toggled.size ? "Unfold all" : "Fold all"}
+        </button>
+      </div>
+      {/* Family strip: width = relations in the family, ink = links that use them. */}
+      <div className="rel-fam-strip" role="list" aria-label="Relation families">
+        {families.map((f) => (
+          <button
+            key={f.fam}
+            type="button"
+            role="listitem"
+            className="rel-fam"
+            style={{ flexGrow: f.all.length, minWidth: 40 + (f.all.length / maxFam) * 40 }}
+            aria-pressed={isOpen(f)}
+            title={`${f.fam}: ${f.all.length} relation${f.all.length === 1 ? "" : "s"}, ${f.links} link${f.links === 1 ? "" : "s"}. Click to fold or unfold.`}
+            onClick={() => flip(f.fam)}
+          >
+            <span className="rel-fam-name">{f.fam}</span>
+            <span className="tabular-nums">
+              {f.all.length} · {f.links} link{f.links === 1 ? "" : "s"}
+            </span>
+          </button>
+        ))}
+      </div>
+      {families.map((f) => {
+        if (!f.shown.length) return null
+        const open = isOpen(f)
+        return (
+          <section key={f.fam} className="rel-group" aria-label={`${f.fam} relations`}>
+            <h3 className="rel-group-head">
+              <button type="button" className="rel-group-toggle" aria-expanded={open} onClick={() => flip(f.fam)}>
+                {open ? "▾" : "▸"} {f.fam} <span className="tabular-nums">{f.shown.length}</span>
+                {f.links ? <span className="tabular-nums"> · {f.links} links</span> : null}
+              </button>
+            </h3>
+            {open ? <ul className="rel-list">{f.shown.map((d) => row(d))}</ul> : null}
+          </section>
+        )
+      })}
+      {(q || usedOnly) && families.every((f) => f.shown.length === 0) ? (
+        <p className="an-chart-empty">No relations match.</p>
+      ) : null}
+    </>
+  )
 
   const treeView = () => {
     const lattice = buildLattice(live)

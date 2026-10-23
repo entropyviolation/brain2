@@ -480,53 +480,45 @@ export function UpsetChart({
   }
   const maxN = Math.max(...rows.map((r) => r.n), 1)
   const shown = rows.slice(0, 16)
+  const cols = universe.slice(0, 8)
   return (
     <div>
       <CanvasTitle title={title} help={help} />
-      <div className="an-upset" role="img" aria-label={title}>
-        <div>
-          {shown.map((row) => (
-            <button
-              key={row.key}
-              type="button"
-              className="an-upset-row"
-              title={`${row.tags.join(" ∩ ") || "∅"} · ${row.n} item${row.n === 1 ? "" : "s"}`}
-              onClick={() => onSelect?.(row.ids)}
-            >
-              <span>{row.tags.join(" ∩ ")}</span>
-              <span className="an-quantile">{row.n}</span>
-              <span className="an-bar-track">
-                <span className="an-upset-bar" style={{ width: `${(row.n / maxN) * 100}%`, display: "block" }} />
+      {/* One grid row per combination: matrix dots, name, n, bar — so they always line up. */}
+      <div className="lib-upset" role="list" aria-label={title}>
+        <div className="lib-upset-row lib-upset-head" aria-hidden>
+          <span className="lib-upset-dots">
+            {cols.map((tag) => (
+              <span key={tag} className="lib-upset-col" title={tag}>
+                {tag}
               </span>
-            </button>
-          ))}
+            ))}
+          </span>
+          <span>Combination</span>
+          <span>n</span>
+          <span />
         </div>
-        <div>
-          <div className="an-upset-row" style={{ fontWeight: 700 }}>
-            <span />
-            <span />
-            <span className="an-upset-dots">
-              {universe.slice(0, 8).map((tag) => (
-                <span key={tag} className="an-upset-dot is-on" title={tag} />
+        {shown.map((row) => (
+          <button
+            key={row.key}
+            type="button"
+            role="listitem"
+            className="lib-upset-row"
+            title={`${row.tags.join(" ∩ ") || "∅"} · ${row.n} item${row.n === 1 ? "" : "s"}`}
+            onClick={() => onSelect?.(row.ids)}
+          >
+            <span className="lib-upset-dots">
+              {cols.map((tag) => (
+                <span key={tag} className={row.tags.includes(tag) ? "an-upset-dot is-on" : "an-upset-dot"} />
               ))}
             </span>
-          </div>
-          {shown.map((row) => (
-            <div key={`d-${row.key}`} className="an-upset-row">
-              <span />
-              <span />
-              <span className="an-upset-dots">
-                {universe.slice(0, 8).map((tag) => (
-                  <span
-                    key={tag}
-                    className={row.tags.includes(tag) ? "an-upset-dot is-on" : "an-upset-dot"}
-                    title={tag}
-                  />
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
+            <span className="lib-upset-name">{row.tags.join(" ∩ ")}</span>
+            <span className="tabular-nums">{row.n}</span>
+            <span className="an-bar-track">
+              <span className="an-upset-bar" style={{ width: `${(row.n / maxN) * 100}%`, display: "block" }} />
+            </span>
+          </button>
+        ))}
       </div>
       <p className="an-canvas-hint">
         UpSet: each row is one exact tag combination (not a superset). Click a row to open those items in Lists.

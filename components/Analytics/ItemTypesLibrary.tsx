@@ -18,6 +18,9 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { openItemsInLists } from "./open-in-lists"
 import { RelationsLibrary } from "./relations/RelationsLibrary"
 import { NativeSelect } from "@/components/ui/native-select"
+import { StudioBars, StudioReadout, inkOnFill } from "./studio-kit"
+import { LibPlate, LibSearch, fmt } from "./library-kit"
+import { shannon } from "./library-stats"
 
 type SortKey = "name" | "count" | "kind"
 type KindFilter = "all" | "system" | "catalog" | "user"
@@ -70,6 +73,7 @@ function TypesCatalog() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<ItemTypeDefinition | null | undefined>(undefined)
+  const [query, setQuery] = useState("")
 
   const rows = useMemo(() => {
     const counted = types.map((type) => {
@@ -77,7 +81,12 @@ function TypesCatalog() {
       const listCount = lists.filter((l) => l.itemTypeId === type.id).length
       return { type, items, listCount, count: items.length }
     })
-    const filtered = kind === "all" ? counted : counted.filter((r) => typeKind(r.type) === kind)
+    const q = query.trim().toLowerCase()
+    const filtered = counted.filter(
+      (r) =>
+        (kind === "all" || typeKind(r.type) === kind) &&
+        (!q || r.type.name.toLowerCase().includes(q) || (r.type.description ?? "").toLowerCase().includes(q)),
+    )
     return filtered.sort((a, b) => {
       if (sort === "count") return b.count - a.count || a.type.name.localeCompare(b.type.name)
       if (sort === "kind") {
@@ -85,11 +94,23 @@ function TypesCatalog() {
       }
       return a.type.name.localeCompare(b.type.name)
     })
-  }, [kind, lists, sort, tasks, types])
+  }, [kind, lists, query, sort, tasks, types])
 
   const selected = rows.find((r) => r.type.id === selectedId) ?? rows[0] ?? null
   const totalItems = rows.reduce((s, r) => s + r.count, 0)
-  const mosaicMax = Math.max(...rows.map((r) => r.count), 1)
+  const inUse = rows.filter((r) => r.count > 0).length
+  const spread = shannon(rows.map((r) => r.count))
+  const top = rows.reduce<(typeof rows)[number] | null>((best, r) => (!best || r.count > best.count ? r : best), null)
+  // Schema coverage: share of the selected type's items that carry each attribute.
+  const coverage = selected
+    ? (selected.type.attributes ?? []).map((def) => {
+        const filled = selected.items.filter((item) => {
+          const raw = (item as { attributes?: Record<string, unknown> }).attributes?.[def.id]
+          return raw !== undefined && raw !== null && raw !== "" && !(Array.isArray(raw) && raw.length === 0)
+        }).length
+        return { name: def.name, value: selected.count ? Math.round((filled / selected.count) * 100) : 0 }
+      })
+    : []
 
   const openNew = () => {
     setEditing(null)
@@ -157,11 +178,30 @@ function TypesCatalog() {
               </button>
             ))}
           </div>
+          <LibSearch value={query} onChange={setQuery} label="Search types" />
           <button type="button" className="an-chip" onClick={openNew}>
             New type
           </button>
         </div>
       </header>
+
+      {rows.length > 0 && (
+        <div className="an-readouts">
+          <StudioReadout label="In use" value={`${inUse}/${rows.length}`} note="types with items" />
+          <StudioReadout
+            label="Top type"
+            value={top && totalItems ? `${Math.round((top.count / totalItems) * 100)}%` : "—"}
+            note={top ? top.type.name : undefined}
+            tip="Share of items (in this filter) held by the biggest type. An item that matches two types counts in both."
+          />
+          <StudioReadout
+            label="Evenness"
+            value={fmt(spread.evenness)}
+            note={`H = ${fmt(spread.bits)} bits`}
+            tip="Pielou J of items across types. 1 = items spread evenly; near 0 = one type holds nearly all."
+          />
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <ChartFrame empty emptySentence="No item types in this filter." />
@@ -174,11 +214,11 @@ function TypesCatalog() {
                 <button
                   key={row.type.id as string}
                   type="button"
-                  className={`an-mosaic-cell${active ? " is-active" : ""}`}
+                  className={`an-mosaic-cell${active ? " is-active" : ""}${row.count ? "" : " is-empty"}`}
                   style={{
-                    flexGrow: Math.max(row.count, 1),
+                    flexGrow: row.count,
                     background: row.type.color || "#1e3a4c",
-                    opacity: 0.55 + (row.count / mosaicMax) * 0.45,
+                    color: inkOnFill(row.type.color || "#1e3a4c"),
                   }}
                   onClick={() => setSelectedId(row.type.id as string)}
                   title={`${row.type.name}: ${row.count} items`}
@@ -244,6 +284,11 @@ function TypesCatalog() {
                     label={`Open ${selected.count} item(s) in Lists`}
                   />
                 </div>
+                {coverage.length > 0 && selected.count > 0 ? (
+                  <LibPlate title="Schema coverage" note="Share of this type's items that carry each attribute.">
+                    <StudioBars rows={coverage} max={100} />
+                  </LibPlate>
+                ) : null}
                 {selected.items.length === 0 ? (
                   <p className="an-chart-empty">No items use this type yet.</p>
                 ) : (
