@@ -18,6 +18,7 @@ import {
   instagramSource,
   parseStandaloneSettings,
   readReportStateMessage,
+  type InstagramRemoved,
   type InstagramSource,
   type InstagramStatus,
 } from "@/lib/instagram-report"
@@ -82,6 +83,63 @@ function ExportReminder({ exportDate, ready }: { exportDate: string | null; read
         {on ? "Turn off" : "Remind me monthly"}
       </button>
     </span>
+  )
+}
+
+/**
+ * DMs an earlier export held and a later one does not: unsent, deleted, or
+ * edited. Read from the archive (`electron/instagram-archive.js`) when opened.
+ */
+function RemovedMessages({ source, buildId }: { source: InstagramSource; buildId: string }) {
+  const [open, setOpen] = useState(false)
+  const [data, setData] = useState<InstagramRemoved | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open || !source.removed) return
+    let live = true
+    source
+      .removed()
+      .then((d) => live && setData(d))
+      .catch((err) => live && setError(err instanceof Error ? err.message : String(err)))
+    return () => {
+      live = false
+    }
+  }, [open, source, buildId])
+
+  if (!source.removed) return null
+  const rows = data?.rows ?? []
+  const label = { removed: "Unsent or deleted", edited: "Edited", "thread-gone": "Chat gone" } as const
+
+  return (
+    <details className="an-ig-more" data-testid="instagram-removed" onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary>Unsent, deleted and edited messages{data ? ` (${rows.length})` : ""}</summary>
+      {error ? <p className="an-ig-error">Could not read the archive: {error}</p> : null}
+      {data && data.exports < 2 ? (
+        <p>Brain2 has {data.exports === 1 ? "one export" : "no exports"} so far. A message shows here once an earlier export has it and a later one does not.</p>
+      ) : null}
+      {data && data.exports >= 2 && rows.length === 0 ? <p>No message has gone missing between the {data.exports} archived exports.</p> : null}
+      {rows.length ? (
+        <>
+          <p className="an-ig-note">
+            A message is here when an earlier export had it and a later one did not. Anything sent and removed between two
+            exports was never captured.
+          </p>
+          <ul className="an-ig-removed">
+            {rows.map((r) => (
+              <li key={`${r.thread}|${r.ts}|${r.sender}|${r.content ?? ""}`}>
+                <b>{r.sender}</b> in {r.title || r.thread} · {formatInstagramStamp(new Date(r.ts).toISOString())} ·{" "}
+                {label[r.kind]}, last in the {formatExportDate(r.lastSeen)} export, gone by {formatExportDate(r.removedSince)}
+                <div className="an-ig-removed-text">
+                  {r.content ?? (r.share?.link ? r.share.link : r.media?.length ? `${r.media.length} attachment(s)` : "(no text)")}
+                  {r.kind === "edited" && r.editedTo !== undefined ? <> → {r.editedTo}</> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </details>
   )
 }
 
@@ -283,6 +341,8 @@ export function InstagramView() {
           allowFullScreen
         />
       ) : null}
+
+      {status?.hasReport && current ? <RemovedMessages source={source} buildId={current.buildId} /> : null}
 
       {status?.hasReport ? (
         <details className="an-ig-more">

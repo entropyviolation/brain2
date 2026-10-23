@@ -38,11 +38,33 @@ export interface InstagramStatus {
   canIngest?: boolean
 }
 
+/** A DM an earlier export held and a later one does not (`electron/instagram-archive.js`). */
+export interface InstagramRemovedMessage {
+  thread: string
+  title: string
+  participants: string[]
+  sender: string
+  ts: number
+  content?: string
+  media?: string[]
+  share?: { link?: string; text?: string }
+  lastSeen: string
+  removedSince: string
+  kind: "removed" | "edited" | "thread-gone"
+  editedTo?: string
+}
+
+export interface InstagramRemoved {
+  exports: number
+  rows: InstagramRemovedMessage[]
+}
+
 export interface DesktopInstagramBridge {
   status: () => Promise<InstagramStatus>
   scan: () => Promise<InstagramStatus>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
   pickFolder: (clear?: boolean) => Promise<InstagramStatus>
+  removed?: () => Promise<InstagramRemoved>
   onChange: (cb: (s: Omit<InstagramStatus, "reportBase">) => void) => () => void
 }
 
@@ -53,6 +75,7 @@ export interface InstagramSource {
   scan?: () => Promise<InstagramStatus>
   pickFolder?: (clear?: boolean) => Promise<InstagramStatus>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
+  removed?: () => Promise<InstagramRemoved>
   onChange?: (cb: () => void) => () => void
 }
 
@@ -79,6 +102,7 @@ export function instagramSource(
       scan: () => bridge.scan(),
       pickFolder: (clear) => bridge.pickFolder(clear),
       saveUi: (key, value) => bridge.saveUi(key, value),
+      removed: bridge.removed ? () => bridge.removed!() : undefined,
       onChange: (cb) => bridge.onChange(() => cb()),
     }
   }
@@ -90,6 +114,11 @@ export function instagramSource(
         const r = await fetchImpl("/api/instagram/status", { cache: "no-store" })
         if (!r.ok) throw new Error(`status ${r.status}`)
         return (await r.json()) as InstagramStatus
+      },
+      removed: async () => {
+        const r = await fetchImpl("/api/instagram/removed", { cache: "no-store" })
+        if (!r.ok) throw new Error(`removed ${r.status}`)
+        return (await r.json()) as InstagramRemoved
       },
       saveUi: async (key, value) => {
         const r = await fetchImpl("/api/instagram/ui-state", {

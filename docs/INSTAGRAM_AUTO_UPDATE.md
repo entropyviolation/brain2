@@ -25,6 +25,14 @@ Everything after the export request is automatic.
    run keeps the previous report and shows the error
    (`electron/instagram-report.js`).
 
+## Every export is kept
+
+Brain2 keeps every export in its own archive and merges them
+(`electron/instagram-archive.js`). Each file is stored once by content, so
+daily exports cost little extra space. A DM that an earlier export had and a
+later one does not shows as unsent, deleted or edited, with its text. A
+message sent and removed between two exports was never captured.
+
 ## Scheduled export to Google Drive or Dropbox (found, not tested)
 
 _Checked: 2026-10-23_
@@ -56,6 +64,11 @@ Not confirmed until one real run:
 - Whether the option is offered in every region and for both destinations.
 
 Until that run, the monthly reminder stays on.
+
+**Set up (2026-10-23):** Athena's account sends a JSON, all-information
+export to Google Drive once a day for 3 years. Meta keeps every export in
+Drive, so a free 15 GB Drive can fill within days. Once Brain2 has archived an
+export, the copy in Drive can be deleted without losing anything.
 
 ## Later: routes we hope to add
 

@@ -25,6 +25,7 @@ const os = require("os")
 const nodeFs = require("fs")
 const { execFile } = require("child_process")
 const { resolveElectronUserData } = require("./user-data-path")
+const archive = require("./instagram-archive")
 
 /** The report keeps these in localStorage. Brain2 keeps a copy so a new origin starts with them. */
 const UI_STATE_KEYS = ["ig-matches", "ig-hide-cols", "ig-photos"]
@@ -525,6 +526,12 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
   done.lastError = null
   done.imported = { ...(done.imported || {}), [candidate.key]: { fingerprint, at, ok: true } }
   saveState(root, done, { fs })
+  // Keep every export for good (`instagram-archive.js`) before prune drops old folders.
+  try {
+    await archive.archiveExport(root, { exportDir: exportDirName, exportRoot, date: candidate.date }, { fs, now })
+  } catch (err) {
+    console.warn("[brain2] instagram archive:", err && err.message)
+  }
   try {
     prune(root, done, config, { fs })
   } catch (err) {
@@ -711,6 +718,7 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     async start() {
       fs.mkdirSync(root, { recursive: true })
       await refreshDeps()
+      await archive.archiveAll(root, { fs, findExportRoot, now }).catch((err) => console.warn("[brain2] instagram archive:", err && err.message))
       watchDirs()
       timer = setInterval(() => scan(), intervalMs)
       timer.unref?.()

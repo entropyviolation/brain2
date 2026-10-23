@@ -121,4 +121,20 @@ describe("InstagramView", () => {
     expect(await screen.findByRole("button", { name: "Remind me monthly" })).toBeInTheDocument()
     vi.useRealTimers()
   })
+
+  it("lists unsent and edited messages from the archive when opened", async () => {
+    const bridge = installBridge(base) as ReturnType<typeof installBridge> & { removed: () => Promise<unknown> }
+    bridge.removed = vi.fn(async () => ({
+      exports: 2,
+      rows: [
+        { thread: "sam_1", title: "sam", participants: [], sender: "sam", ts: Date.UTC(2026, 9, 21), content: "something I will unsend", lastSeen: "2026-10-22", removedSince: "2026-10-23", kind: "removed" },
+      ],
+    }))
+    render(<InstagramView />)
+    const panel = await screen.findByTestId("instagram-removed")
+    ;(panel as HTMLDetailsElement).open = true
+    fireEvent(panel, new Event("toggle"))
+    expect(await screen.findByText("something I will unsend")).toBeInTheDocument()
+    expect(panel.textContent).toMatch(/Unsent or deleted, last in the Oct 22, 2026 export, gone by Oct 23, 2026/)
+  })
 })
