@@ -5,6 +5,7 @@
  * runs from the Electron main process.
  *
  *   GET  /api/instagram/status
+ *   GET  /api/instagram/summary      {buildId, text} of summary.json, or null
  *   POST /api/instagram/ui-state     {key, value}
  *   GET  /api/instagram/report/<path>  report.html, thumbs/, media/
  *
@@ -86,6 +87,17 @@ export async function handleInstagramApi(req, res, pathname, deps = {}) {
 
   if (p.replace(/\/$/, "") === "/api/instagram/status" && req.method === "GET") {
     sendJson(res, 200, { ...ig.publicStatus(root), reportBase: INSTAGRAM_API_REPORT_BASE, canIngest: false })
+    return true
+  }
+
+  if (p.replace(/\/$/, "") === "/api/instagram/summary" && req.method === "GET") {
+    const state = ig.loadState(root)
+    const file = ig.resolveReportPath(root, state, "summary.json")
+    if (!file || !state.current) {
+      sendJson(res, 200, null)
+      return true
+    }
+    sendJson(res, 200, { buildId: state.current.buildId, text: fs.readFileSync(file, "utf8") })
     return true
   }
 

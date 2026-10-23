@@ -220,6 +220,7 @@ describe("report state across origins", () => {
     expect(out.indexOf("brain2")).toBeLessThan(out.indexOf("REPORT"))
     expect(out.startsWith('<!doctype html><html lang="en"><head><script>')).toBe(true)
     expect(out).not.toMatch(/"<\/script>"/)
+    expect(out).toContain("open-account")
     expect(out.replace(/<script>\/\* brain2 \*\/.*?<\/script>/, "")).toBe(html)
   })
 })

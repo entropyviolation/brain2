@@ -1,7 +1,7 @@
 /**
  * components/People/person-time-together.tsx — Time together, from Tracking
  *
- * In a person's item detail (People I Know), under Known for / Last saw. Reads
+ * In a person's item detail (People I Know), under Known for / Last seen. Reads
  * `personTimeStats` (`lib/person-time.ts`) for the Company pens joined to this
  * person: totals and rhythm, when in the week and day you tend to be
  * together, where you usually are and what you are doing, who else is often
@@ -27,7 +27,7 @@ function dayLabel(date: string): string {
 function PersonTimeTogetherView({ person, todayIso }: { person: Task; todayIso: string }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  const penIds = useMemo(() => personTimePenIds(person, scopes), [person, scopes])
+  const penIds = useMemo(() => personTimePenIds(person), [person])
   const joined = useMemo(() => joinedCompanyPenIds(person.personPipelines), [person.personPipelines])
   const stats = useMemo(() => personTimeStats(entries, scopes, penIds, todayIso), [entries, scopes, penIds, todayIso])
   const name = person.title || person.description || "them"
