@@ -16,13 +16,13 @@ const path = require("path")
 const crypto = require("crypto")
 
 const CHANNELS = {
-  status: "cogs:instagram:status",
-  list: "cogs:instagram:list",
-  login: "cogs:instagram:login",
-  update: "cogs:instagram:update",
-  remove: "cogs:instagram:remove",
-  setPassword: "cogs:instagram:setPassword",
-  check: "cogs:instagram:check",
+  status: "cogs:instagram-accounts:status",
+  list: "cogs:instagram-accounts:list",
+  login: "cogs:instagram-accounts:login",
+  update: "cogs:instagram-accounts:update",
+  remove: "cogs:instagram-accounts:remove",
+  setPassword: "cogs:instagram-accounts:setPassword",
+  check: "cogs:instagram-accounts:check",
 }
 
 const FILE_NAME = "instagram-accounts.json"
