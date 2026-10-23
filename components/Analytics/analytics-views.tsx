@@ -49,6 +49,7 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   "cross-section": view(() => import("./CrossSection").then((m) => ({ default: m.CrossSection }))),
   goals: view(() => import("./GoalsAnalytics").then((m) => ({ default: m.GoalsAnalytics }))),
   operations: view(() => import("./OperationsAnalytics").then((m) => ({ default: m.OperationsAnalytics }))),
+  "texts-report": view(() => import("./TextsReportView").then((m) => ({ default: m.TextsReportView }))),
   "item-types": view(() => import("./ItemTypesLibrary").then((m) => ({ default: m.ItemTypesLibrary }))),
   "lists-areas": view(() => import("./ListsAreasView").then((m) => ({ default: m.ListsAreasView }))),
   attributes: view(() => import("./AttributesView").then((m) => ({ default: m.AttributesView }))),

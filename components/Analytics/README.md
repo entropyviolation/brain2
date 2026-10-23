@@ -86,7 +86,7 @@ meaningful on its own.
 | `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
 | `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
 | `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
-| `analytics-tabs.ts` | Six groups (behavior, time, accuracy, meta, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
+| `analytics-tabs.ts` | Seven groups (behavior, time, accuracy, meta, texts, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
 | `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
 | `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
 | `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
@@ -212,6 +212,12 @@ Interpretive views hide or watermark the finding when n is below `SAMPLE_FLOORS`
 Observatory findings with n below 7 are watermarked. Cross-section is a display:
 missing nights stay blank; empty rows say so.
 
+### Texts
+
+_Last mapped: 2026-10-22_
+
+Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts report drawn by `scripts/texts-analysis/` and served on loopback by `electron/texts-report.js`. The report keeps its own look on purpose: the studio skin does not apply inside the frame (allie, 2026-10-22). The view adds only a title, the last update, and **Update now**. It does not use the shared window. It refreshes weekly after Sunday 21:00. The web build shows a sentence instead. Renderer bridge: `lib/texts-report.ts`. Week and month comparisons, notes, and on-demand AI reads are **Planned** in [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
+
 ## Pure libraries
 
 - `lib/tracking-summary.ts` — occupancy (`uniqueMinutes`: overlapping blocks count
@@ -310,6 +316,7 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-Meta has no scheduled or repeating export (checked 2026-10-23,
-`research/instagram-auto-update.md` in the project files). A new export
-still starts with the person asking for one.
+Meta's developer docs list a repeating export to Google Drive or Dropbox
+(Accounts Center schedule). It is not confirmed here that its files match the
+`instagram-<account>-<date>-<id>` name; see the auto-update notes before
+relying on it.

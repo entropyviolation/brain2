@@ -18,6 +18,7 @@ describe("analytics tabs", () => {
       "time",
       "accuracy",
       "meta",
+      "texts",
       "library",
       "sources",
     ])
@@ -77,6 +78,9 @@ describe("analytics tabs", () => {
     expect(tabLabel("research-report")).toBe("Produce research report")
     expect(groupForTab("velocity").id).toBe("behavior")
     expect(firstTabInGroup("meta")).toBe("observatory")
+    expect(groupForTab("texts-report").id).toBe("texts")
+    expect(tabLabel("texts-report")).toBe("Report")
+    expect(firstTabInGroup("texts")).toBe("texts-report")
   })
 
   it("keeps every interpretive view", () => {
