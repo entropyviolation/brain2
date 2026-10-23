@@ -162,13 +162,16 @@ def refresh_pipeline():
     t0 = time.time()
     try:
         cache = ROOT / "data/cache_msgs.pkl"
-        steps = [("copy + aggregates", "analyze.py", ("--fresh",)), ("per-person detail", "analyze2.py", ()), ("detector", "detector_eval.py", ()), ("report", "build_report.py", ())]
+        steps = [("copy + aggregates", "analyze.py", ("--fresh",)), ("calls", "calls.py", ("--fresh",)), ("per-person detail", "analyze2.py", ()), ("detector", "detector_eval.py", ()), ("report", "build_report.py", ())]
         for label, script, args in steps:
             _refresh["step"] = label
             slog(f"refresh: {label}")
             if script == "analyze2.py" and cache.exists():
                 cache.unlink()  # rebuild from the fresh copy
             r = run_script(script, *args)
+            if r.returncode and script == "calls.py":  # calls are extra; texts still update
+                slog(f"refresh: calls skipped: {(r.stderr or r.stdout).strip()[-300:]}")
+                continue
             if r.returncode:
                 raise RuntimeError(f"{script} failed: {(r.stderr or r.stdout).strip().splitlines()[-1] if (r.stderr or r.stdout).strip() else r.returncode}")
         meta = json.loads((OUT / "summary.json").read_text())["meta"]
