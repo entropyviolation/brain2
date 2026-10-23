@@ -39,7 +39,7 @@ function seedMetrics(days: number) {
   const datapoints = Array.from({ length: days }, (_, i) => {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
     const v = 50 + 30 * Math.sin(i / 2)
-    return { id: `m${i}`, at: `${formatLocalDateKey(d)}T09:00`, values: { joy: v, suffering: 100 - v, alignment: v / 2 + 20 } }
+    return { id: `m${i}`, at: `${formatLocalDateKey(d)}T09:00`, createdAt: d, values: { joy: v, suffering: 100 - v, alignment: v / 2 + 20 } }
   })
   useMetricsStore.setState({ datapoints })
 }
