@@ -635,8 +635,11 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
   if (!exportRoot) return fail("unzip", "The export has no your_instagram_activity folder. Was it requested as JSON?", "")
   if (candidate.accountUnknown) {
     const account = exportAccount(exportRoot, { fs })
-    if (account && !accountMatches(account, config.handle))
+    if (account && !accountMatches(account, config.handle)) {
+      // Drop the copy, or archiveAll at the next start would archive it.
+      if (!reusingCurrent) fs.rmSync(exportDir, { recursive: true, force: true })
       return fail("account", `This export is for @${account}, not @${String(config.handle).replace(/^@/, "")}.`, "")
+    }
   }
 
   writeMatchesFile(config, loadUiState(root, config, { fs }), { fs })

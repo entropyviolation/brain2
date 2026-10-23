@@ -59,8 +59,10 @@ Not confirmed until one real run:
 
 - That a Drive or Dropbox export holds the same files as a device export,
   media included.
-- The file and folder names. The watcher matches
-  `instagram-<account>-<YYYY-MM-DD>-<id>`; a different name is not picked up.
+- The file names inside Meta's Drive folder. Downloads exports match
+  `instagram-<account>-<YYYY-MM-DD>-<id>`. Drive folders named
+  `meta-<YYYY>-<Mon>-<DD>-…` are read by `parseMetaFolderName` and
+  `scanMetaFolder` (see below); their contents are not checked yet.
 - Whether the option is offered in every region and for both destinations.
 
 Until that run, the monthly reminder stays on.

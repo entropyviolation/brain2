@@ -326,5 +326,6 @@ describe("Google Drive scheduled export", () => {
     expect(r.imported).toBe(false)
     expect(ig.loadState(root).current).toBeNull()
     expect(archive.isArchived(root, "2026-10-22-202337")).toBe(false)
+    expect(fs.existsSync(path.join(root, "exports", "2026-10-22-202337"))).toBe(false)
   })
 })
