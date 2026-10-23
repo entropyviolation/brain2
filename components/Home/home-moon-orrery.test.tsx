@@ -195,7 +195,7 @@ describe("moon chart date", () => {
     } finally {
       clock.restore()
     }
-  })
+  }, 15_000) // Three real-time flights plus renders; past 5s on CI.
 
   it("keeps Jupiter smaller than the Sun, and opens moons or a globe instead of the Earth title", async () => {
     const clock = installFrames()
