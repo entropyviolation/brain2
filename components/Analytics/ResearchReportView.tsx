@@ -28,6 +28,7 @@ import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
 import { ANALYTICS_TAB_HELP } from "./analytics-tabs"
 import { ChartFrame } from "./chart-frame"
+import "./analytics-meta.css"
 import { CanvasTitle, FindingBlock, PhosphorTrace, StudioBars } from "./studio-kit"
 import { buildResearchReport, researchReportPlainText, type ResearchReportInput } from "./research-report"
 
@@ -179,6 +180,24 @@ export function ResearchReportView() {
     range.label,
   ])
 
+  const [query, setQuery] = useState("")
+  const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set())
+  const q = query.trim().toLowerCase()
+  const visible = q
+    ? report.sections.filter((section) => `${section.title} ${section.sentence}`.toLowerCase().includes(q))
+    : report.sections
+  const setOpen = (id: string, open: boolean) =>
+    setClosed((prev) => {
+      const next = new Set(prev)
+      if (open) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const jump = (id: string) => {
+    setOpen(id, true)
+    document.getElementById(`rr-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(researchReportPlainText(report))
@@ -201,9 +220,48 @@ export function ResearchReportView() {
       {report.sections.length === 0 ? (
         <ChartFrame empty emptySentence="Nothing in this window was dense enough to put in the report." />
       ) : (
-        report.sections.map((section) => (
-          <section key={section.id} className="an-plate">
-            <p className="an-canvas-title">{section.title}</p>
+        <>
+          <div className="an-plate" data-testid="research-report-contents">
+            <p className="an-canvas-title">{`${report.sections.length} findings in this window`}</p>
+            <div className="an-meta-toc">
+              {visible.map((section) => (
+                <button key={section.id} type="button" className="an-meta-chip" onClick={() => jump(section.id)} title={section.sentence}>
+                  {section.title}
+                </button>
+              ))}
+            </div>
+            <div className="an-meta-tools">
+              <input
+                type="search"
+                value={query}
+                placeholder="Filter findings…"
+                aria-label="Filter findings"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button type="button" className="an-meta-chip" onClick={() => setClosed(new Set())}>
+                Open all
+              </button>
+              <button type="button" className="an-meta-chip" onClick={() => setClosed(new Set(report.sections.map((x) => x.id)))}>
+                Fold all
+              </button>
+              {q ? <span className="an-n">{`${visible.length} of ${report.sections.length} match`}</span> : null}
+            </div>
+          </div>
+          {visible.map((section) => (
+          <details
+            key={section.id}
+            id={`rr-${section.id}`}
+            className="an-plate"
+            open={!closed.has(section.id)}
+            onToggle={(e) => {
+              const open = (e.currentTarget as HTMLDetailsElement).open
+              if (open === closed.has(section.id)) setOpen(section.id, open)
+            }}
+          >
+            <summary>
+              <span className="an-canvas-title">{section.title}</span>
+              <span className="an-n">{section.n}</span>
+            </summary>
             <FindingBlock sentence={section.sentence} n={section.n} />
             {section.bars && section.bars.length > 0 ? (
               <StudioBars
@@ -215,10 +273,15 @@ export function ResearchReportView() {
             {section.trace && section.trace.length > 0 ? (
               <PhosphorTrace title={section.title} points={section.trace} unit={section.traceUnit} />
             ) : null}
-          </section>
-        ))
+          </details>
+          ))}
+        </>
       )}
-      <section className="an-plate">
+      <details className="an-plate">
+        <summary>
+          <span className="an-canvas-title">Why these and not others</span>
+          <span className="an-n">{`${report.includedBecause.length} in · ${report.leftOutBecause.length} out`}</span>
+        </summary>
         <p className="an-canvas-title">Included because</p>
         {report.includedBecause.length === 0 ? (
           <p className="an-canvas-hint">Nothing cleared a floor.</p>
@@ -235,7 +298,7 @@ export function ResearchReportView() {
             <li key={`${index}-${reason}`}>{reason}</li>
           ))}
         </ul>
-      </section>
+      </details>
     </div>
   )
 }

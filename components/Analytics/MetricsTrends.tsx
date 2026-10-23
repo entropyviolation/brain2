@@ -20,6 +20,8 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceDot,
+  ReferenceLine,
 } from "recharts"
 import { useMetricsStore, METRIC_DEFINITIONS, type MetricKey } from "@/lib/metrics-store"
 import { trend, rollingSlope, detectChangePoints } from "@/lib/metrics"
@@ -29,6 +31,22 @@ import { dateKeyOf } from "./analytics-range"
 import { MetricLogger } from "@/components/Tracking/MetricLogger"
 import { STUDIO_TOOLTIP } from "./studio-kit"
 import { NativeSelect } from "@/components/ui/native-select"
+import { dailyMeans, rollingMean, summaryStats } from "./meta-math"
+import "./analytics-meta.css"
+
+function MiniLine({ values, label }: { values: number[]; label: string }) {
+  if (values.length < 2) return <svg viewBox="0 0 200 34" role="img" aria-label={`${label}: too few days`} />
+  const w = 200
+  const h = 34
+  const y = (v: number) => h - 3 - (v / 100) * (h - 6)
+  const d = values.map((v, i) => `${i === 0 ? "M" : "L"} ${((i / (values.length - 1)) * w).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label} daily mean`}>
+      <line x1={0} x2={w} y1={y(50)} y2={y(50)} className="an-meta-grid" />
+      <path d={d} fill="none" stroke="var(--at-ink, #14171c)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
+    </svg>
+  )
+}
 
 function formatAt(at: string): string {
   const d = new Date(at)
@@ -73,6 +91,30 @@ export function MetricsTrends() {
     }))
   }, [series, slopes, changePoints])
 
+  const [smooth, setSmooth] = useState(3)
+  const values = useMemo(() => series.map((p) => p.value), [series])
+  const stats = useMemo(() => summaryStats(values), [values])
+  const smoothed = useMemo(() => rollingMean(values, smooth), [values, smooth])
+  const chartRows = useMemo(
+    () => chartData.map((row, i) => ({ ...row, smooth: smooth > 1 ? Number(smoothed[i]?.toFixed(1)) : undefined })),
+    [chartData, smoothed, smooth],
+  )
+  const peak = stats ? series.find((p) => p.value === stats.max) : undefined
+  const trough = stats ? series.find((p) => p.value === stats.min) : undefined
+  const momentum = slopes[slopes.length - 1]?.slope
+
+  const multiples = useMemo(
+    () =>
+      METRIC_DEFINITIONS.map((def) => {
+        const days = dailyMeans(
+          datapoints.map((dp) => ({ at: dp.at, value: dp.values[def.key] })),
+          keySet,
+        )
+        return { def, values: days.map((d) => d.value), stats: summaryStats(days.map((d) => d.value)) }
+      }),
+    [datapoints, keySet],
+  )
+
   const dirLabel = fit.direction === "rising" ? "rising" : fit.direction === "falling" ? "falling" : "flat"
 
   return (
@@ -114,6 +156,8 @@ export function MetricsTrends() {
         {METRIC_DEFINITIONS.map((def) => {
           const values = datapoints
             .filter((dp) => dp.values[def.key] !== undefined && keySet.has(dateKeyOf(dp.at) ?? ""))
+            .slice()
+            .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
             .map((dp) => dp.values[def.key] as number)
           const last = values[values.length - 1]
           return (
@@ -121,6 +165,8 @@ export function MetricsTrends() {
               key={def.key}
               type="button"
               className="an-readout"
+              aria-pressed={def.key === selected?.key}
+              title={`Latest ${def.name} reading in the window`}
               onClick={() => setMetricId(def.key)}
             >
               <p className="an-readout-label">{def.name}</p>
@@ -130,6 +176,27 @@ export function MetricsTrends() {
           )
         })}
       </div>
+      <section className="an-plate" data-testid="metric-multiples">
+        <p className="an-canvas-title">All five, same scale</p>
+        <p className="an-canvas-hint">Daily mean of each metric on 0–100, dotted line at 50. Click a row to open it below.</p>
+        <div className="an-meta-multiples">
+          {multiples.map(({ def, values: v, stats: st }) => (
+            <button
+              key={def.key}
+              type="button"
+              className="an-meta-multiple"
+              aria-pressed={def.key === selected?.key}
+              onClick={() => setMetricId(def.key)}
+            >
+              <span className="an-readout-label">{def.name}</span>
+              <MiniLine values={v} label={def.name} />
+              <span className="an-meta-stats">
+                {st ? `μ ${st.mean.toFixed(0)} · σ ${st.sd.toFixed(0)} · ${st.n} d` : "no readings"}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
           {!selected ? (
             <ChartFrame empty emptySentence="No metrics yet. Log some readings from the Metrics button." />
           ) : series.length < 2 ? (
@@ -143,9 +210,30 @@ export function MetricsTrends() {
                 n = {series.length} readings · {dirLabel}
                 {fit.direction !== "flat" ? ` by ${Math.abs(fit.perDay).toFixed(2)}/day` : ""} · R² {fit.r2.toFixed(2)}
               </p>
+              {stats ? (
+                <p className="an-meta-stats" data-testid="metric-stats">
+                  mean {stats.mean.toFixed(1)} ± {stats.sd.toFixed(1)} σ · median {stats.median.toFixed(1)} · range{" "}
+                  {Math.round(stats.min)}–{Math.round(stats.max)}
+                  {momentum !== undefined ? ` · recent slope ${momentum >= 0 ? "+" : ""}${momentum.toFixed(2)}/day` : ""}
+                </p>
+              ) : null}
+              <div className="an-meta-tools">
+                <label>
+                  Smooth
+                  <input
+                    type="range"
+                    min={1}
+                    max={Math.max(2, Math.min(14, series.length))}
+                    value={smooth}
+                    onChange={(e) => setSmooth(Number(e.target.value))}
+                    aria-label="Rolling mean window in readings"
+                  />
+                  {smooth <= 1 ? "off" : `${smooth}-reading mean`}
+                </label>
+              </div>
               <div className="an-scope">
               <ResponsiveContainer width="100%" height={280}>
-                <ComposedChart data={chartData}>
+                <ComposedChart data={chartRows}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#2a4a32" />
                   <XAxis dataKey="date" fontSize={10} tickFormatter={formatAt} stroke="#8fbf9a" tick={{ fill: "#8fbf9a" }} />
                   <YAxis fontSize={11} domain={[0, 100]} stroke="#8fbf9a" tick={{ fill: "#8fbf9a" }} />
@@ -157,6 +245,18 @@ export function MetricsTrends() {
                     strokeWidth={2}
                     dot={{ r: 2, fill: "#3dff8a" }}
                   />
+                  {smooth > 1 ? (
+                    <Line type="monotone" dataKey="smooth" stroke="#d7f5e0" strokeWidth={1.4} strokeDasharray="4 3" dot={false} />
+                  ) : null}
+                  {stats ? <ReferenceLine y={stats.mean} stroke="#8fbf9a" strokeDasharray="2 4" /> : null}
+                  {peak ? (
+                    <ReferenceDot x={peak.date} y={peak.value} r={4} fill="#3dff8a" stroke="#d7f5e0"
+                      label={{ value: `high ${Math.round(peak.value)} · ${formatAt(peak.date)}`, position: "top", fill: "#d7f5e0", fontSize: 10 }} />
+                  ) : null}
+                  {trough && trough !== peak ? (
+                    <ReferenceDot x={trough.date} y={trough.value} r={4} fill="#3dff8a" stroke="#d7f5e0"
+                      label={{ value: `low ${Math.round(trough.value)} · ${formatAt(trough.date)}`, position: "bottom", fill: "#d7f5e0", fontSize: 10 }} />
+                  ) : null}
                   <Scatter dataKey="change" fill="#ef4444" shape="diamond" />
                 </ComposedChart>
               </ResponsiveContainer>

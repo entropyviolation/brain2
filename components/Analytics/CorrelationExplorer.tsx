@@ -7,7 +7,7 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ZAxis } from "recharts"
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ZAxis, ReferenceLine } from "recharts"
 import { useMetricsStore, METRIC_DEFINITIONS, resolveMetricColor, type MetricKey } from "@/lib/metrics-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -22,9 +22,11 @@ import { sleepMinutes } from "@/lib/sleep-log"
 import { alignSeries, correlate, type SeriesPoint } from "@/lib/metrics"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, dateKeyOf, isThinSample, thinWindowSentence } from "./analytics-range"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
 import { FindingBlock, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
 import { NativeSelect } from "@/components/ui/native-select"
+import { dailyMeans, fisherInterval, fitLine, laggedCorrelation } from "./meta-math"
+import { divergingFill } from "./meta-plots"
 
 interface NamedSeries {
   id: string
@@ -37,12 +39,13 @@ function weekdayIndex(key: string): number {
   return d ? d.getDay() : 0
 }
 
-function cellFill(r: number, n: number, floor: number): string {
-  if (n < floor) return "#b0b0b0"
-  const t = Math.min(1, Math.abs(r))
-  const hue = r >= 0 ? 166 : 8
-  return `hsl(${hue} ${40 + t * 40}% ${16 + t * 36}%)`
+function cellStyle(r: number, n: number, floor: number): { background: string; color: string } {
+  if (n < floor) return { background: "#e1e5e8", color: "#69717c" }
+  const { fill, ink } = divergingFill(r)
+  return { background: fill, color: ink }
 }
+
+type LinkSign = "all" | "positive" | "negative"
 
 export function CorrelationExplorer() {
   const datapoints = useMetricsStore((s) => s.datapoints)
@@ -62,18 +65,19 @@ export function CorrelationExplorer() {
       out.push({
         id: d.key,
         name: d.name,
-        points: datapoints
-          .filter((dp) => dp.values[d.key] !== undefined)
-          .filter((dp) => keySet.has(dateKeyOf(dp.at) ?? ""))
-          .map((dp) => ({ date: dp.at, value: dp.values[d.key] as number })),
+        // One mean per local day so metrics join day-keyed series (habit %, sleep, points).
+        points: dailyMeans(
+          datapoints.map((dp) => ({ at: dp.at, value: dp.values[d.key] })),
+          keySet,
+        ),
       })
     }
-    const habits: SeriesPoint[] = dateKeys.map((date) => ({
-      date,
-      value: habitTasks.length
-        ? calculateDayPercentageAV(date, habitTasks as never, weeklyData as never, weekdayIndex(date), exemptionTest(habitExemptions, "daily"))
-        : 0,
-    }))
+    const habits: SeriesPoint[] = habitTasks.length
+      ? dateKeys.map((date) => ({
+          date,
+          value: calculateDayPercentageAV(date, habitTasks as never, weeklyData as never, weekdayIndex(date), exemptionTest(habitExemptions, "daily")),
+        }))
+      : []
     out.push({ id: "habits", name: "Habit %", points: habits })
     const tracking = uniqueMinutesByDate(trackingEntries)
     out.push({
@@ -117,6 +121,21 @@ export function CorrelationExplorer() {
     return correlate(defA.points, defB.points, { a: defA.name, b: defB.name })
   }, [defA, defB])
 
+  const [lag, setLag] = useState(0)
+  const [sign, setSign] = useState<LinkSign>("all")
+  const lagged = useMemo(
+    () => (defA && defB ? laggedCorrelation(defA.points, defB.points, lag) : { r: 0, n: 0 }),
+    [defA, defB, lag],
+  )
+  const lagProfile = useMemo(
+    () => (defA && defB ? [0, 1, 2, 3, 7].map((k) => ({ k, ...laggedCorrelation(defA.points, defB.points, k) })) : []),
+    [defA, defB],
+  )
+  const fit = useMemo(() => fitLine(aligned.a, aligned.b), [aligned])
+  const ci = result ? fisherInterval(result.r, result.n) : null
+  const xMin = aligned.a.length ? Math.min(...aligned.a) : 0
+  const xMax = aligned.a.length ? Math.max(...aligned.a) : 0
+
   const scatterData = useMemo(
     () => aligned.dates.map((date, i) => ({ x: aligned.a[i], y: aligned.b[i], date })),
     [aligned],
@@ -136,7 +155,7 @@ export function CorrelationExplorer() {
     )
   }, [series])
 
-  const ranked = useMemo(() => {
+  const rankedAll = useMemo(() => {
     const out: { a: string; b: string; r: number; n: number; aId: string; bId: string }[] = []
     for (let i = 0; i < series.length; i++) {
       for (let j = i + 1; j < series.length; j++) {
@@ -146,8 +165,12 @@ export function CorrelationExplorer() {
         }
       }
     }
-    return out.sort((x, y) => Math.abs(y.r) - Math.abs(x.r)).slice(0, 8)
+    return out.sort((x, y) => Math.abs(y.r) - Math.abs(x.r))
   }, [series])
+  const ranked = useMemo(
+    () => rankedAll.filter((row) => (sign === "positive" ? row.r > 0 : sign === "negative" ? row.r < 0 : true)).slice(0, 8),
+    [rankedAll, sign],
+  )
 
   return (
     <div className="an-canvas an-stack">
@@ -168,7 +191,7 @@ export function CorrelationExplorer() {
           >
             <span className="an-matrix-cell is-label" />
             {series.map((s) => (
-              <span key={`h-${s.id}`} className="an-matrix-cell is-label">
+              <span key={`h-${s.id}`} className="an-matrix-cell is-label" title={s.name}>
                 {s.name.slice(0, 4)}
               </span>
             ))}
@@ -178,19 +201,20 @@ export function CorrelationExplorer() {
                 {series.map((col, j) => {
                   const cell = matrix[i]?.[j]
                   const active = row.id === aId && col.id === bId
+                  const diag = i === j
                   return (
                     <button
                       key={`${row.id}-${col.id}`}
                       type="button"
-                      className={`an-matrix-cell${active ? " is-active" : ""}`}
-                      style={{ background: cellFill(cell?.r ?? 0, cell?.n ?? 0, SAMPLE_FLOORS.correlation) }}
+                      className={`an-matrix-cell${active ? " is-active" : ""}${diag ? " is-diag" : ""}`}
+                      style={cellStyle(cell?.r ?? 0, cell?.n ?? 0, SAMPLE_FLOORS.correlation)}
                       title={`${row.name} vs ${col.name}: r=${(cell?.r ?? 0).toFixed(2)} n=${cell?.n ?? 0}`}
                       onClick={() => {
                         setAId(row.id)
                         setBId(col.id)
                       }}
                     >
-                      {cell && cell.n >= SAMPLE_FLOORS.correlation ? cell.r.toFixed(2) : "·"}
+                      {diag ? "—" : cell && cell.n >= SAMPLE_FLOORS.correlation ? cell.r.toFixed(2) : "·"}
                     </button>
                   )
                 })}
@@ -227,7 +251,9 @@ export function CorrelationExplorer() {
             <>
               <FindingBlock
                 sentence={result?.insight ?? ""}
-                n={`n = ${n} overlapping days · r = ${result?.r.toFixed(2)}`}
+                n={`n = ${n} overlapping days · r = ${result?.r.toFixed(2)}${
+                  ci ? ` · 95% CI ${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}` : ""
+                }${fit ? ` · slope ${fit.slope.toFixed(2)} ${defB?.name ?? ""} per ${defA?.name ?? ""}` : ""}`}
                 caveat={caveat}
               />
               <ResponsiveContainer width="100%" height={260}>
@@ -236,6 +262,17 @@ export function CorrelationExplorer() {
                   <XAxis type="number" dataKey="x" name={defA?.name} fontSize={11} stroke={STUDIO_AXIS} />
                   <YAxis type="number" dataKey="y" name={defB?.name} fontSize={11} stroke={STUDIO_AXIS} />
                   <ZAxis range={[60, 60]} />
+                  {fit && xMax > xMin ? (
+                    <ReferenceLine
+                      segment={[
+                        { x: xMin, y: fit.intercept + fit.slope * xMin },
+                        { x: xMax, y: fit.intercept + fit.slope * xMax },
+                      ]}
+                      stroke="#14171c"
+                      strokeDasharray="4 3"
+                      ifOverflow="extendDomain"
+                    />
+                  ) : null}
                   <Tooltip
                     cursor={{ strokeDasharray: "3 3" }}
                     contentStyle={STUDIO_TOOLTIP}
@@ -252,14 +289,47 @@ export function CorrelationExplorer() {
                 </ScatterChart>
               </ResponsiveContainer>
               {(aId === "habits" || bId === "habits") && <OpenInListsButton habits />}
+              <section className="an-plate" data-testid="correlation-lag">
+                <p className="an-canvas-title">Does it carry over?</p>
+                <p className="an-canvas-hint">
+                  Shift {defB?.name} later by a few days and re-join. A link that holds at lag 1 is “today’s {defA?.name} goes
+                  with tomorrow’s {defB?.name}”. Still not a cause, and sticky series inflate r.
+                </p>
+                <div className="an-meta-tools">
+                  <label>
+                    Lag
+                    <input type="range" min={0} max={7} value={lag} onChange={(e) => setLag(Number(e.target.value))} aria-label="Lag in days" />
+                    {lag} d
+                  </label>
+                  <span className="an-n">
+                    {lagged.n >= SAMPLE_FLOORS.correlation
+                      ? `r = ${lagged.r >= 0 ? "+" : ""}${lagged.r.toFixed(2)} over ${lagged.n} days`
+                      : `n = ${lagged.n}, below the floor of ${SAMPLE_FLOORS.correlation}`}
+                  </span>
+                </div>
+                <div className="an-meta-tags">
+                  {lagProfile.map((p) => (
+                    <button key={p.k} type="button" className="an-meta-chip" aria-pressed={p.k === lag} onClick={() => setLag(p.k)}>
+                      {`lag ${p.k}: ${p.n >= SAMPLE_FLOORS.correlation ? (p.r >= 0 ? "+" : "") + p.r.toFixed(2) : "·"}`}
+                    </button>
+                  ))}
+                </div>
+              </section>
             </>
           )}
         </>
       )}
 
-      {ranked.length > 0 && (
+      {rankedAll.length > 0 && (
         <div>
           <p className="an-canvas-title">Strongest links</p>
+          <div className="an-meta-tools">
+            {(["all", "positive", "negative"] as const).map((key) => (
+              <button key={key} type="button" className="an-meta-chip" aria-pressed={sign === key} onClick={() => setSign(key)}>
+                {key === "all" ? "all" : key === "positive" ? "move together" : "move apart"}
+              </button>
+            ))}
+          </div>
           <ul className="an-list">
             {ranked.map((row) => (
               <li key={`${row.aId}-${row.bId}`}>

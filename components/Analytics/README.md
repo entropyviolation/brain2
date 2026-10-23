@@ -90,6 +90,8 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 
 ## Files
 
+_Last mapped: 2026-10-23_
+
 | File | Purpose |
 |------|---------|
 | `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
@@ -106,7 +108,7 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 | `studio-plots.tsx` / `studio-plot-stats.ts` | Horizon, ridgeline, violin+histogram, alluvial, beeswarm, slopegraph, UpSet, hour×pen small multiples (shared white frame), Cleveland cycle, StudioSpark (phosphor on `.an-scope`). |
 | `hour-day.ts` | Hour × day occupancy. Instants off the heat; missing hours stay 0. Overlapping blocks on one minute count once, so an hour stays ≤ 60. Hour×pen small multiples + weekday cycle. |
 | `observatory-findings.ts` | Pearson-r findings for Observatory. Named apart from `Observatory.tsx` (macOS case-fold). |
-| `research-report.ts` / `ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. |
+| `research-report.ts` / `ResearchReportView.tsx` | Meta view `research-report`: a plain-language rundown of the shared window. Sections appear only when a live series clears a floor (habit-day gap, streak, grade gap, tracking coverage, sleep, one wellbeing move, plan vs tracked minutes, text-pipeline stamps, gratitude, why / blocked-reason counts). Copy rundown is plain text. No model. Contents chips, filter, and folding sections. Docs: `docs/analytics/meta-research-report.md`. |
 | `signal-stats.ts` | Shannon entropy of pens/day, Gini, list HHI, Markov transitions, weekday/weekend cut, open-item ages. |
 | `HabitsView.tsx` | Density calendar, sorted bars, week/month grade, Good days, climb, tracking-link split, habit-% lag trace, horizon of daily %, weekday/weekend slopegraph. Day % and rates drop exempt periods from the denominator. |
 | `PointsView.tsx` | Daily stacked source split (habit / bonus / task) + cumulative + top earners. _Last mapped: 2026-10-20_ A **Points ledger** plate (`#analytics-points-ledger`) lists every award, newest first; a row opens the same breakdown as Home Latest award (`components/Home/award-detail.tsx`). Latest award's foot key lands here through `lib/points-ledger-nav.ts`, and the row that was open on Home opens expanded. |
@@ -149,12 +151,12 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 | `CycleView.tsx` | `daysPushed` distribution, open important items, estimate confirmation, empirical survival of open stock, age beeswarm. |
 | `RegretView.tsx` | Accrued cost of important items sitting undone. |
 | `GoalsAnalytics.tsx` | Objective contribution, neglected goals, progress, and which linked goals held the harder or more enjoyable work. |
-| `Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Thin overlap watermarked. |
-| `CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. |
+| `Observatory.tsx` | Classical findings + linked Cross-section (`data-ui-name="Observatory"`, `#studio-views`). Forest plot of every pair with Fisher-z intervals, sortable. Thin overlap watermarked. Docs: `docs/analytics/meta-observatory.md`. |
+| `CrossSection.tsx` | Linked density (habits, tracking, sleep, completions, points, operations, regret, mood, joy, switches, places, goals, Screen Time occupancy). `data-ui-name="Cross-section"`, `#studio-views`. Row chips, sort, compare-to r column. Docs: `docs/analytics/meta-cross-section.md`. |
 | `cross-section.ts` | Pure series builders: missing stays missing. |
-| `MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
-| `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
-| `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
+| `MetricsTrends.tsx` | Readouts, small multiples of all five wellbeing metrics (daily mean, shared 0–100), phosphor detail chart with smoothing slider and labelled high/low, **Log {name}**. Docs: `docs/analytics/meta-metrics.md`. |
+| `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics as daily means + habit % / tracking / sleep / points). Click a cell → scatter with fit line, CI, lag slider. Docs: `docs/analytics/meta-correlation.md`. |
+| `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1, Rhythm finder (correlogram with noise band, log-period periodogram; habit / sleep / tracked). Docs: `docs/analytics/meta-spectrum.md`. |
 | `ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
 | `InstagramView.tsx` / `instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
 | `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). |
