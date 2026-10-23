@@ -46,6 +46,12 @@ export function InstagramImportPanel() {
         This fills <strong>People I follow on Instagram</strong> and <strong>People who follow me on Instagram</strong>.
         One username is one person and can sit on both lists.
       </p>
+      <p className="text-sm text-muted-foreground" data-testid="instagram-analysis-settings-note">
+        If you ran the Instagram analysis, choose its <strong>summary.json</strong> (in instagram-analysis/out/)
+        instead. That fills seven lists in the <strong>People</strong> folder: followers, following, mutuals, no
+        follow-back, fans, pending requests and blocked, each with the report&rsquo;s columns. The interaction counts are
+        what you did toward each account. The export has no follower counts for other accounts.
+      </p>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
         <li>
           On Instagram, open <strong>Settings and activity</strong>, then <strong>Your activity</strong>, then{" "}
