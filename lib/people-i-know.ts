@@ -17,7 +17,7 @@
  * not erased by this build.
  */
 import { createListItem } from "@/lib/item-utils"
-import { PERSON_TYPE_ID } from "@/lib/person-types"
+import { PERSON_ATTR, PERSON_TYPE_ID } from "@/lib/person-types"
 import { phonePenId } from "@/lib/phone-sync/ids"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, PersonPipeline, Task } from "@/lib/types"
@@ -179,10 +179,20 @@ export function joinedCompanyPenIds(pipelines: readonly PersonPipeline[] | undef
 /**
  * Pens whose time counts as time with this person: joined Company pens, plus
  * their iPhone Calls pen, so synced calls count too (`lib/person-time.ts`).
+ * With `scopes`, every iPhone Calls pen linked to them counts as well
+ * (`personId`, `lib/phone-sync/person-links.ts`), so a rename keeps the count.
  */
-export function personTimePenIds(person: Pick<Task, "title" | "description" | "id" | "personPipelines">): string[] {
+export function personTimePenIds(
+  person: Pick<Task, "title" | "description" | "id" | "personPipelines">,
+  scopes?: readonly { id: string; pens: readonly { id: string; personId?: string }[] }[],
+): string[] {
   const name = person.title || person.description || person.id
-  return [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
+  const ids = [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
+  const calls = scopes?.find((scope) => scope.id === "iphone-calls")
+  for (const pen of calls?.pens ?? []) {
+    if (pen.personId === person.id && !ids.includes(pen.id)) ids.push(pen.id)
+  }
+  return ids
 }
 
 /**
@@ -222,6 +232,17 @@ export function pipelinesForEntry(
 }
 
 /** People on the list, plus anyone already carrying a pipeline. */
+/**
+ * A person's numbers: the Phone Number attribute when it has been set, else
+ * the older `personProfile.phones`. Writers keep both (`lib/phone-person-links.ts`).
+ */
+export function personPhoneNumbers(person: Pick<Task, "attributes" | "personProfile">): string[] {
+  const attr = person.attributes?.[PERSON_ATTR.phone]
+  if (Array.isArray(attr)) return attr.filter((v): v is string => typeof v === "string" && v.trim() !== "")
+  if (typeof attr === "string" && attr.trim()) return [attr.trim()]
+  return person.personProfile?.phones ?? []
+}
+
 export function personRecords(tasks: Task[], lists: List[]): Task[] {
   const listId = findPeopleIKnowList(lists)?.id
   return tasks.filter(

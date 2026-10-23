@@ -30,7 +30,7 @@ import { withFlightType } from "@/lib/flight-types"
 import { withLocationType } from "@/lib/location-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
-import { withPersonType } from "@/lib/person-types"
+import { withPersonPhoneAttribute, withPersonType } from "@/lib/person-types"
 import { listAllowedTypeIds } from "@/lib/list-item-types"
 
 export const BUILTIN_TASK_TYPE_ID = "task"
@@ -157,7 +157,7 @@ export function mergeTypeRegistry(stored: ItemTypeDefinition[]): ItemTypeDefinit
       result.push(seed)
       continue
     }
-    result.push(storedById.get(id) ?? seed)
+    result.push(withPersonPhoneAttribute(storedById.get(id) ?? seed))
   }
   for (const t of stored) {
     const id = t.id as string

@@ -33,7 +33,7 @@ import { TypeSpecificSchemaFields } from "@/components/Lists/attributes/Attribut
 export const ITEM_ONLY_TARGET = "__item__"
 
 /** Types that need nothing beyond a name; their settings row is omitted. */
-const NO_SETTINGS = new Set<AttributeType>(["string", "multistring", "link", "color", "image", "multiimage", "file", "multifile"])
+const NO_SETTINGS = new Set<AttributeType>(["string", "multistring", "link", "phone", "color", "image", "multiimage", "file", "multifile"])
 
 /** Sensible starting settings per type so a new attribute is useful at once. */
 function defaultsFor(type: AttributeType): Partial<AttributeDefinition> {

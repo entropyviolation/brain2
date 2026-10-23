@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built and on the phone, not yet switched on.** The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
+**Built and on the phone, not yet switched on.** _Last mapped: 2026-10-22._ Recording is on by default once set up and allowed (`keepOn()` in `LocationPlugin.swift`, called when the app comes to the front). The code is in and wired. On 2026-10-22 the app compiled in Xcode 26.6 (iOS 26.5 SDK) with no changes and was installed on allie's iPhone with a free personal team. That means a reinstall from the Mac every 7 days. Still to do: the box needs the new file and token, then the **Location** card on the phone's Home (`components/Mobile/MobileLocationCard.tsx`) takes the upload URL, upload token and capture public key, asks for Always, and starts recording.
 
 | Piece | File | State |
 | --- | --- | --- |
@@ -41,9 +41,19 @@ Honest gaps:
 
 To switch it on:
 
-1. On the VM, copy `capture-upload.mjs` next to the other box files, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box.
+1. On the VM, copy `capture-box.mjs` and `capture-upload.mjs` into `/opt/brain2-capture/`, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box. From the Mac:
+   ```bash
+   scp scripts/capture-box.mjs scripts/capture-upload.mjs <you>@<vm>:/tmp/
+   ssh <you>@<vm>
+   sudo cp /tmp/capture-box.mjs /tmp/capture-upload.mjs /opt/brain2-capture/
+   echo "COGS_CAPTURE_UPLOAD_TOKEN=$(openssl rand -hex 32)" | sudo tee -a /etc/brain2-capture.env >/dev/null
+   sudo grep -E 'UPLOAD_TOKEN|PUBLIC_KEY' /etc/brain2-capture.env   # the two values the phone needs
+   sudo systemctl restart brain2-capture && systemctl status brain2-capture --no-pager
+   ```
+   Then from the Mac: `curl http://brain2-capture:8788/health`.
+   Install Tailscale on the iPhone too, signed in to the same account. The box is reachable only on the tailnet, so the upload URL is `http://brain2-capture:8788/upload`.
 2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
-3. In Xcode: build to the phone. On the Location card, fill in and save Upload setup, then tap Turn on. Allow location, and pick "Always" when iOS offers it. iOS may grant "While Using" first and offer "Always" later; recording starts either way, and the chip says "set to Always" until then.
+3. In Xcode: build to the phone. On the Location card, fill in and save Upload setup; saving goes straight on to asking for location and starting. Allow location, and pick "Always" when iOS offers it. iOS may grant "While Using" first and offer "Always" later; recording starts either way, and the chip says "set to Always" until then.
 
 ## Job
 
