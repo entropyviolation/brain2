@@ -513,6 +513,13 @@ if (IN_BRAIN2) {
       b2Send({ type: "index", people: personEnts().map((x) => ({ ent: x.id, name: x.name, handles: x.handles || [] })) });
       syncPeopleLinks().catch((err) => console.error(err));
       listeners.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } });
+    } else if (ev.data.type === "nav") {
+      // Brain2's main window lists the sections in its sidebar, so this page hides its own nav there.
+      B2.origin = B2.origin || ev.origin;
+      document.body.classList.toggle("b2nav", !!ev.data.sidebar);
+      if (ev.data.sidebar) { b2Send({ type: "sections", sections: SECTIONS.map(({ id, label }) => ({ id, label })) }); sendSection(); }
+    } else if (ev.data.type === "goto" && ev.origin === B2.origin) {
+      gotoSection(ev.data.id);
     } else if (ev.data.type === "open" && ev.origin === B2.origin) {
       const hit = entForHandles(ev.data.handles);
       if (hit) openRelationship(hit.id);
@@ -795,5 +802,56 @@ async function openTopic(eid, topic) {
   };
   paint(); onState(paint);
 }
+
+// ---------- sections: sidebar list in Brain2, collapsing everywhere ----------
+// The header nav names the sections. Each section folds by its heading, and one that grows
+// very long (conflicts, directory…) is cut to a fixed height with "Show all". Folds are remembered per browser.
+const SECTIONS = [...document.querySelectorAll("header nav a")].map((a) => {
+  const id = a.getAttribute("href").slice(1), el = document.getElementById(id);
+  return { id, label: a.textContent.trim(), el, sec: el?.closest("section") };
+}).filter((x) => x.el);
+const LONG_PX = Math.max(3000, innerHeight * 3.5), CUT_PX = Math.max(1400, innerHeight * 1.6);
+const foldKey = "texts-report-folds";
+let folds = {}; try { folds = JSON.parse(localStorage.getItem(foldKey) || "{}"); } catch (err) { folds = {}; }
+const saveFolds = () => { try { localStorage.setItem(foldKey, JSON.stringify(folds)); } catch (err) { /* private window */ } };
+function gotoSection(id) {
+  const x = SECTIONS.find((s) => s.id === id); if (!x) return;
+  if (x.sec?.classList.contains("folded")) setFold(x.sec, false);
+  x.el.scrollIntoView({ block: "start" });
+}
+let lastSection = null;
+function sendSection() {
+  const y = 90; let cur = SECTIONS[0];
+  for (const x of SECTIONS) if (x.el.getBoundingClientRect().top <= y) cur = x;
+  if (cur && cur.id !== lastSection) { lastSection = cur.id; b2Send({ type: "section", id: cur.id }); }
+}
+let secTimer = null;
+addEventListener("scroll", () => { if (!IN_BRAIN2 || secTimer) return; secTimer = setTimeout(() => { secTimer = null; sendSection(); }, 120); }, { passive: true });
+function setFold(sec, on) {
+  sec.classList.toggle("folded", on);
+  const k = sec.dataset.fold; if (on) folds[k] = 1; else delete folds[k]; saveFolds();
+}
+document.querySelectorAll("main > section").forEach((sec) => {
+  const h2 = sec.querySelector(":scope > h2"); if (!h2) return;
+  sec.dataset.fold = sec.id || h2.id || h2.textContent.trim();
+  const fb = h("button", { type: "button", class: "fold", title: "Fold or unfold this section" });
+  h2.append(fb); fb.onclick = () => setFold(sec, !sec.classList.contains("folded"));
+  if (folds[sec.dataset.fold]) sec.classList.add("folded");
+  const more = h("button", { type: "button", class: "btn more", hidden: "" });
+  sec.append(more);
+  more.onclick = () => { const open = sec.classList.toggle("open"); paintCut(); if (!open) h2.scrollIntoView({ block: "start" }); };
+  const paintCut = () => {
+    const tall = sec.scrollHeight > LONG_PX || sec.classList.contains("open");
+    sec.classList.toggle("cut", tall && !sec.classList.contains("open"));
+    const label = sec.classList.contains("open") ? "Show less" : "Show all";
+    more.hidden = !tall; if (more.textContent !== label) more.textContent = label;
+  };
+  sec.style.setProperty("--cut", CUT_PX + "px");
+  let t = null; const later = () => { clearTimeout(t); t = setTimeout(paintCut, 150); };
+  new ResizeObserver(later).observe(sec);
+  new MutationObserver(later).observe(sec, { childList: true, subtree: true });
+  paintCut();
+});
+document.querySelectorAll("header nav a").forEach((a) => a.addEventListener("click", (ev) => { ev.preventDefault(); gotoSection(a.getAttribute("href").slice(1)); }));
 
 if (SERVER) refreshState().then(() => { if (STATE.jobs.some((j) => j.status === "queued" || j.status === "running")) pollJobs(); });

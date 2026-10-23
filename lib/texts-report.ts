@@ -62,6 +62,11 @@ export type ReportRequest =
   | { type: "link" | "unlink"; personId: string; handles: string[] }
   | { type: "create-person"; name: string; handles: string[] }
   | { type: "open-person"; personId: string }
+  | { type: "sections"; sections: TextsSection[] }
+  | { type: "section"; id: string }
+
+/** One heading of the report, for the Analytics sidebar. */
+export type TextsSection = { id: string; label: string }
 
 function cleanHandles(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -86,6 +91,17 @@ export function readReportRequest(data: unknown): ReportRequest | null {
       })
     return { type: "index", people }
   }
+  if (d.type === "sections") {
+    if (!Array.isArray(d.sections)) return null
+    const sections = d.sections.slice(0, 60).flatMap((row): TextsSection[] => {
+      const r = row as Record<string, unknown>
+      return typeof r?.id === "string" && typeof r.label === "string" && r.id && r.label
+        ? [{ id: r.id.slice(0, 60), label: r.label.slice(0, 60) }]
+        : []
+    })
+    return { type: "sections", sections }
+  }
+  if (d.type === "section") return typeof d.id === "string" ? { type: "section", id: d.id.slice(0, 60) } : null
   if (d.type === "create-person") {
     const name = typeof d.name === "string" ? d.name.trim().slice(0, 120) : ""
     const handles = cleanHandles(d.handles)
