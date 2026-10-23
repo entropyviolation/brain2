@@ -1,0 +1,492 @@
+/*
+ * components/Analytics/library-views.css — Library plates added in the
+ * Library redesign (docs/analytics/library-*.md). Tag search, ledger table,
+ * quadrant grid, step heights, attribute tiles, area squares.
+ */
+
+.fm98.an95 .lib-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.fm98.an95 .lib-search {
+  min-width: 160px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--an-line);
+  background: var(--an-hi);
+  color: var(--an-ink);
+}
+
+.fm98.an95 .lib-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--an-muted);
+}
+
+.fm98.an95 .lib-slider input {
+  width: 120px;
+  accent-color: var(--an-fill);
+}
+
+.fm98.an95 .lib-plate {
+  display: grid;
+  gap: 6px;
+}
+
+.fm98.an95 .lib-plate-title {
+  margin: 0;
+  font-family: var(--font-an-display, inherit);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .lib-plate-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--an-muted);
+  max-width: 68ch;
+}
+
+/* Ledger table: sortable, scrolls inside its own box. */
+.fm98.an95 .lib-table-wrap {
+  max-height: 340px;
+  overflow: auto;
+  box-shadow: inset 0 0 0 1px var(--an-line);
+  background: var(--an-hi);
+}
+
+.fm98.an95 .lib-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .lib-table th,
+.fm98.an95 .lib-table td {
+  padding: 4px 8px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--an-hover);
+}
+
+.fm98.an95 .lib-table th:first-child,
+.fm98.an95 .lib-table td:first-child {
+  text-align: left;
+  white-space: normal;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.fm98.an95 .lib-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--an-panel);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.fm98.an95 .lib-table th button {
+  all: unset;
+  cursor: pointer;
+}
+
+.fm98.an95 .lib-table th button[aria-pressed="true"] {
+  text-decoration: underline;
+}
+
+.fm98.an95 .lib-table tbody tr {
+  cursor: pointer;
+}
+
+.fm98.an95 .lib-table tbody tr:hover {
+  background: var(--an-hover);
+}
+
+.fm98.an95 .lib-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+
+.fm98.an95 .lib-meter {
+  display: inline-block;
+  width: 48px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: var(--an-hover);
+}
+
+.fm98.an95 .lib-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--an-fill);
+}
+
+/* Quadrant grid (Weight, Lists size × rate). */
+.fm98.an95 .lib-quad {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px repeat(var(--cols), minmax(48px, 1fr));
+  gap: 2px;
+  padding: 8px;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+}
+
+.fm98.an95 .lib-quad-axis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .lib-quad-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  min-height: 52px;
+  background: var(--an-paper);
+  cursor: pointer;
+  font: inherit;
+}
+
+.fm98.an95 .lib-quad-cell[data-zone="hi-hi"] { background: color-mix(in srgb, #c45c26 10%, var(--an-hi)); }
+.fm98.an95 .lib-quad-cell[data-zone="hi-lo"] { background: color-mix(in srgb, #4a7c59 12%, var(--an-hi)); }
+.fm98.an95 .lib-quad-cell[data-zone="lo-hi"] { background: color-mix(in srgb, #7a6a4f 12%, var(--an-hi)); }
+.fm98.an95 .lib-quad-cell[data-zone="lo-lo"] { background: color-mix(in srgb, #808080 8%, var(--an-hi)); }
+
+.fm98.an95 .lib-quad-cell:disabled {
+  cursor: default;
+}
+
+.fm98.an95 .lib-quad-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--an-fill);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .lib-quad-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+}
+
+.fm98.an95 .lib-quad-legend b {
+  font-family: var(--font-an-display, inherit);
+}
+
+/* Step heights (Stages). */
+.fm98.an95 .lib-steps {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  min-height: 180px;
+  padding: 8px 8px 0;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+  overflow-x: auto;
+}
+
+.fm98.an95 .lib-step {
+  flex: 1 1 0;
+  min-width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.fm98.an95 .lib-step-label {
+  padding: 0 6px 4px;
+  font-size: 11px;
+  color: var(--an-muted);
+  line-height: 1.3;
+}
+
+.fm98.an95 .lib-step-label b {
+  display: block;
+  font-family: var(--font-an-display, inherit);
+  font-size: 18px;
+  color: var(--an-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .lib-step-bar {
+  min-height: 3px;
+}
+
+.fm98.an95 .lib-step-drop {
+  align-self: center;
+  min-width: 44px;
+  padding: 0 2px 28px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Attribute tiles (periodic taxonomy). */
+.fm98.an95 .lib-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 4px;
+}
+
+.fm98.an95 .lib-tile {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 2px;
+  min-height: 96px;
+  padding: 6px 8px;
+  border: 1px solid var(--an-line);
+  background: var(--an-hi);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .lib-tile[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--an-ink);
+}
+
+.fm98.an95 .lib-tile-sym {
+  font-family: var(--font-an-display, inherit);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.fm98.an95 .lib-tile-name {
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .lib-tile-src {
+  font-size: 10px;
+  color: var(--an-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .lib-tile-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 18px;
+}
+
+.fm98.an95 .lib-tile-spark > span {
+  flex: 1;
+  min-height: 1px;
+  background: var(--an-fill);
+}
+
+.fm98.an95 .lib-tile-fill {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--an-muted);
+}
+
+/* Area squares (Lists & areas). */
+.fm98.an95 .lib-areas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.fm98.an95 .lib-area {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.fm98.an95 .lib-area-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 1px;
+  background: var(--an-hi);
+  box-shadow: 0 0 0 1px var(--an-line);
+}
+
+.fm98.an95 .lib-area-box > button {
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.fm98.an95 .lib-area-name {
+  font-size: 11px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .lib-area-name b {
+  font-family: var(--font-an-display, inherit);
+}
+
+@media (max-width: 640px) {
+  .fm98.an95 .lib-quad {
+    grid-template-columns: 32px repeat(var(--cols), minmax(36px, 1fr));
+  }
+  .fm98.an95 .lib-search {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Library treemaps: keep cells wide enough that the name stays visible
+   (the shared cell hides its label under 88px of content box). Scoped to Library views. */
+.fm98.an95 :is([data-testid="tags-view"], [data-testid="stages-view"], [data-testid="lists-areas"]) .an-treemap-cell {
+  min-width: 112px;
+}
+
+/* UpSet rows (Tags). Dots, name, n and bar share one grid row. */
+.fm98.an95 .lib-upset {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  background: var(--an-hi);
+  box-shadow: inset 0 0 0 1px var(--an-line);
+}
+
+.fm98.an95 .lib-upset-row {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1.2fr) 36px minmax(80px, 2fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  color: var(--an-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fm98.an95 button.lib-upset-row:hover {
+  background: var(--an-hover);
+}
+
+.fm98.an95 .lib-upset-head {
+  align-items: end;
+  cursor: default;
+  color: var(--an-muted);
+}
+
+.fm98.an95 .lib-upset-dots {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  gap: 2px;
+  justify-items: center;
+}
+
+.fm98.an95 .lib-upset-col {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  max-height: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.fm98.an95 .lib-upset-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Library marks and header keys are not house keys: drop the button lip.
+   `:not(#at)` matches the house override's weight (analytics-atlas.css ~1059). */
+.fm98.an95 :is(.lib-upset-row, .lib-table th button, .lib-quad-cell, .lib-step, .lib-area-box > button):not(#at) {
+  background-image: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.fm98.an95 .lib-quad-cell:not(#at) {
+  min-height: 52px;
+}
+
+.fm98.an95 .lib-tile:not(#at) {
+  background-image: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.fm98.an95 .lib-tile[aria-pressed="true"]:not(#at) {
+  box-shadow: inset 0 0 0 2px var(--an-ink);
+}
+
+/* Item Types mosaic: cells fill the plate's height, used types are wide
+   enough to show a name, and unused types shrink to a swatch. */
+.fm98.an95 .an-library .an-mosaic {
+  align-items: stretch;
+  min-height: 0;
+  height: 120px;
+  flex-wrap: nowrap;
+  margin-bottom: 8px;
+}
+
+.fm98.an95 .an-library .an-mosaic-cell {
+  min-width: 112px;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+.fm98.an95 .an-library .an-mosaic-cell.is-empty {
+  min-width: 28px;
+  flex-basis: 28px;
+  padding: 4px;
+}
+
+.fm98.an95 .an-library .an-mosaic-cell.is-empty img {
+  display: none;
+}

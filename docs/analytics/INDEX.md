@@ -75,14 +75,16 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 
 ## Library
 
+_Last mapped: 2026-10-23._ Shared Library plates: `library-kit.tsx`, math `library-stats.ts`, skin `library-views.css`.
+
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
-| `item-types` | `ItemTypesLibrary.tsx`, `relations/` | item types, tasks | Item types by count, type detail, relations library and rules. |
-| `lists-areas` | `ListsAreasView.tsx` | tasks | Lists sized by item count, or by completion rate. |
-| `attributes` | `AttributesView.tsx` | item types, tasks | Histograms of schema attributes. |
-| `tags` | `LibraryCuts.tsx` (`TagsView`) | tasks | Tag areas and UpSet combinations. |
-| `stages` | `LibraryCuts.tsx` (`StagesView`) | tasks | Task stage buckets (inbox / clarified / scheduled / completed / list). |
-| `weight` | `LibraryCuts.tsx` (`WeightView`) | tasks | Importance, cognitive load, entropy. |
+| `item-types` | `ItemTypesLibrary.tsx`, `relations/` | item types, tasks | Item types by count, evenness, schema coverage, type detail; relations with search, family strip, folding, rules. Doc: [`library-item-types.md`](library-item-types.md). |
+| `lists-areas` | `ListsAreasView.tsx` | tasks | Lists by size, rate or area (sized squares), Gini/HHI, sortable ledger. Doc: [`library-lists-areas.md`](library-lists-areas.md). |
+| `attributes` | `AttributesView.tsx` | item types, tasks | Attribute tile table with fill rate, numeric summary, bins. Doc: [`library-attributes.md`](library-attributes.md). |
+| `tags` | `LibraryCuts.tsx` (`TagsView`) | tasks | Tag areas, search and min slider, UpSet, tag pairs with Jaccard and lift. Doc: [`library-tags.md`](library-tags.md). |
+| `stages` | `LibraryCuts.tsx` (`StagesView`) | tasks | Stage buckets, step heights, median age per stage. Doc: [`library-stages.md`](library-stages.md). |
+| `weight` | `LibraryCuts.tsx` (`WeightView`) | tasks | Importance, load, entropy; importance × load quadrant, Spearman ρ. Doc: [`library-weight.md`](library-weight.md). |
 
 ## Out of scope
 
