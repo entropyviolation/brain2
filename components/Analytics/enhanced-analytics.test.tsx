@@ -191,7 +191,8 @@ describe("EnhancedAnalytics", () => {
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Tracking" }))
 
-    expect((await screen.findAllByText("Work")).length).toBeGreaterThan(0)
+    // The Tracking view is a lazy chunk; a cold import can take over the 1s default.
+    expect((await screen.findAllByText("Work", {}, { timeout: 5000 })).length).toBeGreaterThan(0)
     expect(screen.getAllByText("30m").length).toBeGreaterThan(0)
     expect(screen.queryByText("Untracked")).not.toBeInTheDocument()
   })
@@ -214,7 +215,7 @@ describe("EnhancedAnalytics", () => {
     render(<EnhancedAnalytics />)
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Tracking" }))
-    await user.click(await screen.findByLabelText("Show untracked"))
+    await user.click(await screen.findByLabelText("Show untracked", {}, { timeout: 5000 }))
 
     expect(screen.getAllByText("Untracked").length).toBeGreaterThan(0)
   })

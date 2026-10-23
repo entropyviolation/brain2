@@ -36,7 +36,7 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
-| `tracking` | `TrackingAnalytics.tsx` + boards (`AverageDayBoard`, `PeriodFilmstrip`, `GrainStrips`, `TagTrendBoard`, `PeriodDeltaTable`, `BlockSearch`, `TrackingContextPlates`) | tracking, tasks | Pen minutes by scope and depth, composition donut, filmstrip, day/week strips, average day, tags, up/down vs previous window, hour × day, block-length violin, by level, company headcount. Biggest section; split it across agents. |
+| `tracking` | `TrackingAnalytics.tsx` + boards (`AverageDayBoard`, `PeriodFilmstrip`, `GrainStrips`, `TagTrendBoard`, `PeriodDeltaTable`, `BlockSearch`, `TrackingContextPlates`) | tracking, tasks | Pen minutes by scope and depth, composition donut, filmstrip, day/week strips, average day, tags, up/down vs previous window, hour × day, block-length violin, by level, company headcount, sized squares, pace, before \| now mirror, day edges, block-length cut. Biggest section. Docs: [`time-tracking.md`](time-tracking.md). |
 | `sleep` | `SleepAnalytics.tsx` | sleep, tracking, sun times, settings | Nightly duration and bedtime, estimated vs logged, CV, ridgelines, against the sun, all-nighters. |
 | `screentime` | `ScreenTimeView.tsx` | tracking | ActivityWatch Screen Time scope: active vs AFK, alignment with Activity, last sync. |
 | `circadian` | `CircadianView.tsx` | tracking | Hour × day occupancy, weekday cycle plot. |
