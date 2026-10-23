@@ -248,6 +248,15 @@ describe("summary.json through the Instagram upload", () => {
     expect(planDuplicateList(pending, { lists: useTaskStore.getState().lists, folders: [] } as never).list.instagramAnalysisList).toBeUndefined()
     useTaskStore.getState().deleteList(pending.id)
     expect(useTaskStore.getState().lists.some((l) => l.id === pending.id)).toBe(false)
+    expect(useTaskStore.getState().removedListIds).toContain(pending.id)
+
+    // Importing again makes the list under a fresh id, so the tombstone cannot drop it on reload.
+    upload(summary())
+    const again = useTaskStore.getState().lists.filter((l) => l.instagramAnalysisList === "pending")
+    expect(again).toHaveLength(1)
+    expect(again[0].id).not.toBe(pending.id)
+    const asked = useTaskStore.getState().tasks.find((t) => t.attributes?.[IG_USERNAME] === "asked")!
+    expect(asked.lists).toContain(again[0].id)
   })
 
   it("still reads the followers download the old way", () => {

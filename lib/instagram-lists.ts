@@ -340,8 +340,13 @@ function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
   }
   const columns = igAnalysisColumns(key)
   const ids = columns.map((def) => def.id)
+  // A deleted list's id stays in removedListIds, and rehydrate drops a list
+  // with that id. A list made again after a delete takes a fresh id; the flag
+  // finds it from then on.
+  const fixedId = INSTAGRAM_ANALYSIS_LIST_IDS[key]
+  const id = (store.removedListIds ?? []).includes(fixedId) ? `${fixedId}-${Date.now().toString(36)}` : fixedId
   store.addList({
-    id: INSTAGRAM_ANALYSIS_LIST_IDS[key],
+    id,
     name: spec.name,
     color: spec.color,
     createdAt: new Date(),
@@ -353,7 +358,7 @@ function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
     displayedAttributes: ids,
     sheetConfig: { columnIds: ids },
   })
-  return INSTAGRAM_ANALYSIS_LIST_IDS[key]
+  return id
 }
 
 /** Add the report's columns a list is missing. A column the person renamed keeps its name. */
