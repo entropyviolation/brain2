@@ -31,17 +31,20 @@ and `signal-stats.ts` here. No LLM in this studio today. No new stores. The inte
 so Analytics still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
 (`analytics-atlas.css`, drawn from designrefs 0001–0124; see
 [`docs/DESIGN_REFS.md`](../../docs/DESIGN_REFS.md#analytics-atlas-0001-0124)):
-the range bay is a cobalt instrument plate with concentric field rings, spokes,
-a damped trace and a degree ruler, holding chrome-rimmed typewriter keys with
+_Last mapped: 2026-10-23_ the range bay is a plain paper header with one ink
+rule under it (the cobalt plate, field rings and degree ruler were retired
+2026-10-23 at the person's ask), holding chrome-rimmed typewriter keys with
 steel ball-bearing lamps (the lit lamp is a cool pearl). Groups are steel catalog
 drawers; views are index cards with staggered trapezoid tabs, the open one a black
-guide tab with its number. Canvases are cool white paper over a cobalt graph
-rule. Each `.an-plate` has a double rule and crop marks, and each
+guide tab with its number. Canvases and plot wells are plain cool white paper,
+no graph rule. Each `.an-plate` has a double rule and crop marks, and each
 `.an-canvas-title` is numbered `FIG. 01`, `FIG. 02`… by a CSS counter. Readouts
 are one ruled card. `.an-scope` is a dark graphite well with a cobalt grid and a
-white trace. Type is handheld pixel (loaded in `app/layout.tsx` via `next/font`):
-**Pixelify Sans** for titles and values, **Silkscreen** for keys, labels and
-ticks, **DotGothic16** for prose and captions. No italics. One accent,
+white trace. Type (loaded in `app/layout.tsx` via `next/font`, 2026-10-23):
+**Bricolage Grotesque** (`--font-an-display`) for titles and values,
+**Instrument Sans** (`--font-an-text`) for keys, labels, ticks, prose and
+portaled drills, with tabular numbers. This replaces the pixel faces in this
+room only; Home and Lab keep theirs. Section map: [`docs/analytics/INDEX.md`](../../docs/analytics/INDEX.md). No italics. One accent,
 cobalt. No yellow, no celestial or astrology motifs (star icons are fine). Data fills (heat hues, pens, item-type colors)
 are data and are not re-tinted. The skin is CSS only: same DOM, same `role="tab"`
 contract, same classes. Do not restyle Lists, Habits, Plan, Tracking, or
@@ -119,7 +122,7 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 | `tag-trends.ts` / `TagTrendBoard.tsx` | Monthly tag bars beside the weekly series from `tagWeekTrend`. Same union as `tagTotals`: a minute tagged in two scopes counts once. Zero buckets stay in the row. |
 | `block-search.ts` / `BlockSearch.tsx` | Find blocks on this surface. Matcher is `searchTracking` in `lib/tracking-search.ts` (display name, notes, project, primary pen, secondary pens, counts-as chains, action formats, and a mood reading’s word, body, vibe, shorthand, reframe, and about-that). A row jumps: switch scope, highlight the filmstrip segment, open `entry-dialog`. A date outside the shared window opens the block and says so — the window does not move. **Show matches in this view** reruns the Tracking measures on that set (`SEARCH_FILTER_LIMIT`). Other paint is omitted, not called untracked, and Show untracked is paused until Clear. |
 | `period-delta.ts` / `PeriodDeltaTable.tsx` | Pen minutes vs previous equal window from `previousAnalyticsWindow` (same stepper as the range bar). Ink ± deltas; "new" / "same". Renders as a tight four-column table in a scrollable white plot well (max ~320px). |
-| `analytics-atlas.css` | The atlas skin over `analytics-chrome.css`: same selectors, loaded after it (here and in `app/layout.tsx`). Re-points the `--an-*` tokens so boards and Tracking cuts follow, and adds `--at-*` (paper, ink, cobalt, steel, bearing, pearl, key rim). Keys that the house button lip in `app/win95.css` would repaint carry `:not(#at)` for id weight. Field-ring band: `public/analytics-atlas/field-lines.svg` (generated, not a ref photo); the degree ruler is CSS. |
+| `analytics-atlas.css` | The atlas skin over `analytics-chrome.css`: same selectors, loaded after it (here and in `app/layout.tsx`). Re-points the `--an-*` tokens so boards and Tracking cuts follow, and adds `--at-*` (paper, ink, cobalt, steel, bearing, pearl, key rim). Keys that the house button lip in `app/win95.css` would repaint carry `:not(#at)` for id weight. The field-ring band (`public/analytics-atlas/field-lines.svg`) and the degree ruler are no longer drawn (2026-10-23); the SVG file stays on disk. |
 | `analytics-boards.css` | Tracking header, composition band, average-day, filmstrip, compact delta-table styles. Imported by the board components. |
 | `SleepAnalytics.tsx` | Nightly strip on 6pm→noon; `~` estimated, **est.** read off the grid; duration CV + lag-1; weekday ridgelines; **against the sun**; **all-nighters** (count, frequency, time, desktop vs text-pipeline/BIM source). |
 | `ScreenTimeView.tsx` | ActivityWatch-painted Screen Time: active vs untracked, top apps / categories, last-sync, alignment vs Activity occupancy. Empty sentence notes AW only records from when watchers run. `data-testid="screentime-view"`. |
