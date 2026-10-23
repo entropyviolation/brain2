@@ -181,6 +181,7 @@ def refresh_pipeline():
         rr["range"] = {"from": meta["first"][:10], "to": meta["last"][:10]}
         rr["history"] = ([{"at": rr["lastRun"], "seconds": round(time.time() - t0), "messages": rr["messages"]}] + rr.get("history", []))[:52]
         RUNS.write_text(json.dumps(rr, indent=1))
+        _live.update(state=None)  # new base; the live loop starts over from summary.json's max_mid
         slog(f"refresh: done in {time.time() - t0:.0f}s")
     except Exception as e:
         _refresh["error"] = str(e)
@@ -189,13 +190,40 @@ def refresh_pipeline():
         _refresh.update(running=False, step=None)
 
 
+# ---------- live texts (new messages between full runs) ----------
+LIVE_EVERY = 60
+_live = {"state": None, "error": None}
+
+
+def live_loop():
+    import live
+    while True:
+        if not _refresh["running"]:
+            try:
+                _live.update(state=live.poll(), error=None)
+            except Exception as e:
+                if _live["error"] != str(e):
+                    slog(f"live: {e}")
+                _live["error"] = str(e)
+        time.sleep(LIVE_EVERY)
+
+
+def live_state():
+    st = _live["state"] or {}
+    return {k: st.get(k) for k in ("messages", "sent", "received", "group", "last", "updated", "per_month", "per_day", "people", "people_monthly")}
+
+
 def status():
     rr = runs()
     if not rr.get("range") and (OUT / "summary.json").exists():
         meta = json.loads((OUT / "summary.json").read_text())["meta"]
         rr.update(messages=meta["non_tapback_messages"], range={"from": meta["first"][:10], "to": meta["last"][:10]})
+    lv = _live["state"] or {}
+    if lv.get("messages") and rr.get("range"):
+        rr["messages"] = (rr.get("messages") or 0) + lv["messages"]
+        rr["range"] = {**rr["range"], "to": max(rr["range"]["to"], (lv.get("last") or "")[:10])}
     return {"lastRun": rr.get("lastRun"), "running": _refresh["running"], "step": _refresh["step"], "messages": rr.get("messages"),
-            "range": rr.get("range"), "error": _refresh["error"]}
+            "range": rr.get("range"), "error": _refresh["error"], "live": {"messages": lv.get("messages", 0), "updated": lv.get("updated"), "error": _live["error"]}}
 
 
 # ---------- HTTP ----------
@@ -237,6 +265,17 @@ class H(SimpleHTTPRequestHandler):
             self.path = "/report.html"
         if self.path == "/api/status":
             return self._json(status())
+        if self.path == "/api/live":
+            return self._json(live_state())
+        if self.path == "/report.html" and (OUT / "report.html").exists():
+            # The page merges new texts in before it draws; see live.py.
+            html = (OUT / "report.html").read_text().replace("null/*LIVE*/", json.dumps(live_state(), ensure_ascii=False).replace("</", "<\\/"), 1)
+            b = html.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(b)))
+            self.end_headers()
+            return self.wfile.write(b)
         if self.path == "/api/state":
             return self._json(state())
         if self.path == "/api/jobs":
@@ -344,6 +383,7 @@ def main():
     threading.Thread(target=worker, daemon=True).start()
     srv = ThreadingHTTPServer((HOST, PORT), H)
     threading.Thread(target=warm, daemon=True).start()
+    threading.Thread(target=live_loop, daemon=True).start()
     url = f"http://{HOST}:{PORT}/"
     print(f"Texts app on {url} (Ctrl+C to stop)")
     slog(f"serving {url} home={ROOT}")

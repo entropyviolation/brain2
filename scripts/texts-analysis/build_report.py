@@ -268,6 +268,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
 const D = /*DATA*/;
 const DET = /*DETAIL*/;
 const CALLS = /*CALLS*/;
+const LIVE = null/*LIVE*/;
 const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Number(n).toLocaleString("en-US");
@@ -505,6 +506,19 @@ function table(parent, head, rows, numCols = []) {
   return t;
 }
 
+// ---------- live texts (served page only; serve.py fills LIVE, see live.py) ----------
+if (LIVE && LIVE.messages) {
+  const m = D.meta;
+  m.non_tapback_messages += LIVE.messages; m.sent += LIVE.sent; m.received += LIVE.received; m.group_messages += LIVE.group;
+  if (LIVE.last > m.last) m.last = LIVE.last;
+  for (const [mo, ks] of Object.entries(LIVE.per_month)) { const t = (D.volume.per_month[mo] ||= {}); for (const [k, n] of Object.entries(ks)) t[k] = (t[k] || 0) + n; }
+  const rd = (D.volume.recent_days ||= {});
+  for (const [d, n] of Object.entries(LIVE.per_day)) rd[d] = (rd[d] || 0) + n;
+  for (const r of D.people.top25_overall) { const p = LIVE.people[r.name]; if (p) { r.sent += p.sent; r.received += p.received; r.total += p.sent + p.received; } }
+  D.people.top25_overall.sort((a, b) => b.total - a.total);
+  for (const [name, ms] of Object.entries(LIVE.people_monthly)) { const t = D.people.monthly_series_top15[name]; if (t) for (const [mo, n] of Object.entries(ms)) t[mo] = (t[mo] || 0) + n; }
+}
+
 // =================== data prep ===================
 const M = D.meta, V = D.volume, P = D.people, RT = D.response_times, LG = D.language, S = D.sentiment;
 const pmKeys = Object.keys(V.per_month).sort();
@@ -530,6 +544,22 @@ $("sub").textContent = `${fmt(M.non_tapback_messages)} messages from ${M.first.s
   [fmt(P.distinct_1to1_contacts), "distinct 1:1 contacts"],
   [fmt(busiest.count), "busiest day, " + busiest.date],
 ].forEach(([v, l]) => $("tiles").append(h("div", { class: "tile" }, [h("div", { class: "v" }, v), h("div", { class: "l" }, l)])));
+// New texts since the last full update: counted live, the rest catches up daily.
+if (location.protocol.startsWith("http")) {
+  const seen = (LIVE && LIVE.messages) || 0;
+  const note = h("p", { class: "take", style: "margin-top:10px" });
+  const base = seen ? `Includes ${fmt(seen)} new texts since the last full update. Sentiment, topics and the message browser catch up once a day.` : "";
+  note.textContent = base;
+  $("tiles").after(note);
+  setInterval(async () => {
+    try {
+      const r = await (await fetch("/api/live")).json();
+      const more = (r.messages || 0) - seen;
+      if (more > 0) note.innerHTML = (base ? base + " " : "") + `<a href="">${fmt(more)} more since this page opened. Reload</a>`;
+    } catch (e) { /* server restarting */ }
+  }, 60000);
+}
+
 
 // =================== 2. volume ===================
 {
