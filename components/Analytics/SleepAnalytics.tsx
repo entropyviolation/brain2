@@ -528,7 +528,7 @@ export function SleepAnalytics() {
                 Against the sun
                 <span className="an-canvas-kicker">
                   {" "}
-                  that evening's sunset, that morning's sunrise · later: productivity and joy around the sun
+                  that evening&apos;s sunset, that morning&apos;s sunrise · later: productivity and joy around the sun
                 </span>
               </p>
               <div className="an-readouts">
@@ -619,7 +619,7 @@ export function SleepAnalytics() {
                     .slice(0, 3)
                     .map((day) => `${nightLabel(day.date)} ${formatSleepDuration(day.minutes)}`)
                     .join(", ")}
-                  {stray.days.length > 3 ? ", …" : ""}). Kept out of the averages above so "per night" still means per
+                  {stray.days.length > 3 ? ", …" : ""}). Kept out of the averages above so &quot;per night&quot; still means per
                   night.
                 </p>
               )}
