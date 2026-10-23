@@ -8,7 +8,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -27,6 +27,17 @@ import { ChartFrame } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
 import { CanvasTitle, PhosphorTrace, StudioBars, StudioReadout } from "./studio-kit"
+import { uniqueMinutesByDate } from "@/lib/tracking-summary"
+import { acf, spreadMinutes, whiteNoiseBand } from "./meta-math"
+import { Correlogram, LogPeriodogram } from "./meta-plots"
+
+type RhythmSeries = "habits" | "sleep" | "tracking"
+
+const RHYTHM_LABEL: Record<RhythmSeries, string> = {
+  habits: "Habit %",
+  sleep: "Sleep minutes",
+  tracking: "Tracked minutes",
+}
 
 export function SpectrumView() {
   const habitTasks = useHabitsStore((s) => s.tasks)
@@ -65,6 +76,23 @@ export function SpectrumView() {
   const cvBed = coefficientOfVariation(bedtimes)
   const thinHabits = habitTasks.length === 0 || isThinSample(habitValues.length, SAMPLE_FLOORS.spectrum)
   const thinSleep = isThinSample(sleepDurations.length, 7)
+  const bedSpread = spreadMinutes(bedtimes)
+
+  const [pick, setPick] = useState<RhythmSeries>("habits")
+  const [maxLag, setMaxLag] = useState(21)
+  const trackedByDay = useMemo(() => uniqueMinutesByDate(entries), [entries])
+  const rhythmValues = useMemo(() => {
+    if (pick === "habits") return habitValues
+    if (pick === "sleep") return sleepDurations
+    // A day with no paint is a gap here, not zero: a blank grid would fake a rhythm.
+    return dateKeys.map((k) => trackedByDay[k]).filter((v): v is number => typeof v === "number" && v > 0)
+  }, [pick, habitValues, sleepDurations, dateKeys, trackedByDay])
+  const rhythmThin = isThinSample(rhythmValues.length, SAMPLE_FLOORS.spectrum)
+  const lagCap = Math.max(1, Math.min(maxLag, Math.floor(rhythmValues.length / 2)))
+  const rhythmAcf = useMemo(() => acf(rhythmValues, lagCap), [rhythmValues, lagCap])
+  const rhythmBins = useMemo(() => periodogram(rhythmValues), [rhythmValues])
+  const band = whiteNoiseBand(rhythmValues.length)
+  const outside = rhythmAcf.filter((b) => Math.abs(b.r) > band)
 
   return (
     <div className="an-canvas an-stack" data-testid="spectrum-view">
@@ -104,6 +132,44 @@ export function SpectrumView() {
           tip="Duration tonight vs last night. Regular sleep is sticky; a 0 is 'no linear memory'."
         />
       </div>
+
+      <section className="an-plate" data-testid="spectrum-rhythm">
+        <p className="an-canvas-title">Rhythm finder</p>
+        <p className="an-canvas-hint">
+          Bars are r(k): the series against itself k days later. The shaded band is ±1.96/√n, where pure noise would sit 95%
+          of the time. Bars past it are memory or a beat. Below, the periodogram on a log period axis with the week and month
+          named.
+        </p>
+        <div className="an-meta-tools">
+          {(Object.keys(RHYTHM_LABEL) as RhythmSeries[]).map((key) => (
+            <button key={key} type="button" className="an-meta-chip" aria-pressed={pick === key} onClick={() => setPick(key)}>
+              {RHYTHM_LABEL[key]}
+            </button>
+          ))}
+          <label>
+            Lags
+            <input type="range" min={7} max={60} value={maxLag} onChange={(e) => setMaxLag(Number(e.target.value))} aria-label="Most lags to draw" />
+            {lagCap} d
+          </label>
+        </div>
+        {rhythmThin ? (
+          <ChartFrame thin thinSentence={thinWindowSentence(rhythmValues.length, SAMPLE_FLOORS.spectrum, label)} />
+        ) : (
+          <>
+            <Correlogram bars={rhythmAcf} band={band} />
+            <p className="an-n">
+              n = {rhythmValues.length} days · band ±{band.toFixed(2)} ·{" "}
+              {outside.length === 0
+                ? "no lag clears the band"
+                : `outside the band at ${outside.slice(0, 6).map((b) => `${b.k} d`).join(", ")}`}
+            </p>
+            <LogPeriodogram bins={rhythmBins} />
+            <p className="an-caveat">
+              Bars are not independent: one real beat at 7 d also lifts 14 d and 21 d. Gaps are dropped, so days close up.
+            </p>
+          </>
+        )}
+      </section>
 
       <p className="an-canvas-title">Habit % autocorrelation</p>
       {habitTasks.length === 0 ? (
@@ -169,6 +235,12 @@ export function SpectrumView() {
               value={cvBed.toFixed(2)}
               note={stats.nights[0] ? `asleep ~ ${offsetToLabel(stats.averageBedtime ?? 0)}` : ""}
               tip="σ / |mean| of bedtime as minutes from midnight (negative = before). Independent of duration CV."
+            />
+            <StudioReadout
+              label="Bedtime spread"
+              value={`± ${Math.round(bedSpread)} m`}
+              note="σ of asleep time"
+              tip="Standard deviation of bedtime in minutes. Easier to read than bedtime CV, which blows up when the mean bedtime sits near midnight."
             />
           </div>
           <PhosphorTrace
