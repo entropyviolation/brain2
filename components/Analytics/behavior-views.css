@@ -1,0 +1,241 @@
+/*
+ * components/Analytics/behavior-views.css — Behavior: Habits, Streaks, Points, Velocity
+ *
+ * Truth barcode, era bars, ghost bars, sliders and fold toggles. Paper and
+ * ink tokens come from `analytics-atlas.css`. Docs: `docs/analytics/behavior-*.md`.
+ */
+
+.fm98.an95 .an-bv-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-bv-tools input[type="search"] {
+  min-width: 140px;
+  height: 22px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-bv-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-bv-slider input[type="range"] {
+  width: 120px;
+  accent-color: var(--at-ink);
+}
+
+.fm98.an95 .an-bv-slider output {
+  min-width: 3.5em;
+  font-weight: 700;
+}
+
+/* Truth barcode: name | strip | rate */
+.fm98.an95 .an-barcode {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fm98.an95 .an-barcode-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) 1fr 3.5em;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-barcode-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm98.an95 .an-barcode-rate {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-barcode-strip {
+  display: flex;
+  gap: 1px;
+  height: 12px;
+  min-width: 0;
+}
+
+.fm98.an95 .an-barcode-cell {
+  flex: 1 1 0;
+  min-width: 1px;
+}
+
+.fm98.an95 .an-mark-met { background: hsl(166 62% 36%); }
+.fm98.an95 .an-mark-partial { background: hsl(152 38% 72%); }
+.fm98.an95 .an-mark-missed { background: var(--at-paper-deep); }
+.fm98.an95 .an-mark-exempt {
+  background: repeating-linear-gradient(135deg, var(--at-paper-edge) 0 2px, transparent 2px 4px);
+}
+
+.fm98.an95 .an-bv-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--at-ink-soft);
+}
+
+.fm98.an95 .an-bv-key i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+/* Fold: "Show all n" under a long list */
+.fm98.an95 .an-bv-fold {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  color: var(--at-ink-soft);
+  cursor: pointer;
+}
+
+/* Era bars: runs on a calendar, height = run length */
+.fm98.an95 .an-era-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) 1fr 4.5em;
+  align-items: end;
+  gap: 8px;
+  font-size: 11px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--at-rule-soft);
+}
+
+.fm98.an95 .an-era-track {
+  position: relative;
+  height: 22px;
+}
+
+.fm98.an95 .an-era-span {
+  position: absolute;
+  bottom: 0;
+  min-width: 2px;
+  background: hsl(166 62% 36% / 0.75);
+}
+
+.fm98.an95 .an-era-span[data-best="true"] { background: var(--at-ink); }
+.fm98.an95 .an-era-span[data-open="true"] { box-shadow: inset -2px 0 0 hsl(40 95% 55%); }
+
+.fm98.an95 .an-era-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--at-ink-faint);
+}
+
+/* Ghost bars: current run over the all-time best */
+.fm98.an95 .an-ghost-track {
+  position: relative;
+  height: 10px;
+  background: transparent;
+}
+
+.fm98.an95 .an-ghost-best,
+.fm98.an95 .an-ghost-now {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.fm98.an95 .an-ghost-best { background: var(--at-paper-deep); outline: 1px dashed var(--at-paper-edge); }
+.fm98.an95 .an-ghost-now { background: hsl(166 62% 36%); }
+
+/* Moves list under the habit % trace */
+.fm98.an95 .an-bv-moves {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 16px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+}
+
+.fm98.an95 .an-bv-moves b { font-variant-numeric: tabular-nums; }
+
+.fm98.an95 .an-bv-math {
+  font-size: 11px;
+  color: var(--at-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sized squares: area-true two-level treemap, 3:1 */
+.fm98.an95 .an-sq {
+  position: relative;
+  display: flex;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  gap: 2px;
+  box-shadow: 0 0 0 1px var(--at-ink);
+  background: var(--at-ink);
+}
+
+.fm98.an95 .an-sq-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 2px;
+}
+
+.fm98.an95 .an-sq-cell {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  padding: 2px 4px;
+  border: 0;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: left;
+  color: #0b1210;
+  cursor: pointer;
+}
+
+.fm98.an95 .an-sq-cell:disabled { cursor: default; }
+.fm98.an95 .an-sq-cell b { font-variant-numeric: tabular-nums; }
+
+.fm98.an95 .an-sq-anchor {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  aspect-ratio: 1;
+  min-width: 10px;
+  border: 1.5px dashed var(--at-paper-hi);
+  background: rgb(20 23 28 / 0.55);
+  color: var(--at-paper-hi);
+  font-size: 9px;
+  line-height: 1.1;
+  padding: 2px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.fm98.an95 .an-bv-fold + .an-open-lists,
+.fm98.an95 .an-bv-fold { margin-right: 10px; margin-bottom: 6px; }
+.fm98.an95 .an-barcode-row.is-wide { grid-template-columns: minmax(80px, 160px) 1fr 5.5em; }

@@ -22,10 +22,10 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
-| `habits` | `HabitsView.tsx` | habits, points, tasks | Daily habit completion %, per-habit rates, week/month grades, good days, climb (score habits), tracking-linked habits, weekday vs weekend, horizon of daily %. |
-| `streaks` | `StreaksWidget.tsx` | habits, reviews | Current and longest streaks, all-time. Optional week-habit streak. |
-| `points` | `PointsView.tsx` | points, habits, goals | Daily points by source (habit / bonus / task), cumulative, top earners, points ledger. |
-| `velocity` | `VelocityView.tsx` | tasks, points | Completions and points per day, median cycle time, reward scatter. |
+| `habits` | `HabitsView.tsx` | habits, points, tasks | Daily habit completion %, per-habit rates, week/month grades, good days, climb (score habits), tracking-linked habits, weekday vs weekend, horizon of daily %. Doc: [`behavior-habits.md`](behavior-habits.md). |
+| `streaks` | `StreaksWidget.tsx` | habits, reviews | Current and longest streaks, all-time. Optional week-habit streak. Doc: [`behavior-streaks.md`](behavior-streaks.md). |
+| `points` | `PointsView.tsx` | points, habits, goals | Daily points by source (habit / bonus / task), cumulative, top earners, points ledger. Doc: [`behavior-points.md`](behavior-points.md). |
+| `velocity` | `VelocityView.tsx` | tasks, points | Completions and points per day, median cycle time, reward scatter. Doc: [`behavior-velocity.md`](behavior-velocity.md). |
 | `reflection` | `ReflectionView.tsx` + `CompletionReviewPlates.tsx` | tasks, goals | Completion reviews: satisfaction, resistance, focus, distraction, review points, time certainty, expected vs actual difficulty, feelings, reflect notes. |
 | `todo-pulse` | `TodoPulseView.tsx` | tasks, reviews | Morning walkthrough: tier, expected duration, points, day importance, resistance readings, day excitement. |
 | `reviews` | `ReviewsView.tsx`, `PeriodArcReading.tsx` | reviews, habits, tasks | Morning and period reviews, gratitude, plans, blocked-reason mosaic, why-it-didn't notes. |
