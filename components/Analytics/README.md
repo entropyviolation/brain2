@@ -82,6 +82,8 @@ meaningful on its own.
 **Item Types** is a first-class Analytics **Library** view. Settings still
 **edits** types. Do not move the library out of Analytics.
 
+_Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per view, are in [`docs/analytics/viz-inspiration.md`](../../docs/analytics/viz-inspiration.md). It is a menu, not a spec.
+
 ## Files
 
 | File | Purpose |
@@ -220,6 +222,16 @@ missing nights stay blank; empty rows say so.
 _Last mapped: 2026-10-22_
 
 Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts report drawn by `scripts/texts-analysis/` and served on loopback by `electron/texts-report.js`. The report keeps its own look on purpose: the studio skin does not apply inside the frame (allie, 2026-10-22). The view adds only a title, the last update, and **Update now**. It does not use the shared window. It refreshes weekly after Sunday 21:00. The web build shows a sentence instead. Renderer bridge: `lib/texts-report.ts`. _Last mapped: 2026-10-23:_ the view also posts People I Know into the frame and takes link, unlink and open-person requests from it (own frame and origin only, `readReportRequest`), so a relationship page can link its chat to a Person. _2026-10-23:_ it also creates a Person from a chat (`create-person`), keeps the frame's person cards for Person → View text analytics (`writeTextsIndex`), opens a card on request, and reloads when the frame starts an update. **Open in window** shows the view alone at `/popout/?view=texts` (`app/popout/page.tsx`; `electron/main.js` allows only that view name). _2026-10-23:_ in the main window the frame sends its sections (`sections`, `section`) and hides its own nav. `AnalyticsNav` lists them under **Sections** below Views (`lib/texts-report-nav.ts`, `.an-section-bar` in `analytics-atlas.css`); a click sends `goto`. The pop-out keeps the report's nav. Week and month comparisons, notes, and on-demand AI reads are **Planned** in [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
+
+## Time flow views
+
+_Last mapped: 2026-10-23_
+
+Transitions, Context switch, Text events, Text spans, Log and Operations share
+`time-flow-stats.ts` (pure math, tested in `time-flow-stats.test.ts`) and
+`time-flow.css` (folds, signed bars, unit grid, era bars, SVG plates). Each view
+has its own doc: `docs/analytics/time-transitions.md`, `time-context-switch.md`,
+`time-text-pipeline.md`, `time-log.md`, `time-operations.md`. Read the one you need.
 
 ## Pure libraries
 
