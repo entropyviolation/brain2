@@ -18,7 +18,8 @@ def clean(summary):
         lang[k] = [r for r in lang[k] if not has_junk(r["term"])]
     for y, rows in lang["distinctive_words_per_year"].items():
         lang["distinctive_words_per_year"][y] = [r for r in rows if r["term"] not in JUNK]
-    summary["volume"].pop("per_day", None)
+    per_day = summary["volume"].pop("per_day", None) or {}
+    summary["volume"]["recent_days"] = dict(sorted(per_day.items())[-120:])  # week-by-week comparison
     return summary
 
 
@@ -237,13 +238,14 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
   <p id="sub"></p>
   <nav>
     <a href="#overview">Overview</a><a href="#volume">Volume</a><a href="#people">People</a>
-    <a href="#perdayh">Per day</a><a href="#directory">Directory</a><a href="#response">Response times</a><a href="#language">Language</a><a href="#style">Style</a><a href="#sentiment">Sentiment</a>
+    <a href="#perdayh">Per day</a><a href="#compare">Weeks and months</a><a href="#directory">Directory</a><a href="#response">Response times</a><a href="#language">Language</a><a href="#style">Style</a><a href="#sentiment">Sentiment</a>
     <a href="#streaksec">Streaks</a><a href="#relationships">Relationships</a><a href="#markersec">Text markers</a><a href="#topicsec">Topics</a><a href="#conflictsec">Conflicts</a><a href="#yousec">You</a><a href="#method">Method</a>
   </nav>
 </header>
 <section id="overview"><div class="tiles" id="tiles"></div></section>
 <section id="volume"><h2>Volume</h2><div id="vol"></div></section>
 <section id="perdaysec"><h2 id="perdayh">Texts per day</h2><div id="perday"></div></section>
+<section id="compare"><h2>Week by week, month by month</h2><div id="cmp"></div></section>
 <section id="people"><h2>People</h2><div id="ppl"></div></section>
 <section><h2 id="directory">Directory: people and chats</h2><div id="dir"></div></section>
 <section id="response"><h2>Response times</h2><div id="rt"></div></section>
@@ -563,6 +565,72 @@ $("sub").textContent = `${fmt(M.non_tapback_messages)} messages from ${M.first.s
   const tb = V.tapbacks_per_year; const tby = Object.keys(tb);
   const ct = card(g2, "Tapbacks per year", `Reactions went from ${fmt(tb[tby[0]])} in ${tby[0]} to ${fmt(tb[tby[tby.length - 1]])} in ${tby[tby.length - 1]}, with a jump once iOS made them easy in 2020.`);
   hbarsStacked(ct, tby.map((y) => ({ name: y, n: tb[y] })), [{ key: "n", name: "Tapbacks", color: css("s3") }], { labelW: 50 });
+}
+
+// =================== 2b. week by week, month by month ===================
+{
+  const root = $("cmp");
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const lastDay = new Date(M.last.slice(0, 10) + "T12:00");
+  const delta = (a, b) => a && b ? (a - b) / b : null;  // a zero month is a gap in the data, not a change
+  const tpct = (x) => { if (x == null) return "n/a"; const r = Math.round(x * 100); return (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r) + "%"; };
+  const dpct = (x) => x == null || Math.round(x * 100) === 0 ? tpct(x).replace("n/a", "–") : `<span style="color:${css(x > 0 ? "pos" : "neg")}">${tpct(x)}</span>`;
+  const bar = (v, max, color) => h("div", { style: "width:140px" }, h("div", { style: `height:8px;min-width:2px;border-radius:2px;background:${color};width:${(100 * v / (max || 1)).toFixed(1)}%` }));
+
+  // Weeks start Monday. The last one is the week so far.
+  const monday = new Date(lastDay); monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+  const weeks = [];
+  for (let w = 12; w >= 0; w--) {
+    const start = new Date(monday); start.setDate(start.getDate() - 7 * w);
+    let n = 0, days = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      if (d > lastDay) break;
+      n += V.recent_days[iso(d)] || 0; days++;
+    }
+    weeks.push({ start, n, days });
+  }
+  const full = weeks.slice(0, -1), cur = weeks[weeks.length - 1], prev = full[full.length - 1];
+  const avg12 = full.reduce((a, w) => a + w.n, 0) / full.length;
+  const pace = cur.days ? cur.n / cur.days * 7 : 0;
+  const wmax = Math.max(...weeks.map((w) => w.n));
+  const wl = (d) => `${MON[d.getMonth()]} ${d.getDate()}`;
+  const cw = card(root, "Week by week", `Last full week (from ${wl(prev.start)}) had ${fmt(prev.n)} messages, ${tpct(delta(prev.n, full[full.length - 2].n))} on the week before and ${tpct(delta(prev.n, avg12))} against the 12-week average of ${fmt(Math.round(avg12))}. This week is on pace for about ${fmt(Math.round(pace))}.`);
+  table(cw, ["Week of", "Messages", "", "vs week before", "vs 12-week avg"], weeks.slice().reverse().map((w, i, a) => {
+    const before = a[i + 1];
+    const partial = w.days < 7;
+    return [wl(w.start) + (partial ? ` <span style="color:${css("muted")}">(${w.days} days so far)</span>` : ""), fmt(w.n), bar(w.n, wmax, css("me")),
+      partial || !before ? "–" : dpct(delta(w.n, before.n)), partial ? "–" : dpct(delta(w.n, avg12))];
+  }), [1, 3, 4]);
+
+  // Months: last 13, with the same month a year earlier.
+  const mk = months.slice(-13);
+  const tot = (m) => pm(m, "sent_1:1") + pm(m, "received_1:1") + pm(m, "sent_group") + pm(m, "received_group");
+  const sent = (m) => pm(m, "sent_1:1") + pm(m, "sent_group");
+  const yearAgo = (m) => `${+m.slice(0, 4) - 1}${m.slice(4)}`;
+  const curM = mk[mk.length - 1], lastM = mk[mk.length - 2];
+  const curPartial = lastDay.getDate() < new Date(lastDay.getFullYear(), lastDay.getMonth() + 1, 0).getDate();
+  const mmax = Math.max(...mk.map(tot));
+  const sm = (m, k) => (S.monthly_mean[m] || {})[k];
+  const cm = card(root, "Month by month", `${mlabel(lastM)} had ${fmt(tot(lastM))} messages, ${tpct(delta(tot(lastM), tot(mk[mk.length - 3])))} on the month before` + (tot(yearAgo(lastM)) ? ` and ${tpct(delta(tot(lastM), tot(yearAgo(lastM))))} on ${mlabel(yearAgo(lastM))}` : ` (no data for ${mlabel(yearAgo(lastM))})`) + `. I sent ${pct(sent(lastM) / (tot(lastM) || 1))} of them.`);
+  table(cm, ["Month", "Messages", "", "Sent by me", "vs month before", "vs year before", "My sentiment", "Their sentiment"], mk.slice().reverse().map((m, i, a) => {
+    const partial = m === curM && curPartial;
+    const before = a[i + 1];
+    const ms = sm(m, "sent"), mr = sm(m, "received");
+    return [mlabel(m) + (partial ? ` <span style="color:${css("muted")}">(so far)</span>` : ""), fmt(tot(m)), bar(tot(m), mmax, css("me")), tot(m) ? pct(sent(m) / tot(m)) : "–",
+      partial || !before ? "–" : dpct(delta(tot(m), tot(before))), partial ? "–" : dpct(delta(tot(m), tot(yearAgo(m)))),
+      ms == null ? "–" : sgn(ms), mr == null ? "–" : sgn(mr)];
+  }), [1, 3, 4, 5, 6, 7]);
+
+  // Who moved: last full month against the one before, top 15 people.
+  const ser = P.monthly_series_top15, prevM = mk[mk.length - 3];
+  const moves = Object.entries(ser).map(([name, s]) => ({ name, a: s[prevM] || 0, b: s[lastM] || 0 })).filter((r) => r.a || r.b)
+    .sort((x, y) => Math.abs(y.b - y.a) - Math.abs(x.b - x.a));
+  if (moves.length) {
+    const up = moves.find((r) => r.b > r.a), down = moves.find((r) => r.b < r.a);
+    const cp = card(root, `Who moved: ${mlabel(prevM)} → ${mlabel(lastM)}`, [up && `${up.name} rose the most (${fmt(up.a)} → ${fmt(up.b)}).`, down && `${down.name} fell the most (${fmt(down.a)} → ${fmt(down.b)}).`].filter(Boolean).join(" ") + " 1:1 messages, top 15 people overall.");
+    table(cp, ["Person", mlabel(prevM), mlabel(lastM), "Change"], moves.map((r) => [r.name, fmt(r.a), fmt(r.b), r.a ? dpct((r.b - r.a) / r.a) : "new"]), [1, 2, 3]);
+  }
 }
 
 // =================== 3. people ===================
