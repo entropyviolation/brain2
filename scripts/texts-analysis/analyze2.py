@@ -236,7 +236,8 @@ def main():
     present = set(msgs["month"])
     gap_months = [m for m in all_months if m not in present]
 
-    detail = {"meta": {"gap_months": gap_months, "first_day": str(first_day), "last_day": str(last_day)}, "entities": {}}
+    detail = {"meta": {"gap_months": gap_months, "first_day": str(first_day), "last_day": str(last_day)}, "entities": {},
+              "overrides": A.load_overrides()}
 
     # ---------- texts per day ----------
     daily = msgs.groupby("day").size()
@@ -357,6 +358,7 @@ def main():
         if e["kind"] == "person":
             # Numbers and emails this person texts from. Brain2 links them to a Person (local only).
             info["handles"] = sorted({h for h in g["peer_raw"].dropna().unique() if isinstance(h, str)})
+            info["key"] = e["key"]
             person_metrics(info, g, conflicts, eid, all_months, first_day, last_day, markers)
         detail["entities"][eid] = info
 
