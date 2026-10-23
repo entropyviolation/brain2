@@ -18,6 +18,12 @@
  * return this list for a personal account, and this module does not ask for
  * a password or call Instagram. Settings → Import from Instagram data and
  * the file control on these two lists both call `importInstagramExportTexts`.
+ *
+ * That same upload also takes `summary.json` from the person's Instagram
+ * analysis (`lib/instagram-analysis.ts`). It fills both lists with the
+ * report's columns and makes five more lists from the report's Network
+ * section: mutuals, no follow-back, fans, pending requests and blocked.
+ * All seven are filed in the root **People** folder.
  */
 import { createListItem, itemTitle } from "@/lib/item-utils"
 import {
@@ -32,8 +38,19 @@ import {
   type InstagramExportFile,
   type ParsedInstagramExport,
 } from "@/lib/instagram-export"
+import {
+  IG_ANALYSIS_LISTS,
+  igAnalysisColumns,
+  looksLikeInstagramAnalysis,
+  parseInstagramAnalysis,
+  planInstagramAnalysisImport,
+  type IgAnalysisListKey,
+  type ParsedInstagramAnalysis,
+} from "@/lib/instagram-analysis"
+import { applyListLinksToTask } from "@/lib/list-links"
+import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useTaskStore } from "@/lib/task-store"
-import type { AttributeDefinition, AttributeValue, List, Task } from "@/lib/types"
+import type { AttributeDefinition, AttributeValue, Folder, List, Task } from "@/lib/types"
 
 export const INSTAGRAM_FOLLOWING_LIST_ID = "people-i-follow-on-instagram"
 export const INSTAGRAM_FOLLOWING_LIST_NAME = "People I follow on Instagram"
@@ -253,6 +270,9 @@ export function applyInstagramImport(parsed: ParsedInstagramExport): { added: nu
       const item = createListItem(change.name, change.lists)
       useTaskStore.getState().addTask({
         ...item,
+        // createListItem ids are a millisecond plus four random characters, so
+        // thousands of rows in one loop collide and addTask drops the repeat.
+        id: `ig-${change.username.toLowerCase()}-${item.id}`,
         attributes: attributesFromChange(change, undefined),
       })
       added += 1
@@ -270,6 +290,189 @@ export function applyInstagramImport(parsed: ParsedInstagramExport): { added: nu
     updated += 1
   }
   return { added, updated }
+}
+
+type AnalysisOnlyKey = Exclude<IgAnalysisListKey, "followers" | "following">
+
+/** Ids for the five lists only the analysis fills. */
+export const INSTAGRAM_ANALYSIS_LIST_IDS: Record<AnalysisOnlyKey, string> = {
+  mutuals: "instagram-mutuals",
+  nofb: "instagram-no-follow-back",
+  fans: "instagram-fans",
+  pending: "instagram-pending-requests",
+  blocked: "instagram-blocked",
+}
+
+export const PEOPLE_FOLDER_ID = "folder-people"
+export const PEOPLE_FOLDER_NAME = "People"
+
+export function findInstagramAnalysisList(lists: List[], key: AnalysisOnlyKey): List | undefined {
+  return (
+    lists.find((list) => list.id === INSTAGRAM_ANALYSIS_LIST_IDS[key]) ??
+    lists.find((list) => list.instagramAnalysisList === key) ??
+    lists.find((list) => sameName(list.name, IG_ANALYSIS_LISTS[key].name))
+  )
+}
+
+/** One of the five analysis lists. Delete is allowed on these. */
+export function isInstagramAnalysisList(
+  list: { id: string; instagramAnalysisList?: string } | null | undefined,
+): boolean {
+  if (!list) return false
+  return Boolean(list.instagramAnalysisList) || Object.values(INSTAGRAM_ANALYSIS_LIST_IDS).includes(list.id)
+}
+
+/** Create or adopt one analysis list. Rename keeps the flag. */
+function ensureInstagramAnalysisList(key: AnalysisOnlyKey): string {
+  const store = useTaskStore.getState()
+  const spec = IG_ANALYSIS_LISTS[key]
+  const existing = findInstagramAnalysisList(store.lists, key)
+  if (existing) {
+    if (existing.instagramAnalysisList !== key) {
+      store.updateList({
+        ...existing,
+        instagramAnalysisList: key,
+        scheduleable: false,
+        itemLabel: existing.itemLabel || "account",
+      })
+    }
+    return existing.id
+  }
+  const columns = igAnalysisColumns(key)
+  const ids = columns.map((def) => def.id)
+  store.addList({
+    id: INSTAGRAM_ANALYSIS_LIST_IDS[key],
+    name: spec.name,
+    color: spec.color,
+    createdAt: new Date(),
+    itemLabel: "account",
+    scheduleable: false,
+    instagramAnalysisList: key,
+    description: spec.description,
+    itemAttributes: columns,
+    displayedAttributes: ids,
+    sheetConfig: { columnIds: ids },
+  })
+  return INSTAGRAM_ANALYSIS_LIST_IDS[key]
+}
+
+/** Add the report's columns a list is missing. A column the person renamed keeps its name. */
+function ensureAnalysisColumns(listId: string, key: IgAnalysisListKey): void {
+  const store = useTaskStore.getState()
+  const list = store.lists.find((l) => l.id === listId)
+  if (!list) return
+  const defs = igAnalysisColumns(key)
+  const patch = withColumns(list, defs, defs.map((def) => def.id))
+  if (Object.keys(patch).length) store.updateList({ ...list, ...patch })
+}
+
+/**
+ * Root People folder. Adopts a root folder already named People. Each
+ * Instagram list that sits in no folder is filed there. A list the person
+ * filed somewhere else stays where it is.
+ */
+function filePeopleFolder(listIds: string[]): void {
+  const store = useTaskStore.getState()
+  const folder =
+    store.folders.find((f) => f.id === PEOPLE_FOLDER_ID) ??
+    store.folders.find((f) => !f.parentFolderId && sameName(f.name, PEOPLE_FOLDER_NAME))
+  const filed = new Set(store.folders.flatMap((f) => f.listIds))
+  const loose = listIds.filter((id) => !filed.has(id))
+  if (!folder) {
+    const created: Folder = { id: PEOPLE_FOLDER_ID, name: PEOPLE_FOLDER_NAME, createdAt: new Date(), listIds: loose }
+    store.addFolder(created)
+    return
+  }
+  if (loose.length) store.updateFolder({ ...folder, listIds: [...folder.listIds, ...loose] })
+}
+
+function analysisSnapshot(task: Task) {
+  return { id: task.id, name: itemTitle(task), lists: [...(task.lists ?? [])], attributes: task.attributes }
+}
+
+/**
+ * Write one parsed summary.json onto the seven Instagram lists. Items are
+ * written in one store update. Removing an account from a list is not
+ * recorded as a manual opt-out of a connected list.
+ */
+export function applyInstagramAnalysisImport(parsed: ParsedInstagramAnalysis): { added: number; updated: number } {
+  const listIds: Record<IgAnalysisListKey, string> = {
+    followers: ensureInstagramFollowersList(),
+    following: ensureInstagramFollowingList(),
+    mutuals: ensureInstagramAnalysisList("mutuals"),
+    nofb: ensureInstagramAnalysisList("nofb"),
+    fans: ensureInstagramAnalysisList("fans"),
+    pending: ensureInstagramAnalysisList("pending"),
+    blocked: ensureInstagramAnalysisList("blocked"),
+  }
+  for (const [key, id] of Object.entries(listIds)) ensureAnalysisColumns(id, key as IgAnalysisListKey)
+  filePeopleFolder(Object.values(listIds))
+  const ui = useListsUiStore.getState()
+  for (const id of Object.values(listIds)) if (!ui.listDisplay[id]) ui.setListDisplay(id, "table")
+
+  const store = useTaskStore.getState()
+  const changes = planInstagramAnalysisImport(store.tasks.map(analysisSnapshot), parsed, listIds)
+  if (!changes.length) return { added: 0, updated: 0 }
+  const byId = new Map(changes.filter((c) => c.id).map((c) => [c.id as string, c]))
+  let added = 0
+  let updated = 0
+  const tasks = store.tasks.map((task) => {
+    const change = byId.get(task.id)
+    if (!change) return task
+    updated += 1
+    const next: Task = { ...task, lists: change.lists, attributes: change.attributes }
+    return applyListLinksToTask(next, next, store.lists)
+  })
+  // createListItem ids are a millisecond plus four random characters, which
+  // collide across thousands of rows made in one loop.
+  const batch = Date.now().toString(36)
+  for (const change of changes) {
+    if (!change.create) continue
+    const item: Task = { ...createListItem(change.name, change.lists), attributes: change.attributes }
+    item.id = `ig-${batch}-${added.toString(36)}`
+    tasks.push(applyListLinksToTask(item, item, store.lists))
+    added += 1
+  }
+  store.setTasks(tasks)
+  return { added, updated }
+}
+
+function countLabel(n: number, one: string, many = `${one}s`): string {
+  return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`
+}
+
+/** Sentence for a finished summary.json import. */
+export function describeInstagramAnalysisResult(
+  parsed: ParsedInstagramAnalysis,
+  result: { added: number; updated: number },
+): string {
+  const from = parsed.generated ? `Read the Instagram analysis from ${parsed.generated}.` : "Read the Instagram analysis."
+  const sizes = [
+    countLabel(parsed.lists.followers.size, "follower"),
+    `${parsed.lists.following.size.toLocaleString("en-US")} following`,
+    countLabel(parsed.lists.mutuals.size, "mutual"),
+    `${parsed.lists.pending.size.toLocaleString("en-US")} pending`,
+    `${parsed.lists.blocked.size.toLocaleString("en-US")} blocked`,
+  ].join(", ")
+  return [
+    from,
+    `${sizes}.`,
+    `Added ${result.added}.`,
+    `Updated ${result.updated}.`,
+    "Follower counts per account are not in the export, so that column is unchanged.",
+  ].join(" ")
+}
+
+/** Parse summary.json text. Null when it is not the analysis shape. */
+export function readInstagramAnalysisText(text: string): ParsedInstagramAnalysis | null {
+  const trimmed = text.replace(/^\uFEFF/, "").trim()
+  if (!trimmed.startsWith("{")) return null
+  try {
+    const value = JSON.parse(trimmed) as unknown
+    return looksLikeInstagramAnalysis(value) ? parseInstagramAnalysis(value) : null
+  } catch {
+    return null
+  }
 }
 
 export interface InstagramImportReport {
@@ -346,6 +549,19 @@ export function importInstagramExportTexts(files: InstagramExportFile[]): Instag
   if (files.length === 0) return empty
   const zipOnly = files.every((file) => file.name.toLowerCase().endsWith(".zip"))
   if (zipOnly) return { ...empty, message: UNZIP_FIRST }
+  for (const file of files) {
+    const analysis = file.name.toLowerCase().endsWith(".json") ? readInstagramAnalysisText(file.text) : null
+    if (!analysis) continue
+    const result = applyInstagramAnalysisImport(analysis)
+    return {
+      ok: true,
+      message: describeInstagramAnalysisResult(analysis, result),
+      followingRows: analysis.lists.following.size,
+      followerRows: analysis.lists.followers.size,
+      added: result.added,
+      updated: result.updated,
+    }
+  }
   const parsed = parseInstagramExport(files)
   if (!parsed.includedFollowing && !parsed.includedFollowers) {
     return { ...empty, message: parsed.notes[0] ?? NO_LIST }
