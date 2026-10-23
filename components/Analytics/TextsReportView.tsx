@@ -5,16 +5,27 @@
  * report keeps its own look on purpose (allie, 2026-10-22): no studio skin, no
  * restyle. This view only starts the loopback server, shows when it last
  * updated, and offers Update now. It refreshes itself daily (first check after 04:00).
+ *
+ * It also hands the frame People I Know (names and saved numbers) by
+ * postMessage, so a relationship page can link its chat to a Person. A link
+ * saves the chat's numbers on that Person (`lib/phone-person-links.ts`). Only
+ * messages from the frame's own window and origin are read.
  */
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   getDesktopTextsBridge,
+  readReportRequest,
   TEXTS_WEB_BUILD_SENTENCE,
   textsUpdatedLabel,
+  type ReportPerson,
   type TextsStatus,
 } from "@/lib/texts-report"
+import { linkHandlesToPerson, unlinkHandlesFromPerson } from "@/lib/phone-person-links"
+import { personRecords } from "@/lib/people-i-know"
+import { openItemDetailPage } from "@/lib/points-ledger-nav"
+import { useTaskStore } from "@/lib/task-store"
 import { ChartFrame } from "./chart-frame"
 
 type State =
@@ -26,6 +37,44 @@ type State =
 export function TextsReportView() {
   const [state, setState] = useState<State>({ kind: "loading" })
   const [frameKey, setFrameKey] = useState(0)
+  const frameRef = useRef<HTMLIFrameElement>(null)
+  const tasks = useTaskStore((s) => s.tasks)
+  const lists = useTaskStore((s) => s.lists)
+  const people = useMemo<ReportPerson[]>(
+    () =>
+      personRecords(tasks, lists).map((p) => ({
+        id: p.id,
+        name: p.title || p.description || p.id,
+        nicknames: p.personProfile?.nicknames,
+        handles: [...(p.personProfile?.phones ?? []), ...(p.personProfile?.emails ?? [])],
+      })),
+    [tasks, lists],
+  )
+  const frameOrigin = state.kind === "ready" ? new URL(state.url).origin : null
+
+  const sendPeople = useCallback(() => {
+    const win = frameRef.current?.contentWindow
+    if (win && frameOrigin) win.postMessage({ source: "brain2", type: "people", people }, frameOrigin)
+  }, [people, frameOrigin])
+
+  // Keep the frame's copy current; it asks again with "ready" after each load.
+  useEffect(() => sendPeople(), [sendPeople])
+
+  useEffect(() => {
+    if (!frameOrigin) return
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== frameOrigin || event.source !== frameRef.current?.contentWindow) return
+      const req = readReportRequest(event.data)
+      if (!req) return
+      if (req.type === "ready") sendPeople()
+      else if (!people.some((p) => p.id === req.personId)) return
+      else if (req.type === "link") linkHandlesToPerson(req.personId, req.handles)
+      else if (req.type === "unlink") unlinkHandlesFromPerson(req.personId, req.handles)
+      else openItemDetailPage(req.personId)
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [frameOrigin, sendPeople, people])
 
   const start = useCallback(async () => {
     const bridge = getDesktopTextsBridge()
@@ -83,6 +132,7 @@ export function TextsReportView() {
       {state.kind === "error" ? <ChartFrame empty emptySentence={state.message} /> : null}
       {state.kind === "ready" ? (
         <iframe
+          ref={frameRef}
           key={frameKey}
           title="Texts report"
           src={state.url}
