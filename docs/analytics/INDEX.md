@@ -64,14 +64,16 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 
 ## Meta
 
+_Last mapped: 2026-10-23_ Meta views share `meta-math.ts`, `meta-plots.tsx` and `analytics-meta.css`.
+
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
-| `observatory` | `Observatory.tsx`, `observatory-findings.ts` | habits, metrics, points, sleep, tasks, tracking | Pearson r findings on joined days. |
-| `cross-section` | `CrossSection.tsx`, `cross-section.ts` | goals, habits, metrics, points, regret, sleep, tasks, tracking | Linked day-by-day density strips for every series. |
-| `metrics` | `MetricsTrends.tsx` | metrics | Five wellbeing series: joy, suffering, alignment, self satisfaction, situational satisfaction. |
-| `correlation` | `CorrelationExplorer.tsx` | habits, metrics, points, sleep, tracking | Pairwise Pearson matrix, scatter per cell. |
-| `spectrum` | `SpectrumView.tsx` | habits, sleep, tracking | Autocorrelation, DFT periodogram, sleep CV. |
-| `research-report` | `ResearchReportView.tsx`, `research-report.ts` | events, habits, metrics, reviews, sleep, tasks, tracking | Plain-language rundown of the window, sections gated by floors. |
+| [`observatory`](meta-observatory.md) | `Observatory.tsx`, `observatory-findings.ts` | habits, metrics, points, sleep, tasks, tracking | Pearson r findings on joined days. |
+| [`cross-section`](meta-cross-section.md) | `CrossSection.tsx`, `cross-section.ts` | goals, habits, metrics, points, regret, sleep, tasks, tracking | Linked day-by-day density strips for every series. |
+| [`metrics`](meta-metrics.md) | `MetricsTrends.tsx` | metrics | Five wellbeing series: joy, suffering, alignment, self satisfaction, situational satisfaction. |
+| [`correlation`](meta-correlation.md) | `CorrelationExplorer.tsx` | habits, metrics, points, sleep, tracking | Pairwise Pearson matrix, scatter per cell. |
+| [`spectrum`](meta-spectrum.md) | `SpectrumView.tsx` | habits, sleep, tracking | Autocorrelation, DFT periodogram, sleep CV. |
+| [`research-report`](meta-research-report.md) | `ResearchReportView.tsx`, `research-report.ts` | events, habits, metrics, reviews, sleep, tasks, tracking | Plain-language rundown of the window, sections gated by floors. |
 
 ## Library
 
