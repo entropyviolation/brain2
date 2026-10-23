@@ -13,6 +13,7 @@ Code only. Data, output and the venv live in the home folder, `~/texts-analysis`
 - `analyze2.py` builds per-person detail and `out/threads/`.
 - `calls.py` copies the Mac's call history (`CallHistory.storedata`, the iPhone's calls synced through Continuity) into `data/calls/` and writes `out/calls.json`. No recordings exist. If the Mac has no call history, the report says so and texts still update.
 - `detector_eval.py` scores conflict candidates and learns from your labels.
+- `backfill_handles.py` adds each person card's numbers to an existing `out/detail.json` from the copy in `data/`, then rebuilds the report. Seconds, no Full Disk Access. For reports built before cards kept numbers.
 - `build_report.py` writes `out/report.html`, inlining `report_extra.js` and `report_app.js`.
 - `llm_pass.py` and `llm_jobs.py` talk to local Ollama only.
 - `serve.py` serves the report and the API on 127.0.0.1. Notes, labels and jobs live in `out/annotations.sqlite`. Logs go to `out/serve.log`. It opens a browser only with `--open`.
