@@ -277,7 +277,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 
 **Pipeline** (`electron/instagram-report.js`, Electron main only):
 
-1. Scan `~/Downloads` and an optional folder ("Watch a folder…") at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
+1. Scan `~/Downloads`, an optional folder ("Watch a folder…") and, while `watchGoogleDrive` is on, each Google Drive `My Drive` (`googleDriveDirs` via `watchedDirs`) at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
 2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed.
 3. Write the view's manual DM matches to `matches.json`.
 4. Run `analyze.py` then `build_report.py` with the configured Python and `-I`, into a new `builds/<stamp>/` (`IG_OUT`). Last run's thumbs are copied in first.
@@ -289,7 +289,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 (`~/texts-analysis/.venv/bin/python`), `me` (`IG_ME`, the DM sender name),
 `handle` (`IG_HANDLE`, the subtitle and the account an export must match),
 `downloadsDir`, `extraDir`, `matchesPath`, `ffmpeg` (`IG_FFMPEG`; otherwise
-PATH, Homebrew, Anaconda), `keepExports`. Missing Python, scripts, packages
+PATH, Homebrew, Anaconda), `keepExports`, `watchGoogleDrive` (default on). Missing Python, scripts, packages
 (emoji, scikit-learn, vaderSentiment, Pillow) and ffmpeg show in the view.
 
 **State the report keeps.** The report stores `ig-matches`, `ig-hide-cols` and
@@ -316,10 +316,19 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-Meta's developer docs list a repeating export to Google Drive or Dropbox
-(Accounts Center schedule). It is not confirmed here that its files match the
-`instagram-<account>-<date>-<id>` name; see the auto-update notes before
-relying on it.
+**Google Drive scheduled export.** _Last mapped: 2026-10-23_ Meta writes
+each scheduled export into My Drive as `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`.
+`parseMetaFolderName` reads the date from it. `scanMetaFolder` takes, inside
+it, an unzipped export, `instagram-…` zips or folders, or plain zips as the
+parts of one export. The name has no account, so the username is read from
+`personal_information.json` after unzipping (`exportAccount`); another
+account's export is skipped. A `meta-…` folder must hold still (file count,
+size, newest mtime) for 10 s, since Drive may still be syncing it. The newest
+export builds the report. Every other export not yet archived is unzipped,
+archived and its copy removed (`archiveOnly`); a failed one is retried hourly,
+or at once if it changes. The view says **Google Drive watched** when a Drive
+folder is found. Not checked yet: the contents of a real Drive export (the
+first one was still empty). See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
 
 ### Export archive (every export, merged)
 
@@ -336,8 +345,9 @@ export folder not archived yet.
 - `removedMessages` lists DMs an earlier export had and a later one does not: **removed** (unsent or deleted), **edited** (same time and sender, other text), or **chat gone** (the whole thread is missing). The view shows them under "Unsent, deleted and edited messages" (`cogs:instagram:removed`, `/api/instagram/removed` in dev).
 - Limit: a message sent and removed between two exports was never in any export. Daily exports keep that gap to a day.
 - Meta's Latin-1 text is fixed on the way in (`fixText`).
+- Half-copied `exports/*.partial` folders are never archived. A blob copy goes to a temp file and is renamed, so a failed copy leaves no short blob.
 
-**Planned:** steps for when the first Google Drive export lands, including the gap where only the newest export is archived, are in `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER". The same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
+**Planned:** checks for when the first real Google Drive export lands are in `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER". The same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
 
 ### Monthly export reminder
 

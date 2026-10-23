@@ -11,13 +11,13 @@
  * once (`seedInstagramExportReminderOnce`); after that only the switch adds
  * or removes it, so a deleted row stays deleted.
  */
-import { createListItem, itemTitle } from "@/lib/item-utils"
+import { createListItem } from "@/lib/item-utils"
 import {
   INSTAGRAM_EXPORT_REMINDER_ID,
   INSTAGRAM_EXPORT_REMINDER_NAME,
   instagramExportStepsText,
 } from "@/lib/instagram-export-steps"
-import { ensureRemindersList, findRemindersList, reminderInstant, reminderScheduleFields } from "@/lib/reminders"
+import { ensureRemindersList, reminderInstant, reminderScheduleFields } from "@/lib/reminders"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 
@@ -50,13 +50,7 @@ export function firstInstagramExportReminder(now: Date, lastExport?: Date | null
  * Each switch-on gets a new id: a deleted id is tombstoned for sync.
  */
 export function findInstagramExportReminder(tasks: Task[]): Task | undefined {
-  const byId = tasks.find((task) => task.id.startsWith(INSTAGRAM_EXPORT_REMINDER_ID))
-  if (byId) return byId
-  const listId = findRemindersList(useTaskStore.getState().lists)?.id
-  if (!listId) return undefined
-  return tasks.find(
-    (task) => (task.lists ?? []).includes(listId) && itemTitle(task).trim() === INSTAGRAM_EXPORT_REMINDER_NAME,
-  )
+  return tasks.find((task) => task.id.startsWith(INSTAGRAM_EXPORT_REMINDER_ID))
 }
 
 export function instagramExportReminderOn(tasks: Task[] = useTaskStore.getState().tasks): boolean {
