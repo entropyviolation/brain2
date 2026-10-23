@@ -21,6 +21,7 @@ const { resolveElectronUserData } = require("./user-data-path")
 const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cache")
 const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
+const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc } = require("./instagram-ipc")
 
 const isDev = !app.isPackaged
 
@@ -91,6 +92,8 @@ protocol.registerSchemesAsPrivileged([
   },
   // Linked resources stream from disk into the preview well (`file-links.js`).
   LINK_SCHEME_PRIVILEGES,
+  // Analytics → Sources → Instagram report, built from the export (`instagram-ipc.js`).
+  INSTAGRAM_SCHEME_PRIVILEGES,
 ])
 
 // Tracks the primary window so the global capture shortcut can focus it.
@@ -382,6 +385,14 @@ function registerSpotifyAccountsIpcHandlers() {
   registerSpotifyAccountsIpc({ ipcMain, app, safeStorage, BrowserWindow, session, shell, getWindow: () => mainWindow })
 }
 
+/** Instagram export watcher + the `brain2-ig://` report scheme. */
+let instagramWatcher = null
+function registerInstagramIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const { dialog } = require("electron")
+  instagramWatcher = registerInstagramIpc({ app, ipcMain, dialog, protocol, net, getWindow: () => mainWindow })
+}
+
 function registerTelegramIpcHandlers() {
   // eslint-disable-next-line global-require
   const { registerTelegramIpc } = require("./telegram-ingest")
@@ -434,6 +445,7 @@ app.whenReady().then(async () => {
     registerInstagramAccountsIpcHandlers,
     registerSpotifyAccountsIpcHandlers,
     registerTextsIpcHandlers,
+    registerInstagramIpcHandlers,
   ]) {
     try {
       register()
@@ -451,6 +463,7 @@ app.whenReady().then(async () => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll()
+  if (instagramWatcher) instagramWatcher.stop()
 })
 
 app.on("window-all-closed", () => {
