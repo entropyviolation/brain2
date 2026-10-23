@@ -9,7 +9,11 @@
  */
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createPersonFromInstagram, linkInstagramToPerson, personForInstagram, unlinkInstagramFromPerson } from "@/lib/instagram-person-links"
+import { personRecords } from "@/lib/people-i-know"
+import { openItemDetailPopup } from "@/lib/points-ledger-nav"
+import { useTaskStore } from "@/lib/task-store"
 import {
   INSTAGRAM_EXPORT_URL,
   STANDALONE_EXPORT_SNIPPET,
@@ -17,7 +21,9 @@ import {
   formatInstagramStamp,
   instagramSource,
   parseStandaloneSettings,
+  readAccountRequest,
   readReportStateMessage,
+  takePendingInstagramOpen,
   type InstagramRemoved,
   type InstagramSource,
   type InstagramStatus,
@@ -31,8 +37,9 @@ import {
 } from "@/lib/instagram-export-reminder"
 import { INSTAGRAM_EXPORT_STEPS } from "@/lib/instagram-export-steps"
 import { formatReminderWhen } from "@/lib/reminders"
-import { useTaskStore } from "@/lib/task-store"
 import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
+import { syncInstagramListsFromReport } from "@/lib/instagram-lists-sync"
+import { syncInstagramSessionsFromReport } from "@/lib/instagram-sessions-sync"
 import "./instagram-view.css"
 
 function ExportSteps() {
@@ -151,6 +158,7 @@ export function InstagramView() {
   const [reloadKey, setReloadKey] = useState(0)
   const [importText, setImportText] = useState("")
   const [importNote, setImportNote] = useState<string | null>(null)
+  const [listsNote, setListsNote] = useState<string | null>(null)
   const frameRef = useRef<HTMLIFrameElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const [paneHeight, setPaneHeight] = useState<number | null>(null)
@@ -189,6 +197,48 @@ export function InstagramView() {
     return () => window.removeEventListener("message", onMessage)
   }, [source])
 
+  // The account card's Person link: the frame asks, Brain2 answers with who carries the handle.
+  const tasks = useTaskStore((s) => s.tasks)
+  const lists = useTaskStore((s) => s.lists)
+  const people = useMemo(() => personRecords(tasks, lists), [tasks, lists])
+  const openHandle = useRef<string | null>(null)
+  const sendPersonState = useCallback(() => {
+    const handle = openHandle.current
+    const win = frameRef.current?.contentWindow
+    if (!handle || !win) return
+    const linked = personForInstagram(people, handle)
+    win.postMessage(
+      {
+        brain2Instagram: "person-state",
+        handle,
+        linked: linked ? { id: linked.id, name: linked.title || linked.description || linked.id } : null,
+        people: people
+          .filter((p) => !p.personProfile?.self)
+          .map((p) => ({ id: p.id, name: p.title || p.description || p.id }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      },
+      "*",
+    )
+  }, [people])
+  useEffect(() => sendPersonState(), [sendPersonState])
+  useEffect(() => {
+    if (!source) return
+    const onMessage = (e: MessageEvent) => {
+      if (!frameRef.current || e.source !== frameRef.current.contentWindow) return
+      const req = readAccountRequest(e.data)
+      if (!req) return
+      if (req.type === "opened") {
+        openHandle.current = req.handle
+        sendPersonState()
+      } else if (req.type === "create") createPersonFromInstagram(req.handle, req.name)
+      else if (req.type === "attach") linkInstagramToPerson(req.personId, req.handle)
+      else if (req.type === "detach") unlinkInstagramFromPerson(req.personId, req.handle)
+      else if (req.type === "open-person") openItemDetailPopup(req.personId)
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [source, sendPersonState])
+
   // The frame is as tall as the Analytics pane, so the report scrolls inside
   // it and its sticky nav sticks, as it does in its own window.
   useEffect(() => {
@@ -209,6 +259,13 @@ export function InstagramView() {
     } finally {
       setBusy(false)
     }
+  }
+
+  const updateLists = async () => {
+    setListsNote("Updating…")
+    const result = await syncInstagramListsFromReport({ force: true, source })
+    const sessions = await syncInstagramSessionsFromReport({ force: true, source })
+    setListsNote(sessions.status === "applied" ? `${result.message} ${sessions.message}` : result.message)
   }
 
   const pickFolder = async (clear?: boolean) => {
@@ -288,6 +345,15 @@ export function InstagramView() {
             >
               Watch a folder…
             </button>
+            <button
+              type="button"
+              className="an-range-chip"
+              disabled={!status?.hasReport}
+              title="Write this report's followers, following, mutuals, no follow-back, fans, pending and blocked onto the seven Instagram lists. Done on its own for each new report; use this to redo it."
+              onClick={() => void updateLists()}
+            >
+              Update my lists
+            </button>
             {status && status.watching.length > 1 ? (
               <button
                 type="button"
@@ -303,6 +369,12 @@ export function InstagramView() {
           <span className="an-ig-field">New exports are picked up by the desktop app.</span>
         )}
       </div>
+
+      {listsNote ? (
+        <p className="an-ig-note" role="status">
+          {listsNote}
+        </p>
+      ) : null}
 
       {loadError ? <p className="an-ig-error">Could not read the report status: {loadError}</p> : null}
 
@@ -344,6 +416,10 @@ export function InstagramView() {
           allow="clipboard-write; fullscreen"
           style={paneHeight ? { height: Math.max(480, paneHeight - 24) } : undefined}
           allowFullScreen
+          onLoad={() => {
+            const handle = takePendingInstagramOpen()
+            if (handle) frameRef.current?.contentWindow?.postMessage({ brain2Instagram: "open-account", handle }, "*")
+          }}
         />
       ) : null}
 

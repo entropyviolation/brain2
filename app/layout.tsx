@@ -19,7 +19,7 @@
  */
 import type React from "react"
 import type { Metadata } from "next"
-import { DM_Mono, DotGothic16, Fraunces, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
+import { Bricolage_Grotesque, DM_Mono, DotGothic16, Fraunces, Instrument_Sans, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -74,8 +74,21 @@ const karla = Karla({
   display: "swap",
 })
 
-// Analytics handheld pixel faces (analytics-atlas.css): titles and values,
-// readable body prose, and small key labels.
+// Analytics type (analytics-atlas.css): a characterful grotesque for titles
+// and values, a calm sans for prose, keys, labels and chart ticks.
+const anDisplay = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-an-display",
+  display: "swap",
+})
+
+const anText = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-an-text",
+  display: "swap",
+})
+
+// Handheld pixel faces, still used by Home dash, task card and Lab.
 const pixelify = Pixelify_Sans({
   subsets: ["latin"],
   variable: "--font-pixelify",
@@ -126,7 +139,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${karla.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable} ${fraunces.variable} ${dmMono.variable}`}
+      className={`${karla.variable} ${anDisplay.variable} ${anText.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable} ${fraunces.variable} ${dmMono.variable}`}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning

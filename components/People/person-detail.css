@@ -751,3 +751,9 @@ body.win95-app .person-detail .person-nickfield .person-chipfield input.person-c
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* Someone is waiting on a call or text back. */
+.person-readout-owe {
+  color: #7dffc4;
+  font-weight: 600;
+}
