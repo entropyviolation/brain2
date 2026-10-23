@@ -84,6 +84,17 @@ describe("PersonDetail", () => {
     expect(screen.getByLabelText("Address")).toHaveValue("SoMa")
   })
 
+  it("opens the Instagram report on the person's handle", () => {
+    render(<Biography person={person({ personProfile: { instagram: "ada" } })} />)
+    fireEvent.click(screen.getByTestId("person-view-instagram"))
+    expect(window.sessionStorage.getItem("brain2-instagram-open")).toBe("ada")
+  })
+
+  it("hides the Instagram data key without a handle", () => {
+    render(<Biography person={person()} />)
+    expect(screen.queryByTestId("person-view-instagram")).toBeNull()
+  })
+
   it("counts a saw and joined Company time, and keeps a call that was not seen out of last saw", () => {
     useTimeTrackingStore.setState({
       entries: [
@@ -106,17 +117,17 @@ describe("PersonDetail", () => {
       />,
     )
 
-    expect(screen.getByText("Last saw 2 days ago.")).toBeInTheDocument()
+    expect(screen.getByText("Last seen 2 days ago.")).toBeInTheDocument()
     expect(screen.getByText("Called")).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText("Interactions date"), { target: { value: "2026-10-10" } })
     fireEvent.change(screen.getByLabelText("Interaction"), { target: { value: "Texted" } })
     fireEvent.click(screen.getByRole("button", { name: "Add interaction" }))
     expect(screen.getByText("Texted")).toBeInTheDocument()
-    expect(screen.getByText("Last saw 2 days ago.")).toBeInTheDocument()
+    expect(screen.getByText("Last seen 2 days ago.")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Saw them Called" }))
-    expect(screen.getByText("Last saw 1 day ago.")).toBeInTheDocument()
+    expect(screen.getByText("Last seen 1 day ago.")).toBeInTheDocument()
 
     // Gift notes moved into the Gift ideas popup (plan 3.4).
     fireEvent.click(screen.getByTestId("gift-ideas-key"))

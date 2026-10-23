@@ -72,6 +72,10 @@ left out (Wave 13, GS-2 in
 They describe events. The Regret view id stays; the prose does not call the
 person regretful.
 
+_Last mapped: 2026-10-23_ **Sources → Instagram feeds the Instagram lists.** Each new report build is written onto the seven Instagram lists in Lists (followers, following, mutuals, no follow-back, fans, pending, blocked) by `lib/instagram-lists-sync.ts`. It runs on its own at start and after a build, and the **Update my lists** key in the bar (desktop) redoes it.
+
+_Last mapped: 2026-10-23_ **Time active feeds iPhone Screen Time.** Each session in the last-month window (the 275 behind the sessions tile) is painted in Tracking → iPhone Screen Time as an estimated **Instagram** block with the note `derived from instagram data`, by `lib/instagram-sessions-sync.ts`. It runs at start, after a build, and from **Update my lists**. Older years are not painted (action-only floors; localStorage room). The session list comes from `analyze.py` (`time_active.sessions_recent`); a build made before that change has none until it is rebuilt.
+
 **Meaning group (planned, not built).** Wave 14 in
 [`docs/JungBrain2.md`](../../docs/JungBrain2.md) adds a sixth studio group,
 Meaning, with Coincidence, Symbols, and Exceptions. It defaults on and can be
@@ -326,3 +330,11 @@ Meta's developer docs list a repeating export to Google Drive or Dropbox
 (Accounts Center schedule). It is not confirmed here that its files match the
 `instagram-<account>-<date>-<id>` name; see the auto-update notes before
 relying on it.
+
+## Instagram: open one account
+
+_Last mapped: 2026-10-23_
+
+`InstagramView.tsx` hosts the report frame. A Person's **View Instagram data ↗** stores the handle (`openInstagramFor`, `lib/instagram-report.ts`), switches to this tab, and on the frame's `load` the view posts `{ brain2Instagram: "open-account", handle }` into it. The bridge script that `injectBridge` (`electron/instagram-report.js`) puts in the report calls the report's own `openAcct(handle)`. An account not in the export opens an empty card.
+
+_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Analytics (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
