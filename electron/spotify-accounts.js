@@ -350,6 +350,11 @@ function registerSpotifyAccountsIpc({ ipcMain, app, safeStorage, BrowserWindow, 
     }
     const clientId = store.clientId()
     if (!clientId) return { ok: false, error: "Save your Spotify app's Client ID first." }
+    // A second call would make its own PKCE pair, then trade the first window's code with the wrong verifier.
+    if (loginInFlight) {
+      if (!loginInFlight.win.isDestroyed()) loginInFlight.win.focus()
+      return { ok: false, error: "A Spotify login window is already open." }
+    }
     const pkce = createPkce()
     const answer = await openLoginWindow({
       BrowserWindow,
