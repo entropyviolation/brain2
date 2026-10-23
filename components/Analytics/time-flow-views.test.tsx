@@ -7,6 +7,7 @@ import type { ReactNode } from "react"
 import { render, screen } from "@testing-library/react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import type { TimeEntry } from "@/lib/time-entries"
 import { useTaskStore } from "@/lib/task-store"
 import { useAnalyticsRangeStore } from "./analytics-range-store"
 import { TransitionsView } from "./TransitionsView"
@@ -30,7 +31,7 @@ vi.mock("recharts", () => ({
 const pens = ["a", "b", "c"].map((id) => ({ id, name: `Pen ${id}`, color: "#0f766e" }))
 
 function seed() {
-  const entries = []
+  const entries: TimeEntry[] = []
   for (let d = 0; d < 9; d++) {
     const date = formatLocalDateKey(new Date(Date.now() - d * 86400000))
     const seq = ["a", "b", "a", "c", "b", "a"]
