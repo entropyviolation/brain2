@@ -11,7 +11,7 @@ type Picked = { cookies: Record<string, string>; userId: string; expiresAt: stri
 type Store = {
   file: string
   list: () => Array<Record<string, unknown>>
-  saveLogin: (req: { username?: string; label?: string; picked: Picked }) => Record<string, unknown>
+  saveLogin: (req: { username?: string; label?: string; expectUserId?: string; picked: Picked }) => Record<string, unknown>
   update: (id: string, patch: Record<string, unknown>) => Record<string, unknown> | null
   remove: (id: string) => boolean
   setPassword: (id: string, pw: string) => Record<string, unknown> | null
@@ -112,6 +112,21 @@ describe("account store", () => {
     expect(again.username).toBe("alitza")
     expect(store.list()).toHaveLength(1)
     expect(store.sessionCookies(String(first.id))?.sessionid).toBe("NEW")
+  })
+
+  it("keeps the stored name and ignores a row's name for another account's session", () => {
+    const store = ig.createAccountStore({ dir, cipher: fakeCipher() })
+    store.saveLogin({ username: "alitza", picked: ig.pickSessionCookies(LOGGED_IN)! })
+    // Log in again on @alitza's row, but the window logged into user 123 typed as someone else.
+    expect(store.saveLogin({ username: "typo", picked: ig.pickSessionCookies(LOGGED_IN)! }).username).toBe("alitza")
+    // Log in again on @alitza's row (user 123), but the window logged into user 456.
+    const other = store.saveLogin({
+      username: "alitza",
+      expectUserId: "123",
+      picked: { cookies: { sessionid: "S2", ds_user_id: "456" }, userId: "456", expiresAt: null },
+    })
+    expect(other.username).toBe("user 456")
+    expect(store.list().map((x) => x.username)).toEqual(["alitza", "user 456"])
   })
 
   it("stores an opt-in password sealed, forgets it, and removes an account", () => {

@@ -105,7 +105,11 @@ function AccountRow({
           disabled={busy}
           onClick={() =>
             void run(async () => {
-              const res = await bridge.login({ username: account.username, label: account.label })
+              const res = await bridge.login({
+                username: account.username,
+                label: account.label,
+                expectUserId: account.userId,
+              })
               if (res.ok) onChanged(res.account)
               else setNote(res.error || "Login did not finish.")
             })

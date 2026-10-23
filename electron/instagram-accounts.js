@@ -135,7 +135,7 @@ function createAccountStore({ dir, cipher, now = () => new Date() }) {
   }
 
   /** Save a fresh login. The same Instagram user id replaces its old session. */
-  function saveLogin({ username, label, picked }) {
+  function saveLogin({ username, label, picked, expectUserId }) {
     if (!picked || !picked.cookies || !picked.cookies.sessionid) throw new Error("No Instagram session to save.")
     const sealed = seal(JSON.stringify(picked.cookies))
     const data = read()
@@ -145,8 +145,11 @@ function createAccountStore({ dir, cipher, now = () => new Date() }) {
       account = { id: crypto.randomUUID(), userId: picked.userId, addedAt: stamp, secrets: {} }
       data.accounts.push(account)
     }
+    // The session cookie decides who logged in. A typed name only fills a row that has none, and
+    // "Log in again" on one row must not stamp its name on a different account's session.
     const name = normalizeUsername(username)
-    if (name) account.username = name
+    const nameFits = !expectUserId || String(expectUserId) === picked.userId
+    if (name && nameFits && !account.username) account.username = name
     if (!account.username) account.username = `user ${picked.userId}`
     if (typeof label === "string") account.label = label.trim().slice(0, 60)
     account.loggedInAt = stamp
@@ -367,10 +370,19 @@ function registerInstagramAccountsIpc({ ipcMain, app, safeStorage, BrowserWindow
     if (!cipher.available()) {
       return { ok: false, error: "No OS keychain encryption on this computer, so Brain2 will not store a login." }
     }
+    if (loginInFlight) {
+      if (!loginInFlight.win.isDestroyed()) loginInFlight.win.focus()
+      return { ok: false, error: "An Instagram login window is already open." }
+    }
     const picked = await openLoginWindow({ BrowserWindow, session, shell, parent: getWindow && getWindow() })
     if (!picked) return { ok: false, cancelled: true, error: "The login window closed before Instagram logged in." }
     try {
-      const account = store.saveLogin({ username: req && req.username, label: req && req.label, picked })
+      const account = store.saveLogin({
+        username: req && req.username,
+        label: req && req.label,
+        expectUserId: req && req.expectUserId,
+        picked,
+      })
       return { ok: true, account }
     } catch (err) {
       return { ok: false, error: String(err && err.message ? err.message : err) }
