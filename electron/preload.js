@@ -2,7 +2,7 @@
  * electron/preload.js — Electron preload (context-isolated)
  *
  * Runs in the renderer before the web app loads and exposes a minimal, read-only
- * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, …) via `contextBridge`.
+ * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, …) via `contextBridge`.
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
@@ -103,6 +103,30 @@ const TELEGRAM_EDIT = "cogs:telegram:edit"
 const TELEGRAM_MESSAGE = "cogs:telegram:message"
 const TELEGRAM_POLL_STATUS = "cogs:telegram:pollStatus"
 const TELEGRAM_ACK = "cogs:telegram:ack"
+
+// Settings → Instagram accounts. MUST match CHANNELS in electron/instagram-accounts.js
+// (sandboxed preload cannot require it). No channel returns a cookie or password.
+const INSTAGRAM_ACCOUNT_CHANNELS = {
+  status: "cogs:instagram-accounts:status",
+  list: "cogs:instagram-accounts:list",
+  login: "cogs:instagram-accounts:login",
+  update: "cogs:instagram-accounts:update",
+  remove: "cogs:instagram-accounts:remove",
+  setPassword: "cogs:instagram-accounts:setPassword",
+  check: "cogs:instagram-accounts:check",
+}
+
+// Settings → Spotify accounts. MUST match CHANNELS in electron/spotify-accounts.js.
+// No channel returns a token.
+const SPOTIFY_CHANNELS = {
+  status: "cogs:spotify:status",
+  list: "cogs:spotify:list",
+  setClientId: "cogs:spotify:setClientId",
+  login: "cogs:spotify:login",
+  update: "cogs:spotify:update",
+  remove: "cogs:spotify:remove",
+  check: "cogs:spotify:check",
+}
 
 // Chrome localhost persist snapshot. MUST match electron/main.js.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -384,6 +408,24 @@ contextBridge.exposeInMainWorld("desktop", {
       ipcRenderer.on(TELEGRAM_POLL_STATUS, listener)
       return () => ipcRenderer.removeListener(TELEGRAM_POLL_STATUS, listener)
     },
+  },
+  instagramAccounts: {
+    status: () => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.status),
+    list: () => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.list),
+    login: (req) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.login, req),
+    update: (id, patch) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.update, id, patch),
+    remove: (id) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.remove, id),
+    setPassword: (id, password) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.setPassword, id, password),
+    check: (id) => ipcRenderer.invoke(INSTAGRAM_ACCOUNT_CHANNELS.check, id),
+  },
+  spotify: {
+    status: () => ipcRenderer.invoke(SPOTIFY_CHANNELS.status),
+    list: () => ipcRenderer.invoke(SPOTIFY_CHANNELS.list),
+    setClientId: (id) => ipcRenderer.invoke(SPOTIFY_CHANNELS.setClientId, id),
+    login: (req) => ipcRenderer.invoke(SPOTIFY_CHANNELS.login, req),
+    update: (id, patch) => ipcRenderer.invoke(SPOTIFY_CHANNELS.update, id, patch),
+    remove: (id) => ipcRenderer.invoke(SPOTIFY_CHANNELS.remove, id),
+    check: (id) => ipcRenderer.invoke(SPOTIFY_CHANNELS.check, id),
   },
 })
 

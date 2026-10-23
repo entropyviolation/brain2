@@ -367,6 +367,24 @@ function registerFileLinkIpcHandlers() {
   registerFileLinkIpc({ ipcMain, dialog, shell, protocol, net, getWindow: () => mainWindow })
 }
 
+/** Settings → Instagram accounts: login window, keychain-sealed sessions. */
+function registerInstagramAccountsIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const { safeStorage, session } = require("electron")
+  // eslint-disable-next-line global-require
+  const { registerInstagramAccountsIpc } = require("./instagram-accounts")
+  registerInstagramAccountsIpc({ ipcMain, app, safeStorage, BrowserWindow, session, shell, getWindow: () => mainWindow })
+}
+
+/** Settings → Spotify accounts: PKCE login window, keychain-sealed refresh tokens. */
+function registerSpotifyAccountsIpcHandlers() {
+  // eslint-disable-next-line global-require
+  const { safeStorage, session } = require("electron")
+  // eslint-disable-next-line global-require
+  const { registerSpotifyAccountsIpc } = require("./spotify-accounts")
+  registerSpotifyAccountsIpc({ ipcMain, app, safeStorage, BrowserWindow, session, shell, getWindow: () => mainWindow })
+}
+
 /** Instagram export watcher + the `brain2-ig://` report scheme. */
 let instagramWatcher = null
 function registerInstagramIpcHandlers() {
@@ -424,6 +442,8 @@ app.whenReady().then(async () => {
     registerScreenTimeIpcHandlers,
     registerTelegramIpcHandlers,
     registerFileLinkIpcHandlers,
+    registerInstagramAccountsIpcHandlers,
+    registerSpotifyAccountsIpcHandlers,
     registerTextsIpcHandlers,
     registerInstagramIpcHandlers,
   ]) {

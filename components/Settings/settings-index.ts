@@ -122,6 +122,18 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     keywords: "instagram followers following json download import",
   },
   {
+    id: "settings-instagram-accounts",
+    groupId: "imports",
+    title: "Instagram accounts",
+    keywords: "instagram log in login account accounts session keychain password check multiple",
+  },
+  {
+    id: "settings-spotify-accounts",
+    groupId: "imports",
+    title: "Spotify accounts",
+    keywords: "spotify music listening log in login account accounts client id recently played top tracks keychain",
+  },
+  {
     id: "settings-types",
     groupId: "library",
     title: "Item Types",
