@@ -1,7 +1,7 @@
 // App layer: annotations, conflict review, relationship pages and on-demand AI jobs.
 // Works read-only from file://. When served by serve.py (http://127.0.0.1:8765) it can write.
 const SERVER = location.protocol.startsWith("http");
-let STATE = { annotations: [], labels: [], notes: [], jobs: [], detector: null, ctypes: null };
+let STATE = { annotations: [], labels: [], notes: [], jobs: [], detector: null, ctypes: null, topic_feedback: [] };
 const CTYPES_DEFAULT = ["logistics", "deep talk", "banter", "plans", "support", "flirting", "venting", "news"];
 const ctypes = () => STATE.ctypes || CTYPES_DEFAULT;
 const CANDS = DET.conflicts.candidates;
@@ -630,7 +630,10 @@ function openRelationship(eid) {
     const pa = e.pronouns.me || {}, pb = e.pronouns.them || {}, la = e.length.me || {}, lb = e.length.them || {};
     table(pc, ["", "I /100", "you /100", "we /100", "I:you", "chars", "words"], [["Me", pa.i_rate, pa.you_rate, pa.we_rate, pa.i_to_you, la.chars_mean?.toFixed(1), la.words_mean?.toFixed(1)], [e.name, pb.i_rate, pb.you_rate, pb.we_rate, pb.i_to_you, lb.chars_mean?.toFixed(1), lb.words_mean?.toFixed(1)]].map((r) => r.map((v) => v ?? "–")), [1, 2, 3, 4, 5, 6]);
     const tc = card(g2, "Topics vs your normal", "Keyword-based. Above 1× means this topic comes up more than in your texts overall.");
-    tc.append(h("div", { class: "chips" }, Object.entries(e.themes).sort((x, y) => (y[1].lift || 0) - (x[1].lift || 0)).map(([k, v]) => h("span", { class: "chip", html: `${k}<b>${v.lift == null ? "–" : v.lift.toFixed(1) + "×"}</b>` }))));
+    tc.append(h("div", { class: "chips" }, Object.entries(e.themes).sort((x, y) => (y[1].lift || 0) - (x[1].lift || 0)).map(([k, v]) => {
+      const n = topicReviewed(eid, k), c = h("button", { class: "chip", type: "button", title: `See the ${k} conversations${SERVER ? " and correct them" : ""}`, html: `${k}<b>${v.lift == null ? "–" : v.lift.toFixed(1) + "×"}</b>${n ? `<b>· ${n} reviewed</b>` : ""}` });
+      c.onclick = () => openTopic(eid, k); return c;
+    })));
     // conflicts
     const cc = card(body, "Conflicts", "Detected candidates and the ones you marked. Confirm or reject to teach the detector.");
     const refs = conflictRefs(eid);
@@ -650,6 +653,110 @@ function openRelationship(eid) {
     const wc = card(body, "Words", ""); renderWords(wc, e, false);
     const cal = card(body, "Every day", ""); renderCalendar(cal, e);
   };
+  paint();
+  const off = onState(() => { if (!body.isConnected) { off(); return; } const y = mbody.parentElement.scrollTop; paint(); mbody.parentElement.scrollTop = y; });
+}
+
+// ---------- topics: the conversations behind a chip, and your corrections ----------
+// Corrections are append-only rows in topic_feedback (serve.py). The latest one per conversation wins.
+const TOPICS = Object.keys(DET.theme_lexicon || {});
+const topicVerdict = { confirmed: "Confirmed", rejected: "Not this topic", changed: "Changed", added: "Added by you" };
+function topicEvents(ent, topic, mid) {
+  return STATE.topic_feedback.filter((f) => f.ent === ent && f.start_mid === mid && (f.topic === topic || (f.verdict === "changed" && f.new_topic === topic)));
+}
+function topicStatus(ent, topic, mid) {
+  const ev = topicEvents(ent, topic, mid).filter((f) => f.verdict).pop();
+  if (!ev || ev.verdict === "clear") return null;
+  return ev.topic === topic ? ev : { ...ev, verdict: "added", moved_from: ev.topic };
+}
+function topicReviewed(ent, topic) {
+  return new Set(STATE.topic_feedback.filter((f) => f.ent === ent && (f.topic === topic || f.new_topic === topic)).map((f) => f.start_mid)).size;
+}
+function topicRegex(topic) {
+  const ws = (DET.theme_lexicon[topic] || []).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/'/g, "'?").replace(/ /g, "\\s+"));
+  return ws.length ? new RegExp(`(^|[^a-z0-9'])(${ws.join("|")})(?=$|[^a-z0-9'])`, "gi") : null;
+}
+function markWords(text, re) {
+  const out = []; let last = 0, m; re.lastIndex = 0;
+  while ((m = re.exec(text))) { const a = m.index + m[1].length; out.push(text.slice(last, a), h("b", {}, m[2])); last = a + m[2].length; }
+  out.push(text.slice(last)); return out;
+}
+async function openTopic(eid, topic) {
+  const e = E[eid];
+  const b = openModal(`${e.name}: ${topic}`);
+  mbody.parentElement.classList.add("wide");
+  b.append(h("div", { class: "row" }, [link("← Relationship", () => openRelationship(eid), "btn")]), h("p", { class: "take" }, "Loading…"));
+  let t;
+  try { t = await loadThread(eid); } catch (err) { b.lastChild.textContent = err.message + ". Run analyze2.py to create the thread files."; return; }
+  b.lastChild.remove();
+  const bit = TOPICS.indexOf(topic), msgs = t.msgs;
+  if (bit < 0 || (msgs.length && msgs[0][5] == null)) { b.append(h("p", { class: "take" }, "This report was built before topic review existed. Press Update now, then open the topic again.")); return; }
+  const re = topicRegex(topic);
+  // Conversations: a 6-hour gap starts a new one (same rule as the analyzer).
+  const convs = []; let cur = null;
+  msgs.forEach((m, i) => {
+    if (!cur || m[0] - msgs[i - 1][0] >= 6 * 3600) convs.push(cur = { a: i, b: i, hits: [] });
+    cur.b = i; if ((m[5] >> bit) & 1) cur.hits.push(i);
+  });
+  convs.forEach((c) => {
+    c.start_mid = msgs[c.a][4]; c.end_mid = msgs[c.b][4]; c.start_epoch = msgs[c.a][0]; c.end_epoch = msgs[c.b][0]; c.n = c.b - c.a + 1;
+    const words = new Set(); c.hits.forEach((i) => { re.lastIndex = 0; let m; while ((m = re.exec(msgs[i][3] || ""))) words.add(m[2].toLowerCase()); }); c.matched = [...words];
+  });
+  const rec = (c) => ({ ent: eid, topic, start_mid: c.start_mid, end_mid: c.end_mid, start_epoch: c.start_epoch, end_epoch: c.end_epoch,
+    auto: c.hits.length > 0, auto_hits: c.hits.length, n_msgs: c.n, matched: c.matched, theme_version: DET.theme_version });
+  const send = async (c, extra) => { await api("POST", "/api/topics", { ...rec(c), ...extra }); await refreshState(); };
+  let filter = "open", sort = "hits", shown = 25;
+  const body = h("div"); b.append(body);
+  const paint = () => {
+    body.innerHTML = "";
+    const st = (c) => topicStatus(eid, topic, c.start_mid);
+    const list = convs.filter((c) => c.hits.length || st(c));
+    const count = (v) => list.filter((c) => (st(c)?.verdict || "open") === v).length;
+    body.append(h("p", { class: "take" }, `Keyword-based. ${fmt(list.filter((c) => c.hits.length).length)} of ${fmt(convs.length)} conversations use ${topic} words. ` +
+      `Reviewed: ${count("confirmed")} confirmed, ${count("rejected")} not this topic, ${count("changed")} changed, ${count("added")} added by you.` + (SERVER ? " Your corrections are kept on this Mac to train topic tagging on your own life later." : " Run serve.py to correct them.")),
+      h("p", { class: "take" }, [h("small", {}, `Words: ${(DET.theme_lexicon[topic] || []).join(", ")}`)]));
+    const tabs = h("div", { class: "fchips" });
+    [["open", "To review"], ["confirmed", "Confirmed"], ["rejected", "Not this topic"], ["changed", "Changed"], ["added", "Added by you"], ["all", "All"]].forEach(([k, l]) =>
+      tabs.append(link(`${l} (${k === "all" ? list.length : count(k)})`, () => { filter = k; shown = 25; paint(); }, "tab" + (filter === k ? " on" : ""))));
+    const sortSel = h("select", {}, [["hits", "Most matches"], ["new", "Newest"], ["old", "Oldest"]].map(([v, l]) => h("option", { value: v }, l)));
+    sortSel.value = sort; sortSel.onchange = () => { sort = sortSel.value; paint(); };
+    body.append(tabs, h("div", { class: "erow" }, [h("span", { class: "take" }, "Sort"), sortSel]));
+    const rows = list.filter((c) => filter === "all" || (st(c)?.verdict || "open") === filter)
+      .sort((x, y) => sort === "new" ? y.start_epoch - x.start_epoch : sort === "old" ? x.start_epoch - y.start_epoch : y.hits.length - x.hits.length || y.start_epoch - x.start_epoch);
+    if (!rows.length) body.append(h("p", { class: "take" }, "Nothing here."));
+    rows.slice(0, shown).forEach((c) => body.append(convRow(c, st(c))));
+    if (rows.length > shown) body.append(h("div", { class: "row" }, [link(`Show more (${rows.length - shown} left)`, () => { shown += 25; paint(); }, "btn")]));
+  };
+  function convRow(c, s) {
+    const el = h("div", { class: "pnote" });
+    const d0 = new Date(c.start_epoch * 1000);
+    el.append(h("div", {}, [h("b", {}, `${dayStr(d0)} · ${timeStr(d0)}`), ` ${c.n} messages · ${c.hits.length} with ${topic} words` + (c.matched.length ? ` (${c.matched.join(", ")})` : "") +
+      (s ? ` · ${s.moved_from ? `moved here from ${s.moved_from}` : s.verdict === "changed" ? `changed to ${s.new_topic}` : topicVerdict[s.verdict]}` : "")]));
+    const show = c.hits.length ? c.hits.slice(0, 4) : [c.a, c.a + 1, c.a + 2].filter((i) => i <= c.b);
+    show.forEach((i) => { const [ts, me, who, text] = msgs[i];
+      el.append(h("div", { class: "take" }, [h("small", {}, `${timeStr(new Date(ts * 1000))} ${me ? "You" : who || e.name}: `), ...(c.hits.includes(i) ? markWords(text || "", re) : [text || "[attachment]"])])); });
+    if (c.hits.length > show.length) el.append(h("small", { class: "take" }, `+${c.hits.length - show.length} more matching messages`));
+    const row = h("div", { class: "row" }, [link("Open conversation", () => openThread(eid, c.start_epoch, msgs[c.hits[0] ?? c.a][4]), "btn xs")]);
+    if (SERVER) {
+      const v = s && !s.moved_from ? s.verdict : s?.moved_from ? "added" : null;
+      row.append(link(v === "confirmed" ? "✓ Confirmed" : "Confirm", () => send(c, { verdict: v === "confirmed" ? "clear" : "confirmed" }), "btn xs" + (v === "confirmed" ? " on" : "")),
+        link(v === "rejected" ? "✕ Not this topic" : "Not this topic", () => send(c, { verdict: v === "rejected" ? "clear" : "rejected" }), "btn xs" + (v === "rejected" ? " on" : "")));
+      const others = [...TOPICS.filter((x) => x !== topic), ...new Set(STATE.topic_feedback.map((f) => f.new_topic).filter((x) => x && !TOPICS.includes(x)))];
+      const pick = (label, fn) => { const sel = h("select", {}, [h("option", { value: "" }, label), ...others.map((x) => h("option", { value: x }, x)), h("option", { value: "__new" }, "New topic…")]);
+        const name = h("input", { type: "text", placeholder: "New topic", hidden: "" });
+        name.onkeydown = (ev) => { if (ev.key === "Enter" && name.value.trim()) fn(name.value.trim().toLowerCase()); if (ev.key === "Escape") { name.hidden = true; sel.value = ""; } };
+        sel.onchange = () => { if (sel.value === "__new") { name.hidden = false; name.focus(); } else if (sel.value) fn(sel.value); };
+        return h("span", { class: "row", style: "margin:0" }, [sel, name]); };
+      row.append(pick("Change to…", (x) => send(c, { verdict: "changed", new_topic: x })),
+        pick("Also tag as…", (x) => api("POST", "/api/topics", { ...rec(c), topic: x, verdict: "added", auto: false, auto_hits: 0, matched: [] }).then(refreshState)));
+      const last = topicEvents(eid, topic, c.start_mid).filter((f) => f.topic === topic && f.note != null).pop();
+      const ta = h("textarea", { class: "notes", rows: 1, placeholder: "Comment on this tag (why it's right or wrong)…" }); ta.value = last?.note || "";
+      const ok = h("small", { class: "take" }, last?.note ? `Saved ${last.created.replace("T", " ")}` : "");
+      ta.onchange = async () => { if (ta.value === (last?.note || "")) return; await send(c, { verdict: null, note: ta.value }); };
+      el.append(row, h("div", { class: "nwrap" }, [ta, ok]));
+    } else el.append(row);
+    return el;
+  }
   paint();
   const off = onState(() => { if (!body.isConnected) { off(); return; } const y = mbody.parentElement.scrollTop; paint(); mbody.parentElement.scrollTop = y; });
 }

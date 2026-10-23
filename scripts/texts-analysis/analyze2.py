@@ -9,6 +9,7 @@ Nothing here is meant to be shared. out/threads/ contains message text.
 
 Usage: .venv/bin/python analyze2.py && .venv/bin/python build_report.py
 """
+import hashlib
 import json
 import math
 import pickle
@@ -304,6 +305,10 @@ def main():
     txt = msgs[msgs["has_text"]]
     base_theme = {th: float(txt["th_" + th].mean()) for th in THEMES}
     detail["theme_baseline"] = {k: r3(v) for k, v in base_theme.items()}
+    # Keyword lists, in bit order. Thread rows carry a bitmask of the topics each message hit.
+    lex = {th: sorted(THEMES[th]) + (sorted(" ".join(b) for b in CONFLICT_BI) if th == "conflict" else []) for th in THEMES}
+    detail["theme_lexicon"] = lex
+    detail["theme_version"] = hashlib.sha1(json.dumps(lex, sort_keys=True).encode()).hexdigest()[:10]
 
     # Fast Company markers: me overall.
     def markers(g):
@@ -360,13 +365,16 @@ def main():
             info["handles"] = sorted({h for h in g["peer_raw"].dropna().unique() if isinstance(h, str)})
             info["key"] = e["key"]
             person_metrics(info, g, conflicts, eid, all_months, first_day, last_day, markers)
+        else:
+            info["chat_ids"] = sorted({int(c) for c in g["chat_id"].dropna()})  # serve.py keys saved rows on these
         detail["entities"][eid] = info
 
         # Thread file (raw text, local only).
         rows = []
-        for ts, me, sk, t, comp, mid in zip(g["ts"], g["is_from_me"], g["sender_key"], g["text"], g["compound"], g["mid"]):
+        tmask = sum(g["th_" + th].astype(int).to_numpy() << b for b, th in enumerate(THEMES))
+        for ts, me, sk, t, comp, mid, tm in zip(g["ts"], g["is_from_me"], g["sender_key"], g["text"], g["compound"], g["mid"], tmask):
             who = "" if me else (sender_name(sk) if e["kind"] == "group" else "")
-            rows.append([int(ts.timestamp()), int(me), who, t or "", int(mid)])
+            rows.append([int(ts.timestamp()), int(me), who, t or "", int(mid), int(tm)])
         payload = json.dumps({"id": eid, "name": e["name"], "msgs": rows}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
         (THREADS / f"{eid}.js").write_text(f"window.__thread&&window.__thread({payload});")
 

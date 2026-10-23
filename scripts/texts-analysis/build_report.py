@@ -114,6 +114,7 @@ td.n, th.n { text-align: right; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: var(--page); border: 1px solid var(--ring); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; }
 .chip b { font-weight: 500; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+button.chip { font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; } button.chip:hover { border-color: var(--axis); }
 .emoji { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .emoji div { text-align: center; background: var(--page); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 2px; }
 .emoji span { display: block; font-size: 24px; line-height: 1.2; }
@@ -201,7 +202,7 @@ table.heat td { font-size: 12px; }
 .tmini { position: sticky; top: 50px; } .minileg { display: flex; flex-direction: column; font-size: 10px; color: var(--muted); margin-top: 4px; }
 .tbar { position: sticky; bottom: -18px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); padding: 8px 10px; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; z-index: 3; font-size: 13px; }
 .tbar[hidden] { display: none; }
-.tbar select, .editor select, .editor input[type=text], .erow input[type=month] { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 7px; padding: 3px 8px; }
+.tbar select, .editor select, .editor input[type=text], .erow input[type=month], .erow select, .pnote select, .pnote input[type=text] { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 7px; padding: 3px 8px; }
 .editor { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .editor textarea, textarea.notes, .mreplyin textarea, .card textarea { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 8px; width: 100%; resize: vertical; }
 .erow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .erow label { display: flex; gap: 4px; align-items: center; }
