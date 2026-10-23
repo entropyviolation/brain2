@@ -20,7 +20,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { formatDuration } from "@/lib/time-entries"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { isPersonPen } from "@/lib/people-sync"
@@ -29,8 +29,13 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { dateKeysInclusive, previousAnalyticsWindow } from "./analytics-range"
 import { ChartFrame } from "./chart-frame"
+import "./analytics-boards.css"
 import { StudioHelp, StudioReadout } from "./studio-kit"
 import { CompanyHeadcountPlate } from "./TrackingContextPlates"
+import { NativeSelect } from "@/components/ui/native-select"
+
+type SortKey = "time" | "change" | "days" | "last" | "name"
+const TABLE_LIMIT = 12
 
 function count(mask: Uint8Array | undefined): number {
   if (!mask) return 0
@@ -66,6 +71,7 @@ export function PeopleView() {
         let previous = 0
         let days = 0
         let firstEver: string | null = null
+        const byDay = new Map<string, number>()
         for (const [date, mask] of masks) {
           const n = count(mask)
           if (!n) continue
@@ -73,6 +79,7 @@ export function PeopleView() {
           if (inWindow.has(date)) {
             minutes += n
             days += 1
+            byDay.set(date, n)
             const union = anyone.get(date) ?? new Uint8Array(1440)
             for (let m = 0; m < 1440; m++) if (mask[m]) union[m] = 1
             anyone.set(date, union)
@@ -87,6 +94,7 @@ export function PeopleView() {
           previous,
           days,
           sessions: sessionsInWindow,
+          byDay,
           last: stats?.last ?? null,
           sinceLast: stats?.sinceLast ?? null,
           cadence: stats?.cadenceDays ?? null,
@@ -104,6 +112,24 @@ export function PeopleView() {
     const withAnyone = perDay.reduce((sum, day) => sum + day.minutes, 0)
     return { rows, seen, drifting, perDay, withAnyone, newPeople: rows.filter((row) => row.isNew) }
   }, [scopes, entries, dateKeys, previousKeys, today])
+
+  const [find, setFind] = useState("")
+  const [sort, setSort] = useState<SortKey>("time")
+  const [showAll, setShowAll] = useState(false)
+  const tableRows = useMemo(() => {
+    if (!board) return []
+    const q = find.trim().toLowerCase()
+    const rows = board.seen.filter((row) => !q || row.pen.name.toLowerCase().includes(q))
+    const by: Record<SortKey, (r: (typeof rows)[number]) => number> = {
+      time: (r) => -r.minutes,
+      change: (r) => -(r.minutes - r.previous),
+      days: (r) => -r.days,
+      last: (r) => r.sinceLast ?? Infinity,
+      name: () => 0,
+    }
+    return [...rows].sort((a, b) => (sort === "name" ? a.pen.name.localeCompare(b.pen.name) : by[sort](a) - by[sort](b)))
+  }, [board, find, sort])
+  const visibleRows = showAll || find ? tableRows : tableRows.slice(0, TABLE_LIMIT)
 
   const peopleCount = board?.rows.length ?? 0
   const dayMax = Math.max(...(board?.perDay.map((d) => d.minutes) ?? [0]), 1)
@@ -143,6 +169,23 @@ export function PeopleView() {
             {board.seen.length === 0 ? (
               <p className="an-level-empty">Nobody tracked together in the {label}.</p>
             ) : (
+              <>
+              <div className="an-people-controls">
+                <label className="an-studio-field an-find-inline">
+                  <span>Find</span>
+                  <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Name" aria-label="Find a person" />
+                </label>
+                <label className="an-studio-field">
+                  <span>Sort</span>
+                  <NativeSelect value={sort} aria-label="Sort people" onChange={(e) => setSort(e.target.value as SortKey)}>
+                    <option value="time">Most time</option>
+                    <option value="change">Biggest rise</option>
+                    <option value="days">Most days</option>
+                    <option value="last">Seen most recently</option>
+                    <option value="name">Name</option>
+                  </NativeSelect>
+                </label>
+              </div>
               <div className="an-people-table-wrap">
                 <table className="an-people-table">
                   <thead>
@@ -158,15 +201,17 @@ export function PeopleView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {board.seen.map((row) => {
+                    {visibleRows.map((row) => {
                       const delta = row.minutes - row.previous
                       const share = board.seen[0] ? row.minutes / board.seen[0].minutes : 0
                       return (
                         <tr key={row.pen.id}>
                           <th scope="row">
-                            <span className="an-headcount-dot" style={{ background: row.pen.color }} aria-hidden />
-                            {row.pen.name}
-                            {row.isNew ? <span className="an-people-new">new</span> : null}
+                            <span className="an-people-name">
+                              <span className="an-headcount-dot" style={{ background: row.pen.color }} aria-hidden />
+                              {row.pen.name}
+                              {row.isNew ? <span className="an-people-new">new</span> : null}
+                            </span>
                           </th>
                           <td>
                             <span className="an-people-meter" aria-hidden>
@@ -188,8 +233,51 @@ export function PeopleView() {
                   </tbody>
                 </table>
               </div>
+              {tableRows.length > TABLE_LIMIT && !find ? (
+                <button type="button" className="an-open-lists" onClick={() => setShowAll((v) => !v)}>
+                  {showAll ? `Show top ${TABLE_LIMIT}` : `Show all ${tableRows.length}`}
+                </button>
+              ) : null}
+              {find && tableRows.length === 0 ? <p className="an-n">Nobody matches “{find}”.</p> : null}
+              </>
             )}
           </section>
+
+          {board.seen.length ? <CompanyArcs seen={board.seen} drifting={board.drifting} /> : null}
+
+          {board.seen.length ? (
+            <section className="an-plate" aria-label="Days together" data-testid="people-days-together">
+              <p className="an-canvas-title">
+                Days together
+                <StudioHelp text="One row per person (top 12 by time), one cell per day of the window. A filled cell is a day with any tracked minute together; darker means more minutes. Gaps show the rhythm at a glance." />
+              </p>
+              <div className="an-people-era" style={{ ["--days" as string]: dateKeys.length }}>
+                {board.seen.slice(0, 12).map((row) => {
+                  const peak = Math.max(1, ...row.byDay.values())
+                  return (
+                    <div key={row.pen.id} className="an-people-era-row">
+                      <span className="an-people-era-name" title={row.pen.name}>{row.pen.name}</span>
+                      <span className="an-people-era-cells">
+                        {dateKeys.map((date) => {
+                          const n = row.byDay.get(date) ?? 0
+                          return (
+                            <span
+                              key={date}
+                              title={`${row.pen.name} · ${date} · ${n ? formatDuration(n) : "not together"}`}
+                              style={n ? { background: row.pen.color, opacity: 0.35 + 0.65 * (n / peak) } : undefined}
+                            />
+                          )
+                        })}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="an-n">
+                {dateKeys[0]} → {dateKeys[dateKeys.length - 1]} · {dateKeys.length} days
+              </p>
+            </section>
+          ) : null}
 
           {board.drifting.length ? (
             <section className="an-plate" aria-label="Drifting">
@@ -220,11 +308,80 @@ export function PeopleView() {
                 </span>
               ))}
             </div>
+            <p className="an-n">
+              {dateKeys[0]} → {dateKeys[dateKeys.length - 1]} · tallest bar {formatDuration(dayMax === 1 ? 0 : dayMax)} ·{" "}
+              {board.perDay.filter((d) => d.minutes > 0).length} of {dateKeys.length} days with someone
+            </p>
           </section>
 
           <CompanyHeadcountPlate entries={entries} scopes={scopes} dateKeys={dateKeys} rangeLabel={label} />
         </>
       )}
     </div>
+  )
+}
+
+type ArcRow = { pen: { id: string; name: string; color: string }; minutes: number; sinceLast: number | null }
+
+/**
+ * Company arcs (IIB "Who's Suing Whom", turned inward): you in the middle,
+ * people on a ring, stroke width ∝ √minutes together. Drifting people sit on
+ * the ring faded with a dashed spoke.
+ */
+function CompanyArcs({ seen, drifting }: { seen: ArcRow[]; drifting: ArcRow[] }) {
+  const [hover, setHover] = useState<string | null>(null)
+  const people = [...seen.slice(0, 16), ...drifting.filter((d) => !seen.some((s) => s.pen.id === d.pen.id)).slice(0, 6)]
+  const max = Math.max(1, ...seen.map((r) => r.minutes))
+  const size = 320
+  const c = size / 2
+  const r = 118
+  return (
+    <section className="an-plate" aria-label="Company arcs" data-testid="people-arcs">
+      <p className="an-canvas-title">
+        Company arcs
+        <StudioHelp text="You in the middle. Each spoke is a person; its width grows with the square root of your time together in this window. Faded dashed spokes are drifting people (not seen in a while). Hover a name for the numbers." />
+      </p>
+      <svg className="an-people-arcs" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Time with each person as spokes from you">
+        {people.map((row, i) => {
+          const a = (i / people.length) * Math.PI * 2 - Math.PI / 2
+          const x = c + Math.cos(a) * r
+          const y = c + Math.sin(a) * r
+          const isDrift = row.minutes === 0
+          const w = isDrift ? 1 : 1.5 + 10 * Math.sqrt(row.minutes / max)
+          const lit = hover === null || hover === row.pen.id
+          const right = Math.cos(a) >= 0
+          return (
+            <g
+              key={row.pen.id}
+              opacity={lit ? (isDrift ? 0.45 : 1) : 0.2}
+              onMouseEnter={() => setHover(row.pen.id)}
+              onMouseLeave={() => setHover(null)}
+            >
+              <title>{`${row.pen.name} · ${isDrift ? `${row.sinceLast} days since` : formatDuration(row.minutes)}`}</title>
+              <path
+                d={`M ${c} ${c} Q ${c + Math.cos(a - 0.35) * r * 0.55} ${c + Math.sin(a - 0.35) * r * 0.55} ${x} ${y}`}
+                fill="none"
+                stroke={row.pen.color}
+                strokeWidth={w}
+                strokeLinecap="round"
+                strokeDasharray={isDrift ? "3 4" : undefined}
+              />
+              <circle cx={x} cy={y} r={4} fill={row.pen.color} />
+              <text
+                x={x + (right ? 7 : -7)}
+                y={y + 3}
+                textAnchor={right ? "start" : "end"}
+                className="an-people-arc-label"
+              >
+                {row.pen.name.length > 14 ? `${row.pen.name.slice(0, 13)}…` : row.pen.name}
+              </text>
+            </g>
+          )
+        })}
+        <circle cx={c} cy={c} r={14} className="an-people-arc-you" />
+        <text x={c} y={c + 3} textAnchor="middle" className="an-people-arc-label">you</text>
+      </svg>
+      {seen.length > 16 ? <p className="an-n">Top 16 of {seen.length} people seen, plus up to 6 drifting.</p> : null}
+    </section>
   )
 }
