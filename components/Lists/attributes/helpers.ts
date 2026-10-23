@@ -6,6 +6,7 @@
  * id slugging, list-attribute merging, and display formatting.
  */
 import type { AttributeDefinition, AttributeValue, FileValue, GoalValue, ItemTypeDefinition, Task, List } from "@/lib/types"
+import { formatHandle } from "@/lib/phone-sync/handles"
 import { migrateAttributeDefinition, normalizeAttributeType } from "@/lib/attribute-utils"
 import { composeListAttributes, resolveItemSchema } from "@/lib/item-types"
 import { useTaskStore } from "@/lib/task-store"
@@ -132,6 +133,8 @@ export function formatAttributeValue(def: AttributeDefinition, value: AttributeV
     case "selection":
       if (d.allowMultiple || type === "multistring" || type === "multiimage") return asArray(value).join(", ")
       return String(value)
+    case "phone":
+      return asArray(value).map((n) => formatHandle(n)).join(", ")
     case "goal": {
       const g = asGoal(value)
       if (!g.target && !g.current) return ""

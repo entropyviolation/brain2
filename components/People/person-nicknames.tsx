@@ -17,6 +17,7 @@ export function NicknameField({
   label = "Nicknames",
   itemLabel = "nickname",
   suggestions,
+  format,
 }: {
   nicknames: string[]
   onChange: (nicknames: string[]) => void
@@ -24,6 +25,8 @@ export function NicknameField({
   itemLabel?: string
   /** Offered as the user types (a datalist). */
   suggestions?: string[]
+  /** How a chip reads (phone numbers: +1 (555) 123-4567). */
+  format?: (value: string) => string
 }) {
   const [draft, setDraft] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -54,7 +57,7 @@ export function NicknameField({
       >
         {nicknames.map((name) => (
           <span key={name} className="person-nickname">
-            {name}
+            {format ? format(name) : name}
             <button
               type="button"
               aria-label={`Remove ${itemLabel} ${name}`}

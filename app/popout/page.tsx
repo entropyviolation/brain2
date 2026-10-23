@@ -3,7 +3,7 @@
  *
  * A dedicated static route (not the root app shell) so "Pop out" opens *only*
  * the current module workspace or spreadsheet. Query: `?module=<id>` or
- * `?sheet=<categoryId>`. Legacy hashes `#popout/module/…` and `#popout/sheet/…`
+ * `?sheet=<categoryId>`, or `?view=texts` for Analytics → Texts. Legacy hashes `#popout/module/…` and `#popout/sheet/…`
  * still work if they land on this page.
  */
 "use client"
@@ -19,20 +19,23 @@ const ModulePopoutView = lazy(() =>
 const SheetPopoutView = lazy(() =>
   import("@/components/spreadsheet/SheetPopoutView").then((mod) => ({ default: mod.SheetPopoutView })),
 )
+const TextsReportView = lazy(() =>
+  import("@/components/Analytics/TextsReportView").then((mod) => ({ default: mod.TextsReportView })),
+)
 
-function readRoute(): { moduleId: string | null; sheetId: string | null } {
-  if (typeof window === "undefined") return { moduleId: null, sheetId: null }
+type Route = { moduleId: string | null; sheetId: string | null; view: string | null }
+
+function readRoute(): Route {
+  if (typeof window === "undefined") return { moduleId: null, sheetId: null, view: null }
   return {
     moduleId: parseModulePopoutLocation(window.location),
     sheetId: parseSheetPopoutLocation(window.location),
+    view: new URLSearchParams(window.location.search).get("view"),
   }
 }
 
 export default function PopoutPage() {
-  const [route, setRoute] = useState<{ moduleId: string | null; sheetId: string | null }>({
-    moduleId: null,
-    sheetId: null,
-  })
+  const [route, setRoute] = useState<Route>({ moduleId: null, sheetId: null, view: null })
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -42,6 +45,16 @@ export default function PopoutPage() {
     window.addEventListener("hashchange", read)
     return () => window.removeEventListener("hashchange", read)
   }, [])
+
+  if (route.view === "texts") {
+    return (
+      <main className="h-screen bg-background p-3">
+        <Suspense fallback={<MachineLoading label="Loading texts…" />}>
+          <TextsReportView popout />
+        </Suspense>
+      </main>
+    )
+  }
 
   if (route.moduleId) {
     return (

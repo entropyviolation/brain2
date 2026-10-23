@@ -17,7 +17,7 @@
  * not erased by this build.
  */
 import { createListItem } from "@/lib/item-utils"
-import { PERSON_TYPE_ID } from "@/lib/person-types"
+import { PERSON_ATTR, PERSON_TYPE_ID } from "@/lib/person-types"
 import { phonePenId } from "@/lib/phone-sync/ids"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, PersonPipeline, Task } from "@/lib/types"
@@ -232,6 +232,17 @@ export function pipelinesForEntry(
 }
 
 /** People on the list, plus anyone already carrying a pipeline. */
+/**
+ * A person's numbers: the Phone Number attribute when it has been set, else
+ * the older `personProfile.phones`. Writers keep both (`lib/phone-person-links.ts`).
+ */
+export function personPhoneNumbers(person: Pick<Task, "attributes" | "personProfile">): string[] {
+  const attr = person.attributes?.[PERSON_ATTR.phone]
+  if (Array.isArray(attr)) return attr.filter((v): v is string => typeof v === "string" && v.trim() !== "")
+  if (typeof attr === "string" && attr.trim()) return [attr.trim()]
+  return person.personProfile?.phones ?? []
+}
+
 export function personRecords(tasks: Task[], lists: List[]): Task[] {
   const listId = findPeopleIKnowList(lists)?.id
   return tasks.filter(
