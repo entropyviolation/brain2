@@ -86,7 +86,7 @@ meaningful on its own.
 | `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
 | `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
 | `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
-| `analytics-tabs.ts` | Six groups (behavior, time, accuracy, meta, texts, library), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A sixth group, Meaning, is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
+| `analytics-tabs.ts` | Seven groups (behavior, time, accuracy, meta, texts, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
 | `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
 | `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
 | `chart-frame.tsx` | Empty / thin furniture + **Open in Lists** (`an-open-lists`). |
@@ -147,6 +147,7 @@ meaningful on its own.
 | `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
 | `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
 | `ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
+| `InstagramView.tsx` / `instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
 | `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). |
 | `ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
 | `AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
@@ -256,3 +257,66 @@ then the **view** tab (`role="tab"`). Manifest chrome is `ANALYTICS_CHROME` in
 `scripts/screenshot-manifest.mjs`. Recapture `docs/screenshots/07-analytics*` with
 `COGS_FRESH=0` on a loaded vault so empty theater is not product truth. Do not run
 a full-repo screenshot pass while other tabs are in flight.
+
+## Instagram (Sources)
+
+_Last mapped: 2026-10-23_
+
+Sources → **Instagram** shows the person's Instagram report: the page that
+`build_report.py` writes from an Instagram data export. Brain2 does not redraw
+it. The report keeps its own CSS, script, sticky nav, dialogs and dark mode
+(it follows the system setting, as it does standalone). Brain2 adds only its
+title bar, status bar, a line with the export date and last update, and the
+last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`).
+
+**Where it is served from.** The view reads `lib/instagram-report.ts`:
+
+- Desktop: `window.desktop.instagram` (IPC) and the `brain2-ig://report/` scheme (`electron/instagram-ipc.js`).
+- Chrome at localhost: `/api/instagram/*` from the dev server (`scripts/instagram-api.mjs`). It shows the last build. It never runs Python.
+- Web and iOS: one sentence that the desktop app builds the report.
+
+**Pipeline** (`electron/instagram-report.js`, Electron main only):
+
+1. Scan `~/Downloads` and an optional folder ("Watch a folder…") at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
+2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed.
+3. Write the view's manual DM matches to `matches.json`.
+4. Run `analyze.py` then `build_report.py` with the configured Python and `-I`, into a new `builds/<stamp>/` (`IG_OUT`). Last run's thumbs are copied in first.
+5. Only when both succeed, `state.json` points at the new build. The old build and its export stay until then, so thumbs and media never break. On failure the old report stays and `lastError` holds the step and stderr.
+6. Keep the current and previous build and the newest `keepExports` exports (2).
+
+`<userData>/instagram/config.json` holds the paths and names (defaults in
+`defaultConfig()`): `scriptsDir` (`~/instagram-analysis`), `python`
+(`~/texts-analysis/.venv/bin/python`), `me` (`IG_ME`, the DM sender name),
+`handle` (`IG_HANDLE`, the subtitle and the account an export must match),
+`downloadsDir`, `extraDir`, `matchesPath`, `ffmpeg` (`IG_FFMPEG`; otherwise
+PATH, Homebrew, Anaconda), `keepExports`. Missing Python, scripts, packages
+(emoji, scikit-learn, vaderSentiment, Pillow) and ffmpeg show in the view.
+
+**State the report keeps.** The report stores `ig-matches`, `ig-hide-cols` and
+`ig-photos` in localStorage, which is per origin. Brain2 keeps a copy in
+`ui-state.json`. A small script put in front of the report's own seeds those
+keys and posts each change to the view (`injectBridge`). It draws nothing.
+`ig-matches` starts from `matches.json` and is written back to it on every
+change. Hidden columns and the photo choice from a standalone browser are
+brought over once by a console snippet ("bring settings from the standalone
+report").
+
+**Network.** The report's CSP (`REPORT_CSP`) allows only the click-to-load
+embeds (`https://www.instagram.com` frames) and the opt-in profile photos
+(`https://unavatar.io` images). Links with `target=_blank` open in the system
+browser (`setWindowOpenHandler`). Export data, builds and thumbs live in
+userData, never in the repo.
+
+**Limits of the export.** These are stated in `ANALYTICS_TAB_HELP.instagram`.
+Do not fill them with made-up numbers:
+
+- Who liked or commented on my posts and stories is not in the export. Per-person engagement comes from DMs only.
+- Carousel posts have no insights.
+- Follower counts of other accounts are not in it.
+- Comments have no link to their post.
+- Time active is an estimate. Before the recent view-log window it is a floor.
+
+Meta's developer docs list a repeating export to Google Drive or Dropbox
+(Accounts Center schedule). It is not confirmed here that its files match the
+`instagram-<account>-<date>-<id>` name; see the auto-update notes before
+relying on it.
