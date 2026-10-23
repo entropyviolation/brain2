@@ -26,11 +26,11 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `streaks` | `StreaksWidget.tsx` | habits, reviews | Current and longest streaks, all-time. Optional week-habit streak. |
 | `points` | `PointsView.tsx` | points, habits, goals | Daily points by source (habit / bonus / task), cumulative, top earners, points ledger. |
 | `velocity` | `VelocityView.tsx` | tasks, points | Completions and points per day, median cycle time, reward scatter. |
-| `reflection` | `ReflectionView.tsx` + `CompletionReviewPlates.tsx` | tasks, goals | Completion reviews: satisfaction, resistance, focus, distraction, review points, time certainty, expected vs actual difficulty, feelings, reflect notes. |
-| `todo-pulse` | `TodoPulseView.tsx` | tasks, reviews | Morning walkthrough: tier, expected duration, points, day importance, resistance readings, day excitement. |
-| `reviews` | `ReviewsView.tsx`, `PeriodArcReading.tsx` | reviews, habits, tasks | Morning and period reviews, gratitude, plans, blocked-reason mosaic, why-it-didn't notes. |
-| `seasons` | `SeasonsView.tsx` | tasks, points, reviews, goals | Calendar quarters this year and last: completions, points, rituals, season goals. |
-| `overcommit` | `OvercommitmentView.tsx` | tasks | Day-pushes and logged minutes. |
+| `reflection` | `ReflectionView.tsx` + `CompletionReviewPlates.tsx` | tasks, goals | Completion reviews: satisfaction, resistance, focus, distraction, review points, time certainty, expected vs actual difficulty, feelings, reflect notes. [Doc](behavior-reflection.md) |
+| `todo-pulse` | `TodoPulseView.tsx` | tasks, reviews | Morning walkthrough: tier, expected duration, points, day importance, resistance readings, day excitement. [Doc](behavior-todo-pulse.md) |
+| `reviews` | `ReviewsView.tsx`, `PeriodArcReading.tsx` | reviews, habits, tasks | Morning and period reviews, gratitude, plans, blocked-reason mosaic, why-it-didn't notes. [Doc](behavior-reviews.md) |
+| `seasons` | `SeasonsView.tsx` | tasks, points, reviews, goals | Calendar quarters this year and last: completions, points, rituals, season goals. [Doc](behavior-seasons.md) |
+| `overcommit` | `OvercommitmentView.tsx` | tasks | Day-pushes and logged minutes. [Doc](behavior-overcommit.md) |
 
 ## Time
 

@@ -12,10 +12,11 @@ import type { PeriodReview } from "@/lib/types"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { inRange } from "./analytics-range"
-import { SliceMosaic } from "./studio-kit"
+import { CanvasTitle, SliceMosaic, StudioReadout } from "./studio-kit"
+import { ChipFilter, Fold, SearchField, WordTiles, round1, topWords, useShowMore } from "./behavior-kit"
 import { PeriodArcReading } from "./PeriodArcReading"
 import { blockedReasonLabel, blockedReasonToken } from "@/lib/blocked-reason"
-import { collectMissReasonCorpus, MISS_SOURCE_LABEL } from "@/lib/miss-reason-corpus"
+import { collectMissReasonCorpus, MISS_SOURCE_LABEL, type MissReasonSource } from "@/lib/miss-reason-corpus"
 
 const REASON_COLOR: Record<string, string> = {
   "no-energy": "#f59e0b",
@@ -251,8 +252,72 @@ export function ReviewsView() {
         label: String(minutes),
       }
     })
-    return { slices, taskIds, max: Math.max(...slices.map((s) => s.minutes), 1) }
+    return {
+      slices,
+      taskIds,
+      max: Math.max(...slices.map((s) => s.minutes), 1),
+    }
   }, [reviewsInRange])
+
+  // Ritual strip: one cell per day of the window.
+  const strip = useMemo(() => {
+    const state = new Map<string, "done" | "partial" | "review">()
+    for (const r of reviewsInRange) {
+      if (r.period !== "day") continue
+      if (r.morning) state.set(r.periodKey, r.morning.completed === false ? "partial" : "done")
+      else if (!state.has(r.periodKey)) state.set(r.periodKey, "review")
+    }
+    let run = 0
+    let best = 0
+    for (const k of range.dateKeys) {
+      run = state.get(k) === "done" ? run + 1 : 0
+      best = Math.max(best, run)
+    }
+    let current = 0
+    for (let i = range.dateKeys.length - 1; i >= 0; i--) {
+      const st = state.get(range.dateKeys[i])
+      if (st === "done") current++
+      else if (i === range.dateKeys.length - 1)
+        continue // today may still be ahead
+      else break
+    }
+    const done = range.dateKeys.filter((k) => state.get(k) === "done").length
+    return { state, best, current, done }
+  }, [reviewsInRange, range.dateKeys])
+
+  const gratitudeWords = useMemo(() => {
+    const texts: string[] = []
+    for (const r of reviewsInRange) {
+      texts.push(...(r.gratitude ?? []).filter(Boolean))
+      texts.push(...(r.morning?.gratitude ?? []).filter(Boolean))
+    }
+    return { n: texts.length, words: topWords(texts, 36) }
+  }, [reviewsInRange])
+
+  // Why-it-didn't notes: tiles per reason token, filter by source, search.
+  const [noteQuery, setNoteQuery] = useState("")
+  const [noteSource, setNoteSource] = useState<MissReasonSource | null>(null)
+  const [noteToken, setNoteToken] = useState<string | null>(null)
+  const tokenTiles = useMemo(
+    () =>
+      corpus.tokenCounts.map((tc) => ({
+        ...tc,
+        color: REASON_COLOR[tc.id] ?? "#64748b",
+        latest: corpus.notes.find((n) => n.token === tc.id && n.text.trim())?.text ?? "",
+      })),
+    [corpus],
+  )
+  const notes = useMemo(() => {
+    const q = noteQuery.trim().toLowerCase()
+    return corpus.notes.filter(
+      (n) =>
+        (!noteSource || n.source === noteSource) &&
+        (!noteToken || n.token === noteToken) &&
+        (!q || n.text.toLowerCase().includes(q) || n.subject.toLowerCase().includes(q)),
+    )
+  }, [corpus.notes, noteQuery, noteSource, noteToken])
+  const { shown: shownNotes, more: moreNotes } = useShowMore(notes, 12)
+  const { shown: shownMornings, more: moreMornings } = useShowMore(morningDays, 5)
 
   return (
     <div className="an-canvas an-stack">
@@ -268,26 +333,64 @@ export function ReviewsView() {
       ) : (
         <>
           <p className="an-n">
-            n = {reviewsInRange.length} review{reviewsInRange.length === 1 ? "" : "s"} in the {range.label}
+            n = {reviewsInRange.length} review
+            {reviewsInRange.length === 1 ? "" : "s"} in the {range.label}
             {morningDays.length > 0 ? ` · ${morningDays.length} morning` : ""}
           </p>
 
-          {morningDays.length > 0 && (
-            <>
-              <p className="an-canvas-title">Morning rituals</p>
-              <p className="an-n">Cute read-outs of what you answered at the start of the day.</p>
-              {morningDays.map((r) => (
-                <article key={`morning-${r.id}`} className="an-review-card">
-                  <header>
-                    <span>Morning</span>
-                    <span>· {r.periodKey}</span>
-                  </header>
-                  <div className="an-review-body">
-                    <MorningBlock morning={r.morning!} taskTitle={taskTitle} habitTitle={habitTitle} />
-                  </div>
-                </article>
+          <section className="an-plate" data-testid="ritual-strip">
+            <CanvasTitle
+              title="Ritual calendar"
+              help="One square per day of the window, oldest first. Dark green = morning ritual finished, light green = started, blue = a day review without a morning ritual, grey = nothing saved."
+            />
+            <div className="an-readouts">
+              <StudioReadout
+                label="Mornings done"
+                value={strip.done}
+                note={`${round1((strip.done / Math.max(1, range.dateKeys.length)) * 100)}% of ${range.dateKeys.length} days`}
+              />
+              <StudioReadout label="Current run" value={strip.current} note="days in a row" />
+              <StudioReadout label="Longest run" value={strip.best} note="in this window" />
+            </div>
+            <div
+              className="an-strip"
+              role="img"
+              aria-label={`${strip.done} of ${range.dateKeys.length} days with a morning ritual`}
+            >
+              {range.dateKeys.map((k) => (
+                <i
+                  key={k}
+                  data-state={strip.state.get(k) ?? "none"}
+                  title={`${k} · ${strip.state.get(k) ?? "nothing saved"}`}
+                />
               ))}
-            </>
+            </div>
+          </section>
+
+          {morningDays.length > 0 && (
+            <Fold title="Morning rituals" count={morningDays.length} defaultOpen testId="morning-rituals">
+              <p className="an-n">What you answered at the start of each day. Newest first; tap a day to open it.</p>
+              {shownMornings.map((r, i) => (
+                <Fold key={`morning-${r.id}`} title={`Morning · ${r.periodKey}`} defaultOpen={i === 0}>
+                  <MorningBlock morning={r.morning!} taskTitle={taskTitle} habitTitle={habitTitle} />
+                </Fold>
+              ))}
+              {moreMornings}
+            </Fold>
+          )}
+
+          {gratitudeWords.words.length > 0 && (
+            <section className="an-plate" data-testid="gratitude-words">
+              <CanvasTitle
+                title="What you're grateful for"
+                help="Words from every gratitude line in the window (morning and period reviews). Bigger = said more often. Common filler words are dropped."
+              />
+              <WordTiles words={gratitudeWords.words} />
+              <p className="an-n">
+                n = {gratitudeWords.n} gratitude line
+                {gratitudeWords.n === 1 ? "" : "s"}
+              </p>
+            </section>
           )}
 
           <PeriodArcReading reviews={reviewsInRange} />
@@ -299,104 +402,157 @@ export function ReviewsView() {
               <OpenInListsButton taskIds={reasons.taskIds} />
             </>
           )}
-          {reviewsInRange
-            .slice()
-            .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-            .map((r) => {
-              const open = openReviewId === r.id
-              return (
-                <article key={r.id} className="an-review-card">
-                  <header onClick={() => setOpenReviewId(open ? null : r.id)}>
-                    <span className="capitalize">{r.period === "quarter" ? "Season" : r.period}</span>
-                    <span>· {r.period === "quarter" ? periodLabel("quarter", r.periodKey) : r.periodKey}</span>
-                    <span className="an-n" style={{ marginLeft: "auto" }}>
-                      {new Date(r.completedAt).toLocaleDateString()}
-                    </span>
-                  </header>
-                  {open && (
-                    <div className="an-review-body space-y-3">
-                      {r.morning && <MorningBlock morning={r.morning} taskTitle={taskTitle} habitTitle={habitTitle} />}
-                      {r.start && (
-                        <div className="space-y-2 rounded-md border border-dashed p-3">
-                          <p className="an-canvas-title" style={{ margin: 0 }}>
-                            Start ritual
-                            {r.start.completed === false ? <span className="an-n"> · in progress</span> : null}
-                            {r.start.source === "telegram" ? (
-                              <span className="an-n"> · from text pipeline (BIM)</span>
-                            ) : r.start.source === "desktop" ? (
-                              <span className="an-n"> · desktop</span>
-                            ) : null}
-                          </p>
-                          {r.start.priorities && (
-                            <p>
-                              <strong>Priorities</strong> — {r.start.priorities}
+          <Fold title="All reviews" count={reviewsInRange.length} defaultOpen={reviewsInRange.length <= 10}>
+            {reviewsInRange
+              .slice()
+              .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+              .map((r) => {
+                const open = openReviewId === r.id
+                return (
+                  <article key={r.id} className="an-review-card">
+                    <header
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={open}
+                      onClick={() => setOpenReviewId(open ? null : r.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          setOpenReviewId(open ? null : r.id)
+                        }
+                      }}
+                    >
+                      <span aria-hidden>{open ? "▾" : "▸"}</span>
+                      <span className="capitalize">{r.period === "quarter" ? "Season" : r.period}</span>
+                      <span>· {r.period === "quarter" ? periodLabel("quarter", r.periodKey) : r.periodKey}</span>
+                      <span className="an-n" style={{ marginLeft: "auto" }}>
+                        {new Date(r.completedAt).toLocaleDateString()}
+                      </span>
+                    </header>
+                    {open && (
+                      <div className="an-review-body space-y-3">
+                        {r.morning && (
+                          <MorningBlock morning={r.morning} taskTitle={taskTitle} habitTitle={habitTitle} />
+                        )}
+                        {r.start && (
+                          <div className="space-y-2 rounded-md border border-dashed p-3">
+                            <p className="an-canvas-title" style={{ margin: 0 }}>
+                              Start ritual
+                              {r.start.completed === false ? <span className="an-n"> · in progress</span> : null}
+                              {r.start.source === "telegram" ? (
+                                <span className="an-n"> · from text pipeline (BIM)</span>
+                              ) : r.start.source === "desktop" ? (
+                                <span className="an-n"> · desktop</span>
+                              ) : null}
                             </p>
-                          )}
-                          {r.start.mustDo && (
-                            <p>
-                              <strong>Must do</strong> — {r.start.mustDo}
-                            </p>
-                          )}
-                          {r.start.summary && (
-                            <p>
-                              <strong>Intentions</strong> — {r.start.summary}
-                            </p>
-                          )}
-                          {r.start.nextPlans && (
-                            <p>
-                              <strong>Plan</strong> — {r.start.nextPlans}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {r.summary && (
-                        <div>
-                          <p className="an-canvas-title">Summary</p>
-                          <p className="whitespace-pre-wrap">{r.summary}</p>
-                        </div>
-                      )}
-                      {r.gratitude?.filter(Boolean).length > 0 && (
-                        <div>
-                          <p className="an-canvas-title">Gratitude</p>
-                          <ul>
-                            {r.gratitude.filter(Boolean).map((g, i) => (
-                              <li key={i}>{g}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {r.nextPlans && (
-                        <div>
-                          <p className="an-canvas-title">Plans for next {r.period}</p>
-                          <p className="whitespace-pre-wrap">{r.nextPlans}</p>
-                        </div>
-                      )}
-                      <p className="an-n">
-                        {r.resolvedTaskIds?.length || 0} resolved · {r.pushedTaskIds?.length || 0} pushed forward
-                      </p>
-                    </div>
-                  )}
-                </article>
-              )
-            })}
+                            {r.start.priorities && (
+                              <p>
+                                <strong>Priorities</strong> — {r.start.priorities}
+                              </p>
+                            )}
+                            {r.start.mustDo && (
+                              <p>
+                                <strong>Must do</strong> — {r.start.mustDo}
+                              </p>
+                            )}
+                            {r.start.summary && (
+                              <p>
+                                <strong>Intentions</strong> — {r.start.summary}
+                              </p>
+                            )}
+                            {r.start.nextPlans && (
+                              <p>
+                                <strong>Plan</strong> — {r.start.nextPlans}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {r.summary && (
+                          <div>
+                            <p className="an-canvas-title">Summary</p>
+                            <p className="whitespace-pre-wrap">{r.summary}</p>
+                          </div>
+                        )}
+                        {r.gratitude?.filter(Boolean).length > 0 && (
+                          <div>
+                            <p className="an-canvas-title">Gratitude</p>
+                            <ul>
+                              {r.gratitude.filter(Boolean).map((g, i) => (
+                                <li key={i}>{g}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {r.nextPlans && (
+                          <div>
+                            <p className="an-canvas-title">Plans for next {r.period}</p>
+                            <p className="whitespace-pre-wrap">{r.nextPlans}</p>
+                          </div>
+                        )}
+                        <p className="an-n">
+                          {r.resolvedTaskIds?.length || 0} resolved · {r.pushedTaskIds?.length || 0} pushed forward
+                        </p>
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+          </Fold>
         </>
       )}
       {corpus.notes.length > 0 && (
         <>
-          <p className="an-canvas-title">Why it didn't get done</p>
+          <p className="an-canvas-title">Why it didn&apos;t get done</p>
           <p className="an-n" data-testid="miss-reason-counts">
             {corpus.sourceCounts.map((source) => `${source.label} ${source.count}`).join(" · ")}
             {corpus.tokenCounts.length > 0
               ? ` · ${corpus.tokenCounts.map((token) => `${token.label} ${token.count}`).join(" · ")}`
               : ""}
           </p>
-          <ul data-testid="miss-reason-corpus">
-            {corpus.notes.map((note) => (
-              <li key={note.id}>
-                {note.date} · {MISS_SOURCE_LABEL[note.source]} · {note.subject} · {note.text}
+          {tokenTiles.length > 0 && (
+            <div className="an-tiles" data-testid="miss-reason-tiles">
+              {tokenTiles.map((tile) => (
+                <button
+                  key={tile.id}
+                  type="button"
+                  className="an-tile"
+                  style={{ ["--tile" as string]: tile.color }}
+                  aria-pressed={noteToken === tile.id}
+                  onClick={() => setNoteToken(noteToken === tile.id ? null : tile.id)}
+                >
+                  <span className="an-tile-count">{tile.count}</span>
+                  <span>{tile.label}</span>
+                  {tile.latest ? <span className="an-tile-quote">“{tile.latest}”</span> : null}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="an-bx-tools">
+            <SearchField value={noteQuery} onChange={setNoteQuery} placeholder="Words in the note…" />
+            <ChipFilter
+              options={corpus.sourceCounts.map((sc) => ({
+                id: sc.id,
+                label: sc.label,
+                count: sc.count,
+              }))}
+              value={noteSource}
+              onChange={setNoteSource}
+            />
+          </div>
+          <ul data-testid="miss-reason-corpus" className="an-list">
+            {shownNotes.map((note) => (
+              <li key={note.id} className="an-list-row" style={{ cursor: "default" }}>
+                <span>
+                  <strong>{note.subject}</strong> · {note.text}
+                </span>
+                <span className="an-n" style={{ whiteSpace: "nowrap" }}>
+                  {MISS_SOURCE_LABEL[note.source]} · {note.date}
+                </span>
               </li>
             ))}
           </ul>
+          {notes.length === 0 && <p className="an-canvas-hint">No note matches.</p>}
+          {moreNotes}
         </>
       )}
     </div>
