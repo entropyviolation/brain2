@@ -9,6 +9,7 @@ Nothing here is meant to be shared. out/threads/ contains message text.
 
 Usage: .venv/bin/python analyze2.py && .venv/bin/python build_report.py
 """
+import hashlib
 import json
 import math
 import pickle
@@ -304,6 +305,10 @@ def main():
     txt = msgs[msgs["has_text"]]
     base_theme = {th: float(txt["th_" + th].mean()) for th in THEMES}
     detail["theme_baseline"] = {k: r3(v) for k, v in base_theme.items()}
+    # Keyword lists, in bit order. Thread rows carry a bitmask of the topics each message hit.
+    lex = {th: sorted(THEMES[th]) + (sorted(" ".join(b) for b in CONFLICT_BI) if th == "conflict" else []) for th in THEMES}
+    detail["theme_lexicon"] = lex
+    detail["theme_version"] = hashlib.sha1(json.dumps(lex, sort_keys=True).encode()).hexdigest()[:10]
 
     # Fast Company markers: me overall.
     def markers(g):
@@ -360,18 +365,22 @@ def main():
             info["handles"] = sorted({h for h in g["peer_raw"].dropna().unique() if isinstance(h, str)})
             info["key"] = e["key"]
             person_metrics(info, g, conflicts, eid, all_months, first_day, last_day, markers)
+        else:
+            info["chat_ids"] = sorted({int(c) for c in g["chat_id"].dropna()})  # serve.py keys saved rows on these
         detail["entities"][eid] = info
 
         # Thread file (raw text, local only).
         rows = []
-        for ts, me, sk, t, comp, mid in zip(g["ts"], g["is_from_me"], g["sender_key"], g["text"], g["compound"], g["mid"]):
+        tmask = sum(g["th_" + th].astype(int).to_numpy() << b for b, th in enumerate(THEMES))
+        for ts, me, sk, t, comp, mid, tm in zip(g["ts"], g["is_from_me"], g["sender_key"], g["text"], g["compound"], g["mid"], tmask):
             who = "" if me else (sender_name(sk) if e["kind"] == "group" else "")
-            rows.append([int(ts.timestamp()), int(me), who, t or "", int(mid)])
+            rows.append([int(ts.timestamp()), int(me), who, t or "", int(mid), int(tm)])
         payload = json.dumps({"id": eid, "name": e["name"], "msgs": rows}, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
         (THREADS / f"{eid}.js").write_text(f"window.__thread&&window.__thread({payload});")
 
     # Closeness composite over the top 20 people.
     composite(detail)
+    detail["drifting"] = drifting(msgs, detail, last_day)
 
     # Conflict candidates (no text).
     for i, c in enumerate(sorted(conflicts, key=lambda c: c["start"]), 1):
@@ -409,6 +418,7 @@ def person_metrics(info, g, conflicts, eid, all_months, first_day, last_day, mar
         m2 = gg.groupby("month")["min"].agg(["median", "size"])
         m2 = m2[m2["size"] >= 10]["median"]
         cv[s] = r3(m2.std() / m2.mean()) if len(m2) >= 3 and m2.mean() else None
+    info["reply_weekly"] = reply_weekly(pd.DataFrame({"week": week_of(g["ts"]), "side": g["side"], "min": gap.dt.total_seconds() / 60})[flip], last_day)
     info["replies"] = {"median_me": r3(med.get("me")), "median_them": r3(med.get("them")), "cv_me": cv.get("me"), "cv_them": cv.get("them"),
                        "median_all": r3(rp["min"].median())}
     # Monthly series over the relationship span.
@@ -597,10 +607,59 @@ def comparisons(msgs, tok_store, gap_months, last_day):
     wk_series = [{"week": w, "messages": int(wk_counts.get(w, 0)), "gap": w in gap_weeks} for w in weeks]
     mo_series = [{"month": k, "messages": int(v)} for k, v in m.groupby("month").size().items()]
     return {
+        "reply_weekly": reply_weekly(rep, last_day),
         "week": {"this": this_w, "this_days": days_in_this, "last": last_w, "stats": wstats, "avg": avg_week, "avg_weeks": len(full) - 1},
         "month": {"this": this_m, "this_days": int(pd.Timestamp(last_day).day), "last": pm, "last_year": ly, "stats": mstats},
         "weekly_series": wk_series, "monthly_series": mo_series,
     }
+
+
+def week_of(ts):
+    return (ts - pd.to_timedelta(ts.dt.day_of_week, unit="D")).dt.strftime("%Y-%m-%d")
+
+
+def reply_weekly(rep, last_day, n=52):
+    """Median reply minutes per week for me and for them, over the last n weeks. rep: week, side, min."""
+    end = pd.Timestamp(last_day)
+    weeks = [(end - pd.Timedelta(days=end.dayofweek) - pd.Timedelta(weeks=k)).strftime("%Y-%m-%d") for k in range(n - 1, -1, -1)]
+    agg = rep[rep["week"].isin(weeks)].groupby(["week", "side"])["min"].agg(["median", "size"])
+    out = {"weeks": weeks}
+    for side in ("me", "them"):
+        out[side] = [r3(agg.loc[(w, side), "median"]) if (w, side) in agg.index and agg.loc[(w, side), "size"] >= 3 else None for w in weeks]
+        out["n_" + side] = [int(agg.loc[(w, side), "size"]) if (w, side) in agg.index else 0 for w in weeks]
+    return out
+
+
+def drifting(msgs, detail, last_day, recent_days=60, base_days=180, top=15):
+    """People texted a lot in the half year before the last two months who have gone quiet since, and about when it changed."""
+    end = pd.Timestamp(last_day)
+    out = []
+    one = msgs[~msgs["is_group"] & msgs["ent"].notna()]
+    for eid, g in one.groupby("ent"):
+        e = detail["entities"].get(eid)
+        if not e or e["kind"] != "person":
+            continue
+        days = g.groupby("day").size()
+        days.index = pd.to_datetime(days.index)
+        full = days.reindex(pd.date_range(end - pd.Timedelta(days=recent_days + base_days + 240), end), fill_value=0)
+        now = float(full[full.index > end - pd.Timedelta(days=recent_days)].sum()) / recent_days * 7
+        base = full[(full.index > end - pd.Timedelta(days=recent_days + base_days)) & (full.index <= end - pd.Timedelta(days=recent_days))]
+        before = float(base.sum()) / base_days * 7
+        if before < 5 or now > 0.35 * before:
+            continue
+        # Change point: the day that best splits a busy 90 days before from a quiet stretch after (at least 14 days).
+        v = full.to_numpy(dtype=float)
+        cs = np.concatenate([[0], np.cumsum(v)])
+        best, since = None, None
+        for i in range(90, len(v) - 14):
+            gap_ = (cs[i] - cs[i - 90]) / 90 - (cs[len(v)] - cs[i]) / (len(v) - i)
+            if best is None or gap_ > best:
+                best, since = gap_, full.index[i]
+        out.append({"ent": eid, "name": e["name"], "before_per_week": round(before, 1), "now_per_week": round(now, 1),
+                    "since": since.strftime("%Y-%m-%d") if since is not None else None, "last": str(g["day"].max()),
+                    "total": int(len(g))})
+    out.sort(key=lambda r: -(r["before_per_week"] - r["now_per_week"]))
+    return {"recent_days": recent_days, "base_days": base_days, "people": out[:top]}
 
 
 def inflections(series, top=4):

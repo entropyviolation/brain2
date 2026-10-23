@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   id INTEGER PRIMARY KEY, kind TEXT NOT NULL, ent TEXT, ref TEXT, params TEXT, status TEXT NOT NULL,
   progress TEXT DEFAULT '', result TEXT, error TEXT, created TEXT, started TEXT, finished TEXT);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS topic_feedback (
+  id INTEGER PRIMARY KEY, ent TEXT NOT NULL, topic TEXT NOT NULL, start_mid INTEGER, end_mid INTEGER,
+  start_epoch INTEGER, end_epoch INTEGER, auto INTEGER, auto_hits INTEGER, n_msgs INTEGER, matched TEXT DEFAULT '[]',
+  verdict TEXT, new_topic TEXT, note TEXT, theme_version TEXT, created TEXT);
 """
 now = lambda: datetime.now().isoformat(timespec="seconds")
 _db_lock = threading.Lock()
@@ -73,6 +77,8 @@ def q(sql, args=(), one=False):
 
 
 def ins(table, d):
+    if table in ENT_TABLES and d.get("ent"):
+        d = {**d, "ent_ids": json.dumps(ent_ids_map().get(d["ent"]) or [])}
     keys = list(d)
     with _db_lock:
         cur = CON.execute(f"INSERT INTO {table} ({','.join(keys)}) VALUES ({','.join('?' * len(keys))})", [d[k] for k in keys])
@@ -87,16 +93,57 @@ def upd(table, id_, d):
 
 
 def state():
+    if _ents["mtime"] != ((OUT / "detail.json").stat().st_mtime if (OUT / "detail.json").exists() else None):
+        rehome()
     jobs = q("SELECT * FROM jobs ORDER BY id DESC LIMIT 200")
     for j in jobs:
         j["result"] = json.loads(j["result"]) if j["result"] else None
     for a in (anns := q("SELECT * FROM annotations ORDER BY start_epoch, id")):
         a["tags"] = json.loads(a["tags"] or "[]")
+    for t in (topics := q("SELECT * FROM topic_feedback ORDER BY id")):
+        t["matched"] = json.loads(t["matched"] or "[]")
     det = OUT / "detector.json"
     types = q("SELECT value FROM settings WHERE key='ctypes'", one=True)
     return {"annotations": anns, "labels": q("SELECT * FROM labels ORDER BY id"), "notes": q("SELECT * FROM notes ORDER BY id"),
             "jobs": jobs, "detector": json.loads(det.read_text()) if det.exists() else None,
-            "ctypes": json.loads(types["value"]) if types else None}
+            "ctypes": json.loads(types["value"]) if types else None, "topic_feedback": topics}
+
+
+# ---------- stable keys ----------
+# Entity ids (p01, g03) follow rank and shift when Brain2 links, merges or new texts reorder cards.
+# Every saved row also keeps ent_ids: the person's numbers and emails, or a group's chat ids.
+# rehome() points each row's ent at whichever current card holds those ids.
+ENT_TABLES = ("annotations", "labels", "notes", "jobs", "topic_feedback")
+_ents = {"mtime": None, "ids": {}}
+
+
+def ent_ids_map():
+    f = OUT / "detail.json"
+    mt = f.stat().st_mtime if f.exists() else None
+    if mt != _ents["mtime"]:
+        ents = json.loads(f.read_text()).get("entities", {}) if f.exists() else {}
+        _ents.update(mtime=mt, ids={eid: (e.get("handles") or [f"chat:{c}" for c in e.get("chat_ids") or []]) for eid, e in ents.items()})
+    return _ents["ids"]
+
+
+def rehome():
+    ids = ent_ids_map()
+    if not ids:
+        return
+    owner = {i: eid for eid, xs in ids.items() for i in xs}
+    with _db_lock:
+        for t in ENT_TABLES:
+            for r in CON.execute(f"SELECT id, ent, ent_ids FROM {t} WHERE ent IS NOT NULL").fetchall():
+                if not r["ent_ids"]:  # saved before stable keys: trust the card it was saved on
+                    if ids.get(r["ent"]):
+                        CON.execute(f"UPDATE {t} SET ent_ids=? WHERE id=?", (json.dumps(ids[r["ent"]]), r["id"]))
+                    continue
+                now_ent = next((owner[i] for i in json.loads(r["ent_ids"]) if i in owner), None)
+                if now_ent and now_ent != r["ent"]:
+                    CON.execute(f"UPDATE {t} SET ent=? WHERE id=?", (now_ent, r["id"]))
+                    if t == "jobs":  # relationship and mood jobs use the card id as their ref too
+                        CON.execute("UPDATE jobs SET ref=? WHERE id=? AND ref=?", (now_ent, r["id"], r["ent"]))
+        CON.commit()
 
 
 # ---------- detector refresh (debounced, in background) ----------
@@ -137,6 +184,8 @@ def worker():
                    "conflict_results": [r for r in q("SELECT ref, result FROM jobs WHERE kind='conflict' AND ent=? AND status='done' ORDER BY id", (j["ent"],))]}
             if j["kind"] == "conflict":
                 res = llm_jobs.analyze_conflict(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
+            elif j["kind"] == "mood":
+                res = llm_jobs.analyze_mood(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
             else:
                 res = llm_jobs.analyze_relationship(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
             res["generated"] = now()
@@ -181,6 +230,7 @@ def refresh_pipeline():
         rr["range"] = {"from": meta["first"][:10], "to": meta["last"][:10]}
         rr["history"] = ([{"at": rr["lastRun"], "seconds": round(time.time() - t0), "messages": rr["messages"]}] + rr.get("history", []))[:52]
         RUNS.write_text(json.dumps(rr, indent=1))
+        rehome()  # cards may have new ids now
         slog(f"refresh: done in {time.time() - t0:.0f}s")
     except Exception as e:
         _refresh["error"] = str(e)
@@ -196,6 +246,38 @@ def status():
         rr.update(messages=meta["non_tapback_messages"], range={"from": meta["first"][:10], "to": meta["last"][:10]})
     return {"lastRun": rr.get("lastRun"), "running": _refresh["running"], "step": _refresh["step"], "messages": rr.get("messages"),
             "range": rr.get("range"), "error": _refresh["error"]}
+
+
+# ---------- search (every thread file, in memory, on this Mac only) ----------
+_threads = {"sig": None, "rows": []}
+
+
+def search(qs, ent="", side="", limit=300):
+    files = sorted((OUT / "threads").glob("*.js"))
+    sig = tuple((f.name, f.stat().st_mtime) for f in files)
+    if sig != _threads["sig"]:
+        rows = []
+        for f in files:
+            raw = f.read_text()
+            t = json.loads(raw[raw.index("(") + 1: raw.rindex(")")])
+            rows += [(t["id"], m[0], m[1], m[2], m[3], m[4]) for m in t["msgs"] if m[3]]
+        rows.sort(key=lambda r: -r[1])
+        _threads.update(sig=sig, rows=rows)
+    needle = qs.lower()
+    hits, by_ent, total = [], {}, 0
+    for eid, ts, me, who, text, mid in _threads["rows"]:
+        if (ent and eid != ent) or (side == "me" and not me) or (side == "them" and me):
+            continue
+        i = text.lower().find(needle)
+        if i < 0:
+            continue
+        total += 1
+        by_ent[eid] = by_ent.get(eid, 0) + 1
+        if len(hits) < limit:
+            a = max(0, i - 80)
+            hits.append({"ent": eid, "ts": ts, "me": me, "who": who, "mid": mid,
+                         "text": ("…" if a else "") + text[a:i + len(qs) + 120] + ("…" if i + len(qs) + 120 < len(text) else "")})
+    return {"total": total, "hits": hits, "by_ent": sorted(({"ent": k, "n": v} for k, v in by_ent.items()), key=lambda x: -x["n"])}
 
 
 # ---------- HTTP ----------
@@ -239,6 +321,12 @@ class H(SimpleHTTPRequestHandler):
             return self._json(status())
         if self.path == "/api/state":
             return self._json(state())
+        if self.path.startswith("/api/search?"):
+            from urllib.parse import parse_qs, urlparse
+            a = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            if len(a.get("q", "").strip()) < 2:
+                return self._json({"total": 0, "hits": [], "by_ent": []})
+            return self._json(search(a["q"].strip(), a.get("ent", ""), a.get("side", "")))
         if self.path == "/api/jobs":
             jobs = q("SELECT id, kind, ent, ref, status, progress, error, created, started, finished FROM jobs ORDER BY id DESC LIMIT 50")
             return self._json(jobs)
@@ -287,6 +375,13 @@ class H(SimpleHTTPRequestHandler):
                 lid = None  # "clear"
             refresh_detector()
             return self._json({"id": lid})
+        if p == "/api/topics":
+            # Append-only: every confirm, reject, change or comment is kept, so later training sees changes of mind too.
+            if b.get("verdict") not in (None, "confirmed", "rejected", "changed", "added", "clear") or not b.get("ent") or not b.get("topic"):
+                return self._json({"error": "bad topic feedback"}, 400)
+            d = {k: b.get(k) for k in ("ent", "topic", "start_mid", "end_mid", "start_epoch", "end_epoch", "auto_hits", "n_msgs", "verdict", "new_topic", "note", "theme_version")}
+            d.update(auto=1 if b.get("auto") else 0, matched=json.dumps(b.get("matched") or []), created=now())
+            return self._json({"id": ins("topic_feedback", d)})
         if p == "/api/notes":
             d = {k: b.get(k) for k in ("scope", "ent", "ref", "period_start", "period_end", "body")}
             if b.get("id"):
@@ -333,6 +428,11 @@ def main():
     OUT.mkdir(exist_ok=True)
     CON = db()
     CON.executescript(SCHEMA)
+    for t in ENT_TABLES:
+        if "ent_ids" not in {r[1] for r in CON.execute(f"PRAGMA table_info({t})")}:
+            CON.execute(f"ALTER TABLE {t} ADD COLUMN ent_ids TEXT")
+    CON.commit()
+    rehome()
 
     # Rebuild so the page knows it's being served (it detects http: and enables the app layer).
     # Runs after the port is bound, so Brain2 sees /api/status straight away.

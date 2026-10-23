@@ -16,6 +16,7 @@ import {
   type AnalyticsTab,
 } from "./analytics-tabs"
 import { APP_NAV_KEYS, readStoredRecord, writeStoredRecord } from "@/lib/app-navigation"
+import { useTextsNavStore } from "@/lib/texts-report-nav"
 
 function readGroupViews(): Partial<Record<AnalyticsGroupId, AnalyticsTab>> {
   const stored = readStoredRecord(APP_NAV_KEYS.analyticsGroupViews)
@@ -46,6 +47,10 @@ export function AnalyticsNav({
   }, [group.id, tab])
 
   const views = useMemo(() => group.tabs, [group])
+  const textsSections = useTextsNavStore((s) => s.sections)
+  const textsActive = useTextsNavStore((s) => s.active)
+  const textsGoto = useTextsNavStore((s) => s.goto)
+  const showSections = tab === "texts-report" && textsSections.length > 0 && textsGoto
 
   const selectGroup = (groupId: AnalyticsGroupId) => {
     if (groupId === group.id) return
@@ -98,6 +103,25 @@ export function AnalyticsNav({
           </button>
         ))}
       </nav>
+      {showSections ? (
+        <>
+          <span className="an-nameplate">Sections</span>
+          <nav className="an-section-bar" aria-label="Texts report sections">
+            {textsSections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="an-section-btn"
+                aria-current={textsActive === s.id ? "true" : undefined}
+                title={`Jump to ${s.label}`}
+                onClick={() => textsGoto(s.id)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </nav>
+        </>
+      ) : null}
     </div>
   )
 }

@@ -89,6 +89,13 @@ nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 18px 0 8px; font-si
 nav a { color: var(--ink2); text-decoration: none; border-bottom: 1px solid var(--axis); }
 nav a:hover { color: var(--ink); }
 h2 { font-size: 20px; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--grid); }
+h2 .fold { margin-left: 8px; background: none; border: 0; padding: 0 4px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; vertical-align: middle; }
+h2 .fold::before { content: "▾"; } section.folded h2 .fold::before { content: "▸"; } h2 .fold:hover { color: var(--ink); }
+section.folded > :not(h2) { display: none; }
+section.cut { max-height: var(--cut); overflow: hidden; overflow: clip; position: relative; padding-bottom: 44px; }
+section.cut::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--page)); pointer-events: none; }
+section .btn.more { display: block; margin: 8px auto 0; } section .btn.more[hidden] { display: none; } section.cut .btn.more { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 1; }
+body.b2nav header nav { display: none; }
 .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px 12px; margin: 14px 0; }
 .card h3 { font-size: 15px; margin: 0 0 2px; }
 .take { color: var(--ink2); font-size: 13.5px; margin: 0 0 10px; }
@@ -114,6 +121,7 @@ td.n, th.n { text-align: right; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: var(--page); border: 1px solid var(--ring); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; }
 .chip b { font-weight: 500; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+button.chip { font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; } button.chip:hover { border-color: var(--axis); }
 .emoji { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .emoji div { text-align: center; background: var(--page); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 2px; }
 .emoji span { display: block; font-size: 24px; line-height: 1.2; }
@@ -201,7 +209,7 @@ table.heat td { font-size: 12px; }
 .tmini { position: sticky; top: 50px; } .minileg { display: flex; flex-direction: column; font-size: 10px; color: var(--muted); margin-top: 4px; }
 .tbar { position: sticky; bottom: -18px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); padding: 8px 10px; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; z-index: 3; font-size: 13px; }
 .tbar[hidden] { display: none; }
-.tbar select, .editor select, .editor input[type=text], .erow input[type=month] { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 7px; padding: 3px 8px; }
+.tbar select, .editor select, .editor input[type=text], .erow input[type=month], .erow select, .pnote select, .pnote input[type=text] { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 7px; padding: 3px 8px; }
 .editor { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .editor textarea, textarea.notes, .mreplyin textarea, .card textarea { font: inherit; font-size: 13px; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 8px; width: 100%; resize: vertical; }
 .erow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .erow label { display: flex; gap: 4px; align-items: center; }
@@ -239,17 +247,19 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
   <h1>Texts, 2018–2026</h1>
   <p id="sub"></p>
   <nav>
-    <a href="#overview">Overview</a><a href="#volume">Volume</a><a href="#people">People</a>
+    <a href="#overview">Overview</a><a href="#search">Search</a><a href="#volume">Volume</a><a href="#people">People</a><a href="#drift">Drifting</a>
     <a href="#perdayh">Per day</a><a href="#compare">Weeks and months</a><a href="#calls">Calls</a><a href="#directory">Directory</a><a href="#response">Response times</a><a href="#language">Language</a><a href="#style">Style</a><a href="#sentiment">Sentiment</a>
     <a href="#streaksec">Streaks</a><a href="#relationships">Relationships</a><a href="#markersec">Text markers</a><a href="#topicsec">Topics</a><a href="#conflictsec">Conflicts</a><a href="#yousec">You</a><a href="#method">Method</a>
   </nav>
 </header>
 <section id="overview"><div class="tiles" id="tiles"></div></section>
+<section id="search"><h2>Search</h2><div id="searchdiv"></div></section>
 <section id="volume"><h2>Volume</h2><div id="vol"></div></section>
 <section id="perdaysec"><h2 id="perdayh">Texts per day</h2><div id="perday"></div></section>
 <section id="compare"><h2>Week by week, month by month</h2><div id="cmp"></div></section>
 <section id="calls"><h2>Calls</h2><div id="callsdiv"></div></section>
 <section id="people"><h2>People</h2><div id="ppl"></div></section>
+<section id="drift"><h2>Who's drifting</h2><div id="driftdiv"></div></section>
 <section><h2 id="directory">Directory: people and chats</h2><div id="dir"></div></section>
 <section id="response"><h2>Response times</h2><div id="rt"></div></section>
 <section id="language"><h2>Language</h2><div id="lang"></div></section>
@@ -367,12 +377,14 @@ function linesMonths(parent, months, series, opts = {}) {
   const vals = series.flatMap((sr) => sr.values.filter((v) => v != null));
   let lo = opts.min ?? Math.min(...vals), hi = opts.max ?? Math.max(...vals);
   const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
-  const y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  if (opts.floor != null) lo = Math.max(lo, opts.floor);
+  const y = (v) => T + (H - T - B) * (1 - (Math.min(v, hi) - lo) / (hi - lo));
   const x = (i) => L + (W - L - R) * (i / Math.max(months.length - 1, 1));
   const tk = 4;
   for (let i = 0; i <= tk; i++) { const v = lo + (hi - lo) * i / tk; s("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "gridl" }, svg); svgText(svg, L - 6, y(v) + 4, v.toFixed(opts.dec ?? 2), { "text-anchor": "end" }); }
   if (opts.zero && lo < 0 && hi > 0) s("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), class: "axisl" }, svg);
-  months.forEach((m, i) => { if (m.endsWith("-01")) svgText(svg, x(i), H - 10, m.slice(0, 4), { class: "lab", "text-anchor": "middle" }); });
+  const lab = opts.label || mlabel;
+  months.forEach((m, i) => { const t = opts.tick ? opts.tick(m, i) : m.endsWith("-01") ? m.slice(0, 4) : null; if (t) svgText(svg, x(i), H - 10, t, { class: "lab", "text-anchor": "middle" }); });
   (opts.gaps || []).forEach(([a, b, label]) => {
     const i0 = months.indexOf(a), i1 = months.indexOf(b); if (i0 < 0) return;
     s("rect", { x: x(i0 - 0.5), y: T, width: x(i1 + 0.5) - x(i0 - 0.5), height: H - T - B, fill: css("gap") }, svg);
@@ -389,7 +401,7 @@ function linesMonths(parent, months, series, opts = {}) {
     const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) * (W / r.width);
     const i = Math.max(0, Math.min(months.length - 1, Math.round((px - L) / (W - L - R) * (months.length - 1))));
     cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
-    return `<b>${mlabel(months[i])}</b><br>` + series.filter((sr) => !sr.hideTip).map((sr) => `${sr.name}: ${sr.values[i] == null ? "–" : sr.values[i].toFixed(opts.dec ?? 3)}`).join("<br>");
+    return `<b>${lab(months[i])}</b><br>` + series.filter((sr) => !sr.hideTip).map((sr) => `${sr.name}: ${sr.values[i] == null ? "–" : opts.fmtv ? opts.fmtv(sr.values[i]) : sr.values[i].toFixed(opts.dec ?? 3)}`).join("<br>");
   });
   hit.addEventListener("mouseleave", () => cross.setAttribute("opacity", 0));
 }
@@ -491,7 +503,7 @@ function spark(parent, months, series, opts = {}) {
   const hit = s("rect", { x: 0, y: 0, width: W, height: H, fill: "transparent" }, svg);
   hover(hit, (e) => {
     const r = svg.getBoundingClientRect(); const i = Math.max(0, Math.min(months.length - 1, Math.round((e.clientX - r.left) / r.width * (months.length - 1))));
-    return `<b>${mlabel(months[i])}</b><br>` + series.map((sr) => `${sr.name}: ${sr.values[i] == null ? "–" : (opts.dec != null ? sr.values[i].toFixed(opts.dec) : fmt(sr.values[i]))}`).join("<br>");
+    return `<b>${(opts.label || mlabel)(months[i])}</b><br>` + series.map((sr) => `${sr.name}: ${sr.values[i] == null ? "–" : opts.fmtv ? opts.fmtv(sr.values[i]) : (opts.dec != null ? sr.values[i].toFixed(opts.dec) : fmt(sr.values[i]))}`).join("<br>");
   });
 }
 
