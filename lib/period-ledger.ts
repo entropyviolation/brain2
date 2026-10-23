@@ -103,6 +103,28 @@ export function tasksUndoneForPeriod(
   })
 }
 
+/** Could sit on some period's ledger: scheduled once (fields or placements) or completed. */
+function mayBeLedgerRow(task: Task): boolean {
+  return (
+    !!task.completed ||
+    !!(task.scheduledDate || task.scheduledWeek || task.scheduledMonth || task.scheduledYear || task.deadline) ||
+    (task.schedulePlacements?.length ?? 0) > 0
+  )
+}
+
+// Lists → All counts every period list (hundreds) against the same snapshot.
+// Most items are never scheduled or completed, so narrow once per snapshot.
+const ledgerPoolCache = new WeakMap<Task[], Task[]>()
+
+function ledgerPool(tasks: Task[]): Task[] {
+  const cached = ledgerPoolCache.get(tasks)
+  if (cached) return cached
+  // A step's item is never a ledger row (Phase 11); its step is.
+  const pool = withoutStepItems(tasks).filter(mayBeLedgerRow)
+  ledgerPoolCache.set(tasks, pool)
+  return pool
+}
+
 export function tasksForLedgerKind(
   tasks: Task[],
   kind: PeriodLedgerKind,
@@ -111,8 +133,7 @@ export function tasksForLedgerKind(
   folders: Folder[] = [],
   now: Date = new Date(),
 ): Task[] {
-  // A step's item is never a ledger row (Phase 11); its step is.
-  const rows = withoutStepItems(tasks)
+  const rows = ledgerPool(tasks)
   if (kind === "todo") return tasksProspectiveForPeriod(rows, period, value, now)
   if (kind === "done") return tasksCompletedInPeriod(rows, period, value, folders)
   return tasksUndoneForPeriod(rows, period, value, now)

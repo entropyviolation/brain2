@@ -575,6 +575,7 @@ export const useTaskStore = create<TaskState>()(
           // Built-in Instagram lists (`lib/instagram-lists.ts`). Not imported: that module uses this store.
           if (deleted?.id === "people-i-follow-on-instagram" || deleted?.instagramFollowingList) return state
           if (deleted?.id === "people-who-follow-me-on-instagram" || deleted?.instagramFollowersList) return state
+          if (deleted?.instagramAnalysisList) return state
           // Re-parent any sublists onto the deleted category's parent (or root)
           // so deleting a mid-tree category never orphans its descendants.
           const newParentId = deleted?.parentListId
@@ -688,6 +689,10 @@ export const useTaskStore = create<TaskState>()(
       }),
       deleteFolder: (id) => set((state) => ({ folders: state.folders.filter((f) => f.id !== id) })),
       addListToFolder: (folderId, categoryId) => set((state) => {
+        // Already filed: keep the same state so nothing re-renders or re-persists.
+        // Module Lists sync calls this for every module list on each Lists mount.
+        const target = state.folders.find((folder) => folder.id === folderId)
+        if (!target || target.listIds.includes(categoryId)) return state
         const folders = state.folders.map((folder) =>
           folder.id === folderId && !folder.listIds.includes(categoryId)
             ? { ...folder, listIds: [...folder.listIds, categoryId] }
@@ -696,6 +701,8 @@ export const useTaskStore = create<TaskState>()(
         return { folders }
       }),
       removeListFromFolder: (folderId, categoryId) => set((state) => {
+        const target = state.folders.find((folder) => folder.id === folderId)
+        if (!target || !target.listIds.includes(categoryId)) return state
         const folders = state.folders.map((folder) =>
           folder.id === folderId
             ? { ...folder, listIds: folder.listIds.filter((id) => id !== categoryId) }

@@ -209,7 +209,12 @@ function resolvePopoutLoadURL(target) {
       if (parsed.pathname !== "/popout" && parsed.pathname !== "/popout/") return null
       const moduleId = parsed.searchParams.get("module")
       const sheetId = parsed.searchParams.get("sheet")
-      if (moduleId && !sheetId) {
+      const view = parsed.searchParams.get("view")
+      // Whole views that open on their own (Analytics → Texts). Named here, never free text.
+      if (view && !moduleId && !sheetId) {
+        if (view !== "texts") return null
+        pathAndQuery = "/popout/?view=texts"
+      } else if (moduleId && !sheetId) {
         pathAndQuery = `/popout/?module=${encodeURIComponent(moduleId)}`
       } else if (sheetId && !moduleId) {
         pathAndQuery = `/popout/?sheet=${encodeURIComponent(sheetId)}`
@@ -351,7 +356,7 @@ function registerTextsIpcHandlers() {
   ipcMain.handle(TEXTS_ENSURE_SERVER_IPC_CHANNEL, () => texts.ensureTextsServer())
   ipcMain.handle(TEXTS_STATUS_IPC_CHANNEL, () => texts.textsStatus())
   ipcMain.handle(TEXTS_REFRESH_IPC_CHANNEL, () => texts.refreshTexts())
-  texts.startTextsWeeklySchedule()
+  texts.startTextsDailySchedule()
   app.on("will-quit", () => texts.stopTextsServer())
 }
 

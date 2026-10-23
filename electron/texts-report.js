@@ -5,7 +5,7 @@
  * reads a copy of `~/Library/Messages/chat.db`, writes aggregates and the
  * report to a home folder outside the repo (default `~/texts-analysis`), and
  * `serve.py` serves that report on loopback. This file starts that server on
- * demand, asks it for status, and runs the weekly refresh.
+ * demand, asks it for status, and runs the daily refresh.
  *
  * Message text never enters the repo or the vault. Loopback only.
  * Returns structured results rather than throwing (same as activitywatch.js).
@@ -20,9 +20,8 @@ const { spawn } = require("child_process")
 const DEFAULT_PORT = 8765
 const STATUS_TIMEOUT_MS = 2500
 const START_WAIT_MS = 15000
-// Weekly refresh: the week closes Sunday at 21:00 local time.
-const WEEK_CLOSE_DAY = 0
-const WEEK_CLOSE_HOUR = 21
+// Daily refresh: the day closes at 04:00 local time, so a morning view has all of yesterday.
+const DAY_CLOSE_HOUR = 4
 const SCHEDULE_TICK_MS = 60 * 60 * 1000
 
 /** Home folder for data, venv and output. `COGS_TEXTS_HOME` overrides. */
@@ -41,22 +40,20 @@ function textsBaseUrl(env = process.env) {
   return `http://127.0.0.1:${textsPort(env)}`
 }
 
-/** Most recent week close (Sunday 21:00 local) at or before `now`. */
-function lastWeekClose(now) {
+/** Most recent day close (04:00 local) at or before `now`. */
+function lastDayClose(now) {
   const d = new Date(now.getTime())
-  d.setHours(WEEK_CLOSE_HOUR, 0, 0, 0)
-  const back = (d.getDay() - WEEK_CLOSE_DAY + 7) % 7
-  d.setDate(d.getDate() - back)
-  if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 7)
+  d.setHours(DAY_CLOSE_HOUR, 0, 0, 0)
+  if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1)
   return d
 }
 
-/** True when no run has finished since the last week close. */
-function weeklyRunDue(lastRunISO, now = new Date()) {
+/** True when no run has finished since the last day close. */
+function dailyRunDue(lastRunISO, now = new Date()) {
   if (!lastRunISO) return true
   const last = new Date(lastRunISO)
   if (Number.isNaN(last.getTime())) return true
-  return last.getTime() < lastWeekClose(now).getTime()
+  return last.getTime() < lastDayClose(now).getTime()
 }
 
 async function getJson(url, init = {}, timeoutMs = STATUS_TIMEOUT_MS) {
@@ -133,14 +130,14 @@ async function refreshTexts(env = process.env) {
   return res.ok ? { ok: true, status: res.body } : res
 }
 
-/** Hourly check; runs the refresh once per week after Sunday 21:00. */
-function startTextsWeeklySchedule(env = process.env) {
+/** Hourly check; runs the refresh once a day, the first check after 04:00. */
+function startTextsDailySchedule(env = process.env) {
   if (serverPaths(env).missing) return null
   const tick = async () => {
     const res = await ensureTextsServer(env)
     if (!res.ok) return
     const s = res.status || {}
-    if (!s.running && weeklyRunDue(s.lastRun)) await refreshTexts(env)
+    if (!s.running && dailyRunDue(s.lastRun)) await refreshTexts(env)
   }
   setTimeout(() => void tick(), 30000)
   return setInterval(() => void tick(), SCHEDULE_TICK_MS)
@@ -155,12 +152,12 @@ module.exports = {
   textsHome,
   textsPort,
   textsBaseUrl,
-  lastWeekClose,
-  weeklyRunDue,
+  lastDayClose,
+  dailyRunDue,
   serverPaths,
   ensureTextsServer,
   textsStatus,
   refreshTexts,
-  startTextsWeeklySchedule,
+  startTextsDailySchedule,
   stopTextsServer,
 }
