@@ -8,7 +8,7 @@ import { removeTaskFromList } from "@/lib/item-selection"
 import { isFolderAllItemsCategoryId, GLOBAL_ALL_ITEMS_LIST_ID } from "@/lib/folder-all-items"
 import { isRemindersList } from "@/lib/reminders"
 import { isPeopleIKnowList } from "@/lib/people-i-know"
-import { isInstagramPeopleList } from "@/lib/instagram-lists"
+import { isInstagramAnalysisList, isInstagramPeopleList } from "@/lib/instagram-lists"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { InstagramListsSettings } from "@/components/Lists/dialogs/InstagramListsSettings"
 import { isListHiddenFromGlobalAll } from "@/lib/module-lists"
@@ -477,7 +477,7 @@ export function EditListDialog({
               </div>
             </div>
             {isPeople ? <div className="lp-sect"><PersonPipelinesEditor mode="list" /></div> : null}
-            {isInstagram ? <div className="lp-sect"><InstagramListsSettings /></div> : null}
+            {isInstagram || isInstagramAnalysisList(editingCategory) ? <div className="lp-sect"><InstagramListsSettings /></div> : null}
           </section>
 
           {/* PLACES */}

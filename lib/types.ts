@@ -1804,6 +1804,14 @@ export interface List {
    */
   instagramFollowersList?: boolean
   /**
+   * One of the Instagram analysis lists (mutuals, no follow-back, fans,
+   * pending requests, blocked). Set when the summary.json import creates or
+   * adopts the list. Rename keeps it. Delete is allowed; the next import
+   * makes the list again. A duplicate does not copy this.
+   * See `lib/instagram-lists.ts`.
+   */
+  instagramAnalysisList?: "mutuals" | "nofb" | "fans" | "pending" | "blocked"
+  /**
    * Gift ideas list for one person. Set when Close creates or adopts the list.
    * The person's item title is not the identity: a rename updates `name`, and
    * two people with the same title keep two lists. A duplicate does not copy
