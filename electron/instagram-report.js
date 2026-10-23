@@ -567,10 +567,39 @@ function resolveReportPath(root, state, urlPath, { fs = nodeFs } = {}) {
   return real
 }
 
+// Frame side of the account card's Person link. Runs in the report; plain ES5.
+// After the report's own `openAcct` draws a card, it adds a bar to the card's
+// header (`#aact`) and talks to the parent with `{brain2Instagram:"account"}`.
+const ACCOUNT_BAR = [
+  'var cur=null,last=null;',
+  'function send(o){o.brain2Instagram="account";try{parent.postMessage(o,"*")}catch(e){}}',
+  'function el(t,text,fn){var n=document.createElement(t);if(text)n.textContent=text;if(fn)n.onclick=fn;return n}',
+  'function slot(){var a=document.getElementById("aact");if(!a)return null;',
+  'var b=document.getElementById("b2-person");',
+  'if(!b){b=document.createElement("span");b.id="b2-person";b.style.cssText="display:inline-flex;gap:6px;align-items:center;margin-right:8px";a.insertBefore(b,a.firstChild)}return b}',
+  'function draw(){var b=slot();if(!b||!cur)return;b.textContent="";var st=last&&last.handle===cur?last:null;',
+  'if(!st){b.append(el("span","Person…"));return}',
+  'if(st.linked){b.append(el("span","Person: "+st.linked.name),',
+  'el("button","Open",function(){send({action:"open-person",personId:st.linked.id})}),',
+  'el("button","Unlink",function(){send({action:"detach",handle:cur,personId:st.linked.id})}));',
+  'Array.prototype.forEach.call(b.querySelectorAll("button"),function(x){x.className="btn"});return}',
+  'var sel=document.createElement("select");sel.className="btn";sel.setAttribute("aria-label","Attach to Person");',
+  'sel.append(new Option("Attach to Person…",""));st.people.forEach(function(p){sel.append(new Option(p.name,p.id))});',
+  'var at=el("button","Attach",function(){if(sel.value)send({action:"attach",handle:cur,personId:sel.value})});',
+  'var nw=el("button","New person",function(){var n="";try{n=acctName(cur)||""}catch(e){}send({action:"create",handle:cur,name:n})});',
+  'at.className="btn";nw.className="btn";b.append(sel,at,nw)}',
+  'function wrap(){var o=window.openAcct;if(typeof o!=="function"||o.b2)return;',
+  'var w=function(u){var r=o.apply(this,arguments);cur=String(u||"");draw();send({action:"opened",handle:cur});return r};w.b2=1;window.openAcct=w}',
+  'addEventListener("message",function(e){var d=e.data;if(e.source!==parent||!d||d.brain2Instagram!=="person-state")return;last=d;draw()});',
+  'document.readyState==="complete"?wrap():addEventListener("load",wrap);',
+].join("")
+
 /**
  * The report HTML with a small script in front of the report's own: it seeds
  * the ig-* keys from Brain2's copy and tells the parent view when one changes.
- * It draws nothing.
+ * It also opens one account's card when the parent asks (`open-account`, from a
+ * Person's Instagram handle) and adds the Person link bar to that card
+ * (`ACCOUNT_BAR`). It draws nothing else.
  */
 function injectBridge(html, ui) {
   const payload = JSON.stringify(ui || {}).replace(/</g, "\\u003c")
@@ -581,7 +610,11 @@ function injectBridge(html, ui) {
     `try{K.forEach(function(k){var v=localStorage.getItem(k);if(v!==null&&!(k in s))tell(k,v)})}catch(e){}` +
     `var P=Storage.prototype,set=P.setItem,rm=P.removeItem;` +
     `P.setItem=function(k,v){set.call(this,k,v);if(this===window.localStorage&&K.indexOf(k)>=0)tell(k,String(v))};` +
-    `P.removeItem=function(k){rm.call(this,k);if(this===window.localStorage&&K.indexOf(k)>=0)tell(k,null)}})()</script>`
+    `P.removeItem=function(k){rm.call(this,k);if(this===window.localStorage&&K.indexOf(k)>=0)tell(k,null)};` +
+    ACCOUNT_BAR +
+    `addEventListener("message",function(e){var d=e.data;if(e.source!==parent||!d||d.brain2Instagram!=="open-account"||typeof d.handle!=="string")return;` +
+    `var go=function(){if(typeof window.openAcct==="function")try{window.openAcct(d.handle)}catch(x){}};` +
+    `document.readyState==="complete"?go():addEventListener("load",go)})})()</script>`
   const at = html.search(/<head[^>]*>/i)
   if (at < 0) return script + html
   const end = html.indexOf(">", at) + 1
