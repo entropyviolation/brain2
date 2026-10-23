@@ -56,11 +56,11 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
-| `plan` | `PlanVsReality.tsx` | tasks, events, points | Planned minutes (tasks + calendar) vs actual, capacity vs waking window. |
-| `calibration` | `CalibrationView.tsx` | tasks | Estimate vs actual duration, PERT bands. |
-| `cycle` | `CycleView.tsx` | tasks | Push counts, open-item age survival and beeswarm, estimate confirmation. |
-| `regret` | `RegretView.tsx` | regret, tasks | Accrued cost of important items past due. |
-| `goals` | `GoalsAnalytics.tsx` + `CompletionReviewPlates.tsx` | goals, tasks | Objective contribution, neglected goals, where hard or joyful work went. |
+| `plan` | `PlanVsReality.tsx` | tasks, events, points | Planned minutes (tasks + calendar) vs actual, capacity vs waking window. Doc: [`accuracy-plan.md`](accuracy-plan.md). |
+| `calibration` | `CalibrationView.tsx` | tasks | Estimate vs actual duration, PERT bands. Doc: [`accuracy-calibration.md`](accuracy-calibration.md). |
+| `cycle` | `CycleView.tsx` | tasks | Push counts, open-item age survival and beeswarm, estimate confirmation. Doc: [`accuracy-cycle.md`](accuracy-cycle.md). |
+| `regret` | `RegretView.tsx` | regret, tasks | Accrued cost of important items past due. Doc: [`accuracy-regret.md`](accuracy-regret.md). |
+| `goals` | `GoalsAnalytics.tsx` + `CompletionReviewPlates.tsx` | goals, tasks | Objective contribution, neglected goals, where hard or joyful work went. Doc: [`accuracy-goals.md`](accuracy-goals.md). |
 
 ## Meta
 

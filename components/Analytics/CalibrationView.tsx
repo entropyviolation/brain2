@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import {
   ResponsiveContainer,
@@ -22,6 +22,7 @@ import {
   Tooltip,
   CartesianGrid,
   Cell,
+  ReferenceLine,
 } from "recharts"
 import {
   getCalibrationPoints,
@@ -34,12 +35,19 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, inRange, isThinSample, thinWindowSentence } from "./analytics-range"
 import { openItemsInLists } from "./open-in-lists"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "./studio-kit"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars, StudioReadout } from "./studio-kit"
+import { biasStats, estimateBarcode, pertMean, pertSummary, ratioBySize } from "./accuracy-stats"
+import "./accuracy-views.css"
+
+const VERDICT_CLASS = { under: "is-early", on: "is-on", over: "is-over" } as const
 
 export function CalibrationView() {
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const { keySet, label } = useAnalyticsRange()
+  const [bandPct, setBandPct] = useState(10)
+  const [groupBy, setGroupBy] = useState<"type" | "list">("type")
+  const [myEstimate, setMyEstimate] = useState(30)
 
   const points = useMemo(
     () => getCalibrationPoints(tasks).filter((p) => inRange(p.completedAt, keySet)),
@@ -115,6 +123,28 @@ export function CalibrationView() {
     [points, tasks],
   )
 
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
+  const listName = useMemo(() => new Map(lists.map((l) => [l.id, l.name])), [lists])
+  const barcode = useMemo(
+    () =>
+      estimateBarcode(
+        points,
+        (p) => {
+          const task = taskById.get(p.taskId)
+          if (groupBy === "type") return String(task?.type ?? "untyped")
+          return listName.get(task?.lists?.[0] ?? "") ?? "Unlisted"
+        },
+        bandPct,
+      ),
+    [points, taskById, listName, groupBy, bandPct],
+  )
+  const onShare = points.length
+    ? barcode.reduce((s, row) => s + row.on, 0) / points.length
+    : 0
+  const bias = useMemo(() => biasStats(points.map((p) => p.ratio)), [points])
+  const bySize = useMemo(() => ratioBySize(points), [points])
+  const pertHits = useMemo(() => pertSummary(pert), [pert])
+
   const maxAxis = points.reduce((m, p) => Math.max(m, p.estimated, p.actual), 0) || 60
   const caveat =
     "Only tasks with both an estimated duration and a recorded actual count. The median ratio is not a law."
@@ -176,16 +206,153 @@ export function CalibrationView() {
                   formatter={(value: number, key: string) => [`${value}m`, key === "y" ? "Actual" : "Estimated"]}
                   labelFormatter={() => ""}
                 />
+                <ReferenceLine
+                  segment={[
+                    { x: 0, y: 0 },
+                    { x: maxAxis, y: maxAxis },
+                  ]}
+                  stroke={STUDIO_AXIS}
+                  strokeDasharray="4 3"
+                  ifOverflow="hidden"
+                />
+                <ReferenceLine
+                  segment={[
+                    { x: 0, y: 0 },
+                    { x: maxAxis, y: maxAxis * (1 + bandPct / 100) },
+                  ]}
+                  stroke={STUDIO_GRID}
+                  strokeDasharray="2 4"
+                  ifOverflow="hidden"
+                />
+                <ReferenceLine
+                  segment={[
+                    { x: 0, y: 0 },
+                    { x: maxAxis, y: maxAxis * (1 - bandPct / 100) },
+                  ]}
+                  stroke={STUDIO_GRID}
+                  strokeDasharray="2 4"
+                  ifOverflow="hidden"
+                />
                 <Scatter
                   data={scatterData}
-                  fill="#7dd3fc"
+                  fill="#173a7a"
+                  fillOpacity={0.7}
                   onClick={(d: { taskId?: string }) => d?.taskId && openItemsInLists({ taskIds: [d.taskId] })}
                   cursor="pointer"
                 />
               </ScatterChart>
             </ResponsiveContainer>
             <p className="an-canvas-hint">
-              Points above the diagonal took longer than estimated; points below finished faster.
+              Points above the dashed diagonal took longer than estimated; points below finished faster. The
+              dotted lines are the ±{bandPct}% band.
+            </p>
+          </div>
+
+          <div className="an-acc-plate">
+            <p className="an-canvas-title">Estimate barcode</p>
+            <div className="an-acc-tools">
+              <label>
+                On if within ±{bandPct}%
+                <input
+                  type="range"
+                  min={5}
+                  max={50}
+                  step={5}
+                  value={bandPct}
+                  aria-label="Band that counts as on"
+                  onChange={(e) => setBandPct(Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Rows
+                <select
+                  className="an-chip"
+                  value={groupBy}
+                  aria-label="Barcode rows"
+                  onChange={(e) => setGroupBy(e.target.value as "type" | "list")}
+                >
+                  <option value="type">Item type</option>
+                  <option value="list">List</option>
+                </select>
+              </label>
+              <span className="an-n">{Math.round(onShare * 100)}% on at this band</span>
+            </div>
+            <div className="an-acc-barcode">
+              {barcode.map((row) => (
+                <div key={row.group} className="an-acc-barcode-row">
+                  <span className="an-acc-barcode-name" title={row.group}>
+                    {row.group}
+                  </span>
+                  <span className="an-acc-cells">
+                    {row.cells.map((c) => (
+                      <button
+                        key={c.taskId}
+                        type="button"
+                        className={`an-acc-cell ${VERDICT_CLASS[c.verdict]}`}
+                        title={`${c.description}: ${c.estimated}m est. → ${c.actual}m (${c.ratio.toFixed(2)}×)`}
+                        aria-label={`${c.description}, ${c.verdict}`}
+                        onClick={() => openItemsInLists({ taskIds: [c.taskId] })}
+                      />
+                    ))}
+                  </span>
+                  <span className="an-n">
+                    {row.on}/{row.cells.length}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="an-acc-key">
+              <span><i className="is-early" />Finished early</span>
+              <span><i className="is-on" />On estimate</span>
+              <span><i className="is-over" />Ran over</span>
+              <span>Oldest left, newest right</span>
+            </div>
+          </div>
+
+          <div className="an-acc-plate">
+            <p className="an-canvas-title">Plan a task with your own track record</p>
+            <div className="an-acc-tools">
+              <label>
+                My estimate
+                <input
+                  type="number"
+                  min={1}
+                  value={myEstimate}
+                  aria-label="Your estimate in minutes"
+                  onChange={(e) => setMyEstimate(Math.max(1, Number(e.target.value) || 1))}
+                />
+                min
+              </label>
+            </div>
+            <div className="an-readouts">
+              <StudioReadout label="Coin flip (P50)" value={`${Math.round(myEstimate * bias.p50)}m`} note="half run longer" />
+              <StudioReadout label="Safe (P80)" value={`${Math.round(myEstimate * bias.p80)}m`} note="4 in 5 fit" />
+              <StudioReadout label="Very safe (P90)" value={`${Math.round(myEstimate * bias.p90)}m`} note="9 in 10 fit" />
+              <StudioReadout
+                label="Typical multiplier"
+                value={`${bias.geoMeanRatio.toFixed(2)}×`}
+                note={`spread ±${bias.logSd.toFixed(2)} ln`}
+                tip="Geometric mean of actual ÷ estimate. One huge overrun moves it less than a plain mean."
+              />
+            </div>
+            <p className="an-acc-math">
+              Reference-class forecast: your estimate × the 50th, 80th and 90th percentile of your past actual ÷
+              estimate ratios (n = {bias.n}). Typical multiplier = exp(mean ln ratio). Past work in this window only.
+            </p>
+          </div>
+
+          <div className="an-acc-plate">
+            <p className="an-canvas-title">Bias by task size</p>
+            <StudioBars
+              rows={bySize
+                .filter((b) => b.median !== null)
+                .map((b) => ({ name: `${b.label} (n=${b.n})`, value: Math.round((b.median ?? 0) * 100) / 100 }))}
+              max={Math.max(2, ...bySize.map((b) => b.median ?? 0))}
+              unit="×"
+            />
+            <p className="an-acc-math">
+              Median actual ÷ estimate by how big the estimate was. Studies often find short tasks run long and long
+              tasks get padded. Thin bins (small n) are noise.
             </p>
           </div>
 
@@ -240,18 +407,27 @@ export function CalibrationView() {
           {pert.length > 0 && (
             <div>
               <p className="an-canvas-title">PERT bands</p>
-              <ul className="an-list">
-                {pert.map((row) => (
-                  <li key={row.id}>
-                    <button type="button" onClick={() => openItemsInLists({ taskIds: [row.id] })}>
-                      <span className="truncate">{row.name}</span>
-                      <span className="an-n">
-                        {row.optimistic}–{row.likely}–{row.pessimistic} vs {row.actual}m
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <p className="an-n">
+                {pertHits.inside} of {pertHits.n} landed inside optimistic–pessimistic · {pertHits.past} past the
+                pessimistic · {pertHits.early} before the optimistic
+              </p>
+              <details className="an-acc-fold" open={pert.length <= 8}>
+                <summary>{pert.length} tasks with three-point estimates</summary>
+                <ul className="an-list">
+                  {pert.map((row) => (
+                    <li key={row.id}>
+                      <button type="button" onClick={() => openItemsInLists({ taskIds: [row.id] })}>
+                        <span className="truncate">{row.name}</span>
+                        <span className="an-n">
+                          {row.optimistic}–{row.likely}–{row.pessimistic} (mean {Math.round(pertMean(row))}) vs{" "}
+                          {row.actual}m
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+              <p className="an-acc-math">PERT mean = (optimistic + 4 × likely + pessimistic) ÷ 6.</p>
             </div>
           )}
 
@@ -270,7 +446,8 @@ export function CalibrationView() {
                   />
                   <YAxis fontSize={11} stroke={STUDIO_AXIS} tick={{ fill: STUDIO_AXIS }} />
                   <Tooltip contentStyle={STUDIO_TOOLTIP} formatter={(v: number) => `${v.toFixed(2)}×`} />
-                  <Line type="monotone" dataKey="medianRatio" stroke="#7dd3fc" strokeWidth={2} dot />
+                  <ReferenceLine y={1} stroke={STUDIO_AXIS} strokeDasharray="4 3" />
+                  <Line type="monotone" dataKey="medianRatio" stroke="#173a7a" strokeWidth={2} dot />
                 </LineChart>
               </ResponsiveContainer>
               <p className="an-canvas-hint">A ratio of 1.0× means estimates matched reality.</p>

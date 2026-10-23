@@ -1,9 +1,11 @@
 /**
  * components/Analytics/CycleView.tsx — Stall, pushes, estimate confirmation
+ *
+ * Docs: docs/analytics/accuracy-cycle.md.
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { isEstimated } from "@/lib/estimated-values"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
@@ -12,6 +14,12 @@ import { inRange } from "./analytics-range"
 import { StudioBars, StudioReadout, PhosphorTrace } from "./studio-kit"
 import { BeeswarmChart } from "./studio-plots"
 import { openItemAges } from "./signal-stats"
+import { openItemsInLists } from "./open-in-lists"
+import { itemTitle } from "@/lib/item-utils"
+import { AGE_BANDS, ageBandIndex, doneRateByPushes } from "./accuracy-stats"
+import "./accuracy-views.css"
+
+const AGE_FILLS = ["#9cc3a8", "#e2c06b", "#d9893e", "#a8432c"]
 
 export function CycleView() {
   const tasks = useTaskStore((s) => s.tasks)
@@ -69,6 +77,31 @@ export function CycleView() {
     return { total, estimated, confirmed: total - estimated }
   }, [tasks, keySet])
 
+  const [peakCount, setPeakCount] = useState(10)
+  const [minImportance, setMinImportance] = useState(3)
+  const peaks = useMemo(
+    () =>
+      tasks
+        .filter((t) => (t.daysPushed ?? 0) > 0)
+        .sort((a, b) => (b.daysPushed ?? 0) - (a.daysPushed ?? 0))
+        .slice(0, peakCount),
+    [tasks, peakCount],
+  )
+  const peakMax = peaks[0]?.daysPushed ?? 1
+  const doneByPushes = useMemo(() => doneRateByPushes(tasks), [tasks])
+  const unitStock = useMemo(() => {
+    const today = new Date()
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    return tasks
+      .filter((t) => !t.completed && (t.importance ?? 0) >= minImportance)
+      .map((t) => {
+        const created = t.createdAt instanceof Date ? t.createdAt : new Date(String(t.createdAt ?? ""))
+        const age = Number.isNaN(created.getTime()) ? 0 : Math.max(0, Math.round((t0 - created.getTime()) / 86_400_000))
+        return { id: t.id, name: itemTitle(t), age, band: ageBandIndex(age) }
+      })
+      .sort((a, b) => a.age - b.age)
+  }, [tasks, minImportance])
+
   const weeks = tasks.filter((t) => (t.weeksPushed ?? 0) > 0).length
   const months = tasks.filter((t) => (t.monthsPushed ?? 0) > 0).length
   const empty = tasks.length === 0
@@ -82,7 +115,7 @@ export function CycleView() {
     <div className="an-canvas an-stack" data-testid="cycle-view">
       <header className="an-canvas-head">
         <div>
-          <p className="an-canvas-title">Cycle / stall</p>
+          <p className="an-canvas-title">Stall and pushes</p>
           <p className="an-canvas-kicker">{label} · pushes, open important items, estimate confirmation.</p>
         </div>
       </header>
@@ -100,8 +133,64 @@ export function CycleView() {
               note={confirmed.total === 0 ? `none in ${label}` : "~ until confirmed"}
             />
           </div>
-          <p className="an-canvas-title">daysPushed distribution</p>
+          <p className="an-canvas-title">Items by days pushed</p>
           <StudioBars rows={dist} max={Math.max(...dist.map((d) => d.value), 1)} unit="" />
+
+          <div className="an-acc-plate">
+            <p className="an-canvas-title">Does a push still get done?</p>
+            <StudioBars
+              rows={doneByPushes
+                .filter((b) => b.rate !== null)
+                .map((b) => ({ name: `${b.label} pushes (n=${b.n})`, value: Math.round((b.rate ?? 0) * 100) }))}
+              max={100}
+            />
+            <p className="an-acc-math">
+              Share done = completed ÷ all items with that many day pushes, all time. If the share drops as pushes
+              climb, a push is a quiet drop, not a delay.
+            </p>
+          </div>
+
+          {peaks.length > 0 && (
+            <div className="an-acc-plate">
+              <p className="an-canvas-title">Most-pushed items</p>
+              <div className="an-acc-tools">
+                <label>
+                  Show {peakCount}
+                  <input
+                    type="range"
+                    min={3}
+                    max={20}
+                    value={peakCount}
+                    aria-label="How many peaks"
+                    onChange={(e) => setPeakCount(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+              <div className="an-acc-peaks" role="list">
+                {peaks.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="listitem"
+                    className="an-acc-peak"
+                    title={`${itemTitle(t)}: pushed ${t.daysPushed} days${t.completed ? " (done)" : ""}`}
+                    onClick={() => openItemsInLists({ taskIds: [t.id] })}
+                  >
+                    <span className="an-n">{t.daysPushed}</span>
+                    <span
+                      className="an-acc-peak-shape"
+                      style={{
+                        height: `${Math.max(6, ((t.daysPushed ?? 0) / peakMax) * 100)}px`,
+                        opacity: t.completed ? 0.45 : 1,
+                      }}
+                    />
+                    <span className="an-acc-peak-name">{itemTitle(t)}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="an-acc-math">Peak height = day pushes. Faded peaks are done.</p>
+            </div>
+          )}
           <p className="an-canvas-title">Age of open important items</p>
           {survival.ages.length === 0 ? (
             <ChartFrame empty emptySentence="No open items with importance ≥ 3 to age." />
@@ -138,6 +227,44 @@ export function CycleView() {
               </p>
             </>
           )}
+          <div className="an-acc-plate">
+            <p className="an-canvas-title">Open stock, one square per item</p>
+            <div className="an-acc-tools">
+              <label>
+                Importance ≥ {minImportance}
+                <input
+                  type="range"
+                  min={0}
+                  max={5}
+                  value={minImportance}
+                  aria-label="Minimum importance"
+                  onChange={(e) => setMinImportance(Number(e.target.value))}
+                />
+              </label>
+              <span className="an-n">{unitStock.length} open</span>
+            </div>
+            <div className="an-acc-units" role="list">
+              {unitStock.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  role="listitem"
+                  className="an-acc-unit"
+                  style={{ background: AGE_FILLS[u.band] }}
+                  title={`${u.name}: ${u.age}d old`}
+                  onClick={() => openItemsInLists({ taskIds: [u.id] })}
+                />
+              ))}
+            </div>
+            <div className="an-acc-key">
+              {AGE_BANDS.map((b, i) => (
+                <span key={b.label}>
+                  <i style={{ background: AGE_FILLS[i] }} />
+                  {b.label} ({unitStock.filter((u) => u.band === i).length})
+                </span>
+              ))}
+            </div>
+          </div>
           <OpenInListsButton taskIds={open.map((t) => t.id)} label={`Open ${open.length} important item(s) in Lists`} />
         </>
       )}
