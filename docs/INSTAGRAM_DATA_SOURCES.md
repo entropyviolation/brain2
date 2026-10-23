@@ -60,14 +60,18 @@ Settings → Imports → **Instagram accounts** (`components/Settings/InstagramA
 
 Main spawns `profiles.py` with the chosen account's cookie in the `IG_COOKIE` environment variable, so the cookie never lands in `profiles_config.json`. `profiles.py` already reads `IG_COOKIE`. One account per run. A refusal stops that run and is shown in the panel. Per-account pacing is kept in main so two runs never share an account.
 
-### Automatic export requests
+### Automatic exports
 
-Meta's help pages describe a one-time request in Accounts Center. I found no recurring or scheduled export for Instagram, so this plan assumes there is none.
+_Checked: 2026-10-23_
 
-1. **Request.** On a schedule you pick (for example monthly), main opens Accounts Center → Your information and permissions → Download your information in a window with that account's session, and fills in JSON, all data, all time. Instagram may ask for the password; that is what **Remember password** is for. This is UI automation and will break when Meta changes the page. It stops and asks you whenever a screen is not the one expected.
-2. **Wait for the email.** Watch the account's email for Meta's "your information is ready" message. Options, most private first: a mail rule that saves the message to a folder Brain2 watches; IMAP with an app password stored in the keychain; a Gmail connector. Only the link is read.
-3. **Download.** Open the link in a window with the same session (the download needs the login), save the zip into a Brain2-managed folder.
-4. **Process.** The Analytics Instagram view's watcher (another thread) unzips, runs `analyze.py` and `build_report.py`, and keeps the last good report on failure.
+**Scheduled export (found, not tested).** Meta's developer docs say Accounts Center can send an export to Google Drive or Dropbox again and again, from daily to yearly, for one to three years (for example `ONCE_A_MONTH_FOR_ONE_YEAR`). The details, and what still needs one real run to confirm, are in `docs/INSTAGRAM_AUTO_UPDATE.md` (PR #27). If it works for an Instagram JSON export, this is the main path. Drive or Dropbox syncs each export to a local folder, and the Instagram view's watcher picks it up. No request, email or password step is needed. Until a real run works, the monthly reminder in that doc stays on.
+
+**Fallback: automated requests (planned, only if the scheduled export fails).**
+
+1. **Request.** On a schedule, main opens Accounts Center in a window with that account's session and asks for JSON, all time, all information. Instagram may ask for the password, and that is what **Remember password** is for. This is UI automation and will break when Meta changes the page. It stops and asks you whenever a screen is not the one expected.
+2. **Wait for the email.** Watch for Meta's "your information is ready" email. Options, most private first: a mail rule that saves the email to a folder Brain2 watches, IMAP with an app password kept in the keychain, or a Gmail connector. Only the link is read.
+3. **Download.** Open the link in a window with the same session. The download needs the login, and the link expires after 4 days. Save the zip into a folder Brain2 manages.
+4. **Process.** The Instagram view's watcher unzips the export, runs `analyze.py` and `build_report.py`, and keeps the last good report if a run fails.
 
 ### Continuous monitoring
 
@@ -87,4 +91,4 @@ The iOS build cannot run Python or hold an Instagram login. The phone gets resul
 
 - Which `profiles.py` sources to run (asked in the follower-counts thread).
 - Which accounts are yours to log in with, and whether any of them should be used for lookups at all.
-- Whether to build the export request automation, and how the export email should reach Brain2.
+- Whether to set up the scheduled export to Drive or Dropbox and try one run. Automated requests only matter if that fails.
