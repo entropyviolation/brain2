@@ -90,12 +90,22 @@ import { CompanyHeadcountPlate, LevelLadderPlate } from "./TrackingContextPlates
 import { tagMonthTrend } from "./tag-trends"
 import { TagTrendBoard } from "./TagTrendBoard"
 import type { TrackingSearchHit } from "@/lib/tracking-search"
+import {
+  BlockLengthCut,
+  DayEdgesReadouts,
+  MirrorSplitPlate,
+  PacePlate,
+  SizedSquaresPlate,
+  TrackFold,
+} from "./TrackingInsights"
 import "./analytics-boards.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const UNTRACKED_COLOR = "#243044"
 const UNTRACKED_LABEL = "Untracked"
 const NO_ENTRIES: TimeEntry[] = []
+/** Untracked gaps listed before "Show more". */
+const GAP_PAGE = 60
 
 const TRACKING_HINT =
   "Same minutes as Home → Tracking. Donut and rows are the same slices — click either to drill. Average-day ribbons show when pens typically sit on the clock."
@@ -113,6 +123,7 @@ function SliceRows({
   emptyNote,
   activeId,
   onActiveChange,
+  limit,
 }: {
   slices: TrackingSlice[]
   basis: "tracked" | "period"
@@ -122,12 +133,17 @@ function SliceRows({
   emptyNote?: string
   activeId?: string | null
   onActiveChange?: (id: string | null) => void
+  /** Show this many rows, then a Show all toggle. */
+  limit?: number
 }) {
+  const [expanded, setExpanded] = useState(false)
   if (slices.length === 0) return <p className="an-canvas-hint">{emptyNote}</p>
   const max = Math.max(...slices.map((s) => s.minutes), 1)
+  const capped = limit != null && !expanded && slices.length > limit
+  const shown = capped ? slices.slice(0, limit) : slices
   return (
     <div className="an-slice-rows">
-      {slices.map((slice) => {
+      {shown.map((slice) => {
         const pct = basis === "tracked" ? slice.percentOfTracked : slice.percentOfPeriod
         const active = activeId === slice.id
         const row = (
@@ -177,6 +193,11 @@ function SliceRows({
           </div>
         )
       })}
+      {limit != null && slices.length > limit && (
+        <button type="button" className="an-open-lists an-rows-more" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? `Show top ${limit}` : `Show all ${slices.length}`}
+        </button>
+      )}
     </div>
   )
 }
@@ -430,7 +451,7 @@ function TrackingComposition({
     >
       <p className="an-canvas-title">
         {scopeName} · where the time went
-        <span className="an-canvas-kicker" style={{ marginLeft: 8, textTransform: "none", letterSpacing: 0 }}>
+        <span className="an-canvas-kicker an-track-kicker">
           {basis === "tracked"
             ? `out of ${formatDuration(totals.tracked)} logged`
             : `out of all ${totals.days} × 24h`}
@@ -469,26 +490,33 @@ function TrackingComposition({
               onActiveChange={onActiveChange}
               onSelect={onOpenSlice}
               onOpenPen={onOpenPen}
+              limit={12}
             />
           </div>
 
-          <PeriodFilmstrip
-            segments={filmSegments}
-            ticks={filmTicks}
-            totalMinutes={totalMinutes}
-            onSelectBlock={onSelectBlock}
-            onSelectGap={onSelectGap}
-            highlightEntryId={highlightEntryId}
-          />
+          <TrackFold id="filmstrip" title="Filmstrip" note="the whole window, minute by minute">
+            <PeriodFilmstrip
+              segments={filmSegments}
+              ticks={filmTicks}
+              totalMinutes={totalMinutes}
+              onSelectBlock={onSelectBlock}
+              onSelectGap={onSelectGap}
+              highlightEntryId={highlightEntryId}
+            />
+          </TrackFold>
 
-          <GrainStrips days={dayGrain} weeks={weekGrain} />
+          <TrackFold id="grain" title="Day and week strips" note="the pen that took the most minutes">
+            <GrainStrips days={dayGrain} weeks={weekGrain} />
+          </TrackFold>
 
-          <AverageDayBoard
-            ribbons={averageRibbons}
-            pens={penMeta}
-            activeId={activeId}
-            onActiveChange={onActiveChange}
-          />
+          <TrackFold id="average-day" title="Average day" note="All and Mon–Sun ribbons">
+            <AverageDayBoard
+              ribbons={averageRibbons}
+              pens={penMeta}
+              activeId={activeId}
+              onActiveChange={onActiveChange}
+            />
+          </TrackFold>
 
           <p className="an-canvas-hint">
             Click a pen or a tag to drill. Fragmentation: {averageSwitches.toFixed(1)} pen changes on an average
@@ -497,12 +525,12 @@ function TrackingComposition({
           </p>
           {matchNote && <p className="an-canvas-hint">{matchNote}</p>}
           {tagRows.length > 0 && (
-            <>
-              <p className="an-canvas-kicker">Tracked minutes by tag · all scopes</p>
-              <SliceRows slices={tagRows} basis={basis} onSelect={onSelectTag} />
-            </>
+            <TrackFold id="tags" title="Tags" note={`${tagRows.length} tags · tracked minutes, all scopes`}>
+              <SliceRows slices={tagRows} basis={basis} onSelect={onSelectTag} limit={10} />
+              <TagTrendBoard weeks={tagTrends} months={tagMonths} />
+            </TrackFold>
           )}
-          <TagTrendBoard weeks={tagTrends} months={tagMonths} />
+          {tagRows.length === 0 && <TagTrendBoard weeks={tagTrends} months={tagMonths} />}
         </>
       )}
     </section>
@@ -537,6 +565,9 @@ export function TrackingAnalytics() {
   const [filterQuery, setFilterQuery] = useState<string | null>(null)
   const [highlightEntryId, setHighlightEntryId] = useState<string | null>(null)
   const [outsideNote, setOutsideNote] = useState<string | null>(null)
+  const [blockQuery, setBlockQuery] = useState("")
+  const [listSort, setListSort] = useState<"time" | "longest">("time")
+  const [gapsShown, setGapsShown] = useState(GAP_PAGE)
 
   const scope = scopes.find((s) => s.id === scopeId) ?? scopes[0]
   useEffect(() => {
@@ -690,8 +721,20 @@ export function TrackingAnalytics() {
       }
       return pool.filter((e) => combinationKey(e, drillPen.id) === drillSliceId)
     })()
-    return [...rows].sort((a, b) => a.date.localeCompare(b.date) || a.startMin - b.startMin)
-  }, [drillEntries, detailEntries, drillSliceId, drillPen, drillMode])
+    const q = blockQuery.trim().toLowerCase()
+    const kept = q
+      ? rows.filter((e) => `${e.title ?? ""} ${e.notes ?? ""} ${e.date}`.toLowerCase().includes(q))
+      : rows
+    return [...kept].sort((a, b) =>
+      listSort === "longest"
+        ? b.endMin - b.startMin - (a.endMin - a.startMin)
+        : a.date.localeCompare(b.date) || a.startMin - b.startMin,
+    )
+  }, [drillEntries, detailEntries, drillSliceId, drillPen, drillMode, blockQuery, listSort])
+  const listedGaps = useMemo(() => {
+    const gaps = board?.untrackedGaps ?? []
+    return listSort === "longest" ? [...gaps].sort((a, b) => b.endMin - b.startMin - (a.endMin - a.startMin)) : gaps
+  }, [board, listSort])
 
   const loggedIds = useMemo(
     () => loggedTasks.map((t) => t.id),
@@ -700,12 +743,27 @@ export function TrackingAnalytics() {
 
   const openSlice = useCallback((slice: TrackingSlice) => {
     if (slice.id === UNTRACKED_LABEL) {
+      setGapsShown(GAP_PAGE)
       setDrillUntracked(true)
       return
     }
     setDrillSliceId(null)
+    setBlockQuery("")
     setDrillPenId(slice.id)
   }, [])
+
+  const shownPenOf = useCallback(
+    (penId: string) => (scope ? penAtDepth(scope.pens, penId, depth)?.id ?? penId : penId),
+    [scope, depth],
+  )
+
+  const openSliceById = useCallback(
+    (id: string) => {
+      const slice = board?.pieSlices.find((s) => s.id === id)
+      if (slice) openSlice(slice)
+    },
+    [board, openSlice],
+  )
 
   const openGap = useCallback((date: string, startMin: number, endMin: number) => {
     setLogGap({ date, startMin, endMin })
@@ -784,6 +842,17 @@ export function TrackingAnalytics() {
   } = board
 
   const fullHelp = ANALYTICS_TAB_HELP.tracking
+  const listedGapLongest = untrackedGaps.reduce((m, g) => Math.max(m, g.endMin - g.startMin), 0)
+  const listSortSelect = (
+    <NativeSelect
+      value={listSort}
+      onChange={(e) => setListSort(e.target.value as "time" | "longest")}
+      aria-label="Sort list"
+    >
+      <option value="time">By date and time</option>
+      <option value="longest">Longest first</option>
+    </NativeSelect>
+  )
 
   return (
     <div className="an-canvas an-track an-stack">
@@ -883,10 +952,10 @@ export function TrackingAnalytics() {
           ) : null}
           {dailyMins.some((v) => v > 0) && (
             <div className="an-track-spark">
-              <p className="an-canvas-title" style={{ fontSize: 13 }}>
-                Daily tracked minutes
+              <p className="an-canvas-title">Daily tracked minutes</p>
+              <p className="an-canvas-hint">
+                {dailyMins.length} days · peak {formatDuration(Math.max(...dailyMins))}
               </p>
-              <p className="an-canvas-hint">Daily tracked minutes · sparkline of this window</p>
               <StudioSpark values={dailyMins} title="Daily tracked minutes" />
             </div>
           )}
@@ -926,6 +995,10 @@ export function TrackingAnalytics() {
         onSelectTag={selectTag}
       />
 
+      <SizedSquaresPlate slices={pieSlices} dayCount={totals.days} onSelect={openSliceById} />
+
+      <PacePlate slices={pens} dayCount={totals.days} />
+
       <LevelLadderPlate
         scope={scope}
         entries={scoped}
@@ -949,6 +1022,8 @@ export function TrackingAnalytics() {
         />
       )}
 
+      <MirrorSplitPlate rows={deltaRows} />
+
       {grid && grid.observedDays > 0 && (
         <section className="an-plate">
           <p className="an-canvas-title">Hour × day</p>
@@ -960,6 +1035,7 @@ export function TrackingAnalytics() {
 
       {(scoped.length > 0 || hourPens.rows.length > 0) && (
         <section className="an-plate">
+          <DayEdgesReadouts entries={scoped} dateKeys={dateKeys} pens={pens} shownPenOf={shownPenOf} />
           {scoped.length > 0 && (
             <>
               <p className="an-canvas-title">Weekday vs weekend</p>
@@ -1007,6 +1083,7 @@ export function TrackingAnalytics() {
             empty={`No lasting blocks in ${scope.name} in the ${rangeLabel} — only instants, which have no duration.`}
           />
         ) : null}
+        <BlockLengthCut lengths={lengths} />
         {instants.length > 0 && (
           <p className="an-canvas-hint">
             {instants.length} instant{instants.length === 1 ? "" : "s"} (no duration) in this window.
@@ -1055,30 +1132,43 @@ export function TrackingAnalytics() {
               {untrackedGaps.length === 0 ? (
                 <p className="text-sm">No untracked gaps in this window.</p>
               ) : (
-                <ul className="an-drill-blocks">
-                  {untrackedGaps.map((gap) => (
-                    <li key={`${gap.date}-${gap.startMin}-${gap.endMin}`}>
-                      <button
-                        type="button"
-                        className="an-drill-block"
-                        title={`${gap.date} ${minutesToLabel(gap.startMin)}–${minutesToLabel(gap.endMin)} · click to log`}
-                        onClick={() => {
-                          setDrillUntracked(false)
-                          setLogGap(gap)
-                        }}
-                      >
-                        <span className="an-drill-block-time">{gap.date}</span>
-                        <span className="an-drill-block-time">
-                          {minutesToLabel(gap.startMin)}–{minutesToLabel(gap.endMin)}
-                        </span>
-                        <span className="an-drill-block-title">Untracked</span>
-                        <span className="an-drill-block-dur">
-                          {formatDuration(gap.endMin - gap.startMin)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <div className="an-drill-tools">
+                    {listSortSelect}
+                    <span className="an-drill-hint">
+                      {untrackedGaps.length} gaps · longest {formatDuration(listedGapLongest)}
+                    </span>
+                  </div>
+                  <ul className="an-drill-blocks">
+                    {listedGaps.slice(0, gapsShown).map((gap) => (
+                      <li key={`${gap.date}-${gap.startMin}-${gap.endMin}`}>
+                        <button
+                          type="button"
+                          className="an-drill-block"
+                          title={`${gap.date} ${minutesToLabel(gap.startMin)}–${minutesToLabel(gap.endMin)} · click to log`}
+                          onClick={() => {
+                            setDrillUntracked(false)
+                            setLogGap(gap)
+                          }}
+                        >
+                          <span className="an-drill-block-time">{gap.date}</span>
+                          <span className="an-drill-block-time">
+                            {minutesToLabel(gap.startMin)}–{minutesToLabel(gap.endMin)}
+                          </span>
+                          <span className="an-drill-block-title">Untracked</span>
+                          <span className="an-drill-block-dur">
+                            {formatDuration(gap.endMin - gap.startMin)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {listedGaps.length > gapsShown && (
+                    <button type="button" className="an-open-lists" onClick={() => setGapsShown((n) => n + GAP_PAGE)}>
+                      Show {Math.min(GAP_PAGE, listedGaps.length - gapsShown)} more of {listedGaps.length - gapsShown}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </DialogContent>
@@ -1222,6 +1312,17 @@ export function TrackingAnalytics() {
                     </>
                   ) : null}
                 </p>
+                <div className="an-drill-tools">
+                  <input
+                    type="search"
+                    className="an-ins-search"
+                    placeholder="Filter by title, note or date"
+                    aria-label="Filter blocks"
+                    value={blockQuery}
+                    onChange={(e) => setBlockQuery(e.target.value)}
+                  />
+                  {listSortSelect}
+                </div>
                 {listedBlocks.length === 0 ? (
                   <p className="an-drill-hint">No blocks for this slice in the window.</p>
                 ) : (
