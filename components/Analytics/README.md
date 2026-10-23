@@ -330,7 +330,7 @@ export folder not archived yet.
 - Limit: a message sent and removed between two exports was never in any export. Daily exports keep that gap to a day.
 - Meta's Latin-1 text is fixed on the way in (`fixText`).
 
-**Planned:** the same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
+**Planned:** steps for when the first Google Drive export lands, including the gap where only the newest export is archived, are in `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER". The same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
 
 ### Monthly export reminder
 
