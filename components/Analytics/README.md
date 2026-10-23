@@ -79,6 +79,8 @@ meaningful on its own.
 **Item Types** is a first-class Analytics **Library** view. Settings still
 **edits** types. Do not move the library out of Analytics.
 
+_Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per view, are in [`docs/analytics/viz-inspiration.md`](../../docs/analytics/viz-inspiration.md). It is a menu, not a spec.
+
 ## Files
 
 | File | Purpose |
