@@ -7,6 +7,7 @@
  * between Chrome and Electron in local dev. `/api/notes` reads Apple Notes
  * on this Mac (loopback only) so Chrome localhost can ingest without Electron IPC.
  * `/api/screentime` queries a running ActivityWatch install (loopback only).
+ * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
  *
  *   npm run dev
  *   npm run mobile:dev
@@ -23,6 +24,7 @@ import { handlePersistApi, sharedPersistPath } from "./persist-api.mjs"
 import { handleIngestApi, ingestDataPath } from "./ingest-api.mjs"
 import { handleNotesApi } from "./notes-api.mjs"
 import { handleScreenTimeApi } from "./screentime-api.mjs"
+import { handleInstagramApi } from "./instagram-api.mjs"
 
 const hostname = "0.0.0.0"
 const preferredPort = Number(process.env.PORT || 3000)
@@ -142,6 +144,7 @@ const server = createServer(async (req, res) => {
     if (await handleIngestApi(req, res, pathname)) return
     if (await handleNotesApi(req, res, pathname)) return
     if (await handleScreenTimeApi(req, res, pathname)) return
+    if (await handleInstagramApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
     console.error("[cogs-dev] request error", err)

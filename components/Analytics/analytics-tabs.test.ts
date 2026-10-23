@@ -20,6 +20,7 @@ describe("analytics tabs", () => {
       "meta",
       "texts",
       "library",
+      "sources",
     ])
     expect(ANALYTICS_TABS).toContain("item-types")
     expect(ANALYTICS_TABS).toContain("cross-section")
@@ -126,6 +127,22 @@ describe("analytics tabs", () => {
         "Weight",
       ]),
     )
+  })
+
+  it("puts Instagram in Sources with honest help", () => {
+    expect(ANALYTICS_TABS).toContain("instagram")
+    expect(groupForTab("instagram").id).toBe("sources")
+    expect(tabLabel("instagram")).toBe("Instagram")
+    expect(firstTabInGroup("sources")).toBe("instagram")
+    const help = ANALYTICS_TAB_HELP.instagram
+    expect(help).toMatch(/Instagram data export/)
+    expect(help).toMatch(/built on this computer/)
+    expect(help).toMatch(/liked or commented .* not in it/)
+    expect(help).toMatch(/Carousel posts have no insights/)
+    expect(help).toMatch(/Follower counts of other accounts are not in it/)
+    expect(help).toMatch(/Comments have no link to their post/)
+    expect(help).toMatch(/Time active is an estimate/)
+    expect(help).not.toMatch(/\bshould\b/i)
   })
 
   it("keeps Screen Time help honest", () => {
