@@ -114,7 +114,7 @@ def load_thread(eid):
 
 
 def fmt_line(m, other):
-    ts, me, who, text, mid = m
+    ts, me, who, text, mid = m[:5]  # thread rows may carry more fields (topic bits)
     return f"[{datetime.fromtimestamp(ts):%Y-%m-%d %H:%M}] {ME if me else (who or other)}: {redact(text or '[attachment]')[:400]}"
 
 
