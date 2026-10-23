@@ -3,6 +3,7 @@
  *
  * Categories live on a studio index; the views of the selected group sit
  * beneath. Item Types is a first-class Library view (Settings still edits types).
+ * Sources hosts reports built from outside data exports (Instagram).
  */
 export const ANALYTICS_TAB_GROUPS = [
   {
@@ -75,6 +76,11 @@ export const ANALYTICS_TAB_GROUPS = [
       { id: "stages", label: "Stages" },
       { id: "weight", label: "Weight" },
     ],
+  },
+  {
+    id: "sources",
+    label: "Sources",
+    tabs: [{ id: "instagram", label: "Instagram" }],
   },
 ] as const
 
@@ -184,4 +190,6 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Lifecycle bucket (inbox / clarified / scheduled / completed / list). This is Task.stage, not a list name.",
   weight:
     "Importance, cognitive load, and entropy already stored on items. Missing values stay missing.",
+  instagram:
+    "The Instagram report, built on this computer from your Instagram data export (Download your information, JSON, all time). Nothing is sent anywhere; only the click-to-load post previews and the opt-in profile photos reach the internet. The shared date range does not apply here. A new export in Downloads is picked up by the desktop app. Limits of the export: who liked or commented on your posts and stories is not in it, so per-person engagement comes from DMs only. Carousel posts have no insights. Follower counts of other accounts are not in it. Comments have no link to their post. Time active is an estimate, and before the recent view-log window it is a floor.",
 }
