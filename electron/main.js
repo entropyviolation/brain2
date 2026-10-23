@@ -348,7 +348,7 @@ function registerTextsIpcHandlers() {
   ipcMain.handle(TEXTS_ENSURE_SERVER_IPC_CHANNEL, () => texts.ensureTextsServer())
   ipcMain.handle(TEXTS_STATUS_IPC_CHANNEL, () => texts.textsStatus())
   ipcMain.handle(TEXTS_REFRESH_IPC_CHANNEL, () => texts.refreshTexts())
-  texts.startTextsWeeklySchedule()
+  texts.startTextsDailySchedule()
   app.on("will-quit", () => texts.stopTextsServer())
 }
 
