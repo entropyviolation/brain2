@@ -59,6 +59,16 @@ const FILE_LINK_CHANNELS = {
   previewUrl: "cogs:link:previewUrl",
 }
 
+// Instagram report (Analytics → Sources → Instagram). MUST match
+// `INSTAGRAM_CHANNELS` in electron/instagram-ipc.js. Consumed by lib/instagram-report.ts.
+const INSTAGRAM_CHANNELS = {
+  status: "cogs:instagram:status",
+  scan: "cogs:instagram:scan",
+  saveUi: "cogs:instagram:saveUi",
+  pickFolder: "cogs:instagram:pickFolder",
+  changed: "cogs:instagram:changed",
+}
+
 // Module pop-out channel (Workstream C). MUST match `OPEN_MODULE_POPOUT_IPC_CHANNEL`
 // in electron/main.js + `openModulePopout` in electron/ipc/channels.js. Consumed
 // by components/Modules/workspace/ModuleWorkspace.tsx (`openModulePopout`).
@@ -362,6 +372,18 @@ contextBridge.exposeInMainWorld("desktop", {
     reveal: (p) => ipcRenderer.send(FILE_LINK_CHANNELS.reveal, p),
     extractText: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.extractText, p),
     previewUrl: (p) => ipcRenderer.invoke(FILE_LINK_CHANNELS.previewUrl, p),
+  },
+  // Instagram report: status, check for a new export, keep the report's ig-* keys.
+  instagram: {
+    status: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.status),
+    scan: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.scan),
+    saveUi: (key, value) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.saveUi, key, value),
+    pickFolder: (clear) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.pickFolder, clear === true),
+    onChange: (cb) => {
+      const listener = (_event, payload) => cb(payload)
+      ipcRenderer.on(INSTAGRAM_CHANNELS.changed, listener)
+      return () => ipcRenderer.removeListener(INSTAGRAM_CHANNELS.changed, listener)
+    },
   },
   telegram: {
     setToken: (token) => ipcRenderer.invoke(TELEGRAM_SET_TOKEN, token),
