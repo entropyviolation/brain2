@@ -6,13 +6,21 @@ Python pipeline behind Analytics → Texts. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md
 
 Code only. Data, output and the venv live in the home folder, `~/texts-analysis` by default (`COGS_TEXTS_HOME`). The `.gitignore` refuses `data/`, `out/`, `.venv/`, `.env` and database files here too.
 
-**Planned:** the scripts (`analyze.py`, `analyze2.py`, `build_report.py`, `llm_pass.py`, `serve.py`) move here from `~/texts-analysis`. Until then this folder holds only this README, and the desktop view reports `serve.py is missing`.
+## Files
+
+- `texts_home.py` reads `--home` (or `$TEXTS_HOME`, default `~/texts-analysis`). Every script imports it.
+- `analyze.py` copies `chat.db` and Contacts into `data/` (always with `--fresh`), then writes the aggregates to `out/summary.json`.
+- `analyze2.py` builds per-person detail and `out/threads/`.
+- `detector_eval.py` scores conflict candidates and learns from your labels.
+- `build_report.py` writes `out/report.html`, inlining `report_extra.js` and `report_app.js`.
+- `llm_pass.py` and `llm_jobs.py` talk to local Ollama only.
+- `serve.py` serves the report and the API on 127.0.0.1. Notes, labels and jobs live in `out/annotations.sqlite`. Logs go to `out/serve.log`. It opens a browser only with `--open`.
 
 ## First run on a Mac
 
 1. Give Full Disk Access to Terminal (or to Brain2).
-2. `python3 -m venv ~/texts-analysis/.venv && ~/texts-analysis/.venv/bin/pip install pandas vaderSentiment scikit-learn emoji`
-3. `~/texts-analysis/.venv/bin/python scripts/texts-analysis/serve.py --home ~/texts-analysis` then open `http://127.0.0.1:8765`.
+2. `python3 -m venv ~/texts-analysis/.venv && ~/texts-analysis/.venv/bin/pip install -r scripts/texts-analysis/requirements.txt`
+3. `~/texts-analysis/.venv/bin/python scripts/texts-analysis/serve.py --home ~/texts-analysis --open` to open `http://127.0.0.1:8765`.
 
 ## Server contract
 
