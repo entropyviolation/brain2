@@ -26,3 +26,9 @@ Code only. Data, output and the venv live in the home folder, `~/texts-analysis`
 ## Server contract
 
 See the plan doc. `electron/texts-report.js` relies on `GET /api/status` and `POST /api/refresh`.
+
+## Linking to Brain2 people
+
+_Last mapped: 2026-10-23_
+
+`analyze2.py` keeps each person entity's numbers and emails as `handles` (in `out/`, local only). Inside Brain2, a relationship page shows **Person in Brain2**: search People I Know and link. Brain2 sends People I Know into the frame by `postMessage`, and the page asks Brain2 to save the chat's numbers on that Person (`components/Analytics/TextsReportView.tsx`). `serve.py` is not involved. A report built before this change asks for Update now first.

@@ -179,10 +179,20 @@ export function joinedCompanyPenIds(pipelines: readonly PersonPipeline[] | undef
 /**
  * Pens whose time counts as time with this person: joined Company pens, plus
  * their iPhone Calls pen, so synced calls count too (`lib/person-time.ts`).
+ * With `scopes`, every iPhone Calls pen linked to them counts as well
+ * (`personId`, `lib/phone-sync/person-links.ts`), so a rename keeps the count.
  */
-export function personTimePenIds(person: Pick<Task, "title" | "description" | "id" | "personPipelines">): string[] {
+export function personTimePenIds(
+  person: Pick<Task, "title" | "description" | "id" | "personPipelines">,
+  scopes?: readonly { id: string; pens: readonly { id: string; personId?: string }[] }[],
+): string[] {
   const name = person.title || person.description || person.id
-  return [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
+  const ids = [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
+  const calls = scopes?.find((scope) => scope.id === "iphone-calls")
+  for (const pen of calls?.pens ?? []) {
+    if (pen.personId === person.id && !ids.includes(pen.id)) ids.push(pen.id)
+  }
+  return ids
 }
 
 /**
