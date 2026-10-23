@@ -97,6 +97,7 @@ export function listSettingsClone(
     peopleList: _peopleList,
     instagramFollowingList: _instagramFollowingList,
     instagramFollowersList: _instagramFollowersList,
+    instagramAnalysisList: _instagramAnalysisList,
     giftIdeasPersonId: _giftIdeasPersonId,
     giftIdeasAutoName: _giftIdeasAutoName,
     linkedTargetListIds: _links,
