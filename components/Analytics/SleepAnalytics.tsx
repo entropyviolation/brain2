@@ -41,7 +41,7 @@
  */
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
@@ -68,6 +68,18 @@ import { PhosphorTrace, StudioReadout } from "./studio-kit"
 import { RidgelineChart } from "./studio-plots"
 import { valuesByWeekday } from "./studio-plot-stats"
 import { autocorrelation, coefficientOfVariation } from "@/lib/metrics"
+import {
+  chronotypeWord,
+  debtAt,
+  nightsAfter,
+  sleepRegularityIndex,
+  socialJetlag,
+  type SocialJetlag,
+} from "./sleep-rhythm"
+import "./time-rhythms.css"
+
+/** Lists longer than this fold behind a summary. */
+const FOLD_AFTER = 14
 
 /** The chart's window: 6 PM the evening before through noon. */
 const AXIS_START = -6 * 60
@@ -157,6 +169,131 @@ function NightBar({ night, targetMinutes }: { night: SleepNightStat; targetMinut
   )
 }
 
+/**
+ * Every night in the window as a span on the 6 PM → noon axis, oldest first,
+ * over that night's dark (sunset to sunrise). Blank nights keep their row.
+ * Nights asleep after the "late after" line turn orange.
+ */
+function SleepWindowChart({
+  dateKeys,
+  nights,
+  dark,
+  lateAfter,
+}: {
+  dateKeys: readonly string[]
+  nights: readonly SleepNightStat[]
+  dark: ReadonlyMap<string, { sunset: number; sunrise: number }>
+  lateAfter: number
+}) {
+  const W = 600
+  const PAD_L = 44
+  const PAD_T = 18
+  const rowH = Math.max(1, Math.min(12, 360 / Math.max(1, dateKeys.length)))
+  const H = PAD_T + rowH * dateKeys.length + 4
+  const byDate = new Map(nights.map((n) => [n.date, n]))
+  const x = (offset: number) =>
+    PAD_L + ((Math.min(AXIS_END, Math.max(AXIS_START, offset)) - AXIS_START) / AXIS_SPAN) * (W - PAD_L)
+  const ticks = [-360, -180, 0, 180, 360, 540, 720]
+  const labelEvery = Math.ceil(dateKeys.length / 12)
+  return (
+    <svg className="an-tr-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Sleep window, night by night">
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={x(t)} x2={x(t)} y1={PAD_T - 4} y2={H} stroke="var(--at-rule-soft)" strokeWidth={0.5} />
+          <text x={x(t)} y={10} textAnchor="middle">
+            {offsetToLabel(t)}
+          </text>
+        </g>
+      ))}
+      {dateKeys.map((date, i) => {
+        const y = PAD_T + i * rowH
+        const night = byDate.get(date)
+        const sun = dark.get(date)
+        return (
+          <g key={date}>
+            {i % labelEvery === 0 && rowH >= 1 ? (
+              <text x={PAD_L - 6} y={y + rowH} textAnchor="end">
+                {nightLabel(date)}
+              </text>
+            ) : null}
+            {sun ? (
+              <rect x={x(sun.sunset)} y={y} width={Math.max(0, x(sun.sunrise) - x(sun.sunset))} height={rowH} fill="var(--at-night)" opacity={0.1} />
+            ) : null}
+            {night ? (
+              <rect
+                x={x(night.sleptMin)}
+                y={y + rowH * 0.15}
+                width={Math.max(1, x(night.wokeMin) - x(night.sleptMin))}
+                height={Math.max(1, rowH * 0.7)}
+                rx={Math.min(2, rowH / 3)}
+                fill={night.sleptMin > lateAfter ? "#c2410c" : "#3b3f8f"}
+                opacity={night.estimated || night.source !== "logged" ? 0.55 : 1}
+              >
+                <title>
+                  {`${nightLabel(date)} · ${offsetToLabel(night.sleptMin)} – ${offsetToLabel(night.wokeMin)} · ${formatSleepDuration(night.minutes)}${
+                    night.estimated ? " · estimated" : ""
+                  }`}
+                </title>
+              </rect>
+            ) : null}
+          </g>
+        )
+      })}
+      <line x1={x(lateAfter)} x2={x(lateAfter)} y1={PAD_T - 4} y2={H} stroke="#c2410c" strokeDasharray="3 3" strokeWidth={1} />
+    </svg>
+  )
+}
+
+function clockSigned(minutes: number): string {
+  const sign = minutes < 0 ? "−" : "+"
+  return `${sign}${formatSleepDuration(Math.round(Math.abs(minutes)))}`
+}
+
+/** Social jetlag, chronotype and regularity. Each says "not yet" under its floor. */
+function BodyClock({ jetlag, sri }: { jetlag: SocialJetlag | null; sri: { sri: number; pairs: number } | null }) {
+  return (
+    <section className="an-plate" data-testid="sleep-body-clock">
+      <p className="an-canvas-title">Body clock</p>
+      {jetlag ? (
+        <p className="an-tr-lede">
+          {Math.abs(jetlag.jetlag) < 30
+            ? "Your weekend nights sit within half an hour of your weeknights. Little social jetlag."
+            : `On weekend nights the middle of your sleep moves ${formatSleepDuration(Math.round(Math.abs(jetlag.jetlag)))} ${
+                jetlag.jetlag > 0 ? "later" : "earlier"
+              }. That is like ${jetlag.jetlag > 0 ? "flying west" : "flying east"} across ${Math.round(Math.abs(jetlag.jetlag) / 60)} time zone${
+                Math.round(Math.abs(jetlag.jetlag) / 60) === 1 ? "" : "s"
+              } every week.`}
+        </p>
+      ) : null}
+      <div className="an-readouts">
+        <StudioReadout
+          label="Social jetlag"
+          value={jetlag ? clockSigned(jetlag.jetlag) : "not yet"}
+          note={
+            jetlag
+              ? `weekend minus weekday mid-sleep · ${jetlag.nFree} free, ${jetlag.nWork} work nights`
+              : "needs 2 weekend and 2 weekday nights"
+          }
+          tip="Wittmann et al. 2006. Mid-sleep on Fri/Sat nights minus mid-sleep on the other nights. Over 2h is linked to worse mood and metabolic markers in population studies."
+        />
+        <StudioReadout
+          label="Chronotype (MSFsc)"
+          value={jetlag ? offsetToLabel(Math.round(jetlag.msfsc)) : "not yet"}
+          note={jetlag ? chronotypeWord(jetlag.msfsc) : "free-night mid-sleep, corrected"}
+          tip="Munich ChronoType Questionnaire (Roenneberg et al. 2004): free-day mid-sleep minus half the extra sleep on free days. Population median is about 4–5 AM."
+        />
+        <StudioReadout
+          label="Regularity (SRI)"
+          value={sri ? Math.round(sri.sri) : "not yet"}
+          note={sri ? `${sri.pairs} back-to-back pairs · 100 = same every day` : "needs 2 back-to-back night pairs"}
+          tip="Sleep Regularity Index (Phillips et al. 2017): chance you are in the same state (asleep or awake) at the same minute on consecutive days, scaled −100 to 100. Computed on the 6 PM → noon window only, so naps are not in it."
+        />
+      </div>
+      <p className="an-n">Free nights are Friday and Saturday. These are your logs set against published methods, not a diagnosis.</p>
+    </section>
+  )
+}
+
 export function SleepAnalytics() {
   const logged = useSleepStore((s) => s.nights)
   const targetMinutes = useSleepStore((s) => s.targetMinutes) || DEFAULT_SLEEP_TARGET_MINUTES
@@ -207,6 +344,18 @@ export function SleepAnalytics() {
   }, [stats.nights, place, rememberManyIfAbsent])
 
   const counted = stats.nights.length
+  const [lateAfter, setLateAfter] = useState(60)
+  const [whatIfTarget, setWhatIfTarget] = useState<number | null>(null)
+  const target = whatIfTarget ?? targetMinutes
+  const whatIf = useMemo(() => debtAt(stats.nights, target), [stats.nights, target])
+  const late = useMemo(() => nightsAfter(stats.nights, lateAfter), [stats.nights, lateAfter])
+  const jetlag = useMemo(() => socialJetlag(stats.nights), [stats.nights])
+  const sri = useMemo(() => sleepRegularityIndex(stats.nights), [stats.nights])
+  const dark = useMemo(
+    () => new Map(vsSun.nights.map((row) => [row.date, { sunset: row.sunsetMinutes - 1440, sunrise: row.sunriseMinutes }])),
+    [vsSun.nights],
+  )
+  const newestFirst = [...stats.nights].reverse()
   const cvDur = coefficientOfVariation(stats.nights.map((n) => n.minutes))
   const cvBed = coefficientOfVariation(stats.nights.map((n) => n.sleptMin))
   const sleepR1 = autocorrelation(stats.nights.map((n) => n.minutes), 1)
@@ -253,6 +402,8 @@ export function SleepAnalytics() {
               hint="Morning Review checkbox"
             />
           </div>
+          <details className="an-tr-fold" open={allNighterDays.length <= 5}>
+          <summary>{allNighterDays.length} all-nighter dates</summary>
           <ul className="text-sm space-y-1">
             {allNighterDays.map((n) => (
               <li key={n.date}>
@@ -275,6 +426,7 @@ export function SleepAnalytics() {
               </li>
             ))}
           </ul>
+          </details>
           <p className="an-n">
             Impact: these mornings are excluded from night averages above (no bed/wake clocks). Debt and
             &quot;under target&quot; still reflect real nights only.
@@ -324,7 +476,29 @@ export function SleepAnalytics() {
                 hint={`${stats.nightsAtTarget} of ${counted} nights hit the target`}
               />
             </div>
+            <div className="an-tr-controls" data-testid="sleep-what-if">
+              <label className="an-tr-slider">
+                What if I need
+                <input
+                  type="range"
+                  min={300}
+                  max={600}
+                  step={15}
+                  value={target}
+                  aria-label="What-if sleep need"
+                  onChange={(e) => setWhatIfTarget(Number(e.target.value))}
+                />
+                <output>{formatSleepDuration(target)}</output>
+              </label>
+              <span>
+                {`${whatIf.atTarget} of ${counted} nights would reach it, ${formatSleepDuration(whatIf.debt)} short in all (${formatSleepDuration(
+                  Math.round(whatIf.debt / counted),
+                )} a night).`}
+              </span>
+            </div>
           </section>
+
+          <BodyClock jetlag={jetlag} sri={sri} />
 
           {/* The extremes. An average hides the 3am night that explains the week. */}
           <div>
@@ -369,7 +543,9 @@ export function SleepAnalytics() {
                   hint="wake minus that morning's sunrise"
                 />
               </div>
-              <div className="an-stack pt-2 text-xs">
+              <details className="an-tr-fold pt-2" open={vsSun.nights.length <= 7}>
+              <summary>Each night against the sun ({vsSun.nights.length})</summary>
+              <div className="an-stack text-xs">
                 {[...vsSun.nights].reverse().map((row) => (
                   <p key={row.date} className="text-muted-foreground">
                     <span className="tabular-nums">{nightLabel(row.date)}</span>
@@ -380,8 +556,41 @@ export function SleepAnalytics() {
                   </p>
                 ))}
               </div>
+              </details>
             </div>
           )}
+
+          <section className="an-plate" data-testid="sleep-window">
+            <p className="an-canvas-title">Sleep window</p>
+            <p className="an-canvas-kicker">
+              Every night of the {rangeLabel}, oldest at the top. Shaded is that night&apos;s dark, sunset to sunrise.
+              Faded bars are estimated or read off the grid. Empty rows are blank nights.
+            </p>
+            <div className="an-tr-controls">
+              <label className="an-tr-slider">
+                Late after
+                <input
+                  type="range"
+                  min={-180}
+                  max={300}
+                  step={15}
+                  value={lateAfter}
+                  aria-label="Late after"
+                  onChange={(e) => setLateAfter(Number(e.target.value))}
+                />
+                <output>{offsetToLabel(lateAfter)}</output>
+              </label>
+              <span>
+                {`${late.length} of ${counted} nights (${Math.round((late.length / counted) * 100)}%) asleep after ${offsetToLabel(lateAfter)}.`}
+              </span>
+            </div>
+            <SleepWindowChart dateKeys={dateKeys} nights={stats.nights} dark={dark} lateAfter={lateAfter} />
+            <div className="an-tr-legend">
+              <span><i style={{ background: "#3b3f8f" }} />asleep</span>
+              <span><i style={{ background: "#c2410c" }} />asleep after the line</span>
+              <span><i style={{ background: "var(--at-night)", opacity: 0.2 }} />dark</span>
+            </div>
+          </section>
 
           <div>
             <p className="an-canvas-title">
@@ -389,9 +598,19 @@ export function SleepAnalytics() {
               <span className="an-canvas-kicker"> 6 PM to noon · amber is under target · ~ estimated · est. read off the grid</span>
             </p>
             <div className="an-stack">
-              {[...stats.nights].reverse().map((night) => (
+              {newestFirst.slice(0, FOLD_AFTER).map((night) => (
                 <NightBar key={night.date} night={night} targetMinutes={targetMinutes} />
               ))}
+              {newestFirst.length > FOLD_AFTER && (
+                <details className="an-tr-fold">
+                  <summary>{newestFirst.length - FOLD_AFTER} earlier nights</summary>
+                  <div className="an-stack">
+                    {newestFirst.slice(FOLD_AFTER).map((night) => (
+                      <NightBar key={night.date} night={night} targetMinutes={targetMinutes} />
+                    ))}
+                  </div>
+                </details>
+              )}
               {stray.minutes > 0 && (
                 <p className="pt-2 text-xs text-muted-foreground">
                   Plus {formatSleepDuration(stray.minutes)} of sleep painted outside these nights — a nap, or time that
