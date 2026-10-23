@@ -73,7 +73,7 @@ function CycleWheel({ runs }: { runs: readonly CycleRun[] }) {
   const slots = Math.min(45, Math.max(28, ...shown.map((r) => r.days.length)))
   const C = 160
   const R0 = 30
-  const RW = Math.min(16, 110 / Math.max(1, shown.length))
+  const RW = Math.min(30, 110 / Math.max(1, shown.length))
   const step = (2 * Math.PI) / slots
   const p = (r: number, a: number) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`
   return (

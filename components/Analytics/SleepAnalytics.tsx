@@ -260,9 +260,9 @@ function BodyClock({ jetlag, sri }: { jetlag: SocialJetlag | null; sri: { sri: n
             ? "Your weekend nights sit within half an hour of your weeknights. Little social jetlag."
             : `On weekend nights the middle of your sleep moves ${formatSleepDuration(Math.round(Math.abs(jetlag.jetlag)))} ${
                 jetlag.jetlag > 0 ? "later" : "earlier"
-              }. That is like ${jetlag.jetlag > 0 ? "flying west" : "flying east"} across ${Math.round(Math.abs(jetlag.jetlag) / 60)} time zone${
+              }. That is like crossing ${Math.round(Math.abs(jetlag.jetlag) / 60)} time zone${
                 Math.round(Math.abs(jetlag.jetlag) / 60) === 1 ? "" : "s"
-              } every week.`}
+              } every weekend and back.`}
         </p>
       ) : null}
       <div className="an-readouts">
