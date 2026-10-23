@@ -1,0 +1,144 @@
+/*
+ * components/Analytics/time-rhythms.css — Shared bits for Sleep, Screen Time,
+ * Circadian and Cycle phase. Docs: docs/analytics/time-*.md.
+ * Uses the atlas tokens (`--at-*`). Data fills stay data; chrome stays ink.
+ */
+
+.an95 .an-tr-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-family: var(--at-type);
+  font-size: 12px;
+  color: var(--at-ink-soft);
+}
+
+.an95 .an-tr-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.an95 .an-tr-slider input[type="range"] {
+  width: 160px;
+  accent-color: var(--at-ink);
+}
+
+.an95 .an-tr-slider output {
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--at-ink);
+}
+
+.an95 .an-tr-search {
+  min-width: 0;
+  width: 180px;
+  padding: 3px 8px;
+  border: 1px solid var(--at-rule-soft);
+  border-radius: 4px;
+  background: var(--at-paper-hi);
+  font: inherit;
+  color: var(--at-ink);
+}
+
+/* Long lists fold. The summary reads as a quiet link, not a button. */
+.an95 .an-tr-fold > summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--at-type);
+  font-size: 12px;
+  color: var(--at-ink-soft);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.an95 .an-tr-fold[open] > summary {
+  margin-bottom: 8px;
+}
+
+.an95 .an-tr-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: var(--at-type);
+}
+
+.an95 .an-tr-svg text {
+  fill: var(--at-ink-soft);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.an95 .an-tr-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-family: var(--at-type);
+  font-size: 11px;
+  color: var(--at-ink-soft);
+}
+
+.an95 .an-tr-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border-radius: 2px;
+}
+
+.an95 .an-tr-lede {
+  max-width: 62ch;
+  font-family: var(--at-display);
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--at-ink);
+}
+
+.an95 .an-tr-rank {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  font-family: var(--at-type);
+  font-size: 12px;
+}
+
+.an95 .an-tr-rank > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an95 .an-tr-rank .an-tr-bar {
+  height: 12px;
+  border-radius: 2px;
+  min-width: 2px;
+}
+
+.an95 .an-tr-rank .is-anchor {
+  font-style: italic;
+  color: var(--at-ink-faint);
+}
+
+.an95 .an-tr-rank .an-tr-bar.is-anchor {
+  background: repeating-linear-gradient(135deg, var(--at-ink-faint) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 0 1px var(--at-ink-faint);
+}
+
+.an95 .an-tr-rank > span:last-child {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 520px) {
+  .an95 .an-tr-rank {
+    grid-template-columns: minmax(64px, 110px) 1fr auto;
+  }
+  .an95 .an-tr-slider input[type="range"] {
+    width: 120px;
+  }
+}

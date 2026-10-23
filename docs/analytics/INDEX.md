@@ -37,9 +37,9 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | View id | File | Stores read | Data shown |
 |---|---|---|---|
 | `tracking` | `TrackingAnalytics.tsx` + boards (`AverageDayBoard`, `PeriodFilmstrip`, `GrainStrips`, `TagTrendBoard`, `PeriodDeltaTable`, `BlockSearch`, `TrackingContextPlates`) | tracking, tasks | Pen minutes by scope and depth, composition donut, filmstrip, day/week strips, average day, tags, up/down vs previous window, hour × day, block-length violin, by level, company headcount. Biggest section; split it across agents. |
-| `sleep` | `SleepAnalytics.tsx` | sleep, tracking, sun times, settings | Nightly duration and bedtime, estimated vs logged, CV, ridgelines, against the sun, all-nighters. |
-| `screentime` | `ScreenTimeView.tsx` | tracking | ActivityWatch Screen Time scope: active vs AFK, alignment with Activity, last sync. |
-| `circadian` | `CircadianView.tsx` | tracking | Hour × day occupancy, weekday cycle plot. |
+| `sleep` | `SleepAnalytics.tsx` | sleep, tracking, sun times, settings | Nightly duration and bedtime, estimated vs logged, CV, ridgelines, against the sun, all-nighters. Doc: [`time-sleep.md`](time-sleep.md). |
+| `screentime` | `ScreenTimeView.tsx` | tracking | ActivityWatch Screen Time scope: active vs AFK, alignment with Activity, last sync. Doc: [`time-screentime.md`](time-screentime.md). |
+| `circadian` | `CircadianView.tsx` | tracking | Hour × day occupancy, weekday cycle plot. Doc: [`time-circadian.md`](time-circadian.md). |
 | `places` | `PlacesView.tsx` | tracking | Location pens as time-at-place, named GPS pins. |
 | `people` | `PeopleView.tsx` | tracking | Time with each person, change vs previous window, rhythm, drifting, headcount. |
 | `mood-field` | `MoodFieldView.tsx` | tracking, metrics | Painted mood names, mood readings, joy / suffering / alignment beside them. |
@@ -49,7 +49,7 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `text-events` | `TextPipelineView.tsx` (`TextEventsView`) | tracking | Phone text-pipeline instants (log:, triggers, switch markers) by day. Not the Texts report. |
 | `text-spans` | `TextPipelineView.tsx` (`TextSpansView`) | tracking | Text-pipeline currently / stopped / switched intervals. Not the Texts report. |
 | `log` | `LogEventsView.tsx` | tracking | Logged instants: food, drink, drug, intake, event phrases; by day and kind; clock certainty. |
-| `cycle-phase` | `CyclePhaseView.tsx`, `cycle-phase-concealed.tsx` | cycle marks, habits, metrics, points, regret, sleep, tasks, tracking | Menstrual phase labels from bleed and ovulation marks, every joined series by phase. Hidden until Show cycle. |
+| `cycle-phase` | `CyclePhaseView.tsx`, `cycle-phase-concealed.tsx` | cycle marks, habits, metrics, points, regret, sleep, tasks, tracking | Menstrual phase labels from bleed and ovulation marks, every joined series by phase. Hidden until Show cycle. Doc: [`time-cycle-phase.md`](time-cycle-phase.md). |
 | `operations` | `OperationsAnalytics.tsx` | tasks, reviews | Operation items: stage/category mosaic, work vs neglect from time logs. |
 
 ## Accuracy
