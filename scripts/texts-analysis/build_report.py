@@ -34,7 +34,9 @@ def main():
         d = json.loads(det)
         d["llm"] = json.loads(llm_path.read_text())
         det = json.dumps(d, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    html = TEMPLATE.replace("/*DATA*/", data).replace("/*DETAIL*/", det).replace("/*EXTRA*/", extra)
+    calls_path = ROOT / "out/calls.json"
+    calls = calls_path.read_text().replace("</", "<\\/") if calls_path.exists() else "null"
+    html = TEMPLATE.replace("/*CALLS*/", calls).replace("/*DATA*/", data).replace("/*DETAIL*/", det).replace("/*EXTRA*/", extra)
     out = ROOT / "out/report.html"
     out.write_text(html)
     print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
@@ -238,7 +240,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
   <p id="sub"></p>
   <nav>
     <a href="#overview">Overview</a><a href="#volume">Volume</a><a href="#people">People</a>
-    <a href="#perdayh">Per day</a><a href="#compare">Weeks and months</a><a href="#directory">Directory</a><a href="#response">Response times</a><a href="#language">Language</a><a href="#style">Style</a><a href="#sentiment">Sentiment</a>
+    <a href="#perdayh">Per day</a><a href="#compare">Weeks and months</a><a href="#calls">Calls</a><a href="#directory">Directory</a><a href="#response">Response times</a><a href="#language">Language</a><a href="#style">Style</a><a href="#sentiment">Sentiment</a>
     <a href="#streaksec">Streaks</a><a href="#relationships">Relationships</a><a href="#markersec">Text markers</a><a href="#topicsec">Topics</a><a href="#conflictsec">Conflicts</a><a href="#yousec">You</a><a href="#method">Method</a>
   </nav>
 </header>
@@ -246,6 +248,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
 <section id="volume"><h2>Volume</h2><div id="vol"></div></section>
 <section id="perdaysec"><h2 id="perdayh">Texts per day</h2><div id="perday"></div></section>
 <section id="compare"><h2>Week by week, month by month</h2><div id="cmp"></div></section>
+<section id="calls"><h2>Calls</h2><div id="callsdiv"></div></section>
 <section id="people"><h2>People</h2><div id="ppl"></div></section>
 <section><h2 id="directory">Directory: people and chats</h2><div id="dir"></div></section>
 <section id="response"><h2>Response times</h2><div id="rt"></div></section>
@@ -264,6 +267,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
 <script>
 const D = /*DATA*/;
 const DET = /*DETAIL*/;
+const CALLS = /*CALLS*/;
 const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Number(n).toLocaleString("en-US");
@@ -630,6 +634,67 @@ $("sub").textContent = `${fmt(M.non_tapback_messages)} messages from ${M.first.s
     const up = moves.find((r) => r.b > r.a), down = moves.find((r) => r.b < r.a);
     const cp = card(root, `Who moved: ${mlabel(prevM)} → ${mlabel(lastM)}`, [up && `${up.name} rose the most (${fmt(up.a)} → ${fmt(up.b)}).`, down && `${down.name} fell the most (${fmt(down.a)} → ${fmt(down.b)}).`].filter(Boolean).join(" ") + " 1:1 messages, top 15 people overall.");
     table(cp, ["Person", mlabel(prevM), mlabel(lastM), "Change"], moves.map((r) => [r.name, fmt(r.a), fmt(r.b), r.a ? dpct((r.b - r.a) / r.a) : "new"]), [1, 2, 3]);
+  }
+}
+
+// =================== 2c. calls ===================
+{
+  const root = $("callsdiv");
+  if (!CALLS || !CALLS.available) {
+    root.append(h("div", { class: "card" }, [h("p", { class: "take" }, (CALLS && CALLS.reason) || "No call history yet. Run an update to read it.")]));
+  } else {
+    const CM = CALLS.meta, cpm = CALLS.per_month;
+    const ck = Object.keys(cpm).sort();
+    const cmonths = monthRange(ck[0], ck[ck.length - 1]);
+    const cv = (m, k) => (cpm[m] || {})[k] || 0;
+    const hrs = (mins) => mins >= 90 ? (mins / 60).toFixed(1) + " h" : Math.round(mins) + " min";
+    const ser = [
+      { name: "Outgoing", key: "out", color: css("me") },
+      { name: "Incoming", key: "in", color: css("them") },
+      { name: "Missed", key: "missed", color: css("neg") },
+    ].map((sr) => ({ ...sr, values: cmonths.map((m) => cv(m, sr.key)) }));
+    const tot = cmonths.map((m) => cv(m, "out") + cv(m, "in") + cv(m, "missed"));
+    const peakI = tot.indexOf(Math.max(...tot));
+    const c = card(root, "Calls per month", `${fmt(CM.calls)} calls from ${mlabel(CM.first.slice(0, 7))} to ${mlabel(CM.last.slice(0, 7))}, ${fmt(CM.hours)} hours in all, with ${fmt(CM.people)} people. ${pct(CM.outgoing / CM.calls)} were mine; ${pct(CM.missed / CM.calls)} were missed. Peak month was ${mlabel(cmonths[peakI])} with ${fmt(tot[peakI])} calls.`);
+    legend(c, ser.map((sr) => [sr.name, sr.color]));
+    stackedMonths(c, cmonths, ser);
+    const cmin = card(root, "Minutes on the phone per month", `Most talk time was in ${(() => { const i = cmonths.reduce((b, m, j) => cv(m, "minutes") > cv(cmonths[b], "minutes") ? j : b, 0); return `${mlabel(cmonths[i])} (${hrs(cv(cmonths[i], "minutes"))})`; })()}.`);
+    stackedMonths(cmin, cmonths, [{ name: "Minutes", key: "minutes", color: css("s3"), values: cmonths.map((m) => cv(m, "minutes")) }]);
+
+    const top = CALLS.people_top25;
+    const cp = card(root, "Top people by talk time", top.length ? `${top[0].name} leads with ${hrs(top[0].minutes)} over ${fmt(top[0].calls)} calls. Longest single call with them: ${hrs(top[0].longest)}.` : "");
+    hbarsStacked(cp, top, [{ key: "minutes", name: "Minutes", color: css("me") }], { extra: (r) => `<br>Calls: ${fmt(r.calls)} (${fmt(r.out)} out, ${fmt(r.in)} in, ${fmt(r.missed)} missed)<br>Last: ${r.last}` });
+
+    const g = h("div", { class: "grid2" }); root.append(g);
+    const hm = CALLS.heatmap_weekday_hour;
+    const hr = (x) => (x % 12 || 12) + (x < 12 ? "a" : "p");
+    let b = [0, 0, -1]; hm.forEach((r, i) => r.forEach((v, j) => { if (v > b[2]) b = [i, j, v]; }));
+    const ch = card(g, "Calls by weekday × hour", `Busiest slot is ${DOW[b[0]]} ${hr(b[1])} (${fmt(b[2])} calls).`);
+    heatmap(ch, hm, DOW, Array.from({ length: 24 }, (_, i) => i), { colFmt: hr, cellH: 24 });
+    const cl = card(g, "Longest calls", CALLS.longest10.length ? `The longest was ${hrs(CALLS.longest10[0].minutes)} with ${CALLS.longest10[0].name} on ${CALLS.longest10[0].date}.` : "");
+    table(cl, ["Date", "Person", "Who called", "Length"], CALLS.longest10.map((r) => [r.date, r.name, r.out ? "Me" : "Them", hrs(r.minutes)]), [3]);
+
+    // Week by week, same layout as the texts table.
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const lastDay = new Date(CM.last.slice(0, 10) + "T12:00");
+    const monday = new Date(lastDay); monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+    const weeks = [];
+    for (let w = 12; w >= 0; w--) {
+      const start = new Date(monday); start.setDate(start.getDate() - 7 * w);
+      let n = 0, mins = 0, days = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start); d.setDate(d.getDate() + i);
+        if (d > lastDay) break;
+        const r = CALLS.recent_days[iso(d)]; if (r) { n += r.calls; mins += r.minutes; }
+        days++;
+      }
+      weeks.push({ start, n, mins, days });
+    }
+    const wmax = Math.max(...weeks.map((w) => w.mins), 1);
+    const cw = card(root, "Calls week by week", `The last 13 weeks of calls, newest first. The top week may still be going.`);
+    table(cw, ["Week of", "Calls", "Talk time", ""], weeks.slice().reverse().map((w) => [
+      `${MON[w.start.getMonth()]} ${w.start.getDate()}` + (w.days < 7 ? ` <span style="color:${css("muted")}">(${w.days} days so far)</span>` : ""),
+      fmt(w.n), hrs(w.mins), h("div", { style: "width:140px" }, h("div", { style: `height:8px;min-width:2px;border-radius:2px;background:${css("s3")};width:${(100 * w.mins / wmax).toFixed(1)}%` }))]), [1, 2]);
   }
 }
 

@@ -4,7 +4,7 @@
  * Frames the texts report exactly as `scripts/texts-analysis/` draws it. The
  * report keeps its own look on purpose (allie, 2026-10-22): no studio skin, no
  * restyle. This view only starts the loopback server, shows when it last
- * updated, and offers Update now. It refreshes itself weekly (Sunday 21:00).
+ * updated, and offers Update now. It refreshes itself daily (first check after 04:00).
  */
 "use client"
 
@@ -69,7 +69,7 @@ export function TextsReportView() {
           <p className="an-canvas-title">Texts</p>
           <p className="an-canvas-kicker">
             Messages on this Mac, read locally. {state.kind === "ready" ? textsUpdatedLabel(state.status) : null}
-            {state.kind === "ready" ? " · Updates every Sunday evening." : null}
+            {state.kind === "ready" ? " · Updates daily." : null}
           </p>
         </div>
         {state.kind === "ready" ? (
