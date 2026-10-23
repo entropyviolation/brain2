@@ -35,6 +35,7 @@
 import { useState, useCallback, lazy, Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from "react"
 import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
+import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, ChartLine } from "lucide-react"
@@ -59,6 +60,8 @@ import {
   useInstagramAnalysisLists,
   useInstagramFollowersList,
   useInstagramFollowingList,
+  useInstagramListsSync,
+  useInstagramSessionsSync,
 } from "@/hooks/use-instagram-lists"
 import { useVocabLanguageLists } from "@/hooks/use-vocab-language-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
@@ -126,6 +129,8 @@ function IdleVaultSeeds() {
   useInstagramFollowingList()
   useInstagramFollowersList()
   useInstagramAnalysisLists()
+  useInstagramListsSync()
+  useInstagramSessionsSync()
   useVocabLanguageLists()
   return null
 }
@@ -242,6 +247,16 @@ export default function Home() {
     }
     window.addEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
     return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
+  }, [])
+
+  // Analytics (texts report, Instagram report) opens a Person as a popup over itself.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: unknown }>).detail?.id
+      if (typeof id === "string" && id) setSearchSelectedId(id)
+    }
+    window.addEventListener(OPEN_ITEM_POPUP_EVENT, handler)
+    return () => window.removeEventListener(OPEN_ITEM_POPUP_EVENT, handler)
   }, [])
 
   const handleTabChange = useCallback((value: string) => {

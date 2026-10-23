@@ -8,6 +8,10 @@
  * iOS) have no report.
  */
 
+import { APP_NAV_KEYS, writeStoredId, writeStoredTab } from "@/lib/app-navigation"
+import { normalizeInstagram } from "@/lib/person-profile"
+import { COGS_NAV_RESTORE_EVENT } from "@/lib/screen-location"
+
 export const INSTAGRAM_UI_KEYS = ["ig-matches", "ig-hide-cols", "ig-photos"] as const
 export type InstagramUiKey = (typeof INSTAGRAM_UI_KEYS)[number]
 
@@ -38,11 +42,18 @@ export interface InstagramStatus {
   canIngest?: boolean
 }
 
+/** `summary.json` of the current build, as text, with the build it came from. */
+export interface InstagramSummary {
+  buildId: string
+  text: string
+}
+
 export interface DesktopInstagramBridge {
   status: () => Promise<InstagramStatus>
   scan: () => Promise<InstagramStatus>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
   pickFolder: (clear?: boolean) => Promise<InstagramStatus>
+  summary?: () => Promise<InstagramSummary | null>
   onChange: (cb: (s: Omit<InstagramStatus, "reportBase">) => void) => () => void
 }
 
@@ -52,6 +63,7 @@ export interface InstagramSource {
   status: () => Promise<InstagramStatus>
   scan?: () => Promise<InstagramStatus>
   pickFolder?: (clear?: boolean) => Promise<InstagramStatus>
+  summary: () => Promise<InstagramSummary | null>
   saveUi: (key: InstagramUiKey, value: string | null) => Promise<boolean>
   onChange?: (cb: () => void) => () => void
 }
@@ -78,6 +90,10 @@ export function instagramSource(
       status: () => bridge.status(),
       scan: () => bridge.scan(),
       pickFolder: (clear) => bridge.pickFolder(clear),
+      summary: async () => {
+        if (typeof bridge.summary !== "function") throw new Error("restart")
+        return bridge.summary()
+      },
       saveUi: (key, value) => bridge.saveUi(key, value),
       onChange: (cb) => bridge.onChange(() => cb()),
     }
@@ -90,6 +106,11 @@ export function instagramSource(
         const r = await fetchImpl("/api/instagram/status", { cache: "no-store" })
         if (!r.ok) throw new Error(`status ${r.status}`)
         return (await r.json()) as InstagramStatus
+      },
+      summary: async () => {
+        const r = await fetchImpl("/api/instagram/summary", { cache: "no-store" })
+        if (!r.ok) return null
+        return (await r.json()) as InstagramSummary | null
       },
       saveUi: async (key, value) => {
         const r = await fetchImpl("/api/instagram/ui-state", {
@@ -142,6 +163,71 @@ export function parseStandaloneSettings(text: string): Partial<Record<InstagramU
 
 export const STANDALONE_EXPORT_SNIPPET =
   "copy(JSON.stringify(Object.fromEntries(['ig-matches','ig-hide-cols','ig-photos'].map(k=>[k,localStorage.getItem(k)]).filter(e=>e[1]!==null))))"
+
+// ---------- the account card's Person link ----------
+// The bridge in the report frame adds an "Attach to Person" bar to the account
+// card. It asks the parent through these messages; the parent answers with
+// `person-state` (who carries the handle, and who could).
+
+export type AccountRequest =
+  | { type: "opened"; handle: string }
+  | { type: "attach" | "detach"; handle: string; personId: string }
+  | { type: "create"; handle: string; name: string }
+  | { type: "open-person"; personId: string }
+
+export function readAccountRequest(data: unknown): AccountRequest | null {
+  if (!data || typeof data !== "object") return null
+  const d = data as Record<string, unknown>
+  if (d.brain2Instagram !== "account") return null
+  const handle = typeof d.handle === "string" ? normalizeInstagram(d.handle).slice(0, 60) : ""
+  const personId = typeof d.personId === "string" ? d.personId.slice(0, 200) : ""
+  switch (d.action) {
+    case "opened":
+      return handle ? { type: "opened", handle } : null
+    case "attach":
+    case "detach":
+      return handle && personId ? { type: d.action, handle, personId } : null
+    case "create":
+      return handle ? { type: "create", handle, name: typeof d.name === "string" ? d.name.slice(0, 120) : "" } : null
+    case "open-person":
+      return personId ? { type: "open-person", personId } : null
+    default:
+      return null
+  }
+}
+
+// ---------- open one account from a Person ----------
+// A Person's Instagram handle opens that account's card in the report. The
+// handle waits in sessionStorage until the report frame has loaded, then the
+// view posts it into the frame (the bridge in `electron/instagram-report.js`).
+
+const OPEN_KEY = "brain2-instagram-open"
+
+/** Go to Analytics → Sources → Instagram and open this account's card. */
+export function openInstagramFor(handle: string): void {
+  const clean = normalizeInstagram(handle)
+  if (!clean) return
+  try {
+    window.sessionStorage.setItem(OPEN_KEY, clean)
+  } catch {
+    // The report still opens, on its front page.
+  }
+  writeStoredId(APP_NAV_KEYS.appItemId, null)
+  writeStoredTab(APP_NAV_KEYS.analyticsTab, "instagram")
+  writeStoredTab(APP_NAV_KEYS.appTab, "analytics")
+  window.dispatchEvent(new CustomEvent(COGS_NAV_RESTORE_EVENT))
+}
+
+/** The handle to open once the report frame is ready (read once). */
+export function takePendingInstagramOpen(): string | null {
+  try {
+    const raw = window.sessionStorage.getItem(OPEN_KEY)
+    window.sessionStorage.removeItem(OPEN_KEY)
+    return raw ? normalizeInstagram(raw) || null : null
+  } catch {
+    return null
+  }
+}
 
 /** `2026-10-22T18:04:00Z` → `Oct 22, 2026, 11:04 AM` in local time. */
 export function formatInstagramStamp(iso: string | undefined | null): string {
