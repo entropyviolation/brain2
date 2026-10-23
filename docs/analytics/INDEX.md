@@ -44,13 +44,13 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `people` | `PeopleView.tsx` | tracking | Time with each person, change vs previous window, rhythm, drifting, headcount. |
 | `mood-field` | `MoodFieldView.tsx` | tracking, metrics | Painted mood names, mood readings, joy / suffering / alignment beside them. |
 | `diversity` | `DiversityView.tsx` | tracking | Shannon entropy of pens per day, Gini, weekday vs weekend. |
-| `transitions` | `TransitionsView.tsx` | tracking | Markov matrix of pen switches, alluvial of switch counts. |
-| `context-switch` | `ContextSwitchHeatmap.tsx` | tracking, tasks | Pen switches by hour of day. |
-| `text-events` | `TextPipelineView.tsx` (`TextEventsView`) | tracking | Phone text-pipeline instants (log:, triggers, switch markers) by day. Not the Texts report. |
-| `text-spans` | `TextPipelineView.tsx` (`TextSpansView`) | tracking | Text-pipeline currently / stopped / switched intervals. Not the Texts report. |
-| `log` | `LogEventsView.tsx` | tracking | Logged instants: food, drink, drug, intake, event phrases; by day and kind; clock certainty. |
+| `transitions` | `TransitionsView.tsx` | tracking | Markov matrix of pen switches, landing vs leaving, return loops, alluvial. [doc](time-transitions.md) |
+| `context-switch` | `ContextSwitchHeatmap.tsx` | tracking, tasks | Pen switches by day, rate clock by hour, weekday profile. [doc](time-context-switch.md) |
+| `text-events` | `TextPipelineView.tsx` (`TextEventsView`) | tracking | Phone text-pipeline instants (log:, triggers, switch markers) by day, unit grid. Not the Texts report. [doc](time-text-pipeline.md) |
+| `text-spans` | `TextPipelineView.tsx` (`TextSpansView`) | tracking | Text-pipeline currently / stopped / switched intervals, era bars. Not the Texts report. [doc](time-text-pipeline.md) |
+| `log` | `LogEventsView.tsx` | tracking | Logged instants: food, drink, drug, intake, event phrases; by day and kind; clock certainty; rhythm by kind. [doc](time-log.md) |
 | `cycle-phase` | `CyclePhaseView.tsx`, `cycle-phase-concealed.tsx` | cycle marks, habits, metrics, points, regret, sleep, tasks, tracking | Menstrual phase labels from bleed and ovulation marks, every joined series by phase. Hidden until Show cycle. |
-| `operations` | `OperationsAnalytics.tsx` | tasks, reviews | Operation items: stage/category mosaic, work vs neglect from time logs. |
+| `operations` | `OperationsAnalytics.tsx` | tasks, reviews | Operation items: stage/category mosaic, work vs neglect from time logs, untouched ranking, debrief quadrant. [doc](time-operations.md) |
 
 ## Accuracy
 
