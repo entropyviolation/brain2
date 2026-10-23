@@ -38,6 +38,7 @@ const PY_MODULES = [
 const PARTIAL_SUFFIXES = [".crdownload", ".download", ".part", ".partial", ".tmp"]
 /** A zip must hold the same size and mtime this long before it is opened. */
 const STABLE_MS = 10_000
+const ARCHIVE_RETRY_MS = 60 * 60_000
 const RUN_TIMEOUT_MS = 45 * 60_000
 
 /** Outside requests the report may make; both are opt-in inside the report. */
@@ -217,6 +218,52 @@ function findExportRoot(dir, { fs = nodeFs, depth = 2 } = {}) {
 }
 
 /**
+ * The username inside an unzipped export, from
+ * `personal_information/personal_information.json`. "" when it is not there.
+ */
+function exportAccount(exportRoot, { fs = nodeFs } = {}) {
+  const file = path.join(exportRoot, "personal_information", "personal_information", "personal_information.json")
+  try {
+    const data = JSON.parse(fs.readFileSync(file, "utf8"))
+    const user = (data.profile_user || [])[0] || {}
+    const u = (user.string_map_data || {}).Username || (user.string_map_data || {}).username
+    return (u && u.value) || ""
+  } catch {
+    return ""
+  }
+}
+
+/** File count, total size and newest mtime under `dir`, stopping after `limit` entries. */
+function treeStats(dir, { fs = nodeFs, limit = 50_000 } = {}) {
+  const out = { count: 0, size: 0, mtimeMs: 0 }
+  const stack = [dir]
+  while (stack.length && out.count < limit) {
+    const d = stack.pop()
+    let entries = []
+    try {
+      entries = fs.readdirSync(d, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    for (const e of entries) {
+      const p = path.join(d, e.name)
+      if (e.isDirectory()) stack.push(p)
+      else if (e.isFile()) {
+        try {
+          const st = fs.statSync(p)
+          out.count++
+          out.size += st.size
+          out.mtimeMs = Math.max(out.mtimeMs, st.mtimeMs)
+        } catch {
+          // gone between readdir and stat; the next scan sees the change
+        }
+      }
+    }
+  }
+  return out
+}
+
+/**
  * One `meta-…` folder from a scheduled Drive export. Inside it, in this order:
  * an unzipped export, `instagram-…` zips or folders, or any zips (taken as
  * the parts of one export). Its name gives the date; the account is taken
@@ -232,8 +279,10 @@ function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
     }
   }
   if (findExportRoot(folder, { fs, depth: 2 })) {
+    // Drive may still be syncing files into it, so the whole tree is the fingerprint.
     const s = st(folder)
-    return { ...base, kind: "dir", paths: [folder], mtimeMs: s ? s.mtimeMs : 0 }
+    const t = treeStats(folder, { fs })
+    return { ...base, kind: "dir", paths: [folder], size: t.size, treeCount: t.count, mtimeMs: Math.max(t.mtimeMs, s ? s.mtimeMs : 0) }
   }
   const inner = scanForExports([folder], { fs })
   if (inner.length) {
@@ -323,7 +372,8 @@ function scanForExports(dirs, { fs = nodeFs } = {}) {
 
 /** Fingerprint used to skip an export that was already imported (or already failed unchanged). */
 function exportFingerprint(c) {
-  return `${c.kind}:${c.paths.length}:${c.size}:${Math.round(c.mtimeMs)}`
+  const tree = c.treeCount != null ? `:${c.treeCount}` : ""
+  return `${c.kind}:${c.paths.length}:${c.size}:${Math.round(c.mtimeMs)}${tree}`
 }
 
 /**
@@ -346,7 +396,7 @@ function createStabilityTracker(now = () => Date.now()) {
   const seen = new Map()
   return {
     isStable(c) {
-      if (c.kind === "dir") return true
+      if (c.kind === "dir" && !c.accountUnknown) return true
       const fp = exportFingerprint(c)
       const prev = seen.get(c.key)
       if (!prev || prev.fp !== fp) {
@@ -583,6 +633,11 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
   }
   const exportRoot = findExportRoot(exportDir, { fs })
   if (!exportRoot) return fail("unzip", "The export has no your_instagram_activity folder. Was it requested as JSON?", "")
+  if (candidate.accountUnknown) {
+    const account = exportAccount(exportRoot, { fs })
+    if (account && !accountMatches(account, config.handle))
+      return fail("account", `This export is for @${account}, not @${String(config.handle).replace(/^@/, "")}.`, "")
+  }
 
   writeMatchesFile(config, loadUiState(root, config, { fs }), { fs })
   fs.mkdirSync(buildDir, { recursive: true })
@@ -741,6 +796,8 @@ function publicStatus(root, { fs = nodeFs, running = false, deps = null, config 
  */
 function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange = () => {}, now = () => Date.now(), env = process.env, intervalMs = 60_000, home } = {}) {
   const tracker = createStabilityTracker(now)
+  // Backlog exports that failed to archive: retried hourly, or at once if they change.
+  const archiveTried = new Map()
   let running = false
   let deps = null
   let watchers = []
@@ -763,7 +820,9 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     try {
       if (!existed) await extractExport(c, dest, config, { fs, run })
       const exportRoot = findExportRoot(dest, { fs })
-      if (exportRoot) await archive.archiveExport(root, { exportDir: dirName, exportRoot, date: c.date }, { fs, now })
+      const account = exportRoot && c.accountUnknown ? exportAccount(exportRoot, { fs }) : ""
+      if (account && !accountMatches(account, config.handle)) console.warn(`[brain2] instagram archive ${c.key}: export is for @${account}, skipped`)
+      else if (exportRoot) await archive.archiveExport(root, { exportDir: dirName, exportRoot, date: c.date }, { fs, now })
     } catch (err) {
       console.warn(`[brain2] instagram archive ${c.key}:`, err && err.message)
     } finally {
@@ -790,15 +849,23 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     const pick = pickExportToImport(candidates, state, config)
     // Exports the report skips (older than the one on screen, or passed over
     // while Brain2 was closed) still go into the archive.
-    const backlog = candidates.filter(
-      (c) => c !== pick && (c.accountUnknown || accountMatches(c.account, config.handle)) && !archive.isArchived(root, `${c.date}-${c.id}`, { fs }),
-    )
+    const backlog = candidates.filter((c) => {
+      const tried = archiveTried.get(c.key)
+      const due = force || !tried || tried.fp !== exportFingerprint(c) || now() - tried.at >= ARCHIVE_RETRY_MS
+      return (
+        c !== pick &&
+        due &&
+        (c.accountUnknown || accountMatches(c.account, config.handle)) &&
+        !archive.isArchived(root, `${c.date}-${c.id}`, { fs })
+      )
+    })
     if (backlog.length && !running) {
       running = true
       try {
         for (const c of backlog) {
           if (!tracker.isStable(c)) continue
           await archiveOnly(c, config)
+          archiveTried.set(c.key, { fp: exportFingerprint(c), at: now() })
         }
       } finally {
         running = false
@@ -882,6 +949,7 @@ module.exports = {
   createStabilityTracker,
   defaultConfig,
   defaultRoot,
+  exportAccount,
   exportFingerprint,
   findExportRoot,
   findFfmpeg,

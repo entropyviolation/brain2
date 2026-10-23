@@ -235,6 +235,7 @@ type IgDrive = {
     stop: () => void
   }
   saveConfigPatch: (root: string, patch: Record<string, unknown>) => unknown
+  exportAccount: (exportRoot: string) => string
 }
 const igd = nodeRequire("./instagram-report.js") as IgDrive
 const archive = nodeRequire("./instagram-archive.js") as { isArchived: (root: string, dir: string) => boolean }
@@ -290,7 +291,11 @@ describe("Google Drive scheduled export", () => {
     makeExportFolder(path.join(drive, "meta-2026-Oct-23-20-23-37"), "export")
     makeExportFolder(path.join(drive, "meta-2026-Oct-24-20-23-37"), "export")
     igd.saveConfigPatch(root, { ...config, downloadsDir: downloads })
-    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home })
+    let t = 1_000_000
+    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
+    // Drive may still be syncing a meta folder, so it waits for the tree to hold still.
+    expect((await w.scan()).imported).toBe(false)
+    t += ig.STABLE_MS
     const r = await w.scan()
     w.stop()
     expect(r.imported).toBe(true)
@@ -298,5 +303,27 @@ describe("Google Drive scheduled export", () => {
     for (const d of ["2026-10-22-202337", "2026-10-23-202337", "2026-10-24-202337"]) expect(archive.isArchived(root, d)).toBe(true)
     // Skipped exports are archived, not kept as copies.
     expect(fs.existsSync(path.join(root, "exports", "2026-10-22-202337"))).toBe(false)
+  })
+
+  it("reads the username in an export, and skips a meta folder for another account", async () => {
+    const drive = myDrive()
+    const other = makeExportFolder(path.join(drive, "meta-2026-Oct-22-20-23-37"), "export")
+    const info = path.join(other, "personal_information", "personal_information")
+    fs.mkdirSync(info, { recursive: true })
+    fs.writeFileSync(
+      path.join(info, "personal_information.json"),
+      JSON.stringify({ profile_user: [{ string_map_data: { Username: { value: "someone_else" } } }] }),
+    )
+    expect(igd.exportAccount(other)).toBe("someone_else")
+    igd.saveConfigPatch(root, { ...config, downloadsDir: downloads, handle: "_entropyviolation_" })
+    let t = 1_000_000
+    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
+    await w.scan()
+    t += ig.STABLE_MS
+    const r = await w.scan()
+    w.stop()
+    expect(r.imported).toBe(false)
+    expect(ig.loadState(root).current).toBeNull()
+    expect(archive.isArchived(root, "2026-10-22-202337")).toBe(false)
   })
 })

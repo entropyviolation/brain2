@@ -107,6 +107,11 @@ describe("instagram archive", () => {
     expect(ar.archiveStatus(root).count).toBe(2)
   })
 
+  it("skips a half-copied .partial folder", async () => {
+    makeExport("2026-10-22-aaa.partial", { sam_1: [hi] })
+    expect(await ar.archiveAll(root)).toEqual([])
+  })
+
   it("fixes Meta's Latin-1 text and leaves real text alone", async () => {
     expect(ar.fixText("cafÃ©")).toBe("café")
     expect(ar.fixText("café ☕")).toBe("café ☕")

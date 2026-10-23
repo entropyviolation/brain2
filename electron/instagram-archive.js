@@ -104,7 +104,15 @@ async function storeBlob(fs, root, file, sha) {
   try {
     await fs.promises.link(file, dest)
   } catch {
-    await fs.promises.copyFile(file, dest)
+    // Copy beside the blob, then rename, so a failed copy never leaves a short blob.
+    const tmp = `${dest}.${process.pid}-${Date.now()}.tmp`
+    try {
+      await fs.promises.copyFile(file, tmp)
+      await fs.promises.rename(tmp, dest)
+    } catch (err) {
+      await fs.promises.rm(tmp, { force: true })
+      throw err
+    }
   }
 }
 
@@ -181,8 +189,8 @@ function orderedExports(index) {
 }
 
 function rank(index) {
-  const order = orderedExports(index).map((e) => e.dir)
-  return (dir) => order.indexOf(dir)
+  const pos = new Map(orderedExports(index).map((e, i) => [e.dir, i]))
+  return (dir) => (pos.has(dir) ? pos.get(dir) : -1)
 }
 
 /**
@@ -292,7 +300,7 @@ async function archiveAll(root, { fs = nodeFs, findExportRoot, now } = {}) {
   const dir = path.join(root, "exports")
   let names = []
   try {
-    names = fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+    names = fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.endsWith(".partial")).map((e) => e.name)
   } catch {
     return []
   }

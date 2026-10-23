@@ -93,8 +93,8 @@ accepts all three likely shapes. `electron/instagram-report.js`:
 - The view's status line says **Google Drive watched** when a Drive folder
   is found.
 
-Steps 1, 2, 5 and 6 below are still open; 3 and 4 are done unless the real
-contents differ.
+Steps 1, 2, 5 and 6 below are still open. Steps 3 and 4 are now checks
+against the real files.
 
 ## TO DO LATER: when the first Google Drive export lands
 
@@ -131,41 +131,32 @@ order, and write what you find back into this doc and
 - Run `analyze.py` and `build_report.py` on it by hand (see
   `/Users/otherworld/instagram-analysis/README.md`). Note any errors.
 
-### 3. Make the watcher pick it up
+### 3. Check the watcher picks it up
 
-Code: `electron/instagram-report.js`.
+The watcher already handles Drive (see "what is wired" above). Check it
+against the real files; change code only where they differ.
 
-- **Name.** `parseExportName` only accepts
-  `instagram-<account>-<YYYY-MM-DD>-<id>` (optionally `.zip`). If Drive
-  names differ, extend that regex and add a test case in
-  `electron/instagram-report.test.ts` using the real name.
-- **Depth.** `scanForExports` only reads the top level of each watched
-  folder. If Meta writes into a subfolder (for example a dated or `Meta`
-  folder), scan one or two levels down for that folder only. Keep
-  Downloads at the top level.
-- **Folder.** Set the Drive folder as the watched folder ("Watch a folder…"
-  in the view, saved as `extraDir` in `config.json`), or add a
-  `driveDir` config key if Downloads and Drive both need watching beside
-  another folder.
+- **Shape.** Write down the real folder and file names. If they are not one of
+  the shapes `scanMetaFolder` takes (`electron/instagram-report.js`), extend
+  it and add a test in `electron/instagram-report.test.ts` with the real
+  names.
+- **Path.** Confirm `googleDriveDirs` finds the local `My Drive` path, and
+  the view says **Google Drive watched**.
+- **Account.** Confirm `exportAccount` reads the username from
+  `personal_information/personal_information/personal_information.json`.
 - **Placeholders.** If Drive is in Stream mode, check that the 10 s
-  size-stable wait (`STABLE_MS`) sees the real size, and that reading the
-  zip downloads it. If not, tell Athena to set the Instagram folder to
+  hold-still wait (`STABLE_MS`) sees the real size, and that reading the
+  zip downloads it. If not, tell Athena to set the Meta folder to
   "Available offline", or switch the Drive app to Mirror mode.
 - **macOS prompt.** Reading `~/Library/CloudStorage` may trigger a macOS
-  files-access prompt for Brain2. Say so in the view's help text.
+  files-access prompt for Brain2. If it does, say so in the view's help text.
 
-### 4. Make sure no daily export is skipped
+### 4. Check no daily export is skipped
 
-`pickExportToImport` builds only the newest export it finds, and skips
-older ones. With daily exports, if Brain2 is closed for a few days, the
-exports in between never reach `exports/`, so the archive never sees them,
-and an unsent DM inside that gap is lost.
-
-- Fix: archive every not-yet-archived export in the watched folders, oldest
-  first, even when only the newest gets a report build. Unzip each one to a
-  temporary folder, call `archiveExport` (`electron/instagram-archive.js`),
-  then delete the temporary folder. Add a test with three exports, Brain2
-  "closed" for the middle one.
+Done in code: every export not yet archived is archived, even when only the
+newest builds the report. After a few days of Drive exports, open the
+archive (`<userData>/instagram/archive/index.json`) and confirm each day is
+listed.
 
 ### 5. Drive space
 
