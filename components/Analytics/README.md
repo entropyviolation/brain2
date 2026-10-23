@@ -314,6 +314,24 @@ Meta has no scheduled or repeating export (checked 2026-10-23,
 `research/instagram-auto-update.md` in the project files). A new export
 still starts with the person asking for one.
 
+### Export archive (every export, merged)
+
+_Last mapped: 2026-10-23_
+
+The report pipeline keeps only the newest exports (`keepExports`). The
+archive keeps all of them (`electron/instagram-archive.js`). It runs after a
+build is marked good and before `prune`, and once at watcher start for any
+export folder not archived yet.
+
+- `archive/blobs/<aa>/<sha256>` holds every file of every export once, by content. Hard links when on the same disk, so an unchanged file across daily exports costs nothing. Pruning an export folder does not touch the blobs.
+- `archive/manifests/<exportDir>.json` maps each export's paths to blobs, so any old export can be rebuilt.
+- `archive/messages.json` merges all DMs. A message is keyed by thread folder, time, sender and a content hash, and keeps the first and last export that held it.
+- `removedMessages` lists DMs an earlier export had and a later one does not: **removed** (unsent or deleted), **edited** (same time and sender, other text), or **chat gone** (the whole thread is missing). The view shows them under "Unsent, deleted and edited messages" (`cogs:instagram:removed`, `/api/instagram/removed` in dev).
+- Limit: a message sent and removed between two exports was never in any export. Daily exports keep that gap to a day.
+- Meta's Latin-1 text is fixed on the way in (`fixText`).
+
+**Planned:** the same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
+
 ### Monthly export reminder
 
 _Last mapped: 2026-10-23_
