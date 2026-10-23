@@ -24,6 +24,7 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { useStarLordStore } from "@/lib/star-lord-store"
 import { useModulesStore } from "@/lib/modules-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
+import { useModuleHtmlStore } from "@/lib/module-html-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useMetricsStore } from "@/lib/metrics-store"
@@ -85,6 +86,7 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-star-lord-store": () => useStarLordStore.getState(),
   "cogs-modules-store": () => useModulesStore.getState(),
   "cogs-module-definitions": () => useModuleDefinitionsStore.getState(),
+  "cogs-module-html": () => useModuleHtmlStore.getState(),
   "cogs-workflows-store": () => useWorkflowsStore.getState(),
   "cogs-item-types-store": () => useItemTypeStore.getState(),
   "cogs-metrics-store": () => useMetricsStore.getState(),
