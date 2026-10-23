@@ -5,6 +5,7 @@
  * runs from the Electron main process.
  *
  *   GET  /api/instagram/status
+ *   GET  /api/instagram/removed      unsent or deleted DMs from the archive
  *   GET  /api/instagram/summary      {buildId, text} of summary.json, or null
  *   POST /api/instagram/ui-state     {key, value}
  *   GET  /api/instagram/report/<path>  report.html, thumbs/, media/
@@ -18,6 +19,7 @@ import { isLoopbackRemoteAddress } from "./screentime-api.mjs"
 
 const require = createRequire(fileURLToPath(import.meta.url))
 const ig = require("../electron/instagram-report.js")
+const archive = require("../electron/instagram-archive.js")
 
 export const INSTAGRAM_API_REPORT_BASE = "/api/instagram/report/"
 
@@ -90,6 +92,10 @@ export async function handleInstagramApi(req, res, pathname, deps = {}) {
     return true
   }
 
+  if (p.replace(/\/$/, "") === "/api/instagram/removed" && req.method === "GET") {
+    sendJson(res, 200, archive.removedMessages(root))
+    return true
+  }
   if (p.replace(/\/$/, "") === "/api/instagram/summary" && req.method === "GET") {
     const state = ig.loadState(root)
     const file = ig.resolveReportPath(root, state, "summary.json")
