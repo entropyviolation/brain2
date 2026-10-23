@@ -12,7 +12,9 @@ import { isEmailHandle, normalizeHandle } from "@/lib/phone-sync/handles"
 import type { PhonePerson } from "@/lib/phone-sync/people"
 import { penHandle, PHONE_PEN_SCOPE_IDS, relinkPhonePens, twinPenId } from "@/lib/phone-sync/person-links"
 import { phonePeople } from "@/lib/phone-sync/write"
+import { personPhoneNumbers } from "@/lib/people-i-know"
 import { presentPersonProfile } from "@/lib/person-profile"
+import { PERSON_ATTR } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
@@ -39,7 +41,8 @@ function writeHandles(personId: string, add: readonly string[], remove: readonly
   if (!person) return
   const profile = person.personProfile ?? {}
   const keep = (list: readonly string[] | undefined) => (list ?? []).filter((h) => !remove.some((r) => sameHandle(h, r)))
-  let phones = keep(profile.phones)
+  const before = personPhoneNumbers(person)
+  let phones = keep(before)
   let emails = keep(profile.emails)
   for (const raw of add) {
     const h = normalizeHandle(raw)
@@ -48,8 +51,16 @@ function writeHandles(personId: string, add: readonly string[], remove: readonly
     else phones = [...phones, h]
   }
   const same = (a: readonly string[] | undefined, b: readonly string[]) => (a ?? []).join("\n") === b.join("\n")
-  if (same(profile.phones, phones) && same(profile.emails, emails)) return
-  commitItemEdit(personId, { personProfile: presentPersonProfile({ ...profile, phones, emails }) }, SOURCE)
+  if (same(before, phones) && same(profile.emails, emails)) return
+  // The Phone Number attribute is what you see; the profile mirrors it for older readers.
+  commitItemEdit(
+    personId,
+    {
+      personProfile: presentPersonProfile({ ...profile, phones, emails }),
+      attributes: { ...(person.attributes ?? {}), [PERSON_ATTR.phone]: phones.length ? phones : undefined },
+    },
+    SOURCE,
+  )
 }
 
 /** Take these numbers / emails off everyone but `personId`. One number, one person. */

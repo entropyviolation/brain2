@@ -5,7 +5,11 @@
  * 1. Identity bay: the person's orb on a velvet well (click → orb picker,
  *    writes `icon` on the draft) beside the birthday plaque, then one phosphor
  *    readout strip: Known for · Last saw · the Close lamp key.
+ *    View text analytics ↗ joins the strip when the texts report has a card
+ *    for one of their numbers (`lib/texts-report.ts`).
  * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
+ *    Phone numbers (the Phone Number attribute, every number they have had),
+ *    Emails,
  *    Relation, Date met + Est., Instagram, Address.
  * 3. Time together. 4. The host's `pipelines` slot (Company pens).
  * 5. Interactions (`person-log.tsx`; feeds Last saw).
@@ -22,7 +26,8 @@
  */
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { openTextsFor, readTextsIndex, subscribeTextsIndex, textsCardFor } from "@/lib/texts-report"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { AddressSuggestInput } from "@/components/ui/address-suggest-input"
 import { iconFor } from "@/components/Icons/Icon"
@@ -36,7 +41,8 @@ import { syncPhonePersonLinks, takeHandlesFromOthers } from "@/lib/phone-person-
 import { ensureGiftIdeasForPerson } from "@/lib/gift-ideas"
 import { RELATION_WORD_KEYS } from "@/lib/person-relations"
 import { PERSON_ATTR } from "@/lib/person-types"
-import { COMPANY_SCOPE_ID, personTimePenIds } from "@/lib/people-i-know"
+import { COMPANY_SCOPE_ID, personPhoneNumbers, personTimePenIds } from "@/lib/people-i-know"
+import { formatHandle } from "@/lib/phone-sync/handles"
 import { personMinuteMasks } from "@/lib/person-time"
 import { PersonTimeTogether } from "@/components/People/person-time-together"
 import {
@@ -185,6 +191,25 @@ export function PersonDetail({
     onChange({ attributes: attributesWith(id, value) })
   }
 
+  // A number or email belongs to one person: take it off anyone else, then rename the phone pens.
+  const linkDraft = (next: PersonProfile, phones: string[]) => {
+    takeHandlesFromOthers(person.id, [...phones, ...(next.emails ?? [])])
+    const draft = latest()
+    syncPhonePersonLinks({
+      id: person.id,
+      name: draft.title || draft.description || person.id,
+      nicknames: next.nicknames,
+      phones,
+      emails: next.emails,
+    })
+  }
+
+  // "View text analytics" shows once the texts report has a card for one of their numbers.
+  const handles = useMemo(() => [...personPhoneNumbers(person), ...(profile?.emails ?? [])], [person, profile?.emails])
+  const [textsIndex, setTextsIndex] = useState(readTextsIndex)
+  useEffect(() => subscribeTextsIndex(() => setTextsIndex(readTextsIndex())), [])
+  const textsCard = useMemo(() => textsCardFor(handles, textsIndex), [handles, textsIndex])
+
   // Numbers texts and calls came from that no one has yet, offered as you type.
   const unlinkedNumbers = useMemo(() => unlinkedPhoneHandles(scopes, phonePeople()), [scopes])
 
@@ -237,6 +262,17 @@ export function PersonDetail({
         >
           Last saw {lastSawSentence(lastSaw, todayIso)}
         </span>
+        {textsCard ? (
+          <button
+            type="button"
+            className="person-readout person-readout-link"
+            data-testid="person-view-texts"
+            title={`Open ${textsCard.name} in Analytics → Texts`}
+            onClick={() => openTextsFor(handles)}
+          >
+            View text analytics ↗
+          </button>
+        ) : null}
         <button
           type="button"
           role="switch"
@@ -272,24 +308,31 @@ export function PersonDetail({
           onChange={(nicknames) => writeProfile({ ...current(), nicknames })}
         />
         <NicknameField
-          label="Phones and emails"
-          itemLabel="number or email"
-          nicknames={[...(profile?.phones ?? []), ...(profile?.emails ?? [])]}
+          label="Phone numbers"
+          itemLabel="phone number"
+          nicknames={personPhoneNumbers(person)}
+          format={formatHandle}
           suggestions={unlinkedNumbers}
-          onChange={(handles) => {
-            const { phones, emails } = splitHandles(handles)
-            const next = { ...current(), phones, emails }
+          onChange={(typed) => {
+            // Every number they have had. Texts and calls from any of them show this person.
+            const phones = splitHandles(typed).phones
+            const attributes = { ...(latest().attributes ?? {}) }
+            if (phones.length) attributes[PERSON_ATTR.phone] = phones
+            else delete attributes[PERSON_ATTR.phone]
+            const next = { ...current(), phones }
+            onChange({ personProfile: presentPersonProfile(next), attributes })
+            linkDraft(next, phones)
+          }}
+        />
+        <NicknameField
+          label="Emails"
+          itemLabel="email"
+          nicknames={profile?.emails ?? []}
+          onChange={(typed) => {
+            const emails = splitHandles(typed).emails
+            const next = { ...current(), emails }
             writeProfile(next)
-            // Texts and calls from these numbers show this person (`lib/phone-person-links.ts`).
-            takeHandlesFromOthers(person.id, handles)
-            const draft = latest()
-            syncPhonePersonLinks({
-              id: person.id,
-              name: draft.title || draft.description || person.id,
-              nicknames: next.nicknames,
-              phones,
-              emails,
-            })
+            linkDraft(next, personPhoneNumbers(latest()))
           }}
         />
         <label className="person-field">

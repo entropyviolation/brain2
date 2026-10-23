@@ -32,3 +32,17 @@ See the plan doc. `electron/texts-report.js` relies on `GET /api/status` and `PO
 _Last mapped: 2026-10-23_
 
 `analyze2.py` keeps each person entity's numbers and emails as `handles` (in `out/`, local only). Inside Brain2, a relationship page shows **Person in Brain2**: search People I Know and link. Brain2 sends People I Know into the frame by `postMessage`, and the page asks Brain2 to save the chat's numbers on that Person (`components/Analytics/TextsReportView.tsx`). `serve.py` is not involved. A report built before this change asks for Update now first.
+
+## Merges, names and Brain2 people
+
+_Last mapped: 2026-10-23_
+
+Three keys in the `settings` table of `out/annotations.sqlite`, written by the report through `POST /api/settings`. `analyze.py` reads them in `load_contacts` / `resolve_handle` / `label_people`, so `analyze2.py` and `calls.py` follow, and they hold through every refresh.
+
+- `people_links` `[{id, name, handles}]`: People I Know from Brain2. Every number on one Person resolves to one card, key `b2:<id>`, named after the Person. The frame posts it whenever Brain2 sends people.
+- `merges` `{from_key: {to, name}}`: Name and merge → fold another chat into this card. Undo removes the row.
+- `names` `{key: name}`: Name and merge → Rename.
+
+Each of these re-runs the pipeline (`POST /api/refresh`); Brain2 reloads the frame when it ends. Person cards carry `key` and `handles`, and `detail.json` carries the current `overrides`. Card ids (`p01`…) are ranks, so a merge can shift which id a card has; notes and labels keyed by those ids can move. **Planned:** key notes by `key`.
+
+In Brain2, the frame also sends its person cards (`index`), which Person → View text analytics uses. Brain2 can ask the frame to `open` the card for some numbers.

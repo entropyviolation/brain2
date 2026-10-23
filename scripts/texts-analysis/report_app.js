@@ -455,9 +455,12 @@ async function openThread(id, atEpoch, highlightMid) {
 // ---------- Brain2: link a relationship to a Person ----------
 // Only inside Brain2 (Analytics → Texts frames this page). Brain2 posts People I Know
 // here (names and the numbers saved on each). Linking saves this chat's numbers on that
-// Person in Brain2, so its texts and calls pens show their name. Nothing leaves this Mac.
+// Person in Brain2, so its texts and calls pens show their name. The links are also
+// saved here (settings → people_links), so every number on one Person becomes one
+// card at the next update (analyze.py). Nothing leaves this Mac.
 const IN_BRAIN2 = window.parent !== window;
-let B2 = { people: null, origin: null };
+let B2 = { people: null, origin: null, applyOnNext: false };
+let OV = DET.overrides || {};
 function b2Norm(x) {
   const raw = String(x || "").trim();
   if (!raw) return "";
@@ -476,25 +479,59 @@ function b2Linked(e) {
   const mine = new Set((e.handles || []).map(b2Norm).filter(Boolean));
   return (B2.people || []).find((p) => (p.handles || []).some((x) => mine.has(b2Norm(x))));
 }
+const personEnts = () => Object.values(E).filter((x) => x.kind === "person");
+function entForHandles(handles) {
+  const want = new Set((handles || []).map(b2Norm).filter(Boolean));
+  return personEnts().find((x) => (x.handles || []).some((hd) => want.has(b2Norm(hd))));
+}
+let applyNote = "";
+// Save one override, then re-run the pipeline so cards merge or rename. Brain2 reloads the frame when it ends.
+async function saveOverride(key, value) {
+  OV = { ...OV, [key]: value };
+  await api("POST", "/api/settings", { [key]: value });
+  await applyOverrides();
+}
+async function applyOverrides() {
+  await api("POST", "/api/refresh");
+  applyNote = IN_BRAIN2 ? "Updating the report to apply this. It reloads when done." : "Updating the report. Reload this page when Update finishes.";
+  b2Send({ type: "refreshing" });
+  listeners.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } });
+}
+async function syncPeopleLinks() {
+  if (!SERVER) return;
+  const links = B2.people.filter((p) => p.handles?.length).map((p) => ({ id: p.id, name: p.name, handles: p.handles.map(b2Norm).filter(Boolean).sort() }));
+  if (JSON.stringify(links) === JSON.stringify(OV.people_links || [])) return;
+  OV = { ...OV, people_links: links };
+  await api("POST", "/api/settings", { people_links: links });
+  if (B2.applyOnNext) { B2.applyOnNext = false; await applyOverrides(); }
+}
 if (IN_BRAIN2) {
   window.addEventListener("message", (ev) => {
-    if (ev.source !== window.parent || ev.data?.source !== "brain2" || ev.data.type !== "people") return;
-    B2 = { people: ev.data.people || [], origin: ev.origin };
-    listeners.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } });
+    if (ev.source !== window.parent || ev.data?.source !== "brain2") return;
+    if (ev.data.type === "people") {
+      B2 = { ...B2, people: ev.data.people || [], origin: ev.origin };
+      b2Send({ type: "index", people: personEnts().map((x) => ({ ent: x.id, name: x.name, handles: x.handles || [] })) });
+      syncPeopleLinks().catch((err) => console.error(err));
+      listeners.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } });
+    } else if (ev.data.type === "open" && ev.origin === B2.origin) {
+      const hit = entForHandles(ev.data.handles);
+      if (hit) openRelationship(hit.id);
+    }
   });
   window.parent.postMessage({ source: "texts-report", type: "ready" }, "*");
 }
 function brain2Card(parent, e) {
   if (!IN_BRAIN2 || e.kind !== "person") return;
-  const c = card(parent, "Person in Brain2", "Link this chat to someone in People I Know. Their texts and calls in Tracking then show their name.");
+  const c = card(parent, "Person in Brain2", "Link this chat to someone in People I Know, or make them a new person. Their texts and calls in Tracking then show their name, and every number saved on them becomes one card here.");
   if (!B2.people) { c.append(h("p", { class: "take" }, "Waiting for Brain2…")); return; }
   if (!e.handles?.length) { c.append(h("p", { class: "take" }, "Press Update now above, then link. This report was built before it kept numbers.")); return; }
   c.append(h("p", { class: "take" }, `Numbers in this chat: ${e.handles.join(", ")}`));
+  const act = (msg) => { B2.applyOnNext = SERVER; b2Send(msg); };
   const linked = b2Linked(e);
   if (linked) {
     c.append(h("div", { class: "row" }, [h("span", {}, ["Linked to ", h("b", {}, linked.name), "."]),
       link("Open in Brain2", () => b2Send({ type: "open-person", personId: linked.id }), "btn xs"),
-      link("Unlink", () => b2Send({ type: "unlink", personId: linked.id, handles: e.handles }), "btn xs")]));
+      link("Unlink", () => act({ type: "unlink", personId: linked.id, handles: e.handles }), "btn xs")]));
   }
   const q = h("input", { type: "search", placeholder: linked ? "Link to someone else…" : "Search People I Know…", "aria-label": "Search People I Know" });
   const res = h("div", { class: "row" });
@@ -504,7 +541,39 @@ function brain2Card(parent, e) {
     if (!t) return;
     const hits = B2.people.filter((p) => [p.name, ...(p.nicknames || [])].some((n) => n && n.toLowerCase().includes(t))).slice(0, 8);
     if (!hits.length) res.append(h("span", { class: "take" }, "No one by that name in People I Know."));
-    hits.forEach((p) => res.append(link(p.name, () => b2Send({ type: "link", personId: p.id, handles: e.handles }), "btn xs" + (linked?.id === p.id ? " on" : ""))));
+    hits.forEach((p) => res.append(link(p.name, () => act({ type: "link", personId: p.id, handles: e.handles }), "btn xs" + (linked?.id === p.id ? " on" : ""))));
+  };
+  c.append(h("div", { class: "tctrl", style: "position:static" }, [q]), res);
+  if (!linked) {
+    const nm = h("input", { type: "text", value: e.name, "aria-label": "New person's name" });
+    c.append(h("div", { class: "tctrl", style: "position:static" }, [h("span", { class: "take" }, "Or make a new person:"), nm,
+      link("Create in People I Know", () => { const name = nm.value.trim(); if (name) act({ type: "create-person", name, handles: e.handles }); }, "btn xs")]));
+  }
+}
+// Rename a card and fold other chats into it. Saved in settings (names / merges), so they hold through every update.
+function mergeCard(parent, e) {
+  if (!SERVER || e.kind !== "person") return;
+  const c = card(parent, "Name and merge", "Give this card a name, or fold another chat into it (an old number, a second email). It holds through every update.");
+  if (applyNote) c.append(h("p", { class: "take" }, applyNote));
+  if (!e.key) { c.append(h("p", { class: "take" }, "Press Update now first. This report was built before cards could merge.")); return; }
+  const nm = h("input", { type: "text", value: e.name, "aria-label": "Card name" });
+  c.append(h("div", { class: "tctrl", style: "position:static" }, [nm, link("Rename", () => { const v = nm.value.trim(); if (v && v !== e.name) saveOverride("names", { ...(OV.names || {}), [e.key]: v }); }, "btn xs")]));
+  const merges = OV.merges || {};
+  const here = Object.entries(merges).filter(([, v]) => (v?.to ?? v) === e.key);
+  if (here.length) {
+    c.append(h("h4", {}, "Merged into this card"));
+    c.append(h("div", { class: "row" }, here.map(([from, v]) => h("span", { class: "chip" }, [v?.name || from, " ",
+      link("Undo", () => { const next = { ...merges }; delete next[from]; saveOverride("merges", next); }, "btn xs")]))));
+  }
+  const q = h("input", { type: "search", placeholder: "Merge another chat into this one…", "aria-label": "Search chats to merge" });
+  const res = h("div", { class: "row" });
+  q.oninput = () => {
+    res.innerHTML = "";
+    const t = q.value.trim().toLowerCase();
+    if (!t) return;
+    const hits = personEnts().filter((x) => x.id !== e.id && x.key && (x.name.toLowerCase().includes(t) || (x.handles || []).some((hd) => hd.includes(t)))).slice(0, 8);
+    if (!hits.length) res.append(h("span", { class: "take" }, "No other chat matches."));
+    hits.forEach((x) => res.append(link(`${x.name} (${fmt(x.total)})`, () => saveOverride("merges", { ...merges, [x.key]: { to: e.key, name: x.name } }), "btn xs")));
   };
   c.append(h("div", { class: "tctrl", style: "position:static" }, [q]), res);
 }
@@ -521,6 +590,7 @@ function openRelationship(eid) {
     body.append(h("p", { class: "take" }, `${fmt(e.total)} messages from ${e.first} to ${e.last}` + (cl ? ` · closeness ${cl.score} (#${cl.rank} of 20)` : "") + "."));
     body.append(h("div", { class: "row" }, [link("Messages", () => openThread(eid), "btn"), link("Words ☁", () => openWords(e), "btn"), link("Calendar", () => openCalendar(e), "btn")]));
     brain2Card(body, e);
+    mergeCard(body, e);
     const top = h("div", { class: "grid2" }); body.append(top);
     // AI read
     const ai = card(top, "AI relationship report", SERVER ? "Generated by the local model from yearly samples, your metrics, your notes and your confirmed conflicts." : "Run serve.py to generate it.");

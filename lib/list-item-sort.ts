@@ -60,6 +60,7 @@ const SORTABLE_ATTR_TYPES = new Set<AttributeDefinition["type"]>([
   "selection",
   "item",
   "link",
+  "phone",
   "goal",
 ])
 
