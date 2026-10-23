@@ -34,6 +34,7 @@ import { formatLocalDateKey, parseLocalDate, safeDateFormat, startOfLocalDay } f
 import { isClearedFromWork } from "@/lib/completion-status"
 import { createListItem, itemTitle } from "@/lib/item-utils"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
+import { INSTAGRAM_EXPORT_REMINDER_ID, INSTAGRAM_EXPORT_URL } from "@/lib/instagram-export-steps"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import {
   MOON_REMINDER_HOUR,
@@ -363,6 +364,8 @@ export function reminderRowCaption(task: Task): string {
 
 export function reminderTelegramText(task: Task): string {
   const title = itemTitle(task).trim() || "Reminder"
+  // The Instagram export reminder carries its one-click link (`lib/instagram-export-steps.ts`).
+  if (task.id.startsWith(INSTAGRAM_EXPORT_REMINDER_ID)) return `Reminder: ${title}\n${INSTAGRAM_EXPORT_URL}`
   return `Reminder: ${title}`
 }
 

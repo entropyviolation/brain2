@@ -10,6 +10,7 @@
 const fs = require("fs")
 const { pathToFileURL } = require("url")
 const ig = require("./instagram-report")
+const archive = require("./instagram-archive")
 
 const INSTAGRAM_SCHEME = "brain2-ig"
 const INSTAGRAM_REPORT_BASE = `${INSTAGRAM_SCHEME}://report/`
@@ -19,6 +20,7 @@ const INSTAGRAM_CHANNELS = {
   scan: "cogs:instagram:scan",
   saveUi: "cogs:instagram:saveUi",
   pickFolder: "cogs:instagram:pickFolder",
+  removed: "cogs:instagram:removed",
   summary: "cogs:instagram:summary",
   changed: "cogs:instagram:changed",
 }
@@ -68,6 +70,7 @@ function registerInstagramIpc({ app, ipcMain, dialog, protocol, net, getWindow }
     await watcher.scan({ force: true })
     return statusWithUrl()
   })
+  ipcMain.handle(INSTAGRAM_CHANNELS.removed, () => archive.removedMessages(root))
   // summary.json of the current build, for the Instagram lists. Null when there is no build.
   ipcMain.handle(INSTAGRAM_CHANNELS.summary, async () => {
     const state = ig.loadState(root)

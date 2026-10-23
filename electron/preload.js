@@ -66,6 +66,7 @@ const INSTAGRAM_CHANNELS = {
   scan: "cogs:instagram:scan",
   saveUi: "cogs:instagram:saveUi",
   pickFolder: "cogs:instagram:pickFolder",
+  removed: "cogs:instagram:removed",
   summary: "cogs:instagram:summary",
   changed: "cogs:instagram:changed",
 }
@@ -380,6 +381,7 @@ contextBridge.exposeInMainWorld("desktop", {
     scan: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.scan),
     saveUi: (key, value) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.saveUi, key, value),
     pickFolder: (clear) => ipcRenderer.invoke(INSTAGRAM_CHANNELS.pickFolder, clear === true),
+    removed: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.removed),
     summary: () => ipcRenderer.invoke(INSTAGRAM_CHANNELS.summary),
     onChange: (cb) => {
       const listener = (_event, payload) => cb(payload)
