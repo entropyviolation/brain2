@@ -141,6 +141,8 @@ def rehome():
                 now_ent = next((owner[i] for i in json.loads(r["ent_ids"]) if i in owner), None)
                 if now_ent and now_ent != r["ent"]:
                     CON.execute(f"UPDATE {t} SET ent=? WHERE id=?", (now_ent, r["id"]))
+                    if t == "jobs":  # relationship and mood jobs use the card id as their ref too
+                        CON.execute("UPDATE jobs SET ref=? WHERE id=? AND ref=?", (now_ent, r["id"], r["ent"]))
         CON.commit()
 
 
@@ -182,6 +184,8 @@ def worker():
                    "conflict_results": [r for r in q("SELECT ref, result FROM jobs WHERE kind='conflict' AND ent=? AND status='done' ORDER BY id", (j["ent"],))]}
             if j["kind"] == "conflict":
                 res = llm_jobs.analyze_conflict(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
+            elif j["kind"] == "mood":
+                res = llm_jobs.analyze_mood(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
             else:
                 res = llm_jobs.analyze_relationship(j["ent"], params, ctx, progress, fresh=params.get("regenerate", False))
             res["generated"] = now()
@@ -244,6 +248,38 @@ def status():
             "range": rr.get("range"), "error": _refresh["error"]}
 
 
+# ---------- search (every thread file, in memory, on this Mac only) ----------
+_threads = {"sig": None, "rows": []}
+
+
+def search(qs, ent="", side="", limit=300):
+    files = sorted((OUT / "threads").glob("*.js"))
+    sig = tuple((f.name, f.stat().st_mtime) for f in files)
+    if sig != _threads["sig"]:
+        rows = []
+        for f in files:
+            raw = f.read_text()
+            t = json.loads(raw[raw.index("(") + 1: raw.rindex(")")])
+            rows += [(t["id"], m[0], m[1], m[2], m[3], m[4]) for m in t["msgs"] if m[3]]
+        rows.sort(key=lambda r: -r[1])
+        _threads.update(sig=sig, rows=rows)
+    needle = qs.lower()
+    hits, by_ent, total = [], {}, 0
+    for eid, ts, me, who, text, mid in _threads["rows"]:
+        if (ent and eid != ent) or (side == "me" and not me) or (side == "them" and me):
+            continue
+        i = text.lower().find(needle)
+        if i < 0:
+            continue
+        total += 1
+        by_ent[eid] = by_ent.get(eid, 0) + 1
+        if len(hits) < limit:
+            a = max(0, i - 80)
+            hits.append({"ent": eid, "ts": ts, "me": me, "who": who, "mid": mid,
+                         "text": ("…" if a else "") + text[a:i + len(qs) + 120] + ("…" if i + len(qs) + 120 < len(text) else "")})
+    return {"total": total, "hits": hits, "by_ent": sorted(({"ent": k, "n": v} for k, v in by_ent.items()), key=lambda x: -x["n"])}
+
+
 # ---------- HTTP ----------
 class H(SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
@@ -285,6 +321,12 @@ class H(SimpleHTTPRequestHandler):
             return self._json(status())
         if self.path == "/api/state":
             return self._json(state())
+        if self.path.startswith("/api/search?"):
+            from urllib.parse import parse_qs, urlparse
+            a = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            if len(a.get("q", "").strip()) < 2:
+                return self._json({"total": 0, "hits": [], "by_ent": []})
+            return self._json(search(a["q"].strip(), a.get("ent", ""), a.get("side", "")))
         if self.path == "/api/jobs":
             jobs = q("SELECT id, kind, ent, ref, status, progress, error, created, started, finished FROM jobs ORDER BY id DESC LIMIT 50")
             return self._json(jobs)
