@@ -40,10 +40,10 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `sleep` | `SleepAnalytics.tsx` | sleep, tracking, sun times, settings | Nightly duration and bedtime, estimated vs logged, CV, ridgelines, against the sun, all-nighters. |
 | `screentime` | `ScreenTimeView.tsx` | tracking | ActivityWatch Screen Time scope: active vs AFK, alignment with Activity, last sync. |
 | `circadian` | `CircadianView.tsx` | tracking | Hour × day occupancy, weekday cycle plot. |
-| `places` | `PlacesView.tsx` | tracking | Location pens as time-at-place, named GPS pins. |
-| `people` | `PeopleView.tsx` | tracking | Time with each person, change vs previous window, rhythm, drifting, headcount. |
-| `mood-field` | `MoodFieldView.tsx` | tracking, metrics | Painted mood names, mood readings, joy / suffering / alignment beside them. |
-| `diversity` | `DiversityView.tsx` | tracking | Shannon entropy of pens per day, Gini, weekday vs weekend. |
+| `places` | `PlacesView.tsx` | tracking | Location pens as time-at-place, named GPS pins. Doc: [`time-places.md`](time-places.md). |
+| `people` | `PeopleView.tsx` | tracking | Time with each person, change vs previous window, rhythm, drifting, headcount. Doc: [`time-people.md`](time-people.md). |
+| `mood-field` | `MoodFieldView.tsx` | tracking, metrics | Painted mood names, mood readings, joy / suffering / alignment beside them. Doc: [`time-mood-field.md`](time-mood-field.md). |
+| `diversity` | `DiversityView.tsx` | tracking | Shannon entropy of pens per day, Gini, weekday vs weekend. Doc: [`time-diversity.md`](time-diversity.md). |
 | `transitions` | `TransitionsView.tsx` | tracking | Markov matrix of pen switches, alluvial of switch counts. |
 | `context-switch` | `ContextSwitchHeatmap.tsx` | tracking, tasks | Pen switches by hour of day. |
 | `text-events` | `TextPipelineView.tsx` (`TextEventsView`) | tracking | Phone text-pipeline instants (log:, triggers, switch markers) by day. Not the Texts report. |

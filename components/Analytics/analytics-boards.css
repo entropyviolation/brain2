@@ -911,3 +911,382 @@
   min-height: 1px;
   background: #f59e0b;
 }
+
+/* _2026-10-23_ Time → Places, People, Mood field, Diversity additions.
+   Docs: docs/analytics/time-places.md, time-people.md, time-mood-field.md, time-diversity.md. */
+.an-people-table tbody th {
+  display: table-cell;
+}
+
+.an-people-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.an-people-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.an-people-controls .an-find-label {
+  flex: 1 1 12rem;
+  max-width: 18rem;
+}
+
+.an-people-arcs {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.an-people-arc-label {
+  font-family: var(--font-an-text, inherit);
+  font-size: 9px;
+  fill: var(--an-ink);
+}
+
+.an-people-arc-you {
+  fill: var(--an-hi);
+  stroke: var(--an-ink);
+  stroke-width: 1;
+}
+
+.an-people-era {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.an-people-era-row {
+  display: grid;
+  grid-template-columns: minmax(5rem, 8rem) 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.an-people-era-name {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-people-era-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--days, 7), minmax(0, 1fr));
+  gap: 1px;
+  height: 12px;
+}
+
+.an-people-era-cells > span {
+  background: var(--an-empty);
+  opacity: 0.35;
+}
+
+.an-places-find,
+.an-mood-find {
+  max-width: 18rem;
+  margin-bottom: 8px;
+}
+
+.an-digit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.an-digit-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) repeat(24, minmax(10px, 1fr));
+  align-items: center;
+  gap: 2px;
+}
+
+.an-digit-row > span {
+  height: 14px;
+}
+
+.an-digit-row > span:first-child {
+  overflow: hidden;
+  height: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-digit-row.is-head > span {
+  height: auto;
+  font-size: 9px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.an-places-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.an-places-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fm98.an95 .an-places-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.fm98.an95 .an-places-row .an-find-label {
+  flex: 1 1 16rem;
+}
+
+.an-mood-how > summary,
+.an-mood-word > summary {
+  cursor: pointer;
+}
+
+.an-mood-word > summary {
+  font-weight: 600;
+}
+
+.an-mood-wheel-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.an-mood-wheel {
+  width: 100%;
+  max-width: 380px;
+  overflow: visible;
+}
+
+.an-mood-wheel-label {
+  font-family: var(--font-an-text, inherit);
+  font-size: 9px;
+  fill: var(--an-ink);
+}
+
+.an-mood-tiles-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.an-mood-tiles-head [aria-pressed="true"] {
+  outline: 2px solid var(--an-ink);
+}
+
+.an-mood-family + .an-mood-family {
+  margin-top: 10px;
+}
+
+.an-mood-family-name {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.an-mood-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.an-mood-tiles > li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--an-hi);
+  border: 1px solid var(--an-line);
+  border-top: 4px solid;
+}
+
+.an-mood-tile-sym {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-family: var(--font-an-display, inherit);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.an-mood-tile-name {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-mood-tile-meta {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.an-anchor-bars,
+.an-cover-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.an-anchor-bars > li,
+.an-cover-bars > li {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) 1fr 3.5rem;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.an-anchor-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-anchor-track {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.an-anchor-track > span {
+  display: block;
+  height: 100%;
+  background: var(--an-muted);
+}
+
+.an-anchor-bars > li.is-mine {
+  font-weight: 700;
+}
+
+.an-anchor-bars > li.is-mine .an-anchor-track > span {
+  background: var(--an-accent);
+}
+
+.an-anchor-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-cover-bars > li {
+  opacity: 0.4;
+}
+
+.an-cover-bars > li.is-in {
+  opacity: 1;
+}
+
+.an-cover-slider input[type="range"] {
+  width: min(100%, 18rem);
+}
+
+.an-cover-answer {
+  margin: 6px 0 8px;
+  font-size: 13px;
+}
+
+.an-cover-answer strong {
+  font-family: var(--font-an-display, inherit);
+  font-size: 20px;
+}
+
+.an-places-ranked {
+  margin-top: 10px;
+}
+
+.an-places-ranked > li {
+  grid-template-columns: minmax(7rem, 11rem) 1fr 7rem;
+}
+
+.fm98.an95 .an-find-inline {
+  margin-bottom: 8px;
+}
+
+.fm98.an95 .an-find-inline input {
+  width: 14rem;
+  max-width: 100%;
+  padding: 0 6px;
+}
+
+.fm98.an95 .an-people-controls .an-find-inline {
+  margin-bottom: 0;
+}
+
+.an-mood-how {
+  padding: 4px 0;
+}
+
+.an-mood-how-summary {
+  font-family: var(--font-an-display, inherit);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.an-mood-how > summary,
+.an-mood-word > summary {
+  list-style: none;
+}
+
+.an-mood-how > summary::-webkit-details-marker,
+.an-mood-word > summary::-webkit-details-marker {
+  display: none;
+}
+
+.an-mood-how > summary::before,
+.an-mood-word > summary::before {
+  content: "▸ ";
+}
+
+.an-mood-how[open] > summary::before,
+.an-mood-word[open] > summary::before {
+  content: "▾ ";
+}
+
+.an-mood-tiles-head [aria-pressed="false"] {
+  opacity: 0.55;
+}
+
+.fm98.an95 .an-cover-slider {
+  height: auto;
+}
+
+.fm98.an95 .an-cover-slider input[type="range"] {
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  accent-color: var(--an-accent);
+}
