@@ -89,6 +89,13 @@ nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 18px 0 8px; font-si
 nav a { color: var(--ink2); text-decoration: none; border-bottom: 1px solid var(--axis); }
 nav a:hover { color: var(--ink); }
 h2 { font-size: 20px; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--grid); }
+h2 .fold { margin-left: 8px; background: none; border: 0; padding: 0 4px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; vertical-align: middle; }
+h2 .fold::before { content: "▾"; } section.folded h2 .fold::before { content: "▸"; } h2 .fold:hover { color: var(--ink); }
+section.folded > :not(h2) { display: none; }
+section.cut { max-height: var(--cut); overflow: hidden; overflow: clip; position: relative; padding-bottom: 44px; }
+section.cut::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--page)); pointer-events: none; }
+section .btn.more { display: block; margin: 8px auto 0; } section .btn.more[hidden] { display: none; } section.cut .btn.more { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 1; }
+body.b2nav header nav { display: none; }
 .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px 12px; margin: 14px 0; }
 .card h3 { font-size: 15px; margin: 0 0 2px; }
 .take { color: var(--ink2); font-size: 13.5px; margin: 0 0 10px; }

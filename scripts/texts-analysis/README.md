@@ -52,3 +52,10 @@ In Brain2, the frame also sends its person cards (`index`), which Person → Vie
 _Last mapped: 2026-10-23_
 
 Topic chips on a relationship page open the conversations behind them. Confirm, reject, change, add or comment on a tag. Corrections are append-only rows in `topic_feedback` (`out/annotations.sqlite`), for later training on your own texts. Saved rows follow a person by their numbers, not by card rank. See [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md) → "Topic review and your corrections". A report built before this asks for Update now first.
+
+## Sections and folding
+
+_Last mapped: 2026-10-23_
+
+`report_app.js` reads the section list from the header nav. Each section folds from the arrow by its heading, remembered in `localStorage`. A section taller than about 3.5 screens is cut with **Show all**. Inside Brain2's main window the nav moves to the Analytics sidebar (`nav`, `sections`, `section`, `goto` messages).
+
