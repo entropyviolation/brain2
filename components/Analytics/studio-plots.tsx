@@ -418,33 +418,51 @@ export function Slopegraph({
       </div>
     )
   }
-  const h = Math.max(120, 18 * rows.length + 28)
-  const w = 360
-  const x0 = 110
-  const x1 = 250
+  // Real slopes on one 0–100% scale. Labels dodge so close values do not overlap.
+  const w = 560
+  const x0 = 190
+  const x1 = 370
+  const top = 30
+  const gap = 13
+  const plotH = Math.max(120, Math.min(420, rows.length * gap))
+  const h = top + plotH + 16
+  const yOf = (v: number) => top + (1 - Math.max(0, Math.min(100, v)) / 100) * plotH
+  const dodge = (vals: number[]) => {
+    const order = vals.map((v, i) => ({ i, y: yOf(v) })).sort((a, b) => a.y - b.y)
+    for (let k = 1; k < order.length; k++) order[k].y = Math.max(order[k].y, order[k - 1].y + gap)
+    const out: number[] = []
+    for (const o of order) out[o.i] = o.y
+    return out
+  }
+  const ly = dodge(rows.map((r) => r.left))
+  const ry = dodge(rows.map((r) => r.right))
+  const svgH = Math.max(h, ...ly, ...ry) + 8
   return (
     <div>
       <CanvasTitle title={title} help={help} />
-      <svg className="an-slope" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={title}>
-        <text x={x0} y={12} textAnchor="middle" fontSize={10} fontWeight={700} fill="#000" fontFamily="Karla, sans-serif">
+      <svg className="an-slope" viewBox={`0 0 ${w} ${svgH}`} style={{ maxWidth: w }} role="img" aria-label={title}>
+        <text x={x0} y={14} textAnchor="middle" fontSize={11} fontWeight={700} fill="#000">
           {leftLabel}
         </text>
-        <text x={x1} y={12} textAnchor="middle" fontSize={10} fontWeight={700} fill="#000" fontFamily="Karla, sans-serif">
+        <text x={x1} y={14} textAnchor="middle" fontSize={11} fontWeight={700} fill="#000">
           {rightLabel}
         </text>
         {rows.map((row, i) => {
-          const y = 28 + i * 18
           const rising = row.right > row.left + 0.5
           const falling = row.right < row.left - 0.5
           const stroke = rising ? "#0e4a40" : falling ? "#6b1a1a" : "#404040"
+          const name = row.name.length > 24 ? `${row.name.slice(0, 23)}…` : row.name
           return (
             <g key={row.id}>
-              <text x={x0 - 8} y={y + 3} textAnchor="end" fontSize={10} fill="#000" fontFamily="Karla, sans-serif">
-                {row.name.slice(0, 14)} {Math.round(row.left)}%
+              <title>{`${row.name}: ${Math.round(row.left)}% → ${Math.round(row.right)}%`}</title>
+              <text x={x0 - 8} y={ly[i] + 3.5} textAnchor="end" fontSize={10} fill="#000">
+                {name} {Math.round(row.left)}%
               </text>
-              <line x1={x0} y1={y} x2={x1} y2={y} stroke={stroke} strokeWidth={1.4} />
-              <text x={x1 + 8} y={y + 3} fontSize={10} fill="#000" fontFamily="Karla, sans-serif">
-                {Math.round(row.right)}%
+              <line x1={x0} y1={yOf(row.left)} x2={x1} y2={yOf(row.right)} stroke={stroke} strokeWidth={1.4} />
+              <circle cx={x0} cy={yOf(row.left)} r={2} fill={stroke} />
+              <circle cx={x1} cy={yOf(row.right)} r={2} fill={stroke} />
+              <text x={x1 + 8} y={ry[i] + 3.5} fontSize={10} fill="#000">
+                {Math.round(row.right)}% {name}
               </text>
             </g>
           )
