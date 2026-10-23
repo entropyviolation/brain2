@@ -65,6 +65,11 @@ export const ANALYTICS_TAB_GROUPS = [
     ],
   },
   {
+    id: "texts",
+    label: "Texts",
+    tabs: [{ id: "texts-report", label: "Report" }],
+  },
+  {
     id: "library",
     label: "Library",
     tabs: [
@@ -172,6 +177,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Lag-1 / lag-7 autocorrelation of daily habit % and of sleep duration, a naive DFT periodogram of habit %, and coefficient of variation of sleep. Classical only — not a forecast.",
   "research-report":
     "A rundown of this window, chosen from the live vault. A section is included only when a shape clears its floor: a habit day at least 25 points from the window median (n ≥ 5), a current streak of 3 or more fully met habit days, tracking coverage at least 25 points from the median of painted days (n ≥ 5), a sleep night at least 90 minutes from the median (n ≥ 5), one wellbeing series that rose or fell once n clears 7, a week grade at least 8 points from its raw grade, planned minutes and tracked minutes both present, a text-pipeline stamp beside the other rows, the longest gratitude list, or a why / blocked-reason note (a repeat, or a plain count). A thin sample keeps the studio floor sentence and is not captioned as a trend. Counts only — no sentiment score.",
+  "texts-report":
+    "Every iMessage and SMS on this Mac since 2018, read from a local copy of the Messages database by scripts/texts-analysis. The report keeps its own look. It updates itself every Sunday at 21:00 while Brain2 is open (or the next time it opens), adding the new week. Update now runs it at once. Message text stays on this Mac.",
   "item-types":
     "Every item type by count. Settings still edits schemas. Open in Lists jumps to those items.",
   "lists-areas":

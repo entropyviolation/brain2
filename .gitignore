@@ -67,3 +67,12 @@ docs/shortcuts/*.plist
 /test-results/
 /docs/sdfh
 /.commit-drafts/
+
+# Analytics → Texts: message data, outputs and the venv live in ~/texts-analysis.
+# Never commit them, even if someone points the home at the script folder.
+/scripts/texts-analysis/data/
+/scripts/texts-analysis/out/
+/scripts/texts-analysis/.venv/
+/scripts/texts-analysis/.env
+/scripts/texts-analysis/**/*.sqlite
+/scripts/texts-analysis/**/*.db
