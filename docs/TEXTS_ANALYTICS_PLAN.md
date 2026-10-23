@@ -50,6 +50,30 @@ New sections inside the report, in its existing style:
 - Each person has a **Relationship** page with notes and **Analyze relationship**.
 - Confirm and reject labels train the conflict detector over time.
 
+## Topic review and your corrections
+
+_Last mapped: 2026-10-23_
+
+Topics are keyword lists (`THEMES` in `scripts/texts-analysis/analyze2.py`). Each thread row in `out/threads/` carries a bitmask of the topics that message hit, in `DET.theme_lexicon` order. `DET.theme_version` hashes the lists, so a correction records which lists it judged.
+
+On a relationship page, every chip under **Topics vs your normal** opens that topic (`openTopic` in `report_app.js`). It lists the conversations (6-hour gaps, same rule as the analyzer) with matching messages and the words highlighted. You can **Confirm**, mark **Not this topic**, **Change to…** another topic, **Also tag as…** another one, or add a new topic, and comment on any of them.
+
+Corrections go to the `topic_feedback` table in `out/annotations.sqlite` through `POST /api/topics`. The table is append-only: every confirm, reject, change, clear and comment is a new row, so changes of mind survive. The latest row per conversation and topic wins on screen. Each row keeps the conversation's message ids and times, whether the keywords tagged it, how many messages hit, which words matched, and the lexicon version. It holds no message text.
+
+### Stable keys
+
+Card ids (`p01`, `g03`) follow rank. They move when Brain2 links a number, a merge happens, or new texts reorder people. Every saved row (annotations, labels, notes, jobs, topic feedback) now also keeps `ent_ids`: the person's numbers and emails, or a group's chat ids. `serve.py` `rehome()` points each row at the card that holds those ids, at start, after a refresh, and whenever `detail.json` changes. Rows saved before this were keyed to the card they were on at the time.
+
+### Training on your own life (Planned)
+
+Not built yet. The idea:
+
+1. Export `topic_feedback` with the messages it points to, read locally from the thread files. Message text never leaves the Mac.
+2. Use confirmed and added rows as positives, and rejected and changed-away rows as negatives, per topic. Keep custom topics you added.
+3. Start simple: grow or prune each keyword list from the words that separate your positives from your negatives. Later, train a small local classifier (or few-shot prompts to local Ollama) on the same rows.
+4. Score it against your held-out corrections before it replaces the keyword lists, the same way `detector_eval.py` does for conflicts.
+5. Show the learned topics next to the keyword ones until you trust them.
+
 ## Order
 
 1. Brain2 side: Texts group, view, bridge, weekly schedule. Done on this branch.
