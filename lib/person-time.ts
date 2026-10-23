@@ -5,9 +5,8 @@
  * - a Company block names them (its pen, extra pens, ticked details, or a
  *   group they belong to — `blockPeople` in `lib/company-headcount.ts`), or
  * - a block on a who pen (Social · "Who with?") ticks a detail that is them
- *   (`variantPerson` in `lib/people-sync.ts`), or
- * - an iPhone Calls interval is on their call pen (phone sync,
- *   `personTimePenIds` in `lib/people-i-know.ts`).
+ *   (`variantPerson` in `lib/people-sync.ts`).
+ * Phone calls and texts are not company (`lib/person-contact.ts`).
  * Minutes are unioned per day, so the two never double count.
  *
  * Sessions are runs of those minutes, joining gaps of `SESSION_GAP_MIN` or
@@ -18,8 +17,6 @@
  */
 import { blockPeople } from "@/lib/company-headcount"
 import { COMPANY, variantPerson } from "@/lib/people-sync"
-
-const IPHONE_CALLS = "iphone-calls"
 
 export const SESSION_GAP_MIN = 30
 
@@ -107,10 +104,6 @@ export function personMinuteMasks(entries: PtEntry[], scopes: PtScope[], penIds:
       if (!company) continue
       const said = blockPeople(company, entry)
       if ([...said.people].some((id) => wanted.has(id)) || wanted.has(entry.penId)) mark(entry)
-      continue
-    }
-    if (entry.scopeId === IPHONE_CALLS) {
-      if (wanted.has(entry.penId)) mark(entry)
       continue
     }
     if (!entry.variantIds?.length) continue
