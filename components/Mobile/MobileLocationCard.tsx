@@ -4,8 +4,10 @@
  * Shows only in the iOS build, where the `BrainLocation` plugin exists
  * (`lib/mobile/location-bridge.ts`). Setup takes the capture box's upload URL,
  * the upload-only token and the capture public key. The plugin keeps them on
- * the phone, so this card stores nothing itself. Turn on asks for "While
- * Using", then "Always", then starts recording.
+ * the phone, so this card stores nothing itself. Saving the setup goes straight
+ * on to Turn on, which asks for "While Using", then "Always", then starts
+ * recording. Recording then stays on across launches until Turn off. While
+ * iOS has only "While Using", the card offers iPhone Settings to pick Always.
  */
 "use client"
 
@@ -16,7 +18,9 @@ import {
   flushLocationQueue,
   getLocationStatus,
   isLocationPluginAvailable,
+  appExpiryWarning,
   locationChip,
+  openLocationSettings,
   requestAlwaysLocation,
   startLocationRecording,
   stopLocationRecording,
@@ -64,27 +68,31 @@ export function MobileLocationCard() {
     }
   }
 
+  const askAndStart = async () => {
+    const permission = await requestAlwaysLocation()
+    if (permission === "denied" || permission === "restricted") {
+      return "Location is off for Brain2. Turn it on in iPhone Settings → Brain2 → Location → Always."
+    }
+    // iOS often grants While Using first and offers Always later, so that one still starts.
+    if (permission !== "always" && permission !== "whenInUse") {
+      return "No location answer yet. Tap Turn on again, or set iPhone Settings → Brain2 → Location → Always."
+    }
+    await startLocationRecording()
+    return permission === "always" ? "Recording." : "Recording. Choose Always in iPhone Settings so the day has no gaps."
+  }
+
   const save = () =>
     run("Saving…", async () => {
       await configureLocationUpload({ uploadUrl: uploadUrl.trim(), token: token.trim(), publicKey: publicKey.trim() })
       setToken("")
       setSetupOpen(false)
-      return "Upload saved on this phone."
+      return `Upload saved. ${await askAndStart()}`
     })
 
   const turnOn = () =>
-    run("Asking for location…", async () => {
-      const permission = await requestAlwaysLocation()
-      if (permission === "denied" || permission === "restricted") {
-        return "Location is off for Brain2. Turn it on in iPhone Settings → Brain2 → Location → Always."
-      }
-      // iOS often grants While Using first and offers Always later, so that one still starts.
-      if (permission !== "always" && permission !== "whenInUse") {
-        return "No location answer yet. Tap Turn on again, or set iPhone Settings → Brain2 → Location → Always."
-      }
-      await startLocationRecording()
-      return permission === "always" ? "Recording." : "Recording. Choose Always in iPhone Settings so the day has no gaps."
-    })
+    run("Asking for location…", askAndStart)
+
+  const toSettings = () => run("", async () => void (await openLocationSettings()))
 
   const turnOff = () => run("Stopping…", async () => (await stopLocationRecording(), "Location is off."))
 
@@ -100,6 +108,7 @@ export function MobileLocationCard() {
         <strong>Location</strong>
         <span className={chip.tone === "warn" ? "warn" : chip.tone === "ok" ? "ok" : undefined}>{chip.label}</span>
         {status.lastError ? <span className="warn">Last error: {status.lastError}</span> : null}
+        {appExpiryWarning(status) ? <span className="warn">{appExpiryWarning(status)}</span> : null}
         {note ? <span>{note}</span> : null}
       </div>
 
@@ -155,6 +164,11 @@ export function MobileLocationCard() {
             Turn on
           </Button>
         )}
+        {status.permission === "whenInUse" || status.permission === "denied" ? (
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={toSettings}>
+            Set to Always
+          </Button>
+        ) : null}
         <Button type="button" size="sm" variant="outline" disabled={busy || status.queued === 0} onClick={sendNow}>
           Send now
         </Button>

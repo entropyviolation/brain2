@@ -13,6 +13,12 @@
  * Permission: iOS asks "While Using" first, then offers "Always" later. The
  * plugin asks for both in that order. Without "Always", iOS stops waking the
  * app in the background and the day has gaps.
+ *
+ * On by default: once set up and allowed, the native side starts recording
+ * and keeps it on across launches until the person taps Turn off. Each time
+ * the app comes to the front it asks for "Always" again while only "While
+ * Using" is granted; after iOS stops showing that prompt, `openLocationSettings`
+ * is the way to Always.
  */
 import { Capacitor, registerPlugin } from "@capacitor/core"
 
@@ -31,6 +37,8 @@ export interface LocationStatus {
   dropped: number
   lastUploadAt?: number
   lastError?: string
+  /** When this sideloaded build stops opening (ms). A free Apple ID build lasts 7 days. */
+  appExpiresAt?: number
 }
 
 export interface LocationUploadConfig {
@@ -49,6 +57,7 @@ interface BrainLocationPlugin {
   start(): Promise<void>
   stop(): Promise<void>
   flush(): Promise<{ ok: boolean }>
+  openSettings(): Promise<void>
 }
 
 const BrainLocation = registerPlugin<BrainLocationPlugin>("BrainLocation")
@@ -103,6 +112,23 @@ export async function stopLocationRecording(): Promise<boolean> {
 export async function flushLocationQueue(): Promise<boolean> {
   if (!isLocationPluginAvailable()) return false
   return (await BrainLocation.flush()).ok
+}
+
+/** Open Brain2's page in iPhone Settings, where Location can be set to Always. */
+export async function openLocationSettings(): Promise<boolean> {
+  if (!isLocationPluginAvailable()) return false
+  await BrainLocation.openSettings()
+  return true
+}
+
+/** A warning when the app stops opening within `withinDays`, else null. Pure. */
+export function appExpiryWarning(status: LocationStatus, now = Date.now(), withinDays = 2): string | null {
+  if (!status.appExpiresAt) return null
+  const days = (status.appExpiresAt - now) / 86400000
+  if (days > withinDays) return null
+  if (days <= 0) return "This app build has expired. Reinstall it from the Mac."
+  const when = days < 1 ? "today" : `in ${Math.floor(days)} day${Math.floor(days) === 1 ? "" : "s"}`
+  return `This app stops opening ${when}, and location stops with it. Bring the phone near the Mac on the same Wi-Fi so it can reinstall.`
 }
 
 export interface LocationChip {
