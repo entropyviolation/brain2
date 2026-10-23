@@ -681,7 +681,7 @@ export function TaskDetailPopup({
                           layout={detailView.layout}
                           omitAttributeIds={
                             itemShowsPersonPipelines(task, lists)
-                              ? [PERSON_ATTR.birthday, PERSON_ATTR.notes]
+                              ? [PERSON_ATTR.birthday, PERSON_ATTR.phone, PERSON_ATTR.notes]
                               : undefined
                           }
                           onLiveValue={(id, value) =>

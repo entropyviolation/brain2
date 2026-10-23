@@ -688,6 +688,10 @@ export const useTaskStore = create<TaskState>()(
       }),
       deleteFolder: (id) => set((state) => ({ folders: state.folders.filter((f) => f.id !== id) })),
       addListToFolder: (folderId, categoryId) => set((state) => {
+        // Already filed: keep the same state so nothing re-renders or re-persists.
+        // Module Lists sync calls this for every module list on each Lists mount.
+        const target = state.folders.find((folder) => folder.id === folderId)
+        if (!target || target.listIds.includes(categoryId)) return state
         const folders = state.folders.map((folder) =>
           folder.id === folderId && !folder.listIds.includes(categoryId)
             ? { ...folder, listIds: [...folder.listIds, categoryId] }
@@ -696,6 +700,8 @@ export const useTaskStore = create<TaskState>()(
         return { folders }
       }),
       removeListFromFolder: (folderId, categoryId) => set((state) => {
+        const target = state.folders.find((folder) => folder.id === folderId)
+        if (!target || !target.listIds.includes(categoryId)) return state
         const folders = state.folders.map((folder) =>
           folder.id === folderId
             ? { ...folder, listIds: folder.listIds.filter((id) => id !== categoryId) }

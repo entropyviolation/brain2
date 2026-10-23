@@ -5,7 +5,8 @@
  */
 import type { AttributeDefinition, AttributeValue, List, Task } from "@/lib/types"
 import { withCompleted } from "@/lib/completion-status"
-import { isExplicitlyScheduleable } from "@/lib/scheduling"
+import { isExplicitlyScheduleable, taskHasSchedulePlacement } from "@/lib/scheduling"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 
 export const MODULE_SOURCE_ATTR = "moduleSource"
 export const MODULE_SOURCE_ID_ATTR = "moduleSourceId"
@@ -153,13 +154,34 @@ export function mergeImportedItem(existing: Task, mapped: Task): Task {
     why: existing.why,
     consequences: existing.consequences,
     deadline: existing.deadline,
-    scheduledDate: mapped.scheduledDate ?? existing.scheduledDate,
-    scheduledTime: mapped.scheduledTime ?? existing.scheduledTime,
+    ...(scheduleAlreadyHandled(existing, mapped)
+      ? {
+          scheduledDate: existing.scheduledDate,
+          scheduledTime: existing.scheduledTime,
+          scheduledWeek: existing.scheduledWeek,
+          scheduledMonth: existing.scheduledMonth,
+          scheduledYear: existing.scheduledYear,
+        }
+      : {
+          scheduledDate: mapped.scheduledDate ?? existing.scheduledDate,
+          scheduledTime: mapped.scheduledTime ?? existing.scheduledTime,
+        }),
     tags: [...(mapped.tags ?? []), ...extraTags],
     lists: [...(mapped.lists ?? []), ...extraLists],
     attributes: { ...(existing.attributes || {}), ...(mapped.attributes || {}) },
     itemAttributeDefinitions: existing.itemAttributeDefinitions,
   }
+}
+
+/**
+ * The record's day already left the item's live schedule (rolled up, pushed,
+ * or dismissed). Re-importing it would undo that, and the day rollover would
+ * undo the import again on the next launch or focus.
+ */
+function scheduleAlreadyHandled(existing: Task, mapped: Task): boolean {
+  const day = parseLocalDate(mapped.scheduledDate)
+  if (!day) return false
+  return taskHasSchedulePlacement(existing, "day", formatLocalDateKey(day))
 }
 
 function timeOf(value: Date | string | number | undefined): number | undefined {

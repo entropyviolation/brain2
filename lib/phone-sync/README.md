@@ -24,6 +24,7 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `people.ts` | Match a party to People I Know: saved phone/email first (`personProfile.phones` / `emails`), then the Contacts name through `resolveName`, else the number. |
 | `ids.ts` | Entry id from the source id, and the stamp `generatedBy: { kind: "phone-sync", id: "<source>:<sourceId>" }`. |
 | `to-entries.ts` | Texts → instants on iPhone Texts. Calls → intervals on iPhone Calls, sliced at midnight; missed calls are instants. Exact clocks. `mergePhoneEntries` skips ids already there or deleted. |
+| `person-links.ts` | Phone number ↔ Person. Pure. `relinkPhonePens` names each iPhone Texts / Calls pen after the person whose saved number it is, and stamps `personId` + `handle` on it. App side: `lib/phone-person-links.ts`. Built 2026-10-23. |
 | `write.ts` | `applyPhoneRecords`: the one door into the tracking store. Pen ids match the BIM `text:` / `call:` verbs (`iphone-text-<slug>`), so both share a person's pen. |
 | `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200). |
 | `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. |
@@ -68,3 +69,16 @@ _Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 
 _Last mapped: 2026-10-22_ **Hub storage.** `scripts/phone-hub.mjs` loads `phone-hub-polyfill.mjs` natively, and `phone-hub.ts` loads it again through jiti. That makes two module copies. `fillLocalStorage` and `dumpLocalStorage` must use the installed `globalThis.localStorage`; before this fix, the stores started empty and nothing the hub wrote reached the vault. Each sync pass also calls `rehydrateFromDisk()` first, so app edits made in between are not refused by the vault guard.
 
 _Last mapped: 2026-10-22_ **Tracking key only.** Phone sync and the location drain flush through `flushTracking()`, which pushes only the Tracking persist key (`timegrid-store`). The hub fills every store from disk, and a full dump would send its copy of stores the app changed in the meantime. The vault guard refused those (tasks, points, baby-animals) on the first run with the dev app open. Telegram ingest still flushes every key, since it can touch several stores.
+
+## People links
+
+_Last mapped: 2026-10-23_
+
+The link is the number saved on the Person. Numbers live in the Person type's **Phone Number** attribute (`attributes.phone`, type `phone`, several allowed), mirrored to `personProfile.phones`; emails in `personProfile.emails`. `personPhoneNumbers` (`lib/people-i-know.ts`) reads the attribute first. A Person type saved before the attribute existed gets it on load (`withPersonPhoneAttribute`).
+
+- **Ways in.** Person detail → Phone numbers / Emails (suggests numbers no one has yet), or the Phone Number attribute in any list or table. Pen settings → Person, on iPhone Texts and iPhone Calls pens. Analytics → Texts → a relationship page → Person in Brain2 (link, unlink, or create a new person with the chat's numbers). All end in `lib/phone-person-links.ts`. `lib/people-sync-runner.ts` renames the pens on every task or scope change, so an edit anywhere reaches them.
+- **One number, one person.** Linking a number takes it off anyone else.
+- **Pens are renamed, not merged.** A linked pen keeps its id and its rows; it gets the person's name, `personId`, and its `handle`. Nothing is re-written, so the hub's union by id has nothing to fight. A person with an old name pen and a number pen shows two pens with one name.
+- **Renames keep one pen.** `penFor` in `write.ts` picks the pen linked to the matched person before the name-derived id, and each sync renames linked pens. `personTimePenIds(person, scopes)` counts every linked call pen.
+- **Unlink.** Taking the number off the person unlinks the pen and gives it the number as its name again. A pen Contacts named, with no number, can be linked by hand (pen and its text/call twin); its name follows the person.
+- A pen matched by Contacts name only is not stamped with the number, since the name does not prove it.

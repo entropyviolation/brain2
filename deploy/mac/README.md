@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-20_
 
-launchd job for the nightly vault backup. See `docs/BIM_BACKUP.md` for what is and is not backed up.
+launchd jobs: the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
 
 ## Install
 
@@ -45,3 +45,27 @@ rm ~/Library/LaunchAgents/com.brain2.backup.plist
 - Under `~/Library/Mobile Documents/` or `~/Documents`, macOS may ask for file access. Allow `node` once.
 - A Mac that is asleep at 03:00 runs the job on wake.
 - Edit `COGS_BACKUP_KEEP` in the plist to change how many backups are kept.
+
+## iPhone app reinstall
+
+_Last mapped: 2026-10-22_
+
+A free Apple ID build stops opening after 7 days, and location stops with it. `scripts/ios-reinstall.mjs` keeps it alive. launchd runs it every 3 hours and at login. A run does nothing until the last good install is 4 days old (`COGS_IOS_REINSTALL_DAYS`). Then it builds the app and installs it on the iPhone over Wi-Fi or cable, and keeps trying every 3 hours until one works. From day 5 (`COGS_IOS_REMIND_DAYS`) it also reminds you, at most every 12 hours: a Mac notification, plus Telegram when `COGS_TELEGRAM_BOT_TOKEN` and `COGS_IOS_REMIND_CHAT_ID` are set in the plist. The Location card on the phone also warns when the app is 2 days from expiry. State lives in `~/.brain2/ios-reinstall.json`.
+
+**Once, with the phone plugged in:** Xcode → Window → Devices and Simulators → select the iPhone → tick **Connect via network**. After that, the phone installs over Wi-Fi when it is unlocked, on the same network, and the Mac is awake.
+
+Find your team id in Xcode → Settings → Accounts (the 10-character id), then:
+
+```bash
+sed -e "s|__NODE_PATH__|$(command -v node)|" -e "s|__REPO_PATH__|$HOME/brain2|g" -e "s|__HOME__|$HOME|g" -e "s|__PATH__|$PATH|" -e "s|__TEAM_ID__|YOURTEAMID|" deploy/mac/com.brain2.ios-reinstall.plist > ~/Library/LaunchAgents/com.brain2.ios-reinstall.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.brain2.ios-reinstall.plist
+```
+
+Install now to start the clock: `COGS_IOS_TEAM_ID=YOURTEAMID npm run ios:reinstall -- --force`. Check without building: `-- --dry-run`. Logs: `~/Library/Logs/brain2-ios-reinstall.log`.
+
+Uninstall: `launchctl bootout gui/$(id -u)/com.brain2.ios-reinstall` and delete the plist.
+
+Notes:
+- A build needs about 2 GB free (the cache lives in `~/Library/Caches/brain2-ios-build`).
+- The build runs `npm run build` and `npx cap sync ios`, so it installs whatever `~/brain2` has checked out.
+- `PATH` is baked into the plist at install time, so `npx`, `pod` and `xcodebuild` resolve under launchd. Reinstall the plist if you move Node or CocoaPods.

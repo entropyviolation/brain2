@@ -6,7 +6,7 @@
  * `text:` / `call:` verbs, so a hand-sent text and a synced one share a pen),
  * and adds the rows. Re-applying the same records adds nothing.
  */
-import { personRecords } from "@/lib/people-i-know"
+import { personPhoneNumbers, personRecords } from "@/lib/people-i-know"
 import { useTaskStore } from "@/lib/task-store"
 import {
   PEN_PALETTE,
@@ -18,8 +18,10 @@ import {
   type TrackPen,
   type TrackScope,
 } from "@/lib/time-tracking-store"
+import { normalizeHandle } from "./handles"
 import { phonePenId } from "./ids"
 import { matchPerson, type PhonePerson } from "./people"
+import { relinkPhonePens } from "./person-links"
 import { mergePhoneEntries, recordToEntries } from "./to-entries"
 import type { PhoneRecord } from "./types"
 
@@ -36,7 +38,7 @@ export function phonePeople(): PhonePerson[] {
     id: task.id,
     name: task.title || task.description || task.id,
     nicknames: task.personProfile?.nicknames,
-    phones: task.personProfile?.phones,
+    phones: personPhoneNumbers(task),
     emails: task.personProfile?.emails,
   }))
 }
@@ -96,11 +98,23 @@ export function applyPhoneRecords(
   const newPens = new Map<string, TrackPen[]>()
   const penFor = (record: PhoneRecord, scopeId: string): string => {
     const match = matchPerson(record.party, people)
-    const id = phonePenId(scopeId === calls.scope.id ? "call" : "text", match.name)
     const scope = scopes.find((s) => s.id === scopeId)
     const pending = newPens.get(scopeId) ?? []
+    // A person's linked pen wins over the name, so a rename keeps one pen.
+    const personId = match.status === "unknown" ? undefined : match.personId
+    const linked = personId ? [...(scope?.pens ?? []), ...pending].find((p) => p.personId === personId) : undefined
+    const id = linked?.id ?? phonePenId(scopeId === calls.scope.id ? "call" : "text", match.name)
     if (!scope?.pens.some((p) => p.id === id) && !pending.some((p) => p.id === id)) {
-      pending.push({ id, name: match.name, color: hashPenColor(id), lastUsedAt: Date.now() })
+      // A name match does not prove the number is theirs, so only a number match or an unknown keeps it.
+      const handle = match.status === "name" ? "" : normalizeHandle(record.party.handle)
+      pending.push({
+        id,
+        name: match.name,
+        color: hashPenColor(id),
+        lastUsedAt: Date.now(),
+        ...(personId ? { personId } : {}),
+        ...(handle ? { handle } : {}),
+      })
       newPens.set(scopeId, pending)
     }
     return id
@@ -112,10 +126,13 @@ export function applyPhoneRecords(
   if (merged.added === 0 && newPens.size === 0 && scopes === state.scopes) {
     return { read: all.length, written: 0, skipped: merged.skipped + outside }
   }
-  const nextScopes = scopes.map((scope) => {
-    const add = newPens.get(scope.id)
-    return add?.length ? { ...scope, pens: [...scope.pens, ...add] } : scope
-  })
+  const nextScopes = relinkPhonePens(
+    scopes.map((scope) => {
+      const add = newPens.get(scope.id)
+      return add?.length ? { ...scope, pens: [...scope.pens, ...add] } : scope
+    }),
+    people,
+  )
   useTimeTrackingStore.setState({ entries: merged.entries, scopes: nextScopes })
   return { read: all.length, written: merged.added, skipped: merged.skipped + outside }
 }

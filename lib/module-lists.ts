@@ -109,23 +109,42 @@ function folderIdFromAllItemsCategory(id: string): string | null {
  * also belong to a visible list stay shown.
  */
 export function isTaskHiddenFromGlobalAll(task: Task, lists: List[], folders: Folder[]): boolean {
-  const cats = task.lists ?? []
-  if (cats.length === 0) return false
+  return globalAllTaskHider(lists, folders)(task)
+}
+
+/**
+ * One lists + folders snapshot → a task test. Each list id is resolved once,
+ * so filtering thousands of items does not rebuild the list map or re-walk
+ * the folder tree per item (that took ~1s on a 6,900-item vault).
+ */
+function globalAllTaskHider(lists: List[], folders: Folder[]): (task: Task) => boolean {
   const byId = new Map(lists.map((l) => [l.id, l]))
-  return !cats.some((id) => {
+  const shownById = new Map<string, boolean>()
+  const isShown = (id: string): boolean => {
+    const cached = shownById.get(id)
+    if (cached !== undefined) return cached
+    let shown: boolean
     const allFolderId = folderIdFromAllItemsCategory(id)
     if (allFolderId) {
       const folder = folders.find((f) => f.id === allFolderId)
-      return folder ? !isFolderHiddenFromGlobalAll(folder, folders) : true
+      shown = folder ? !isFolderHiddenFromGlobalAll(folder, folders) : true
+    } else {
+      const list = byId.get(id)
+      shown = list ? !isListHiddenFromGlobalAll(list, folders) : true
     }
-    const list = byId.get(id)
-    if (!list) return true
-    return !isListHiddenFromGlobalAll(list, folders)
-  })
+    shownById.set(id, shown)
+    return shown
+  }
+  return (task) => {
+    const cats = task.lists ?? []
+    if (cats.length === 0) return false
+    return !cats.some(isShown)
+  }
 }
 
 export function filterTasksHiddenFromGlobalAll(tasks: Task[], lists: List[], folders: Folder[]): Task[] {
-  return tasks.filter((t) => !isTaskHiddenFromGlobalAll(t, lists, folders))
+  const isHidden = globalAllTaskHider(lists, folders)
+  return tasks.filter((t) => !isHidden(t))
 }
 
 function addId(ids: Set<string>, id?: string | null) {
@@ -296,7 +315,11 @@ function upsertImportedItemInStore(item: Task): void {
       startedAt: asDate(item.startedAt),
     }
     const index = state.tasks.findIndex((t) => t.id === normalized.id)
-    if (index < 0) return { tasks: [...state.tasks, normalized] }
+    if (index < 0) {
+      // Deleted on purpose: the module record stays, the item does not come back.
+      if ((state.removedTaskIds ?? []).includes(normalized.id)) return state
+      return { tasks: [...state.tasks, normalized] }
+    }
     const next = [...state.tasks]
     next[index] = normalized
     return { tasks: next }
