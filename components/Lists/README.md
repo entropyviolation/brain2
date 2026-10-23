@@ -295,6 +295,18 @@ app shell no longer remounts `EnhancedCategoryView` via a nav key.
 | `habits-store` | Habits lists (`daily-habits-list.tsx`) |
 | `folder-all-items` helpers | `lib/folder-all-items.ts` — All Items category sync; view prefs on the backing list, including Home All `__all-items__root` ([`FOLDER_ALL_ITEMS.md`](FOLDER_ALL_ITEMS.md)) |
 
+## Mount cost
+
+_Last mapped: 2026-10-22_
+
+Every task-store write re-serializes the whole vault (3.7 MB on a 6,900-item vault). In Electron it also re-parses it to count records before the hub POST (`lib/persist-storage.ts` `postHub`). So the mount effect in `enhanced-list-view.tsx` (~414) must not write when nothing changed:
+
+- `addListToFolder` / `removeListFromFolder` return the same state when the list is already filed (or not filed). Module Lists sync calls them for every module list on each mount.
+- The Trip/Tidy import (`mergeImportedItem`) keeps an item's schedule once the record's day sits in `schedulePlacements`. Otherwise the import and the day rollover (`hooks/use-day-rollover.ts`) undo each other.
+- The import does not re-create an item listed in `removedTaskIds`.
+
+Global All counts: `filterTasksHiddenFromGlobalAll` resolves each list once per call. Period ledger lists (`tasksForLedgerKind`) scan a cached pool of only scheduled or completed items. About 400 ledger lists still cost ~0.3 s whenever the All grid recomputes.
+
 ## Tests
 
 | Location | Coverage |
