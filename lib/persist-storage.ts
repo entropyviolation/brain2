@@ -358,6 +358,84 @@ function followHubAfterPaint(name: string, local: string | null, painted: string
   })
 }
 
+/**
+ * Merge a hub snapshot into stores that are already running. A rich local copy
+ * wins at load (`getItem`, and the sandboxed Electron preload keeps any present
+ * local value), so rows another writer added later — the phone hub's iPhone
+ * Texts and Calls — never reached the screen, and this profile's saves of the
+ * older copy were refused by the vault guard. Same pick as a load
+ * (`choosePersistSnapshot`), and the store's own `merge` keeps live edits.
+ * `names` limits it to those keys; otherwise every store with a rehydrator.
+ * Returns the keys that changed.
+ */
+export async function mergeHubIntoStores(hub: HubSnapshot, names?: string[]): Promise<string[]> {
+  if (!hub?.items) return []
+  const keys = names ?? [...persistRehydrators.keys()]
+  const changed: string[] = []
+  const ran = new Set<() => void | Promise<void>>()
+  for (const name of keys) {
+    const rehydrate = persistRehydrators.get(name) ?? persistRehydrators.get(persistKey(name))
+    if (!rehydrate || ran.has(rehydrate)) continue
+    const hubValue = hubItem(hub, name)
+    if (typeof hubValue !== "string") continue
+    const local = readLocalItem(name)
+    const chosen = choosePersistSnapshot(name, local, hubValue)
+    if (typeof chosen !== "string" || chosen === local) continue
+    writeChosenLocal(name, local, chosen)
+    ran.add(rehydrate)
+    changed.push(name)
+    await rehydrate()
+  }
+  return changed
+}
+
+/** Re-read the hub (no cache) and merge it into running stores. */
+async function pullHubIntoStores(names?: string[]): Promise<string[]> {
+  if (!hubEnabled()) return []
+  resetPersistHubCache()
+  return mergeHubIntoStores(await loadHub(), names)
+}
+
+/** Focus and visibility re-reads run at most once per this window. */
+export const HUB_FOCUS_PULL_MS = 10_000
+
+/** Throttle for focus pulls. Pure apart from the clock. */
+export function createHubFocusPull(pull: () => unknown, minMs = HUB_FOCUS_PULL_MS, now: () => number = Date.now) {
+  let last = -Infinity
+  return () => {
+    const at = now()
+    if (at - last < minMs) return false
+    last = at
+    void pull()
+    return true
+  }
+}
+
+let hubFollowInstalled = false
+
+/** Pull the hub when the window comes back, so rows added meanwhile appear without a reload. */
+function installHubFollow(): void {
+  if (hubFollowInstalled || !hubEnabled() || typeof window === "undefined") return
+  hubFollowInstalled = true
+  const onFocus = createHubFocusPull(() => pullHubIntoStores().catch(() => []))
+  window.addEventListener("focus", onFocus)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") onFocus()
+  })
+  // Launch: the preload and getItem both kept the local copy, so merge once now.
+  setTimeout(onFocus, 2000)
+}
+
+/**
+ * The hub refused this save (`skipped: "shrink"` from `upsertSharedPersistItem`),
+ * so this copy is behind the vault. Merge the vault in; the store's next save
+ * then carries both and goes through. "friend-pic" and "empty" are not refusals.
+ */
+export function hubRefusedSave(response: unknown): boolean {
+  if (!response || typeof response !== "object") return false
+  return (response as { skipped?: unknown }).skipped === "shrink"
+}
+
 const hubPostTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 /**
@@ -401,7 +479,12 @@ function postHub(name: string, value: string) {
             value,
             source: isElectronRenderer() ? "electron" : "chrome",
           }),
-        }).catch(() => {})
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((body) => {
+            if (hubRefusedSave(body)) void pullHubIntoStores([name]).catch(() => [])
+          })
+          .catch(() => {})
       }, 250),
     )
   }
@@ -473,6 +556,7 @@ export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
       if (!hasLocalStorage()) return null
+      installHubFollow()
       ensureLegacyPersistCopied()
       const local = presentLocal(readLocalItem(name))
       if (local != null && !(hubEnabled() && isElectronRenderer())) return local
