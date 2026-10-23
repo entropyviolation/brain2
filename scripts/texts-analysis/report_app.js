@@ -68,7 +68,7 @@ function renderJobs() {
     const name = E[j.ent]?.name || j.ent;
     const row = h("div", { class: "jrow " + j.status }, [
       h("i", { class: "dot " + j.status }),
-      h("div", {}, [h("b", {}, `${j.kind === "conflict" ? "Conflict" : "Relationship"} · ${name}`), h("small", {}, j.status === "running" ? j.progress || "running" : j.status === "error" ? (j.error || "error").slice(0, 80) : j.status)]),
+      h("div", {}, [h("b", {}, `${{ conflict: "Conflict", mood: "Mood by month" }[j.kind] || "Relationship"} · ${name}`), h("small", {}, j.status === "running" ? j.progress || "running" : j.status === "error" ? (j.error || "error").slice(0, 80) : j.status)]),
     ]);
     if (j.status === "queued" || j.status === "running") row.append(link("Cancel", async () => { await api("POST", `/api/jobs/${j.id}/cancel`); refreshState(); }, "btn xs"));
     else if (j.status === "done") row.append(link("Open", () => j.kind === "conflict" ? openConflict(j.ent, j.ref) : openRelationship(j.ent), "btn xs"));
@@ -641,6 +641,9 @@ function openRelationship(eid) {
       const n = topicReviewed(eid, k), c = h("button", { class: "chip", type: "button", title: `See the ${k} conversations${SERVER ? " and correct them" : ""}`, html: `${k}<b>${v.lift == null ? "–" : v.lift.toFixed(1) + "×"}</b>${n ? `<b>· ${n} reviewed</b>` : ""}` });
       c.onclick = () => openTopic(eid, k); return c;
     })));
+    if (e.reply_weekly) { const rc = card(body, "Reply time by week", `Median time to answer, last 52 weeks. Your trend: ${replyTrend(e.reply_weekly.me)}. Theirs: ${replyTrend(e.reply_weekly.them)}.`); replyWeeks(rc, e.reply_weekly, e.name, 200); }
+    dayTimeline(card(body, "Texts and calls by day", "Texts above the line (yours and theirs), calls below (minutes; a red tick is a missed call). Click a day to open its messages."), e);
+    moodCard(card(body, "Mood by month", SERVER ? "An on-demand read by the local model: a sample of each month's texts, scored from −2 (hard) to +2 (warm), next to the keyword sentiment line. Nothing leaves this Mac." : "Run serve.py to read mood."), e);
     // conflicts
     const cc = card(body, "Conflicts", "Detected candidates and the ones you marked. Confirm or reject to teach the detector.");
     const refs = conflictRefs(eid);
@@ -766,6 +769,98 @@ async function openTopic(eid, topic) {
   }
   paint();
   const off = onState(() => { if (!body.isConnected) { off(); return; } const y = mbody.parentElement.scrollTop; paint(); mbody.parentElement.scrollTop = y; });
+}
+
+// ---------- texts + calls by day (one person) ----------
+function dayTimeline(parent, e) {
+  const box = h("div"); parent.append(box);
+  const calls = (typeof CALLS !== "undefined" && CALLS?.log && e.key) ? CALLS.log.filter((c) => c[1] === e.key) : null;
+  let span = 365;
+  const sel = h("select", {}, [[90, "Last 90 days"], [365, "Last year"], [0, "Everything"]].map(([v, l]) => h("option", { value: v }, l)));
+  sel.value = span; sel.onchange = () => { span = +sel.value; draw(); };
+  parent.insertBefore(h("div", { class: "erow" }, [sel, h("span", { class: "take" }, calls ? `${fmt(calls.length)} calls with ${e.name}.` : e.key ? "No call history on this Mac." : "Press Update now to match calls to this card.")]), box);
+  let t = null;
+  const draw = async () => {
+    box.innerHTML = "";
+    if (!t) { try { t = await loadThread(e.id); } catch (err) { box.append(h("p", { class: "take" }, err.message)); return; } }
+    const dk = (ep) => { const d = new Date(ep * 1000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+    const end = new Date(e.last + "T00:00"), start = span ? new Date(end - (span - 1) * 864e5) : new Date(e.first + "T00:00");
+    const days = []; for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(dk(d / 1000));
+    const ix = new Map(days.map((d, i) => [d, i]));
+    const me = days.map(() => 0), them = days.map(() => 0), mins = days.map(() => 0), missed = days.map(() => 0), ncall = days.map(() => 0);
+    t.msgs.forEach((m) => { const i = ix.get(dk(m[0])); if (i != null) (m[1] ? me : them)[i]++; });
+    (calls || []).forEach((c) => { const i = ix.get(dk(c[0])); if (i == null) return; ncall[i]++; mins[i] += c[4]; if (c[3]) missed[i]++; });
+    const W = 1000, H = 220, L = 40, R = 8, mid = 130, up = 110, dn = 70;
+    const svg = svgBox(box, W, H);
+    const tmax = niceMax(Math.max(1, ...days.map((_, i) => me[i] + them[i]))), cmax = niceMax(Math.max(1, ...mins));
+    const bw = (W - L - R) / days.length, x = (i) => L + i * bw;
+    s("line", { x1: L, x2: W - R, y1: mid, y2: mid, class: "axisl" }, svg);
+    svgText(svg, L - 6, mid - up + 4, short(tmax), { "text-anchor": "end" }); svgText(svg, L - 6, mid + dn, short(cmax) + " min", { "text-anchor": "end" });
+    days.forEach((d, i) => {
+      if (d.endsWith("-01") && (span !== 0 || d.slice(5, 7) === "01")) svgText(svg, x(i), H - 4, span === 0 ? d.slice(0, 4) : MON[+d.slice(5, 7) - 1], { class: "lab" });
+      const hm = up * me[i] / tmax, ht = up * them[i] / tmax;
+      if (me[i]) s("rect", { x: x(i), y: mid - hm, width: Math.max(bw - 0.4, 0.6), height: hm, fill: css("me") }, svg);
+      if (them[i]) s("rect", { x: x(i), y: mid - hm - ht, width: Math.max(bw - 0.4, 0.6), height: ht, fill: css("them") }, svg);
+      if (mins[i]) s("rect", { x: x(i), y: mid + 1, width: Math.max(bw - 0.4, 0.6), height: Math.max(1, dn * mins[i] / cmax), fill: css("s3") }, svg);
+      if (missed[i]) s("rect", { x: x(i), y: mid + 1, width: Math.max(bw - 0.4, 1), height: 3, fill: css("neg") }, svg);
+    });
+    const hit = s("rect", { x: L, y: 0, width: W - L - R, height: H, fill: "transparent", style: "cursor:pointer" }, svg);
+    const at = (ev) => { const r = svg.getBoundingClientRect(); return Math.max(0, Math.min(days.length - 1, Math.floor(((ev.clientX - r.left) * (W / r.width) - L) / bw))); };
+    hover(hit, (ev) => { const i = at(ev); return `<b>${dayStr(new Date(days[i] + "T00:00"))}</b><br>Texts: you ${me[i]}, ${e.name} ${them[i]}` + (calls ? `<br>Calls: ${ncall[i]}${ncall[i] ? `, ${mins[i].toFixed(1)} min` : ""}${missed[i] ? `, ${missed[i]} missed` : ""}` : ""); });
+    hit.addEventListener("click", (ev) => openThread(e.id, Date.parse(days[at(ev)] + "T00:00") / 1000));
+    legend(box, [["Your texts", css("me")], [`${e.name}'s texts`, css("them")], ["Call minutes", css("s3")], ["Missed call", css("neg")]]);
+  };
+  draw();
+}
+
+// ---------- mood by month (local model, on demand) ----------
+function moodCard(c, e) {
+  c.append(h("div", { class: "row" }, [analyzeButton("mood", e.id, e.id, { months: 24 }, "Read mood by month (last 2 years)")]));
+  const done = latestDone("mood", e.id);
+  if (!done?.result?.months?.length) return;
+  const R = done.result.months, ms = R.map((r) => r.month);
+  const sen = e.series ? ms.map((m) => { const i = e.series.months.indexOf(m); return i < 0 ? null : e.series.sentiment[i]; }) : null;
+  linesMonths(c, ms, [{ name: "Mood (model, −2 to +2)", values: R.map((r) => r.score), color: css("me"), width: 2.5 },
+    ...(sen ? [{ name: "Keyword sentiment × 4", values: sen.map((v) => (v == null ? null : v * 4)), color: css("muted"), width: 1.5 }] : [])],
+  { min: -2, max: 2, zero: true, height: 180, dec: 1, tick: (m) => (m.endsWith("-01") || m === ms[0] ? `${MON[+m.slice(5) - 1]} ${m.slice(0, 4)}` : null) });
+  c.append(h("p", { class: "take" }, `Read ${done.result.generated?.replace("T", " ") || done.finished} by ${done.result.model || "the local model"}. Paraphrased; it can be wrong.`));
+  table(c, ["Month", "Tone", "Score", "What it was like"], R.slice().reverse().map((r) => [mlabel(r.month), r.tone || "–", r.score == null ? "–" : (r.score > 0 ? "+" : "") + r.score, r.summary || ""]), [2]);
+}
+
+// ---------- search all texts (served by serve.py, stays on this Mac) ----------
+{
+  const root = $("searchdiv");
+  if (!SERVER) root.append(h("p", { class: "take" }, "Search runs in the local app: cd ~/texts-analysis && .venv/bin/python serve.py"));
+  else {
+    const q = h("input", { type: "search", placeholder: "Find a word or phrase in every chat…" });
+    const who = h("select", {}, [h("option", { value: "" }, "Everyone"), ...Object.values(E).sort((a, b) => b.total - a.total).map((x) => h("option", { value: x.id }, x.name))]);
+    const side = h("select", {}, [["", "Anyone wrote it"], ["me", "I wrote it"], ["them", "They wrote it"]].map(([v, l]) => h("option", { value: v }, l)));
+    const out = h("div");
+    const c = card(root, "Search your texts", "Searches every message on this Mac, newest first. Click a result to open it in the conversation.");
+    c.append(h("div", { class: "erow" }, [q, who, side]), out);
+    let timer = null, seq = 0;
+    const run = async () => {
+      const text = q.value.trim(); out.innerHTML = "";
+      if (text.length < 2) return;
+      const my = ++seq;
+      out.append(h("p", { class: "take" }, "Searching…"));
+      const r = await api("GET", `/api/search?q=${encodeURIComponent(text)}&ent=${who.value}&side=${side.value}`);
+      if (my !== seq) return;
+      out.innerHTML = "";
+      out.append(h("p", { class: "take" }, r.total ? `${fmt(r.total)} messages${r.total > r.hits.length ? `, showing the newest ${r.hits.length}` : ""}. ` + (r.by_ent || []).slice(0, 8).map((x) => `${E[x.ent]?.name || x.ent} ${fmt(x.n)}`).join(" · ") : "No matches."));
+      const re = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig");
+      r.hits.forEach((x) => {
+        const parts = []; let last = 0, m; re.lastIndex = 0;
+        while ((m = re.exec(x.text))) { parts.push(x.text.slice(last, m.index), h("b", {}, m[0])); last = m.index + m[0].length; if (!m[0]) break; }
+        parts.push(x.text.slice(last));
+        const row = h("div", { class: "pnote", style: "cursor:pointer" }, [h("small", { class: "take" }, `${fmtDate(x.ts)} · ${E[x.ent]?.name || x.ent}${x.me ? " · You" : x.who ? " · " + x.who : ""}`), h("div", {}, parts)]);
+        row.onclick = () => openThread(x.ent, x.ts, x.mid);
+        out.append(row);
+      });
+    };
+    const later = () => { clearTimeout(timer); timer = setTimeout(run, 300); };
+    q.oninput = later; who.onchange = run; side.onchange = run;
+  }
 }
 
 // ---------- conflicts review on the main page ----------

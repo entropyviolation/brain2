@@ -74,6 +74,16 @@ Not built yet. The idea:
 4. Score it against your held-out corrections before it replaces the keyword lists, the same way `detector_eval.py` does for conflicts.
 5. Show the learned topics next to the keyword ones until you trust them.
 
+## Reply trends, drifting, calls + texts, search, mood
+
+_Last mapped: 2026-10-23_
+
+- **Reply time by week** (Response times, and each relationship page). `analyze2.py` `reply_weekly()`: median minutes to answer per week for you and for them, last 52 weeks, blank under 3 replies. A table compares this week, last week and 8 weeks per person, with a trend (last 4 weeks against the 8 before).
+- **Who's drifting** (its own section). `drifting()`: people you texted at least 5 a week in the 180 days before the last 60, now under a third of that. "Changed around" is the day that best splits a busy 90 days from a quiet stretch after it.
+- **Texts and calls by day** (relationship page). Texts come from the thread file. Calls come from `calls.json` `log` (`[epoch, person key, outgoing, missed, minutes]`), matched on the card's `key`. Click a day to open its messages.
+- **Search** (its own section). `GET /api/search?q=&ent=&side=` in `serve.py` reads every thread file into memory once, on 127.0.0.1 only. It returns the newest 300 hits and a count per chat. Needs the local app.
+- **Mood by month** (relationship page, on demand). Job kind `mood` → `llm_jobs.analyze_mood`: a sample of each month (last 24 with 20+ messages) goes to local Ollama, which returns a tone, a −2 to +2 score and one paraphrased sentence. It is drawn next to the keyword sentiment line.
+
 ## Order
 
 1. Brain2 side: Texts group, view, bridge, weekly schedule. Done on this branch.

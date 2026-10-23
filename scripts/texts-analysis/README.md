@@ -59,3 +59,9 @@ _Last mapped: 2026-10-23_
 
 `report_app.js` reads the section list from the header nav. Each section folds from the arrow by its heading, remembered in `localStorage`. A section taller than about 3.5 screens is cut with **Show all**. Inside Brain2's main window the nav moves to the Analytics sidebar (`nav`, `sections`, `section`, `goto` messages).
 
+## Trends, drifting, timeline, search, mood
+
+_Last mapped: 2026-10-23_
+
+See [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md) → "Reply trends, drifting, calls + texts, search, mood". New data: `reply_weekly` (overall in `comparisons`, and per person), `drifting` in `detail.json`, and `log` in `calls.json`. New routes: `GET /api/search`, job kind `mood`. Thread rows are `[ts, me, who, text, mid, topic bits]`; Python readers take the first five (`llm_pass.fmt_line`).
+
