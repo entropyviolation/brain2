@@ -24,7 +24,9 @@
 .an-meta-hit { fill: transparent; }
 .an-meta-row.is-pickable { cursor: pointer; }
 .an-meta-row.is-pickable:hover .an-meta-hit,
-.an-meta-row.is-active .an-meta-hit { fill: rgba(20, 23, 28, 0.06); }
+.an-meta-row.is-active .an-meta-hit,
+.an-meta-row.is-pickable:focus-visible .an-meta-hit { fill: rgba(20, 23, 28, 0.06); }
+.an-meta-row.is-pickable:focus-visible { outline: 2px solid var(--at-ink, #14171c); outline-offset: -2px; }
 .an-meta-bar { fill: var(--at-ink-faint, #69717c); }
 .an-meta-bar.is-out { fill: #1f7a6d; }
 .an-meta-stem { stroke: var(--at-ink-soft, #363c45); stroke-width: 1.2; }

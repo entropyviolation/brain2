@@ -54,6 +54,9 @@ function cellFill(hue: number, value: number | null, domainMax: number): string 
 
 type RowSort = "default" | "observed" | "anchor"
 
+/** Shared days before a row shows its r against the anchor. */
+const ANCHOR_R_FLOOR = 7
+
 function rowR(a: DensitySeries, b: DensitySeries): { r: number; n: number } {
   const xs: number[] = []
   const ys: number[] = []
@@ -242,7 +245,11 @@ export function CrossSection() {
       .filter((s) => !hidden.has(s.id))
       .map((s) => ({ s, rel: anchor && anchor.id !== s.id ? rowR(anchor, s) : null }))
     if (sortBy === "observed") rows.sort((a, b) => b.s.n - a.s.n)
-    else if (sortBy === "anchor" && anchor) rows.sort((a, b) => Math.abs(b.rel?.r ?? 2) - Math.abs(a.rel?.r ?? 2))
+    else if (sortBy === "anchor" && anchor) {
+      // Rows below the display floor show "·", so they rank after rows that show an r.
+      const score = (rel: { r: number; n: number } | null) => (rel === null ? 2 : rel.n >= ANCHOR_R_FLOOR ? Math.abs(rel.r) : -1)
+      rows.sort((a, b) => score(b.rel) - score(a.rel))
+    }
     return rows
   }, [series, hidden, sortBy, anchor])
   const toggle = (id: string) =>
@@ -416,7 +423,7 @@ function DensityRow({
           className="an-density-r"
           title={rel && rel !== "anchor" ? `Pearson r against the anchor over ${rel.n} shared days` : undefined}
         >
-          {rel === "anchor" ? "◆" : rel && rel.n >= 7 ? `${rel.r >= 0 ? "+" : ""}${rel.r.toFixed(2)}` : "·"}
+          {rel === "anchor" ? "◆" : rel && rel.n >= ANCHOR_R_FLOOR ? `${rel.r >= 0 ? "+" : ""}${rel.r.toFixed(2)}` : "·"}
         </span>
       ) : null}
     </div>

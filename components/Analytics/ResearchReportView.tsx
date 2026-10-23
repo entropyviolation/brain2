@@ -224,7 +224,7 @@ export function ResearchReportView() {
           <div className="an-plate" data-testid="research-report-contents">
             <p className="an-canvas-title">{`${report.sections.length} findings in this window`}</p>
             <div className="an-meta-toc">
-              {report.sections.map((section) => (
+              {visible.map((section) => (
                 <button key={section.id} type="button" className="an-meta-chip" onClick={() => jump(section.id)} title={section.sentence}>
                   {section.title}
                 </button>

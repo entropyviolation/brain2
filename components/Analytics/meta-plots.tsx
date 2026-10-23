@@ -58,7 +58,7 @@ export function ForestPlot({
   const maxN = Math.max(...rows.map((r) => r.n), floor)
   const rad = (n: number) => 3 + Math.sqrt(n / maxN) * 8
   return (
-    <svg className="an-meta-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Forest plot of Pearson r with 95% intervals">
+    <svg className="an-meta-svg" viewBox={`0 0 ${w} ${h}`} role="group" aria-label="Forest plot of Pearson r with 95% intervals">
       <rect x={x(-1)} y={top - 6} width={x(-notice) - x(-1)} height={h - top - 10} className="an-meta-band" />
       <rect x={x(notice)} y={top - 6} width={x(1) - x(notice)} height={h - top - 10} className="an-meta-band" />
       {[-1, -0.5, 0, 0.5, 1].map((t) => (
@@ -75,13 +75,28 @@ export function ForestPlot({
         const cy = top + i * rowH + rowH / 2
         const ci = fisherInterval(row.r, row.n)
         const active = activeId === row.id
+        const name = `${row.label}: r = ${row.r.toFixed(2)}, n = ${row.n}${ci ? `, 95% CI ${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}` : ""}`
         return (
           <g
             key={row.id}
             className={`an-meta-row${active ? " is-active" : ""}${onPick ? " is-pickable" : ""}`}
             onClick={onPick ? () => onPick(row.id) : undefined}
+            role={onPick ? "button" : undefined}
+            tabIndex={onPick ? 0 : undefined}
+            aria-pressed={onPick ? active : undefined}
+            aria-label={name}
+            onKeyDown={
+              onPick
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      onPick(row.id)
+                    }
+                  }
+                : undefined
+            }
           >
-            <title>{`${row.label}: r = ${row.r.toFixed(2)}, n = ${row.n}${ci ? `, 95% CI ${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}` : ""}`}</title>
+            <title>{name}</title>
             <rect x={0} y={cy - rowH / 2} width={w} height={rowH} className="an-meta-hit" />
             <text x={padL - 10} y={cy + 4} textAnchor="end" className="an-meta-label">
               {row.label}
