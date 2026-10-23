@@ -70,6 +70,96 @@ export to Google Drive once a day for 3 years. Meta keeps every export in
 Drive, so a free 15 GB Drive can fill within days. Once Brain2 has archived an
 export, the copy in Drive can be deleted without losing anything.
 
+## TO DO LATER: when the first Google Drive export lands
+
+_Written: 2026-10-23. Status: waiting on Meta. Athena scheduled a daily
+JSON, all-information export of `_entropyviolation_` to Google Drive for 3
+years, starting 2026-10-23. Meta gave no date for the first file._
+
+Nothing below has been checked against a real Drive export. Do these steps in
+order, and write what you find back into this doc and
+`components/Analytics/README.md`.
+
+### 1. Find the files
+
+- Google Drive for desktop puts Drive under
+  `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`. Ask Athena for
+  folder access to `~/Library/CloudStorage` (the session cannot list it
+  without a grant).
+- Look for a new folder or zip from Meta. Write down the exact path, the
+  folder names, and the file names. Note whether one export is one zip,
+  several zips, or an already-unzipped folder.
+- Check the Drive app's mode. In **Stream files** mode the files are
+  cloud-only placeholders until read. In **Mirror files** mode they are on
+  disk. Note which one is in use.
+
+### 2. Check the contents match a device export
+
+- Unzip one copy into a scratch folder (never inside Drive).
+- Confirm it has `your_instagram_activity/` and
+  `connections/followers_and_following/`, JSON (not HTML), and the media
+  folders.
+- Compare the top-level folders and file counts with the device export in
+  `~/Downloads/instagram-_entropyviolation_-2026-10-22-vn7ORB66/`. List
+  anything missing.
+- Run `analyze.py` and `build_report.py` on it by hand (see
+  `/Users/otherworld/instagram-analysis/README.md`). Note any errors.
+
+### 3. Make the watcher pick it up
+
+Code: `electron/instagram-report.js`.
+
+- **Name.** `parseExportName` only accepts
+  `instagram-<account>-<YYYY-MM-DD>-<id>` (optionally `.zip`). If Drive
+  names differ, extend that regex and add a test case in
+  `electron/instagram-report.test.ts` using the real name.
+- **Depth.** `scanForExports` only reads the top level of each watched
+  folder. If Meta writes into a subfolder (for example a dated or `Meta`
+  folder), scan one or two levels down for that folder only. Keep
+  Downloads at the top level.
+- **Folder.** Set the Drive folder as the watched folder ("Watch a folder…"
+  in the view, saved as `extraDir` in `config.json`), or add a
+  `driveDir` config key if Downloads and Drive both need watching beside
+  another folder.
+- **Placeholders.** If Drive is in Stream mode, check that the 10 s
+  size-stable wait (`STABLE_MS`) sees the real size, and that reading the
+  zip downloads it. If not, tell Athena to set the Instagram folder to
+  "Available offline", or switch the Drive app to Mirror mode.
+- **macOS prompt.** Reading `~/Library/CloudStorage` may trigger a macOS
+  files-access prompt for Brain2. Say so in the view's help text.
+
+### 4. Make sure no daily export is skipped
+
+`pickExportToImport` builds only the newest export it finds, and skips
+older ones. With daily exports, if Brain2 is closed for a few days, the
+exports in between never reach `exports/`, so the archive never sees them,
+and an unsent DM inside that gap is lost.
+
+- Fix: archive every not-yet-archived export in the watched folders, oldest
+  first, even when only the newest gets a report build. Unzip each one to a
+  temporary folder, call `archiveExport` (`electron/instagram-archive.js`),
+  then delete the temporary folder. Add a test with three exports, Brain2
+  "closed" for the middle one.
+
+### 5. Drive space
+
+Meta keeps every export in Drive, and a free 15 GB Drive fills in days.
+
+- After `archiveExport` succeeds for an export, show it in the view as
+  "safe to delete from Drive" with its path. Do not delete it from Drive
+  automatically unless Athena asks for that.
+
+### 6. Reminder and docs
+
+- If the Drive export works, change the monthly reminder
+  (`lib/instagram-export-reminder.ts`) into one reminder before the schedule
+  ends (about 2029-10-23), and update the view's export steps
+  (`lib/instagram-export-steps.ts`) to describe the Drive route first.
+- If it does not work, say why here, and keep the monthly reminder.
+- Update "Scheduled export to Google Drive or Dropbox" above from "found,
+  not tested" to what is now known. Tell the Instagram data-sources doc
+  (`docs/INSTAGRAM_DATA_SOURCES.md`) the result too.
+
 ## Later: routes we hope to add
 
 The aim is to update as much of this as possible without a manual export:
