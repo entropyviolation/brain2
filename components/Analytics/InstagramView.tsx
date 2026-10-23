@@ -24,27 +24,129 @@ import {
   readAccountRequest,
   readReportStateMessage,
   takePendingInstagramOpen,
+  type InstagramRemoved,
   type InstagramSource,
   type InstagramStatus,
 } from "@/lib/instagram-report"
+import { parseLocalDate } from "@/lib/date-utils"
+import {
+  instagramExportReminderOn,
+  nextInstagramExportReminder,
+  seedInstagramExportReminderOnce,
+  setInstagramExportReminder,
+} from "@/lib/instagram-export-reminder"
+import { INSTAGRAM_EXPORT_STEPS } from "@/lib/instagram-export-steps"
+import { formatReminderWhen } from "@/lib/reminders"
+import { afterPersistHydrated } from "@/lib/use-persist-hydrated"
 import { syncInstagramListsFromReport } from "@/lib/instagram-lists-sync"
 import { syncInstagramSessionsFromReport } from "@/lib/instagram-sessions-sync"
 import "./instagram-view.css"
 
 function ExportSteps() {
+  const [first, ...rest] = INSTAGRAM_EXPORT_STEPS
   return (
     <ol className="an-ig-steps">
       <li>
-        Open Accounts Center → Your information and permissions → Download your information (
+        {first.replace(/\.$/, "")} (
         <a href={INSTAGRAM_EXPORT_URL} target="_blank" rel="noreferrer">
           accountscenter.instagram.com
         </a>
         ).
       </li>
-      <li>Create export → Export to device. Pick All time, JSON, and all information.</li>
-      <li>When Meta emails that it is ready (it can take days), download the zip within 4 days into Downloads.</li>
-      <li>Brain2 desktop picks it up from Downloads, copies it into its own data folder, and builds this report.</li>
+      {rest.map((step) => (
+        <li key={step}>{step}</li>
+      ))}
     </ol>
+  )
+}
+
+/**
+ * Monthly "request a new export" switch. The reminder is a row on the
+ * Reminders list (`lib/instagram-export-reminder.ts`), seeded once per device.
+ */
+function ExportReminder({ exportDate, ready }: { exportDate: string | null; ready: boolean }) {
+  const tasks = useTaskStore((s) => s.tasks)
+  const on = instagramExportReminderOn(tasks)
+  const next = nextInstagramExportReminder(tasks)
+  const lastExport = exportDate ? parseLocalDate(exportDate) : null
+
+  // Seed once, after the vault and the report status load, so the first
+  // fire counts from the export date. A later export does not reseed.
+  useEffect(() => {
+    if (!ready) return
+    return afterPersistHydrated(useTaskStore.persist, () => void seedInstagramExportReminderOnce(new Date(), lastExport))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
+  return (
+    <span className="an-ig-field" title="A monthly item on the Reminders list with the export link and steps.">
+      <b>Reminder</b> {on && next ? formatReminderWhen(next) : "off"}{" "}
+      <button
+        type="button"
+        className="an-range-chip"
+        aria-pressed={on}
+        onClick={() => setInstagramExportReminder(!on, new Date(), lastExport)}
+      >
+        {on ? "Turn off" : "Remind me monthly"}
+      </button>
+    </span>
+  )
+}
+
+/**
+ * DMs an earlier export held and a later one does not: unsent, deleted, or
+ * edited. Read from the archive (`electron/instagram-archive.js`) when opened.
+ */
+function RemovedMessages({ source, buildId }: { source: InstagramSource; buildId: string }) {
+  const [open, setOpen] = useState(false)
+  const [data, setData] = useState<InstagramRemoved | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open || !source.removed) return
+    let live = true
+    source
+      .removed()
+      .then((d) => live && setData(d))
+      .catch((err) => live && setError(err instanceof Error ? err.message : String(err)))
+    return () => {
+      live = false
+    }
+  }, [open, source, buildId])
+
+  if (!source.removed) return null
+  const rows = data?.rows ?? []
+  const label = { removed: "Unsent or deleted", edited: "Edited", "thread-gone": "Chat gone" } as const
+
+  return (
+    <details className="an-ig-more" data-testid="instagram-removed" onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary>Unsent, deleted and edited messages{data ? ` (${rows.length})` : ""}</summary>
+      {error ? <p className="an-ig-error">Could not read the archive: {error}</p> : null}
+      {data && data.exports < 2 ? (
+        <p>Brain2 has {data.exports === 1 ? "one export" : "no exports"} so far. A message shows here once an earlier export has it and a later one does not.</p>
+      ) : null}
+      {data && data.exports >= 2 && rows.length === 0 ? <p>No message has gone missing between the {data.exports} archived exports.</p> : null}
+      {rows.length ? (
+        <>
+          <p className="an-ig-note">
+            A message is here when an earlier export had it and a later one did not. Anything sent and removed between two
+            exports was never captured.
+          </p>
+          <ul className="an-ig-removed">
+            {rows.map((r) => (
+              <li key={`${r.thread}|${r.ts}|${r.sender}|${r.content ?? ""}`}>
+                <b>{r.sender}</b> in {r.title || r.thread} · {formatInstagramStamp(new Date(r.ts).toISOString())} ·{" "}
+                {label[r.kind]}, last in the {formatExportDate(r.lastSeen)} export, gone by {formatExportDate(r.removedSince)}
+                <div className="an-ig-removed-text">
+                  {r.content ?? (r.share?.link ? r.share.link : r.media?.length ? `${r.media.length} attachment(s)` : "(no text)")}
+                  {r.kind === "edited" && r.editedTo !== undefined ? <> → {r.editedTo}</> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </details>
   )
 }
 
@@ -190,6 +292,9 @@ export function InstagramView() {
           The Instagram report is built and shown by the Brain2 desktop app on your computer. This build cannot run
           it.
         </p>
+        <div className="an-ig-bar">
+          <ExportReminder exportDate={null} ready />
+        </div>
       </div>
     )
   }
@@ -214,6 +319,12 @@ export function InstagramView() {
         <span className="an-ig-field" title="When Brain2 last built this report">
           <b>Last updated</b> {current ? formatInstagramStamp(current.builtAt) : "never"}
         </span>
+        <ExportReminder exportDate={current?.exportDate ?? null} ready={status !== null} />
+        {status?.drive?.length ? (
+          <span className="an-ig-field" title={`Meta's scheduled export is read from ${status.drive.join(", ")}`}>
+            <b>Google Drive</b> watched
+          </span>
+        ) : null}
         {status?.running ? <span className="an-ig-field an-ig-running">Building a new report…</span> : null}
         {source.canIngest ? (
           <span className="an-ig-actions">
@@ -229,7 +340,7 @@ export function InstagramView() {
             <button
               type="button"
               className="an-range-chip"
-              title={`Watched: ${(status?.watching ?? []).join(", ") || "Downloads"}. Add one more folder.`}
+              title={`Watched: ${[...(status?.watching ?? []), ...(status?.drive ?? [])].join(", ") || "Downloads"}. Add one more folder.`}
               onClick={() => void pickFolder()}
             >
               Watch a folder…
@@ -311,6 +422,8 @@ export function InstagramView() {
           }}
         />
       ) : null}
+
+      {status?.hasReport && current ? <RemovedMessages source={source} buildId={current.buildId} /> : null}
 
       {status?.hasReport ? (
         <details className="an-ig-more">
