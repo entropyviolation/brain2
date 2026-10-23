@@ -308,6 +308,10 @@ async function archiveAll(root, { fs = nodeFs, findExportRoot, now } = {}) {
   return done
 }
 
+function isArchived(root, exportDir, { fs = nodeFs } = {}) {
+  return Boolean(loadIndex(root, { fs }).exports[exportDir])
+}
+
 function archiveStatus(root, { fs = nodeFs } = {}) {
   const order = orderedExports(loadIndex(root, { fs }))
   return { exports: order.map((e) => ({ dir: e.dir, date: e.date, messages: e.messages })), count: order.length }
@@ -320,6 +324,7 @@ module.exports = {
   archiveStatus,
   blobPath,
   fixText,
+  isArchived,
   loadIndex,
   loadMessages,
   messageKey,

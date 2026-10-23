@@ -263,6 +263,11 @@ export function InstagramView() {
           <b>Last updated</b> {current ? formatInstagramStamp(current.builtAt) : "never"}
         </span>
         <ExportReminder exportDate={current?.exportDate ?? null} ready={status !== null} />
+        {status?.drive?.length ? (
+          <span className="an-ig-field" title={`Meta's scheduled export is read from ${status.drive.join(", ")}`}>
+            <b>Google Drive</b> watched
+          </span>
+        ) : null}
         {status?.running ? <span className="an-ig-field an-ig-running">Building a new report…</span> : null}
         {source.canIngest ? (
           <span className="an-ig-actions">
@@ -278,7 +283,7 @@ export function InstagramView() {
             <button
               type="button"
               className="an-range-chip"
-              title={`Watched: ${(status?.watching ?? []).join(", ") || "Downloads"}. Add one more folder.`}
+              title={`Watched: ${[...(status?.watching ?? []), ...(status?.drive ?? [])].join(", ") || "Downloads"}. Add one more folder.`}
               onClick={() => void pickFolder()}
             >
               Watch a folder…
