@@ -70,6 +70,32 @@ export to Google Drive once a day for 3 years. Meta keeps every export in
 Drive, so a free 15 GB Drive can fill within days. Once Brain2 has archived an
 export, the copy in Drive can be deleted without losing anything.
 
+## Google Drive export: what is wired (2026-10-23)
+
+_Last mapped: 2026-10-23_
+
+The first scheduled export arrived in Athena's My Drive as a folder named
+`meta-2026-Oct-22-20-23-37` (Meta's name: `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`).
+Its contents were not inspected yet (the Mac was offline), so the watcher
+accepts all three likely shapes. `electron/instagram-report.js`:
+
+- `googleDriveDirs` finds `~/Library/CloudStorage/GoogleDrive-*/My Drive`
+  (Google Drive for desktop). `watchedDirs` adds them to Downloads and the
+  picked folder while `watchGoogleDrive` is on (the default in `config.json`).
+- `parseMetaFolderName` reads the date from the folder name. `scanMetaFolder`
+  takes, inside it: an unzipped export, `instagram-…` zips or folders, or
+  any zips as the parts of one export. Meta's name has no account, so these
+  are not filtered by `handle`.
+- The newest export builds the report as before. Every other export found,
+  older or skipped while Brain2 was closed, is unzipped, archived
+  (`archiveOnly`), and its copy removed. So daily exports are not lost to the
+  archive.
+- The view's status line says **Google Drive watched** when a Drive folder
+  is found.
+
+Steps 1, 2, 5 and 6 below are still open; 3 and 4 are done unless the real
+contents differ.
+
 ## TO DO LATER: when the first Google Drive export lands
 
 _Written: 2026-10-23. Status: waiting on Meta. Athena scheduled a daily

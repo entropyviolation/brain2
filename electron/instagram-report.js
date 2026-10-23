@@ -80,7 +80,35 @@ function defaultConfig(home = os.homedir()) {
     /** Empty = found on PATH or the usual Homebrew / Anaconda folders. */
     ffmpeg: "",
     keepExports: 2,
+    /** Also watch My Drive of every Google Drive for desktop account (Meta's scheduled export). */
+    watchGoogleDrive: true,
   }
+}
+
+/**
+ * `~/Library/CloudStorage/GoogleDrive-<email>/My Drive` for each signed-in
+ * Google Drive for desktop account. Meta's scheduled export writes a
+ * `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>` folder at the top of My Drive.
+ */
+function googleDriveDirs(home = os.homedir(), { fs = nodeFs } = {}) {
+  const base = path.join(home, "Library", "CloudStorage")
+  let entries = []
+  try {
+    entries = fs.readdirSync(base, { withFileTypes: true })
+  } catch {
+    return []
+  }
+  return entries
+    .filter((e) => e.isDirectory() && e.name.startsWith("GoogleDrive-"))
+    .map((e) => path.join(base, e.name, "My Drive"))
+    .filter((d) => fs.existsSync(d))
+}
+
+/** Every folder the watcher reads: Downloads, the picked folder, and Google Drive when on. */
+function watchedDirs(config, { fs = nodeFs, home } = {}) {
+  const dirs = [config.downloadsDir, config.extraDir]
+  if (config.watchGoogleDrive !== false) dirs.push(...googleDriveDirs(home, { fs }))
+  return [...new Set(dirs.filter(Boolean))]
 }
 
 function readJson(fs, p, fallback) {
@@ -144,6 +172,25 @@ function parseExportName(name) {
   }
 }
 
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+
+/**
+ * Meta's scheduled export folder in Google Drive: `meta-2026-Oct-22-20-23-37`.
+ * The account is not in the name; the zips or folders inside may carry it.
+ */
+function parseMetaFolderName(name) {
+  const m = /^meta-(\d{4})-([A-Za-z]{3})-(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})$/.exec(String(name || ""))
+  if (!m) return null
+  const mon = MONTHS.indexOf(m[2].toLowerCase())
+  if (mon < 0) return null
+  const pad = (n) => String(n).padStart(2, "0")
+  return {
+    key: name,
+    date: `${m[1]}-${pad(mon + 1)}-${pad(m[3])}`,
+    id: `${pad(m[4])}${pad(m[5])}${pad(m[6])}`,
+  }
+}
+
 function accountMatches(account, handle) {
   const norm = (s) => String(s || "").replace(/^@/, "").replace(/^_+|_+$/g, "").toLowerCase()
   return !norm(handle) || norm(account) === norm(handle)
@@ -170,6 +217,50 @@ function findExportRoot(dir, { fs = nodeFs, depth = 2 } = {}) {
 }
 
 /**
+ * One `meta-…` folder from a scheduled Drive export. Inside it, in this order:
+ * an unzipped export, `instagram-…` zips or folders, or any zips (taken as
+ * the parts of one export). Its name gives the date; the account is taken
+ * from an `instagram-<account>-…` name inside when there is one.
+ */
+function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
+  const base = { key: meta.key, account: "", accountUnknown: true, date: meta.date, id: meta.id, paths: [], size: 0, mtimeMs: 0 }
+  const st = (p) => {
+    try {
+      return fs.statSync(p)
+    } catch {
+      return null
+    }
+  }
+  if (findExportRoot(folder, { fs, depth: 2 })) {
+    const s = st(folder)
+    return { ...base, kind: "dir", paths: [folder], mtimeMs: s ? s.mtimeMs : 0 }
+  }
+  const inner = scanForExports([folder], { fs })
+  if (inner.length) {
+    const c = inner[inner.length - 1]
+    return { ...c, key: meta.key, date: meta.date, id: meta.id, accountUnknown: false }
+  }
+  let names = []
+  try {
+    names = fs.readdirSync(folder)
+  } catch {
+    return null
+  }
+  if (names.some((n) => PARTIAL_SUFFIXES.some((s) => n.toLowerCase().endsWith(s)))) return null
+  const zips = names.filter((n) => n.toLowerCase().endsWith(".zip")).sort()
+  if (!zips.length) return null
+  const c = { ...base, kind: "zip" }
+  for (const z of zips) {
+    const s = st(path.join(folder, z))
+    if (!s || !s.isFile()) continue
+    c.paths.push(path.join(folder, z))
+    c.size += s.size
+    c.mtimeMs = Math.max(c.mtimeMs, s.mtimeMs)
+  }
+  return c.paths.length ? c : null
+}
+
+/**
  * Exports sitting in the watched folders, grouped by export key (several zips
  * of one export share a key). Partial downloads are skipped.
  */
@@ -185,6 +276,12 @@ function scanForExports(dirs, { fs = nodeFs } = {}) {
     }
     for (const e of entries) {
       if (PARTIAL_SUFFIXES.some((s) => e.name.toLowerCase().endsWith(s))) continue
+      const meta = e.isDirectory() ? parseMetaFolderName(e.name) : null
+      if (meta) {
+        const c = scanMetaFolder(path.join(dir, e.name), meta, { fs })
+        if (c) groups.set(c.key, c)
+        continue
+      }
       const parsed = parseExportName(e.name)
       if (!parsed) continue
       const full = path.join(dir, e.name)
@@ -235,7 +332,7 @@ function exportFingerprint(c) {
  */
 function pickExportToImport(candidates, state, config) {
   const fresh = candidates.filter((c) => {
-    if (!accountMatches(c.account, config.handle)) return false
+    if (!c.accountUnknown && !accountMatches(c.account, config.handle)) return false
     const seen = state.imported && state.imported[c.key]
     if (seen && seen.fingerprint === exportFingerprint(c)) return false
     if (state.current && state.current.exportDate && c.date < state.current.exportDate) return false
@@ -633,6 +730,7 @@ function publicStatus(root, { fs = nodeFs, running = false, deps = null, config 
     running,
     deps,
     watching: [cfg.downloadsDir, cfg.extraDir].filter(Boolean),
+    drive: cfg.watchGoogleDrive !== false ? googleDriveDirs(undefined, { fs }) : [],
     handle: cfg.handle,
   }
 }
@@ -641,7 +739,7 @@ function publicStatus(root, { fs = nodeFs, running = false, deps = null, config 
  * The Electron-side watcher: scan at start, on folder changes, and every
  * minute; one run at a time.
  */
-function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange = () => {}, now = () => Date.now(), env = process.env, intervalMs = 60_000 } = {}) {
+function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange = () => {}, now = () => Date.now(), env = process.env, intervalMs = 60_000, home } = {}) {
   const tracker = createStabilityTracker(now)
   let running = false
   let deps = null
@@ -657,14 +755,32 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     return deps
   }
 
+  /** Copy or unzip one export, archive it, and drop the copy unless the report uses it. */
+  async function archiveOnly(c, config) {
+    const dirName = `${c.date}-${c.id}`
+    const dest = path.join(root, "exports", dirName)
+    const existed = fs.existsSync(dest)
+    try {
+      if (!existed) await extractExport(c, dest, config, { fs, run })
+      const exportRoot = findExportRoot(dest, { fs })
+      if (exportRoot) await archive.archiveExport(root, { exportDir: dirName, exportRoot, date: c.date }, { fs, now })
+    } catch (err) {
+      console.warn(`[brain2] instagram archive ${c.key}:`, err && err.message)
+    } finally {
+      const s = loadState(root, { fs })
+      const inUse = [s.current, s.previous].some((b) => b && b.exportDir === dirName)
+      if (!existed && !inUse) fs.rmSync(dest, { recursive: true, force: true })
+    }
+  }
+
   async function scan({ force = false } = {}) {
     if (running || stopped) return { ok: false, busy: running }
     const config = loadConfig(root, { fs })
-    const candidates = scanForExports([config.downloadsDir, config.extraDir], { fs })
+    const candidates = scanForExports(watchedDirs(config, { fs, home }), { fs })
     let state = loadState(root, { fs })
     if (force && candidates.length) {
       // "Check again" retries the newest export even if it failed before.
-      const newest = candidates.filter((c) => accountMatches(c.account, config.handle)).pop()
+      const newest = candidates.filter((c) => c.accountUnknown || accountMatches(c.account, config.handle)).pop()
       if (newest && state.imported[newest.key] && !state.imported[newest.key].ok) {
         delete state.imported[newest.key]
         saveState(root, state, { fs })
@@ -672,6 +788,22 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
       }
     }
     const pick = pickExportToImport(candidates, state, config)
+    // Exports the report skips (older than the one on screen, or passed over
+    // while Brain2 was closed) still go into the archive.
+    const backlog = candidates.filter(
+      (c) => c !== pick && (c.accountUnknown || accountMatches(c.account, config.handle)) && !archive.isArchived(root, `${c.date}-${c.id}`, { fs }),
+    )
+    if (backlog.length && !running) {
+      running = true
+      try {
+        for (const c of backlog) {
+          if (!tracker.isStable(c)) continue
+          await archiveOnly(c, config)
+        }
+      } finally {
+        running = false
+      }
+    }
     if (!pick) return { ok: true, imported: false }
     if (!tracker.isStable(pick)) {
       setTimeout(() => scan(), STABLE_MS + 500).unref?.()
@@ -698,11 +830,12 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     for (const w of watchers) w.close()
     watchers = []
     const config = loadConfig(root, { fs })
-    for (const dir of [config.downloadsDir, config.extraDir]) {
+    for (const dir of watchedDirs(config, { fs, home })) {
       if (!dir) continue
       try {
         const w = fs.watch(dir, { persistent: false }, (_event, name) => {
-          if (name && !String(name).toLowerCase().startsWith("instagram-")) return
+          const n = String(name || "").toLowerCase()
+          if (name && !n.startsWith("instagram-") && !n.startsWith("meta-")) return
           clearTimeout(debounce)
           debounce = setTimeout(() => scan(), 2000)
         })
@@ -752,6 +885,7 @@ module.exports = {
   exportFingerprint,
   findExportRoot,
   findFfmpeg,
+  googleDriveDirs,
   ingestExport,
   injectBridge,
   loadConfig,
@@ -760,10 +894,12 @@ module.exports = {
   matchesFromUiState,
   mimeFor,
   parseExportName,
+  parseMetaFolderName,
   pickExportToImport,
   publicStatus,
   resolveReportPath,
   saveConfigPatch,
   saveUiState,
   scanForExports,
+  watchedDirs,
 }

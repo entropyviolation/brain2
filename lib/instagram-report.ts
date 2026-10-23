@@ -33,6 +33,8 @@ export interface InstagramStatus {
     ok: boolean
   } | null
   watching: string[]
+  /** Google Drive "My Drive" folders also watched for Meta's scheduled export. */
+  drive?: string[]
   handle: string
   reportBase: string
   canIngest?: boolean
