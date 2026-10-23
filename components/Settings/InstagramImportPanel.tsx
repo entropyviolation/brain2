@@ -48,7 +48,7 @@ export function InstagramImportPanel() {
       </p>
       <p className="text-sm text-muted-foreground" data-testid="instagram-analysis-settings-note">
         If you ran the Instagram analysis, choose its <strong>summary.json</strong> (in instagram-analysis/out/)
-        instead. That fills seven lists in the <strong>People</strong> folder: followers, following, mutuals, no
+        instead. That fills seven lists on Lists Home: followers, following, mutuals, no
         follow-back, fans, pending requests and blocked, each with the report&rsquo;s columns. The interaction counts are
         what you did toward each account. The export has no follower counts for other accounts.
       </p>

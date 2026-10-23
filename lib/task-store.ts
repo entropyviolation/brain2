@@ -575,6 +575,7 @@ export const useTaskStore = create<TaskState>()(
           // Built-in Instagram lists (`lib/instagram-lists.ts`). Not imported: that module uses this store.
           if (deleted?.id === "people-i-follow-on-instagram" || deleted?.instagramFollowingList) return state
           if (deleted?.id === "people-who-follow-me-on-instagram" || deleted?.instagramFollowersList) return state
+          if (deleted?.instagramAnalysisList) return state
           // Re-parent any sublists onto the deleted category's parent (or root)
           // so deleting a mid-tree category never orphans its descendants.
           const newParentId = deleted?.parentListId
