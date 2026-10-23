@@ -408,3 +408,55 @@ if (LLM?.conflicts?.conflicts) {
     if (P2.caveats) root.append(h("p", { class: "take" }, "Caveats: " + P2.caveats));
   }
 }
+
+// ---------- reply time by week ----------
+// Median minutes to answer, per week, last 52 weeks (analyze2.py reply_weekly). Thin lines are single weeks; thick ones a 4-week median.
+const wkLabel = (w) => { const d = new Date(w + "T00:00"); return `Week of ${MON[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
+const wkTick = (w, i) => (i % 13 === 0 ? `${MON[+w.slice(5, 7) - 1]} ${w.slice(0, 4)}` : null);
+const medOf = (v) => { const xs = v.filter((x) => x != null).sort((a, b) => a - b); return xs.length ? xs[Math.floor(xs.length / 2)] : null; };
+const roll4 = (v) => v.map((_, i) => (v.slice(Math.max(0, i - 3), i + 1).filter((x) => x != null).length >= 2 ? medOf(v.slice(Math.max(0, i - 3), i + 1)) : null));
+function replyWeeks(parent, rw, them, height) {
+  const all = [...rw.me, ...rw.them].filter((x) => x != null).sort((a, b) => a - b);
+  const cap = all.length ? all[Math.floor(all.length * 0.95)] * 1.15 : 10;
+  linesMonths(parent, rw.weeks, [
+    { name: "You, that week", values: rw.me, color: css("me"), width: 1, opacity: 0.35 },
+    { name: `${them}, that week`, values: rw.them, color: css("them"), width: 1, opacity: 0.35 },
+    { name: "You, 4-week median", values: roll4(rw.me), color: css("me"), width: 2.5 },
+    { name: `${them}, 4-week median`, values: roll4(rw.them), color: css("them"), width: 2.5 }],
+  { floor: 0, max: cap, height: height || 220, label: wkLabel, tick: wkTick, fmtv: minutes, dec: 0 });
+  legend(parent, [["You", css("me")], [them, css("them")]]);
+}
+function replyTrend(v) {
+  const a = medOf(v.slice(-4)), b = medOf(v.slice(-12, -4));
+  if (a == null || b == null) return "–";
+  const r = a / b; return r < 0.8 ? `faster (${minutes(b)} → ${minutes(a)})` : r > 1.25 ? `slower (${minutes(b)} → ${minutes(a)})` : "about the same";
+}
+if (DET.comparisons?.reply_weekly) {
+  const root = $("rt"), rw = DET.comparisons.reply_weekly, n = rw.weeks.length;
+  const c = card(root, "Reply time by week", `Median time to answer in 1:1 chats, last 52 weeks. This week you took ${minutes(rw.me[n - 1])} (last week ${minutes(rw.me[n - 2])}); people took ${minutes(rw.them[n - 1])} to answer you (last week ${minutes(rw.them[n - 2])}). Weeks with fewer than 3 replies are blank.`);
+  replyWeeks(c, rw, "Them");
+  const ppl = people.filter((e) => e.reply_weekly).map((e) => ({ e, n8: [...e.reply_weekly.n_me.slice(-8), ...e.reply_weekly.n_them.slice(-8)].reduce((a, b) => a + b, 0) }))
+    .filter((x) => x.n8 >= 6).sort((a, b) => b.n8 - a.n8).slice(0, 20);
+  if (ppl.length) {
+    const pc = card(root, "Reply time by person, week over week", "Your median reply time and theirs this week, last week and over the last 8 weeks. The trend compares the last 4 weeks with the 8 before. Click a name for the weekly chart.");
+    table(pc, ["Person", "You this week", "last week", "8 weeks", "Your trend", "Them this week", "last week", "8 weeks", "Their trend"], ppl.map(({ e }) => {
+      const r = e.reply_weekly, k = r.weeks.length;
+      return [link(e.name, () => openRelationship(e.id)), minutes(r.me[k - 1]), minutes(r.me[k - 2]), minutes(medOf(r.me.slice(-8))), replyTrend(r.me),
+        minutes(r.them[k - 1]), minutes(r.them[k - 2]), minutes(medOf(r.them.slice(-8))), replyTrend(r.them)];
+    }), [1, 2, 3, 5, 6, 7]);
+  }
+}
+
+// ---------- who's drifting ----------
+{
+  const root = $("driftdiv"), DR = DET.drifting;
+  if (!DR) root.append(h("p", { class: "take" }, "Press Update now to compute this."));
+  else if (!DR.people.length) root.append(h("p", { class: "take" }, `Nobody you texted at least 5 times a week has gone quiet in the last ${DR.recent_days} days.`));
+  else {
+    const top = DR.people[0];
+    const c = card(root, "People who've gone quiet", `People you texted at least 5 times a week in the ${DR.base_days} days before the last ${DR.recent_days}, who are now under a third of that. ${top.name} dropped the most, from ${top.before_per_week} a week to ${top.now_per_week}, starting around ${top.since}. "Changed around" is the day that best splits a busy stretch from a quiet one.`);
+    table(c, ["Person", "Before / week", "Now / week", "Changed around", "Last text", ""], DR.people.map((x) => [
+      x.name, String(x.before_per_week), String(x.now_per_week), x.since || "–", x.last,
+      h("span", { class: "row", style: "margin:0" }, [...(E[x.ent]?.kind === "person" ? [link("Relationship", () => openRelationship(x.ent), "btn xs")] : []), link("Messages", () => openThread(x.ent, x.since ? Date.parse(x.since + "T00:00") / 1000 : undefined), "btn xs")])]), [1, 2]);
+  }
+}

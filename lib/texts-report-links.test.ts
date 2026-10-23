@@ -44,3 +44,13 @@ describe("textsCardFor", () => {
     expect(textsCardFor([], rows)).toBeNull()
   })
 })
+
+describe("readReportRequest sections", () => {
+  it("keeps well-formed sections and drops the rest", () => {
+    expect(
+      readReportRequest({ source: "texts-report", type: "sections", sections: [{ id: "volume", label: "Volume" }, { id: 3 }, null] }),
+    ).toEqual({ type: "sections", sections: [{ id: "volume", label: "Volume" }] })
+    expect(readReportRequest({ source: "texts-report", type: "section", id: "calls" })).toEqual({ type: "section", id: "calls" })
+    expect(readReportRequest({ source: "texts-report", type: "section" })).toBeNull()
+  })
+})
