@@ -20,8 +20,10 @@ import {
   INSTAGRAM_ANALYSIS_LIST_IDS,
   INSTAGRAM_FOLLOWERS_LIST_ID,
   INSTAGRAM_FOLLOWING_LIST_ID,
-  PEOPLE_FOLDER_ID,
+  ensureInstagramAnalysisLists,
+  ensureInstagramFollowingList,
 } from "@/lib/instagram-lists"
+import { pinSystemListsToHome } from "@/lib/home-system-lists"
 import { planDuplicateList } from "@/lib/lists-duplicate"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import { useTaskStore } from "@/lib/task-store"
@@ -173,13 +175,13 @@ describe("summary.json through the Instagram upload", () => {
   const upload = (value: unknown) =>
     importInstagramExportTexts([{ name: "summary.json", text: JSON.stringify(value) }])
 
-  it("fills seven lists in the People folder with the report's columns", () => {
+  it("fills seven lists with the report's columns", () => {
     const report = upload(summary())
     expect(report.ok).toBe(true)
     expect(report.message).toContain("Read the Instagram analysis from 2026-10-22.")
     expect(report.message).toContain("Added 5.")
 
-    const { lists, tasks, folders } = useTaskStore.getState()
+    const { lists, tasks } = useTaskStore.getState()
     const mutuals = lists.find((l) => l.id === INSTAGRAM_ANALYSIS_LIST_IDS.mutuals)!
     expect(mutuals.name).toBe("Instagram mutuals")
     expect(mutuals.instagramAnalysisList).toBe("mutuals")
@@ -192,11 +194,7 @@ describe("summary.json through the Instagram upload", () => {
     expect(following.displayedAttributes).toContain(IG_LAST_ENGAGED)
     expect(following.itemAttributes?.find((a) => a.id === IG_FOLLOWED_ME)?.name).toBe("Follows me since")
 
-    const folder = folders.find((f) => f.id === PEOPLE_FOLDER_ID)!
-    expect(folder.name).toBe("People")
-    expect(folder.listIds).toEqual(
-      expect.arrayContaining([INSTAGRAM_FOLLOWERS_LIST_ID, INSTAGRAM_FOLLOWING_LIST_ID, ...Object.values(INSTAGRAM_ANALYSIS_LIST_IDS)]),
-    )
+    expect(useTaskStore.getState().folders.some((f) => f.listIds.includes(INSTAGRAM_ANALYSIS_LIST_IDS.mutuals))).toBe(false)
     expect(useListsUiStore.getState().listDisplay[INSTAGRAM_ANALYSIS_LIST_IDS.blocked]).toBe("table")
 
     const mutual = tasks.find((t) => t.attributes?.[IG_USERNAME] === "mutual_one")!
@@ -205,14 +203,11 @@ describe("summary.json through the Instagram upload", () => {
     expect(new Set(tasks.map((t) => t.id)).size).toBe(tasks.length)
   })
 
-  it("updates in place on a second run and leaves a renamed list and a moved list alone", () => {
+  it("updates in place on a second run and leaves a renamed list alone", () => {
     upload(summary())
     const store = useTaskStore.getState()
     const fans = store.lists.find((l) => l.id === INSTAGRAM_ANALYSIS_LIST_IDS.fans)!
     store.updateList({ ...fans, name: "Fans" })
-    store.addFolder({ id: "elsewhere", name: "Elsewhere", createdAt: new Date(), listIds: [] })
-    store.removeListFromFolder(PEOPLE_FOLDER_ID, INSTAGRAM_ANALYSIS_LIST_IDS.blocked)
-    store.addListToFolder("elsewhere", INSTAGRAM_ANALYSIS_LIST_IDS.blocked)
     const count = store.tasks.length
 
     const report = upload(summary())
@@ -222,7 +217,6 @@ describe("summary.json through the Instagram upload", () => {
     expect(after.tasks).toHaveLength(count)
     expect(after.lists.find((l) => l.id === INSTAGRAM_ANALYSIS_LIST_IDS.fans)!.name).toBe("Fans")
     expect(after.lists.filter((l) => l.instagramAnalysisList === "fans")).toHaveLength(1)
-    expect(after.folders.find((f) => f.id === PEOPLE_FOLDER_ID)!.listIds).not.toContain(INSTAGRAM_ANALYSIS_LIST_IDS.blocked)
   })
 
   it("joins an account already imported from the followers download", () => {
@@ -242,21 +236,26 @@ describe("summary.json through the Instagram upload", () => {
     expect(after[0].attributes?.["ig-story-likes"]).toBe(14)
   })
 
-  it("lets an analysis list be deleted, and a duplicate is an ordinary list", () => {
+  it("refuses delete on an analysis list, and a duplicate is an ordinary list", () => {
     upload(summary())
     const pending = useTaskStore.getState().lists.find((l) => l.id === INSTAGRAM_ANALYSIS_LIST_IDS.pending)!
     expect(planDuplicateList(pending, { lists: useTaskStore.getState().lists, folders: [] } as never).list.instagramAnalysisList).toBeUndefined()
     useTaskStore.getState().deleteList(pending.id)
-    expect(useTaskStore.getState().lists.some((l) => l.id === pending.id)).toBe(false)
-    expect(useTaskStore.getState().removedListIds).toContain(pending.id)
+    expect(useTaskStore.getState().lists.some((l) => l.id === pending.id)).toBe(true)
+  })
 
-    // Importing again makes the list under a fresh id, so the tombstone cannot drop it on reload.
-    upload(summary())
-    const again = useTaskStore.getState().lists.filter((l) => l.instagramAnalysisList === "pending")
-    expect(again).toHaveLength(1)
-    expect(again[0].id).not.toBe(pending.id)
-    const asked = useTaskStore.getState().tasks.find((t) => t.attributes?.[IG_USERNAME] === "asked")!
-    expect(asked.lists).toContain(again[0].id)
+  it("makes all five analysis lists empty before any import and pins all seven on Home", () => {
+    const ids = ensureInstagramAnalysisLists()
+    expect(ids).toEqual(Object.values(INSTAGRAM_ANALYSIS_LIST_IDS))
+    expect(useTaskStore.getState().tasks.some((t) => t.lists?.some((id) => ids.includes(id)))).toBe(false)
+    useListsUiStore.setState({ homePinned: [] })
+    ensureInstagramFollowingList()
+    const pinned = pinSystemListsToHome()
+    expect(pinned).toEqual(expect.arrayContaining([INSTAGRAM_FOLLOWING_LIST_ID, ...ids]))
+    expect(useListsUiStore.getState().homePinned).toEqual(expect.arrayContaining(ids))
+    // A second call adopts, it does not add copies.
+    expect(ensureInstagramAnalysisLists()).toEqual(ids)
+    expect(useTaskStore.getState().lists.filter((l) => l.instagramAnalysisList)).toHaveLength(5)
   })
 
   it("still reads the followers download the old way", () => {

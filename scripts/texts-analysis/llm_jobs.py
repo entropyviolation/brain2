@@ -119,3 +119,50 @@ def analyze_relationship(eid, params, ctx, progress, fresh=False):
         raise RuntimeError("model call failed")
     r.update({"ent": eid, "name": e["name"], "yearly": yearly, "model": L.MODEL})
     return r
+
+
+MOOD_SYS = (f"You read a sample of one month of text messages between {L.ME} and another person and judge the emotional tone "
+            "between them that month. " + L.GROUND)
+MOOD_SCHEMA = '{"tone": "one to three words", "score": -2 to 2 (-2 hard, 0 neutral, 2 warm), "summary": "one sentence, paraphrased"}'
+
+
+def sample_month(msgs, idxs, target=80, seed=11):
+    """A few runs of consecutive messages spread across the month, so the model sees real exchanges."""
+    if len(idxs) <= target:
+        return idxs
+    import random
+    rnd, picked, n = random.Random(seed + idxs[0]), set(), target
+    while n > 0:
+        snip = min(12, n)
+        st = rnd.randrange(0, len(idxs) - snip + 1)
+        picked.update(idxs[st:st + snip]); n -= snip
+    return sorted(picked)
+
+
+def analyze_mood(eid, params, ctx, progress, fresh=False):
+    t = _thread(eid)
+    by_m = {}
+    for i, m in enumerate(t["msgs"]):
+        by_m.setdefault(datetime.fromtimestamp(m[0]).strftime("%Y-%m"), []).append(i)
+    months = [k for k in sorted(by_m) if len(by_m[k]) >= 20][-int(params.get("months") or 24):]
+    notes = _notes_block(ctx)
+    out = []
+    for k, mo in enumerate(months, 1):
+        progress(f"month {mo} ({k}/{len(months)})")
+        idx = sample_month(t["msgs"], by_m[mo])
+        lines, prev = [], None
+        for i in idx:
+            if prev is not None and i != prev + 1:
+                lines.append("…")
+            lines.append(L.fmt_line(t["msgs"][i], t["name"])); prev = i
+        r = L.ask(MOOD_SYS, f"Other person: {t['name']}. Month: {mo}. {len(by_m[mo])} messages that month.\n"
+                  f"Allie's own notes (her perspective):\n{notes}\n\nReturn JSON: {MOOD_SCHEMA}\n\nExcerpts:\n" + "\n".join(lines), 300, fresh=fresh)
+        if r.get("error"):
+            raise RuntimeError("model call failed")
+        try:
+            score = max(-2.0, min(2.0, float(r.get("score"))))
+        except (TypeError, ValueError):
+            score = None
+        out.append({"month": mo, "messages": len(by_m[mo]), "tone": str(r.get("tone") or "")[:40], "score": score, "summary": str(r.get("summary") or "")[:300]})
+    return {"ent": eid, "name": t["name"], "months": out, "model": L.MODEL}
+

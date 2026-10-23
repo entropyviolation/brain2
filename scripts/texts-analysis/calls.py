@@ -135,6 +135,9 @@ def main():
         "by_service": dict(Counter(df["service"])),
         "longest10": [{"date": r["ts"].strftime("%Y-%m-%d"), "name": r["name"], "minutes": round(r["dur"] / 60, 1), "out": bool(r["out"])} for _, r in longest.iterrows()],
         "recent_days": dict(sorted(recent_days.items())),
+        # Every call, for the per-person calls + texts timeline: [epoch, person key, outgoing, missed, minutes].
+        # The key matches the person card's key in detail.json (same resolve_handle).
+        "log": [[int(t.timestamp()), k, int(o), int(ms), round(float(d) / 60, 1)] for t, k, o, ms, d in zip(df["ts"], df["peer"], df["out"], df["missed"], df["dur"])],
     }
     (OUT / "calls.json").write_text(json.dumps(out, ensure_ascii=False))
     print(f"calls: {len(df)} calls, {out['meta']['hours']} h, {out['meta']['first'][:10]} to {out['meta']['last'][:10]}")

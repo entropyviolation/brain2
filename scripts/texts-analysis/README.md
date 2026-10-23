@@ -43,6 +43,25 @@ Three keys in the `settings` table of `out/annotations.sqlite`, written by the r
 - `merges` `{from_key: {to, name}}`: Name and merge → fold another chat into this card. Undo removes the row.
 - `names` `{key: name}`: Name and merge → Rename.
 
-Each of these re-runs the pipeline (`POST /api/refresh`); Brain2 reloads the frame when it ends. Person cards carry `key` and `handles`, and `detail.json` carries the current `overrides`. Card ids (`p01`…) are ranks, so a merge can shift which id a card has; notes and labels keyed by those ids can move. **Planned:** key notes by `key`.
+Each of these re-runs the pipeline (`POST /api/refresh`); Brain2 reloads the frame when it ends. Person cards carry `key` and `handles`, and `detail.json` carries the current `overrides`. Card ids (`p01`…) are ranks, so a merge can shift which id a card has; saved rows follow the card by its numbers instead (see "Topic review" below).
 
 In Brain2, the frame also sends its person cards (`index`), which Person → View text analytics uses. Brain2 can ask the frame to `open` the card for some numbers.
+
+## Topic review
+
+_Last mapped: 2026-10-23_
+
+Topic chips on a relationship page open the conversations behind them. Confirm, reject, change, add or comment on a tag. Corrections are append-only rows in `topic_feedback` (`out/annotations.sqlite`), for later training on your own texts. Saved rows follow a person by their numbers, not by card rank. See [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md) → "Topic review and your corrections". A report built before this asks for Update now first.
+
+## Sections and folding
+
+_Last mapped: 2026-10-23_
+
+`report_app.js` reads the section list from the header nav. Each section folds from the arrow by its heading, remembered in `localStorage`. A section taller than about 3.5 screens is cut with **Show all**. Inside Brain2's main window the nav moves to the Analytics sidebar (`nav`, `sections`, `section`, `goto` messages).
+
+## Trends, drifting, timeline, search, mood
+
+_Last mapped: 2026-10-23_
+
+See [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md) → "Reply trends, drifting, calls + texts, search, mood". New data: `reply_weekly` (overall in `comparisons`, and per person), `drifting` in `detail.json`, and `log` in `calls.json`. New routes: `GET /api/search`, job kind `mood`. Thread rows are `[ts, me, who, text, mid, topic bits]`; Python readers take the first five (`llm_pass.fmt_line`).
+

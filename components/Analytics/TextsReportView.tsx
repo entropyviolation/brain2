@@ -12,7 +12,9 @@
  * (`lib/phone-person-links.ts`). The frame sends back its person cards, kept
  * for Person → View text analytics (`writeTextsIndex`). Only messages from
  * the frame's own window and origin are read. Open in window shows the same
- * view at `/popout/?view=texts` (`popout`).
+ * view at `/popout/?view=texts` (`popout`). In the main window the frame's
+ * sections are listed in the Analytics sidebar (`lib/texts-report-nav.ts`)
+ * and the frame hides its own nav; the pop-out keeps it.
  */
 "use client"
 
@@ -32,6 +34,7 @@ import { linkHandlesToPerson, unlinkHandlesFromPerson } from "@/lib/phone-person
 import { createPerson, ensurePeopleIKnowList, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
 import { openItemDetailPage } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
+import { useTextsNavStore } from "@/lib/texts-report-nav"
 import { ChartFrame } from "./chart-frame"
 
 type State =
@@ -74,12 +77,16 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
       if (!req) return
       if (req.type === "ready") {
         sendPeople()
+        // In the main window the report's sections move to the Analytics sidebar; the pop-out keeps its own nav.
+        frameRef.current?.contentWindow?.postMessage({ source: "brain2", type: "nav", sidebar: !popout }, frameOrigin)
         // Person → View text analytics: open that relationship once the frame is listening.
         const handles = takePendingTextsOpen()
         if (handles?.length) frameRef.current?.contentWindow?.postMessage({ source: "brain2", type: "open", handles }, frameOrigin)
         return
       }
       if (req.type === "index") return writeTextsIndex(req.people)
+      if (req.type === "sections") return popout ? undefined : useTextsNavStore.getState().setSections(req.sections)
+      if (req.type === "section") return popout ? undefined : useTextsNavStore.getState().setActive(req.id)
       if (req.type === "refreshing") {
         setState((s) => (s.kind === "ready" ? { ...s, status: { ...s.status, running: true } } : s))
         return
@@ -98,7 +105,15 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)
-  }, [frameOrigin, sendPeople, people])
+  }, [frameOrigin, sendPeople, people, popout])
+
+  // Sidebar → frame: scroll the report to a section.
+  useEffect(() => {
+    if (popout || !frameOrigin) return
+    const { setGoto } = useTextsNavStore.getState()
+    setGoto((id) => frameRef.current?.contentWindow?.postMessage({ source: "brain2", type: "goto", id }, frameOrigin))
+    return () => setGoto(null)
+  }, [popout, frameOrigin])
 
   const start = useCallback(async () => {
     const bridge = getDesktopTextsBridge()

@@ -1,7 +1,7 @@
 // App layer: annotations, conflict review, relationship pages and on-demand AI jobs.
 // Works read-only from file://. When served by serve.py (http://127.0.0.1:8765) it can write.
 const SERVER = location.protocol.startsWith("http");
-let STATE = { annotations: [], labels: [], notes: [], jobs: [], detector: null, ctypes: null };
+let STATE = { annotations: [], labels: [], notes: [], jobs: [], detector: null, ctypes: null, topic_feedback: [] };
 const CTYPES_DEFAULT = ["logistics", "deep talk", "banter", "plans", "support", "flirting", "venting", "news"];
 const ctypes = () => STATE.ctypes || CTYPES_DEFAULT;
 const CANDS = DET.conflicts.candidates;
@@ -68,7 +68,7 @@ function renderJobs() {
     const name = E[j.ent]?.name || j.ent;
     const row = h("div", { class: "jrow " + j.status }, [
       h("i", { class: "dot " + j.status }),
-      h("div", {}, [h("b", {}, `${j.kind === "conflict" ? "Conflict" : "Relationship"} · ${name}`), h("small", {}, j.status === "running" ? j.progress || "running" : j.status === "error" ? (j.error || "error").slice(0, 80) : j.status)]),
+      h("div", {}, [h("b", {}, `${{ conflict: "Conflict", mood: "Mood by month" }[j.kind] || "Relationship"} · ${name}`), h("small", {}, j.status === "running" ? j.progress || "running" : j.status === "error" ? (j.error || "error").slice(0, 80) : j.status)]),
     ]);
     if (j.status === "queued" || j.status === "running") row.append(link("Cancel", async () => { await api("POST", `/api/jobs/${j.id}/cancel`); refreshState(); }, "btn xs"));
     else if (j.status === "done") row.append(link("Open", () => j.kind === "conflict" ? openConflict(j.ent, j.ref) : openRelationship(j.ent), "btn xs"));
@@ -513,6 +513,13 @@ if (IN_BRAIN2) {
       b2Send({ type: "index", people: personEnts().map((x) => ({ ent: x.id, name: x.name, handles: x.handles || [] })) });
       syncPeopleLinks().catch((err) => console.error(err));
       listeners.forEach((fn) => { try { fn(); } catch (err) { console.error(err); } });
+    } else if (ev.data.type === "nav") {
+      // Brain2's main window lists the sections in its sidebar, so this page hides its own nav there.
+      B2.origin = B2.origin || ev.origin;
+      document.body.classList.toggle("b2nav", !!ev.data.sidebar);
+      if (ev.data.sidebar) { b2Send({ type: "sections", sections: SECTIONS.map(({ id, label }) => ({ id, label })) }); sendSection(); }
+    } else if (ev.data.type === "goto" && ev.origin === B2.origin) {
+      gotoSection(ev.data.id);
     } else if (ev.data.type === "open" && ev.origin === B2.origin) {
       const hit = entForHandles(ev.data.handles);
       if (hit) openRelationship(hit.id);
@@ -630,7 +637,13 @@ function openRelationship(eid) {
     const pa = e.pronouns.me || {}, pb = e.pronouns.them || {}, la = e.length.me || {}, lb = e.length.them || {};
     table(pc, ["", "I /100", "you /100", "we /100", "I:you", "chars", "words"], [["Me", pa.i_rate, pa.you_rate, pa.we_rate, pa.i_to_you, la.chars_mean?.toFixed(1), la.words_mean?.toFixed(1)], [e.name, pb.i_rate, pb.you_rate, pb.we_rate, pb.i_to_you, lb.chars_mean?.toFixed(1), lb.words_mean?.toFixed(1)]].map((r) => r.map((v) => v ?? "–")), [1, 2, 3, 4, 5, 6]);
     const tc = card(g2, "Topics vs your normal", "Keyword-based. Above 1× means this topic comes up more than in your texts overall.");
-    tc.append(h("div", { class: "chips" }, Object.entries(e.themes).sort((x, y) => (y[1].lift || 0) - (x[1].lift || 0)).map(([k, v]) => h("span", { class: "chip", html: `${k}<b>${v.lift == null ? "–" : v.lift.toFixed(1) + "×"}</b>` }))));
+    tc.append(h("div", { class: "chips" }, Object.entries(e.themes).sort((x, y) => (y[1].lift || 0) - (x[1].lift || 0)).map(([k, v]) => {
+      const n = topicReviewed(eid, k), c = h("button", { class: "chip", type: "button", title: `See the ${k} conversations${SERVER ? " and correct them" : ""}`, html: `${k}<b>${v.lift == null ? "–" : v.lift.toFixed(1) + "×"}</b>${n ? `<b>· ${n} reviewed</b>` : ""}` });
+      c.onclick = () => openTopic(eid, k); return c;
+    })));
+    if (e.reply_weekly) { const rc = card(body, "Reply time by week", `Median time to answer, last 52 weeks. Your trend: ${replyTrend(e.reply_weekly.me)}. Theirs: ${replyTrend(e.reply_weekly.them)}.`); replyWeeks(rc, e.reply_weekly, e.name, 200); }
+    dayTimeline(card(body, "Texts and calls by day", "Texts above the line (yours and theirs), calls below (minutes; a red tick is a missed call). Click a day to open its messages."), e);
+    moodCard(card(body, "Mood by month", SERVER ? "An on-demand read by the local model: a sample of each month's texts, scored from −2 (hard) to +2 (warm), next to the keyword sentiment line. Nothing leaves this Mac." : "Run serve.py to read mood."), e);
     // conflicts
     const cc = card(body, "Conflicts", "Detected candidates and the ones you marked. Confirm or reject to teach the detector.");
     const refs = conflictRefs(eid);
@@ -652,6 +665,202 @@ function openRelationship(eid) {
   };
   paint();
   const off = onState(() => { if (!body.isConnected) { off(); return; } const y = mbody.parentElement.scrollTop; paint(); mbody.parentElement.scrollTop = y; });
+}
+
+// ---------- topics: the conversations behind a chip, and your corrections ----------
+// Corrections are append-only rows in topic_feedback (serve.py). The latest one per conversation wins.
+const TOPICS = Object.keys(DET.theme_lexicon || {});
+const topicVerdict = { confirmed: "Confirmed", rejected: "Not this topic", changed: "Changed", added: "Added by you" };
+function topicEvents(ent, topic, mid) {
+  return STATE.topic_feedback.filter((f) => f.ent === ent && f.start_mid === mid && (f.topic === topic || (f.verdict === "changed" && f.new_topic === topic)));
+}
+function topicStatus(ent, topic, mid) {
+  const ev = topicEvents(ent, topic, mid).filter((f) => f.verdict).pop();
+  if (!ev || ev.verdict === "clear") return null;
+  return ev.topic === topic ? ev : { ...ev, verdict: "added", moved_from: ev.topic };
+}
+function topicReviewed(ent, topic) {
+  return new Set(STATE.topic_feedback.filter((f) => f.ent === ent && (f.topic === topic || f.new_topic === topic)).map((f) => f.start_mid)).size;
+}
+function topicRegex(topic) {
+  const ws = (DET.theme_lexicon[topic] || []).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/'/g, "'?").replace(/ /g, "\\s+"));
+  return ws.length ? new RegExp(`(^|[^a-z0-9'])(${ws.join("|")})(?=$|[^a-z0-9'])`, "gi") : null;
+}
+function markWords(text, re) {
+  const out = []; let last = 0, m; re.lastIndex = 0;
+  while ((m = re.exec(text))) { const a = m.index + m[1].length; out.push(text.slice(last, a), h("b", {}, m[2])); last = a + m[2].length; }
+  out.push(text.slice(last)); return out;
+}
+async function openTopic(eid, topic) {
+  const e = E[eid];
+  const b = openModal(`${e.name}: ${topic}`);
+  mbody.parentElement.classList.add("wide");
+  b.append(h("div", { class: "row" }, [link("← Relationship", () => openRelationship(eid), "btn")]), h("p", { class: "take" }, "Loading…"));
+  let t;
+  try { t = await loadThread(eid); } catch (err) { b.lastChild.textContent = err.message + ". Run analyze2.py to create the thread files."; return; }
+  b.lastChild.remove();
+  const bit = TOPICS.indexOf(topic), msgs = t.msgs;
+  if (bit < 0 || (msgs.length && msgs[0][5] == null)) { b.append(h("p", { class: "take" }, "This report was built before topic review existed. Press Update now, then open the topic again.")); return; }
+  const re = topicRegex(topic);
+  // Conversations: a 6-hour gap starts a new one (same rule as the analyzer).
+  const convs = []; let cur = null;
+  msgs.forEach((m, i) => {
+    if (!cur || m[0] - msgs[i - 1][0] >= 6 * 3600) convs.push(cur = { a: i, b: i, hits: [] });
+    cur.b = i; if ((m[5] >> bit) & 1) cur.hits.push(i);
+  });
+  convs.forEach((c) => {
+    c.start_mid = msgs[c.a][4]; c.end_mid = msgs[c.b][4]; c.start_epoch = msgs[c.a][0]; c.end_epoch = msgs[c.b][0]; c.n = c.b - c.a + 1;
+    const words = new Set(); c.hits.forEach((i) => { re.lastIndex = 0; let m; while ((m = re.exec(msgs[i][3] || ""))) words.add(m[2].toLowerCase()); }); c.matched = [...words];
+  });
+  const rec = (c) => ({ ent: eid, topic, start_mid: c.start_mid, end_mid: c.end_mid, start_epoch: c.start_epoch, end_epoch: c.end_epoch,
+    auto: c.hits.length > 0, auto_hits: c.hits.length, n_msgs: c.n, matched: c.matched, theme_version: DET.theme_version });
+  const send = async (c, extra) => { await api("POST", "/api/topics", { ...rec(c), ...extra }); await refreshState(); };
+  let filter = "open", sort = "hits", shown = 25;
+  const body = h("div"); b.append(body);
+  const paint = () => {
+    body.innerHTML = "";
+    const st = (c) => topicStatus(eid, topic, c.start_mid);
+    const list = convs.filter((c) => c.hits.length || st(c));
+    const count = (v) => list.filter((c) => (st(c)?.verdict || "open") === v).length;
+    body.append(h("p", { class: "take" }, `Keyword-based. ${fmt(list.filter((c) => c.hits.length).length)} of ${fmt(convs.length)} conversations use ${topic} words. ` +
+      `Reviewed: ${count("confirmed")} confirmed, ${count("rejected")} not this topic, ${count("changed")} changed, ${count("added")} added by you.` + (SERVER ? " Your corrections are kept on this Mac to train topic tagging on your own life later." : " Run serve.py to correct them.")),
+      h("p", { class: "take" }, [h("small", {}, `Words: ${(DET.theme_lexicon[topic] || []).join(", ")}`)]));
+    const tabs = h("div", { class: "fchips" });
+    [["open", "To review"], ["confirmed", "Confirmed"], ["rejected", "Not this topic"], ["changed", "Changed"], ["added", "Added by you"], ["all", "All"]].forEach(([k, l]) =>
+      tabs.append(link(`${l} (${k === "all" ? list.length : count(k)})`, () => { filter = k; shown = 25; paint(); }, "tab" + (filter === k ? " on" : ""))));
+    const sortSel = h("select", {}, [["hits", "Most matches"], ["new", "Newest"], ["old", "Oldest"]].map(([v, l]) => h("option", { value: v }, l)));
+    sortSel.value = sort; sortSel.onchange = () => { sort = sortSel.value; paint(); };
+    body.append(tabs, h("div", { class: "erow" }, [h("span", { class: "take" }, "Sort"), sortSel]));
+    const rows = list.filter((c) => filter === "all" || (st(c)?.verdict || "open") === filter)
+      .sort((x, y) => sort === "new" ? y.start_epoch - x.start_epoch : sort === "old" ? x.start_epoch - y.start_epoch : y.hits.length - x.hits.length || y.start_epoch - x.start_epoch);
+    if (!rows.length) body.append(h("p", { class: "take" }, "Nothing here."));
+    rows.slice(0, shown).forEach((c) => body.append(convRow(c, st(c))));
+    if (rows.length > shown) body.append(h("div", { class: "row" }, [link(`Show more (${rows.length - shown} left)`, () => { shown += 25; paint(); }, "btn")]));
+  };
+  function convRow(c, s) {
+    const el = h("div", { class: "pnote" });
+    const d0 = new Date(c.start_epoch * 1000);
+    el.append(h("div", {}, [h("b", {}, `${dayStr(d0)} · ${timeStr(d0)}`), ` ${c.n} messages · ${c.hits.length} with ${topic} words` + (c.matched.length ? ` (${c.matched.join(", ")})` : "") +
+      (s ? ` · ${s.moved_from ? `moved here from ${s.moved_from}` : s.verdict === "changed" ? `changed to ${s.new_topic}` : topicVerdict[s.verdict]}` : "")]));
+    const show = c.hits.length ? c.hits.slice(0, 4) : [c.a, c.a + 1, c.a + 2].filter((i) => i <= c.b);
+    show.forEach((i) => { const [ts, me, who, text] = msgs[i];
+      el.append(h("div", { class: "take" }, [h("small", {}, `${timeStr(new Date(ts * 1000))} ${me ? "You" : who || e.name}: `), ...(c.hits.includes(i) ? markWords(text || "", re) : [text || "[attachment]"])])); });
+    if (c.hits.length > show.length) el.append(h("small", { class: "take" }, `+${c.hits.length - show.length} more matching messages`));
+    const row = h("div", { class: "row" }, [link("Open conversation", () => openThread(eid, c.start_epoch, msgs[c.hits[0] ?? c.a][4]), "btn xs")]);
+    if (SERVER) {
+      const v = s && !s.moved_from ? s.verdict : s?.moved_from ? "added" : null;
+      row.append(link(v === "confirmed" ? "✓ Confirmed" : "Confirm", () => send(c, { verdict: v === "confirmed" ? "clear" : "confirmed" }), "btn xs" + (v === "confirmed" ? " on" : "")),
+        link(v === "rejected" ? "✕ Not this topic" : "Not this topic", () => send(c, { verdict: v === "rejected" ? "clear" : "rejected" }), "btn xs" + (v === "rejected" ? " on" : "")));
+      const others = [...TOPICS.filter((x) => x !== topic), ...new Set(STATE.topic_feedback.map((f) => f.new_topic).filter((x) => x && !TOPICS.includes(x)))];
+      const pick = (label, fn) => { const sel = h("select", {}, [h("option", { value: "" }, label), ...others.map((x) => h("option", { value: x }, x)), h("option", { value: "__new" }, "New topic…")]);
+        const name = h("input", { type: "text", placeholder: "New topic", hidden: "" });
+        name.onkeydown = (ev) => { if (ev.key === "Enter" && name.value.trim()) fn(name.value.trim().toLowerCase()); if (ev.key === "Escape") { name.hidden = true; sel.value = ""; } };
+        sel.onchange = () => { if (sel.value === "__new") { name.hidden = false; name.focus(); } else if (sel.value) fn(sel.value); };
+        return h("span", { class: "row", style: "margin:0" }, [sel, name]); };
+      row.append(pick("Change to…", (x) => send(c, { verdict: "changed", new_topic: x })),
+        pick("Also tag as…", (x) => api("POST", "/api/topics", { ...rec(c), topic: x, verdict: "added", auto: false, auto_hits: 0, matched: [] }).then(refreshState)));
+      const last = topicEvents(eid, topic, c.start_mid).filter((f) => f.topic === topic && f.note != null).pop();
+      const ta = h("textarea", { class: "notes", rows: 1, placeholder: "Comment on this tag (why it's right or wrong)…" }); ta.value = last?.note || "";
+      const ok = h("small", { class: "take" }, last?.note ? `Saved ${last.created.replace("T", " ")}` : "");
+      ta.onchange = async () => { if (ta.value === (last?.note || "")) return; await send(c, { verdict: null, note: ta.value }); };
+      el.append(row, h("div", { class: "nwrap" }, [ta, ok]));
+    } else el.append(row);
+    return el;
+  }
+  paint();
+  const off = onState(() => { if (!body.isConnected) { off(); return; } const y = mbody.parentElement.scrollTop; paint(); mbody.parentElement.scrollTop = y; });
+}
+
+// ---------- texts + calls by day (one person) ----------
+function dayTimeline(parent, e) {
+  const box = h("div"); parent.append(box);
+  const calls = (typeof CALLS !== "undefined" && CALLS?.log && e.key) ? CALLS.log.filter((c) => c[1] === e.key) : null;
+  let span = 365;
+  const sel = h("select", {}, [[90, "Last 90 days"], [365, "Last year"], [0, "Everything"]].map(([v, l]) => h("option", { value: v }, l)));
+  sel.value = span; sel.onchange = () => { span = +sel.value; draw(); };
+  parent.insertBefore(h("div", { class: "erow" }, [sel, h("span", { class: "take" }, calls ? `${fmt(calls.length)} calls with ${e.name}.` : e.key ? "No call history on this Mac." : "Press Update now to match calls to this card.")]), box);
+  let t = null;
+  const draw = async () => {
+    box.innerHTML = "";
+    if (!t) { try { t = await loadThread(e.id); } catch (err) { box.append(h("p", { class: "take" }, err.message)); return; } }
+    const dk = (ep) => { const d = new Date(ep * 1000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+    const end = new Date(e.last + "T00:00"), start = span ? new Date(end - (span - 1) * 864e5) : new Date(e.first + "T00:00");
+    const days = []; for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) days.push(dk(d / 1000));
+    const ix = new Map(days.map((d, i) => [d, i]));
+    const me = days.map(() => 0), them = days.map(() => 0), mins = days.map(() => 0), missed = days.map(() => 0), ncall = days.map(() => 0);
+    t.msgs.forEach((m) => { const i = ix.get(dk(m[0])); if (i != null) (m[1] ? me : them)[i]++; });
+    (calls || []).forEach((c) => { const i = ix.get(dk(c[0])); if (i == null) return; ncall[i]++; mins[i] += c[4]; if (c[3]) missed[i]++; });
+    const W = 1000, H = 220, L = 40, R = 8, mid = 130, up = 110, dn = 70;
+    const svg = svgBox(box, W, H);
+    const tmax = niceMax(Math.max(1, ...days.map((_, i) => me[i] + them[i]))), cmax = niceMax(Math.max(1, ...mins));
+    const bw = (W - L - R) / days.length, x = (i) => L + i * bw;
+    s("line", { x1: L, x2: W - R, y1: mid, y2: mid, class: "axisl" }, svg);
+    svgText(svg, L - 6, mid - up + 4, short(tmax), { "text-anchor": "end" }); svgText(svg, L - 6, mid + dn, short(cmax) + " min", { "text-anchor": "end" });
+    days.forEach((d, i) => {
+      if (d.endsWith("-01") && (span !== 0 || d.slice(5, 7) === "01")) svgText(svg, x(i), H - 4, span === 0 ? d.slice(0, 4) : MON[+d.slice(5, 7) - 1], { class: "lab" });
+      const hm = up * me[i] / tmax, ht = up * them[i] / tmax;
+      if (me[i]) s("rect", { x: x(i), y: mid - hm, width: Math.max(bw - 0.4, 0.6), height: hm, fill: css("me") }, svg);
+      if (them[i]) s("rect", { x: x(i), y: mid - hm - ht, width: Math.max(bw - 0.4, 0.6), height: ht, fill: css("them") }, svg);
+      if (mins[i]) s("rect", { x: x(i), y: mid + 1, width: Math.max(bw - 0.4, 0.6), height: Math.max(1, dn * mins[i] / cmax), fill: css("s3") }, svg);
+      if (missed[i]) s("rect", { x: x(i), y: mid + 1, width: Math.max(bw - 0.4, 1), height: 3, fill: css("neg") }, svg);
+    });
+    const hit = s("rect", { x: L, y: 0, width: W - L - R, height: H, fill: "transparent", style: "cursor:pointer" }, svg);
+    const at = (ev) => { const r = svg.getBoundingClientRect(); return Math.max(0, Math.min(days.length - 1, Math.floor(((ev.clientX - r.left) * (W / r.width) - L) / bw))); };
+    hover(hit, (ev) => { const i = at(ev); return `<b>${dayStr(new Date(days[i] + "T00:00"))}</b><br>Texts: you ${me[i]}, ${e.name} ${them[i]}` + (calls ? `<br>Calls: ${ncall[i]}${ncall[i] ? `, ${mins[i].toFixed(1)} min` : ""}${missed[i] ? `, ${missed[i]} missed` : ""}` : ""); });
+    hit.addEventListener("click", (ev) => openThread(e.id, Date.parse(days[at(ev)] + "T00:00") / 1000));
+    legend(box, [["Your texts", css("me")], [`${e.name}'s texts`, css("them")], ["Call minutes", css("s3")], ["Missed call", css("neg")]]);
+  };
+  draw();
+}
+
+// ---------- mood by month (local model, on demand) ----------
+function moodCard(c, e) {
+  c.append(h("div", { class: "row" }, [analyzeButton("mood", e.id, e.id, { months: 24 }, "Read mood by month (last 2 years)")]));
+  const done = latestDone("mood", e.id);
+  if (!done?.result?.months?.length) return;
+  const R = done.result.months, ms = R.map((r) => r.month);
+  const sen = e.series ? ms.map((m) => { const i = e.series.months.indexOf(m); return i < 0 ? null : e.series.sentiment[i]; }) : null;
+  linesMonths(c, ms, [{ name: "Mood (model, −2 to +2)", values: R.map((r) => r.score), color: css("me"), width: 2.5 },
+    ...(sen ? [{ name: "Keyword sentiment × 4", values: sen.map((v) => (v == null ? null : v * 4)), color: css("muted"), width: 1.5 }] : [])],
+  { min: -2, max: 2, zero: true, height: 180, dec: 1, tick: (m) => (m.endsWith("-01") || m === ms[0] ? `${MON[+m.slice(5) - 1]} ${m.slice(0, 4)}` : null) });
+  c.append(h("p", { class: "take" }, `Read ${done.result.generated?.replace("T", " ") || done.finished} by ${done.result.model || "the local model"}. Paraphrased; it can be wrong.`));
+  table(c, ["Month", "Tone", "Score", "What it was like"], R.slice().reverse().map((r) => [mlabel(r.month), r.tone || "–", r.score == null ? "–" : (r.score > 0 ? "+" : "") + r.score, r.summary || ""]), [2]);
+}
+
+// ---------- search all texts (served by serve.py, stays on this Mac) ----------
+{
+  const root = $("searchdiv");
+  if (!SERVER) root.append(h("p", { class: "take" }, "Search runs in the local app: cd ~/texts-analysis && .venv/bin/python serve.py"));
+  else {
+    const q = h("input", { type: "search", placeholder: "Find a word or phrase in every chat…" });
+    const who = h("select", {}, [h("option", { value: "" }, "Everyone"), ...Object.values(E).sort((a, b) => b.total - a.total).map((x) => h("option", { value: x.id }, x.name))]);
+    const side = h("select", {}, [["", "Anyone wrote it"], ["me", "I wrote it"], ["them", "They wrote it"]].map(([v, l]) => h("option", { value: v }, l)));
+    const out = h("div");
+    const c = card(root, "Search your texts", "Searches every message on this Mac, newest first. Click a result to open it in the conversation.");
+    c.append(h("div", { class: "erow" }, [q, who, side]), out);
+    let timer = null, seq = 0;
+    const run = async () => {
+      const text = q.value.trim(); out.innerHTML = "";
+      if (text.length < 2) return;
+      const my = ++seq;
+      out.append(h("p", { class: "take" }, "Searching…"));
+      const r = await api("GET", `/api/search?q=${encodeURIComponent(text)}&ent=${who.value}&side=${side.value}`);
+      if (my !== seq) return;
+      out.innerHTML = "";
+      out.append(h("p", { class: "take" }, r.total ? `${fmt(r.total)} messages${r.total > r.hits.length ? `, showing the newest ${r.hits.length}` : ""}. ` + (r.by_ent || []).slice(0, 8).map((x) => `${E[x.ent]?.name || x.ent} ${fmt(x.n)}`).join(" · ") : "No matches."));
+      const re = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig");
+      r.hits.forEach((x) => {
+        const parts = []; let last = 0, m; re.lastIndex = 0;
+        while ((m = re.exec(x.text))) { parts.push(x.text.slice(last, m.index), h("b", {}, m[0])); last = m.index + m[0].length; if (!m[0]) break; }
+        parts.push(x.text.slice(last));
+        const row = h("div", { class: "pnote", style: "cursor:pointer" }, [h("small", { class: "take" }, `${fmtDate(x.ts)} · ${E[x.ent]?.name || x.ent}${x.me ? " · You" : x.who ? " · " + x.who : ""}`), h("div", {}, parts)]);
+        row.onclick = () => openThread(x.ent, x.ts, x.mid);
+        out.append(row);
+      });
+    };
+    const later = () => { clearTimeout(timer); timer = setTimeout(run, 300); };
+    q.oninput = later; who.onchange = run; side.onchange = run;
+  }
 }
 
 // ---------- conflicts review on the main page ----------
@@ -688,5 +897,56 @@ function openRelationship(eid) {
   };
   paint(); onState(paint);
 }
+
+// ---------- sections: sidebar list in Brain2, collapsing everywhere ----------
+// The header nav names the sections. Each section folds by its heading, and one that grows
+// very long (conflicts, directory…) is cut to a fixed height with "Show all". Folds are remembered per browser.
+const SECTIONS = [...document.querySelectorAll("header nav a")].map((a) => {
+  const id = a.getAttribute("href").slice(1), el = document.getElementById(id);
+  return { id, label: a.textContent.trim(), el, sec: el?.closest("section") };
+}).filter((x) => x.el);
+const LONG_PX = Math.max(3000, innerHeight * 3.5), CUT_PX = Math.max(1400, innerHeight * 1.6);
+const foldKey = "texts-report-folds";
+let folds = {}; try { folds = JSON.parse(localStorage.getItem(foldKey) || "{}"); } catch (err) { folds = {}; }
+const saveFolds = () => { try { localStorage.setItem(foldKey, JSON.stringify(folds)); } catch (err) { /* private window */ } };
+function gotoSection(id) {
+  const x = SECTIONS.find((s) => s.id === id); if (!x) return;
+  if (x.sec?.classList.contains("folded")) setFold(x.sec, false);
+  x.el.scrollIntoView({ block: "start" });
+}
+let lastSection = null;
+function sendSection() {
+  const y = 90; let cur = SECTIONS[0];
+  for (const x of SECTIONS) if (x.el.getBoundingClientRect().top <= y) cur = x;
+  if (cur && cur.id !== lastSection) { lastSection = cur.id; b2Send({ type: "section", id: cur.id }); }
+}
+let secTimer = null;
+addEventListener("scroll", () => { if (!IN_BRAIN2 || secTimer) return; secTimer = setTimeout(() => { secTimer = null; sendSection(); }, 120); }, { passive: true });
+function setFold(sec, on) {
+  sec.classList.toggle("folded", on);
+  const k = sec.dataset.fold; if (on) folds[k] = 1; else delete folds[k]; saveFolds();
+}
+document.querySelectorAll("main > section").forEach((sec) => {
+  const h2 = sec.querySelector(":scope > h2"); if (!h2) return;
+  sec.dataset.fold = sec.id || h2.id || h2.textContent.trim();
+  const fb = h("button", { type: "button", class: "fold", title: "Fold or unfold this section" });
+  h2.append(fb); fb.onclick = () => setFold(sec, !sec.classList.contains("folded"));
+  if (folds[sec.dataset.fold]) sec.classList.add("folded");
+  const more = h("button", { type: "button", class: "btn more", hidden: "" });
+  sec.append(more);
+  more.onclick = () => { const open = sec.classList.toggle("open"); paintCut(); if (!open) h2.scrollIntoView({ block: "start" }); };
+  const paintCut = () => {
+    const tall = sec.scrollHeight > LONG_PX || sec.classList.contains("open");
+    sec.classList.toggle("cut", tall && !sec.classList.contains("open"));
+    const label = sec.classList.contains("open") ? "Show less" : "Show all";
+    more.hidden = !tall; if (more.textContent !== label) more.textContent = label;
+  };
+  sec.style.setProperty("--cut", CUT_PX + "px");
+  let t = null; const later = () => { clearTimeout(t); t = setTimeout(paintCut, 150); };
+  new ResizeObserver(later).observe(sec);
+  new MutationObserver(later).observe(sec, { childList: true, subtree: true });
+  paintCut();
+});
+document.querySelectorAll("header nav a").forEach((a) => a.addEventListener("click", (ev) => { ev.preventDefault(); gotoSection(a.getAttribute("href").slice(1)); }));
 
 if (SERVER) refreshState().then(() => { if (STATE.jobs.some((j) => j.status === "queued" || j.status === "running")) pollJobs(); });
