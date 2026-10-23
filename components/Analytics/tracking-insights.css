@@ -1,0 +1,255 @@
+/* Added Tracking plates and the composition folds. Tokens only; see
+   docs/analytics/time-tracking.md. */
+
+.fm98.an95 .an-fold {
+  border-top: 1px solid var(--at-rule-soft, var(--an-line));
+  padding-top: 6px;
+  margin-top: 8px;
+}
+
+.fm98.an95 .an-fold-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0 6px;
+  user-select: none;
+}
+
+.fm98.an95 .an-fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.fm98.an95 .an-fold-summary::before {
+  content: "▸";
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--an-muted));
+  transition: transform 0.12s ease;
+}
+
+.fm98.an95 .an-fold[open] > .an-fold-summary::before {
+  transform: rotate(90deg);
+}
+
+.fm98.an95 .an-fold-title {
+  font-family: var(--at-display, inherit);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--at-ink, var(--an-ink));
+}
+
+.fm98.an95 .an-fold-note {
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--an-muted));
+}
+
+.fm98.an95 .an-fold-summary:focus-visible {
+  outline: 2px solid var(--at-cyan, var(--an-accent));
+  outline-offset: 2px;
+}
+
+.fm98.an95 .an-track-kicker {
+  margin-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fm98.an95 .an-rows-more {
+  margin-top: 4px;
+}
+
+/* Controls row shared by the added plates. Wraps on a phone. */
+.fm98.an95 .an-ins-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 4px 0 10px;
+}
+
+.fm98.an95 .an-ins-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--at-ink-soft, var(--an-ink));
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-ins-field input[type="number"] {
+  width: 4.5rem;
+}
+
+.fm98.an95 .an-ins-field input[type="range"] {
+  width: 9rem;
+}
+
+.fm98.an95 .an-ins-search {
+  min-width: 10rem;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.fm98.an95 .an-ins-cut {
+  margin-top: 10px;
+}
+
+/* Sized squares */
+.fm98.an95 .an-squares {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.fm98.an95 .an-square {
+  display: flex;
+  align-items: flex-end;
+  padding: 3px 4px;
+  border: 0;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.fm98.an95 .an-square > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.fm98.an95 .an-square:focus-visible {
+  outline: 2px solid var(--at-ink, var(--an-ink));
+  outline-offset: 1px;
+}
+
+.fm98.an95 .an-square.is-anchor {
+  background: transparent;
+  border: 1px dashed var(--at-ink-faint, var(--an-muted));
+  color: var(--at-ink-faint, var(--an-muted));
+  cursor: default;
+}
+
+/* Mirror split */
+.fm98.an95 .an-mirror {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.fm98.an95 .an-mirror-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(9rem, 14rem) 1fr;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 22px;
+  font-size: 12px;
+}
+
+.fm98.an95 .an-mirror-row.is-head {
+  font-size: 11px;
+  color: var(--at-ink-faint, var(--an-muted));
+  border-bottom: 1px solid var(--at-rule-soft, var(--an-line));
+  margin-bottom: 4px;
+}
+
+.fm98.an95 .an-mirror-row.is-head > :first-child {
+  text-align: right;
+}
+
+.fm98.an95 .an-mirror-row.is-head > :nth-child(2) {
+  text-align: center;
+}
+
+.fm98.an95 .an-mirror-side {
+  display: flex;
+  height: 12px;
+}
+
+.fm98.an95 .an-mirror-side.is-left {
+  justify-content: flex-end;
+}
+
+.fm98.an95 .an-mirror-side > i {
+  display: block;
+  height: 100%;
+  min-width: 1px;
+}
+
+.fm98.an95 .an-mirror-mid {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm98.an95 .an-mirror-mid > b {
+  font-weight: 600;
+}
+
+/* Drill list tools */
+.fm98.an95 .an-drill-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0 6px;
+}
+
+@media (max-width: 719px) {
+  .fm98.an95 .an-mirror-row {
+    grid-template-columns: 1fr minmax(6rem, 9rem) 1fr;
+  }
+}
+
+/* The fold names the band, so the band's own first title would repeat it. */
+.fm98.an95 .an-fold-body > .an-film:first-child > .an-film-title,
+.fm98.an95 .an-fold-body .an-avg-day-title {
+  display: none;
+}
+
+.fm98.an95 .an-square-fig {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.fm98.an95 .an-square-fig > figcaption {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--at-ink-soft, var(--an-ink));
+  max-width: 6.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plain inputs in the added plates: same height as the chips. */
+.fm98.an95 .an-ins-tools input[type="number"],
+.fm98.an95 .an-ins-search {
+  height: 24px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--at-ink, var(--an-ink));
+  background: var(--at-paper-hi, var(--an-hi));
+  border: 1px solid var(--at-paper-edge, var(--an-line));
+  border-radius: 3px;
+}
+
+.fm98.an95 .an-ins-tools input[type="range"] {
+  accent-color: var(--at-ink, var(--an-ink));
+}
+
+.fm98.an95 .an-ins-tools select,
+.fm98.an95 .an-drill-tools select {
+  height: 24px;
+  min-width: 7rem;
+  font-size: 12px;
+}
+

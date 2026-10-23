@@ -30,6 +30,13 @@ export const PeriodDeltaTable = memo(function PeriodDeltaTable({
       ) : (
         <div className="an-plot-well an-delta-well">
           <div className="an-delta-rows">
+            <div className="an-delta-row is-head" aria-hidden>
+              <span />
+              <span className="an-delta-name">Pen</span>
+              <span className="an-delta-num">Now</span>
+              <span className="an-delta-num">Change</span>
+              <span className="an-delta-num">%</span>
+            </div>
             {rows.map((row) => (
               <div key={row.id} className="an-delta-row">
                 <span className="an-delta-swatch" style={{ background: row.color }} aria-hidden />
