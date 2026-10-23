@@ -9,7 +9,13 @@
 //
 //  Recording and upload live in LocationRecorder, not the plugin, because iOS
 //  relaunches the app in the background for a location event with no web view.
-//  AppDelegate calls LocationRecorder.shared.resumeIfEnabled() at launch.
+//  AppDelegate calls LocationRecorder.shared.resumeIfEnabled() at launch and
+//  keepOn() each time the app comes to the front.
+//
+//  On by default: once the upload is set up and location is allowed, recording
+//  starts and stays on until the person taps Turn off. While permission is only
+//  "While Using", keepOn() asks for "Always" again (iOS shows that prompt at
+//  most once; after that only Settings can change it, see openSettings).
 //
 //  JS side: lib/mobile/location-bridge.ts (jsName "BrainLocation").
 //  Registered in AppViewController.swift.
@@ -93,6 +99,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
 
     private enum Key {
         static let enabled = "brain2.location.enabled"
+        static let userStopped = "brain2.location.userStopped"
         static let uploadUrl = "brain2.location.uploadUrl"
         static let token = "brain2.location.token"
         static let publicKey = "brain2.location.publicKey"
@@ -119,6 +126,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         defaults.set(uploadUrl, forKey: Key.uploadUrl)
         defaults.set(token, forKey: Key.token)
         defaults.set(publicKey, forKey: Key.publicKey)
+        keepOn()
     }
 
     private var isConfigured: Bool {
@@ -186,11 +194,13 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
 
     func start() {
         defaults.set(true, forKey: Key.enabled)
+        defaults.set(false, forKey: Key.userStopped)
         DispatchQueue.main.async { self.beginMonitoring() }
     }
 
     func stop() {
         defaults.set(false, forKey: Key.enabled)
+        defaults.set(true, forKey: Key.userStopped)
         DispatchQueue.main.async {
             self.manager.stopMonitoringSignificantLocationChanges()
             self.manager.stopMonitoringVisits()
@@ -201,6 +211,30 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     func resumeIfEnabled() {
         guard defaults.bool(forKey: Key.enabled) else { return }
         DispatchQueue.main.async { self.beginMonitoring() }
+    }
+
+    /// Call when the app comes to the front. Starts recording if it is set up,
+    /// allowed and not turned off by the person, and asks for "Always" while
+    /// permission is only "While Using".
+    func keepOn() {
+        DispatchQueue.main.async {
+            let status = self.manager.authorizationStatus
+            let allowed = status == .authorizedAlways || status == .authorizedWhenInUse
+            if allowed && self.isConfigured && !self.defaults.bool(forKey: Key.userStopped) && !self.defaults.bool(forKey: Key.enabled) {
+                self.start()
+            }
+            if status == .authorizedWhenInUse && self.defaults.bool(forKey: Key.enabled) {
+                self.manager.requestAlwaysAuthorization()
+            }
+        }
+    }
+
+    /// The app's page in iPhone Settings, where Location can be set to Always.
+    func openSettings() {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+        }
     }
 
     private func beginMonitoring() {
@@ -377,6 +411,18 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
 
     // MARK: Status
 
+    /// When this sideloaded build stops opening: the profile's ExpirationDate.
+    /// A free Apple ID profile lasts 7 days. Nil for App Store builds and the simulator.
+    static let appExpiresAt: Date? = {
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url),
+              let start = data.range(of: Data("<?xml".utf8)),
+              let end = data.range(of: Data("</plist>".utf8)), start.lowerBound < end.upperBound,
+              let plist = try? PropertyListSerialization.propertyList(from: data.subdata(in: start.lowerBound..<end.upperBound), format: nil) as? [String: Any]
+        else { return nil }
+        return plist["ExpirationDate"] as? Date
+    }()
+
     func status(_ done: @escaping ([String: Any]) -> Void) {
         DispatchQueue.main.async {
             let permission = Self.permissionName(self.manager.authorizationStatus)
@@ -391,6 +437,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
                 let last = self.defaults.double(forKey: Key.lastUploadAt)
                 if last > 0 { out["lastUploadAt"] = last }
                 if let error = self.defaults.string(forKey: Key.lastError) { out["lastError"] = error }
+                if let expires = Self.appExpiresAt { out["appExpiresAt"] = Self.ms(expires) }
                 done(out)
             }
         }
@@ -410,6 +457,7 @@ public class LocationPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "flush", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise),
     ]
 
     @objc func getStatus(_ call: CAPPluginCall) {
@@ -443,5 +491,10 @@ public class LocationPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func flush(_ call: CAPPluginCall) {
         LocationRecorder.shared.flush { call.resolve(["ok": $0]) }
+    }
+
+    @objc func openSettings(_ call: CAPPluginCall) {
+        LocationRecorder.shared.openSettings()
+        call.resolve()
     }
 }

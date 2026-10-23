@@ -15,7 +15,7 @@ seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
 | `MobileApp.tsx` | Login gate + sticky full-width topbar (incl. **From Notes**, **Phone Notes**, shelf shadow) + `HomeDashboard` / Lists. Listing Apple Notes still needs Mac Notes.app. Phone Notes is the Telegram Shortcut queue. |
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
 | `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
-| `MobileLocationCard.tsx` | iPhone location. Shows only in the iOS build. Upload setup (URL, upload-only token, capture public key), Turn on (asks While Using, then Always, then starts), Send now, Turn off. The plugin keeps the setup; the card stores nothing. See [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md). |
+| `MobileLocationCard.tsx` | iPhone location. Shows only in the iOS build. Upload setup (URL, upload-only token, capture public key), Save goes straight on to Turn on (asks While Using, then Always, then starts). Recording stays on across launches until Turn off. **Set to Always** opens iPhone Settings while only While Using is granted. Send now. The plugin keeps the setup; the card stores nothing. See [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md). |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
 | `lib/mobile-sync.ts` | HTTP client for the hub (`/api/sync` on the dev server) |
 
