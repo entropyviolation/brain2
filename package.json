@@ -30,7 +30,8 @@
     "mobile:dev": "npm run dev",
     "mobile:cap:sync": "bash -c 'export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; npx cap sync ios'",
     "mobile:ios:init": "bash -c 'export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; npm run build && npx cap add ios && node scripts/mobile-ios-ats.mjs && npx cap sync ios'",
-    "mobile:ios": "bash -c 'export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; npm run build && node scripts/mobile-ios-ats.mjs && npx cap sync ios && npx cap open ios'"
+    "mobile:ios": "bash -c 'export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; npm run build && node scripts/mobile-ios-ats.mjs && npx cap sync ios && npx cap open ios'",
+    "ios:reinstall": "node scripts/ios-reinstall.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^7.6.8",
