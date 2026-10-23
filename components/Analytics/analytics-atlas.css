@@ -5,15 +5,14 @@
  * Nothing here changes what a control does. Drawn from designrefs 0001–0124,
  * read as technical diagrams rather than costume:
  *
- * - Range bay is a cobalt instrument plate (0124 cover) with concentric field
- *   rings and spokes (0047 periodic law, 0058 / 0061 degree wheels, 0049),
- *   a damped trace (0016) and a degree ruler (0007, 0034). Keys are
+ * - Range bay is a plain paper header with one ink rule (the cobalt plate,
+ *   field rings and degree ruler were retired 2026-10-23). Keys are
  *   chrome-rimmed typewriter keys (0087, 0088, 0116). Lamps are steel ball
  *   bearings (0045, 0097); the lit lamp is a cool pearl (0105).
  * - Groups are steel catalog drawers (0082). Views are index cards with
  *   trapezoid tabs; the open card is the black guide tab with its number
  *   (0084, 0085).
- * - Canvas is cool white paper over a cobalt graph rule (0118). Plates carry
+ * - Canvas is plain cool white paper (no graph rule). Plates carry
  *   a double rule, crop marks (0011, 0075) and FIG. numbering (0069, 0083).
  * - Readouts are one ruled card (0120), not a stack of cards.
  * - Scopes are dark graphite wells with a cobalt grid and a white trace.
@@ -41,12 +40,12 @@
   --at-steel-hi: #eef1f4;
   --at-steel: #9ca4ae;
   --at-steel-lo: #4b525b;
-  /* Handheld pixel faces (app/layout.tsx): Pixelify Sans for titles and
-     values, Silkscreen for keys, labels and ticks, DotGothic16 for prose. */
-  --at-display: var(--font-pixelify), "Pixelify Sans", var(--font-w95, "w95fa"), monospace;
+  /* Type (app/layout.tsx): Bricolage Grotesque for titles and values,
+     Instrument Sans for keys, labels, ticks and prose. Numbers are tabular. */
+  --at-display: var(--font-an-display), "Bricolage Grotesque", system-ui, sans-serif;
   --at-serif: var(--at-display);
-  --at-type: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
-  --at-sans: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  --at-type: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
+  --at-sans: var(--at-type);
 
   /* Steel ball bearing, lit from the upper left. */
   --at-bearing:
@@ -110,19 +109,11 @@
   padding: 12px 14px;
   margin: 3px 3px 0;
   border-radius: 2px;
-  color: var(--at-frost);
-  background:
-    repeating-linear-gradient(90deg, rgba(232, 237, 245, 0.5) 0 1px, transparent 1px 40px) left 6px bottom 5px / calc(100% - 12px) 7px no-repeat,
-    repeating-linear-gradient(90deg, rgba(232, 237, 245, 0.32) 0 1px, transparent 1px 8px) left 6px bottom 5px / calc(100% - 12px) 3px no-repeat,
-    url("/analytics-atlas/field-lines.svg") right -180px center / 1600px 160px no-repeat,
-    radial-gradient(ellipse at 85% 50%, rgba(120, 160, 255, 0.22), transparent 60%),
-    linear-gradient(180deg, var(--at-night-2), var(--at-night) 80%);
-  box-shadow:
-    0 0 0 1px #000000,
-    inset 0 0 0 1px rgba(232, 237, 245, 0.18),
-    inset 0 0 0 4px var(--at-night),
-    inset 0 0 0 5px rgba(232, 237, 245, 0.12),
-    inset 0 10px 24px rgba(0, 0, 20, 0.45);
+  /* Plain paper header: one ink rule under it, no cobalt plate, no field
+     rings, no ruler ticks (the graph-paper look was retired 2026-10-23). */
+  color: var(--at-ink);
+  background: var(--at-paper-hi);
+  box-shadow: 0 1px 0 var(--at-rule-soft);
 }
 
 .fm98.an95 .an-range-bar > .an-nameplate {
@@ -134,7 +125,7 @@
   font-style: normal;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--at-frost);
+  color: var(--at-ink);
   text-shadow: none;
   background: none;
   box-shadow: none;
@@ -142,11 +133,10 @@
 
 .fm98.an95 .an-range-bar > .an-nameplate::before {
   content: "";
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--at-frost) 0 1.5px, transparent 2px);
-  box-shadow: 0 0 0 1px var(--at-frost), inset 0 0 0 3px var(--at-night), inset 0 0 0 3.6px rgba(232, 237, 245, 0.55);
+  background: var(--at-ink);
 }
 
 .fm98.an95 .an-range-keys,
@@ -155,13 +145,8 @@
   gap: 9px;
   padding: 7px 9px;
   border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(4, 10, 28, 0.6), rgba(10, 20, 50, 0.4));
-  box-shadow:
-    inset 0 0 0 1px rgba(232, 237, 245, 0.18),
-    inset 0 2px 6px rgba(0, 0, 20, 0.7),
-    0 1px 0 rgba(232, 237, 245, 0.08);
-  backdrop-filter: blur(1px);
+  background: var(--at-paper-deep);
+  box-shadow: inset 0 0 0 1px var(--at-rule-soft);
 }
 
 .fm98.an95 .an-range-keys {
@@ -255,8 +240,7 @@
   box-shadow:
     0 0 0 1px var(--at-ink),
     0 0 0 3px var(--at-paper-hi),
-    0 0 0 3.5px var(--at-ink),
-    0 2px 6px 3px rgba(0, 0, 20, 0.35);
+    0 0 0 3.5px var(--at-ink);
   margin: 0 4px;
 }
 
@@ -542,13 +526,7 @@
 .fm98.an95 .an-content {
   counter-reset: at-plate;
   padding: 18px 22px 28px;
-  background:
-    linear-gradient(var(--at-grid-major) 1px, transparent 1px) 0 0 / 40px 40px,
-    linear-gradient(90deg, var(--at-grid-major) 1px, transparent 1px) 0 0 / 40px 40px,
-    linear-gradient(var(--at-grid) 1px, transparent 1px) 0 0 / 8px 8px,
-    linear-gradient(90deg, var(--at-grid) 1px, transparent 1px) 0 0 / 8px 8px,
-    var(--at-paper);
-  background-attachment: local;
+  background: var(--at-paper);
 }
 
 /* The view's legend, set like an atlas caption under a rule. */
@@ -701,7 +679,7 @@
   border: none;
 }
 
-/* Plot wells: cobalt graph paper inside a single ink rule (0118). */
+/* Plot wells: plain white inside a single ink rule. */
 .fm98.an95 .an-plot-well,
 .fm98.an95 .an-mosaic,
 .fm98.an95 .an-treemap,
@@ -709,12 +687,7 @@
 .fm98.an95 .an-violin,
 .fm98.an95 .an-small-mult,
 .fm98.an95 .an-cycle-plot {
-  background:
-    linear-gradient(var(--at-grid-major) 1px, transparent 1px) -1px -1px / 40px 40px,
-    linear-gradient(90deg, var(--at-grid-major) 1px, transparent 1px) -1px -1px / 40px 40px,
-    linear-gradient(var(--at-grid) 1px, transparent 1px) -1px -1px / 8px 8px,
-    linear-gradient(90deg, var(--at-grid) 1px, transparent 1px) -1px -1px / 8px 8px,
-    #fbfcfd;
+  background: #fbfcfd;
   box-shadow:
     0 0 0 1px var(--at-ink),
     inset 0 1px 3px rgba(20, 30, 55, 0.12);
@@ -1201,7 +1174,7 @@
   border: none !important;
   border-radius: 1px;
   box-shadow: 0 0 0 1px #14171c, 3px 3px 0 0 rgba(20, 23, 28, 0.18);
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   color: #14171c !important;
 }
 
@@ -1215,7 +1188,7 @@
   border: none !important;
   border-radius: 1px !important;
   box-shadow: 0 0 0 1px #14171c, 3px 3px 0 0 rgba(20, 23, 28, 0.18) !important;
-  font-family: var(--font-dotgothic), "DotGothic16", monospace !important;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif !important;
   font-size: 13px !important;
   font-style: normal;
 }
@@ -1242,7 +1215,7 @@
   box-shadow: none;
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
   color: #f9fafb !important;
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: 0.12em;
   text-shadow: none;
@@ -1250,7 +1223,7 @@
 
 .an-drill-summary,
 .an-drill-hint {
-  font-family: var(--font-dotgothic), "DotGothic16", monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-style: normal;
   color: #363c45;
 }
@@ -1260,7 +1233,7 @@
 }
 
 .an-drill-kicker {
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1270,7 +1243,7 @@
 .an-drill-empty {
   background: #fbfcfd;
   box-shadow: 0 0 0 1px rgba(20, 23, 28, 0.22);
-  font-family: var(--font-dotgothic), "DotGothic16", monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-style: normal;
 }
 
@@ -1278,7 +1251,7 @@
   border: none;
   background: linear-gradient(180deg, #fbfcfd, #e2e6ea);
   box-shadow: 0 0 0 1px #14171c;
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-weight: 400;
 }
 
@@ -1322,7 +1295,7 @@
 
 .an-drill-block-time,
 .an-drill-block-dur {
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-size: 12px;
 }
 
@@ -1337,7 +1310,7 @@
 
 .an-drill .an-open-lists:not(#at) {
   color: #173a7a;
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
   font-weight: 400;
 }
 
@@ -1412,23 +1385,24 @@
 }
 
 /* ======================================================================
-   Pixel type everywhere in the room
+   One type family everywhere in the room
    ====================================================================== */
 
-/* analytics-chrome.css sets Karla on these; the room is pixel now. */
+/* analytics-chrome.css sets Karla on these; the room uses Instrument Sans. */
 .fm98.an95 .an-studio,
 .fm98.an95 .an-range-bar,
 .fm98.an95 .an-content,
 .an-drill,
 .an-popup {
-  font-family: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 .fm98.an95 svg text {
-  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-family: var(--font-an-text), "Instrument Sans", system-ui, sans-serif;
 }
 
-/* Silkscreen is wide: tighter tracking on keys and engraved labels. */
+/* Keys and engraved labels keep light tracking. */
 .fm98.an95 :is(.an-range-chip, .an-chip, .an-studio-tools button, .an-open-lists, .an-view-btn, .an-group-btn):not(#at),
 .fm98.an95 :is(.an-readout-label, .an-readout-note, .an-nav > .an-nameplate, .an-range-bar > .an-nameplate, .an-range-label, .an-phase-table th),
 .an-drill-kicker,
