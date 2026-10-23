@@ -867,6 +867,7 @@ export type AttributeType =
   | "multifile" // multiple attached files (FileValue[])
   | "item"
   | "link"
+  | "phone" // phone numbers (string[]), stored as +<digits>; People I Know links texts and calls by them
   | "goal" // an x / y progress value with custom labels (e.g. actual / goal)
   | "formula" // computed cell from an expression over other attributes (Feature 5, Worker E)
 

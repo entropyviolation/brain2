@@ -6,7 +6,7 @@
  * `text:` / `call:` verbs, so a hand-sent text and a synced one share a pen),
  * and adds the rows. Re-applying the same records adds nothing.
  */
-import { personRecords } from "@/lib/people-i-know"
+import { personPhoneNumbers, personRecords } from "@/lib/people-i-know"
 import { useTaskStore } from "@/lib/task-store"
 import {
   PEN_PALETTE,
@@ -38,7 +38,7 @@ export function phonePeople(): PhonePerson[] {
     id: task.id,
     name: task.title || task.description || task.id,
     nicknames: task.personProfile?.nicknames,
-    phones: task.personProfile?.phones,
+    phones: personPhoneNumbers(task),
     emails: task.personProfile?.emails,
   }))
 }

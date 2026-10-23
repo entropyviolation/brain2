@@ -36,6 +36,7 @@ import { ListPicker } from "@/components/Lists/list-picker"
 import { formatBytes, resourceKind, RESOURCE_KIND_LABEL } from "@/lib/item-resources"
 import { asArray, asFile, asFiles, asGoal, fileToFileValue } from "./helpers"
 import { itemTitle } from "@/lib/item-utils"
+import { formatHandle, normalizeHandle } from "@/lib/phone-sync/handles"
 import "./attribute-fields.css"
 
 /** At most this many options draw as a row of keys; more fall back to a menu. */
@@ -178,6 +179,67 @@ function MultiStringEditor({
         onBlur={commit}
         placeholder={arr.length ? "Add…" : "Type, then Enter"}
         aria-label={label ? `Add to ${label}` : "Add entry"}
+        className="attr-chip-input"
+      />
+    </div>
+  )
+}
+
+/** Phone numbers as chips. Typed numbers are stored as +<digits>; each chip dials. */
+function PhoneValueEditor({
+  value,
+  onChange,
+  label,
+}: {
+  value: AttributeValue
+  onChange: (v: AttributeValue) => void
+  label?: string
+}) {
+  const arr = asArray(value)
+  const [draft, setDraft] = useState("")
+
+  const commit = () => {
+    const parts = draft
+      .split(/[,;\n]/)
+      .map((s) => normalizeHandle(s))
+      .filter(Boolean)
+    setDraft("")
+    const fresh = parts.filter((p) => !arr.some((have) => normalizeHandle(have) === p))
+    if (fresh.length) onChange([...arr, ...fresh])
+  }
+
+  return (
+    <div className="attr-chip-field">
+      {arr.map((s, i) => (
+        <span key={`${s}-${i}`} className="attr-chip">
+          <a href={`tel:${normalizeHandle(s)}`} title="Call">
+            {formatHandle(s)}
+          </a>
+          <button
+            type="button"
+            className="attr-chip-x"
+            aria-label={`Remove ${formatHandle(s)}`}
+            onClick={() => onChange(arr.filter((_, idx) => idx !== i).length ? arr.filter((_, idx) => idx !== i) : undefined)}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        type="tel"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault()
+            commit()
+          } else if (e.key === "Backspace" && draft === "" && arr.length > 0) {
+            onChange(arr.length > 1 ? arr.slice(0, -1) : undefined)
+          }
+        }}
+        onBlur={commit}
+        placeholder={arr.length ? "Add another number…" : "Phone number, then Enter"}
+        aria-label={label ? `Add to ${label}` : "Add phone number"}
         className="attr-chip-input"
       />
     </div>
@@ -857,6 +919,8 @@ export function AttributeValueField({
       return <FileValueEditor multiple={false} value={value} onChange={onChange} />
     case "multifile":
       return <FileValueEditor multiple value={value} onChange={onChange} />
+    case "phone":
+      return <PhoneValueEditor value={value} onChange={onChange} label={label} />
     case "link":
       return <LinkValueEditor value={value} onChange={onChange} onLive={onLive} label={label} />
     case "goal":

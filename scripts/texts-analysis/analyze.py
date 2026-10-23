@@ -86,6 +86,42 @@ def decode_attributed_body(blob):
         return None
 
 
+# ---------- your merges, names and Brain2 links ----------
+# Saved from the report into out/annotations.sqlite (settings table, via serve.py
+# POST /api/settings), so they survive every refresh:
+#   people_links  [{id, name, handles}]  a Brain2 Person and every number saved on them
+#   merges        {from_key: {to, name}}  a chat folded into another
+#   names         {key: name}             a name you gave a card
+ALIAS, NAMES = {}, {}
+
+
+def load_overrides():
+    db = OUT / "annotations.sqlite"
+    if not db.exists():
+        return {}
+    try:
+        con = open_ro(db)
+        rows = con.execute("SELECT key, value FROM settings WHERE key IN ('people_links', 'merges', 'names')").fetchall()
+        con.close()
+    except sqlite3.Error:
+        return {}
+    out = {}
+    for k, v in rows:
+        try:
+            out[k] = json.loads(v)
+        except ValueError:
+            pass
+    return out
+
+
+def alias(key):
+    seen = set()
+    while key in ALIAS and key not in seen:
+        seen.add(key)
+        key = ALIAS[key]
+    return key
+
+
 # ---------- contacts ----------
 
 def norm_phone(s):
@@ -125,6 +161,21 @@ def load_contacts():
             con.close()
         except sqlite3.Error as e:
             print(f"warn: address book {path}: {e}", file=sys.stderr)
+    # Brain2 links win over Contacts: every number on one Person is one person here.
+    ov = load_overrides()
+    for p in ov.get("people_links") or []:
+        if not isinstance(p, dict) or not p.get("id"):
+            continue
+        key = f"b2:{p['id']}"
+        for h in p.get("handles") or []:
+            k = h.strip().lower() if "@" in h else norm_phone(h)
+            if k:
+                lookup[k] = key
+        labels[key] = p.get("name") or labels.get(key)
+    ALIAS.clear()
+    ALIAS.update({k: v.get("to") if isinstance(v, dict) else v for k, v in (ov.get("merges") or {}).items() if v})
+    NAMES.clear()
+    NAMES.update(ov.get("names") or {})
     return lookup, labels
 
 
@@ -133,8 +184,8 @@ def resolve_handle(hid, lookup):
         return None
     key = hid.strip().lower() if "@" in hid else norm_phone(hid)
     if key and key in lookup:
-        return lookup[key]
-    return "unk:" + hid
+        return alias(lookup[key])
+    return alias("unk:" + hid)
 
 
 # ---------- extraction ----------
@@ -201,7 +252,7 @@ def unknown_label(hid):
 def label_people(keys, labels, raw_for_key):
     out, seen = {}, Counter()
     for k in keys:
-        lab = labels.get(k) if not k.startswith("unk:") else unknown_label(k[4:])
+        lab = NAMES.get(k) or (labels.get(k) if not k.startswith("unk:") else unknown_label(k[4:]))
         lab = lab or unknown_label(raw_for_key.get(k, k))
         seen[lab] += 1
         out[k] = lab if seen[lab] == 1 else f"{lab} ({seen[lab]})"
