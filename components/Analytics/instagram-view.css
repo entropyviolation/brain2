@@ -1,0 +1,101 @@
+/*
+ * components/Analytics/instagram-view.css — Sources → Instagram
+ *
+ * Brain2 furniture around the hosted report only. The report inside the
+ * frame keeps its own CSS; nothing here reaches into it.
+ */
+.fm98.an95 .an-ig {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fm98.an95 .an-ig-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 12px;
+  color: var(--an-ink);
+}
+
+.fm98.an95 .an-ig-field b {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.fm98.an95 .an-ig-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.fm98.an95 .an-ig-running {
+  font-weight: 700;
+}
+
+.fm98.an95 .an-ig-error {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid currentColor;
+  font-size: 12px;
+  color: #a1262d;
+  background: #fff;
+}
+
+.fm98.an95 .an-ig-error p {
+  margin: 0;
+}
+
+.fm98.an95 .an-ig-error pre,
+.fm98.an95 .an-ig-snippet {
+  max-height: 180px;
+  overflow: auto;
+  margin: 6px 0 0;
+  padding: 6px;
+  font: 11px/1.4 ui-monospace, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--an-ink);
+  background: #f4f4f4;
+}
+
+.fm98.an95 .an-ig-note {
+  margin: 0;
+  font-size: 12px;
+}
+
+.fm98.an95 .an-ig-empty {
+  font-size: 13px;
+}
+
+.fm98.an95 .an-ig-steps {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+/* The report scrolls inside its own frame, so its sticky nav sticks. */
+.fm98.an95 .an-ig-frame {
+  display: block;
+  width: 100%;
+  height: max(560px, calc(100vh - 250px));
+  border: 1px solid var(--an-rule, #c0c0c0);
+  background: #fff;
+}
+
+.fm98.an95 .an-ig-more {
+  font-size: 12px;
+}
+
+.fm98.an95 .an-ig-more summary {
+  cursor: pointer;
+}
+
+.fm98.an95 .an-ig-paste {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin: 6px 0;
+  font: 11px/1.4 ui-monospace, Menlo, monospace;
+}
