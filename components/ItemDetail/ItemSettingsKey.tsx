@@ -2,8 +2,8 @@
  * components/ItemDetail/ItemSettingsKey.tsx — Chrome gear for item settings
  *
  * The brushed gear, with no keycap around it. The hit target matches the
- * neighboring window keys (26px). The popup pins it with `id-window-key`
- * beside Minimize and Close. The page uses it in the fascia.
+ * neighboring window keys (26px). On the popup it sits in the title row
+ * with Minimize and Close. The page uses it in the fascia.
  * _Last mapped: 2026-10-24_
  */
 "use client"
