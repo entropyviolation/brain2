@@ -1074,7 +1074,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-now-module .ops-now-bar select,
-.trk95 .trk-now-module .ops-now-bar .native-select {
+.trk95 .trk-now-module .ops-now-bar .native-select,
+.trk95 .trk-now-module .ops-now-bar .ops-now-field {
   min-width: 0;
   max-width: 11rem;
 }
