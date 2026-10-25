@@ -8,7 +8,8 @@
  *
  * One snapshot covers the stores that chase each other (Tracking entries, the
  * sleep log, the live work session, the live pen-color session, habit
- * completions, points, tasks, unfinished objectives). Sleep sync and habit-tracking sync rewrite
+ * completions, points, tasks, unfinished objectives, sitting reviews and the
+ * notes left for the next clock). Sleep sync and habit-tracking sync rewrite
  * derived rows after a paint; restoring only the grid would let them resurrect
  * the stroke. Capturing the cluster means one Cmd+Z returns the Home dashboard
  * to the moment before the action.
@@ -48,6 +49,8 @@ import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
 import type { ParkedObjective } from "@/lib/unfinished-objectives"
+import { useSessionDebriefStore } from "@/lib/session-debrief-store"
+import type { SessionHandoff, SittingReview } from "@/lib/session-debrief-store"
 
 export const MAX_ACTION_HISTORY = 40
 
@@ -97,6 +100,8 @@ type WorldSnap = {
   pointsHistory: ReturnType<typeof usePointsStore.getState>["pointsHistory"]
   tasks: ReturnType<typeof useTaskStore.getState>["tasks"]
   unfinished: ParkedObjective[]
+  handoffs: SessionHandoff[]
+  sittingReviews: SittingReview[]
 }
 
 let pendingBook: (() => void) | null = null
@@ -137,6 +142,7 @@ function applyBookkeeping(snap: WorldSnap): void {
   usePointsStore.setState({ pointsHistory: snap.pointsHistory })
   useTaskStore.setState({ tasks: snap.tasks })
   useUnfinishedObjectivesStore.setState({ rows: snap.unfinished })
+  useSessionDebriefStore.setState({ handoffs: snap.handoffs, reviews: snap.sittingReviews })
 }
 
 /** Browser keydowns paint the grid before habit/points/task bookkeeping. Tests stay synchronous. */
@@ -196,6 +202,8 @@ function captureWorld(): { restore: () => void; world: WorldSnap } {
     pointsHistory: usePointsStore.getState().pointsHistory,
     tasks: useTaskStore.getState().tasks,
     unfinished: useUnfinishedObjectivesStore.getState().rows,
+    handoffs: useSessionDebriefStore.getState().handoffs,
+    sittingReviews: useSessionDebriefStore.getState().reviews,
   }
 
   return {

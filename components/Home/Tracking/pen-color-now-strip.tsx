@@ -33,7 +33,6 @@ import {
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
-  stopPenColorSession,
   tickPenColorSession,
   togglePenColorNowObjectiveComplete,
   togglePenColorSession,
@@ -46,6 +45,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { reviewPenStop } from "@/lib/session-debrief"
 import { useClockTask } from "@/components/Focus/use-clock-task"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
@@ -147,7 +147,7 @@ export function PenColorNowStrip({
     [tasks, session?.penId, session?.taskId],
   )
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) =>
-    stopPenColorSession(new Date(), park ? { parkUnfinished: true } : undefined),
+    reviewPenStop(park),
   )
   const listId = useId()
   const allChoices = useMemo(() => choicesFrom(scopes), [scopes])

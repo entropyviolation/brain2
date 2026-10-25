@@ -31,7 +31,6 @@ import {
   removeWorkNowObjective,
   saveWorkObjectiveForLater,
   sessionElapsedMs,
-  stopWorkingOnOperation,
   toggleWorkNowObjectiveComplete,
   toggleWorkingOnOperation,
 } from "@/lib/operation-work-session"
@@ -40,6 +39,7 @@ import { formatUsualDuration, usualDurationMinutes } from "@/lib/estimated-value
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { attachChoicesForOperation } from "@/lib/unfinished-objectives"
 import "@/components/Operations/operations-chrome.css"
@@ -71,7 +71,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
     [tasks, session],
   )
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) =>
-    stopWorkingOnOperation(new Date(), park ? { parkUnfinished: true } : undefined),
+    reviewWorkStop(park),
   )
 
   if (operations.length === 0) return null
