@@ -497,7 +497,7 @@ describe("TodoPanel", () => {
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").availableNow).toBe(true)
   })
 
-  it("warns in chrome when in-progress count exceeds the soft cap", () => {
+  it("hides the in-progress cap warning and still stores the cap", () => {
     useTaskStore.getState().setTasks(
       ["one", "two", "three", "four"].map((id, index) => ({
         id,
@@ -522,13 +522,57 @@ describe("TodoPanel", () => {
       })),
     )
     render(<TodoPanel />)
-    expect(screen.getByRole("status")).toHaveTextContent("4 in progress (cap 3)")
+    expect(screen.queryByText(/warning only, not a block/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
     expect(screen.getByText("WIP one")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "To Do settings" }))
     fireEvent.change(screen.getByLabelText("In progress cap"), { target: { value: "5" } })
-    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+    expect(screen.queryByText(/warning only, not a block/)).not.toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem(TODO_PREFS_KEY) ?? "{}").wipLimit).toBe(5)
+  })
+
+  it("the Done cell is the glass tube at σ, the card's average, not B/G/E", () => {
+    const base = useTaskStore.getState().tasks[0]
+    useTaskStore.getState().setTasks([
+      {
+        ...base,
+        id: "uneven",
+        description: "Uneven",
+        subtasks: [
+          {
+            id: "a",
+            description: "a",
+            completed: false,
+            tier: "min",
+            subtasks: [
+              { id: "a1", description: "a1", completed: true },
+              {
+                id: "a2",
+                description: "a2",
+                completed: false,
+                subtasks: [
+                  { id: "a2a", description: "a2a", completed: false },
+                  { id: "a2b", description: "a2b", completed: false },
+                  { id: "a2c", description: "a2c", completed: false },
+                ],
+              },
+            ],
+          },
+          { id: "b", description: "b", completed: true, tier: "goal" },
+        ],
+      },
+    ])
+    render(<TodoPanel />)
+    // σ = (1/4 + 1/1) / 2 = 62.5% → 63. Weighted step percent would be 75; ρ is 40.
+    const row = screen.getByText("Uneven").closest(".todo-row") as HTMLElement
+    expect(within(row).getByRole("meter", { name: "Complete 63%" })).toHaveAttribute("aria-valuenow", "63")
+    expect(row.querySelector(".level-gauge")).toBeNull()
+
+    fireEvent.click(screen.getByText("Uneven"))
+    const lid = document.querySelector(".todo-lid") as HTMLElement
+    expect(within(lid).getByRole("button", { name: "Done" })).toBeInTheDocument()
+    expect(lid.querySelector(".level-gauge")).not.toBeNull()
   })
 
   it("opens the focused period's To do list in Lists", () => {

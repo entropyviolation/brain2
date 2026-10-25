@@ -13,7 +13,7 @@ type Candidate = { key: string; account: string; date: string; id: string; kind:
 type Ig = {
   parseExportName: (n: string) => { key: string; account: string; date: string; id: string; zip: boolean } | null
   scanForExports: (dirs: string[]) => Candidate[]
-  pickExportToImport: (c: Candidate[], state: Record<string, unknown>, config: Record<string, unknown>) => Candidate | null
+  pickExportToImport: (c: Candidate[], state: Record<string, unknown>, config: Record<string, unknown>, now?: number) => Candidate | null
   createStabilityTracker: (now: () => number) => { isStable: (c: Candidate) => boolean }
   ingestExport: (c: Candidate, o: { root: string; config: Record<string, unknown>; run: Run; now?: () => number; env?: Record<string, string> }) => Promise<{ ok: boolean; step?: string; buildId?: string }>
   loadConfig: (root: string, o?: { home?: string }) => Record<string, string>
@@ -29,6 +29,14 @@ type Ig = {
   injectBridge: (html: string, ui: Record<string, string>) => string
   publicStatus: (root: string) => { hasReport: boolean; current: { exportDate: string } | null }
   STABLE_MS: number
+  DRIVE_STABLE_MS: number
+  COPY_RETRY_MS: number
+  exportFingerprint: (c: Candidate) => string
+  copyExportTree: (
+    src: string,
+    dest: string,
+    opts?: { fs?: typeof fs; attempts?: number; pause?: () => Promise<void> },
+  ) => Promise<string[]>
 }
 const ig = nodeRequire("./instagram-report.js") as Ig
 
@@ -185,8 +193,46 @@ describe("ingest", () => {
     expect(after.lastError?.step).toBe("analyze")
     expect(ig.resolveReportPath(root, after, "report.html")).toBeTruthy()
     expect(ig.resolveReportPath(root, after, "media/posts/a.jpg")).toBeTruthy()
-    // A failed export is not retried until it changes.
+    // A failed analyze is not retried until the export changes.
     expect(ig.pickExportToImport(ig.scanForExports([downloads]), after, config)).toBeNull()
+  })
+
+  it("retries a Drive copy failure after a wait, and still skips an analyze failure", () => {
+    const c = {
+      key: "instagram-_entropyviolation_-2026-10-23-gUaaX5zH",
+      account: "entropyviolation",
+      date: "2026-10-23",
+      id: "gUaaX5zH",
+      kind: "dir",
+      paths: ["/drive/day"],
+      size: 10,
+      mtimeMs: 5,
+      fromDrive: true,
+    }
+    const fp = ig.exportFingerprint(c)
+    const at = "2026-10-23T15:07:00.000Z"
+    const t0 = Date.parse(at)
+    const row: { fingerprint: string; at: string; ok: boolean; step: string } = {
+      fingerprint: fp,
+      at,
+      ok: false,
+      step: "copy",
+    }
+    const state = {
+      current: { exportDate: "2026-10-22" },
+      imported: { [c.key]: row },
+    }
+    expect(ig.pickExportToImport([c], state, config, t0 + 1000)).toBeNull()
+    expect(ig.pickExportToImport([c], state, config, t0 + ig.COPY_RETRY_MS)?.key).toBe(c.key)
+    // A failure recorded before `step` was stored, with the copy error still on lastError.
+    const legacy = {
+      current: { exportDate: "2026-10-22" },
+      lastError: { step: "copy", exportName: c.key, at, message: "ECANCELED" },
+      imported: { [c.key]: { fingerprint: fp, at, ok: false } },
+    }
+    expect(ig.pickExportToImport([c], legacy, config, t0 + ig.COPY_RETRY_MS)?.key).toBe(c.key)
+    state.imported[c.key].step = "analyze"
+    expect(ig.pickExportToImport([c], state, config, t0 + ig.COPY_RETRY_MS * 2)).toBeNull()
   })
 
   it("reports missing Python packages without touching the report", async () => {
@@ -278,12 +324,26 @@ describe("Google Drive scheduled export", () => {
     const c = igd.scanForExports([drive])
     expect(c.map((x) => [x.key, x.date, x.kind])).toEqual([
       ["meta-2026-Oct-22-20-23-37", "2026-10-22", "dir"],
-      ["meta-2026-Oct-23-20-00-00", "2026-10-23", "zip"],
+      ["instagram-_entropyviolation_-2026-10-23-abc", "2026-10-23", "zip"],
       ["meta-2026-Oct-24-20-00-00", "2026-10-24", "zip"],
     ])
     expect(c[2].paths.map((p) => path.basename(p))).toEqual(["part-1.zip", "part-2.zip"])
     // No account in Meta's folder name: it is not filtered out by the handle.
     expect(igd.pickExportToImport(c, { imported: {} }, config)?.key).toBe("meta-2026-Oct-24-20-00-00")
+  })
+
+  it("takes each day's instagram-* folder inside one meta folder, skipping one with no files yet", () => {
+    const drive = myDrive()
+    const meta = path.join(drive, "meta-2026-Oct-22-20-23-37")
+    makeExportFolder(meta, "instagram-_entropyviolation_-2026-10-22-20PSWrsW")
+    makeExportFolder(meta, "instagram-_entropyviolation_-2026-10-23-gUaaX5zH")
+    // Meta's next day, folders made but no files synced yet.
+    fs.mkdirSync(path.join(meta, "instagram-_entropyviolation_-2026-10-24-zzzzzzzz", "your_instagram_activity"), { recursive: true })
+    const c = igd.scanForExports([drive])
+    expect(c.map((x) => [x.key, x.date])).toEqual([
+      ["instagram-_entropyviolation_-2026-10-22-20PSWrsW", "2026-10-22"],
+      ["instagram-_entropyviolation_-2026-10-23-gUaaX5zH", "2026-10-23"],
+    ])
   })
 
   it("builds the newest export and still archives the ones it skipped", async () => {
@@ -296,7 +356,7 @@ describe("Google Drive scheduled export", () => {
     const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
     // Drive may still be syncing a meta folder, so it waits for the tree to hold still.
     expect((await w.scan()).imported).toBe(false)
-    t += ig.STABLE_MS
+    t += ig.DRIVE_STABLE_MS
     const r = await w.scan()
     w.stop()
     expect(r.imported).toBe(true)
@@ -320,12 +380,68 @@ describe("Google Drive scheduled export", () => {
     let t = 1_000_000
     const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
     await w.scan()
-    t += ig.STABLE_MS
+    t += ig.DRIVE_STABLE_MS
     const r = await w.scan()
     w.stop()
     expect(r.imported).toBe(false)
     expect(ig.loadState(root).current).toBeNull()
     expect(archive.isArchived(root, "2026-10-22-202337")).toBe(false)
     expect(fs.existsSync(path.join(root, "exports", "2026-10-22-202337"))).toBe(false)
+  })
+})
+
+describe("copy from Google Drive", () => {
+  const pause = async () => {}
+
+  function flakyRead(match: string, times: number, code = "ECANCELED") {
+    let left = times
+    const wrapped = Object.create(fs) as typeof fs
+    wrapped.createReadStream = ((p: fs.PathLike, opts?: { encoding?: BufferEncoding | null }) => {
+      if (left > 0 && String(p).endsWith(match)) {
+        left -= 1
+        const { Readable } = require("node:stream") as typeof import("node:stream")
+        const r = new Readable({ read() {} })
+        queueMicrotask(() => {
+          const err = new Error("canceled") as NodeJS.ErrnoException
+          err.code = code
+          r.destroy(err)
+        })
+        return r
+      }
+      return fs.createReadStream(p, opts as Parameters<typeof fs.createReadStream>[1])
+    }) as typeof fs.createReadStream
+    return wrapped
+  }
+
+  it("reads each file, and retries a download Drive cancels", async () => {
+    const src = makeExportFolder(tmp, "day")
+    fs.writeFileSync(path.join(src, "your_instagram_activity", "messages.json"), '{"ok":true}')
+    const dest = path.join(tmp, "out")
+    fs.mkdirSync(dest)
+    const skipped = await ig.copyExportTree(src, dest, { fs: flakyRead("a.jpg", 2), attempts: 4, pause })
+    expect(skipped).toEqual([])
+    expect(fs.readFileSync(path.join(dest, "media", "posts", "a.jpg"), "utf8")).toBe("photo")
+    expect(fs.readFileSync(path.join(dest, "your_instagram_activity", "messages.json"), "utf8")).toBe('{"ok":true}')
+  })
+
+  it("skips a photo Drive will not give up, and still copies the JSON", async () => {
+    const src = makeExportFolder(tmp, "day")
+    fs.writeFileSync(path.join(src, "your_instagram_activity", "messages.json"), '{"ok":true}')
+    const dest = path.join(tmp, "out")
+    fs.mkdirSync(dest)
+    const skipped = await ig.copyExportTree(src, dest, { fs: flakyRead("a.jpg", 10), attempts: 2, pause })
+    expect(skipped).toEqual([path.join("media", "posts", "a.jpg")])
+    expect(fs.existsSync(path.join(dest, "media", "posts", "a.jpg"))).toBe(false)
+    expect(fs.readFileSync(path.join(dest, "your_instagram_activity", "messages.json"), "utf8")).toBe('{"ok":true}')
+  })
+
+  it("fails the copy when a JSON file will not download", async () => {
+    const src = makeExportFolder(tmp, "day")
+    fs.writeFileSync(path.join(src, "your_instagram_activity", "messages.json"), '{"ok":true}')
+    const dest = path.join(tmp, "out")
+    fs.mkdirSync(dest)
+    await expect(ig.copyExportTree(src, dest, { fs: flakyRead("messages.json", 10), attempts: 2, pause })).rejects.toThrow(
+      /Google Drive did not finish downloading/,
+    )
   })
 })

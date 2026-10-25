@@ -94,6 +94,19 @@ describe("CompletionTimeLine", () => {
     expect(screen.getByTitle("Duration, start, or finish is a rough estimate")).toHaveTextContent("Est.")
   })
 
+  it("says the finish time is unknown instead of printing the stamp", () => {
+    render(
+      <CompletionTimeLine
+        task={row({ estimates: undefined, completedCertainty: "unknown", actualDuration: 40 })}
+        completedAt={FINISH}
+        history={[]}
+      />,
+    )
+    expect(screen.getByText("Time unknown")).toBeInTheDocument()
+    expect(screen.queryByText(/8:30/)).not.toBeInTheDocument()
+    expect(screen.getByText("40m")).toBeInTheDocument()
+  })
+
   it("shows a read-only usually chip from peer history without rewriting estimates", () => {
     const peers: Task[] = [
       row({ id: "peer-a", actualDuration: 20, estimates: undefined }),

@@ -6,6 +6,8 @@ Mobile entry for the **Home** tab only (Habits, Plan, To Do, Goals, Tracking —
 
 Phones copy desktop data with a **manual pull** (`MobilePullCard`) after the desktop
 seeds the hub (`lib/mobile-sync.ts`). There is no continuous live-sync engine.
+Texts, calls, and location are a different door: Settings → **Phone sync**
+(`components/Settings/PhoneSyncPanel.tsx`), on the Mac.
 
 ## Entry points
 

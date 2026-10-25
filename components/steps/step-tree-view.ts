@@ -1,10 +1,10 @@
 /**
  * components/steps/step-tree-view.ts — Which rows a step tree draws
  *
- * Pure. Turns a step tree plus the view switches (folds, Hide locked, Show
- * next only, peek) into a flat list of rows: step rows, a dim "+ N more" under
- * a branch showing only its next step, and one quiet "+ step" at the end of
- * every open branch. The tree's data never changes here.
+ * Pure. Turns a step tree plus the view switches (folds, Hide locked, Hide
+ * completed, Show next only, peek) into a flat list of rows: step rows, a dim
+ * "+ N more" under a branch showing only its next step, and one quiet "+ step"
+ * at the end of every open branch. The tree's data never changes here.
  *
  * The Tier filter (`tier`) keeps one level's view (`lib/step-tiers.ts`); a
  * step outside it with an in-view step inside shows greyed as its container.
@@ -38,6 +38,12 @@ export interface StepViewOptions {
   /** Step ids whose children are folded away. */
   folded?: ReadonlySet<string>
   hideLocked?: boolean
+  /**
+   * Skip a step with `completed`. An open parent stays. A completed parent is
+   * skipped with its subtree. Not counted in `hiddenBySwitches` (that line is
+   * for waits, not for done work).
+   */
+  hideCompleted?: boolean
   nextOnly?: boolean
   /** Branches opened in full while Show next only is on. */
   openedNext?: ReadonlySet<string>
@@ -69,6 +75,17 @@ export function hiddenByLock(steps: readonly Subtask[] | undefined, step: Subtas
   return kids.length > 0 && kids.every((kid) => hiddenByLock(steps, kid, extra))
 }
 
+/** Descendants Show next only may collapse. Completed steps drop out of the count when Hide completed is on, and a completed parent takes its subtree. */
+function countableInside(list: readonly Subtask[] | undefined, hideCompleted: boolean): number {
+  if (!hideCompleted) return flattenSteps(list).length
+  let n = 0
+  for (const step of list ?? []) {
+    if (step.completed) continue
+    n += 1 + countableInside(step.subtasks, true)
+  }
+  return n
+}
+
 /** The one step Show next only keeps under a branch: the Just Start pick inside it, else its first open leaf. */
 export function nextStepInBranch(steps: readonly Subtask[] | undefined, branch: Subtask, extra?: (step: Subtask) => boolean): Subtask | undefined {
   const pick = pickStartStep({ subtasks: branch.subtasks })
@@ -89,6 +106,7 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
   // `counted`: an ancestor is already counted as hidden (we are inside a peek).
   const walk = (list: readonly Subtask[], depth: number, parentId: string | null, counted = false) => {
     for (const step of list) {
+      if (options.hideCompleted && step.completed) continue
       let peeked = counted
       if (tierView && !counted && !tierView.ids.has(step.id) && !tierView.containers.has(step.id)) {
         hiddenBySwitches += 1 + flattenSteps(step.subtasks).length
@@ -104,7 +122,7 @@ export function buildStepView(steps: readonly Subtask[] | undefined, options: St
       const greyed = !!tierView?.containers.has(step.id)
       rows.push({ kind: "step", step, depth, parentId, hasKids: kids.length > 0, locked: isStepLocked(all, step, options.extraLock), peeked, ...(greyed ? { greyed } : {}) })
       if (kids.length === 0 || folded.has(step.id)) continue
-      const inside = flattenSteps(kids).length
+      const inside = countableInside(kids, !!options.hideCompleted)
       if (options.nextOnly && inside > 1 && !openedNext.has(step.id)) {
         const next = nextStepInBranch(all, step, options.extraLock)
         const more = inside - (next ? 1 : 0)

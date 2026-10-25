@@ -63,7 +63,7 @@ function ShellClockCardButton({ taskId, stepId }: { taskId: string; stepId?: str
   return (
     <button
       type="button"
-      className="ops-btn trk-now-obj-trigger trk-clock-card-trigger"
+      className="todo-cap trk-now-obj-trigger trk-clock-card-trigger"
       aria-label={`Open task card, ${label}`}
       data-testid="clock-task-card"
       onClick={() => openTodoTaskCard(task, stepId)}
@@ -178,7 +178,7 @@ export function HeaderNowRows() {
 
   return (
     <fieldset
-      className="b2-shell-group b2-shell-now"
+      className="b2-shell-group b2-shell-now b2-now"
       data-testid="header-now-box"
       data-ui-name="Now"
       aria-label="now"

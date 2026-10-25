@@ -378,6 +378,13 @@ export function InstagramView() {
 
       {loadError ? <p className="an-ig-error">Could not read the report status: {loadError}</p> : null}
 
+      {current?.skipped ? (
+        <p className="an-ig-note" role="status">
+          {current.skipped} {current.skipped === 1 ? "file" : "files"} in Google Drive could not be downloaded (a photo
+          or video). The report was still updated.
+        </p>
+      ) : null}
+
       {status?.lastError ? (
         <div className="an-ig-error" role="status">
           <p>

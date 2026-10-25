@@ -857,7 +857,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
  * Pushes is last, so it never moves with the length of a name.
  */
 .todo95 .todo-table {
-  --todo-cols: minmax(0, 1fr) auto auto auto 3.4rem auto auto 3rem;
+  --todo-cols: minmax(0, 1fr) auto auto minmax(9rem, max-content) 3.4rem auto auto 3rem;
   display: grid;
   grid-template-columns: var(--todo-cols);
   column-gap: 8px;
@@ -890,7 +890,7 @@ body.win95-app .todo95 button.todo-scope-lamp {
 
   .todo95 .todo-table .todo-row-closed,
   .todo95 .todo-table .todo-table-head {
-    grid-template-columns: minmax(0, 1fr) 3.4rem 1.2rem 4.6rem 3.4rem 3rem 15.5rem 3rem;
+    grid-template-columns: minmax(0, 1fr) 3.4rem 1.2rem minmax(9rem, max-content) 3.4rem 3rem 15.5rem 3rem;
   }
 }
 
@@ -3051,7 +3051,18 @@ body.win95-app .todo95 button.todo-cap.is-cornflower[type="button"]:not([hidden]
 /* ==== Redesign 2026-10-21: rows keep Card and ▶; everything else is in the drawer ==== */
 
 .todo95 .todo-table {
-  --todo-cols: minmax(0, 1fr) 3.6rem auto auto 3.4rem auto auto 2rem;
+  --todo-cols: minmax(0, 1fr) 3.6rem auto minmax(9rem, max-content) 3.4rem auto auto 2rem;
+}
+
+/* The glass tube fills the Done track. The old 7rem cap stays off the table. */
+.todo95 .todo-table .todo-cell-done.todo-row-mins {
+  max-width: none;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.todo95 .todo-table .todo-row-verbs {
+  margin-left: 0;
 }
 
 .todo95 .todo-table .todo-cell-tier {
@@ -3251,7 +3262,6 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"]:not([h
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: "VT323", var(--font-pixel, monospace);
   font-size: clamp(20px, 2.4vw, 28px);
   font-weight: 400;
   letter-spacing: 0.08em;
@@ -4167,7 +4177,7 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
 .todo95 .todo-gem-stone { flex: none; display: block; max-width: none; }
 
 @media (max-width: 720px) {
-  .todo95 .todo-screen .todo-mark h2 { font-size: 21px; letter-spacing: 0.04em; }
+  .todo95 .todo-screen .todo-mark h2 { font-size: 21px; letter-spacing: 0.10em; }
   .todo95 .todo-load-readout { font-size: 14px; gap: 4px; }
   .todo95 .todo-load-needle { width: 20px; }
 }
@@ -4180,7 +4190,7 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
   letter-spacing: 0.04em;
 }
 
-/* Phone: keep the Done cell (percent, or the B / G / E level gauge) on the meta line. */
+/* Phone: keep the Done cell (the glass tube) on its own line. */
 @media (max-width: 720px) {
   .todo95 .todo-table .todo-row-closed,
   .todo95 .todo-row-closed {
@@ -4228,29 +4238,36 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
 
 /* ==== Polish 2026-10-22: screen type, period row, sort arrow, Show tray, formula bay, Done keys ==== */
 
-/* Screen: chunky Pixelify Sans (loaded in `app/layout.tsx`; VT323 never was) and an even, softer glass. */
-.todo95 .todo-screen .todo-mark h2,
+/* Screen title, open count, and load readout share Silkscreen (loaded in `app/layout.tsx`). */
 .todo95 .todo-screen .todo-mark-count,
 .todo95 .todo-load-readout {
-  font-family: var(--font-pixelify), "w95fa", monospace;
-  font-weight: 600;
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+  letter-spacing: 0.11em;
 }
 
 .todo95 .todo-screen .todo-mark h2 {
-  letter-spacing: 0.06em;
+  font-family: var(--font-silkscreen), Silkscreen, monospace;
+  font-weight: 400;
+  letter-spacing: 0.11em;
   text-shadow: 0 0 2px rgba(125, 255, 196, 0.85), 0 0 8px rgba(125, 255, 196, 0.25);
+}
+
+@media (max-width: 720px) {
+  .todo95 .todo-screen .todo-mark h2,
+  .todo95 .todo-screen .todo-mark-count,
+  .todo95 .todo-load-readout { letter-spacing: 0.10em; }
 }
 
 .todo95 .todo-load-readout {
   font-size: 16px;
-  letter-spacing: 0.02em;
 }
 
 .todo95 .todo-screen .todo-mark-count {
   font-size: 18px;
 }
 
-/* The dot grid over the count splits Pixelify's blocks; a lighter grid keeps the digit legible. */
+/* The dot grid over the count splits Silkscreen's blocks; a lighter grid keeps the digit legible. */
 .todo95 .todo-screen .todo-mark-count::after {
   opacity: 0.35;
 }

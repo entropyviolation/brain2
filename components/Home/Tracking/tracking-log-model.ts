@@ -137,6 +137,14 @@ export function classifyLogInstant(entry: LogTimeEntry, penName?: string): Class
   return null
 }
 
+/** Move a bare intake instant onto Food, Drink, or Drugs. Same fields `paintLogInstant` writes. */
+export function setIntakeClass(entryId: string, intakeClass: IntakeClass): void {
+  useTimeTrackingStore.getState().updateEntry(entryId, {
+    intakeClass,
+    eventKind: `intake.${intakeClass}`,
+  })
+}
+
 /**
  * Tracking-log shelves. Food, drink, drug, bare intake, and events stay on
  * `classifyLogInstant` (analytics uses that). Switch is one extra shelf:

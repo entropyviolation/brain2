@@ -1,19 +1,24 @@
 /**
  * components/Home/ToDo/TaskCardSide.tsx — The task card's right bar: node detail
  *
- * One step selected: `NodeDetail` (path, points by level, needs, unlocks).
- * Several: `SelectionSummary` (aggregate figure). None: the task itself, drawn
- * by `TaskCard` with `NeedsEditor` in task mode. `LogNotes` sits under all three.
+ * One step selected: `NodeDetail` (path, actual against estimate, the first
+ * level inside, points, needs, unlocks). Several: `SelectionSummary`. None:
+ * the task itself, drawn by `TaskCard`, with the same actual-against-estimate
+ * readout and the same `SubstepPreview` of the task's first-level steps.
+ * `LogNotes` sits under all three.
  *
  * Needs come in three kinds (`lib/node-needs.ts`): tasks first (steps in this
  * tree or any task), resources (any item or list), awaiting (`event` items that
  * lock until logged). Only kinds in use show; **+ Add need** picks a kind, then
- * searches, and creates when nothing fits. Points are `PointsDial`s: the node's
+ * searches, and creates when nothing fits. **Make a task wait on this** is
+ * `WaitPicker`: a portaled multiselect. The head's `Nm left` tag writes
+ * `estimatedDuration`. Points are `PointsDial`s: the node's
  * own value and, optionally, what every step inside pays (`stepPoints`).
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import type { StepTier, Subtask, Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { createListItem, itemTitleOrUntitled } from "@/lib/item-utils"
@@ -27,12 +32,17 @@ import { NOTICE_PROMPT, needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
 import { massDone, openSubCard, setEstimate, taskPointsWithSource } from "@/lib/task-card"
 import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { Mosaic } from "@/components/steps/TreeMath"
-import { ItemPenLinksField } from "@/components/ItemDetail/ItemPenTime"
+import { ItemPenLinksField, withClockPen } from "@/components/ItemDetail/ItemPenTime"
+import { PACE_MIN_SAMPLES, paceFor, paceKey, paceSampleCount, type PaceSample } from "@/lib/estimate-pace"
 import { stepPenLinks } from "@/lib/task-clock"
+import { placeSteps } from "@/lib/next-step"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
-import { partsMinutes } from "@/lib/tracked-time"
+import { partsMinutes, stepActualAccount, taskActualAccount } from "@/lib/tracked-time"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { makeNoteEntry } from "@/lib/item-notes"
 import { EstimateCell } from "./EstimateCell"
+import { SpentDiary, type SpentBlocksScope } from "./SpentBlocks"
+import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
 import { SegDigits } from "../dash/dash-primitives"
 
 type Write = (label: string, next: Subtask[]) => void
@@ -110,6 +120,298 @@ function Chip({ label, state, onRemove, onOpen, children }: { label: string; sta
         ×
       </button>
     </span>
+  )
+}
+
+/**
+ * Minutes still believed for undone work. Done steps drop out.
+ * The rule is the same as `effectiveDurationMinutes`: the greater of the
+ * number typed on this node and the sum of what is still open inside it.
+ */
+export function openEstimateMinutes(own: number | undefined, steps: readonly Subtask[] | undefined): number {
+  const mine = own != null && own > 0 ? own : 0
+  const kids = steps ?? []
+  if (!kids.length) return mine
+  const child = kids.reduce((n, step) => n + (step.completed ? 0 : openEstimateMinutes(step.estimatedDuration, step.subtasks)), 0)
+  return Math.max(mine, child)
+}
+
+/**
+ * A pace the lid ghost would use: a pen with samples or an override, else overall.
+ * The bare fallback of 1 (fewer than three samples, no override) is not a pace.
+ */
+export function knownPace(task: Pick<Task, "penLinks"> | undefined, samples: readonly PaceSample[], overrides: Record<string, number> = {}): number | null {
+  for (const { penId } of task?.penLinks ?? []) {
+    const scope = { kind: "pen" as const, penId }
+    if ((overrides[paceKey(scope)] ?? 0) > 0 || paceSampleCount(samples, scope) >= PACE_MIN_SAMPLES) return paceFor(samples, scope, overrides)
+  }
+  const overall = { kind: "overall" as const }
+  if ((overrides[paceKey(overall)] ?? 0) > 0 || paceSampleCount(samples, overall) >= PACE_MIN_SAMPLES) return paceFor(samples, overall, overrides)
+  return null
+}
+
+/** The aside's remaining-time tag. Click opens the readings; the field still writes `estimatedDuration`. */
+export function RemainingEstTag({
+  shown,
+  field,
+  label,
+  onSet,
+  steps,
+  spent = 0,
+  levelMinutes,
+  pace,
+}: {
+  shown: number
+  field?: number
+  label: string
+  onSet: (minutes: number) => void
+  steps?: readonly Subtask[]
+  spent?: number
+  /** `remainingForLevel` for the aimed tier. Omitted when there is nothing to compare. */
+  levelMinutes?: number
+  /** `knownPace`, or null when no pace exists. Times the still-open minutes. */
+  pace?: number | null
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState("")
+  const skipBlur = useRef(false)
+  const pop = useRef<HTMLDivElement>(null)
+  const btn = useRef<HTMLButtonElement>(null)
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(Math.abs(Math.round(n)), unit)
+  const start = field && field > 0 ? String(field) : shown > 0 ? String(shown) : ""
+  const commit = (raw: string) => {
+    const next = raw.trim() === "" ? 0 : Math.max(0, Math.round(Number(raw)) || 0)
+    if (next !== (field ?? 0)) onSet(next)
+    setOpen(false)
+  }
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (btn.current?.contains(target) || pop.current?.contains(target)) return
+      commit(draft)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      skipBlur.current = true
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", onDown)
+    document.addEventListener("keydown", onKey, true)
+    return () => {
+      document.removeEventListener("mousedown", onDown)
+      document.removeEventListener("keydown", onKey, true)
+    }
+  }, [open, draft, field, onSet])
+  const openParts = (steps ?? []).reduce((n, step) => n + (step.completed ? 0 : openEstimateMinutes(step.estimatedDuration, step.subtasks)), 0)
+  const fullLeft = effectiveDurationMinutes(field, steps) - spent
+  const paceMinutes = pace != null && shown > 0 ? Math.round(pace * shown) : null
+  const rows: { name: string; minutes: number; sentence: string }[] = [{ name: "Still open", minutes: shown, sentence: "The greater of the number on this node and what is still undone inside it." }]
+  if (field != null && field > 0 && field !== shown) rows.push({ name: "Your number", minutes: field, sentence: "What you typed on this node." })
+  if ((steps?.length ?? 0) > 0 && openParts !== shown) rows.push({ name: "Open parts", minutes: openParts, sentence: "The sum of the steps that are not done yet." })
+  if ((effectiveDurationMinutes(field, steps) > 0 || spent > 0) && fullLeft !== shown) {
+    rows.push({
+      name: "Full tree, minus logged",
+      minutes: Math.abs(fullLeft),
+      sentence: fullLeft >= 0 ? "The whole tree, after the minutes already logged." : "Logged minutes are past the whole tree by this much.",
+    })
+  }
+  if (levelMinutes != null && levelMinutes !== shown) rows.push({ name: "This level", minutes: levelMinutes, sentence: "Open leaves in the aimed level only." })
+  if (paceMinutes != null) rows.push({ name: "At your pace", minutes: paceMinutes, sentence: "Still open, times the pace you usually take." })
+  if (spent > shown) rows.push({ name: "Already past", minutes: spent - shown, sentence: "Logged time is past the still-open belief by this much." })
+  const title = field && field > 0 && field !== shown
+    ? `Your estimate is ${dur(field)}. The tag shows ${dur(shown)} left on undone work. Click to read the other figures and set your estimate.`
+    : "Your estimate for the time left on undone work. Click to read it and set it."
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        data-no95=""
+        className="tcs-meta-pill"
+        aria-expanded={open}
+        aria-label={`Estimated time left for ${label}`}
+        title={title}
+        onClick={() => {
+          setDraft(start)
+          setOpen((v) => !v)
+        }}
+      >
+        {shown > 0 ? `${dur(shown)} left` : "— left"}
+      </button>
+      {open ? (
+        <div ref={pop} className="tcs-remain" data-task-card-pop="" role="dialog" aria-label={`Time still open for ${label}`}>
+          <label className="tcs-remain-set">
+            <span>Your estimate</span>
+            <input
+              data-no95=""
+              data-draft=""
+              className="tcs-meta-input"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              autoFocus
+              aria-label={`Estimated time left for ${label}`}
+              value={draft}
+              onClick={(e) => e.stopPropagation()}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => {
+                if (skipBlur.current) {
+                  skipBlur.current = false
+                  return
+                }
+                commit(draft)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") return (e.preventDefault(), e.stopPropagation(), (skipBlur.current = true), setOpen(false))
+                if (e.key === "Enter") (e.preventDefault(), commit(draft))
+              }}
+            />
+          </label>
+          <ul className="tcs-remain-rows">
+            {rows.map((row) => (
+              <li key={row.name}>
+                <span>{row.name}</span>
+                <b>{dur(row.minutes)}</b>
+                <p>{row.sentence}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+interface WaitRow {
+  id: string
+  label: string
+  /** Parent path from `placeSteps`, such as `Front › spine`. */
+  path?: string
+  band: 0 | 1 | 2
+  checked: boolean
+  onToggle: () => void
+}
+
+const WAIT_BAND = ["This level", "Rest of this task", "Other tasks"]
+
+/** Searchable multiselect, portaled beside the button so the card's overflow cannot cover it. */
+function WaitPicker({ label, title, rows }: { label: string; title: string; rows: WaitRow[] }) {
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState("")
+  const btn = useRef<HTMLButtonElement>(null)
+  const pop = useRef<HTMLDivElement>(null)
+  const [box, setBox] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open) return
+    const place = () => {
+      const rect = btn.current?.getBoundingClientRect()
+      if (!rect) return
+      const width = Math.min(360, window.innerWidth - 24)
+      const chrome = 96
+      const want = 320 + chrome
+      const spaceBelow = window.innerHeight - rect.bottom - 16
+      const spaceAbove = rect.top - 16
+      const openUp = spaceBelow < Math.min(want, 220) && spaceAbove > spaceBelow
+      const room = Math.max(140, openUp ? spaceAbove : spaceBelow)
+      const maxHeight = Math.min(want, room, window.innerHeight - 24)
+      let left = rect.right + 8
+      if (left + width > window.innerWidth - 12) left = rect.left - width - 8
+      if (left < 12) left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))
+      const top = openUp ? Math.max(12, rect.top - maxHeight - 8) : rect.bottom + 8
+      setBox({ top, left, width, maxHeight })
+    }
+    place()
+    window.addEventListener("resize", place)
+    window.addEventListener("scroll", place, true)
+    return () => {
+      window.removeEventListener("resize", place)
+      window.removeEventListener("scroll", place, true)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (btn.current?.contains(target) || pop.current?.contains(target)) return
+      setOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", onDown)
+    document.addEventListener("keydown", onKey, true)
+    return () => {
+      document.removeEventListener("mousedown", onDown)
+      document.removeEventListener("keydown", onKey, true)
+    }
+  }, [open])
+
+  const needle = q.trim().toLowerCase()
+  const hits = rows.filter((row) => !needle || row.label.toLowerCase().includes(needle) || (row.path ?? "").toLowerCase().includes(needle))
+  const byName = (a: WaitRow, b: WaitRow) => a.label.localeCompare(b.label)
+  const waiting = hits.filter((row) => row.checked).sort(byName)
+  const sections = [
+    waiting.length ? { name: "Waiting now", rows: waiting } : null,
+    ...([0, 1, 2] as const).map((band) => {
+      const bandRows = hits.filter((row) => !row.checked && row.band === band).sort(byName)
+      return bandRows.length ? { name: WAIT_BAND[band], rows: bandRows } : null
+    }),
+  ].filter((section): section is { name: string; rows: WaitRow[] } => section !== null)
+
+  return (
+    <>
+      <button ref={btn} type="button" className="tcs-add-key" aria-expanded={open} title={title} onClick={() => setOpen((v) => !v)}>
+        <b aria-hidden>+</b> {label}
+      </button>
+      {open && box
+        ? createPortal(
+            <div ref={pop} className="tcs-wait-pop" data-task-card-pop="" role="dialog" aria-label={title} style={{ position: "fixed", zIndex: 80, pointerEvents: "auto", top: box.top, left: box.left, width: box.width, maxHeight: box.maxHeight }}>
+              <p className="tcs-wait-title">{title}</p>
+              <input
+                className="tcs-wait-search"
+                data-draft=""
+                data-no95=""
+                autoFocus
+                value={q}
+                placeholder="Search"
+                aria-label="Search work that waits"
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") (e.stopPropagation(), e.preventDefault(), setOpen(false))
+                }}
+              />
+              <div className="tcs-wait-list" role="listbox" aria-multiselectable="true" aria-label="Work that waits until this is done">
+                {sections.length === 0 ? <p className="tcs-hint">Nothing matches.</p> : null}
+                {sections.map((section) => (
+                  <section key={section.name} className="tcs-wait-section">
+                    <h3 className="tcs-wait-band">{section.name}</h3>
+                    {section.rows.map((row) => (
+                      <label key={row.id} className="tcs-wait-row">
+                        <input type="checkbox" checked={row.checked} aria-label={row.label} onChange={row.onToggle} />
+                        <span className="tcs-wait-copy">
+                          <span className="tcs-wait-name">{row.label}</span>
+                          {row.path ? <span className="tcs-wait-path">{row.path}</span> : null}
+                        </span>
+                      </label>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   )
 }
 
@@ -372,8 +674,20 @@ function AddNeed({ kinds, pickerFor, close }: { kinds: { id: NeedKind; label: st
 /** Steps that wait on this one; add or drop them here. */
 function StepUnlocks({ step, steps, write }: { step: Subtask; steps: Subtask[]; write: Write }) {
   const flat = flattenSteps(steps)
+  const placed = placeSteps(steps)
+  const mine = placed.find((row) => row.step.id === step.id)
+  const parentId = mine ? mine.path[mine.path.length - 1]?.id : undefined
   const waiters = flat.filter((s) => (s.dependsOn ?? []).includes(step.id))
-  const options = flat.filter((s) => s.id !== step.id && !waiters.includes(s) && stepPrereqChoices(steps, s.id).has(step.id)).map((s) => ({ id: s.id, label: s.description }))
+  const rows: WaitRow[] = placed
+    .filter((row) => row.step.id !== step.id && !row.step.completed && (stepPrereqChoices(steps, row.step.id).has(step.id) || (row.step.dependsOn ?? []).includes(step.id)))
+    .map((row) => ({
+      id: row.step.id,
+      label: row.step.description,
+      path: row.path.map((step) => step.description).join(" › ") || undefined,
+      band: (row.path[row.path.length - 1]?.id ?? undefined) === parentId ? 0 : 1,
+      checked: (row.step.dependsOn ?? []).includes(step.id),
+      onToggle: () => write("Unlocks", toggleStepPrereq(steps, row.step.id, step.id)),
+    }))
   return (
     <div className="tcs-need is-unlocks">
       {waiters.length ? (
@@ -386,11 +700,9 @@ function StepUnlocks({ step, steps, write }: { step: Subtask; steps: Subtask[]; 
           </div>
         </>
       ) : null}
-      {options.length ? (
+      {rows.length ? (
         <div className="tcs-needs-actions">
-          <Reveal label="Make a step wait on this" title="Pick a step that waits until this one is done">
-            {(close) => <Picker onDone={close} placeholder="Make a step wait on this…" title="Pick a step that waits until this one is done" options={options} onPick={(id) => write("Unlocks", toggleStepPrereq(steps, id, step.id))} />}
-          </Reveal>
+          <WaitPicker label="Make a step wait on this" title="Pick a step that waits until this one is done" rows={rows} />
         </div>
       ) : null}
     </div>
@@ -401,9 +713,36 @@ function StepUnlocks({ step, steps, write }: { step: Subtask; steps: Subtask[]; 
 export function TaskUnlocks({ task }: { task: Task }) {
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
+  const placed = placeSteps(task.subtasks)
   const waiters = tasks.filter((t) => (t.dependencies ?? []).includes(task.id))
-  const options = tasks.filter((t) => t.id !== task.id && (t.type ?? "task") === "task" && !t.completed && !waiters.includes(t)).map((t) => ({ id: t.id, label: itemTitleOrUntitled(t) }))
   const flip = (t: Task) => updateTask({ ...t, dependencies: toggleId(t.dependencies, task.id) ?? [] })
+  const toggleStep = (stepId: string) => {
+    const latest = useTaskStore.getState().tasks.find((row) => row.id === task.id)
+    const step = latest ? flattenSteps(latest.subtasks).find((row) => row.id === stepId) : undefined
+    if (!latest || !step) return
+    updateTask({ ...latest, subtasks: patchStep(latest.subtasks, stepId, { needsTaskIds: toggleId(step.needsTaskIds, task.id) }) })
+  }
+  const rows: WaitRow[] = [
+    ...placed
+      .filter((row) => !row.step.completed)
+      .map((row) => ({
+        id: `step:${row.step.id}`,
+        label: row.step.description,
+        path: row.path.map((step) => step.description).join(" › ") || undefined,
+        band: (row.path.length === 0 ? 0 : 1) as 0 | 1,
+        checked: (row.step.needsTaskIds ?? []).includes(task.id),
+        onToggle: () => toggleStep(row.step.id),
+      })),
+    ...tasks
+      .filter((t) => t.id !== task.id && (t.type ?? "task") === "task" && !t.completed && t.stepOf?.taskId !== task.id)
+      .map((t) => ({
+        id: t.id,
+        label: itemTitleOrUntitled(t),
+        band: 2 as const,
+        checked: (t.dependencies ?? []).includes(task.id),
+        onToggle: () => flip(t),
+      })),
+  ]
   return (
     <div className="tcs-need is-unlocks">
       {waiters.length ? (
@@ -417,9 +756,7 @@ export function TaskUnlocks({ task }: { task: Task }) {
         </>
       ) : null}
       <div className="tcs-needs-actions">
-        <Reveal label="Make a task wait on this" title="Pick a task that waits until this one is done">
-          {(close) => <Picker onDone={close} placeholder="Make a task wait on this…" title="Pick a task that waits until this one is done" options={options} onPick={(id) => flip(tasks.find((t) => t.id === id)!)} />}
-        </Reveal>
+        <WaitPicker label="Make a task wait on this" title="Pick a task that waits until this one is done" rows={rows} />
       </div>
     </div>
   )
@@ -496,6 +833,62 @@ function PointsLadder({ task, step, steps, write }: { task: Task; step: Subtask;
   )
 }
 
+// ── Actual against estimate ──────────────────────────────────────────
+
+/**
+ * The first comparison under the head. Actual is the spent pill, or the Time
+ * section's total when that is larger (`taskActualAccount` / `stepActualAccount`).
+ * Estimate is `effectiveDurationMinutes`: the typed number, or the parts when
+ * those are larger. Hidden unless both are above zero. The gap is under, over,
+ * or the same. Figures follow `formatStatMinutes` and the card's h/m switch.
+ */
+export function ActualVsEstimate({
+  task,
+  stepId,
+  spent,
+  ownEstimate,
+  steps,
+}: {
+  task: Task
+  /** Set on a step. Omitted, the actual is the whole task. */
+  stepId?: string
+  /** The spent pill. The Time ledger is read here when the pill is empty. */
+  spent?: number
+  ownEstimate?: number
+  steps?: readonly Subtask[]
+}) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const tracked = stepId ? (stepActualAccount(task, stepId, entries)?.total ?? 0) : taskActualAccount(task, entries).total
+  const actual = Math.max(0, Math.round(spent ?? 0), Math.round(tracked))
+  const estimate = effectiveDurationMinutes(ownEstimate, steps)
+  if (actual <= 0 || estimate <= 0) return null
+  const gap = Math.abs(actual - estimate)
+  const relation = actual > estimate ? "over" : actual < estimate ? "under" : "same"
+  return (
+    <section className="tcs-vs tcs-control-card" aria-label="Actual and estimate">
+      <h3>Actual and estimate</h3>
+      <div className="tcs-vs-figs">
+        <div className="tcs-vs-fig" title="Time already logged here">
+          <span>Actual</span>
+          <b>{dur(actual)}</b>
+        </div>
+        <div className="tcs-vs-fig" title="The typed estimate, or the parts when those are larger">
+          <span>Estimate</span>
+          <b>{dur(estimate)}</b>
+        </div>
+        <div className={`tcs-vs-fig is-${relation}`} title="Actual minus the estimate">
+          <span>Difference</span>
+          <b>
+            {dur(gap)} {relation}
+          </b>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ── One step ─────────────────────────────────────────────────────────
 
 /** The one way into the item popup from the detail panel: a ghost window-arrow key. */
@@ -510,10 +903,11 @@ export function OpenItemKey({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSelect, isRoot }: { task: Task; step: Subtask; steps: Subtask[]; write: Write; tier: StepTier; locked: boolean; spent?: number; onSelect?: (id: string) => void; isRoot?: boolean }) {
+export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSelect, isRoot, onSpent, spentOpen, spentScope, levelMinutes, pace }: { task: Task; step: Subtask; steps: Subtask[]; write: Write; tier: StepTier; locked: boolean; spent?: number; onSelect?: (id: string) => void; isRoot?: boolean; onSpent?: () => void; spentOpen?: boolean; spentScope?: SpentBlocksScope; levelMinutes?: number; pace?: number | null }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const path = pathTo(steps, step.id)
   const { leaves, done } = leafTally(step)
-  const est = effectiveDurationMinutes(step.estimatedDuration, step.subtasks)
   const state = step.completed ? "done" : locked ? "locked" : "open"
   return (
     <div className="tcs-node" key={step.id}>
@@ -535,16 +929,35 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSe
           />
           <span className="tcs-complete-label">{step.completed ? "Completed" : "Mark complete"}</span>
         </label>
-        <p className="tcs-node-meta">
+        <div className="tcs-node-meta">
           <span className={`tcs-lamp is-${state}`}>{state}</span>
           <span className={`tcs-tier is-${tier}`} title={STEP_TIER_LABEL[tier]}>{STEP_TIER_SHORT[tier]}</span>
-          <span className="tcs-meta-pill">{est ? `${est}m` : "—"} est</span>
-          {spent ? <span className="tcs-meta-pill">{spent}m spent</span> : null}
+          <RemainingEstTag
+            shown={step.completed ? 0 : openEstimateMinutes(step.estimatedDuration, step.subtasks)}
+            field={step.estimatedDuration}
+            label={step.description}
+            steps={step.subtasks}
+            spent={spent ?? 0}
+            levelMinutes={levelMinutes}
+            pace={pace}
+            onSet={(m) => write("Estimate", setEstimate(steps, step.id, m))}
+          />
+          {spent ? (
+            <button type="button" className="tcs-meta-pill" aria-expanded={!!spentOpen} onClick={onSpent}>
+              {dur(spent)} spent
+            </button>
+          ) : null}
           {step.subtasks?.length ? <span className="tcs-meta-pill" title="End nodes done / end nodes">{done}/{leaves} ends</span> : null}
-        </p>
+        </div>
       </header>
+      {spentOpen && spentScope ? (
+        <div className="tcs-spent-quick" aria-label="Spent">
+          <SpentDiary scope={spentScope} />
+        </div>
+      ) : null}
+      <ActualVsEstimate task={task} stepId={step.id} spent={spent} ownEstimate={step.estimatedDuration} steps={step.subtasks} />
       <EstimatePanel step={step} steps={steps} write={write} />
-      <SubstepPreview step={step} steps={steps} write={write} onSelect={onSelect} />
+      <SubstepPreview kids={step.subtasks ?? []} steps={steps} write={write} onSelect={onSelect} />
       <PointsLadder task={task} step={step} steps={steps} write={write} />
       <StepPens task={task} step={step} steps={steps} write={write} />
       <section aria-label="Needs" className="tcs-needs tcs-control-card">
@@ -570,20 +983,23 @@ const stamp = (iso: string) => new Date(iso).toLocaleDateString(undefined, { mon
 
 /** The step's estimate: one big figure, quick values, and every value it has had. */
 function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]; write: Write }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const set = (m: number) => write("Estimate", setEstimate(steps, step.id, m))
   const log = step.estimateLog ?? []
   const parts = partsMinutes(step.subtasks)
+  const guess = step.estimatedDuration && step.estimatedDuration > 0 ? undefined : parts || undefined
   return (
     <section className="tcs-est tcs-control-card" aria-label="Estimate">
       <h3 title="Minutes you think this takes. Every change is kept so you can see how your guesses move.">Estimate</h3>
       <div className="tcs-est-row">
-        <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} onSet={set} />
-        {parts > 0 ? <span className="tcs-est-parts" title="Sum of the steps inside">= {parts}m in parts</span> : null}
+        <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} suggestion={guess} onSet={set} />
+        {parts > 0 && step.estimatedDuration ? <span className="tcs-est-parts" title="Sum of the steps inside">= {dur(parts)} in parts</span> : null}
       </div>
       <div className="tcs-quick" role="group" aria-label="Quick estimates">
         {QUICK_MINUTES.map((m) => (
           <button key={m} type="button" aria-pressed={step.estimatedDuration === m} onClick={() => set(m)}>
-            {m}
+            {dur(m)}
           </button>
         ))}
       </div>
@@ -591,7 +1007,7 @@ function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]
         <ol className="tcs-hist" aria-label="Estimate history">
           {log.slice(-6).map((e, i, a) => (
             <li key={e.at + i} className={i === a.length - 1 ? "is-now" : undefined} title={new Date(e.at).toLocaleString()}>
-              <b>{e.minutes}m</b>
+              <b>{dur(e.minutes)}</b>
               <time dateTime={e.at}>{stamp(e.at)}</time>
             </li>
           ))}
@@ -601,9 +1017,8 @@ function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]
   )
 }
 
-/** The first level of steps inside this one, each with its estimate one click away. */
-function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps: Subtask[]; write: Write; onSelect?: (id: string) => void }) {
-  const kids = step.subtasks ?? []
+/** The first level inside a node. On the whole task, `kids` is that task's top level. */
+export function SubstepPreview({ kids, steps, write, onSelect }: { kids: readonly Subtask[]; steps: Subtask[]; write: Write; onSelect?: (id: string) => void }) {
   if (!kids.length) return null
   const done = kids.filter((k) => k.completed).length
   return (
@@ -626,7 +1041,7 @@ function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps
               {k.description}
             </button>
             {k.subtasks?.length ? <small title="Steps inside it">+{k.subtasks.length}</small> : null}
-            <EstimateCell minutes={k.estimatedDuration} label={k.description} onSet={(m) => write("Estimate", setEstimate(steps, k.id, m))} />
+            <EstimateCell minutes={k.estimatedDuration} label={k.description} suggestion={k.estimatedDuration ? undefined : partsMinutes(k.subtasks) || undefined} onSet={(m) => write("Estimate", setEstimate(steps, k.id, m))} />
           </li>
         ))}
       </ul>
@@ -634,7 +1049,7 @@ function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps
   )
 }
 
-const PEN_HELP = "The pen the time grid paints with when ▶ or Just Start runs on this, or when it is logged done. Double-click a pen to open its settings."
+const PEN_HELP = "The clock pen is the one ▶ and Just Start paint with (the first linked pen). Click clock on another pen to switch it. Double-click a pen to open its settings."
 
 /** The task's own pens (steps without their own inherit these). */
 export function TaskPens({ task }: { task: Task }) {
@@ -642,30 +1057,46 @@ export function TaskPens({ task }: { task: Task }) {
   return (
     <section aria-label="Pen" className="tcs-pens tcs-control-card">
       <h3 title={PEN_HELP}>Pen</h3>
-      <ItemPenLinksField penLinks={task.penLinks} onChange={(penLinks) => updateTask({ ...task, penLinks })} />
+      <ItemPenLinksField
+        chain
+        penLinks={task.penLinks}
+        onChange={(penLinks) => updateTask({ ...task, penLinks })}
+        onMakeClock={(penId) => {
+          const next = withClockPen(task.penLinks, penId)
+          if (next && next !== task.penLinks) updateTask({ ...task, penLinks: next })
+        }}
+      />
     </section>
   )
 }
 
 /** A step's pen: inherited by default; set its own, remove it, or go back to inheriting. */
 function StepPens({ task, step, steps, write }: { task: Task; step: Subtask; steps: Subtask[]; write: Write }) {
+  const updateTask = useTaskStore((s) => s.updateTask)
   const { links, from, own } = stepPenLinks({ ...task, subtasks: steps }, step.id)
   // What this step would inherit without its own pens: a new pen here counts as that one.
   const parentPen = own ? stepPenLinks({ ...task, subtasks: patchStep(steps, step.id, { penLinks: undefined }) }, step.id).links[0] : undefined
   const set = (label: string, penLinks: Subtask["penLinks"]) => write(label, patchStep(steps, step.id, { penLinks }))
+  const makeClock = (penId: string) => {
+    const next = withClockPen(links, penId)
+    if (!next || next === links) return
+    if (own) set("Clock pen", next)
+    else if (from) write("Clock pen", patchStep(steps, from.id, { penLinks: next }))
+    else updateTask({ ...task, penLinks: next })
+  }
   return (
     <section aria-label="Pen" className="tcs-pens tcs-control-card">
       <h3 title={PEN_HELP}>Pen</h3>
       {own ? (
         <>
-          <ItemPenLinksField penLinks={links} parent={parentPen} onChange={(next) => set("Step pen", next ?? [])} />
+          <ItemPenLinksField chain penLinks={links} parent={parentPen} onMakeClock={makeClock} onChange={(next) => set("Step pen", next ?? [])} />
           <button type="button" className="tcs-link" title="Drop this step's own pens and use its parent's" onClick={() => set("Inherit pen", undefined)}>
             Inherit
           </button>
         </>
       ) : (
         <>
-          <ItemPenLinksField penLinks={links} readOnly onChange={() => {}} />
+          <ItemPenLinksField chain penLinks={links} readOnly onMakeClock={makeClock} onChange={() => {}} />
           <p className="is-quiet">
             from {from ? from.description : "the task"} ·{" "}
             <button type="button" className="tcs-link" title="Give this step its own pens, starting from these" onClick={() => set("Step pen", [...links])}>
@@ -694,6 +1125,8 @@ function pathTo(steps: readonly Subtask[], id: string, trail: Subtask[] = []): S
 // ── Several steps ────────────────────────────────────────────────────
 
 export function SelectionSummary({ steps, ids, tierOf, isLocked, spentOf }: { steps: Subtask[]; ids: ReadonlySet<string>; tierOf: Map<string, StepTier>; isLocked: (s: Subtask) => boolean; spentOf: (id: string) => number }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const picked = flattenSteps(steps).filter((s) => ids.has(s.id))
   // Count each subtree once: drop steps whose ancestor is also picked.
   const inside = new Set(picked.flatMap((s) => flattenSteps(s.subtasks).map((k) => k.id)))
@@ -731,10 +1164,10 @@ export function SelectionSummary({ steps, ids, tierOf, isLocked, spentOf }: { st
         </dd>
         <dt>Estimate</dt>
         <dd>
-          {est}m{spent ? ` · ${spent}m spent` : ""}
+          {dur(est)}{spent ? ` · ${dur(spent)} spent` : ""}
         </dd>
         <dt>Left</dt>
-        <dd>{Math.max(0, est - Math.round(est * (stats.raw ?? 0)))}m by ends</dd>
+        <dd>{dur(Math.max(0, est - Math.round(est * (stats.raw ?? 0))))} by ends</dd>
         <dt>Points</dt>
         <dd>{pts}</dd>
         <dt>Locked</dt>
