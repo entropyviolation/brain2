@@ -151,6 +151,8 @@ export function iconBoxesOverlap(
 export function listDisplayCaption(display: string): string {
   if (display === "table") return "Details"
   if (display === "spreadsheet") return "Spreadsheet"
+  if (display === "gallery") return "Photo gallery"
+  if (display === "documents") return "Document gallery"
   if (!display) return "Default"
   return display.charAt(0).toUpperCase() + display.slice(1)
 }

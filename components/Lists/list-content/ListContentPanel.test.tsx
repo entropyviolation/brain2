@@ -365,3 +365,63 @@ describe("ListContentPanel single add", () => {
     expect(onAddTask).toHaveBeenCalledWith("From enter key")
   })
 })
+
+describe("ListContentPanel plain text list", () => {
+  it("opens a read-only name list beside Add and copies every name", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } })
+    renderPanel({
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [task("a", "item a", "list-1"), task("b", "item b", "list-1")],
+    })
+    const bulk = screen.getByRole("button", { name: /Bulk add items/i })
+    const add = screen.getByRole("button", { name: /^Add Item$/i })
+    const plain = screen.getByRole("button", { name: "Plain text list for copy paste" })
+    expect(bulk.compareDocumentPosition(plain) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(add.compareDocumentPosition(plain) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByRole("textbox", { name: "Plain text list" })).not.toBeInTheDocument()
+
+    fireEvent.click(plain)
+    const box = screen.getByRole("textbox", { name: "Plain text list" })
+    expect(box).toHaveValue("item a\nitem b")
+    expect(box).toHaveAttribute("readonly")
+    fireEvent.change(box, { target: { value: "nope" } })
+    expect(box).toHaveValue("item a\nitem b")
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy all" }))
+    expect(writeText).toHaveBeenCalledWith("item a\nitem b")
+    expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("textbox", { name: "Plain text list" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Plain text list for copy paste" })).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("shows tag headers in the box and copies names only", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } })
+    const tagged = task("a", "fox statue", "list-1")
+    tagged.tags = ["Already have"]
+    const planned = task("b", "holder", "list-1")
+    planned.tags = ["planned"]
+    renderPanel({
+      openFolderAll: false,
+      openCategory: list("list-1", "list 1"),
+      currentDisplay: "default",
+      tasks: [tagged, planned],
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Plain text list for copy paste" }))
+    expect(screen.getByRole("textbox", { name: "Plain text list" })).toHaveValue(
+      "Already have:\nfox statue\n\nplanned:\nholder",
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Copy all" }))
+    expect(writeText).toHaveBeenCalledWith("fox statue\nholder")
+    expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument()
+  })
+
+  it("hides the plain text button outside default view", () => {
+    renderPanel({ currentDisplay: "checklist", tasks: [task("a", "item a", "list-1")] })
+    expect(screen.queryByRole("button", { name: "Plain text list for copy paste" })).not.toBeInTheDocument()
+  })
+})
