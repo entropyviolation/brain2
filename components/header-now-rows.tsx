@@ -54,6 +54,7 @@ function NowRow({
   onRemoveObjective,
   stepChoices,
   onTieStep,
+  onSetCompletes,
 }: {
   name: string
   elapsed: string
@@ -69,6 +70,7 @@ function NowRow({
   onRemoveObjective: (id: string) => void
   stepChoices?: { id: string; label: string }[]
   onTieStep?: (id: string, stepId: string | "new" | undefined) => void
+  onSetCompletes?: (id: string, completes: boolean) => void
 }) {
   const pauseLabel = paused ? `Resume ${name}` : `Pause ${name}`
   return (
@@ -89,6 +91,7 @@ function NowRow({
         onRemove={onRemoveObjective}
         stepChoices={stepChoices}
         onTieStep={onTieStep}
+        onSetCompletes={onSetCompletes}
       />
       <DvdTransportKey mark={paused ? "play" : "pause"} label={pauseLabel} className="b2-shell-now-icon" onClick={onPauseToggle} />
       <DvdTransportKey mark="stop" label={stopLabel} className="b2-shell-now-icon" onClick={onStop} />
@@ -157,6 +160,7 @@ export function HeaderNowRows() {
             onRemoveObjective={(id) => removePenColorNowObjective(id)}
             stepChoices={clock.stepChoices}
             onTieStep={clock.onTieStep}
+            onSetCompletes={clock.onSetCompletes}
           />
         )}
       </div>

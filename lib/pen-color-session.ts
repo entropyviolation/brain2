@@ -29,6 +29,7 @@ import {
   editNowObjectiveText,
   parseObjectiveClock,
   removeNowObjective,
+  setNowObjectiveCompletes,
   tieNowObjectiveToStep,
   toggleNowObjectiveComplete,
   type NowObjective,
@@ -302,9 +303,24 @@ export function tiePenColorNowObjective(id: string, stepId: string | "new" | und
     target = addStepForObjective({ taskId: session.taskId, stepId: session.stepId }, objective)
     if (!target) return session
   }
-  const next = withoutUndo(() => patchPenColorObjectives((list) => tieNowObjectiveToStep(list, id, target)))
+  const next = withoutUndo(() =>
+    patchPenColorObjectives((list) => {
+      const tied = tieNowObjectiveToStep(list, id, target)
+      // A step picked from the list only counts the time toward it; a step made
+      // from the objective is that objective. Either can be flipped in the popup.
+      if (!target) return tied.map((row) => (row.id === id && row.completes === false ? { ...row, completes: undefined } : row))
+      return setNowObjectiveCompletes(tied, id, stepId === "new")
+    }),
+  )
   const tiedRow = next?.nowObjectives?.find((row) => row.id === id)
   if (tiedRow?.stepId && tiedRow.completedAt && stepId !== "new") applyObjectiveToStep(next ?? {}, tiedRow)
+  return next
+}
+
+export function setPenColorNowObjectiveCompletes(id: string, completes: boolean): PenColorSession | null {
+  const next = withoutUndo(() => patchPenColorObjectives((list) => setNowObjectiveCompletes(list, id, completes)))
+  const row = next?.nowObjectives?.find((o) => o.id === id)
+  if (next?.taskId && row?.completedAt) applyObjectiveToStep(next, row)
   return next
 }
 
@@ -315,7 +331,7 @@ export function editPenColorNowObjectiveText(id: string, text: string): PenColor
 export function togglePenColorNowObjectiveComplete(id: string, now = new Date()): PenColorSession | null {
   const next = withoutUndo(() => patchPenColorObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
   const row = next?.nowObjectives?.find((o) => o.id === id)
-  if (next?.taskId && row?.stepId) applyObjectiveToStep(next, row)
+  if (next?.taskId && row) applyObjectiveToStep(next, row)
   return next
 }
 

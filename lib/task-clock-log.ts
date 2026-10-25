@@ -13,7 +13,7 @@
  * Imported by `lib/pen-color-session.ts`, so it must not import that module.
  */
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
-import type { NowObjective } from "@/lib/now-objective"
+import { objectiveCompletesTarget, type NowObjective } from "@/lib/now-objective"
 import { useTaskStore } from "@/lib/task-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
@@ -66,10 +66,23 @@ export function logTaskClockSpan(ref: ClockTaskRef, start: Date, end: Date, acti
   return entry
 }
 
-/** Tick or reopen the step an objective stands for. */
+/**
+ * Tick or reopen what an objective stands for. A step objective that only
+ * "counts toward" its step leaves the step alone; its minutes still land on
+ * the step through the block's `stepId`. A task-level one finishes the task.
+ */
 export function applyObjectiveToStep(ref: ClockTaskRef, objective: NowObjective): void {
   const task = getTask(ref.taskId)
-  if (!task || !objective.stepId) return
+  if (!task || !objectiveCompletesTarget(objective)) return
+  if (!objective.stepId) {
+    if (!!task.completed === !!objective.completedAt) return
+    useTaskStore.getState().updateTask({
+      ...task,
+      completed: !!objective.completedAt,
+      completedDate: objective.completedAt ? new Date(objective.completedAt) : undefined,
+    })
+    return
+  }
   if (!placeSteps(task.subtasks).some((p) => p.step.id === objective.stepId)) return
   let subtasks: Subtask[]
   if (objective.completedAt) {
