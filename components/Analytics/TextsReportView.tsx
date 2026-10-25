@@ -32,7 +32,7 @@ import {
 } from "@/lib/texts-report"
 import { linkHandlesToPerson, unlinkHandlesFromPerson } from "@/lib/phone-person-links"
 import { createPerson, ensurePeopleIKnowList, personPhoneNumbers, personRecords } from "@/lib/people-i-know"
-import { openItemDetailPage } from "@/lib/points-ledger-nav"
+import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
 import { useTextsNavStore } from "@/lib/texts-report-nav"
 import { ChartFrame } from "./chart-frame"
@@ -101,7 +101,7 @@ export function TextsReportView({ popout = false }: { popout?: boolean }) {
       if (req.type === "link") linkHandlesToPerson(req.personId, req.handles)
       else if (req.type === "unlink") unlinkHandlesFromPerson(req.personId, req.handles)
       else if (popout) window.alert("Open Brain2's main window to see this person.")
-      else openItemDetailPage(req.personId)
+      else openItemDetailPopup(req.personId)
     }
     window.addEventListener("message", onMessage)
     return () => window.removeEventListener("message", onMessage)

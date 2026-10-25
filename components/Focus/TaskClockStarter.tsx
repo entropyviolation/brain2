@@ -5,7 +5,8 @@
  * element to render. Start puts the task on the Tracking pen clock
  * (`lib/task-clock.ts`). A task with no linked pen, while nothing is running,
  * asks once which pen to paint with; **Remember for this task** (on by
- * default) saves it in `Task.penLinks`.
+ * default) saves it in `Task.penLinks`. The same dialog can make a new pen
+ * (name from the search, a color, a view) and assign it here.
  *
  * The picker is a Radix dialog, so it stacks over another open one (the
  * Session popup): Radix gives the top dialog the clicks, focus and Escape.
@@ -16,8 +17,10 @@
 
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { ColorSwatch } from "@/components/ui/color-swatch"
+import { NativeSelect } from "@/components/ui/native-select"
 import { useTaskStore } from "@/lib/task-store"
-import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { startTaskClock } from "@/lib/task-clock"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import "./focus-bar.css"
@@ -40,8 +43,12 @@ function TaskPenPicker({
   onCancel: () => void
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
+  const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
+  const addPen = useTimeTrackingStore((s) => s.addPen)
   const [query, setQuery] = useState("")
   const [remember, setRemember] = useState(true)
+  const [newColor, setNewColor] = useState(PEN_PALETTE[0])
+  const [createScopeId, setCreateScopeId] = useState(activeScopeId || scopes[0]?.id || "activity")
   const rows = useMemo(() => {
     const all: PenRow[] = []
     for (const scope of scopes) {
@@ -55,6 +62,23 @@ function TaskPenPicker({
       .sort((a, b) => b.lastUsedAt - a.lastUsedAt || a.name.localeCompare(b.name))
       .slice(0, 40)
   }, [scopes, query])
+
+  const draftName = query.trim()
+  const nameTaken = Boolean(
+    draftName &&
+      scopes.some(
+        (scope) =>
+          scope.id === createScopeId &&
+          scope.pens.some((pen) => pen.name.toLowerCase() === draftName.toLowerCase()),
+      ),
+  )
+  const canCreate = Boolean(draftName && createScopeId && !nameTaken)
+  const createPen = () => {
+    if (!canCreate) return
+    const id = addPen(createScopeId, { name: draftName, color: newColor })
+    if (!id) return
+    onPick(id, remember)
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
@@ -79,7 +103,9 @@ function TaskPenPicker({
           aria-label="Search pens"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && rows[0]) onPick(rows[0].penId, remember)
+            if (e.key !== "Enter") return
+            if (rows[0]) onPick(rows[0].penId, remember)
+            else createPen()
           }}
         />
         <ul className="task-pen-picker-list">
@@ -92,8 +118,31 @@ function TaskPenPicker({
               </button>
             </li>
           ))}
-          {rows.length === 0 ? <li className="task-pen-picker-empty">No pen matches. Make one in Tracking.</li> : null}
+          {rows.length === 0 ? (
+            <li className="task-pen-picker-empty">
+              {draftName ? "No pen matches." : "Name a pen in the search, then pick its color."}
+            </li>
+          ) : null}
         </ul>
+        {draftName ? (
+          <div className="task-pen-picker-create">
+            <ColorSwatch value={newColor} onChange={setNewColor} size="sm" aria-label="New pen color" />
+            <NativeSelect
+              aria-label="View for the new pen"
+              value={createScopeId}
+              onChange={(e) => setCreateScopeId(e.target.value)}
+            >
+              {scopes.map((scope) => (
+                <option key={scope.id} value={scope.id}>
+                  {scope.name}
+                </option>
+              ))}
+            </NativeSelect>
+            <button data-no95 type="button" className="task-pen-picker-create-key" disabled={!canCreate} onClick={createPen}>
+              {nameTaken ? "Already in this view" : `Create “${draftName}”`}
+            </button>
+          </div>
+        ) : null}
         <div className="task-pen-picker-foot">
           <label>
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />

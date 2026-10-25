@@ -15,6 +15,7 @@ import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { itemTitle } from "@/lib/item-utils"
 import { iconFor } from "@/components/Icons"
+import { KeycapClose } from "@/components/keycap-close"
 import { HabitGemImg } from "@/components/Home/Habits/habit-gems"
 
 const RESULT_LIMIT = 40
@@ -116,15 +117,12 @@ export function EventPrereqPicker({
               </span>
               <Orb task={task} />
               <span className="plan-prereq-title">{itemTitle(task)}</span>
-              <button
-                type="button"
+              <KeycapClose
                 data-plan-pick=""
-                className="plan-prereq-remove b2-close-key"
+                className="plan-prereq-remove"
                 onClick={() => onDetach(task.id)}
-                aria-label={`Remove ${itemTitle(task)} from checklist`}
-              >
-                ×
-              </button>
+                label={`Remove ${itemTitle(task)} from checklist`}
+              />
             </li>
           ))}
         </ul>

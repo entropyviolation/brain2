@@ -16,8 +16,15 @@ import { splitStats, type TierSplit } from "@/lib/tree-math"
 import { formatPercent } from "@/lib/step-progress"
 import { effectiveDurationMinutes } from "@/lib/todo-steps"
 import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
+import { tierEstimates } from "@/lib/task-card"
 import type { StepTier, Subtask } from "@/lib/types"
 import { SpentBlocks, type SpentBlocksScope } from "./SpentBlocks"
+
+const TIER_PICKER_LABEL: Record<StepTier, string> = {
+  min: "Bare minimum",
+  goal: "Goal (B + G)",
+  exceptional: "Exceptional (all)",
+}
 
 export interface TaskCardStatsData {
   view: readonly Subtask[]
@@ -40,6 +47,13 @@ export interface TaskCardStatsData {
   levelName: string
   levelPts: number
   onPick: (id: string) => void
+  /** Selected cumulative estimate tier for the root task (min = B, goal = B+G, exceptional = all). */
+  estimateTier?: StepTier
+  onEstimateTierChange?: (tier: StepTier) => void
+  /** Per-step spent minutes from time entries, used for running/original estimate calculations. */
+  stepSpent?: ReadonlyMap<string, number>
+  /** Whether the root task/step itself is completed. */
+  rootCompleted?: boolean
 }
 
 const stamp = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })
@@ -65,6 +79,7 @@ function Bar({ value, max, over }: { value: number; max: number; over?: boolean 
 
 export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
   const [open, setOpen] = useState<string | null>(null)
+  const [localEstTier, setLocalEstTier] = useState<StepTier>("exceptional")
   const wrap = useRef<HTMLDivElement>(null)
   const stats = splitStats(d.view, d.tierOf)
 
@@ -84,27 +99,86 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
     }
   }, [open])
 
+  const byTier = tierEstimates(d.view, d.ownEst, d.stepSpent, d.estLog, d.rootCompleted, d.spent)
+  const activeEstTier = d.estimateTier ?? localEstTier
+  const activeDetail = byTier[activeEstTier]
+  const activeEst = activeEstTier === "exceptional" && activeDetail.estimate === 0 && d.est > 0 ? d.est : activeDetail.estimate
+  const activeParts = activeEstTier === "exceptional" && activeDetail.parts === 0 && d.parts > 0 ? d.parts : activeDetail.parts
+
   const own = d.ownEst ?? 0
-  const unsplit = d.parts > 0 && d.est > d.parts ? d.est - d.parts : 0
-  const fromParts = d.parts > own
+  const unsplit = activeParts > 0 && activeEst > activeParts ? activeEst - activeParts : 0
+  const fromParts = activeParts > own
   const log = d.estLog ?? []
   const parts = d.view.map((s) => ({ s, m: effectiveDurationMinutes(s.estimatedDuration, s.subtasks) }))
   const biggest = parts.reduce((a, b) => (b.m > a.m ? b : a), { s: undefined as Subtask | undefined, m: 0 })
-  const left = d.est - d.spent
+  const left = activeEst - d.spent
   const cards: { id: string; label: string; value: string; sub?: string; wide?: boolean; testId?: string; body: ReactNode }[] = [
     {
       id: "estimate",
       label: "Estimate",
-      value: d.est ? `${d.est}m` : "—",
-      sub: d.est ? (fromParts ? "from parts" : "own") : undefined,
+      value: activeEst > 0 ? `${activeEst}m` : "—",
+      sub:
+        activeEstTier !== "exceptional"
+          ? `${STEP_TIER_SHORT[activeEstTier]} · ${activeDetail.running}m run`
+          : activeEst > 0
+            ? fromParts
+              ? "from parts"
+              : "own"
+            : undefined,
+      wide: true,
       body: (
         <>
-          <h4>Where {d.est}m comes from</h4>
-          <p className="tcs-formula">est = max(own, Σ parts) = max({own}, {d.parts}) = <b>{d.est}m</b></p>
-          <R k="Source">{!d.est ? "nothing set yet" : fromParts ? "the sum of the steps (larger than the own estimate)" : "the own estimate (parts are smaller or unset)"}</R>
+          <h4>Estimates by level (pick one to use)</h4>
+          <div className="tcs-tier-ests" role="group" aria-label="Estimate level">
+            {STEP_TIERS.map((t) => {
+              const tierInfo = byTier[t]
+              const isActive = activeEstTier === t
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  className={`tcs-tier-est-btn is-${t}${isActive ? " is-active" : ""}`}
+                  aria-pressed={isActive}
+                  data-estimate-tier={t}
+                  onClick={() => {
+                    setLocalEstTier(t)
+                    d.onEstimateTierChange?.(t)
+                  }}
+                >
+                  <span className="tcs-tier-est-badge">{STEP_TIER_SHORT[t]}</span>
+                  <span className="tcs-tier-est-label">{TIER_PICKER_LABEL[t]}</span>
+                  <b className="tcs-tier-est-val">{tierInfo.estimate}m</b>
+                  <small className="tcs-tier-est-meta">
+                    run {tierInfo.running}m · orig {tierInfo.original}m
+                  </small>
+                </button>
+              )
+            })}
+          </div>
+          <h4>Original vs. running estimate ({STEP_TIER_SHORT[activeEstTier]})</h4>
+          <div className="tcs-est-compare">
+            <R
+              k="Original estimate"
+              hint="Before any steps were completed: sum of initial estimates, or actual duration at finish if never estimated"
+            >
+              {activeDetail.original}m <small className="is-quiet">(pre-completion baseline)</small>
+            </R>
+            <R
+              k="Running estimate"
+              hint="Actual duration of completed steps where known, plus estimates for open or unknown steps"
+            >
+              {activeDetail.running}m <small className="is-quiet">(actuals done + open est)</small>
+            </R>
+            {activeDetail.running !== activeDetail.original && activeDetail.original > 0 ? (
+              <R k="Delta vs original">{signed(activeDetail.running - activeDetail.original)}m vs original</R>
+            ) : null}
+          </div>
+          <h4>Where {activeEst}m comes from</h4>
+          <p className="tcs-formula">est = max(own, Σ parts) = max({own}, {activeParts}) = <b>{activeEst}m</b></p>
+          <R k="Source">{!activeEst ? "nothing set yet" : fromParts ? "the sum of the steps (larger than the own estimate)" : "the own estimate (parts are smaller or unset)"}</R>
           <R k="Own estimate">{own ? `${own}m` : "none set"}</R>
-          <R k="Parts total">{d.parts}m across {d.view.length} {d.view.length === 1 ? "part" : "parts"}</R>
-          <R k="Unsplit">{unsplit ? `${unsplit}m (${pct(unsplit, d.est)}) not split into steps` : "nothing"}</R>
+          <R k="Parts total">{activeParts}m across {d.view.length} {d.view.length === 1 ? "part" : "parts"}</R>
+          <R k="Unsplit">{unsplit ? `${unsplit}m (${pct(unsplit, activeEst)}) not split into steps` : "nothing"}</R>
           <h4>History of this estimate</h4>
           {log.length ? (
             <>

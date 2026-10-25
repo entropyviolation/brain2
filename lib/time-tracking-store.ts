@@ -426,6 +426,9 @@ interface TimeTrackingState {
         | "spendAmount"
         | "spendOn"
         | "spendSource"
+        | "taskId"
+        | "stepId"
+        | "nowObjectives"
       >
     >,
   ) => void
@@ -1593,6 +1596,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
               spendAmount: extras?.spendAmount,
               spendOn: extras?.spendOn,
               spendSource: extras?.spendSource,
+              taskId: extras?.taskId,
+              stepId: extras?.stepId,
+              nowObjectives: extras?.nowObjectives,
             },
             () => rid("te"),
           )

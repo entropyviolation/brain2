@@ -65,7 +65,7 @@ Small, can go into the To do redesign as drawn in [To do redesign mockup](https:
 8. **Self-describing empty band.** XTC *Go 2*. When a band is empty the ledger shows plain pixel text on CRT glass: "This is the Required band. Nothing is in it. Mark a task Required to put it here." Names the real key. Data: band name, count 0.
 9. **Inspection stickers for flags.** Walkman sticker, Alien signage. Required and Prioritized become small printed paper stickers on the card edge (paper, not light), with the date set: `REQUIRED · you marked 18 Oct`. Data: flag and when it was set.
 10. **Contact-sheet frame numbers.** Hipgnosis contact sheets. Each closed row carries a tiny engraved frame number on the mill (`01`, `02`). Prioritized rows get a hand-drawn ring in violet grease pencil. Data: order, priority.
-11. **Two-tone keycaps by role.** `0029`, Intecolor, Porta Pro. Verbs on a task (Done, Start, Just 25, Push, Missed) are pale caps. Mode and view keys (Show, Sort, Span) are darker gunmetal caps. Data: none; it makes the role readable.
+11. **Two-tone keycaps by role.** Shipped. `0029`, Intecolor, Porta Pro. Verbs are the pale silver cap; mode and view keys (Show, Sort, Span) are the darker grey modifier. Allie likes this button and wants more of the silver ones. Seafoam (`.is-seafoam`) and cornflower (`.is-cornflower`) are the only extra plastics. Not beige, cream, yellow, or orange. See [`DESIGN_STYLE.md` → Keycaps](../../../DESIGN_STYLE.md#keycaps).
 12. **Develop instead of a spinner.** Polaroid and darkroom. While the list loads, rows fade up from overexposed to true, about 1s, once. Reduced motion shows them at once. It is the verb "load".
 
 ## Options where To do invents furniture

@@ -82,21 +82,21 @@ Full contract, install ladder, manifest shape, and migration plan:
 | `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `WIDGET_MODULE_CATALOG` (what each card should tell), `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
 | `module-bodies.tsx` | `ModuleCard` + per-widget render bodies (analytics stat, list summary, writing prompt, list explorer, random task, rules). Exports `AnalyticsStat` (reused by workspace `stat` views) |
 | `module-helpers.test.ts` | Unit tests for the pure helpers (`ruleMatches`, `tasksInList`, `randN`) |
-| `ModuleConfigDialog.tsx` | Add/configure a **widget** |
+| `ModuleConfigDialog.tsx` | Add/configure a **widget**. Its list field is `SingleListPicker` (built-in topics, or choose a list). |
 | `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. |
 | `workspace/module-popout.ts` | `/popout/?module=<id>` helpers + `openModulePopout` (Electron `BrowserWindow` or `window.open`). Hash `#popout/module/<id>` still parsed. |
 | `workspace/module-popout.test.ts` | Unit tests for path + hash round-trip |
-| `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` (writes `timeLogs` on complete) |
+| `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` (writes `timeLogs` on complete). When the timer must ask which item to log, that choice is `ItemPicker`. |
 | `workspace/module-view-bodies.timer.test.tsx` | Focus-timer complete → Working Now `timeLogs`, or a one-step item prompt |
-| `workspace/ModuleViewEditor.tsx` | Add/edit one bound view (kind, title, source list, group/sum/date attrs, pick count, timer, stat) |
+| `workspace/ModuleViewEditor.tsx` | Add/edit one bound view (kind, title, source list, group/sum/date attrs, pick count, timer, stat). Source, match, quiz, and dashboard-card lists are `SingleListPicker`. |
 | `workspace/ModuleBuilderDialog.tsx` | "Build a module" chooser: **build from scratch** (definition-first), saved definitions, workspace templates, or a classic widget |
 | `workspace/html/HtmlModuleView.tsx` | `html` view body: runs an uploaded `.html` in a sandboxed `<iframe srcDoc>` and answers its `window.brain2` calls (`lib/module-html-bridge.ts`). Writes go through `task-store`. |
 | `workspace/html/HtmlUploadDialog.tsx` | **Upload HTML file** from the Build a module dialog: pick a file (2 MB cap), name it, tick lists it may see, optionally allow edits. Creates a workspace with one `html` view. |
-| `workspace/html/HtmlViewFields.tsx` | The list-grant checkboxes + "Allow edits" toggle, shared by the upload dialog and `ModuleViewEditor`. |
+| `workspace/html/HtmlViewFields.tsx` | Which lists an HTML page may see (`ListPicker`, multi, searchable) and the "Allow edits" toggle. Shared by the upload dialog and `ModuleViewEditor`. |
 | `workspace/ModuleSettingsDialog.tsx` | **Module definition / settings editor**: name, icon, description, bound lists (+ roles + attribute extensions), views (add/edit/remove/**reorder**), plan-sync + print toggles, attach workflows. Edits a controlled `ModuleDefinition` and reports via `onSave` |
-| `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (category), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
+| `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (`SingleListPicker`), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |
-| `workspace/WorkflowStepEditor.tsx` | Composes a single serializable `WorkflowDefinition`: trigger → conditions → drag-reorderable action steps. No DSL — the JSON shape is the source of truth |
+| `workspace/WorkflowStepEditor.tsx` | Composes a single serializable `WorkflowDefinition`: trigger → conditions → drag-reorderable action steps. No DSL — the JSON shape is the source of truth. **Limit to list** and action list fields are `SingleListPicker` (**Any list** / **Choose a list…**). |
 | `workspace/ModulePopoutView.tsx` | Renders one module workspace **standalone** (no app shell) at `/popout/?module=<id>` |
 | `workspace/itinerary/DocPlanView.tsx` | Module **Plan** (`doc`): Docs `DocumentEditor` bound to a trip note (`config.docId`) |
 | `workspace/itinerary/ItineraryDocumentView.tsx` | Printable day-by-day itinerary (`itinerary-doc`); assembles via `lib/itinerary-assemble.ts` / `lib/trip-itinerary.ts` |

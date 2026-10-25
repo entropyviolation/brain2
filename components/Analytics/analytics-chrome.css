@@ -1557,8 +1557,8 @@
 .an-drill,
 .an-popup {
   font-family: var(--font-karla), Karla, "Segoe UI", sans-serif);
-  /* Title chip sits in the dialog's 24px pad. */
-  --b2-close-top: 27px;
+  /* 26px keycap centered on the title chip in the dialog's 24px pad. */
+  --b2-close-top: 25px;
   --b2-close-right: 18px;
 }
 

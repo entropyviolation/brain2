@@ -10,6 +10,8 @@
  * lazy-loads below that stack. Item detail fills the desk *below* the pin —
  * the header stays mounted, the tab keys hide, and the tab desk stays mounted
  * (hidden) so Lists can jump back in place without rebuilding its task index.
+ * A refresh while item detail is open saves the draft and the next load
+ * parks it on the minimized dock.
  * `CaptureDoorHost` mounts Ingest, From Notes, and Phone Notes the first time
  * that door is opened; once mounted, a listing survives closing the popup.
  * Global hotkeys: Cmd/Ctrl-K search, Cmd/Ctrl-Shift-A Quick Add, Cmd/Ctrl-Z
@@ -35,6 +37,8 @@
 import { useState, useCallback, lazy, Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from "react"
 import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
+import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
+import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, ChartLine } from "lucide-react"
@@ -59,12 +63,16 @@ import {
   useInstagramAnalysisLists,
   useInstagramFollowersList,
   useInstagramFollowingList,
+  useInstagramListsSync,
+  useInstagramSessionsSync,
 } from "@/hooks/use-instagram-lists"
+import { useTrackingLists } from "@/hooks/use-tracking-lists"
 import { useVocabLanguageLists } from "@/hooks/use-vocab-language-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
 import { PenSettingsHost } from "@/components/Home/Tracking/pen-settings-host"
 import { TagSettingsHost } from "@/components/Home/Tracking/tag-settings-host"
+import { SessionDebriefHost } from "@/components/Home/Tracking/session-debrief-dialog"
 import { parseModulePopoutModuleId } from "@/components/Modules/workspace/module-popout"
 import { parseSheetPopoutCategoryId } from "@/components/spreadsheet/sheet-popout"
 import { initWorkflowEngine, createTaskRepositoryAdapter } from "@/lib/services/item-mutation-service"
@@ -126,7 +134,10 @@ function IdleVaultSeeds() {
   useInstagramFollowingList()
   useInstagramFollowersList()
   useInstagramAnalysisLists()
+  useInstagramListsSync()
+  useInstagramSessionsSync()
   useVocabLanguageLists()
+  useTrackingLists()
   return null
 }
 
@@ -177,7 +188,13 @@ export default function Home() {
     const id = window.setTimeout(run, 1)
     return () => window.clearTimeout(id)
   }, [])
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.appItemId))
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
+    // A fresh launch does not reopen the full-page editor. An item detail that
+    // was still open is pinned separately and comes back on the minimized dock.
+    writeStoredId(APP_NAV_KEYS.appItemId, null)
+    return null
+  })
+  const [dockItemId, setDockItemId] = useState<string | null>(null)
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey()
   const capture = useQuickCaptureHotkey()
@@ -194,10 +211,21 @@ export default function Home() {
     if (!useTaskStore.persist.hasHydrated()) return false
     return !s.tasks.some((t) => t.id === selectedTaskId)
   })
+  const dockMissing = useTaskStore((s) => {
+    if (!dockItemId) return false
+    if (!useTaskStore.persist.hasHydrated()) return false
+    return !s.tasks.some((t) => t.id === dockItemId)
+  })
 
   useEffect(() => {
     writeStoredId(APP_NAV_KEYS.appItemId, selectedTaskId)
   }, [selectedTaskId])
+
+  // localStorage is empty during SSR, so the dock id is read after mount.
+  // A detail surface still open at reload left this pin and already saved.
+  useEffect(() => {
+    setDockItemId(readItemDetailDock())
+  }, [])
 
   // Screen history Back/Forward rewrites appItemId; keep the desk in sync.
   useEffect(() => {
@@ -216,6 +244,23 @@ export default function Home() {
   useEffect(() => {
     if (selectedMissing) setSelectedTaskId(null)
   }, [selectedMissing])
+
+  useEffect(() => {
+    if (!dockMissing || !dockItemId) return
+    clearItemDetailDock(dockItemId)
+    setDockItemId(null)
+  }, [dockMissing, dockItemId])
+
+  // The selector above only re-runs on store writes; if hydration finishes without
+  // one, a stale persisted id (deleted/merged Person) would stay open. Re-check then.
+  useEffect(() => {
+    const check = () => {
+      const id = readStoredId(APP_NAV_KEYS.appItemId)
+      if (id && !useTaskStore.getState().tasks.some((t) => t.id === id)) setSelectedTaskId(null)
+    }
+    if (useTaskStore.persist.hasHydrated()) check()
+    return useTaskStore.persist.onFinishHydration(check)
+  }, [])
 
   // Detect a leftover hash pop-out on the *root* page (`#popout/module/<id>`).
   // New pop-outs use `/popout/?module=` (see `app/popout/page.tsx`); this is a
@@ -242,6 +287,16 @@ export default function Home() {
     }
     window.addEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
     return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
+  }, [])
+
+  // Analytics (texts report, Instagram report) opens a Person as a popup over itself.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: unknown }>).detail?.id
+      if (typeof id === "string" && id) setSearchSelectedId(id)
+    }
+    window.addEventListener(OPEN_ITEM_POPUP_EVENT, handler)
+    return () => window.removeEventListener(OPEN_ITEM_POPUP_EVENT, handler)
   }, [])
 
   const handleTabChange = useCallback((value: string) => {
@@ -317,6 +372,7 @@ export default function Home() {
     {vaultSeeds}
     <PenSettingsHost />
     <TagSettingsHost />
+    <SessionDebriefHost />
     <main className="min-h-screen bg-background">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         {/* Header and the tab bay share one sticky stack. The bay uses the
@@ -435,6 +491,16 @@ export default function Home() {
           taskId={searchSelectedId}
           open
           onClose={() => setSearchSelectedId(null)}
+        />
+      </Suspense>
+    ) : null}
+    {dockItemId ? (
+      <Suspense fallback={null}>
+        <TaskDetailPopup
+          taskId={dockItemId}
+          open
+          startMinimized
+          onClose={() => setDockItemId(null)}
         />
       </Suspense>
     ) : null}

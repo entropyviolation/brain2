@@ -24,6 +24,11 @@ import { ChevronLeft, Plus, Search, X } from "lucide-react"
 import type { List } from "@/lib/types"
 import "./list-picker.css"
 
+export interface PinnedListChoice {
+  id: string
+  label: string
+}
+
 export interface ListPickerProps {
   selected: string[]
   onChange: (ids: string[]) => void
@@ -42,6 +47,13 @@ export interface ListPickerProps {
   showSelectedChips?: boolean
   /** Pin these list ids at the top as a Recent strip (Inbox walk). */
   suggestedIds?: string[]
+  /**
+   * Rows pinned above the catalog. An empty `id` means nothing is chosen
+   * (Any list, New list, Automatic) and is drawn selected while `selected` is empty.
+   */
+  pinnedChoices?: PinnedListChoice[]
+  /** Accessible name for the search field. Placeholder stays "Search lists…". */
+  searchLabel?: string
   /**
    * Offer each folder's All Items pool. Search `folder: all` / `all folder`
    * (and one unambiguous folder name). The row is a folder plate plus All.
@@ -100,6 +112,8 @@ export function ListPicker({
   showSelectedChips = false,
   suggestedIds,
   offerFolderAll = false,
+  pinnedChoices,
+  searchLabel = "Search lists",
 }: ListPickerProps) {
   const categories = useTaskStore((s) => s.lists)
   const folders = useTaskStore((s) => s.folders)
@@ -155,6 +169,9 @@ export function ListPicker({
 
   const q = search.trim().toLowerCase()
   const searchActive = q.length > 0
+  const visiblePins = (pinnedChoices ?? []).filter(
+    (pin) => !searchActive || pin.label.toLowerCase().includes(q),
+  )
 
   const searchResults = useMemo(() => {
     if (!searchActive) return []
@@ -343,6 +360,35 @@ export function ListPicker({
       </button>
     )
 
+  const renderPin = (pin: PinnedListChoice) => {
+    const on = pin.id === "" ? !effectiveMulti && selected.length === 0 : selected.includes(pin.id)
+    const activate = () => {
+      if (pin.id === "") onChange([])
+      else toggle(pin.id)
+    }
+    const name = <span className="truncate">{pin.label}</span>
+    const rowClass = fm
+      ? `fm-picker-row${on ? " selected" : ""}`
+      : `list-picker-row w-full px-2 py-1.5 text-sm rounded hover:bg-muted/60${on ? " bg-muted" : ""}`
+    if (effectiveMulti && pin.id !== "") {
+      return (
+        <label key={`pin:${pin.id}`} className={rowClass}>
+          {fm ? (
+            <input type="checkbox" checked={on} onChange={activate} aria-label={pin.label} />
+          ) : (
+            <Checkbox checked={on} onCheckedChange={activate} aria-label={pin.label} />
+          )}
+          {name}
+        </label>
+      )
+    }
+    return (
+      <button key={`pin:${pin.id || pin.label}`} type="button" className={rowClass} onClick={activate}>
+        {name}
+      </button>
+    )
+  }
+
   const recentStrip =
     !searchActive && suggestedLists.length > 0 ? (
       <div className={fm ? undefined : "list-picker-recent"} aria-label="Recent lists">
@@ -361,14 +407,20 @@ export function ListPicker({
       ? [...folderAll.targets.map(renderFolderAllRow), ...searchResults.map(renderListRow)]
       : [...searchResults.map(renderListRow), ...folderAll.targets.map(renderFolderAllRow)]
 
+  const pinNodes = visiblePins.map(renderPin)
+
   const body = searchActive ? (
-    searchNodes.length === 0 ? (
+    searchNodes.length === 0 && pinNodes.length === 0 ? (
       <p className={fm ? "fm-picker-empty" : "text-xs text-muted-foreground p-2"}>No lists match.</p>
     ) : (
-      searchNodes
+      <>
+        {pinNodes}
+        {searchNodes}
+      </>
     )
   ) : browseFolderId && inFolder ? (
     <>
+      {pinNodes}
       {recentStrip}
       <p className={fm ? "fm-picker-section" : "text-xs font-medium px-2 py-1 text-muted-foreground"}>{inFolder.name}</p>
       {browseAll ? renderFolderAllRow(browseAll) : null}
@@ -380,6 +432,7 @@ export function ListPicker({
     </>
   ) : (
     <>
+      {pinNodes}
       {recentStrip}
       {childFolders.map(renderFolderRow)}
       {looseLists.map(renderListRow)}
@@ -411,7 +464,7 @@ export function ListPicker({
               }
             }}
             placeholder="Search lists…"
-            aria-label="Search lists"
+            aria-label={searchLabel}
             style={{ flex: 1, minWidth: 0, width: "100%" }}
           />
         </div>
@@ -472,7 +525,7 @@ export function ListPicker({
               }
             }}
             placeholder="Search lists…"
-            aria-label="Search lists"
+            aria-label={searchLabel}
             className="h-8 pl-8"
           />
         </div>
@@ -520,6 +573,44 @@ export function ListPicker({
           <Label className="text-[10px] text-muted-foreground">Selected ({selected.length})</Label>
         </div>
       )}
+    </div>
+  )
+}
+
+/** One list from the catalog. Empty `value` selects `emptyLabel` when that row is set. */
+export function SingleListPicker({
+  value,
+  onValueChange,
+  emptyLabel,
+  searchLabel,
+  showCreate = false,
+  excludeIds,
+  compact = true,
+  showSelectedChips = false,
+}: {
+  value: string
+  onValueChange: (id: string) => void
+  emptyLabel?: string
+  searchLabel?: string
+  showCreate?: boolean
+  excludeIds?: string[]
+  compact?: boolean
+  /** Chip of the chosen list, above the search, the way item detail shows lists. */
+  showSelectedChips?: boolean
+}) {
+  return (
+    <div className="catalog-field">
+      <ListPicker
+        mode="single"
+        compact={compact}
+        showCreate={showCreate}
+        showSelectedChips={showSelectedChips}
+        excludeIds={excludeIds}
+        searchLabel={searchLabel}
+        pinnedChoices={emptyLabel ? [{ id: "", label: emptyLabel }] : undefined}
+        selected={value ? [value] : []}
+        onChange={(ids) => onValueChange(ids[0] ?? "")}
+      />
     </div>
   )
 }

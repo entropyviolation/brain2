@@ -4,9 +4,10 @@
  * Phase 5 of `docs/TODO_REDESIGN.md`. `ItemPenLinksField` edits `Task.penLinks`
  * (the same list **Remember for this task** writes; the first link is the clock
  * pen). `ItemTrackedTime` reads `trackedTimeForItem` (`lib/tracked-time.ts`):
- * the total, an est-vs-tracked bar, and the counted blocks. Both shells use it:
- * the popup's Time tab and the page's Scheduling tab. Edits go through the
- * shell's draft, like every other field.
+ * the total, an est-vs-tracked bar, and the counted blocks. A task's Time tab
+ * passes `editableTime` and renders `ItemTimeLedger` instead: the same blocks,
+ * their objectives, and session logs, all correctable. Edits to pens and logs
+ * go through the shell's draft. Block clocks go through the time grid.
  */
 "use client"
 
@@ -16,6 +17,7 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { findPen, partsMinutes, timeTrio, trackedTimeForItem } from "@/lib/tracked-time"
 import type { Task } from "@/lib/types"
+import { ItemTimeLedger } from "@/components/ItemDetail/ItemTimeLedger"
 import { PEN_COLOR_OPEN_TITLE, openPenSettings, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./item-pen-time.css"
 
@@ -72,7 +74,7 @@ export function ItemPenLinksField({
   return (
     <div className="ipt-pens" data-ui-name="Item pens">
       <div className="ipt-chips">
-        {links.length === 0 && <span className="ipt-quiet">No pen linked. Time painted with a linked pen counts here.</span>}
+        {links.length === 0 && <span className="ipt-quiet">No pen linked. Link one and new paint from the clock counts here.</span>}
         {links.map((link, i) => {
           const pen = findPen(scopes, link.penId)
           return (
@@ -239,15 +241,22 @@ export function ItemTrackedTime({
   )
 }
 
-/** The Pens field and the tracked total, as one bay. Shells pass their draft setters. */
+/**
+ * Pens, plus either the read-only total or the task ledger.
+ * `editableTime` is the task Time tab: blocks, objectives, and logs can be corrected.
+ */
 export function ItemPenTimeSection({
   task,
   onPenLinksChange,
+  onPatch,
   readOnly,
+  editableTime = false,
 }: {
-  task: Pick<Task, "id" | "penLinks" | "timeLogs" | "estimatedDuration"> & Partial<Pick<Task, "subtasks">>
+  task: Task
   onPenLinksChange: (next: Task["penLinks"]) => void
+  onPatch?: (patch: Partial<Task>) => void
   readOnly?: boolean
+  editableTime?: boolean
 }) {
   return (
     <div className="ipt-section space-y-3">
@@ -256,7 +265,11 @@ export function ItemPenTimeSection({
         Pens and tracked time
       </h3>
       <ItemPenLinksField penLinks={task.penLinks} onChange={onPenLinksChange} readOnly={readOnly} />
-      <ItemTrackedTime task={task} />
+      {editableTime && onPatch ? (
+        <ItemTimeLedger task={task} onPatch={onPatch} readOnly={readOnly} />
+      ) : (
+        <ItemTrackedTime task={task} />
+      )}
     </div>
   )
 }

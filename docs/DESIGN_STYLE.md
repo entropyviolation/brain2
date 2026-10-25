@@ -259,7 +259,7 @@ Under 720px a room gets its own layout, not a shrunk desktop.
 - **Verbs in the drawer, in an even grid** (3 × 2), with the rest under More….
 - **Wells stack one per row.** Empty ones are hidden.
 - **Trays open as a bottom sheet.**
-- Same materials as desktop: phosphor glass, milled keys, small lamps.
+- Same materials as desktop: phosphor glass, silver keycaps for word keys, milled keys, small lamps.
 
 ### Laying out a room
 
@@ -293,6 +293,39 @@ the next screen.
 One body. The actions are one row at the foot, in the order of the decision.
 One size ladder is enough: small, medium, large. The list picker on item
 detail is secondary to the item body.
+
+### Choosing a list or an item
+
+_Last mapped: 2026-10-24_
+
+A list or an item is a catalog. It can hold thousands of rows. Do not put
+that catalog in a `<select>`, `NativeSelect`, or Radix `Select`. Those menus
+grow into one unreadably long line, cannot be searched, and do not fit the
+field.
+
+Use the shared pickers. They are the same shape as **Lists** on the item
+detail rail: a search field, one name per row, a bounded scroll.
+
+- **Lists** — `ListPicker` (`components/Lists/list-picker.tsx`).
+  `mode="single"` chooses one list. `mode="multi"` ticks several. A
+  single-choice field stays single. `pinnedChoices` adds a row such as
+  **Any list**; an empty id means nothing is chosen. `SingleListPicker` is
+  that one-list field. **New list** is on when creating a list belongs in
+  the moment (an attribute’s scope) and off when the field must name a list
+  that already exists.
+- **Items** — `ItemPicker` (`components/Lists/item-picker.tsx`). Pass
+  `{ id, title }[]`. Single or multi the same way. A long catalog stays
+  capped; the rest of the rows ask the person to keep typing.
+- **A long set of option strings** (a selection attribute whose choices come
+  from a list) — `StringPicker` in that same file, once there are more than
+  a handful.
+
+`NativeSelect` stays for a short enum: a type, a status, a period, a pen, an
+item type. **Add attribute → Add to** lists only the lists this item already
+belongs to, so that one menu stays short.
+
+The picker is the width of its field (`.catalog-field`). Names truncate.
+The control does not grow with the longest name.
 
 A dirty editor does not close as if it were clean. Cancel, close, ×, and
 overlay-click prompt when the draft differs from the open baseline: **Save
@@ -347,7 +380,8 @@ The direction is more magic, not less. More esoteric technology, more pixel,
 more small lights, more interaction that is beautiful because it moves.
 Object chrome, the milled fascia, phosphor, nested depth, and the willpower
 plate are materials and examples. They are not a rule that the next room must
-wear them.
+wear them. A word key is the exception: it is the silver keycap
+([Keycaps](#keycaps)). Seafoam and cornflower are the spare plastics.
 
 ### Magical interaction
 
@@ -446,16 +480,10 @@ the required start for every new tab.
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
 | **Key** | Raised metal: specular top lip, mill, pressed foot. Sibling keys share the bay equally. Active mode is the CRT plus the power lamp. |
 
-A title-bar close key is an opaque raised metal key: solid `--chrome-face`
-under the fascia key face, specular top lip, inset pressed foot. The painted
-face and the hit target are the same 22px square (the ring is the border, so
-a shadow foot cannot hang off the bottom and make the key taller than it is
-wide). The × is a geometric 10px mark centered on that square — a font glyph’s
-side bearings sit off the optical center. Every dialog that uses the house
-title bar uses this key (`.b2-close-key` in `app/win95.css`). It sits in the
-title bar. It is not a transparent pip, and it is not a smaller off-center
-mark. The generic button hairline is only a lip — it must not be the close
-key’s only paint, or the title bar shows through.
+A title-bar × is the keycap close (`KeycapClose`; see [Keycaps](#keycaps)),
+including Settings and every dialog that uses the shared close. It sits in
+the title bar, on `--b2-close-top` / `--b2-close-right` when it is the corner
+key. It is not a transparent pip, and it is not a smaller off-center mark.
 
 **Caption keys.** A caption bar that carries a row of actions (the open list’s
 Search / Add / Settings / Close in Lists) uses one family of keys instead: a
@@ -518,18 +546,28 @@ Shipped example: `PointsDial` in `components/Home/ToDo/TaskCardSide.tsx`, styled
 
 ### Keycaps
 
-_Last mapped: 2026-10-21_
+_Last mapped: 2026-10-24_
+
+Allie likes this button and wants more of it. A word key is this cap. Reach for the pale silver one. Seafoam and cornflower are the only other plastics, for a word key that needs a color. Do not invent a new word-button shape.
 
 Word keys use the ortholinear keycap, from a round-screen terminal allie picked. The cap is nearly square with a 3–4px corner. It has a flat top face with a soft top-to-bottom gradient, a darker skirt along the bottom and sides drawn with inset shadows (4px at the bottom, 2px at the sides), a 1px edge line, and a dark legend.
 
-- **Default cap:** pale silver. Top `#f1f3f5` → `#dfe2e6`, skirt `#b3b8be`, edge `#6e7378`, legend `#1f2226`.
-- **Modifier cap** (Session, Sessions, Show, sort, Needs…, View, Delete): darker grey. Top `#c9ccd0` → `#b9bdc1`, skirt `#969a9f`, edge `#55595d`.
-- **Primary cap** (+ Add task, Done): the silver cap with a navy legend, a small navy lamp before the word, and a 2px navy ring.
+- **Default cap (use this):** pale silver. Top `#f1f3f5` → `#dfe2e6`, skirt `#b3b8be`, edge `#6e7378`, legend `#1f2226`. Class `.todo-cap`.
+- **Modifier cap** (Session, Sessions, Show, sort, Needs…, View, Delete): darker grey. Top `#c9ccd0` → `#b9bdc1`, skirt `#969a9f`, edge `#55595d`. Class `.todo-cap.is-mod` (`.is-quiet` is the same grey).
+- **Primary cap** (+ Add task, Done): the silver cap with a navy legend, a small navy lamp before the word, and a 2px navy ring. Class `.todo-cap.is-primary`. Navy `#22306c`.
+- **Seafoam cap:** the same cap in seafoam. Top `#d4f3e8` → `#b7e6d4`, skirt `#7ebfa8`, edge `#3f7564`, legend `#102820`. Class `.todo-cap.is-seafoam`.
+- **Cornflower cap:** the same cap in cornflower. Top `#dce6fb` → `#c0d0f6`, skirt `#8aa6e0`, edge `#4a6298`, legend `#17243f`. Class `.todo-cap.is-cornflower`.
 - **Latching keys** (the span keys): a lamp at the left, lit green and sunken when current.
 - A pressed or on key drops by about 2px and its skirt shrinks.
-- Never cream or yellow caps by default.
+- Never cream, yellow, or orange caps.
 
-Code: the `--todo-cap-*` tokens and `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class.
+The two color faces set the four locals the shape already uses (`--cap-top`, `--cap-top2`, `--cap-skirt`, `--cap-edge`) and the legend color. They add no tokens. Silver and the grey modifier keep the `--todo-cap-*` tokens. Do not stack a color face on `.is-mod` or `.is-primary`.
+
+A milled fascia key (a bay’s raised metal, the title-bar close key) is a different object. Pause, Play, and Stop stay the transport disc.
+
+Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × stays the gunmetal caption key.
+
+Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
 
 ### Transport keys
 
@@ -908,6 +946,8 @@ instrument and Needs Attention are already on a machine face.
 | Chrome warmth and Bouba/Kiki | `lib/chrome-patina.ts`, `lib/drift-clock.ts`, `lib/corner-mix.ts`, `app/chrome-patina.css`, Settings → Window gray / Bouba/Kiki |
 | Sand close | `components/ui/window-sand-close.tsx`, `components/ui/window-sand-sim.ts`; wired from `daily-task-form-dialog.tsx` |
 | Pause / Play / Stop | `components/dvd-transport-keys.tsx` (`DvdTransportKey`) and `dvd-transport-keys.css`. The glassy 28px disc. Reuse it; do not invent another transport icon. |
+| Word keys (keycaps) | `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Pale silver is the face to use more of. `.is-seafoam` and `.is-cornflower` are the only other plastics; they reuse `--cap-*` and add no tokens. |
+| Keycap × | `components/keycap-close.tsx` (`KeycapClose`) and `keycap-close.css`. Grey modifier cap, 26px, round ×. The shared dialog close, and the other title-bar × that used to be the metal key. Hover and focus turn the plastic brick (`#7A3C31` / `#78292E`). |
 | Willpower gems | `willpower-gems.tsx`, `lib/willpower-physics.ts`, `lib/willpower-stones.ts`, `habits-control-panel.tsx` |
 | Habits lamps and tubes | `habit-led-lamp.tsx`, `percent-led-bar.tsx`, `percent-led.tsx`, `noble-gas-tube.tsx`, `cockpit-switch.tsx` |
 | Lists orbs | `FolderViewIcons.tsx`, `lib/orbs-manifest.ts`, `lib/lists-icon-grid.ts`, `components/Icons/OrbPicker.tsx`, `public/orbs-removebackground/` |
@@ -939,6 +979,9 @@ orb. It may also be an object that room invented.
       no orphan wrap, no clipped toolbar (padding first), the hint is
       readable, a dead control is hidden, clocks and popovers are the
       instrument. No chrome added to look busy.
+- [ ] A word key is the silver [keycap](#keycaps). Seafoam and cornflower
+      are the spare plastics. No cream, yellow, orange, or a new word-button
+      shape. Pause / Play / Stop stay the transport disc.
 - [ ] If it moves, it is a verb (or one rare gesture on that verb), and
       reduced motion snaps to the end state.
 - [ ] A number the person did not type wears `~` and an **est.** chip.
@@ -946,6 +989,9 @@ orb. It may also be an object that room invented.
       do. States read as neutral facts ("Waiting since Tue", "Pushed ×3"), and
       warm red is kept for estimate overruns.
 - [ ] A dirty editor uses Save / Stay / Discard. A clean close is silent.
+- [ ] A list or item catalog is `ListPicker` / `ItemPicker`: search, truncated
+      rows, single or multi as that field requires. Not a `<select>` of the vault.
+      See [Choosing a list or an item](#choosing-a-list-or-an-item).
 - [ ] Habits, Lists, Plan chips, and the Analytics studio were left as their
       own rooms. New furniture was invented here, or a palette material was
       used, without cloning `.hab95`.
