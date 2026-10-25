@@ -5,7 +5,8 @@
  * task — pen clock, To Do start, a hand correction — list here with their
  * notes, objectives, and the clocks those objectives ran. A block from the
  * pen clock says it was added from Working On Now. Session lines that never
- * painted a block list under them. Edits to a block go through the time grid
+ * painted a block list under them. Add time takes an optional start, end, and
+ * duration (any two fill in the third) and a list of objectives. Edits to a block go through the time grid
  * (`updateEntry`). Edits to a log, a step's minutes, or the task's completed
  * mark go through the open draft, or onto the parent task when this item is
  * a step.
@@ -16,7 +17,8 @@
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { formatDuration } from "@/lib/time-entries"
+import { formatDuration, parseDurationInput } from "@/lib/time-entries"
+import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { findPen, stepSpentMinutes, timeTrio, trackedTimeForItem, partsMinutes } from "@/lib/tracked-time"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import {
@@ -491,19 +493,18 @@ export function ItemTimeLedger({
           penName={pen?.name}
           onCancel={() => setAdding(false)}
           onAdd={(row) => {
-            const objective = row.objective.trim()
-            const objectives = objective
-              ? [
-                  {
-                    id: `nobj-${Date.now().toString(36)}`,
-                    text: objective,
-                    addedAt: isoAt(row.date, row.start),
-                    ...(row.done ? { completedAt: isoAt(row.date, row.end) } : {}),
+            const stamped =
+              row.start != null && row.end != null
+                ? row.objectives.map((item) => ({
+                    id: `nobj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+                    text: item.text,
+                    addedAt: isoAt(row.date, row.start!),
+                    ...(item.done ? { completedAt: isoAt(row.date, row.end!) } : {}),
                     ...(row.stepId ? { stepId: row.stepId } : {}),
-                  },
-                ]
-              : undefined
-            if (pen && scopeId) {
+                  }))
+                : []
+            const objectives = stamped.length ? stamped : undefined
+            if (pen && scopeId && row.start != null && row.end != null) {
               paintMinutes(row.date, scopeId, row.start, row.end, pen.id, undefined, undefined, undefined, {
                 title: row.note || undefined,
                 taskId: record.id,
@@ -516,10 +517,10 @@ export function ItemTimeLedger({
               const entry: TimeLogEntry = {
                 id: `tl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
                 date: row.date,
-                startTime: hhmm(row.start),
-                endTime: hhmm(row.end),
-                durationMinutes: row.end - row.start,
-                notes: [row.note, objective].filter(Boolean).join(" · ") || undefined,
+                ...(row.start != null ? { startTime: hhmm(row.start) } : {}),
+                ...(row.end != null ? { endTime: hhmm(row.end) } : {}),
+                durationMinutes: row.duration,
+                notes: [row.note, ...row.objectives.map((item) => item.text)].filter(Boolean).join(" · ") || undefined,
                 taskId: record.id,
                 ...(row.stepId ? { stepId: row.stepId } : {}),
               }
@@ -814,6 +815,38 @@ function LogRow({
   )
 }
 
+type ClockFieldName = "start" | "end" | "duration"
+
+type LoggedObjective = { id: string; text: string; done: boolean }
+
+type TimeAsk = {
+  message: string
+  choices: { label: string; start: string; end: string; duration: string }[]
+}
+
+const face = (min: number) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}`
+
+/** The two ways to restore start + end = length after one of them moved. */
+function timeAsk(edited: ClockFieldName, start: number | null, end: number | null, duration: number | null): TimeAsk | null {
+  const choices: TimeAsk["choices"] = []
+  const push = (label: string, s: number, e: number, d: number) => {
+    if (d < 1 || e <= s || e > 1440 || s < 0) return
+    choices.push({ label, start: hhmm(s), end: hhmm(e), duration: String(d) })
+  }
+  if (edited === "start" && start != null) {
+    if (duration != null) push(`Move the end to ${face(start + duration)}`, start, start + duration, duration)
+    if (end != null && end > start) push(`Set the duration to ${formatDuration(end - start)}`, start, end, end - start)
+  } else if (edited === "end" && end != null) {
+    if (duration != null) push(`Move the start to ${face(end - duration)}`, end - duration, end, duration)
+    if (start != null && end > start) push(`Set the duration to ${formatDuration(end - start)}`, start, end, end - start)
+  } else if (edited === "duration" && duration != null) {
+    if (start != null) push(`Move the end to ${face(start + duration)}`, start, start + duration, duration)
+    if (end != null) push(`Move the start to ${face(end - duration)}`, end - duration, end, duration)
+  }
+  if (choices.length === 0) return null
+  return { message: "Start, end, and duration no longer match.", choices }
+}
+
 function AddTime({
   choices,
   penName,
@@ -823,28 +856,128 @@ function AddTime({
   choices: { id: string; label: string }[]
   penName?: string
   onCancel: () => void
-  onAdd: (row: { date: string; start: number; end: number; stepId?: string; note: string; objective: string; done: boolean }) => void
+  onAdd: (row: {
+    date: string
+    start: number | null
+    end: number | null
+    duration: number
+    stepId?: string
+    note: string
+    objectives: { text: string; done: boolean }[]
+  }) => void
 }) {
   const [date, setDate] = useState(() => formatLocalDateKey(new Date()))
   const [start, setStart] = useState("")
   const [end, setEnd] = useState("")
+  const [duration, setDuration] = useState("")
   const [stepId, setStepId] = useState("")
   const [note, setNote] = useState("")
+  const [objectives, setObjectives] = useState<LoggedObjective[]>([])
   const [objective, setObjective] = useState("")
-  const [done, setDone] = useState(true)
+  const [ask, setAsk] = useState<TimeAsk | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const reconcile = (edited: ClockFieldName, raw: string) => {
+    const next = { start, end, duration, [edited]: raw }
+    if (!raw) {
+      setStart(next.start)
+      setEnd(next.end)
+      setDuration(next.duration)
+      setAsk(null)
+      return
+    }
+    const s = parseClock(next.start)
+    const e = parseClock(next.end)
+    const d = parseDurationInput(next.duration)
+    const have = [s, e, d].filter((n) => n != null).length
+    if (have < 2) {
+      setStart(s != null ? hhmm(s) : next.start)
+      setEnd(e != null ? hhmm(e) : next.end)
+      setDuration(d != null ? String(d) : next.duration)
+      setAsk(null)
+      return
+    }
+    if (have === 2) {
+      const filled =
+        s != null && e != null && e > s
+          ? { start: s, end: e, duration: e - s }
+          : s != null && d != null && s + d <= 1440
+            ? { start: s, end: s + d, duration: d }
+            : e != null && d != null && e - d >= 0
+              ? { start: e - d, end: e, duration: d }
+              : null
+      if (!filled || filled.end <= filled.start) {
+        setError("The end is later than the start.")
+        setStart(next.start)
+        setEnd(next.end)
+        setDuration(next.duration)
+        return
+      }
+      setStart(hhmm(filled.start))
+      setEnd(hhmm(filled.end))
+      setDuration(String(filled.duration))
+      setAsk(null)
+      setError(null)
+      return
+    }
+    if (s != null && e != null && d != null && e - s === d) {
+      setStart(hhmm(s))
+      setEnd(hhmm(e))
+      setDuration(String(d))
+      setAsk(null)
+      return
+    }
+    setStart(s != null ? hhmm(s) : next.start)
+    setEnd(e != null ? hhmm(e) : next.end)
+    setDuration(d != null ? String(d) : next.duration)
+    setAsk(timeAsk(edited, s, e, d))
+  }
+
+  const addObjective = (text: string) => {
+    const value = text.trim()
+    if (!value) return
+    setObjectives((rows) => [...rows, { id: `add-obj-${rows.length}-${value}`, text: value, done: true }])
+    setObjective("")
+  }
+
   return (
     <form
       className="ipt-add-form"
       onSubmit={(e) => {
         e.preventDefault()
-        const a = parseClock(start)
-        const b = parseClock(end)
-        if (a == null || b == null || b <= a) {
-          setError("Start and end are clock times, and the end is later.")
+        if (ask) {
+          setError("Choose which time to update.")
           return
         }
-        onAdd({ date, start: a, end: b, stepId: stepId || undefined, note: note.trim(), objective: objective.trim(), done })
+        let s = parseClock(start)
+        let en = parseClock(end)
+        let d = parseDurationInput(duration)
+        const filled = [s, en, d].filter((n) => n != null).length
+        if (filled === 2) {
+          if (s != null && en != null && en > s) d = en - s
+          else if (s != null && d != null && s + d <= 1440) en = s + d
+          else if (en != null && d != null && en - d >= 0) s = en - d
+          else {
+            setError("The end comes after the start.")
+            return
+          }
+        }
+        if (s != null && en != null && d != null && en - s !== d) {
+          setAsk(timeAsk("duration", s, en, d))
+          setError("Choose which time to update.")
+          return
+        }
+        const pending = objective.trim()
+        const list = [...objectives.map((item) => ({ text: item.text, done: item.done })), ...(pending ? [{ text: pending, done: true }] : [])]
+        if (s != null && en != null && en > s) {
+          onAdd({ date, start: s, end: en, duration: en - s, stepId: stepId || undefined, note: note.trim(), objectives: list })
+          return
+        }
+        if (d != null && s == null && en == null) {
+          onAdd({ date, start: null, end: null, duration: d, stepId: stepId || undefined, note: note.trim(), objectives: list })
+          return
+        }
+        setError("Enter a duration, or a start and an end.")
       }}
     >
       <label>
@@ -853,14 +986,40 @@ function AddTime({
       </label>
       <label>
         Start
-        <input className="ipt-clock" aria-label="Start" value={start} onChange={(e) => setStart(e.target.value)} placeholder="9:00" />
+        <ClockPicker aria-label="Start" value={start} onChange={(value) => reconcile("start", value)} placeholder="optional" />
       </label>
       <label>
         End
-        <input className="ipt-clock" aria-label="End" value={end} onChange={(e) => setEnd(e.target.value)} placeholder="10:30" />
+        <ClockPicker aria-label="End" value={end} onChange={(value) => reconcile("end", value)} placeholder="optional" />
+      </label>
+      <label>
+        Duration
+        <input
+          className="ipt-mins"
+          aria-label="Duration"
+          inputMode="text"
+          value={duration}
+          placeholder="optional"
+          onChange={(e) => {
+            setDuration(e.target.value)
+            setAsk(null)
+          }}
+          onBlur={() => {
+            const raw = duration.trim()
+            if (!raw) {
+              reconcile("duration", "")
+              return
+            }
+            if (parseDurationInput(raw) == null) {
+              setError("Duration is minutes, like 90 or 1h 30m.")
+              return
+            }
+            reconcile("duration", raw)
+          }}
+        />
       </label>
       {choices.length > 0 && (
-        <label>
+        <label className="ipt-add-span2">
           Step
           <select className="ipt-step" aria-label="Step" value={stepId} onChange={(e) => setStepId(e.target.value)}>
             <option value="">Whole task</option>
@@ -876,13 +1035,68 @@ function AddTime({
         Note
         <input className="ipt-text" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
       </label>
-      <label className="ipt-add-wide">
-        Objective
-        <input className="ipt-text" aria-label="Objective" value={objective} onChange={(e) => setObjective(e.target.value)} />
-      </label>
-      <label className="ipt-add-check">
-        <input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} /> Done at the end
-      </label>
+      <div className="ipt-add-wide ipt-add-objs">
+        <span>Objectives</span>
+        {objectives.length > 0 && (
+          <ul aria-label="Objectives for this block">
+            {objectives.map((item) => (
+              <li key={item.id}>
+                <input
+                  type="checkbox"
+                  aria-label={`Done: ${item.text}`}
+                  checked={item.done}
+                  onChange={() => setObjectives((rows) => rows.map((row) => (row.id === item.id ? { ...row, done: !row.done } : row)))}
+                />
+                <span>{item.text}</span>
+                <button type="button" className="ipt-x" aria-label={`Remove objective ${item.text}`} onClick={() => setObjectives((rows) => rows.filter((row) => row.id !== item.id))}>
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="ipt-obj-add">
+          <input
+            className="ipt-text"
+            aria-label="Objective"
+            placeholder="What got done"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return
+              e.preventDefault()
+              addObjective(objective)
+            }}
+          />
+          <button type="button" className="ipt-add" onClick={() => addObjective(objective)}>
+            Add
+          </button>
+        </div>
+      </div>
+      {ask && (
+        <div className="ipt-ask ipt-add-wide" role="group" aria-label="Update the other times">
+          <p>{ask.message}</p>
+          {ask.choices.map((choice) => (
+            <button
+              key={choice.label}
+              type="button"
+              className="ipt-add"
+              onClick={() => {
+                setStart(choice.start)
+                setEnd(choice.end)
+                setDuration(choice.duration)
+                setAsk(null)
+                setError(null)
+              }}
+            >
+              {choice.label}
+            </button>
+          ))}
+          <button type="button" className="ipt-add" onClick={() => setAsk(null)}>
+            Leave these
+          </button>
+        </div>
+      )}
       <div className="ipt-add-actions">
         <button type="submit" className="ipt-add">
           {penName ? "Add this block" : "Add this log"}
@@ -891,7 +1105,9 @@ function AddTime({
           Cancel
         </button>
       </div>
-      <p className="ipt-quiet">{penName ? `Paints with ${penName}.` : "No pen is linked. This writes a time log."}</p>
+      <p className="ipt-quiet">
+        {penName ? `A start and an end paint with ${penName}. A duration alone writes a log.` : "No pen is linked. This writes a time log."} Any two of start, end, and duration fill in the third.
+      </p>
       {error && <p className="ipt-quiet">{error}</p>}
     </form>
   )
