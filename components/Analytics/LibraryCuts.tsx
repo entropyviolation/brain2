@@ -400,10 +400,15 @@ export function WeightView() {
                 />
                 <ul className="lib-quad-legend">
                   {WEIGHT_ZONES.map((z) => {
-                    const n = cells.filter((c) => weightZone(c.x, c.y) === z.id).reduce((sum, c) => sum + c.count, 0)
+                    const zoneCells = cells.filter((c) => weightZone(c.x, c.y) === z.id)
+                    const n = zoneCells.reduce((sum, c) => sum + c.count, 0)
+                    // Do some corners slip more? Mean days pushed of the corner's items.
+                    const zoneIds = new Set(zoneCells.flatMap((c) => c.ids))
+                    const pushed = summarize(pool.filter((t) => zoneIds.has(t.id)).map((t) => t.daysPushed ?? 0))
                     return (
-                      <li key={z.id}>
+                      <li key={z.id} title="Mean days pushed of the items in this corner">
                         <b>{z.name}</b> · {n} — {z.hint}
+                        {pushed.n ? ` · pushed ${fmt(pushed.mean, 1)}d avg` : ""}
                       </li>
                     )
                   })}
