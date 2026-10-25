@@ -23,7 +23,8 @@ describe("CognitiveState", () => {
     expect(key).toHaveAttribute("title", "Now")
   })
 
-  it("opens Recent now, then Upcoming now, with the moment explanation", async () => {
+  // The Now popup body is a lazy import; its module graph can take over a second to load in jsdom.
+  it("opens Recent now, then Upcoming now, with the moment explanation", { timeout: 15000 }, async () => {
     const user = userEvent.setup()
     render(<CognitiveState />)
     await user.click(screen.getByRole("button", { name: "Now" }))
@@ -32,7 +33,7 @@ describe("CognitiveState", () => {
     expect(screen.getByText("Recent now")).toBeInTheDocument()
     expect(screen.getByText(/edge of the current moment/)).toBeInTheDocument()
     expect(screen.queryByText("What is true right now, and the plan for the hours ahead.")).not.toBeInTheDocument()
-    expect(await screen.findByRole("tab", { name: "Tracking" })).toHaveAttribute("aria-selected", "true")
+    expect(await screen.findByRole("tab", { name: "Tracking" }, { timeout: 8000 })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByRole("tab", { name: "Plan" })).toBeInTheDocument()
     expect(await screen.findByTestId("time-grid")).toHaveTextContent("day grid")
     expect(screen.getByTestId("htk-current-moment")).toBeInTheDocument()

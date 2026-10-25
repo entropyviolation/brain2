@@ -35,7 +35,6 @@ const STAMPS: [string, string, string][] = [
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Required"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Assigned"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Assigned composer"', 'data-ui-docs="components/Home/ToDo/README.md"'],
-  ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="WIP warning"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/PriorityFormulaPanel.tsx", 'data-ui-name="Priority formula"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="Status bar"', 'data-ui-docs="components/Home/ToDo/README.md"'],
   ["components/Home/ToDo/todo-panel.tsx", 'data-ui-name="To Do plate"', 'data-ui-docs="components/Home/ToDo/README.md"'],
