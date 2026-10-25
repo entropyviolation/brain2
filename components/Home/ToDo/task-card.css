@@ -28,8 +28,7 @@
   overflow-wrap: anywhere;
 }
 .task-card-close {
-  position: absolute; top: 8px; right: 8px; z-index: 2;
-  width: 28px; height: 28px; padding: 0; font-size: 16px; line-height: 1;
+  position: absolute; top: 6px; right: 6px; z-index: 2;
 }
 .task-card-num.is-explained { cursor: help; border-bottom: 1px dotted rgba(40, 48, 60, 0.45); }
 .task-card-rawmath { margin: 2px 0 0; color: #3b3f45; }
@@ -472,7 +471,7 @@ body.win95-app .task-card .task-card-jewel.is-prioritized.is-icon[aria-pressed="
 
 /* Detail panel pass: corner close, push flag, digital readouts, quieter estimate */
 .task-card-title-row { padding-right: 30px; }
-.task-card .task-card-close { top: 3px; right: 3px; width: 22px; height: 22px; }
+.task-card .task-card-close { top: 6px; right: 6px; }
 .task-card-pushflag { font: 700 11px/1 var(--font-dmmono), monospace; letter-spacing: 0.04em; padding: 4px 8px; border-radius: 4px; color: #8a2a1f; background: #fbe9e5; border: 1px solid #e3a99f; box-shadow: inset 0 0 0 1px #fff7; white-space: nowrap; }
 body.win95-app .task-card .tcs-dials { display: flex; gap: 6px; flex-wrap: nowrap; }
 body.win95-app .task-card .tcs-dial { flex: 1 1 0; min-width: 0; padding: 6px 8px 5px; gap: 2px; background: linear-gradient(#0d1a1c, #12262a); border: 1px solid #2a4348; border-radius: 6px; box-shadow: inset 0 1px 6px #000a, 0 0 0 1px #fff6; }
@@ -609,6 +608,11 @@ body.win95-app .task-card .tcs-notes-scope button[aria-pressed="true"] { backgro
 /* Spent popover: the blocks behind the number, editable in place */
 .tcs-spent { list-style: none; margin: 0; padding: 0; max-height: 14rem; overflow: auto; }
 .tcs-spent > li { display: grid; grid-template-columns: 6.2rem auto 3rem minmax(0, 1fr) 2.4rem; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--tc-wash); }
+.tcs-spent-objs { grid-column: 1 / -1; list-style: none; margin: 0 0 2px 10px; padding: 0 0 0 8px; border-left: 2px solid var(--tc-wash); display: grid; gap: 4px; }
+.tcs-spent-objs > li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; border: 0; }
+.tcs-spent-obj-text { flex: 1 1 14rem; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
+.tcs-spent-objs .is-done .tcs-spent-obj-text { color: var(--tc-mute); }
+.tcs-spent-objs .trk-now-obj-picker { flex: 1 1 100%; }
 .tcs-spent time, .tcs-spent-span { font: 400 11px/1.2 var(--tc-mono); color: var(--tc-mute); white-space: nowrap; }
 .tcs-spent b { font: 500 12px/1 var(--tc-mono); text-align: right; }
 .tcs-spent em { font-style: normal; color: var(--tc-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -619,3 +623,7 @@ body.win95-app .task-card .tcs-notes-scope button[aria-pressed="true"] { backgro
 .task-card .tcs-spent-x { justify-self: end; padding: 0 4px; border: 0; background: none; box-shadow: none; font: 400 13px/1.2 var(--tc-mono); color: var(--tc-mute); cursor: pointer; opacity: 0.5; }
 .task-card .tcs-spent-x:hover, .task-card .tcs-spent-x.is-sure { opacity: 1; color: #a3372a; }
 .task-card .tcs-spent-x.is-sure { font-size: 10px; }
+
+.task-card-spent-btn { padding: 0 2px; border: 0; border-bottom: 1px dotted currentColor; background: none; font: inherit; color: inherit; cursor: pointer; }
+.task-card-spent-panel { margin: 6px 0; padding: 6px 8px; border: 1px solid var(--tc-wash); background: rgba(255, 255, 255, 0.5); }
+.task-card-spent-panel > header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 13px; }

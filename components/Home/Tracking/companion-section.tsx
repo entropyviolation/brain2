@@ -271,26 +271,11 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                         />
                       ) : (
                         <>
-                        {scope.pens.map((pen) => {
-                        const multi = scope.id === COMPANY_SCOPE_ID
-                        const on = picked.includes(pen.id)
-                        return (
-                          <button
-                            key={pen.id}
-                            type="button"
-                            aria-pressed={multi ? on : undefined}
-                            onClick={() =>
-                              multi
-                                ? setPicked((current) => (on ? current.filter((id) => id !== pen.id) : [...current, pen.id]))
-                                : attach(scope.id, pen.id)
-                            }
-                            className={`rounded border px-2 py-0.5 text-[11px] hover:bg-muted ${on ? "bg-foreground text-background" : ""}`}
-                            style={{ borderColor: pen.color }}
-                          >
-                            {pen.name}
-                          </button>
-                        )
-                      })}
+                        <PenSearchList
+                          pens={scope.pens}
+                          query={newPenName}
+                          onPick={(id) => attach(scope.id, id)}
+                        />
                       <span className="flex items-center gap-1">
                         <Input
                           value={newPenName}
@@ -298,11 +283,16 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                           onKeyDown={(e) => {
                             if (e.key !== "Enter") return
                             e.preventDefault()
-                            createAndAttach(scope.id)
+                            const q = newPenName.trim().toLowerCase()
+                            const hits = q ? scope.pens.filter((p) => p.name.toLowerCase().includes(q)) : []
+                            const exact = hits.find((p) => p.name.toLowerCase() === q)
+                            if (exact || hits.length === 1) attach(scope.id, (exact ?? hits[0]!).id)
+                            else createAndAttach(scope.id)
                           }}
-                          placeholder={`New ${scope.name.toLowerCase()} pen…`}
-                          aria-label={`New ${scope.name} pen`}
-                          className="h-6 w-36 text-[11px]"
+                          autoFocus
+                          placeholder={`Search or add ${scope.name.toLowerCase()}…`}
+                          aria-label={`Search or add ${scope.name} pen`}
+                          className="h-6 w-48 text-[11px]"
                         />
                         <Button
                           type="button"
@@ -489,6 +479,47 @@ function CompanionRow({
 }
 
 const FALLBACK_COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#0ea5e9", "#ef4444", "#84cc16"]
+const PEN_LIST_LIMIT = 12
+
+/** Pens matching the search box; with no query, just the first few so the picker stays calm. */
+function PenSearchList({
+  pens,
+  query,
+  onPick,
+}: {
+  pens: TrackPen[]
+  query: string
+  onPick: (penId: string) => void
+}) {
+  const q = query.trim().toLowerCase()
+  const matches = q ? pens.filter((p) => p.name.toLowerCase().includes(q)) : pens
+  const shown = matches.slice(0, PEN_LIST_LIMIT)
+  return (
+    <div className="flex w-full flex-wrap items-center gap-1.5" data-testid="pen-search-list">
+      {shown.map((pen) => (
+        <button
+          key={pen.id}
+          type="button"
+          onClick={() => onPick(pen.id)}
+          className="max-w-full truncate rounded border px-2 py-0.5 text-[11px] hover:bg-muted"
+          style={{ borderColor: pen.color }}
+          title={pen.name}
+        >
+          {pen.name}
+        </button>
+      ))}
+      {matches.length > shown.length ? (
+        <span className="text-[11px] text-muted-foreground">
+          +{matches.length - shown.length} more — keep typing
+        </span>
+      ) : null}
+      {q && matches.length === 0 ? (
+        <span className="text-[11px] text-muted-foreground">No match — Enter adds “{query.trim()}”</span>
+      ) : null}
+    </div>
+  )
+}
+
 function penColorFor(index: number): string {
   return FALLBACK_COLORS[index % FALLBACK_COLORS.length]
 }

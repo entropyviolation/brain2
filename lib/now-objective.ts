@@ -18,6 +18,13 @@ export interface NowObjective {
    * actual minutes. Omitted = free-form, as before.
    */
   stepId?: string
+  /**
+   * What finishing the objective means for its task. With a `stepId`: omitted
+   * or true ticks that step; false only counts the time toward it (the step
+   * stays open). Without a `stepId`: true finishes the whole clock task;
+   * omitted means it is just a line in the session.
+   */
+  completes?: boolean
 }
 
 function rid(): string {
@@ -43,7 +50,8 @@ export function sameNowObjectives(
       x.text !== y.text ||
       x.addedAt !== y.addedAt ||
       x.completedAt !== y.completedAt ||
-      x.stepId !== y.stepId
+      x.stepId !== y.stepId ||
+      x.completes !== y.completes
     ) {
       return false
     }
@@ -61,6 +69,7 @@ export function compactNowObjectives(list: NowObjective[] | undefined): NowObjec
       const packed: NowObjective = { id: row.id, text, addedAt: row.addedAt }
       if (row.completedAt) packed.completedAt = row.completedAt
       if (row.stepId) packed.stepId = row.stepId
+      if (row.completes !== undefined) packed.completes = row.completes
       return packed
     })
     .filter((row): row is NowObjective => row != null)
@@ -93,6 +102,20 @@ export function tieNowObjectiveToStep(
     else delete next.stepId
     return next
   })
+}
+
+/** Whether ticking this objective finishes something (its step, or the whole task). */
+export function objectiveCompletesTarget(row: NowObjective): boolean {
+  return row.stepId ? row.completes !== false : row.completes === true
+}
+
+/** Switch an objective between "counts toward" and "finishes" its target. */
+export function setNowObjectiveCompletes(
+  list: NowObjective[] | undefined,
+  id: string,
+  completes: boolean,
+): NowObjective[] {
+  return (list ?? []).map((row) => (row.id === id ? { ...row, completes } : row))
 }
 
 /**

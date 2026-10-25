@@ -168,6 +168,7 @@ export default function FocusBar() {
             onRemove={(id) => removePenColorNowObjective(id)}
             stepChoices={clock.stepChoices}
             onTieStep={clock.onTieStep}
+            onSetCompletes={clock.onSetCompletes}
           />
           <button
             data-no95

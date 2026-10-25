@@ -298,6 +298,7 @@ export function PenColorNowStrip({ compact = false }: { compact?: boolean } = {}
             onRemove={(id) => removePenColorNowObjective(id)}
             stepChoices={clock.stepChoices}
             onTieStep={clock.onTieStep}
+            onSetCompletes={clock.onSetCompletes}
           />
           <DvdTransportKey
             className="trk-pen-now-icon"

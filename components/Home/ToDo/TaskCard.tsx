@@ -16,6 +16,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
+import { SpentBlocks } from "./SpentBlocks"
 import { StepTree, type StepRowInfo } from "@/components/steps/StepTree"
 import { SplitGauge } from "@/components/steps/TreeMath"
 import { tierSplit } from "@/lib/tree-math"
@@ -194,6 +196,7 @@ function TaskCardBody({
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => (focusStepId ? new Set([focusStepId]) : new Set()))
   const [visibleIds, setVisibleIds] = useState<string[]>([])
+  const [spentStep, setSpentStep] = useState<string | null>(null)
   const [cols, setCols] = useState<CardColumn[]>(DEFAULT_COLS)
   const [moreBar, setMoreBar] = useState(false)
   const [tier, setTier] = useState<StepTier | undefined>()
@@ -259,7 +262,13 @@ function TaskCardBody({
         {has("pct") ? <SplitGauge levels={rowLevels.get(step.id) ?? null} focus={tier} /> : null}
         {has("est") ? <EstimateCell minutes={step.estimatedDuration} label={step.description} onSet={(m) => writeSteps("Estimate", setEstimate(steps, step.id, m))} /> : null}
         {has("parts") && step.subtasks?.length ? <span className="task-card-num">={partsMinutes(step.subtasks)}m</span> : null}
-        {has("spent") ? <span className="task-card-num is-quiet">{time?.stepSpent?.get(step.id) ? `${time.stepSpent.get(step.id)}m` : ""}</span> : null}
+        {has("spent") ? <span className="task-card-num is-quiet">
+            {time?.stepSpent?.get(step.id) ? (
+              <button type="button" className="task-card-spent-btn" title="See the time blocks and objectives behind this" onClick={(ev) => (ev.stopPropagation(), setSpentStep(step.id))}>
+                {time.stepSpent.get(step.id)}m
+              </button>
+            ) : null}
+          </span> : null}
         {has("points") ? (
           <input
             className="task-card-pts"
@@ -311,6 +320,22 @@ function TaskCardBody({
             ))}
           </nav>
         ) : null}
+        {spentStep && flat.some((x) => x.id === spentStep) ? (
+          <section className="task-card-spent-panel" aria-label="Time behind this step">
+            <header>
+              <b>Time on “{flat.find((x) => x.id === spentStep)?.description}”</b>
+              <KeycapClose label="Close time detail" onClick={() => setSpentStep(null)} />
+            </header>
+            <SpentBlocks
+              scope={{
+                taskId: task.id,
+                stepIds: new Set(flattenSteps([flat.find((x) => x.id === spentStep)!]).map((x) => x.id)),
+                names: new Map(flat.map((x) => [x.id, x.description])),
+                logs: task.timeLogs,
+              }}
+            />
+          </section>
+        ) : null}
         <div className="task-card-title-row">
           <DialogTitle
             className="task-card-name"
@@ -345,9 +370,7 @@ function TaskCardBody({
               ↻ pushed ×{task[pushKey]}
             </span>
           ) : null}
-          <button type="button" className="task-card-key b2-close-key task-card-close" title="Close the card (Esc)" aria-label="Close the card" onClick={closeTaskCard}>
-            ×
-          </button>
+          <KeycapClose className="task-card-close" title="Close the card (Esc)" label="Close the card" onClick={closeTaskCard} />
         </div>
         <div className="task-card-title-row">
           <TaskCardStats

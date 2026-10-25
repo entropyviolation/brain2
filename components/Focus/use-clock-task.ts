@@ -10,7 +10,7 @@
 import { useMemo } from "react"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
 import { useTaskStore } from "@/lib/task-store"
-import { tiePenColorNowObjective } from "@/lib/pen-color-session"
+import { setPenColorNowObjectiveCompletes, tiePenColorNowObjective } from "@/lib/pen-color-session"
 import { findPlacedStep, placeSteps } from "@/lib/next-step"
 import { clockPathLabel } from "@/lib/task-clock-log"
 
@@ -19,7 +19,7 @@ export function useClockTask(session: Pick<PenColorSession, "taskId" | "stepId">
   const stepId = session?.stepId
   const task = useTaskStore((s) => (taskId ? s.tasks.find((t) => t.id === taskId) : undefined))
   return useMemo(() => {
-    if (!task) return { task: undefined, step: undefined, path: "", stepChoices: undefined, onTieStep: undefined }
+    if (!task) return { task: undefined, step: undefined, path: "", stepChoices: undefined, onTieStep: undefined, onSetCompletes: undefined }
     const step = stepId ? findPlacedStep(task.subtasks, stepId)?.step : undefined
     const stepChoices = placeSteps(task.subtasks)
       .filter((p) => !p.step.completed)
@@ -31,6 +31,9 @@ export function useClockTask(session: Pick<PenColorSession, "taskId" | "stepId">
       stepChoices,
       onTieStep: (id: string, target: string | "new" | undefined) => {
         tiePenColorNowObjective(id, target)
+      },
+      onSetCompletes: (id: string, completes: boolean) => {
+        setPenColorNowObjectiveCompletes(id, completes)
       },
     }
   }, [task, stepId])

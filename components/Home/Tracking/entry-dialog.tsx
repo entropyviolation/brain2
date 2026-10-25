@@ -75,7 +75,10 @@ import {
   removeNowObjective,
   toggleNowObjectiveComplete,
   type NowObjective,
+  setNowObjectiveCompletes,
+  tieNowObjectiveToStep,
 } from "@/lib/now-objective"
+import { openStepChoices } from "@/lib/task-clock-log"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
 import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
@@ -1061,6 +1064,18 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             onEditText={(id, text) => setNowObjectives((list) => editNowObjectiveText(list, id, text))}
             onToggleComplete={(id) => setNowObjectives((list) => toggleNowObjectiveComplete(list, id))}
             onRemove={(id) => setNowObjectives((list) => removeNowObjective(list, id))}
+            stepChoices={entry.taskId ? openStepChoices(entry.taskId) : undefined}
+            onTieStep={
+              entry.taskId
+                ? (id, stepId) =>
+                    setNowObjectives((list) =>
+                      stepId === "new"
+                        ? list
+                        : setNowObjectiveCompletes(tieNowObjectiveToStep(list, id, stepId), id, false),
+                    )
+                : undefined
+            }
+            onSetCompletes={(id, completes) => setNowObjectives((list) => setNowObjectiveCompletes(list, id, completes))}
           />
 
           <div>
