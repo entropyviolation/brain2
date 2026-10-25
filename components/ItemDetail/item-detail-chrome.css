@@ -465,10 +465,21 @@
   gap: 8px;
 }
 
+/* Window keys sit in the title row, beside the CRT. A step item's breadcrumb
+   bar is above that row, so the keys stay off the readout. */
+.id-window-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.id-window-keys .id-settings-key {
+  margin-left: 0;
+}
+
 .id-window-key {
-  position: absolute;
-  z-index: 4;
-  top: var(--b2-close-top, 1rem);
+  position: static;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -478,15 +489,6 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-}
-
-.id-minimize-key {
-  right: calc(var(--b2-close-right, 1rem) + 32px);
-}
-
-.id-settings-key.id-window-key {
-  right: calc(var(--b2-close-right, 1rem) + 64px);
-  margin-left: 0;
 }
 
 body.win95-app button.id-settings-key {

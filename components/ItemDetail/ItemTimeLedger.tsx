@@ -217,6 +217,11 @@ export function ItemTimeLedger({
     task.stepOf.stepId,
     entries,
   ) : tracked.total
+  const mentionMin = focus
+    ? blocks
+        .filter((entry) => !(entry.stepId && focus.has(entry.stepId)))
+        .reduce((sum, entry) => sum + (entry.endMin - entry.startMin), 0)
+    : 0
   const est = task.estimatedDuration ?? 0
   const parts = partsMinutes(record.subtasks)
   const link = (record.penLinks ?? task.penLinks)?.[0]
@@ -288,6 +293,11 @@ export function ItemTimeLedger({
         <strong>{formatDuration(spent)}</strong> {focus ? "on this step" : "tracked"}
         {!focus && est > 0 && (est >= spent ? <> · {formatDuration(est - spent)} est left</> : <> · {formatDuration(spent - est)} past est</>)}
       </p>
+      {focus && mentionMin > 0 && (
+        <p className="ipt-quiet">
+          {formatDuration(mentionMin)} on the task names this step. Set the block&apos;s step to count it here.
+        </p>
+      )}
       {!focus && est > 0 && (
         <div
           className={`ipt-bar${spent > est ? " is-over" : ""}`}
