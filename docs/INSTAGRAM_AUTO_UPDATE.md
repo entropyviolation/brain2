@@ -1,6 +1,6 @@
 # Instagram: keeping the data up to date
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
 Brain2 shows the Instagram report in Analytics → Sources → **Instagram**
 (`components/Analytics/README.md` → Instagram (Sources)). This doc covers how
@@ -74,7 +74,7 @@ export, the copy in Drive can be deleted without losing anything.
 
 ## Google Drive export: what is wired (2026-10-23)
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
 The first scheduled export arrived in Athena's My Drive as a folder named
 `meta-2026-Oct-22-20-23-37` (Meta's name: `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`).
@@ -113,6 +113,19 @@ candidate with no files is skipped. One with files must hold still for
 `DRIVE_STABLE_MS` (15 min), since Drive writes it file by file.
 `archiveExport` refuses an export with no files, and an export with no DM
 threads is not used to call messages removed.
+
+**Copy (2026-10-25).** The Oct 23 run failed in `copyfile` with `ECANCELED`
+on one DM photo
+(`messages/inbox/mitch_469012721163782/photos/490599612079985.jpg`). That is
+Google Drive in stream mode, not iCloud and not a lost connection. Drive's
+file provider cancels `copyfile` on a file that is still online-only, and
+Brain2 treated that as a failed day, so the report stayed on the Oct 22
+export. The Meta folder stays in Drive. It does not need "Available offline".
+`copyExportTree` reads each file (that is what downloads it), retries a
+cancel, and if one photo or video still will not come down, skips it. The
+day's JSON still imports. A JSON file that will not download fails the copy,
+and that failure is tried again after 10 min even when the folder has not
+changed. A leftover `exports/*.partial` folder is removed on the next scan.
 
 ## TO DO LATER: when the first Google Drive export lands
 
@@ -162,10 +175,7 @@ against the real files; change code only where they differ.
   the view says **Google Drive watched**.
 - **Account.** Confirm `exportAccount` reads the username from
   `personal_information/personal_information/personal_information.json`.
-- **Placeholders.** If Drive is in Stream mode, check that the 10 s
-  hold-still wait (`STABLE_MS`) sees the real size, and that reading the
-  zip downloads it. If not, tell Athena to set the Meta folder to
-  "Available offline", or switch the Drive app to Mirror mode.
+- **Placeholders.** Drive for desktop is in stream mode: files stay online until something reads them. `copyfile` (what `fs.cp` uses) is canceled on those files with `ECANCELED`. Decided 2026-10-25: do not ask for "Available offline", and do not move the folder out of Drive or onto iCloud. `copyExportTree` reads each file, retries a cancel, and if one photo or video still will not download, skips it so the day's JSON still imports. A JSON file that will not download fails the copy, and that failure is tried again after 10 min even when the folder has not changed. The Oct 23, 2026 run died on `messages/inbox/mitch_…/photos/490599612079985.jpg` and left the report on the Oct 22 export. That half-copied `exports/*.partial` folder is removed on the next scan.
 - **macOS prompt.** Reading `~/Library/CloudStorage` may trigger a macOS
   files-access prompt for Brain2. If it does, say so in the view's help text.
 

@@ -2,9 +2,10 @@
  * electron/instagram-report.js — Instagram export → report pipeline
  *
  * Finds a new Instagram "Download your information" export (zip or unzipped
- * folder) in ~/Downloads or a picked folder, copies it into Brain2's data
- * folder, runs the person's `analyze.py` then `build_report.py`, and points
- * the Analytics → Sources → Instagram view at the new `report.html`.
+ * folder) in ~/Downloads, a picked folder, or Google Drive, copies it into
+ * Brain2's data folder, runs the person's `analyze.py` then `build_report.py`,
+ * and points the Analytics → Sources → Instagram view at the new `report.html`.
+ * Drive files are read, not `copyfile`d: Drive cancels `copyfile` on a streamed file.
  *
  * Plain Node (no `electron` import) so `scripts/instagram-api.mjs` can serve
  * the same folder in local dev. Only the Electron main process runs ingest.
@@ -23,6 +24,7 @@
 const path = require("path")
 const os = require("os")
 const nodeFs = require("fs")
+const { pipeline } = require("stream/promises")
 const { execFile } = require("child_process")
 const { resolveElectronUserData } = require("./user-data-path")
 const archive = require("./instagram-archive")
@@ -41,6 +43,45 @@ const STABLE_MS = 10_000
 const ARCHIVE_RETRY_MS = 60 * 60_000
 // Drive writes a daily export file by file, sometimes with long gaps.
 const DRIVE_STABLE_MS = 15 * 60_000
+/**
+ * A canceled Drive copy is retried even when the folder has not changed.
+ * The fingerprint would otherwise remember the failure forever.
+ */
+const COPY_RETRY_MS = 10 * 60_000
+const COPY_ATTEMPTS = 5
+/** macOS File Provider answers these while a streamed Drive file is not local yet. */
+const COPY_TRANSIENT = new Set([
+  "ECANCELED",
+  "EAGAIN",
+  "EBUSY",
+  "EINTR",
+  "EIO",
+  "ETIMEDOUT",
+  "ENETDOWN",
+  "ENETUNREACH",
+  "ECONNRESET",
+  "ECONNABORTED",
+  "ENOTCONN",
+  "ESTALE",
+])
+/** A photo or video Drive will not hand over. The JSON is the export; these are not. */
+const MEDIA_EXT = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".heic",
+  ".heif",
+  ".mp4",
+  ".mov",
+  ".m4v",
+  ".mp3",
+  ".m4a",
+  ".aac",
+  ".wav",
+  ".ogg",
+])
 const RUN_TIMEOUT_MS = 45 * 60_000
 
 /** Outside requests the report may make; both are opt-in inside the report. */
@@ -386,15 +427,174 @@ function exportFingerprint(c) {
   return `${c.kind}:${c.paths.length}:${c.size}:${Math.round(c.mtimeMs)}${tree}`
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isSkippableMedia(name) {
+  return MEDIA_EXT.has(path.extname(String(name || "")).toLowerCase())
+}
+
+function isTransientCopyError(err) {
+  return !!(err && COPY_TRANSIENT.has(err.code))
+}
+
+/** A failed copy or unzip can be tried again. An analyze or build failure waits until the export changes. */
+function copyRetryPending(seen, now) {
+  if (!seen || seen.ok !== false) return false
+  if (seen.step !== "copy" && seen.step !== "unzip") return false
+  const at = Date.parse(seen.at || "")
+  if (!Number.isFinite(at)) return false
+  return now - at < COPY_RETRY_MS
+}
+
+function copyErrorMessage(err, rel) {
+  if (isTransientCopyError(err)) {
+    return `Google Drive did not finish downloading ${rel}. Leave the Meta folder in Drive; it does not need to be copied onto this Mac or into iCloud. The next check will try again.`
+  }
+  return (err && err.message) || `Could not copy ${rel}.`
+}
+
+async function withCopyTries(fn, { attempts, pause }) {
+  let last
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      last = err
+      if (!isTransientCopyError(err) || i === attempts - 1) throw err
+      await pause(Math.min(8000, 400 * 2 ** i))
+    }
+  }
+  throw last
+}
+
+/**
+ * Copy one file by reading it. `fs.cp` / `copyfile` is what Google Drive's
+ * file provider cancels (`ECANCELED`) on a streamed, online-only file. A
+ * normal read is how that file gets downloaded.
+ */
+async function copyOneFile(fs, src, dest, opts) {
+  await withCopyTries(async () => {
+    const tmp = `${dest}.${process.pid}.part`
+    try {
+      await fs.promises.mkdir(path.dirname(dest), { recursive: true })
+      const size = (await fs.promises.stat(src)).size
+      await pipeline(fs.createReadStream(src), fs.createWriteStream(tmp))
+      const got = (await fs.promises.stat(tmp)).size
+      if (size > 0 && got !== size) {
+        const err = new Error(`short read of ${path.basename(src)} (${got} of ${size})`)
+        err.code = "ECANCELED"
+        throw err
+      }
+      await fs.promises.rename(tmp, dest)
+    } catch (err) {
+      await fs.promises.rm(tmp, { force: true }).catch(() => {})
+      throw err
+    }
+  }, opts)
+}
+
+/**
+ * Copy a directory tree into `dest` (which already exists). Returns relative
+ * paths of media files that Drive still would not give up. A JSON file that
+ * fails still throws: that is the export.
+ */
+async function copyExportTree(src, dest, { fs = nodeFs, attempts = COPY_ATTEMPTS, pause = sleep } = {}) {
+  const skipped = []
+  const opts = { attempts, pause }
+  async function walk(from, to) {
+    let entries
+    try {
+      entries = await withCopyTries(() => fs.promises.readdir(from, { withFileTypes: true }), opts)
+    } catch (err) {
+      const rel = path.relative(src, from) || path.basename(src)
+      const wrapped = new Error(copyErrorMessage(err, rel))
+      wrapped.step = "copy"
+      wrapped.code = err && err.code
+      throw wrapped
+    }
+    await fs.promises.mkdir(to, { recursive: true })
+    for (const ent of entries) {
+      if (ent.name.startsWith(".") || ent.name === "__MACOSX") continue
+      const fromChild = path.join(from, ent.name)
+      const toChild = path.join(to, ent.name)
+      if (ent.isDirectory()) {
+        await walk(fromChild, toChild)
+        continue
+      }
+      if (!ent.isFile()) continue
+      try {
+        await copyOneFile(fs, fromChild, toChild, opts)
+      } catch (err) {
+        const rel = path.relative(src, fromChild)
+        if (isTransientCopyError(err) && isSkippableMedia(ent.name)) {
+          skipped.push(rel)
+          continue
+        }
+        const wrapped = new Error(copyErrorMessage(err, rel))
+        wrapped.step = "copy"
+        wrapped.code = err && err.code
+        throw wrapped
+      }
+    }
+  }
+  await walk(src, dest)
+  return skipped
+}
+
+/** Local folders use `cpSync` (fast). Drive, and any canceled copy, is read file by file. */
+async function placeExportDir(src, dest, { fs, fromDrive, attempts, pause }) {
+  if (!fromDrive) {
+    try {
+      fs.cpSync(src, dest, { recursive: true })
+      return []
+    } catch (err) {
+      if (!isTransientCopyError(err)) {
+        if (!err.step) err.step = "copy"
+        throw err
+      }
+      fs.rmSync(dest, { recursive: true, force: true })
+      fs.mkdirSync(dest, { recursive: true })
+    }
+  }
+  return copyExportTree(src, dest, { fs, attempts, pause })
+}
+
+function clearPartialExports(root, fs) {
+  const dir = path.join(root, "exports")
+  let names = []
+  try {
+    names = fs.readdirSync(dir)
+  } catch {
+    return
+  }
+  for (const name of names) {
+    if (String(name).endsWith(".partial")) fs.rmSync(path.join(dir, name), { recursive: true, force: true })
+  }
+}
+
 /**
  * The newest export that belongs to the configured account and has not been
- * imported, and is not older than the report on screen.
+ * imported, and is not older than the report on screen. A copy or unzip that
+ * failed is tried again after `COPY_RETRY_MS` even when the folder is unchanged.
  */
-function pickExportToImport(candidates, state, config) {
+function failureStep(seen, state, key) {
+  if (seen && typeof seen.step === "string") return seen.step
+  const err = state && state.lastError
+  if (err && err.exportName === key && typeof err.step === "string") return err.step
+  return ""
+}
+
+function pickExportToImport(candidates, state, config, now = Date.now()) {
   const fresh = candidates.filter((c) => {
     if (!c.accountUnknown && !accountMatches(c.account, config.handle)) return false
     const seen = state.imported && state.imported[c.key]
-    if (seen && seen.fingerprint === exportFingerprint(c)) return false
+    if (seen && seen.fingerprint === exportFingerprint(c)) {
+      const step = failureStep(seen, state, c.key)
+      const retryable = seen.ok === false && (step === "copy" || step === "unzip")
+      if (!retryable || copyRetryPending({ ...seen, step }, now)) return false
+    }
     if (state.current && state.current.exportDate && c.date < state.current.exportDate) return false
     return true
   })
@@ -556,12 +756,29 @@ function seedThumbs(fs, fromBuild, toBuild) {
   }
 }
 
-async function extractExport(candidate, dest, config, { fs, run }) {
+async function extractExport(candidate, dest, config, { fs, run, attempts, pause } = {}) {
   const tmp = `${dest}.partial`
   fs.rmSync(tmp, { recursive: true, force: true })
   fs.mkdirSync(tmp, { recursive: true })
+  let skipped = []
   if (candidate.kind === "dir") {
-    fs.cpSync(candidate.paths[0], tmp, { recursive: true })
+    try {
+      skipped = await placeExportDir(candidate.paths[0], tmp, {
+        fs,
+        fromDrive: !!candidate.fromDrive,
+        attempts,
+        pause,
+      })
+    } catch (err) {
+      fs.rmSync(tmp, { recursive: true, force: true })
+      if (!err.step) err.step = "copy"
+      throw err
+    }
+    if (skipped.length) {
+      console.warn(
+        `[brain2] instagram: ${skipped.length} file(s) stayed in Drive after retries (the export was still copied): ${skipped.slice(0, 8).join(", ")}`,
+      )
+    }
   } else {
     // Python's zipfile drops absolute paths and `..` parts, so a zip cannot write outside tmp.
     for (const zip of candidate.paths) {
@@ -577,6 +794,7 @@ async function extractExport(candidate, dest, config, { fs, run }) {
   }
   fs.rmSync(dest, { recursive: true, force: true })
   fs.renameSync(tmp, dest)
+  return skipped
 }
 
 /** Keep the builds and exports in use, plus the newest `keepExports` exports. */
@@ -621,7 +839,7 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
   const fail = (step, message, stderr) => {
     const s = loadState(root, { fs })
     s.lastError = { at: new Date(now()).toISOString(), step, message, stderr: tail(stderr), exportName: candidate.key }
-    s.imported = { ...(s.imported || {}), [candidate.key]: { fingerprint, at: s.lastError.at, ok: false } }
+    s.imported = { ...(s.imported || {}), [candidate.key]: { fingerprint, at: s.lastError.at, ok: false, step } }
     saveState(root, s, { fs })
     fs.rmSync(buildDir, { recursive: true, force: true })
     return { ok: false, step, message }
@@ -634,9 +852,10 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
     return fail("python", `Python is missing: ${deps.missingModules.join(", ")}.`, `pip install ${deps.missingModules.join(" ")}`)
 
   const reusingCurrent = state.current && state.current.exportDir === exportDirName
+  let skipped = []
   if (!reusingCurrent) {
     try {
-      await extractExport(candidate, exportDir, config, { fs, run })
+      skipped = (await extractExport(candidate, exportDir, config, { fs, run })) || []
     } catch (err) {
       return fail(err.step || "copy", err.message || "Could not copy the export.", err.stderr || "")
     }
@@ -687,6 +906,7 @@ async function ingestExport(candidate, { root, config, fs = nodeFs, run = defaul
     account: candidate.account,
     builtAt: at,
     ffmpeg: !!deps.ffmpeg,
+    ...(skipped.length ? { skipped: skipped.length } : {}),
   }
   done.lastError = null
   done.imported = { ...(done.imported || {}), [candidate.key]: { fingerprint, at, ok: true } }
@@ -825,6 +1045,7 @@ function publicStatus(root, { fs = nodeFs, running = false, deps = null, config 
           exportDate: state.current.exportDate,
           builtAt: state.current.builtAt,
           ffmpeg: state.current.ffmpeg !== false,
+          ...(state.current.skipped ? { skipped: state.current.skipped } : {}),
         }
       : null,
     lastError: state.lastError,
@@ -880,6 +1101,8 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
 
   async function scan({ force = false } = {}) {
     if (running || stopped) return { ok: false, busy: running }
+    // A canceled copy leaves `<date>-<id>.partial`. Nothing reads it.
+    clearPartialExports(root, fs)
     const config = loadConfig(root, { fs })
     const candidates = scanForExports(watchedDirs(config, { fs, home }), { fs })
     let state = loadState(root, { fs })
@@ -892,10 +1115,12 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
         state = loadState(root, { fs })
       }
     }
-    const pick = pickExportToImport(candidates, state, config)
+    const pick = pickExportToImport(candidates, state, config, now())
     // Exports the report skips (older than the one on screen, or passed over
     // while Brain2 was closed) still go into the archive.
     const backlog = candidates.filter((c) => {
+      const seen = state.imported && state.imported[c.key]
+      if (copyRetryPending(seen, now())) return false
       const tried = archiveTried.get(c.key)
       const due = force || !tried || tried.fp !== exportFingerprint(c) || now() - tried.at >= ARCHIVE_RETRY_MS
       return (
@@ -986,8 +1211,10 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
 
 module.exports = {
   REPORT_CSP,
+  COPY_RETRY_MS,
   DRIVE_STABLE_MS,
   STABLE_MS,
+  copyExportTree,
   UI_STATE_KEYS,
   accountMatches,
   appDataDir,
