@@ -82,7 +82,7 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
       : `${started.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}–${ended.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
   const touched = draft.steps.filter((step) => (step.sittingMinutes ?? 0) > 0 && readMinutes(steps.find((row) => row.stepId === step.stepId)?.estimated ?? "") != null)
   const touchedEstimate = touched.reduce((sum, step) => sum + (readMinutes(steps.find((row) => row.stepId === step.stepId)?.estimated ?? "") ?? 0), 0)
-  const touchedSpent = touched.reduce((sum, step) => sum + (step.sittingMinutes ?? 0), 0)
+  const touchedSpent = draft.activeMinutes
   const touchedVersus = touched.length ? versusLabel(touchedEstimate, touchedSpent) : ""
 
   const done = () => {

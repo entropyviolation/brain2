@@ -25,7 +25,7 @@ list-seeding hooks start on idle after that nav mark, not during first paint.
 The shell mounts:
 
 - `AppHeader` (`components/AppHeader.tsx`) — the pin bar; it mounts `HeaderNowBox`
-- `PersistStatusBanner`, `PenSettingsHost`, `TagSettingsHost`
+- `PersistStatusBanner`, `PenSettingsHost`, `TagSettingsHost`, `SessionDebriefHost`
 - Tab panels, once warm: `HomeDashboard`, `EnhancedCategoryView`, `DocsPanel`, `EnhancedScheduler`, `OperationsView`, `ModulesPanel`, `EnhancedAnalytics`
 
 `EnhancedTaskDetail`, `GlobalSearch`, and `TaskDetailPopup` mount when they
@@ -53,6 +53,10 @@ when that dialog opens.
 next to it. It subscribes to the tag-settings open bus and renders nothing until
 a tag id or create-from-name target is chosen. `tag-settings-gate.tsx` loads the
 timegrid store when that dialog opens.
+
+`SessionDebriefHost` (`components/Home/Tracking/session-debrief-dialog.tsx`) is
+mounted with them. It stays empty until Working on now stops, then opens the
+sitting review.
 
 ## Files
 

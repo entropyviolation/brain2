@@ -1203,8 +1203,13 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   the objective). Save for later parks it on that task or subtask
   (`lib/unfinished-objectives-store.ts`) and takes it off this sitting, so the
   wait does not count as work. Stop, while any objective is still open, asks
-  whether to save them. Yes puts them on that store and they are on the list
-  from the start the next time that pen, task, or subtask is tracked. The list
+  whether to save them. Yes closes and parks them on that store, and they are
+  on the list from the start the next time that pen, task, or subtask is
+  tracked. No closes without parking. Cancel leaves the clock running. After
+  the clock stops, the sitting review (`lib/session-debrief.ts`) shows
+  estimates against the minutes of that sitting, lets you correct completion
+  and the log note, and can leave a note for the next start plus a 1–5
+  satisfaction, energy, and what got in the way. That objectives list
   mirrors onto the painted block and stays editable in the block editor. The
   pen clock's **Task** key (`components/Home/Tracking/clock-task-panel.tsx`,
   also on the header now row and the focus bar) puts one task on the minutes
