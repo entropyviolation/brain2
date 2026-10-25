@@ -199,7 +199,7 @@ Plan does not own a second task table. A chip, a rail row, and a funnel card are
 |---|---|
 | `period` | `day` \| `week` \| `month` \| `year` |
 | `value` | Day `YYYY-MM-DD`, week range, month `YYYY-MM`, or year `YYYY` |
-| `resolved` | Omitted, or `assimilated` \| `pushed` \| `discarded` \| `clarified` |
+| `resolved` | Omitted, or `assimilated` \| `pushed` \| `discarded` \| `clarified` \| `missed` |
 
 What the resolution means:
 
@@ -208,6 +208,7 @@ What the resolution means:
 | omitted | Automatic roll-up when the period ended and the task was still open, or persist backfill of a live assignment whose period has already ended | Yes. The Scheduler can still triage it. |
 | `pushed` | Explicit push or auto-push onto the next period | Yes, as a plan that was deferred. Push counters increment. Roll-up does not. |
 | `clarified` | Dismiss or Unschedule on a past Scheduler card | The period was closed without finishing. Undone list can still show it. |
+| `missed` | Missed on a past Scheduler card | Hidden from that card's default queue. The task status stays unchanged. Undone list can still show it. |
 | `discarded` | To Do Discard | Dropped from the working lists. The row remains. |
 | `assimilated` | Named on the type as a resolution | Roll-up itself leaves `resolved` unset. Do not assume every coarser landing is marked assimilated. |
 

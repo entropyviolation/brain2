@@ -8,6 +8,7 @@ import {
   taskInheritsScheduleableFromLists,
   getAvailableTasks,
   getTasksForPeriod,
+  tasksMovedAheadForPeriod,
   getWeeksInMonth,
   scheduleUpdatesForPeriod,
   unscheduleUpdates,
@@ -283,7 +284,7 @@ describe("overview boxes", () => {
     expect(isExpiredDaySchedule({ ...scheduled, scheduledDate: new Date(2026, 8, 25, 0, 0, 0) }, dayAfter)).toBe(false)
   })
 
-  it("shows rolled history in a past day cell and live work on the week", () => {
+  it("hides a past day once the task lives on the current week", () => {
     const tuesday = new Date(2026, 8, 22, 10, 0, 0)
     const week = "2026-09-21_2026-09-27"
     const rolled = task({
@@ -291,23 +292,39 @@ describe("overview boxes", () => {
       scheduledWeek: week,
       schedulePlacements: [{ period: "day", value: "2026-09-21" }],
     })
-    const pastDay = getTasksForPeriod([rolled], "day", "2026-09-21", tuesday, tuesday)
-    const weekLive = getTasksForPeriod([rolled], "week", week, tuesday, tuesday)
-    expect(pastDay.map((t) => t.id)).toEqual(["rolled"])
-    expect(weekLive.map((t) => t.id)).toEqual(["rolled"])
+    expect(getTasksForPeriod([rolled], "day", "2026-09-21", tuesday, tuesday)).toEqual([])
+    expect(tasksMovedAheadForPeriod([rolled], "day", "2026-09-21", tuesday, tuesday).map((t) => t.id)).toEqual(["rolled"])
+    expect(getTasksForPeriod([rolled], "week", week, tuesday, tuesday).map((t) => t.id)).toEqual(["rolled"])
     expect(getTasksForPeriod([rolled], "day", "2026-09-22", tuesday, tuesday)).toEqual([])
   })
 
-  it("a past week keeps unfinished month work and drops a handled row", () => {
+  it("a past week hides work already placed on the current month", () => {
     const tuesday = new Date(2026, 8, 22, 10, 0, 0)
     const week = "2026-09-14_2026-09-20"
-    const month = task({ id: "month", scheduledMonth: "2026-09" })
+    const current = task({ id: "month", scheduledMonth: "2026-09" })
     const handled = task({
       id: "handled",
       scheduledMonth: "2026-09",
       schedulePlacements: [{ period: "week", value: week, resolved: "clarified" }],
     })
-    expect(getTasksForPeriod([month, handled], "week", week, tuesday, tuesday).map((t) => t.id)).toEqual(["month"])
+    const stuck = task({ id: "august", scheduledMonth: "2026-08" })
+    const augustWeek = "2026-08-10_2026-08-16"
+    expect(getTasksForPeriod([current, handled], "week", week, tuesday, tuesday)).toEqual([])
+    expect(tasksMovedAheadForPeriod([current, handled], "week", week, tuesday, tuesday).map((t) => t.id)).toEqual(["month"])
+    expect(getTasksForPeriod([stuck], "week", augustWeek, tuesday, tuesday).map((t) => t.id)).toEqual(["august"])
+  })
+
+  it("a past boundary week hides a task moved onto the current month", () => {
+    const oct25 = new Date(2026, 9, 25, 10, 0, 0)
+    const week = "2026-09-28_2026-10-04"
+    const moved = task({
+      id: "elijah",
+      scheduledMonth: "2026-10",
+      schedulePlacements: [{ period: "month", value: "2026-09" }],
+    })
+    const stuck = task({ id: "stuck", schedulePlacements: [{ period: "week", value: week }] })
+    expect(getTasksForPeriod([moved, stuck], "week", week, oct25, oct25).map((t) => t.id)).toEqual(["stuck"])
+    expect(tasksMovedAheadForPeriod([moved, stuck], "week", week, oct25, oct25).map((t) => t.id)).toEqual(["elijah"])
   })
 
   it("a past week includes an undone month that contains it", () => {

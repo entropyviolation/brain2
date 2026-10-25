@@ -302,7 +302,7 @@ describe("EnhancedScheduler", () => {
           ...unscheduledTask,
           id: "past-hist",
           description: "Rolled Monday chore",
-          scheduledWeek: "2026-09-21_2026-09-27",
+          scheduledWeek: undefined,
           schedulePlacements: [{ period: "day", value: "2026-09-21" }],
         },
       ],
@@ -324,7 +324,7 @@ describe("EnhancedScheduler", () => {
 
     const after = useTaskStore.getState().tasks.find((t) => t.id === "past-hist")
     expect(after?.schedulePlacements ?? []).toEqual([])
-    expect(after?.scheduledWeek).toBe("2026-09-21_2026-09-27")
+    expect(after?.scheduledWeek).toBeUndefined()
     expect(
       screen
         .queryAllByText("Rolled Monday chore")
