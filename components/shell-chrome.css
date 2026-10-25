@@ -498,6 +498,20 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   min-width: max-content;
 }
 
+.b2-shell-now-row > button.b2-shell-now-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 9rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
 .b2-shell-now-swatch {
   flex: 0 0 12px;
   width: 12px;

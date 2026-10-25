@@ -24,6 +24,7 @@
 import { useState } from "react"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
+import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
 import { usePenColorSessionClock } from "@/components/Home/Tracking/pen-color-now-strip"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatElapsedClock, isSessionPaused, sessionElapsedMs } from "@/lib/operation-work-session"
@@ -46,6 +47,7 @@ import { activeNowObjectives } from "@/lib/now-objective"
 import { attachChoicesForPen } from "@/lib/unfinished-objectives"
 import { useTaskStore } from "@/lib/task-store"
 import { openSession } from "@/lib/session-open-store"
+import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import JustStartMode from "./JustStartMode"
 import SittingEnd from "./SittingEnd"
@@ -188,9 +190,16 @@ export default function FocusBar() {
         <>
           <span className="focus-bar-lamp" aria-hidden />
           {pen ? <span className="focus-bar-swatch" style={{ background: pen.color }} title={pen.name} aria-hidden /> : null}
-          <span className="focus-bar-path" title={clock.path}>
+          <button
+            type="button"
+            className="focus-bar-path"
+            data-no95
+            title={`Open ${clock.path}`}
+            onClick={() => openItemDetailPopup(clock.task!.id)}
+          >
             {clock.path}
-          </span>
+          </button>
+          <ClockTaskButton />
           {estimate ? <span className="focus-bar-est">{estimate}m est</span> : null}
           <span className={`focus-bar-clock${paused ? " is-paused" : ""}`} aria-live="off">
             {formatElapsedClock(sessionElapsedMs(session, now))}

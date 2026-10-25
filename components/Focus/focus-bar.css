@@ -59,6 +59,17 @@
   color: #f4f6f7;
 }
 
+button.focus-bar-path {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
 .focus-bar-est {
   flex: 0 0 auto;
   font-size: 10px;
