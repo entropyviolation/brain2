@@ -16,4 +16,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. A brushed gear with no keycap sits with Minimize and Close and opens Settings. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.
+Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. Gear, Minimize, and Close sit in the title row beside the CRT. The right rail leads with Open task card, then Lists and Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.

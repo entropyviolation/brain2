@@ -14,4 +14,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Time: estimated 90 and actual 40, linked pens, and the task ledger. Scouted the overlook is a 40m log with no painted block. A session, the pen clock, or a To Do start writes a block here; Add time can paint one or correct a log.
+Time: estimated 90 and actual 40, linked pens, and the task ledger. Each block is a plate (when, step, label, notes, then objectives). Scouted the overlook is a 40m log with no painted block. A step total counts blocks tagged to that step.

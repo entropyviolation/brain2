@@ -85,9 +85,9 @@ own when a table is wide.
 
 ## Status
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-24_
 
-Inventory written **Friday 9 October 2026**, recaptured **Tuesday 20 October 2026**. This table is the only freshness
+Inventory written **Friday 9 October 2026**, recaptured **Saturday 24 October 2026**. Earlier frames stay in `history/<shot>/`. This table is the only freshness
 record for the folder. A row count is not a finished product: rooms can keep
 arriving, and the surfaces listed at the bottom still have no file.
 
@@ -97,113 +97,113 @@ table uses.
 
 **How a row was marked.**
 
-- **fresh** — written by `npm run capture-screenshots` on 20 October 2026 against the throwaway seed (headless Chrome, not a personal vault). Bulk Add is Quick Add with **Bulk & shorthand** opened and Bulk checked. Plain is the other checkbox there, default off. The Tracking week frame has the **Fill** tool key pressed, so the range-fill row (Mon–Fri armed) shows in the desk bay. Metrics opens from Now → Current moment. Screen Time is the empty ActivityWatch state (no watcher on the capture machine).
+- **fresh** — written by `npm run capture-screenshots` on 24 October 2026 against the throwaway seed (headless Chrome, not a personal vault). Bulk Add is Quick Add with **Bulk & shorthand** opened and Bulk checked. Plain is the other checkbox there, default off. The Tracking week frame has the **Fill** tool key pressed, so the range-fill row (Mon–Fri armed) shows in the desk bay. Metrics opens from Now → Current moment. Screen Time is the empty ActivityWatch state (no watcher on the capture machine).
 - **stale** — none.
 - **unknown** — `habits-noble-gas-rail.png` is a Habits control-panel crop from 20 September 2026. It has no sidecar and was not part of this capture. The Daily Habits frame shows the updated control panel.
 - **missing** — none. Screen Time and Docs both have PNGs.
 
-**Counts (20 October 2026).** 97 PNG files. 96 `.txt` sidecars. 96 PNGs have a sidecar. 1 PNG has no sidecar (`habits-noble-gas-rail.png`). 0 sidecars without a PNG. Rows: 96 fresh, 0 stale, 1 unknown, 0 missing.
+**Counts (24 October 2026).** 97 PNG files. 96 `.txt` sidecars. 96 PNGs have a sidecar. 1 PNG has no sidecar (`habits-noble-gas-rail.png`). 0 sidecars without a PNG. Rows: 96 fresh, 0 stale, 1 unknown, 0 missing.
 
 **Reading note.** These frames show the throwaway seed, not a personal vault. Tracking still includes the zoo and Ian’s examples. Screen Time shows ActivityWatch only when a watcher is already running on the capture machine; the script does not invent that data.
 
 | File | Date | Status | View |
 |------|------|--------|------|
-| `01-home-daily-habits.png` | 2026-10-20 | fresh | Home → Habits → Daily |
-| `01-home-habits-monthly.png` | 2026-10-20 | fresh | Home → Habits → Monthly |
-| `01-home-habits-weekly.png` | 2026-10-20 | fresh | Home → Habits → Weekly |
-| `02-home-plan-day.png` | 2026-10-20 | fresh | Home → Plan → Day |
-| `02-home-plan-season.png` | 2026-10-20 | fresh | Home → Plan → Season |
-| `02-home-plan-week.png` | 2026-10-20 | fresh | Home → Plan → Week |
-| `02-home-plan.png` | 2026-10-20 | fresh | Home → Plan → Month |
-| `03-home-todo-just-start.png` | 2026-10-20 | fresh | To Do → Start (Just Start) |
-| `03-home-todo-month.png` | 2026-10-20 | fresh | Home → To Do → Month |
-| `03-home-todo-week.png` | 2026-10-20 | fresh | Home → To Do → Week |
-| `03-home-todo.png` | 2026-10-20 | fresh | Home → To Do → Day |
-| `04-home-goals.png` | 2026-10-20 | fresh | Home → Goals |
-| `05-lists-cards.png` | 2026-10-20 | fresh | Lists → Home folder → Cards |
-| `05-lists-content-checklist.png` | 2026-10-20 | fresh | Lists → Example List → Checklist |
-| `05-lists-content-default.png` | 2026-10-20 | fresh | Lists → Example List → Default |
-| `05-lists-content-spreadsheet.png` | 2026-10-20 | fresh | Lists → Example List → Spreadsheet |
-| `05-lists-details.png` | 2026-10-20 | fresh | Lists → Home folder → Details |
-| `05-lists-list.png` | 2026-10-20 | fresh | Lists → Home folder → List |
-| `05-lists.png` | 2026-10-20 | fresh | Lists → Home folder → Icons |
-| `06-scheduler-day.png` | 2026-10-20 | fresh | Scheduler → Funnel → Day |
-| `06-scheduler-dependencies.png` | 2026-10-20 | fresh | Scheduler → Dependencies |
-| `06-scheduler-gantt.png` | 2026-10-20 | fresh | Scheduler → Gantt |
-| `06-scheduler.png` | 2026-10-20 | fresh | Scheduler → Funnel → Always |
-| `07-analytics-attributes.png` | 2026-10-20 | fresh | Analytics → Attributes |
-| `07-analytics-calibration.png` | 2026-10-20 | fresh | Analytics → Calibration |
-| `07-analytics-circadian.png` | 2026-10-20 | fresh | Analytics → Circadian |
-| `07-analytics-context-switch.png` | 2026-10-20 | fresh | Analytics → Context switch |
-| `07-analytics-correlation.png` | 2026-10-20 | fresh | Analytics → Correlation |
-| `07-analytics-cross-section.png` | 2026-10-20 | fresh | Analytics → Cross-section |
-| `07-analytics-cycle.png` | 2026-10-20 | fresh | Analytics → Cycle |
-| `07-analytics-diversity.png` | 2026-10-20 | fresh | Analytics → Diversity |
-| `07-analytics-goals.png` | 2026-10-20 | fresh | Analytics → Goals |
-| `07-analytics-item-types.png` | 2026-10-20 | fresh | Analytics → Item Types |
-| `07-analytics-lists-areas.png` | 2026-10-20 | fresh | Analytics → Lists & areas |
-| `07-analytics-metrics.png` | 2026-10-20 | fresh | Analytics → Metrics |
-| `07-analytics-mood-field.png` | 2026-10-20 | fresh | Analytics → Mood field |
-| `07-analytics-observatory.png` | 2026-10-20 | fresh | Analytics → Observatory |
-| `07-analytics-operations.png` | 2026-10-20 | fresh | Analytics → Operations |
-| `07-analytics-overcommit.png` | 2026-10-20 | fresh | Analytics → Overcommit |
-| `07-analytics-places.png` | 2026-10-20 | fresh | Analytics → Places |
-| `07-analytics-plan-vs-reality.png` | 2026-10-20 | fresh | Analytics → Plan vs Reality |
-| `07-analytics-points.png` | 2026-10-20 | fresh | Analytics → Points |
-| `07-analytics-reflection.png` | 2026-10-20 | fresh | Analytics → Reflection |
-| `07-analytics-regret.png` | 2026-10-20 | fresh | Analytics → Regret |
-| `07-analytics-reviews.png` | 2026-10-20 | fresh | Analytics → Reviews |
-| `07-analytics-screentime.png` | 2026-10-20 | fresh | Analytics → Screen Time |
-| `07-analytics-sleep.png` | 2026-10-20 | fresh | Analytics → Sleep |
-| `07-analytics-spectrum.png` | 2026-10-20 | fresh | Analytics → Spectrum |
-| `07-analytics-stages.png` | 2026-10-20 | fresh | Analytics → Stages |
-| `07-analytics-streaks.png` | 2026-10-20 | fresh | Analytics → Streaks |
-| `07-analytics-tags.png` | 2026-10-20 | fresh | Analytics → Tags |
-| `07-analytics-tracking-breakdown.png` | 2026-10-20 | fresh | Analytics → Tracking pen drill-down |
-| `07-analytics-tracking-tag.png` | 2026-10-20 | fresh | Analytics → Tracking tag drill-down |
-| `07-analytics-tracking.png` | 2026-10-20 | fresh | Analytics → Tracking |
-| `07-analytics-transitions.png` | 2026-10-20 | fresh | Analytics → Transitions |
-| `07-analytics-velocity.png` | 2026-10-20 | fresh | Analytics → Velocity |
-| `07-analytics-weight.png` | 2026-10-20 | fresh | Analytics → Weight |
-| `07-analytics.png` | 2026-10-20 | fresh | Analytics → Habits |
-| `08-home-tracking-activity.png` | 2026-10-20 | fresh | Home → Tracking → Activity Log |
-| `08-home-tracking-block.png` | 2026-10-20 | fresh | Home → Tracking → block editor |
-| `08-home-tracking-daylog.png` | 2026-10-20 | fresh | Home → Tracking → Day Log |
-| `08-home-tracking-week.png` | 2026-10-20 | fresh | Home → Tracking → week span |
-| `08-home-tracking.png` | 2026-10-20 | fresh | Home → Tracking → Time Grid |
+| `01-home-daily-habits.png` | 2026-10-24 | fresh | Home → Habits → Daily |
+| `01-home-habits-monthly.png` | 2026-10-24 | fresh | Home → Habits → Monthly |
+| `01-home-habits-weekly.png` | 2026-10-24 | fresh | Home → Habits → Weekly |
+| `02-home-plan-day.png` | 2026-10-24 | fresh | Home → Plan → Day |
+| `02-home-plan-season.png` | 2026-10-24 | fresh | Home → Plan → Season |
+| `02-home-plan-week.png` | 2026-10-24 | fresh | Home → Plan → Week |
+| `02-home-plan.png` | 2026-10-24 | fresh | Home → Plan → Month |
+| `03-home-todo-just-start.png` | 2026-10-24 | fresh | To Do → Start (Just Start) |
+| `03-home-todo-month.png` | 2026-10-24 | fresh | Home → To Do → Month |
+| `03-home-todo-week.png` | 2026-10-24 | fresh | Home → To Do → Week |
+| `03-home-todo.png` | 2026-10-24 | fresh | Home → To Do → Day |
+| `04-home-goals.png` | 2026-10-24 | fresh | Home → Goals |
+| `05-lists-cards.png` | 2026-10-24 | fresh | Lists → Home folder → Cards |
+| `05-lists-content-checklist.png` | 2026-10-24 | fresh | Lists → Example List → Checklist |
+| `05-lists-content-default.png` | 2026-10-24 | fresh | Lists → Example List → Default |
+| `05-lists-content-spreadsheet.png` | 2026-10-24 | fresh | Lists → Example List → Spreadsheet |
+| `05-lists-details.png` | 2026-10-24 | fresh | Lists → Home folder → Details |
+| `05-lists-list.png` | 2026-10-24 | fresh | Lists → Home folder → List |
+| `05-lists.png` | 2026-10-24 | fresh | Lists → Home folder → Icons |
+| `06-scheduler-day.png` | 2026-10-24 | fresh | Scheduler → Funnel → Day |
+| `06-scheduler-dependencies.png` | 2026-10-24 | fresh | Scheduler → Dependencies |
+| `06-scheduler-gantt.png` | 2026-10-24 | fresh | Scheduler → Gantt |
+| `06-scheduler.png` | 2026-10-24 | fresh | Scheduler → Funnel → Always |
+| `07-analytics-attributes.png` | 2026-10-24 | fresh | Analytics → Attributes |
+| `07-analytics-calibration.png` | 2026-10-24 | fresh | Analytics → Calibration |
+| `07-analytics-circadian.png` | 2026-10-24 | fresh | Analytics → Circadian |
+| `07-analytics-context-switch.png` | 2026-10-24 | fresh | Analytics → Context switch |
+| `07-analytics-correlation.png` | 2026-10-24 | fresh | Analytics → Correlation |
+| `07-analytics-cross-section.png` | 2026-10-24 | fresh | Analytics → Cross-section |
+| `07-analytics-cycle.png` | 2026-10-24 | fresh | Analytics → Cycle |
+| `07-analytics-diversity.png` | 2026-10-24 | fresh | Analytics → Diversity |
+| `07-analytics-goals.png` | 2026-10-24 | fresh | Analytics → Goals |
+| `07-analytics-item-types.png` | 2026-10-24 | fresh | Analytics → Item Types |
+| `07-analytics-lists-areas.png` | 2026-10-24 | fresh | Analytics → Lists & areas |
+| `07-analytics-metrics.png` | 2026-10-24 | fresh | Analytics → Metrics |
+| `07-analytics-mood-field.png` | 2026-10-24 | fresh | Analytics → Mood field |
+| `07-analytics-observatory.png` | 2026-10-24 | fresh | Analytics → Observatory |
+| `07-analytics-operations.png` | 2026-10-24 | fresh | Analytics → Operations |
+| `07-analytics-overcommit.png` | 2026-10-24 | fresh | Analytics → Overcommit |
+| `07-analytics-places.png` | 2026-10-24 | fresh | Analytics → Places |
+| `07-analytics-plan-vs-reality.png` | 2026-10-24 | fresh | Analytics → Plan vs Reality |
+| `07-analytics-points.png` | 2026-10-24 | fresh | Analytics → Points |
+| `07-analytics-reflection.png` | 2026-10-24 | fresh | Analytics → Reflection |
+| `07-analytics-regret.png` | 2026-10-24 | fresh | Analytics → Regret |
+| `07-analytics-reviews.png` | 2026-10-24 | fresh | Analytics → Reviews |
+| `07-analytics-screentime.png` | 2026-10-24 | fresh | Analytics → Screen Time |
+| `07-analytics-sleep.png` | 2026-10-24 | fresh | Analytics → Sleep |
+| `07-analytics-spectrum.png` | 2026-10-24 | fresh | Analytics → Spectrum |
+| `07-analytics-stages.png` | 2026-10-24 | fresh | Analytics → Stages |
+| `07-analytics-streaks.png` | 2026-10-24 | fresh | Analytics → Streaks |
+| `07-analytics-tags.png` | 2026-10-24 | fresh | Analytics → Tags |
+| `07-analytics-tracking-breakdown.png` | 2026-10-24 | fresh | Analytics → Tracking pen drill-down |
+| `07-analytics-tracking-tag.png` | 2026-10-24 | fresh | Analytics → Tracking tag drill-down |
+| `07-analytics-tracking.png` | 2026-10-24 | fresh | Analytics → Tracking |
+| `07-analytics-transitions.png` | 2026-10-24 | fresh | Analytics → Transitions |
+| `07-analytics-velocity.png` | 2026-10-24 | fresh | Analytics → Velocity |
+| `07-analytics-weight.png` | 2026-10-24 | fresh | Analytics → Weight |
+| `07-analytics.png` | 2026-10-24 | fresh | Analytics → Habits |
+| `08-home-tracking-activity.png` | 2026-10-24 | fresh | Home → Tracking → Activity Log |
+| `08-home-tracking-block.png` | 2026-10-24 | fresh | Home → Tracking → block editor |
+| `08-home-tracking-daylog.png` | 2026-10-24 | fresh | Home → Tracking → Day Log |
+| `08-home-tracking-week.png` | 2026-10-24 | fresh | Home → Tracking → week span |
+| `08-home-tracking.png` | 2026-10-24 | fresh | Home → Tracking → Time Grid |
 | `08-home-tracking-log.txt` | 2026-10-09 | sidecar | Home → Tracking → Tracking log (Spent: amount, what, source). PNG not recaptured this pass. |
-| `09-modules-workspace.png` | 2026-10-20 | fresh | Modules → Itinerary Creator workspace |
-| `09-modules.png` | 2026-10-20 | fresh | Modules → dashboard |
-| `10-operations-locations.png` | 2026-10-20 | fresh | Operations → Locations |
-| `10-operations-log.png` | 2026-10-20 | fresh | Operations → Log |
-| `10-operations-parts.png` | 2026-10-20 | fresh | Operations → Parts |
-| `10-operations-phases.png` | 2026-10-20 | fresh | Operations → Phases |
-| `10-operations-plan.png` | 2026-10-20 | fresh | Operations → Plan |
-| `10-operations-postmortem.png` | 2026-10-20 | fresh | Operations → After-action report |
-| `10-operations-resources.png` | 2026-10-20 | fresh | Operations → Resources |
-| `10-operations-settings.png` | 2026-10-20 | fresh | Operations → Settings |
-| `10-operations-timeline.png` | 2026-10-20 | fresh | Operations → Timeline |
-| `10-operations-todo.png` | 2026-10-20 | fresh | Operations → To do |
-| `10-operations-workspace.png` | 2026-10-20 | fresh | Operations → Home panel |
-| `10-operations.png` | 2026-10-20 | fresh | Operations → home board |
-| `12-docs-reading.png` | 2026-10-20 | fresh | Docs → open document |
-| `12-docs.png` | 2026-10-20 | fresh | Docs → folder homepage |
-| `20-dialog-bulk-add.png` | 2026-10-20 | fresh | Header → Quick Add → Bulk |
-| `20-dialog-completion.png` | 2026-10-20 | fresh | Completion dialog |
-| `20-dialog-global-search.png` | 2026-10-20 | fresh | Global search dialog |
-| `20-dialog-inbox.png` | 2026-10-20 | fresh | Inbox dialog |
-| `20-dialog-metrics.png` | 2026-10-20 | fresh | Metrics dialog |
-| `20-dialog-morning-review.png` | 2026-10-20 | fresh | Morning review dialog |
-| `20-dialog-quick-add.png` | 2026-10-20 | fresh | Quick Add dialog |
-| `20-dialog-reviews.png` | 2026-10-20 | fresh | Day review dialog |
-| `20-dialog-settings.png` | 2026-10-20 | fresh | Settings dialog. PNG is the 9 October stack. Sidecar describes the grouped index (find well; You, Appearance, Points, Data, Imports, Library) and was not recaptured. |
-| `20-dialog-time-tracking.png` | 2026-10-20 | fresh | Header Now dialog (Recent now / Upcoming now) |
-| `21-item-detail-analysis.png` | 2026-10-20 | fresh | Item detail → Analysis |
-| `21-item-detail-body.png` | 2026-10-20 | fresh | Item detail → Body |
-| `21-item-detail-dependencies.png` | 2026-10-20 | fresh | Item detail → Dependencies |
+| `09-modules-workspace.png` | 2026-10-24 | fresh | Modules → Itinerary Creator workspace |
+| `09-modules.png` | 2026-10-24 | fresh | Modules → dashboard |
+| `10-operations-locations.png` | 2026-10-24 | fresh | Operations → Locations |
+| `10-operations-log.png` | 2026-10-24 | fresh | Operations → Log |
+| `10-operations-parts.png` | 2026-10-24 | fresh | Operations → Parts |
+| `10-operations-phases.png` | 2026-10-24 | fresh | Operations → Phases |
+| `10-operations-plan.png` | 2026-10-24 | fresh | Operations → Plan |
+| `10-operations-postmortem.png` | 2026-10-24 | fresh | Operations → After-action report |
+| `10-operations-resources.png` | 2026-10-24 | fresh | Operations → Resources |
+| `10-operations-settings.png` | 2026-10-24 | fresh | Operations → Settings |
+| `10-operations-timeline.png` | 2026-10-24 | fresh | Operations → Timeline |
+| `10-operations-todo.png` | 2026-10-24 | fresh | Operations → To do |
+| `10-operations-workspace.png` | 2026-10-24 | fresh | Operations → Home panel |
+| `10-operations.png` | 2026-10-24 | fresh | Operations → home board |
+| `12-docs-reading.png` | 2026-10-24 | fresh | Docs → open document |
+| `12-docs.png` | 2026-10-24 | fresh | Docs → folder homepage |
+| `20-dialog-bulk-add.png` | 2026-10-24 | fresh | Header → Quick Add → Bulk |
+| `20-dialog-completion.png` | 2026-10-24 | fresh | Completion dialog |
+| `20-dialog-global-search.png` | 2026-10-24 | fresh | Global search dialog |
+| `20-dialog-inbox.png` | 2026-10-24 | fresh | Inbox dialog |
+| `20-dialog-metrics.png` | 2026-10-24 | fresh | Metrics dialog |
+| `20-dialog-morning-review.png` | 2026-10-24 | fresh | Morning review dialog |
+| `20-dialog-quick-add.png` | 2026-10-24 | fresh | Quick Add dialog |
+| `20-dialog-reviews.png` | 2026-10-24 | fresh | Day review dialog |
+| `20-dialog-settings.png` | 2026-10-24 | fresh | Settings dialog |
+| `20-dialog-time-tracking.png` | 2026-10-24 | fresh | Header Now dialog (Recent now / Upcoming now) |
+| `21-item-detail-analysis.png` | 2026-10-24 | fresh | Item detail → Analysis |
+| `21-item-detail-body.png` | 2026-10-24 | fresh | Item detail → Body |
+| `21-item-detail-dependencies.png` | 2026-10-24 | fresh | Item detail → Dependencies |
 | `21-item-detail-popup.png` | 2026-10-24 | fresh | Item detail → Details. Save lamp beside Save Changes. Gear, Minimize, and Close sit in the title row beside the CRT. A task's rail leads with Open task card. |
-| `21-item-detail-scheduling.png` | 2026-10-20 | fresh | Item detail → Scheduling |
-| `21-item-detail-subtasks.png` | 2026-10-20 | fresh | Item detail → Subtasks |
+| `21-item-detail-scheduling.png` | 2026-10-24 | fresh | Item detail → Scheduling |
+| `21-item-detail-subtasks.png` | 2026-10-24 | fresh | Item detail → Subtasks |
 | `21-item-detail-time.png` | 2026-10-24 | fresh | Item detail → Time. Each block is a plate (when, step, label, notes, then objectives). A step total counts only blocks tagged to that step. |
 | `habits-noble-gas-rail.png` | 2026-09-20 | unknown | Habits control-panel crop; no sidecar |
 
@@ -218,7 +218,7 @@ Rendered by `app/page.tsx`:
 | Nav | `components/header-nav-buttons.tsx` | Back / Forward through in-app screens (tabs, Lists folders, full-page item detail). Disabled at stack edges. |
 | Today's friend | `components/baby-animal-nest.tsx` | Photograph in a chrome + black-mirror jewel on the pin bar. Persists until Monday or a manual change (`brain2-friend-worn`; reads prefer `brain2-*`). Returning friends may say Hi again. Click the photograph for details. The chat button above Gallery asks for a Stardew line (daily habit / today's To Do / Next Action, species bias). Click the **line** (no bevel) for the mission sheet: the task opens item detail on top; Accept until the end of the day; Decline asks for smaller tasks, then a first step, then a reason. **Escape**, ×, or a click outside closes the bubble. **Gallery** holds the preapproved `animalsrcs/` pack (unnamed until you name them) — the only picture sources are that pack and your own uploads. Name field, equal cards, confirm-before-delete (dismissed stay gone); **navy** text-field focus (never orange). Pictures in IndexedDB `idb:friend_<id>` (gallery JSON holds `friend:<id>`) or `/friend-pack/`. Plan: [`docs/FRIEND_COMPANION.md`](../FRIEND_COMPANION.md). |
 | Names | `components/AppHeader.tsx` | System-group latch. Caption stays **Names**; sunken + `aria-pressed` while on (tooltip **Stop naming**). |
-| now | `components/header-now-box.tsx` | Optional groupbox inside Capture. Live Operations / pen-color Working sessions (name, tabular elapsed, Objectives, **Task** on a pen clock, Stop, Pause↔Resume). The pen clock's name opens that task when one is on it. Absent when idle. |
+| now | `components/header-now-box.tsx` | Optional groupbox inside Capture. Live Operations / pen-color Working sessions (name, tabular elapsed, Objectives, **Card** when a task is on the pen clock, **Task** when the clock is still waiting for one, Stop, Pause↔Resume). **Card** opens that task's To Do card. The pen clock's name opens that task when one is on it. Absent when idle. |
 | Review (badge) | `components/Reviews/reviews.tsx` | Rituals menu (day sun/moon; week–year Start / Review) |
 | Morning | `components/Reviews/MorningReview.tsx` | Day morning ritual (wake, dream, intentions, affirmations, postpone) |
 | Settings | `components/Settings/SettingsDialog.tsx` | Home city, assumed finish time, backup, sync, **message ingest** (grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call / Text Shortcut AirDrop), **Screen Time** (ActivityWatch), item types, Second Brain |
@@ -253,7 +253,7 @@ Rendered by `app/page.tsx`:
 | `03-home-todo.png` | To Do → Day |
 | `03-home-todo-week.png` | To Do → Week |
 | `03-home-todo-month.png` | To Do → Month |
-| `03-home-todo-just-start.png` | To Do row → Start (Just Start focus mode) |
+| `03-home-todo-just-start.png` | To Do drawer → Start (Just Start focus mode) |
 | `04-home-goals.png` | Goals → objectives & direction report |
 | `08-home-tracking.png` | Tracking → Time Grid in a Win95 window (plain steel pen well, Sort Recent / A–Z / Tree / Expand↔Conceal, + New pen under the beads, occupancy). Fascia keys include Tracking log. |
 | `08-home-tracking-log.txt` | Tracking → Tracking log. Composer Event, Switch, Intake, Spent, Note, Thought process. Spent records amount, what, and source, and the shelf totals the day. |
