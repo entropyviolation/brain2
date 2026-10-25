@@ -147,3 +147,141 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.ipt-ledger {
+  display: grid;
+  gap: 8px;
+}
+
+.ipt-blocks-edit {
+  gap: 8px;
+}
+
+.ipt-block {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--id-sunken, inset 0 0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.ipt-block-row,
+.ipt-span,
+.ipt-label-line,
+.ipt-obj-add,
+.ipt-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-clock,
+.ipt-date,
+.ipt-text,
+.ipt-mins,
+.ipt-step {
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  background: var(--id-highlight, #fff);
+  box-shadow: var(--id-field, inset 0 0 0 1px rgba(0, 0, 0, 0.35));
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-clock,
+.ipt-mins {
+  width: 4.4rem;
+}
+
+.ipt-text {
+  flex: 1;
+  min-width: 8rem;
+  font-variant-numeric: normal;
+}
+
+.ipt-step {
+  max-width: 16rem;
+}
+
+.ipt-label-line span,
+.ipt-kind {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.ipt-objs ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ipt-objs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-objs li.is-done .ipt-text {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.ipt-mode,
+.ipt-x.is-sure {
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ipt-logs h3 {
+  margin: 4px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ipt-add-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: var(--id-sunken, inset 0 0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.ipt-add-form label {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ipt-add-wide {
+  grid-column: 1 / -1;
+}
+
+.ipt-add-check {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+
+.ipt-add-actions,
+.ipt-add-form .ipt-quiet {
+  grid-column: 1 / -1;
+}

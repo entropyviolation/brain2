@@ -1,17 +1,17 @@
 /**
  * components/ItemDetail/ItemSettingsPanel.tsx — Item settings
  *
- * The item-settings popup (fascia gear) for one item:
- *  - the item id, with a copy key
- *  - every attribute: show or hide it on Details, a display name for this item,
- *    and the name opens the attribute's own settings popup
- *  - which detail tabs this item shows. Details stays.
+ * The item-settings popup (fascia gear) for one item. The header is Settings.
+ * Plates under it hold the item id, every attribute (show, shared name, type,
+ * display name), and which tabs this item shows. Details stays. The plates
+ * are the place later settings land.
  *
  * _Last mapped: 2026-10-24_
  */
 "use client"
 
 import { useMemo, useState } from "react"
+import { DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { mergeItemAttributes } from "@/components/Lists/attribute-editor"
 import { effectiveDef } from "@/components/Lists/attributes/helpers"
@@ -129,17 +129,29 @@ export function ItemSettingsPanel({
   }
 
   return (
-    <div className="id-settings">
-      <section>
+    <div className="id-settings-sheet">
+      <header className="id-settings-head">
+        <p className="id-settings-kicker">This item</p>
+        <DialogTitle className="id-settings-title">Settings</DialogTitle>
+        <p className="id-settings-lede">Attributes, tabs, and the item id.</p>
+      </header>
+      <div className="id-settings">
+      <section className="id-settings-plate">
         <h2>Item id</h2>
         <CopyId id={task.id} label="Copy item id" />
       </section>
-      <section>
+      <section className="id-settings-plate">
         <h2>Attributes</h2>
+        <p className="id-settings-note">A checked attribute shows on Details. The name opens its own settings. The field is the name on this item.</p>
         {defs.length === 0 ? (
           <p>No attributes yet.</p>
         ) : (
           <ul className="id-settings-attrs">
+            <li className="id-settings-attr id-settings-attr-head" aria-hidden>
+              <span />
+              <span>Name</span>
+              <span>Type</span>
+            </li>
             {defs.map((def) => {
               const type = normalizeAttributeType(def.type)
               return (
@@ -169,7 +181,7 @@ export function ItemSettingsPanel({
           </ul>
         )}
       </section>
-      <section>
+      <section className="id-settings-plate">
         <h2>Tabs on this item</h2>
         <ul className="id-settings-tabs">
           {catalog.map((panel) => {
@@ -213,6 +225,7 @@ export function ItemSettingsPanel({
           </li>
         </ul>
       </section>
+      </div>
     </div>
   )
 }

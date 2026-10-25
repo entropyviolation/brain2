@@ -79,13 +79,13 @@ import {
   Rocket,
   History,
   TimerOff,
-  Settings,
   Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
 import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
@@ -132,6 +132,8 @@ interface EnhancedTaskDetailProps {
 
 export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) {
   const detailRef = useRef<HTMLDivElement>(null)
+  const settingsHost = useRef<HTMLDivElement>(null)
+  const attributeLock = useRef(false)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -620,15 +622,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             {task.completed ? "Completed" : task.stage}
           </Badge>
           <InboxClarifyKey task={task} getDraft={getDraft} commitDraft={commitDraft} />
-          <button
-            type="button"
-            className="id-btn id-btn-icon id-settings-key"
-            aria-label="Item settings"
-            title="Item settings"
-            onClick={() => setItemSettingsOpen(true)}
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <ItemSettingsKey onClick={() => setItemSettingsOpen(true)} />
           {task.actualDuration && (
             <Badge variant="outline" className="id-chip">
               <Timer className="h-3 w-3" />
@@ -662,6 +656,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           )}
           {visiblePanels.includes("analysis") && (
             <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
+          )}
+          {visiblePanels.includes("time") && (
+            <TabsTrigger value="time" className="id-tab-secondary">
+              <Timer className="h-4 w-4" />
+              Time
+            </TabsTrigger>
           )}
           {detailTabs.includes("history") && (
           <TabsTrigger value="history" className="id-tab-secondary">
@@ -1184,20 +1184,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               )}
             </CardContent>
           </Card>
-          {isTask && (
-            <Card>
-              <CardContent className="pt-6">
-                <ItemPenTimeSection
-                  task={task}
-                  readOnly={!isEditing}
-                  onPenLinksChange={(penLinks) => {
-                    touchDraft({ penLinks })
-                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="dependencies" className="space-y-6">
@@ -1418,6 +1404,25 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           </Card>
         </TabsContent>
 
+        {visiblePanels.includes("time") && (
+          <TabsContent value="time" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <ItemPenTimeSection
+                  task={task}
+                  editableTime={isTask}
+                  readOnly={!isEditing}
+                  onPatch={patchItem}
+                  onPenLinksChange={(penLinks) => {
+                    touchDraft({ penLinks })
+                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {visiblePanels.includes("body") && (
           <TabsContent value="body" className="space-y-6">
             <Card>
@@ -1477,21 +1482,38 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       </div>
     </div>
 
-    <Dialog open={itemSettingsOpen} onOpenChange={setItemSettingsOpen}>
+    <Dialog
+      open={itemSettingsOpen}
+      onOpenChange={(next) => {
+        if (!next && attributeLock.current) return
+        setItemSettingsOpen(next)
+      }}
+    >
       <DialogContent
-        className="id95-dialog id95 z-[90] sm:max-w-lg max-h-[85vh] overflow-hidden !flex flex-col"
+        ref={settingsHost}
+        className="id95-dialog id95 z-[90] sm:max-w-xl max-h-[85vh] overflow-hidden !flex flex-col"
         overlayClassName="z-[90]"
         data-ui-name="Item settings"
+        onPointerDownOutside={(event) => {
+          const target = event.target as Element | null
+          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target as Element | null
+          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+        }}
       >
-        <DialogTitle className="sr-only">Item settings</DialogTitle>
-        <div className="id-settings" style={{ padding: "16px 8px 8px", overflow: "auto" }}>
+        <div className="id-settings-host">
           <ItemSettingsPanel
             task={task}
             lists={lists}
             isTask={isTask}
             showLinks={false}
             onPatch={patchItem}
-            onOpenAttribute={(id) => setAttributeSettingsId(id)}
+            onOpenAttribute={(id) => {
+              attributeLock.current = true
+              setAttributeSettingsId(id)
+            }}
           />
         </div>
       </DialogContent>
@@ -1499,8 +1521,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     <AttributeSettingsDialog
       attributeId={attributeSettingsId}
       open={attributeSettingsId != null}
+      container={settingsHost.current}
       onOpenChange={(next) => {
-        if (!next) setAttributeSettingsId(null)
+        if (!next) {
+          attributeLock.current = false
+          setAttributeSettingsId(null)
+        }
       }}
       draftTask={task}
       onPatchDraft={patchItem}
