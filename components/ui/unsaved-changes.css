@@ -75,8 +75,8 @@
     inset 0 10px 14px rgba(0, 0, 0, 0.4)
   );
 
-  /* Caption bay starts after 10px pad; key sits on that bay. */
-  --b2-close-top: 20px;
+  /* 26px keycap, same center the 22px key had on the caption bay. */
+  --b2-close-top: 18px;
   --b2-close-right: 16px;
   z-index: 60;
   display: flex !important;
