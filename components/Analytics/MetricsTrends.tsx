@@ -34,15 +34,17 @@ import { NativeSelect } from "@/components/ui/native-select"
 import { dailyMeans, rollingMean, summaryStats } from "./meta-math"
 import "./analytics-meta.css"
 
-function MiniLine({ values, label }: { values: number[]; label: string }) {
+function MiniLine({ values, label, own = false }: { values: number[]; label: string; own?: boolean }) {
   if (values.length < 2) return <svg viewBox="0 0 200 34" role="img" aria-label={`${label}: too few days`} />
   const w = 200
   const h = 34
-  const y = (v: number) => h - 3 - (v / 100) * (h - 6)
+  const lo = own ? Math.min(...values) : 0
+  const hi = own ? Math.max(...values, lo + 1) : 100
+  const y = (v: number) => h - 3 - ((v - lo) / (hi - lo)) * (h - 6)
   const d = values.map((v, i) => `${i === 0 ? "M" : "L"} ${((i / (values.length - 1)) * w).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")
   return (
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label} daily mean`}>
-      <line x1={0} x2={w} y1={y(50)} y2={y(50)} className="an-meta-grid" />
+      {!own ? <line x1={0} x2={w} y1={y(50)} y2={y(50)} className="an-meta-grid" /> : null}
       <path d={d} fill="none" stroke="var(--at-ink, #14171c)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
     </svg>
   )
@@ -102,6 +104,14 @@ export function MetricsTrends() {
   const peak = stats ? series.find((p) => p.value === stats.max) : undefined
   const trough = stats ? series.find((p) => p.value === stats.min) : undefined
   const momentum = slopes[slopes.length - 1]?.slope
+  // Keep the high/low labels inside the plot: near an edge, put them beside the dot.
+  const labelSide = (date: string, fallback: "top" | "bottom") => {
+    const i = series.findIndex((p) => p.date === date)
+    if (i <= 0) return "right" as const
+    if (i >= series.length - 1) return "left" as const
+    return fallback
+  }
+  const [ownScale, setOwnScale] = useState(false)
 
   const multiples = useMemo(
     () =>
@@ -177,8 +187,20 @@ export function MetricsTrends() {
         })}
       </div>
       <section className="an-plate" data-testid="metric-multiples">
-        <p className="an-canvas-title">All five, same scale</p>
-        <p className="an-canvas-hint">Daily mean of each metric on 0–100, dotted line at 50. Click a row to open it below.</p>
+        <p className="an-canvas-title">{ownScale ? "All five, each on its own range" : "All five, same scale"}</p>
+        <p className="an-canvas-hint">
+          {ownScale
+            ? "Each line stretched to its own low and high, so small moves show. Do not compare heights across rows."
+            : "Daily mean of each metric on 0–100, dotted line at 50. Click a row to open it below."}
+        </p>
+        <div className="an-meta-tools">
+          <button type="button" className="an-meta-chip" aria-pressed={!ownScale} onClick={() => setOwnScale(false)}>
+            same 0–100
+          </button>
+          <button type="button" className="an-meta-chip" aria-pressed={ownScale} onClick={() => setOwnScale(true)}>
+            own range
+          </button>
+        </div>
         <div className="an-meta-multiples">
           {multiples.map(({ def, values: v, stats: st }) => (
             <button
@@ -189,7 +211,7 @@ export function MetricsTrends() {
               onClick={() => setMetricId(def.key)}
             >
               <span className="an-readout-label">{def.name}</span>
-              <MiniLine values={v} label={def.name} />
+              <MiniLine values={v} label={def.name} own={ownScale} />
               <span className="an-meta-stats">
                 {st ? `μ ${st.mean.toFixed(0)} · σ ${st.sd.toFixed(0)} · ${st.n} d` : "no readings"}
               </span>
@@ -251,11 +273,11 @@ export function MetricsTrends() {
                   {stats ? <ReferenceLine y={stats.mean} stroke="#8fbf9a" strokeDasharray="2 4" /> : null}
                   {peak ? (
                     <ReferenceDot x={peak.date} y={peak.value} r={4} fill="#3dff8a" stroke="#d7f5e0"
-                      label={{ value: `high ${Math.round(peak.value)} · ${formatAt(peak.date)}`, position: "top", fill: "#d7f5e0", fontSize: 10 }} />
+                      label={{ value: `high ${Math.round(peak.value)} · ${formatAt(peak.date)}`, position: labelSide(peak.date, "top"), fill: "#d7f5e0", fontSize: 10 }} />
                   ) : null}
                   {trough && trough !== peak ? (
                     <ReferenceDot x={trough.date} y={trough.value} r={4} fill="#3dff8a" stroke="#d7f5e0"
-                      label={{ value: `low ${Math.round(trough.value)} · ${formatAt(trough.date)}`, position: "bottom", fill: "#d7f5e0", fontSize: 10 }} />
+                      label={{ value: `low ${Math.round(trough.value)} · ${formatAt(trough.date)}`, position: labelSide(trough.date, "bottom"), fill: "#d7f5e0", fontSize: 10 }} />
                   ) : null}
                   <Scatter dataKey="change" fill="#ef4444" shape="diamond" />
                 </ComposedChart>

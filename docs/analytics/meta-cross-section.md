@@ -12,7 +12,7 @@ Thirteen day-aligned strips from `buildCrossSection`: habits, tracking, sleep, c
 - Long labels ellipsize instead of pushing the grid.
 
 ## New controls
-- **Rows**: one chip per series. Click to hide or show it.
+- **Rows**: one chip per series with its color swatch. Click to hide or show it; a hidden row's chip is faded and struck.
 - **Compare to**: pick an anchor series. Each row gets an `r` column against it (shown only with 7+ shared days, else `·`). The anchor row shows ◆.
 - **Sort**: house order, most observed, or closest to anchor (|r|).
 - Hover a column to read every strip; click to pin (unchanged). This is IIB's **Truth barcode** stack.

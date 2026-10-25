@@ -220,7 +220,12 @@ export function LogPeriodogram({
           </g>
         ))}
       {peak ? (
-        <text x={x(peak.period)} y={Math.max(10, y(peak.power) - 6)} textAnchor="middle" className="an-meta-num">
+        <text
+          x={x(peak.period)}
+          y={Math.max(10, y(peak.power) - 6)}
+          textAnchor={x(peak.period) > w - 60 ? "end" : x(peak.period) < 60 ? "start" : "middle"}
+          className="an-meta-num"
+        >
           {`peak ${peak.period.toFixed(1)} d`}
         </text>
       ) : null}

@@ -294,8 +294,9 @@ export function CrossSection() {
               <button
                 key={s.id}
                 type="button"
-                className="an-meta-chip"
+                className="an-meta-chip is-toggle"
                 aria-pressed={!hidden.has(s.id)}
+                style={{ ["--an-swatch" as string]: sequentialFill(s.hue, 0.8) }}
                 title={`${s.label}: n = ${s.n}. Click to ${hidden.has(s.id) ? "show" : "hide"}.`}
                 onClick={() => toggle(s.id)}
               >

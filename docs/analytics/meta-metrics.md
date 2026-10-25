@@ -10,8 +10,8 @@ Five wellbeing metrics, 0–100: joy, suffering, alignment, self satisfaction, s
 ## Layout
 1. Header: metric select, **Log {name}**.
 2. Readouts: latest value per metric with n. Click to select.
-3. **All five, same scale** (new): small multiples of the daily mean on 0–100 with a dotted 50 line, plus μ, σ and day count. Click a row to open it.
-4. Detail: stats line (mean ± σ, median, range, recent rolling slope), **Smooth** slider (1–14 reading rolling mean, dashed), the phosphor chart with a mean line and labelled high and low points, change points as red diamonds.
+3. **All five, same scale** (new): small multiples of the daily mean on 0–100 with a dotted 50 line, plus μ, σ and day count. Click a row to open it. **own range** stretches each line to its own low and high so small moves show (heights then do not compare across rows).
+4. Detail: stats line (mean ± σ, median, range, recent rolling slope), **Smooth** slider (1–14 reading rolling mean, dashed), the phosphor chart with a mean line and labelled high and low points (labels move beside the dot at the plot edges), change points as red diamonds.
 5. Trend sentence and change-point list.
 
 ## Fixes (2026-10-23)
