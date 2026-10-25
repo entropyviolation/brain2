@@ -1,6 +1,6 @@
 # Analytics vision: Now
 
-Now is the header door onto the present. The word key (`components/cognitive-state.tsx`, export name `CognitiveState`) opens one dialog. The caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The body is `components/header-tracking/`. Current moment sits above the pane switch on both sides: four presence lanes, a Metrics key, Working on, Events, Thought process, and Update state.
+Now is the header door onto the present. The word key (`components/cognitive-state.tsx`, export name `CognitiveState`) opens one dialog. The caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The body is `components/header-tracking/`. Current moment sits above the pane switch on both sides: four presence lanes, a Metrics key, the operation Working on clock, an activity-pen clock, Events, Notes, Thought process, and Update state.
 
 This report designs an Analytics tab for that surface. It is grounded in the fields those writers actually leave behind. It does not describe any Analytics screen that already exists.
 
@@ -114,6 +114,7 @@ Until a reading is actually stored, mood analytics is **categorical** (pen / wor
 | List | `mode` | `clock` | `minute` | Stored shape |
 | --- | --- | --- | --- | --- |
 | Events | `event` | `"exact"` | now, if the day key is today; else 08:00 | Activity **instant**: `kind: "instant"`, `startMin === endMin`, pen Text log, `title` = the phrase, `eventKind` = slug of the phrase |
+| Notes | `note` | `"exact"` | same | Activity instant, pen Text log, no `eventKind`. First line is `title`; later lines are `notes`. The Tracking log still shelves this row with Events. Now splits it because a general note is not a countable phrase |
 | Thought process | `thought` | `"exact"` | same | Activity instant, pen Text log, `eventKind: "thought-process"`. First line is `title`; later lines are `notes` |
 
 Grain: one instant, duration 0. Instants are **invisible to presence**. A thought at 14:07 does not make Activity “current.”
@@ -158,7 +159,7 @@ Current moment embeds `WorkingNowStrip`. It is the Operations clock, not a priva
 
 Paint is minute slices (`splitIntoDaySlices`). The clock starts at the exact second; the block starts at the minute that contains that second and grows on tick (`WORK_SESSION_TICK_MS`). Tick is silenced from undo. Stop writes Done / `timeLogs` / `actualDuration` on the operation.
 
-A second, independent singleton is the pen-color session (`brain2-pen-color-session`, `lib/pen-color-session.ts`): `penId`, `scopeId`, `title`, `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`. Span id `pen-color-${startedAt}`. It does not write a Done row. Current moment does not render that strip; it only **reads** the session as a live presence hint if one is running. Do not describe pen-color as a Now control. Do count its hint when explaining why a lane can say “current” with no covering block.
+A second, independent singleton is the pen-color session (`brain2-pen-color-session`, `lib/pen-color-session.ts`): `penId`, `scopeId`, `title`, `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`. Span id `pen-color-${startedAt}`. It does not write a Done row. Current moment renders that strip under the operation clock, locked to Activity pens (`PenColorNowStrip` `scopeId="activity"`): search, assign, or create a pen, then start the same session the Tracking desk uses. A pen started on another view still shows on this strip while the session is live. The lanes also **read** the session as a live presence hint. Count that hint when explaining why a lane can say “current” with no covering block.
 
 The **usually ~N** chip is computed at render from the median of past `timeLogs` / unflagged `actualDuration` for that title or type (`usualDurationMinutes`). It is not stored on the session.
 
