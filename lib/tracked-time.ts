@@ -194,6 +194,8 @@ export interface TrackedTimeOptions {
 type TrackedItem = {
   id: string
   penLinks?: { penId: string }[]
+  estimatedDuration?: number
+  subtasks?: unknown[]
   timeLogs?: {
     id?: string
     date?: string
