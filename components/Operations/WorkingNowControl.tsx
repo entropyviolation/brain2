@@ -26,7 +26,7 @@ import {
   WORK_SESSION_TICK_MS,
 } from "@/lib/operation-work-session"
 import { useWorkSessionStore } from "@/lib/work-session-store"
-import { NativeSelect } from "@/components/ui/native-select"
+import { ItemPicker } from "@/components/Lists/item-picker"
 
 export function useWorkSessionClock() {
   const session = useWorkSessionStore((s) => s.session)
@@ -68,6 +68,7 @@ export function WorkingNowControl({
   tasks?: { id: string; name: string }[]
 }) {
   const { session, now } = useWorkSessionClock()
+  const [taskOpen, setTaskOpen] = useState(false)
   const live = session?.operationId === operationId
   const taskClock = useTaskClockStarter()
   const clockTaskId = usePenColorSessionStore((s) => s.session?.taskId)
@@ -95,24 +96,34 @@ export function WorkingNowControl({
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
-        <NativeSelect
-          className="ops-btn ops-now-task"
-          aria-label="Work on a task in this operation now"
-          value=""
-          onChange={(e) => {
-            const id = e.target.value
-            if (!id) return
-            if (live) stopWorkingOnOperation()
-            taskClock.start(id)
-          }}
-        >
-          <option value="">…or a task</option>
-          {tasks.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <span className="ops-task-pick">
+          <button
+            type="button"
+            className="ops-btn"
+            aria-expanded={taskOpen}
+            onClick={() => setTaskOpen((open) => !open)}
+          >
+            …or a task
+          </button>
+          {taskOpen ? (
+            <span className="ops-task-pick-panel">
+              <ItemPicker
+                compact
+                searchLabel="Work on a task in this operation now"
+                choices={tasks.map((task) => ({ id: task.id, title: task.name }))}
+                selected={[]}
+                mode="single"
+                onChange={(ids) => {
+                  const id = ids[0]
+                  if (!id) return
+                  if (live) stopWorkingOnOperation()
+                  taskClock.start(id)
+                  setTaskOpen(false)
+                }}
+              />
+            </span>
+          ) : null}
+        </span>
       ) : null}
       {taskClock.picker}
     </span>
