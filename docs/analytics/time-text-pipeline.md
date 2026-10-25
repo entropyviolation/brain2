@@ -19,7 +19,7 @@ These are **not** the Texts report (`texts-report`, out of scope). They read Tra
 
 - Intervals: currently / stopped / switched.
 - **Readouts.** Spans, duration, switch instants, median span (and the longest).
-- **Bars by day.** Minutes and switches.
+- **Bars by day.** Minutes on the left axis, switches on their own right axis. On one shared axis the switch bars were too small to see.
 - **Spans on the clock.** Era bars. One row per day, midnight to midnight, a bar from start to end in the pen's color. Gridlines every 6 hours.
 - **Filter** and a folded **span list**, as for events.
 

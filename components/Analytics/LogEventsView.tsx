@@ -89,6 +89,9 @@ export function LogEventsView() {
   }))
   const byKind = countLogEventsByKind(points)
   const scatter = logClockScatter(points)
+  const scatterRows = [...scatter.points]
+    .sort((x, y) => x.date.localeCompare(y.date))
+    .map((pt) => ({ ...pt, day: dayLabel(pt.date) }))
   const rhythms = kindRhythms(points)
   const ordered = [...shown].sort((a, b) => a.date.localeCompare(b.date) || a.startMin - b.startMin)
   const certainty = {
@@ -99,7 +102,7 @@ export function LogEventsView() {
   const phaseLabeled = strip.some((cell) => cell.phase !== "unknown")
 
   return (
-    <div className="an-canvas an-stack" data-testid="log-events-view">
+    <div className="an-canvas an-stack tf-view" data-testid="log-events-view">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle
@@ -226,7 +229,7 @@ export function LogEventsView() {
               <ResponsiveContainer width="100%" height={180}>
                 <ScatterChart>
                   <CartesianGrid stroke={STUDIO_GRID} />
-                  <XAxis dataKey="date" type="category" allowDuplicatedCategory fontSize={11} stroke={STUDIO_AXIS} />
+                  <XAxis dataKey="day" type="category" allowDuplicatedCategory={false} fontSize={11} stroke={STUDIO_AXIS} minTickGap={12} />
                   <YAxis
                     dataKey="minute"
                     type="number"
@@ -243,7 +246,7 @@ export function LogEventsView() {
                       return [value, name]
                     }}
                   />
-                  <Scatter data={scatter.points} fill={LOG_FILL} />
+                  <Scatter data={scatterRows} fill={LOG_FILL} />
                 </ScatterChart>
               </ResponsiveContainer>
             </>

@@ -18,7 +18,7 @@ File: `components/Analytics/LogEventsView.tsx`. Math: `log-event-stats.ts` (by d
 4. **Bars by day.**
 5. **Every event, one square.** Unit grid by kind, oldest first. Solid = exact, hatched = estimated, hollow = unknown. This replaces the plain kind list.
 6. **Rhythm by kind.** Table: n, typical time, regularity, median gap ("every").
-7. **Clock scatter.** As before, in the house data color.
+7. **Clock scatter.** In the house data color. Days now run oldest to newest with short labels. They ran newest first with full dates that overlapped.
 8. **Phase.** Now folded, with the day count in the summary. Same caveat text.
 
 ## Math

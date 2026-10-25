@@ -121,7 +121,7 @@ export function ContextSwitchHeatmap() {
   )
 
   return (
-    <div className="an-canvas an-stack">
+    <div className="an-canvas an-stack tf-view">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle
