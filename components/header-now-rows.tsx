@@ -3,8 +3,8 @@
  *
  * Loaded by `header-now-box.tsx` only after an Operations or pen-color session
  * is already live. This module may read the timegrid (pen color) and the
- * clock hooks (pause, stop, elapsed, objectives-for-right-now popup). The
- * always-mounted shell does not.
+ * clock hooks (pause, stop, elapsed, objectives-for-right-now popup, and the
+ * task key on a pen clock). The always-mounted shell does not.
  */
 "use client"
 
