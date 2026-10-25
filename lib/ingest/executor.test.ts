@@ -83,7 +83,9 @@ describe("ingestIncoming", () => {
     if (result.status !== "ok") return
     expect(result.kind).toBe("event-log")
     expect(result.reply).toMatch(/Logged: need to get my car fixed/)
-    expect(useTaskStore.getState().tasks.some((t) => t.description === "need to get my car fixed")).toBe(false)
+    const filed = useTaskStore.getState().tasks.filter((t) => t.description === "need to get my car fixed")
+    expect(filed.some((t) => t.stage === "inbox")).toBe(false)
+    expect(filed.some((t) => t.type === "log")).toBe(true)
     const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
     expect(rows.some((row) => row.title === "need to get my car fixed")).toBe(true)
   })
@@ -105,8 +107,13 @@ describe("ingestIncoming", () => {
     if (tp.status !== "ok") return
     expect(tp.kind).toBe("thought-process")
     expect(tp.reply).toMatch(/Inbox: i really need to get my car fixed/)
-    const fromTp = useTaskStore.getState().tasks.filter((t) => t.description === "i really need to get my car fixed")
+    const fromTp = useTaskStore.getState().tasks.filter(
+      (t) => t.description === "i really need to get my car fixed" && t.stage === "inbox",
+    )
     expect(fromTp).toHaveLength(1)
+    expect(
+      useTaskStore.getState().tasks.some((t) => t.description === "i really need to get my car fixed" && t.type === "thought-process"),
+    ).toBe(true)
     expect(fromTp[0]?.stage).toBe("inbox")
     expect(tp.itemIds).toContain(fromTp[0]!.id)
 
@@ -118,7 +125,10 @@ describe("ingestIncoming", () => {
     }
     const rows = useTimeTrackingStore.getState().entriesFor(formatLocalDateKey(NOW), "activity")
     expect(rows.some((row) => row.title === "call the shop about the car")).toBe(true)
-    expect(useTaskStore.getState().tasks.find((t) => t.description === "call the shop about the car")?.stage).toBe("inbox")
+    expect(
+      useTaskStore.getState().tasks.find((t) => t.description === "call the shop about the car" && t.stage === "inbox")?.stage,
+    ).toBe("inbox")
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "call the shop about the car" && t.type === "log")).toBe(true)
 
     const once = ingestIncoming(sim("inbox: renew the tags -i"), NOW)
     expect(once.kind).toBe("capture")
@@ -130,7 +140,8 @@ describe("ingestIncoming", () => {
 
     const word = ingestIncoming(sim("wi-fi is down"), NOW)
     expect(word.kind).toBe("event-log")
-    expect(useTaskStore.getState().tasks.some((t) => /wi-fi/.test(t.description))).toBe(false)
+    expect(useTaskStore.getState().tasks.some((t) => /wi-fi/.test(t.description) && t.stage === "inbox")).toBe(false)
+    expect(useTaskStore.getState().tasks.some((t) => t.description === "wi-fi is down" && t.type === "log")).toBe(true)
   })
 
   it("undoes both writes of a -i message at once", () => {

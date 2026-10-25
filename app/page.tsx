@@ -63,6 +63,7 @@ import {
   useInstagramListsSync,
   useInstagramSessionsSync,
 } from "@/hooks/use-instagram-lists"
+import { useTrackingLists } from "@/hooks/use-tracking-lists"
 import { useVocabLanguageLists } from "@/hooks/use-vocab-language-lists"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { MachineLoading } from "@/components/machine-loading"
@@ -132,6 +133,7 @@ function IdleVaultSeeds() {
   useInstagramListsSync()
   useInstagramSessionsSync()
   useVocabLanguageLists()
+  useTrackingLists()
   return null
 }
 
@@ -182,7 +184,11 @@ export default function Home() {
     const id = window.setTimeout(run, 1)
     return () => window.clearTimeout(id)
   }, [])
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.appItemId))
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
+    // A fresh launch starts on the tab, never reopening the last item's detail view.
+    writeStoredId(APP_NAV_KEYS.appItemId, null)
+    return null
+  })
   const [searchSelectedId, setSearchSelectedId] = useState<string | null>(null)
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey()
   const capture = useQuickCaptureHotkey()
@@ -221,6 +227,17 @@ export default function Home() {
   useEffect(() => {
     if (selectedMissing) setSelectedTaskId(null)
   }, [selectedMissing])
+
+  // The selector above only re-runs on store writes; if hydration finishes without
+  // one, a stale persisted id (deleted/merged Person) would stay open. Re-check then.
+  useEffect(() => {
+    const check = () => {
+      const id = readStoredId(APP_NAV_KEYS.appItemId)
+      if (id && !useTaskStore.getState().tasks.some((t) => t.id === id)) setSelectedTaskId(null)
+    }
+    if (useTaskStore.persist.hasHydrated()) check()
+    return useTaskStore.persist.onFinishHydration(check)
+  }, [])
 
   // Detect a leftover hash pop-out on the *root* page (`#popout/module/<id>`).
   // New pop-outs use `/popout/?module=` (see `app/popout/page.tsx`); this is a
