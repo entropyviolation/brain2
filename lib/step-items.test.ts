@@ -158,7 +158,7 @@ describe("step items (Phase 11)", () => {
   it("names the path and the readout", () => {
     const id = ensureStepItem("cds", "disc")!
     expect(stepCrumbs(tasks(), get(id)).map((c) => c.label)).toEqual(["Finish CDs", "insert", "disc"])
-    expect(stepReadout(findStep(get("cds"), "insert")!)).toEqual({ est: 20, parts: "0/1", spent: 0 })
+    expect(stepReadout(findStep(get("cds"), "insert")!)).toEqual({ est: 20, parts: "0/1", spent: 4 })
   })
 
   it("a task cannot wait on its own step item, nor the item on its parent", () => {

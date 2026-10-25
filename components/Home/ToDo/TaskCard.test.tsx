@@ -6,6 +6,8 @@ import { closeTaskCard, openTaskCard } from "@/lib/task-card"
 import { resetPointsVisibilityForTests, setPointsVisibility } from "@/lib/points-visibility"
 import { undoLastAction } from "@/lib/action-history"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { startTaskClock } from "@/lib/task-clock"
 import { useSessionOpenStore } from "@/lib/session-open-store"
 import { itemLayers, clearItemLayers } from "@/lib/step-item-stack"
 import type { Subtask, Task } from "@/lib/types"
@@ -51,6 +53,7 @@ describe("TaskCard", () => {
     resetPointsVisibilityForTests()
     clearItemLayers()
     closeTaskCard()
+    localStorage.removeItem("brain2-task-card-time-unit")
   })
 
   it("opens from the store and links to item detail with ↗ Item", () => {
@@ -59,8 +62,43 @@ describe("TaskCard", () => {
     expect(screen.queryByText("Finish CDs")).toBeNull()
     act(() => openTaskCard("t1"))
     expect(screen.getAllByText("Finish CDs").length).toBeGreaterThan(0)
+    expect(document.querySelector(".task-card-pushflag")).toBeNull()
+    expect(screen.getByRole("button", { name: "Just Start" }).className).toContain("is-primary")
     fireEvent.click(screen.getByRole("button", { name: "↗ Item" }))
     expect(itemLayers().map((l) => l.taskId)).toEqual(["t1"])
+  })
+
+  it("shows a push flag from the first push, and no Order section", () => {
+    seed({
+      daysPushed: 1,
+      subtasks: [s("insert"), s("label", { dependsOn: ["insert"] })],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const flag = document.querySelector(".task-card-pushflag") as HTMLElement
+    expect(flag).toBeTruthy()
+    expect(flag.textContent).toMatch(/pushed ×1/)
+    expect(flag.getAttribute("data-push-count")).toBe("1")
+    expect(screen.queryByRole("region", { name: "Order" })).toBeNull()
+    expect(screen.getByRole("region", { name: "Steps" })).toBeTruthy()
+  })
+
+  it("the aside has a Time section, and several selected steps do not", () => {
+    seed({ timeLogs: [{ id: "log1", date: "2026-10-20", durationMinutes: 10, taskId: "t1" }] })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const side = document.querySelector("aside.task-card-side") as HTMLElement
+    expect(within(side).getByRole("region", { name: "Time" })).toBeTruthy()
+    const minutes = within(side).getByLabelText("Minutes of log log1") as HTMLInputElement
+    fireEvent.change(minutes, { target: { value: "40" } })
+    fireEvent.blur(minutes)
+    expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(40)
+    act(() => undoLastAction())
+    expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(10)
+
+    fireEvent.click(screen.getByRole("button", { name: "Select all open" }))
+    expect(within(side).queryByRole("region", { name: "Time" })).toBeNull()
+    expect(within(side).getByText("Time edits need one step.")).toBeTruthy()
   })
 
   it("the Spent card lists the tagged blocks and edits their clock span", () => {
@@ -201,5 +239,144 @@ describe("TaskCard", () => {
     fireEvent.click(kidCheckbox)
     expect(steps().find((x) => x.id === "insert")!.subtasks!.find((k) => k.id === "fold booklet")!.completed).toBe(false)
     expect(kidCheckbox.checked).toBe(false)
+  })
+
+  it("marks the clock pen and play paints with the one you switch to", () => {
+    seed({
+      penLinks: [
+        { scopeId: "activity", penId: "act-work" },
+        { scopeId: "activity", penId: "act-rest" },
+      ],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const pen = document.querySelector("section.tcs-pens") as HTMLElement
+    expect(within(pen).getByRole("button", { name: "Clock pen Work" })).toHaveAttribute("aria-pressed", "true")
+    fireEvent.click(within(pen).getByRole("button", { name: "Make Rest the clock pen" }))
+    expect(useTaskStore.getState().tasks[0].penLinks?.map((link) => link.penId)).toEqual(["act-rest", "act-work"])
+    act(() => startTaskClock("t1"))
+    expect(usePenColorSessionStore.getState().session?.penId).toBe("act-rest")
+  })
+
+  it("opens a large multiselect for tasks that wait, above the card", () => {
+    seed({
+      subtasks: [s("insert"), s("label", { subtasks: [s("ink")] })],
+    })
+    useTaskStore.getState().addTask({ id: "mail", description: "Mail the set", completed: false, type: "task" } as Task)
+    useTaskStore.getState().addTask({ id: "zebra", description: "Zebra later", completed: false, type: "task" } as Task)
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    fireEvent.click(screen.getByRole("button", { name: /Make a task wait on this/ }))
+    const pop = document.querySelector("[data-task-card-pop]") as HTMLElement
+    expect(pop).toBeTruthy()
+    expect(pop.parentElement).toBe(document.body)
+    const list = within(pop).getByRole("listbox", { name: "Work that waits until this is done" })
+    const names = within(list).getAllByRole("checkbox").map((box) => box.getAttribute("aria-label"))
+    expect(names.slice(0, 3)).toEqual(["insert", "label", "ink"])
+    expect(names.slice(3)).toEqual(["Mail the set", "Zebra later"])
+    expect(within(pop).getByRole("heading", { name: "This level" })).toBeTruthy()
+    expect(within(pop).getByRole("heading", { name: "Rest of this task" })).toBeTruthy()
+    expect(pop.querySelector(".tcs-wait-path")?.textContent).toBe("label")
+    expect(within(pop).queryByText("step")).toBeNull()
+    expect(within(pop).queryByText("task")).toBeNull()
+    fireEvent.change(within(pop).getByLabelText("Search work that waits"), { target: { value: "zebra" } })
+    expect(within(list).getAllByRole("checkbox").map((box) => box.getAttribute("aria-label"))).toEqual(["Zebra later"])
+    fireEvent.change(within(pop).getByLabelText("Search work that waits"), { target: { value: "" } })
+    fireEvent.click(within(list).getByRole("checkbox", { name: "insert" }))
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Mail the set" }))
+    const task = useTaskStore.getState().tasks.find((row) => row.id === "t1")!
+    expect(task.subtasks?.find((step) => step.id === "insert")?.needsTaskIds).toEqual(["t1"])
+    expect(useTaskStore.getState().tasks.find((row) => row.id === "mail")?.dependencies).toEqual(["t1"])
+    expect(screen.getByRole("button", { name: /Make a task wait on this/ })).toHaveAttribute("aria-expanded", "true")
+  })
+
+  it("edits the remaining estimate from the aside tag", () => {
+    seed({ subtasks: [s("insert", { estimatedDuration: 20 }), s("label", { estimatedDuration: 10, completed: true })] })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const tag = screen.getByRole("button", { name: "Estimated time left for Finish CDs" })
+    expect(tag).toHaveTextContent("20m left")
+    fireEvent.click(tag)
+    expect(screen.getByText("Still open")).toBeTruthy()
+    const input = screen.getByRole("spinbutton", { name: "Estimated time left for Finish CDs" })
+    fireEvent.change(input, { target: { value: "50" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(50)
+    act(() => openTaskCard("t1", "insert"))
+    const stepTag = screen.getByRole("button", { name: "Estimated time left for insert" })
+    fireEvent.click(stepTag)
+    const stepInput = screen.getByRole("spinbutton", { name: "Estimated time left for insert" })
+    fireEvent.change(stepInput, { target: { value: "12" } })
+    fireEvent.keyDown(stepInput, { key: "Enter" })
+    expect(steps().find((step) => step.id === "insert")?.estimatedDuration).toBe(12)
+  })
+
+  it("formats stat durations in minutes or hours", () => {
+    seed({ estimatedDuration: 325, subtasks: [] })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const reading = () => document.querySelector('[data-stat="estimate"] .dash-reading')
+    expect(reading()).toHaveAttribute("aria-label", "325m")
+    fireEvent.click(screen.getByRole("button", { name: "Hours" }))
+    expect(reading()).toHaveAttribute("aria-label", "5h25")
+    expect(localStorage.getItem("brain2-task-card-time-unit")).toBe("h")
+    fireEvent.click(screen.getByRole("button", { name: "Minutes" }))
+    expect(reading()).toHaveAttribute("aria-label", "325m")
+  })
+
+  it("shows a short duration as hours when that unit is on", () => {
+    localStorage.setItem("brain2-task-card-time-unit", "h")
+    seed({ estimatedDuration: 45, subtasks: [] })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    expect(document.querySelector('[data-stat="estimate"] .dash-reading')).toHaveAttribute("aria-label", "0h45")
+    expect(screen.getByRole("button", { name: "Hours" })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("the spent pill is a diary of days, not the blocks editor", () => {
+    seed()
+    useTimeTrackingStore.setState({
+      entries: [
+        {
+          id: "e1",
+          date: "2026-10-20",
+          scopeId: "s",
+          penId: "p",
+          startMin: 570,
+          endMin: 660,
+          taskId: "t1",
+          nowObjectives: [{ id: "o1", text: "Print the spines", addedAt: "2026-10-20T09:30:00", stepId: "insert" }],
+        },
+      ],
+    } as never)
+    render(<TaskCard host={host({ timeOf: () => ({ spent: 90 }) })} />)
+    act(() => openTaskCard("t1"))
+    fireEvent.click(screen.getByRole("button", { name: "90m spent" }))
+    const diary = document.querySelector(".tcs-spent-diary") as HTMLElement
+    expect(diary).toBeTruthy()
+    expect(diary.textContent).toMatch(/Tue, Oct 20/)
+    expect(diary.querySelector(".tcs-spent-clock")).toBeNull()
+    expect(screen.queryByRole("list", { name: "Blocks of time spent" })).toBeNull()
+    expect(screen.queryByRole("list", { name: "Minutes counted as spent" })).toBeNull()
+  })
+
+  it("draws one chain when the clock pen's parent is linked, and keeps an unrelated pen", () => {
+    useTimeTrackingStore.getState().setPenParent("activity", "act-rest", "act-work")
+    seed({
+      penLinks: [
+        { scopeId: "activity", penId: "act-rest" },
+        { scopeId: "activity", penId: "act-work" },
+        { scopeId: "activity", penId: "act-exercise" },
+      ],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const pen = document.querySelector("section.tcs-pens") as HTMLElement
+    expect(pen.querySelectorAll(".trk-chain")).toHaveLength(1)
+    expect(within(pen).getByRole("button", { name: "Clock pen Rest" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(pen).getByRole("button", { name: "Unlink Work" })).toBeTruthy()
+    expect(pen.querySelectorAll(".ipt-chip")).toHaveLength(1)
+    expect(within(pen).getByText("Exercise")).toBeTruthy()
+    expect(useTaskStore.getState().tasks[0].penLinks?.map((link) => link.penId)).toEqual(["act-rest", "act-work", "act-exercise"])
   })
 })

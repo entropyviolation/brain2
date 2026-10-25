@@ -238,8 +238,10 @@
 │   ├── Completion
 │   │   ├── CompletionDialog.test.tsx
 │   │   ├── CompletionDialog.tsx
+│   │   ├── CompletionPixel.tsx
 │   │   ├── CompletionPopupHost.tsx
-│   │   └── README.md
+│   │   ├── README.md
+│   │   └── completion-dialog.css
 │   ├── Docs
 │   │   ├── DocsHome.tsx
 │   │   ├── DocsPanel.tsx
@@ -436,12 +438,14 @@
 │   │   │   ├── SessionPlanner-h2.test.tsx
 │   │   │   ├── SessionPlanner.test.tsx
 │   │   │   ├── SessionPlanner.tsx
+│   │   │   ├── SpentBlocks.test.tsx
 │   │   │   ├── SpentBlocks.tsx
 │   │   │   ├── TaskCard.test.tsx
 │   │   │   ├── TaskCard.tsx
 │   │   │   ├── TaskCardPeriod.tsx
 │   │   │   ├── TaskCardSide.tsx
 │   │   │   ├── TaskCardStats.tsx
+│   │   │   ├── TaskCardTimeAside.tsx
 │   │   │   ├── TaskPrereqDialog.tsx
 │   │   │   ├── TodoBreakdown.tsx
 │   │   │   ├── TodoLoadPanel.tsx
@@ -461,6 +465,9 @@
 │   │   │   │   ├── scene-well.ts
 │   │   │   │   └── types.ts
 │   │   │   ├── prereqs-ui.test.tsx
+│   │   │   ├── priority-star-sweep.ts
+│   │   │   ├── priority-star.css
+│   │   │   ├── priority-star.test.ts
 │   │   │   ├── session-planner.css
 │   │   │   ├── task-card.css
 │   │   │   ├── todo-chrome.css
@@ -1491,18 +1498,18 @@
 │   │   ├── messages.jsonl
 │   │   └── runs.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-10-25-03.json
-│   │   ├── auto-brain2-habits-store-2026-10-25-04.json
-│   │   ├── auto-brain2-habits-store-2026-10-25-05.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-03.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-04.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-05.json
-│   │   ├── auto-brain2-telegram-feed-2026-10-25-03.json
-│   │   ├── auto-brain2-telegram-feed-2026-10-25-04.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-04.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-05.json
-│   │   ├── auto-points-store-2026-10-25-04.json
-│   │   ├── auto-points-store-2026-10-25-05.json
+│   │   ├── auto-brain2-habits-store-2026-10-25-07.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-06.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-07.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-08.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-09.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-07.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-08.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-09.json
+│   │   ├── auto-points-store-2026-10-25-06.json
+│   │   ├── auto-points-store-2026-10-25-07.json
+│   │   ├── auto-points-store-2026-10-25-08.json
+│   │   ├── auto-points-store-2026-10-25-09.json
 │   │   ├── brain2-backup-2026-10-10T093232Z.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
@@ -1518,6 +1525,7 @@
 │   │   ├── shared-persist-20260919-201252.json
 │   │   └── tracking-union-2026-09-22T01-21-45.json
 │   ├── shared-persist.json
+│   ├── shared-persist.json.19751.126.tmp
 │   └── telegram-offset.json
 ├── deploy
 │   ├── mac
@@ -2154,7 +2162,8 @@
 │   │   │   │   ├── 2026-10-06T00-46-24.png
 │   │   │   │   ├── 2026-10-09T19-39-03.png
 │   │   │   │   ├── 2026-10-10T05-33-02.png
-│   │   │   │   └── 2026-10-20T00-11-37.png
+│   │   │   │   ├── 2026-10-20T00-11-37.png
+│   │   │   │   └── 2026-10-24T22-27-12.png
 │   │   │   ├── 03-home-todo-month
 │   │   │   │   ├── 2026-10-06T00-33-42.png
 │   │   │   │   ├── 2026-10-06T00-42-09.png
@@ -2650,7 +2659,8 @@
 │   │   │   ├── 20-dialog-completion
 │   │   │   │   ├── 2026-10-06T00-48-22.png
 │   │   │   │   ├── 2026-10-09T19-42-36.png
-│   │   │   │   └── 2026-10-20T00-13-24.png
+│   │   │   │   ├── 2026-10-20T00-13-24.png
+│   │   │   │   └── 2026-10-24T22-27-48.png
 │   │   │   ├── 20-dialog-global-search
 │   │   │   │   ├── 2026-10-06T00-39-43.png
 │   │   │   │   ├── 2026-10-06T00-43-55.png

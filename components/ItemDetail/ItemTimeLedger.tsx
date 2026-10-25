@@ -3,13 +3,16 @@
  *
  * The Time tab for a task (and for a step's item). Blocks painted with this
  * task — pen clock, To Do start, a hand correction — list here with their
- * notes, objectives, and the clocks those objectives ran. A block from the
+ * notes, objectives, and the clocks those objectives ran. The total is time
+ * indicated on this item plus each part's actual minutes. A block from the
  * pen clock says it was added from Working On Now. Session lines that never
  * painted a block list under them. Add time takes an optional start, end, and
  * duration (any two fill in the third) and a list of objectives. Edits to a block go through the time grid
  * (`updateEntry`). Edits to a log, a step's minutes, or the task's completed
- * mark go through the open draft, or onto the parent task when this item is
- * a step.
+ * mark go through the open draft (`onPatch`), or onto the parent task when this
+ * item is a step. A host can pass `onParentPatch` so that parent write is its
+ * own (the task card uses it so the edit is one undo). Without it, the parent
+ * write is `updateTask`.
  *
  * _Last mapped: 2026-10-24_
  */
@@ -19,7 +22,7 @@ import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration, parseDurationInput } from "@/lib/time-entries"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
-import { findPen, stepSpentMinutes, timeTrio, trackedTimeForItem, partsMinutes } from "@/lib/tracked-time"
+import { findPen, stepActualAccount, taskActualAccount, timeTrio, trackedTimeForItem, partsMinutes, type ActualAccount } from "@/lib/tracked-time"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import {
   addNowObjective,
@@ -43,7 +46,7 @@ const BLOCKS_SHOWN = 12
 
 type LedgerTask = Pick<
   Task,
-  "id" | "penLinks" | "timeLogs" | "estimatedDuration" | "subtasks" | "stepOf" | "completed"
+  "id" | "penLinks" | "timeLogs" | "estimatedDuration" | "actualDuration" | "subtasks" | "stepOf" | "completed"
 >
 
 const clock = (min: number) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}`
@@ -153,13 +156,34 @@ function ClockField({
   )
 }
 
+function ActualSplit({ account, names, onlyLabel }: { account: ActualAccount; names: Map<string, string>; onlyLabel: string }) {
+  if (account.children.length === 0) return null
+  return (
+    <ul className="ipt-actuals" aria-label="Where the actual minutes sit">
+      {account.unlabeled > 0 ? (
+        <li>
+          {formatDuration(account.unlabeled)} {onlyLabel}
+        </li>
+      ) : null}
+      {account.children.map((child) => (
+        <li key={child.id}>
+          {formatDuration(child.total)} on {names.get(child.id) ?? "a part"}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function ItemTimeLedger({
   task,
   onPatch,
+  onParentPatch,
   readOnly = false,
 }: {
   task: LedgerTask
   onPatch: (patch: Partial<Task>) => void
+  /** When this item is a step, task patches go here instead of `updateTask`. */
+  onParentPatch?: (patch: Partial<Task>) => void
   readOnly?: boolean
 }) {
   const entries = useTimeTrackingStore((s) => s.entries)
@@ -214,11 +238,17 @@ export function ItemTimeLedger({
   })
 
   const shown = showAll ? blocks : blocks.slice(0, BLOCKS_SHOWN)
-  const spent = focus && task.stepOf ? stepSpentMinutes(
-    { id: record.id, timeLogs: record.timeLogs, subtasks: record.subtasks },
-    task.stepOf.stepId,
-    entries,
-  ) : tracked.total
+  const account = useMemo(() => {
+    const host = {
+      id: record.id,
+      timeLogs: record.timeLogs,
+      subtasks: record.subtasks,
+      actualDuration: record.actualDuration,
+    }
+    if (task.stepOf) return stepActualAccount(host, task.stepOf.stepId, entries)
+    return taskActualAccount(host, entries)
+  }, [record, task.stepOf, entries])
+  const spent = account?.total ?? 0
   const mentionMin = focus
     ? blocks
         .filter((entry) => !(entry.stepId && focus.has(entry.stepId)))
@@ -232,6 +262,10 @@ export function ItemTimeLedger({
 
   const writeHost = (patch: Partial<Task>) => {
     if (task.stepOf) {
+      if (onParentPatch) {
+        onParentPatch(patch)
+        return
+      }
       const latest = useTaskStore.getState().tasks.find((row) => row.id === task.stepOf!.taskId)
       if (latest) useTaskStore.getState().updateTask({ ...latest, ...patch })
       return
@@ -295,7 +329,10 @@ export function ItemTimeLedger({
         <strong>{formatDuration(spent)}</strong> {focus ? "on this step" : "tracked"}
         {!focus && est > 0 && (est >= spent ? <> · {formatDuration(est - spent)} est left</> : <> · {formatDuration(spent - est)} past est</>)}
       </p>
-      {focus && mentionMin > 0 && (
+      {account && account.children.length > 0 && (
+        <ActualSplit account={account} names={names} onlyLabel={focus ? "on this step only" : "on this task only"} />
+      )}
+      {focus && spent === 0 && mentionMin > 0 && (
         <p className="ipt-quiet">
           {formatDuration(mentionMin)} on the task names this step. Set the block&apos;s step to count it here.
         </p>

@@ -21,10 +21,11 @@
  */
 "use client"
 
-import { useMemo, useState, useEffect, useRef, useCallback } from "react"
+import { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { orbFor } from "@/components/Icons"
 import { useTaskStore } from "@/lib/task-store"
+import { sweepStaleTaskPriorities } from "@/components/Home/ToDo/priority-star-sweep"
 import { needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
 import { getWeekString, toLocalCalendarDate } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, quarterStartDate, seasonSlug, seasonOfDate, shiftQuarter, taskTouchesQuarter } from "@/lib/seasons"
@@ -80,7 +81,6 @@ import {
   filterTodosByStatus,
   filterTodosAvailableNow,
   countInProgress,
-  formatWipWarning,
   sortTodos,
   pinPrioritizedFirst,
   tierToUrgencyImportance,
@@ -183,6 +183,9 @@ export function TodoPanel({
   usePenActionSync()
   const tasks = useTaskStore((s) => s.tasks)
   const reviews = useReviewsStore((s) => s.reviews)
+  useLayoutEffect(() => {
+    sweepStaleTaskPriorities()
+  }, [tasks, reviews])
   const starReports = useStarLordStore((s) => s.reports)
   const birthday = useUserSettingsStore((s) => s.birthday)
   const updateTask = useTaskStore((s) => s.updateTask)
@@ -375,8 +378,6 @@ export function TodoPanel({
     }
     return { day: count("day"), week: count("week"), month: count("month") } satisfies Record<TodoPeriod, number>
   }, [hideLocked, availableNow, todoItems, showAllTasks, focusedDate, tasks, statusFilter])
-
-  const wipWarning = formatWipWarning(countInProgress(tasks), wipLimit)
 
   const doneByPeriod = useMemo(
     () => ({
@@ -1545,19 +1546,6 @@ export function TodoPanel({
               </div>
             )}
           </div>
-
-          {wipWarning && (
-            <p
-              className={`todo-wip${wipWarning ? " is-lace" : ""}`}
-              role="status"
-              data-ui-name="WIP warning"
-              data-ui-help="Soft cap when too many tasks are in progress."
-              data-ui-docs="components/Home/ToDo/README.md"
-              data-ui-docs-anchor="wip-warning-19"
-            >
-              {wipWarning}
-            </p>
-          )}
 
           {showFormula && activeTodoTab !== "other" && periodTab !== "quarter" && <PriorityFormulaPanel />}
 
