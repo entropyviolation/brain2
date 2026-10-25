@@ -13,7 +13,6 @@ import type { ReactNode } from "react"
 import { formatStatMinutes, useTaskCardTimeControls, useTaskCardTimeUnit } from "./task-card-unit"
 
 export { CardMinutes, formatStatMinutes, TaskCardTimeUnit, useTaskCardTimeUnit } from "./task-card-unit"
-export type { TaskCardTimeUnit } from "./task-card-unit"
 import { DashReading } from "../dash/dash-primitives"
 import { TreeMath } from "@/components/steps/TreeMath"
 import { splitStats, type TierSplit } from "@/lib/tree-math"

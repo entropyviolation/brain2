@@ -273,7 +273,7 @@ export function TaskDetailPopup({
     writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
   }, [effectiveId, detailTab])
 
-  const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
+  const activeDetailTab = popupTabs.includes(detailTab as (typeof popupTabs)[number]) ? detailTab : "details"
 
   const commitReminder = useCallback(
     (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
