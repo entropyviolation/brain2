@@ -161,7 +161,7 @@ starters. Itinerary weather uses Open-Meteo (`lib/weather-client.ts`).
 body, folders, Google Fonts, images, PDF ingest); a **global Cmd/Ctrl-K search**
 palette (`components/Search/`) over all items; a consolidated **item detail**
 surface (`components/ItemDetail/`) with tags, typed links, related items, a
-**History** tab (append-only `lib/item-activity.ts`), a **Settings** tab, dependency-cycle refuse,
+**History** tab (append-only `lib/item-activity.ts`), item settings from the gear, dependency-cycle refuse,
 a **Clarify** key on inbox items, text lists that can become list references,
 and a rich-text/markdown body (`components/Editor/`); **Set up Second Brain**
 (Source/Belief item types) and full **JSON backup/restore** from the header
