@@ -3,6 +3,8 @@
  * Same writer as the Home Tracking log (`submitTrackingLog`, mode `intake`),
  * so a line lands on that log's Food / Drink / Drugs shelves. A chip only
  * fills the name, the same rule as the log's Recent row. Add or Enter logs.
+ * Today's bare intake (no food, drink, or drug class) is listed under the
+ * field. Food, Drink, and Drug / med call `setIntakeClass`.
  */
 "use client"
 
