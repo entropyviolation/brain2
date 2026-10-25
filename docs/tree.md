@@ -306,7 +306,7 @@ paints the same grid. Both clocks carry **objectives for right now**
 (`now-objectives-list.tsx`): add one for this moment, log one already completed,
 hide completed rows, and open a row for delete / save for later / attach to a
 task. Stop with any still open asks whether to keep them
-(`save-unfinished-dialog.tsx`, `lib/unfinished-objectives-store.ts`). `ClockTaskButton` (`clock-task-panel.tsx`) on the header now row, the pen strip, and the focus bar puts a task on the clock already running without splitting the painted block. The name opens that task. The block's notes say it was added from Working On Now. Sleep is painted on the Time Grid or typed in the
+(`save-unfinished-dialog.tsx`, `lib/unfinished-objectives-store.ts`; Cancel leaves the clock running). After a stop, the sitting review (`session-debrief-dialog.tsx`, `lib/session-debrief.ts`) can correct the log, and a note for next time shows on the next start (`session-handoff-note.tsx`). `ClockTaskButton` (`clock-task-panel.tsx`) on the header now row, the pen strip, and the focus bar puts a task on the clock already running without splitting the painted block. The name opens that task. The block's notes say it was added from Working On Now. Sleep is painted on the Time Grid or typed in the
 block editor / Morning Review — there is no **Sleep this day** form
 (`lib/sleep-log.ts` → `lib/sleep-store.ts` → `lib/sleep-sync.ts`). Logged nights
 are painted onto the grid when Tracking mounts, after both persist vaults
