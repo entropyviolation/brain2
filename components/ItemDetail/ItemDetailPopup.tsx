@@ -77,6 +77,7 @@ import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
 import { ItemDetailDock } from "@/components/ItemDetail/ItemDetailDock"
 import { iconFor } from "@/components/Icons/Icon"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { ItemNotesLog, NotesPeek } from "@/components/ItemDetail/ItemNotesLog"
 import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
@@ -425,11 +426,13 @@ export function TaskDetailPopup({
   const itemEdges = useItemEdges(task)
 
   const minimize = useCallback(() => {
+    const draft = getDraft()
+    if (draft && task && !snapshotsEqual(task, draft)) setTask({ ...draft })
     minimizeLock.current = true
     setItemSettingsOpen(false)
     setAttributeSettingsId(null)
     setMinimized(true)
-  }, [])
+  }, [getDraft, setTask, task])
   const handleNavigateToList = useCallback(
     (listId: string) => {
       minimize()

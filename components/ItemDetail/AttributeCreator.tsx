@@ -105,7 +105,7 @@ export function AttributeCreator({ categories, itemCategoryIds, existingIds, onC
     const base = slugId(trimmed)
     const existing = new Set(existingIds)
     const id = existing.has(base) ? `${base}_${Date.now().toString(36)}` : base
-    const def: AttributeDefinition = { ...settings, id, name: trimmed, type }
+    const def: AttributeDefinition = { ...settings, id, name: trimmed, type, createdAt: new Date().toISOString() }
     const listId = effectiveTarget === ITEM_ONLY_TARGET ? null : effectiveTarget
     onCreate(def, value, listId)
     // Keep type/target for rapid entry; clear the name and value.

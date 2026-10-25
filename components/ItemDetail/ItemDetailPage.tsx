@@ -84,6 +84,8 @@ import {
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
+import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
@@ -190,9 +192,10 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     const hidden = new Set(task?.hiddenShellTabs ?? [])
     const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details")]
     if (!hidden.has("history")) tabs.push("history")
-    tabs.push("settings")
     return tabs
   }, [visiblePanels, task?.hiddenShellTabs])
+  const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
+  const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState(() => {
     const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
     return stored || "details"
@@ -622,7 +625,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             className="id-btn id-btn-icon id-settings-key"
             aria-label="Item settings"
             title="Item settings"
-            onClick={() => setDetailTab("settings")}
+            onClick={() => setItemSettingsOpen(true)}
           >
             <Settings className="h-4 w-4" />
           </button>
@@ -666,10 +669,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             History
           </TabsTrigger>
           )}
-          <TabsTrigger value="settings" className="id-tab-secondary">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -739,6 +738,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   onCreateAttribute={handleCreateAttribute}
                   onOpenItem={openItem}
                   attributeLabels={task.attributeLabels}
+                  hiddenAttributeIds={task.hiddenAttributeIds}
                   textListIds={task.textListIds}
                   onBindTextList={bindTextList}
                   onOpenTextList={handleNavigateToList}
@@ -1473,13 +1473,38 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         <TabsContent value="history" className="space-y-6">
           <ItemActivityPanel itemId={task.id} />
         </TabsContent>
-        <TabsContent value="settings" className="space-y-6">
-          <ItemSettingsPanel task={task} lists={lists} isTask={isTask} showLinks={false} onPatch={patchItem} />
-        </TabsContent>
       </Tabs>
       </div>
     </div>
 
+    <Dialog open={itemSettingsOpen} onOpenChange={setItemSettingsOpen}>
+      <DialogContent
+        className="id95-dialog id95 z-[90] sm:max-w-lg max-h-[85vh] overflow-hidden !flex flex-col"
+        overlayClassName="z-[90]"
+        data-ui-name="Item settings"
+      >
+        <DialogTitle className="sr-only">Item settings</DialogTitle>
+        <div className="id-settings" style={{ padding: "16px 8px 8px", overflow: "auto" }}>
+          <ItemSettingsPanel
+            task={task}
+            lists={lists}
+            isTask={isTask}
+            showLinks={false}
+            onPatch={patchItem}
+            onOpenAttribute={(id) => setAttributeSettingsId(id)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    <AttributeSettingsDialog
+      attributeId={attributeSettingsId}
+      open={attributeSettingsId != null}
+      onOpenChange={(next) => {
+        if (!next) setAttributeSettingsId(null)
+      }}
+      draftTask={task}
+      onPatchDraft={patchItem}
+    />
     <CycleConfirmDialog
       open={!!cycleLabel}
       cycleLabel={cycleLabel ?? ""}
