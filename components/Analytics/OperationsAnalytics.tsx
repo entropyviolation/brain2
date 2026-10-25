@@ -112,7 +112,7 @@ export function OperationsAnalytics() {
   }, [ops, operationReviews, keySet])
 
   return (
-    <div className="an-canvas an-stack" data-testid="operations-analytics">
+    <div className="an-canvas an-stack tf-view" data-testid="operations-analytics">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle

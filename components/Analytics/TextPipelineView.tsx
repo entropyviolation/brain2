@@ -117,7 +117,7 @@ export function TextEventsView() {
   const busiestDay = [...byDay].sort((a, b) => b.count - a.count)[0]
 
   return (
-    <div className="an-canvas an-stack" data-testid="text-events-view">
+    <div className="an-canvas an-stack tf-view" data-testid="text-events-view">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle
@@ -251,7 +251,7 @@ export function TextSpansView() {
   )
 
   return (
-    <div className="an-canvas an-stack" data-testid="text-spans-view">
+    <div className="an-canvas an-stack tf-view" data-testid="text-spans-view">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle
@@ -286,10 +286,11 @@ export function TextSpansView() {
               <BarChart data={byDay}>
                 <CartesianGrid stroke={STUDIO_GRID} vertical={false} />
                 <XAxis dataKey="label" fontSize={11} stroke={STUDIO_AXIS} minTickGap={12} />
-                <YAxis allowDecimals={false} fontSize={11} stroke={STUDIO_AXIS} />
+                <YAxis yAxisId="min" allowDecimals={false} fontSize={11} stroke={STUDIO_AXIS} />
+                <YAxis yAxisId="sw" orientation="right" allowDecimals={false} fontSize={11} stroke={SWITCH_FILL} />
                 <Tooltip contentStyle={STUDIO_TOOLTIP} />
-                <Bar dataKey="minutes" name="Minutes" fill={SPAN_FILL} />
-                <Bar dataKey="switches" name="Switches" fill={SWITCH_FILL} />
+                <Bar yAxisId="min" dataKey="minutes" name="Minutes" fill={SPAN_FILL} />
+                <Bar yAxisId="sw" dataKey="switches" name="Switches" fill={SWITCH_FILL} />
               </BarChart>
             </ResponsiveContainer>
           )}

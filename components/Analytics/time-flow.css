@@ -204,3 +204,10 @@
   gap: 14px;
   align-items: start;
 }
+
+/* Plates with overflow set (readouts, matrix) must not shrink to 0 in the
+   flex column when the canvas has a fixed height. */
+.tf-view > *,
+.tf-view .an-plate > * {
+  flex-shrink: 0;
+}

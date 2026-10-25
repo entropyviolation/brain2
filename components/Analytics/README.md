@@ -237,6 +237,8 @@ Transitions, Context switch, Text events, Text spans, Log and Operations share
 has its own doc: `docs/analytics/time-transitions.md`, `time-context-switch.md`,
 `time-text-pipeline.md`, `time-log.md`, `time-operations.md`. Read the one you need.
 
+The six roots carry `tf-view`. Its children do not shrink. Without that, a readout row or matrix (they set `overflow`) collapsed to 0px in the flex column. Checked in a browser on 2026-10-25.
+
 ## Pure libraries
 
 - `lib/tracking-summary.ts` — occupancy (`uniqueMinutes`: overlapping blocks count

@@ -59,14 +59,14 @@ export function TransitionsView() {
 
   if (!scope) {
     return (
-      <div className="an-canvas an-stack" data-testid="transitions-view">
+      <div className="an-canvas an-stack tf-view" data-testid="transitions-view">
         <ChartFrame empty emptySentence="No tracking scopes yet." />
       </div>
     )
   }
 
   return (
-    <div className="an-canvas an-stack" data-testid="transitions-view">
+    <div className="an-canvas an-stack tf-view" data-testid="transitions-view">
       <header className="an-canvas-head">
         <div>
           <CanvasTitle
@@ -229,7 +229,7 @@ export function TransitionsView() {
 
           <details className="tf-fold">
             <summary>
-              Alluvial of switches <span className="an-n">ribbon = raw count</span>
+              Show alluvial <span className="an-n">ribbon = raw count</span>
             </summary>
           <AlluvialChart
             pens={matrix.pens}
