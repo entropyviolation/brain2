@@ -17,6 +17,7 @@ import { peekUndoLabel, runAsAction, undoLastAction } from "@/lib/action-history
 import { completeTask, uncompleteTask } from "@/lib/services/completion-service"
 import { AttributeValuesEditor } from "@/components/Lists/attribute-editor"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 type Action =
   | "attribute"
@@ -277,14 +278,13 @@ export function BulkEditPanel({
               <input className="lp-field" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
             ) : null}
             {action === "addToList" ? (
-              <NativeSelect className="lp-field lp-sel" value={targetListId} onChange={(e) => setTargetListId(e.target.value)} aria-label="Target list">
-                <option value="">Choose list…</option>
-                {otherLists.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </NativeSelect>
+              <SingleListPicker
+                value={targetListId}
+                onValueChange={setTargetListId}
+                emptyLabel="Choose a list…"
+                searchLabel="Target list"
+                excludeIds={lists.filter((l) => !otherLists.some((o) => o.id === l.id)).map((l) => l.id)}
+              />
             ) : null}
             {action === "removeFromList" ? (
               <p className="lp-caption">The items stay in the vault and on their other lists.</p>

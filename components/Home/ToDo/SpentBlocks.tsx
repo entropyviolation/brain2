@@ -7,12 +7,18 @@
  * (`H:MM`, Enter or blur saves, Esc backs out) and a block can be deleted after
  * a second click. Edits go through `updateEntry` / `removeEntry`, the same
  * calls the time grid uses. Typed time logs (no block behind them) are listed
- * under the blocks, read-only.
+ * under the blocks, read-only. Each block also lists the objectives that were
+ * live on it (added and done times); an old one can be tied to any step of the
+ * task here, and switched between "counts toward" and "finishes" it.
  */
 "use client"
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useTaskStore } from "@/lib/task-store"
+import { placeSteps } from "@/lib/next-step"
+import { objectiveCompletesTarget, setNowObjectiveCompletes, tieNowObjectiveToStep } from "@/lib/now-objective"
+import { objectiveSpanLabel, StepSearchPicker } from "@/components/Home/Tracking/now-objectives-list"
 import type { TimeEntry } from "@/lib/time-entries"
 import type { TimeLogEntry } from "@/lib/types"
 
@@ -68,11 +74,26 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
   const removeEntry = useTimeTrackingStore((s) => s.removeEntry)
   const [sure, setSure] = useState<string | null>(null)
   const { taskId, stepIds, names, logs = [] } = scope
+  const task = useTaskStore((st) => st.tasks.find((t) => t.id === taskId))
+  const choices = useMemo(
+    () =>
+      task
+        ? placeSteps(task.subtasks).map((p) => ({
+            id: p.step.id,
+            label: [...p.path.map((x) => x.description), p.step.description].join(" › ") + (p.step.completed ? " ✓" : ""),
+          }))
+        : [],
+    [task],
+  )
 
   const blocks = useMemo(
     () =>
       entries
-        .filter((e) => e.taskId === taskId && e.kind !== "instant" && e.endMin > e.startMin && (!stepIds || (!!e.stepId && stepIds.has(e.stepId))))
+        .filter((e) => e.taskId === taskId &&
+            e.kind !== "instant" &&
+            e.endMin > e.startMin &&
+            (!stepIds || (!!e.stepId && stepIds.has(e.stepId)) || (e.nowObjectives ?? []).some((o) => !!o.stepId && stepIds.has(o.stepId))),
+        )
         .sort((a, b) => (a.date === b.date ? b.startMin - a.startMin : a.date < b.date ? 1 : -1)),
     [entries, taskId, stepIds],
   )
@@ -109,6 +130,43 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
                     ×
                   </button>
                 )}
+                {e.nowObjectives?.length ? (
+                  <ul className="tcs-spent-objs" aria-label="Objectives on this block">
+                    {e.nowObjectives.map((o) => (
+                      <li key={o.id} className={o.completedAt ? "is-done" : undefined}>
+                        <span className="tcs-spent-obj-text">{o.completedAt ? "☑" : "☐"} {o.text}</span>
+                        <time className="tcs-spent-obj-when">{objectiveSpanLabel(o)}</time>
+                        <StepSearchPicker
+                          value={o.stepId}
+                          choices={choices}
+                          label={o.text}
+                          onPick={(id) =>
+                            updateEntry(e.id, {
+                              nowObjectives: setNowObjectiveCompletes(
+                                tieNowObjectiveToStep(e.nowObjectives, o.id, id === "new" ? undefined : id),
+                                o.id,
+                                false,
+                              ).map((r) => (r.id === o.id && !id ? { ...r, completes: undefined } : r)),
+                            })
+                          }
+                        />
+                        {o.stepId ? (
+                          <button
+                            type="button"
+                            className="trk-now-obj-mode"
+                            aria-pressed={objectiveCompletesTarget(o)}
+                            title="Whether finishing this objective finished the step"
+                            onClick={() =>
+                              updateEntry(e.id, { nowObjectives: setNowObjectiveCompletes(e.nowObjectives, o.id, !objectiveCompletesTarget(o)) })
+                            }
+                          >
+                            {objectiveCompletesTarget(o) ? "finished step" : "counts toward"}
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </li>
             )
           })}

@@ -28,6 +28,7 @@ import {
 } from "@/lib/list-membership-rules"
 import { HabitBarRocker } from "@/components/Home/Habits/habit-led-switch"
 import { NativeSelect } from "@/components/ui/native-select"
+import { ListPicker } from "@/components/Lists/list-picker"
 import { allRelations } from "@/lib/relation-registry"
 
 type Kind = MembershipCondition["kind"]
@@ -87,10 +88,6 @@ export function MembershipRulesEditor({
   const tasks = useTaskStore((s) => s.tasks)
   const lists = useTaskStore((s) => s.lists)
   const rules = list.membershipRules ?? []
-  const otherLists = useMemo(
-    () => lists.filter((l) => l.id !== list.id && !isFolderAllItemsCategoryId(l.id)).sort((a, b) => a.name.localeCompare(b.name)),
-    [lists, list.id],
-  )
   const preview = useMemo(() => previewMembershipRules(list, tasks, new Date()), [list, tasks])
   const dateAttrs = attributes.filter((a) => a.type === "datetime")
   const names = {
@@ -136,29 +133,15 @@ export function MembershipRulesEditor({
               <option value="all">is on all of</option>
               <option value="none">is on none of</option>
             </NativeSelect>
-            {c.listIds.map((id) => (
-              <span key={id} className="lp-cond-chip">
-                {names.list(id)}
-                <button type="button" aria-label={`Remove ${names.list(id)}`} onClick={() => set({ ...c, listIds: c.listIds.filter((x) => x !== id) })}>
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <NativeSelect
-              className="lp-field lp-sel"
-              value=""
-              aria-label="Add a list"
-              onChange={(e) => e.target.value && set({ ...c, listIds: [...c.listIds, e.target.value] })}
-            >
-              <option value="">+ list…</option>
-              {otherLists
-                .filter((l) => !c.listIds.includes(l.id))
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-            </NativeSelect>
+            <ListPicker
+              mode="multi"
+              compact
+              showCreate={false}
+              searchLabel="Add a list"
+              excludeIds={lists.filter((l) => l.id === list.id || isFolderAllItemsCategoryId(l.id)).map((l) => l.id)}
+              selected={c.listIds}
+              onChange={(ids) => set({ ...c, listIds: ids })}
+            />
           </span>
         )
       case "dateWithin":

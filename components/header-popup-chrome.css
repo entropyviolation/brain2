@@ -7,8 +7,8 @@
  * Tracking dialog frame. Kin of settings-chrome / inbox / item-detail.
  * Phosphor #7dffc4. No LED #7d6bb8 / grade #508b51 / output #25366a.
  * Looks only — same verbs, fields, and accessible names.
- * Title-bar close is `.b2-close-key` (opaque 22px, centered ×), placed with
- * `--b2-close-top` / `--b2-close-right` on `.hpp95-dialog`.
+ * Title-bar × is `KeycapClose`, placed with `--b2-close-top` / `--b2-close-right`
+ * on `.hpp95-dialog`. Quick Add draws its own and reads those same offsets.
  * `.qa-wrote` is the Quick Add added confirmation: fixed floating bottom-right
  * (16px inset from bottom and right), one line, off the page flow, X to dismiss.
  * docs/DESIGN_STYLE.md#milled-fascia
@@ -65,8 +65,8 @@
 }
 
 .hpp95-dialog {
-  /* 22px key centered on the 40px CRT mark (dialog pad 10 + caption pad 10). */
-  --b2-close-top: 29px;
+  /* 26px keycap centered on the 40px CRT mark (dialog pad 10 + caption pad 10). */
+  --b2-close-top: 27px;
   --b2-close-right: 18px;
   display: flex !important;
   flex-direction: column;
@@ -87,7 +87,8 @@
 }
 
 /* Close key is `.b2-close-key` in win95.css (opaque 22px metal, centered ×).
-   Placement: --b2-close-top / --b2-close-right on `.hpp95-dialog`. */
+   Placement: --b2-close-top / --b2-close-right on `.hpp95-dialog`.
+   Quick Add uses `KeycapClose` on those same offsets. */
 
 /* ---- CRT caption --------------------------------------------------------- */
 
@@ -603,4 +604,87 @@
   .qa-wrote {
     animation: none;
   }
+}
+
+/* ---- Quick Add: chip ×, keycap submit ------------------------------------ */
+/* Keycap × (`KeycapClose`) top edge lines up with the top of the CRT mark
+   (dialog pad 10 + caption pad 10). */
+.qa-dialog {
+  --b2-close-top: 20px;
+}
+/* Submit wears the To do modifier keycap (--todo-cap-mod-* in todo-chrome.css). */
+.qa-dialog {
+  --qa-cap-top: #c9ccd0;
+  --qa-cap-top2: #b9bdc1;
+  --qa-cap-skirt: #969a9f;
+  --qa-cap-edge: #55595d;
+}
+body.win95-app .qa-dialog .hpp-body button.qa-key:not([role="tab"]):not([role="switch"]):not([data-no95]) {
+  background: linear-gradient(180deg, var(--qa-cap-top), var(--qa-cap-top2)) !important;
+  border: 1px solid var(--qa-cap-edge) !important;
+  border-radius: 4px !important;
+  color: #25282b !important;
+  text-shadow: none !important;
+  filter: none;
+  box-shadow:
+    inset 2px 0 0 var(--qa-cap-skirt),
+    inset -2px 0 0 var(--qa-cap-skirt),
+    inset 0 -4px 0 var(--qa-cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+body.win95-app .qa-dialog .hpp-body button.qa-key:not([role="tab"]):not([role="switch"]):not([data-no95]):active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--qa-cap-skirt),
+    inset -2px 0 0 var(--qa-cap-skirt),
+    inset 0 -2px 0 var(--qa-cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+body.win95-app .qa-dialog .hpp-body button.qa-key:not([role="tab"]):not([role="switch"]):not([data-no95]) {
+  height: 28px;
+  min-height: 28px;
+  padding: 3px 12px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  outline: 0;
+}
+body.win95-app .qa-dialog .hpp-body button.qa-key:disabled {
+  color: #7d8185 !important;
+}
+.qa-dialog .qa-chip .qa-chip-x {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid #6e7378;
+  border-radius: 50%;
+  background: #f1f3f5;
+  color: #22306c;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity 80ms ease;
+}
+.qa-dialog .qa-chip .qa-chip-x svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 3;
+}
+.qa-dialog .qa-chip:hover .qa-chip-x,
+.qa-dialog .qa-chip .qa-chip-x:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.qa-dialog .qa-chip .qa-chip-x:hover {
+  background: #fff;
+  color: #b0283f;
 }

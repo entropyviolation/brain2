@@ -33,6 +33,7 @@ import { useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import type { PersonPipeline, Task } from "@/lib/types"
 import "./person-pipelines.css"
 import { NativeSelect } from "@/components/ui/native-select"
+import { ItemPicker } from "@/components/Lists/item-picker"
 
 type PersonMode = {
   mode: "person"
@@ -334,17 +335,18 @@ function AttachPerson({
   })
   return (
     <div className="person-pipelines-add">
-      <label>
-        Person
-        <NativeSelect aria-label="Person to attach" value={personId} onChange={(event) => setPersonId(event.target.value)}>
-          <option value="">Choose a person</option>
-          {people.map((task) => (
-            <option key={task.id} value={task.id}>
-              {itemTitleOrUntitled(task, "Person")}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
+      <div className="person-pick">
+        <span>Person</span>
+        <ItemPicker
+          compact
+          mode="single"
+          searchLabel="Person to attach"
+          choices={people.map((task) => ({ id: task.id, title: itemTitleOrUntitled(task, "Person"), icon: task.icon }))}
+          selected={personId ? [personId] : []}
+          onChange={(ids) => setPersonId(ids[0] ?? "")}
+          emptyLabel="No people match."
+        />
+      </div>
       <Button
         type="button"
         size="sm"
@@ -448,17 +450,18 @@ function ListEditor({
         }}
       />
       <div className="person-pipelines-add">
-        <label>
-          Person
-          <NativeSelect aria-label="Pipeline person" value={personId} onChange={(event) => setPersonId(event.target.value)}>
-            <option value="">Choose a person</option>
-            {people.map((task) => (
-              <option key={task.id} value={task.id}>
-                {itemTitleOrUntitled(task, "Person")}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
+        <div className="person-pick">
+          <span>Person</span>
+          <ItemPicker
+            compact
+            mode="single"
+            searchLabel="Pipeline person"
+            choices={people.map((task) => ({ id: task.id, title: itemTitleOrUntitled(task, "Person"), icon: task.icon }))}
+            selected={personId ? [personId] : []}
+            onChange={(ids) => setPersonId(ids[0] ?? "")}
+            emptyLabel="No people match."
+          />
+        </div>
         <label>
           New person
           <input type="text" aria-label="New pipeline person" value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />

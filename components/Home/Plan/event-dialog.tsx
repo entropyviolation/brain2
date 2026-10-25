@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
@@ -212,9 +213,7 @@ export function EventDialog({
         <DialogContent className="plan95-dialog max-h-[90vh]" hideClose data-ui-name="Plan event" data-ui-docs="components/Home/Plan/README.md" {...unsavedDismissProps(guard.requestClose)}>
           <DialogHeader className="plan95-dialog-caption flex-row items-center space-y-0 text-left">
             <DialogTitle>{editingEvent ? "Edit Event" : "Create New Event"}</DialogTitle>
-            <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
-              ×
-            </button>
+            <KeycapClose className="plan95-title-btn" label="Close" onClick={guard.requestClose} />
           </DialogHeader>
           <div className="plan95-dialog-body">
             <div className="plan95-field">

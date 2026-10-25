@@ -2,7 +2,7 @@
  * components/ui/unsaved-changes.css — milled fascia confirm for unsaved edits
  *
  * House law: dirty close prompts; clean close does not. Portaled private skin
- * (`.w95-confirm`) — brushed bay + CRT title + metal keys. Excluded from the
+ * (`.w95-confirm`) — brushed bay + CRT title + centered keycaps. Excluded from the
  * global unskinned-dialog face in `app/win95.css` so the old navy caption
  * cannot fight the CRT. Kin: `header-popup-chrome.css` (`.hpp95`).
  * docs/DESIGN_STYLE.md#milled-fascia
@@ -75,8 +75,8 @@
     inset 0 10px 14px rgba(0, 0, 0, 0.4)
   );
 
-  /* Caption bay starts after 10px pad; key sits on that bay. */
-  --b2-close-top: 20px;
+  /* 26px keycap, same center the 22px key had on the caption bay. */
+  --b2-close-top: 18px;
   --b2-close-right: 16px;
   z-index: 60;
   display: flex !important;
@@ -157,44 +157,67 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
-/* Milled footer — three metal keys centered with air below. */
+/* Milled footer — three keycaps centered in the bay. */
 .w95-confirm-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
+  align-content: center;
   gap: 10px;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   margin: 0;
-  padding: 10px 10px 4px;
+  padding: 16px 12px;
   border-radius: var(--r-3, 3px);
   background: var(--w95c-mill);
   box-shadow: var(--w95c-bay-ring);
 }
 
-.w95-confirm-actions button {
-  min-height: 28px;
+.w95-confirm-actions button.w95-keycap {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
   min-width: 5.5rem;
-  padding: 5px 12px;
-  border: none;
-  border-radius: var(--r-2, 2px);
-  background: var(--w95c-key-face);
-  color: #1c1e20;
+  margin: 0;
+  padding: 3px 12px 7px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  color: #1c1e20 !important;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow: var(--w95c-key-ring);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
   cursor: pointer;
 }
 
-.w95-confirm-actions button[data-default="true"] {
+.w95-confirm-actions button.w95-keycap[data-default="true"] {
   box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 0 1px var(--chrome-pressed),
-    var(--w95c-key-ring);
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
 }
 
-.w95-confirm-actions button:active {
-  box-shadow: var(--w95c-key-pressed);
+.w95-confirm-actions button.w95-keycap:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
 }

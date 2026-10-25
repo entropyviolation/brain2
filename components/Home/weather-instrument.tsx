@@ -12,6 +12,7 @@ import { CopyCaption, useCopySetting } from "@/components/Home/widgets/copy-cont
 
 import { useEffect, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { searchCities, type CitySuggestion } from "@/lib/city-search"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import {
@@ -494,9 +495,7 @@ function WeatherDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="home95 home-weather-dialog home-widget-dialog home-widget-instrument" aria-describedby={undefined} hideClose>
-        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
-          ×
-        </button>
+        <KeycapClose className="home-widget-dismiss" label="Close" onClick={() => onOpenChange(false)} />
         <DialogHeader className="home-weather-dialog-title home-widget-caption">
           <span className="home-widget-power" aria-hidden="true" />
           <DialogTitle>Weather · {titleCity}</DialogTitle>
