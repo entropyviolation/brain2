@@ -37,7 +37,7 @@ import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { useStepPointsVisible } from "@/lib/points-visibility"
 import { activeTierPoints } from "@/lib/completion-tiers"
 import { COMPLETION_STATUS_LABELS } from "@/lib/completion-status"
-import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT, effectiveTierMap, tierBand } from "@/lib/step-tiers"
+import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT, effectiveTierMap, stepsForTier, tierBand } from "@/lib/step-tiers"
 import { formatPercent, levelReached } from "@/lib/step-progress"
 import { effectiveDurationMinutes, flattenSteps, moveSteps } from "@/lib/todo-steps"
 import { stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
@@ -200,6 +200,7 @@ function TaskCardBody({
   const [cols, setCols] = useState<CardColumn[]>(DEFAULT_COLS)
   const [moreBar, setMoreBar] = useState(false)
   const [tier, setTier] = useState<StepTier | undefined>()
+  const [estimateTier, setEstimateTier] = useState<StepTier>("exceptional")
   const [hideLocked, setHideLocked] = useState(false)
   const [nextOnly, setNextOnly] = useState(false)
   const [columnsView, setColumnsView] = useState(false)
@@ -224,8 +225,30 @@ function TaskCardBody({
   const bar = (label: string, edit: (s: Subtask[]) => Subtask[]) => () => writeSteps(label, edit(steps))
 
   // ── Numbers ──
-  const est = root ? effectiveDurationMinutes(root.estimatedDuration, root.subtasks) : effectiveDurationMinutes(task.estimatedDuration, steps)
+  const ownEst = root ? root.estimatedDuration : task.estimatedDuration
+  const est = useMemo(() => {
+    if (estimateTier === "exceptional") {
+      return effectiveDurationMinutes(ownEst, view)
+    }
+    const tierView = stepsForTier(view, estimateTier)
+    const filterForTier = (list: readonly Subtask[]): Subtask[] =>
+      list
+        .filter((s) => tierView.ids.has(s.id) || tierView.containers.has(s.id))
+        .map((s) => ({
+          ...s,
+          estimatedDuration: tierView.ids.has(s.id) ? s.estimatedDuration : undefined,
+          subtasks: s.subtasks?.length ? filterForTier(s.subtasks) : undefined,
+        }))
+    const allIncluded = view.length === 0 || tierView.ids.size === flattenSteps(view).length
+    return effectiveDurationMinutes(allIncluded ? ownEst : undefined, filterForTier(view))
+  }, [estimateTier, ownEst, view])
   const spent = root ? (time?.stepSpent?.get(root.id) ?? 0) : (time?.spent ?? 0)
+  const statsTierExtra = {
+    estimateTier,
+    onEstimateTierChange: setEstimateTier,
+    stepSpent: time?.stepSpent,
+    rootCompleted: root ? root.completed : task.completed,
+  }
   const pts = taskPointsWithSource(task, lists, folders)
   const earned = stepPointsEarned(steps, task.stepPoints)
   const reached = levelReached(task, task.completed)
@@ -380,7 +403,7 @@ function TaskCardBody({
               levels,
               tier,
               est,
-              ownEst: root ? root.estimatedDuration : task.estimatedDuration,
+              ownEst,
               estLog: root?.estimateLog,
               parts: partsMinutes(view),
               spent,
@@ -399,6 +422,7 @@ function TaskCardBody({
               levelName: reached === "none" ? "none" : STEP_TIER_LABEL[reached],
               levelPts,
               onPick: (id) => setSelected(new Set([id])),
+              ...statsTierExtra,
             }}
           />
           <span className="task-card-spacer" />
@@ -640,16 +664,16 @@ function TaskCardBody({
             </div>
             <p className="tcs-node-meta">
               <span className={`tcs-lamp is-${task.completed ? "done" : "open"}`}>{task.completed ? "done" : (task.status ?? "active")}</span>
-              <span>{est ? `${est}m` : "—"} est</span>
-              {spent ? <span>{spent}m spent</span> : null}
-              {flat.length ? <span title="Steps done / steps">{flat.filter((x) => x.completed).length}/{flat.length} steps</span> : null}
+              <span className="tcs-meta-pill">{est ? `${est}m` : "—"} est</span>
+              {spent ? <span className="tcs-meta-pill">{spent}m spent</span> : null}
+              {flat.length ? <span className="tcs-meta-pill" title="Steps done / steps">{flat.filter((x) => x.completed).length}/{flat.length} steps</span> : null}
             </p>
           </header>
 
           <TaskPoints task={task} />
           <TaskPens task={task} />
 
-          <section aria-label="Prerequisites" className="tcs-needs">
+          <section aria-label="Prerequisites" className="tcs-needs tcs-control-card">
             <h3>Needs</h3>
             <NeedsEditor task={task} steps={steps} write={writeSteps} />
             <TaskUnlocks task={task} />
