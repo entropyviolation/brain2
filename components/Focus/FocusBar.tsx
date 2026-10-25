@@ -2,7 +2,8 @@
  * components/Focus/FocusBar.tsx — The task on the clock, docked at the foot of Home
  *
  * Shown while a task rides the Tracking pen clock (`lib/task-clock.ts`). One
- * thin strip of dark glass, the Just Start family: pen swatch, `Task › step`,
+ * thin strip of dark glass, the Just Start family: pen swatch, `Task › step`
+ * (click opens that task), **Task** (the step on the clock, or a new one),
  * the step's estimate, the live clock, Objectives (tied to steps), Just Start,
  * Pause / Resume, and Stop. Stop first asks whether to save still-open
  * objectives for the next time this task or subtask is tracked. Then, when a

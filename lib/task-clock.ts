@@ -275,12 +275,12 @@ export function completeClockStep(stepId: string): void {
 }
 
 /** Mark the task on the clock complete, then stop. One undo step. */
-export function finishClockTask(park: boolean): void {
+export function finishClockTask(park: boolean, now = new Date()): void {
   const live = liveClock()
   if (!live) return
   const taskId = live.taskId
   runAsAction("finish the task on the clock", () => {
     if (taskId) completeTask(taskId)
-    stopPenColorSession(new Date(), park ? { parkUnfinished: true } : undefined)
+    stopPenColorSession(now, park ? { parkUnfinished: true } : undefined)
   })
 }

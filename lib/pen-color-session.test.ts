@@ -44,6 +44,17 @@ describe("pen color session", () => {
     })
     expect(entry!.endMin).toBeGreaterThan(entry!.startMin)
     expect(useTaskStore.getState().tasks.some((t) => /worked on/i.test(t.description))).toBe(false)
+    expect(entry?.notes).toBe(
+      "added from Working On Now, task: none subtasks completed: none objectives completed: none",
+    )
+  })
+
+  it("leaves a hand-written block note alone when the clock refreshes", () => {
+    startPenColorSession("act-exercise", AT)
+    const entry = useTimeTrackingStore.getState().entries.find((e) => e.penId === "act-exercise")!
+    useTimeTrackingStore.getState().updateEntry(entry.id, { notes: "kept by hand" })
+    addPenColorNowObjective("finish the nest", AT)
+    expect(useTimeTrackingStore.getState().entries.find((e) => e.id === entry.id)?.notes).toBe("kept by hand")
   })
 
   it("grows the block while the timer runs and keeps it after stop", () => {

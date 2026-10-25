@@ -149,6 +149,7 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
   const slices = splitIntoDaySlices(new Date(session.startedAt), now)
   const tracking = useTimeTrackingStore.getState()
   const ids: string[] = []
+  const fresh: string[] = []
 
   for (let i = 0; i < slices.length; i++) {
     const slice = slices[i]
@@ -176,9 +177,12 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
       `pen-color-${session.startedAt}`,
     )
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
-    if (id) ids.push(id)
+    if (id) {
+      ids.push(id)
+      fresh.push(id)
+    }
   }
-  stampClockEntries(session, ids)
+  stampClockEntries(session, fresh)
   return ids
 }
 

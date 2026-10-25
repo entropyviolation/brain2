@@ -1203,7 +1203,16 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   wait does not count as work. Stop, while any objective is still open, asks
   whether to save them. Yes puts them on that store and they are on the list
   from the start the next time that pen, task, or subtask is tracked. The list
-  mirrors onto the painted block and stays editable in the block editor. Not
+  mirrors onto the painted block and stays editable in the block editor. The
+  pen clock's **Task** key (`components/Home/Tracking/clock-task-panel.tsx`,
+  also on the header now row and the focus bar) puts one task on the minutes
+  already running, marks the current step, and can open that task or step,
+  add a step, finish the step, or complete the task and stop. The header name
+  opens the task when one is on the clock. The painted minutes stay one block.
+  Its notes, and the task's time log, say it was added from Working On Now,
+  with the task and the subtasks and objectives that sitting finished. That
+  block is what the item Time tab lists for the task and for a step the
+  sitting is on or finished. Not
   Home → Goals, and not the Tracking Objective pen (`so:`).
 - **Sleep / wake log** — ✅ `lib/sleep-log.ts` (pure model) + `lib/sleep-store.ts`
   (`cogs-sleep-store`) + `lib/sleep-sync.ts` (derivation). Tracking no longer

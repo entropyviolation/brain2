@@ -121,4 +121,22 @@ describe("HeaderNowBox", () => {
     expect(screen.getByRole("textbox", { name: "Add objective" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Mark objective complete: finish the nest/i })).toBeInTheDocument()
   })
+
+  it("opens the task on the pen clock from the now row", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    startPenColorSession("act-exercise")
+    render(<HeaderNowBox />)
+
+    await user.click(await screen.findByRole("button", { name: "Put a task on this clock" }))
+    expect(await screen.findByRole("dialog", { name: "Task on this clock" })).toBeInTheDocument()
+    await user.type(screen.getByRole("textbox", { name: "Find or create a task" }), "Nest the discs")
+    await user.click(screen.getByRole("button", { name: "Create “Nest the discs”" }))
+
+    const open = await screen.findByRole("button", { name: /Open Nest the discs/ })
+    const heard = vi.fn()
+    window.addEventListener("brain2-open-item-popup", heard)
+    await user.click(open)
+    expect(heard).toHaveBeenCalled()
+    window.removeEventListener("brain2-open-item-popup", heard)
+  })
 })
