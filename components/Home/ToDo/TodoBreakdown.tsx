@@ -67,6 +67,12 @@ export interface TodoTimeInfo {
   /** Minutes on the linked pen not tagged to this task (never counted in `spent`). */
   penPool?: number
   stepSpent?: ReadonlyMap<string, number>
+  /** Where the task total sits: minutes only on the task, then each direct part. */
+  account?: import("@/lib/tracked-time").ActualAccount
+  /** One row per counted stretch. The minutes sum to `spent`. */
+  segments?: readonly import("@/lib/tracked-time").ActualSegment[]
+  /** Per-step accounts, for a card opened on a step. */
+  stepAccounts?: ReadonlyMap<string, import("@/lib/tracked-time").ActualAccount>
   pace?: number
   ghosts?: boolean
   /** The linked pen, shown as a dot and short name. */

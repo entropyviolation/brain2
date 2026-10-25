@@ -4,10 +4,11 @@
  * The quick review on a finished task can name a length, a start, and a finish.
  * Length and start are each exact, estimated, or unknown. Unknown stores no
  * value — not zero, not midnight, and not an estimate. The finish is a real
- * day and time (`completedDate`); it can be exact or estimated, and never
- * unknown. Estimated minutes stay out of exact totals. `timeRough` is set
- * when the length, the start, or the finish is estimated. Agreeing to the review
- * awards 3 points plus 0.1 per word in
+ * day and time (`completedDate`); it can be exact, estimated, or unknown.
+ * Unknown keeps the mark-done stamp and does not move it to the draft clock.
+ * Estimated minutes stay out of exact totals. `timeRough` is set
+ * when the length, the start, or the finish is estimated. Unknown is not rough.
+ * Agreeing to the review awards 3 points plus 0.1 per word in
  * the quick-review notes, through the points ledger. A later Reflect note
  * (`reflectNotes`) is not that string and does not change the award.
  *
@@ -238,7 +239,7 @@ export function clockDraftFromTask(task: Task | undefined | null): ClockDraft {
   const finished = asDate(task.completedDate) ?? new Date()
   const doneFlag = task.completionReview?.completedCertainty ?? task.completedCertainty
   const draftDone: ClockDraft["doneCertainty"] =
-    doneFlag === "exact" || doneFlag === "estimated" ? doneFlag : "unspecified"
+    doneFlag === "exact" || doneFlag === "estimated" || doneFlag === "unknown" ? doneFlag : "unspecified"
 
   return {
     durationCertainty,
@@ -274,6 +275,7 @@ export interface ClockWrite {
  * An empty exact/est. field does not invent a number or a time.
  * `timeRough` is set when the length, the start, or the finish is estimated.
  * An unspecified finish leaves `completedDate` alone, even if the draft still shows that clock.
+ * An unknown finish keeps that stamp, marks it unknown, and ignores the draft clock.
  */
 export function clockWriteFromDraft(task: Task, draft: ClockDraft): ClockWrite {
   const write: ClockWrite = { writeDuration: false, writeStart: false, writeDone: false }
@@ -294,7 +296,12 @@ export function clockWriteFromDraft(task: Task, draft: ClockDraft): ClockWrite {
     }
   }
 
-  if (draft.doneCertainty === "exact" || draft.doneCertainty === "estimated") {
+  if (draft.doneCertainty === "unknown") {
+    write.writeDone = true
+    write.completedDate = asDate(task.completedDate) ?? new Date()
+    write.completedCertainty = "unknown"
+    estimates = clearEstimates(estimates, ["completedDate"])
+  } else if (draft.doneCertainty === "exact" || draft.doneCertainty === "estimated") {
     const completedDate = combineLocalDateTime(draft.doneDate, draft.doneTime)
     if (completedDate) {
       write.writeDone = true

@@ -3,7 +3,7 @@
  *
  * Phase 5 of `docs/TODO_REDESIGN.md`. `ItemPenLinksField` edits `Task.penLinks`
  * (the same list **Remember for this task** writes; the first link is the clock
- * pen). `ItemTrackedTime` reads `trackedTimeForItem` (`lib/tracked-time.ts`):
+ * pen, and **clock** on another chip moves it first). `ItemTrackedTime` reads `trackedTimeForItem` (`lib/tracked-time.ts`):
  * the total, an est-vs-tracked bar, and the counted blocks. A task's Time tab
  * passes `editableTime` and renders `ItemTimeLedger` instead: the same blocks,
  * their objectives, and session logs, all correctable. Edits to pens and logs
@@ -14,14 +14,24 @@
 import { useMemo, useState } from "react"
 import { Link2, Plus, X } from "lucide-react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { ancestorChains, isDescendant } from "@/lib/pen-tree"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { findPen, partsMinutes, timeTrio, trackedTimeForItem } from "@/lib/tracked-time"
 import type { Task } from "@/lib/types"
 import { ItemTimeLedger } from "@/components/ItemDetail/ItemTimeLedger"
+import { PenChainVisual } from "@/components/Home/Tracking/pen-chain-visual"
 import { PEN_COLOR_OPEN_TITLE, openPenSettings, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./item-pen-time.css"
 
 type PenLink = { scopeId: string; penId: string }
+
+/** Put `penId` first. The first link is the clock pen (`clockPenFor`). Same list when it already is. */
+export function withClockPen(links: PenLink[] | undefined, penId: string): PenLink[] | undefined {
+  const list = links ?? []
+  const hit = list.find((link) => link.penId === penId)
+  if (!hit || list[0]?.penId === penId) return links
+  return [hit, ...list.filter((link) => link.penId !== penId)]
+}
 
 /** How many counted blocks the Time panel lists before "+ N more". */
 export const ITEM_BLOCKS_SHOWN = 12
@@ -30,13 +40,22 @@ export function ItemPenLinksField({
   penLinks,
   onChange,
   readOnly = false,
+  onMakeClock,
   parent,
+  chain = false,
 }: {
   penLinks: PenLink[] | undefined
   onChange: (next: PenLink[] | undefined) => void
   readOnly?: boolean
+  /** Move this pen first so ▶ paints with it. Defaults to `onChange(withClockPen(...))`. */
+  onMakeClock?: (penId: string) => void
   /** A new pen made here counts as this one (same view), until pen settings say otherwise. */
   parent?: PenLink
+  /**
+   * Task card: draw the clock pen's counts-as chain. Ancestors come from the
+   * pen tree and are not written into `penLinks`. Item detail leaves this off.
+   */
+  chain?: boolean
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const addPen = useTimeTrackingStore((s) => s.addPen)
@@ -70,23 +89,67 @@ export function ItemPenLinksField({
     setQuery("")
     setPicking(false)
   }
+  const makeClock = (penId: string) => {
+    if (onMakeClock) onMakeClock(penId)
+    else {
+      const next = withClockPen(links, penId)
+      if (next && next !== links) onChange(next)
+    }
+  }
+
+  const clock = links[0]
+  const clockScope = clock ? scopes.find((scope) => scope.id === clock.scopeId) : undefined
+  const tree = clockScope?.pens ?? []
+  const chains = clock && chain ? ancestorChains(tree, clock.penId) : []
+  const showChain = chain && chains.some((path) => path.length > 1)
+  const hidden = new Set<string>()
+  if (showChain && clock) {
+    hidden.add(clock.penId)
+    for (const path of chains) for (const pen of path) if (pen.id !== clock.penId) hidden.add(pen.id)
+    for (const link of links) {
+      if (link.penId === clock.penId) continue
+      if (isDescendant(tree, clock.penId, link.penId) || isDescendant(tree, link.penId, clock.penId)) hidden.add(link.penId)
+    }
+  }
 
   return (
     <div className="ipt-pens" data-ui-name="Item pens">
+      {showChain && clock ? (
+        <PenChainVisual
+          variant="row"
+          pens={tree}
+          penId={clock.penId}
+          linkedIds={linked}
+          onUnlink={readOnly ? undefined : remove}
+          onMakeClock={(penId) => makeClock(penId)}
+          onOpenPen={(penId) => openPenSettings(links.find((link) => link.penId === penId)?.scopeId ?? clock.scopeId, penId)}
+        />
+      ) : null}
       <div className="ipt-chips">
         {links.length === 0 && <span className="ipt-quiet">No pen linked. Link one and new paint from the clock counts here.</span>}
         {links.map((link, i) => {
+          if (hidden.has(link.penId)) return null
           const pen = findPen(scopes, link.penId)
           return (
             <span
               key={link.penId}
-              className="ipt-chip"
+              className={`ipt-chip${i === 0 ? " is-clock" : ""}`}
               title={`${i === 0 ? "Clock pen: ▶ paints with this one. " : ""}${PEN_COLOR_OPEN_TITLE}`}
               onDoubleClick={penColorDoubleClick(link.scopeId, link.penId)}
             >
               <span className="ipt-dot" style={{ background: pen?.color ?? "transparent" }} aria-hidden />
               {pen?.name ?? "Missing pen"}
-              {i === 0 && links.length > 1 && <span className="ipt-quiet"> · clock</span>}
+              <button
+                type="button"
+                className="ipt-clock"
+                aria-pressed={i === 0}
+                disabled={i === 0 || (readOnly && !onMakeClock)}
+                aria-label={i === 0 ? `Clock pen ${pen?.name ?? "pen"}` : `Make ${pen?.name ?? "pen"} the clock pen`}
+                title={i === 0 ? "Play paints with this pen" : "Paint with this pen when play is clicked"}
+                onClick={() => makeClock(link.penId)}
+              >
+                clock
+              </button>
               {!readOnly && (
                 <button type="button" className="ipt-x" aria-label={`Unlink ${pen?.name ?? "pen"}`} onClick={() => remove(link.penId)}>
                   <X className="h-3 w-3" />

@@ -3,6 +3,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import type { TimeEntry } from "@/lib/time-entries"
 import { defaultScopes, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
+  appendBlockNote,
   applyScopeNowUpdate,
   applyTrackingPresenceUpdate,
   livePresenceHints,
@@ -264,5 +265,61 @@ describe("applyTrackingPresenceUpdate", () => {
     const recent = recentScopeSequence("activity", useTimeTrackingStore.getState().entries, useTimeTrackingStore.getState().scopes)
     expect(recent.map((step) => step.name)).toEqual(["Rest", "Work"])
     expect(recent[1]?.estimated).toBe(true)
+  })
+
+  it("keeps the pen across a gap and switches the detail at this minute", () => {
+    const living = useTimeTrackingStore.getState().addVariant("location", "loc-home", "Living Room")
+    const bedroom = useTimeTrackingStore.getState().addVariant("location", "loc-home", "Bedroom")
+    useTimeTrackingStore.getState().paintMinutes("2026-09-23", "location", 600, 700, "loc-home", [living], undefined, undefined, {
+      notes: "sofa",
+    })
+    applyScopeNowUpdate("location", "Home", new Date(2026, 8, 23, 14, 0), "open", { variantIds: [bedroom] })
+    const blocks = useTimeTrackingStore
+      .getState()
+      .entries.filter((entry) => entry.date === "2026-09-23" && entry.scopeId === "location")
+      .sort((a, b) => a.startMin - b.startMin)
+    expect(blocks.map((entry) => entry.variantIds)).toEqual([[living], [living], [bedroom]])
+    expect(blocks[0]).toMatchObject({ penId: "loc-home", startMin: 600, endMin: 700, notes: "sofa" })
+    expect(blocks[1]).toMatchObject({ penId: "loc-home", startMin: 700, endMin: 14 * 60 })
+    expect(blocks[1]?.notes).toBeUndefined()
+    expect(blocks[2]).toMatchObject({ penId: "loc-home", startMin: 14 * 60, endMin: 14 * 60 + 1 })
+    expect(blocks[2]?.notes).toBeUndefined()
+  })
+
+  it("appends a filled note and leaves a blank note alone", () => {
+    const atTwo = new Date(2026, 8, 23, 14, 0)
+    useTimeTrackingStore.getState().paintMinutes("2026-09-23", "activity", 600, 700, "act-work", undefined, undefined, undefined, {
+      notes: "sofa",
+    })
+    applyScopeNowUpdate("activity", "Work", atTwo, "open", { notes: "   " })
+    const kept = useTimeTrackingStore
+      .getState()
+      .entries.filter((entry) => entry.scopeId === "activity" && entry.date === "2026-09-23")
+      .sort((a, b) => a.startMin - b.startMin)
+    expect(kept[0]).toMatchObject({ startMin: 600, endMin: 700, notes: "sofa" })
+    expect(kept.some((entry) => entry.notes === "sofa" && entry.endMin > 700)).toBe(false)
+
+    applyScopeNowUpdate("activity", "Work", atTwo, "open", { notes: "kitchen" })
+    const noted = useTimeTrackingStore
+      .getState()
+      .entries.filter((entry) => entry.scopeId === "activity" && entry.date === "2026-09-23" && (entry.notes ?? "").includes("kitchen"))
+    expect(noted.length).toBeGreaterThan(0)
+    expect(noted.every((entry) => entry.notes === `sofa${appendBlockNote(undefined, "kitchen", atTwo)}` || entry.notes === appendBlockNote(undefined, "kitchen", atTwo) || entry.notes?.endsWith(appendBlockNote(undefined, "kitchen", atTwo)))).toBe(true)
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.notes === "sofa")).toBe(true)
+  })
+
+  it("stores a sequence note as a timed line", () => {
+    const atTwo = new Date(2026, 8, 23, 14, 0)
+    const painted = paintScopeSequence(
+      "mood",
+      "2026-09-23",
+      [{ name: "Worn", startMin: 13 * 60, endMin: 14 * 60, estimated: false }],
+      "long day",
+      atTwo,
+    )
+    expect(painted).toBe(1)
+    const mood = useTimeTrackingStore.getState().entries.find((entry) => entry.scopeId === "mood" && entry.date === "2026-09-23")
+    expect(mood?.notes).toBe(appendBlockNote(undefined, "long day", atTwo))
+    expect(mood?.notes).toBe("\n\n 2:00 PM- long day \n\n")
   })
 })

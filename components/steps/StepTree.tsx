@@ -65,6 +65,8 @@ export interface StepTreeProps {
   /** Extra classes on a row (live, linking…). */
   rowClassName?: (step: Subtask) => string | undefined
   hideLocked?: boolean
+  /** Skip completed steps. An open parent stays; a completed parent takes its subtree. */
+  hideCompleted?: boolean
   nextOnly?: boolean
   /** Tier filter (Phase 10): only that level's view, other steps greyed or hidden. */
   tier?: StepTier
@@ -230,6 +232,7 @@ export function StepTree({
   columns,
   rowClassName,
   hideLocked = false,
+  hideCompleted = false,
   nextOnly = false,
   tier,
   tierTags = false,
@@ -302,8 +305,8 @@ export function StepTree({
   }
 
   const view = useMemo(
-    () => buildStepView(list, { folded, hideLocked, nextOnly, openedNext, peek, tier, extraLock }),
-    [list, folded, hideLocked, nextOnly, openedNext, peek, tier, extraLock],
+    () => buildStepView(list, { folded, hideLocked, hideCompleted, nextOnly, openedNext, peek, tier, extraLock }),
+    [list, folded, hideLocked, hideCompleted, nextOnly, openedNext, peek, tier, extraLock],
   )
   const visibleIds = useMemo(
     () => view.rows.flatMap((r) => (r.kind === "step" ? [r.step.id] : [])),

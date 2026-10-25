@@ -13,6 +13,11 @@
  * Each painted block's notes say it was added from Working On Now, with the
  * task and the subtasks and objectives finished on this sitting. A note you
  * rewrote by hand is left as you wrote it.
+ *
+ * Only the header clock grows the block (`watchPenClockShown`). The Tracking
+ * strip and the focus bar show the same sitting; they do not paint. If that
+ * header clock is missing, or the page is going away, the sitting ends: the
+ * block gets an end, and the task and step stay open.
  */
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -273,6 +278,52 @@ export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: 
     }
     return session
   })
+}
+
+/**
+ * How long the header may take to paint its clock before an open sitting is
+ * closed. A lazy load is not a hidden clock.
+ */
+export const PEN_CLOCK_UNSHOWN_GRACE_MS = 3_000
+
+/**
+ * The header clock has been off-screen long enough that the sitting must end.
+ * Ending sets the block's end. It does not complete the task or the step.
+ */
+export function penClockShouldStop(headerShown: boolean, unshownMs: number): boolean {
+  return !headerShown && unshownMs >= PEN_CLOCK_UNSHOWN_GRACE_MS
+}
+
+/**
+ * Grow the block only while `isShown` says the header clock is on screen.
+ * After {@link PEN_CLOCK_UNSHOWN_GRACE_MS} off screen, or on `pagehide`, end
+ * the sitting. Returns a dispose function. The label clocks elsewhere do not
+ * call this.
+ */
+export function watchPenClockShown(isShown: () => boolean, now = () => new Date()): () => void {
+  let unshownSince: number | null = null
+  const check = () => {
+    if (typeof document !== "undefined" && document.hidden) return
+    const shown = isShown()
+    const at = now()
+    if (shown) {
+      unshownSince = null
+      tickPenColorSession(at)
+      return
+    }
+    if (unshownSince == null) unshownSince = at.getTime()
+    if (penClockShouldStop(false, at.getTime() - unshownSince)) stopPenColorSession(at)
+  }
+  const onPageHide = () => {
+    if (usePenColorSessionStore.getState().session) stopPenColorSession(now())
+  }
+  check()
+  const id = window.setInterval(check, 1_000)
+  window.addEventListener("pagehide", onPageHide)
+  return () => {
+    window.clearInterval(id)
+    window.removeEventListener("pagehide", onPageHide)
+  }
 }
 
 /** Grow the live block up to active end. Silenced from undo. */

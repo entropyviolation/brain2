@@ -6,6 +6,7 @@
  * Search a pen color, or type a new name and **Create** it in a view, then
  * press **Working on right now**. A timer starts at this second. The pen's
  * view gains a block from the minute that contains that second until you stop.
+ * This strip shows the sitting. It does not grow the block. The header clock does.
  * While live, **Objectives for right now** opens as a popup checklist on the
  * row (add an objective, log one already completed, hide completed rows)
  * without growing the strip. Stop with any still open asks whether to save
@@ -29,11 +30,9 @@ import {
   attachPenNowObjective,
   editPenColorNowObjectiveText,
   pausePenColorSession,
-  PEN_COLOR_SESSION_TICK_MS,
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
-  tickPenColorSession,
   togglePenColorNowObjectiveComplete,
   togglePenColorSession,
 } from "@/lib/pen-color-session"
@@ -99,28 +98,23 @@ function formatStartSecond(iso: string): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })
 }
 
+/** Elapsed label only. The header clock is what grows the painted block. */
 export function usePenColorSessionClock() {
   const session = usePenColorSessionStore((s) => s.session)
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     if (!session) return
-    tickPenColorSession()
     const ui = window.setInterval(() => {
       if (document.hidden) return
       setNow(Date.now())
     }, 1000)
-    const grid = window.setInterval(() => {
-      if (document.hidden) return
-      tickPenColorSession()
-    }, PEN_COLOR_SESSION_TICK_MS)
     const onVis = () => {
       if (!document.hidden) setNow(Date.now())
     }
     document.addEventListener("visibilitychange", onVis)
     return () => {
       window.clearInterval(ui)
-      window.clearInterval(grid)
       document.removeEventListener("visibilitychange", onVis)
     }
   }, [session?.penId, session?.startedAt, session?.pausedAt, session?.pausedAccumMs])
@@ -222,7 +216,7 @@ export function PenColorNowStrip({
 
   return (
     <div
-      className={`ops-now-bar trk-pen-now${live ? " live" : ""}${compact ? " is-compact" : ""}`}
+      className={`ops-now-bar trk-pen-now b2-now${live ? " live" : ""}${compact ? " is-compact" : ""}`}
       data-ui-name="Working on right now"
     >
       {compact ? null : <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />}
@@ -326,7 +320,7 @@ export function PenColorNowStrip({
                 ))}
               </NativeSelect>
               )}
-              <button type="button" className="ops-btn" disabled={!canCreate} onMouseDown={(e) => e.preventDefault()} onClick={createPen}>
+              <button type="button" className="todo-cap" disabled={!canCreate} onMouseDown={(e) => e.preventDefault()} onClick={createPen}>
                 {nameTaken ? "Already in this view" : `Create “${draftName}”`}
               </button>
             </div>
@@ -384,7 +378,7 @@ export function PenColorNowStrip({
       ) : (
         <button
           type="button"
-          className="ops-btn ops-btn-now"
+          className="todo-cap is-primary"
           disabled={!selected}
           aria-label={selected ? "Start this pen's clock" : "Choose a pen to start its clock"}
           onClick={() => selected && togglePenColorSession(selected.penId)}
