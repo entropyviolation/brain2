@@ -482,7 +482,15 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   flex: 0 1 auto;
   width: max-content;
   min-width: 0;
-  max-width: min(28rem, 100%);
+  max-width: min(34rem, 100%);
+}
+
+/* Nav and Go never squash; a live now well widens Capture, which then wraps
+   under the other clusters instead of squeezing them. */
+.b2-shell-nav,
+.b2-shell-tabs {
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 
 .b2-shell-now-row > button {
@@ -1063,4 +1071,98 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger.has-active {
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* Go tabs keep a floor: they never shrink below their icon + label. */
+.b2-shell-tabs [role="tablist"] {
+  width: max-content;
+  min-width: max-content;
+}
+
+.b2-shell-tabs [role="tab"] {
+  flex: 0 0 auto;
+  min-width: 2.6rem;
+}
+
+/* One flat line of clusters. They sit on one row when they fit; otherwise the
+   rows wrap and each row is centered, so nothing floats against one edge.
+   Go may stretch a little (capped); nothing shrinks below its content. */
+.b2-shell-stage {
+  display: contents;
+}
+
+.b2-shell-body {
+  justify-content: center;
+  column-gap: clamp(8px, 1.2cqi, 14px);
+}
+
+.b2-shell-fold,
+body.win95-app .b2-shell .b2-shell-group button.b2-shell-fold,
+body.win95-app .b2-shell-rail button.b2-shell-fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px !important;
+  min-width: 0 !important;
+  height: 14px !important;
+  min-height: 0 !important;
+  margin: 0 0 0 5px !important;
+  padding: 0 !important;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  font: 700 11px/1 inherit;
+  color: #222;
+  cursor: pointer;
+}
+
+.b2-shell-fold:hover,
+body.win95-app .b2-shell-rail button.b2-shell-fold:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Folded Friend: just the picture. */
+.b2-shell-brand.is-folded .baby-nest-wordmark {
+  display: none;
+}
+
+.b2-shell-brand.is-folded {
+  padding-inline: 10px;
+}
+
+/* Rituals: the legend names it, so the key is just the count. */
+.b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) .b2-key-word,
+.b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) svg {
+  display: none;
+}
+
+/* Friend avatar is a round porthole. */
+.b2-shell-brand .baby-nest-crt,
+.b2-shell-brand .baby-nest-screen,
+.b2-shell-brand .baby-nest-screen img {
+  border-radius: 50%;
+}
+
+.b2-shell-brand .baby-nest-screen {
+  overflow: hidden;
+}
+
+/* The friend's shine stays inside the round porthole. */
+body .b2-shell-brand .baby-nest-hit {
+  border-radius: 50% !important;
+  overflow: hidden;
+  background: none !important;
+}
+
+/* Every well centers its keys vertically, like Capture does. */
+.b2-shell-group.b2-shell-nav,
+.b2-shell-group.b2-shell-tabs,
+.b2-shell-group.b2-shell-rituals,
+.b2-shell-group.b2-shell-system {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
