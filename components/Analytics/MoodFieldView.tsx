@@ -120,6 +120,21 @@ export function MoodFieldView() {
               }))}
               max={Math.max(...slices.map((s) => s.minutes), 1)}
             />
+            <ul className="an-cover-bars an-places-ranked" aria-label="Mood pens ranked by time">
+              {[...slices]
+                .sort((a, b) => b.minutes - a.minutes)
+                .map((s, _, ranked) => (
+                  <li key={s.id} className="is-in">
+                    <span className="an-anchor-label">{s.name}</span>
+                    <span className="an-anchor-track" aria-hidden>
+                      <span style={{ width: `${(s.minutes / Math.max(1, ranked[0].minutes)) * 100}%`, background: s.color }} />
+                    </span>
+                    <span className="an-anchor-value">
+                      {formatDuration(s.minutes)} · {Math.round((s.minutes / Math.max(1, slices.reduce((sum, s) => sum + s.minutes, 0))) * 100)}%
+                    </span>
+                  </li>
+                ))}
+            </ul>
           </section>
           {grid && grid.observedDays > 0 && (
             <section className="an-plate">
