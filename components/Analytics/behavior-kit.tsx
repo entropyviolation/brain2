@@ -48,8 +48,10 @@ export function Fold({
   children: ReactNode
   testId?: string
 }) {
+  // Keep the first value: a later prop change must not fold what the user opened.
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <details className="an-fold" open={defaultOpen} data-testid={testId}>
+    <details className="an-fold" open={open} onToggle={(e) => setOpen(e.currentTarget.open)} data-testid={testId}>
       <summary>
         <span>{title}</span>
         {count != null ? <span className="an-n">{count}</span> : null}
