@@ -12,6 +12,7 @@
 
 import { useEffect, useState, type ComponentType } from "react"
 import { subscribeTagSettings, type TagSettingsTarget } from "@/components/Home/Tracking/open-tag-settings"
+import { subscribeTimegridReveal } from "@/components/Home/Tracking/timegrid-reveal"
 
 type TagSettingsGateProps = {
   target: TagSettingsTarget
@@ -23,6 +24,7 @@ export function TagSettingsHost() {
   const [Gate, setGate] = useState<ComponentType<TagSettingsGateProps> | null>(null)
 
   useEffect(() => subscribeTagSettings(setTarget), [])
+  useEffect(() => subscribeTimegridReveal(() => setTarget(null)), [])
 
   useEffect(() => {
     if (!target || Gate) return

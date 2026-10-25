@@ -4,12 +4,14 @@
  * One period card, opened across the board to the right of the broader list.
  * Current cards list work at this grain, work assigned to a finer period, and
  * Undone history still open to triage. A past card is that Undone queue:
- * Push to the current period, Mark done, Dismiss, or Unschedule.
- * The placement stays in the database.
+ * Push to the current period, Mark done, Dismiss, Missed, or Unschedule.
+ * Rows already moved forward, pushed, dismissed, or missed stay off the list
+ * until a toggle on that card shows them. The placement stays in the database.
  */
 "use client"
 
 import type React from "react"
+import { useEffect, useState } from "react"
 import type { Task } from "@/lib/types"
 import type { SchedulerTaskItemOpts } from "./PeriodFunnelTab"
 import type { CardDetailRows } from "./schedule-card-detail"
@@ -23,6 +25,7 @@ export function ScheduleCardDetail({
   renderTaskItem,
   onPush,
   onDismiss,
+  onMiss,
   onDone,
   onUnschedule,
   grain,
@@ -37,6 +40,7 @@ export function ScheduleCardDetail({
   renderTaskItem: (task: Task, opts?: SchedulerTaskItemOpts) => React.ReactNode
   onPush?: (taskId: string) => void
   onDismiss?: (taskId: string) => void
+  onMiss?: (taskId: string) => void
   onDone?: (taskId: string) => void
   onUnschedule?: (taskId: string) => void
   /** Grain of a past card, used for the Push label. */
@@ -45,7 +49,17 @@ export function ScheduleCardDetail({
   listName?: string
   onOpenList?: () => void
 }) {
-  const empty = rows.here.length + rows.finer.length + rows.undone.length === 0
+  const [showHidden, setShowHidden] = useState({ moved: false, pushed: false, dismissed: false, missed: false })
+  useEffect(() => {
+    setShowHidden({ moved: false, pushed: false, dismissed: false, missed: false })
+  }, [title])
+  const hiddenRows = [
+    ...(showHidden.moved ? rows.archive.moved.map((task) => ({ task, tag: "Moved" })) : []),
+    ...(showHidden.pushed ? rows.archive.pushed.map((task) => ({ task, tag: "Pushed" })) : []),
+    ...(showHidden.dismissed ? rows.archive.dismissed.map((task) => ({ task, tag: "Dismissed" })) : []),
+    ...(showHidden.missed ? rows.archive.missed.map((task) => ({ task, tag: "Missed" })) : []),
+  ]
+  const empty = rows.here.length + rows.finer.length + rows.undone.length + hiddenRows.length === 0
   return (
     <section
       className="sch-card-detail"
@@ -76,12 +90,25 @@ export function ScheduleCardDetail({
         </div>
       </header>
       <div className="sch-card-detail-body">
-        {empty && <p className="sch-vacant">Nothing on this card.</p>}
+        {empty && !rows.past && <p className="sch-vacant">Nothing on this card.</p>}
         {rows.past ? (
-          <DetailSection
-            title="Undone"
-            hint="Scheduled for this period and not finished. Push assigns the current period of this size. Mark done finishes it in this period and is the one action that takes it off the Undone list. Dismiss and Unschedule leave that list and clear this queue."
-          >
+          <section className="sch-card-section">
+            <h3 className="sch-card-section-title">
+              Undone
+              <span>{rows.undone.length + hiddenRows.length}</span>
+            </h3>
+            <p className="sch-hint">
+              Still needs a decision here. A task already placed on a current or future day, week, or month stays in this period&apos;s record and stays off the list. Push, Mark done, Dismiss, Missed, and Unschedule clear a row. The placement stays.
+            </p>
+            <div className="sch-undone-toggles" role="group" aria-label="Hidden undone rows">
+              <UndoneToggle label="Show moved forward" checked={showHidden.moved} onChange={(moved) => setShowHidden((prev) => ({ ...prev, moved }))} />
+              <UndoneToggle label="Show pushed" checked={showHidden.pushed} onChange={(pushed) => setShowHidden((prev) => ({ ...prev, pushed }))} />
+              <UndoneToggle label="Show dismissed" checked={showHidden.dismissed} onChange={(dismissed) => setShowHidden((prev) => ({ ...prev, dismissed }))} />
+              <UndoneToggle label="Show missed opportunities" checked={showHidden.missed} onChange={(missed) => setShowHidden((prev) => ({ ...prev, missed }))} />
+            </div>
+            {rows.undone.length === 0 && hiddenRows.length === 0 && (
+              <p className="sch-vacant">Nothing left to clear in this period.</p>
+            )}
             {rows.undone.map((task) => (
               <div key={task.id} className="sch-card-detail-row">
                 {renderTaskItem(task)}
@@ -95,13 +122,22 @@ export function ScheduleCardDetail({
                   <button type="button" className="sch-btn" onClick={() => onDismiss?.(task.id)}>
                     Dismiss
                   </button>
+                  <button type="button" className="sch-btn" title="Hide this period as a missed opportunity. The record stays." onClick={() => onMiss?.(task.id)}>
+                    Missed
+                  </button>
                   <button type="button" className="sch-btn" onClick={() => onUnschedule?.(task.id)}>
                     Unschedule
                   </button>
                 </div>
               </div>
             ))}
-          </DetailSection>
+            {hiddenRows.map(({ task, tag }) => (
+              <div key={`${tag}-${task.id}`} className="sch-card-detail-row">
+                <span className="sch-undone-tag">{tag}</span>
+                {renderTaskItem(task)}
+              </div>
+            ))}
+          </section>
         ) : (
           <>
             <DetailSection title="At this period" hint="Assigned to this period, not to a finer one.">
@@ -114,7 +150,7 @@ export function ScheduleCardDetail({
                 <div key={task.id}>{renderTaskItem(task, { showUnschedule: true })}</div>
               ))}
             </DetailSection>
-            <DetailSection title="Undone" hint="A past period inside this span, still open. Pushed and dismissed rows leave this list and stay in the record.">
+            <DetailSection title="Undone" hint="A past period inside this span, still open. Pushed, dismissed, missed, and already-moved rows leave this list and stay in the record.">
               {rows.undone.map((task) => (
                 <div key={task.id}>{renderTaskItem(task)}</div>
               ))}
@@ -123,6 +159,23 @@ export function ScheduleCardDetail({
         )}
       </div>
     </section>
+  )
+}
+
+function UndoneToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (next: boolean) => void
+}) {
+  return (
+    <label className="sch-undone-toggle">
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      {label}
+    </label>
   )
 }
 

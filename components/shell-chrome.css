@@ -479,9 +479,11 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
 }
 
 .b2-shell-now {
-  flex: 0 1 auto;
+  /* Do not let a live clock shrink to nothing beside the Capture keys.
+     A running clock the header cannot show is ended, not left to paint. */
+  flex: 0 0 auto;
   width: max-content;
-  min-width: 0;
+  min-width: max-content;
   max-width: min(34rem, 100%);
 }
 
@@ -1179,4 +1181,130 @@ body .b2-shell-brand .baby-nest-hit {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* Working on Now word keys. Same house keycap as `.todo-cap` in todo-chrome.css.
+   These roots are not inside `.todo95`, so the rules live here too. Play, pause,
+   and stop stay the transport disc and do not wear this class. */
+.b2-now {
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-mod-top: #c9ccd0;
+  --todo-cap-mod-top2: #b9bdc1;
+  --todo-cap-mod-skirt: #969a9f;
+  --todo-cap-mod-edge: #55595d;
+  --todo-cap-navy: #22306c;
+}
+
+.b2-now button.todo-cap,
+body.win95-app .b2-now button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--todo-cap-leg);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.b2-now button.todo-cap.is-mod,
+body.win95-app .b2-now button.todo-cap.is-mod[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  color: #25282b;
+}
+
+.b2-now button.todo-cap.is-primary,
+body.win95-app .b2-now button.todo-cap.is-primary[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--todo-cap-navy);
+  outline-offset: 1px;
+}
+
+.b2-now button.todo-cap.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--todo-cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+.b2-now button.todo-cap:active:not(:disabled),
+.b2-now button.todo-cap[aria-pressed="true"],
+.b2-now button.todo-cap.is-on,
+body.win95-app .b2-now button.todo-cap:active:not(:disabled),
+body.win95-app .b2-now button.todo-cap[aria-pressed="true"] {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.b2-now button.todo-cap:disabled,
+body.win95-app .b2-now button.todo-cap:disabled {
+  color: #7d8185;
+  cursor: default;
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+}
+
+.b2-now button.todo-cap:focus-visible,
+body.win95-app .b2-now button.todo-cap:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+.b2-now button.todo-cap.trk-clock-task-choice,
+body.win95-app .b2-now button.todo-cap.trk-clock-task-choice[type="button"] {
+  justify-content: flex-start;
+  width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.b2-shell-now button.todo-cap,
+.ops-now-bar.is-compact button.todo-cap,
+.trk-pen-now.is-compact button.todo-cap,
+body.win95-app .b2-shell-now button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+body.win95-app .ops-now-bar.is-compact button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  min-height: 26px;
+  padding: 2px 8px 5px;
+  font-size: 11px;
 }

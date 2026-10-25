@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { formatLocalDateKey } from "./date-utils"
 import type { TimeEntry } from "./time-entries"
 import type { TrackScope } from "./time-tracking-store"
 import {
@@ -17,6 +18,10 @@ import {
   timeTrio,
   stepSpentMap,
   settleSpentOnFinish,
+  stepActualAccount,
+  storedActualMinutes,
+  taskActualAccount,
+  taskActualSegments,
   type TrackedTimeSource,
 } from "./tracked-time"
 
@@ -234,10 +239,196 @@ describe("stepSpentMinutes", () => {
     expect(stepSpentMap(task, entries).get("a")).toBe(55)
   })
 
+  it("keeps an unlabeled parent segment off the child, and rolls the child up", () => {
+    const date = formatLocalDateKey(new Date(2026, 9, 16, 10, 0, 0))
+    const sitting: TimeEntry = {
+      id: "sit",
+      date,
+      scopeId: "activity",
+      penId: "dishes",
+      startMin: 10 * 60,
+      endMin: 10 * 60 + 6,
+      taskId: "dishes",
+      stepId: "rinse",
+      nowObjectives: [
+        {
+          id: "o-rinse",
+          text: "rinse",
+          addedAt: new Date(2026, 9, 16, 10, 5, 0).toISOString(),
+          completedAt: new Date(2026, 9, 16, 10, 6, 0).toISOString(),
+          stepId: "rinse",
+        },
+      ],
+    }
+    const task = {
+      id: "dishes",
+      subtasks: [
+        {
+          id: "pot",
+          description: "pot",
+          completed: true,
+          subtasks: [
+            { id: "soap", description: "soap", completed: false },
+            { id: "rinse", description: "rinse", completed: true, actualDuration: 1 },
+          ],
+        },
+        {
+          id: "pan",
+          description: "pan",
+          completed: false,
+          subtasks: [
+            { id: "pan-soap", description: "soap", completed: false },
+            { id: "pan-rinse", description: "rinse", completed: false },
+          ],
+        },
+      ],
+      timeLogs: [
+        {
+          date,
+          startTime: "10:00",
+          endTime: "10:06",
+          durationMinutes: 6,
+          stepId: "rinse",
+          entryIds: ["sit"],
+        },
+      ],
+    }
+    const account = taskActualAccount(task, [sitting])
+    expect(account.total).toBe(6)
+    expect(account.unlabeled).toBe(5)
+    expect(stepSpentMinutes(task, "pot", [sitting])).toBe(1)
+    expect(stepSpentMinutes(task, "rinse", [sitting])).toBe(1)
+    expect(stepSpentMinutes(task, "soap", [sitting])).toBe(0)
+    expect(stepSpentMinutes(task, "pan", [sitting])).toBe(0)
+    expect(stepActualAccount(task, "pot", [sitting])).toMatchObject({
+      total: 1,
+      unlabeled: 0,
+      children: [{ id: "rinse", total: 1, unlabeled: 1 }],
+    })
+    expect(stepSpentMap(task, [sitting]).get("rinse")).toBe(1)
+  })
+
+  it("counts a saved actual whose block was tagged to another step", () => {
+    const date = formatLocalDateKey(new Date(2026, 9, 16, 19, 0, 0))
+    const block: TimeEntry = {
+      id: "color",
+      date,
+      scopeId: "activity",
+      penId: "work",
+      startMin: 19 * 60,
+      endMin: 19 * 60 + 14,
+      taskId: "cds",
+      stepId: "cleanup",
+      nowObjectives: [
+        {
+          id: "o-color",
+          text: "add the color effect",
+          addedAt: new Date(2026, 9, 16, 18, 57, 0).toISOString(),
+          completedAt: new Date(2026, 9, 16, 19, 23, 0).toISOString(),
+          stepId: "color",
+        },
+      ],
+    }
+    const task = {
+      id: "cds",
+      subtasks: [
+        {
+          id: "disc",
+          description: "Disc",
+          completed: false,
+          subtasks: [{ id: "color", description: "add the color effect", completed: true, actualDuration: 26 }],
+        },
+        {
+          id: "insert",
+          description: "Insert",
+          completed: false,
+          subtasks: [{ id: "cleanup", description: "clean up", completed: false }],
+        },
+      ],
+    }
+    expect(stepSpentMinutes(task, "color", [block])).toBe(26)
+    expect(stepSpentMinutes(task, "disc", [block])).toBe(26)
+    expect(stepSpentMinutes(task, "cleanup", [block])).toBe(0)
+    expect(taskActualAccount(task, [block]).total).toBe(26)
+    const savedOnly = {
+      id: "cds",
+      subtasks: [{ id: "color", description: "add the color effect", completed: true, actualDuration: 26 }],
+    }
+    expect(stepSpentMinutes(savedOnly, "color", [])).toBe(26)
+    expect(taskActualAccount(savedOnly, []).total).toBe(26)
+  })
+
+  it("rolls a saved actual up without counting it twice", () => {
+    const parent = {
+      id: "p",
+      actualDuration: 55,
+      subtasks: [{ id: "c", actualDuration: 35, subtasks: [{ id: "g", actualDuration: 35 }] }],
+    }
+    expect(storedActualMinutes(parent)).toBe(55)
+    expect(storedActualMinutes({ id: "leaf", actualDuration: 26 })).toBe(26)
+    expect(storedActualMinutes({ id: "top", subtasks: [{ id: "c", actualDuration: 26 }] })).toBe(26)
+    expect(storedActualMinutes({ id: "disc", actualDuration: 20, subtasks: [{ id: "color", actualDuration: 26 }] })).toBe(46)
+  })
+
   it("ignores blocks for another task and plain pen blocks", () => {
     const task = { id: "t", subtasks: steps, penLinks: [{ penId: "cd" }] }
     const elsewhere = { ...onStep("2026-10-01", "a", 0, 30), taskId: "u" }
     expect(stepSpentMinutes(task, "a", [elsewhere, block("2026-10-01", "act", "cd", 0, 60)])).toBe(0)
+  })
+
+  it("does not add a saved actual on top of the same blocks, or a stale rollup under the parts", () => {
+    const painted = onStep("2026-10-01", "b", 0, 20)
+    const task = { id: "t", subtasks: [{ id: "b", description: "B", completed: true, actualDuration: 20 }] }
+    expect(stepSpentMinutes(task, "b", [painted])).toBe(20)
+    expect(taskActualSegments(task, [painted]).reduce((sum, row) => sum + row.minutes, 0)).toBe(20)
+
+    const parent = {
+      id: "t",
+      actualDuration: 30,
+      subtasks: [{ id: "b", description: "B", completed: true, actualDuration: 40 }],
+    }
+    expect(taskActualAccount(parent, []).total).toBe(40)
+    expect(taskActualAccount(parent, []).unlabeled).toBe(0)
+  })
+
+  it("counts a timed log by its duration, not a longer start-to-end window", () => {
+    const front = onStep("2026-10-24", "b", 22 * 60, 22 * 60 + 21)
+    const task = {
+      id: "t",
+      subtasks: steps,
+      timeLogs: [{ id: "phantom", date: "2026-10-24", startTime: "00:53", endTime: "10:01", durationMinutes: 1 }],
+    }
+    const account = taskActualAccount(task, [front])
+    expect(account.total).toBe(22)
+    const rows = taskActualSegments(task, [front])
+    expect(rows.reduce((sum, row) => sum + row.minutes, 0)).toBe(account.total)
+    expect(rows.some((row) => row.kind === "log" && row.minutes === 1)).toBe(true)
+  })
+
+  it("does not count an open stint past the painted block, a deleted step, or another pen", () => {
+    const when = new Date(2026, 9, 24, 10, 0, 0)
+    const live: TimeEntry = {
+      ...onStep(formatLocalDateKey(when), "a", 600, 637),
+      nowObjectives: [
+        {
+          id: "live",
+          text: "fronts",
+          addedAt: when.toISOString(),
+          stintStartedAt: when.toISOString(),
+          stepId: "a",
+        },
+      ],
+    }
+    const task = { id: "t", subtasks: steps, penLinks: [{ penId: "cd" }] }
+    expect(taskActualAccount(task, [live]).total).toBe(37)
+    expect(stepSpentMinutes(task, "a", [live])).toBe(37)
+
+    const gone = onStep("2026-10-01", "deleted", 0, 15)
+    expect(taskActualAccount(task, [gone]).total).toBe(15)
+    expect(stepSpentMinutes(task, "a", [gone])).toBe(0)
+
+    const otherPen = block("2026-10-01", "act", "other", 0, 90)
+    expect(taskActualAccount(task, [otherPen]).total).toBe(0)
   })
 
   it("on finish, actualDuration takes spent when spent is larger", () => {

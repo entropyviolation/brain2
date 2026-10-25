@@ -6,6 +6,8 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { trackedMinutesForTags } from "@/lib/tracked-time"
 import { moodPenColor } from "@/lib/mood-reading"
 import { EntryDialog } from "./entry-dialog"
+import { peekTimegridReveal, resetTimegridReveal } from "./timegrid-reveal"
+import { APP_NAV_KEYS, APP_TABS, readStoredTab } from "@/lib/app-navigation"
 
 const KEY = "2026-09-17"
 
@@ -33,6 +35,7 @@ async function entryOverlay() {
 
 beforeEach(() => {
   resetAllStores()
+  resetTimegridReveal()
 })
 
 describe("EntryDialog", () => {
@@ -361,6 +364,43 @@ describe("EntryDialog", () => {
     fireEvent.pointerDown(overlay)
     expect(onClose).toHaveBeenCalled()
     expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+  })
+
+  it("show in timegrid leaves a clean editor and names that block", async () => {
+    const entry = paint(15 * 60, 16 * 60)
+    const onClose = vi.fn()
+    render(<EntryDialog entry={entry} onClose={onClose} />)
+    fireEvent.click(screen.getByRole("button", { name: "show in timegrid" }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(peekTimegridReveal()).toMatchObject({
+      entryId: entry.id,
+      date: KEY,
+      scopeId: "activity",
+      startMin: 15 * 60,
+    })
+    expect(useTimeTrackingStore.getState().gridSpan).toBe("day")
+    expect(readStoredTab(APP_NAV_KEYS.appTab, APP_TABS, "analytics")).toBe("home")
+    expect(readStoredTab(APP_NAV_KEYS.homeTab, ["habits", "plan", "todo", "goals", "tracking"], "habits")).toBe(
+      "tracking",
+    )
+    expect(readStoredTab(APP_NAV_KEYS.homeTrackingTab, ["grid", "activity", "daylog", "log"], "activity")).toBe("grid")
+  })
+
+  it("asks before show in timegrid leaves a dirty editor", async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<EntryDialog entry={paint()} onClose={onClose} />)
+    await user.type(screen.getByLabelText("Notes"), "dream")
+    await user.click(screen.getByRole("button", { name: "show in timegrid" }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(peekTimegridReveal()).toBeNull()
+    expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByLabelText("Notes")).toHaveValue("dream")
+    expect(onClose).not.toHaveBeenCalled()
   })
 })
 

@@ -281,7 +281,7 @@ a full-repo screenshot pass while other tabs are in flight.
 
 ## Instagram (Sources)
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
 Sources → **Instagram** shows the person's Instagram report: the page that
 `build_report.py` writes from an Instagram data export. Brain2 does not redraw
@@ -299,7 +299,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 **Pipeline** (`electron/instagram-report.js`, Electron main only):
 
 1. Scan `~/Downloads`, an optional folder ("Watch a folder…") and, while `watchGoogleDrive` is on, each Google Drive `My Drive` (`googleDriveDirs` via `watchedDirs`) at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
-2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed.
+2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed. A Google Drive folder is copied by reading each file (`copyExportTree`). Drive's file provider cancels `copyfile` (`ECANCELED`) on a streamed, online-only file, which used to abort the whole day on one DM photo. A read is what makes Drive download the file. A photo or video that still will not download after retries is skipped and counted on `current.skipped`; a JSON file that will not download fails the copy, and that failure is tried again after 10 min (`COPY_RETRY_MS`) even when the folder has not changed. The Meta folder stays in Drive. It does not need to be available offline, and it is not in iCloud.
 3. Write the view's manual DM matches to `matches.json`.
 4. Run `analyze.py` then `build_report.py` with the configured Python and `-I`, into a new `builds/<stamp>/` (`IG_OUT`). Last run's thumbs are copied in first.
 5. Only when both succeed, `state.json` points at the new build. The old build and its export stay until then, so thumbs and media never break. On failure the old report stays and `lastError` holds the step and stderr.
@@ -337,19 +337,20 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-**Google Drive scheduled export.** _Last mapped: 2026-10-23_ Meta writes
-each scheduled export into My Drive as `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`.
-`parseMetaFolderName` reads the date from it. `scanMetaFolder` takes, inside
-it, an unzipped export, `instagram-…` zips or folders, or plain zips as the
-parts of one export. The name has no account, so the username is read from
+**Google Drive scheduled export.** _Last mapped: 2026-10-25_ Meta keeps one
+folder in My Drive, `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`, and adds each
+day's export inside it as an unzipped `instagram-<account>-<date>-<id>`
+folder. `scanMetaFolder` returns each of those as its own export. It also
+takes the folder itself as one unzipped export, or plain zips as the parts of
+one export (dated by `parseMetaFolderName`). A Drive export with no files yet
+is skipped; one with files must hold still for 15 min (`DRIVE_STABLE_MS`). The name has no account, so the username is read from
 `personal_information.json` after unzipping (`exportAccount`); another
-account's export is skipped. A `meta-…` folder must hold still (file count,
-size, newest mtime) for 10 s, since Drive may still be syncing it. The newest
+account's export is skipped. The newest
 export builds the report. Every other export not yet archived is unzipped,
 archived and its copy removed (`archiveOnly`); a failed one is retried hourly,
-or at once if it changes. The view says **Google Drive watched** when a Drive
-folder is found. Not checked yet: the contents of a real Drive export (the
-first one was still empty). See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
+or at once if it changes. A copy canceled by Drive is retried after 10 min
+even if the folder's fingerprint has not changed. The view says **Google Drive watched** when a Drive
+folder is found. The first real export (2026-10-22) has the same top folders as a device export, media included. Copying it with `copyfile` failed on 2026-10-23 (`ECANCELED` on one DM photo) and left the report on that Oct 22 export. Drive stays in stream mode; Brain2 reads each file instead. See `docs/INSTAGRAM_AUTO_UPDATE.md`.
 
 ### Export archive (every export, merged)
 

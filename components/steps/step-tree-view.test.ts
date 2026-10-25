@@ -35,6 +35,17 @@ describe("buildStepView", () => {
     expect(buildStepView(ticked, { hideLocked: true }).hidden).toBe(0)
   })
 
+  it("hides a completed step and keeps an open parent", () => {
+    const steps = [
+      s("open", { subtasks: [s("done", { completed: true }), s("left")] }),
+      s("shut", { completed: true, subtasks: [s("buried")] }),
+    ]
+    expect(ids(steps, { hideCompleted: true })).toEqual(["open", "left", "add:open", "add:root"])
+    const view = buildStepView(steps, { hideCompleted: true })
+    expect(view.hiddenBySwitches).toBe(0)
+    expect(view.hidden).toBe(0)
+  })
+
   it("Show next only keeps the Just Start pick of a branch and counts the rest", () => {
     const branch = s("p", {
       subtasks: [s("x", { estimatedDuration: 30 }), s("y", { estimatedDuration: 5 }), s("z", { estimatedDuration: 10 })],

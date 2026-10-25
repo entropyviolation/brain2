@@ -33,8 +33,8 @@ export default function SittingEnd({
   onDone: () => void
   paper?: boolean
 }) {
-  const key = paper ? "todo-btn" : "focus-bar-key"
-  const primary = paper ? "todo-btn is-primary" : "focus-bar-key is-primary"
+  const key = paper ? "todo-btn todo-cap" : "focus-bar-key todo-cap"
+  const primary = paper ? "todo-btn todo-cap is-primary" : "focus-bar-key todo-cap is-primary"
   const next = useMemo(() => (task ? rankStartSteps(task, 1)[0] : undefined), [task])
   const [text, setText] = useState(() => next?.step.context ?? next?.step.description ?? "")
 
@@ -48,7 +48,7 @@ export default function SittingEnd({
   }
 
   return (
-    <div className={paper ? "sitting-end is-paper todo-session-ask" : "sitting-end"} role="dialog" aria-label="End of sitting" data-ui-name="End of sitting">
+    <div className={paper ? "sitting-end is-paper todo-session-ask b2-now" : "sitting-end b2-now"} role="dialog" aria-label="End of sitting" data-ui-name="End of sitting">
       <span className="sitting-end-text">Sat {formatSat(minutes)}.{next ? " Left it here:" : ""}</span>
       {next ? (
         <input
