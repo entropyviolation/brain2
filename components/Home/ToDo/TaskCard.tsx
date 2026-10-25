@@ -24,7 +24,7 @@ import { tierSplit } from "@/lib/tree-math"
 import { externalWaits, needCount } from "@/lib/node-needs"
 import { buildStepView, isStepLocked } from "@/components/steps/step-tree-view"
 import { TaskCardPeriod } from "./TaskCardPeriod"
-import { LogNotes, NeedsEditor, NodeDetail, OpenItemKey, RemainingEstTag, SelectionSummary, TaskPens, TaskPoints, TaskUnlocks, knownPace, openEstimateMinutes } from "./TaskCardSide"
+import { ActualVsEstimate, LogNotes, NeedsEditor, NodeDetail, OpenItemKey, RemainingEstTag, SelectionSummary, SubstepPreview, TaskPens, TaskPoints, TaskUnlocks, knownPace, openEstimateMinutes } from "./TaskCardSide"
 import { TaskCardTimeAside } from "./TaskCardTimeAside"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { useTaskStore } from "@/lib/task-store"
@@ -77,7 +77,7 @@ import { CardSection } from "./CardSection"
 import { PriorityStar } from "./PriorityStar"
 import { CircleAlert } from "lucide-react"
 import { paceSamples } from "@/lib/estimate-pace"
-import { TaskCardStats, TaskCardTimeUnit } from "./TaskCardStats"
+import { CardMinutes, TaskCardStats, TaskCardTimeUnit } from "./TaskCardStats"
 import { useTodoPrefs } from "./todo-prefs"
 import { attentionGiven, attentionGivenLabel } from "./attention-given"
 import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "./todo-utils"
@@ -326,11 +326,11 @@ function TaskCardBody({
       <span className="task-card-cols">
         {has("pct") ? <SplitGauge levels={rowLevels.get(step.id) ?? null} focus={tier} /> : null}
         {has("est") ? <EstimateCell minutes={step.estimatedDuration} label={step.description} onSet={(m) => writeSteps("Estimate", setEstimate(steps, step.id, m))} /> : null}
-        {has("parts") && step.subtasks?.length ? <span className="task-card-num">={partsMinutes(step.subtasks)}m</span> : null}
+        {has("parts") && step.subtasks?.length ? <span className="task-card-num">=<CardMinutes minutes={partsMinutes(step.subtasks)} /></span> : null}
         {has("spent") ? <span className="task-card-num is-quiet">
             {time?.stepSpent?.get(step.id) ? (
               <button type="button" className="task-card-spent-btn" title="See the time blocks and objectives behind this" onClick={(ev) => (ev.stopPropagation(), setSpentStep(step.id))}>
-                {time.stepSpent.get(step.id)}m
+                <CardMinutes minutes={time.stepSpent.get(step.id)!} />
               </button>
             ) : null}
           </span> : null}
@@ -720,7 +720,7 @@ function TaskCardBody({
               />
               {spent ? (
                 <button type="button" className="tcs-meta-pill" aria-expanded={quickSpent} onClick={() => setQuickSpent((open) => !open)}>
-                  {spent}m spent
+                  <CardMinutes minutes={spent} /> spent
                 </button>
               ) : null}
               {flat.length ? <span className="tcs-meta-pill" title="Steps done / steps">{flat.filter((x) => x.completed).length}/{flat.length} steps</span> : null}
@@ -737,6 +737,9 @@ function TaskCardBody({
               />
             </div>
           ) : null}
+
+          <ActualVsEstimate task={task} spent={spent} ownEstimate={task.estimatedDuration} steps={view} />
+          <SubstepPreview kids={view} steps={steps} write={writeSteps} onSelect={(id) => setSelected(new Set([id]))} />
 
           <TaskPoints task={task} />
           <TaskPens task={task} />

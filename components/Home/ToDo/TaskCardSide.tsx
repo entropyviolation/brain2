@@ -1,9 +1,11 @@
 /**
  * components/Home/ToDo/TaskCardSide.tsx — The task card's right bar: node detail
  *
- * One step selected: `NodeDetail` (path, points by level, needs, unlocks).
- * Several: `SelectionSummary` (aggregate figure). None: the task itself, drawn
- * by `TaskCard` with `NeedsEditor` in task mode. `LogNotes` sits under all three.
+ * One step selected: `NodeDetail` (path, actual against estimate, the first
+ * level inside, points, needs, unlocks). Several: `SelectionSummary`. None:
+ * the task itself, drawn by `TaskCard`, with the same actual-against-estimate
+ * readout and the same `SubstepPreview` of the task's first-level steps.
+ * `LogNotes` sits under all three.
  *
  * Needs come in three kinds (`lib/node-needs.ts`): tasks first (steps in this
  * tree or any task), resources (any item or list), awaiting (`event` items that
@@ -35,7 +37,8 @@ import { PACE_MIN_SAMPLES, paceFor, paceKey, paceSampleCount, type PaceSample } 
 import { stepPenLinks } from "@/lib/task-clock"
 import { placeSteps } from "@/lib/next-step"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
-import { partsMinutes } from "@/lib/tracked-time"
+import { partsMinutes, stepActualAccount, taskActualAccount } from "@/lib/tracked-time"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { makeNoteEntry } from "@/lib/item-notes"
 import { EstimateCell } from "./EstimateCell"
 import { SpentDiary, type SpentBlocksScope } from "./SpentBlocks"
@@ -220,7 +223,7 @@ export function RemainingEstTag({
   if (paceMinutes != null) rows.push({ name: "At your pace", minutes: paceMinutes, sentence: "Still open, times the pace you usually take." })
   if (spent > shown) rows.push({ name: "Already past", minutes: spent - shown, sentence: "Logged time is past the still-open belief by this much." })
   const title = field && field > 0 && field !== shown
-    ? `Your estimate is ${field}m. The tag shows ${shown}m left on undone work. Click to read the other figures and set your estimate.`
+    ? `Your estimate is ${dur(field)}. The tag shows ${dur(shown)} left on undone work. Click to read the other figures and set your estimate.`
     : "Your estimate for the time left on undone work. Click to read it and set it."
   return (
     <>
@@ -237,7 +240,7 @@ export function RemainingEstTag({
           setOpen((v) => !v)
         }}
       >
-        {shown > 0 ? `${shown}m left` : "— left"}
+        {shown > 0 ? `${dur(shown)} left` : "— left"}
       </button>
       {open ? (
         <div ref={pop} className="tcs-remain" data-task-card-pop="" role="dialog" aria-label={`Time still open for ${label}`}>
@@ -830,6 +833,62 @@ function PointsLadder({ task, step, steps, write }: { task: Task; step: Subtask;
   )
 }
 
+// ── Actual against estimate ──────────────────────────────────────────
+
+/**
+ * The first comparison under the head. Actual is the spent pill, or the Time
+ * section's total when that is larger (`taskActualAccount` / `stepActualAccount`).
+ * Estimate is `effectiveDurationMinutes`: the typed number, or the parts when
+ * those are larger. Hidden unless both are above zero. The gap is under, over,
+ * or the same. Figures follow `formatStatMinutes` and the card's h/m switch.
+ */
+export function ActualVsEstimate({
+  task,
+  stepId,
+  spent,
+  ownEstimate,
+  steps,
+}: {
+  task: Task
+  /** Set on a step. Omitted, the actual is the whole task. */
+  stepId?: string
+  /** The spent pill. The Time ledger is read here when the pill is empty. */
+  spent?: number
+  ownEstimate?: number
+  steps?: readonly Subtask[]
+}) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const tracked = stepId ? (stepActualAccount(task, stepId, entries)?.total ?? 0) : taskActualAccount(task, entries).total
+  const actual = Math.max(0, Math.round(spent ?? 0), Math.round(tracked))
+  const estimate = effectiveDurationMinutes(ownEstimate, steps)
+  if (actual <= 0 || estimate <= 0) return null
+  const gap = Math.abs(actual - estimate)
+  const relation = actual > estimate ? "over" : actual < estimate ? "under" : "same"
+  return (
+    <section className="tcs-vs tcs-control-card" aria-label="Actual and estimate">
+      <h3>Actual and estimate</h3>
+      <div className="tcs-vs-figs">
+        <div className="tcs-vs-fig" title="Time already logged here">
+          <span>Actual</span>
+          <b>{dur(actual)}</b>
+        </div>
+        <div className="tcs-vs-fig" title="The typed estimate, or the parts when those are larger">
+          <span>Estimate</span>
+          <b>{dur(estimate)}</b>
+        </div>
+        <div className={`tcs-vs-fig is-${relation}`} title="Actual minus the estimate">
+          <span>Difference</span>
+          <b>
+            {dur(gap)} {relation}
+          </b>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ── One step ─────────────────────────────────────────────────────────
 
 /** The one way into the item popup from the detail panel: a ghost window-arrow key. */
@@ -845,6 +904,8 @@ export function OpenItemKey({ onClick }: { onClick: () => void }) {
 }
 
 export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSelect, isRoot, onSpent, spentOpen, spentScope, levelMinutes, pace }: { task: Task; step: Subtask; steps: Subtask[]; write: Write; tier: StepTier; locked: boolean; spent?: number; onSelect?: (id: string) => void; isRoot?: boolean; onSpent?: () => void; spentOpen?: boolean; spentScope?: SpentBlocksScope; levelMinutes?: number; pace?: number | null }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const path = pathTo(steps, step.id)
   const { leaves, done } = leafTally(step)
   const state = step.completed ? "done" : locked ? "locked" : "open"
@@ -883,7 +944,7 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSe
           />
           {spent ? (
             <button type="button" className="tcs-meta-pill" aria-expanded={!!spentOpen} onClick={onSpent}>
-              {spent}m spent
+              {dur(spent)} spent
             </button>
           ) : null}
           {step.subtasks?.length ? <span className="tcs-meta-pill" title="End nodes done / end nodes">{done}/{leaves} ends</span> : null}
@@ -894,8 +955,9 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSe
           <SpentDiary scope={spentScope} />
         </div>
       ) : null}
+      <ActualVsEstimate task={task} stepId={step.id} spent={spent} ownEstimate={step.estimatedDuration} steps={step.subtasks} />
       <EstimatePanel step={step} steps={steps} write={write} />
-      <SubstepPreview step={step} steps={steps} write={write} onSelect={onSelect} />
+      <SubstepPreview kids={step.subtasks ?? []} steps={steps} write={write} onSelect={onSelect} />
       <PointsLadder task={task} step={step} steps={steps} write={write} />
       <StepPens task={task} step={step} steps={steps} write={write} />
       <section aria-label="Needs" className="tcs-needs tcs-control-card">
@@ -921,20 +983,23 @@ const stamp = (iso: string) => new Date(iso).toLocaleDateString(undefined, { mon
 
 /** The step's estimate: one big figure, quick values, and every value it has had. */
 function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]; write: Write }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const set = (m: number) => write("Estimate", setEstimate(steps, step.id, m))
   const log = step.estimateLog ?? []
   const parts = partsMinutes(step.subtasks)
+  const guess = step.estimatedDuration && step.estimatedDuration > 0 ? undefined : parts || undefined
   return (
     <section className="tcs-est tcs-control-card" aria-label="Estimate">
       <h3 title="Minutes you think this takes. Every change is kept so you can see how your guesses move.">Estimate</h3>
       <div className="tcs-est-row">
-        <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} onSet={set} />
-        {parts > 0 ? <span className="tcs-est-parts" title="Sum of the steps inside">= {parts}m in parts</span> : null}
+        <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} suggestion={guess} onSet={set} />
+        {parts > 0 && step.estimatedDuration ? <span className="tcs-est-parts" title="Sum of the steps inside">= {dur(parts)} in parts</span> : null}
       </div>
       <div className="tcs-quick" role="group" aria-label="Quick estimates">
         {QUICK_MINUTES.map((m) => (
           <button key={m} type="button" aria-pressed={step.estimatedDuration === m} onClick={() => set(m)}>
-            {m}
+            {dur(m)}
           </button>
         ))}
       </div>
@@ -942,7 +1007,7 @@ function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]
         <ol className="tcs-hist" aria-label="Estimate history">
           {log.slice(-6).map((e, i, a) => (
             <li key={e.at + i} className={i === a.length - 1 ? "is-now" : undefined} title={new Date(e.at).toLocaleString()}>
-              <b>{e.minutes}m</b>
+              <b>{dur(e.minutes)}</b>
               <time dateTime={e.at}>{stamp(e.at)}</time>
             </li>
           ))}
@@ -952,9 +1017,8 @@ function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]
   )
 }
 
-/** The first level of steps inside this one, each with its estimate one click away. */
-function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps: Subtask[]; write: Write; onSelect?: (id: string) => void }) {
-  const kids = step.subtasks ?? []
+/** The first level inside a node. On the whole task, `kids` is that task's top level. */
+export function SubstepPreview({ kids, steps, write, onSelect }: { kids: readonly Subtask[]; steps: Subtask[]; write: Write; onSelect?: (id: string) => void }) {
   if (!kids.length) return null
   const done = kids.filter((k) => k.completed).length
   return (
@@ -977,7 +1041,7 @@ function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps
               {k.description}
             </button>
             {k.subtasks?.length ? <small title="Steps inside it">+{k.subtasks.length}</small> : null}
-            <EstimateCell minutes={k.estimatedDuration} label={k.description} onSet={(m) => write("Estimate", setEstimate(steps, k.id, m))} />
+            <EstimateCell minutes={k.estimatedDuration} label={k.description} suggestion={k.estimatedDuration ? undefined : partsMinutes(k.subtasks) || undefined} onSet={(m) => write("Estimate", setEstimate(steps, k.id, m))} />
           </li>
         ))}
       </ul>
@@ -1061,6 +1125,8 @@ function pathTo(steps: readonly Subtask[], id: string, trail: Subtask[] = []): S
 // ── Several steps ────────────────────────────────────────────────────
 
 export function SelectionSummary({ steps, ids, tierOf, isLocked, spentOf }: { steps: Subtask[]; ids: ReadonlySet<string>; tierOf: Map<string, StepTier>; isLocked: (s: Subtask) => boolean; spentOf: (id: string) => number }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const picked = flattenSteps(steps).filter((s) => ids.has(s.id))
   // Count each subtree once: drop steps whose ancestor is also picked.
   const inside = new Set(picked.flatMap((s) => flattenSteps(s.subtasks).map((k) => k.id)))
@@ -1098,10 +1164,10 @@ export function SelectionSummary({ steps, ids, tierOf, isLocked, spentOf }: { st
         </dd>
         <dt>Estimate</dt>
         <dd>
-          {est}m{spent ? ` · ${spent}m spent` : ""}
+          {dur(est)}{spent ? ` · ${dur(spent)} spent` : ""}
         </dd>
         <dt>Left</dt>
-        <dd>{Math.max(0, est - Math.round(est * (stats.raw ?? 0)))}m by ends</dd>
+        <dd>{dur(Math.max(0, est - Math.round(est * (stats.raw ?? 0))))} by ends</dd>
         <dt>Points</dt>
         <dd>{pts}</dd>
         <dt>Locked</dt>

@@ -241,6 +241,30 @@ describe("TaskCard", () => {
     expect(kidCheckbox.checked).toBe(false)
   })
 
+  it("offers the sum of parts as a ghost estimate", () => {
+    seed({
+      subtasks: [
+        s("album", {
+          subtasks: [
+            s("insert", {
+              subtasks: [s("fold booklet", { estimatedDuration: 20 }), s("slip into tray", { estimatedDuration: 15 })],
+            }),
+          ],
+        }),
+      ],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1", "album"))
+    const inside = within(document.querySelector("aside.task-card-side") as HTMLElement).getByRole("region", { name: "Steps inside" })
+    const ghost = within(inside).getByRole("button", { name: "Suggested estimate for insert" })
+    expect(ghost.textContent).toBe("35m")
+    expect(ghost.className).toContain("is-ghost")
+    fireEvent.click(ghost)
+    fireEvent.keyDown(within(inside).getByRole("spinbutton", { name: "Estimate for insert" }), { key: "Enter" })
+    const insert = steps().find((step) => step.id === "album")!.subtasks!.find((step) => step.id === "insert")
+    expect(insert?.estimatedDuration).toBe(35)
+  })
+
   it("marks the clock pen and play paints with the one you switch to", () => {
     seed({
       penLinks: [
@@ -378,5 +402,74 @@ describe("TaskCard", () => {
     expect(pen.querySelectorAll(".ipt-chip")).toHaveLength(1)
     expect(within(pen).getByText("Exercise")).toBeTruthy()
     expect(useTaskStore.getState().tasks[0].penLinks?.map((link) => link.penId)).toEqual(["act-rest", "act-work", "act-exercise"])
+  })
+
+  it("with nothing selected, the whole-task aside lists the first level inside, and a name selects that step", () => {
+    seed({
+      subtasks: [
+        s("insert", { description: "Insert", subtasks: [s("fronts", { description: "fronts", estimatedDuration: 45 })] }),
+        s("disc", { description: "Disc", estimatedDuration: 20 }),
+      ],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const side = document.querySelector("aside.task-card-side") as HTMLElement
+    expect(within(side).getByText(/whole task/)).toBeTruthy()
+    const inside = within(side).getByRole("region", { name: "Steps inside" })
+    expect(within(inside).getByRole("button", { name: "Insert" })).toBeTruthy()
+    expect(within(inside).getByRole("button", { name: "Disc" })).toBeTruthy()
+    expect(within(inside).queryByRole("button", { name: "fronts" })).toBeNull()
+    const ghost = within(inside).getByRole("button", { name: "Suggested estimate for Insert" })
+    expect(ghost.className).toContain("is-ghost")
+    expect(ghost.textContent).toBe("45m")
+    expect(within(inside).getByRole("checkbox", { name: "Complete Disc" })).toBeTruthy()
+
+    fireEvent.click(within(inside).getByRole("button", { name: "Insert" }))
+    expect(within(side).getByRole("heading", { level: 3, name: "Insert" })).toBeTruthy()
+    const nested = within(side).getByRole("region", { name: "Steps inside" })
+    expect(within(nested).getByRole("button", { name: "fronts" })).toBeTruthy()
+    expect(within(nested).queryByRole("button", { name: "Disc" })).toBeNull()
+  })
+
+  it("compares actual and estimate when both exist, and hides the readout when one is missing", () => {
+    seed({ estimatedDuration: 325, subtasks: [s("insert", { description: "Insert", estimatedDuration: 40 })] })
+    const { unmount } = render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const side = () => document.querySelector("aside.task-card-side") as HTMLElement
+    expect(within(side()).queryByRole("region", { name: "Actual and estimate" })).toBeNull()
+    unmount()
+    closeTaskCard()
+
+    render(<TaskCard host={host({ timeOf: () => ({ spent: 322, stepSpent: new Map([["insert", 50]]) }) })} />)
+    act(() => openTaskCard("t1"))
+    const cmp = within(side()).getByRole("region", { name: "Actual and estimate" })
+    expect(within(cmp).getByText("Actual")).toBeTruthy()
+    expect(within(cmp).getByText("Estimate")).toBeTruthy()
+    expect(within(cmp).getByText("Difference")).toBeTruthy()
+    expect(cmp).toHaveTextContent("322m")
+    expect(cmp).toHaveTextContent("325m")
+    expect(cmp).toHaveTextContent("3m under")
+    fireEvent.click(screen.getByRole("button", { name: "Hours" }))
+    expect(cmp).toHaveTextContent("5h22")
+    expect(cmp).toHaveTextContent("5h25")
+    expect(cmp).toHaveTextContent("0h03 under")
+    fireEvent.click(screen.getByRole("button", { name: "Minutes" }))
+
+    fireEvent.click(within(side()).getByRole("button", { name: "Insert" }))
+    const stepCmp = within(side()).getByRole("region", { name: "Actual and estimate" })
+    expect(stepCmp).toHaveTextContent("50m")
+    expect(stepCmp).toHaveTextContent("40m")
+    expect(stepCmp).toHaveTextContent("10m over")
+  })
+
+  it("hides the comparison on a step that has only one of the two numbers", () => {
+    seed({ subtasks: [s("insert", { description: "Insert", estimatedDuration: 40 }), s("disc", { description: "Disc" })] })
+    render(<TaskCard host={host({ timeOf: () => ({ spent: 0, stepSpent: new Map([["disc", 15]]) }) })} />)
+    act(() => openTaskCard("t1", "insert"))
+    const side = document.querySelector("aside.task-card-side") as HTMLElement
+    expect(within(side).queryByRole("region", { name: "Actual and estimate" })).toBeNull()
+    expect(within(side).getByRole("region", { name: "Estimate" })).toBeTruthy()
+    act(() => openTaskCard("t1", "disc"))
+    expect(within(side).queryByRole("region", { name: "Actual and estimate" })).toBeNull()
   })
 })

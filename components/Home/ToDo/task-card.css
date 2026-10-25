@@ -2,6 +2,8 @@
 
 .task-card {
   --step-select-edge: #163e82;
+  /* Checked boxes in this card. Pastel teal, quieter than the seafoam used on pills. */
+  --tc-check: #8ecfc0;
   --tm-min: #209e82;
   --tm-goal: #2558a8;
   --tm-exceptional: #12356e;
@@ -168,7 +170,7 @@ button.tcs-meta-pill:hover { border-color: #12356e; }
 }
 .tcs-step-checkbox,
 .tcs-kid-check {
-  accent-color: #209e82;
+  accent-color: var(--tc-check, #8ecfc0);
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -377,6 +379,8 @@ span.tcs-chip-name { cursor: default; }
 .tc-est:hover { background: #e2f7f1; border-color: #2bb596; }
 .tc-est.is-empty { color: rgba(40, 48, 60, 0.32); font-style: italic; }
 .tc-est.is-empty:hover { color: #12356e; }
+.tc-est.is-ghost { color: #6e9eb5; font-style: italic; }
+.tc-est.is-ghost:hover { color: #12356e; background: #e7f3f8; border-color: #6e9eb5; }
 .tc-est-input { width: 4.2rem; height: auto; border: 1px solid #209e82; background: #fff; box-shadow: 0 0 0 3px rgba(32, 158, 130, 0.18); outline: none; text-align: center; appearance: textfield; -moz-appearance: textfield; }
 .tc-est-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .tc-est.is-big, .tc-est-input.is-big { font: 600 34px/1.1 var(--font-fraunces), Georgia, serif; font-variation-settings: "SOFT" 100; padding: 0 10px; border-radius: 12px; text-align: left; }
@@ -405,6 +409,24 @@ span.tcs-chip-name { cursor: default; }
 .tcs-kid-name { flex: 1; min-width: 0; padding: 0; border: 0; background: none; font: 500 14px/1.3 var(--font-karla), system-ui, sans-serif; text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcs-kid-name:hover { color: #12356e; }
 .tcs-kids small { font: 10px var(--font-dmmono), monospace; opacity: 0.55; }
+
+/* ── Actual against estimate, under the aside head ── */
+.tcs-vs { display: grid; gap: 8px; }
+.tcs-vs-figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tcs-vs-fig { display: grid; gap: 2px; min-width: 0; }
+.tcs-vs-fig > span {
+  font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(12, 35, 74, 0.55);
+}
+.tcs-vs-fig > b {
+  font: 600 15px/1.15 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  color: #0c234a;
+}
+.tcs-vs-fig.is-under > b { color: #209e82; }
+.tcs-vs-fig.is-over > b { color: #a33b3b; }
 
 /* ── Sub-card: crumbs and the opener ── */
 .task-card-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: 11px; }
@@ -456,6 +478,8 @@ body.win95-app .task-card .task-card-key.is-primary:active {
 /* Estimates: static pills, not fields */
 body.win95-app .task-card .tc-est { border: 0; border-radius: 999px; background: var(--tc-wash); box-shadow: none; background-image: none; color: #3b4452; padding: 1px 9px; min-width: 3rem; text-align: center; font-style: normal; }
 body.win95-app .task-card .tc-est.is-empty { background: transparent; color: #98a0ad; }
+body.win95-app .task-card .tc-est.is-ghost { background: transparent; color: #6e9eb5; }
+body.win95-app .task-card .tc-est.is-ghost:hover { background: #e7f3f8; color: #12356e; }
 body.win95-app .task-card .tc-est:hover { background: #e2f7f1; color: #0c234a; }
 body.win95-app .task-card .tc-est.is-big { background: transparent; text-align: left; padding: 0 6px; border-radius: 10px; font-size: 38px; }
 body.win95-app .task-card .tc-est-input { border: 1px solid #209e82; border-radius: 999px; background: #fff; box-shadow: 0 0 0 3px rgba(32, 158, 130, 0.18); padding: 1px 8px; }
@@ -464,7 +488,8 @@ body.win95-app .task-card .tc-est-input.is-big { border-radius: 12px; font-size:
 /* Rows breathe */
 body.win95-app .task-card .step-tree-row { min-height: 34px; border-radius: 8px; }
 body.win95-app .task-card .step-tree-row:hover { background: #eafaf5; }
-body.win95-app .task-card input[type="checkbox"] { accent-color: #209e82; width: 15px; height: 15px; }
+body.win95-app .task-card input[type="checkbox"],
+body.win95-app .tcs-wait-pop input[type="checkbox"] { accent-color: var(--tc-check, #8ecfc0); width: 15px; height: 15px; }
 
 /* Steps inside: names are text, not keys */
 body.win95-app .task-card .tcs-kids ul { background: #fff; border-color: var(--tc-rule); border-radius: 10px; gap: 0; }
@@ -927,7 +952,38 @@ body.win95-app .task-card .tcs-notes-scope button[aria-pressed="true"] { backgro
 .tcs-spent { list-style: none; margin: 0; padding: 0; max-height: 14rem; overflow: auto; }
 .tcs-spent > li { display: grid; grid-template-columns: auto 3.2rem minmax(0, 1fr) 2.4rem; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--tc-wash); }
 .tcs-spent > li.tcs-spent-day { display: block; margin-top: 8px; border: 0; font: 500 10px/1.3 var(--tc-mono, ui-monospace, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--tc-mute); }
-.task-card .tcs-spent-step { width: 100%; max-width: 100%; min-width: 0; height: auto; padding: 1px 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; box-shadow: none; font: 400 11px/1.2 var(--tc-mono, ui-monospace, monospace); color: var(--tc-ink, #1f2630); }
+.task-card .tcs-spent-aim,
+body.win95-app .task-card button.tcs-spent-aim {
+  width: 100%; max-width: 100%; min-width: 0; height: auto; padding: 1px 6px; border: 1px solid transparent; border-radius: 6px;
+  background: transparent; box-shadow: none; font: 400 12px/1.3 var(--font-karla), system-ui, sans-serif; color: var(--tc-ink, #1f2630);
+  text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.task-card .tcs-spent-aim:hover,
+.task-card .tcs-spent-aim[aria-expanded="true"] { border-color: rgba(18, 53, 110, 0.22); background: #fff; }
+.tcs-step-pop {
+  position: fixed; z-index: 90; display: flex; flex-direction: column; gap: 6px; min-height: 0;
+  padding: 8px; border: 1px solid rgba(18, 53, 110, 0.18); border-radius: 12px; background: #fff;
+  box-shadow: 0 16px 40px rgba(12, 35, 74, 0.22);
+}
+.tcs-step-pop input.tcs-wait-search,
+body.win95-app .tcs-step-pop input.tcs-wait-search:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
+  width: 100%; box-sizing: border-box; height: auto; min-height: 0; padding: 6px 8px; border: 1px solid rgba(18, 53, 110, 0.18); border-radius: 8px;
+  background: #f7fafb; box-shadow: none; font: 400 13px/1.3 var(--font-karla), system-ui, sans-serif; color: #1f2630;
+}
+.tcs-step-pop input.tcs-wait-search:focus,
+body.win95-app .tcs-step-pop input.tcs-wait-search:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus {
+  outline: none; border-color: #163e82; box-shadow: none;
+}
+.tcs-step-list { overflow: auto; display: flex; flex-direction: column; gap: 1px; max-height: 240px; margin: 0; padding: 0; list-style: none; }
+.tcs-step-pop .tcs-step-row {
+  display: grid; gap: 1px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px; background: none; box-shadow: none;
+  text-align: left; cursor: pointer; font: 400 13px/1.3 var(--font-karla), system-ui, sans-serif; color: #1f2630;
+}
+.tcs-step-pop .tcs-step-row:hover,
+.tcs-step-pop .tcs-step-row[aria-selected="true"] { background: #eafaf5; }
+.tcs-step-pop .tcs-step-row.is-current { box-shadow: inset 2px 0 0 #8ecfc0; }
+.tcs-step-pop .tcs-step-path { font: 400 11px/1.3 var(--font-dmmono), ui-monospace, monospace; color: #8b93a0; }
+.tcs-step-pop .tcs-hint { margin: 4px 6px; font-size: 12px; color: #6b7482; }
 .tcs-spent-objs { grid-column: 1 / -1; list-style: none; margin: 0 0 2px 10px; padding: 0 0 0 8px; border-left: 2px solid var(--tc-wash); display: grid; gap: 4px; }
 .tcs-spent-objs > li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; border: 0; }
 .tcs-spent-obj-text { flex: 1 1 14rem; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }

@@ -3,8 +3,9 @@
  *
  * One row per stretch in `taskActualSegments`, so the rows add up to the
  * total. A block's clocks and step can be edited, and the block can be
- * deleted, through the same time-grid calls as the grid. A typed log and a
- * saved actual with no block are their own rows: change the minutes, point
+ * deleted, through the same time-grid calls as the grid. Durations follow the
+ * card's h/m switch. The step is a searchable picker. A typed log and a
+ * saved actual with no block are their own rows: change the duration, point
  * the log at a step, or clear it.
  *
  * A written block with a pen shows that pen's color as a dot. Double-click
@@ -14,7 +15,8 @@
  */
 "use client"
 
-import { useEffect, useMemo, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react"
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react"
+import { createPortal } from "react-dom"
 import { createRoot, type Root } from "react-dom/client"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
@@ -22,7 +24,8 @@ import { useTaskStore } from "@/lib/task-store"
 import { placeSteps } from "@/lib/next-step"
 import { tieNowObjectiveToStep } from "@/lib/now-objective"
 import { whenLabel } from "@/lib/session-debrief"
-import { formatDuration } from "@/lib/time-entries"
+import { compactDuration, parseDurationInput } from "@/lib/time-entries"
+import { formatStatMinutes, useTaskCardTimeUnit } from "./task-card-unit"
 import { findPen, taskActualSegments, type ActualSegment } from "@/lib/tracked-time"
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 
@@ -97,20 +100,34 @@ function ClockField({ value, label, onCommit }: { value: number; label: string; 
   )
 }
 
+function readDuration(raw: string, hours: boolean): number | null {
+  const t = raw.trim()
+  if (t === "") return 0
+  if (!hours) {
+    const n = Number(t)
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
+  }
+  if (/^\d+(?:\.\d+)?$/.test(t)) return Math.round(Number(t) * 60)
+  if (t === "0h" || t === "0h00") return 0
+  return parseDurationInput(t)
+}
+
 function MinuteField({ value, label, onCommit }: { value: number; label: string; onCommit: (min: number) => void }) {
+  const hours = useTaskCardTimeUnit() === "h"
   const [draft, setDraft] = useState<string | null>(null)
+  const shown = hours ? compactDuration(value, true) : String(value)
   const done = (keep: boolean) => {
-    const next = draft == null ? null : Number(draft)
-    if (keep && Number.isFinite(next) && next! >= 0 && next !== value) onCommit(next!)
+    const next = draft == null ? null : readDuration(draft, hours)
+    if (keep && next != null && next !== value) onCommit(next)
     setDraft(null)
   }
   return (
     <input
       className="tcs-spent-clock"
       aria-label={label}
-      inputMode="numeric"
-      size={4}
-      value={draft ?? String(value)}
+      inputMode={hours ? "text" : "numeric"}
+      size={hours ? 6 : 4}
+      value={draft ?? shown}
       onFocus={(e) => e.currentTarget.select()}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => done(true)}
@@ -122,7 +139,158 @@ function MinuteField({ value, label, onCommit }: { value: number; label: string;
   )
 }
 
+function splitStep(label: string): { name: string; path?: string } {
+  const parts = label.split(" › ")
+  if (parts.length < 2) return { name: label }
+  return { name: parts[parts.length - 1]!, path: parts.slice(0, -1).join(" › ") }
+}
+
+/** Searchable step for one spent row. The closed face is the step's own name. */
+function StepAim({ value, label, choices, onChange }: { value: string; label: string; choices: { id: string; label: string }[]; onChange: (id: string) => void }) {
+  const listId = useId()
+  const btn = useRef<HTMLButtonElement>(null)
+  const pop = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState("")
+  const [hi, setHi] = useState(0)
+  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null)
+  const current = choices.find((choice) => choice.id === value)
+  const face = current ? splitStep(current.label).name : "Whole task"
+
+  const needle = q.trim().toLowerCase()
+  const options = useMemo(() => {
+    const all = [{ id: "", label: "Whole task" }, ...choices]
+    return all.filter((choice) => !needle || choice.label.toLowerCase().includes(needle)).slice(0, 40)
+  }, [choices, needle])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    const place = () => {
+      const rect = btn.current?.getBoundingClientRect()
+      if (!rect) return
+      const width = Math.min(320, window.innerWidth - 24)
+      let left = rect.left
+      if (left + width > window.innerWidth - 12) left = window.innerWidth - width - 12
+      const top = rect.bottom + 6 + 280 > window.innerHeight && rect.top > 280 ? Math.max(12, rect.top - 286) : rect.bottom + 6
+      setBox({ top, left: Math.max(12, left), width })
+    }
+    place()
+    window.addEventListener("resize", place)
+    window.addEventListener("scroll", place, true)
+    return () => {
+      window.removeEventListener("resize", place)
+      window.removeEventListener("scroll", place, true)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (btn.current?.contains(target) || pop.current?.contains(target)) return
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", onDown)
+    return () => document.removeEventListener("mousedown", onDown)
+  }, [open])
+
+  const choose = (id: string) => {
+    onChange(id)
+    setOpen(false)
+    setQ("")
+    setHi(0)
+  }
+
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        className="tcs-spent-aim"
+        data-no95=""
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        title={current?.label ?? "Whole task"}
+        onClick={() => {
+          setHi(0)
+          setOpen((v) => !v)
+        }}
+      >
+        {face}
+      </button>
+      {open && box
+        ? createPortal(
+            <div ref={pop} className="tcs-step-pop" data-spent-step-pop="" role="dialog" aria-label={label} style={{ top: box.top, left: box.left, width: box.width }}>
+              <input
+                className="tcs-wait-search"
+                data-draft=""
+                data-no95=""
+                autoFocus
+                value={q}
+                placeholder="Search steps"
+                aria-label="Search steps"
+                autoComplete="off"
+                role="combobox"
+                aria-expanded
+                aria-controls={listId}
+                aria-autocomplete="list"
+                onChange={(e) => {
+                  setQ(e.target.value)
+                  setHi(0)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault()
+                    setHi((n) => Math.min(n + 1, Math.max(0, options.length - 1)))
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault()
+                    setHi((n) => Math.max(n - 1, 0))
+                  } else if (e.key === "Enter") {
+                    e.preventDefault()
+                    const pick = options[Math.min(hi, options.length - 1)]
+                    if (pick) choose(pick.id)
+                  } else if (e.key === "Escape") {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setOpen(false)
+                  }
+                }}
+              />
+              <ul id={listId} className="tcs-step-list" role="listbox" aria-label="Steps">
+                {options.length === 0 ? <li className="tcs-hint">Nothing matches.</li> : null}
+                {options.map((choice, i) => {
+                  const { name, path } = splitStep(choice.label)
+                  return (
+                    <li key={choice.id || "whole"} role="presentation">
+                      <button
+                        type="button"
+                        role="option"
+                        className={`tcs-step-row${choice.id === value ? " is-current" : ""}`}
+                        data-no95=""
+                        aria-selected={i === hi}
+                        onMouseEnter={() => setHi(i)}
+                        onClick={() => choose(choice.id)}
+                      >
+                        <span>{name}</span>
+                        {path ? <span className="tcs-step-path">{path}</span> : null}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  )
+}
+
 export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const updateEntry = useTimeTrackingStore((s) => s.updateEntry)
@@ -223,7 +391,7 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
     const openDetail = row.kind === "block" && entry
       ? (event: ReactMouseEvent) => {
           const target = event.target
-          if (target instanceof Element && target.closest("input, textarea, button")) return
+          if (target instanceof Element && target.closest("input, textarea, button, [data-spent-step-pop]")) return
           openBlockDetail(entry.id)
         }
       : undefined
@@ -250,19 +418,12 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
         ) : row.kind === "log" && row.logId ? (
           <MinuteField value={row.minutes} label="Logged minutes" onCommit={(m) => editLog(row, m)} />
         ) : (
-          <b>{row.minutes}m</b>
+          <b>{dur(row.minutes)}</b>
         )}
         {row.kind === "saved" ? (
           <em title={where}>{where}</em>
         ) : (
-          <select className="tcs-spent-step" aria-label={`Step for ${row.minutes}m on ${row.date ?? "this record"}`} value={row.stepId ?? ""} onChange={(e) => aim(row, e.target.value)}>
-            <option value="">Whole task</option>
-            {choices.map((choice) => (
-              <option key={choice.id} value={choice.id}>
-                {choice.label}
-              </option>
-            ))}
-          </select>
+          <StepAim value={row.stepId ?? ""} label={`Step for ${dur(row.minutes)} on ${row.date ?? "this record"}`} choices={choices} onChange={(id) => aim(row, id)} />
         )}
         {sure === row.id ? (
           <button type="button" className="tcs-spent-x is-sure" onClick={() => (drop(row), setSure(null))} onBlur={() => setSure(null)} autoFocus>
@@ -290,13 +451,13 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
         const sum = list.reduce((n, row) => n + row.minutes, 0)
         return [
           <li key={date} className="tcs-spent-day">
-            {dayLabel(date)} · {sum}m
+            {dayLabel(date)} · {dur(sum)}
           </li>,
           ...list.map(line),
         ]
       })}
       {saved.length ? (
-        <li className="tcs-spent-day">Recorded actual, no block · {saved.reduce((n, row) => n + row.minutes, 0)}m</li>
+        <li className="tcs-spent-day">Recorded actual, no block · {dur(saved.reduce((n, row) => n + row.minutes, 0))}</li>
       ) : null}
       {saved.map(line)}
     </ul>
@@ -327,6 +488,8 @@ function stretchWhen(row: ActualSegment): string {
  * Days newest first. No clock editors, delete, or account split.
  */
 export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const entries = useTimeTrackingStore((s) => s.entries)
   const task = useTaskStore((st) => st.tasks.find((t) => t.id === scope.taskId))
   const rows = useMemo(() => {
@@ -367,7 +530,7 @@ export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
           <section key={date}>
             <h4 className="tcs-diary-day">
               <span>{diaryDay(date)}</span>
-              <span>{formatDuration(sum)}</span>
+              <span>{dur(sum)}</span>
             </h4>
             <ul>
               {list.map((row) => {
@@ -376,7 +539,7 @@ export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
                   <li key={row.id} className="tcs-diary-row">
                     {when ? <span className="tcs-diary-when">{when}</span> : <span className="tcs-diary-when">logged</span>}
                     <span className="tcs-diary-where">{whereOf(row)}</span>
-                    <span className="tcs-diary-dur">{formatDuration(row.minutes)}</span>
+                    <span className="tcs-diary-dur">{dur(row.minutes)}</span>
                   </li>
                 )
               })}
@@ -388,14 +551,14 @@ export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
         <section>
           <h4 className="tcs-diary-day">
             <span>Recorded, no day</span>
-            <span>{formatDuration(saved.reduce((n, row) => n + row.minutes, 0))}</span>
+            <span>{dur(saved.reduce((n, row) => n + row.minutes, 0))}</span>
           </h4>
           <ul>
             {saved.map((row) => (
               <li key={row.id} className="tcs-diary-row">
                 <span className="tcs-diary-when">saved</span>
                 <span className="tcs-diary-where">{whereOf(row)}</span>
-                <span className="tcs-diary-dur">{formatDuration(row.minutes)}</span>
+                <span className="tcs-diary-dur">{dur(row.minutes)}</span>
               </li>
             ))}
           </ul>
