@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -7,6 +8,8 @@ import { fetchDayClimate } from "@/lib/weather-client"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { TimeGrid } from "./time-grid"
+import { showBlockInTimegrid } from "./show-in-timegrid"
+import { resetTimegridReveal } from "./timegrid-reveal"
 import { useTrackingUndoHotkey } from "./tracking-undo"
 import {
   getTrackingViewPrefs,
@@ -31,6 +34,7 @@ describe("TimeGrid", () => {
     vi.setSystemTime(new Date("2026-06-20T12:00:00"))
     resetAllStores()
     resetTrackingViewPrefs()
+    resetTimegridReveal()
     fetchDayClimateMock.mockResolvedValue(null)
   })
 
@@ -698,5 +702,51 @@ describe("TimeGrid", () => {
       "aria-pressed",
       "true",
     )
+  })
+
+  it("shows the requested block on its day, under the ruler, by id", () => {
+    const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetTop")
+    Object.defineProperty(HTMLElement.prototype, "offsetTop", {
+      configurable: true,
+      get() {
+        const hour = this.getAttribute?.("data-hour")
+        return hour == null ? 0 : Number(hour) * 24
+      },
+    })
+    try {
+      useTimeTrackingStore.getState().setGridSpan("week")
+      useTimeTrackingStore.getState().setInfiniteScroll(true)
+      useTimeTrackingStore.getState().paintMinutes("2026-09-17", "activity", 9 * 60, 10 * 60, "act-work")
+      useTimeTrackingStore.getState().paintMinutes("2026-09-17", "activity", 15 * 60 + 20, 16 * 60, "act-rest")
+      const target = useTimeTrackingStore
+        .getState()
+        .entriesFor("2026-09-17", "activity")
+        .find((entry) => entry.startMin === 15 * 60 + 20)
+      expect(target).toBeTruthy()
+      showBlockInTimegrid(target!.id)
+
+      function DatedGrid() {
+        const [date, setDate] = useState(() => new Date(2026, 5, 20, 12))
+        return <TimeGrid currentDate={date} setCurrentDate={setDate} />
+      }
+      render(<DatedGrid />)
+
+      const grid = document.querySelector(".trk-grid") as HTMLElement
+      expect(grid.dataset.revealedEntry).toBe(target!.id)
+      expect(grid.dataset.revealHour).toBe("15")
+      expect(grid.scrollTop).toBe(15 * 24)
+      expect(grid.querySelector(`[data-entry-id="${target!.id}"]`)).toBeTruthy()
+      expect(useTimeTrackingStore.getState().gridSpan).toBe("day")
+      expect(useTimeTrackingStore.getState().infiniteScroll).toBe(false)
+      const label = new Date(2026, 8, 17).toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+      expect(screen.getByRole("heading", { name: label })).toBeInTheDocument()
+    } finally {
+      if (original) Object.defineProperty(HTMLElement.prototype, "offsetTop", original)
+    }
   })
 })

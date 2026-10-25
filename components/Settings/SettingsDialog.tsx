@@ -88,6 +88,9 @@ const CaptureDoorButtons = lazy(() =>
 const MessageIngestPanel = lazy(() =>
   import("@/components/Settings/MessageIngestPanel").then((m) => ({ default: m.MessageIngestPanel })),
 )
+const PhoneSyncPanel = lazy(() =>
+  import("@/components/Settings/PhoneSyncPanel").then((m) => ({ default: m.PhoneSyncPanel })),
+)
 const ScreenTimePanel = lazy(() =>
   import("@/components/Settings/ScreenTimePanel").then((m) => ({ default: m.ScreenTimePanel })),
 )
@@ -261,6 +264,7 @@ export function SettingsDialog({
                     </div>
                   ) : null}
                   {selected.id === "settings-messages" ? <MessageIngestPanel /> : null}
+                  {selected.id === "settings-phone-sync" ? <PhoneSyncPanel /> : null}
                   {selected.id === "settings-screen" ? <ScreenTimePanel /> : null}
                   {selected.id === "settings-instagram" ? <InstagramImportPanel /> : null}
                   {selected.id === "settings-instagram-accounts" ? <InstagramAccountsPanel /> : null}

@@ -8,11 +8,13 @@
  */
 "use client"
 
+import { useLayoutEffect } from "react"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useTaskStore } from "@/lib/task-store"
 import { useReviewsStore } from "@/lib/reviews-store"
 import type { Task, TodoMarkPeriod } from "@/lib/types"
+import { sweepStaleTaskPriorities } from "@/components/Home/ToDo/priority-star-sweep"
 import {
   assignedCommitmentSlots,
   nextPriorityIds,
@@ -40,6 +42,10 @@ export function TodoCommitmentFields({
   disabled?: boolean
 }) {
   const morningIds = useReviewsStore((s) => s.getMorningReview)
+  const reviews = useReviewsStore((s) => s.reviews)
+  useLayoutEffect(() => {
+    sweepStaleTaskPriorities()
+  }, [task, reviews])
   const slots = assignedCommitmentSlots(task)
   if (slots.length === 0) return null
 

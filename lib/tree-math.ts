@@ -11,8 +11,9 @@
  *
  * Levels: B / G / E at any root read the same two numbers over only the
  * children whose effective tier is exactly that level. An empty level is `null`.
+ * `splitPercent` is σ as a whole percent for the To Do glass tube.
  *
- * Pure. Fractions 0–1.
+ * Pure. Fractions 0–1. `splitPercent` is 0–100.
  */
 import type { StepTier, Subtask } from "@/lib/types"
 import { STEP_TIERS, effectiveTierMap } from "@/lib/step-tiers"
@@ -58,6 +59,19 @@ export function splitStats(list: readonly Subtask[], tiers: Map<string, StepTier
     raw: leaves ? done / leaves : null,
     split: parts.length ? parts.reduce((n, p) => n + p.done / p.leaves, 0) / parts.length : null,
   }
+}
+
+/**
+ * σ as a whole percent. Same rounding as the task card Progress subtitle
+ * (`formatPercent(split)`): the average of each top-level part's done ends
+ * over its ends. No steps reads 0, which is what the To Do glass tube shows.
+ * Tiers do not change this number.
+ */
+export function splitPercent(steps: readonly Subtask[] | undefined): number {
+  const list = steps ?? []
+  if (list.length === 0) return 0
+  const split = splitStats(list, new Map()).split
+  return split == null ? 0 : Math.round(split * 100)
 }
 
 export type TierSplit = Record<StepTier, SplitStats | null>

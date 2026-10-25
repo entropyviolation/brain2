@@ -88,7 +88,7 @@ export function WorkingNowControl({
   })
 
   return (
-    <span className="ops-menubar-now">
+    <span className="ops-menubar-now b2-now">
       {live && <span className="ops-now-led live" aria-hidden />}
       {elapsed && (
         <span className="ops-now-elapsed" aria-live="polite">
@@ -97,20 +97,20 @@ export function WorkingNowControl({
       )}
       <button
         type="button"
-        className={`ops-btn ops-btn-now${live ? " live" : ""}`}
+        className={`todo-cap${live ? "" : " is-primary"}`}
         onClick={() => (live ? workStop.request() : toggleWorkingOnOperation(operationId))}
       >
         {live ? `Stop working on ${operationName}` : "Working on this now"}
       </button>
       {namedTask ? (
-        <button type="button" className="ops-btn ops-btn-now live" onClick={() => taskStop.request()}>
+        <button type="button" className="todo-cap" onClick={() => taskStop.request()}>
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
         <span className="ops-task-pick">
           <button
             type="button"
-            className="ops-btn"
+            className="todo-cap is-mod"
             aria-expanded={taskOpen}
             onClick={() => setTaskOpen((open) => !open)}
           >

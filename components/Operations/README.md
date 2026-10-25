@@ -150,7 +150,7 @@ share one live clock (`lib/operation-work-session.ts` + `lib/work-session-store.
    If objectives for right now are still open, Stop asks whether to save them.
    Yes closes and parks them for the next time this operation (or an attached
    task or subtask) is tracked. No closes without parking. Cancel leaves the
-   clock running. After the clock stops, the sitting review opens. **Stop {task}**
+   clock running. After the clock stops, the optional end-of-session reflection opens. The operation stays open. **Stop {task}**
    on a named task asks the same question for that pen clock, then the same review.
 
 Tag the operation in Settings with Tracking tags so linked habits count
@@ -172,7 +172,7 @@ _Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and 
 | `operations-chrome.css` | Milled fascia (CRT title, engraved nameplates, raised metal keys, equal-fill view keys, stage power lamps, CRT heatmap well, working-now lamp) |
 | `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Empty board offers pickable preset objects (`.ops-empty-presets`). Last open operation survives refresh / tab switch. |
 | `OperationWorkspace.tsx` | full-screen mini-app; tab strip clusters **Plan/Do** vs **Reference** (`.ops-view-clusters`). Last panel per operation is restored, plus that panel's scroll. |
-| `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle. Stop with open objectives asks **Yes** / **No** / **Cancel**. After the clock stops, the sitting review opens. **Stop {task}** asks the same for the pen clock. |
+| `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle. Stop with open objectives asks **Yes** / **No** / **Cancel**. After the clock stops, the optional end-of-session reflection opens. The task stays open. **Stop {task}** asks the same for the pen clock. |
 | `OperationSettingsDialog.tsx` | per-operation settings: identity, categories, tracking tags, panels, presets, **Delete operation** |
 | `OperationHome.tsx` | Home: mission / progress / notes as a vertical instrument; work/neglect heatmap — cold (neglected) days read hotter (`.ops-heat-cell.is-cold`) |
 | `OperationTasksPanel.tsx` | To do: embeds the Lists content panel, including phase steps and part tasks |

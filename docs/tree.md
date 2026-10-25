@@ -126,7 +126,7 @@ use `ItemTagChip.tsx` / `TagInput.tsx` (catalog bead when the name matches; doub
 opens tag settings). Tabs and
 chrome come from `resolveDetailView` (item type + list overlays + capabilities);
 Task chrome is not the default for generic list items. Shared Scheduling pieces:
-`ItemScheduleFlags.tsx` (Send to Scheduler / Auto-push), `ItemEstimateField.tsx`
+`ItemScheduleFlags.tsx` (Send to Scheduler / Auto-push), `ItemEstimateField.tsx`, `ItemRewardField.tsx`
 (Details-tab estimate), `ReminderScheduleFields.tsx` (Reminders list When / Repeat including new/full moon / Text me / Persistent; the page and popup write that patch through immediately),
 People I Know biography (`components/People/person-detail.tsx` — `Task.personProfile` above the pipelines; birthday and standing notes edited once there; the plaque draws a pixel cake, and a later PNG folder is not loaded), then **Pipelines** (`components/People/person-pipelines.tsx` — Company
 time follows a joined pen; a stored timeblock row is kept and is not how membership is chosen),
@@ -135,7 +135,7 @@ per assigned To Do period). `ItemSaveFlag.tsx` stays on the fascia: green **Save
 while the draft matches the stored item, pink **Unsaved changes** while it does not.
 **Cmd/Ctrl+S** (`useItemDetailSaveHotkey.ts`) saves that draft while the surface is in front.
 An inbox item gets a smaller **Clarify** key (`InboxClarifyKey.tsx`) beside the INBOX chip.
-**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The brushed gear (`ItemSettingsKey.tsx`, `public/ui/settings-gear.png`, no keycap) opens **Settings** on top of the item (`ItemSettingsPanel.tsx`): item id, which attributes show, display names, and which tabs this item shows. On a popup the gear, minimize, and close sit in the title row beside the CRT, including when a step breadcrumb is above that row. A task's Details rail has **Open task card** (`ItemTaskCardKey.tsx`). While the pen clock is on this item or a parent of the live item, the fascia leads with an electric-blue **Working on this now** strip (`WorkingNowBanner.tsx`, `lib/working-now-banner.ts`). A task's Time tab (`ItemTimeLedger.tsx`) edits the blocks, objectives, and logs tagged to that task; a step total counts blocks tagged to the step, and says when a listed block is still on the whole task. A name opens **Attribute settings** (`AttributeSettingsDialog.tsx`). The popup's minimize key leaves a dock bar or icon (`ItemDetailDock.tsx`) so the draft stays mounted. Opening a list from the popup minimizes it.
+**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The brushed gear (`ItemSettingsKey.tsx`, `public/ui/settings-gear.png`, no keycap) opens **Settings** on top of the item (`ItemSettingsPanel.tsx`): item id, which attributes show, display names, and which tabs this item shows. On a popup the gear, minimize, and close sit in the title row beside the CRT, including when a step breadcrumb is above that row. A task's Details rail has **Open task card** (`ItemTaskCardKey.tsx`). While the pen clock is on this item or a parent of the live item, the fascia leads with an electric-blue **Working on this now** strip (`WorkingNowBanner.tsx`, `lib/working-now-banner.ts`). A task's Time tab (`ItemTimeLedger.tsx`) edits the blocks, objectives, and logs tagged to that task. The total is minutes indicated on this item plus each direct part, and those lines name the parts. A timed log counts its duration, not a longer start-to-end window. A saved actual is not added on top of the same blocks. A listed block with no worked minutes still says it is on the whole task. A name opens **Attribute settings** (`AttributeSettingsDialog.tsx`). The popup's minimize key leaves a dock bar or icon (`ItemDetailDock.tsx`) so the draft stays mounted. Opening a list from the popup minimizes it.
 The Detailed Description box keeps the height you drag it to for that item in this session.
 
 → [`components/README.md`](../components/README.md)
@@ -153,7 +153,7 @@ Default tab — date + the **Visual dashboard** (installed widget copies: points
 | [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-completion-cell.tsx`, `habits-tab-controls.tsx`, `hab-grade-sheet.tsx`, `habit-row-name.tsx`, `habit-heatmap.tsx`, `habit-priority-bar.tsx`, `habit-sort-control.tsx`, `habit-month-window-control.tsx`, `habit-week-window-control.tsx`, `habit-led-lamp.tsx`, `percent-led.tsx`, `percent-led-bar.tsx`, `habit-percent-readout.tsx`, `habit-grid.css`, `habit-chrome.css`, `habit-gems.tsx`, `gem-picker.tsx`, `habits-control-panel.tsx`, `exemption-wand-button.tsx`, `missed-op-wand-button.tsx`, `habit-wand-banner.tsx`, `habit-wand-banner.css`, `willpower-gems.tsx`, `noble-gas-tube.tsx`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `good-days-dialog.tsx`, `priority-math.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `PriorityReasonDialog.tsx`, `habit-tag-catalog.tsx`, `habit-list-popup.tsx`, `habit-sources-field.tsx`, `habit-source-detail.tsx`, `habit-period-breakdown.tsx`, `habit-span-breakdown.tsx`, `habit-completion-detail.tsx`, `habit-value-field.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store`, `time-tracking-store` (auto-fill tags) |
 | [Plan/](#homeplan)          | `plan-panel.tsx`, `plan-period-nav.tsx`, `plan-chrome.css`, `plan-theme.ts`, `plan-gem-mode.ts`, `plan-gem-mode-toggle.tsx`, `plan-gem-day.ts`, `plan-gem-day-body.tsx`, `plan-chip.tsx`, `plan-capacity.ts`, `plan-text-log.tsx`, `plan-tracked-ghosts.ts`, `season-view.tsx`, `month/week/day-view.tsx`, `agenda-grid.tsx`, `planned-tasks-sidebar.tsx`, `use-plan-rail-drag.ts`, `planned-action-dialog.tsx`, `event-dialog.tsx`, `paste-events-dialog.tsx`, `settings-dialog.tsx` | task, event, planned-action, plan-text, sleep-sync, time-tracking, unsaved-changes |
 | [ToDo/](#hometodo)          | `todo-panel.tsx`, `todo-filters.tsx`, `todo-prefs.ts`, `todo-chrome.css`, `TodoLoadPanel.tsx`, `TodoTable.tsx`, `TodoBreakdown.tsx`, `AddTodoDialog.tsx`, `DoneTodoSection.tsx`, `MissedTodoSection.tsx`, `UndoneTodoSection.tsx`, `AddDoneDialog.tsx`, `CompletionTimeLine.tsx`, `todo-utils.ts` | `task-store`, `todo-prefs` (`cogs-todo-prefs`), `lib/todo-commitment.ts`, `lib/todo-steps.ts` |
-| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `tracking-log-week.tsx`, `tracking-log-week.css`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `day-photos.tsx`, `pen-person-link.tsx`, `tracking-summaries.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `pen-settings-gate.tsx`, `open-pen-settings.ts`, `tag-settings-dialog.tsx`, `tag-settings-host.tsx`, `tag-settings-gate.tsx`, `open-tag-settings.ts`, `catalog-tag-chip.tsx`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
+| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `timegrid-reveal.ts`, `show-in-timegrid.ts`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `tracking-log-week.tsx`, `tracking-log-week.css`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `day-photos.tsx`, `pen-person-link.tsx`, `tracking-summaries.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `pen-settings-gate.tsx`, `open-pen-settings.ts`, `tag-settings-dialog.tsx`, `tag-settings-host.tsx`, `tag-settings-gate.tsx`, `open-tag-settings.ts`, `catalog-tag-chip.tsx`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
 
 Shared **selected day** via `lib/use-current-date.ts` — overview, Plan, the To Do day lens, and Tracking (a chosen other day persists across refresh / tab switches; a cursor left on today catches up after missed midnights, including on the next launch). To Do week, month, and season nameplates stay local. The date plate is the wall clock.
 
@@ -235,11 +235,12 @@ placement `resolved: "discarded"`. Item detail **Auto-push** (off unless turned
 on) does the same push when the period ends, onto the next To Do period, not
 into the Scheduler. The earliest Undone start feeds the priority date
 (`priorityDateOf`), so a later push does not reset `waiting Nd`.
+The task card is `TaskCard.tsx`. Durations follow the h/m switch in `task-card-unit.tsx`. Its aside time editor is `TaskCardTimeAside.tsx` (the same ledger as item detail, not a second time model). The prioritized star is `PriorityStar.tsx` (silver chrome in `priority-star.css`). Shine follows `priorityRefreshedOn`; at 14 days `priority-star-sweep.ts` clears the mark on read.
 **Could add:** duration rollups per day, est.-only filter.
 
 #### Home/Tracking/
 
-The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, and `now-log-lists.tsx`. Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Update state) sits above the Tracking / Plan switch. That popup reuses `TimeGrid`. It does not replace this desk.
+The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, `now-intake.tsx`, and `now-log-lists.tsx`. Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Intake, Update state) sits above the Tracking / Plan switch. Intake with no class can be sorted onto Food, Drink, or Drugs there. That popup reuses `TimeGrid`. It does not replace this desk.
 TimeGrid (`time-grid.tsx`, minute-accurate intervals, Activity / Location / Mood /
 Company views; **1m/5m/10m/15m/30m** cell size on the grid chrome via `cell-size-keys.tsx`
 (active key navy inset + phosphor cap); **Fill** via `fill-range-control.tsx` +
@@ -306,7 +307,7 @@ paints the same grid. Both clocks carry **objectives for right now**
 (`now-objectives-list.tsx`): add one for this moment, log one already completed,
 hide completed rows, and open a row for delete / save for later / attach to a
 task. Stop with any still open asks whether to keep them
-(`save-unfinished-dialog.tsx`, `lib/unfinished-objectives-store.ts`; Cancel leaves the clock running). After a stop, the sitting review (`session-debrief-dialog.tsx`, `lib/session-debrief.ts`) can correct the log, and a note for next time shows on the next start (`session-handoff-note.tsx`). `ClockTaskButton` (`clock-task-panel.tsx`) on the pen strip and the focus bar, and on the header now row while no task is on the clock yet, puts a task on the clock already running without splitting the painted block. When a task is already on it, the header key is **Card** and opens that task's To Do card. The name opens that task. The block's notes say it was added from Working On Now. Sleep is painted on the Time Grid or typed in the
+(`save-unfinished-dialog.tsx`, `lib/unfinished-objectives-store.ts`; Cancel leaves the clock running). After a stop, the optional end-of-session reflection (`session-debrief-dialog.tsx`, `lib/session-debrief.ts`) can correct the log. It does not complete the task. A note for next time, and the saved reflection, show on the next start (`session-handoff-note.tsx`). `ClockTaskButton` (`clock-task-panel.tsx`) on the pen strip and the focus bar, and on the header now row while no task is on the clock yet, puts a task on the clock already running without splitting the painted block. When a task is already on it, the header key is **Card** and opens that task's To Do card. The name opens that task. The block's notes say it was added from Working On Now. Sleep is painted on the Time Grid or typed in the
 block editor / Morning Review — there is no **Sleep this day** form
 (`lib/sleep-log.ts` → `lib/sleep-store.ts` → `lib/sleep-sync.ts`). Logged nights
 are painted onto the grid when Tracking mounts, after both persist vaults
@@ -323,12 +324,16 @@ and Analytics → Sleep reflects it either way.
 `Completion/CompletionPopupHost.tsx` + `CompletionDialog.tsx` — mounted once in
 `app/layout.tsx`. Subscribes to the completion event bus (`lib/completion-events.ts`,
 emitted by `task-store.updateTask`) so a popup appears on **every** task completion.
+The caption is a full-width CRT bar with a pixel star (`CompletionPixel.tsx`);
+the task name sits on a nameplate; Undo, Skip, and Save are house keycaps
+(`completion-dialog.css`).
 Captures objective/goal contributions (searchable lists, and **Add** creates a
 real objective or a year-count goal), advances goals, and awards the stacking
 objective point multipliers (1.5× default; prioritized objectives use a custom
 multiplier). The optional quick reflection records a finish on any date and
-time (exact or estimated), an exact, estimated, or unknown length, an exact,
-estimated, or unknown start, optional 1–10 reflections, and notes, and awards
+time (exact, estimated, or unknown — unknown keeps the mark-done stamp), an
+exact, estimated, or unknown length, an exact, estimated, or unknown start,
+optional 1–10 reflections, and notes, and awards
 3 points plus 0.1 per word (`lib/completion-review.ts`).
 Footer **Undo** reopens the task as still to-do (and drops that day's
 base points and any quick-review points); **Skip** keeps the win without a contribution; **Save** records one.
@@ -619,7 +624,9 @@ helpers in `lib/affirmations.ts`).
   and ingest, **Message ingest** (`MessageIngestPanel` — Telegram pairing,
   grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call /
   Text Shortcut AirDrop, cheat-sheet, simulate message + scan; see
-  [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), **Screen Time** (`ScreenTimePanel`
+  [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), **Phone sync** (`PhoneSyncPanel`
+  — texts, calls, and location on/off, last run; Health, email, and DMs listed
+  as not built), **Screen Time** (`ScreenTimePanel`
   — ActivityWatch URL, lookback, Sync now), **Import from Instagram data**
   (`InstagramImportPanel` — `following.json` and every `followers_N.json` in
   one upload; no password). **Library:** **Manage Item Types**
@@ -776,7 +783,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `focus-timer-log.ts` | Module focus timer complete → `timeLogs` on Working Now or a picked item (no Tracking paint) |
 | `habit-time-estimate.ts` | How long a habit's period took: its own minutes/hours value → painted Tracking minutes → amount × `minutesPerUnit` → flat length |
 | `completion-window.ts` | Where in the day a completion sat: last painted Tracking run → "just now" → that night's bedtime (stated, painted, or your usual), falling back to the day anchor; never backdated past the wake time |
-| `completion-review.ts` | Quick-review finish (any date and time, exact or estimated), length and start (each exact / estimated / unknown), optional 1–10 scores, and 3 + 0.1 per word on the points ledger. The summary also means satisfaction and distraction and keeps later `reflectNotes` |
+| `completion-review.ts` | Quick-review finish (any date and time, exact, estimated, or unknown — unknown keeps the mark-done stamp), length and start (each exact / estimated / unknown), optional 1–10 scores, and 3 + 0.1 per word on the points ledger. The summary also means satisfaction and distraction and keeps later `reflectNotes` |
 | `miss-reason-corpus.ts` | Dated why-it-didn't notes from push, missed tasks, habit cells, missed ops, and ritual reviews, with counts by preset token and by source |
 | `estimated-values.ts` | `FieldEstimate` provenance for autogenerated values; sticky confirmation (`canRegenerate`) |
 | `habit-week-streaks.ts` | 4+ day week streaks for daily habit chips |
@@ -1123,7 +1130,7 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | `screenshot-reel-server.mjs` | Serve the evolution reel and `feature-notes.json` (`npm run screenshot-reel`) |
 | `write-screenshot-reel.mjs` | Same server entry, kept next to the archive helper |
 | `cogs-dev-server.mjs`     | Next + `/api/health` + `/api/sync` + `/api/persist` + `/api/ingest` + `/api/notes` + `/api/screentime` on one port; Electron strict-port reclaim of leftover Node |
-| `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM |
+| `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM; `/api/health` probe so a second dev stack reuses the running one |
 | `persist-api.mjs`         | Chrome/Electron shared persist hub: every record-bearing vault is shrink-guarded, append-only logs only grow, and a write that loses rows journals the old copy into `data/recovery-backups/` |
 | `ingest-api.mjs`          | Dev hub for Telegram pending messages / replies |
 | `phone-hub.mjs` / `phone-hub.ts` | Always-on Telegram executor (`npm run phone:hub`), including photo/PDF download |
