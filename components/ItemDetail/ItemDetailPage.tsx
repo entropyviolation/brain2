@@ -15,7 +15,7 @@ import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
 import { InboxClarifyKey } from "@/components/ItemDetail/InboxClarifyKey"
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
@@ -414,7 +414,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     },
   })
   const { guardAction, requestClose } = guard
-  useItemDetailUnloadGuard(Boolean(task), isDraftDirty)
+  useItemDetailSession(Boolean(task), effectiveId, handleSave)
 
   const openItem = useCallback(
     (id: string) => guardAction(() => setOverrideId(id)),

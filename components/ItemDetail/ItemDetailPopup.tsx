@@ -23,7 +23,7 @@ import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { isReminderTask } from "@/lib/reminders"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { RichLinksPanel, useItemEdges } from "@/components/ItemDetail/links/RichLinksPanel"
@@ -118,7 +118,7 @@ import { CompletionDialog } from "@/components/Completion/CompletionDialog"
 import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
 import { SchedulingSummary } from "@/components/ItemDetail/SchedulingSummary"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
-import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
 
 /**
@@ -126,7 +126,10 @@ import "./item-detail-chrome.css"
  * (`StepItemStack`) is not "outside" this popup, so the popup underneath keeps
  * its place instead of closing.
  */
-function layerSafeDismiss<P extends ReturnType<typeof unsavedDismissProps>>(props: P): P {
+function layerSafeDismiss(handlers: {
+  onOutside: (event: Event) => void
+  onEscape: (event: KeyboardEvent) => void
+}) {
   const inLayer = (event: Event) => {
     const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as
       | Element
@@ -134,9 +137,12 @@ function layerSafeDismiss<P extends ReturnType<typeof unsavedDismissProps>>(prop
     return !!target?.closest?.("[data-item-layer]")
   }
   return {
-    ...props,
-    onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onPointerDownOutside(event)),
-    onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onInteractOutside(event)),
+    onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
+    onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      event.preventDefault()
+      if (!inLayer(event)) handlers.onEscape(event)
+    },
   }
 }
 
@@ -152,6 +158,8 @@ interface TaskDetailPopupProps {
   layerHeader?: ReactNode
   /** Phase 11: Complete on a step item ticks the step instead of completing the item. */
   onStepComplete?: () => void
+  /** Open straight onto the dock. A reload uses this so the editor does not flash open. */
+  startMinimized?: boolean
 }
 
 export function TaskDetailPopup({
@@ -162,6 +170,7 @@ export function TaskDetailPopup({
   container = null,
   layerHeader,
   onStepComplete,
+  startMinimized = false,
 }: TaskDetailPopupProps) {
   const detailRef = useRef<HTMLDivElement>(null)
   const settingsHost = useRef<HTMLDivElement>(null)
@@ -244,7 +253,7 @@ export function TaskDetailPopup({
   }, [visiblePanels, hiddenShell])
   const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
   const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
-  const [minimized, setMinimized] = useState(false)
+  const [minimized, setMinimized] = useState(startMinimized)
   const [dockShape, setDockShape] = useState<"bar" | "icon">("bar")
   const minimizeLock = useRef(false)
   const [detailTab, setDetailTab] = useState(() => {
@@ -422,7 +431,16 @@ export function TaskDetailPopup({
     },
   })
   const { guardAction } = guard
-  useItemDetailUnloadGuard(open && Boolean(task), isDraftDirty)
+  useItemDetailSession(open && Boolean(task), effectiveId, handleSave)
+  const outsideHold = useRef(false)
+  outsideHold.current =
+    itemSettingsOpen ||
+    attributeSettingsId != null ||
+    editingItemType != null ||
+    !!cycleLabel ||
+    missAsk ||
+    reviewOpen ||
+    guard.prompt.open
 
   // Every way out of the popup asks about unsaved edits first.
   const openItem = useCallback(
@@ -441,6 +459,18 @@ export function TaskDetailPopup({
     setAttributeSettingsId(null)
     setMinimized(true)
   }, [getDraft, setTask, task])
+  const saveAndMinimize = useCallback(() => {
+    handleSave()
+    minimize()
+  }, [handleSave, minimize])
+  const parkFromOutside = useCallback(
+    (event: Event) => {
+      event.preventDefault()
+      if (outsideHold.current) return
+      saveAndMinimize()
+    },
+    [saveAndMinimize],
+  )
   const handleNavigateToList = useCallback(
     (listId: string) => {
       minimize()
@@ -532,7 +562,13 @@ export function TaskDetailPopup({
           container={container}
           data-ui-name="Item detail"
           data-ui-docs="components/ItemDetail/README.md"
-          {...layerSafeDismiss(unsavedDismissProps(guard.requestClose))}
+          {...layerSafeDismiss({
+            onOutside: parkFromOutside,
+            onEscape: () => {
+              if (outsideHold.current) return
+              guard.requestClose()
+            },
+          })}
           data-item-layer={layerHeader !== undefined ? "" : undefined}
           hideClose
         >

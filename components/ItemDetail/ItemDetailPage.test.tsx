@@ -14,6 +14,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { TaskType } from "@/lib/types"
 import { EnhancedTaskDetail } from "@/components/ItemDetail/ItemDetailPage"
+import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 
 describe("EnhancedTaskDetail", () => {
   const onBack = vi.fn()
@@ -21,6 +22,7 @@ describe("EnhancedTaskDetail", () => {
   beforeEach(() => {
     resetLocalStorage()
     resetItemActivity()
+    resetItemDetailSessionForTests()
     onBack.mockClear()
     useItemTypeStore.getState().resetTypes()
     useTaskStore.getState().clearAllData()
@@ -77,17 +79,22 @@ describe("EnhancedTaskDetail", () => {
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
-  it("asks the browser before unload while dirty", async () => {
+  it("saves on reload and leaves the item pinned for the dock", async () => {
     const user = userEvent.setup()
     render(<EnhancedTaskDetail taskId="task-detail-1" onBack={onBack} />)
     const clean = new Event("beforeunload", { cancelable: true })
     window.dispatchEvent(clean)
     expect(clean.defaultPrevented).toBe(false)
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(45)
     await user.click(screen.getByRole("button", { name: /^Edit$/i }))
-    await user.type(screen.getByLabelText(/Estimated Duration/i), "5")
+    const duration = screen.getByLabelText(/Estimated Duration/i)
+    await user.clear(duration)
+    await user.type(duration, "90")
     const dirty = new Event("beforeunload", { cancelable: true })
     window.dispatchEvent(dirty)
-    expect(dirty.defaultPrevented).toBe(true)
+    expect(dirty.defaultPrevented).toBe(false)
+    expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
+    expect(readItemDetailDock()).toBe("task-detail-1")
   })
 
   it("shows not found when task id is missing", () => {
