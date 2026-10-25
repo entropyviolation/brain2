@@ -74,7 +74,7 @@ export function ItemPenLinksField({
   return (
     <div className="ipt-pens" data-ui-name="Item pens">
       <div className="ipt-chips">
-        {links.length === 0 && <span className="ipt-quiet">No pen linked. Time painted with a linked pen counts here.</span>}
+        {links.length === 0 && <span className="ipt-quiet">No pen linked. Link one and new paint from the clock counts here.</span>}
         {links.map((link, i) => {
           const pen = findPen(scopes, link.penId)
           return (

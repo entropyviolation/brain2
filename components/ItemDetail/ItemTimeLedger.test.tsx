@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
+import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ItemTimeLedger } from "./ItemTimeLedger"
 
@@ -75,6 +76,21 @@ describe("ItemTimeLedger", () => {
     expect(onPatch).toHaveBeenCalledWith({
       timeLogs: [expect.objectContaining({ id: "session-log-1", durationMinutes: 40 })],
     })
+  })
+
+  it("keeps a whole-task block out of the step total and says so", () => {
+    useTaskStore.setState({
+      tasks: [{ id: "t1", description: "Finish CDs", subtasks: [{ id: "cut", description: "Cut the tray" }], timeLogs: [] }],
+    } as never)
+    render(
+      <ItemTimeLedger
+        task={{ id: "step-1", description: "Cut the tray", stepOf: { taskId: "t1", stepId: "cut" }, penLinks: task.penLinks }}
+        onPatch={() => {}}
+      />,
+    )
+    expect(screen.getByText(/on this step/).textContent).toMatch(/0m/)
+    expect(screen.getByText(/names this step/)).toBeInTheDocument()
+    expect(screen.getAllByText("Whole task").length).toBeGreaterThan(0)
   })
 
   it("paints an added block onto this task", () => {
