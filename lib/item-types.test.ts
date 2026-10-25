@@ -15,6 +15,7 @@ import {
   applyRulesFor,
   validateItem,
   resolveDetailView,
+  applyItemDetailPanels,
   mergeTypeRegistry,
   type TypedAttributeSource,
 } from "@/lib/item-types"
@@ -429,6 +430,19 @@ describe("delta operators and implied-action effects", () => {
       expect.objectContaining({ kind: "logAction", delta: 12, titleTemplate: "read {delta} pages of {title}" }),
       expect.objectContaining({ kind: "incrementHabit", habitId: "task-9", amount: 12 }),
     ])
+  })
+})
+
+describe("applyItemDetailPanels", () => {
+  it("keeps details and drops a hidden panel", () => {
+    expect(applyItemDetailPanels(["details", "scheduling", "notes"], { hiddenDetailPanels: ["scheduling"] })).toEqual([
+      "details",
+      "notes",
+    ])
+  })
+
+  it("adds a panel this item asked to show", () => {
+    expect(applyItemDetailPanels(["details"], { shownDetailPanels: ["body"] })).toEqual(["details", "body"])
   })
 })
 

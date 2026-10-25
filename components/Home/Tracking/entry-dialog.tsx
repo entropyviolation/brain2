@@ -70,12 +70,25 @@ import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import { MoodStretchCard } from "@/components/Home/Tracking/mood-stretch-card"
 import { compactMoodReading, moodPenColor, normalizeWord, type MoodReading } from "@/lib/mood-reading"
 import {
+  addCompletedNowObjective,
   addNowObjective,
+  attachNowObjective,
   editNowObjectiveText,
   removeNowObjective,
   toggleNowObjectiveComplete,
   type NowObjective,
+  setNowObjectiveCompletes,
+  tieNowObjectiveToStep,
 } from "@/lib/now-objective"
+import {
+  attachChoicesForPen,
+  createTaskForObjective,
+  homeForObjective,
+  toParked,
+} from "@/lib/unfinished-objectives"
+import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
+import { useTaskStore } from "@/lib/task-store"
+import { openStepChoices } from "@/lib/task-clock-log"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
 import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
@@ -100,6 +113,11 @@ interface EntryDialogProps {
 }
 
 /** "the night ending Thu, Sep 17" — sleep is keyed by the morning it ended. */
+function blockFloor(entry: Pick<TimeEntry, "date" | "startMin">): Date {
+  const [year, month, day] = entry.date.split("-").map(Number)
+  return new Date(year, (month || 1) - 1, day || 1, Math.floor(entry.startMin / 60), entry.startMin % 60, 0, 0)
+}
+
 function nightLabel(date: string): string {
   const parsed = parseLocalDate(date)
   return parsed ? parsed.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : date
@@ -169,6 +187,11 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
   })
   const [notes, setNotes] = useState(entry.notes ?? "")
   const [nowObjectives, setNowObjectives] = useState<NowObjective[] | undefined>(entry.nowObjectives)
+  const tasks = useTaskStore((s) => s.tasks)
+  const attachChoices = useMemo(
+    () => attachChoicesForPen(tasks, entry.penId, entry.taskId),
+    [tasks, entry.penId, entry.taskId],
+  )
   const [reading, setReading] = useState<MoodReading>(entry.moodReading ?? {})
   const [assumed, setAssumed] = useState(entry.precision === "estimated")
   // Per-end certainty. An older block that only has a block-wide value reads as both ends.
@@ -1058,9 +1081,48 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             mode="inline"
             objectives={nowObjectives}
             onAdd={(text) => setNowObjectives((list) => addNowObjective(list, text))}
+            onAddCompleted={(text) =>
+              setNowObjectives((list) => addCompletedNowObjective(list, text, blockFloor(entry)))
+            }
             onEditText={(id, text) => setNowObjectives((list) => editNowObjectiveText(list, id, text))}
             onToggleComplete={(id) => setNowObjectives((list) => toggleNowObjectiveComplete(list, id))}
             onRemove={(id) => setNowObjectives((list) => removeNowObjective(list, id))}
+            onSaveForLater={(id) => {
+              const row = (nowObjectives ?? []).find((item) => item.id === id)
+              if (row && !row.completedAt) {
+                const home = homeForObjective(row, {
+                  taskId: entry.taskId,
+                  stepId: entry.stepId,
+                  scopeId: entry.scopeId,
+                  penId: entry.penId,
+                })
+                const parked = home ? toParked(row, home) : null
+                if (parked) useUnfinishedObjectivesStore.getState().upsert([parked])
+              }
+              setNowObjectives((list) => removeNowObjective(list, id))
+            }}
+            onAttach={(id, target) => {
+              const taskId =
+                "createName" in target
+                  ? createTaskForObjective(target.createName, { scopeId: entry.scopeId, penId: entry.penId })
+                  : target.taskId
+              if (!taskId) return
+              const stepId = "createName" in target ? undefined : target.stepId
+              setNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+            }}
+            attachChoices={attachChoices}
+            stepChoices={entry.taskId ? openStepChoices(entry.taskId) : undefined}
+            onTieStep={
+              entry.taskId
+                ? (id, stepId) =>
+                    setNowObjectives((list) =>
+                      stepId === "new"
+                        ? list
+                        : setNowObjectiveCompletes(tieNowObjectiveToStep(list, id, stepId), id, false),
+                    )
+                : undefined
+            }
+            onSetCompletes={(id, completes) => setNowObjectives((list) => setNowObjectiveCompletes(list, id, completes))}
           />
 
           <div>

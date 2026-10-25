@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
-
 import { cn } from "@/lib/utils"
+import { KeycapClose } from "@/components/keycap-close"
 
 const Dialog = DialogPrimitive.Root
 
@@ -54,9 +53,8 @@ const DialogContent = React.forwardRef<
     >
       {children}
       {!hideClose && (
-        <DialogPrimitive.Close className="b2-close-key absolute">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
+        <DialogPrimitive.Close asChild>
+          <KeycapClose corner className="absolute" />
         </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Content>

@@ -20,6 +20,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { AttributeSchemaEditor } from "@/components/Lists/attributes/AttributeSchemaEditor"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -66,19 +67,12 @@ export function ModuleListsPanel({
               </div>
               <div className="flex-1 min-w-[140px] space-y-1">
                 <Label className="text-[10px]">List</Label>
-                <NativeSelect
-                  aria-label={`List ${idx + 1}`}
-                  className={SELECT_CLS}
+                <SingleListPicker
                   value={binding.categoryId}
-                  onChange={(e) => update(idx, { categoryId: e.target.value })}
-                >
-                  <option value="">Choose a list…</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </NativeSelect>
+                  onValueChange={(id) => update(idx, { categoryId: id })}
+                  emptyLabel="Choose a list…"
+                  searchLabel={`List ${idx + 1}`}
+                />
               </div>
               <div className="flex-1 min-w-[140px] space-y-1">
                 <Label className="text-[10px]">Item type (optional)</Label>

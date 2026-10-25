@@ -3,19 +3,22 @@
  */
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
+import { undoLastAction } from "@/lib/action-history"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Subtask, Task } from "@/lib/types"
 import { parseObjectiveClock } from "@/lib/now-objective"
 import {
   addPenColorNowObjective,
+  startPenColorSession,
   stopPenColorSession,
   tickPenColorSession,
   tiePenColorNowObjective,
   togglePenColorNowObjectiveComplete,
 } from "./pen-color-session"
 import { usePenColorSessionStore } from "./pen-color-session-store"
-import { clockPenFor, isTaskOnClock, startTaskClock, stepPenLinks } from "./task-clock"
+import { clockPenFor, isTaskOnClock, startTaskClock, stepPenLinks, assignTaskOnClock, completeClockStep, finishClockTask } from "./task-clock"
+import { WORKING_ON_NOW_NOTE_PREFIX } from "./task-clock-log"
 
 const AT = new Date(2026, 9, 15, 20, 24, 0)
 const later = (min: number) => new Date(AT.getTime() + min * 60_000)
@@ -88,7 +91,9 @@ describe("startTaskClock", () => {
     const log = task().timeLogs?.[0]
     expect(log).toMatchObject({ durationMinutes: 23, stepId: "confirm wood", taskId: "cds", startTime: "20:24" })
     expect(log?.entryIds?.length).toBeGreaterThan(0)
-    expect(log?.notes).toContain("Finish CDs › inside holder › confirm wood")
+    expect(log?.notes).toBe(
+      "added from Working On Now, task: Finish CDs subtasks completed: none objectives completed: none",
+    )
   })
 
   it("a plain pen clock still writes nothing on any task", () => {
@@ -171,5 +176,47 @@ describe("stepPenLinks", () => {
     expect(stepPenLinks(t, "p")).toMatchObject({ links: [b], own: true })
     expect(stepPenLinks(t, "q").links).toEqual([])
     expect(stepPenLinks({ ...t, subtasks: [] }, "x")).toMatchObject({ links: [a], from: null })
+  })
+})
+
+describe("the task on a clock that is already running", () => {
+  it("keeps the one block, names it in the note, and logs that note on the task", () => {
+    seed()
+    startPenColorSession("act-exercise", AT)
+    assignTaskOnClock("cds", "confirm wood")
+    const row = session()!.nowObjectives!.find((item) => item.stepId === "confirm wood")!
+    togglePenColorNowObjectiveComplete(row.id, later(6))
+    stopPenColorSession(later(6))
+
+    const entry = useTimeTrackingStore.getState().entries.find((e) => e.penId === "act-exercise")!
+    expect(useTimeTrackingStore.getState().entries.filter((e) => e.penId === "act-exercise")).toHaveLength(1)
+    expect(entry.notes).toContain(`${WORKING_ON_NOW_NOTE_PREFIX}, task: Finish CDs`)
+    expect(entry.notes).toContain("subtasks completed: confirm wood")
+    expect(entry.notes).toContain("objectives completed: confirm wood")
+    expect(entry).toMatchObject({ taskId: "cds", stepId: "confirm wood" })
+    const log = task().timeLogs?.[0]
+    expect(log?.notes).toBe(entry.notes)
+    expect(log?.stepId).toBe("confirm wood")
+    expect(log?.taskId).toBe("cds")
+  })
+
+  it("finishes the current step and moves to the next open one", () => {
+    seed({ penLinks: [{ scopeId: "activity", penId: "act-exercise" }] })
+    startTaskClock("cds", { stepId: "confirm wood", now: AT })
+    completeClockStep("confirm wood")
+    const wood = task().subtasks![0].subtasks!.find((step) => step.id === "confirm wood")
+    expect(wood?.completed).toBe(true)
+    expect(session()!.stepId).toBe("confirm hidden message")
+  })
+
+  it("completes the task and stops the clock as one undo", () => {
+    seed({ penLinks: [{ scopeId: "activity", penId: "act-exercise" }] })
+    startTaskClock("cds", { now: AT })
+    finishClockTask(false, later(3))
+    expect(session()).toBeNull()
+    expect(task().completed).toBe(true)
+    undoLastAction()
+    expect(task().completed).toBe(false)
+    expect(session()?.taskId).toBe("cds")
   })
 })

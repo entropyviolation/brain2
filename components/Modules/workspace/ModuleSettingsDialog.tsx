@@ -26,6 +26,7 @@ import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { ModuleViewEditor } from "./ModuleViewEditor"
 import { ModuleListsPanel } from "./ModuleListsPanel"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -202,19 +203,12 @@ export function ModuleSettingsDialog({
               <div className="grid grid-cols-2 gap-2 rounded-md border p-2">
                 <div className="space-y-1">
                   <Label className="text-[10px]">Source list</Label>
-                  <NativeSelect
-                    aria-label="Plan sync list"
-                    className={SELECT_CLS}
+                  <SingleListPicker
                     value={draft.planSync.categoryId}
-                    onChange={(e) => patch({ planSync: { ...draft.planSync!, categoryId: e.target.value } })}
-                  >
-                    <option value="">Choose…</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                    onValueChange={(id) => patch({ planSync: { ...draft.planSync!, categoryId: id } })}
+                    emptyLabel="Choose…"
+                    searchLabel="Plan sync list"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Date attribute</Label>

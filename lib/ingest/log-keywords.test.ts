@@ -71,10 +71,11 @@ describe("log keywords", () => {
     // No verb is a log line too, so a bare saved phrase logs as that phrase.
     ingestIncoming(sim("went outside"), SENT)
     expect(useTimeTrackingStore.getState().entries.filter((row) => row.title === "went outside")).toHaveLength(3)
-    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside")).toBe(false)
+    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside" && row.stage === "inbox")).toBe(false)
+    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside" && row.type === "log")).toBe(true)
     ingestIncoming(sim("inbox: went outside"), SENT)
     expect(useTimeTrackingStore.getState().entries.filter((row) => row.title === "went outside")).toHaveLength(3)
-    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside")).toBe(true)
+    expect(useTaskStore.getState().tasks.some((row) => row.description === "went outside" && row.stage === "inbox")).toBe(true)
   })
 
   it("reads military clocks, dotted meridians, and a US date on log lines", () => {

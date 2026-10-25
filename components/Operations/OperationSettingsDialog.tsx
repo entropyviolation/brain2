@@ -21,6 +21,7 @@
 
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { useTaskStore } from "@/lib/task-store"
 import {
   OPERATION_ATTR,
@@ -129,9 +130,7 @@ export function OperationSettingsDialog({
       <DialogContent className="ops95-dialog sm:max-w-2xl">
         <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="ops-title-text">Operation settings</DialogTitle>
-          <button type="button" className="ops-title-btn b2-close-key" aria-label="Close" onClick={onClose}>
-            ×
-          </button>
+          <KeycapClose label="Close" onClick={onClose} />
         </DialogHeader>
 
         <div className="ops-dialog-body">
@@ -383,9 +382,7 @@ export function OperationSettingsDialog({
         <DialogContent className="ops95-dialog sm:max-w-md">
           <DialogHeader className="ops-title-bar flex-row items-center space-y-0 text-left">
             <DialogTitle className="ops-title-text">Are you sure?</DialogTitle>
-            <button type="button" className="ops-title-btn b2-close-key" aria-label="Close" onClick={() => setConfirmDelete(false)}>
-              ×
-            </button>
+            <KeycapClose label="Close" onClick={() => setConfirmDelete(false)} />
           </DialogHeader>
           <div className="ops-dialog-body">
             <p>
