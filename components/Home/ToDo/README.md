@@ -15,14 +15,14 @@ The **day** lens is Home’s selected day (`currentDate` / `setCurrentDate` from
 - **Prerequisites** (Phase 3, 2026-10-15). Every open step in the lid has a quiet **Needs…** key (it shows on hover). It starts **link mode**: a violet banner names the step that is choosing, and every other step becomes a **needed?** / **✓ needed** toggle, written to `Subtask.dependsOn`. A toggle is disabled where it would loop, where the step is family (an ancestor or descendant), or where the step is done. **Done** or Esc ends link mode. A step still waiting shows a violet **⊘ needs …** chip (click it to change) and a dimmed name. A step waits on its ancestors' prerequisites too.
 - At task level, the lid's Flags row has **Needs…**, which opens `TaskPrereqDialog`: the Plan checklist search (`EventPrereqPicker`) over open tasks, writing `Task.dependencies`, with **Create** for a new unscheduled task. A loop is refused and spelled out (`findCyclePath`). A blocked row shows **⊘ needs …** beside its name. Just Start and Available now read the same fields. Helpers: `lib/prereqs.ts`.
 
-**Planned (2026-10-16), same plan doc.** _Last mapped: 2026-10-16._ Decisions are in the plan doc; only 9 (drag across tasks) is still open. Session plans (Phase 4) are being built in `SessionPlanner.tsx` and `lib/session-plan.ts`, not committed yet; their third tier reads **Exceptional**, and since slice Q (2026-10-16) the stored id is `exceptional` too. New phases, all optional fields and toggles so nothing current changes:
-- **Phase 4, keep, park and resume.** Built 2026-10-16 (slice H), not committed. See [Sessions: park, resume, shelves](#sessions-park-resume-shelves). Park in the focus bar, templates, Just 25, breaks, the flat list and the other ways in followed in slice H2 (see [Sessions: ways in, templates, timebox](#sessions-ways-in-templates-timebox-slice-h2)). Padded for you (FN-2) is wired too.
+**Planned (2026-10-16), same plan doc.** _Last mapped: 2026-10-25._ Decisions are in the plan doc; only 9 (drag across tasks) is still open. Session plans live in `SessionPlanner.tsx` and `lib/session-plan.ts`. Their third tier reads **Exceptional**, and since slice Q (2026-10-16) the stored id is `exceptional` too. The 2026-10-16 notes that called these slices uncommitted were written before they landed. New phases, all optional fields and toggles so nothing current changes:
+- **Phase 4, keep, park and resume.** Built 2026-10-16 (slice H). See [Sessions: park, resume, shelves](#sessions-park-resume-shelves). Park in the focus bar, templates, Just 25, breaks, the flat list and the other ways in followed in slice H2 (see [Sessions: ways in, templates, timebox](#sessions-ways-in-templates-timebox-slice-h2)). Padded for you (FN-2) is wired too.
 - **Phase 6.** Every task and step shows `est · parts · spent`; spent adds up across sittings until done.
 - **Phase 8.** Morning and Night rite rows follow the sun on today's day lens: Night hides until sunset, Morning hides from sunset while not done. Header → Rituals is unchanged. Show-bay toggle `ritesFollowSun`.
-- **Phase 9.** _Last mapped: 2026-10-16._ **Built (slice K), not committed.** One `StepTree` (`components/steps/`) shared with item detail → Subtasks: clear hierarchy, no empty stylus lines, ▶ kept, drag and Shift/Cmd-click multi-move, **Hide locked** and **Show next only**, and the calm line. See [Steps](#steps). Not built: cross-task drag (Decision 9 open), Paste as log (waits for slice I).
+- **Phase 9.** _Last mapped: 2026-10-25._ **Built (slice K).** One `StepTree` (`components/steps/`) shared with item detail → Subtasks: clear hierarchy, no empty stylus lines, ▶ kept, drag and Shift/Cmd-click multi-move, **Hide locked** and **Show next only**, and the calm line. See [Steps](#steps). Not built: cross-task drag (Decision 9 open), Paste as log (waits for slice I).
 - **Phase 10.** Bare minimum / Goal / Exceptional on steps (`Subtask.tier`, unset top level = Goal), inherited down the tree. Percent done becomes **weighted by the tree** (each child an equal share of its parent), and a task shows the level it is completed to. _Last mapped: 2026-10-25._ The closed row does not draw the three B / G / E percents. Its Done cell is the glass tube at σ, the average already on the task card. The lid, the card, and item detail still show Begin / Grow / End.
 - **Phase 11.** Steps become items when needed (`Subtask.itemId`, `Task.parentTaskId` + `stepOf`). Clicking a step's star or dot opens its item detail on top of whatever is open, with Back.
-- **Phase 12.** _Last mapped: 2026-10-16._ **Built (slice O), not committed.** The **To Do task card**. See [Task card](#task-card).
+- **Phase 12.** _Last mapped: 2026-10-25._ **Built (slice O).** The **To Do task card**. See [Task card](#task-card).
 - **Phase 13.** Drag whole branches into session tiers, split one tree across tiers, and session-only tasks that **Persist** on request.
 - **Phase 14.** Only prerequisites (`dependencies`, `dependsOn`) **lock**; open steps leave a task **incomplete**, never locked. New `lib/unlock-value.ts` adds an `unlocks` signal to the Priority formula, so a prerequisite of valuable work rises. A blocker sorts above its locked row, and a prerequisite inherits the earliest deadline of what waits on it. A task with nothing waiting on it ranks as today. Later, a prerequisite can be met at a level (Decision 11).
 - **Phase 15.** Less pressure: Just Start offers two or three choices, a time-box ring, an end-of-sitting strip; neutral words (no "should", warm red only for overruns); a quiet attention-given line on Done; a notice dot on rows pushed 3+ times; a **Waiting** shelf after 5 pushes (`waitingShelfAfter`, 0 = off); step points hidden behind **Points visible**. Also added to earlier phases: a future-self note and **Just 25** sessions (4), your own pace ghost (6), **Show next only** and the "waiting, not forgotten" line (9), spark marks (10).
@@ -176,7 +176,7 @@ The page scrolls. Fascia, load strip, ledger, Done/Missed/Undone, and the dove d
 
 ## Sessions: park, resume, shelves
 
-_Last mapped: 2026-10-16._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, Keep, park and resume). Built, not committed.
+_Last mapped: 2026-10-25._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, Keep, park and resume). Built.
 
 - **Store.** `lib/session-plan-store.ts` holds `open` (every draft and parked session, plus at most one running or in review), `focusId` (the one the popup shows), `history` (closed, append-only) and `kept`. `put` goes through `admitSession`, so a session going live parks the one that was. `focus` drops an empty draft it leaves behind. Persist `version: 2`; `migrateSessionBlob` moves a v0 or v1 `current` into `open` and renames `excellent` → `exceptional`. Backups carry the same key. `lib/vault-guard.js` counts `open` and `history` (slice H2); only `history` must keep growing on the hub (`logArrays`).
 - **End of sitting.** _Last mapped: 2026-10-16._ **End** in the run view first pauses the session and shows `SittingEnd` (`components/Focus/`): "Sat 52m. Left it here:" with the next leaf of the current line's task. Keep saves it as that step's `context`; Keep or Skip then ends into the review (Phase 15 A).
@@ -229,7 +229,7 @@ _Last mapped: 2026-10-22._ Redesigned after Tidy's **Working the plan** (`TidyVi
 
 ## Sessions: ways in, templates, timebox (slice H2)
 
-_Last mapped: 2026-10-16._ Slice H2 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, "Not built yet" and "Additions"). Built, not committed.
+_Last mapped: 2026-10-25._ Slice H2 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) (Phase 4, "Not built yet" and "Additions"). Built.
 
 - **Ways in.** Outside To Do, a way in sets a request on `lib/session-open-store.ts` (tiny, not persisted). `SessionDock.tsx` reads it and shows the planner over today's open tasks. The header Now box (`components/header-now-box.tsx`) hosts the dock and loads it only once a request is set. The ways in:
   - **Focus bar:** **Session** and **Just 25** on the task on the clock, or **Park session** while one runs.
@@ -446,7 +446,7 @@ On **Assigned**, `pinPrioritizedFirst` always puts prioritized rows first; the c
 
 ### What waits on a row (Phase 14, task half)
 
-_Last mapped: 2026-10-21._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), task half. Built, not committed.
+_Last mapped: 2026-10-25._ Slice S of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), task half. Built.
 
 - **Priority sort only.** `sortTodosByPriority` (`todo-utils.ts`) reads `unlockContextFor` from `lib/unlock-value.ts` over the whole task list, so a waiting task counts even when it is not on this list. It adds the fifth `unlocks` signal and an urgency floor from the inherited due date. A row with nothing waiting scores exactly as before.
 - **Blocker goes first.** `blockersFirst` then moves an open prerequisite on the list to just above the first row waiting on it. Required / Assigned split and `pinPrioritizedFirst` run after, so this holds within each partition and Prioritized stays pinned.
@@ -495,7 +495,7 @@ _Last mapped: 2026-10-25._ **In progress** = `status === "partial"` (started, no
 
 ## Neutral words, the notice dot, attention given (Phase 15 B)
 
-_Last mapped: 2026-10-16._ Built, not committed. House rule: [No "should"](../../../docs/DESIGN_STYLE.md#no-should). Plan: [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) Phase 15 B.
+_Last mapped: 2026-10-25._ Built. House rule: [No "should"](../../../docs/DESIGN_STYLE.md#no-should). Plan: [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md) Phase 15 B.
 - **Words.** The lid reads "Waiting since Tue" (a date past a week), from `waitingSinceLabel` in `TodoTable.tsx`. The push tube's title reads "Pushed ×3". Required reads "you marked this one", not "must be done". The comfort band `behind` reads "more than fits" (the key stays). Missed keeps its word, key and record; its tooltip reads "the window for it passed".
 - **Ink.** The Missed key, the Missed well and its lamp, and the comfort `behind` arc are neutral ink, not red (`todo-chrome.css`). Warm red stays on estimate overruns only (`.is-over`).
 - **Notice dot.** A row pushed 3+ times across day, week and month (`needsNotice`, `lib/notice-dot.ts`) shows a small ink dot after its name. Clicking it opens one line: "I'd like to understand what's going on with this one…". Enter saves a dated `noteLog` entry with `tag: "notice"` and `pushCount` (`withNoticeAnswer`). The dot stays quiet until the next push. It shows in item detail → Notes with the other entries, and on the task card (Phase 12).

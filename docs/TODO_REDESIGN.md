@@ -1,12 +1,11 @@
 # To Do redesign plan
 
-Home → To Do. _Last mapped: 2026-10-16._
+Home → To Do. _Last mapped: 2026-10-25._
 
 **Status.**
 - **Shipped 2026-10-15:** Phases 0–3. What they built is described in the room READMEs, not here (see [What already exists](#what-already-exists)).
-- **Built 2026-10-16, not committed:** Phase 4 sessions (slices G, Q, H), Phase 5 (slice E), Phase 6 (slices F and L, plus Operations naming a task) and Phase 8 (slice J).
-- **Next:** K, S (task half), and the Phase 4 leftovers.
-- **Planned:** Phases 7 and 9–15. Phase 6 leftovers: a default estimate per tier; spent on the task card (Phase 12) and on every `StepTree` step (Phase 9).
+- **In the repo:** Phase 4 sessions, Phase 5 pens, Phase 6 spent and pace, Phase 8 rites that follow the sun, Phase 9 the shared step tree, Phase 10 tiers, Phase 11 steps as items, Phase 12 the task card, Phase 14 unlocks, and Phase 15 B neutral words. The 2026-10-16 "not committed" marks described work that has since landed.
+- **Still open inside those phases:** a default estimate per tier, list-scope pace in Settings, cross-task drag (Decision 9), Paste as log, and a prerequisite met at a level. Phase 7 and Phase 13 are not marked built.
 
 Behavior as it is now lives in [`components/Home/ToDo/README.md`](../components/Home/ToDo/README.md). The house order is [`DESIGN_STYLE.md`](DESIGN_STYLE.md): failures first, then layout, then palette. Tidy is the model for plans and for "currently working on" ([Modules README → Tidy internals](../components/Modules/README.md)). To Do copies Tidy's patterns but never imports `TidyView`.
 
@@ -245,7 +244,7 @@ Also used by the Night rite's **Put the day down** (FN-9, Phase 8).
 
 ## Phase 4: Session plans
 
-_Last mapped: 2026-10-16._ Built (slices G, Q, H), not committed. A session is a time box with three tiers of lines, worked through with a clock. Lines are pointers (`SessionLine { taskId, stepId?, estMin?, actualSec?, doneAt?, outcome? }`), never copies. Points follow the completion-tier rules. Behavior as built: [To Do README → Sessions](../components/Home/ToDo/README.md#sessions-park-resume-shelves).
+_Last mapped: 2026-10-25._ Built (slices G, Q, H). A session is a time box with three tiers of lines, worked through with a clock. Lines are pointers (`SessionLine { taskId, stepId?, estMin?, actualSec?, doneAt?, outcome? }`), never copies. Points follow the completion-tier rules. Behavior as built: [To Do README → Sessions](../components/Home/ToDo/README.md#sessions-park-resume-shelves).
 
 **Not built yet from the original plan** (not found in `SessionPlanner.tsx` / `lib/session-plan.ts` on 2026-10-16):
 - **Ways in:** focus bar, dragging across empty time in Plan's day view, the header Now box, and **Session with this / these** on the task card (Phase 12). The fascia **Session** and **Sessions** keys exist.
@@ -270,7 +269,7 @@ _Last mapped: 2026-10-16._ Built (slices G, Q, H), not committed. A session is a
 
 ## Phase 5: Pens on items (both directions)
 
-_Last mapped: 2026-10-16._ **Built (slice E), not committed.** `trackedTimeForItem` / `trackedMinutesForItem` in `lib/tracked-time.ts`; `ItemPenTime.tsx` in item detail (popup Time tab, page Scheduling tab); `pen-linked-items.tsx` in Pen settings; `tasksLinkedToPen` / `setTaskPenLinked` in `lib/task-clock.ts`. Logs that name their blocks (`entryIds`) only add what those blocks did not. The task card header waits for Phase 12. Behavior: [ItemDetail README](../components/ItemDetail/README.md).
+_Last mapped: 2026-10-25._ **Built (slice E).** `trackedTimeForItem` / `trackedMinutesForItem` in `lib/tracked-time.ts`; `ItemPenTime.tsx` in item detail (popup Time tab, page Scheduling tab); `pen-linked-items.tsx` in Pen settings; `tasksLinkedToPen` / `setTaskPenLinked` in `lib/task-clock.ts`. Logs that name their blocks (`entryIds`) only add what those blocks did not. The task card's Pen section is Phase 12. Behavior: [ItemDetail README](../components/ItemDetail/README.md).
 
 People already do this: a person's company pen (`PersonPipeline { kind: "company-pen", penId }`, `lib/people-i-know.ts`) owns blocks painted with it. Tasks get the same.
 
@@ -287,7 +286,7 @@ People already do this: a person's company pen (`PersonPipeline { kind: "company
 
 ## Phase 6: Estimates, parts, time spent, and your own pace
 
-_Last mapped: 2026-10-16._ **Slices F and L built, not committed.** L: `stepSpentMinutes` / `stepSpentMap` / `settleSpentOnFinish` (`lib/tracked-time.ts`), `lib/estimate-pace.ts`, `use-todo-time.ts`, `todo-pace.tsx`; rows read `spent/counts`, the lid reads `est · parts · spent · pen`, steps get spent chips, the ghost sits beside estimate fields, and the session fit gauge reads `paceFor`. Operations naming a task is the **…or a task** menu in `WorkingNowControl.tsx`. Behavior: [To Do README → Time spent and your pace](../components/Home/ToDo/README.md), [Operations README](../components/Operations/README.md). **Still planned:** a default per tier, list-scope pace in Settings (the API takes `listIdsOf`; no UI yet), and the task card and `StepTree` placements.
+_Last mapped: 2026-10-25._ **Slices F and L built.** L: `stepSpentMinutes` / `stepSpentMap` / `settleSpentOnFinish` (`lib/tracked-time.ts`), `lib/estimate-pace.ts`, `use-todo-time.ts`, `todo-pace.tsx`; rows read `spent/counts`, the lid reads `est · parts · spent · pen`, steps get spent chips, the ghost sits beside estimate fields, and the session fit gauge reads `paceFor`. Operations naming a task is the **…or a task** menu in `WorkingNowControl.tsx`. Behavior: [To Do README → Time spent and your pace](../components/Home/ToDo/README.md), [Operations README](../components/Operations/README.md). **Still planned:** a default per tier, and list-scope pace in Settings (the API takes `listIdsOf`; no UI yet). Spent is on the task card and on `StepTree`.
 
 Slice F notes: `countingMinutes` (`lib/todo-steps.ts`) is the one rule; Plan's drop and `plan-capacity.ts` use it. **Default est** is one To Do pref (`defaultEstimateMin`, Pace bay, default 30), not one per tier yet; rows show it as `~30`, and the load strip still counts those rows as unestimated. Operations totals read `trackedTimeForItems`, which unions minutes per day so a clock log and its block count once. The lid's spent and Operations naming a task came with slice L.
 
@@ -340,7 +339,7 @@ House language stays: cool silver well, short rounded cards, nixie tier, the sil
 
 ## Phase 8: Rites that follow the sun, and calmer rites
 
-_Last mapped: 2026-10-16._ **Built (slice J), not committed:** Night hidden on today's day lens until sunset, Morning hidden from sunset while not done, started or done rites never hidden, other days unchanged, toggle `ritesFollowSun` (default on). See [To Do README → Rites follow the sun](../components/Home/ToDo/README.md#rites-follow-the-sun). Header → Rituals never hides a rite.
+_Last mapped: 2026-10-25._ **Built (slice J):** Night hidden on today's day lens until sunset, Morning hidden from sunset while not done, started or done rites never hidden, other days unchanged, toggle `ritesFollowSun` (default on). See [To Do README → Rites follow the sun](../components/Home/ToDo/README.md#rites-follow-the-sun). Header → Rituals never hides a rite.
 
 **Additions (2026-10-16).**
 - **Put the day down (FN-9).** The Night rite (`RitualSteps.tsx`, Reviews room) gains an optional first row: a free-text box for anything still in your head. On **Done** it runs `lib/work-log-parse.ts` (slice I) and shows the same preview as Paste as log: lines that name an open task become steps or ticks on it; other lines become new tasks on tomorrow's day list. Nothing is written without the preview. **Skip** is always there. Turned on per rite in the rite's settings (default off).
