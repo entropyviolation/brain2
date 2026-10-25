@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { addPenColorNowObjective } from "@/lib/pen-color-session"
 import { startTaskClock } from "@/lib/task-clock"
 import type { Task } from "@/lib/types"
@@ -54,6 +55,32 @@ describe("task clock UI", () => {
     expect(usePenColorSessionStore.getState().session).toMatchObject({ taskId: "cds", stepId: "spines", penId: "act-exercise" })
     expect(task().penLinks?.[0].penId).toBe("act-exercise")
     expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
+  it("creates a pen in the picker, assigns it, and can leave it unremembered", () => {
+    seed()
+    render(<StarterHarness />)
+    fireEvent.click(screen.getByRole("button", { name: "go" }))
+    fireEvent.change(screen.getByLabelText("Search pens"), { target: { value: "no-such-pen" } })
+    expect(screen.getByText("No pen matches.")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Create “no-such-pen”" }))
+    const session = usePenColorSessionStore.getState().session
+    expect(session).toMatchObject({ taskId: "cds", stepId: "spines" })
+    const pen = useTimeTrackingStore
+      .getState()
+      .scopes.flatMap((scope) => scope.pens)
+      .find((row) => row.id === session?.penId)
+    expect(pen?.name).toBe("no-such-pen")
+    expect(task().penLinks?.[0].penId).toBe(session?.penId)
+
+    usePenColorSessionStore.setState({ session: null })
+    useTaskStore.getState().updateTask({ ...task(), penLinks: undefined })
+    fireEvent.click(screen.getByRole("button", { name: "go" }))
+    fireEvent.change(screen.getByLabelText("Search pens"), { target: { value: "once-only" } })
+    fireEvent.click(screen.getByRole("checkbox", { name: "Remember for this task" }))
+    fireEvent.click(screen.getByRole("button", { name: "Create “once-only”" }))
+    expect(task().penLinks).toBeUndefined()
+    expect(usePenColorSessionStore.getState().session?.taskId).toBe("cds")
   })
 
   it("stacks over an open dialog: Escape and Cancel close only the picker", () => {

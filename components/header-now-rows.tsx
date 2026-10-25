@@ -3,8 +3,10 @@
  *
  * Loaded by `header-now-box.tsx` only after an Operations or pen-color session
  * is already live. This module may read the timegrid (pen color) and the
- * clock hooks (pause, stop, elapsed, objectives-for-right-now popup, and the
- * task key on a pen clock). The always-mounted shell does not.
+ * clock hooks (pause, stop, elapsed, objectives-for-right-now popup). The
+ * always-mounted shell does not. A pen clock with a task shows **Card**,
+ * which opens that task's To Do card. With no task yet, **Task** still puts
+ * one on the minutes already running.
  */
 "use client"
 
@@ -48,8 +50,28 @@ import { activeNowObjectives, type NowObjective } from "@/lib/now-objective"
 import { attachChoicesForOperation, attachChoicesForPen, type ObjectiveAttachChoice } from "@/lib/unfinished-objectives"
 import { useClockTask } from "@/components/Focus/use-clock-task"
 import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
+import { openTodoTaskCard } from "@/components/ItemDetail/ItemTaskCardKey"
 import { useTaskStore } from "@/lib/task-store"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
+
+function ShellClockCardButton({ taskId, stepId }: { taskId: string; stepId?: string }) {
+  const tasks = useTaskStore((s) => s.tasks)
+  const task = tasks.find((row) => row.id === taskId)
+  if (!task) return null
+  const label = itemTitleOrUntitled(task)
+  return (
+    <button
+      type="button"
+      className="ops-btn trk-now-obj-trigger trk-clock-card-trigger"
+      aria-label={`Open task card, ${label}`}
+      data-testid="clock-task-card"
+      onClick={() => openTodoTaskCard(task, stepId)}
+    >
+      Card
+    </button>
+  )
+}
 
 function NowRow({
   name,
@@ -212,7 +234,13 @@ export function HeaderNowRows() {
             onTieStep={clock.onTieStep}
             onSetCompletes={clock.onSetCompletes}
             onOpen={penSession.taskId ? () => openItemDetailPopup(penSession.taskId!) : undefined}
-            taskSlot={<ClockTaskButton />}
+            taskSlot={
+              penSession.taskId ? (
+                <ShellClockCardButton taskId={penSession.taskId} stepId={penSession.stepId} />
+              ) : (
+                <ClockTaskButton />
+              )
+            }
           />
           <SessionHandoffNote taskId={penSession.taskId} penId={penSession.penId} />
           </>

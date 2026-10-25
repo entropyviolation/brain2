@@ -1,10 +1,11 @@
 /**
  * components/Home/Tracking/clock-task-panel.tsx — The task on the live pen clock
  *
- * One key on the header now row, the Tracking pen strip, and the focus bar.
- * It puts a task on the clock already running, shows which step is current,
- * and can open that task or step, add a step, finish a step, or finish the
- * task and stop. The painted block stays one block.
+ * One key on the Tracking pen strip and the focus bar. The shell now row
+ * uses it only while the clock has no task yet. It puts a task on the clock
+ * already running, shows which step is current, and can open that task or
+ * step, add a step, finish a step, or finish the task and stop. The painted
+ * block stays one block.
  */
 "use client"
 

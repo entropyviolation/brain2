@@ -48,6 +48,7 @@ import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
 import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
 import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
+import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -509,6 +510,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     <div ref={detailRef} className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
       <div className="id-window">
       <div className="id-fascia">
+        <WorkingNowBanner itemId={task.id} />
         <div className="id-fascia-row">
           <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="Back" onClick={requestClose}>
             <ArrowLeft className="h-4 w-4" />

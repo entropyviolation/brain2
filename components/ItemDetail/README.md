@@ -68,7 +68,7 @@ Popup and page are both public entries.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
 
-Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `ItemSettingsKey`, `ItemSettingsPanel`, `ItemTaskCardKey`, `ItemTimeLedger`, `AttributeSettingsDialog`, `ItemDetailDock`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `InboxClarifyKey`, `item-detail-chrome.css`.
+Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `ItemSettingsKey`, `ItemSettingsPanel`, `ItemTaskCardKey`, `WorkingNowBanner`, `ItemTimeLedger`, `AttributeSettingsDialog`, `ItemDetailDock`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `InboxClarifyKey`, `item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
 `useItemDetailDraft.commitDraft` → `commitItemEdit` (patch + History line).
@@ -139,7 +139,7 @@ Missed Opportunities list instead of Completed. When one of the item’s lists h
 
 ## Layout (Details, Notes, Resources, Links)
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-24._ While the pen clock is on this item, or on a descendant of it, the fascia leads with a small electric-blue strip (`WorkingNowBanner`, `lib/working-now-banner.ts`). The lamp is the one electric-blue accent for that live clock. On the item itself it reads **Working on this now**. On a parent it names the item the clock is on. A sibling, a child of the clock task, and an unrelated item stay quiet. The rule is pure: the clock's step item when that step has one, otherwise the clock's task, plus every ancestor (`parentTaskId`, the owning task, and ancestor step items).
 
 Identity leads: the fascia holds the CRT title, then the item's **type plates**
 (lamp in the type color; double-click opens the type editor) and the stage
@@ -204,7 +204,7 @@ _Last mapped: 2026-10-24._
 | `ItemSaveFlag.tsx` | Fascia lamp beside Save Changes (popup) and beside Edit / Save Changes (page). Always visible. **Saved** (green) when the live draft matches the stored item; **Unsaved changes** (pink) otherwise. `role="status"`. |
 | `InboxClarifyKey.tsx` | Small **Clarify** key beside the INBOX stage chip when the open item is not completed. Commits the live draft through `clarifyInboxItems`. |
 | `ItemSettingsKey.tsx` | Brushed gear, no keycap, 26px like the window keys. Opens Settings. On the popup it sits in the title row with Minimize and Close, beside the CRT, so a step item's breadcrumb bar stays clear. The page puts it on the fascia. Image: `public/ui/settings-gear.png`. |
-| `ItemTaskCardKey.tsx` | **Open task card** in the Details rail and the page's right column, for every task. A step item opens the parent's card at that step. Closes item detail first. If To Do is not mounted, Home switches to To Do so the card has a host. |
+| `ItemTaskCardKey.tsx` | **Open task card** in the Details rail and the page's right column, for every task. A step item opens the parent's card at that step. Closes item detail first. If To Do is not mounted, Home switches to To Do so the card has a host. `openTodoTaskCard` is that same door; the shell now row uses it for the task already on the pen clock. |
 | `ItemSettingsPanel.tsx` | Settings. Header, then plates: copyable item id, which attributes show on Details, this item's display names, and which tabs this item shows. A name opens attribute settings. |
 | `ItemTimeLedger.tsx` | Task Time tab. Each block is a plate: when, step, label, notes, then objectives on their own rows. A step total counts blocks tagged to that step; a block that only names the step through an objective stays on the whole task, and a line under the total says so. A pen-clock block's notes say it was added from Working On Now, with the task and the subtasks and objectives that sitting finished. Add time takes an optional start, end, and duration: any two fill in the third, and changing one asks which of the others to move. Start and end use the house clock. Objectives are a list for that block. A start and an end paint on the linked pen; a duration alone, or no pen, writes a log. |
 | `useItemDetailSaveHotkey.ts` | **Cmd/Ctrl+S** calls the shell’s save while that item-detail root is in front. Skips the chord when another open dialog sits above it. Prevents the browser page-save dialog. |
