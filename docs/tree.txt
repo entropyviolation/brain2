@@ -469,6 +469,7 @@
 │   │   │   ├── priority-star.css
 │   │   │   ├── priority-star.test.ts
 │   │   │   ├── session-planner.css
+│   │   │   ├── task-card-unit.tsx
 │   │   │   ├── task-card.css
 │   │   │   ├── todo-chrome.css
 │   │   │   ├── todo-filters.tsx
@@ -585,6 +586,8 @@
 │   │   │   ├── session-debrief-dialog.tsx
 │   │   │   ├── session-debrief.css
 │   │   │   ├── session-handoff-note.tsx
+│   │   │   ├── show-in-timegrid.test.ts
+│   │   │   ├── show-in-timegrid.ts
 │   │   │   ├── spending-dialog.tsx
 │   │   │   ├── summary-reference.tsx
 │   │   │   ├── superimpose-bar.test.tsx
@@ -597,6 +600,7 @@
 │   │   │   ├── time-grid-desk.test.tsx
 │   │   │   ├── time-grid.test.tsx
 │   │   │   ├── time-grid.tsx
+│   │   │   ├── timegrid-reveal.ts
 │   │   │   ├── tool-detail.tsx
 │   │   │   ├── tracked-agenda-blocks.ts
 │   │   │   ├── tracking-activity-log.test.tsx
@@ -763,6 +767,7 @@
 │   │   ├── ItemDoneBanner.test.tsx
 │   │   ├── ItemDoneBanner.tsx
 │   │   ├── ItemEstimateField.tsx
+│   │   ├── ItemRewardField.tsx
 │   │   ├── ItemNotesLog.test.tsx
 │   │   ├── ItemNotesLog.tsx
 │   │   ├── ItemPenTime.test.tsx
@@ -1210,6 +1215,8 @@
 │   │   ├── MobileSyncPanel.tsx
 │   │   ├── PcbBackdropField.test.tsx
 │   │   ├── PcbBackdropField.tsx
+│   │   ├── PhoneSyncPanel.test.tsx
+│   │   ├── PhoneSyncPanel.tsx
 │   │   ├── PointAllocationField.tsx
 │   │   ├── PointsRulesDialog.test.tsx
 │   │   ├── PointsRulesDialog.tsx
@@ -1499,17 +1506,17 @@
 │   │   └── runs.json
 │   ├── recovery-backups
 │   │   ├── auto-brain2-habits-store-2026-10-25-07.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-06.json
 │   │   ├── auto-brain2-task-storage-2026-10-25-07.json
 │   │   ├── auto-brain2-task-storage-2026-10-25-08.json
 │   │   ├── auto-brain2-task-storage-2026-10-25-09.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-07.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-10.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-25-10.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-08.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-09.json
-│   │   ├── auto-points-store-2026-10-25-06.json
-│   │   ├── auto-points-store-2026-10-25-07.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-10.json
 │   │   ├── auto-points-store-2026-10-25-08.json
 │   │   ├── auto-points-store-2026-10-25-09.json
+│   │   ├── auto-points-store-2026-10-25-10.json
 │   │   ├── brain2-backup-2026-10-10T093232Z.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
@@ -1525,7 +1532,6 @@
 │   │   ├── shared-persist-20260919-201252.json
 │   │   └── tracking-union-2026-09-22T01-21-45.json
 │   ├── shared-persist.json
-│   ├── shared-persist.json.19751.126.tmp
 │   └── telegram-offset.json
 ├── deploy
 │   ├── mac
@@ -4654,6 +4660,8 @@
 │   │   ├── readers.ts
 │   │   ├── runner.test.ts
 │   │   ├── runner.ts
+│   │   ├── status.test.ts
+│   │   ├── status.ts
 │   │   ├── to-entries.test.ts
 │   │   ├── to-entries.ts
 │   │   ├── types.ts
@@ -5335,6 +5343,8 @@
 │   ├── phone-hub-polyfill.test.ts
 │   ├── phone-hub.mjs
 │   ├── phone-hub.ts
+│   ├── phone-sync-api.mjs
+│   ├── phone-sync-api.test.ts
 │   ├── process-folders.py
 │   ├── process-friend-pack.py
 │   ├── process-gems.py
