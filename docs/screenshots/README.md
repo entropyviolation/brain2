@@ -201,10 +201,10 @@ table uses.
 | `21-item-detail-analysis.png` | 2026-10-20 | fresh | Item detail → Analysis |
 | `21-item-detail-body.png` | 2026-10-20 | fresh | Item detail → Body |
 | `21-item-detail-dependencies.png` | 2026-10-20 | fresh | Item detail → Dependencies |
-| `21-item-detail-popup.png` | 2026-10-24 | fresh | Item detail → Details. Save lamp beside Save Changes. Brushed gear, no keycap, beside Minimize and Close. |
+| `21-item-detail-popup.png` | 2026-10-24 | fresh | Item detail → Details. Save lamp beside Save Changes. Gear, Minimize, and Close sit in the title row beside the CRT. A task's rail leads with Open task card. |
 | `21-item-detail-scheduling.png` | 2026-10-20 | fresh | Item detail → Scheduling |
 | `21-item-detail-subtasks.png` | 2026-10-20 | fresh | Item detail → Subtasks |
-| `21-item-detail-time.png` | 2026-10-24 | fresh | Item detail → Time. Ledger of blocks, objectives, and logs with no painted block. |
+| `21-item-detail-time.png` | 2026-10-24 | fresh | Item detail → Time. Each block is a plate (when, step, label, notes, then objectives). A step total counts only blocks tagged to that step. |
 | `habits-noble-gas-rail.png` | 2026-09-20 | unknown | Habits control-panel crop; no sidecar |
 
 ---
@@ -390,12 +390,12 @@ Tracking and Habits; Screen Time still depends on a local ActivityWatch watcher.
 | `20-dialog-time-tracking.png` | Header Now dialog |
 | `20-dialog-metrics.png` | Now → Current moment → Metrics |
 | `20-dialog-completion.png` | Completion dialog (Undo reopens the task so the run can continue) |
-| `21-item-detail-popup.png` | Item detail → Details (save lamp; brushed gear beside Minimize and Close) |
+| `21-item-detail-popup.png` | Item detail → Details (save lamp; gear, Minimize, and Close in the title row; Open task card on the rail) |
 | `21-item-detail-scheduling.png` | Item detail → Scheduling |
 | `21-item-detail-dependencies.png` | Item detail → Dependencies |
 | `21-item-detail-subtasks.png` | Item detail → Subtasks |
 | `21-item-detail-analysis.png` | Item detail → Analysis |
-| `21-item-detail-time.png` | Item detail → Time (blocks, objectives, and logs) |
+| `21-item-detail-time.png` | Item detail → Time (block plates, objectives under each block) |
 | `21-item-detail-body.png` | Item detail → Body |
 
 ---

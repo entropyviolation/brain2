@@ -1490,9 +1490,9 @@
 │   │   ├── auto-brain2-habits-store-2026-10-25-03.json
 │   │   ├── auto-brain2-habits-store-2026-10-25-04.json
 │   │   ├── auto-brain2-task-storage-2026-10-25-03.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-04.json
 │   │   ├── auto-brain2-telegram-feed-2026-10-25-02.json
 │   │   ├── auto-brain2-telegram-feed-2026-10-25-03.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-02.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-03.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-04.json
 │   │   ├── auto-points-store-2026-10-25-02.json
@@ -1513,7 +1513,6 @@
 │   │   ├── shared-persist-20260919-201252.json
 │   │   └── tracking-union-2026-09-22T01-21-45.json
 │   ├── shared-persist.json
-│   ├── shared-persist.json.57544.122.tmp
 │   └── telegram-offset.json
 ├── deploy
 │   ├── mac

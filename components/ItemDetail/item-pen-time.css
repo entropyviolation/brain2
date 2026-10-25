@@ -215,11 +215,22 @@
 }
 
 .ipt-fields .ipt-text,
-.ipt-fields .ipt-step,
-.ipt-obj-step .ipt-step {
+.ipt-fields .ipt-step {
   width: 100%;
   max-width: none;
   min-width: 0;
+}
+
+.ipt-obj-step .ipt-step {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.ipt-mode {
+  flex: none;
+  white-space: nowrap;
 }
 
 .ipt-clock,
