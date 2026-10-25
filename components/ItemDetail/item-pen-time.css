@@ -335,6 +335,54 @@
   grid-column: 1 / -1;
 }
 
+.ipt-add-span2 {
+  grid-column: span 2;
+}
+
+.ipt-add-form .clock-picker,
+.ipt-add-form .ipt-mins,
+.ipt-add-form .ipt-step {
+  width: 100%;
+  max-width: none;
+}
+
+.ipt-add-objs {
+  display: grid;
+  gap: 6px;
+}
+
+.ipt-add-objs > span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ipt-add-objs ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ipt-add-objs li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ipt-ask p {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
 .ipt-add-check {
   display: flex !important;
   flex-direction: row;

@@ -104,4 +104,18 @@ describe("ItemTimeLedger", () => {
     expect(made?.nowObjectives?.[0]?.text).toBe("layout")
     expect(made?.nowObjectives?.[0]?.completedAt).toBeTruthy()
   })
+
+  it("fills the end from a start and a duration, and asks before a later edit moves another clock", () => {
+    render(<ItemTimeLedger task={{ ...task, timeLogs: [], subtasks: [] }} onPatch={() => {}} />)
+    fireEvent.click(screen.getByRole("button", { name: "Add time" }))
+    fireEvent.change(screen.getByLabelText("Start"), { target: { value: "9:00" } })
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "30" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    expect(screen.getByLabelText("End")).toHaveValue("09:30")
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "90" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    fireEvent.click(screen.getByRole("button", { name: "Move the end to 10:30" }))
+    expect(screen.getByLabelText("End")).toHaveValue("10:30")
+    expect(screen.getByLabelText("Duration")).toHaveValue("90")
+  })
 })
