@@ -918,7 +918,7 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
       "components/ItemDetail/ItemAttributesSection.tsx",
       "components/ItemDetail/ItemSettingsKey.tsx",
     ],
-    description: `Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. A brushed gear with no keycap sits with Minimize and Close and opens Settings. Detailed description, duration, reward, urgency/importance, Show in Scheduler, Type, Lists, Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.`,
+    description: `Item detail, Details tab. Title Photograph the headlands. Delete / Complete / save lamp (Saved green, or Unsaved changes pink) / Save Changes. Gear, Minimize, and Close sit in the title row beside the CRT. The right rail leads with Open task card, then Lists and Tags. Other tabs: Scheduling, Dependencies, Subtasks, Analysis, Time, Body.`,
   },
   {
     file: "21-item-detail-scheduling.png",
@@ -957,7 +957,7 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
       "components/ItemDetail/ItemPenTime.tsx",
       "components/ItemDetail/ItemTimeLedger.tsx",
     ],
-    description: `Time: estimated 90 and actual 40, linked pens, and the task ledger. Scouted the overlook is a 40m log with no painted block. A session, the pen clock, or a To Do start writes a block here; Add time can paint one or correct a log.`,
+    description: `Time: estimated 90 and actual 40, linked pens, and the task ledger. Each block is a plate (when, step, label, notes, then objectives). Scouted the overlook is a 40m log with no painted block. A step total counts blocks tagged to that step.`,
   },
   {
     file: "21-item-detail-body.png",
