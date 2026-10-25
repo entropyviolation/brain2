@@ -709,7 +709,7 @@ describe("TodoPanel", () => {
     useTaskStore.getState().updateTask({ ...task, timeLogs: [{ id: "log-1", date: "2026-10-01", durationMinutes: 25 }] })
     render(<TodoPanel />)
     const row = screen.getByRole("button", { name: "Finish slides" }).closest(".todo-row") as HTMLElement
-    expect(row.querySelector(".todo-cell-time")).toHaveTextContent("25/60m")
+    expect(row.querySelector(".todo-cell-time")).toHaveTextContent("0h25/1h00")
     fireEvent.click(screen.getByRole("button", { name: "Finish slides" }))
     expect(screen.getByLabelText("Estimate, parts and time spent")).toHaveTextContent("25m · est 60")
   })
