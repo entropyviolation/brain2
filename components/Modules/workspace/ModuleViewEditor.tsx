@@ -23,6 +23,7 @@ import { isKanbanGroupable } from "@/components/Lists/list-content/kanban-utils"
 import { MAX_MODULE_HTML_BYTES, useModuleHtmlStore } from "@/lib/module-html-store"
 import { HtmlViewFields } from "./html/HtmlViewFields"
 import { HtmlFilePicker } from "./html/HtmlFilePicker"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 const VIEW_KINDS = MODULE_VIEW_KINDS.map((m) => ({ value: m.kind, label: m.label, needsList: m.needsList }))
 
@@ -199,19 +200,12 @@ export function ModuleViewEditor({
           {meta.needsList && (
             <div className="space-y-2">
               <Label>Source list</Label>
-              <Select value={categoryId || "none"} onValueChange={(v) => setCategoryId(v === "none" ? undefined : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a list" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Choose a list</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SingleListPicker
+                value={categoryId || ""}
+                onValueChange={(id) => setCategoryId(id || undefined)}
+                emptyLabel="Choose a list"
+                searchLabel="Source list"
+              />
             </div>
           )}
 
@@ -244,22 +238,12 @@ export function ModuleViewEditor({
             <>
               <div className="space-y-2">
                 <Label>Match against list</Label>
-                <Select
-                  value={matchTargetCategoryId || "none"}
-                  onValueChange={(v) => setMatchTargetCategoryId(v === "none" ? undefined : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a list" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Choose a list</SelectItem>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SingleListPicker
+                  value={matchTargetCategoryId || ""}
+                  onValueChange={(id) => setMatchTargetCategoryId(id || undefined)}
+                  emptyLabel="Choose a list"
+                  searchLabel="Match against list"
+                />
               </div>
               <AttrSelect label="Text / file attribute (optional)" attrs={attrs} value={matchTextAttrId} onChange={setMatchTextAttrId} allowNone />
               <div className="space-y-2">
@@ -272,22 +256,12 @@ export function ModuleViewEditor({
             <>
               <div className="space-y-2">
                 <Label>Source list (prompts)</Label>
-                <Select
-                  value={quizSourceCategoryId || "none"}
-                  onValueChange={(v) => setQuizSourceCategoryId(v === "none" ? undefined : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Same as candidates" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Same as candidates</SelectItem>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SingleListPicker
+                  value={quizSourceCategoryId || ""}
+                  onValueChange={(id) => setQuizSourceCategoryId(id || undefined)}
+                  emptyLabel="Same as candidates"
+                  searchLabel="Source list for prompts"
+                />
               </div>
               <AttrSelect label="Text / file attribute" attrs={quizSourceAttrs} value={fileAttrId} onChange={setFileAttrId} allowNone />
               <div className="space-y-2">
@@ -442,19 +416,12 @@ function DashboardCardsEditor({ cards, onChange }: { cards: DashboardCard[]; onC
                   Remove
                 </Button>
               </div>
-              <Select value={card.categoryId || "none"} onValueChange={(v) => update(card.id, { categoryId: v === "none" ? "" : v, attrId: "" })}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="List" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Choose a list</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SingleListPicker
+                value={card.categoryId || ""}
+                onValueChange={(id) => update(card.id, { categoryId: id, attrId: "" })}
+                emptyLabel="Choose a list"
+                searchLabel={`Card list ${card.label || ""}`.trim()}
+              />
               <div className="grid grid-cols-2 gap-2">
                 <Select value={card.attrId || "none"} onValueChange={(v) => update(card.id, { attrId: v === "none" ? "" : v })}>
                   <SelectTrigger className="h-8 text-xs">

@@ -705,7 +705,7 @@ body.win95-app
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
   ):not(.w95-confirm):not(.an-drill):not(.an-popup)
-  > button.absolute:not(.b2-close-key) {
+  > button.absolute:not(.b2-close-key):not(.keycap-close) {
   border-radius: var(--r-2, 2px);
   opacity: 1;
   color: var(--fascia-nameplate);
@@ -718,7 +718,7 @@ body.win95-app
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
   ):not(.w95-confirm):not(.an-drill):not(.an-popup)
-  > button.absolute:not(.b2-close-key):hover {
+  > button.absolute:not(.b2-close-key):not(.keycap-close):hover {
   opacity: 1;
   filter: brightness(1.04);
 }
@@ -728,7 +728,7 @@ body.win95-app
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
   ):not(.w95-confirm):not(.an-drill):not(.an-popup)
-  > button.absolute:not(.b2-close-key):active {
+  > button.absolute:not(.b2-close-key):not(.keycap-close):active {
   box-shadow: var(--fascia-key-pressed);
 }
 
@@ -873,15 +873,18 @@ body.win95-app .native-select:focus-visible {
    that shrinks to fit and takes the height Nav sets. The CRT glyph replaces
    the LED dot. */
 .b2-shell-group.b2-shell-tabs {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   width: auto;
-  min-width: 0;
-  margin-left: 8px;
+  min-width: max-content;
+  max-width: 38rem;
+  margin-left: 0;
 }
 body.win95-app .b2-shell-tabs [data-ui-name="App tabs"][role="tablist"] {
   width: 100%;
-  height: 100%;
+  min-width: max-content;
+  height: auto;
   min-height: 52px;
+  align-items: center;
   gap: 3px;
   padding: 2px;
   background: transparent;
@@ -892,6 +895,10 @@ html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui
   flex-direction: column;
   gap: 3px;
   min-height: 0;
+  flex: 1 1 0;
+  min-width: 2.6rem;
+  max-width: 5rem;
+  height: 52px;
   padding: 4px 1px 3px;
 }
 body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] > svg {

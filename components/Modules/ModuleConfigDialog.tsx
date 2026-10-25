@@ -19,6 +19,7 @@ import type { ModuleInstance, ModuleType, AttrRule, RuleOperator } from "@/lib/m
 import { mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { MODULE_META, RULE_OPERATORS, STAT_OPTIONS, WIDGET_MODULE_TYPES, rid } from "./module-helpers"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 export function ModuleConfigDialog({
   open,
@@ -107,19 +108,12 @@ export function ModuleConfigDialog({
           {(needsList || optionalList) && (
             <div className="space-y-2">
               <Label>{optionalList ? "Topic source list (optional)" : "List"}</Label>
-              <Select value={categoryId || "none"} onValueChange={(v) => setCategoryId(v === "none" ? undefined : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a list" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{optionalList ? "Built-in topics" : "Choose a list"}</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SingleListPicker
+                value={categoryId || ""}
+                onValueChange={(id) => setCategoryId(id || undefined)}
+                emptyLabel={optionalList ? "Built-in topics" : "Choose a list"}
+                searchLabel={optionalList ? "Topic source list" : "List"}
+              />
             </div>
           )}
 

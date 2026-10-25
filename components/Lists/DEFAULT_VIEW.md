@@ -40,7 +40,9 @@ Rows: `list-content/ListContentDefault.tsx`. Folder **All Items** uses the same 
 
 ## Sort
 
-A **Sort** plate sits at the right of the Bulk add / Add item row (Default
+_Last mapped: 2026-10-24_
+
+A clipboard key on the Bulk add / Add item row (Default display only) opens a read-only bulk-add paste of the rows on screen (`Tag:` headers included). **Copy all** copies the names only, one per line. **Close** hides the box. A **Sort** plate sits at the right of that row (Default
 display only). Pick a key; a direction key appears beside it (it is hidden on
 Custom order, which has no direction). The picker is the house milled select,
 not the OS popup: a sunken face with a black caret and a metal list portaled

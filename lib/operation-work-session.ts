@@ -33,13 +33,24 @@ import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { useWorkSessionStore, type WorkSession } from "@/lib/work-session-store"
 import { isRestoring, runAsAction, withoutUndo } from "@/lib/action-history"
 import {
+  addCompletedNowObjective,
   addNowObjective,
+  attachNowObjective,
+  bankOpenStint,
   compactNowObjectives,
   editNowObjectiveText,
   removeNowObjective,
   toggleNowObjectiveComplete,
   type NowObjective,
 } from "@/lib/now-objective"
+import {
+  createTaskForObjective,
+  homeForObjective,
+  homesForOperation,
+  mergeResumed,
+  toParked,
+} from "@/lib/unfinished-objectives"
+import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const WORK_SESSION_TICK_MS = 15_000
@@ -450,19 +461,37 @@ export function startWorkingOnOperation(operationId: string, now = new Date()): 
     penId,
     trackingEntryIds,
   }
-  useWorkSessionStore.getState().setSession(session)
-  return session
+  const resumed = mergeResumed(
+    undefined,
+    useUnfinishedObjectivesStore.getState().take(homesForOperation(operationId)),
+    now,
+  )
+  const next: WorkSession = resumed?.length ? { ...session, nowObjectives: resumed } : session
+  useWorkSessionStore.getState().setSession(next)
+  if (resumed?.length) writeWorkObjectivesOnto(trackingEntryIds, resumed)
+  return next
   })
 }
 
 /** Close the live session and stamp Done / timeLogs / Tracking for the elapsed span. */
-export function stopWorkingOnOperation(now = new Date()): WorkSession | null {
+export function stopWorkingOnOperation(now = new Date(), opts?: { parkUnfinished?: boolean }): WorkSession | null {
   return runAsAction("stop work", () => {
-  const session = useWorkSessionStore.getState().session
+  let session = useWorkSessionStore.getState().session
   if (!session) return null
+  const end = sessionActiveEnd(session, now)
+  if (opts?.parkUnfinished && session.nowObjectives?.length) {
+    const banked = session.nowObjectives.map((row) => bankOpenStint(row, end))
+    const parked = banked.flatMap((row) => {
+      const home = homeForObjective(row, { ...session!, operationId: session!.operationId })
+      const packed = home ? toParked(row, home) : null
+      return packed ? [packed] : []
+    })
+    if (parked.length) useUnfinishedObjectivesStore.getState().upsert(parked)
+    session = { ...session, nowObjectives: banked }
+    useWorkSessionStore.getState().setSession(session)
+  }
 
   const operation = taskRepository.getById(session.operationId)
-  const end = sessionActiveEnd(session, now)
   const slices = splitIntoDaySlices(new Date(session.startedAt), end)
 
   if (operation && session.penId) {
@@ -543,6 +572,50 @@ export function toggleWorkingOnOperation(operationId: string, now = new Date()):
 /** Add an objective for right now on the live Operations activity block. */
 export function addWorkNowObjective(text: string, now = new Date()): WorkSession | null {
   return withoutUndo(() => patchWorkNowObjectives((list) => addNowObjective(list, text, now)))
+}
+
+/** Already done during this sitting. Start is unknown, and not before the session began. */
+export function addWorkCompletedObjective(text: string, now = new Date()): WorkSession | null {
+  const session = useWorkSessionStore.getState().session
+  if (!session) return null
+  return withoutUndo(() =>
+    patchWorkNowObjectives((list) => addCompletedNowObjective(list, text, new Date(session.startedAt), now)),
+  )
+}
+
+/** Take the objective off this sitting without counting the open stint, and park it. */
+export function saveWorkObjectiveForLater(id: string): WorkSession | null {
+  const session = useWorkSessionStore.getState().session
+  if (!session) return null
+  const row = session.nowObjectives?.find((item) => item.id === id)
+  if (!row || row.completedAt) return session
+  const home = homeForObjective(row, { ...session, operationId: session.operationId })
+  const parked = home ? toParked(row, home) : null
+  return runAsAction("save objective for later", () => {
+    if (parked) useUnfinishedObjectivesStore.getState().upsert([parked])
+    return patchWorkNowObjectives((list) => removeNowObjective(list, id))
+  })
+}
+
+/** Attach the objective to a task in this operation, or make a new task from its name. */
+export function attachWorkNowObjective(
+  id: string,
+  target: { taskId: string; stepId?: string } | { createName: string },
+): WorkSession | null {
+  const session = useWorkSessionStore.getState().session
+  if (!session) return null
+  return runAsAction("attach objective", () => {
+    const taskId =
+      "createName" in target
+        ? createTaskForObjective(
+            target.createName,
+            session.penId ? { scopeId: session.scopeId, penId: session.penId } : undefined,
+          )
+        : target.taskId
+    if (!taskId) return session
+    const stepId = "createName" in target ? undefined : target.stepId
+    return patchWorkNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+  })
 }
 
 export function editWorkNowObjectiveText(id: string, text: string): WorkSession | null {

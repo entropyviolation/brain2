@@ -258,6 +258,7 @@ button.htk-lane:hover {
 .htk-compare input:not([type="checkbox"]):not([type="radio"]),
 .htk-search input,
 .htk-log-add input,
+.htk-log-add textarea,
 .htk-menu-pop input {
   min-height: 26px;
   padding: 2px 6px;
@@ -469,17 +470,26 @@ button.htk-lane:hover {
   flex: none;
 }
 
-/* Events and Thought process side by side when there is room. */
+/* Events, Notes, and Thought process. Three across when the dialog is wide. */
 .htk-log-pair {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: 8px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .htk-log-pair > .trk-aside-well,
 .htk-logs > .htk-intake {
   margin-top: 0;
+  min-width: 0;
+}
+
+.htk-log-pair .trk-logbook-heading {
+  min-height: 1.2em;
+}
+
+.htk-log-pair > .trk-aside-well > .trk-logbook-note:first-of-type {
+  min-height: 2.7em;
 }
 
 /* Intake: class keys beside the heading, then quick chips, then the field. */
@@ -567,16 +577,138 @@ button.htk-lane:hover {
 }
 
 .htk-moment .trk95.trk-logbook .trk-log {
-  max-height: 7.5rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+/* A long strand grows the row. The well scrolls once the pile is taller. */
+.htk-moment .trk95.trk-logbook .trk-log-row {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  height: auto;
+  min-height: 28px;
+  white-space: normal;
+}
+
+.htk-moment .trk95.trk-logbook .trk-log-when {
+  width: auto;
+  min-width: 4.6rem;
+  padding-top: 2px;
+}
+
+.htk-moment .trk95.trk-logbook .trk-log-copy,
+.htk-moment .trk95.trk-logbook .trk-log-body {
+  min-width: 0;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: pre-wrap;
+}
+
+.htk-moment .trk95.trk-logbook .trk-log-body {
+  display: block;
+  margin-top: 2px;
+  color: #2a2c2e;
+}
+
+.htk-moment .trk95.trk-logbook .trk-logbook-badge {
+  margin-top: 2px;
 }
 
 .htk-moment .ops-now-bar {
   margin: 0;
 }
 
-.htk-log-add input {
+/* Operation clock and activity-pen clock, one tray, fields on the same line. */
+.htk-working {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border-radius: var(--r-2, 2px);
+  background: var(--chrome-mill-soft, #c0c4c8);
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px var(--chrome-frame),
+    inset -2px -2px var(--chrome-mid),
+    inset 2px 2px var(--chrome-lo);
+}
+
+.htk-working .ops-now-bar {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.htk-working .ops-now-bar > label {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+
+.htk-working .ops-now-kicker {
+  flex: 0 0 9.25rem;
+  width: 9.25rem;
+  min-width: 9.25rem;
+  white-space: nowrap;
+}
+
+.htk-working .ops-now-meta {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.htk-working.trk95 .ops-now-bar > label .native-select,
+.htk-working.trk95 .trk-pen-now-field {
+  flex: 1 1 16rem;
+  width: auto;
+  min-width: 16rem;
+  max-width: none;
+  height: 26px;
+}
+
+.htk-working .trk-pen-now-pop {
+  flex: 1 1 100%;
+}
+
+.htk-working .trk-pen-now-option span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.htk-log-pair > .trk-aside-well {
+  height: 100%;
+}
+
+.htk-log-add {
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.htk-log-add input,
+.htk-log-add textarea {
   flex: 1 1 12rem;
   min-width: 0;
+}
+
+.htk-log-add textarea {
+  display: block;
+  width: auto;
+  max-height: 9rem;
+  margin: 0;
+  overflow: hidden;
+  line-height: 1.35;
+  resize: none;
+  field-sizing: content;
+}
+
+.htk-log-empty {
+  margin: 0;
+  color: #5c6166;
 }
 
 .htk-log-add > button {

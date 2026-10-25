@@ -58,8 +58,8 @@
 }
 
 .set95-dialog {
-  /* 22px key centered on the CRT mark (dialog pad 3 + caption pad 10, mark 40). */
-  --b2-close-top: 22px;
+  /* 26px keycap centered on the CRT mark (dialog pad 3 + caption pad 10, mark 40). */
+  --b2-close-top: 20px;
   --b2-close-right: 12px;
   display: flex !important;
   flex-direction: column;
@@ -71,8 +71,7 @@
   box-shadow: var(--s-raised), 4px 4px 0 rgba(0, 0, 0, 0.28) !important;
 }
 
-/* Close key is `.b2-close-key` in win95.css. Hover used to flatten the face
-   to --s-highlight; that wash is gone. Placement is --b2-close-* above. */
+/* Close key is `KeycapClose`. Placement is --b2-close-* above. */
 
 /* ---- Caption: CRT hero for Settings title -------------------------------- */
 

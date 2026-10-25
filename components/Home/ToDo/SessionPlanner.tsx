@@ -32,6 +32,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { openTaskCard } from "@/lib/task-card"
@@ -302,9 +303,7 @@ export function SessionPlanner({
                 </span>
               ) : null}
             </button>
-            <button type="button" className="b2-close-key" aria-label="Close" title="Close" onClick={requestClose}>
-              ×
-            </button>
+            <KeycapClose label="Close" onClick={requestClose} />
           </span>
         </div>
         {asking ? (

@@ -94,12 +94,12 @@ describe("AppHeader", () => {
     expect(screen.getByRole("group", { name: "Nav" })).toBeInTheDocument()
     expect(screen.getByTestId("header-nav-back")).toBeDisabled()
     expect(screen.getByTestId("header-nav-forward")).toBeDisabled()
-    expect(screen.getByRole("group", { name: "Friend" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: /^Friend/ })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Rituals" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "System" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Capture" })).toBeInTheDocument()
 
-    for (const name of [/^Rituals/, "Settings", "Names help mode", "Search", "Reminders", "Now", /^Inbox/, /^Quick Add/]) {
+    for (const name of [/rituals/i, "Settings", "Names help mode", "Search", "Reminders", "Now", /^Inbox/, /^Quick Add/]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument()
     }
 
@@ -112,7 +112,7 @@ describe("AppHeader", () => {
     expect(screen.getByRole("button", { name: "Search" })).toHaveClass("b2-shell-icon")
     expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("title", "Search")
 
-    expect(screen.getByRole("button", { name: /^Rituals/ })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /rituals/i })).toHaveAttribute(
       "title",
       expect.stringMatching(/ritual/i),
     )
@@ -178,10 +178,8 @@ describe("AppHeader", () => {
     const stage = header.querySelector(".b2-shell-stage") as HTMLElement
 
     expect(getComputedStyle(body).flexWrap).toBe("wrap")
-    expect(getComputedStyle(body).justifyContent).toBe("flex-start")
-    expect(getComputedStyle(stage).justifyContent).toBe("flex-start")
-    expect(getComputedStyle(stage).marginLeft).toBe("auto")
-    expect(getComputedStyle(stage).marginRight).toBe("auto")
+    expect(getComputedStyle(body).justifyContent).toBe("center")
+    expect(getComputedStyle(stage).display).toBe("contents")
     expect(getComputedStyle(stage).maxWidth).toContain("100%")
     expect(getComputedStyle(rail).display).toBe("contents")
     expect(getComputedStyle(capture).flexShrink).toBe("0")

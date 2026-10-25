@@ -5,8 +5,9 @@
  * item. The type is picked from a palette of keys grouped by what they hold
  * (Words, Numbers, Choices, Time, Media, References); the chosen key shows a
  * one-line description and a real-shaped example (`lib/attribute-type-catalog`).
- * Type settings (options, unit, labels, formula, scope list) sit right under
+ * Type settings (options, unit, labels, formula, list scope) sit right under
  * it, so a Selection is born with its options and a Number with its unit.
+ * An item reference has no scope list: its value searches every item.
  *
  * The attribute can be added to one of the item's lists (so it becomes a real,
  * reusable, typed attribute shared by every item in that list) or kept on just
@@ -33,7 +34,7 @@ import { TypeSpecificSchemaFields } from "@/components/Lists/attributes/Attribut
 export const ITEM_ONLY_TARGET = "__item__"
 
 /** Types that need nothing beyond a name; their settings row is omitted. */
-const NO_SETTINGS = new Set<AttributeType>(["string", "multistring", "link", "phone", "color", "image", "multiimage", "file", "multifile"])
+const NO_SETTINGS = new Set<AttributeType>(["string", "multistring", "link", "phone", "color", "image", "multiimage", "file", "multifile", "item"])
 
 /** Sensible starting settings per type so a new attribute is useful at once. */
 function defaultsFor(type: AttributeType): Partial<AttributeDefinition> {
@@ -105,7 +106,7 @@ export function AttributeCreator({ categories, itemCategoryIds, existingIds, onC
     const base = slugId(trimmed)
     const existing = new Set(existingIds)
     const id = existing.has(base) ? `${base}_${Date.now().toString(36)}` : base
-    const def: AttributeDefinition = { ...settings, id, name: trimmed, type }
+    const def: AttributeDefinition = { ...settings, id, name: trimmed, type, createdAt: new Date().toISOString() }
     const listId = effectiveTarget === ITEM_ONLY_TARGET ? null : effectiveTarget
     onCreate(def, value, listId)
     // Keep type/target for rapid entry; clear the name and value.
@@ -126,7 +127,7 @@ export function AttributeCreator({ categories, itemCategoryIds, existingIds, onC
 
       <div className="id-attr-palette" role="radiogroup" aria-label="Attribute type">
         {groups.map(({ group, types }) => (
-          <div key={group} className="id-attr-palette-group">
+          <div key={group} className="id-attr-palette-group" data-group={group}>
             <span className="id-attr-palette-plate">{group}</span>
             <div className="id-attr-palette-keys">
               {types.map((t) => (
@@ -200,7 +201,7 @@ export function AttributeCreator({ categories, itemCategoryIds, existingIds, onC
 
       {type !== "formula" && (
         <div className="space-y-1">
-          <Label className="text-[10px]">Initial value</Label>
+          <Label className="text-[10px]">{type === "item" ? "Item" : type === "list" ? "List" : "Initial value"}</Label>
           <AttributeValueField def={draftDef} value={value} onChange={setValue} />
         </div>
       )}

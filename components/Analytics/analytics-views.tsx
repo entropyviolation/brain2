@@ -56,5 +56,6 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   tags: view(() => import("./LibraryCuts").then((m) => ({ default: m.TagsView }))),
   stages: view(() => import("./LibraryCuts").then((m) => ({ default: m.StagesView }))),
   weight: view(() => import("./LibraryCuts").then((m) => ({ default: m.WeightView }))),
+  browser: view(() => import("./BrowserHistoryView").then((m) => ({ default: m.BrowserHistoryView }))),
   instagram: view(() => import("./InstagramView").then((m) => ({ default: m.InstagramView }))),
 }

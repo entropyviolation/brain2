@@ -85,7 +85,10 @@ export const ANALYTICS_TAB_GROUPS = [
   {
     id: "sources",
     label: "Sources",
-    tabs: [{ id: "instagram", label: "Instagram" }],
+    tabs: [
+      { id: "instagram", label: "Instagram" },
+      { id: "browser", label: "Browser" },
+    ],
   },
 ] as const
 
@@ -197,6 +200,8 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
     "Lifecycle bucket (inbox / clarified / scheduled / completed / list). This is Task.stage, not a list name.",
   weight:
     "Importance, cognitive load, and entropy already stored on items. Missing values stay missing.",
+  browser:
+    "Chrome history from every profile you add (Quick Chrome History Export JSON), merged. Visits per day, week by hour, sites and kinds of site, sessions, Google searches, and every YouTube video with a topic guessed from its title. Files stay on this computer. The shared date range does not apply here.",
   instagram:
     "The Instagram report, built on this computer from your Instagram data export (Download your information, JSON, all time). Nothing is sent anywhere; only the click-to-load post previews and the opt-in profile photos reach the internet. The shared date range does not apply here. A new export in Downloads is picked up by the desktop app. Limits of the export: who liked or commented on your posts and stories is not in it, so per-person engagement comes from DMs only. Carousel posts have no insights. Follower counts of other accounts are not in it. Comments have no link to their post. Time active is an estimate, and before the recent view-log window it is a floor.",
 }

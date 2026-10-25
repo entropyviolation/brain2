@@ -36,6 +36,7 @@ import {
   matchDiscreteEventTrigger,
   type DiscreteTriggerDef,
 } from "./text-triggers"
+import { dropMirroredTrackingEntry, mirrorTrackingEntry } from "@/lib/tracking-lists"
 import type { ApplyResult, IngestIntentKind } from "./types"
 
 const ACTIVITY = "activity"
@@ -97,6 +98,7 @@ export function applyDiscreteLog(
     logMeta(parsed.title, parsed.clockCertainty),
   )
     const placeId = pairLocation(parsed, parsed.start)
+    if (id) mirrorTrackingEntry(id, "log")
     return {
       status: "ok",
       kind: "event-log",
@@ -116,6 +118,7 @@ export function applyDiscreteLog(
   )
   const placeId = pairLocation(parsed, parsed.at)
   tallySavedKeyword(parsed.title, parsed.at, phrases, parsed.clockCertainty)
+  if (id) mirrorTrackingEntry(id, "log")
   return {
     status: "ok",
     kind: "event-log",
@@ -192,6 +195,7 @@ export function applyTransferredLogLines(
   appendTrackingInstants(created)
   const live = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
   if (!created.every((entry) => live.has(entry.id))) return { ok: false, entries: [] }
+  for (const entry of created) mirrorTrackingEntry(entry.id, "log")
   return { ok: true, entries: created }
 }
 
@@ -247,6 +251,7 @@ export function applyThoughtProcess(payload: string, now = new Date()): ApplyRes
   if (!id) {
     return { status: "error", kind: "thought-process", reply: "Could not save that thought process." }
   }
+  mirrorTrackingEntry(id, "thought-process")
   return {
     status: "ok",
     kind: "thought-process",
@@ -440,7 +445,10 @@ function paintLogStart(parsed: BoundNote, now: Date): ApplyResult {
     ACTIVITY,
     logMeta(parsed.title, parsed.clockCertainty),
   )
-  if (id) openStarts.set(startKey(parsed.title), { at: parsed.at.toISOString(), entryId: id, note: parsed.note })
+  if (id) {
+    openStarts.set(startKey(parsed.title), { at: parsed.at.toISOString(), entryId: id, note: parsed.note })
+    mirrorTrackingEntry(id, "log")
+  }
   const placeId = pairLocation(parsed, parsed.at)
   void now
   return {
@@ -469,6 +477,7 @@ function paintLogEnd(parsed: BoundNote, now: Date): ApplyResult {
     )
     const placeId = pairLocation(parsed, parsed.at)
     void now
+    if (id) mirrorTrackingEntry(id, "log")
     return {
       status: "ok",
       kind: "event-log",
@@ -477,7 +486,10 @@ function paintLogEnd(parsed: BoundNote, now: Date): ApplyResult {
       itemIds: loggedIds(id, placeId),
     }
   }
-  if (open?.entryId) useTimeTrackingStore.getState().removeEntry(open.entryId)
+  if (open?.entryId) {
+    dropMirroredTrackingEntry(open.entryId)
+    useTimeTrackingStore.getState().removeEntry(open.entryId)
+  }
   const id = paintSpan(
     parsed.title,
     start,
@@ -488,6 +500,7 @@ function paintLogEnd(parsed: BoundNote, now: Date): ApplyResult {
     logMeta(parsed.title, parsed.clockCertainty),
   )
   const placeId = pairLocation(parsed, start)
+  if (id) mirrorTrackingEntry(id, "log")
   return {
     status: "ok",
     kind: "event-log",

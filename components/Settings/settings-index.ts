@@ -6,7 +6,7 @@
  * this file only decides which ones a query keeps.
  */
 
-export type SettingsGroupId = "you" | "appearance" | "points" | "data" | "imports" | "library"
+export type SettingsGroupId = "you" | "appearance" | "points" | "data" | "imports" | "library" | "help"
 
 export type SettingsGroup = {
   id: SettingsGroupId
@@ -28,6 +28,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   { id: "data", title: "Data" },
   { id: "imports", title: "Imports" },
   { id: "library", title: "Library" },
+  { id: "help", title: "Help" },
 ]
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
@@ -144,6 +145,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     groupId: "library",
     title: "Second Brain",
     keywords: "second brain source belief trust knowledge base seed setup",
+  },
+  {
+    id: "settings-shortcuts",
+    groupId: "help",
+    title: "Keyboard shortcuts",
+    keywords: "help keyboard shortcuts hotkeys keys chords quick add search undo",
   },
 ]
 
