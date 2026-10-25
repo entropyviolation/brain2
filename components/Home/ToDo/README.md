@@ -189,13 +189,14 @@ _Last mapped: 2026-10-25._ Slice H of [`docs/TODO_REDESIGN.md`](../../../docs/TO
 
 ## Sessions: parking lot view modes
 
-_Last mapped: 2026-10-22._ The parked popup has four view keys above the detail: **Classic**, **Cartridge rack**, **Scrying well** and **Night garage**. The choice is `parkingLotMode` in `todo-prefs.ts` (default `classic`).
+_Last mapped: 2026-10-25._ The parked popup has five view keys above the detail: **Classic**, **Cartridge rack**, **Scrying well**, **Garage** and **Night garage**. The choice is `parkingLotMode` in `todo-prefs.ts` (default `classic`).
 
-- **Where.** `parking-lot/ParkingLot.tsx` holds the keys (`ParkingLotModeKeys`) and the stage (`ParkingLotStage`). It lazy-loads three.js and one scene, so Classic loads nothing. The scenes are `scene-rack.ts`, `scene-well.ts` and `scene-garage.ts` (cars in `garage-cars.ts`). The contract is `parking-lot/types.ts` (`MountLot`, `LotScene`, `LotCar`).
+- **Where.** `parking-lot/ParkingLot.tsx` holds the keys (`ParkingLotModeKeys`) and the stage (`ParkingLotStage`). It lazy-loads three.js and one scene, so Classic loads nothing. The scenes are `scene-rack.ts`, `scene-well.ts`, `scene-sanctuary.ts` (mode `garage`, cars in `sanctuary-cars.ts`) and `scene-garage.ts` (mode `night`, cars in `garage-cars.ts`). Saved prefs that said `garage` now open the Sanctuary. The contract is `parking-lot/types.ts` (`MountLot`, `LotScene`, `LotCar`).
 - **What it shows.** Every parked session is an object: a cartridge, a crystal or a car. Clicking one focuses that session (`focus(id)`), and the house detail and Resume keys sit under the stage, skinned per mode (`parking-lot.css`).
 - **Resume.** With a scene up, Resume plays the scene's motion first (`playResume`), then resumes. Classic resumes at once. Reduced motion skips the motion.
 - **Cars.** Night garage builds nine cars in code (Oldsmobile, Volvo 240, Mercedes SL, Jeep Cherokee, Bronco, Vanagon, Panda, R5, Samurai), assigned by index. Textures are canvas-generated; no model files.
-- Mockups: `docs/mockups/parking-lot/` (open `index.html`). **Planned:** the Solarpunk sanctuary garage in `docs/mockups/solarpunk-sanctuary/` is a mockup only, not in the app yet.
+- **Garage (Solarpunk Sanctuary).** _Last mapped: 2026-10-25._ The default garage look, ported from `docs/mockups/solarpunk-sanctuary/`. Terraced white concrete, arches, planters, water, forest and a dome. Day and night follow the local clock. Zoom keys 1–4 (car, structure, forest, dome) sit bottom right, and the wheel or a pinch also zooms. Pills show name and time left; a click calls `onPick`. Bloom (`three/examples/jsm` postprocessing) is off on phone-width hosts. The resume drive is about 4s, but `playResume` resolves by about 2.2s and never later than 3s (a timer covers slow GPUs and hidden tabs). The concept cars only; the retro cars stayed in the mockup.
+- Mockups: `docs/mockups/parking-lot/` (open `index.html`) and `docs/mockups/solarpunk-sanctuary/`.
 
 ## Sessions: the draft
 
