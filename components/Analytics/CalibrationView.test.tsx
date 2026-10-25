@@ -22,6 +22,7 @@ vi.mock("recharts", () => ({
   Tooltip: () => null,
   CartesianGrid: () => null,
   Cell: () => null,
+  ReferenceLine: () => null,
 }))
 
 function task(overrides: Partial<Task>): Task {

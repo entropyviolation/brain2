@@ -27,6 +27,10 @@ import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { SAMPLE_FLOORS, isThinSample, periodKeysFromDateKeys, thinWindowSentence } from "./analytics-range"
 import { NativeSelect } from "@/components/ui/native-select"
+import { openItemsInLists } from "./open-in-lists"
+import { itemTitle } from "@/lib/item-utils"
+import { quantile } from "./accuracy-stats"
+import "./accuracy-views.css"
 
 const GRAINS: { value: PlanPeriod; label: string }[] = [
   { value: "day", label: "Day" },
@@ -58,6 +62,7 @@ export function PlanVsReality() {
   const [period, setPeriod] = useState<PlanPeriod>("day")
   const keys = useMemo(() => periodKeysFromDateKeys(period, dateKeys), [period, dateKeys])
   const [periodKey, setPeriodKey] = useState<string>("")
+  const [ribbonOrder, setRibbonOrder] = useState<"time" | "aligned">("time")
   const activeKey = keys.includes(periodKey) ? periodKey : (keys[keys.length - 1] ?? "")
 
   const planText = useMemo(() => getPlanBodies(period, activeKey), [period, activeKey])
@@ -77,6 +82,27 @@ export function PlanVsReality() {
     [keys, period, tasks, pointsHistory],
   )
   const plannedPeriods = windowRibbon.filter((c) => c.hasPlan).length
+  const ribbonShown = useMemo(
+    () =>
+      ribbonOrder === "time"
+        ? windowRibbon
+        : [...windowRibbon].sort((a, b) => (b.hasPlan ? b.alignment : -1) - (a.hasPlan ? a.alignment : -1)),
+    [windowRibbon, ribbonOrder],
+  )
+  const ribbonStats = useMemo(() => {
+    const planned = windowRibbon.filter((c) => c.hasPlan)
+    if (planned.length === 0) return null
+    const values = planned.map((c) => c.alignment)
+    const best = planned.reduce((a, b) => (b.alignment > a.alignment ? b : a))
+    const worst = planned.reduce((a, b) => (b.alignment < a.alignment ? b : a))
+    let run = 0
+    let longest = 0
+    for (const c of windowRibbon) {
+      run = c.hasPlan && c.alignment >= 70 ? run + 1 : 0
+      longest = Math.max(longest, run)
+    }
+    return { median: Math.round(quantile(values, 0.5)), best, worst, longest }
+  }, [windowRibbon])
 
   const itemIds = useMemo(
     () =>
@@ -91,6 +117,20 @@ export function PlanVsReality() {
         .map((t) => t.id),
     [tasks, period, activeKey],
   )
+
+  const plannedItems = useMemo(() => {
+    const ids = new Set(itemIds)
+    return tasks
+      .filter((t) => ids.has(t.id))
+      .map((t) => ({
+        id: t.id,
+        name: itemTitle(t),
+        state: t.completed ? "kept" : (t.daysPushed ?? 0) > 0 ? "moved" : "open",
+      }))
+      .sort((a, b) => ["kept", "moved", "open"].indexOf(a.state) - ["kept", "moved", "open"].indexOf(b.state))
+  }, [tasks, itemIds])
+  const keptCount = plannedItems.filter((i) => i.state === "kept").length
+  const movedCount = plannedItems.filter((i) => i.state === "moved").length
 
   const capacityLine = useMemo(() => {
     if (period !== "day" || !activeKey) return null
@@ -148,9 +188,38 @@ export function PlanVsReality() {
         </span>
       </div>
 
+      {plannedPeriods > 1 && (
+        <div className="an-acc-tools">
+          <span className="an-n">Ribbon order</span>
+          <button
+            type="button"
+            className="an-chip"
+            aria-pressed={ribbonOrder === "time"}
+            onClick={() => setRibbonOrder("time")}
+          >
+            By date
+          </button>
+          <button
+            type="button"
+            className="an-chip"
+            aria-pressed={ribbonOrder === "aligned"}
+            onClick={() => setRibbonOrder("aligned")}
+          >
+            Best aligned first
+          </button>
+          {ribbonStats && (
+            <span className="an-n">
+              median {ribbonStats.median}% aligned · best {periodKeyLabel(period, ribbonStats.best.key)} (
+              {ribbonStats.best.alignment}%) · worst {periodKeyLabel(period, ribbonStats.worst.key)} (
+              {ribbonStats.worst.alignment}%) · longest run ≥ 70%: {ribbonStats.longest}
+            </span>
+          )}
+        </div>
+      )}
+
       {keys.length > 0 && (
         <div className="an-pvr-ribbon" role="list" aria-label="Plan vs reality across the window">
-          {windowRibbon.map((cell) => {
+          {ribbonShown.map((cell) => {
             const selected = cell.key === activeKey
             const height = cell.hasPlan ? Math.max(8, cell.alignment) : 0
             return (
@@ -225,15 +294,70 @@ export function PlanVsReality() {
                 })}
                 <div className="an-legend">
                   <span>
-                    <i style={{ background: "#94a3b8" }} />
-                    Planned
+                    <i className="an-pvr-planned" />
+                    Planned (wide)
                   </span>
                   <span>
-                    <i style={{ background: "#2563eb" }} />
-                    Actual
+                    <i className="an-pvr-actual" />
+                    Actual (thin)
                   </span>
                 </div>
               </div>
+
+              <div className="an-acc-plate">
+                <p className="an-canvas-title">Plan ← mirror → reality</p>
+                <div className="an-acc-mirror">
+                  {comparison.metrics.filter((m) => m.planned > 0 || m.actual > 0).map((m) => {
+                    const max = Math.max(m.planned, m.actual, 1)
+                    return (
+                      <div key={m.key} className="an-acc-mirror-row">
+                        <div className="an-acc-mirror-side is-plan" title={`planned ${m.planned} ${m.unit}`}>
+                          <span style={{ width: `${(m.planned / max) * 100}%` }} />
+                        </div>
+                        <span className="an-acc-mirror-label">
+                          {m.label}
+                          <br />
+                          <span className="an-acc-mirror-val">
+                            {m.planned} | {m.actual}
+                          </span>
+                        </span>
+                        <div className="an-acc-mirror-side is-real" title={`actual ${m.actual} ${m.unit}`}>
+                          <span style={{ width: `${(m.actual / max) * 100}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className="an-acc-math">
+                  Attainment per row: tasks = done ÷ planned, points = earned ÷ planned (both capped at 100%), time =
+                  min(plan, actual) ÷ max(plan, actual), so running over costs as much as running short. Alignment is
+                  the mean over rows that had a plan.
+                </p>
+              </div>
+
+              {plannedItems.length > 0 && (
+                <div className="an-acc-plate">
+                  <p className="an-canvas-title">Truth barcode: what happened to each planned item</p>
+                  <div className="an-acc-cells" role="list">
+                    {plannedItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="listitem"
+                        className={`an-acc-cell ${item.state === "kept" ? "is-on" : item.state === "moved" ? "is-over" : "is-open"}`}
+                        style={{ width: 12 }}
+                        title={`${item.name}: ${item.state}`}
+                        onClick={() => openItemsInLists({ taskIds: [item.id] })}
+                      />
+                    ))}
+                  </div>
+                  <div className="an-acc-key">
+                    <span><i className="is-on" />Done ({keptCount})</span>
+                    <span><i className="is-over" />Pushed at least once, still open ({movedCount})</span>
+                    <span><i className="is-open" />Open ({plannedItems.length - keptCount - movedCount})</span>
+                  </div>
+                </div>
+              )}
               {comparison.intentions.length > 0 && (
                 <p className="an-canvas-kicker">{comparison.intentions.join(" · ")}</p>
               )}
