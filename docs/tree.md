@@ -135,7 +135,7 @@ per assigned To Do period). `ItemSaveFlag.tsx` stays on the fascia: green **Save
 while the draft matches the stored item, pink **Unsaved changes** while it does not.
 **Cmd/Ctrl+S** (`useItemDetailSaveHotkey.ts`) saves that draft while the surface is in front.
 An inbox item gets a smaller **Clarify** key (`InboxClarifyKey.tsx`) beside the INBOX chip.
-**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The fascia gear opens **Settings** (`ItemSettingsPanel.tsx`): item id, attribute display names, and which tabs this item shows.
+**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The fascia gear opens **Item settings** as a dialog (`ItemSettingsPanel.tsx`): item id, which attributes show, display names, and which tabs this item shows. A name opens **Attribute settings** (`AttributeSettingsDialog.tsx`). The popup's minimize key leaves a dock bar or icon (`ItemDetailDock.tsx`) so the draft stays mounted.
 The Detailed Description box keeps the height you drag it to for that item in this session.
 
 → [`components/README.md`](../components/README.md)
