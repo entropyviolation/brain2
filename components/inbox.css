@@ -53,8 +53,8 @@ body.win95-app .inbox-dialog {
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
-  /* Nameplate is ~28px starting after the 10px dialog pad. */
-  --b2-close-top: 13px;
+  /* 26px keycap centered on the ~28px nameplate (starts after the 10px pad). */
+  --b2-close-top: 11px;
   --b2-close-right: 13px;
   accent-color: var(--inbox-blue);
   display: flex !important;

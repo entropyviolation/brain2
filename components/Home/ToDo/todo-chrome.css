@@ -2915,7 +2915,8 @@ body.win95-app .todo95 .todo-view-keys [role="tab"] { min-height: 26px; padding:
 :is(.todo95, .todo95-dialog) .todo-formula-presets .todo-chiclet { min-height: 22px; padding: 2px 10px; border: 0; border-radius: 11px; font: inherit; font-size: 10px; font-weight: 700; letter-spacing: .06em; cursor: pointer; background: linear-gradient(180deg, var(--chrome-key-sheen, #f2f3f4), var(--chrome-mill-soft, #d4d7da)); box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 0 0 1px var(--chrome-ring-deep, #8a8f94); }
 :is(.todo95, .todo95-dialog) .todo-math-card.is-wide .todo-math-svg { max-width: 640px; }
 
-/* ==== Redesign 2026-10-21: keycaps (house key shape, docs/DESIGN_STYLE.md → Keycaps) ==== */
+/* ==== Keycaps (house word key, docs/DESIGN_STYLE.md → Keycaps). Silver is the face.
+   .is-seafoam and .is-cornflower reuse --cap-* and add no tokens. 2026-10-24. ==== */
 
 .todo95 {
   --todo-cap-top: #f1f3f5;
@@ -3000,6 +3001,26 @@ body.win95-app .todo95 .todo-lid-actions button.todo-verb.is-primary[type="butto
   border-radius: 1px;
   background: var(--todo-cap-navy);
   box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+/* Spare plastics. Same four locals as the silver cap — no extra tokens.
+   Silver stays the face to reach for. Do not stack these on .is-mod or .is-primary. */
+.todo95 .todo-cap.is-seafoam:not(:disabled),
+body.win95-app .todo95 button.todo-cap.is-seafoam[type="button"]:not([hidden]):not(:disabled) {
+  --cap-top: #d4f3e8;
+  --cap-top2: #b7e6d4;
+  --cap-skirt: #7ebfa8;
+  --cap-edge: #3f7564;
+  color: #102820;
+}
+
+.todo95 .todo-cap.is-cornflower:not(:disabled),
+body.win95-app .todo95 button.todo-cap.is-cornflower[type="button"]:not([hidden]):not(:disabled) {
+  --cap-top: #dce6fb;
+  --cap-top2: #c0d0f6;
+  --cap-skirt: #8aa6e0;
+  --cap-edge: #4a6298;
+  color: #17243f;
 }
 
 .todo95 .todo-cap:active:not(:disabled),

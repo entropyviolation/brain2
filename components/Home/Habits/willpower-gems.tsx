@@ -39,6 +39,7 @@ import {
 import katex from "katex"
 import "katex/dist/katex.min.css"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { orbFor } from "@/components/Icons"
 import { removeBackground } from "@/lib/remove-background"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -1514,9 +1515,7 @@ function WillpowerGemsStage({
         <DialogContent className="habit95-dialog hab-willpower-lab-dialog">
           <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
             <DialogTitle className="habit95-title-text">Willpower gems physics</DialogTitle>
-            <button type="button" className="habit95-title-btn b2-close-key" aria-label="Close physics" onClick={() => setHud(false)}>
-              ×
-            </button>
+            <KeycapClose className="habit95-title-btn" label="Close physics" onClick={() => setHud(false)} />
           </DialogHeader>
           <DialogDescription className="sr-only">
             The same Willpower gems world as the control panel. Stir, grab, or lift gems here. Live

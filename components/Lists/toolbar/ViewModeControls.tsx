@@ -45,6 +45,8 @@ const LIST_DISPLAY_ABBR: Record<ListDisplay, string> = {
   icons: "Icon",
   table: "Det",
   spreadsheet: "Sheet",
+  gallery: "Photos",
+  documents: "Docs",
 }
 
 const LIST_DISPLAY_KEYS: { id: ListDisplay; full: string; abbr: string }[] = (
@@ -137,7 +139,7 @@ export function ViewModeControls({
   const modes =
     openTarget.type === "category" && enabledDisplays && enabledDisplays.length > 0
       ? allModes.filter((d) => enabledDisplays.includes(d))
-      : allModes
+      : allModes.filter((d) => d !== "gallery" && d !== "documents")
 
   const keys = LIST_DISPLAY_KEYS.filter((k) => modes.includes(k.id))
 

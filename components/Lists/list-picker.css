@@ -38,9 +38,29 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   text-align: left;
   cursor: pointer;
+}
+
+.list-picker-row > .truncate,
+.fm-picker-row > .truncate,
+.list-picker-row > span,
+.fm-picker-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A catalog choice stays the width of its field. Names truncate; the menu does not grow. */
+.catalog-field,
+.catalog-picker {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .list-picker-body {

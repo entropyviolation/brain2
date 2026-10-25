@@ -1,10 +1,10 @@
 # Performance plan
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-24_
 
 Reload, load, closing dialogs, and saving all feel slow and glitchy. This maps where that time goes, checked against the code at `f1848fc`. Status: **Planned**, except Step 1, which is done in code (2026-10-20). The CI side is in [`CI_GREEN_PLAN.md`](CI_GREEN_PLAN.md). Phase 3 below depends on it.
 
-I have not profiled a live vault. Numbers below come from a jsdom benchmark of the real `cogsStateStorage().setItem` on synthetic blobs. Step 0 measures the real thing.
+The table in section 2 is a jsdom benchmark of `cogsStateStorage().setItem` on synthetic blobs. A reading of the live vault on 2026-10-24 is the next section. Step 0 is still the DevTools measurement.
 
 ---
 
@@ -50,7 +50,7 @@ So a task edit blocks the UI for about 200 ms before any network. The 48 ms coal
 
 ### 4. Timers keep the save path busy
 
-- A running work session or pen session writes the time grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts:~45`). Each tick takes the full timegrid save path and sends 2 hub POSTs.
+- A running work session or pen session checks the grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts`). Since Step 4, `liveEntryUpToDate` skips the write when the painted block already ends at the active minute. The block still grows about once a minute, and that growth takes the full timegrid save. Typing an objective takes that same save on every character (see the 2026-10-24 note). Hub posts are one per edit after Step 1, not two.
 - In a browser tab (not the Electron desktop ingest), `hooks/useMessageIngest.ts:~179` polls the hub every 1 s with 2–3 fetches to the same dev server.
 - With the phone hub up, `pushVault` PUTs the whole vault every 60 s.
 
@@ -59,6 +59,27 @@ So a task edit blocks the UI for about 200 ms before any network. The 48 ms coal
 In Electron, `getItem` races a hub GET against an 800 ms cap (`PERSIST_HUB_WAIT_MS`) for every missing or seed-sized key, and always for plan-text keys. The GET returns the whole double-stored file.
 
 What is fine: store subscriptions use selectors (two whole-store hooks, both in `components/Home/Plan/settings-dialog.tsx`). Tabs are `lazy()` in `app/page.tsx`.
+
+---
+
+## Observed on the live vault (2026-10-24)
+
+_Last mapped: 2026-10-24_
+
+While a pen-color **Working on right now** session was open, the whole window lagged: closing a popup, typing, and clicking a button. The same lag may also be attributable to the computer being overloaded at the time. The seams below are in the code either way.
+
+The session blob itself is small (about 1.6 KB). The one-second clock does not walk the vault. `usePenColorSessionClock` (`components/Home/Tracking/pen-color-now-strip.tsx`) only updates the elapsed label in the components that call it: the header Now rows (loaded only while a session is live), the Tracking strip, and the focus bar when a task is on the clock. Each mounted caller starts its own one-second interval and its own 15-second tick. A three-second sample of the Electron renderer showed the main thread waiting, not spinning.
+
+The vault beside that small session is large. Read from the Electron localStorage log that evening (`brain2-task-storage`, `brain2-timegrid-store`):
+
+| Store | JSON | On disk (UTF-16) | Rows |
+|-------|------|------------------|------|
+| Tasks | 6.4 MB | 12.8 MB | 11,853 tasks |
+| Time grid | 3.6 MB | 7.1 MB | 9,566 entries, 691 pens |
+
+Typing in an objective is the expensive app path. `GrowText` in `now-objectives-list.tsx` calls `onEditText` on every change. For the pen clock that is `editPenColorNowObjectiveText`, which mirrors the list onto the painted block through `updateEntry`. `updateEntry` maps the whole `entries` array. About 48 ms later `createCogsJSONStorage` stringifies `brain2-timegrid-store` and writes it. The Operations clock uses the same editor and the same mirror (`editWorkNowObjectiveText`). Dozens of views select `s.entries` (the time grid, the dash faces, the home tiles, and others) and re-render when that array changes. A task-store edit stringifies the 6.4 MB task blob the same way.
+
+The dev window in that session was `npm run electron:dev`, compiling on the order of 9,000 modules, with full reloads. That matches section 1.
 
 ---
 
@@ -133,7 +154,7 @@ _Last mapped: 2026-10-20_ — **Done** (not committed).
 
 ### Later — Stop rewriting whole stores (**Do not start** without a design pass)
 
-The root cost is one localStorage blob per store, rewritten whole on every edit. Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
+The root cost is one localStorage blob per store, rewritten whole on every edit. Typing an objective is one case: each character rewrites `brain2-timegrid-store` (see the 2026-10-24 note). Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
 
 ---
 

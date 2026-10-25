@@ -54,12 +54,13 @@
   align-items: end;
 }
 
-.person-pipelines-add label {
+.person-pipelines-add label,
+.person-pipelines-add .person-pick {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 8rem;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 12rem;
   font-size: 11px;
 }
 

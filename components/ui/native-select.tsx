@@ -11,6 +11,11 @@ import "./native-select.css"
  * Drop-in for a native `<select>` with `<option>` children. Renders the
  * app's Radix select (menu layer, house styling) instead of the OS popup.
  * `onChange` gets `{ target: { value } }`, so `e.target.value` callers work.
+ *
+ * Short enums only (a type, a status, a period). A list or item from the
+ * vault uses `ListPicker` / `ItemPicker` — see DESIGN_STYLE.md
+ * "Choosing a list or an item". A select of that catalog is not searchable
+ * and does not fit.
  */
 
 const EMPTY = "__empty__"
