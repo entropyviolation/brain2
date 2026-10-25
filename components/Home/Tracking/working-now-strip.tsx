@@ -78,7 +78,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
 
   return (
     <div
-      className={`ops-now-bar${live ? " live" : ""}${compact ? " is-compact" : ""}`}
+      className={`ops-now-bar b2-now${live ? " live" : ""}${compact ? " is-compact" : ""}`}
       title={
         compact
           ? opTags.length > 0
@@ -129,7 +129,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
       )}
       <button
         type="button"
-        className={`ops-btn ops-btn-now${live ? " live" : ""}`}
+        className={`todo-cap${live ? "" : " is-primary"}`}
         disabled={!selected}
         aria-label={live && selected ? `Stop working on ${selected.description}` : "Working on this now"}
         onClick={() => {

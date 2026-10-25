@@ -1206,10 +1206,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   whether to save them. Yes closes and parks them on that store, and they are
   on the list from the start the next time that pen, task, or subtask is
   tracked. No closes without parking. Cancel leaves the clock running. After
-  the clock stops, the sitting review (`lib/session-debrief.ts`) shows
-  estimates against the minutes of that sitting, lets you correct completion
-  and the log note, and can leave a note for the next start plus a 1–5
-  satisfaction, energy, and what got in the way. That objectives list
+  the clock stops, an optional end-of-session reflection
+  (`lib/session-debrief.ts`) shows estimates against the minutes of that
+  sitting, the log note, a note for the next start, a 1–5 satisfaction,
+  energy, and what got in the way. Save keeps them. Skip leaves the log.
+  The task stays open. Completing a task still uses the completion
+  reflection. That objectives list
   mirrors onto the painted block and stays editable in the block editor. The
   pen clock's **Task** key (`components/Home/Tracking/clock-task-panel.tsx`,
   also on the header now row and the focus bar) puts one task on the minutes
@@ -1219,7 +1221,13 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Its notes, and the task's time log, say it was added from Working On Now,
   with the task and the subtasks and objectives that sitting finished. That
   block is what the item Time tab lists for the task and for a step the
-  sitting is on or finished. Not
+  sitting is on or finished. The step's total counts that objective's worked
+  minutes, and a parent's spent adds them, even when the block's own step
+  tag is a different step. An open objective counts only the minutes inside
+  its block. A saved actual is not added on top of those same minutes. A
+  timed log counts its duration, not every minute from its start to its end.
+  Minutes before any part was indicated stay on the
+  ancestor. The task card's Spent list is those same rows. Not
   Home → Goals, and not the Tracking Objective pen (`so:`).
 - **Sleep / wake log** — ✅ `lib/sleep-log.ts` (pure model) + `lib/sleep-store.ts`
   (`cogs-sleep-store`) + `lib/sleep-sync.ts` (derivation). Tracking no longer
@@ -1375,8 +1383,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   over a settled value.
 - **Task completion review** — ✅ `CompletionDialog` (global, on every done).
   Separate from period rituals. Select or create objectives and goals, optional
-  quick review: **Done at** is any date and time, **exact** or **estimated**
-  (`completedCertainty`; unmarked leaves the stamp). Length and start are each
+  quick review: **Done at** is any date and time, **exact**, **estimated**, or
+  **unknown** (`completedCertainty`; unmarked leaves the stamp; unknown keeps
+  the stamp and does not treat it as the real clock). Length and start are each
   **exact / estimated / unknown** (unknown stores no minutes and no start time;
   a saved start of `known` reads as exact),
   optional 1–10 scores (expected vs
