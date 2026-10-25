@@ -9,7 +9,7 @@
  * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
  * the Objective pen (`so:`), plus an instant on whatever other scope the
  * person picked. A note is a Text log instant (`note:`), so it stays on the
- * event list. A thought process is that same Text log instant with
+ * event list. The Now popup lists that note on its own shelf. A thought process is that same Text log instant with
  * `eventKind` `thought-process`, and the Tracking log shelves it under Thought process.
  * Thought process rows and Event rows are also items on Lists → Tracking (`lib/tracking-lists.ts`).
  * A spend is an Activity instant on the Spent pen: integer cents, what it was
