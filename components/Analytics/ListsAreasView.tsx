@@ -144,6 +144,7 @@ export function ListsAreasView() {
         <>
           <StudioBars rows={rows.slice(0, 24).map((r) => ({ name: `${r.name} (${r.count})`, value: r.rate }))} max={100} />
           {rows.length > 24 ? <p className="an-canvas-hint">Top 24 lists by size. The ledger below has all {rows.length}.</p> : null}
+          <SizeRateScatter rows={rows} onOpen={openList} />
           <OpenInListsButton taskIds={tasks.filter((t) => t.lists?.length).map((t) => t.id)} />
         </>
       ) : (
@@ -236,6 +237,64 @@ function AreaSquares({
           )
         })}
       </div>
+    </LibPlate>
+  )
+}
+
+/** Quadrant scatter: list size (log x) against completion rate (y). Dot area ∝ stalled + 1. */
+function SizeRateScatter({
+  rows,
+  onOpen,
+}: {
+  rows: { id: string; name: string; color: string; count: number; rate: number; stalled: number }[]
+  onOpen: (id: string) => void
+}) {
+  if (rows.length < 2) return null
+  const W = 640
+  const H = 260
+  const pad = { l: 36, r: 12, t: 12, b: 28 }
+  const maxN = Math.max(...rows.map((r) => r.count), 2)
+  const x = (n: number) => pad.l + (Math.log(n) / Math.log(maxN)) * (W - pad.l - pad.r)
+  const y = (rate: number) => pad.t + (1 - rate / 100) * (H - pad.t - pad.b)
+  const medN = summarize(rows.map((r) => r.count)).median
+  const medRate = summarize(rows.map((r) => r.rate)).median
+  const maxStalled = Math.max(...rows.map((r) => r.stalled), 1)
+  return (
+    <LibPlate
+      title="Size × rate"
+      note={`Each dot is a list. Right = more items (log scale), up = higher completion. Dot area grows with stalled items. Dashed lines are the medians (${fmt(medN, 1)} items, ${fmt(medRate, 0)}%), so the corners read: big and moving (top right), big and stuck (bottom right), small and done (top left), small and idle (bottom left). Click a dot to open the list.`}
+    >
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="List size against completion rate" style={{ maxHeight: 300 }}>
+        <rect x={pad.l} y={pad.t} width={W - pad.l - pad.r} height={H - pad.t - pad.b} fill="var(--an-hi, #fff)" stroke="var(--an-line, #888)" strokeWidth={0.5} />
+        <line x1={x(Math.max(medN, 1))} x2={x(Math.max(medN, 1))} y1={pad.t} y2={H - pad.b} stroke="var(--an-muted, #444)" strokeDasharray="3 3" strokeWidth={0.75} />
+        <line x1={pad.l} x2={W - pad.r} y1={y(medRate)} y2={y(medRate)} stroke="var(--an-muted, #444)" strokeDasharray="3 3" strokeWidth={0.75} />
+        {[0, 50, 100].map((v) => (
+          <text key={v} x={pad.l - 4} y={y(v) + 3} textAnchor="end" fontSize={10} fill="currentColor">
+            {v}%
+          </text>
+        ))}
+        {[1, Math.round(Math.sqrt(maxN)), maxN].filter((v, i, a) => a.indexOf(v) === i).map((v) => (
+          <text key={v} x={x(v)} y={H - pad.b + 14} textAnchor="middle" fontSize={10} fill="currentColor">
+            {v}
+          </text>
+        ))}
+        {rows.map((r) => (
+          <circle
+            key={r.id}
+            cx={x(r.count)}
+            cy={y(r.rate)}
+            r={4 + Math.sqrt(r.stalled / maxStalled) * 8}
+            fill={r.color}
+            fillOpacity={0.85}
+            stroke="var(--an-ink, #000)"
+            strokeWidth={0.5}
+            style={{ cursor: "pointer" }}
+            onClick={() => onOpen(r.id)}
+          >
+            <title>{`${r.name}: ${r.count} items, ${r.rate}% done, ${r.stalled} stalled`}</title>
+          </circle>
+        ))}
+      </svg>
     </LibPlate>
   )
 }
