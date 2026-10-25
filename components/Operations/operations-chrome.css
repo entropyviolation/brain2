@@ -1454,7 +1454,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 }
 
 /* Dialog × is `.b2-close-key`. Workspace Back stays `.ops-title-btn` without that class. */
-.ops95-dialog .ops-title-btn.b2-close-key {
+.ops95-dialog .keycap-close {
   margin-left: auto;
   cursor: pointer;
 }
@@ -1891,8 +1891,19 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 }
 
 /* Phase 6: name a task on the ▶ clock beside Working on this now. */
-.ops95 .ops-now-task {
-  max-width: 14em;
+.ops95 .ops-task-pick {
+  position: relative;
+  display: inline-flex;
   margin-left: 6px;
-  cursor: pointer;
+}
+
+.ops95 .ops-task-pick-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 16rem;
+  max-width: min(16rem, 70vw);
+  background: var(--chrome-face, #c0c0c0);
+  box-shadow: var(--w95-raised, inset -1px -1px #404040, inset 1px 1px #fff);
 }

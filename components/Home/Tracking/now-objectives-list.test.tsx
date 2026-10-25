@@ -42,8 +42,43 @@ describe("NowObjectivesList", () => {
     expect(onToggleComplete).toHaveBeenCalledWith("a")
 
     await user.type(screen.getByRole("textbox", { name: "Add objective" }), "one more")
-    await user.click(screen.getByRole("button", { name: "Add" }))
+    await user.click(screen.getByRole("button", { name: "Add objective" }))
     expect(onAdd).toHaveBeenCalledWith("one more")
+  })
+
+  it("logs a completed objective, hides done rows, and opens delete from the row", async () => {
+    const user = userEvent.setup()
+    const onAddCompleted = vi.fn()
+    const onRemove = vi.fn()
+
+    render(
+      <NowObjectivesList
+        objectives={seed}
+        onAdd={() => {}}
+        onAddCompleted={onAddCompleted}
+        onEditText={() => {}}
+        onToggleComplete={() => {}}
+        onRemove={onRemove}
+        onSaveForLater={() => {}}
+        onAttach={() => {}}
+      />,
+    )
+
+    await user.click(screen.getByTestId("now-objectives-trigger"))
+    await user.type(screen.getByRole("textbox", { name: "Add objective" }), "already finished")
+    await user.click(screen.getByRole("button", { name: "Completed objective" }))
+    expect(onAddCompleted).toHaveBeenCalledWith("already finished")
+
+    expect(screen.getByDisplayValue("already done")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Hide completed" }))
+    expect(screen.queryByDisplayValue("already done")).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Show completed" }))
+    expect(screen.getByDisplayValue("already done")).toBeInTheDocument()
+
+    await user.click(screen.getByText(/added /))
+    await user.click(screen.getByRole("button", { name: "Delete" }))
+    expect(onRemove).toHaveBeenCalledWith("a")
   })
 
   it("inline mode shows the list without a trigger", () => {

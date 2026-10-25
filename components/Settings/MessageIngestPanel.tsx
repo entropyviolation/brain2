@@ -27,7 +27,7 @@ import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { useTaskStore } from "@/lib/task-store"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
 import { normalizeHubUrl, pushVaultToHub } from "@/lib/ingest/vault-push"
-import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 export function MessageIngestPanel() {
   const enabled = useIngestStore((s) => s.enabled)
@@ -392,21 +392,13 @@ export function MessageIngestPanel() {
           example <code className="text-foreground">store</code> → <code className="text-foreground">groc</code>{" "}
           is optional — an empty shortcut map still understands <code className="text-foreground">store</code>.
         </p>
-        <NativeSelect
-          id="live-grocery-list"
-          aria-label="Live grocery list"
+        <SingleListPicker
           value={groceryListId ?? ""}
-          onChange={(e) => setGroceryListId(e.target.value || null)}
-        >
-          <option value="">Automatic (Grocery / Groceries / Shopping)</option>
-          {lists
-            .filter((list) => !isFolderAllItemsCategoryId(list.id))
-            .map((list) => (
-              <option key={list.id} value={list.id}>
-                {list.name}
-              </option>
-            ))}
-        </NativeSelect>
+          onValueChange={(id) => setGroceryListId(id || null)}
+          emptyLabel="Automatic (Grocery / Groceries / Shopping)"
+          searchLabel="Live grocery list"
+          excludeIds={lists.filter((list) => isFolderAllItemsCategoryId(list.id)).map((list) => list.id)}
+        />
       </div>
 
       <div className="space-y-2">

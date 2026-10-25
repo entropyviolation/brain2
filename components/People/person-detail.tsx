@@ -4,7 +4,7 @@
  * Reads top to bottom (3.1, `docs/PERSON_DETAIL_REDESIGN.md` §2):
  * 1. Identity bay: the person's orb on a velvet well (click → orb picker,
  *    writes `icon` on the draft) beside the birthday plaque, then one phosphor
- *    readout strip: Known for · Last saw · the Close lamp key.
+ *    readout strip: Known for · Last seen · Last called · Last texted · the Close lamp key.
  *    View text analytics ↗ joins the strip when the texts report has a card
  *    for one of their numbers (`lib/texts-report.ts`).
  * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
@@ -12,7 +12,7 @@
  *    Emails,
  *    Relation, Date met + Est., Instagram, Address.
  * 3. Time together. 4. The host's `pipelines` slot (Company pens).
- * 5. Interactions (`person-log.tsx`; feeds Last saw).
+ * 5. Interactions (`person-log.tsx`; feeds Last seen).
  * 6. The Gift ideas key → a small popup with the list and quick notes
  *    (`person-gift-ideas.tsx`).
  *
@@ -27,6 +27,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { openInstagramFor } from "@/lib/instagram-report"
 import { openTextsFor, readTextsIndex, subscribeTextsIndex, textsCardFor } from "@/lib/texts-report"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { AddressSuggestInput } from "@/components/ui/address-suggest-input"
@@ -44,6 +45,7 @@ import { PERSON_ATTR } from "@/lib/person-types"
 import { COMPANY_SCOPE_ID, personPhoneNumbers, personTimePenIds } from "@/lib/people-i-know"
 import { formatHandle } from "@/lib/phone-sync/handles"
 import { personMinuteMasks } from "@/lib/person-time"
+import { contactSentence, personContact } from "@/lib/person-contact"
 import { PersonTimeTogether } from "@/components/People/person-time-together"
 import {
   addressPlaceholder,
@@ -149,11 +151,12 @@ export function PersonDetail({
   const scopes = useTimeTrackingStore((s) => s.scopes)
   // Extra pens, ticked details, and Social · "Who with?" ticks count too (`lib/person-time.ts`).
   const trackedLast = useMemo(() => {
-    const masks = personMinuteMasks(entries, scopes, personTimePenIds(person, scopes))
+    const masks = personMinuteMasks(entries, scopes, personTimePenIds(person))
     return [...masks.keys()].sort().at(-1) ?? null
   }, [entries, scopes, person])
   const storedLast = lastTogetherDate(profile, person.personPipelines, companyEntries)
   const lastSaw = [storedLast, trackedLast].filter(Boolean).sort().at(-1) as typeof storedLast
+  const contact = useMemo(() => personContact(entries, scopes, person), [entries, scopes, person])
   const [precision, setPrecision] = useState<AddressPrecision>(profile?.address?.precision ?? "mailing")
   const shownPrecision = profile?.address?.precision ?? precision
   const [orbOpen, setOrbOpen] = useState(false)
@@ -258,10 +261,37 @@ export function PersonDetail({
         </span>
         <span
           className="person-readout"
-          title="Interactions marked Saw them, plus tracked time with a pen joined to this person."
+          title="Interactions marked Saw them, plus tracked time with a pen joined to this person. Calls and texts are not counted."
         >
-          Last saw {lastSawSentence(lastSaw, todayIso)}
+          Last seen {lastSawSentence(lastSaw, todayIso)}
         </span>
+        <span
+          className="person-readout"
+          data-testid="person-last-called"
+          title="Synced iPhone calls. Calls are contact, not time together."
+        >
+          Last called {contactSentence(contact.call, todayIso)}
+          {contact.callBack ? <strong className="person-readout-owe"> Call them back.</strong> : null}
+        </span>
+        <span
+          className="person-readout"
+          data-testid="person-last-texted"
+          title="Synced iPhone texts. Texts are contact, not time together."
+        >
+          Last texted {contactSentence(contact.text, todayIso)}
+          {contact.textBack ? <strong className="person-readout-owe"> Text them back.</strong> : null}
+        </span>
+        {profile?.instagram ? (
+          <button
+            type="button"
+            className="person-readout person-readout-link"
+            data-testid="person-view-instagram"
+            title={`Open @${profile.instagram} in Analytics → Sources → Instagram`}
+            onClick={() => openInstagramFor(profile.instagram!)}
+          >
+            View Instagram analytics ↗
+          </button>
+        ) : null}
         {textsCard ? (
           <button
             type="button"

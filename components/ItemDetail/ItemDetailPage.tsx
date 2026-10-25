@@ -12,9 +12,10 @@
 "use client"
 
 import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
+import { InboxClarifyKey } from "@/components/ItemDetail/InboxClarifyKey"
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
@@ -24,6 +25,7 @@ import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
 import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
 import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { ItemPicker } from "@/components/Lists/item-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { openStepItem } from "@/lib/step-item-stack"
@@ -45,6 +47,8 @@ import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFiel
 import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
 import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
+import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
+import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -80,6 +84,10 @@ import {
   Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
+import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
+import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
@@ -103,6 +111,7 @@ import { markMissedOpportunity } from "@/lib/services/completion-service"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { asListReference } from "@/lib/text-list-to-list"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
 import { dateInputValue, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
@@ -125,6 +134,8 @@ interface EnhancedTaskDetailProps {
 
 export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) {
   const detailRef = useRef<HTMLDivElement>(null)
+  const settingsHost = useRef<HTMLDivElement>(null)
+  const attributeLock = useRef(false)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -167,7 +178,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
   const [isEditing, setIsEditing] = useState(false)
-  const [selectedDependency, setSelectedDependency] = useState("")
   const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
@@ -183,9 +193,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const caps = detailView.capabilities
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
   const detailTabs = useMemo(() => {
-    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details"), "history"]
+    const hidden = new Set(task?.hiddenShellTabs ?? [])
+    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details")]
+    if (!hidden.has("history")) tabs.push("history")
     return tabs
-  }, [visiblePanels])
+  }, [visiblePanels, task?.hiddenShellTabs])
+  const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
+  const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState(() => {
     const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
     return stored || "details"
@@ -361,20 +375,21 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task, persistSubtasks],
   )
 
-  const handleAddDependency = useCallback(() => {
-    const result = addDependency(selectedDependency)
-    if (!result.ok) {
-      setCycleLabel(result.cycleLabel)
-      return
-    }
-    if (selectedDependency) setSelectedDependency("")
-  }, [addDependency, selectedDependency])
-
-  // Get available tasks for dependencies (excluding current task and its subtasks)
-  const availableDependencies = allTasks.filter(
-    (t) => t.id !== effectiveId && !t.completed && t.parentTaskId !== effectiveId,
+  const syncDependencies = useCallback(
+    (ids: string[]) => {
+      if (!task) return
+      const prev = task.dependencies ?? []
+      const added = ids.find((id) => !prev.includes(id))
+      const removed = prev.filter((id) => !ids.includes(id))
+      if (added && removed.length === 0) {
+        const result = addDependency(added)
+        if (!result.ok) setCycleLabel(result.cycleLabel)
+        return
+      }
+      for (const id of removed) removeDependency(id)
+    },
+    [task, addDependency, removeDependency],
   )
-
 
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
@@ -400,7 +415,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     },
   })
   const { guardAction, requestClose } = guard
-  useItemDetailUnloadGuard(Boolean(task), isDraftDirty)
+  useItemDetailSession(Boolean(task), effectiveId, handleSave)
 
   const openItem = useCallback(
     (id: string) => guardAction(() => setOverrideId(id)),
@@ -416,6 +431,34 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         if (!peekHabitSettingsReturn()) onBack()
       }),
     [guardAction, folders, onBack],
+  )
+  const bindTextList = useCallback(
+    (attributeId: string, listId: string) => {
+      const id = task?.id
+      if (!id) return
+      const current = getDraft()
+      if (!current || current.id !== id) return
+      const converted = asListReference(current, attributeId, listId)
+      const owns = current.itemAttributeDefinitions?.some((def) => def.id === attributeId) ?? false
+      const stamp = (base: Task): Task => ({
+        ...base,
+        attributes: owns ? { ...(base.attributes ?? {}), [attributeId]: listId } : base.attributes,
+        itemAttributeDefinitions: owns ? converted.itemAttributeDefinitions : base.itemAttributeDefinitions,
+        textListIds: converted.textListIds,
+      })
+      const stored = useTaskStore.getState().tasks.find((row) => row.id === id)
+      if (stored) updateTask(stamp(stored))
+      setOriginalTask(originalTask?.id === id ? stamp(originalTask) : stored ? stamp(stored) : converted)
+      setTask(converted)
+    },
+    [task?.id, originalTask, getDraft, updateTask, setOriginalTask, setTask],
+  )
+  const patchItem = useCallback(
+    (patch: Partial<Task>) => {
+      touchDraft(patch)
+      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+    },
+    [touchDraft, setTask],
   )
 
   const commitNotes = useCallback(
@@ -458,7 +501,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     )
   }
 
-  const tabCount = visiblePanels.length + 1
+  const tabCount = detailTabs.length
   // Old person notes still on personProfile.noteLog count too (3.3 fold).
   const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
 
@@ -467,6 +510,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     <div ref={detailRef} className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
       <div className="id-window">
       <div className="id-fascia">
+        <WorkingNowBanner itemId={task.id} />
         <div className="id-fascia-row">
           <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="Back" onClick={requestClose}>
             <ArrowLeft className="h-4 w-4" />
@@ -580,6 +624,8 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
             {task.completed ? "Completed" : task.stage}
           </Badge>
+          <InboxClarifyKey task={task} getDraft={getDraft} commitDraft={commitDraft} />
+          <ItemSettingsKey onClick={() => setItemSettingsOpen(true)} />
           {task.actualDuration && (
             <Badge variant="outline" className="id-chip">
               <Timer className="h-3 w-3" />
@@ -614,10 +660,18 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           {visiblePanels.includes("analysis") && (
             <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
           )}
+          {visiblePanels.includes("time") && (
+            <TabsTrigger value="time" className="id-tab-secondary">
+              <Timer className="h-4 w-4" />
+              Time
+            </TabsTrigger>
+          )}
+          {detailTabs.includes("history") && (
           <TabsTrigger value="history" className="id-tab-secondary">
             <History className="h-4 w-4" />
             History
           </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -686,6 +740,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   }
                   onCreateAttribute={handleCreateAttribute}
                   onOpenItem={openItem}
+                  attributeLabels={task.attributeLabels}
+                  hiddenAttributeIds={task.hiddenAttributeIds}
+                  textListIds={task.textListIds}
+                  onBindTextList={bindTextList}
+                  onOpenTextList={handleNavigateToList}
                 />
               </div>
               {isTask && (
@@ -841,6 +900,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </div>
 
             <div className="space-y-6">
+              {isTask && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Task card</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ItemTaskCardKey task={task} onBeforeOpen={requestClose} />
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Type</CardTitle>
@@ -1128,20 +1197,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               )}
             </CardContent>
           </Card>
-          {isTask && (
-            <Card>
-              <CardContent className="pt-6">
-                <ItemPenTimeSection
-                  task={task}
-                  readOnly={!isEditing}
-                  onPenLinksChange={(penLinks) => {
-                    touchDraft({ penLinks })
-                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="dependencies" className="space-y-6">
@@ -1183,26 +1238,20 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
               {isEditing && (
                 <div className="space-y-2">
-                  <Label>Add Dependency</Label>
-                  <div className="flex gap-2">
-                    <Select value={selectedDependency} onValueChange={setSelectedDependency}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select a task" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDependencies
-                          .filter((t) => !(task.dependencies ?? []).includes(t.id))
-                          .map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              {t.description}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleAddDependency} disabled={!selectedDependency}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Label>Add dependency</Label>
+                  <ItemPicker
+                    mode="multi"
+                    searchLabel="Add dependency"
+                    choices={allTasks
+                      .filter(
+                        (t) =>
+                          t.id !== effectiveId &&
+                          ((task.dependencies ?? []).includes(t.id) || (!t.completed && t.parentTaskId !== effectiveId)),
+                      )
+                      .map((t) => ({ id: t.id, title: itemTitleOrUntitled(t), icon: t.icon }))}
+                    selected={task.dependencies ?? []}
+                    onChange={syncDependencies}
+                  />
                 </div>
               )}
             </CardContent>
@@ -1368,6 +1417,25 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           </Card>
         </TabsContent>
 
+        {visiblePanels.includes("time") && (
+          <TabsContent value="time" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <ItemPenTimeSection
+                  task={task}
+                  editableTime={isTask}
+                  readOnly={!isEditing}
+                  onPatch={patchItem}
+                  onPenLinksChange={(penLinks) => {
+                    touchDraft({ penLinks })
+                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {visiblePanels.includes("body") && (
           <TabsContent value="body" className="space-y-6">
             <Card>
@@ -1427,6 +1495,55 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       </div>
     </div>
 
+    <Dialog
+      open={itemSettingsOpen}
+      onOpenChange={(next) => {
+        if (!next && attributeLock.current) return
+        setItemSettingsOpen(next)
+      }}
+    >
+      <DialogContent
+        ref={settingsHost}
+        className="id95-dialog id95 z-[90] sm:max-w-xl max-h-[85vh] overflow-hidden !flex flex-col"
+        overlayClassName="z-[90]"
+        data-ui-name="Item settings"
+        onPointerDownOutside={(event) => {
+          const target = event.target as Element | null
+          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target as Element | null
+          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+        }}
+      >
+        <div className="id-settings-host">
+          <ItemSettingsPanel
+            task={task}
+            lists={lists}
+            isTask={isTask}
+            showLinks={false}
+            onPatch={patchItem}
+            onOpenAttribute={(id) => {
+              attributeLock.current = true
+              setAttributeSettingsId(id)
+            }}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    <AttributeSettingsDialog
+      attributeId={attributeSettingsId}
+      open={attributeSettingsId != null}
+      container={settingsHost.current}
+      onOpenChange={(next) => {
+        if (!next) {
+          attributeLock.current = false
+          setAttributeSettingsId(null)
+        }
+      }}
+      draftTask={task}
+      onPatchDraft={patchItem}
+    />
     <CycleConfirmDialog
       open={!!cycleLabel}
       cycleLabel={cycleLabel ?? ""}

@@ -93,6 +93,64 @@
   box-shadow: var(--id-bay-ring);
 }
 
+/* Live pen clock. Electric blue is the one accent for this state. */
+.id95 .id-now-banner,
+.id95-dialog .id-now-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: var(--r-2, 2px);
+  background: linear-gradient(180deg, rgba(232, 246, 255, 0.55), rgba(47, 155, 255, 0.16));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(20, 110, 210, 0.45);
+  color: #0c3a66;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.id95 .id-now-banner-text,
+.id95-dialog .id-now-banner-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.id95 .id-now-lamp,
+.id95-dialog .id-now-lamp {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fbff, #3ec0ff 42%, #0a3a78 78%);
+  box-shadow:
+    0 0 0 1px #123055,
+    0 0 6px rgba(47, 155, 255, 0.85);
+  animation: id-now-rec 1.6s ease-in-out infinite;
+}
+
+@keyframes id-now-rec {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .id95 .id-now-lamp,
+  .id95-dialog .id-now-lamp {
+    animation: none;
+  }
+}
+
 .id95 .id-fascia-row,
 .id95-dialog .id-fascia-row {
   display: flex;
@@ -226,6 +284,424 @@
   padding-left: 2px;
 }
 
+.id95 .id-settings-key,
+.id95-dialog .id-settings-key {
+  margin-left: auto;
+}
+
+.id-settings-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.id-settings-sheet {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.id-settings-head {
+  flex: none;
+  padding: 16px 18px 14px;
+  background: var(--id-mill);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.id-settings-kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.id95 .id-settings-title,
+.id95-dialog .id-settings-title {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-transform: none;
+  color: var(--id-ink, #111);
+}
+
+.id-settings-lede {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #3a3e42;
+}
+
+.id-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 18px;
+}
+
+.id-settings-plate {
+  padding: 10px 12px 12px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: var(--id-sunken);
+}
+
+.id-settings h2 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.id-settings-plate > h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2e32;
+}
+
+.id-settings-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.id-settings-id code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.id-settings-attrs,
+.id-settings-tabs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.id-settings-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.id-settings-tabs label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
+  background: var(--id-face, #dfdfdf);
+  box-shadow: var(--id-key-ring);
+  cursor: pointer;
+}
+
+.id-settings-tabs label:has(input:disabled) {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.id-settings-attr {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.id-settings-attr-head {
+  padding-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a4e52;
+}
+
+.id-settings-label {
+  grid-column: 2 / -1;
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--id-highlight, #fff);
+  box-shadow: var(--id-field);
+  font: inherit;
+  font-size: 12px;
+}
+
+.id-settings-attr button.id-settings-jump {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.id-settings-attr button.id-settings-jump:hover {
+  color: #000080;
+}
+
+.id-settings-type {
+  font-size: 11px;
+  color: #4a4e52;
+}
+
+.id-settings-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #3a3e42;
+}
+
+.id-settings-show {
+  display: inline-flex;
+  align-items: center;
+}
+
+.id-attr-settings {
+  padding: 18px 16px 16px;
+}
+
+.id-attr-settings-body {
+  overflow: auto;
+}
+
+.id-attr-settings-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.id-attr-settings-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.id-attr-settings-facts p,
+.id-attr-settings-values {
+  margin: 0;
+  font-size: 12px;
+}
+
+.id-attr-settings-values {
+  list-style: none;
+  padding: 0;
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.id-attr-settings-values li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.id-attr-settings-values li span:last-child {
+  color: #3a3e42;
+  text-align: right;
+}
+
+.id-attr-settings-delete p {
+  margin: 0 0 8px;
+}
+
+.id-attr-settings-delete div {
+  display: flex;
+  gap: 8px;
+}
+
+/* Window keys sit in the title row, beside the CRT. A step item's breadcrumb
+   bar is above that row, so the keys stay off the readout. */
+.id-window-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.id-window-keys .id-settings-key {
+  margin-left: 0;
+}
+
+.id-window-key {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+body.win95-app button.id-settings-key {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #2a2e32;
+  cursor: pointer;
+}
+
+body.win95-app button.id-settings-key:hover img {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)) brightness(1.08);
+}
+
+body.win95-app button.id-settings-key:active {
+  transform: translateY(1px);
+}
+
+body.win95-app button.id-settings-key:active img {
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35)) brightness(0.96);
+}
+
+body.win95-app button.id-settings-key:focus-visible {
+  outline: 1px dotted var(--id-crt, #7dffc4);
+  outline-offset: 2px;
+}
+
+body.win95-app button.id-settings-key img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+.id-minimize-mark {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: #1a1c1e;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-settings-key img,
+body.win95-app button.id-settings-key img {
+  display: block !important;
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.id-detail-dock {
+  position: fixed;
+  z-index: 45;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.id-dock-bar,
+.id-dock-icon {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 16rem;
+  min-height: 28px;
+  padding: 2px 4px 2px 2px;
+  background: linear-gradient(180deg, #f4f5f6, #d5d8dc);
+  border: 1px solid #6e7378;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.28), inset 0 1px 0 #fff;
+}
+
+.id-dock-icon {
+  max-width: none;
+  padding: 3px;
+  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.id-dock-orb,
+.id-dock-title,
+.id-dock-x,
+.id-dock-shape {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: #1a1c1e;
+}
+
+.id-dock-orb img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.id-dock-icon .id-dock-orb img {
+  width: 36px;
+  height: 36px;
+}
+
+.id-dock-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.id-dock-x,
+.id-dock-shape {
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.id-settings-label {
+  grid-column: 1 / -1;
+}
+
+.id-settings-tabs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+
+.id-settings-back {
+  align-self: flex-start;
+}
+
 /* Save lamp — always beside Save Changes / Edit. The cluster does not split. */
 .id95 .id-save-cluster,
 .id95-dialog .id-save-cluster {
@@ -303,6 +779,79 @@
   box-shadow:
     0 0 0 1px var(--chrome-lip),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Smaller than the stage chip. Must beat the global Win95 button skin. */
+body.win95-app :is(.id95, .id95-dialog) button.id-clarify-key {
+  min-height: 18px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+  border-radius: 2px;
+  border: 0;
+  cursor: pointer;
+  background: linear-gradient(180deg, #f4f5f6, #c8cccf);
+  background-image: linear-gradient(180deg, #f4f5f6, #c8cccf) !important;
+  box-shadow: 0 0 0 1px #9aa0a6, inset 0 1px 0 #fff !important;
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-clarify-key:hover,
+body.win95-app :is(.id95, .id95-dialog) button.id-clarify-key:focus-visible {
+  background: linear-gradient(180deg, #eef6ff, #c5e2ff);
+  background-image: linear-gradient(180deg, #eef6ff, #c5e2ff) !important;
+  color: #14324a;
+  box-shadow: 0 0 0 1px #7eb4e0, inset 0 1px 0 #fff !important;
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-clarify-key:active {
+  transform: translateY(1px);
+}
+
+/* Pale silver keycap. Beats .id-btn and the global Win95 button. */
+body.win95-app :is(.id95, .id95-dialog) button.id-keycap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none !important;
+  color: #1f2226 !important;
+  cursor: pointer;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-keycap:hover:not(:disabled) {
+  filter: brightness(1.02);
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-keycap:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+body.win95-app :is(.id95, .id95-dialog) button.id-keycap:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Item tags: plain chip; catalog match adds a Tracking color bead. */
@@ -783,8 +1332,8 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
 /* ---- Portaled popup dialog --------------------------------------------- */
 
 .id95-dialog {
-  /* Fascia pad 10 inside dialog pad 3; mark is 40px. */
-  --b2-close-top: 22px;
+  /* 26px keycap centered on the 40px mark (fascia pad 10 inside dialog pad 3). */
+  --b2-close-top: 20px;
   --b2-close-right: 12px;
   display: flex !important;
   flex-direction: column;
@@ -1300,7 +1849,38 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
 .id-attr-palette-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #7a8086;
+  border-radius: 3px;
+  background: #e6e8ea;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.id-attr-palette-group[data-group="Words"] {
+  background: #e3ebf4;
+}
+
+.id-attr-palette-group[data-group="Numbers"] {
+  background: #e3f0e4;
+}
+
+.id-attr-palette-group[data-group="Choices"] {
+  background: #f6edd9;
+}
+
+.id-attr-palette-group[data-group="Time"] {
+  background: #ebe4f4;
+}
+
+.id-attr-palette-group[data-group="Media"] {
+  background: #f6e4e2;
+}
+
+.id-attr-palette-group[data-group="References"] {
+  background: #e2f1f2;
 }
 
 .id-attr-palette-plate {

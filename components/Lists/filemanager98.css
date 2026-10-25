@@ -157,6 +157,7 @@
 
 .fm98 .fm-title-bar-controls {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -2506,8 +2507,8 @@ body.win95-app .fm-sort-menu[role="listbox"] {
     inset 2px 2px var(--chrome-mid, #dfdfdf),
     4px 4px 0 rgba(0, 0, 0, 0.35) !important;
   padding: 10px 12px 12px !important;
-  /* h2 min-height 32 starts after the 10px pad. */
-  --b2-close-top: 15px;
+  /* 26px keycap centered on the 32px title (starts after the 10px pad). */
+  --b2-close-top: 13px;
   --b2-close-right: 12px;
 }
 
@@ -2666,3 +2667,41 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   flex: 1;
   min-width: 0;
 }
+
+/* Photo gallery display (ListContentGallery) */
+.fm-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; padding: 8px; }
+.fm-gallery-tile { position: relative; margin: 0; cursor: pointer; background: #fff; border: 2px solid; border-color: #808080 #fff #fff #808080; }
+.fm-gallery-tile.selected { outline: 2px solid #000080; }
+.fm-gallery-tile img, .fm-gallery-empty { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #c0c0c0; }
+.fm-gallery-empty { display: grid; place-items: center; font-size: 11px; color: #404040; }
+.fm-gallery-tile figcaption { display: flex; flex-direction: column; padding: 2px 4px; font-size: 11px; overflow: hidden; }
+.fm-gallery-tile figcaption span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm-gallery-tile figcaption small { color: #404040; }
+
+/* Photo / Document gallery shared add bar + drop target */
+.fm-media { position: relative; min-height: 100%; }
+.fm-media.is-over { outline: 2px dashed #000080; outline-offset: -4px; }
+.fm-media-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid #808080; }
+.fm-media-text { flex: 1 1 220px; min-width: 0; padding: 3px 6px; font: inherit; border: 2px solid; border-color: #808080 #fff #fff #808080; }
+.fm-media-text:focus { outline: 1px solid #000080; }
+.fm-media-staged { font-size: 11px; color: #404040; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm-media-clear { border: 0; background: none; cursor: pointer; font-size: 14px; line-height: 1; }
+.fm-media-drop { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(236, 240, 246, 0.85); color: #000080; font-size: 15px; letter-spacing: 0.04em; pointer-events: none; }
+.fm-media-empty { grid-column: 1 / -1; padding: 28px 8px; text-align: center; color: #404040; font-size: 12px; }
+
+/* Document gallery: a library shelf of covers */
+.fm-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; padding: 14px 12px; align-items: start; }
+.fm-vol { position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+.fm-vol.selected { outline: 2px solid #000080; outline-offset: 3px; }
+.fm-vol-cover { position: relative; aspect-ratio: 2 / 3; overflow: hidden; background: #f4f1ea; border-radius: 2px 5px 5px 2px; box-shadow: inset 5px 0 6px -4px rgba(0, 0, 0, 0.35), 2px 3px 0 #808080, 3px 5px 8px rgba(0, 0, 0, 0.25); transition: transform 0.15s ease; }
+.fm-vol:hover .fm-vol-cover { transform: translateY(-3px); }
+.fm-vol-cover img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.fm-vol-jacket { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 14px 12px 10px 16px; color: #2b2b33; }
+.fm-vol-jacket strong { font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.2; }
+.fm-vol-jacket em { font-size: 11px; color: #555; }
+.fm-vol-jacket p { margin: 0; font-size: 10px; line-height: 1.4; color: #666; overflow: hidden; }
+.fm-vol-ext { position: absolute; right: 4px; bottom: 4px; padding: 0 5px; font-size: 9px; letter-spacing: 0.08em; color: #fff; background: rgba(32, 40, 70, 0.8); }
+.fm-vol-meta { display: flex; flex-direction: column; gap: 1px; font-size: 11px; }
+.fm-vol-meta strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm-vol-meta span { color: #404040; }
+.fm-vol-meta p { margin: 2px 0 0; color: #666; font-size: 10px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

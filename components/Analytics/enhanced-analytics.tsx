@@ -21,6 +21,7 @@ import { useScreenTimeSync } from "@/hooks/use-screentime-sync"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { MachineLoading } from "@/components/machine-loading"
+import { KeycapClose } from "@/components/keycap-close"
 import { CyclePhaseConcealed, cycleDetailsConcealed } from "./cycle-phase-concealed"
 import "./analytics-chrome.css"
 import "./analytics-atlas.css"
@@ -53,9 +54,7 @@ export function EnhancedAnalytics() {
             <button type="button" className="fm-title-btn" aria-label="Maximize">
               □
             </button>
-            <button type="button" className="fm-title-btn b2-close-key" aria-label="Close">
-              ×
-            </button>
+            <KeycapClose label="Close" />
           </div>
         </div>
 

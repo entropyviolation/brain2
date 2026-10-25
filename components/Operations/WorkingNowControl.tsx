@@ -26,7 +26,10 @@ import {
   WORK_SESSION_TICK_MS,
 } from "@/lib/operation-work-session"
 import { useWorkSessionStore } from "@/lib/work-session-store"
-import { NativeSelect } from "@/components/ui/native-select"
+import { ItemPicker } from "@/components/Lists/item-picker"
+import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { offerPenDebrief, reviewWorkStop } from "@/lib/session-debrief"
+import { activeNowObjectives } from "@/lib/now-objective"
 
 export function useWorkSessionClock() {
   const session = useWorkSessionStore((s) => s.session)
@@ -68,12 +71,21 @@ export function WorkingNowControl({
   tasks?: { id: string; name: string }[]
 }) {
   const { session, now } = useWorkSessionClock()
+  const [taskOpen, setTaskOpen] = useState(false)
   const live = session?.operationId === operationId
   const taskClock = useTaskClockStarter()
   const clockTaskId = usePenColorSessionStore((s) => s.session?.taskId)
+  const penObjectives = usePenColorSessionStore((s) => s.session?.nowObjectives)
   const namedTask = tasks.find((t) => t.id === clockTaskId)
   const elapsed =
     live && session ? formatElapsedClock(sessionElapsedMs(session, now)) : null
+  const workStop = useUnfinishedStop(live ? activeNowObjectives(session?.nowObjectives).length : 0, (park) =>
+    reviewWorkStop(park),
+  )
+  const taskStop = useUnfinishedStop(activeNowObjectives(penObjectives).length, (park) => {
+    const ended = stopTaskClock(namedTask?.id, new Date(), park ? { parkUnfinished: true } : undefined)
+    if (ended) offerPenDebrief(ended)
+  })
 
   return (
     <span className="ops-menubar-now">
@@ -86,35 +98,47 @@ export function WorkingNowControl({
       <button
         type="button"
         className={`ops-btn ops-btn-now${live ? " live" : ""}`}
-        onClick={() => toggleWorkingOnOperation(operationId)}
+        onClick={() => (live ? workStop.request() : toggleWorkingOnOperation(operationId))}
       >
         {live ? `Stop working on ${operationName}` : "Working on this now"}
       </button>
       {namedTask ? (
-        <button type="button" className="ops-btn ops-btn-now live" onClick={() => stopTaskClock(namedTask.id)}>
+        <button type="button" className="ops-btn ops-btn-now live" onClick={() => taskStop.request()}>
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
-        <NativeSelect
-          className="ops-btn ops-now-task"
-          aria-label="Work on a task in this operation now"
-          value=""
-          onChange={(e) => {
-            const id = e.target.value
-            if (!id) return
-            if (live) stopWorkingOnOperation()
-            taskClock.start(id)
-          }}
-        >
-          <option value="">…or a task</option>
-          {tasks.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <span className="ops-task-pick">
+          <button
+            type="button"
+            className="ops-btn"
+            aria-expanded={taskOpen}
+            onClick={() => setTaskOpen((open) => !open)}
+          >
+            …or a task
+          </button>
+          {taskOpen ? (
+            <span className="ops-task-pick-panel">
+              <ItemPicker
+                compact
+                searchLabel="Work on a task in this operation now"
+                choices={tasks.map((task) => ({ id: task.id, title: task.name }))}
+                selected={[]}
+                mode="single"
+                onChange={(ids) => {
+                  const id = ids[0]
+                  if (!id) return
+                  if (live) stopWorkingOnOperation()
+                  taskClock.start(id)
+                  setTaskOpen(false)
+                }}
+              />
+            </span>
+          ) : null}
+        </span>
       ) : null}
       {taskClock.picker}
+      {workStop.dialog}
+      {taskStop.dialog}
     </span>
   )
 }

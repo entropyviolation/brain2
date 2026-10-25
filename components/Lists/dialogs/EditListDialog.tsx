@@ -71,7 +71,8 @@ export interface EditListDialogProps {
   onDuplicate?: () => void
 }
 
-const ALL_DISPLAYS: ListDisplayMode[] = [...LIST_DISPLAY_MODES]
+// Galleries are not picks: lists that take Photo / Document items get them automatically.
+const ALL_DISPLAYS: ListDisplayMode[] = LIST_DISPLAY_MODES.filter((d) => d !== "gallery" && d !== "documents")
 
 type SettingsTab = "general" | "places" | "items" | "rules" | "views" | "bulk" | "behavior"
 
