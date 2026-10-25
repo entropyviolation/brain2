@@ -299,8 +299,8 @@ Slice F notes: `countingMinutes` (`lib/todo-steps.ts`) is the one rule; Plan's d
 - **Usually ~N** (`usualDurationMinutes`) stays display-only. A review can offer to set an estimate from it.
 
 **Three numbers on every task and step (R6).**
-- **est:** the typed estimate. **parts:** the sum of the children's counting minutes (none on a leaf). **spent:** every minute logged on it and its subtree (▶ runs, tied objectives, Paste as log spans, session lines), across days, until done.
-- Pure `stepSpentMinutes(task, stepId, entries)` in `lib/tracked-time.ts`: `timeLogs` and blocks carrying the `stepId`, deduped by entry id, walked over the subtree. At task level it is `trackedMinutesForItem`.
+- **est:** the typed estimate. **parts:** the sum of the children's counting minutes (none on a leaf). **spent:** actual minutes on it and its parts, across days, until done. _Last mapped: 2026-10-24._ Minutes indicated only here stay here. A part's play or a tied objective counts on that part and is included in the parent. A saved `actualDuration` counts only when it exceeds the blocks and the parts; a timed log counts its duration, not a longer start-to-end window. Estimates are not replaced by actuals.
+- Pure `stepSpentMinutes(task, stepId, entries)` / `taskActualAccount` / `taskActualSegments` in `lib/tracked-time.ts`. The card and the lid use that account. The segment rows sum to it. A saved actual with nothing behind it is its own row.
 - On completion, if spent is larger than `actualDuration`, `actualDuration` takes spent.
 - A finished step shows a quiet chip: "52m · est 30 · parts 45".
 - Shown on: the row's Time cell (`spent / counts`), the lid's Time readout (`est 120 · parts 145 · spent 3h10 · pen ●CD`), every step (Phase 9), the task card, item detail → Time.
@@ -440,7 +440,7 @@ Finish CDs: Bare minimum = Back (3 steps, 2 done) and Inside holder (2, 0 done);
 
 ### What it changes
 
-- **Row progress** becomes the level gauge on a task with step tiers. Without tiers: one bar, weighted percent.
+- **Row progress** was the level gauge on a task with step tiers, and one weighted bar without them. _Last mapped: 2026-10-25._ That Done cell is the glass tube at σ instead (`splitPercent`). The three B / G / E percents were too much for the row; the task card already shows this one average. The gauge stays on the lid, the card, and item detail. The weighted percent (`todoCompletionPercent`) stays in the model.
 - **Done** offers **Done at Bare minimum** / **Done at Goal** when reached. Undo unchanged.
 - **Points.** Quantity completion tiers, if any, still decide a task's points. Otherwise the level reached pays the house completion-tier amounts (`activeTierPoints()`). Step points (Phase 12) are extra; how visible they are is Decision 13.
 - **Just Start** prefers the lowest level not yet reached (see [Rules](#rules-that-hold-for-all-of-these)).

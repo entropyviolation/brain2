@@ -1,26 +1,30 @@
 /**
- * components/Home/ToDo/SpentBlocks.tsx — The blocks of time counted as spent on a task
+ * components/Home/ToDo/SpentBlocks.tsx — The minutes counted as spent
  *
- * Lives in the Spent stat popover. Each row is one tracking block tagged with
- * this task (or, in a sub-card, with the root step or a step inside it): date,
- * clock span, minutes, and which step it was on. Start and end are editable
- * (`H:MM`, Enter or blur saves, Esc backs out) and a block can be deleted after
- * a second click. Edits go through `updateEntry` / `removeEntry`, the same
- * calls the time grid uses. Typed time logs (no block behind them) are listed
- * under the blocks, read-only. Each block also lists the objectives that were
- * live on it (added and done times); an old one can be tied to any step of the
- * task here, and switched between "counts toward" and "finishes" it.
+ * One row per stretch in `taskActualSegments`, so the rows add up to the
+ * total. A block's clocks and step can be edited, and the block can be
+ * deleted, through the same time-grid calls as the grid. A typed log and a
+ * saved actual with no block are their own rows: change the minutes, point
+ * the log at a step, or clear it.
+ *
+ * A written block with a pen shows that pen's color as a dot. Double-click
+ * the row (not a clock field) opens `EntryDialog` for that entry.
+ *
+ * _Last mapped: 2026-10-25_
  */
 "use client"
 
-import { useMemo, useState } from "react"
-import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useEffect, useMemo, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react"
+import { createRoot, type Root } from "react-dom/client"
+import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
 import { useTaskStore } from "@/lib/task-store"
 import { placeSteps } from "@/lib/next-step"
-import { objectiveCompletesTarget, setNowObjectiveCompletes, tieNowObjectiveToStep } from "@/lib/now-objective"
-import { objectiveSpanLabel, StepSearchPicker } from "@/components/Home/Tracking/now-objectives-list"
-import type { TimeEntry } from "@/lib/time-entries"
-import type { TimeLogEntry } from "@/lib/types"
+import { tieNowObjectiveToStep } from "@/lib/now-objective"
+import { whenLabel } from "@/lib/session-debrief"
+import { formatDuration } from "@/lib/time-entries"
+import { findPen, taskActualSegments, type ActualSegment } from "@/lib/tracked-time"
+import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 
 export interface SpentBlocksScope {
   taskId: string
@@ -29,11 +33,13 @@ export interface SpentBlocksScope {
   /** Step id to name, for the "on" column. */
   names: ReadonlyMap<string, string>
   logs?: readonly TimeLogEntry[]
+  /** Task writes (a log, a saved actual). The card passes its undo path. */
+  onPatch?: (patch: Partial<Task>) => void
 }
 
 const clock = (min: number) => `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}`
 
-/** "9:30", "930", "9.5" is not supported; returns minutes since midnight or null. */
+/** "9:30", "930". Returns minutes since midnight, or null. */
 function parseClock(v: string): number | null {
   const m = v.trim().match(/^(\d{1,2})(?::?(\d{2}))?$/)
   if (!m) return null
@@ -42,6 +48,29 @@ function parseClock(v: string): number | null {
 }
 
 const dayLabel = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+
+/** The entry's pen, when it has a real color. A missing pen is not given one. */
+function blockPen(kind: ActualSegment["kind"], penId: string | undefined, scopes: TrackScope[]) {
+  if (kind !== "block" || !penId) return null
+  const pen = findPen(scopes, penId)
+  const color = pen?.color?.trim()
+  if (!pen || !color) return null
+  return { color, name: pen.name }
+}
+
+function withActual(steps: readonly Subtask[] | undefined, id: string, minutes: number | undefined): Subtask[] {
+  return (steps ?? []).map((step) => {
+    if (step.id !== id) {
+      if (!step.subtasks?.length) return step
+      const subtasks = withActual(step.subtasks, id, minutes)
+      return subtasks === step.subtasks ? step : { ...step, subtasks }
+    }
+    const next = { ...step }
+    if (minutes != null && minutes > 0) next.actualDuration = minutes
+    else delete next.actualDuration
+    return next
+  })
+}
 
 function ClockField({ value, label, onCommit }: { value: number; label: string; onCommit: (min: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null)
@@ -68,125 +97,381 @@ function ClockField({ value, label, onCommit }: { value: number; label: string; 
   )
 }
 
+function MinuteField({ value, label, onCommit }: { value: number; label: string; onCommit: (min: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const done = (keep: boolean) => {
+    const next = draft == null ? null : Number(draft)
+    if (keep && Number.isFinite(next) && next! >= 0 && next !== value) onCommit(next!)
+    setDraft(null)
+  }
+  return (
+    <input
+      className="tcs-spent-clock"
+      aria-label={label}
+      inputMode="numeric"
+      size={4}
+      value={draft ?? String(value)}
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => done(true)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") return (e.preventDefault(), done(true), e.currentTarget.blur())
+        if (e.key === "Escape" && draft != null) return (e.preventDefault(), e.stopPropagation(), done(false), e.currentTarget.blur())
+      }}
+    />
+  )
+}
+
 export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
   const entries = useTimeTrackingStore((s) => s.entries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
   const updateEntry = useTimeTrackingStore((s) => s.updateEntry)
   const removeEntry = useTimeTrackingStore((s) => s.removeEntry)
+  const updateTask = useTaskStore((s) => s.updateTask)
   const [sure, setSure] = useState<string | null>(null)
-  const { taskId, stepIds, names, logs = [] } = scope
+  const { taskId, stepIds, names, onPatch } = scope
   const task = useTaskStore((st) => st.tasks.find((t) => t.id === taskId))
   const choices = useMemo(
     () =>
       task
         ? placeSteps(task.subtasks).map((p) => ({
             id: p.step.id,
-            label: [...p.path.map((x) => x.description), p.step.description].join(" › ") + (p.step.completed ? " ✓" : ""),
+            label: [...p.path.map((x) => x.description), p.step.description].join(" › "),
           }))
         : [],
     [task],
   )
+  const rows = useMemo(() => {
+    if (!task) return []
+    const all = taskActualSegments(task, entries)
+    if (!stepIds) return all
+    return all.filter((row) => !!row.stepId && stepIds.has(row.stepId))
+  }, [task, entries, stepIds])
 
-  const blocks = useMemo(
-    () =>
-      entries
-        .filter((e) => e.taskId === taskId &&
-            e.kind !== "instant" &&
-            e.endMin > e.startMin &&
-            (!stepIds || (!!e.stepId && stepIds.has(e.stepId)) || (e.nowObjectives ?? []).some((o) => !!o.stepId && stepIds.has(o.stepId))),
-        )
-        .sort((a, b) => (a.date === b.date ? b.startMin - a.startMin : a.date < b.date ? 1 : -1)),
-    [entries, taskId, stepIds],
-  )
-  const blockIds = new Set(blocks.map((b) => b.id))
-  const typed = logs.filter((l) => (!stepIds || (!!l.stepId && stepIds.has(l.stepId))) && !(l.entryIds ?? []).some((id) => blockIds.has(id)))
-
-  const edit = (e: TimeEntry, startMin: number, endMin: number) => {
-    if (endMin <= startMin) return
-    updateEntry(e.id, { startMin, endMin })
+  const write = (patch: Partial<Task>) => {
+    if (!task) return
+    if (onPatch) onPatch(patch)
+    else updateTask({ ...task, ...patch })
   }
-  if (!blocks.length && !typed.length) return <p className="is-quiet">No blocks tagged with this yet. Tag a block in the time grid, or run ▶ on a step.</p>
+
+  const aim = (row: ActualSegment, stepId: string) => {
+    const next = stepId || undefined
+    if (row.kind === "block" && row.entryId) {
+      const entry = entries.find((item) => item.id === row.entryId)
+      if (!entry) return
+      if (row.objectiveId) {
+        updateEntry(entry.id, { nowObjectives: tieNowObjectiveToStep(entry.nowObjectives, row.objectiveId, next) })
+        return
+      }
+      updateEntry(entry.id, { stepId: next })
+      return
+    }
+    if (row.kind === "log" && row.logId) {
+      write({
+        timeLogs: (task?.timeLogs ?? []).map((log) => (log.id === row.logId ? { ...log, ...(next ? { stepId: next } : { stepId: undefined }) } : log)),
+      })
+    }
+  }
+
+  const drop = (row: ActualSegment) => {
+    if (row.kind === "block" && row.entryId) {
+      removeEntry(row.entryId)
+      return
+    }
+    if (row.kind === "log" && row.logId) {
+      write({ timeLogs: (task?.timeLogs ?? []).filter((log) => log.id !== row.logId) })
+      return
+    }
+    if (row.kind === "saved") {
+      if (!row.stepId) write({ actualDuration: undefined })
+      else write({ subtasks: withActual(task?.subtasks, row.stepId, undefined) })
+    }
+  }
+
+  const editSaved = (row: ActualSegment, minutes: number) => {
+    if (!row.stepId) write({ actualDuration: minutes > 0 ? minutes : undefined })
+    else write({ subtasks: withActual(task?.subtasks, row.stepId, minutes) })
+  }
+
+  const editLog = (row: ActualSegment, minutes: number) => {
+    if (!row.logId) return
+    write({
+      timeLogs: (task?.timeLogs ?? []).map((log) => (log.id === row.logId ? { ...log, durationMinutes: minutes } : log)),
+    })
+  }
+
+  if (!rows.length) return <p className="is-quiet">No time recorded on this yet.</p>
+
+  const byDay = new Map<string, ActualSegment[]>()
+  const saved: ActualSegment[] = []
+  for (const row of rows) {
+    if (!row.date) saved.push(row)
+    else {
+      const list = byDay.get(row.date) ?? []
+      list.push(row)
+      byDay.set(row.date, list)
+    }
+  }
+  const days = [...byDay.keys()].sort((a, b) => (a < b ? 1 : -1))
+  const entryOf = (id: string | undefined) => (id ? entries.find((item) => item.id === id) : undefined)
+
+  const line = (row: ActualSegment) => {
+    const entry = entryOf(row.entryId)
+    const whole = !!(entry && row.kind === "block" && !row.objectiveId && row.startMin === entry.startMin && row.endMin === entry.endMin)
+    const where = row.stepId ? (names.get(row.stepId) ?? "a step") : "whole task"
+    const mark = blockPen(row.kind, entry ? entry.penId : row.penId, scopes)
+    const openDetail = row.kind === "block" && entry
+      ? (event: ReactMouseEvent) => {
+          const target = event.target
+          if (target instanceof Element && target.closest("input, textarea, button")) return
+          openBlockDetail(entry.id)
+        }
+      : undefined
+    return (
+      <li key={row.id} onDoubleClick={openDetail}>
+        <span className="tcs-spent-span">
+          {mark ? <span className="task-card-pen-dot" style={{ backgroundColor: mark.color, display: "inline-block", flex: "none" }} title={mark.name} aria-hidden /> : null}
+          {whole && entry ? (
+            <>
+              <ClockField value={entry.startMin} label={`Start on ${row.date}`} onCommit={(m) => entry.endMin > m && updateEntry(entry.id, { startMin: m })} />
+              <i aria-hidden>–</i>
+              <ClockField value={entry.endMin} label={`End on ${row.date}`} onCommit={(m) => m > entry.startMin && updateEntry(entry.id, { endMin: m })} />
+            </>
+          ) : row.startMin != null && row.endMin != null ? (
+            `${clock(row.startMin)}–${clock(row.endMin)}`
+          ) : row.kind === "saved" ? (
+            "no block"
+          ) : (
+            "logged"
+          )}
+        </span>
+        {row.kind === "saved" ? (
+          <MinuteField value={row.minutes} label="Recorded actual minutes" onCommit={(m) => editSaved(row, m)} />
+        ) : row.kind === "log" && row.logId ? (
+          <MinuteField value={row.minutes} label="Logged minutes" onCommit={(m) => editLog(row, m)} />
+        ) : (
+          <b>{row.minutes}m</b>
+        )}
+        {row.kind === "saved" ? (
+          <em title={where}>{where}</em>
+        ) : (
+          <select className="tcs-spent-step" aria-label={`Step for ${row.minutes}m on ${row.date ?? "this record"}`} value={row.stepId ?? ""} onChange={(e) => aim(row, e.target.value)}>
+            <option value="">Whole task</option>
+            {choices.map((choice) => (
+              <option key={choice.id} value={choice.id}>
+                {choice.label}
+              </option>
+            ))}
+          </select>
+        )}
+        {sure === row.id ? (
+          <button type="button" className="tcs-spent-x is-sure" onClick={() => (drop(row), setSure(null))} onBlur={() => setSure(null)} autoFocus>
+            delete?
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="tcs-spent-x"
+            title={row.kind === "block" ? "Delete this block from the time grid" : row.kind === "log" ? "Remove this log" : "Clear this recorded actual"}
+            aria-label={row.kind === "saved" ? "Clear recorded actual" : "Delete this time"}
+            onClick={() => setSure(row.id)}
+          >
+            ×
+          </button>
+        )}
+      </li>
+    )
+  }
+
   return (
-    <>
-      {blocks.length ? (
-        <ul className="tcs-spent" aria-label="Blocks of time spent">
-          {blocks.map((e) => {
-            const on = e.stepId ? names.get(e.stepId) : undefined
-            return (
-              <li key={e.id}>
-                <time dateTime={e.date}>{dayLabel(e.date)}</time>
-                <span className="tcs-spent-span">
-                  <ClockField value={e.startMin} label={`Start of the block on ${e.date}`} onCommit={(m) => edit(e, m, e.endMin)} />
-                  <i aria-hidden>–</i>
-                  <ClockField value={e.endMin} label={`End of the block on ${e.date}`} onCommit={(m) => edit(e, e.startMin, m)} />
-                </span>
-                <b>{e.endMin - e.startMin}m</b>
-                <em title={on ?? "Tagged to the task, not to a step"}>{on ?? "whole task"}</em>
-                {sure === e.id ? (
-                  <button type="button" className="tcs-spent-x is-sure" onClick={() => (removeEntry(e.id), setSure(null))} onBlur={() => setSure(null)} autoFocus>
-                    delete?
-                  </button>
-                ) : (
-                  <button type="button" className="tcs-spent-x" title="Delete this block from the time grid" aria-label="Delete this block" onClick={() => setSure(e.id)}>
-                    ×
-                  </button>
-                )}
-                {e.nowObjectives?.length ? (
-                  <ul className="tcs-spent-objs" aria-label="Objectives on this block">
-                    {e.nowObjectives.map((o) => (
-                      <li key={o.id} className={o.completedAt ? "is-done" : undefined}>
-                        <span className="tcs-spent-obj-text">{o.completedAt ? "☑" : "☐"} {o.text}</span>
-                        <time className="tcs-spent-obj-when">{objectiveSpanLabel(o)}</time>
-                        <StepSearchPicker
-                          value={o.stepId}
-                          choices={choices}
-                          label={o.text}
-                          onPick={(id) =>
-                            updateEntry(e.id, {
-                              nowObjectives: setNowObjectiveCompletes(
-                                tieNowObjectiveToStep(e.nowObjectives, o.id, id === "new" ? undefined : id),
-                                o.id,
-                                false,
-                              ).map((r) => (r.id === o.id && !id ? { ...r, completes: undefined } : r)),
-                            })
-                          }
-                        />
-                        {o.stepId ? (
-                          <button
-                            type="button"
-                            className="trk-now-obj-mode"
-                            aria-pressed={objectiveCompletesTarget(o)}
-                            title="Whether finishing this objective finished the step"
-                            onClick={() =>
-                              updateEntry(e.id, { nowObjectives: setNowObjectiveCompletes(e.nowObjectives, o.id, !objectiveCompletesTarget(o)) })
-                            }
-                          >
-                            {objectiveCompletesTarget(o) ? "finished step" : "counts toward"}
-                          </button>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </li>
-            )
-          })}
-        </ul>
+    <ul className="tcs-spent" aria-label="Minutes counted as spent">
+      {days.flatMap((date) => {
+        const list = byDay.get(date) ?? []
+        const sum = list.reduce((n, row) => n + row.minutes, 0)
+        return [
+          <li key={date} className="tcs-spent-day">
+            {dayLabel(date)} · {sum}m
+          </li>,
+          ...list.map(line),
+        ]
+      })}
+      {saved.length ? (
+        <li className="tcs-spent-day">Recorded actual, no block · {saved.reduce((n, row) => n + row.minutes, 0)}m</li>
       ) : null}
-      {typed.length ? (
-        <>
-          <h4>Typed in, no block</h4>
-          <ul className="tcs-spent is-typed">
-            {typed.map((l) => (
-              <li key={l.id}>
-                <time dateTime={l.date}>{dayLabel(l.date)}</time>
-                <span className="tcs-spent-span">{l.startTime && l.endTime ? `${l.startTime}–${l.endTime}` : "—"}</span>
-                <b>{l.durationMinutes}m</b>
-                <em>{(l.stepId && names.get(l.stepId)) || l.notes || "whole task"}</em>
+      {saved.map(line)}
+    </ul>
+  )
+}
+
+const diaryDay = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+
+/** Local wall time for `whenLabel`. Minutes past midnight roll onto the next day. */
+function diaryIso(date: string, minute: number): string {
+  const day = new Date(`${date}T00:00:00`)
+  day.setMinutes(minute)
+  const y = day.getFullYear()
+  const mo = String(day.getMonth() + 1).padStart(2, "0")
+  const d = String(day.getDate()).padStart(2, "0")
+  const h = String(day.getHours()).padStart(2, "0")
+  const mi = String(day.getMinutes()).padStart(2, "0")
+  return `${y}-${mo}-${d}T${h}:${mi}:00`
+}
+
+function stretchWhen(row: ActualSegment): string {
+  if (!row.date || row.startMin == null || row.endMin == null) return ""
+  return whenLabel(diaryIso(row.date, row.startMin), diaryIso(row.date, row.endMin))
+}
+
+/**
+ * Read-only diary of `taskActualSegments` for the header spent pill.
+ * Days newest first. No clock editors, delete, or account split.
+ */
+export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const task = useTaskStore((st) => st.tasks.find((t) => t.id === scope.taskId))
+  const rows = useMemo(() => {
+    if (!task) return []
+    const all = taskActualSegments(task, entries)
+    if (!scope.stepIds) return all
+    return all.filter((row) => !!row.stepId && scope.stepIds!.has(row.stepId))
+  }, [task, entries, scope.stepIds])
+
+  if (!rows.length) return <p className="is-quiet">No time recorded on this yet.</p>
+
+  const byDay = new Map<string, ActualSegment[]>()
+  const saved: ActualSegment[] = []
+  for (const row of rows) {
+    if (!row.date) saved.push(row)
+    else {
+      const list = byDay.get(row.date) ?? []
+      list.push(row)
+      byDay.set(row.date, list)
+    }
+  }
+  const days = [...byDay.keys()].sort((a, b) => (a < b ? 1 : -1))
+  const whereOf = (row: ActualSegment) => {
+    if (row.objectiveId && row.entryId) {
+      const title = entries.find((item) => item.id === row.entryId)?.nowObjectives?.find((item) => item.id === row.objectiveId)?.text?.trim()
+      if (title) return title
+    }
+    if (row.stepId) return scope.names.get(row.stepId) || "on this task"
+    return "on this task"
+  }
+
+  return (
+    <div className="tcs-spent-diary" aria-label="Spent diary">
+      {days.map((date) => {
+        const list = [...(byDay.get(date) ?? [])].sort((a, b) => (b.startMin ?? 0) - (a.startMin ?? 0))
+        const sum = list.reduce((n, row) => n + row.minutes, 0)
+        return (
+          <section key={date}>
+            <h4 className="tcs-diary-day">
+              <span>{diaryDay(date)}</span>
+              <span>{formatDuration(sum)}</span>
+            </h4>
+            <ul>
+              {list.map((row) => {
+                const when = stretchWhen(row)
+                return (
+                  <li key={row.id} className="tcs-diary-row">
+                    {when ? <span className="tcs-diary-when">{when}</span> : <span className="tcs-diary-when">logged</span>}
+                    <span className="tcs-diary-where">{whereOf(row)}</span>
+                    <span className="tcs-diary-dur">{formatDuration(row.minutes)}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )
+      })}
+      {saved.length ? (
+        <section>
+          <h4 className="tcs-diary-day">
+            <span>Recorded, no day</span>
+            <span>{formatDuration(saved.reduce((n, row) => n + row.minutes, 0))}</span>
+          </h4>
+          <ul>
+            {saved.map((row) => (
+              <li key={row.id} className="tcs-diary-row">
+                <span className="tcs-diary-when">saved</span>
+                <span className="tcs-diary-where">{whereOf(row)}</span>
+                <span className="tcs-diary-dur">{formatDuration(row.minutes)}</span>
               </li>
             ))}
           </ul>
-        </>
+        </section>
       ) : null}
-    </>
+    </div>
   )
+}
+
+/**
+ * The Spent popover unmounts on any pointerdown outside the stat card.
+ * This editor lives in its own root so that click still reaches `EntryDialog`
+ * (including the unsaved-changes guard). A pointerdown inside the editor does
+ * not close the popover.
+ */
+let detailId: string | null = null
+const detailListeners = new Set<() => void>()
+let detailRoot: Root | null = null
+
+function getDetailId() {
+  return detailId
+}
+
+function getServerDetailId() {
+  return null
+}
+
+function subscribeDetail(listener: () => void) {
+  detailListeners.add(listener)
+  return () => detailListeners.delete(listener)
+}
+
+function emitDetail() {
+  for (const listener of detailListeners) listener()
+}
+
+function closeBlockDetail() {
+  if (detailId == null) return
+  detailId = null
+  emitDetail()
+}
+
+function openBlockDetail(entryId: string) {
+  detailId = entryId
+  if (!detailRoot && typeof document !== "undefined") {
+    const el = document.createElement("div")
+    el.dataset.spentBlockDetail = ""
+    document.body.appendChild(el)
+    detailRoot = createRoot(el)
+    detailRoot.render(<BlockDetailHost />)
+  }
+  emitDetail()
+}
+
+function BlockDetailHost() {
+  const id = useSyncExternalStore(subscribeDetail, getDetailId, getServerDetailId)
+  const entry = useTimeTrackingStore((s) => (id ? s.entries.find((item) => item.id === id) : undefined))
+  useEffect(() => {
+    if (id && !entry) closeBlockDetail()
+  }, [id, entry])
+  useEffect(() => {
+    if (!id || !entry) return
+    const stopPointer = (event: Event) => {
+      const node = event.target
+      if (node instanceof Element && node.closest("[data-ui-name='Tracking entry'], .w95-confirm")) event.stopPropagation()
+    }
+    const stopEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") event.stopPropagation()
+    }
+    document.body.addEventListener("pointerdown", stopPointer)
+    document.addEventListener("keydown", stopEscape, true)
+    return () => {
+      document.body.removeEventListener("pointerdown", stopPointer)
+      document.removeEventListener("keydown", stopEscape, true)
+    }
+  }, [id, entry])
+  if (!entry) return null
+  return <EntryDialog entry={entry} onClose={closeBlockDetail} />
 }

@@ -31,6 +31,27 @@
   cursor: pointer;
 }
 
+.ipt-clock {
+  border: 0;
+  padding: 0 2px;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ipt-clock[aria-pressed="true"] {
+  text-decoration: none;
+  font-weight: 600;
+  cursor: default;
+}
+
+.ipt-chip.is-clock {
+  box-shadow: inset 0 0 0 1px #209e82;
+}
+
 .ipt-x {
   display: inline-flex;
   margin-left: 2px;
@@ -54,6 +75,20 @@
 .ipt-quiet {
   font-size: 12px;
   opacity: 0.65;
+}
+
+.ipt-actuals {
+  margin: 2px 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ipt-actuals ul {
+  margin: 0;
+  padding: 0 0 0 1rem;
+  list-style: none;
 }
 
 .ipt-picker {
