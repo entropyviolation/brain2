@@ -18,6 +18,7 @@ describe("settings index", () => {
       "data",
       "imports",
       "library",
+      "help",
     ])
     const ids = SETTINGS_SECTIONS.map((section) => section.id)
     expect(new Set(ids).size).toBe(ids.length)

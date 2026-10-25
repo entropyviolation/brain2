@@ -12,7 +12,7 @@
 import { create } from "zustand"
 import type { Folder, List, SchedulePlacement, StepTier, Subtask, Task } from "@/lib/types"
 import { flattenSteps, removeNestedStep, countingMinutes } from "@/lib/todo-steps"
-import { stepsForTier } from "@/lib/step-tiers"
+import { STEP_TIERS, stepsForTier } from "@/lib/step-tiers"
 import { resolveCompletionPoints } from "@/lib/item-utils"
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString, parseLocalDate } from "@/lib/date-utils"
 
@@ -332,6 +332,115 @@ export function remainingForLevel(steps: readonly Subtask[] | undefined, tier: S
   return flattenSteps(steps)
     .filter((s) => ids.has(s.id) && !s.completed && !s.subtasks?.length)
     .reduce((sum, s) => sum + countingMinutes(s, defaultMin), 0)
+}
+
+export interface TierEstimateDetail {
+  tier: StepTier
+  /** Standard estimate for this cumulative tier (min = B, goal = B+G, exceptional = B+G+E). */
+  estimate: number
+  /** Sum of step estimates counting toward this cumulative tier. */
+  parts: number
+  /** Original estimate before any tasks were completed: sum of initial/estimated values UNLESS an estimated value does not and never did exist, in which case use actual duration at finish. */
+  original: number
+  /** Running estimate: ACTUAL duration of all completed steps if known at current moment as much as possible, and estimates when step is not completed or duration is unknown. */
+  running: number
+  /** Number of steps included in this cumulative tier. */
+  stepCount: number
+}
+
+/** Cumulative estimates (min = B, goal = B+G, exceptional = B+G+E) plus original and running totals. */
+export function tierEstimates(
+  steps: readonly Subtask[] | undefined,
+  ownEst?: number,
+  stepSpent?: ReadonlyMap<string, number>,
+  estLog?: readonly { at: string; minutes: number }[],
+  rootCompleted?: boolean,
+  rootActual?: number,
+): Record<StepTier, TierEstimateDetail> {
+  const allFlat = flattenSteps(steps)
+  const actualOf = (step: Subtask): number => Math.max(step.actualDuration ?? 0, stepSpent?.get(step.id) ?? 0)
+  const firstEstOf = (step: Subtask): number => {
+    const fromLog = step.estimateLog?.find((e) => e.minutes > 0)?.minutes
+    if (fromLog && fromLog > 0) return fromLog
+    return (step.estimatedDuration ?? 0) > 0 ? step.estimatedDuration! : 0
+  }
+
+  const out = {} as Record<StepTier, TierEstimateDetail>
+  for (const tier of STEP_TIERS) {
+    const view = stepsForTier(steps ?? [], tier)
+
+    const stepEst = (step: Subtask): number => {
+      if (!view.ids.has(step.id) && !view.containers.has(step.id)) return 0
+      const childSum = (step.subtasks ?? []).reduce((s, k) => s + stepEst(k), 0)
+      if (view.ids.has(step.id)) {
+        const own = (step.estimatedDuration ?? 0) > 0 ? step.estimatedDuration! : 0
+        return Math.max(own, childSum)
+      }
+      return childSum
+    }
+
+    const stepOrig = (step: Subtask): number => {
+      if (!view.ids.has(step.id) && !view.containers.has(step.id)) return 0
+      const childOrig = (step.subtasks ?? []).reduce((s, k) => s + stepOrig(k), 0)
+      if (view.ids.has(step.id)) {
+        const first = firstEstOf(step)
+        const ownOrig = first > 0 ? first : step.completed ? actualOf(step) : 0
+        return Math.max(ownOrig, childOrig)
+      }
+      return childOrig
+    }
+
+    const stepRun = (step: Subtask): number => {
+      if (!view.ids.has(step.id) && !view.containers.has(step.id)) return 0
+      const relevantKids = (step.subtasks ?? []).filter((k) => view.ids.has(k.id) || view.containers.has(k.id))
+      const act = actualOf(step)
+      if (relevantKids.length === 0) {
+        if (step.completed && act > 0) return act
+        return (step.estimatedDuration ?? 0) > 0 ? step.estimatedDuration! : 0
+      }
+      const childRun = relevantKids.reduce((s, k) => s + stepRun(k), 0)
+      const childEst = relevantKids.reduce((s, k) => s + stepEst(k), 0)
+      if (step.completed && act > 0) {
+        return childRun === 0 ? act : childRun
+      }
+      if (view.ids.has(step.id)) {
+        const unsplit = Math.max(0, (step.estimatedDuration ?? 0) - childEst)
+        return childRun + unsplit
+      }
+      return childRun
+    }
+
+    const allIncluded = allFlat.length === 0 || view.ids.size === allFlat.length
+    const parts = (steps ?? []).reduce((s, step) => s + stepEst(step), 0)
+    const own = (ownEst ?? 0) > 0 ? ownEst! : 0
+    const estimate = allIncluded ? Math.max(own, parts) : parts > 0 ? parts : 0
+
+    const partsOrig = (steps ?? []).reduce((s, step) => s + stepOrig(step), 0)
+    const firstRootEst = estLog?.find((e) => e.minutes > 0)?.minutes ?? (own > 0 ? own : 0)
+    const rootOrigOwn = firstRootEst > 0 ? firstRootEst : rootCompleted ? Math.max(0, rootActual ?? 0) : 0
+    const original = allIncluded ? Math.max(rootOrigOwn, partsOrig) : partsOrig
+
+    const partsRun = (steps ?? []).reduce((s, step) => s + stepRun(step), 0)
+    let running: number
+    if (allFlat.length === 0) {
+      running = rootCompleted && (rootActual ?? 0) > 0 ? rootActual! : own
+    } else if (allIncluded) {
+      const unsplitOwn = Math.max(0, own - parts)
+      running = rootCompleted && (rootActual ?? 0) > 0 && partsRun === 0 ? rootActual! : partsRun + (rootCompleted ? 0 : unsplitOwn)
+    } else {
+      running = partsRun
+    }
+
+    out[tier] = {
+      tier,
+      estimate,
+      parts,
+      original,
+      running,
+      stepCount: view.ids.size,
+    }
+  }
+  return out
 }
 
 /** The notice-dot answers on this task, newest first. */

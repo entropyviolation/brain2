@@ -44,7 +44,7 @@ Events (whole message, or log: / intake:)
 • log categories  — numbered tracking views (a reply, not an event)
 • st: / switch task: cleaning  ·  so: / switch objective: / switch goal: read  ·  transit: the store
 • note: left room  ·  n left room  ·  jot:  ·  memo:  — Text log instant. day: stays the day jot
-• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp:  — Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. Same clocks as a log line.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp:  — Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. Same clocks as a log line. Also a Thought Process item on Lists → Tracking → Thought Process.
 Activity spans
 • currently deep work  ·  stopped deep work  ·  switched to cooking
 Plan / capture
@@ -111,7 +111,7 @@ Presets:
 • ate {item}     →  ate egg salad
 • took {item}    →  took 2 adderall
 • log: left room  |  log- left room  |  log went outside  |  log: left room at 3:30 est  |  log: left room unknown
-  Desktop Quick Add uses this same log: a dark blue LOG mark, and it does not go to Inbox.
+  Desktop Quick Add uses this same log: a dark blue LOG mark, and it does not go to Inbox. Also a Log item on Lists → Tracking → Log.
   |  log: left room at 3:30 loc: home
   Whatever follows is the event title, unless it is a saved keyword. A line under it is the note.
   The phrase is also an eventKind slug so repeats group. A clock with no word is exact.
@@ -148,6 +148,7 @@ Presets:
   Activity instant, pen Text log, eventKind thought-process. First line is the title; lines under it are the note.
   Clocks are the same reader as a log line (parseExpectedWhen): bare clock is military, 1pm / 1:00 PM / 1:00 p.m. are 13:00, 7/4/26 is July 4, 2026.
   est / estimated / ~ is estimated. unknown keeps the minute for placement.
+  Also a Thought Process item on Lists → Tracking → Thought Process. Quick Add thought process: / tp: uses this write.
 • cycle: bleeding  |  cycle: spotting  |  cycle: ovulation  |  cycle: bleeding off
   That flag on the send date. Spotting does not change phase.
 
@@ -186,7 +187,7 @@ CAPTURE / LISTS
 TRACK / LOCATION / NOTES
 • n stuck in aisle 4 — a point at send time; also on the block covering that minute
 • note: left room at 8:15 est — same clock words as log (exact unless est / estimated / ~ / unknown)
-• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp: — Thought process: a guiding strand of this moment, from what you are doing to what it leads to and how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. eventKind thought-process.
+• tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  ·  thought process:  ·  log: tp: — Thought process: a guiding strand of this moment, from what you are doing to what it leads to and how it feels. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required. eventKind thought-process. Also a Thought Process item on Lists → Tracking → Thought Process.
 • day: tired — day jot, not a tick, and not a clock
 • at: gym  ·  tt work  ·  track: exercise 30m
 • start: write paper  ·  stop (working-now / pause)

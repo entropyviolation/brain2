@@ -4,7 +4,7 @@
  * The Capture-cluster word key opens the Now popup
  * (`components/header-tracking/`). That popup is the edge of the current
  * moment: recent tracking and the short plan ahead. Current moment, including
- * Working on, Events, Thought process, and Update state, stays above the
+ * Working on, the activity-pen clock, Events, Notes, Thought process, and Update state, stays above the
  * Tracking / Plan switch. Home → Tracking stays the full desk. The export
  * name stays `CognitiveState` so the header wiring is unchanged. The popup
  * module loads when Now opens, not on first paint. While the dialog is open,

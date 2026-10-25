@@ -1,18 +1,43 @@
 "use client"
 
 import { useState } from "react"
+import { ClipboardCopy } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { itemTitle } from "@/lib/item-utils"
 import { listIsReminders } from "@/lib/reminders"
 import { isScheduledFolderId, isNaArchiveCategoryId, NA_SMART_MISSED } from "@/lib/scheduled-lists-sync"
 import { ReminderQuickAdd } from "./reminder-quick-add"
 import { ListContentDefault } from "./ListContentDefault"
 import { ListContentChecklist } from "./ListContentChecklist"
+import { ListContentDocuments } from "./ListContentDocuments"
+import { ListContentGallery } from "./ListContentGallery"
 import { ListContentIcons } from "./ListContentIcons"
 import { ListContentIconsDesktop } from "./ListContentIconsDesktop"
 import { ListContentDetails } from "./ListContentDetails"
 import { ListContentSpreadsheet } from "./ListContentSpreadsheet"
 import { ListSortControl } from "./ListSortControl"
+import type { Task } from "@/lib/types"
 import type { ListContentPanelProps } from "./types"
+
+/** Bulk-add shape in list order, plus the names alone for Copy all. */
+function plainTextList(tasks: Task[]): { view: string; names: string } {
+  const names: string[] = []
+  const lines: string[] = []
+  let section: string | undefined
+  for (const task of tasks) {
+    const name = itemTitle(task)
+    if (!name) continue
+    names.push(name)
+    const tag = (task.tags ?? []).map((t) => t.trim()).find(Boolean) ?? ""
+    if (section !== tag) {
+      if (lines.length) lines.push("")
+      if (tag) lines.push(`${tag}:`)
+      section = tag
+    }
+    lines.push(name)
+  }
+  return { view: lines.join("\n"), names: names.join("\n") }
+}
 
 export type { ListContentPanelProps } from "./types"
 
@@ -92,6 +117,38 @@ function BulkAddPanel({
   )
 }
 
+/** Read-only bulk-add shape. Select any stretch; Copy all takes every name. */
+function PlainTextListPanel({ view, names, onClose }: { view: string; names: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const copyAll = () => {
+    const done = () => setCopied(true)
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(names).then(done).catch(done)
+      return
+    }
+    done()
+  }
+  const lines = view ? view.split("\n").length : 1
+  return (
+    <div className="fm-quickadd" style={{ marginTop: 8 }}>
+      <Textarea
+        readOnly
+        value={view}
+        rows={Math.min(12, Math.max(3, lines))}
+        aria-label="Plain text list"
+      />
+      <div className="flex gap-2">
+        <button type="button" className="fm-btn fm-btn-sm" onClick={copyAll}>
+          {copied ? "Copied" : "Copy all"}
+        </button>
+        <button type="button" className="fm-btn fm-btn-sm" onClick={onClose}>
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ListContentPanel({
   tasks,
   currentDisplay,
@@ -115,6 +172,7 @@ export function ListContentPanel({
   addingTaskToTarget,
   openTargetKeyValue,
   onAddTask,
+  onAddMedia,
   onCancelAddTask,
   onShowAddTask,
   showBulkAdd,
@@ -144,6 +202,7 @@ export function ListContentPanel({
   onSortChange,
   searchQuery = "",
 }: ListContentPanelProps) {
+  const [plainTextOpen, setPlainTextOpen] = useState(false)
   const hiddenForFolder = currentFolder ? folderAllHiddenListIds[currentFolder.id] ?? [] : []
   const hiddenGlobalFolders = globalAllHiddenFolderIds
 
@@ -199,8 +258,24 @@ export function ListContentPanel({
     ) : null
 
   const showAdd = allowAdd && !addingTaskToTarget && !showBulkAdd
+  const plainText = currentDisplay === "default" && tasks.length > 0 ? plainTextList(tasks) : null
+  const plainTextButton = plainText?.names ? (
+    <button
+      type="button"
+      className={`fm-btn fm-btn-sm${plainTextOpen ? " active" : ""}`}
+      aria-label="Plain text list for copy paste"
+      title="Plain text list for copy paste"
+      aria-pressed={plainTextOpen}
+      onClick={() => setPlainTextOpen((open) => !open)}
+    >
+      <ClipboardCopy size={14} aria-hidden />
+    </button>
+  ) : null
+  const plainTextPanel = plainText && plainTextOpen ? (
+    <PlainTextListPanel view={plainText.view} names={plainText.names} onClose={() => setPlainTextOpen(false)} />
+  ) : null
   const addButtons =
-    showAdd || sortControl ? (
+    showAdd || sortControl || plainTextButton ? (
       <div className="fm-list-add-row">
         {showAdd && !reminders ? (
           <button className="fm-btn fm-btn-sm" onClick={() => onShowBulkAdd(true)}>
@@ -212,6 +287,7 @@ export function ListContentPanel({
             Add {itemLabel}
           </button>
         ) : null}
+        {plainTextButton}
         {showSentControl}
         {sortControl}
       </div>
@@ -260,6 +336,7 @@ export function ListContentPanel({
         {quickAdd}
         {addButtons}
         {!addingTaskToTarget && bulkAddPanel}
+        {plainTextPanel}
         <div className="fm-empty">
           <img src={openIconKey} alt="" style={{ width: 56, height: 56, opacity: 0.6 }} loading="lazy" decoding="async" />
           <p>{emptyMessage}</p>
@@ -293,6 +370,10 @@ export function ListContentPanel({
     )
   } else if (currentDisplay === "icons") {
     body = <ListContentIcons {...taskHandlers} onIconPickerOpen={onIconPickerOpen} />
+  } else if (currentDisplay === "gallery") {
+    body = <ListContentGallery {...taskHandlers} onAddMedia={onAddMedia} />
+  } else if (currentDisplay === "documents") {
+    body = <ListContentDocuments {...taskHandlers} onAddMedia={onAddMedia} />
   } else if (currentDisplay === "spreadsheet") {
     body = (
       <ListContentSpreadsheet
@@ -325,6 +406,7 @@ export function ListContentPanel({
       {quickAdd}
       {addButtons}
       {!addingTaskToTarget && bulkAddPanel}
+      {plainTextPanel}
       {body}
     </div>
   )
