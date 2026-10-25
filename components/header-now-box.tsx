@@ -22,20 +22,18 @@ import { useSessionPlanStore } from "@/lib/session-plan-store"
 
 const SessionDock = lazy(() => import("@/components/Home/ToDo/SessionDock"))
 
-/** "Session" while one runs, "⏸n" for parked ones; null when there are none. */
+/** "Session" while one runs or is in review; parked ones live on the To do shelves, not here. */
 function SessionChip() {
   const running = useSessionPlanStore((s) => s.open.some((p) => p.phase === "run" || p.phase === "review"))
-  const parked = useSessionPlanStore((s) => s.open.filter((p) => p.phase === "parked").length)
-  if (!running && !parked) return null
+  if (!running) return null
   return (
     <button
       type="button"
       className="b2-shell-now-row b2-now-session-chip"
-      title={running ? "Open the running session" : `${parked} parked session${parked === 1 ? "" : "s"}`}
-      onClick={() => openSession({ startOn: running ? "session" : "shelves" })}
+      title="Open the running session"
+      onClick={() => openSession({ startOn: "session" })}
     >
-      {running ? "Session" : "Sessions"}
-      {parked ? ` ⏸${parked}` : ""}
+      Session
     </button>
   )
 }

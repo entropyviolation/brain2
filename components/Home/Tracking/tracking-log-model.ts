@@ -9,8 +9,9 @@
  * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
  * the Objective pen (`so:`), plus an instant on whatever other scope the
  * person picked. A note is a Text log instant (`note:`), so it stays on the
- * event list. A thought process is that same Text log instant with
+ * event list. The Now popup lists that note on its own shelf. A thought process is that same Text log instant with
  * `eventKind` `thought-process`, and the Tracking log shelves it under Thought process.
+ * Thought process rows and Event rows are also items on Lists → Tracking (`lib/tracking-lists.ts`).
  * A spend is an Activity instant on the Spent pen: integer cents, what it was
  * spent on, and the source. The Tracking log shelves it under Spent.
  * A chosen location is a Location-scope instant at the same minute.
@@ -25,6 +26,7 @@ import type { CyclePhase } from "@/lib/cycle-phase"
 import { applyNote } from "@/lib/ingest/apply-note"
 import { applyScopeSwitch, applyThoughtProcess, ensureLocationPen, THOUGHT_PROCESS_KIND } from "@/lib/ingest/apply-discrete-event"
 import { stablePenColor, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
+import { mirrorTrackingEntry } from "@/lib/tracking-lists"
 import { SPEND_EVENT_KIND, compactSpend, formatSpendAmount, isSpendEntry } from "@/lib/spend"
 import {
   entryClockCertainty,
@@ -259,6 +261,7 @@ export function paintLogInstant(input: {
   const created = useTimeTrackingStore
     .getState()
     .entries.find((entry) => !before.has(entry.id) && entry.kind === "instant" && entry.date === input.date)
+  if (created?.id && input.target === "event") mirrorTrackingEntry(created.id, "log")
   return created?.id ?? null
 }
 

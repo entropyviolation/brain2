@@ -11,6 +11,7 @@ import type React from "react"
 
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -234,9 +235,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="plan95-dialog plan95-dialog-lg max-h-[90vh]" hideClose {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader className="plan95-dialog-caption">
           <DialogTitle>Settings & Data Management</DialogTitle>
-          <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
-            ×
-          </button>
+          <KeycapClose className="plan95-title-btn" label="Close" onClick={guard.requestClose} />
         </DialogHeader>
         <div className="plan95-dialog-body">
         <p>Manage your data, export backups, and configure your workspace</p>

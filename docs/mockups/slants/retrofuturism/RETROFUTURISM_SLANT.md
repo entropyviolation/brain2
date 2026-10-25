@@ -43,7 +43,7 @@ Pick one era per mockup. Do not mix eras on one board; mixing reads as a costume
 1. **One glowing screen per panel.** It shows one shape or two big numbers. Everything else is the panel around it.
 2. **Every panel has a job and a label.** Ron Cobb's rule on *Alien*: a plausible engineering label on every surface (`QUEUE 14`, `SPAN`, `LOAD`, `COUPLING`). The labels sell the world. They can carry counts.
 3. **Instruments carry real data.** DSKY span readout (`SPAN 01 DAY`), caution-lamp grid lit by real counts, load as an oscilloscope trace against a capacity rule, a big-number pair (`64% / 83%`).
-4. **Physical controls with one job each.** Rocker keys for grouping, keycaps for spans, one orange key for the main action, two-tone caps by role (pale for verbs, dark for modes).
+4. **Physical controls with one job each.** Rocker keys for grouping, keycaps for spans, one orange key for the main action, two-tone caps by role (pale for verbs, dark for modes). The house button that shipped is the silver keycap, and that is the one to use more of. Seafoam and cornflower are the only colored house caps. An orange cap stays in this slant.
 5. **The panel explains itself.** Printed lines link controls to what they change (Programma 900). In a detail view, dotted signal lines join a task to its project and blockers.
 6. **Wear and glow are seasoning.** Scanlines, bloom, curvature, scuffs: one or two, softly. Never at the cost of reading.
 

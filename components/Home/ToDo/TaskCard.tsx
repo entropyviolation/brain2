@@ -16,6 +16,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
+import { SpentBlocks } from "./SpentBlocks"
 import { StepTree, type StepRowInfo } from "@/components/steps/StepTree"
 import { SplitGauge } from "@/components/steps/TreeMath"
 import { tierSplit } from "@/lib/tree-math"
@@ -35,7 +37,7 @@ import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { useStepPointsVisible } from "@/lib/points-visibility"
 import { activeTierPoints } from "@/lib/completion-tiers"
 import { COMPLETION_STATUS_LABELS } from "@/lib/completion-status"
-import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT, effectiveTierMap, tierBand } from "@/lib/step-tiers"
+import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT, effectiveTierMap, stepsForTier, tierBand } from "@/lib/step-tiers"
 import { formatPercent, levelReached } from "@/lib/step-progress"
 import { effectiveDurationMinutes, flattenSteps, moveSteps } from "@/lib/todo-steps"
 import { stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
@@ -194,9 +196,11 @@ function TaskCardBody({
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => (focusStepId ? new Set([focusStepId]) : new Set()))
   const [visibleIds, setVisibleIds] = useState<string[]>([])
+  const [spentStep, setSpentStep] = useState<string | null>(null)
   const [cols, setCols] = useState<CardColumn[]>(DEFAULT_COLS)
   const [moreBar, setMoreBar] = useState(false)
   const [tier, setTier] = useState<StepTier | undefined>()
+  const [estimateTier, setEstimateTier] = useState<StepTier>("exceptional")
   const [hideLocked, setHideLocked] = useState(false)
   const [nextOnly, setNextOnly] = useState(false)
   const [columnsView, setColumnsView] = useState(false)
@@ -221,8 +225,30 @@ function TaskCardBody({
   const bar = (label: string, edit: (s: Subtask[]) => Subtask[]) => () => writeSteps(label, edit(steps))
 
   // ── Numbers ──
-  const est = root ? effectiveDurationMinutes(root.estimatedDuration, root.subtasks) : effectiveDurationMinutes(task.estimatedDuration, steps)
+  const ownEst = root ? root.estimatedDuration : task.estimatedDuration
+  const est = useMemo(() => {
+    if (estimateTier === "exceptional") {
+      return effectiveDurationMinutes(ownEst, view)
+    }
+    const tierView = stepsForTier(view, estimateTier)
+    const filterForTier = (list: readonly Subtask[]): Subtask[] =>
+      list
+        .filter((s) => tierView.ids.has(s.id) || tierView.containers.has(s.id))
+        .map((s) => ({
+          ...s,
+          estimatedDuration: tierView.ids.has(s.id) ? s.estimatedDuration : undefined,
+          subtasks: s.subtasks?.length ? filterForTier(s.subtasks) : undefined,
+        }))
+    const allIncluded = view.length === 0 || tierView.ids.size === flattenSteps(view).length
+    return effectiveDurationMinutes(allIncluded ? ownEst : undefined, filterForTier(view))
+  }, [estimateTier, ownEst, view])
   const spent = root ? (time?.stepSpent?.get(root.id) ?? 0) : (time?.spent ?? 0)
+  const statsTierExtra = {
+    estimateTier,
+    onEstimateTierChange: setEstimateTier,
+    stepSpent: time?.stepSpent,
+    rootCompleted: root ? root.completed : task.completed,
+  }
   const pts = taskPointsWithSource(task, lists, folders)
   const earned = stepPointsEarned(steps, task.stepPoints)
   const reached = levelReached(task, task.completed)
@@ -259,7 +285,13 @@ function TaskCardBody({
         {has("pct") ? <SplitGauge levels={rowLevels.get(step.id) ?? null} focus={tier} /> : null}
         {has("est") ? <EstimateCell minutes={step.estimatedDuration} label={step.description} onSet={(m) => writeSteps("Estimate", setEstimate(steps, step.id, m))} /> : null}
         {has("parts") && step.subtasks?.length ? <span className="task-card-num">={partsMinutes(step.subtasks)}m</span> : null}
-        {has("spent") ? <span className="task-card-num is-quiet">{time?.stepSpent?.get(step.id) ? `${time.stepSpent.get(step.id)}m` : ""}</span> : null}
+        {has("spent") ? <span className="task-card-num is-quiet">
+            {time?.stepSpent?.get(step.id) ? (
+              <button type="button" className="task-card-spent-btn" title="See the time blocks and objectives behind this" onClick={(ev) => (ev.stopPropagation(), setSpentStep(step.id))}>
+                {time.stepSpent.get(step.id)}m
+              </button>
+            ) : null}
+          </span> : null}
         {has("points") ? (
           <input
             className="task-card-pts"
@@ -311,6 +343,22 @@ function TaskCardBody({
             ))}
           </nav>
         ) : null}
+        {spentStep && flat.some((x) => x.id === spentStep) ? (
+          <section className="task-card-spent-panel" aria-label="Time behind this step">
+            <header>
+              <b>Time on “{flat.find((x) => x.id === spentStep)?.description}”</b>
+              <KeycapClose label="Close time detail" onClick={() => setSpentStep(null)} />
+            </header>
+            <SpentBlocks
+              scope={{
+                taskId: task.id,
+                stepIds: new Set(flattenSteps([flat.find((x) => x.id === spentStep)!]).map((x) => x.id)),
+                names: new Map(flat.map((x) => [x.id, x.description])),
+                logs: task.timeLogs,
+              }}
+            />
+          </section>
+        ) : null}
         <div className="task-card-title-row">
           <DialogTitle
             className="task-card-name"
@@ -345,9 +393,7 @@ function TaskCardBody({
               ↻ pushed ×{task[pushKey]}
             </span>
           ) : null}
-          <button type="button" className="task-card-key b2-close-key task-card-close" title="Close the card (Esc)" aria-label="Close the card" onClick={closeTaskCard}>
-            ×
-          </button>
+          <KeycapClose className="task-card-close" title="Close the card (Esc)" label="Close the card" onClick={closeTaskCard} />
         </div>
         <div className="task-card-title-row">
           <TaskCardStats
@@ -357,7 +403,7 @@ function TaskCardBody({
               levels,
               tier,
               est,
-              ownEst: root ? root.estimatedDuration : task.estimatedDuration,
+              ownEst,
               estLog: root?.estimateLog,
               parts: partsMinutes(view),
               spent,
@@ -376,6 +422,7 @@ function TaskCardBody({
               levelName: reached === "none" ? "none" : STEP_TIER_LABEL[reached],
               levelPts,
               onPick: (id) => setSelected(new Set([id])),
+              ...statsTierExtra,
             }}
           />
           <span className="task-card-spacer" />
@@ -617,16 +664,16 @@ function TaskCardBody({
             </div>
             <p className="tcs-node-meta">
               <span className={`tcs-lamp is-${task.completed ? "done" : "open"}`}>{task.completed ? "done" : (task.status ?? "active")}</span>
-              <span>{est ? `${est}m` : "—"} est</span>
-              {spent ? <span>{spent}m spent</span> : null}
-              {flat.length ? <span title="Steps done / steps">{flat.filter((x) => x.completed).length}/{flat.length} steps</span> : null}
+              <span className="tcs-meta-pill">{est ? `${est}m` : "—"} est</span>
+              {spent ? <span className="tcs-meta-pill">{spent}m spent</span> : null}
+              {flat.length ? <span className="tcs-meta-pill" title="Steps done / steps">{flat.filter((x) => x.completed).length}/{flat.length} steps</span> : null}
             </p>
           </header>
 
           <TaskPoints task={task} />
           <TaskPens task={task} />
 
-          <section aria-label="Prerequisites" className="tcs-needs">
+          <section aria-label="Prerequisites" className="tcs-needs tcs-control-card">
             <h3>Needs</h3>
             <NeedsEditor task={task} steps={steps} write={writeSteps} />
             <TaskUnlocks task={task} />

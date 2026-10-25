@@ -18,6 +18,7 @@
 
 import { useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { listPeriodMeasure, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import { currentExemptionContext, isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { isGoalType } from "@/lib/habit-utils"
@@ -163,9 +164,7 @@ export function HabitSourceDetail({
           <DialogDescription className="sr-only">
             Read-only account of {square.habitName} for {square.periodLabel}. Closing writes nothing.
           </DialogDescription>
-          <button type="button" className="habit95-title-btn b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
-            ×
-          </button>
+          <KeycapClose className="habit95-title-btn" label="Close" onClick={() => onOpenChange(false)} />
         </DialogHeader>
         <div className="habit95-body">
           <p className="habit95-hint">{square.periodLabel}</p>

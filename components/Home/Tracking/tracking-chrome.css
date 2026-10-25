@@ -3225,6 +3225,17 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-weight: 700;
 }
 
+.trk95 button.trk-pen-now-live-task {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
 .trk95 .trk-pen-now-live-name {
   flex: 1 1 auto;
   min-width: 4rem;
@@ -5071,6 +5082,55 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
   color: #222;
 }
 
+.trk-clock-task-pop {
+  max-height: min(440px, calc(100vh - 16px));
+  overflow: auto;
+}
+
+.trk-clock-task-current,
+.trk-clock-task-steps,
+.trk-clock-task-find {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trk-clock-task-on {
+  margin: 0;
+  font-size: 12px;
+  color: #222;
+}
+
+.trk-clock-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.trk-clock-task-choices,
+.trk-clock-task-steps ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.trk-clock-task-choice {
+  width: 100%;
+  text-align: left;
+}
+
+.trk-clock-task-choice.is-current {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px #0b3d0b;
+}
+
 .trk-now-obj-editor {
   display: flex;
   flex-direction: column;
@@ -5082,7 +5142,7 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
   list-style: none;
   margin: 0;
   padding: 4px;
-  max-height: 12rem;
+  max-height: min(22rem, 55vh);
   overflow: auto;
   border: 1px solid #808080;
   background: #fff;
@@ -5097,7 +5157,8 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
 
 .trk-now-obj-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  border-bottom: 1px dotted #b0b0b0;
   gap: 6px;
   min-width: 0;
   padding: 2px 0;
@@ -5147,19 +5208,104 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger {
   border-radius: 0;
   background: #fff;
   box-shadow: inset 1px 1px 0 #404040;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.3;
   color: #111;
+}
+
+textarea.trk-now-obj-text {
+  height: auto;
+  min-height: 24px;
+  padding: 2px 4px;
+  resize: none;
+  overflow: hidden;
+  font-family: inherit;
+  white-space: pre-wrap;
 }
 
 .trk-now-obj-add {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trk-now-obj-add-actions {
+  display: flex;
   gap: 4px;
   min-width: 0;
 }
 
 .trk-now-obj-add-btn {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+}
+
+.trk-now-obj-hide-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trk-now-obj-hide {
+  padding: 0 6px;
+  border: 1px solid #808080;
+  border-radius: 2px;
+  background: #e8e6e0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1e2a24;
+  cursor: pointer;
+}
+
+.trk-now-obj-hide[aria-pressed="true"] {
+  background: #cfc;
+}
+
+.trk-now-obj-row.is-open {
+  background: #f4f4f0;
+}
+
+.trk-now-obj-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trk-now-obj-stop-back {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.trk-now-obj-stop {
+  width: min(22rem, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid #404040;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d4d0c8 0%, #c0c0c0 100%);
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 #808080,
+    2px 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.trk-now-obj-stop p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #111;
+}
+
+.trk-now-obj-stop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .trk-now-obj-inline {
@@ -6165,3 +6311,81 @@ body.win95-app .trk95 .trk-fascia .trk-settings-gear {
 .trk95 .trk-edge-next-row span { font-size: 11px; opacity: 0.8; }
 .trk95 .trk-edge-conflict { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .trk95 .trk-edge-conflict .trk-edge-option { padding: 1px 8px; }
+
+.trk-now-obj-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.trk-now-obj-meta {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #555;
+}
+
+.trk-now-obj-tie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.trk-now-obj-link,
+.trk-now-obj-mode {
+  max-width: 100%;
+  padding: 1px 5px;
+  border: 1px solid #808080;
+  border-radius: 2px;
+  background: #e8e6e0;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+  color: #1e2a24;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.trk-now-obj-mode[aria-pressed="true"] {
+  background: #cfc;
+  font-weight: 700;
+}
+
+.trk-now-obj-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.trk-now-obj-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 10rem;
+  overflow: auto;
+  border: 1px solid #808080;
+  background: #fff;
+}
+
+.trk-now-obj-picker-list button {
+  display: block;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  color: #111;
+  cursor: pointer;
+}
+
+.trk-now-obj-picker-list button:hover,
+.trk-now-obj-picker-list button[aria-selected="true"] {
+  background: #000080;
+  color: #fff;
+}

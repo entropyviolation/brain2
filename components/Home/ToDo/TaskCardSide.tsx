@@ -24,13 +24,12 @@ import { stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { LIST_REF, eventHappened, patchStep, toggleId } from "@/lib/node-needs"
 import { leafTally, splitStats } from "@/lib/tree-math"
 import { NOTICE_PROMPT, needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
-import { taskPointsWithSource } from "@/lib/task-card"
+import { massDone, openSubCard, setEstimate, taskPointsWithSource } from "@/lib/task-card"
 import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { Mosaic } from "@/components/steps/TreeMath"
 import { ItemPenLinksField } from "@/components/ItemDetail/ItemPenTime"
 import { stepPenLinks } from "@/lib/task-clock"
 import { runWithoutCompletionPopup } from "@/lib/completion-events"
-import { openSubCard, setEstimate } from "@/lib/task-card"
 import { partsMinutes } from "@/lib/tracked-time"
 import { makeNoteEntry } from "@/lib/item-notes"
 import { EstimateCell } from "./EstimateCell"
@@ -167,7 +166,7 @@ export function TaskPoints({ task }: { task: Task }) {
     updateTask(next)
   }
   return (
-    <section className="tcs-points" aria-label="Points">
+    <section className="tcs-points tcs-control-card" aria-label="Points">
       <h3>Points</h3>
       <div className="tcs-dials">
         <PointsDial
@@ -338,9 +337,11 @@ export function NeedsEditor({ task, step, steps, write }: NeedsTarget) {
 
       {!firstCount && !resources?.length && !awaits?.length ? <p className="is-quiet tcs-empty">Needs nothing yet.</p> : null}
 
-      <Reveal label="Add need" title="Add something this waits on or uses">
-        {(close) => <AddNeed kinds={kinds} pickerFor={pickerFor} close={close} />}
-      </Reveal>
+      <div className="tcs-needs-actions">
+        <Reveal label="Add need" title="Add something this waits on or uses">
+          {(close) => <AddNeed kinds={kinds} pickerFor={pickerFor} close={close} />}
+        </Reveal>
+      </div>
     </>
   )
 }
@@ -386,9 +387,11 @@ function StepUnlocks({ step, steps, write }: { step: Subtask; steps: Subtask[]; 
         </>
       ) : null}
       {options.length ? (
-        <Reveal label="Make a step wait on this" title="Pick a step that waits until this one is done">
-          {(close) => <Picker onDone={close} placeholder="Make a step wait on this…" title="Pick a step that waits until this one is done" options={options} onPick={(id) => write("Unlocks", toggleStepPrereq(steps, id, step.id))} />}
-        </Reveal>
+        <div className="tcs-needs-actions">
+          <Reveal label="Make a step wait on this" title="Pick a step that waits until this one is done">
+            {(close) => <Picker onDone={close} placeholder="Make a step wait on this…" title="Pick a step that waits until this one is done" options={options} onPick={(id) => write("Unlocks", toggleStepPrereq(steps, id, step.id))} />}
+          </Reveal>
+        </div>
       ) : null}
     </div>
   )
@@ -413,9 +416,11 @@ export function TaskUnlocks({ task }: { task: Task }) {
           </div>
         </>
       ) : null}
-      <Reveal label="Make a task wait on this" title="Pick a task that waits until this one is done">
-        {(close) => <Picker onDone={close} placeholder="Make a task wait on this…" title="Pick a task that waits until this one is done" options={options} onPick={(id) => flip(tasks.find((t) => t.id === id)!)} />}
-      </Reveal>
+      <div className="tcs-needs-actions">
+        <Reveal label="Make a task wait on this" title="Pick a task that waits until this one is done">
+          {(close) => <Picker onDone={close} placeholder="Make a task wait on this…" title="Pick a task that waits until this one is done" options={options} onPick={(id) => flip(tasks.find((t) => t.id === id)!)} />}
+        </Reveal>
+      </div>
     </div>
   )
 }
@@ -436,7 +441,7 @@ function PointsLadder({ task, step, steps, write }: { task: Task; step: Subtask;
   }
   const total = byLevel ? STEP_TIERS.reduce((n, t) => n + (step.tierPoints?.[t] ?? 0), 0) : (step.points ?? inherited ?? 0)
   return (
-    <section className="tcs-points" aria-label="Points for this step">
+    <section className="tcs-points tcs-control-card" aria-label="Points for this step">
       <h3 title="Points paid when this step is done. With steps inside, you can pay per level reached instead.">
         Points <span className="tcs-total">{total}</span>
       </h3>
@@ -520,19 +525,29 @@ export function NodeDetail({ task, step, steps, write, tier, locked, spent, onSe
           <h3 className="tcs-node-name">{step.description}</h3>
           <OpenItemKey onClick={() => openStepItem(task.id, step.id)} />
         </div>
+        <label className={`tcs-complete-toggle${step.completed ? " is-done" : ""}`} title={step.completed ? "Completed — click to mark open" : "Click to mark this step complete"}>
+          <input
+            type="checkbox"
+            className="tcs-step-checkbox"
+            checked={step.completed}
+            aria-label={`Complete ${step.description}`}
+            onChange={(e) => write(e.target.checked ? "Done" : "Not done", massDone(steps, new Set([step.id]), e.target.checked))}
+          />
+          <span className="tcs-complete-label">{step.completed ? "Completed" : "Mark complete"}</span>
+        </label>
         <p className="tcs-node-meta">
           <span className={`tcs-lamp is-${state}`}>{state}</span>
           <span className={`tcs-tier is-${tier}`} title={STEP_TIER_LABEL[tier]}>{STEP_TIER_SHORT[tier]}</span>
-          <span>{est ? `${est}m` : "—"} est</span>
-          {spent ? <span>{spent}m spent</span> : null}
-          {step.subtasks?.length ? <span title="End nodes done / end nodes">{done}/{leaves} ends</span> : null}
+          <span className="tcs-meta-pill">{est ? `${est}m` : "—"} est</span>
+          {spent ? <span className="tcs-meta-pill">{spent}m spent</span> : null}
+          {step.subtasks?.length ? <span className="tcs-meta-pill" title="End nodes done / end nodes">{done}/{leaves} ends</span> : null}
         </p>
       </header>
       <EstimatePanel step={step} steps={steps} write={write} />
       <SubstepPreview step={step} steps={steps} write={write} onSelect={onSelect} />
       <PointsLadder task={task} step={step} steps={steps} write={write} />
       <StepPens task={task} step={step} steps={steps} write={write} />
-      <section aria-label="Needs" className="tcs-needs">
+      <section aria-label="Needs" className="tcs-needs tcs-control-card">
         <h3>Needs</h3>
         <NeedsEditor task={task} step={step} steps={steps} write={write} />
         <StepUnlocks step={step} steps={steps} write={write} />
@@ -559,7 +574,7 @@ function EstimatePanel({ step, steps, write }: { step: Subtask; steps: Subtask[]
   const log = step.estimateLog ?? []
   const parts = partsMinutes(step.subtasks)
   return (
-    <section className="tcs-est" aria-label="Estimate">
+    <section className="tcs-est tcs-control-card" aria-label="Estimate">
       <h3 title="Minutes you think this takes. Every change is kept so you can see how your guesses move.">Estimate</h3>
       <div className="tcs-est-row">
         <EstimateCell className="is-big" minutes={step.estimatedDuration} label={step.description} onSet={set} />
@@ -592,14 +607,21 @@ function SubstepPreview({ step, steps, write, onSelect }: { step: Subtask; steps
   if (!kids.length) return null
   const done = kids.filter((k) => k.completed).length
   return (
-    <section className="tcs-kids" aria-label="Steps inside">
+    <section className="tcs-kids tcs-control-card" aria-label="Steps inside">
       <h3>
         Inside <span className="tcs-total">{done}/{kids.length}</span>
       </h3>
       <ul>
         {kids.map((k) => (
           <li key={k.id} className={k.completed ? "is-done" : undefined}>
-            <i aria-hidden />
+            <input
+              type="checkbox"
+              className="tcs-kid-check"
+              checked={k.completed}
+              aria-label={`Complete ${k.description}`}
+              title={k.completed ? "Completed — click to reopen" : "Mark complete"}
+              onChange={(e) => write(e.target.checked ? "Done" : "Not done", massDone(steps, new Set([k.id]), e.target.checked))}
+            />
             <button type="button" className="tcs-kid-name" title={`Select ${k.description}`} onClick={() => onSelect?.(k.id)}>
               {k.description}
             </button>
@@ -618,7 +640,7 @@ const PEN_HELP = "The pen the time grid paints with when ▶ or Just Start runs 
 export function TaskPens({ task }: { task: Task }) {
   const updateTask = useTaskStore((s) => s.updateTask)
   return (
-    <section aria-label="Pen" className="tcs-pens">
+    <section aria-label="Pen" className="tcs-pens tcs-control-card">
       <h3 title={PEN_HELP}>Pen</h3>
       <ItemPenLinksField penLinks={task.penLinks} onChange={(penLinks) => updateTask({ ...task, penLinks })} />
     </section>
@@ -632,7 +654,7 @@ function StepPens({ task, step, steps, write }: { task: Task; step: Subtask; ste
   const parentPen = own ? stepPenLinks({ ...task, subtasks: patchStep(steps, step.id, { penLinks: undefined }) }, step.id).links[0] : undefined
   const set = (label: string, penLinks: Subtask["penLinks"]) => write(label, patchStep(steps, step.id, { penLinks }))
   return (
-    <section aria-label="Pen" className="tcs-pens">
+    <section aria-label="Pen" className="tcs-pens tcs-control-card">
       <h3 title={PEN_HELP}>Pen</h3>
       {own ? (
         <>

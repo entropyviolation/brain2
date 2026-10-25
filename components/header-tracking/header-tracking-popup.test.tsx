@@ -9,6 +9,7 @@ import { minutesToLabel } from "@/lib/time-entries"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { getPlanEntries } from "@/lib/plan-text"
 import { useTaskStore } from "@/lib/task-store"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { itemTitle } from "@/lib/item-utils"
 
@@ -106,7 +107,9 @@ describe("Header tracking popup", () => {
     const moment = screen.getByRole("region", { name: "Current moment" })
     expect(moment).toBeInTheDocument()
     expect(within(moment).getByTestId("htk-working-now")).toBeInTheDocument()
+    expect(within(moment).getByRole("combobox", { name: "Search activity pens" })).toBeInTheDocument()
     expect(within(moment).getByRole("region", { name: "Events" })).toBeInTheDocument()
+    expect(within(moment).getByRole("region", { name: "Notes" })).toBeInTheDocument()
     expect(within(moment).getByRole("region", { name: "Thought process" })).toBeInTheDocument()
     expect(screen.getByTestId("htk-lane-company")).toBeInTheDocument()
     expect(screen.getAllByTestId(/^htk-lane-/)).toHaveLength(4)
@@ -135,9 +138,19 @@ describe("Header tracking popup", () => {
 
     const thoughts = screen.getByRole("region", { name: "Thought process" })
     expect(thoughts).toHaveTextContent("A strand from what you are doing, to what it leads to, to how it feels.")
-    await user.type(within(thoughts).getByRole("textbox", { name: "Add to Thought process" }), "opening the window")
+    const thoughtField = within(thoughts).getByRole("textbox", { name: "Add to Thought process" })
+    await user.type(thoughtField, "opening the window")
+    await user.keyboard("{Shift>}{Enter}{/Shift}relieved it is a small fix")
     await user.click(within(thoughts).getByRole("button", { name: "Add to Thought process" }))
-    expect(within(thoughts).getByText("opening the window")).toBeInTheDocument()
+    expect(thoughts).toHaveTextContent("opening the window")
+    expect(thoughts).toHaveTextContent("relieved it is a small fix")
+
+    const notes = screen.getByRole("region", { name: "Notes" })
+    expect(notes).toHaveTextContent("A general note for this minute.")
+    await user.type(within(notes).getByRole("textbox", { name: "Add to Notes" }), "landlord called back")
+    await user.click(within(notes).getByRole("button", { name: "Add to Notes" }))
+    expect(within(notes).getByText("landlord called back")).toBeInTheDocument()
+    expect(events).not.toHaveTextContent("landlord called back")
 
     const note = await screen.findByRole("textbox", { name: /Day summary for|Day summary ·/ })
     await user.type(note, "zoo 4-5")
@@ -147,6 +160,7 @@ describe("Header tracking popup", () => {
     const stored = useTimeTrackingStore.getState().entries
     expect(stored.some((entry) => entry.title === "left room")).toBe(true)
     expect(stored.some((entry) => entry.title === "opening the window" && entry.eventKind === "thought-process")).toBe(true)
+    expect(stored.some((entry) => entry.title === "landlord called back" && !entry.eventKind)).toBe(true)
     const moment = screen.getByRole("region", { name: "Current moment" })
     expect(within(moment).getByRole("region", { name: "Events" })).toBeInTheDocument()
   })
@@ -242,5 +256,25 @@ describe("Header tracking popup", () => {
     const exact = screen.getByText("Exact").closest("label")
     expect(exact).toHaveClass("htk-exact")
     expect(exact?.querySelector("input[type='checkbox']")).toBeTruthy()
+  })
+
+  it("starts an activity pen from Current moment and keeps location pens out of that search", async () => {
+    const user = userEvent.setup()
+    render(<HeaderTrackingPopup />)
+    const moment = await screen.findByRole("region", { name: "Current moment" })
+    const search = within(moment).getByRole("combobox", { name: "Search activity pens" })
+    await user.click(search)
+    await user.type(search, "work")
+    expect(screen.getByRole("option", { name: /Work · Activity/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Work · Location/ })).not.toBeInTheDocument()
+    await user.clear(search)
+    await user.type(search, "Garden shed")
+    expect(screen.queryByRole("combobox", { name: "View for the new pen" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Create [“"]Garden shed[”"]/ }))
+    await user.click(within(moment).getByRole("button", { name: "Start this pen's clock" }))
+    const pen = useTimeTrackingStore.getState().scopes.find((scope) => scope.id === "activity")?.pens.find((item) => item.name === "Garden shed")
+    expect(pen).toBeTruthy()
+    expect(usePenColorSessionStore.getState().session?.penId).toBe(pen?.id)
+    expect(usePenColorSessionStore.getState().session?.scopeId).toBe("activity")
   })
 })

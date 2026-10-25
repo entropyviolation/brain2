@@ -5,6 +5,7 @@
 
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { TaskForm } from "@/components/Home/Habits/daily-task-form"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import type { WeeklyTask, HabitFrequency } from "@/lib/types"
@@ -64,15 +65,12 @@ export function TaskFormDialog({
       >
         <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="habit95-title-text">{title}</DialogTitle>
-          <button
+          <KeycapClose
             ref={sand.originRef}
-            type="button"
-            className="habit95-title-btn b2-close-key"
-            aria-label="Close"
+            className="habit95-title-btn"
+            label="Close"
             onClick={guard.requestClose}
-          >
-            ×
-          </button>
+          />
         </DialogHeader>
         <div className="habit95-body">
           <TaskForm

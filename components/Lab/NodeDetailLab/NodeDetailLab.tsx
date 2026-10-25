@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react"
 import type { Subtask } from "@/lib/types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { ItemPicker } from "@/components/Lists/item-picker"
 import { patchStep } from "@/lib/node-needs"
 import { useLab } from "./lab-store"
 import { useNode } from "./model"
@@ -150,16 +151,20 @@ export function NodeDetailLab() {
 
       <div className="lab-body">
         <aside className="lab-tree" aria-label="Pick a node">
-          <label className="lab-task-pick">
+          <div className="lab-task-pick">
             <span>Task</span>
-            <select value={task?.id ?? ""} onChange={(e) => (setTaskId(e.target.value), setStepId(null))}>
-              {withSteps.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {itemTitleOrUntitled(t)}
-                </option>
-              ))}
-            </select>
-          </label>
+            <ItemPicker
+              compact
+              mode="single"
+              searchLabel="Task"
+              choices={withSteps.map((t) => ({ id: t.id, title: itemTitleOrUntitled(t), icon: t.icon }))}
+              selected={task?.id ? [task.id] : []}
+              onChange={(ids) => {
+                setTaskId(ids[0] ?? "")
+                setStepId(null)
+              }}
+            />
+          </div>
           {task ? (
             <ul>
               <li>
