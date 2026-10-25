@@ -27,7 +27,7 @@ import {
 } from "./studio-kit"
 import { BEHAVIOR_FILL, BubblePlot, Fold, RangeField, SearchField, round1, useShowMore } from "./behavior-kit"
 
-const TIERS = ["A+", "A", "B", "C", "D"] as const
+const TIERS = ["A+", "A", "A/B", "B", "C"] as const
 
 const FIELD_HELP = {
   tier: "Priority band on the to-do (A+ … D). Maps to urgency/importance on the item.",
