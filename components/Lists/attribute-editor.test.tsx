@@ -11,6 +11,7 @@ import {
   formatAttributeValue,
   mergeListAttributes,
 } from "./attribute-editor"
+import { TypeSpecificSchemaFields } from "./attributes/AttributeSchemaEditor"
 import type { AttributeDefinition, List } from "@/lib/types"
 
 const sampleCategories: List[] = [
@@ -68,6 +69,21 @@ describe("AttributeSchemaEditor", () => {
     expect(onChange).toHaveBeenCalledWith([
       expect.objectContaining({ name: "New attribute", type: "string" }),
     ])
+  })
+
+  it("picks a list reference scope from the searchable list picker", async () => {
+    const user = userEvent.setup()
+    const onPatch = vi.fn()
+    render(
+      <TypeSpecificSchemaFields
+        def={{ id: "pack", name: "Packing", type: "list" }}
+        onPatch={onPatch}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Any list" })).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "Scope list" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Any list" }))
+    expect(onPatch).toHaveBeenCalledWith({ refListId: undefined })
   })
 
   it("single mode hides add/remove chrome for the column-header popup", () => {
