@@ -193,11 +193,12 @@ export function RitualsKey() {
       data-home-review-entry
       data-rituals-entry
       title={title}
+      aria-label={title}
       onPointerDown={load}
       onClick={load}
     >
       <ClipboardCheck className="h-4 w-4 mr-2" />
-      Rituals
+      <span className="b2-key-word">Rituals</span>
       {availableCount > 0 ? (
         <Badge className="b2-shell-count" variant="default">
           {availableCount}

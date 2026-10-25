@@ -11,12 +11,15 @@
  *    the item type, a list, or this item only),
  *  - item-only cells carry a remove key; legacy values with no definition stay
  *    editable as "Other attributes".
+ *
+ * A text list can join a Brain2 list on the item (`textListIds`, `onBindTextList`).
+ * Add attribute is the `.id-keycap` key.
+ * _Last mapped: 2026-10-24_
  */
 "use client"
 
 import { useMemo, useState } from "react"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
-import { Button } from "@/components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
 import type { AttributeDefinition, AttributeValue, ItemDetailLayout, ItemType, List } from "@/lib/types"
 import { mergeItemAttributes } from "@/components/Lists/attribute-editor"
@@ -63,6 +66,16 @@ export interface ItemAttributesSectionProps {
   defaultCreating?: boolean
   /** Opens another item in this same view; enables the "every type" demo key in the creator. */
   onOpenItem?: (id: string) => void
+  /** Text-list attribute id → Brain2 list id. The join lives on the item, not the definition. */
+  textListIds?: Record<string, string>
+  /** Display names for attributes on this item only. */
+  attributeLabels?: Record<string, string>
+  /** Attribute ids hidden on this item's Details tab. */
+  hiddenAttributeIds?: string[]
+  /** Called after Make Brain2 List creates a list for this attribute. */
+  onBindTextList?: (attributeId: string, listId: string) => void
+  /** Open the list joined to a text list or a list reference. */
+  onOpenTextList?: (listId: string) => void
 }
 
 function AttributeCell({
@@ -75,6 +88,9 @@ function AttributeCell({
   onLive,
   onRemove,
   featured = false,
+  textListBinding,
+  attributeLabels,
+  onOpenList,
 }: {
   def: AttributeDefinition
   source: string
@@ -85,10 +101,18 @@ function AttributeCell({
   onLive?: (v: AttributeValue) => void
   onRemove?: () => void
   featured?: boolean
+  textListBinding?: {
+    listId?: string
+    onBind: (listId: string) => void
+    onOpen?: (listId: string) => void
+  }
+  attributeLabels?: Record<string, string>
+  onOpenList?: (listId: string) => void
 }) {
   const type = normalizeAttributeType(def.type)
   const info = attributeTypeInfo(type)
   const wide = attributeIsWide(type)
+  const displayName = attributeLabels?.[def.id]?.trim() || def.name
   return (
     <div
       className={`id-attr-cell${wide ? " is-wide" : ""}${featured ? " is-featured" : ""}`}
@@ -99,23 +123,25 @@ function AttributeCell({
         <span className="id-attr-glyph" title={`${info.label} — ${info.blurb}`} aria-hidden>
           {info.glyph}
         </span>
-        <span className="id-attr-name">{def.name}</span>
+        <span className="id-attr-name">{displayName}</span>
         <span className="id-attr-source" title={`From ${source}`}>
           {source}
         </span>
         {onRemove && (
-          <button type="button" className="id-attr-icon-key" onClick={onRemove} aria-label={`Remove ${def.name}`}>
+          <button type="button" className="id-attr-icon-key" onClick={onRemove} aria-label={`Remove ${displayName}`}>
             <Trash2 className="h-3 w-3" />
           </button>
         )}
       </div>
       <AttributeValueField
-        def={def}
+        def={{ ...def, name: displayName }}
         value={value}
         onChange={onChange}
         onLive={onLive}
         definitions={allDefs}
         siblingValues={values}
+        textListBinding={textListBinding}
+        onOpenList={onOpenList}
       />
     </div>
   )
@@ -135,6 +161,11 @@ export function ItemAttributesSection({
   onCreateAttribute,
   defaultCreating = false,
   onOpenItem,
+  textListIds,
+  attributeLabels,
+  hiddenAttributeIds,
+  onBindTextList,
+  onOpenTextList,
 }: ItemAttributesSectionProps) {
   const types = useItemTypeStore((s) => s.types)
   const [creating, setCreating] = useState(defaultCreating)
@@ -175,7 +206,7 @@ export function ItemAttributesSection({
     [schemaDefs, itemOnlyDefs, values],
   )
 
-  const omitted = new Set(omitAttributeIds ?? [])
+  const omitted = new Set([...(omitAttributeIds ?? []), ...(hiddenAttributeIds ?? [])])
   const visibleSchema = schemaDefs.filter((d) => !omitted.has(d.id))
   const featuredIds = layout?.featuredAttributeIds ?? []
   const heroId = layout?.heroImageAttrId
@@ -225,6 +256,17 @@ export function ItemAttributesSection({
         onLive={onLiveValue ? (v) => onLiveValue(d.id, v) : undefined}
         onRemove={opts.removable ? () => removeItemOnly(d.id) : undefined}
         featured={opts.featured}
+        attributeLabels={attributeLabels}
+        onOpenList={onOpenTextList}
+        textListBinding={
+          onBindTextList && normalizeAttributeType(d.type) === "multistring"
+            ? {
+                listId: textListIds?.[d.id],
+                onBind: (listId) => onBindTextList(d.id, listId),
+                onOpen: onOpenTextList,
+              }
+            : undefined
+        }
       />
     )
   }
@@ -236,16 +278,15 @@ export function ItemAttributesSection({
         <span className="id-attrs-count" title={`${filled} of ${count} filled`}>
           {filled}/{count}
         </span>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          className="id-btn id-attrs-add"
+          className="id-keycap id-attrs-add"
           aria-expanded={creating}
           onClick={() => setCreating((v) => !v)}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" aria-hidden />
           Add attribute
-        </Button>
+        </button>
       </header>
 
       {creating && (

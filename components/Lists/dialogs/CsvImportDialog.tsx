@@ -1,22 +1,21 @@
 "use client"
 
-import type { List } from "@/lib/types"
 import type { CsvImportState } from "@/components/Lists/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 export interface CsvImportDialogProps {
   csvImport: CsvImportState
-  categories: List[]
   onClose: () => void
   onImport: () => void
   onUpdate: (next: CsvImportState) => void
 }
 
-export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUpdate }: CsvImportDialogProps) {
+export function CsvImportDialog({ csvImport, onClose, onImport, onUpdate }: CsvImportDialogProps) {
   return (
     <Dialog open={!!csvImport} onOpenChange={onClose}>
       <DialogContent className="fm98-dialog sm:max-w-lg">
@@ -30,18 +29,12 @@ export function CsvImportDialog({ csvImport, categories, onClose, onImport, onUp
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Import into</Label>
-            <NativeSelect
-              className="w-full border rounded-md h-9 px-2 bg-background text-sm"
+            <SingleListPicker
               value={csvImport.targetCategoryId}
-              onChange={(e) => onUpdate({ ...csvImport, targetCategoryId: e.target.value })}
-            >
-              <option value="">➕ New list</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </NativeSelect>
+              onValueChange={(id) => onUpdate({ ...csvImport, targetCategoryId: id })}
+              emptyLabel="New list"
+              searchLabel="Import into"
+            />
           </div>
           {csvImport.targetCategoryId === "" && (
             <div className="space-y-2">

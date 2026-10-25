@@ -14,4 +14,11 @@ describe("quickAddLogIntent", () => {
   it("stays off when Plain is on", () => {
     expect(quickAddLogIntent("log: left room", true)).toBeNull()
   })
+
+  it("treats a leading thought process: and tp: as a thought process", () => {
+    expect(quickAddLogIntent("thought process: opening the editor")?.kind).toBe("thought-process")
+    expect(quickAddLogIntent("tp: opening the editor")?.kind).toBe("thought-process")
+    expect(quickAddLogIntent("thought process opening the editor")).toBeNull()
+    expect(quickAddLogIntent("next actions: thought process: buy milk")).toBeNull()
+  })
 })

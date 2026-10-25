@@ -117,7 +117,9 @@ describe("inbox log transfer queue", () => {
       "need candy",
       "total exercise 60m",
     ])
-    expect(useTaskStore.getState().tasks).toHaveLength(0)
+    const left = useTaskStore.getState().tasks
+    expect(left.some((task) => task.id === "early" || task.id === "late")).toBe(false)
+    expect(left.filter((task) => task.type === "log")).toHaveLength(2)
   })
 
   it("undo before the write restores the ideas and leaves no note", () => {
@@ -146,7 +148,9 @@ describe("inbox log transfer queue", () => {
     flushInboxLogTransfers()
     const notes = useTimeTrackingStore.getState().entries.filter((entry) => entry.title === "need candy")
     expect(notes).toHaveLength(1)
-    expect(useTaskStore.getState().tasks).toHaveLength(0)
+    const left = useTaskStore.getState().tasks
+    expect(left.some((task) => task.id === "early")).toBe(false)
+    expect(left.filter((task) => task.type === "log")).toHaveLength(1)
   })
 
   it("puts the row back when the log write throws", () => {

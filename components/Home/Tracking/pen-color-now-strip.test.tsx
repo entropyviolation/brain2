@@ -54,10 +54,11 @@ describe("PenColorNowStrip", () => {
     await user.click(screen.getByTestId("now-objectives-trigger"))
     expect(screen.getByTestId("now-objectives-pop")).toBeInTheDocument()
     await user.type(screen.getByRole("textbox", { name: "Add objective" }), "ship it")
-    await user.click(screen.getByRole("button", { name: "Add" }))
+    await user.click(screen.getByRole("button", { name: "Add objective" }))
     expect(usePenColorSessionStore.getState().session?.nowObjectives?.[0].text).toBe("ship it")
 
     await user.click(screen.getByRole("button", { name: "Stop working on Work" }))
+    await user.click(screen.getByRole("button", { name: "No" }))
     expect(usePenColorSessionStore.getState().session).toBeNull()
     expect(useTimeTrackingStore.getState().entries.some((e) => e.penId === "loc-work")).toBe(true)
     expect(
@@ -83,5 +84,25 @@ describe("PenColorNowStrip", () => {
     expect(created).toBeTruthy()
     expect(screen.getByRole("button", { name: "Start this pen's clock" })).toBeEnabled()
     expect(screen.getByText(new RegExp(`${scopeName} · starts this second`))).toBeInTheDocument()
+  })
+
+  it("limits search and create to activity pens when that view is locked", async () => {
+    const user = userEvent.setup()
+    render(<PenColorNowStrip scopeId="activity" />)
+
+    const search = screen.getByRole("combobox", { name: "Search activity pens" })
+    await user.click(search)
+    await user.type(search, "work")
+    expect(screen.getByRole("option", { name: /Work · Activity/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Work · Location/ })).not.toBeInTheDocument()
+
+    await user.clear(search)
+    await user.type(search, "Garden shed")
+    expect(screen.queryByRole("combobox", { name: "View for the new pen" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Create [“"]Garden shed[”"]/ }))
+
+    const pens = useTimeTrackingStore.getState().scopes.find((scope) => scope.id === "activity")?.pens ?? []
+    expect(pens.some((pen) => pen.name === "Garden shed")).toBe(true)
+    expect(useTimeTrackingStore.getState().scopes.find((scope) => scope.id === "location")?.pens.some((pen) => pen.name === "Garden shed")).toBe(false)
   })
 })

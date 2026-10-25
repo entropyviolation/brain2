@@ -147,10 +147,16 @@ share one live clock (`lib/operation-work-session.ts` + `lib/work-session-store.
    - `timeLogs` on the operation (Operations **Log** + Tracking **Day Log**);
    - the Tracking block, finalized to the real start/end minutes.
 
+   If objectives for right now are still open, Stop asks whether to save them.
+   Yes closes and parks them for the next time this operation (or an attached
+   task or subtask) is tracked. No closes without parking. Cancel leaves the
+   clock running. After the clock stops, the sitting review opens. **Stop {task}**
+   on a named task asks the same question for that pen clock, then the same review.
+
 Tag the operation in Settings with Tracking tags so linked habits count
 those minutes. One session at a time; starting another stops the current one.
 
-_Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and `hoursLogged` on an after-action in `operation-actions.ts`) read `trackedTimeForItems([operation, ...tree], entries)` (`lib/tracked-time.ts`): `timeLogs` plus Tracking blocks on any linked pen (`Task.penLinks`) or carrying a tree task's id, each minute once per day. A clock log and the block it painted count once. The heatmap and the Log feed rows still read `timeLogs` only. **Naming a task** (_Last mapped 2026-10-16_, [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 6): beside **Working on this now**, a **…or a task** menu lists the operation's open tree tasks (`OperationWorkspace` passes `tasks`). Picking one puts it on the pen clock exactly like ▶ on its To Do row (`useTaskClockStarter`, so it can ask for a pen), and shows **Stop {task}** while it runs. If this operation's own session is live it is stopped first, so time is not painted twice. The two session stores stay separate. The task's blocks carry its `taskId`, so they roll up into the hour totals above.
+_Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and `hoursLogged` on an after-action in `operation-actions.ts`) read `trackedTimeForItems([operation, ...tree], entries)` (`lib/tracked-time.ts`): `timeLogs` plus Tracking blocks on any linked pen (`Task.penLinks`) or carrying a tree task's id, each minute once per day. A clock log and the block it painted count once. The heatmap and the Log feed rows still read `timeLogs` only. **Naming a task** (_Last mapped 2026-10-24_, [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 6): beside **Working on this now**, **…or a task** opens `ItemPicker` (search, one row per open tree task — `OperationWorkspace` passes `tasks`). It is not a `<select>` of those names. Picking one puts it on the pen clock exactly like ▶ on its To Do row (`useTaskClockStarter`, so it can ask for a pen), and shows **Stop {task}** while it runs. If this operation's own session is live it is stopped first, so time is not painted twice. The two session stores stay separate. The task's blocks carry its `taskId`, so they roll up into the hour totals above.
 
 ## Files
 
@@ -166,7 +172,7 @@ _Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and 
 | `operations-chrome.css` | Milled fascia (CRT title, engraved nameplates, raised metal keys, equal-fill view keys, stage power lamps, CRT heatmap well, working-now lamp) |
 | `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Empty board offers pickable preset objects (`.ops-empty-presets`). Last open operation survives refresh / tab switch. |
 | `OperationWorkspace.tsx` | full-screen mini-app; tab strip clusters **Plan/Do** vs **Reference** (`.ops-view-clusters`). Last panel per operation is restored, plus that panel's scroll. |
-| `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle |
+| `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle. Stop with open objectives asks **Yes** / **No** / **Cancel**. After the clock stops, the sitting review opens. **Stop {task}** asks the same for the pen clock. |
 | `OperationSettingsDialog.tsx` | per-operation settings: identity, categories, tracking tags, panels, presets, **Delete operation** |
 | `OperationHome.tsx` | Home: mission / progress / notes as a vertical instrument; work/neglect heatmap — cold (neglected) days read hotter (`.ops-heat-cell.is-cold`) |
 | `OperationTasksPanel.tsx` | To do: embeds the Lists content panel, including phase steps and part tasks |

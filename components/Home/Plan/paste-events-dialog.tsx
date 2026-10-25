@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { CalendarEvent } from "@/lib/types"
@@ -130,9 +131,7 @@ export function PasteEventsDialog({ open, onOpenChange }: PasteEventsDialogProps
       <DialogContent className="plan95-dialog plan95-dialog-lg max-h-[90vh]" hideClose {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader className="plan95-dialog-caption">
           <DialogTitle>Paste Events</DialogTitle>
-          <button type="button" className="plan95-title-btn b2-close-key" aria-label="Close" onClick={guard.requestClose}>
-            ×
-          </button>
+          <KeycapClose className="plan95-title-btn" label="Close" onClick={guard.requestClose} />
         </DialogHeader>
 
         <div className="plan95-dialog-body">

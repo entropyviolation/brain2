@@ -4,6 +4,12 @@ import type { Task, List, Folder, ChecklistCheckboxVar, ListItemSort } from "@/l
 import type { ListItemSortOption } from "@/lib/list-item-sort"
 
 /** Shared drag/select/complete handlers for all list-content display modes. */
+/** One thing to add from a gallery: a description, a file, or both. */
+export interface MediaDraft {
+  title?: string
+  file?: File
+}
+
 export interface ListContentTaskHandlers {
   tasks: Task[]
   onTaskSelect: (taskId: string) => void
@@ -63,6 +69,8 @@ export interface ListContentPanelProps extends ListContentTaskHandlers {
   addingTaskToTarget: string | null
   openTargetKeyValue: string
   onAddTask: (description: string) => void
+  /** Photo / Document galleries: add items from dropped or chosen files. */
+  onAddMedia?: (drafts: MediaDraft[]) => void | Promise<void>
   onCancelAddTask: () => void
   onShowAddTask: () => void
   showBulkAdd: boolean

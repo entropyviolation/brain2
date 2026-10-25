@@ -14,6 +14,7 @@
 import type { RelationDef, RelationFamily } from "@/lib/links"
 import { LOCATION_TYPE_ID } from "@/lib/location-types"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
+import { PHOTO_TYPE_ID } from "@/lib/photo-types"
 
 const P = [PERSON_TYPE_ID]
 
@@ -106,6 +107,12 @@ const SEEDS: RelationDef[] = [
   ...pair("born-in", "was born in", "birthplace-of", "is the birthplace of", "place", toLocation),
   ...pair("grew-up-in", "grew up in", "where-grew-up", "is where they grew up", "place", toLocation),
   ...pair("located-in", "is located in", "location-of", "contains", "place", { fromTypes: [LOCATION_TYPE_ID], toTypes: [LOCATION_TYPE_ID] }),
+  // photos
+  ...pair("depicts", "shows", "appears-in", "appears in", "other", { fromTypes: [PHOTO_TYPE_ID], toTypes: P }),
+  ...pair("taken-at", "was taken at", "place-of-photo", "is where this was taken", "place", {
+    fromTypes: [PHOTO_TYPE_ID],
+    toTypes: [LOCATION_TYPE_ID],
+  }),
   // work
   sym("works-with", "works with", "work"),
   ...pair("manager-of", "is the manager of", "reports-to", "reports to", "work"),

@@ -162,6 +162,27 @@ describe("ListPicker", () => {
     await user.keyboard("{Enter}")
     expect(onChange).toHaveBeenCalledWith(["list-1"])
   })
+
+  it("pins Any list above the catalog and clears the choice when that row is clicked", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <ListPicker
+        mode="single"
+        selected={["list-1"]}
+        onChange={onChange}
+        pinnedChoices={[{ id: "", label: "Any list" }]}
+        searchLabel="Scope list"
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Any list" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Any list" }))
+    expect(onChange).toHaveBeenCalledWith([])
+    await user.type(screen.getByRole("textbox", { name: "Scope list" }), "book")
+    expect(screen.getByRole("button", { name: "Books" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Groceries" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Any list" })).not.toBeInTheDocument()
+  })
 })
 
 describe("ListPicker folder All Items", () => {

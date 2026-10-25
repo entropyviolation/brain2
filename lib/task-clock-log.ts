@@ -6,14 +6,15 @@
  * - stopping logs one `timeLogs` entry for the span, with the step and the
  *   painted entry ids, so a total can skip the paint it already counted;
  * - an objective tied to a step ticks (or reopens) that step, with the
- *   objective's own span as the step's actual minutes;
+ *   objective's active work as its actual minutes (a parked gap does not count;
+ *   an unknown start writes no minutes);
  * - a typed objective is matched to an open step by name;
  * - free objectives can be kept as steps.
  *
  * Imported by `lib/pen-color-session.ts`, so it must not import that module.
  */
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
-import type { NowObjective } from "@/lib/now-objective"
+import { objectiveCompletesTarget, objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
 import { useTaskStore } from "@/lib/task-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
@@ -24,6 +25,71 @@ export interface ClockTaskRef {
   taskId?: string
   stepId?: string
   trackingEntryIds?: string[]
+  nowObjectives?: readonly NowObjective[]
+}
+
+/** Every block this clock paints starts its note with this. A hand-written note does not. */
+export const WORKING_ON_NOW_NOTE_PREFIX = "added from Working On Now"
+
+function listOrNone(items: readonly string[] | undefined): string {
+  const names = (items ?? []).map((item) => item.trim()).filter(Boolean)
+  return names.length ? names.join(", ") : "none"
+}
+
+/**
+ * The sentence a Working-on-right-now block carries.
+ * `added from Working On Now, task: {name} subtasks completed: {list} objectives completed: {list}`
+ */
+export function workingOnNowNote(input: {
+  taskName?: string
+  subtasksCompleted?: readonly string[]
+  objectivesCompleted?: readonly string[]
+}): string {
+  const task = input.taskName?.trim() || "none"
+  return `${WORKING_ON_NOW_NOTE_PREFIX}, task: ${task} subtasks completed: ${listOrNone(input.subtasksCompleted)} objectives completed: ${listOrNone(input.objectivesCompleted)}`
+}
+
+/** That sentence for the task and the objectives on this sitting. */
+export function workingOnNowBlockNote(session: {
+  taskId?: string
+  stepId?: string
+  nowObjectives?: readonly NowObjective[]
+}): string {
+  const task = getTask(session.taskId)
+  const done = (session.nowObjectives ?? []).filter((row) => row.completedAt)
+  const steps: string[] = []
+  const seen = new Set<string>()
+  const push = (name: string | undefined) => {
+    const text = name?.trim()
+    if (!text || seen.has(text)) return
+    seen.add(text)
+    steps.push(text)
+  }
+  if (task) {
+    for (const row of done) {
+      if (!row.stepId) continue
+      const placed = placeSteps(task.subtasks).find((p) => p.step.id === row.stepId)
+      push(placed?.step.description ?? row.text)
+    }
+    if (session.stepId) {
+      const current = placeSteps(task.subtasks).find((p) => p.step.id === session.stepId)
+      if (current?.step.completed) push(current.step.description)
+    }
+  }
+  return workingOnNowNote({
+    taskName: task ? itemTitleOrUntitled(task) : undefined,
+    subtasksCompleted: steps,
+    objectivesCompleted: done.map((row) => row.text),
+  })
+}
+
+/**
+ * The clock fills an empty note, and refreshes one it already wrote.
+ * A note you changed yourself is left alone.
+ */
+export function clockNoteField(existing: string | undefined, note: string): { notes: string } | undefined {
+  if (!existing || existing.startsWith(WORKING_ON_NOW_NOTE_PREFIX)) return { notes: note }
+  return undefined
 }
 
 function getTask(taskId: string | undefined): Task | undefined {
@@ -57,7 +123,7 @@ export function logTaskClockSpan(ref: ClockTaskRef, start: Date, end: Date, acti
     startTime: hhmm(start),
     endTime: hhmm(end),
     durationMinutes: minutes,
-    notes: `Clock · ${clockPathLabel(task, ref.stepId)}`,
+    notes: workingOnNowBlockNote(ref),
     taskId: task.id,
     ...(ref.stepId ? { stepId: ref.stepId } : {}),
     ...(ref.trackingEntryIds?.length ? { entryIds: [...ref.trackingEntryIds] } : {}),
@@ -66,16 +132,30 @@ export function logTaskClockSpan(ref: ClockTaskRef, start: Date, end: Date, acti
   return entry
 }
 
-/** Tick or reopen the step an objective stands for. */
+/**
+ * Tick or reopen what an objective stands for. A step objective that only
+ * "counts toward" its step leaves the step alone; its minutes still land on
+ * the step through the block's `stepId`. A task-level one finishes the task.
+ */
 export function applyObjectiveToStep(ref: ClockTaskRef, objective: NowObjective): void {
-  const task = getTask(ref.taskId)
-  if (!task || !objective.stepId) return
+  const task = getTask(objective.taskId ?? ref.taskId)
+  if (!task || !objectiveCompletesTarget(objective)) return
+  if (!objective.stepId) {
+    if (!!task.completed === !!objective.completedAt) return
+    useTaskStore.getState().updateTask({
+      ...task,
+      completed: !!objective.completedAt,
+      completedDate: objective.completedAt ? new Date(objective.completedAt) : undefined,
+    })
+    return
+  }
   if (!placeSteps(task.subtasks).some((p) => p.step.id === objective.stepId)) return
   let subtasks: Subtask[]
   if (objective.completedAt) {
     const done = new Date(objective.completedAt)
-    const minutes = (done.getTime() - new Date(objective.addedAt).getTime()) / 60_000
-    subtasks = finishStep(task.subtasks, objective.stepId, minutes >= 0.5 ? minutes : undefined, done)
+    const ms = objectiveWorkedMs(objective)
+    const minutes = ms == null ? undefined : ms / 60_000
+    subtasks = finishStep(task.subtasks, objective.stepId, minutes != null && minutes >= 0.5 ? minutes : undefined, done)
   } else {
     subtasks = updateNestedStep(task.subtasks, objective.stepId, { completed: false })
   }
@@ -129,8 +209,9 @@ export function addStepForObjective(ref: ClockTaskRef, objective: NowObjective):
   if (!made) return undefined
   if (objective.completedAt) {
     const done = new Date(objective.completedAt)
-    const minutes = (done.getTime() - new Date(objective.addedAt).getTime()) / 60_000
-    subtasks = finishStep(subtasks, made.step.id, minutes >= 0.5 ? minutes : undefined, done)
+    const ms = objectiveWorkedMs(objective)
+    const minutes = ms == null ? undefined : ms / 60_000
+    subtasks = finishStep(subtasks, made.step.id, minutes != null && minutes >= 0.5 ? minutes : undefined, done)
   }
   useTaskStore.getState().updateTask({ ...task, subtasks })
   return made.step.id
