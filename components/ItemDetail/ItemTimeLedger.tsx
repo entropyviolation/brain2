@@ -3,7 +3,8 @@
  *
  * The Time tab for a task (and for a step's item). Blocks painted with this
  * task — pen clock, To Do start, a hand correction — list here with their
- * objectives and the clocks those objectives ran. Session lines that never
+ * notes, objectives, and the clocks those objectives ran. A block from the
+ * pen clock says it was added from Working On Now. Session lines that never
  * painted a block list under them. Edits to a block go through the time grid
  * (`updateEntry`). Edits to a log, a step's minutes, or the task's completed
  * mark go through the open draft, or onto the parent task when this item is
@@ -29,6 +30,7 @@ import {
   type NowObjective,
 } from "@/lib/now-objective"
 import { finishStep, placeSteps } from "@/lib/next-step"
+import { WORKING_ON_NOW_NOTE_PREFIX } from "@/lib/task-clock-log"
 import { updateNestedStep } from "@/lib/todo-steps"
 import { useTaskStore } from "@/lib/task-store"
 import type { TimeEntry } from "@/lib/time-entries"
@@ -88,6 +90,7 @@ function logKind(log: TimeLogEntry): string {
   const notes = log.notes ?? ""
   if (notes.startsWith("Session")) return "Session"
   if (notes.startsWith("Clock")) return "Clock"
+  if (notes.startsWith(WORKING_ON_NOW_NOTE_PREFIX)) return "Now"
   return "Log"
 }
 
@@ -400,6 +403,21 @@ export function ItemTimeLedger({
                     onBlur={(e) => {
                       const title = e.target.value.trim()
                       if (title !== (entry.title ?? "")) updateEntry(entry.id, { title: title || undefined })
+                    }}
+                  />
+                </label>
+                <label className="ipt-label-line">
+                  <span>Notes</span>
+                  <input
+                    className="ipt-text"
+                    aria-label={`Notes of the block on ${entry.date} at ${clock(entry.startMin)}`}
+                    disabled={readOnly}
+                    defaultValue={entry.notes ?? ""}
+                    title={entry.notes || undefined}
+                    key={`${entry.id}:notes:${entry.notes ?? ""}`}
+                    onBlur={(e) => {
+                      const notes = e.target.value.trim()
+                      if (notes !== (entry.notes ?? "")) updateEntry(entry.id, { notes: notes || undefined })
                     }}
                   />
                 </label>

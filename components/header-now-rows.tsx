@@ -8,6 +8,7 @@
  */
 "use client"
 
+import type { ReactNode } from "react"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { useWorkSessionClock } from "@/components/Operations/WorkingNowControl"
 import { usePenColorSessionClock } from "@/components/Home/Tracking/pen-color-now-strip"
@@ -46,7 +47,9 @@ import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-di
 import { activeNowObjectives, type NowObjective } from "@/lib/now-objective"
 import { attachChoicesForOperation, attachChoicesForPen, type ObjectiveAttachChoice } from "@/lib/unfinished-objectives"
 import { useClockTask } from "@/components/Focus/use-clock-task"
+import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
 import { useTaskStore } from "@/lib/task-store"
+import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 
 function NowRow({
   name,
@@ -68,6 +71,8 @@ function NowRow({
   stepChoices,
   onTieStep,
   onSetCompletes,
+  onOpen,
+  taskSlot,
 }: {
   name: string
   elapsed: string
@@ -88,15 +93,23 @@ function NowRow({
   stepChoices?: { id: string; label: string }[]
   onTieStep?: (id: string, stepId: string | "new" | undefined) => void
   onSetCompletes?: (id: string, completes: boolean) => void
+  onOpen?: () => void
+  taskSlot?: ReactNode
 }) {
   const pauseLabel = paused ? `Resume ${name}` : `Pause ${name}`
   const unfinished = useUnfinishedStop(activeNowObjectives(objectives).length, onStop)
   return (
     <div className="b2-shell-now-row">
       {color ? <span className="b2-shell-now-swatch" style={{ background: color }} aria-hidden /> : null}
-      <span className="b2-shell-now-name" title={name}>
-        {name}
-      </span>
+      {onOpen ? (
+        <button type="button" className="b2-shell-now-name" data-no95 title={`Open ${name}`} onClick={onOpen}>
+          {name}
+        </button>
+      ) : (
+        <span className="b2-shell-now-name" title={name}>
+          {name}
+        </span>
+      )}
       <span className="b2-shell-now-elapsed" aria-live="polite">
         {elapsed}
       </span>
@@ -115,6 +128,7 @@ function NowRow({
         onTieStep={onTieStep}
         onSetCompletes={onSetCompletes}
       />
+      {taskSlot}
       <DvdTransportKey mark={paused ? "play" : "pause"} label={pauseLabel} className="b2-shell-now-icon" onClick={onPauseToggle} />
       <DvdTransportKey mark="stop" label={stopLabel} className="b2-shell-now-icon" onClick={unfinished.request} />
       {unfinished.dialog}
@@ -193,6 +207,8 @@ export function HeaderNowRows() {
             stepChoices={clock.stepChoices}
             onTieStep={clock.onTieStep}
             onSetCompletes={clock.onSetCompletes}
+            onOpen={penSession.taskId ? () => openItemDetailPopup(penSession.taskId!) : undefined}
+            taskSlot={<ClockTaskButton />}
           />
         )}
       </div>

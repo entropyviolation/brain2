@@ -41,8 +41,10 @@ import {
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { attachChoicesForPen } from "@/lib/unfinished-objectives"
+import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
+import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
 import { useClockTask } from "@/components/Focus/use-clock-task"
 import "@/components/Operations/operations-chrome.css"
@@ -335,7 +337,16 @@ export function PenColorNowStrip({
         <div className="trk-pen-now-live">
           <span className="trk-pen-now-bead" style={{ background: selected.color }} aria-hidden />
           <span className="trk-pen-now-live-name" title={clock.path ? `${clock.path} · ${choiceLabel(selected)}` : choiceLabel(selected)}>
-            {clock.path ? <span className="trk-pen-now-live-task">{clock.path} · </span> : null}
+            {clock.task ? (
+              <button
+                type="button"
+                className="trk-pen-now-live-task"
+                data-no95
+                onClick={() => openItemDetailPopup(clock.task!.id)}
+              >
+                {clock.path} ·{" "}
+              </button>
+            ) : null}
             {choiceLabel(selected)}
           </span>
           <span className="ops-now-elapsed" aria-live="polite">
@@ -362,6 +373,7 @@ export function PenColorNowStrip({
             onTieStep={clock.onTieStep}
             onSetCompletes={clock.onSetCompletes}
           />
+          <ClockTaskButton />
           <DvdTransportKey
             className="trk-pen-now-icon"
             mark="stop"
