@@ -74,6 +74,8 @@ import {
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
+import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
+import { KeycapClose } from "@/components/keycap-close"
 import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
 import { ItemDetailDock } from "@/components/ItemDetail/ItemDetailDock"
@@ -532,18 +534,9 @@ export function TaskDetailPopup({
           data-ui-docs="components/ItemDetail/README.md"
           {...layerSafeDismiss(unsavedDismissProps(guard.requestClose))}
           data-item-layer={layerHeader !== undefined ? "" : undefined}
+          hideClose
         >
           <DialogTitle className="sr-only">Item detail</DialogTitle>
-          <button type="button" className="id-window-key id-minimize-key" data-no95 aria-label="Minimize" title="Minimize" onClick={minimize}>
-            <span className="id-minimize-mark" aria-hidden />
-          </button>
-          <ItemSettingsKey
-            className="id-window-key"
-            onClick={() => {
-              settingsLock.current = true
-              setItemSettingsOpen(true)
-            }}
-          />
           {layerHeader}
           <div className="id-fascia">
             <div className="id-fascia-row">
@@ -559,6 +552,18 @@ export function TaskDetailPopup({
                   className="id-title-input id-title"
                   placeholder="Item name"
                 />
+              </div>
+              <div className="id-window-keys">
+                <ItemSettingsKey
+                  onClick={() => {
+                    settingsLock.current = true
+                    setItemSettingsOpen(true)
+                  }}
+                />
+                <button type="button" className="id-window-key id-minimize-key" data-no95 aria-label="Minimize" title="Minimize" onClick={minimize}>
+                  <span className="id-minimize-mark" aria-hidden />
+                </button>
+                <KeycapClose onClick={() => guard.requestClose()} />
               </div>
             </div>
             <div className="id-fascia-row id-meta">
@@ -1028,6 +1033,18 @@ export function TaskDetailPopup({
                     </div>
 
                     <aside className="id-details-rail" aria-label="Where this item lives">
+                      {isTask && (
+                        <div className="space-y-2">
+                          <Label className="id-rail-plate">Task card</Label>
+                          <ItemTaskCardKey
+                            task={task}
+                            onBeforeOpen={() => {
+                              if (stackAbove) clearItemLayers()
+                              else guard.requestClose()
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-3">
                         <Label className="id-rail-plate">Lists</Label>
                         <div className="flex flex-wrap gap-2">
@@ -1658,7 +1675,7 @@ export function TaskDetailPopup({
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 bg-muted/30 rounded-lg border">
+                  <div className="id-bay">
                     <ItemPenTimeSection
                       task={task}
                       editableTime={isTask}

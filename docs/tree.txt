@@ -763,6 +763,7 @@
 │   │   ├── ItemSettingsKey.tsx
 │   │   ├── ItemSettingsPanel.tsx
 │   │   ├── ItemTagChip.tsx
+│   │   ├── ItemTaskCardKey.tsx
 │   │   ├── ItemTimeLedger.test.tsx
 │   │   ├── ItemTimeLedger.tsx
 │   │   ├── README.md
@@ -1512,6 +1513,7 @@
 │   │   ├── shared-persist-20260919-201252.json
 │   │   └── tracking-union-2026-09-22T01-21-45.json
 │   ├── shared-persist.json
+│   ├── shared-persist.json.57544.122.tmp
 │   └── telegram-offset.json
 ├── deploy
 │   ├── mac
