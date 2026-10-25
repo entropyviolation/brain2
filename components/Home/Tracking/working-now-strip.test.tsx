@@ -27,7 +27,7 @@ describe("WorkingNowStrip", () => {
     const user = userEvent.setup()
     render(<WorkingNowStrip />)
 
-    expect(screen.getByRole("combobox", { name: "Operation to work on" })).toHaveTextContent("Foxtide rebuild")
+    expect(screen.getByRole("combobox", { name: "Operation to work on" })).toHaveValue("Foxtide rebuild")
     await user.click(screen.getByRole("button", { name: "Working on this now" }))
     expect(screen.getByRole("button", { name: "Stop working on Foxtide rebuild" })).toBeInTheDocument()
     expect(useTimeTrackingStore.getState().entries.length).toBeGreaterThan(0)
@@ -55,5 +55,35 @@ describe("WorkingNowStrip", () => {
     expect(screen.getByTitle(/same title/i)).toBeInTheDocument()
     expect(op.estimatedDuration).toBeUndefined()
     expect(useTaskStore.getState().tasks.find((t) => t.id === "op_1")?.estimatedDuration).toBeUndefined()
+  })
+
+  it("filters operations and creates one that does not exist", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().addTask({
+      id: "op_2",
+      description: "clean house",
+      type: OPERATION_TYPE_ID,
+      stage: "clarified",
+      createdAt: new Date("2026-01-02"),
+      completed: false,
+      lists: [],
+      attributes: { [OPERATION_ATTR.stage]: "active" },
+      links: [],
+    })
+    render(<WorkingNowStrip />)
+    const field = screen.getByRole("combobox", { name: "Operation to work on" })
+    await user.click(field)
+    await user.type(field, "clean")
+    expect(screen.getByRole("option", { name: "clean house" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "Foxtide rebuild" })).not.toBeInTheDocument()
+
+    await user.clear(field)
+    await user.type(field, "mop floors{Enter}")
+    expect(useTaskStore.getState().tasks.some((task) => task.description === "mop floors")).toBe(true)
+    expect(field).toHaveValue("mop floors")
+    expect(screen.getByText("No tracking tags — set them on the operation in Settings.")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Working on this now" }))
+    expect(screen.getByRole("button", { name: "Stop working on mop floors" })).toBeInTheDocument()
   })
 })

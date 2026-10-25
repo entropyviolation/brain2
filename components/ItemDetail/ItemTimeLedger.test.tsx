@@ -55,6 +55,8 @@ describe("ItemTimeLedger", () => {
     expect(screen.getByLabelText("Added time for ship it")).toHaveValue("10:05")
     expect(screen.getByLabelText("Done time for ship it")).toHaveValue("10:40")
     expect(screen.getByText("35m")).toBeInTheDocument()
+    expect(screen.getByText(/on Cut the tray/)).toHaveTextContent("35m")
+    expect(screen.getByText(/on this task only/)).toHaveTextContent("1h 20m")
     expect(screen.getByText("Session")).toBeInTheDocument()
     expect(screen.getByLabelText("Minutes of log session-log-1")).toHaveValue("25")
   })
@@ -78,7 +80,7 @@ describe("ItemTimeLedger", () => {
     })
   })
 
-  it("keeps a whole-task block out of the step total and says so", () => {
+  it("counts an objective's minutes on its step and leaves the rest of the block on the task", () => {
     useTaskStore.setState({
       tasks: [{ id: "t1", description: "Finish CDs", subtasks: [{ id: "cut", description: "Cut the tray" }], timeLogs: [] }],
     } as never)
@@ -88,8 +90,8 @@ describe("ItemTimeLedger", () => {
         onPatch={() => {}}
       />,
     )
-    expect(screen.getByText(/on this step/).textContent).toMatch(/0m/)
-    expect(screen.getByText(/names this step/)).toBeInTheDocument()
+    expect(screen.getByText(/on this step/).textContent).toMatch(/35m/)
+    expect(screen.queryByText(/names this step/)).not.toBeInTheDocument()
     expect(screen.getAllByText("Whole task").length).toBeGreaterThan(0)
   })
 

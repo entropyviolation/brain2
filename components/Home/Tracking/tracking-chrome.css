@@ -1074,7 +1074,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 }
 
 .trk95 .trk-now-module .ops-now-bar select,
-.trk95 .trk-now-module .ops-now-bar .native-select {
+.trk95 .trk-now-module .ops-now-bar .native-select,
+.trk95 .trk-now-module .ops-now-bar .ops-now-field {
   min-width: 0;
   max-width: 11rem;
 }
@@ -1685,7 +1686,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-size: 11px;
 }
 
-.trk95 .trk-chain {
+.trk95 .trk-chain,
+.tcs-pens .trk-chain {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1695,7 +1697,8 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   box-shadow: var(--t-field);
 }
 
-.trk95 .trk-chain-node {
+.trk95 .trk-chain-node,
+.tcs-pens .trk-chain-node {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1707,12 +1710,14 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-size: 11px;
 }
 
-.trk95 .trk-chain-node[data-current="true"] {
+.trk95 .trk-chain-node[data-current="true"],
+.tcs-pens .trk-chain-node[data-current="true"] {
   outline: 1px dotted #000;
   outline-offset: 1px;
 }
 
-.trk95 .trk-chain-bead {
+.trk95 .trk-chain-bead,
+.tcs-pens .trk-chain-bead {
   width: 12px;
   height: 12px;
   flex-shrink: 0;
@@ -1720,10 +1725,48 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(0, 0, 0, 0.35);
 }
 
-.trk95 .trk-chain-arrow {
+.trk95 .trk-chain-arrow,
+.tcs-pens .trk-chain-arrow {
   color: #000;
   font-size: 12px;
   line-height: 1;
+}
+
+.tcs-pens .trk-chain-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.tcs-pens {
+  --t-face: var(--chrome-mid, #dfdfdf);
+  --t-highlight: var(--chrome-hi, #ffffff);
+  --t-shadow: var(--chrome-lo, #808080);
+  --t-frame: var(--chrome-frame, #0a0a0a);
+  --t-raised: inset -1px -1px var(--t-frame), inset 1px 1px var(--t-highlight), inset -2px -2px var(--t-shadow), inset 2px 2px var(--t-face);
+  --t-field: inset -1px -1px var(--t-highlight), inset 1px 1px var(--t-shadow), inset -2px -2px var(--t-face), inset 2px 2px var(--t-frame);
+}
+
+.tcs-pens .trk-chain-open,
+body.win95-app .tcs-pens button.trk-chain-open,
+body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-clock,
+body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
 }
 
 .trk95 .trk-chain-branch {

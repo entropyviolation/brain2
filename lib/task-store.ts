@@ -17,6 +17,8 @@
  *
  * Connected lists (`List.linkedTargetListIds`) auto-join membership through
  * `addTask` / `updateTask` / `addListLink`; see `lib/list-links.ts`.
+ * `updateTask` appends `Task.estimateLog` when `estimatedDuration` changes
+ * (`noteTaskEstimate`). The same minutes again adds no row.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -75,6 +77,7 @@ import {
 import { withArchiveListMembership } from "@/lib/archive-lists"
 import { keptCreatedAt } from "@/lib/date-utils"
 import { keptCaptureOrigin } from "@/lib/capture-origin"
+import { noteTaskEstimate } from "@/lib/task-card"
 
 // Date-typed fields on persisted Task / List objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
@@ -408,6 +411,7 @@ export const useTaskStore = create<TaskState>()(
             // which screen completed it). Guarded so re-saving a completed task
             // doesn't double-award.
             const prev = state.tasks[index]
+            updatedTask = noteTaskEstimate(prev, updatedTask)
             const justCompleted = !prev.completed && updatedTask.completed
             const justReopened = prev.completed && !updatedTask.completed
             // Phase 10: Done records the step level reached; reopening clears it.
