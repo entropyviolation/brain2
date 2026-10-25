@@ -9,7 +9,7 @@
  * Exit without saving. `isDirty` may be a function so the check reads the
  * live draft at call time instead of a render-time boolean.
  * Look: milled fascia (`.w95-confirm` in unsaved-changes.css) — CRT title,
- * brushed bay, metal keys. docs/DESIGN_STYLE.md#milled-fascia
+ * brushed bay, three keycaps centered in the bay. docs/DESIGN_STYLE.md#milled-fascia
  */
 "use client"
 
@@ -177,14 +177,14 @@ export function UnsavedChangesDialog({ open, onSave, onStay, onDiscard, canSave 
         </div>
         <div className="w95-confirm-actions">
           {canSave ? (
-            <button type="button" data-default="true" onClick={onSave}>
+            <button type="button" className="w95-keycap" data-no95 data-default="true" onClick={onSave}>
               Save changes
             </button>
           ) : null}
-          <button type="button" onClick={onStay}>
+          <button type="button" className="w95-keycap" data-no95 onClick={onStay}>
             Cancel
           </button>
-          <button type="button" onClick={onDiscard}>
+          <button type="button" className="w95-keycap" data-no95 onClick={onDiscard}>
             Exit without saving
           </button>
         </div>
