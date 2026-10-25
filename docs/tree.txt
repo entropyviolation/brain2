@@ -570,10 +570,14 @@
 │   │   │   ├── pen-tray-bg.css
 │   │   │   ├── pen-tray-bg.test.ts
 │   │   │   ├── pen-tray-bg.ts
+│   │   │   ├── save-unfinished-dialog.test.tsx
 │   │   │   ├── save-unfinished-dialog.tsx
 │   │   │   ├── screentime-empty-hint.test.tsx
 │   │   │   ├── screentime-empty-hint.tsx
 │   │   │   ├── secondary-pens-field.tsx
+│   │   │   ├── session-debrief-dialog.tsx
+│   │   │   ├── session-debrief.css
+│   │   │   ├── session-handoff-note.tsx
 │   │   │   ├── spending-dialog.tsx
 │   │   │   ├── summary-reference.tsx
 │   │   │   ├── superimpose-bar.test.tsx
@@ -1493,9 +1497,9 @@
 │   │   ├── auto-brain2-task-storage-2026-10-25-04.json
 │   │   ├── auto-brain2-telegram-feed-2026-10-25-02.json
 │   │   ├── auto-brain2-telegram-feed-2026-10-25-03.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-25-04.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-03.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-04.json
-│   │   ├── auto-points-store-2026-10-25-02.json
 │   │   ├── auto-points-store-2026-10-25-03.json
 │   │   ├── auto-points-store-2026-10-25-04.json
 │   │   ├── brain2-backup-2026-10-10T093232Z.json
@@ -4654,6 +4658,9 @@
 │   │   ├── review-service.ts
 │   │   ├── scheduling-service.test.ts
 │   │   └── scheduling-service.ts
+│   ├── session-debrief-store.ts
+│   ├── session-debrief.test.ts
+│   ├── session-debrief.ts
 │   ├── session-open-store.ts
 │   ├── session-pen.test.ts
 │   ├── session-pen.ts
