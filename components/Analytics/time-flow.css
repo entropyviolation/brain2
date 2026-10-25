@@ -172,6 +172,9 @@
 .an-matrix-cell.is-diag {
   background-image: repeating-linear-gradient(45deg, var(--at-rule-soft, rgba(20, 23, 28, 0.22)) 0 1px, transparent 1px 5px) !important;
 }
+.an-matrix-cell[role="button"] {
+  cursor: pointer;
+}
 .an-matrix-cell.is-label {
   overflow: hidden;
   text-overflow: ellipsis;

@@ -18,7 +18,7 @@ import { CanvasTitle, StudioReadout } from "./studio-kit"
 import { AlluvialChart } from "./studio-plots"
 import { penTransitionMatrix } from "./signal-stats"
 import { NativeSelect } from "@/components/ui/native-select"
-import { penDaySequences, penFlows, returnLoops } from "./time-flow-stats"
+import { penDaySequences, penFlows, returnLoops, switchDays } from "./time-flow-stats"
 import "./time-flow.css"
 
 type Order = "total" | "name"
@@ -37,6 +37,11 @@ export function TransitionsView() {
   const [show, setShow] = useState<"p" | "count">("p")
   const [order, setOrder] = useState<Order>("total")
   const [minCount, setMinCount] = useState(1)
+  const [picked, setPicked] = useState<{ fromId: string; toId: string } | null>(null)
+  const pickedDays = useMemo(
+    () => (scope && picked ? switchDays(entries, dateKeys, scope.id, picked.fromId, picked.toId) : []),
+    [entries, dateKeys, scope, picked],
+  )
   const flows = useMemo(() => penFlows(matrix.pens, matrix.cells), [matrix])
   const pens = useMemo(() => {
     if (order === "name") return [...matrix.pens].sort((a, b) => a.name.localeCompare(b.name))
@@ -154,15 +159,42 @@ export function TransitionsView() {
                 </span>
               ))}
               {pens.map((from) => (
-                <Row key={from.id} from={from} pens={pens} cells={matrix.cells} show={show} minCount={minCount} />
+                <Row
+                  key={from.id}
+                  from={from}
+                  pens={pens}
+                  cells={matrix.cells}
+                  show={show}
+                  minCount={minCount}
+                  picked={picked}
+                  onPick={(fromId, toId) =>
+                    setPicked(picked?.fromId === fromId && picked.toId === toId ? null : { fromId, toId })
+                  }
+                />
               ))}
             </div>
           </div>
           <p className="an-canvas-hint">
-            Shade follows P(to | from). Hover a cell for the raw count. The hatched diagonal is staying on the same
+            Shade follows P(to | from). Hover a cell for the raw count; click it to list the days. The hatched diagonal is staying on the same
             pen, left out on purpose — duration lives on Tracking.
           </p>
 
+          {picked ? (
+            <div className="tf-tools" aria-live="polite" data-testid="transition-days">
+              <strong>
+                {nameOf(picked.fromId)} → {nameOf(picked.toId)}
+              </strong>
+              {pickedDays.map((d) => (
+                <span key={d.date} className="an-chip" title={`${d.count} times on ${d.date}`}>
+                  {d.date.slice(5)}
+                  {d.count > 1 ? ` ×${d.count}` : ""}
+                </span>
+              ))}
+              <button type="button" className="an-chip" onClick={() => setPicked(null)}>
+                Clear
+              </button>
+            </div>
+          ) : null}
           <section className="an-plate" aria-label="Landing and leaving">
             <CanvasTitle
               title="Where you land, where you leave"
@@ -251,12 +283,16 @@ function Row({
   cells,
   show,
   minCount,
+  picked,
+  onPick,
 }: {
   from: { id: string; name: string }
   pens: { id: string; name: string }[]
   cells: { fromId: string; toId: string; p: number; count: number }[]
   show: "p" | "count"
   minCount: number
+  picked: { fromId: string; toId: string } | null
+  onPick: (fromId: string, toId: string) => void
 }) {
   return (
     <>
@@ -274,7 +310,11 @@ function Row({
         return (
           <span
             key={`${from.id}-${to.id}`}
-            className="an-matrix-cell"
+            className={`an-matrix-cell${picked?.fromId === from.id && picked.toId === to.id ? " is-active" : ""}`}
+            role={cell ? "button" : undefined}
+            tabIndex={cell ? 0 : undefined}
+            onClick={cell ? () => onPick(from.id, to.id) : undefined}
+            onKeyDown={cell ? (e) => (e.key === "Enter" || e.key === " ") && onPick(from.id, to.id) : undefined}
             title={
               cell
                 ? `${from.name} → ${to.name}: ${cell.count} switches · P=${p.toFixed(2)}`
