@@ -8,6 +8,7 @@
  * on this Mac (loopback only) so Chrome localhost can ingest without Electron IPC.
  * `/api/screentime` queries a running ActivityWatch install (loopback only).
  * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
+ * `/api/phone-sync` reads the phone-sync run log (loopback only, no message bodies).
  *
  *   npm run dev
  *   npm run mobile:dev
@@ -25,6 +26,7 @@ import { handleIngestApi, ingestDataPath } from "./ingest-api.mjs"
 import { handleNotesApi } from "./notes-api.mjs"
 import { handleScreenTimeApi } from "./screentime-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
+import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
 
 const hostname = "0.0.0.0"
 const preferredPort = Number(process.env.PORT || 3000)
@@ -171,6 +173,7 @@ const server = createServer(async (req, res) => {
     if (await handleNotesApi(req, res, pathname)) return
     if (await handleScreenTimeApi(req, res, pathname)) return
     if (await handleInstagramApi(req, res, pathname)) return
+    if (await handlePhoneSyncApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
     console.error("[cogs-dev] request error", err)
@@ -205,6 +208,7 @@ server.listen(port, hostname, () => {
   console.log(`[cogs-dev] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
   console.log(`[cogs-dev] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
   console.log(`[cogs-dev] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
+  console.log(`[cogs-dev] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
   console.log(`[cogs-dev] data:    ${syncDataPath()}`)
   console.log("")
 })
