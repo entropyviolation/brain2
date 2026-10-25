@@ -154,26 +154,72 @@
 }
 
 .ipt-blocks-edit {
-  gap: 8px;
+  gap: 10px;
 }
 
+.ipt-blocks-edit > li,
 .ipt-block {
   display: grid;
-  gap: 6px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.35);
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 0;
+  background: rgba(255, 255, 255, 0.45);
   box-shadow: var(--id-sunken, inset 0 0 0 1px rgba(0, 0, 0, 0.2));
 }
 
-.ipt-block-row,
+.ipt-block-head,
+.ipt-block-id,
 .ipt-span,
-.ipt-label-line,
+.ipt-obj-main,
+.ipt-obj-time,
+.ipt-obj-step,
 .ipt-obj-add,
 .ipt-add-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+
+.ipt-block-head {
+  justify-content: space-between;
+}
+
+.ipt-block-id {
+  flex: 1;
+}
+
+.ipt-where {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+  white-space: nowrap;
+}
+
+.ipt-fields {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.ipt-k,
+.ipt-obj-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.ipt-fields .ipt-text,
+.ipt-fields .ipt-step,
+.ipt-obj-step .ipt-step {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
 }
 
 .ipt-clock,
@@ -215,19 +261,26 @@
   color: #3a3e42;
 }
 
+.ipt-objs {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(128, 128, 128, 0.35);
+}
+
 .ipt-objs ul {
   display: grid;
-  gap: 4px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .ipt-objs li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  display: grid;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dotted rgba(128, 128, 128, 0.45);
 }
 
 .ipt-objs li.is-done .ipt-text {

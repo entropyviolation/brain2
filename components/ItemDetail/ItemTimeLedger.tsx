@@ -337,21 +337,41 @@ export function ItemTimeLedger({
           {shown.map((entry) => {
             const paint = findPen(scopes, entry.penId)
             const on = entry.stepId ? names.get(entry.stepId) : undefined
+            const onThis = !!(focus && entry.stepId && focus.has(entry.stepId))
             return (
               <li key={entry.id} className="ipt-block">
-                <div className="ipt-block-row">
-                  <time dateTime={entry.date}>{dayLabel(entry.date)}</time>
-                  <input
-                    className="ipt-date"
-                    type="date"
-                    aria-label={`Date of the block on ${entry.date} at ${clock(entry.startMin)}`}
-                    disabled={readOnly}
-                    value={entry.date}
-                    onChange={(e) => {
-                      if (e.target.value) updateEntry(entry.id, { date: e.target.value })
-                    }}
-                  />
+                <div className="ipt-block-head">
+                  <div className="ipt-block-id">
+                    <time dateTime={entry.date}>{dayLabel(entry.date)}</time>
+                    <b>{formatDuration(entry.endMin - entry.startMin)}</b>
+                    <span className="ipt-dot" style={{ background: paint?.color ?? "transparent" }} aria-hidden />
+                    <span className="ipt-block-name">{paint?.name ?? entry.title ?? "Block"}</span>
+                    <span className="ipt-where">{focus ? (onThis ? "On this step" : "Whole task") : on ?? "Whole task"}</span>
+                  </div>
+                  {!readOnly &&
+                    (sure === entry.id ? (
+                      <button type="button" className="ipt-x is-sure" onClick={() => (removeEntry(entry.id), setSure(null))}>
+                        delete?
+                      </button>
+                    ) : (
+                      <button type="button" className="ipt-x" aria-label={`Delete the block on ${entry.date} at ${clock(entry.startMin)}`} onClick={() => setSure(entry.id)}>
+                        ×
+                      </button>
+                    ))}
+                </div>
+                <div className="ipt-fields">
+                  <span className="ipt-k">When</span>
                   <span className="ipt-span">
+                    <input
+                      className="ipt-date"
+                      type="date"
+                      aria-label={`Date of the block on ${entry.date} at ${clock(entry.startMin)}`}
+                      disabled={readOnly}
+                      value={entry.date}
+                      onChange={(e) => {
+                        if (e.target.value) updateEntry(entry.id, { date: e.target.value })
+                      }}
+                    />
                     <ClockField
                       value={entry.startMin}
                       label={`Start of the block on ${entry.date} at ${clock(entry.startMin)}`}
@@ -370,10 +390,8 @@ export function ItemTimeLedger({
                       }}
                     />
                   </span>
-                  <b>{formatDuration(entry.endMin - entry.startMin)}</b>
-                  <span className="ipt-dot" style={{ background: paint?.color ?? "transparent" }} aria-hidden />
-                  <span className="ipt-block-name">{entry.title || paint?.name || "Block"}</span>
-                  {names.size > 0 && (
+                  <span className="ipt-k">Step</span>
+                  {names.size > 0 ? (
                     <select
                       className="ipt-step"
                       aria-label={`Step for the block on ${entry.date} at ${clock(entry.startMin)}`}
@@ -388,41 +406,29 @@ export function ItemTimeLedger({
                         </option>
                       ))}
                     </select>
+                  ) : (
+                    <em className="ipt-quiet">{on ?? "Whole task"}</em>
                   )}
-                  {!names.size && <em className="ipt-quiet">{on ?? "whole task"}</em>}
-                  {!readOnly &&
-                    (sure === entry.id ? (
-                      <button type="button" className="ipt-x is-sure" onClick={() => (removeEntry(entry.id), setSure(null))}>
-                        delete?
-                      </button>
-                    ) : (
-                      <button type="button" className="ipt-x" aria-label={`Delete the block on ${entry.date} at ${clock(entry.startMin)}`} onClick={() => setSure(entry.id)}>
-                        ×
-                      </button>
-                    ))}
-                </div>
-                <label className="ipt-label-line">
-                  <span>Label</span>
+                  <span className="ipt-k">Label</span>
                   <input
                     className="ipt-text"
                     aria-label={`Label of the block on ${entry.date} at ${clock(entry.startMin)}`}
                     disabled={readOnly}
                     defaultValue={entry.title ?? ""}
-                    placeholder={paint?.name || "Block"}
+                    placeholder={paint?.name || "What this block was"}
                     key={`${entry.id}:${entry.title ?? ""}`}
                     onBlur={(e) => {
                       const title = e.target.value.trim()
                       if (title !== (entry.title ?? "")) updateEntry(entry.id, { title: title || undefined })
                     }}
                   />
-                </label>
-                <label className="ipt-label-line">
-                  <span>Notes</span>
+                  <span className="ipt-k">Notes</span>
                   <input
                     className="ipt-text"
                     aria-label={`Notes of the block on ${entry.date} at ${clock(entry.startMin)}`}
                     disabled={readOnly}
                     defaultValue={entry.notes ?? ""}
+                    placeholder="A longer note"
                     title={entry.notes || undefined}
                     key={`${entry.id}:notes:${entry.notes ?? ""}`}
                     onBlur={(e) => {
@@ -430,7 +436,7 @@ export function ItemTimeLedger({
                       if (notes !== (entry.notes ?? "")) updateEntry(entry.id, { notes: notes || undefined })
                     }}
                   />
-                </label>
+                </div>
                 <ObjectiveList
                   entry={entry}
                   names={names}
@@ -548,6 +554,7 @@ function ObjectiveList({
   }
   return (
     <div className="ipt-objs">
+      <p className="ipt-obj-label">Objectives</p>
       {rows.length > 0 && (
         <ul aria-label="Objectives on this block">
           {rows.map((row) => {
@@ -555,108 +562,114 @@ function ObjectiveList({
               row.completedAt ? Math.max(0, Math.round((Date.parse(row.completedAt) - Date.parse(row.addedAt)) / 60_000)) : null
             return (
               <li key={row.id} className={row.completedAt ? "is-done" : undefined}>
-                <input
-                  type="checkbox"
-                  aria-label={`Done: ${row.text}`}
-                  disabled={readOnly}
-                  checked={!!row.completedAt}
-                  onChange={() => {
-                    const completedAt = row.completedAt ? undefined : isoAt(entry.date, entry.endMin)
-                    const nextRow = { ...row }
-                    if (completedAt) nextRow.completedAt = completedAt
-                    else delete nextRow.completedAt
-                    onChange(
-                      rows.map((item) => (item.id === row.id ? nextRow : item)),
-                      nextRow,
-                    )
-                  }}
-                />
-                <input
-                  className="ipt-text"
-                  aria-label={`Objective ${row.text}`}
-                  disabled={readOnly}
-                  defaultValue={row.text}
-                  key={`${row.id}:${row.text}`}
-                  onBlur={(e) => {
-                    const value = e.target.value.trim()
-                    if (!value || value === row.text) return
-                    onChange(editNowObjectiveText(rows, row.id, value))
-                  }}
-                />
-                <ClockField
-                  value={clockOf(row.addedAt)}
-                  label={`Added time for ${row.text}`}
-                  disabled={readOnly}
-                  onCommit={(min) => {
-                    if (min == null) return
-                    const nextRow = { ...row, addedAt: withClock(row.addedAt, min) }
-                    onChange(
-                      rows.map((item) => (item.id === row.id ? nextRow : item)),
-                      nextRow.completedAt ? nextRow : undefined,
-                    )
-                  }}
-                />
-                <i aria-hidden>→</i>
-                <ClockField
-                  value={row.completedAt ? clockOf(row.completedAt) : null}
-                  label={`Done time for ${row.text}`}
-                  disabled={readOnly}
-                  allowEmpty
-                  onCommit={(min) => {
-                    const nextRow = { ...row }
-                    if (min == null) delete nextRow.completedAt
-                    else nextRow.completedAt = withClock(row.completedAt ?? row.addedAt, min)
-                    onChange(
-                      rows.map((item) => (item.id === row.id ? nextRow : item)),
-                      nextRow,
-                    )
-                  }}
-                />
-                {mins != null && <b>{mins}m</b>}
-                {names.size > 0 && (
-                  <select
-                    className="ipt-step"
-                    aria-label={`Step for ${row.text}`}
+                <div className="ipt-obj-main">
+                  <input
+                    type="checkbox"
+                    aria-label={`Done: ${row.text}`}
                     disabled={readOnly}
-                    value={row.stepId ?? ""}
-                    onChange={(e) => {
-                      const stepId = e.target.value || undefined
-                      const tied = tieNowObjectiveToStep(rows, row.id, stepId)
-                      const next = setNowObjectiveCompletes(tied, row.id, false)
-                      onChange(next)
+                    checked={!!row.completedAt}
+                    onChange={() => {
+                      const completedAt = row.completedAt ? undefined : isoAt(entry.date, entry.endMin)
+                      const nextRow = { ...row }
+                      if (completedAt) nextRow.completedAt = completedAt
+                      else delete nextRow.completedAt
+                      onChange(
+                        rows.map((item) => (item.id === row.id ? nextRow : item)),
+                        nextRow,
+                      )
                     }}
-                  >
-                    <option value="">No step</option>
-                    {[...names.entries()].map(([id, label]) => (
-                      <option key={id} value={id}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {row.stepId && !readOnly && (
-                  <button
-                    type="button"
-                    className="ipt-mode"
-                    aria-pressed={objectiveCompletesTarget(row)}
-                    onClick={() => {
-                      const next = setNowObjectiveCompletes(rows, row.id, !objectiveCompletesTarget(row))
-                      const updated = next.find((item) => item.id === row.id)
-                      onChange(next, updated)
+                  />
+                  <input
+                    className="ipt-text"
+                    aria-label={`Objective ${row.text}`}
+                    disabled={readOnly}
+                    defaultValue={row.text}
+                    key={`${row.id}:${row.text}`}
+                    onBlur={(e) => {
+                      const value = e.target.value.trim()
+                      if (!value || value === row.text) return
+                      onChange(editNowObjectiveText(rows, row.id, value))
                     }}
-                  >
-                    {objectiveCompletesTarget(row) ? "finished step" : "counts toward"}
-                  </button>
-                )}
-                {!readOnly && (
-                  <button
-                    type="button"
-                    className="ipt-x"
-                    aria-label={`Remove objective ${row.text}`}
-                    onClick={() => onChange(removeNowObjective(rows, row.id))}
-                  >
-                    ×
-                  </button>
+                  />
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      className="ipt-x"
+                      aria-label={`Remove objective ${row.text}`}
+                      onClick={() => onChange(removeNowObjective(rows, row.id))}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                <div className="ipt-obj-time">
+                  <ClockField
+                    value={clockOf(row.addedAt)}
+                    label={`Added time for ${row.text}`}
+                    disabled={readOnly}
+                    onCommit={(min) => {
+                      if (min == null) return
+                      const nextRow = { ...row, addedAt: withClock(row.addedAt, min) }
+                      onChange(
+                        rows.map((item) => (item.id === row.id ? nextRow : item)),
+                        nextRow.completedAt ? nextRow : undefined,
+                      )
+                    }}
+                  />
+                  <i aria-hidden>→</i>
+                  <ClockField
+                    value={row.completedAt ? clockOf(row.completedAt) : null}
+                    label={`Done time for ${row.text}`}
+                    disabled={readOnly}
+                    allowEmpty
+                    onCommit={(min) => {
+                      const nextRow = { ...row }
+                      if (min == null) delete nextRow.completedAt
+                      else nextRow.completedAt = withClock(row.completedAt ?? row.addedAt, min)
+                      onChange(
+                        rows.map((item) => (item.id === row.id ? nextRow : item)),
+                        nextRow,
+                      )
+                    }}
+                  />
+                  {mins != null && <b>{mins}m</b>}
+                </div>
+                {names.size > 0 && (
+                  <div className="ipt-obj-step">
+                    <select
+                      className="ipt-step"
+                      aria-label={`Step for ${row.text}`}
+                      disabled={readOnly}
+                      value={row.stepId ?? ""}
+                      onChange={(e) => {
+                        const stepId = e.target.value || undefined
+                        const tied = tieNowObjectiveToStep(rows, row.id, stepId)
+                        const next = setNowObjectiveCompletes(tied, row.id, false)
+                        onChange(next)
+                      }}
+                    >
+                      <option value="">No step</option>
+                      {[...names.entries()].map(([id, label]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    {row.stepId && !readOnly && (
+                      <button
+                        type="button"
+                        className="ipt-mode"
+                        aria-pressed={objectiveCompletesTarget(row)}
+                        onClick={() => {
+                          const next = setNowObjectiveCompletes(rows, row.id, !objectiveCompletesTarget(row))
+                          const updated = next.find((item) => item.id === row.id)
+                          onChange(next, updated)
+                        }}
+                      >
+                        {objectiveCompletesTarget(row) ? "finished step" : "counts toward"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </li>
             )
@@ -708,9 +721,25 @@ function LogRow({
   const to = log.endTime ? parseClock(log.endTime) : null
   return (
     <li className="ipt-block">
-      <div className="ipt-block-row">
-        <span className="ipt-kind">{logKind(log)}</span>
-        <time dateTime={log.date}>{log.date ? dayLabel(log.date) : "No date"}</time>
+      <div className="ipt-block-head">
+        <div className="ipt-block-id">
+          <span className="ipt-kind">{logKind(log)}</span>
+          <time dateTime={log.date}>{log.date ? dayLabel(log.date) : "No date"}</time>
+          <b>{log.durationMinutes}m</b>
+        </div>
+        {!readOnly &&
+          (sure ? (
+            <button type="button" className="ipt-x is-sure" onClick={onDelete}>
+              delete?
+            </button>
+          ) : (
+            <button type="button" className="ipt-x" aria-label={`Delete log ${log.id}`} onClick={onSure}>
+              ×
+            </button>
+          ))}
+      </div>
+      <div className="ipt-fields">
+        <span className="ipt-k">When</span>
         <span className="ipt-span">
           <ClockField
             value={from}
@@ -734,22 +763,23 @@ function LogRow({
               onChange({ endTime: hhmm(min), durationMinutes: min - from })
             }}
           />
+          <input
+            className="ipt-mins"
+            aria-label={`Minutes of log ${log.id}`}
+            inputMode="numeric"
+            disabled={readOnly}
+            defaultValue={String(log.durationMinutes)}
+            key={`${log.id}:${log.durationMinutes}`}
+            onBlur={(e) => {
+              const mins = Number.parseInt(e.target.value, 10)
+              if (!Number.isFinite(mins) || mins < 1 || mins === log.durationMinutes) return
+              if (from != null) onChange({ durationMinutes: mins, endTime: hhmm(Math.min(1440, from + mins)) })
+              else onChange({ durationMinutes: mins })
+            }}
+          />
+          <span className="ipt-quiet">m</span>
         </span>
-        <input
-          className="ipt-mins"
-          aria-label={`Minutes of log ${log.id}`}
-          inputMode="numeric"
-          disabled={readOnly}
-          defaultValue={String(log.durationMinutes)}
-          key={`${log.id}:${log.durationMinutes}`}
-          onBlur={(e) => {
-            const mins = Number.parseInt(e.target.value, 10)
-            if (!Number.isFinite(mins) || mins < 1 || mins === log.durationMinutes) return
-            if (from != null) onChange({ durationMinutes: mins, endTime: hhmm(Math.min(1440, from + mins)) })
-            else onChange({ durationMinutes: mins })
-          }}
-        />
-        <span className="ipt-quiet">m</span>
+        {names.size > 0 && <span className="ipt-k">Step</span>}
         {names.size > 0 && (
           <select
             className="ipt-step"
@@ -766,29 +796,20 @@ function LogRow({
             ))}
           </select>
         )}
-        {!readOnly &&
-          (sure ? (
-            <button type="button" className="ipt-x is-sure" onClick={onDelete}>
-              delete?
-            </button>
-          ) : (
-            <button type="button" className="ipt-x" aria-label={`Delete log ${log.id}`} onClick={onSure}>
-              ×
-            </button>
-          ))}
+        <span className="ipt-k">Note</span>
+        <input
+          className="ipt-text"
+          aria-label={`Note for log ${log.id}`}
+          disabled={readOnly}
+          defaultValue={log.notes ?? ""}
+          placeholder="What this time was"
+          key={`${log.id}:notes:${log.notes ?? ""}`}
+          onBlur={(e) => {
+            const notes = e.target.value.trim()
+            if (notes !== (log.notes ?? "")) onChange({ notes: notes || undefined })
+          }}
+        />
       </div>
-      <input
-        className="ipt-text"
-        aria-label={`Note for log ${log.id}`}
-        disabled={readOnly}
-        defaultValue={log.notes ?? ""}
-        placeholder="What this time was"
-        key={`${log.id}:notes:${log.notes ?? ""}`}
-        onBlur={(e) => {
-          const notes = e.target.value.trim()
-          if (notes !== (log.notes ?? "")) onChange({ notes: notes || undefined })
-        }}
-      />
     </li>
   )
 }

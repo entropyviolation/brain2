@@ -172,7 +172,11 @@ export function ClockTaskButton() {
               />
             </label>
             <ul className="trk-clock-task-choices" aria-label="Tasks">
-              {choices.length === 0 ? <li className="trk-pen-now-empty">No matching task.</li> : null}
+              {choices.length === 0 ? (
+                <li className="trk-pen-now-empty">
+                  {query.trim() ? "No matching task." : "Type a name to find a task, or to create one."}
+                </li>
+              ) : null}
               {choices.map((row) => (
                 <li key={row.id}>
                   <button
