@@ -4,7 +4,9 @@
  * One key on the Tracking pen strip and the focus bar. The shell now row
  * uses it only while the clock has no task yet. It puts a task on the clock
  * already running, shows which step is current, and can open that task or
- * step, add a step, finish a step, or finish the task and stop. The painted
+ * step, add a step, finish a step, or finish the task and stop. Finishing
+ * the task opens the completion reflection. The stop key does not: it ends
+ * the session and opens the optional end-of-session reflection. The painted
  * block stays one block.
  */
 "use client"
@@ -29,7 +31,6 @@ import {
   setClockStep,
 } from "@/lib/task-clock"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
-import { offerPenDebrief } from "@/lib/session-debrief"
 
 export function ClockTaskButton() {
   const session = usePenColorSessionStore((s) => s.session)
@@ -43,8 +44,8 @@ export function ClockTaskButton() {
   const task = session?.taskId ? tasks.find((row) => row.id === session.taskId) : undefined
   const step = task && session?.stepId ? findPlacedStep(task.subtasks, session.stepId)?.step : undefined
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) => {
-    const ended = finishClockTask(park)
-    if (ended) offerPenDebrief(ended)
+    // Completing the task opens the completion reflection. Stop uses the session one.
+    finishClockTask(park)
     setOpen(false)
   })
 
@@ -125,7 +126,7 @@ export function ClockTaskButton() {
       ? createPortal(
           <div
             ref={panelRef}
-            className="trk-now-obj-pop trk-clock-task-pop"
+            className="trk-now-obj-pop trk-clock-task-pop b2-now"
             role="dialog"
             aria-label="Task on this clock"
             data-testid="clock-task-pop"
@@ -134,7 +135,7 @@ export function ClockTaskButton() {
             <div className="trk-now-obj-pop-head">Task on this clock</div>
             {task ? (
               <div className="trk-clock-task-current">
-                <button type="button" className="ops-btn" onClick={() => openItemDetailPopup(task.id)}>
+                <button type="button" className="todo-cap" onClick={() => openItemDetailPopup(task.id)}>
                   Open {taskLabel}
                 </button>
                 <p className="trk-clock-task-on">
@@ -144,7 +145,7 @@ export function ClockTaskButton() {
                   <div className="trk-clock-task-actions">
                     <button
                       type="button"
-                      className="ops-btn"
+                      className="todo-cap"
                       onClick={() => {
                         const id = ensureStepItem(task.id, step.id)
                         if (id) openItemDetailPopup(id)
@@ -153,7 +154,7 @@ export function ClockTaskButton() {
                       Open this step
                     </button>
                     {!step.completed ? (
-                      <button type="button" className="ops-btn" onClick={() => completeClockStep(step.id)}>
+                      <button type="button" className="todo-cap" onClick={() => completeClockStep(step.id)}>
                         Done with this step
                       </button>
                     ) : null}
@@ -184,7 +185,7 @@ export function ClockTaskButton() {
                 <li key={row.id}>
                   <button
                     type="button"
-                    className="ops-btn trk-clock-task-choice"
+                    className="todo-cap trk-clock-task-choice"
                     aria-current={row.id === task?.id ? "true" : undefined}
                     onClick={() => {
                       assignTaskOnClock(row.id)
@@ -199,7 +200,7 @@ export function ClockTaskButton() {
             {query.trim() && !exact ? (
               <button
                 type="button"
-                className="ops-btn"
+                className="todo-cap is-primary"
                 onClick={() => {
                   createTaskOnClock(query)
                   setQuery("")
@@ -214,7 +215,7 @@ export function ClockTaskButton() {
                 <div className="trk-now-obj-pop-head">Step</div>
                 <button
                   type="button"
-                  className={`ops-btn trk-clock-task-choice${step ? "" : " is-current"}`}
+                  className={`todo-cap trk-clock-task-choice${step ? "" : " is-on"}`}
                   aria-current={step ? undefined : "step"}
                   onClick={() => setClockStep(undefined)}
                 >
@@ -227,7 +228,7 @@ export function ClockTaskButton() {
                       <li key={placed.step.id}>
                         <button
                           type="button"
-                          className={`ops-btn trk-clock-task-choice${current ? " is-current" : ""}`}
+                          className={`todo-cap trk-clock-task-choice${current ? " is-on" : ""}`}
                           aria-current={current ? "step" : undefined}
                           onClick={() => setClockStep(placed.step.id)}
                         >
@@ -256,7 +257,7 @@ export function ClockTaskButton() {
                   />
                   <button
                     type="button"
-                    className="ops-btn"
+                    className="todo-cap"
                     disabled={!stepName.trim()}
                     onClick={() => {
                       addClockStep(stepName)
@@ -266,7 +267,7 @@ export function ClockTaskButton() {
                     Add step
                   </button>
                 </div>
-                <button type="button" className="ops-btn" onClick={unfinished.request}>
+                <button type="button" className="todo-cap is-primary" onClick={unfinished.request}>
                   Done — complete task and stop
                 </button>
               </div>
@@ -281,7 +282,7 @@ export function ClockTaskButton() {
       <button
         ref={triggerRef}
         type="button"
-        className={`ops-btn trk-now-obj-trigger trk-clock-task-trigger${open ? " open" : ""}${task ? " has-active" : ""}`}
+        className={`todo-cap trk-now-obj-trigger trk-clock-task-trigger${open ? " open" : ""}${task ? " has-active" : ""}`}
         aria-expanded={open}
         aria-label={task ? `Task on this clock, ${taskLabel}` : "Put a task on this clock"}
         data-testid="clock-task-trigger"

@@ -1,8 +1,9 @@
 /**
  * components/Home/ToDo/TodoTable.tsx — Period to-do ledger
  *
- * Closed rows show the name (padded), a tier menu, the active lamp, completion
- * percent, and two keys: Card (opens the task card) and ▶ (the pen clock).
+ * Closed rows show the name (padded), a tier menu, the active lamp, the glass
+ * tube at σ (the task card's average completion), and two keys: Card (opens
+ * the task card) and ▶ (the pen clock).
  * Click / Enter opens one clamshell lid: the header name is the only edit
  * field. The lid's Actions line holds every other verb (Done, Done at B/G,
  * Start, Just 25, Push, Missed, Needs…, View, Delete); Flags (the willpower
@@ -15,7 +16,9 @@ import type { KeyboardEvent } from "react"
 import type { CompletionStatus, StepTier, Subtask, TodoItem } from "@/lib/types"
 import { COMPLETION_STATUS_LABELS } from "@/lib/completion-status"
 import { PercentLedBar } from "@/components/Home/Habits/percent-led-bar"
-import { effectiveDurationMinutes, flattenSteps, formatInternalProgress, todoCompletionPercent } from "@/lib/todo-steps"
+import { compactDuration } from "@/lib/time-entries"
+import { effectiveDurationMinutes, flattenSteps, formatInternalProgress } from "@/lib/todo-steps"
+import { splitPercent } from "@/lib/tree-math"
 import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPeriod } from "./todo-utils"
 import { itemTitle } from "@/lib/item-utils"
 import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "./TodoBreakdown"
@@ -24,9 +27,7 @@ import { openSession } from "@/lib/session-open-store"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import { NOTICE_PROMPT } from "@/lib/notice-dot"
 import { hasStepTiers } from "@/lib/step-tiers"
-import { LevelGauge } from "@/components/steps/LevelGauge"
 import { levelReached } from "@/lib/step-progress"
-import { useTodoPrefs } from "./todo-prefs"
 import { openStepItem } from "@/lib/step-item-stack"
 import { openTaskCard } from "@/lib/task-card"
 import { NativeSelect } from "@/components/ui/native-select"
@@ -55,13 +56,9 @@ function statusLampClass(status: CompletionStatus): string {
   return "is-live"
 }
 
-/** Compact spent for the narrow Time cell: `45`, `1h40`, `12h`. */
-function spentLabel(minutes: number): string {
-  const total = Math.round(minutes)
-  if (total < 60) return String(total)
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`
+/** True when a Time-cell pair must both use `xhxm`, including `0h40`. */
+function pairUsesHours(a: number, b: number): boolean {
+  return Math.round(a) >= 60 || Math.round(b) >= 60
 }
 
 /** "Waiting since Tue" within a week, "Waiting since Sep 3" past it. Neutral words (Phase 15 B). */
@@ -139,7 +136,7 @@ export function TodoTable({
   onStepsChange: (todoId: string, steps: Subtask[]) => void
   stepsOf: (todoId: string) => Subtask[] | undefined
   estimateOf: (todoId: string) => number | undefined
-  /** Shown as a dim `~30` on rows with no estimate and no steps. 0 or missing = a blank, as before. */
+  /** Shown as a dim `~30` (or `~0h30` when the pair is in hours) on rows with no estimate and no steps. 0 or missing = a blank, as before. */
   defaultEstimateMin?: number
   /** Minutes logged on the row's task, across days (`trackedMinutesForItem`). Omit to hide. */
   spentOf?: (todoId: string) => number
@@ -184,7 +181,6 @@ export function TodoTable({
   /** Save the notice answer as a dated `noteLog` entry tagged `notice`. */
   onNotice?: (todoId: string, text: string) => void
 }) {
-  const { tierView } = useTodoPrefs()
   const [noticeRowId, setNoticeRowId] = useState<string | null>(null)
   const pushedKey = pushedKeyForPeriod(period)
   const pushLabel = period === "day" ? "next day" : period === "week" ? "next week" : "next month"
@@ -300,7 +296,7 @@ export function TodoTable({
         const estimate = estimateOf(todo.id)
         const minutes = effectiveDurationMinutes(estimate, steps)
         const progress = formatInternalProgress(steps)
-        const completePct = todoCompletionPercent(steps)
+        const completePct = splitPercent(steps)
         const walk = isWalkRow?.(todo.id) ?? false
         const spent = walk ? 0 : (spentOf?.(todo.id) ?? 0)
         const open = openRowId === todo.id
@@ -478,11 +474,7 @@ export function TodoTable({
               </span>
 
               <span className="todo-cell todo-cell-done todo-row-mins" title={walk ? undefined : `${completePct}% complete`}>
-                {walk ? null : hasStepTiers(steps) ? (
-                  <LevelGauge steps={steps} counts={false} focus={tierView === "all" ? undefined : tierView} />
-                ) : (
-                  <PercentLedBar value={completePct} label="Complete" density="compact" />
-                )}
+                {walk ? null : <PercentLedBar value={completePct} label="Complete" density="compact" />}
               </span>
 
               <span
@@ -490,9 +482,9 @@ export function TodoTable({
                 title={
                   walk
                     ? undefined
-                    : (spent > 0 ? `${spentLabel(spent)} spent. ` : "") +
+                    : (spent > 0 ? `${Math.round(spent)} minutes spent. ` : "") +
                       (minutes > 0
-                        ? `${minutes} minutes that count`
+                        ? `${Math.round(minutes)} minutes that count`
                         : defaultEstimateMin > 0
                           ? `No estimate yet. Counts as the default, ${defaultEstimateMin} minutes`
                           : "No estimate yet")
@@ -500,15 +492,16 @@ export function TodoTable({
               >
                 {walk ? null : minutes > 0 ? (
                   <span className={`todo-mins-read${spent > minutes ? " is-over" : ""}`}>
-                    {spent > 0 ? <span className="todo-mins-spent">{spentLabel(spent)}/</span> : null}
-                    {minutes}m
+                    {spent > 0 ? <span className="todo-mins-spent">{compactDuration(spent, pairUsesHours(spent, minutes))}/</span> : null}
+                    {compactDuration(minutes, spent > 0 && pairUsesHours(spent, minutes))}
                   </span>
                 ) : defaultEstimateMin > 0 ? (
                   <span className="todo-mins-read is-default">
-                    {spent > 0 ? <span className="todo-mins-spent">{spentLabel(spent)}/</span> : null}~{defaultEstimateMin}
+                    {spent > 0 ? <span className="todo-mins-spent">{compactDuration(spent, pairUsesHours(spent, defaultEstimateMin))}/</span> : null}
+                    ~{compactDuration(defaultEstimateMin, spent > 0 && pairUsesHours(spent, defaultEstimateMin))}
                   </span>
                 ) : spent > 0 ? (
-                  <span className="todo-mins-read is-default">{spentLabel(spent)}</span>
+                  <span className="todo-mins-read is-default">{compactDuration(spent)}</span>
                 ) : (
                   <span className="todo-cell-blank">–</span>
                 )}

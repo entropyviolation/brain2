@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   dismissCardWorkingQueue,
   finishCardInPeriod,
+  missCardWorkingQueue,
   partitionCardDetail,
   pushCardWorkingQueue,
   unscheduleCardWorkingQueue,
@@ -57,20 +58,44 @@ describe("partitionCardDetail", () => {
     expect(rows.undone.map((row) => row.id)).toEqual(["aug", "day"])
   })
 
-  it("a past week shows the month tasks sitting in that funnel cell", () => {
+  it("a past week hides a task already placed on the current month", () => {
     const week = "2026-09-14_2026-09-20"
     const rows = partitionCardDetail(
       [
         task({ id: "month", scheduledMonth: "2026-09" }),
         task({ id: "handled", scheduledMonth: "2026-09", schedulePlacements: [{ period: "week", value: week, resolved: "clarified" }] }),
         task({ id: "done", completed: true, scheduledMonth: "2026-09" }),
+        task({ id: "stuck", scheduledMonth: "2026-08" }),
       ],
       "week",
       week,
       september,
     )
     expect(rows.past).toBe(true)
-    expect(rows.undone.map((row) => row.id)).toEqual(["month"])
+    expect(rows.undone.map((row) => row.id)).toEqual([])
+    expect(rows.archive.moved.map((row) => row.id)).toEqual(["month"])
+    expect(rows.archive.dismissed.map((row) => row.id)).toEqual(["handled"])
+    expect(rows.archive.pushed).toEqual([])
+  })
+
+  it("a boundary week keeps the september record and hides the october placement", () => {
+    const oct25 = new Date(2026, 9, 25, 12, 0, 0)
+    const week = "2026-09-28_2026-10-04"
+    const rows = partitionCardDetail(
+      [
+        task({
+          id: "elijah",
+          scheduledMonth: "2026-10",
+          schedulePlacements: [{ period: "month", value: "2026-09" }],
+        }),
+        task({ id: "stuck", schedulePlacements: [{ period: "week", value: week }] }),
+      ],
+      "week",
+      week,
+      oct25,
+    )
+    expect(rows.undone.map((row) => row.id)).toEqual(["stuck"])
+    expect(rows.archive.moved.map((row) => row.id)).toEqual(["elijah"])
   })
 })
 
@@ -94,6 +119,17 @@ describe("card working queue", () => {
     const next = { ...open, ...pushCardWorkingQueue(open, "month", "2026-08", september) }
     expect(next.scheduledMonth).toBe("2026-09")
     expect(next.schedulePlacements).toEqual([{ period: "month", value: "2026-08", resolved: "pushed" }])
+  })
+
+  it("missed hides the period and keeps the live assignment", () => {
+    const open = task({ id: "m", scheduledMonth: "2026-10", schedulePlacements: [{ period: "week", value: "2026-09-28_2026-10-04" }] })
+    const next = { ...open, ...missCardWorkingQueue(open, "week", "2026-09-28_2026-10-04", september) }
+    expect(next.completed).toBe(false)
+    expect(next.status).toBeUndefined()
+    expect(next.scheduledMonth).toBe("2026-10")
+    expect(next.schedulePlacements).toEqual([
+      { period: "week", value: "2026-09-28_2026-10-04", resolved: "missed" },
+    ])
   })
 
   it("dismiss keeps the placement and the live assignment", () => {

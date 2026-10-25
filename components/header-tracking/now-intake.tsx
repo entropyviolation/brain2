@@ -3,13 +3,20 @@
  * Same writer as the Home Tracking log (`submitTrackingLog`, mode `intake`),
  * so a line lands on that log's Food / Drink / Drugs shelves. A chip only
  * fills the name, the same rule as the log's Recent row. Add or Enter logs.
+ * Today's bare intake (no food, drink, or drug class) is listed under the
+ * field. Food, Drink, and Drug / med call `setIntakeClass`.
  */
 "use client"
 
 import { useMemo, useRef, useState } from "react"
 import {
+  asLogEntry,
+  classifyLogInstant,
+  compareLogRows,
+  logClockLabel,
   loggedFlag,
   recentIntakeByClass,
+  setIntakeClass,
   submitTrackingLog,
   type IntakeClass,
 } from "@/components/Home/Tracking/tracking-log-model"
@@ -47,6 +54,15 @@ export function NowIntake({ dayKey }: { dayKey: string }) {
     return recentIntakeByClass(entries, penName)
   }, [entries, scopes])
   const chips = chipsFor(recents[cls], preset.starters)
+  const loose = useMemo(() => {
+    const penName = new Map<string, string>()
+    for (const scope of scopes) for (const pen of scope.pens) penName.set(pen.id, pen.name)
+    return entries
+      .filter((entry) => entry.date === dayKey)
+      .map((entry) => classifyLogInstant(asLogEntry(entry), penName.get(entry.penId)))
+      .filter((row): row is NonNullable<typeof row> => row?.list === "intake")
+      .sort(compareLogRows)
+  }, [entries, scopes, dayKey])
 
   function fill(title: string) {
     setName(title)
@@ -117,6 +133,29 @@ export function NowIntake({ dayKey }: { dayKey: string }) {
         <p className="trk-logbook-note htk-intake-saved" role="status">
           Logged {saved}.
         </p>
+      ) : null}
+      {loose.length > 0 ? (
+        <div className="htk-intake-loose">
+          <p className="trk-logbook-note">No class yet. Sort each one.</p>
+          <ul aria-label="Uncategorized intake">
+            {loose.map((row) => {
+              const clock = logClockLabel(row)
+              return (
+                <li key={row.id}>
+                  {clock.time ? <span className="trk-log-when">{clock.time}</span> : null}
+                  <span className="htk-intake-loose-name">{row.title?.trim() || "Untitled"}</span>
+                  <span className="htk-intake-sort" role="group" aria-label={`Sort ${row.title?.trim() || "Untitled"}`}>
+                    {CLASSES.map((kind) => (
+                      <button key={kind.id} type="button" onClick={() => setIntakeClass(row.id, kind.id)}>
+                        {kind.label}
+                      </button>
+                    ))}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       ) : null}
     </section>
   )

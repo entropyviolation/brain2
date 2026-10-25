@@ -3,11 +3,14 @@
  *
  * Every open To Do row is assigned to its period by the schedule fields.
  * `Task.todoMarks` adds required (its own list) and prioritized (a mark on
- * Assigned). The period load panel uses the same marks: days left, estimated
+ * Assigned). A task-card star whose `priorityRefreshedOn` is 14 days old
+ * reads as not prioritized; `releaseStaleTaskPriority` clears that mark.
+ * The period load panel uses the same marks: days left, estimated
  * time, hours left, working hours left, and comfort (Hofstadter padding).
  */
 import { differenceInDays, format } from "date-fns"
-import type { StepTier, Task, TodoMarkPeriod, TodoPeriodMark } from "@/lib/types"
+import { calendarDaysAfter, priorityStarFade } from "@/lib/habit-priority"
+import type { StepTier, Task, TaskPriorityEntry, TodoMarkPeriod, TodoPeriodMark } from "@/lib/types"
 import {
   canonicalWeekKey,
   formatLocalDateKey,
@@ -70,15 +73,71 @@ export function taskIsRequired(
 }
 
 /**
+ * Calendar days after `priorityRefreshedOn` before a task-card star drops its
+ * prioritized mark. The shine percent is still `priorityStarFade` (0 from day 10).
+ */
+export const PRIORITY_STAR_STALE_DAYS = 14
+
+/** True when the star's refresh day is 14 or more calendar days before `asOf`. A missing day is not stale. */
+export function priorityStarStale(refreshedOn: string | undefined, asOf: Date): boolean {
+  if (!refreshedOn) return false
+  return calendarDaysAfter(refreshedOn, asOf) >= PRIORITY_STAR_STALE_DAYS
+}
+
+/**
+ * 0–1 chrome shine for the task-card star.
+ * `priorityStarFade` is 100 on the refresh day, then −10 points a calendar day, and 0 from day 10.
+ */
+export function priorityStarShine(refreshedOn: string | undefined, asOf: Date): number {
+  return priorityStarFade(refreshedOn, asOf) / 100
+}
+
+function marksWithoutPriority(marks: TodoPeriodMark[]): TodoPeriodMark[] | undefined {
+  const next = marks.flatMap((mark) => {
+    if (!mark.prioritized) return [mark]
+    const kept: TodoPeriodMark = { period: mark.period, periodKey: mark.periodKey }
+    if (mark.required) kept.required = true
+    if (mark.tier) kept.tier = mark.tier
+    return kept.required || kept.tier ? [kept] : []
+  })
+  return next.length ? next : undefined
+}
+
+/**
+ * Once the refresh day is stale, drop it. If a prioritized mark is still on,
+ * clear it the way the star's Remove does: the flag and an `off` line.
+ * Required and tier stay. Dropping the day lets a later mark start clean.
+ * Same task when the day is not stale.
+ */
+export function releaseStaleTaskPriority(task: Task, asOf: Date): Task {
+  if (!priorityStarStale(task.priorityRefreshedOn, asOf)) return task
+  const { priorityRefreshedOn: _drop, ...rest } = task
+  if (!task.todoMarks?.some((mark) => mark.prioritized)) return rest
+  const entry: TaskPriorityEntry = {
+    at: asOf.toISOString(),
+    dayKey: formatLocalDateKey(asOf),
+    kind: "off",
+  }
+  return {
+    ...rest,
+    todoMarks: marksWithoutPriority(task.todoMarks ?? []),
+    priorityLog: [...(task.priorityLog ?? []), entry],
+  }
+}
+
+/**
  * Prioritized from a mark, or from a ritual id list (morning `priorityTaskIds`
  * for the day). The id list is display-only; clearing the flag also drops the id.
+ * A star with a prioritized mark and a refresh day 14 or more days old reads as off.
  */
 export function taskIsPrioritized(
-  task: { id?: string; todoMarks?: TodoPeriodMark[] },
+  task: { id?: string; todoMarks?: TodoPeriodMark[]; priorityRefreshedOn?: string },
   period: TodoMarkPeriod,
   periodKey: string,
   ritualPriorityIds?: readonly string[],
+  asOf: Date = new Date(),
 ): boolean {
+  if (priorityStarStale(task.priorityRefreshedOn, asOf) && task.todoMarks?.some((mark) => mark.prioritized)) return false
   if (period === "day" && task.id && ritualPriorityIds?.includes(task.id)) return true
   return !!findTodoMark(task, period, periodKey)?.prioritized
 }

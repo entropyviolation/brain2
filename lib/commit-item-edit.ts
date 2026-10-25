@@ -69,6 +69,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   lists: true,
   listMembershipExclusions: true,
   estimatedDuration: true,
+  estimateLog: true,
   actualDuration: true,
   durationCertainty: true,
   startCertainty: true,

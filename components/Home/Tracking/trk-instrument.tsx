@@ -312,15 +312,23 @@ export function TrkBlockLabel({
   color,
   left,
   width,
+  entryId,
 }: {
   name: string
   color: string
   left: number
   width: number
+  /** Stable block id, so a jump can find this run when several share an hour. */
+  entryId?: string
 }) {
   if (!name || width <= 0) return null
   return (
-    <span className="trk-block-run" style={{ left: `${left}%`, width: `${width}%` }} aria-hidden>
+    <span
+      className="trk-block-run"
+      data-entry-id={entryId}
+      style={{ left: `${left}%`, width: `${width}%` }}
+      aria-hidden
+    >
       <span className="trk-block-label" style={{ color: inkOnFill(color) }}>
         {name}
       </span>

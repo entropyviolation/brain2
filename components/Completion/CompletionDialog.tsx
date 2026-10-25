@@ -9,8 +9,9 @@
  * review records how long the work took and when it started.
  * Length and start are each exact, estimated, or unknown. Unknown stores no
  * minutes and no start time. The finish ("Done at") is always shown, outside
- * the reflection: any day and time, exact or estimated, for tasks ticked late. A few
- * 1–10 reflections and notes follow. Agreeing to that review
+ * the reflection: any day and time, exact, estimated, or unknown, for tasks
+ * ticked late. Unknown keeps the mark-done stamp and hides the clock.
+ * A few 1–10 reflections and notes follow. Agreeing to that review
  * awards 3 points plus 0.1 per word. **Undo** reopens the task; **Skip** keeps
  * the completion without a contribution.
  */
@@ -18,13 +19,14 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { CheckCircle2, Search, Star, Target, Trophy, Undo2 } from "lucide-react"
+import { Search, Star, Target, Trophy } from "lucide-react"
+import { CompletionPixel } from "@/components/Completion/CompletionPixel"
+import "./completion-dialog.css"
 import { useTaskStore } from "@/lib/task-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { uncompleteTask, completeTask } from "@/lib/services/completion-service"
@@ -55,7 +57,7 @@ import {
   reviewWordCount,
   type ClockDraft,
 } from "@/lib/completion-review"
-import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { usualDurationMinutes } from "@/lib/estimated-values"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
@@ -120,7 +122,7 @@ function ClockCertaintyField({
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{legend}</Label>
-      <div className="flex gap-1" role="group" aria-label={groupLabel}>
+      <div className="flex flex-wrap gap-1" role="group" aria-label={groupLabel}>
         {choices.map((choice) => {
           const on = value === choice.id
           return (
@@ -130,9 +132,7 @@ function ClockCertaintyField({
               aria-label={choice.name}
               aria-pressed={on}
               onClick={() => onChange(choice.id)}
-              className={`h-7 rounded border px-2 text-xs ${
-                on ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-              }`}
+              className="todo-cap"
             >
               {choice.label}
             </button>
@@ -459,21 +459,25 @@ export function CompletionDialog({
   const doneChoices: { id: ClockCertainty; label: string; name: string }[] = [
     { id: "exact", label: "Exact", name: "Exact finish" },
     { id: "estimated", label: "Est.", name: "Estimated finish" },
+    { id: "unknown", label: "Unknown", name: "Unknown finish" },
   ]
 
   return (
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[88vh] overflow-y-auto" data-ui-name="Completion" data-ui-docs="components/Completion/README.md" {...unsavedDismissProps(guard.requestClose)}>
+      <DialogContent className="completion-dialog sm:max-w-lg max-h-[88vh] overflow-y-auto" data-ui-name="Completion" data-ui-docs="components/Completion/README.md" {...unsavedDismissProps(guard.requestClose)}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <DialogTitle className="completion-caption">
+            <CompletionPixel />
             Task completed
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
-          <p className="text-sm text-muted-foreground line-clamp-2">{itemTitle(task)}</p>
+          <p className="completion-task" data-testid="completion-task-title" title={itemTitleOrUntitled(task)}>
+            <span className="completion-task-kicker">Finished</span>
+            <span className="completion-task-name">{itemTitleOrUntitled(task)}</span>
+          </p>
           {usual && (
             <p
               title={usual.basis}
@@ -545,9 +549,9 @@ export function CompletionDialog({
                   aria-label="New objective"
                   className="h-8"
                 />
-                <Button type="button" size="sm" variant="outline" aria-label="Add objective" disabled={!objectiveDraft.trim()} onClick={createObjective}>
+                <button type="button" className="todo-cap" aria-label="Add objective" disabled={!objectiveDraft.trim()} onClick={createObjective}>
                   Add
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -609,17 +613,16 @@ export function CompletionDialog({
                   aria-label="New goal"
                   className="h-8"
                 />
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant="outline"
+                  className="todo-cap"
                   aria-label="Add goal"
                   disabled={!goalDraft.trim() || objectiveIds.length === 0}
                   title={objectiveIds.length === 0 ? "A goal serves an objective. Select or add one first." : "Counts once this year, toward the objectives selected above."}
                   onClick={createGoal}
                 >
                   Add
-                </Button>
+                </button>
               </div>
               <p className="px-2 pb-2 text-[10px] text-muted-foreground">
                 A new goal counts once this year and serves the objectives selected above.
@@ -653,10 +656,8 @@ export function CompletionDialog({
               groupLabel="When this was finished"
               choices={doneChoices}
               value={doneCertainty}
-              onChange={(id) => {
-                if (id === "exact" || id === "estimated") setDoneCertainty(id)
-              }}
-              unknownHint=""
+              onChange={setDoneCertainty}
+              unknownHint="No finish clock. The day it was marked stays, and it is not treated as the real time."
               estimatedHint="Approximate finish. The day and the time stay editable."
               control={
                 <div className="space-y-1.5">
@@ -682,7 +683,7 @@ export function CompletionDialog({
                       className="h-8"
                     />
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     {[
                       { label: "Today", back: 0 },
                       { label: "Yesterday", back: 1 },
@@ -691,8 +692,8 @@ export function CompletionDialog({
                       <button
                         key={label}
                         type="button"
+                        className="todo-cap"
                         onClick={() => pickDoneDay(back)}
-                        className="h-7 rounded border bg-background px-2 text-xs hover:bg-muted"
                       >
                         {label}
                       </button>
@@ -797,21 +798,21 @@ export function CompletionDialog({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="completion-actions">
             {edit ? (
               <span />
             ) : (
-              <Button variant="ghost" onClick={handleUndo} aria-label="Undo completion">
-                <Undo2 className="h-4 w-4 mr-2" />
+              <button type="button" className="todo-cap is-mod" onClick={handleUndo} aria-label="Undo completion">
                 Undo
-              </Button>
+              </button>
             )}
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={edit ? guard.requestClose : handleSkip}>{edit ? "Cancel" : "Skip"}</Button>
-              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
+            <div className="completion-actions-main">
+              <button type="button" className="todo-cap is-mod" onClick={edit ? guard.requestClose : handleSkip}>
+                {edit ? "Cancel" : "Skip"}
+              </button>
+              <button type="button" className="todo-cap is-primary" onClick={handleSave}>
                 Save
-              </Button>
+              </button>
             </div>
           </div>
         </div>

@@ -15,8 +15,8 @@
  * wiping other history. A card title opens Schedule Card Detail across the
  * board: work at this grain, finer assignments, and Undone still open to
  * push, dismiss, or finish. Open list jumps to that period's To do list in
- * Lists. That queue drops pushed and discarded placements;
- * the record keeps them. Send to Scheduler (`scheduleable`) is membership in
+ * Lists. That queue drops pushed, dismissed, missed, and already-moved rows;
+ * the record keeps them. Advanced toggles on a past card show those rows. Send to Scheduler (`scheduleable`) is membership in
  * this funnel. A dated list, such as a trip itinerary, is scheduled on its
  * own and is not sent here unless that switch is on.
  */
@@ -83,6 +83,8 @@ import { DayTab } from "./DayTab"
 import { ScheduleCardDetail } from "./ScheduleCardDetail"
 import {
   dismissCardWorkingQueue,
+  EMPTY_UNDONE_ARCHIVE,
+  missCardWorkingQueue,
   finishCardInPeriod,
   partitionCardDetail,
   pushCardWorkingQueue,
@@ -301,6 +303,7 @@ export function EnhancedScheduler() {
         here: allTasks.filter((task) => !isClearedFromWork(task) && isOnEventuallyList(task, eventuallyListId)),
         finer: [] as Task[],
         undone: [] as Task[],
+        archive: EMPTY_UNDONE_ARCHIVE,
       }
     }
     return partitionCardDetail(allTasks, detail.period, detail.value, wallClock)
@@ -309,7 +312,7 @@ export function EnhancedScheduler() {
   const [pushAsk, setPushAsk] = useState<{ taskId: string; subject: string } | null>(null)
 
   const applyDetailAction = useCallback(
-    (taskId: string, kind: "push" | "dismiss" | "done" | "unschedule", missReason?: StoredBlockedReason) => {
+    (taskId: string, kind: "push" | "dismiss" | "miss" | "done" | "unschedule", missReason?: StoredBlockedReason) => {
       if (!detail || detail.period === "eventually") return
       const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
       if (!task) return
@@ -320,7 +323,9 @@ export function EnhancedScheduler() {
             ? pushCardWorkingQueue(task, detail.period, detail.value, wallClock, missReason)
             : kind === "unschedule"
               ? unscheduleCardWorkingQueue(task, detail.period, detail.value, wallClock)
-              : dismissCardWorkingQueue(task, detail.period, detail.value, wallClock)
+              : kind === "miss"
+                ? missCardWorkingQueue(task, detail.period, detail.value, wallClock)
+                : dismissCardWorkingQueue(task, detail.period, detail.value, wallClock)
       useTaskStore.getState().updateTask({ ...task, ...patch })
     },
     [detail, wallClock],
@@ -396,7 +401,7 @@ export function EnhancedScheduler() {
           detail.period === "eventually"
             ? "Held with no period. Dates on a list do not send it here."
             : detailRows.past
-              ? "This period is over. Push sends it to the current period. Mark done finishes it here. Dismiss and Unschedule clear this queue and leave it on the Undone list."
+              ? "This period is over. The list is what you have not moved forward, finished, or cleared. Push sends it to the current period. Mark done finishes it here."
               : "Drag here to assign this period. Drop on the list to the left to return it to the broader period."
         }
         rows={detailRows}
@@ -415,6 +420,7 @@ export function EnhancedScheduler() {
           setPushAsk({ taskId, subject: task ? itemTitleOrUntitled(task) : "Task" })
         }}
         onDismiss={(taskId) => applyDetailAction(taskId, "dismiss")}
+        onMiss={(taskId) => applyDetailAction(taskId, "miss")}
         onDone={(taskId) => applyDetailAction(taskId, "done")}
         onUnschedule={(taskId) => applyDetailAction(taskId, "unschedule")}
         listName={detail.period === "eventually" ? undefined : periodTodoListName(detail.period, detail.value)}

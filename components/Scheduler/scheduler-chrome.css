@@ -774,6 +774,29 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"]::before
   min-width: 0;
 }
 
+.sch95 .sch-undone-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0 8px;
+}
+
+.sch95 .sch-undone-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+}
+
+.sch95 .sch-undone-tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--chrome-ink-soft);
+}
+
 .sch95 .sch-card-actions {
   display: flex;
   flex-shrink: 0;
