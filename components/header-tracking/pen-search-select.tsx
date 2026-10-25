@@ -177,7 +177,7 @@ export function PenSearchSelect({
       <button
         ref={buttonRef}
         type="button"
-        className="htk-value"
+        className="htk-value todo-cap"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Choose ${label}`}

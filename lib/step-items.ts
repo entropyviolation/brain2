@@ -17,6 +17,7 @@
  */
 import type { Subtask, Task } from "@/lib/types"
 import { findPlacedStep, placeSteps } from "@/lib/next-step"
+import { storedActualMinutes } from "@/lib/tracked-time"
 import { countingMinutes, internalStepProgress, updateNestedStep } from "@/lib/todo-steps"
 import { useTaskStore } from "@/lib/task-store"
 import { orbFor } from "@/components/Icons/Icon"
@@ -142,13 +143,13 @@ export function stepCrumbs(tasks: readonly Task[], item: Task): StepCrumb[] {
   ]
 }
 
-/** `est · parts · spent` for a step. */
+/** `est · parts · spent` for a step. Spent rolls up parts' saved actuals. Estimates stay as typed. */
 export function stepReadout(step: Subtask): { est: number; parts: string | null; spent: number } {
   const progress = internalStepProgress(step.subtasks)
   return {
     est: countingMinutes(step, 0),
     parts: progress ? `${progress.completed}/${progress.total}` : null,
-    spent: step.actualDuration ?? 0,
+    spent: storedActualMinutes(step),
   }
 }
 

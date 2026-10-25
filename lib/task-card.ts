@@ -72,6 +72,29 @@ export function setEstimate(steps: readonly Subtask[] | undefined, id: string, m
   return mapIds(steps, new Set([id]), (s) => withEstimate(s, minutes))
 }
 
+/**
+ * Keep `Task.estimateLog` in step with the task's own `estimatedDuration`.
+ * `updateTask` calls this, so item detail, the task card, the drawer, and a
+ * ghost accept that writes the task all land here. The same minutes again
+ * adds no row. A shorter log on `next` is a stale draft: the stored rows stay.
+ * Step logs are not touched.
+ */
+export function noteTaskEstimate(prev: Pick<Task, "estimatedDuration" | "estimateLog">, next: Task, now = new Date()): Task {
+  const before = Math.max(0, Math.round(prev.estimatedDuration ?? 0))
+  const after = Math.max(0, Math.round(next.estimatedDuration ?? 0))
+  const prevLog = prev.estimateLog ?? []
+  const nextLog = next.estimateLog ?? []
+  const extended = nextLog.length > prevLog.length
+  const base = extended ? nextLog : prevLog
+  if (before === after) {
+    if (nextLog.length >= prevLog.length) return next
+    return prevLog.length ? { ...next, estimateLog: prevLog } : next
+  }
+  const last = base[base.length - 1]
+  if (extended && last?.minutes === after) return { ...next, estimateLog: base }
+  return { ...next, estimateLog: [...base, { at: now.toISOString(), minutes: after }] }
+}
+
 /** Called by the host on mount; returns the unmount. */
 export function registerTaskCardHost(): () => void {
   useTaskCardStore.setState((s) => ({ hosts: s.hosts + 1 }))

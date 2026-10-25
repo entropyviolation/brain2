@@ -557,7 +557,14 @@ export interface Task extends Item {
   listAddedAt?: Record<string, string>
   // ---- Next-actions / scheduling fields (optional; only meaningful for items
   // in the Next Actions folder tree — see lib/item-utils.ts) ----------------
-  estimatedDuration?: number // minutes
+  estimatedDuration?: number // minutes — the typed estimate, not the sum of parts
+  /**
+   * Every value this task's own estimate has had, oldest first.
+   * Same shape as `Subtask.estimateLog`. `updateTask` appends a row when
+   * `estimatedDuration` changes (`noteTaskEstimate` in `lib/task-card.ts`).
+   * Setting the same minutes again does not add a row. Step edits stay on the step.
+   */
+  estimateLog?: { at: string; minutes: number }[]
   actualDuration?: number // minutes - set when task is completed
   /**
    * How firmly `actualDuration` is known.
@@ -642,9 +649,12 @@ export interface Task extends Item {
    * Every period this task was on and did not finish. Periods are independent:
    * Monday and Tuesday can both be Undone. Gray Scheduler cells read these.
    * Roll-up does not increment push counters; a push and auto-push do.
-   * `resolved: "pushed"` clears it from a Scheduler card's working queue and
-   * leaves it on Home → To Do Undone. `resolved: "discarded"` drops it from
-   * both working lists. The placement stays for analytics either way.
+   * `resolved: "pushed"`, `"clarified"`, and `"missed"` clear it from a Scheduler
+   * card's working queue and leave it on Home → To Do Undone. `"missed"` is the
+   * past card's Missed button and does not set the task status. `"discarded"`
+   * drops it from both working lists. A task already placed on a current or
+   * future day, week, or month stays off the default past-cell queue too.
+   * The placement stays for analytics either way.
    */
   schedulePlacements?: SchedulePlacement[]
   /** How many times this task was pushed forward in the To-Do day/week/month views. */
@@ -662,7 +672,7 @@ export interface Task extends Item {
   todoMarks?: TodoPeriodMark[]
   /** Task-card star: every prioritize, reaffirm and removal, with the reason given. */
   priorityLog?: TaskPriorityEntry[]
-  /** Local day (`YYYY-MM-DD`) the task's star was last set or reaffirmed; it fades 10 points a day. */
+  /** Local day (`YYYY-MM-DD`) the task's star was last set or reaffirmed. Shine fades 10 points a day; the prioritized mark comes off after 14 days. */
   priorityRefreshedOn?: string
   /**
    * True when this record is a generated implied-action (e.g. "read 12 pages of Dune").
@@ -2049,15 +2059,16 @@ export type SchedulePeriod = "always" | "year" | "month" | "week" | "day"
 export type SchedulePlacementPeriod = Exclude<SchedulePeriod, "always">
 
 /** How a past placement left the Scheduler's working queue. History stays on the row. */
-export type SchedulePlacementResolution = "assimilated" | "pushed" | "discarded" | "clarified"
+export type SchedulePlacementResolution = "assimilated" | "pushed" | "discarded" | "clarified" | "missed"
 
 export interface SchedulePlacement {
   period: SchedulePlacementPeriod
   /** Day `YYYY-MM-DD`, week range, month `YYYY-MM`, or year `YYYY`. */
   value: string
   /**
-   * `pushed` and `clarified` leave the Scheduler queue for this period.
+   * `pushed`, `clarified`, and `missed` leave the Scheduler queue for this period.
    * Home → To Do and the period's Undone list still show them.
+   * `missed` is Missed on a past Scheduler card: hidden here, still that period's record.
    * `discarded` drops the period from those lists too.
    * The placement itself stays for analytics either way.
    */
@@ -2095,10 +2106,11 @@ export type StartCertainty = ClockCertainty
 
 /**
  * How firmly a completion's finish is known.
- * A finish always has a stamp, so this is never `unknown`.
+ * `unknown` means the person does not know when it finished. The mark-done
+ * stamp stays (a done task still has a day) and is not treated as the real clock.
  * `estimated` is a day and time the person does not treat as exact.
  */
-export type CompletedCertainty = "exact" | "estimated"
+export type CompletedCertainty = "exact" | "estimated" | "unknown"
 
 /**
  * Optional 1–10 reflections on a completion. A missing score was not asked —
@@ -2127,7 +2139,8 @@ export interface TaskCompletionReview extends CompletionReflections {
   completedAt: Date
   /**
    * How firmly `completedAt` is known. Mirrors `Task.completedCertainty`.
-   * `estimated` is an approximate finish. Never `unknown` — the review still has a stamp.
+   * `estimated` is an approximate finish. `unknown` keeps the stamp and
+   * does not treat that clock as the real finish.
    */
   completedCertainty?: CompletedCertainty
   /**

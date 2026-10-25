@@ -901,6 +901,20 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
+ * Narrow duration. Under an hour, alone, is a plain count (`25`). An hour or
+ * more is `7h07`, minutes always two digits, including a whole hour (`2h00`).
+ * Pass `hours` when the other side of a pair is an hour or more, or when an
+ * hours switch is on, so a short side stays the same shape (`0h40`, `0h45`).
+ */
+export function compactDuration(minutes: number, hours = false): string {
+  const total = Math.max(0, Math.round(minutes))
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  if (!hours && h === 0) return String(total)
+  return `${h}h${String(m).padStart(2, "0")}`
+}
+
+/**
  * Minutes from typed duration text: `90`, `1:30`, `1h30`, `1h 30m`, `1.5h`, `45m`.
  * A bare number is minutes. Null when it is not a positive length.
  */

@@ -490,7 +490,7 @@ so Ctrl-C kills it instead of orphaning a listener on port 3000. It also sets
 `COGS_STRICT_PORT=1`: the server stays on `http://localhost:3000` (Electron never
 follows a fallback port). If a leftover **Node** process is still listening after
 a crash (heap OOM / SIGABRT), the next `electron:dev` SIGTERMs that listener and
-binds 3000 itself. A non-Node occupant still errors — then
+binds 3000 itself. _Last mapped: 2026-10-25_ One dev stack at a time: if a healthy cogs server already answers `/api/health` (on 3000, or 3000–3014 without strict port), a second `dev` / `electron:dev` prints "reusing it" and starts no second Next. It stays alive as a light watcher so `concurrently -k` keeps Electron up, and it exits when the first server stops. A hung server fails the probe, so the OOM reclaim above still applies. Set `COGS_ALLOW_SECOND_SERVER=1` to opt out. A non-Node occupant still errors — then
 `kill $(lsof -t -nP -iTCP:3000 -sTCP:LISTEN)`. Both `dev` and `electron:dev`
 raise the Node heap to 8 GB (`--max-old-space-size=8192`); webpack’s compiler
 cache is on disk in dev so a long Fast Refresh session is less likely to abort. The desktop vault is **pinned** to

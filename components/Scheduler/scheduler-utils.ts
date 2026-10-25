@@ -24,7 +24,7 @@ import {
 import { isAvailableNow } from "@/lib/available-tasks"
 import { isOnEventuallyList } from "@/lib/eventually-list"
 import { isClearedFromWork } from "@/lib/completion-status"
-import { taskBelongsInOverviewBox } from "@/lib/item-utils"
+import { getStoredScheduleLevel, taskBelongsInOverviewBox } from "@/lib/item-utils"
 import {
   scheduleFieldsForPeriod,
   clearedScheduleFields,
@@ -210,11 +210,70 @@ function liveTasksForPeriod(
 }
 
 /**
+ * The live day, week, or month is current or still ahead.
+ * A future year counts. The current year does not: roll-up onto this year
+ * has not placed the task on a To Do period.
+ */
+export function liveScheduleIsAhead(
+  task: Pick<Task, "scheduledDate" | "scheduledWeek" | "scheduledMonth" | "scheduledYear">,
+  now: Date,
+): boolean {
+  const level = getStoredScheduleLevel(task)
+  if (level === "day") {
+    const date = parseLocalDate(task.scheduledDate)
+    const key = date ? formatLocalDateKey(date) : ""
+    return key !== "" && !isPastFunnelPeriod("day", key, now)
+  }
+  if (level === "week") return !!task.scheduledWeek && !isPastFunnelPeriod("week", task.scheduledWeek, now)
+  if (level === "month") return !!task.scheduledMonth && !isPastFunnelPeriod("month", task.scheduledMonth, now)
+  if (level === "year") return !!task.scheduledYear && task.scheduledYear > String(now.getFullYear())
+  return false
+}
+
+/**
+ * Past-cell members before the display filter.
+ * `open` still needs a decision. `moved` is already on a current or future
+ * day, week, or month, so the default queue hides it and the record stays.
+ */
+function splitPastCell(
+  allTasks: Task[],
+  period: SchedulePlacementPeriod,
+  value: string,
+  currentDate: Date,
+  now: Date,
+): { open: Task[]; moved: Task[] } {
+  const liveOpen = liveTasksForPeriod(
+    allTasks.filter((task) => !isClearedFromWork(task)),
+    period,
+    value,
+    currentDate,
+  )
+  const fromHistory = allTasks.filter(
+    (task) =>
+      !isClearedFromWork(task) &&
+      !isSchedulePlacementHandled(task, period, value) &&
+      openPlacementCovers(task, period, value, now),
+  )
+  const seen = new Set<string>()
+  const open: Task[] = []
+  const moved: Task[] = []
+  for (const task of [...liveOpen, ...fromHistory]) {
+    if (seen.has(task.id)) continue
+    if (isSchedulePlacementHandled(task, period, value)) continue
+    seen.add(task.id)
+    if (liveScheduleIsAhead(task, now)) moved.push(task)
+    else open.push(task)
+  }
+  return { open, moved }
+}
+
+/**
  * Tasks assigned to a period bucket. Current and future cells show live open
- * work only. A past cell is the Undone queue: unfinished work still assigned
- * there, including a coarser live assignment that surfaces in this cell, plus
- * an unresolved placement. A handled placement (push, dismiss, unschedule, or
- * done) leaves this cell. The placement stays on the task.
+ * work only. A past cell is the Undone queue: unfinished work still sitting
+ * on that past period. A task already placed on a current or future day, week,
+ * or month stays in the record and stays off this queue. A handled placement
+ * (push, dismiss, missed, unschedule, or done) leaves this cell. The placement
+ * stays on the task.
  */
 export function getTasksForPeriod(
   allTasks: Task[],
@@ -229,7 +288,7 @@ export function getTasksForPeriod(
   const past =
     placementPeriod != null && value != null && isPastFunnelPeriod(placementPeriod, value, now)
 
-  if (!past) {
+  if (!past || placementPeriod == null || value == null) {
     return liveTasksForPeriod(
       allTasks.filter((task) => !isClearedFromWork(task)),
       period,
@@ -238,31 +297,21 @@ export function getTasksForPeriod(
     )
   }
 
-  const liveOpen = liveTasksForPeriod(
-    allTasks.filter((task) => !isClearedFromWork(task)),
-    period,
-    value,
-    currentDate,
-  )
-  const fromHistory =
-    value != null && placementPeriod
-      ? allTasks.filter(
-          (task) =>
-            !isClearedFromWork(task) &&
-            !isSchedulePlacementHandled(task, placementPeriod, value) &&
-            openPlacementCovers(task, placementPeriod, value, now),
-        )
-      : []
+  return splitPastCell(allTasks, placementPeriod, value, currentDate, now).open
+}
 
-  const seen = new Set<string>()
-  const out: Task[] = []
-  for (const task of [...liveOpen, ...fromHistory]) {
-    if (seen.has(task.id)) continue
-    if (placementPeriod && value && isSchedulePlacementHandled(task, placementPeriod, value)) continue
-    seen.add(task.id)
-    out.push(task)
-  }
-  return out
+/** Past-cell rows hidden because the task already sits on a current or future period. */
+export function tasksMovedAheadForPeriod(
+  allTasks: Task[],
+  period: SchedulePeriod,
+  value: string | undefined,
+  currentDate: Date,
+  now: Date = new Date(),
+): Task[] {
+  allTasks = withoutStepItems(allTasks)
+  const placementPeriod = period === "always" ? null : (period as SchedulePlacementPeriod)
+  if (placementPeriod == null || value == null || !isPastFunnelPeriod(placementPeriod, value, now)) return []
+  return splitPastCell(allTasks, placementPeriod, value, currentDate, now).moved
 }
 
 /** Re-export for funnel grid past styling. */

@@ -6,7 +6,9 @@
  * and returns null. It does not import the timegrid. A live Operations or
  * pen-color session loads `header-now-rows.tsx` for the clocks, pause, stop,
  * and pen color. A refresh should not JSON.parse the timegrid blob before
- * the desk paints.
+ * the desk paints. The pen clock's paint lives here, and only while that
+ * clock is actually on screen. If it is not, the sitting ends: the block
+ * gets an end, and the task and step stay open.
  *
  * Sessions (slice H2): a running or parked To Do session shows a small
  * **Session** chip that opens it, and the box hosts `SessionDock`, loaded
@@ -48,11 +50,40 @@ function SessionHost() {
   )
 }
 
+/** True when the header clock is in the document and not collapsed off screen. */
+export function headerPenClockOnScreen(): boolean {
+  if (typeof document === "undefined") return false
+  const el = document.querySelector('[data-testid="header-now-box"]')
+  if (!(el instanceof HTMLElement)) return false
+  const r = el.getBoundingClientRect()
+  // jsdom, and a node that has not been laid out, reports an all-zero box.
+  if (r.width === 0 && r.height === 0 && r.top === 0 && r.left === 0) return true
+  if (r.width < 8 || r.height < 8) return false
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  if (!vw || !vh) return true
+  return r.bottom > 0 && r.right > 0 && r.top < vh && r.left < vw
+}
+
 export function HeaderNowBox() {
   const workLive = useWorkSessionStore((s) => s.session != null)
   const penLive = usePenColorSessionStore((s) => s.session != null)
   const live = workLive || penLive
   const [Rows, setRows] = useState<ComponentType | null>(null)
+
+  useEffect(() => {
+    if (!penLive) return
+    let dispose: (() => void) | undefined
+    let cancel = false
+    void import("@/lib/pen-color-session").then((mod) => {
+      if (cancel) return
+      dispose = mod.watchPenClockShown(headerPenClockOnScreen)
+    })
+    return () => {
+      cancel = true
+      dispose?.()
+    }
+  }, [penLive])
 
   useEffect(() => {
     if (!live || Rows) return

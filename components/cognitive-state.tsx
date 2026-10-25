@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Brain } from "lucide-react"
 import { MachineLoading } from "@/components/machine-loading"
 import { useTrackingUndoHotkey } from "@/components/Home/Tracking/tracking-undo"
+import { subscribeTimegridReveal } from "@/components/Home/Tracking/timegrid-reveal"
 
 type NowPopupProps = {
   pane?: "tracking" | "plan"
@@ -32,6 +33,7 @@ export function CognitiveState() {
   const [pane, setPane] = useState<"tracking" | "plan">("tracking")
   const [Popup, setPopup] = useState<ComponentType<NowPopupProps> | null>(null)
   useTrackingUndoHotkey(open)
+  useEffect(() => subscribeTimegridReveal(() => setOpen(false)), [])
 
   useEffect(() => {
     if (!open || Popup) return

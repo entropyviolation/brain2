@@ -13,12 +13,16 @@ import { sessionElapsedMs, startWorkingOnOperation } from "@/lib/operation-work-
 import {
   addPenColorNowObjective,
   pausePenColorSession,
+  PEN_CLOCK_UNSHOWN_GRACE_MS,
+  penClockShouldStop,
   resumePenColorSession,
   startPenColorSession,
   stopPenColorSession,
   tickPenColorSession,
   togglePenColorNowObjectiveComplete,
+  watchPenClockShown,
 } from "./pen-color-session"
+import { startTaskClock } from "./task-clock"
 import { usePenColorSessionStore } from "./pen-color-session-store"
 import { useUnfinishedObjectivesStore } from "./unfinished-objectives-store"
 
@@ -193,5 +197,38 @@ describe("pen color session", () => {
     expect(again?.addedAt).toBe(created)
     expect(again?.completedAt).toBeUndefined()
     expect(useUnfinishedObjectivesStore.getState().rows).toEqual([])
+  })
+
+  it("ends an open working-on block when the header clock is not showing, and does not complete the step", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(AT)
+    useTaskStore.getState().addTask({
+      id: "cds",
+      description: "Finish CDs",
+      type: "task",
+      stage: "clarified",
+      createdAt: AT,
+      completed: false,
+      lists: [],
+      links: [],
+      subtasks: [{ id: "fronts", description: "fronts", completed: false }],
+    })
+    expect(startTaskClock("cds", { stepId: "fronts", penId: "act-exercise", now: AT }).kind).toBe("started")
+    expect(penClockShouldStop(true, 60_000)).toBe(false)
+    expect(penClockShouldStop(false, PEN_CLOCK_UNSHOWN_GRACE_MS - 1)).toBe(false)
+    expect(penClockShouldStop(false, PEN_CLOCK_UNSHOWN_GRACE_MS)).toBe(true)
+
+    const dispose = watchPenClockShown(() => false, () => new Date())
+    vi.advanceTimersByTime(PEN_CLOCK_UNSHOWN_GRACE_MS)
+    dispose()
+
+    expect(usePenColorSessionStore.getState().session).toBeNull()
+    const task = useTaskStore.getState().tasks.find((t) => t.id === "cds")!
+    expect(task.completed).toBe(false)
+    expect(task.subtasks?.[0].completed).toBe(false)
+    const entry = useTimeTrackingStore.getState().entries.find((e) => e.taskId === "cds")
+    expect(entry?.stepId).toBe("fronts")
+    expect(entry!.endMin).toBeGreaterThan(entry!.startMin)
+    vi.useRealTimers()
   })
 })

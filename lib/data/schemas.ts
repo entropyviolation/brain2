@@ -73,6 +73,7 @@ export const subtaskSchema: z.ZodTypeAny = z.lazy(() =>
       isMolecular: z.boolean().optional(),
       context: z.string().optional(),
       estimatedDuration: z.number().optional(),
+      estimateLog: z.array(z.object({ at: z.string(), minutes: z.number() })).optional(),
       subtasks: z.array(subtaskSchema).optional(),
       dependsOn: z.array(z.string()).optional(),
       actualDuration: z.number().optional(),
@@ -133,6 +134,7 @@ export const taskSchema = z
     attributes: z.record(z.string(), attributeValueSchema).optional(),
     // Common scheduling/metadata (optional)
     estimatedDuration: z.number().optional(),
+    estimateLog: z.array(z.object({ at: z.string(), minutes: z.number() })).optional(),
     actualDuration: z.number().optional(),
     cognitiveLoad: z.number().optional(),
     urgency: z.number().optional(),

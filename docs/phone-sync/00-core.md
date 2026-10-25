@@ -1,10 +1,10 @@
 # 00 · Sync core
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-25_
 
 **Wave 0.** Lands before every other agent starts.
 
-**Status: built 2026-10-22** except the Settings panel (**Planned**, after Wave 1 so it has readers to show). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record.
+**Status: built 2026-10-22.** The Settings panel landed 2026-10-25 (`components/Settings/PhoneSyncPanel.tsx`). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record. On/off is `data/phone-sync/enabled.json` (a missing key stays on), read by the hub each tick. The panel is loopback only and does not show message bodies.
 
 ## Job
 
@@ -28,4 +28,4 @@ Message bodies are kept (decided 2026-10-22). A message is a vault record with b
 
 - Feeding the same fixture batch twice writes once.
 - A hub push from a desktop that never saw a record does not drop it.
-- Settings shows each source and its last run.
+- Settings → Phone sync shows each source, the permission it needs, and its last run. Texts, calls, and location can be turned off. Health, phone Screen Time, email, and DMs are listed as not built.

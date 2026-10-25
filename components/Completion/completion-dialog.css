@@ -1,0 +1,242 @@
+/*
+ * Completion popup. Full-width CRT caption, the finished task's nameplate,
+ * and the house keycap for this dialog's word keys. The cap matches `.todo-cap`
+ * in todo-chrome.css. This root is not inside `.todo95`, so the rules live here.
+ */
+
+.completion-pixel {
+  display: inline-flex;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  animation: completion-pixel-bob 1.2s steps(2, end) infinite;
+}
+
+.completion-pixel svg {
+  display: block;
+  overflow: visible;
+}
+
+.completion-pixel-ink {
+  fill: #b8ffe0;
+}
+
+.completion-pixel-hot {
+  fill: #ffffff;
+}
+
+.completion-pixel-spark {
+  fill: #ffffff;
+  opacity: 0;
+}
+
+.completion-pixel-spark.is-a { animation: completion-twinkle 1.2s steps(1, end) infinite; }
+.completion-pixel-spark.is-b { animation: completion-twinkle 1.2s steps(1, end) infinite 0.3s; }
+.completion-pixel-spark.is-c { animation: completion-twinkle 1.2s steps(1, end) infinite 0.6s; }
+.completion-pixel-spark.is-d { animation: completion-twinkle 1.2s steps(1, end) infinite 0.9s; }
+
+@keyframes completion-twinkle {
+  0%, 40% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes completion-pixel-bob {
+  50% { transform: translateY(1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .completion-pixel,
+  .completion-pixel-spark {
+    animation: none;
+  }
+
+  .completion-pixel-spark.is-a {
+    opacity: 1;
+  }
+}
+
+/* The shared dialog caption is fit-content. This one spans the dialog. */
+body.win95-app [role="dialog"].completion-dialog h2.completion-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: calc(100% + 2.3rem);
+  max-width: none;
+  margin: 0 -1.15rem 2px;
+  padding: 9px 2.6rem 9px 12px;
+  border-radius: var(--r-2, 2px);
+  background: var(--fascia-crt-glass, #0c1210);
+  box-shadow: var(--fascia-crt-ring, inset 0 0 0 1px #1a2420);
+  color: var(--hab-crt-green, #7dffc4);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  text-shadow: var(--hab-crt-glow, 0 0 6px rgba(125, 255, 196, 0.55));
+}
+
+.completion-task {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 8px 10px 9px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
+    var(--chrome-pewter, #d8dbe0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 1px 0 rgba(0, 0, 0, 0.16);
+}
+
+.completion-task-kicker {
+  font-family: var(--font-pixel, inherit);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #3c4148;
+}
+
+.completion-task-name {
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+  color: #14161a;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.completion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.completion-actions-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.completion-dialog {
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-mod-top: #c9ccd0;
+  --todo-cap-mod-top2: #b9bdc1;
+  --todo-cap-mod-skirt: #969a9f;
+  --todo-cap-mod-edge: #55595d;
+  --todo-cap-navy: #22306c;
+}
+
+.completion-dialog button.todo-cap,
+body.win95-app .completion-dialog button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--todo-cap-leg);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.completion-dialog button.todo-cap.is-mod,
+body.win95-app .completion-dialog button.todo-cap.is-mod[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  color: #25282b;
+}
+
+.completion-dialog button.todo-cap.is-primary,
+body.win95-app .completion-dialog button.todo-cap.is-primary[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--todo-cap-navy);
+  outline-offset: 1px;
+}
+
+.completion-dialog button.todo-cap.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--todo-cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+.completion-dialog button.todo-cap[aria-pressed="true"]:not(.is-primary)::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: #7dffc4;
+  box-shadow: 0 0 0 1px #0e3d2c, 0 0 4px rgba(125, 255, 196, 0.7);
+}
+
+.completion-dialog button.todo-cap:active:not(:disabled),
+.completion-dialog button.todo-cap[aria-pressed="true"],
+body.win95-app .completion-dialog button.todo-cap:active:not(:disabled),
+body.win95-app .completion-dialog button.todo-cap[aria-pressed="true"] {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.completion-dialog button.todo-cap:disabled,
+body.win95-app .completion-dialog button.todo-cap:disabled {
+  color: #7d8185;
+  cursor: default;
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+}
+
+.completion-dialog button.todo-cap:focus-visible,
+body.win95-app .completion-dialog button.todo-cap:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}

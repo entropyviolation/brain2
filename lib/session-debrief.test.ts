@@ -7,7 +7,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { Task, TimeEntry } from "@/lib/types"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
-import { handoffsFor, useSessionDebriefStore } from "@/lib/session-debrief-store"
+import { handoffsFor, latestReviewFor, useSessionDebriefStore } from "@/lib/session-debrief-store"
 import { buildPenDraft, saveSessionDebrief } from "@/lib/session-debrief"
 
 const AT = new Date(2026, 9, 15, 9, 14, 0)
@@ -82,7 +82,7 @@ describe("sitting review", () => {
     expect(draft.objectives[0]).toMatchObject({ text: "find photos", completed: true, minutes: 8 })
   })
 
-  it("saves completion, the log, and a note for next time, and leaves a hand-written block note", () => {
+  it("saves the session reflection and a note for next time, and does not complete the task", () => {
     const row = task()
     useTaskStore.getState().setTasks([row])
     useTimeTrackingStore.setState({
@@ -107,19 +107,20 @@ describe("sitting review", () => {
       satisfaction: 4,
       energy: "steady",
       blocker: "the drawer stuck",
-      taskCompleted: false,
       taskEstimate: 40,
       logMinutes: 30,
       steps: [
         { stepId: "insert", completed: false, estimated: 25 },
         { stepId: "photos", completed: true, estimated: 10 },
+        // completed: true is ignored. Stop must not finish the step.
       ],
     })
 
     const saved = useTaskStore.getState().tasks.find((item) => item.id === "cds")
     const photos = saved?.subtasks?.find((step) => step.id === "photos")
     const insert = saved?.subtasks?.find((step) => step.id === "insert")
-    expect(photos?.completed).toBe(true)
+    expect(saved?.completed).toBe(false)
+    expect(photos?.completed).toBe(false)
     expect(insert?.estimatedDuration).toBe(25)
     expect(saved?.timeLogs?.[0]).toMatchObject({
       durationMinutes: 30,
@@ -131,6 +132,7 @@ describe("sitting review", () => {
     expect(notes).toHaveLength(1)
     expect(notes[0].text).toBe("start at the photos")
     expect(useSessionDebriefStore.getState().reviews[0]).toMatchObject({ satisfaction: 4, energy: "steady", taskId: "cds" })
+    expect(latestReviewFor(useSessionDebriefStore.getState().reviews, { taskId: "cds" })?.note).toBe("the sleeve was the slow part")
   })
 
   it("replaces the previous note for the same task", () => {
