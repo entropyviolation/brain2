@@ -75,6 +75,7 @@ import {
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
 import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
 import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
+import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
 import { KeycapClose } from "@/components/keycap-close"
 import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
@@ -575,6 +576,7 @@ export function TaskDetailPopup({
           <DialogTitle className="sr-only">Item detail</DialogTitle>
           {layerHeader}
           <div className="id-fascia">
+            <WorkingNowBanner itemId={task.id} />
             <div className="id-fascia-row">
               <div className="id-mark">
                 <span className="id-power-lamp is-on" aria-hidden />

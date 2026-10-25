@@ -268,6 +268,45 @@ body.win95-app .task-pen-picker input.task-pen-picker-search {
   color: #5a5e62;
 }
 
+.task-pen-picker-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-pen-picker-create .native-select,
+.task-pen-picker-create button[role="combobox"] {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+
+.task-pen-picker .task-pen-picker-create-key {
+  min-height: 30px;
+  padding: 4px 12px 7px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  color: #1f2226;
+  font: inherit;
+  font-weight: 700;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.task-pen-picker .task-pen-picker-create-key:disabled {
+  color: #6a6e72;
+  cursor: default;
+}
+
+.task-pen-picker .task-pen-picker-create-key:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .task-pen-picker-foot {
   display: flex;
   align-items: center;
