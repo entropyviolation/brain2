@@ -10,7 +10,7 @@
  *  - number: unit suffix, −/+ keys for whole numbers · goal: x / y + meter
  *  - boolean: checkbox or rocker with a Yes / No word · selection: keys or chips
  *  - color: swatch, hex, and preset chips · datetime: Today / Now + how far away
- *  - link: field + Open key showing the host · item: searchable typeahead
+ *  - link: field + Open key showing the host · item: search every item, or create one
  *  - image / multiimage: preview / gallery
  *  - file / multifile: file chips · formula: computed readout
  * Used by the values editors (Lists, Inbox, Item detail).
@@ -733,7 +733,7 @@ function FileValueEditor({
   )
 }
 
-/** Searchable item reference. The match list is portaled above every well (menu layer). */
+/** Searchable item reference over the whole vault. The match list is portaled above every well. */
 function ItemRefField({
   def,
   value,
@@ -747,23 +747,38 @@ function ItemRefField({
   const lists = useTaskStore((s) => s.lists)
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState("")
   const [rect, setRect] = useState<DOMRect | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const selectedId = typeof value === "string" && value ? value : null
   const selected = selectedId ? tasks.find((t) => t.id === selectedId) : undefined
   const selectedList = selected ? lists.find((l) => selected.lists?.includes(l.id)) : undefined
+  const needle = query.trim()
+  const needleKey = needle.toLowerCase()
 
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const scoped = def.refListId ? tasks.filter((t) => t.lists?.includes(def.refListId!)) : tasks
-    const hits = q ? scoped.filter((t) => itemTitle(t).toLowerCase().includes(q)) : scoped
+    const hits = needleKey ? tasks.filter((t) => itemTitle(t).toLowerCase().includes(needleKey)) : tasks
     return hits.slice(0, 8)
-  }, [query, tasks, def.refListId])
+  }, [needleKey, tasks])
+  const exact = needleKey.length > 0 && matches.some((t) => itemTitle(t).toLowerCase() === needleKey)
 
   const openList = () => {
     if (inputRef.current) setRect(inputRef.current.getBoundingClientRect())
     setOpen(true)
+  }
+
+  const createItem = (name: string) => {
+    const title = name.trim()
+    if (!title) return
+    const task = createListItem(title, [])
+    useTaskStore.getState().addTask(task)
+    onChange(task.id)
+    setQuery("")
+    setNewName("")
+    setCreating(false)
+    setOpen(false)
   }
 
   return (
@@ -795,9 +810,44 @@ function ItemRefField({
         aria-label={`Search items for ${def.name}`}
         className="attr-ref-input"
       />
+      {creating ? (
+        <div className="attr-ref-create">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                createItem(newName)
+              }
+            }}
+            placeholder="New item name"
+            aria-label="New item name"
+            className="attr-ref-input"
+            autoFocus
+          />
+          <button type="button" className="attr-mini-key" onClick={() => createItem(newName)}>
+            Create
+          </button>
+          <button type="button" className="attr-mini-key" onClick={() => setCreating(false)}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="attr-mini-key"
+          onClick={() => {
+            setNewName(needle)
+            setCreating(true)
+          }}
+        >
+          New item
+        </button>
+      )}
       {open &&
         rect &&
-        matches.length > 0 &&
+        (matches.length > 0 || (needle && !exact)) &&
         typeof document !== "undefined" &&
         createPortal(
           <div
@@ -832,6 +882,19 @@ function ItemRefField({
                 </button>
               )
             })}
+            {needle && !exact ? (
+              <button
+                type="button"
+                role="option"
+                className="attr-ref-option"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  createItem(needle)
+                }}
+              >
+                <span className="truncate">Create “{needle}”</span>
+              </button>
+            ) : null}
           </div>,
           document.body,
         )}

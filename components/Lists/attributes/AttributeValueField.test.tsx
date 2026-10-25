@@ -82,3 +82,24 @@ describe("AttributeValueField text list", () => {
     expect(onOpen).toHaveBeenCalledWith(list!.id)
   })
 })
+
+describe("AttributeValueField item reference", () => {
+  beforeEach(() => {
+    resetAllStores()
+  })
+
+  it("creates an item from the search instead of asking for a list", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<AttributeValueField def={{ id: "host", name: "Host", type: "item" }} value="" onChange={onChange} />)
+
+    expect(screen.queryByRole("button", { name: "Choose list" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "New item" }))
+    await user.type(screen.getByRole("textbox", { name: "New item name" }), "Museum Park")
+    await user.click(screen.getByRole("button", { name: "Create" }))
+
+    const id = onChange.mock.calls.at(-1)?.[0]
+    expect(typeof id).toBe("string")
+    expect(useTaskStore.getState().tasks.find((task) => task.id === id)?.title).toBe("Museum Park")
+  })
+})

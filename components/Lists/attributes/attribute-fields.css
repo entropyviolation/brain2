@@ -411,6 +411,14 @@
   gap: 4px;
 }
 
+.attr-ref-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 100%;
+}
+
 .attr-ref-chip {
   display: inline-flex;
   align-items: center;

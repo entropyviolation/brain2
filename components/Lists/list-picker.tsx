@@ -586,6 +586,7 @@ export function SingleListPicker({
   showCreate = false,
   excludeIds,
   compact = true,
+  showSelectedChips = false,
 }: {
   value: string
   onValueChange: (id: string) => void
@@ -594,6 +595,8 @@ export function SingleListPicker({
   showCreate?: boolean
   excludeIds?: string[]
   compact?: boolean
+  /** Chip of the chosen list, above the search, the way item detail shows lists. */
+  showSelectedChips?: boolean
 }) {
   return (
     <div className="catalog-field">
@@ -601,6 +604,7 @@ export function SingleListPicker({
         mode="single"
         compact={compact}
         showCreate={showCreate}
+        showSelectedChips={showSelectedChips}
         excludeIds={excludeIds}
         searchLabel={searchLabel}
         pinnedChoices={emptyLabel ? [{ id: "", label: emptyLabel }] : undefined}

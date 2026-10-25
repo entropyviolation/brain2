@@ -4,7 +4,8 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { resetLocalStorage } from "@/tests/test-utils"
+import { resetAllStores, resetLocalStorage } from "@/tests/test-utils"
+import { useTaskStore } from "@/lib/task-store"
 import {
   AttributeSchemaEditor,
   AttributeValuesEditor,
@@ -69,6 +70,42 @@ describe("AttributeSchemaEditor", () => {
     expect(onChange).toHaveBeenCalledWith([
       expect.objectContaining({ name: "New attribute", type: "string" }),
     ])
+  })
+
+  it("does not ask an item reference to pick a list first", () => {
+    render(
+      <TypeSpecificSchemaFields
+        def={{ id: "host", name: "Host", type: "item" }}
+        onPatch={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole("textbox", { name: "Scope list" })).not.toBeInTheDocument()
+  })
+
+  it("shows the chosen scope list above the search", async () => {
+    resetAllStores()
+    useTaskStore.getState().addList({
+      id: "reading",
+      name: "Reading",
+      color: "#3B82F6",
+      description: "",
+      createdAt: new Date(),
+      order: 0,
+    })
+    const user = userEvent.setup()
+    const onPatch = vi.fn()
+    const { rerender } = render(
+      <TypeSpecificSchemaFields def={{ id: "pack", name: "Packing", type: "list" }} onPatch={onPatch} />,
+    )
+    await user.click(screen.getByRole("button", { name: "Reading" }))
+    expect(onPatch).toHaveBeenCalledWith({ refListId: "reading" })
+    rerender(
+      <TypeSpecificSchemaFields
+        def={{ id: "pack", name: "Packing", type: "list", refListId: "reading" }}
+        onPatch={onPatch}
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Remove Reading" })).toBeInTheDocument()
   })
 
   it("picks a list reference scope from the searchable list picker", async () => {
