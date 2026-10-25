@@ -37,16 +37,16 @@ export function SaveUnfinishedDialog({
   const noun = count === 1 ? "1 objective is still open." : `${count} objectives are still open.`
   return createPortal(
     <div className="trk-now-obj-stop-back" role="presentation">
-      <div className="trk-now-obj-stop" role="alertdialog" aria-label="Save unfinished objectives" data-testid="save-unfinished-dialog">
+      <div className="trk-now-obj-stop b2-now" role="alertdialog" aria-label="Save unfinished objectives" data-testid="save-unfinished-dialog">
         <p>{noun} Save them for the next time you track this?</p>
         <div className="trk-now-obj-stop-actions">
-          <button type="button" className="ops-btn" title="Close and save them" onClick={onYes}>
+          <button type="button" className="todo-cap is-primary" title="Close and save them" onClick={onYes}>
             Yes
           </button>
-          <button type="button" className="ops-btn" title="Close without saving them" onClick={onNo}>
+          <button type="button" className="todo-cap" title="Close without saving them" onClick={onNo}>
             No
           </button>
-          <button type="button" className="ops-btn" title="Go back. The clock stays on." onClick={onCancel}>
+          <button type="button" className="todo-cap is-mod" title="Go back. The clock stays on." onClick={onCancel}>
             Cancel
           </button>
         </div>
