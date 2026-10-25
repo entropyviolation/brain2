@@ -76,7 +76,7 @@ _Last mapped: 2026-10-22_
 
 ## Status and handoff
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-25_
 
 Notes for the next agent. Read this before touching phone sync.
 
@@ -84,7 +84,7 @@ Notes for the next agent. Read this before touching phone sync.
 
 | Piece | State | Where |
 | --- | --- | --- |
-| Sync core | Built. Readers return records plus a cursor. The runner archives, applies, flushes the vault, then moves the cursor, so a crash re-reads and never skips. | `lib/phone-sync/runner.ts`, `README.md` there |
+| Sync core | Built. Readers return records plus a cursor. The runner archives, applies, flushes the vault, then moves the cursor, so a crash re-reads and never skips. Settings → Phone sync shows each source and its last run, and can turn texts, calls, and location off. | `lib/phone-sync/runner.ts`, `components/Settings/PhoneSyncPanel.tsx` |
 | Texts | **Live** on allie's MacBook (`~/brain2`). The Mac holds 302k texts back to 2018. Every text is archived to `data/phone-sync/messages.jsonl`; Tracking keeps only the last 30 days (`COGS_PHONE_SYNC_TEXT_DAYS`), because localStorage holds about 5 MB. | `lib/phone-sync/messages*.ts`, `write.ts` |
 | Calls | **Live.** 997 calls (since 2026-05-25). Calls count as time together with the person (`personTimePenIds`). | `lib/phone-sync/calls*.ts`, `lib/person-time.ts` |
 | Hub | `npm run phone:hub` runs phone sync every 60 s and catches up in one tick. It fills localStorage from the vault, and phone sync and location push **only the Tracking key** back (`flushTracking`). Pushing every key sent stale copies of other stores, which the vault guard refused. | `scripts/phone-hub.ts`, `scripts/phone-hub-polyfill.mjs` |
@@ -103,7 +103,7 @@ Notes for the next agent. Read this before touching phone sync.
 4. **Reinstall the app** from the Mac (it now has the card and on-by-default). Fill in the card, allow location, pick Always.
 5. **Check:** walk somewhere, open the app, tap Send now, and see a Location row in Tracking.
 6. **Turn on the weekly reinstall.** Tick Connect via network for the iPhone in Xcode once, then install the launchd job. Steps: [`deploy/mac/README.md`](../deploy/mac/README.md) → iPhone app reinstall.
-7. **Wave 2:** Health, Screen Time, DMs, email, phone plates, and the Settings → Phone sync panel (briefs `04`–`06`).
+7. **Wave 2:** Health, Screen Time, DMs, email, and phone plates (briefs `04`–`06`). Settings → Phone sync is built (2026-10-25): it lists those sources as not built, and it can turn texts, calls, and location off.
 
 ### Known issues and watch items
 

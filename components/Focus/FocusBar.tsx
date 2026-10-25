@@ -129,7 +129,7 @@ export default function FocusBar() {
   return (
     <>
     <div
-      className="focus-bar"
+      className="focus-bar b2-now"
       role="region"
       aria-label="On the clock"
       data-ui-name="Focus bar"
@@ -158,7 +158,7 @@ export default function FocusBar() {
           <button
             data-no95
             type="button"
-            className="focus-bar-key is-primary"
+            className="focus-bar-key todo-cap is-primary"
             onClick={() => {
               // The pen pauses with it (lib/session-pen.ts), so this bar stays.
               parkLiveSession(new Date(), parkNote)
@@ -167,7 +167,7 @@ export default function FocusBar() {
           >
             Park
           </button>
-          <button data-no95 type="button" className="focus-bar-key" onClick={() => setParkNote(null)}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap" onClick={() => setParkNote(null)}>
             Keep going
           </button>
         </div>
@@ -178,13 +178,13 @@ export default function FocusBar() {
               ? "1 objective is still open. Save it for the next time you track this?"
               : `${active.length} objectives are still open. Save them for the next time you track this?`}
           </span>
-          <button data-no95 type="button" className="focus-bar-key is-primary" onClick={() => answerSave(true)}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap is-primary" onClick={() => answerSave(true)}>
             Yes
           </button>
-          <button data-no95 type="button" className="focus-bar-key" onClick={() => answerSave(false)}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap" onClick={() => answerSave(false)}>
             No
           </button>
-          <button data-no95 type="button" className="focus-bar-key" onClick={() => setAsking(false)}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap" onClick={() => setAsking(false)}>
             Cancel
           </button>
         </div>
@@ -193,18 +193,18 @@ export default function FocusBar() {
           <span className="focus-bar-ask-text">
             {free.length === 1 ? "1 objective isn't a step yet." : `${free.length} objectives aren't steps yet.`}
           </span>
-          <button data-no95 type="button" className="focus-bar-key is-primary" onClick={keepAsSteps}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap is-primary" onClick={keepAsSteps}>
             Keep as steps
           </button>
           <button
             data-no95
             type="button"
-            className="focus-bar-key"
+            className="focus-bar-key todo-cap"
             onClick={endSitting}
           >
             Leave on the block
           </button>
-          <button data-no95 type="button" className="focus-bar-key" onClick={() => setAsking(false)}>
+          <button data-no95 type="button" className="focus-bar-key todo-cap" onClick={() => setAsking(false)}>
             Keep going
           </button>
         </div>
@@ -244,14 +244,14 @@ export default function FocusBar() {
           <button
             data-no95
             type="button"
-            className="focus-bar-key"
+            className="focus-bar-key todo-cap"
             title="Just Start: the smallest ready step"
             onClick={() => setJustStart(true)}
           >
             Just start
           </button>
           {sessionRuns ? (
-            <button data-no95 type="button" className="focus-bar-key" title="Park the running session" onClick={() => setParkNote("")}>
+            <button data-no95 type="button" className="focus-bar-key todo-cap" title="Park the running session" onClick={() => setParkNote("")}>
               Park session
             </button>
           ) : (
@@ -259,7 +259,7 @@ export default function FocusBar() {
               <button
                 data-no95
                 type="button"
-                className="focus-bar-key"
+                className="focus-bar-key todo-cap"
                 title="Plan a session starting with this"
                 onClick={() => openSession({ startOn: "session", seed: [{ taskId: session.taskId!, ...(session.stepId ? { stepId: session.stepId } : {}) }] })}
               >
@@ -268,7 +268,7 @@ export default function FocusBar() {
               <button
                 data-no95
                 type="button"
-                className="focus-bar-key"
+                className="focus-bar-key todo-cap"
                 title="Just 25 minutes on this: the clock is the commitment"
                 onClick={() =>
                   openSession({

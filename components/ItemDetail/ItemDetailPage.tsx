@@ -46,6 +46,7 @@ import { PERSON_ATTR } from "@/lib/person-types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
 import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemRewardField } from "@/components/ItemDetail/ItemRewardField"
 import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
 import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
 import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
@@ -74,7 +75,6 @@ import {
   CalendarDays,
   Users,
   Timer,
-  Award,
   Sparkles,
   Split,
   MoreHorizontal,
@@ -762,29 +762,13 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                       isEditing={isEditing}
                     />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="reward-value">Reward Value (1-10)</Label>
-                      {isEditing ? (
-                        <IsolatedInput
-                          id="reward-value"
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={String(task.rewardValue ?? "")}
-                          onLiveChange={(v) => touchDraft({ rewardValue: Number.parseInt(v) || 1 })}
-                          onCommit={(v) =>
-                            setTask((prev) =>
-                              prev ? { ...prev, rewardValue: Number.parseInt(v) || 1 } : prev,
-                            )
-                          }
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span>{task.rewardValue}/10</span>
-                        </div>
-                      )}
-                    </div>
+                    <ItemRewardField
+                      task={task}
+                      touchDraft={touchDraft}
+                      setTask={setTask}
+                      variant="page"
+                      isEditing={isEditing}
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="urgency">Urgency</Label>
@@ -1395,7 +1379,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Reward Value:</span>
-                    <span className="font-medium">{task.rewardValue}/10</span>
+                    <span className="font-medium">{task.pointsOverride == null ? "—" : task.pointsOverride}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Cognitive Load:</span>

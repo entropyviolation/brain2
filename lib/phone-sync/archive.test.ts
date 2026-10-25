@@ -45,4 +45,13 @@ describe("openPhoneArchive", () => {
     for (let i = 0; i < 205; i++) a.logRun({ source: "messages", startedAt: i, finishedAt: i, read: 0, written: 0, skipped: 0 })
     expect(a.runs()).toHaveLength(200)
   })
+
+  it("treats a missing switch as on, and keeps an explicit off", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "b2-ps-"))
+    const a = openPhoneArchive(dir)
+    expect(a.getEnabled("messages")).toBe(true)
+    a.setEnabled("calls", false)
+    expect(openPhoneArchive(dir).getEnabled("calls")).toBe(false)
+    expect(openPhoneArchive(dir).getEnabled("messages")).toBe(true)
+  })
 })

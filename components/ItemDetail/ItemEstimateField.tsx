@@ -2,6 +2,8 @@
  * components/ItemDetail/ItemEstimateField.tsx — Estimated duration LiveInput
  *
  * Shared draft wiring for the Details-tab duration field on popup and page.
+ * This is the task's own `estimatedDuration`, not the parts rollup.
+ * `updateTask` appends `Task.estimateLog` when a save changes it.
  * Presentation stays shell-specific via `variant` (labels, icon, read-only).
  * The popup Time tab uses a different empty→undefined parse — leave that alone.
  */

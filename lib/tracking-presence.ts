@@ -15,7 +15,7 @@
 
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { minutesPastMidnight, MINUTES_PER_DAY } from "@/lib/ingest/times"
-import { entryClockCertainty, isInstant, isSpeculative, minutesToLabel, type TimeEntry } from "@/lib/time-entries"
+import { entryClockCertainty, isInstant, isSpeculative, minutesToLabel, sameIds, type TimeEntry } from "@/lib/time-entries"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 
 export const PRESENCE_SCOPE_IDS = ["activity", "location", "mood", "company"] as const
@@ -341,12 +341,40 @@ function keepMinuteSeam(date: string, scopeId: string, penId: string, slot: numb
   if (touching) useTimeTrackingStore.getState().updateEntry(touching.id, { splitAfter: true })
 }
 
+/**
+ * Optional detail and notes for one Now stamp.
+ * Omit `variantIds` to paint the pen only, as before.
+ * A blank `notes` string is ignored and does not clear notes already stored.
+ * A filled one is appended, after the paint, as `\n\n {time}- {note} \n\n`
+ * (`minutesToLabel` of the stamp clock). On an open stamp the previous note
+ * is carried through the paint so the continued block stays one piece and
+ * the line is added at the end of the notes it already has. A blank field
+ * does not copy that note onto new minutes.
+ */
+export type ScopeNowWrite = {
+  variantIds?: string[]
+  notes?: string
+}
+
+/** `\n\n {time}- {note} \n\n` using the tracking clock (`2:43 PM`). */
+export function formatBlockNoteLine(note: string, now: Date): string {
+  return `\n\n ${minutesToLabel(minutesPastMidnight(now))}- ${note.trim()} \n\n`
+}
+
+/** Append one stamped line. A blank note leaves `existing` unchanged. */
+export function appendBlockNote(existing: string | undefined, note: string, now: Date): string {
+  const text = note.trim()
+  if (!text) return existing ?? ""
+  return `${existing ?? ""}${formatBlockNoteLine(text, now)}`
+}
+
 /** Stamp one view up to now. A new name becomes a pen on that view. */
 export function applyScopeNowUpdate(
   scopeId: string,
   name: string,
   now = new Date(),
   span: ScopeNowSpan = "open",
+  write?: ScopeNowWrite,
 ): boolean {
   const trimmed = name.trim()
   if (!trimmed) return false
@@ -375,30 +403,73 @@ export function applyScopeNowUpdate(
       )
     : undefined
   const continueEstimate = neighbor ? blockIsEstimated(neighbor) : false
-  const extras = named
-    ? neighbor?.title || neighbor?.moodReading || continueEstimate
-      ? {
-          ...(neighbor?.title ? { title: neighbor.title } : {}),
-          ...(neighbor?.moodReading ? { moodReading: neighbor.moodReading } : {}),
-          ...(continueEstimate ? { clockCertainty: "estimated" as const } : {}),
-        }
-      : undefined
-    : { title: trimmed }
+  const note = write?.notes?.trim() || undefined
+  const chosenVariants = write?.variantIds?.length ? write.variantIds : undefined
+  // Filled notes carry the previous text so an open stamp stays one block,
+  // then the line is appended. A blank field carries nothing.
+  const carriedNote = note && span === "open" ? neighbor?.notes : undefined
+  const detailSplit = Boolean(
+    chosenVariants &&
+      span === "open" &&
+      neighbor &&
+      startMin < slot &&
+      !sameIds(neighbor.variantIds, chosenVariants),
+  )
+
+  const extrasFor = (sliceNote: string | undefined) => {
+    const clock = continueEstimate ? { clockCertainty: "estimated" as const } : {}
+    if (!named) return { title: trimmed, ...clock, ...(sliceNote ? { notes: sliceNote } : {}) }
+    const title = neighbor?.title ? { title: neighbor.title } : {}
+    const mood = neighbor?.moodReading ? { moodReading: neighbor.moodReading } : {}
+    const notes = sliceNote ? { notes: sliceNote } : {}
+    if (!neighbor?.title && !neighbor?.moodReading && !continueEstimate && !sliceNote) return undefined
+    return { ...title, ...mood, ...clock, ...notes }
+  }
+
+  const paintSlice = (from: number, to: number, variantIds: string[] | undefined, sliceNote: string | undefined) => {
+    if (to <= from) return
+    store.paintMinutes(
+      date,
+      scopeId,
+      from,
+      to,
+      penId,
+      variantIds,
+      undefined,
+      continueEstimate ? "estimated" : undefined,
+      extrasFor(sliceNote),
+    )
+  }
+
   if (endMin < MINUTES_PER_DAY) {
     store.paintMinutes(date, scopeId, endMin, MINUTES_PER_DAY, null)
   }
   if (span === "minute") keepMinuteSeam(date, scopeId, penId, slot)
-  store.paintMinutes(
-    date,
-    scopeId,
-    startMin,
-    endMin,
-    penId,
-    undefined,
-    undefined,
-    continueEstimate ? "estimated" : undefined,
-    extras,
-  )
+  if (detailSplit) {
+    // The pen fills the open stretch. The previous detail holds until this
+    // minute; the chosen detail starts now.
+    paintSlice(startMin, slot, neighbor?.variantIds, carriedNote)
+    paintSlice(slot, endMin, chosenVariants, undefined)
+  } else {
+    paintSlice(startMin, endMin, chosenVariants, carriedNote)
+  }
+  if (note) {
+    const from = startMin
+    const touched = useTimeTrackingStore.getState().entries.filter(
+      (entry) =>
+        entry.date === date &&
+        entry.scopeId === scopeId &&
+        entry.penId === penId &&
+        !isInstant(entry) &&
+        entry.endMin > from &&
+        entry.startMin < endMin,
+    )
+    for (const entry of touched) {
+      const next = appendBlockNote(entry.notes, note, now)
+      if ((entry.notes ?? "") === next) continue
+      useTimeTrackingStore.getState().updateEntry(entry.id, { notes: next })
+    }
+  }
   return true
 }
 
@@ -421,10 +492,20 @@ export type ScopeSequenceStep = {
   estimated: boolean
 }
 
-/** Paint an ordered same-day sequence on one view. Estimated steps are not stored as exact. */
-export function paintScopeSequence(scopeId: string, date: string, steps: ScopeSequenceStep[]): number {
+/**
+ * Paint an ordered same-day sequence on one view. Estimated steps are not stored as exact.
+ * A filled `notes` string is appended to each step this call paints (`formatBlockNoteLine`). Blank writes no note.
+ */
+export function paintScopeSequence(
+  scopeId: string,
+  date: string,
+  steps: ScopeSequenceStep[],
+  notes?: string,
+  now = new Date(),
+): number {
   const store = useTimeTrackingStore.getState()
   if (!store.scopes.some((scope) => scope.id === scopeId)) return 0
+  const note = notes?.trim() || undefined
   let painted = 0
   for (const step of steps) {
     const name = step.name.trim()
@@ -445,6 +526,22 @@ export function paintScopeSequence(scopeId: string, date: string, steps: ScopeSe
         ...(step.estimated ? { clockCertainty: "estimated" as const } : {}),
       },
     )
+    if (note) {
+      const touched = useTimeTrackingStore.getState().entries.filter(
+        (entry) =>
+          entry.date === date &&
+          entry.scopeId === scopeId &&
+          entry.penId === penId &&
+          !isInstant(entry) &&
+          entry.endMin > step.startMin &&
+          entry.startMin < step.endMin,
+      )
+      for (const entry of touched) {
+        const next = appendBlockNote(entry.notes, note, now)
+        if ((entry.notes ?? "") === next) continue
+        useTimeTrackingStore.getState().updateEntry(entry.id, { notes: next })
+      }
+    }
     painted += 1
   }
   return painted

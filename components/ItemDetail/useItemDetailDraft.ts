@@ -16,7 +16,9 @@
  * history. Steps the page already wrote to the store are written back too.
  * Variant-
  * specific behavior (scheduling UX, completion flow, subtasks) stays in each
- * component. This is the de-duplication seam for the consolidated ItemDetail.
+ * component. A clean draft follows the store, so a task-card write of
+ * `estimatedDuration` or `pointsOverride` shows here. An unsaved draft stays.
+ * This is the de-duplication seam for the consolidated ItemDetail.
  *
  * Spec: §5.5 (Item detail view).
  */
@@ -200,6 +202,21 @@ export function useItemDetailDraft(taskId: string | null): ItemDetailDraft {
       setOriginalTask(foundTask)
     }
   }, [taskId, applyTask, resetHistory, setOriginalTask])
+
+  // A clean draft follows the store, so a task-card write shows here without a reload.
+  // An unsaved draft is left alone.
+  useEffect(() => {
+    if (!taskId) return
+    const stored = allTasks.find((t) => t.id === taskId)
+    const draft = taskRef.current
+    const original = originalRef.current
+    if (!stored || !draft || !original || draft.id !== taskId) return
+    if (!snapshotsEqual(draft, original)) return
+    if (snapshotsEqual(draft, stored)) return
+    resetHistory()
+    applyTask(stored)
+    setOriginalTask(stored)
+  }, [allTasks, taskId, applyTask, resetHistory, setOriginalTask])
 
   const addToCategory = useCallback(
     (categoryId: string) => {

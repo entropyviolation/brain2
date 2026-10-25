@@ -53,7 +53,6 @@ import {
   CheckCircle,
   XCircle,
   Timer,
-  Award,
   X,
   Plus,
   Trash2,
@@ -108,6 +107,7 @@ import { asListReference } from "@/lib/text-list-to-list"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition } from "@/lib/types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
+import { ItemRewardField } from "@/components/ItemDetail/ItemRewardField"
 import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
@@ -273,7 +273,7 @@ export function TaskDetailPopup({
     writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
   }, [effectiveId, detailTab])
 
-  const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
+  const activeDetailTab = popupTabs.includes(detailTab as (typeof popupTabs)[number]) ? detailTab : "details"
 
   const commitReminder = useCallback(
     (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
@@ -868,24 +868,12 @@ export function TaskDetailPopup({
                           variant="popup"
                         />
 
-                        <div className="space-y-3">
-                          <Label htmlFor="reward-value" className="text-sm font-semibold flex items-center gap-2">
-                            <Award className="h-4 w-4" />
-                            Reward Value
-                          </Label>
-                          <IsolatedInput
-                            id="reward-value"
-                            type="number"
-                            value={String(task.rewardValue ?? "")}
-                            onLiveChange={(v) => touchDraft({ rewardValue: Number.parseInt(v) || 0 })}
-                            onCommit={(v) =>
-                              setTask((prev) =>
-                                prev ? { ...prev, rewardValue: Number.parseInt(v) || 0 } : prev,
-                              )
-                            }
-                            className="focus-ring"
-                          />
-                        </div>
+                        <ItemRewardField
+                          task={task}
+                          touchDraft={touchDraft}
+                          setTask={setTask}
+                          variant="popup"
+                        />
 
                         <div className="space-y-3">
                           <Label htmlFor="urgency" className="text-sm font-semibold flex items-center gap-2">

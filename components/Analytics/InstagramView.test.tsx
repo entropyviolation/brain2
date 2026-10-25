@@ -71,6 +71,12 @@ describe("InstagramView", () => {
     expect(screen.getByTitle("Instagram report")).toBeInTheDocument()
   })
 
+  it("says a Drive photo was left behind when the report still updated", async () => {
+    installBridge({ ...base, current: { ...base.current!, skipped: 1 } })
+    render(<InstagramView />)
+    expect(await screen.findByText(/1 file in Google Drive could not be downloaded/)).toBeInTheDocument()
+  })
+
   it("saves ig-* changes the report posts, and ignores other windows", async () => {
     const bridge = installBridge(base)
     render(<InstagramView />)

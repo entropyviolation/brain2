@@ -111,6 +111,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     keywords: "telegram bim pairing grocery cheat sheet simulate shortcut message",
   },
   {
+    id: "settings-phone-sync",
+    groupId: "imports",
+    title: "Phone sync",
+    keywords: "texts calls location health email dms full disk access iphone hub",
+  },
+  {
     id: "settings-screen",
     groupId: "imports",
     title: "Screen Time",

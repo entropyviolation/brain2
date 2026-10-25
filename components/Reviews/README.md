@@ -88,7 +88,7 @@ Start of month is the 1st. Season start is the first day of the quarter
 30 Sep, 31 Dec). Year start is 1 January. Year end is 31 December. Morning
 and Night are every day.
 
-**Built 2026-10-16 (not committed):** on today's day lens, the Night row hides until sunset and the Morning row hides from sunset while not done. Started and done rites always show, and the Rituals menu never hides anything. See [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 8. **Planned** there too: an optional **Put the day down** first row on the Night rite (free text, parsed into steps with a preview), and an optional weekly check-in in Header → Rituals (space, sleep, food, movement on 1–5, your own trend only).
+**Built 2026-10-16:** on today's day lens, the Night row hides until sunset and the Morning row hides from sunset while not done. Started and done rites always show, and the Rituals menu never hides anything. See [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 8. **Planned** there too: an optional **Put the day down** first row on the Night rite (free text, parsed into steps with a preview), and an optional weekly check-in in Header → Rituals (space, sleep, food, movement on 1–5, your own trend only).
 
 **Star Lord ritual** is the named rite. It lands on the local day of the new
 moon, the local day of the full moon, and the birthday. The full moon is the

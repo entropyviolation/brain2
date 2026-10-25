@@ -1,7 +1,7 @@
 /**
  * components/Home/Tracking/session-debrief.css
  *
- * The sitting review and the note it leaves for the next clock.
+ * The end-of-session reflection and the note it leaves for the next clock.
  * Same steel face as the unfinished-objectives question.
  */
 
@@ -126,10 +126,10 @@
 
 .trk-debrief-step,
 .trk-debrief-task {
-  display: grid;
-  grid-template-columns: 16px 1fr;
-  gap: 2px 8px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
   padding: 4px 0;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
 }
@@ -144,7 +144,6 @@
 }
 
 .trk-debrief-meta {
-  grid-column: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -211,17 +210,8 @@
 .trk-debrief-scale {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
-}
-
-.trk-debrief-scale button {
-  min-width: 4.2rem;
-  padding: 3px 6px;
-}
-
-.trk-debrief-scale button[aria-pressed="true"] {
-  background: #000080;
-  color: #fff;
 }
 
 .trk-debrief-actions {
