@@ -27,7 +27,7 @@ import { useAnalyticsRange } from "./analytics-range-store"
 import { CrossSection } from "./CrossSection"
 import { FindingBlock, StudioHelp } from "./studio-kit"
 import { dailySeries, observatoryFindings, OBSERVATORY_FLOOR, type ObservatoryPair } from "./observatory-findings"
-import { fisherInterval, intervalClearsZero } from "./meta-math"
+import { dailyMeans, fisherInterval, intervalClearsZero } from "./meta-math"
 import { ForestPlot } from "./meta-plots"
 
 type ForestSort = "strength" | "n" | "name"
@@ -88,10 +88,9 @@ export function Observatory() {
         }
       }
     }
-    for (const dp of datapoints) {
-      const key = dateKeyOf(dp.at)
-      if (!key || joyByDay[key] !== undefined) continue
-      if (dp.values.joy !== undefined) joyByDay[key] = dp.values.joy
+    // Mean of the day's joy readings; the first one alone depended on store order.
+    for (const p of dailyMeans(datapoints.map((dp) => ({ at: dp.at, value: dp.values.joy })), new Set(dateKeys))) {
+      joyByDay[p.date] = p.value
     }
 
     const pairs: ObservatoryPair[] = [
