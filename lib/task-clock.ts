@@ -134,11 +134,11 @@ export function startTaskClock(
 }
 
 /** Stop the clock if it is on this task. */
-export function stopTaskClock(taskId?: string, now = new Date()): void {
+export function stopTaskClock(taskId?: string, now = new Date(), opts?: { parkUnfinished?: boolean }): void {
   const session = usePenColorSessionStore.getState().session
   if (!session) return
   if (taskId && session.taskId !== taskId) return
-  stopPenColorSession(now)
+  stopPenColorSession(now, opts)
 }
 
 /** Tasks linked to this pen (`Task.penLinks`), in list order. Pure. */

@@ -8,7 +8,7 @@
  *
  * One snapshot covers the stores that chase each other (Tracking entries, the
  * sleep log, the live work session, the live pen-color session, habit
- * completions, points, tasks). Sleep sync and habit-tracking sync rewrite
+ * completions, points, tasks, unfinished objectives). Sleep sync and habit-tracking sync rewrite
  * derived rows after a paint; restoring only the grid would let them resurrect
  * the stroke. Capturing the cluster means one Cmd+Z returns the Home dashboard
  * to the moment before the action.
@@ -46,6 +46,8 @@ import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
+import type { ParkedObjective } from "@/lib/unfinished-objectives"
 
 export const MAX_ACTION_HISTORY = 40
 
@@ -94,6 +96,7 @@ type WorldSnap = {
   quarterlyHabitData: ReturnType<typeof useHabitsStore.getState>["quarterlyHabitData"]
   pointsHistory: ReturnType<typeof usePointsStore.getState>["pointsHistory"]
   tasks: ReturnType<typeof useTaskStore.getState>["tasks"]
+  unfinished: ParkedObjective[]
 }
 
 let pendingBook: (() => void) | null = null
@@ -133,6 +136,7 @@ function applyBookkeeping(snap: WorldSnap): void {
   })
   usePointsStore.setState({ pointsHistory: snap.pointsHistory })
   useTaskStore.setState({ tasks: snap.tasks })
+  useUnfinishedObjectivesStore.setState({ rows: snap.unfinished })
 }
 
 /** Browser keydowns paint the grid before habit/points/task bookkeeping. Tests stay synchronous. */
@@ -191,6 +195,7 @@ function captureWorld(): { restore: () => void; world: WorldSnap } {
     quarterlyHabitData: habits.quarterlyHabitData,
     pointsHistory: usePointsStore.getState().pointsHistory,
     tasks: useTaskStore.getState().tasks,
+    unfinished: useUnfinishedObjectivesStore.getState().rows,
   }
 
   return {

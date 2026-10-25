@@ -24,6 +24,7 @@ import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
@@ -155,6 +156,7 @@ export function resetAllStores() {
   useSunTimesStore.getState().resetSunTimes()
   useWorkSessionStore.setState({ session: null })
   usePenColorSessionStore.setState({ session: null })
+  useUnfinishedObjectivesStore.setState({ rows: [] })
   useIngestStore.setState({
     enabled: true,
     allowGroups: false,

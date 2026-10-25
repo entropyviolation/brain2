@@ -23,11 +23,15 @@ import { selectOperations } from "@/lib/operations"
 import { getOperationTrackingTagIds } from "@/lib/operation-types"
 import { activeTrackingLink } from "@/lib/habit-tracking"
 import {
+  addWorkCompletedObjective,
   addWorkNowObjective,
+  attachWorkNowObjective,
   editWorkNowObjectiveText,
   formatElapsedClock,
   removeWorkNowObjective,
+  saveWorkObjectiveForLater,
   sessionElapsedMs,
+  stopWorkingOnOperation,
   toggleWorkNowObjectiveComplete,
   toggleWorkingOnOperation,
 } from "@/lib/operation-work-session"
@@ -35,6 +39,9 @@ import { useWorkSessionClock } from "@/components/Operations/WorkingNowControl"
 import { formatUsualDuration, usualDurationMinutes } from "@/lib/estimated-values"
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
+import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { activeNowObjectives } from "@/lib/now-objective"
+import { attachChoicesForOperation } from "@/lib/unfinished-objectives"
 import "@/components/Operations/operations-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 import { NativeSelect } from "@/components/ui/native-select"
@@ -59,6 +66,13 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
   const live = Boolean(session)
   const elapsed = session ? formatElapsedClock(sessionElapsedMs(session, now)) : null
   const usual = live && selected ? usualDurationMinutes(tasks, selected) : null
+  const attachChoices = useMemo(
+    () => (session ? attachChoicesForOperation(tasks, session.operationId) : []),
+    [tasks, session],
+  )
+  const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) =>
+    stopWorkingOnOperation(new Date(), park ? { parkUnfinished: true } : undefined),
+  )
 
   if (operations.length === 0) return null
 
@@ -75,7 +89,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
     >
       {compact ? null : <span className={`ops-now-led${live ? " live" : ""}`} aria-hidden />}
       <label>
-        {compact ? <span className="sr-only">Working on</span> : "Working on"}
+        {compact ? <span className="sr-only">Working on</span> : <span className="ops-now-kicker">Working on</span>}
         <NativeSelect
           aria-label="Operation to work on"
           value={selectedId}
@@ -95,9 +109,13 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
           objectives={session.nowObjectives}
           contextName={selected?.description}
           onAdd={(text) => addWorkNowObjective(text)}
+          onAddCompleted={(text) => addWorkCompletedObjective(text)}
           onEditText={(id, text) => editWorkNowObjectiveText(id, text)}
           onToggleComplete={(id) => toggleWorkNowObjectiveComplete(id)}
           onRemove={(id) => removeWorkNowObjective(id)}
+          onSaveForLater={(id) => saveWorkObjectiveForLater(id)}
+          onAttach={(id, target) => attachWorkNowObjective(id, target)}
+          attachChoices={attachChoices}
         />
       )}
       {usual && (
@@ -114,7 +132,11 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
         className={`ops-btn ops-btn-now${live ? " live" : ""}`}
         disabled={!selected}
         aria-label={live && selected ? `Stop working on ${selected.description}` : "Working on this now"}
-        onClick={() => selected && toggleWorkingOnOperation(selected.id)}
+        onClick={() => {
+          if (!selected) return
+          if (live) unfinished.request()
+          else toggleWorkingOnOperation(selected.id)
+        }}
       >
         {compact
           ? live
@@ -124,6 +146,7 @@ export function WorkingNowStrip({ compact = false }: { compact?: boolean } = {})
             ? `Stop working on ${selected.description}`
             : "Working on this now"}
       </button>
+      {unfinished.dialog}
       {compact ? null : (
       <span
         className="ops-now-meta"

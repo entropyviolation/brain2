@@ -27,6 +27,8 @@ import {
 } from "@/lib/operation-work-session"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { ItemPicker } from "@/components/Lists/item-picker"
+import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { activeNowObjectives } from "@/lib/now-objective"
 
 export function useWorkSessionClock() {
   const session = useWorkSessionStore((s) => s.session)
@@ -72,9 +74,16 @@ export function WorkingNowControl({
   const live = session?.operationId === operationId
   const taskClock = useTaskClockStarter()
   const clockTaskId = usePenColorSessionStore((s) => s.session?.taskId)
+  const penObjectives = usePenColorSessionStore((s) => s.session?.nowObjectives)
   const namedTask = tasks.find((t) => t.id === clockTaskId)
   const elapsed =
     live && session ? formatElapsedClock(sessionElapsedMs(session, now)) : null
+  const workStop = useUnfinishedStop(live ? activeNowObjectives(session?.nowObjectives).length : 0, (park) =>
+    stopWorkingOnOperation(new Date(), park ? { parkUnfinished: true } : undefined),
+  )
+  const taskStop = useUnfinishedStop(activeNowObjectives(penObjectives).length, (park) =>
+    stopTaskClock(namedTask?.id, new Date(), park ? { parkUnfinished: true } : undefined),
+  )
 
   return (
     <span className="ops-menubar-now">
@@ -87,12 +96,12 @@ export function WorkingNowControl({
       <button
         type="button"
         className={`ops-btn ops-btn-now${live ? " live" : ""}`}
-        onClick={() => toggleWorkingOnOperation(operationId)}
+        onClick={() => (live ? workStop.request() : toggleWorkingOnOperation(operationId))}
       >
         {live ? `Stop working on ${operationName}` : "Working on this now"}
       </button>
       {namedTask ? (
-        <button type="button" className="ops-btn ops-btn-now live" onClick={() => stopTaskClock(namedTask.id)}>
+        <button type="button" className="ops-btn ops-btn-now live" onClick={() => taskStop.request()}>
           Stop {namedTask.name}
         </button>
       ) : tasks.length > 0 ? (
@@ -126,6 +135,8 @@ export function WorkingNowControl({
         </span>
       ) : null}
       {taskClock.picker}
+      {workStop.dialog}
+      {taskStop.dialog}
     </span>
   )
 }
