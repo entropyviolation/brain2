@@ -336,6 +336,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `ItemDetailPopup`). The fascia lamp (`ItemSaveFlag`) stays on: green **Saved**
   while the draft matches the stored item, pink **Unsaved changes** while it
   does not. **Cmd/Ctrl+S** saves that draft while the surface is in front.
+  A click on the page behind the popup saves and minimizes. Refresh while
+  detail is open saves and the next load opens that minimized dock.
   Tabs and chrome follow `resolveDetailView` (item type +
   list `detailPanels` / `hiddenDetailPanels` + capabilities). Book shows a cover
   and featured page fields; non-task types do not inherit Scheduling by default.

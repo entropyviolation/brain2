@@ -9,6 +9,7 @@ import { listItemActivity, resetItemActivity } from "@/lib/item-activity"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
+import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 
 describe("TaskDetailPopup", () => {
   const onClose = vi.fn()
@@ -16,6 +17,7 @@ describe("TaskDetailPopup", () => {
   beforeEach(() => {
     resetLocalStorage()
     resetItemActivity()
+    resetItemDetailSessionForTests()
     onClose.mockClear()
     useItemTypeStore.getState().resetTypes()
     useTaskStore.getState().clearAllData()
@@ -245,6 +247,70 @@ describe("TaskDetailPopup", () => {
       await user.click(screen.getByRole("button", { name: "Save changes" }))
       expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
       expect(onClose).toHaveBeenCalled()
+    })
+
+    async function overlay() {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      const el = document.querySelector("div.fixed.inset-0")
+      expect(el).toBeTruthy()
+      return el as Element
+    }
+
+    it("saves and minimizes when you click away", async () => {
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      fireEvent.pointerDown(await overlay())
+      expect(screen.queryByRole("heading", { name: "Unsaved changes" })).not.toBeInTheDocument()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
+      expect(screen.getByRole("button", { name: "Plan team demo" })).toBeInTheDocument()
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+
+    it("still asks when Close is clicked", async () => {
+      const user = userEvent.setup()
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      await user.click(screen.getByRole("button", { name: "Close" }))
+      expect(screen.getByRole("heading", { name: "Unsaved changes" })).toBeInTheDocument()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(useTaskStore.getState().tasks[0].description).toBe("Plan sprint demo")
+    })
+
+    it("saves on reload and leaves the item pinned for the dock", () => {
+      render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      typeIntoDescription()
+      const leaving = new Event("beforeunload", { cancelable: true })
+      window.dispatchEvent(leaving)
+      expect(leaving.defaultPrevented).toBe(false)
+      expect(useTaskStore.getState().tasks[0].description).toBe("Plan team demo")
+      expect(readItemDetailDock()).toBe("popup-task")
+    })
+
+    it("keeps the pin of the detail that is still open", () => {
+      act(() => {
+        useTaskStore.getState().addTask({
+          ...useTaskStore.getState().tasks[0],
+          id: "other-task",
+          title: "Book the room",
+          description: "Book the room",
+        })
+      })
+      const first = render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+      const second = render(<TaskDetailPopup taskId="other-task" open onClose={vi.fn()} />)
+      expect(readItemDetailDock()).toBe("other-task")
+      second.unmount()
+      expect(readItemDetailDock()).toBe("popup-task")
+      first.unmount()
+      expect(readItemDetailDock()).toBeNull()
+    })
+
+    it("opens on the dock when a reload restored it", () => {
+      render(<TaskDetailPopup taskId="popup-task" open startMinimized onClose={onClose} />)
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Plan sprint demo" })).toBeInTheDocument()
     })
 
     it("Exit without saving from the minimized item drops the edit", async () => {
