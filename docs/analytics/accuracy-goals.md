@@ -1,6 +1,6 @@
 # Accuracy → Goals
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
 File: `components/Analytics/GoalsAnalytics.tsx`, plus `GoalTexturePlate` from `CompletionReviewPlates.tsx` (shared with Reflection, not changed here). Math: `lib/objectives.ts` (`goalProgressPercent`, `goalsNeedingAttention`), `accuracy-stats.ts` (`goalPace`).
 
@@ -16,7 +16,8 @@ File: `components/Analytics/GoalsAnalytics.tsx`, plus `GoalTexturePlate` from `C
 - **New, where the work went** (IIB *20th Century Death*, size by cause): one bubble per open goal, area ∝ contributing completions in the window. Grey or orange when nothing was linked (orange = also neglected).
 
 ## Math
-- Elapsed = (now − start) ÷ (end − start). Start = `startDate` or `createdAt`; end = `deadline` or `endDate`.
+- Elapsed = (now − start) ÷ (end − start). Start = `startDate` or `createdAt`; end = `deadline` or `endDate`. With no end date, a day / week (Monday start) / month / season / year goal is paced across the current calendar period (`periodSpan`). Custom and aspirational goals without dates show —.
+- Days left drops one hour before rounding up, so a DST shift does not add a day.
 - Gap = progress − elapsed. Needed / day = (target − current) ÷ days left.
 
 ## Research notes

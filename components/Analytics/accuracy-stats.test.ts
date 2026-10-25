@@ -88,5 +88,11 @@ describe("accuracy-stats", () => {
     expect(pace.daysLeft).toBe(5)
     expect(pace.neededPerDay).toBeCloseTo(1.6)
     expect(goalPace({ target: 5, current: 1, createdAt: new Date() }).gap).toBeNull()
+    const yearly = goalPace(
+      { target: 12, current: 6, createdAt: new Date(2025, 5, 1), periodKind: "year" },
+      new Date(2026, 6, 2),
+    )
+    expect(yearly.elapsed).toBeCloseTo(0.5, 1)
+    expect(yearly.daysLeft).toBe(183)
   })
 })

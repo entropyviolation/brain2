@@ -307,7 +307,7 @@ export function PlanVsReality() {
               <div className="an-acc-plate">
                 <p className="an-canvas-title">Plan ← mirror → reality</p>
                 <div className="an-acc-mirror">
-                  {comparison.metrics.map((m) => {
+                  {comparison.metrics.filter((m) => m.planned > 0 || m.actual > 0).map((m) => {
                     const max = Math.max(m.planned, m.actual, 1)
                     return (
                       <div key={m.key} className="an-acc-mirror-row">

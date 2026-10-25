@@ -93,7 +93,7 @@
 }
 
 .fm98.an95 .an-acc-cell {
-  width: 7px;
+  width: 10px;
   height: 18px;
   padding: 0;
   border: 0;
@@ -362,4 +362,29 @@
 .fm98.an95 .an-legend i.an-pvr-planned,
 .fm98.an95 .an-legend i.an-pvr-actual {
   position: static;
+}
+
+/* Plate marks are buttons for click-to-open. Strip the shell's key chrome so
+   only the data shape shows. :not(#at) matches the atlas skin's weight. */
+.fm98.an95 :is(.an-acc-peak, .an-acc-cell, .an-acc-unit, .an-acc-bubble, .an-acc-table button):not(#at) {
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  text-transform: none;
+}
+
+.fm98.an95 .an-acc-peak:not(#at) {
+  background: transparent;
+}
+
+.fm98.an95 button.an-acc-bubble:not(#at) {
+  border-radius: 50%;
+}
+
+.fm98.an95 .an-acc-table button:not(#at) {
+  height: auto;
+  padding: 0;
+  background: none;
 }
