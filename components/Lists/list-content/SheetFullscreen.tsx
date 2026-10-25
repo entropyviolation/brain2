@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { commitFocusedSheetEdit, isEditingField } from "./sheet-fullscreen"
+import { KeycapClose } from "@/components/keycap-close"
 import "./sheet-fullscreen.css"
 
 function FullscreenToggle({
@@ -72,9 +73,7 @@ function SheetFullscreenWindow({
             <button type="button" className="fm-title-btn" aria-label="Restore down" title="Exit fullscreen" onClick={onExit}>
               ❐
             </button>
-            <button type="button" className="fm-title-btn b2-close-key" aria-label="Close" title="Exit fullscreen" onClick={onExit}>
-              ×
-            </button>
+            <KeycapClose label="Close" title="Exit fullscreen" onClick={onExit} />
           </div>
         </div>
         <div className="fm-window-body sheet-fs-body">{children}</div>

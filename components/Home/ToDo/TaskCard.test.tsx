@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
@@ -158,5 +158,48 @@ describe("TaskCard", () => {
     fireEvent.keyDown(input, { key: "Enter" })
     expect(screen.getByText("Resources")).toBeInTheDocument()
     expect(screen.getByText("Drill")).toBeInTheDocument()
+  })
+
+  it("toggles completion for a selected step and its nested substeps in the right control panel", () => {
+    seed({
+      subtasks: [
+        s("insert", {
+          points: 4,
+          subtasks: [s("fold booklet"), s("slip into tray")],
+        }),
+        s("label"),
+      ],
+    })
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1", "insert"))
+
+    const side = document.querySelector("aside.task-card-side") as HTMLElement
+    expect(side).toBeTruthy()
+
+    const stepCheckbox = within(side).getByRole("checkbox", { name: "Complete insert" }) as HTMLInputElement
+    expect(stepCheckbox.checked).toBe(false)
+    expect(within(side).getByText("Mark complete")).toBeInTheDocument()
+
+    fireEvent.click(stepCheckbox)
+    expect(steps().find((x) => x.id === "insert")!.completed).toBe(true)
+    expect(stepCheckbox.checked).toBe(true)
+    expect(within(side).getByText("Completed")).toBeInTheDocument()
+
+    fireEvent.click(stepCheckbox)
+    expect(steps().find((x) => x.id === "insert")!.completed).toBe(false)
+    expect(stepCheckbox.checked).toBe(false)
+
+    // Substeps inside SubstepPreview ("Inside") also render completion checkboxes
+    const insideSection = within(side).getByRole("region", { name: "Steps inside" })
+    const kidCheckbox = within(insideSection).getByRole("checkbox", { name: "Complete fold booklet" }) as HTMLInputElement
+    expect(kidCheckbox.checked).toBe(false)
+
+    fireEvent.click(kidCheckbox)
+    expect(steps().find((x) => x.id === "insert")!.subtasks!.find((k) => k.id === "fold booklet")!.completed).toBe(true)
+    expect(kidCheckbox.checked).toBe(true)
+
+    fireEvent.click(kidCheckbox)
+    expect(steps().find((x) => x.id === "insert")!.subtasks!.find((k) => k.id === "fold booklet")!.completed).toBe(false)
+    expect(kidCheckbox.checked).toBe(false)
   })
 })

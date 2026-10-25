@@ -1,8 +1,9 @@
 /**
  * Current moment — the top of the Now dialog, on both panes.
- * Activity, Location, Mood, and Company, plus the Metrics key, Working on,
- * Intake, Events, and Thought process. Estimated facts wear `~` and the dashed est.
- * treatment. Update state opens from a lane and writes on either pane.
+ * Activity, Location, Mood, and Company, plus the Metrics key, the operation
+ * clock, the activity-pen clock, Intake, Events, Notes, and Thought process.
+ * Estimated facts wear `~` and the dashed est. treatment. Update state opens
+ * from a lane and writes on either pane.
  * Metrics is the same wellbeing logger the header used to open.
  */
 "use client"
@@ -22,6 +23,7 @@ import {
 } from "@/lib/tracking-presence"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
+import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { EstMark } from "@/components/header-tracking/est-mark"
@@ -118,10 +120,11 @@ export function CurrentMoment({
 }
 
 /**
- * Working on, then the four lanes with Metrics at the end of that band —
- * always up. Clicking a lane opens Update state under the band; clicking the
- * same lane again closes it. Intake, Events, and Thought process follow.
- * Stays mounted across panes.
+ * The operation clock, then the activity-pen clock (search or create a pen on
+ * Activity and start that shared pen session). Then the four lanes with
+ * Metrics at the end of that band — always up. Clicking a lane opens Update
+ * state under the band; clicking the same lane again closes it. Intake,
+ * Events, Notes, and Thought process follow. Stays mounted across panes.
  */
 export function CurrentMomentDeck() {
   const { today, lanes } = useCurrentMomentLanes()
@@ -142,8 +145,9 @@ export function CurrentMomentDeck() {
   return (
     <section className="htk-moment" aria-label="Current moment" data-testid="htk-current-moment">
       <p className="htk-moment-title">Current moment</p>
-      <div className="htk-working" data-testid="htk-working-now">
+      <div className="htk-working trk95" data-testid="htk-working-now">
         <WorkingNowStrip />
+        <PenColorNowStrip scopeId="activity" />
       </div>
       <div className="htk-state">
         <div className="htk-moment-band">

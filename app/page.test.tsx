@@ -5,10 +5,28 @@ import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
-import { APP_NAV_KEYS, applyListsNavigation, writeStoredId, writeStoredTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, applyListsNavigation, writeStoredTab } from "@/lib/app-navigation"
+import { writeItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { useTaskStore } from "@/lib/task-store"
 
 const listsMounts = vi.fn()
+
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
+  TaskDetailPopup: ({
+    taskId,
+    open,
+    startMinimized,
+  }: {
+    taskId: string | null
+    open: boolean
+    startMinimized?: boolean
+  }) =>
+    open ? (
+      <div data-testid="item-popup" data-minimized={startMinimized ? "1" : ""}>
+        {taskId}
+      </div>
+    ) : null,
+}))
 
 vi.mock("@/components/ItemDetail/ItemDetailPage", () => ({
   EnhancedTaskDetail: ({ taskId, onBack }: { taskId: string; onBack: () => void }) => (
@@ -69,15 +87,28 @@ describe("app page shell", () => {
   })
 
   it("keeps the pinned header mounted when item detail is open", async () => {
-    writeStoredId(APP_NAV_KEYS.appItemId, "pin-item-1")
+    const user = userEvent.setup()
+    writeStoredTab(APP_NAV_KEYS.appTab, "categories")
     render(<Home />)
+    await user.click(await screen.findByRole("button", { name: "open item" }))
 
     expect(screen.getByTestId("app-header")).toHaveAttribute("data-pin", "viewport")
-    expect(await screen.findByTestId("item-detail")).toHaveTextContent("pin-item-1")
+    expect(await screen.findByTestId("item-detail")).toHaveTextContent("item-1")
     // Desk stays in the document (hidden) so Lists can remain warm.
     expect(screen.getByTestId("app-desk")).toHaveAttribute("aria-hidden", "true")
     // The tab keys live in the pinned header now, so they stay with it.
     expect(within(screen.getByTestId("app-header")).getByRole("tab", { name: "Home" })).toBeInTheDocument()
+  })
+
+  it("comes back minimized after a refresh that left item detail open", async () => {
+    writeItemDetailDock("pin-item-1")
+    render(<Home />)
+
+    const dock = await screen.findByTestId("item-popup")
+    expect(dock).toHaveAttribute("data-minimized", "1")
+    expect(dock).toHaveTextContent("pin-item-1")
+    expect(screen.queryByTestId("item-detail")).not.toBeInTheDocument()
+    expect(screen.getByTestId("app-desk")).not.toHaveAttribute("aria-hidden", "true")
   })
 
   it("shows the pin bar with the tab strip when no item is open", async () => {

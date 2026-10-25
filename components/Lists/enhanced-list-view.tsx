@@ -9,6 +9,7 @@
 import type React from "react"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
+import { KeycapClose } from "@/components/keycap-close"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useListsUiStore, type ListDisplay } from "@/lib/lists-ui-store"
 import { inferColumnType } from "@/lib/csv"
@@ -118,6 +119,9 @@ import { MergeListsDialog } from "@/components/Lists/dialogs/MergeListsDialog"
 import { MergeItemsConfirmDialog } from "@/components/Lists/dialogs/MergeItemsConfirmDialog"
 import { MergeItemsDialog } from "@/components/Lists/dialogs/MergeItemsDialog"
 import { EditListDialog } from "@/components/Lists/dialogs/EditListDialog"
+import { documentAttrsFromFile, photoAttrsFromFile, titleFromFileName } from "@/lib/media-ingest"
+import { listAllowsDocuments } from "@/lib/document-types"
+import { listAllowsPhotos } from "@/lib/photo-types"
 import { EditFolderDialog } from "@/components/Lists/dialogs/EditFolderDialog"
 import { DuplicateSelectionDialog } from "@/components/Lists/dialogs/DuplicateSelectionDialog"
 import { PasteSelectionDialog } from "@/components/Lists/dialogs/PasteSelectionDialog"
@@ -153,7 +157,7 @@ import {
 import { chooseListsLocation } from "@/components/Lists/lib/lists-location-choice"
 import { openTargetKey } from "@/components/Lists/open-target"
 import type { CsvImportState, GridEntry, IconPickerTarget, SmartId } from "@/components/Lists/types"
-import { isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue, type AttributeDefinition, type ListItemSort } from "@/lib/types"
+import { LIST_DISPLAY_MODES, isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue, type AttributeDefinition, type ListItemSort } from "@/lib/types"
 import { listAttributeSchema, mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { getItemType } from "@/lib/item-types"
 import { resolveDefaultViewSort, setDefaultViewSort } from "@/lib/default-view-prefs"
@@ -606,11 +610,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return "default"
     const saved = listDisplay[openTargetKey(openTarget)]
     if (saved && isListDisplayMode(saved)) return saved
-    return openSmart ? "checklist" : "default"
+    return openSmart ? "checklist" : listAllowsPhotos(viewList) ? "gallery" : listAllowsDocuments(viewList) ? "documents" : "default"
   })()
   // If the list no longer offers the saved active display, fall back to the
   // first display it does offer (Feature 1: per-list display offerings).
-  const offeredDisplays = sanitizeEnabledDisplays(viewList?.enabledDisplays)
+  const offeredDisplays = (() => {
+    const base = sanitizeEnabledDisplays(viewList?.enabledDisplays)
+    const extra = (listAllowsPhotos(viewList) ? ["gallery"] : []).concat(listAllowsDocuments(viewList) ? ["documents"] : []) as ListDisplay[]
+    if (extra.length === 0) return base
+    const all = base ?? LIST_DISPLAY_MODES.filter((d) => d !== "gallery" && d !== "documents")
+    return [...all, ...extra.filter((d) => !all.includes(d))]
+  })()
   const currentDisplay: ListDisplay =
     offeredDisplays && !offeredDisplays.includes(rawDisplay) ? offeredDisplays[0] : rawDisplay
 
@@ -1552,6 +1562,22 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           globalAllHideUncategorized={!!globalAllHideUncategorized}
           addingTaskToTarget={addingTaskToTarget}
           openTargetKeyValue={openTargetKey(openTarget)}
+          onAddMedia={
+            openTarget?.type === "category" && (listAllowsPhotos(openCategory) || listAllowsDocuments(openCategory))
+              ? async (drafts) => {
+                  const listId = openTarget.id
+                  const photo = listAllowsPhotos(openCategory)
+                  for (const d of drafts) {
+                    const title = d.title?.trim() || (d.file ? titleFromFileName(d.file.name) : "")
+                    if (!title) continue
+                    const base = taskActions.buildBaseTask(title, listId)
+                    base.lists = [listId]
+                    const attrs = d.file ? await (photo ? photoAttrsFromFile(d.file) : documentAttrsFromFile(d.file)) : {}
+                    addTask({ ...base, attributes: { ...base.attributes, ...attrs } })
+                  }
+                }
+              : undefined
+          }
           onAddTask={(text) => taskActions.handleAddTaskToOpen(text, openTarget, currentFolder, () => { setAddingTaskToTarget(null) })}
           onCancelAddTask={() => setAddingTaskToTarget(null)}
           onShowAddTask={() => { setShowBulkAdd(false); setAddingTaskToTarget(openTargetKey(openTarget)) }}
@@ -1685,7 +1711,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           <div className="fm-title-bar-controls">
             <button className="fm-title-btn" aria-label="Minimize">_</button>
             <button className="fm-title-btn" aria-label="Maximize">□</button>
-            <button className="fm-title-btn b2-close-key" aria-label="Close" onClick={closeTarget}>×</button>
+            <KeycapClose label="Close" onClick={closeTarget} />
           </div>
         </div>
 
@@ -2016,7 +2042,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       </div>
 
       <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} initialName={newListSeed} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} onBulkCreate={handleBulkCreateLists} />
-      {csvImport && <CsvImportDialog csvImport={csvImport} categories={categories} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
+      {csvImport && <CsvImportDialog csvImport={csvImport} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
       <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id) || isRemindersList(editingCategory) || isPeopleIKnowList(editingCategory) || isInstagramPeopleList(editingCategory)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} onDuplicate={() => editingCategory && openDuplicateList(editingCategory)} />
       <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) handleNavTo("all"); setEditingFolder(null) } }} onDuplicate={() => editingFolder && openDuplicateFolder(editingFolder)} />
       <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} onBulkCreate={handleBulkCreateFolders} />

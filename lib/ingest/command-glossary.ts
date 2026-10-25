@@ -336,7 +336,7 @@ What it is
 How to use it
 • log: left room  |  log: left room at 3:30  |  log: left room at 3:30 loc: home
 • Text with no verb is the same as log: (left room → log: left room). Add -i or -inbox at the end to also file it in Inbox.
-• Desktop Quick Add log: is this same log (dark blue LOG mark). It does not go to Inbox.
+• Desktop Quick Add log: is this same log (dark blue LOG mark). It does not go to Inbox. The row is also a Log item on Lists → Tracking → Log.
 • log: shower 10m  — just finished (end is send time)
 • log: START walk  |  log: END walk 5:00
 • log: left room at 3:30 est  ·  log: left room unknown  — estimated or unknown clock
@@ -362,7 +362,7 @@ How to use it
 • tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix  |  TP:  |  thought process:  |  log: tp:
   Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels.
   Why you are doing something, what you expect next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
-  Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process.
+  Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process. Also a Thought Process item on Lists → Tracking → Thought Process. Quick Add thought process: / tp: uses this write.
   First line is the title; a line under it is the note. Same clocks as a log line.
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}

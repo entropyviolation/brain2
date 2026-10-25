@@ -25,7 +25,7 @@ cycle marks, reviews, operations, goals, and the item library. Charts use **rech
 (themed, including **pies**) plus shared studio primitives (treemap, density,
 mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 `lib/*` helpers plus `cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`,
-and `signal-stats.ts` here. No LLM in this studio today. No new stores. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
+and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
 so Analytics still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
@@ -71,6 +71,10 @@ left out (Wave 13, GS-2 in
 [`docs/ScienceandSanityBrain2.md`](../../docs/ScienceandSanityBrain2.md)).
 They describe events. The Regret view id stays; the prose does not call the
 person regretful.
+
+_Last mapped: 2026-10-23_ **Sources → Instagram feeds the Instagram lists.** Each new report build is written onto the seven Instagram lists in Lists (followers, following, mutuals, no follow-back, fans, pending, blocked) by `lib/instagram-lists-sync.ts`. It runs on its own at start and after a build, and the **Update my lists** key in the bar (desktop) redoes it.
+
+_Last mapped: 2026-10-23_ **Time active feeds iPhone Screen Time.** Each session in the last-month window (the 275 behind the sessions tile) is painted in Tracking → iPhone Screen Time as an estimated **Instagram** block with the note `derived from instagram data`, by `lib/instagram-sessions-sync.ts`. It runs at start, after a build, and from **Update my lists**. Older years are not painted (action-only floors; localStorage room). The session list comes from `analyze.py` (`time_active.sessions_recent`); a build made before that change has none until it is rebuilt.
 
 **Meaning group (planned, not built).** Wave 14 in
 [`docs/JungBrain2.md`](../../docs/JungBrain2.md) adds a sixth studio group,
@@ -283,7 +287,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 
 **Pipeline** (`electron/instagram-report.js`, Electron main only):
 
-1. Scan `~/Downloads` and an optional folder ("Watch a folder…") at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
+1. Scan `~/Downloads`, an optional folder ("Watch a folder…") and, while `watchGoogleDrive` is on, each Google Drive `My Drive` (`googleDriveDirs` via `watchedDirs`) at start, on folder changes, and every minute. Match `instagram-<account>-<YYYY-MM-DD>-<id>` as a zip (several parts are grouped) or an unzipped folder with `your_instagram_activity/`. Skip `.crdownload`, `.download`, `.part`. A zip must hold still for 10 s. Other accounts are ignored.
 2. Copy or unzip into `<userData>/instagram/exports/<date>-<id>/`. Downloads is never changed.
 3. Write the view's manual DM matches to `matches.json`.
 4. Run `analyze.py` then `build_report.py` with the configured Python and `-I`, into a new `builds/<stamp>/` (`IG_OUT`). Last run's thumbs are copied in first.
@@ -295,7 +299,7 @@ last error. Do not reskin the report with the atlas CSS (`docs/DESIGN_STYLE.md`)
 (`~/texts-analysis/.venv/bin/python`), `me` (`IG_ME`, the DM sender name),
 `handle` (`IG_HANDLE`, the subtitle and the account an export must match),
 `downloadsDir`, `extraDir`, `matchesPath`, `ffmpeg` (`IG_FFMPEG`; otherwise
-PATH, Homebrew, Anaconda), `keepExports`. Missing Python, scripts, packages
+PATH, Homebrew, Anaconda), `keepExports`, `watchGoogleDrive` (default on). Missing Python, scripts, packages
 (emoji, scikit-learn, vaderSentiment, Pillow) and ffmpeg show in the view.
 
 **State the report keeps.** The report stores `ig-matches`, `ig-hide-cols` and
@@ -322,7 +326,78 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-Meta's developer docs list a repeating export to Google Drive or Dropbox
-(Accounts Center schedule). It is not confirmed here that its files match the
-`instagram-<account>-<date>-<id>` name; see the auto-update notes before
-relying on it.
+**Google Drive scheduled export.** _Last mapped: 2026-10-23_ Meta writes
+each scheduled export into My Drive as `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`.
+`parseMetaFolderName` reads the date from it. `scanMetaFolder` takes, inside
+it, an unzipped export, `instagram-…` zips or folders, or plain zips as the
+parts of one export. The name has no account, so the username is read from
+`personal_information.json` after unzipping (`exportAccount`); another
+account's export is skipped. A `meta-…` folder must hold still (file count,
+size, newest mtime) for 10 s, since Drive may still be syncing it. The newest
+export builds the report. Every other export not yet archived is unzipped,
+archived and its copy removed (`archiveOnly`); a failed one is retried hourly,
+or at once if it changes. The view says **Google Drive watched** when a Drive
+folder is found. Not checked yet: the contents of a real Drive export (the
+first one was still empty). See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
+
+### Export archive (every export, merged)
+
+_Last mapped: 2026-10-23_
+
+The report pipeline keeps only the newest exports (`keepExports`). The
+archive keeps all of them (`electron/instagram-archive.js`). It runs after a
+build is marked good and before `prune`, and once at watcher start for any
+export folder not archived yet.
+
+- `archive/blobs/<aa>/<sha256>` holds every file of every export once, by content. Hard links when on the same disk, so an unchanged file across daily exports costs nothing. Pruning an export folder does not touch the blobs.
+- `archive/manifests/<exportDir>.json` maps each export's paths to blobs, so any old export can be rebuilt.
+- `archive/messages.json` merges all DMs. A message is keyed by thread folder, time, sender and a content hash, and keeps the first and last export that held it.
+- `removedMessages` lists DMs an earlier export had and a later one does not: **removed** (unsent or deleted), **edited** (same time and sender, other text), or **chat gone** (the whole thread is missing). The view shows them under "Unsent, deleted and edited messages" (`cogs:instagram:removed`, `/api/instagram/removed` in dev).
+- Limit: a message sent and removed between two exports was never in any export. Daily exports keep that gap to a day.
+- Meta's Latin-1 text is fixed on the way in (`fixText`).
+- Half-copied `exports/*.partial` folders are never archived. A blob copy goes to a temp file and is renamed, so a failed copy leaves no short blob.
+
+**Planned:** checks for when the first real Google Drive export lands are in `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER". The same "gone since" merge for followers and following (unfollows), comments and likes. Showing archived photos of removed messages (the blobs are kept; the view lists them as attachments for now).
+
+### Monthly export reminder
+
+_Last mapped: 2026-10-23_
+
+Everything after the request is automatic; a device export's request is not.
+Accounts Center can also repeat an export to Google Drive or Dropbox on a
+schedule (Meta's deep-link guide, checked 2026-10-23). That route is not
+tested yet; see `docs/INSTAGRAM_AUTO_UPDATE.md`. A monthly row,
+**Request a new Instagram export**, sits on the Reminders list
+(`lib/instagram-export-reminder.ts`). It uses the normal reminder clock in
+`lib/reminders.ts`: Inbox copy, header bell until Dismiss, and a Telegram
+text with the Accounts Center link when Text me is on. Its description holds
+the link and the steps. The steps and link have one copy,
+`lib/instagram-export-steps.ts`, shared with the view's `ExportSteps`.
+
+- The status line shows **Reminder** with the next fire time and a switch. On means the row exists. Off deletes it.
+- The view seeds it once per device, after the report status loads. The first fire is one month after the export date at 10:00, or the next 10:00 when that has passed. A deleted row stays deleted (`brain2-instagram-export-reminder-seeded` in localStorage).
+- Each switch-on gets a new id (`reminder-instagram-export-<ms>`), because a deleted id is tombstoned for sync.
+- Export settings are always JSON, All time, all information. A date-range export leaves whole sections empty.
+
+Later routes (iPhone app, APIs, free tools) and what each can and cannot
+reach are in [`docs/INSTAGRAM_AUTO_UPDATE.md`](../../docs/INSTAGRAM_AUTO_UPDATE.md).
+
+## Instagram: open one account
+
+_Last mapped: 2026-10-23_
+
+`InstagramView.tsx` hosts the report frame. A Person's **View Instagram data ↗** stores the handle (`openInstagramFor`, `lib/instagram-report.ts`), switches to this tab, and on the frame's `load` the view posts `{ brain2Instagram: "open-account", handle }` into it. The bridge script that `injectBridge` (`electron/instagram-report.js`) puts in the report calls the report's own `openAcct(handle)`. An account not in the export opens an empty card.
+
+_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Analytics (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
+
+## Browser history (`browser`)
+
+_Last mapped: 2026-10-23_
+
+**Kept rows only grow.** The view stores merged visits in IndexedDB key `visits` (union by time+url), so a later export that has lost the old 90 days never removes them. **Screen Time:** `lib/chrome-sessions.ts` paints each site stretch on the Screen Time scope (pen = site name, local servers by page title, sites under 3 visits in `Other sites`, notes start `logged from chrome browser data`, YouTube notes list minutes per video). It merges through `mergeSessionEntries`, so edits and deleted ids win. The backlog is ~3,500 blocks (~1.2 MB); watch the localStorage quota. It may overlap blocks from the ActivityWatch Screen Time sync.
+
+`BrowserHistoryView.tsx` (Sources → Browser) takes Chrome "Quick Chrome History Export" JSON files, one per profile, through a file picker. Files are kept in IndexedDB (`brain2-browser-history`) because they are too big for localStorage. All analysis is `lib/browser-history.ts` (pure, tested in `lib/browser-history.test.ts`): merge and dedupe by time+url, site kinds, sessions (30 min gap), Google searches, YouTube videos.
+
+- YouTube topic is a keyword guess from the title (`TOPICS` in the lib). The export has no channel or description. **Planned:** fetch channel and category by oEmbed if the user opts in.
+- Active time is session span plus one minute per page. An estimate.
+- Not in the Instagram/Texts shell: charts are small inline SVG, skin is `browser-history-view.css`.

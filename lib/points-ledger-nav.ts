@@ -65,3 +65,12 @@ export function openItemDetailPage(itemId: string): void {
   writeStoredId(APP_NAV_KEYS.appItemId, itemId)
   restore()
 }
+
+/** The app shell listens for this and opens the item as a popup over the current screen. */
+export const OPEN_ITEM_POPUP_EVENT = "brain2-open-item-popup"
+
+/** Open item detail as a popup above whatever is showing (Analytics keeps its place). */
+export function openItemDetailPopup(itemId: string): void {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(OPEN_ITEM_POPUP_EVENT, { detail: { id: itemId } }))
+}

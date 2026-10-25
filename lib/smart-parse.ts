@@ -88,6 +88,11 @@ export interface SmartParseResult {
   highlights: SmartHighlight[]
 }
 
+/** Stable id for one recognized span, so a skip survives further typing. */
+export function highlightSkipKey(type: SmartTokenType, text: string): string {
+  return `${type}:${text.trim().toLowerCase()}`
+}
+
 export interface SmartParseOptions {
   /** Reference "now" for relative dates. Defaults to `new Date()`. */
   now?: Date
@@ -96,6 +101,11 @@ export interface SmartParseOptions {
    * Lists, folders, dates, times, priority, duration, and Monkey brain are skipped.
    */
   plain?: boolean
+  /**
+   * Tags the caller turned off, as `highlightSkipKey` strings. A skipped span
+   * is not read: its words stay in the title and set no field.
+   */
+  skip?: readonly string[]
   /**
    * Also drop date, time, priority, and duration from the title.
    * Capture keeps those words. `before 9/12:` uses this to test a date-only phrase.
@@ -586,6 +596,14 @@ export function parseSmartCapture(input: string, options: SmartParseOptions = {}
     const minutes = unit.startsWith("h") ? Math.round(value * 60) : Math.round(value)
     if (minutes <= 0) continue
     candidates.push({ start: m.index!, end: m.index! + m[0].length, type: "duration", duration: minutes })
+  }
+
+  if (options.skip?.length) {
+    const off = new Set(options.skip)
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      const c = candidates[i]
+      if (off.has(highlightSkipKey(c.type, input.slice(c.start, c.end)))) candidates.splice(i, 1)
+    }
   }
 
   // --- Resolve overlaps: earliest start wins; ties → longest span ---

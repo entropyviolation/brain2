@@ -27,7 +27,7 @@
  */
 "use client"
 
-import { useEffect, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { APP_NAME } from "@/lib/app-brand"
 import { CognitiveState } from "@/components/cognitive-state"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
@@ -79,6 +79,39 @@ function NamesModeButton() {
   )
 }
 
+/** A cluster's fold state, remembered per viewer. */
+function useFold(key: string) {
+  const [folded, setFolded] = useState(false)
+  useEffect(() => {
+    try {
+      setFolded(localStorage.getItem(key) === "1")
+    } catch {}
+  }, [key])
+  const toggle = () =>
+    setFolded((v) => {
+      try {
+        localStorage.setItem(key, v ? "0" : "1")
+      } catch {}
+      return !v
+    })
+  return [folded, toggle] as const
+}
+
+function FoldKey({ folded, onToggle, what }: { folded: boolean; onToggle: () => void; what: string }) {
+  return (
+    <button
+      type="button"
+      className="b2-shell-fold"
+      aria-expanded={!folded}
+      aria-label={folded ? `Expand ${what}` : `Collapse ${what}`}
+      title={folded ? `Expand ${what}` : `Collapse ${what}`}
+      onClick={onToggle}
+    >
+      {folded ? "+" : "–"}
+    </button>
+  )
+}
+
 function SearchKey({ onOpen }: { onOpen?: () => void }) {
   return (
     <Button
@@ -113,6 +146,7 @@ export function AppHeader({
   /** App tab strip (a Radix `TabsList`), seated beside Nav. */
   tabs?: ReactNode
 }) {
+  const [friendFolded, toggleFriend] = useFold("brain2-shell-friend-folded")
   useEffect(() => {
     performance.mark("brain2-shell-ready")
   }, [])
@@ -140,8 +174,11 @@ export function AppHeader({
           </fieldset>
         ) : null}
         <div className="b2-shell-stage">
-        <fieldset className="b2-shell-brand">
-          <legend>Friend</legend>
+        <fieldset className={`b2-shell-brand${friendFolded ? " is-folded" : ""}`}>
+          <legend>
+            Friend
+            <FoldKey folded={friendFolded} onToggle={toggleFriend} what="Friend" />
+          </legend>
           <BabyAnimalNest />
         </fieldset>
         <div className="b2-shell-rail" role="toolbar" aria-label="Global actions">

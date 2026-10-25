@@ -17,7 +17,7 @@ import { Plus, Trash2, ChevronUp, ChevronDown, Trophy } from "lucide-react"
 import type { AttributeDefinition, AttributeType } from "@/lib/types"
 import { ATTRIBUTE_TYPE_LABELS, SCHEMA_ATTRIBUTE_TYPES, normalizeAttributeType } from "@/lib/attribute-utils"
 import { isValidFormula } from "@/lib/formula"
-import { useTaskStore } from "@/lib/task-store"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 import { hasCompletionTiers, withCompletionTiers } from "@/lib/completion-tiers"
 import { effectiveDef, slugId } from "./helpers"
 
@@ -33,7 +33,6 @@ export function TypeSpecificSchemaFields({
   def: AttributeDefinition
   onPatch: (patch: Partial<AttributeDefinition>) => void
 }) {
-  const categories = useTaskStore((s) => s.lists)
   const type = normalizeAttributeType(def.type)
 
   switch (type) {
@@ -110,21 +109,15 @@ export function TypeSpecificSchemaFields({
             </Select>
           </div>
           {def.optionSource === "list" ? (
-            <div className="flex-1 min-w-[140px] space-y-1">
+            <div className="basis-full min-w-0 space-y-1">
               <Label className="text-[10px]">Source list</Label>
-              <Select value={def.optionListId || "none"} onValueChange={(v) => onPatch({ optionListId: v === "none" ? undefined : v })}>
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Choose list…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SingleListPicker
+                value={def.optionListId || ""}
+                onValueChange={(id) => onPatch({ optionListId: id || undefined })}
+                emptyLabel="Choose a list"
+                searchLabel="Source list"
+                showCreate
+              />
             </div>
           ) : (
             <div className="flex-1 min-w-[140px] space-y-1">
@@ -139,25 +132,22 @@ export function TypeSpecificSchemaFields({
         </>
       )
     case "list":
-    case "item":
       return (
-        <div className="flex-1 min-w-[140px] space-y-1">
+        <div className="basis-full min-w-0 space-y-1">
           <Label className="text-[10px]">Scope list (optional)</Label>
-          <Select value={def.refListId || "any"} onValueChange={(v) => onPatch({ refListId: v === "any" ? undefined : v })}>
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Any list</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SingleListPicker
+            value={def.refListId || ""}
+            onValueChange={(id) => onPatch({ refListId: id || undefined })}
+            emptyLabel="Any list"
+            searchLabel="Scope list"
+            showCreate
+            showSelectedChips
+            compact={false}
+          />
         </div>
       )
+    case "item":
+      return null
     case "goal":
       return (
         <div className="flex gap-2 min-w-[180px]">
