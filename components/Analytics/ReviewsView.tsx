@@ -397,9 +397,22 @@ export function ReviewsView() {
 
           {reasons.slices.length > 0 && (
             <>
-              <p className="an-canvas-title">Blocked reasons</p>
-              <SliceMosaic slices={reasons.slices} max={reasons.max} />
-              <OpenInListsButton taskIds={reasons.taskIds} />
+              <section className="an-plate">
+                <CanvasTitle
+                  title="Blocked reasons"
+                  help="Area = how many items a ritual marked with that reason in the window."
+                />
+                <SliceMosaic slices={reasons.slices} max={reasons.max} />
+                <p className="an-bx-legend">
+                  {reasons.slices.map((sl) => (
+                    <span key={sl.id}>
+                      <i style={{ background: sl.color }} />
+                      {sl.name} {sl.minutes}
+                    </span>
+                  ))}
+                </p>
+                <OpenInListsButton taskIds={reasons.taskIds} />
+              </section>
             </>
           )}
           <Fold title="All reviews" count={reviewsInRange.length} defaultOpen={reviewsInRange.length <= 10}>
@@ -522,7 +535,9 @@ export function ReviewsView() {
                 >
                   <span className="an-tile-count">{tile.count}</span>
                   <span>{tile.label}</span>
-                  {tile.latest ? <span className="an-tile-quote">“{tile.latest}”</span> : null}
+                  {tile.latest && tile.latest.trim().toLowerCase() !== tile.label.toLowerCase() ? (
+                    <span className="an-tile-quote">“{tile.latest}”</span>
+                  ) : null}
                 </button>
               ))}
             </div>

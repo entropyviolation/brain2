@@ -270,18 +270,20 @@ export function OvercommitmentView() {
                   className="an-step"
                   title={`Week of ${w.label}: ${w.pushes} pushes · ${w.done} done · ${round1(w.hours)} h logged`}
                 >
-                  <span
-                    style={{
-                      height: `${(w.pushes / weekMax) * 100}%`,
-                      background: BEHAVIOR_FILL.b,
-                    }}
-                  />
-                  <span
-                    style={{
-                      height: `${(w.done / weekMax) * 100}%`,
-                      background: BEHAVIOR_FILL.a,
-                    }}
-                  />
+                  <span className="an-step-bars">
+                    <span
+                      style={{
+                        height: `${(w.pushes / weekMax) * 100}%`,
+                        background: BEHAVIOR_FILL.b,
+                      }}
+                    />
+                    <span
+                      style={{
+                        height: `${(w.done / weekMax) * 100}%`,
+                        background: BEHAVIOR_FILL.a,
+                      }}
+                    />
+                  </span>
                   <span className="an-step-label">{w.label}</span>
                 </div>
               ))}
