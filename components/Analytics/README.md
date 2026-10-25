@@ -325,19 +325,19 @@ Do not fill them with made-up numbers:
 - Comments have no link to their post.
 - Time active is an estimate. Before the recent view-log window it is a floor.
 
-**Google Drive scheduled export.** _Last mapped: 2026-10-23_ Meta writes
-each scheduled export into My Drive as `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`.
-`parseMetaFolderName` reads the date from it. `scanMetaFolder` takes, inside
-it, an unzipped export, `instagram-…` zips or folders, or plain zips as the
-parts of one export. The name has no account, so the username is read from
+**Google Drive scheduled export.** _Last mapped: 2026-10-25_ Meta keeps one
+folder in My Drive, `meta-<YYYY>-<Mon>-<DD>-<HH>-<mm>-<ss>`, and adds each
+day's export inside it as an unzipped `instagram-<account>-<date>-<id>`
+folder. `scanMetaFolder` returns each of those as its own export. It also
+takes the folder itself as one unzipped export, or plain zips as the parts of
+one export (dated by `parseMetaFolderName`). A Drive export with no files yet
+is skipped; one with files must hold still for 15 min (`DRIVE_STABLE_MS`). The name has no account, so the username is read from
 `personal_information.json` after unzipping (`exportAccount`); another
-account's export is skipped. A `meta-…` folder must hold still (file count,
-size, newest mtime) for 10 s, since Drive may still be syncing it. The newest
+account's export is skipped. The newest
 export builds the report. Every other export not yet archived is unzipped,
 archived and its copy removed (`archiveOnly`); a failed one is retried hourly,
 or at once if it changes. The view says **Google Drive watched** when a Drive
-folder is found. Not checked yet: the contents of a real Drive export (the
-first one was still empty). See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
+folder is found. The first real export (2026-10-22) has the same top folders as a device export, media included. See `docs/INSTAGRAM_AUTO_UPDATE.md` → "TO DO LATER".
 
 ### Export archive (every export, merged)
 

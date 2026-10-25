@@ -107,6 +107,17 @@ describe("instagram archive", () => {
     expect(ar.archiveStatus(root).count).toBe(2)
   })
 
+  it("refuses an export with no files, and an export with no DMs marks nothing removed", async () => {
+    const a = makeExport("2026-10-22-aaa", { sam_1: [hi, secret] })
+    const empty = path.join(root, "exports", "2026-10-23-bbb")
+    fs.mkdirSync(path.join(empty, "your_instagram_activity"), { recursive: true })
+    const noDms = makeExport("2026-10-24-ccc", {}, { "personal_information/x.json": "{}" })
+    await ar.archiveExport(root, { exportDir: "2026-10-22-aaa", exportRoot: a, date: "2026-10-22" })
+    await expect(ar.archiveExport(root, { exportDir: "2026-10-23-bbb", exportRoot: empty, date: "2026-10-23" })).rejects.toThrow(/no files/)
+    await ar.archiveExport(root, { exportDir: "2026-10-24-ccc", exportRoot: noDms, date: "2026-10-24" })
+    expect(ar.removedMessages(root).rows).toEqual([])
+  })
+
   it("skips a half-copied .partial folder", async () => {
     makeExport("2026-10-22-aaa.partial", { sam_1: [hi] })
     expect(await ar.archiveAll(root)).toEqual([])
