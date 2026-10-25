@@ -33,7 +33,7 @@ function DayStrip({ dateKeys, byDay }: { dateKeys: readonly string[]; byDay: Rea
   const painted = values.filter((v) => v > 0)
   const mean = painted.length ? painted.reduce((a, b) => a + b, 0) / painted.length : 0
   const bw = W / Math.max(1, dateKeys.length)
-  const y = (v: number) => H - 14 - (v / max) * (H - 24)
+  const y = (v: number) => H - 14 - (v / max) * (H - 30)
   return (
     <svg className="an-tr-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Screen Time per day">
       {values.map((v, i) =>
@@ -50,7 +50,7 @@ function DayStrip({ dateKeys, byDay }: { dateKeys: readonly string[]; byDay: Rea
       {mean > 0 ? (
         <>
           <line x1={0} x2={W} y1={y(mean)} y2={y(mean)} stroke="var(--at-ink)" strokeDasharray="4 3" strokeWidth={1} />
-          <text x={W} y={y(mean) - 3} textAnchor="end">{`mean ${formatDuration(Math.round(mean))} on painted days`}</text>
+          <text x={W} y={9} textAnchor="end">{`mean ${formatDuration(Math.round(mean))} on painted days`}</text>
         </>
       ) : null}
       <text x={0} y={H - 2}>{dateKeys[0]?.slice(5)}</text>
@@ -95,7 +95,7 @@ function AnchoredApps({ apps, days }: { apps: readonly RankRow[]; days: number }
     .filter((a) => !q || a.name.toLowerCase().includes(q))
     .map((a) => ({ ...a, minutes: a.minutes * scale }))
   const top = Math.max(1, ...shown.map((a) => a.minutes))
-  let rows = showAnchors && !perDay ? rankWithAnchors(shown, anchorsFor(top)) : [...shown].sort((a, b) => b.minutes - a.minutes)
+  let rows = showAnchors && !perDay && shown.length > 0 ? rankWithAnchors(shown, anchorsFor(top)) : [...shown].sort((a, b) => b.minutes - a.minutes)
   if (sort === "name") rows = rows.filter((r) => !r.anchor).sort((a, b) => a.name.localeCompare(b.name))
   const max = Math.max(1, ...rows.map((r) => r.minutes))
   return (
@@ -262,7 +262,7 @@ export function ScreenTimeView() {
                 Activity {formatDuration(activityMin)} · Screen Time {formatDuration(screenMin)} · overlap{" "}
                 {formatDuration(overlap)} ({overlapPct}% of Activity)
               </p>
-              <div className="mt-2 flex h-3 overflow-hidden rounded-sm" style={{ boxShadow: "inset 0 0 0 1px var(--at-rule-soft)" }}>
+              <div style={{ display: "flex", height: 12, marginTop: 8, overflow: "hidden", borderRadius: 2, boxShadow: "inset 0 0 0 1px var(--at-rule-soft)" }}>
                 {(["Screen Time only", "Both", "Activity only"] as const).map((name, i) => (
                   <span
                     key={name}

@@ -33,7 +33,8 @@ function DayWheel({ mean, days, hue }: { mean: number[][]; days: number[]; hue: 
   const R0 = 34
   const RW = 17
   return (
-    <svg className="an-tr-svg" viewBox="0 0 320 320" style={{ maxWidth: 360, margin: "0 auto" }} role="img" aria-label="24-hour wheel by weekday">
+    <div className="an-tr-wheel">
+    <svg className="an-tr-svg" viewBox="0 0 320 320" role="img" aria-label="24-hour wheel by weekday">
       {RING_ORDER.map((wd, ring) =>
         Array.from({ length: 24 }, (_, h) => {
           const a0 = ((h * 15 - 90) * Math.PI) / 180
@@ -64,6 +65,7 @@ function DayWheel({ mean, days, hue }: { mean: number[][]; days: number[]; hue: 
       <text x={C} y={C - 2} textAnchor="middle">Mon</text>
       <text x={C} y={C + 10} textAnchor="middle">inside</text>
     </svg>
+    </div>
   )
 }
 
@@ -194,28 +196,28 @@ export function CircadianView() {
               empty={`Nothing painted in ${scope?.name ?? "this scope"} in the ${label}.`}
             />
           </section>
-          {grid.instants.length > 0 && (
-            <details className="an-tr-fold">
-              <summary>
-                {grid.instants.length} instant{grid.instants.length === 1 ? "" : "s"} (no duration) in this window
-              </summary>
-              <ul className="an-stack text-xs">
-                {[...grid.instants]
-                  .sort((a, b) => (a.date === b.date ? a.startMin - b.startMin : a.date < b.date ? 1 : -1))
-                  .slice(0, 200)
-                  .map((e) => (
-                    <li key={e.id}>
-                      <span className="tabular-nums">
-                        {e.date} {String(Math.floor(e.startMin / 60)).padStart(2, "0")}:{String(e.startMin % 60).padStart(2, "0")}
-                      </span>
-                      {" · "}
-                      {penName.get(e.penId) ?? "unnamed pen"}
-                    </li>
-                  ))}
-              </ul>
-            </details>
-          )}
         </>
+      )}
+      {grid && grid.instants.length > 0 && (
+        <details className="an-tr-fold">
+          <summary>
+            {grid.instants.length} instant{grid.instants.length === 1 ? "" : "s"} (no duration) in this window
+          </summary>
+          <ul className="an-stack text-xs">
+            {[...grid.instants]
+              .sort((a, b) => (a.date === b.date ? b.startMin - a.startMin : a.date < b.date ? 1 : -1))
+              .slice(0, 200)
+              .map((e) => (
+                <li key={e.id}>
+                  <span className="tabular-nums">
+                    {e.date} {String(Math.floor(e.startMin / 60)).padStart(2, "0")}:{String(e.startMin % 60).padStart(2, "0")}
+                  </span>
+                  {" · "}
+                  {penName.get(e.penId) ?? "unnamed pen"}
+                </li>
+              ))}
+          </ul>
+        </details>
       )}
     </div>
   )

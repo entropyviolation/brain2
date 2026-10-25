@@ -90,6 +90,8 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 
 ## Files
 
+_Last mapped: 2026-10-25_
+
 | File | Purpose |
 |------|---------|
 | `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |

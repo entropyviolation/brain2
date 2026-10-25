@@ -72,6 +72,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.an95 .an-tr-wheel {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
 .an95 .an-tr-legend {
   display: flex;
   flex-wrap: wrap;

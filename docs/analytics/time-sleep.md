@@ -29,7 +29,7 @@ File: `components/Analytics/SleepAnalytics.tsx`. Math: `lib/sleep-log.ts`, `lib/
 - Mid-sleep = (sleep + wake) / 2, in offset minutes.
 - Social jetlag = mean mid-sleep on free nights minus work nights. Free nights are Friday and Saturday (Saturday and Sunday mornings). Floor: 2 of each. Wittmann et al. 2006.
 - MSFsc = MSF − (SDf − SDweek) / 2 when free nights are longer, with SDweek = (5·SDw + 2·SDf) / 7. Bands: before 2:30 early, 2:30–4 slightly early, 4–5 intermediate, 5–6:30 slightly late, later is late. Roenneberg et al. 2004 (MCTQ).
-- SRI = 200 · P(same state at the same minute on consecutive days) − 100, on 5-minute steps over 6 PM → noon only. Floor: 2 back-to-back pairs. Phillips et al. 2017. The full method uses 24 h; naps are out here.
+- SRI = 200 · P(same state at the same minute on consecutive days) − 100, on 5-minute steps over 6 PM → noon only. Floor: 2 back-to-back pairs. Phillips et al. 2017. The full method uses 24 h; naps are out here. An all-nighter day has no night, so it breaks a pair instead of counting as awake. The readout says so.
 
 ## Research notes
 
