@@ -5,7 +5,7 @@ _Last mapped: 2026-10-23_
 `components/Analytics/Observatory.tsx`, math in `observatory-findings.ts` and `meta-math.ts`, plot in `meta-plots.tsx` (`ForestPlot`), skin in `analytics-meta.css`.
 
 ## Information
-- Daily series built in the view: habit % (`calculateDayPercentageAV`), tracked minutes, sleep minutes (`resolveNights`), points, Activity context switches, first joy reading per day, Activity and Screen Time occupancy.
+- Daily series built in the view: habit % (`calculateDayPercentageAV`), tracked minutes, sleep minutes (`resolveNights`), points, Activity context switches, mean joy reading per day (`dailyMeans`), Activity and Screen Time occupancy.
 - Eight pairs (`PAIR_LABELS` ~262): habits↔tracked, switches↔sleep, points↔habits, joy↔habits, joy↔sleep, Activity↔Screen Time, habits↔sleep, switches↔habits.
 - Each pair → Pearson r on inner-joined days. Floor `OBSERVATORY_FLOOR = 7`. Below it the pair is thin and only watermarked.
 - The view mounts `CrossSection` on top (see `meta-cross-section.md`).
@@ -21,4 +21,3 @@ _Last mapped: 2026-10-23_
 
 ## Planned
 - **Axis picker** (IIB *Hollywood In$ider*): choose any two Cross-section series for x/y and a third for size. Reuse `buildCrossSection` output.
-- Use daily mean joy instead of first reading (`dailyMeans` in `meta-math.ts`).
