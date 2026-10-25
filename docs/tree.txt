@@ -569,6 +569,7 @@
 │   │   │   ├── pen-tray-bg.css
 │   │   │   ├── pen-tray-bg.test.ts
 │   │   │   ├── pen-tray-bg.ts
+│   │   │   ├── save-unfinished-dialog.tsx
 │   │   │   ├── screentime-empty-hint.test.tsx
 │   │   │   ├── screentime-empty-hint.tsx
 │   │   │   ├── secondary-pens-field.tsx
@@ -758,8 +759,11 @@
 │   │   ├── ItemResourcesPanel.tsx
 │   │   ├── ItemSaveFlag.tsx
 │   │   ├── ItemScheduleFlags.tsx
+│   │   ├── ItemSettingsKey.tsx
 │   │   ├── ItemSettingsPanel.tsx
 │   │   ├── ItemTagChip.tsx
+│   │   ├── ItemTimeLedger.test.tsx
+│   │   ├── ItemTimeLedger.tsx
 │   │   ├── README.md
 │   │   ├── ReminderScheduleFields.test.tsx
 │   │   ├── ReminderScheduleFields.tsx
@@ -1480,18 +1484,18 @@
 │   │   ├── messages.jsonl
 │   │   └── runs.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-goals-store-2026-10-25-01.json
-│   │   ├── auto-brain2-habits-store-2026-10-25-01.json
-│   │   ├── auto-brain2-modules-store-2026-10-25-01.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-01.json
+│   │   ├── auto-brain2-habits-store-2026-10-25-02.json
+│   │   ├── auto-brain2-habits-store-2026-10-25-03.json
 │   │   ├── auto-brain2-task-storage-2026-10-25-02.json
-│   │   ├── auto-brain2-telegram-feed-2026-10-25-01.json
+│   │   ├── auto-brain2-task-storage-2026-10-25-03.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-25-02.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-25-03.json
 │   │   ├── auto-brain2-timegrid-store-2026-10-25-02.json
-│   │   ├── auto-brain2-tracking-day-notes-2026-10-25-01.json
-│   │   ├── auto-cogs-reviews-store-2026-10-25-01.json
-│   │   ├── auto-cogs-tracking-day-notes-2026-10-25-01.json
-│   │   ├── auto-points-store-2026-10-25-01.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-03.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-25-04.json
 │   │   ├── auto-points-store-2026-10-25-02.json
+│   │   ├── auto-points-store-2026-10-25-03.json
+│   │   ├── auto-points-store-2026-10-25-04.json
 │   │   ├── brain2-backup-2026-10-10T093232Z.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
@@ -2637,7 +2641,8 @@
 │   │   │   │   ├── 2026-10-06T00-46-36.png
 │   │   │   │   ├── 2026-10-09T19-39-14.png
 │   │   │   │   ├── 2026-10-10T03-14-51.png
-│   │   │   │   └── 2026-10-20T00-08-00.png
+│   │   │   │   ├── 2026-10-20T00-08-00.png
+│   │   │   │   └── 2026-10-24T20-43-49.png
 │   │   │   ├── 21-item-detail-scheduling
 │   │   │   │   ├── 2026-10-06T00-42-39.png
 │   │   │   │   ├── 2026-10-06T00-46-36.png
@@ -2652,7 +2657,8 @@
 │   │   │       ├── 2026-10-06T00-42-41.png
 │   │   │       ├── 2026-10-06T00-46-38.png
 │   │   │       ├── 2026-10-09T19-39-17.png
-│   │   │       └── 2026-10-20T00-08-03.png
+│   │   │       ├── 2026-10-20T00-08-03.png
+│   │   │       └── 2026-10-24T20-43-52.png
 │   │   ├── reel.js
 │   │   └── viewer.html
 │   ├── sdfh
@@ -4795,6 +4801,9 @@
 │   ├── types.ts
 │   ├── ui-names-store.test.ts
 │   ├── ui-names-store.ts
+│   ├── unfinished-objectives-store.ts
+│   ├── unfinished-objectives.test.ts
+│   ├── unfinished-objectives.ts
 │   ├── unlock-value.test.ts
 │   ├── unlock-value.ts
 │   ├── unsaved-changes.test.ts
@@ -5167,9 +5176,11 @@
 │   │   └── venus.jpg
 │   ├── todo
 │   │   └── settings-globe.jpg
-│   └── tracking
-│       ├── frost.jpg
-│       └── lace.jpg
+│   ├── tracking
+│   │   ├── frost.jpg
+│   │   └── lace.jpg
+│   └── ui
+│       └── settings-gear.png
 ├── scripts
 │   ├── anonymize-backup.py
 │   ├── backup-crypt.mjs

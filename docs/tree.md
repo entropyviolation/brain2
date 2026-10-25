@@ -135,7 +135,7 @@ per assigned To Do period). `ItemSaveFlag.tsx` stays on the fascia: green **Save
 while the draft matches the stored item, pink **Unsaved changes** while it does not.
 **Cmd/Ctrl+S** (`useItemDetailSaveHotkey.ts`) saves that draft while the surface is in front.
 An inbox item gets a smaller **Clarify** key (`InboxClarifyKey.tsx`) beside the INBOX chip.
-**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The fascia gear opens **Item settings** as a dialog (`ItemSettingsPanel.tsx`): item id, which attributes show, display names, and which tabs this item shows. A name opens **Attribute settings** (`AttributeSettingsDialog.tsx`). The popup's minimize key leaves a dock bar or icon (`ItemDetailDock.tsx`) so the draft stays mounted. Opening a list from the popup minimizes it.
+**Add attribute** is a pale silver keycap. A text list can become a list reference (`asListReference`). A list reference shows that list's items. The brushed gear (`ItemSettingsKey.tsx`, `public/ui/settings-gear.png`, no keycap) opens **Settings** on top of the item (`ItemSettingsPanel.tsx`): item id, which attributes show, display names, and which tabs this item shows. A task's Time tab (`ItemTimeLedger.tsx`) edits the blocks, objectives, and logs tagged to that task. A name opens **Attribute settings** (`AttributeSettingsDialog.tsx`). The popup's minimize key leaves a dock bar or icon (`ItemDetailDock.tsx`) so the draft stays mounted. Opening a list from the popup minimizes it.
 The Detailed Description box keeps the height you drag it to for that item in this session.
 
 → [`components/README.md`](../components/README.md)
@@ -239,7 +239,7 @@ into the Scheduler. The earliest Undone start feeds the priority date
 
 #### Home/Tracking/
 
-The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, and `now-log-lists.tsx`. Current moment (Working on, Events, Thought process, Update state) sits above the Tracking / Plan switch. That popup reuses `TimeGrid`. It does not replace this desk.
+The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, and `now-log-lists.tsx`. Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Update state) sits above the Tracking / Plan switch. That popup reuses `TimeGrid`. It does not replace this desk.
 TimeGrid (`time-grid.tsx`, minute-accurate intervals, Activity / Location / Mood /
 Company views; **1m/5m/10m/15m/30m** cell size on the grid chrome via `cell-size-keys.tsx`
 (active key navy inset + phosphor cap); **Fill** via `fill-range-control.tsx` +
@@ -302,7 +302,11 @@ ever fill minutes the other scope left blank.
 **Working on this now** (`working-now-strip.tsx`) and **Working on right now**
 (`pen-color-now-strip.tsx`) sit in `.trk-now-module` under the Tracking view
 switcher (before the chrome stack). The Operations strip starts a session that
-paints the same grid. Sleep is painted on the Time Grid or typed in the
+paints the same grid. Both clocks carry **objectives for right now**
+(`now-objectives-list.tsx`): add one for this moment, log one already completed,
+hide completed rows, and open a row for delete / save for later / attach to a
+task. Stop with any still open asks whether to keep them
+(`save-unfinished-dialog.tsx`, `lib/unfinished-objectives-store.ts`). Sleep is painted on the Time Grid or typed in the
 block editor / Morning Review — there is no **Sleep this day** form
 (`lib/sleep-log.ts` → `lib/sleep-store.ts` → `lib/sleep-sync.ts`). Logged nights
 are painted onto the grid when Tracking mounts, after both persist vaults
@@ -700,6 +704,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `pen-action-sync.ts` | Store bridge for the above — upserts/removes the `pen-action-*` Done row as blocks are painted, retimed, relocated, or deleted; never overwrites a title the user edited |
 | `work-session-store.ts` | Live Operations "working on this now" pointer |
 | `pen-color-session-store.ts` | Live pen-color "working on right now" pointer |
+| `unfinished-objectives-store.ts` | Parked objectives waiting for the next time that task, subtask, pen, or operation is tracked |
 | `reviews-store.ts` | Period reviews |
 | `modules-store.ts` | Module widgets and workspace views |
 | `module-definitions.ts` | Reusable module blueprints (`ModuleDefinition`) |
@@ -765,8 +770,9 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `habit-points.ts` | Daily habit 50×ratio points; user accomplishment bonus (default +50 at ≥80% raw); 75% grade bonuses (100 either / 300 both); editable grade-lift bonuses vs yesterday and vs last week; average bonuses (default +5) vs the prior 7-day and prior 30-day raw averages |
 | `habit-accomplishment.ts` | Good day threshold/bonus; streak; last-30; yesterday and week raw averages (independent of grade curves) |
 | `habit-done-log.ts` | Mirror habit completions into To-Do Done, with a derived duration + clock window (`deriveHabitCompletion`), refreshed while the goal stays met unless confirmed |
-| `operation-work-session.ts` | Live Operations "working on this now": Tracking paint, Done `worked on {name}`, timeLogs, habit tags |
-| `pen-color-session.ts` | Live pen-color "working on right now": timer from this second, Tracking block of that pen |
+| `operation-work-session.ts` | Live Operations "working on this now": Tracking paint, Done `worked on {name}`, timeLogs, habit tags. Stop can park open objectives |
+| `unfinished-objectives.ts` | Where a still-open objective waits, and how it comes back without counting the gap |
+| `pen-color-session.ts` | Live pen-color "working on right now": timer from this second, Tracking block of that pen. Stop can park open objectives |
 | `focus-timer-log.ts` | Module focus timer complete → `timeLogs` on Working Now or a picked item (no Tracking paint) |
 | `habit-time-estimate.ts` | How long a habit's period took: its own minutes/hours value → painted Tracking minutes → amount × `minutesPerUnit` → flat length |
 | `completion-window.ts` | Where in the day a completion sat: last painted Tracking run → "just now" → that night's bedtime (stated, painted, or your usual), falling back to the day anchor; never backdated past the wake time |
