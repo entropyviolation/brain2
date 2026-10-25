@@ -311,7 +311,7 @@ export function TodoPulseView() {
       )}
 
       {dayImportanceAvg.length > 0 && (
-        <div>
+        <section className="an-plate">
           <p className="an-canvas-title">Day importance &amp; excitement (averages)</p>
           <p className="an-canvas-kicker">
             Mean of that day&apos;s per-item morning ratings (0–10). Importance = how much it matters today; excitement
@@ -337,11 +337,11 @@ export function TodoPulseView() {
               Excitement
             </span>
           </p>
-        </div>
+        </section>
       )}
 
       {resistanceSeries.length > 0 && (
-        <div>
+        <section className="an-plate">
           <p className="an-canvas-title">Resistance over time</p>
           <p className="an-canvas-kicker">
             Each point is one reading (0–10). Resistance can be logged again and again — this is a series, not a single
@@ -366,7 +366,7 @@ export function TodoPulseView() {
               <Line type="monotone" dataKey="resistance" stroke={BEHAVIOR_FILL.b} strokeWidth={2} dot />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </section>
       )}
 
       <Fold title="Items with pulse fields" count={pulsed.length} testId="pulse-items">

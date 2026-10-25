@@ -265,9 +265,13 @@ export function BubblePlot({
   const W = 560
   const H = height
   const pad = { l: 40, r: 14, t: 14, b: 34 }
+  // Inset keeps points at the domain edge off the axes and corner labels.
+  const inset = 14
   const [hover, setHover] = useState<string | null>(null)
-  const sx = (v: number) => pad.l + ((v - xDomain[0]) / (xDomain[1] - xDomain[0] || 1)) * (W - pad.l - pad.r)
-  const sy = (v: number) => H - pad.b - ((v - yDomain[0]) / (yDomain[1] - yDomain[0] || 1)) * (H - pad.t - pad.b)
+  const sx = (v: number) =>
+    pad.l + inset + ((v - xDomain[0]) / (xDomain[1] - xDomain[0] || 1)) * (W - pad.l - pad.r - inset * 2)
+  const sy = (v: number) =>
+    H - pad.b - inset - ((v - yDomain[0]) / (yDomain[1] - yDomain[0] || 1)) * (H - pad.t - pad.b - inset * 2)
   const maxSize = Math.max(1, ...points.map((p) => p.size ?? 1))
   const placed = useMemo(() => {
     const seen = new Map<string, number>()

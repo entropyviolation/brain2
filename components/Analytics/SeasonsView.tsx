@@ -75,9 +75,6 @@ function SeasonWheel({ last, now, year }: { last: Record<string, number>; now: R
             </g>
           )
         })}
-        <text x={C} y={C + 4} textAnchor="middle" fontSize="10" fill="#1a1a1a">
-          {year - 1} · {year}
-        </text>
       </svg>
     </div>
   )
@@ -282,6 +279,16 @@ export function SeasonsView() {
             help="Each quarter of the circle is a season. Pale inner wedge = last year, solid outer wedge = this year. Wedge depth grows with the square root of the count, so area tracks the amount."
           />
           <SeasonWheel last={lastYear} now={thisYear} year={year} />
+          <p className="an-bx-legend">
+            <span>
+              <i style={{ background: "#e3eef6", boxShadow: "inset 0 0 0 1px #4a7eaa" }} />
+              Inner: {year - 1}
+            </span>
+            <span>
+              <i style={{ background: "#4a7eaa" }} />
+              Outer: {year}
+            </span>
+          </p>
         </section>
       </div>
 

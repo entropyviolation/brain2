@@ -179,6 +179,11 @@
   fill: #000;
 }
 
+.fm98.an95 .an-bubble-corner {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
 .fm98.an95 .an-bubble-corner text {
   font-size: 11px;
   font-weight: 700;
@@ -212,7 +217,7 @@
   gap: 10px;
 }
 
-.fm98.an95 .an-square {
+.fm98.an95 .an-square:not(#at) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -221,6 +226,7 @@
   padding: 0;
   border: none;
   background: transparent;
+  box-shadow: none;
   font: inherit;
   cursor: pointer;
 }
@@ -318,8 +324,8 @@
 }
 
 .fm98.an95 .an-strip i {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   background: #e2e2e2;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
@@ -336,38 +342,38 @@
 
 .fm98.an95 .an-steps {
   display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 150px;
+  align-items: stretch;
+  gap: 6px;
+  height: 160px;
   padding-top: 6px;
   overflow-x: auto;
 }
 
 .fm98.an95 .an-step {
-  position: relative;
-  flex: 1 0 22px;
-  max-width: 48px;
-  height: 100%;
+  flex: 1 0 28px;
+  max-width: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fm98.an95 .an-step-bars {
+  flex: 1;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
 }
 
-.fm98.an95 .an-step > span {
-  width: 45%;
+.fm98.an95 .an-step-bars > span {
+  width: 42%;
   min-height: 1px;
 }
 
 .fm98.an95 .an-step-label {
-  position: absolute;
-  bottom: -16px;
-  font-size: 9px;
+  font-size: 10px;
+  text-align: center;
   white-space: nowrap;
-}
-
-.fm98.an95 .an-steps-wrap {
-  padding-bottom: 18px;
 }
 
 .fm98.an95 .an-meter {
