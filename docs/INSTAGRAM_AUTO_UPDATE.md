@@ -98,6 +98,22 @@ accepts all three likely shapes. `electron/instagram-report.js`:
 Steps 1, 2, 5 and 6 below are still open. Steps 3 and 4 are now checks
 against the real files.
 
+**Seen on the Mac (2026-10-25).** Meta does not make a new `meta-…` folder
+each day. It keeps `meta-2026-Oct-22-20-23-37` and adds each day's export
+inside it as an unzipped folder, `instagram-_entropyviolation_-<date>-<id>`.
+The 2026-10-22 one is complete (1.2 GB, 5,038 files, 1,532 DM threads). The
+2026-10-23 one, made 2026-10-24 04:29, had its top folders but no files yet,
+and no `media/`. Whether a daily export holds everything or only what
+changed is not known yet; check once that folder has synced.
+
+Fixed in code the same day: `scanMetaFolder` now returns every
+`instagram-…` export inside a `meta-…` folder as its own candidate (before,
+the whole folder was one export, so later days were never seen). A Drive
+candidate with no files is skipped. One with files must hold still for
+`DRIVE_STABLE_MS` (15 min), since Drive writes it file by file.
+`archiveExport` refuses an export with no files, and an export with no DM
+threads is not used to call messages removed.
+
 ## TO DO LATER: when the first Google Drive export lands
 
 _Written: 2026-10-23. Status: waiting on Meta. Athena scheduled a daily
