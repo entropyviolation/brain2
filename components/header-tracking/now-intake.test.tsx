@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -32,7 +32,7 @@ describe("NowIntake uncategorized", () => {
     expect(list).toHaveTextContent("gummy")
     expect(list).not.toHaveTextContent("toast")
 
-    await user.click(screen.getByRole("button", { name: "Drink" }))
+    await user.click(within(screen.getByRole("group", { name: "Sort gummy" })).getByRole("button", { name: "Drink" }))
     expect(screen.queryByRole("list", { name: "Uncategorized intake" })).not.toBeInTheDocument()
     const gummy = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "gummy")
     expect(gummy).toMatchObject({ intakeClass: "drink", eventKind: "intake.drink" })

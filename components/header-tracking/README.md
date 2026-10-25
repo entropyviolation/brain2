@@ -47,7 +47,7 @@ Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Pl
 | `tracking-pane.tsx` | The Home desk’s three bays (pen rack, Time Grid screen, time recorder) and the day summary in the lace frame. |
 | `plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
 | `now-log-lists.tsx` | Events, Notes, and Thought process. Written through `submitTrackingLog`. A Text log instant with no `eventKind` is a Note here; the Tracking log still shelves that row with Events. |
-| `now-intake.tsx` | Intake row: class keys, quick chips, name field. Same writer as the Tracking log. |
+| `now-intake.tsx` | Intake row: class keys, quick chips, name field, and today's uncategorized intake with Food / Drink / Drug / med sort (`setIntakeClass`). Same writer as the Tracking log. |
 | `pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |
 | `est-mark.tsx` | `~` and the dashed `.trk-est` treatment, plus the compact Exact key. |
 | `header-tracking.css` | Popup layout. The lane color swatch corner is `--r-1`. Does not restyle the Home desk. |

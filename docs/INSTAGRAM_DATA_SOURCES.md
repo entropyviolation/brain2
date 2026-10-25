@@ -1,8 +1,8 @@
 # Instagram data sources
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-25_
 
-**Planned, partly built.** How Brain2 gets Instagram data that the export file does not have, without breaking what reads the export today. Built so far: Settings → Imports → **Instagram accounts** (log into more than one account, sessions sealed with the OS keychain). Everything else here is a plan.
+**Partly built.** How Brain2 gets Instagram data that the export file does not have, without breaking what reads the export today. Built: Settings → Imports → **Instagram accounts** (log into more than one account, sessions sealed with the OS keychain), and the daily Google Drive export watcher ([`INSTAGRAM_AUTO_UPDATE.md`](INSTAGRAM_AUTO_UPDATE.md)). A photo or video Drive will not download is skipped so that day's JSON still imports. The other layers below are still a plan.
 
 Related: `components/Settings/README.md` (the two Instagram bays), `electron/README.md` (`instagram-accounts.js`), `~/instagram-analysis/PROFILES.md` (the `profiles.py` fetcher), `docs/KNOWLEDGE_GRAPH_PLAN.md` (where a follower graph would live).
 
@@ -91,4 +91,4 @@ The iOS build cannot run Python or hold an Instagram login. The phone gets resul
 
 - Which `profiles.py` sources to run (asked in the follower-counts thread).
 - Which accounts are yours to log in with, and whether any of them should be used for lookups at all.
-- Whether to set up the scheduled export to Drive or Dropbox and try one run. Automated requests only matter if that fails.
+- The daily Drive export is already set up. The open check is a full import after the 2026-10-25 skip change. Automated requests stay a fallback only if that keeps failing.

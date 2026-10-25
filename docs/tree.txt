@@ -791,6 +791,7 @@
 │   │   ├── TagInput.tsx
 │   │   ├── TodoCommitmentFields.tsx
 │   │   ├── WorkingNowBanner.tsx
+│   │   ├── detail-card-agreement.test.tsx
 │   │   ├── item-attributes.test.tsx
 │   │   ├── item-detail-chrome.css
 │   │   ├── item-pen-time.css
@@ -1287,11 +1288,15 @@
 │   │   ├── header-tracking-popup.test.tsx
 │   │   ├── header-tracking-popup.tsx
 │   │   ├── header-tracking.css
+│   │   ├── now-intake.test.tsx
+│   │   ├── now-intake.test.tsx
 │   │   ├── now-intake.tsx
 │   │   ├── now-log-lists.tsx
 │   │   ├── pen-search-select.tsx
 │   │   ├── plan-pane.tsx
 │   │   ├── tracking-pane.tsx
+│   │   ├── update-state.test.tsx
+│   │   ├── update-state.test.tsx
 │   │   └── update-state.tsx
 │   ├── inbox-links.tsx
 │   ├── inbox.css

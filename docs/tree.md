@@ -240,7 +240,7 @@ The task card is `TaskCard.tsx`. Durations follow the h/m switch in `task-card-u
 
 #### Home/Tracking/
 
-The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, and `now-log-lists.tsx`. Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Update state) sits above the Tracking / Plan switch. That popup reuses `TimeGrid`. It does not replace this desk.
+The time grid lives here (`components/Home/Tracking/`). The metric logger is `components/Tracking/MetricLogger.tsx` (no folder README). The header **Now** word key opens `components/header-tracking/` (its own README), including `current-moment.tsx`, `update-state.tsx`, `now-intake.tsx`, and `now-log-lists.tsx`. Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Intake, Update state) sits above the Tracking / Plan switch. Intake with no class can be sorted onto Food, Drink, or Drugs there. That popup reuses `TimeGrid`. It does not replace this desk.
 TimeGrid (`time-grid.tsx`, minute-accurate intervals, Activity / Location / Mood /
 Company views; **1m/5m/10m/15m/30m** cell size on the grid chrome via `cell-size-keys.tsx`
 (active key navy inset + phosphor cap); **Fill** via `fill-range-control.tsx` +
