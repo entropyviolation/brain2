@@ -815,7 +815,9 @@ describe("Inbox", () => {
     await user.click(screen.getByRole("checkbox", { name: /Select total exercise/i }))
     await user.click(screen.getByRole("checkbox", { name: /Select log need candy/i }))
     await user.click(screen.getByRole("button", { name: /Transfer to log/i }))
-    expect(useTaskStore.getState().tasks.map((task) => task.id)).toEqual(["stay"])
+    // Log rows are also filed as Tracking items (`lib/tracking-lists.ts`); count only inbox ideas.
+    const ideaIds = () => useTaskStore.getState().tasks.map((task) => task.id).filter((id) => !id.startsWith("tracking-entry-"))
+    expect(ideaIds()).toEqual(["stay"])
     flushInboxLogTransfers()
     const entries = useTimeTrackingStore.getState().entries
     expect(entries.find((entry) => entry.title === "total exercise 60m")).toMatchObject({
@@ -832,7 +834,7 @@ describe("Inbox", () => {
     })
     expect(entries.some((entry) => entry.date === "2026-10-09")).toBe(false)
     await user.click(screen.getByRole("button", { name: /^Undo$/i }))
-    expect(useTaskStore.getState().tasks.map((task) => task.id).sort()).toEqual(["early", "late", "stay"])
+    expect(ideaIds().sort()).toEqual(["early", "late", "stay"])
     expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "total exercise 60m")).toBe(false)
   })
 
