@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { describeListRoutingPreview, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import { itemTitle } from "@/lib/item-utils"
 import { isSentOnList, withSentMark } from "@/lib/list-sent"
@@ -95,9 +96,7 @@ export function HabitListPopup({ listId, link, frequency, container, onClose, br
               ? "Items on this list. Closing it leaves the form underneath."
               : "The list checklist, above the habit form. Closing it leaves the draft."}
           </DialogDescription>
-          <button type="button" className="habit95-title-btn b2-close-key" aria-label="Close list" onClick={onClose}>
-            ×
-          </button>
+          <KeycapClose className="habit95-title-btn" label="Close list" onClick={onClose} />
         </DialogHeader>
         <div className="habit95-list-popup-body" data-testid="habit-list-popup">
           {browse ? null : (

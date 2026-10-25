@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 
 export function PriorityReasonDialog({
   open,
@@ -55,14 +56,7 @@ export function PriorityReasonDialog({
       >
         <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
           <DialogTitle className="habit95-title-text">Why prioritize this?</DialogTitle>
-          <button
-            type="button"
-            className="habit95-title-btn b2-close-key"
-            aria-label="Close"
-            onClick={() => finish(undefined)}
-          >
-            ×
-          </button>
+          <KeycapClose className="habit95-title-btn" label="Close" onClick={() => finish(undefined)} />
         </DialogHeader>
         <div className="habit95-body">
           <p className="habit95-reason-subject">{subject}</p>

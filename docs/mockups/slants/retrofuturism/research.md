@@ -157,8 +157,8 @@ Both put a strange object in a calm, real place.
 7. **Eye clock focus timer.** _Fit for the screen, Bold if made big._ Source: `0025`. A 7-segment countdown sits in a round CRT window. The bezel is a milled steel ring. Data: the running timer and the task it belongs to.
 8. **Printed signal lines in the drawer.** _Fit._ Source: Programma 900 `0030`. In the detail drawer, dotted lines link a task to its project, its parent and its blockers, printed on the panel. Data: real links from the task record.
 9. **Stencilled panel labels.** _Fit._ Source: Alien / Ron Cobb, `0026`. Every panel gets a short engineering label, like `QUEUE`, `SPAN`, `LOAD`, `CAT. II`. Keep them small caps and tracked. Data: the label can carry a count, like `QUEUE 14`.
-10. **One orange action key.** _Fit._ Source: `0026` orange `=` key, Teenage Engineering orange. Only "Add task" or "Start timer" gets the orange cap. Everything else is beige or grey. Data: none, it marks the main action.
-11. **Two-tone keycaps by role.** _Fit._ Source: `0029`, beige letters and grey modifiers. Beige caps for task actions. Grey caps for mode and view. Data: makes the role of each control readable.
+10. **One orange action key.** _Fit as research, not the house._ Source: `0026` orange `=` key, Teenage Engineering orange. Only "Add task" or "Start timer" gets the orange cap. Everything else is beige or grey. Data: none, it marks the main action. The house primary is the silver cap with a navy lamp. See the house decision under Rules of thumb.
+11. **Two-tone keycaps by role.** _Fit. Shipped in silver, not beige._ Source: `0029`, beige letters and grey modifiers. The house took the two tones as pale silver for word keys and darker grey for mode and view. Allie likes the silver cap and wants more of it. Seafoam and cornflower are the spare plastics. Data: makes the role of each control readable.
 12. **Vector-glyph empty state.** _Fit._ Source: intercom `0020`. When a span is clear, the CRT shows one slow-rotating vector triangle and "NO OPEN ITEMS". Data: shown only when the open count is 0.
 13. **Mood glyph.** _Fit._ Source: GERTY in Moon. A tiny emoticon on the status screen reacts to load: calm under 80%, worried over 110%. Data: load ratio.
 14. **Inspection sticker badges.** _Fit._ Source: Walkman stickers (brief), Alien safety signage. Rectangular stickers on cards: yellow `CHECKED`, red `DO NOT SKIP`, white `QC 21-10`. Use for priority, recurring and reviewed. Data: task flags and last-reviewed date.
@@ -170,6 +170,8 @@ Both put a strange object in a calm, real place.
 20. **Tinney-style staged hero art.** _Bold._ Source: Tinney BYTE covers, Hipgnosis. One painted or staged image per span, such as Season shown as a CRT in a field. Data: changes with the span. Use only on the header, never behind text.
 
 **Rules of thumb.** One glowing screen per panel. Few, large numbers. Every label earns its place. Wear and glow are seasoning, not the meal. Effects like scanlines and bloom stay subtle and must not hurt legibility.
+
+**House decision (2026-10-24).** The shipped word key is the pale silver keycap, with a darker grey modifier. The primary key is that silver cap with a navy lamp, not the orange key in item 10. Seafoam and cornflower are the spare plastics. Beige, cream, yellow, and orange caps are not the house. Allie likes the silver cap and wants more of it. See `docs/DESIGN_STYLE.md` → Keycaps.
 
 ---
 
