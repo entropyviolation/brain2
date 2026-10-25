@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
 import {
   activeNowObjectives,
+  addCompletedNowObjective,
   addNowObjective,
   compactNowObjectives,
   editNowObjectiveText,
+  objectiveWorkedMs,
   removeNowObjective,
   sameNowObjectives,
   toggleNowObjectiveComplete,
@@ -61,5 +63,26 @@ describe("now-objective", () => {
     expect(compactNowObjectives([{ id: "1", text: "  hi  ", addedAt: AT.toISOString() }])).toEqual([
       { id: "1", text: "hi", addedAt: AT.toISOString() },
     ])
+  })
+
+  it("banks a stint, and an unknown start has no duration", () => {
+    const list = addNowObjective(undefined, "draft", AT)
+    const doneAt = new Date(AT.getTime() + 60_000)
+    const completed = toggleNowObjectiveComplete(list, list[0].id, doneAt)
+    expect(completed[0].workedMs).toBe(60_000)
+    expect(completed[0].stintStartedAt).toBeUndefined()
+
+    const parkedGap = {
+      ...completed[0],
+      workedMs: 60_000,
+      addedAt: new Date(AT.getTime() - 7 * 24 * 60 * 60_000).toISOString(),
+    }
+    expect(objectiveWorkedMs(parkedGap)).toBe(60_000)
+
+    const logged = addCompletedNowObjective(undefined, "already", AT, doneAt)
+    expect(logged[0].startUnknown).toBe(true)
+    expect(logged[0].addedAt).toBe(AT.toISOString())
+    expect(logged[0].completedAt).toBe(doneAt.toISOString())
+    expect(objectiveWorkedMs(logged[0])).toBeUndefined()
   })
 })

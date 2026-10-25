@@ -99,3 +99,20 @@
   margin: 6px 0;
   font: 11px/1.4 ui-monospace, Menlo, monospace;
 }
+
+/* Unsent, deleted and edited messages from the export archive. */
+.fm98.an95 .an-ig-removed {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.fm98.an95 .an-ig-removed li {
+  padding: 6px 0;
+  border-top: 1px solid currentColor;
+  border-top-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+.fm98.an95 .an-ig-removed-text {
+  margin-top: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -15,6 +15,7 @@ import {
   stepPointsEarned,
   stepPointsKey,
   taskPointsWithSource,
+  tierEstimates,
 } from "@/lib/task-card"
 import { settleStepPoints } from "@/lib/step-points"
 import { usePointsStore } from "@/lib/points-store"
@@ -131,3 +132,107 @@ describe("setEstimate", () => {
     expect(b[0].estimateLog?.map((e) => e.minutes)).toEqual([20, 30])
   })
 })
+
+describe("tierEstimates", () => {
+  it("computes cumulative estimates across min (B), goal (B+G), and exceptional (B+G+E)", () => {
+    const steps: Subtask[] = [
+      s("b1", { tier: "min", estimatedDuration: 10 }),
+      s("b2", { tier: "min", estimatedDuration: 15 }),
+      s("g1", { tier: "goal", estimatedDuration: 20 }),
+      s("e1", { tier: "exceptional", estimatedDuration: 30 }),
+    ]
+    const res = tierEstimates(steps, 50)
+    // min = B only (10 + 15 = 25, 2 steps)
+    expect(res.min.estimate).toBe(25)
+    expect(res.min.parts).toBe(25)
+    expect(res.min.stepCount).toBe(2)
+    // goal = B + G (25 + 20 = 45, 3 steps)
+    expect(res.goal.estimate).toBe(45)
+    expect(res.goal.parts).toBe(45)
+    expect(res.goal.stepCount).toBe(3)
+    // exceptional = all (45 + 30 = 75 > ownEst 50, 4 steps)
+    expect(res.exceptional.estimate).toBe(75)
+    expect(res.exceptional.parts).toBe(75)
+    expect(res.exceptional.stepCount).toBe(4)
+
+    // When ownEst exceeds the total of all steps, exceptional takes max(ownEst, parts)
+    const resWithLargerOwn = tierEstimates(steps, 100)
+    expect(resWithLargerOwn.min.estimate).toBe(25)
+    expect(resWithLargerOwn.goal.estimate).toBe(45)
+    expect(resWithLargerOwn.exceptional.estimate).toBe(100)
+  })
+
+  it("computes original estimate from first estimateLog or estimatedDuration, falling back to actual only when never estimated", () => {
+    const steps: Subtask[] = [
+      // Had an initial estimate of 15 in estimateLog, later changed to 25, completed in 40m -> original uses 15
+      s("s1", {
+        tier: "min",
+        estimatedDuration: 25,
+        actualDuration: 40,
+        completed: true,
+        estimateLog: [
+          { at: "2026-10-01T10:00:00.000Z", minutes: 15 },
+          { at: "2026-10-02T10:00:00.000Z", minutes: 25 },
+        ],
+      }),
+      // Never had an estimate, completed with actualDuration 12 -> original uses 12
+      s("s2", {
+        tier: "min",
+        completed: true,
+        actualDuration: 12,
+      }),
+      // Never had an estimate, completed with stepSpent 8 -> original uses 8
+      s("s3", {
+        tier: "goal",
+        completed: true,
+      }),
+      // Never had an estimate, NOT completed -> original uses 0
+      s("s4", {
+        tier: "goal",
+        completed: false,
+      }),
+      // Estimated at 20 (no log), completed in 35 -> original still uses 20 (not 35)
+      s("s5", {
+        tier: "exceptional",
+        estimatedDuration: 20,
+        actualDuration: 35,
+        completed: true,
+      }),
+    ]
+    const stepSpent = new Map<string, number>([["s3", 8]])
+    const res = tierEstimates(steps, undefined, stepSpent)
+
+    // min: s1 (15) + s2 (12) = 27
+    expect(res.min.original).toBe(27)
+    // goal: min (27) + s3 (8) + s4 (0) = 35
+    expect(res.goal.original).toBe(35)
+    // exceptional: goal (35) + s5 (20) = 55
+    expect(res.exceptional.original).toBe(55)
+  })
+
+  it("computes running estimate using actual duration for completed steps where known and estimates otherwise", () => {
+    const steps: Subtask[] = [
+      // Completed with known actualDuration (18m vs 10m est) -> running uses 18
+      s("b1", { tier: "min", estimatedDuration: 10, actualDuration: 18, completed: true }),
+      // Completed but actualDuration is unknown (0) -> running falls back to estimate (15m)
+      s("b2", { tier: "min", estimatedDuration: 15, completed: true }),
+      // Incomplete step -> running uses estimate (20m) even if some time was already spent
+      s("g1", { tier: "goal", estimatedDuration: 20, completed: false }),
+      // Completed step whose actual comes from stepSpent map (22m vs 25m est) -> running uses 22
+      s("e1", { tier: "exceptional", estimatedDuration: 25, completed: true }),
+    ]
+    const stepSpent = new Map<string, number>([
+      ["g1", 5],
+      ["e1", 22],
+    ])
+    const res = tierEstimates(steps, undefined, stepSpent)
+
+    // min: b1 (18 actual) + b2 (15 fallback est) = 33
+    expect(res.min.running).toBe(33)
+    // goal: 33 + g1 (20 open est) = 53
+    expect(res.goal.running).toBe(53)
+    // exceptional: 53 + e1 (22 actual from stepSpent) = 75
+    expect(res.exceptional.running).toBe(75)
+  })
+})
+

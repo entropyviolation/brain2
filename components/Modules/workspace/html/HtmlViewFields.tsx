@@ -7,8 +7,8 @@
  */
 "use client"
 
-import { useTaskStore } from "@/lib/task-store"
 import { Label } from "@/components/ui/label"
+import { ListPicker } from "@/components/Lists/list-picker"
 
 export function HtmlViewFields({
   listIds,
@@ -21,8 +21,6 @@ export function HtmlViewFields({
   onListIds: (ids: string[]) => void
   onCanWrite: (v: boolean) => void
 }) {
-  const lists = useTaskStore((s) => s.lists)
-  const toggle = (id: string) => onListIds(listIds.includes(id) ? listIds.filter((x) => x !== id) : [...listIds, id])
   return (
     <div className="space-y-3">
       <div className="space-y-2">
@@ -30,15 +28,7 @@ export function HtmlViewFields({
         <p className="text-xs text-muted-foreground">
           Leave all unticked for a page that needs no data. A page only ever sees the lists ticked here.
         </p>
-        <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-          {lists.length === 0 && <p className="text-xs text-muted-foreground">No lists yet.</p>}
-          {lists.map((l) => (
-            <label key={l.id} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={listIds.includes(l.id)} onChange={() => toggle(l.id)} />
-              <span className="truncate">{l.name}</span>
-            </label>
-          ))}
-        </div>
+        <ListPicker mode="multi" compact showCreate={false} selected={listIds} onChange={onListIds} searchLabel="Lists this page can see" />
       </div>
       <label className={`flex items-start gap-2 text-sm ${listIds.length ? "cursor-pointer" : "opacity-50"}`}>
         <input

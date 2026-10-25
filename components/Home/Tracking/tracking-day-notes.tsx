@@ -16,6 +16,7 @@
  */
 "use client"
 
+import { DayPhotos } from "./day-photos"
 import { useState, useSyncExternalStore } from "react"
 import { format } from "date-fns"
 import { DAY_NOTES_PERSIST_KEY } from "@/lib/day-notes-persist"
@@ -98,6 +99,7 @@ export function TrackingDayNotes({
             ))}
           </div>
           {period === "day" ? <SummaryReference dateKey={dayKey} /> : null}
+          {period === "day" ? <DayPhotos dayKey={dayKey} /> : null}
           {period === "day" ? (
             <SummaryEditor storageKey={dayKey} label={legend} period="day" rows={8} />
           ) : period === "week" ? (

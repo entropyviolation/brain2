@@ -10,6 +10,7 @@
 "use client"
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { percentLedText } from "@/lib/habit-led"
 import type { HabitSpanBreakdown } from "@/lib/habit-span-breakdown"
 import "./habit-form-dialog.css"
@@ -66,14 +67,7 @@ export function HabitSpanBreakdownDialog({
           <DialogDescription className="sr-only">
             {breakdown.habitName} across {breakdown.spanLabel}. Closing writes nothing.
           </DialogDescription>
-          <button
-            type="button"
-            className="habit95-title-btn b2-close-key"
-            aria-label="Close"
-            onClick={() => onOpenChange(false)}
-          >
-            ×
-          </button>
+          <KeycapClose className="habit95-title-btn" label="Close" onClick={() => onOpenChange(false)} />
         </DialogHeader>
         <div className="habit95-body">
           <div className="habit95-list-popup-body">

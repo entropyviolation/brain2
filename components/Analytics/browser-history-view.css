@@ -1,0 +1,35 @@
+/*
+ * components/Analytics/browser-history-view.css — Sources → Browser
+ */
+.fm98.an95 .an-bh { display: flex; flex-direction: column; gap: 12px; color: var(--an-ink); font-size: 12px; }
+.fm98.an95 .an-bh-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.fm98.an95 .an-bh-btn { border: 1px solid currentColor; background: transparent; color: inherit; padding: 3px 10px; font: inherit; cursor: pointer; }
+.fm98.an95 .an-bh-err { color: #a3201a; margin: 0; }
+.fm98.an95 .an-bh-note { margin: 0 0 6px; opacity: 0.7; line-height: 1.4; }
+.fm98.an95 .an-bh-h2 { font-family: var(--font-an-display, inherit); font-size: 20px; margin: 10px 0 0; }
+.fm98.an95 .an-bh-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.fm98.an95 .an-bh-stat { border-top: 2px solid currentColor; padding-top: 4px; }
+.fm98.an95 .an-bh-stat b { display: block; font-family: var(--font-an-display, inherit); font-size: 24px; line-height: 1.1; }
+.fm98.an95 .an-bh-stat span { opacity: 0.7; }
+.fm98.an95 .an-bh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.fm98.an95 .an-bh-card { border-top: 1px solid currentColor; padding-top: 6px; min-width: 0; }
+.fm98.an95 .an-bh-card.is-wide { grid-column: 1 / -1; }
+.fm98.an95 .an-bh-card h3 { font-family: var(--font-an-display, inherit); font-size: 14px; margin: 0 0 4px; }
+.fm98.an95 .an-bh-bars, .fm98.an95 .an-bh-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.fm98.an95 .an-bh-bars li { display: grid; grid-template-columns: 120px 1fr 44px; gap: 6px; align-items: center; }
+.fm98.an95 .an-bh-bars.is-click li { cursor: pointer; }
+.fm98.an95 .an-bh-bars li.is-on .an-bh-k { font-weight: 700; text-decoration: underline; }
+.fm98.an95 .an-bh-k { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm98.an95 .an-bh-bars b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fm98.an95 .an-bh-track { height: 8px; background: rgba(128, 128, 128, 0.2); }
+.fm98.an95 .an-bh-track i { display: block; height: 100%; background: currentColor; }
+.fm98.an95 .an-bh-svg { width: 100%; height: auto; display: block; }
+.fm98.an95 .an-bh-fill { fill: currentColor; }
+.fm98.an95 .an-bh-axis { stroke: currentColor; stroke-width: 0.5; }
+.fm98.an95 .an-bh-tick { font-size: 7px; fill: currentColor; opacity: 0.7; }
+.fm98.an95 .an-bh-list.is-videos li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(128, 128, 128, 0.2); padding: 2px 0; }
+.fm98.an95 .an-bh-list.is-videos a { color: inherit; }
+.fm98.an95 .an-bh-list.is-videos span { opacity: 0.6; white-space: nowrap; }
+.fm98.an95 .an-bh-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 0; font-size: 11px; }
+.fm98.an95 .an-bh-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; }
+.fm98.an95 .an-bh-multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }

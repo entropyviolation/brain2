@@ -65,7 +65,7 @@ import {
   completeFocusTimer,
   focusTimerPickOptions,
 } from "@/lib/focus-timer-log"
-import { NativeSelect } from "@/components/ui/native-select"
+import { ItemPicker } from "@/components/Lists/item-picker"
 
 function getDef(cat: List | undefined, id?: string): AttributeDefinition | undefined {
   if (!cat || !id) return undefined
@@ -1279,19 +1279,18 @@ export function Timer({ minutes, compact = false }: { minutes: number; compact?:
         <div className="flex flex-col gap-2 text-sm" role="dialog" aria-label="Log focus session">
           <label className="flex flex-col gap-1">
             Log {minutes} min to
-            <NativeSelect
-              aria-label="Item to log"
-              value={pickId}
-              onChange={(e) => setPickId(e.target.value)}
-              className="border rounded px-2 py-1 bg-background"
-            >
-              {pickOptions.length === 0 && <option value="">No open items</option>}
-              {pickOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.title}
-                </option>
-              ))}
-            </NativeSelect>
+            {pickOptions.length === 0 ? (
+              <span className="text-xs text-muted-foreground">No open items</span>
+            ) : (
+              <ItemPicker
+                compact
+                mode="single"
+                searchLabel="Item to log"
+                choices={pickOptions}
+                selected={pickId ? [pickId] : []}
+                onChange={(ids) => setPickId(ids[0] ?? "")}
+              />
+            )}
           </label>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={!pickId} onClick={logToPicked}>

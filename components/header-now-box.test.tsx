@@ -12,6 +12,8 @@ import {
   stopWorkingOnOperation,
 } from "@/lib/operation-work-session"
 import { addPenColorNowObjective, startPenColorSession } from "@/lib/pen-color-session"
+import { startTaskClock } from "@/lib/task-clock"
+import { useTaskCardStore } from "@/lib/task-card"
 import { HeaderNowBox } from "./header-now-box"
 
 function seedOperation(id = "op_1", name = "Foxtide rebuild"): void {
@@ -120,5 +122,49 @@ describe("HeaderNowBox", () => {
     expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
     expect(screen.getByRole("textbox", { name: "Add objective" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Mark objective complete: finish the nest/i })).toBeInTheDocument()
+  })
+
+  it("opens the task on the pen clock from the now row", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    startPenColorSession("act-exercise")
+    render(<HeaderNowBox />)
+
+    await user.click(await screen.findByRole("button", { name: "Put a task on this clock" }))
+    expect(await screen.findByRole("dialog", { name: "Task on this clock" })).toBeInTheDocument()
+    await user.type(screen.getByRole("textbox", { name: "Find or create a task" }), "Nest the discs")
+    await user.click(screen.getByRole("button", { name: "Create “Nest the discs”" }))
+
+    expect(screen.queryByRole("dialog", { name: "Task on this clock" })).not.toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: "Open task card, Nest the discs" })).toBeInTheDocument()
+    const heard = vi.fn()
+    window.addEventListener("brain2-open-item-popup", heard)
+    await user.click(screen.getByRole("button", { name: "Nest the discs · Exercise" }))
+    expect(heard).toHaveBeenCalled()
+    window.removeEventListener("brain2-open-item-popup", heard)
+  })
+
+  it("opens the To Do task card for the task already on the pen clock", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    useTaskStore.getState().addTask({
+      id: "testy",
+      description: "testy",
+      type: "task",
+      stage: "clarified",
+      createdAt: new Date("2026-01-01"),
+      completed: false,
+      lists: [],
+      links: [],
+    })
+    startTaskClock("testy", { penId: "act-exercise" })
+
+    render(<HeaderNowBox />)
+
+    expect(screen.queryByRole("button", { name: "Put a task on this clock" })).not.toBeInTheDocument()
+    expect(screen.queryByTestId("clock-task-trigger")).not.toBeInTheDocument()
+    await user.click(await screen.findByRole("button", { name: "Open task card, testy" }))
+    expect(useTaskCardStore.getState().taskId).toBe("testy")
+    expect(screen.queryByRole("dialog", { name: "Task on this clock" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Stop /i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Pause /i })).toBeInTheDocument()
   })
 })

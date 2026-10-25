@@ -319,7 +319,7 @@ Slice F notes: `countingMinutes` (`lib/todo-steps.ts`) is the one rule; Plan's d
 
 ## Phase 7: The look
 
-House language stays: cool silver well, short rounded cards, nixie tier, engraved verbs, the milled fascia ([`DESIGN_STYLE.md` → Milled fascia](DESIGN_STYLE.md#milled-fascia)). No celestial costume; star icons are welcome. No yellow. Each phase applies its part as it ships; a last pass checks them together.
+House language stays: cool silver well, short rounded cards, nixie tier, the silver keycap for word keys ([`DESIGN_STYLE.md` → Keycaps](DESIGN_STYLE.md#keycaps); seafoam and cornflower are the only other plastics), the milled fascia ([`DESIGN_STYLE.md` → Milled fascia](DESIGN_STYLE.md#milled-fascia)). No celestial costume; star icons are welcome. No yellow, cream, or orange caps. Each phase applies its part as it ships; a last pass checks them together.
 
 - **Row.** Name, a step-path hint under it while a step is on the clock, a lock when locked, an **unlocks N** chip (Phase 14). Actions: ▶, Start, **Card**.
 - **Lid.** Fold labels all left-aligned (today Time and Steps are centred). Flags: jewels left, Missed / View right. Time: segmented control, field, then `est · parts · spent · pen` with the pace ghost.
