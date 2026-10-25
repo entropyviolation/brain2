@@ -1,10 +1,10 @@
 # `lib/phone-sync/` — iPhone data into the vault
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-25_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status (_Last mapped: 2026-10-22_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `COGS_CAPTURE_BOX_URL` is set, starts the location drain. **Planned:** the Settings → Phone sync panel.
+Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `COGS_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. Health, phone Screen Time, email, and DMs are listed and not built.
 
 ## Flow
 
@@ -26,8 +26,9 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `to-entries.ts` | Texts → instants on iPhone Texts. Calls → intervals on iPhone Calls, sliced at midnight; missed calls are instants. Exact clocks. `mergePhoneEntries` skips ids already there or deleted. |
 | `person-links.ts` | Phone number ↔ Person. Pure. `relinkPhonePens` names each iPhone Texts / Calls pen after the person whose saved number it is, and stamps `personId` + `handle` on it. App side: `lib/phone-person-links.ts`. Built 2026-10-23. |
 | `write.ts` | `applyPhoneRecords`: the one door into the tracking store. Pen ids match the BIM `text:` / `call:` verbs (`iphone-text-<slug>`), so both share a person's pen. |
-| `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200). |
-| `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. |
+| `archive.ts` | Node only. `data/phone-sync/messages.jsonl` (full bodies, append-only, deduped), `cursors.json`, `runs.json` (last 200), `enabled.json` (a missing key stays on). |
+| `runner.ts` | Reader registry and `runPhoneSync`. A reader error is logged and the cursor stays put. `enabled` returning false skips that reader and writes no run. |
+| `status.ts` | The Settings row list (title, permission, which ones switch) and `latestRun`. No disk. |
 | `readers.ts` | Node only. The list the hub runs. Each Wave 1 agent adds one line. |
 | `calls.ts` | `ZCALLRECORD` row → `CallRecord`. Core Data time (seconds since 2001-01-01), service name, and the cursor `"<ZDATE>\|<ZUNIQUE_ID>"`. Any duration counts as answered. Pure. Built 2026-10-22. |
 | `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `COGS_CALLS_DB` overrides the path. Loaded by `readers.ts`. |
@@ -62,7 +63,7 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 
 ## Hub
 
-`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows.
+`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows. A source whose `enabled.json` entry is `false` is skipped for that tick. The location drain uses the same file: off means it waits and does not pull.
 
 _Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
 

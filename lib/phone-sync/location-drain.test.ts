@@ -3,7 +3,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetGpsPlacesForTests } from "@/lib/ingest/gps-places"
 import { generateKeyPair, open, seal } from "@/scripts/sealed-box.mjs"
-import { drainLocationOnce } from "./location-drain"
+import { drainLocationOnce, startLocationDrain } from "./location-drain"
 import type { PhoneSyncRun } from "./types"
 
 beforeEach(() => {
@@ -106,5 +106,23 @@ describe("drainLocationOnce", () => {
     const box = fakeBox([])
     const run = await drainLocationOnce({ boxUrl: "http://box", token: "t", privateKey: keys.privateKey, open, archive: memoryArchive(), fetch: box.fetch })
     expect(run).toBeNull()
+  })
+
+  it("does not pull while location is off", async () => {
+    const fetchFn = vi.fn()
+    const stop = startLocationDrain({
+      boxUrl: "http://box",
+      token: "t",
+      privateKey: keys.privateKey,
+      open,
+      archive: memoryArchive(),
+      fetch: fetchFn,
+      paused: () => true,
+      intervalMs: 60_000,
+      log: () => {},
+    })
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    stop()
+    expect(fetchFn).not.toHaveBeenCalled()
   })
 })
