@@ -49,6 +49,9 @@ function groupById(id: (typeof SETTINGS_GROUPS)[number]["id"]) {
 const BabyAnimalFriendField = lazy(() =>
   import("@/components/Settings/BabyAnimalFriendField").then((m) => ({ default: m.BabyAnimalFriendField })),
 )
+const KeyboardShortcutsPanel = lazy(() =>
+  import("@/components/Settings/KeyboardShortcutsPanel").then((m) => ({ default: m.KeyboardShortcutsPanel })),
+)
 const HomeLocationField = lazy(() =>
   import("@/components/Settings/HomeLocationField").then((m) => ({ default: m.HomeLocationField })),
 )
@@ -262,6 +265,7 @@ export function SettingsDialog({
                   {selected.id === "settings-instagram" ? <InstagramImportPanel /> : null}
                   {selected.id === "settings-instagram-accounts" ? <InstagramAccountsPanel /> : null}
                   {selected.id === "settings-spotify-accounts" ? <SpotifyAccountsPanel /> : null}
+                  {selected.id === "settings-shortcuts" ? <KeyboardShortcutsPanel /> : null}
                   {selected.id === "settings-types" ? (
                     <div className="space-y-3 rounded-lg border border-dashed p-4">
                       <div className="flex items-center gap-2">
