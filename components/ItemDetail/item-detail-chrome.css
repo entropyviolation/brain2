@@ -231,17 +231,82 @@
   margin-left: auto;
 }
 
+.id-settings-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.id-settings-sheet {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.id-settings-head {
+  flex: none;
+  padding: 16px 18px 14px;
+  background: var(--id-mill);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.id-settings-kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #3a3e42;
+}
+
+.id95 .id-settings-title,
+.id95-dialog .id-settings-title {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-transform: none;
+  color: var(--id-ink, #111);
+}
+
+.id-settings-lede {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #3a3e42;
+}
+
 .id-settings {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  max-width: 36rem;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 18px;
+}
+
+.id-settings-plate {
+  padding: 10px 12px 12px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: var(--id-sunken);
 }
 
 .id-settings h2 {
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.id-settings-plate > h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a2e32;
 }
 
 .id-settings-id {
@@ -265,13 +330,55 @@
   padding: 0;
 }
 
+.id-settings-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.id-settings-tabs label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
+  background: var(--id-face, #dfdfdf);
+  box-shadow: var(--id-key-ring);
+  cursor: pointer;
+}
+
+.id-settings-tabs label:has(input:disabled) {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .id-settings-attr {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 4px 8px;
   align-items: center;
-  padding: 4px 0;
+  padding: 8px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.id-settings-attr-head {
+  padding-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a4e52;
+}
+
+.id-settings-label {
+  grid-column: 2 / -1;
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  background: var(--id-highlight, #fff);
+  box-shadow: var(--id-field);
+  font: inherit;
+  font-size: 12px;
 }
 
 .id-settings-attr button.id-settings-jump {
@@ -360,13 +467,13 @@
 
 .id-window-key {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   top: var(--b2-close-top, 1rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -374,12 +481,53 @@
 }
 
 .id-minimize-key {
-  right: calc(var(--b2-close-right, 1rem) + 26px);
+  right: calc(var(--b2-close-right, 1rem) + 32px);
 }
 
 .id-settings-key.id-window-key {
-  right: calc(var(--b2-close-right, 1rem) + 52px);
+  right: calc(var(--b2-close-right, 1rem) + 64px);
   margin-left: 0;
+}
+
+body.win95-app button.id-settings-key {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #2a2e32;
+  cursor: pointer;
+}
+
+body.win95-app button.id-settings-key:hover img {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45)) brightness(1.08);
+}
+
+body.win95-app button.id-settings-key:active {
+  transform: translateY(1px);
+}
+
+body.win95-app button.id-settings-key:active img {
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35)) brightness(0.96);
+}
+
+body.win95-app button.id-settings-key:focus-visible {
+  outline: 1px dotted var(--id-crt, #7dffc4);
+  outline-offset: 2px;
+}
+
+body.win95-app button.id-settings-key img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
 .id-minimize-mark {
@@ -390,13 +538,11 @@
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-body.win95-app :is(.id95, .id95-dialog) button.id-settings-key svg {
+body.win95-app :is(.id95, .id95-dialog) button.id-settings-key img,
+body.win95-app button.id-settings-key img {
   display: block !important;
-  width: 16px !important;
-  height: 16px !important;
-  stroke-width: 2.25;
-  color: #1a1c1e !important;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
+  width: 26px !important;
+  height: 26px !important;
 }
 
 .id-detail-dock {
@@ -1643,7 +1789,38 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
 .id-attr-palette-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #7a8086;
+  border-radius: 3px;
+  background: #e6e8ea;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.id-attr-palette-group[data-group="Words"] {
+  background: #e3ebf4;
+}
+
+.id-attr-palette-group[data-group="Numbers"] {
+  background: #e3f0e4;
+}
+
+.id-attr-palette-group[data-group="Choices"] {
+  background: #f6edd9;
+}
+
+.id-attr-palette-group[data-group="Time"] {
+  background: #ebe4f4;
+}
+
+.id-attr-palette-group[data-group="Media"] {
+  background: #f6e4e2;
+}
+
+.id-attr-palette-group[data-group="References"] {
+  background: #e2f1f2;
 }
 
 .id-attr-palette-plate {

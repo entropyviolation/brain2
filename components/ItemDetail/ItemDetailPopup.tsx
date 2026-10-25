@@ -73,6 +73,7 @@ import {
   Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
 import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
 import { ItemDetailDock } from "@/components/ItemDetail/ItemDetailDock"
@@ -161,6 +162,9 @@ export function TaskDetailPopup({
   onStepComplete,
 }: TaskDetailPopupProps) {
   const detailRef = useRef<HTMLDivElement>(null)
+  const settingsHost = useRef<HTMLDivElement>(null)
+  const settingsLock = useRef(false)
+  const attributeLock = useRef(false)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -429,6 +433,8 @@ export function TaskDetailPopup({
     const draft = getDraft()
     if (draft && task && !snapshotsEqual(task, draft)) setTask({ ...draft })
     minimizeLock.current = true
+    settingsLock.current = false
+    attributeLock.current = false
     setItemSettingsOpen(false)
     setAttributeSettingsId(null)
     setMinimized(true)
@@ -510,7 +516,7 @@ export function TaskDetailPopup({
       <Dialog
         open={open && !minimized}
         onOpenChange={(next) => {
-          if (!next && minimizeLock.current) {
+          if (!next && (minimizeLock.current || settingsLock.current)) {
             minimizeLock.current = false
             return
           }
@@ -531,16 +537,13 @@ export function TaskDetailPopup({
           <button type="button" className="id-window-key id-minimize-key" data-no95 aria-label="Minimize" title="Minimize" onClick={minimize}>
             <span className="id-minimize-mark" aria-hidden />
           </button>
-          <button
-            type="button"
-            className="id-window-key id-settings-key"
-            data-no95
-            aria-label="Item settings"
-            title="Item settings"
-            onClick={() => setItemSettingsOpen(true)}
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <ItemSettingsKey
+            className="id-window-key"
+            onClick={() => {
+              settingsLock.current = true
+              setItemSettingsOpen(true)
+            }}
+          />
           {layerHeader}
           <div className="id-fascia">
             <div className="id-fascia-row">
@@ -1654,20 +1657,12 @@ export function TaskDetailPopup({
                         <Input type="number" value={task.actualDuration ?? ""} readOnly className="bg-muted" />
                       </div>
                     </div>
-                    {(task.timeLogs?.length ?? 0) > 0 && (
-                      <ul className="text-sm space-y-1">
-                        {task.timeLogs!.map((log) => (
-                          <li key={log.id} className="flex justify-between border-b py-1">
-                            <span>{log.durationMinutes}m{log.location ? ` @ ${log.location}` : ""}{log.notes ? ` — ${log.notes}` : ""}</span>
-                            <span className="text-muted-foreground">{log.date}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg border">
                     <ItemPenTimeSection
                       task={task}
+                      editableTime={isTask}
+                      onPatch={patchItem}
                       onPenLinksChange={(penLinks) => {
                         touchDraft({ penLinks })
                         setTask((prev) => (prev ? { ...prev, penLinks } : prev))
@@ -1707,21 +1702,40 @@ export function TaskDetailPopup({
           onClose={() => guard.requestClose()}
         />
       ) : null}
-      <Dialog open={itemSettingsOpen} onOpenChange={setItemSettingsOpen}>
+      <Dialog
+        open={itemSettingsOpen}
+        onOpenChange={(next) => {
+          if (!next && attributeLock.current) return
+          settingsLock.current = next
+          setItemSettingsOpen(next)
+        }}
+      >
         <DialogContent
-          className="id95-dialog id95 z-[90] sm:max-w-lg max-h-[85vh] overflow-hidden !flex flex-col"
+          ref={settingsHost}
+          container={detailRef.current}
+          className="id95-dialog id95 z-[90] sm:max-w-xl max-h-[85vh] overflow-hidden !flex flex-col"
           overlayClassName="z-[90]"
           data-ui-name="Item settings"
+          onPointerDownOutside={(event) => {
+            const target = event.target as Element | null
+            if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+          }}
+          onInteractOutside={(event) => {
+            const target = event.target as Element | null
+            if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+          }}
         >
-          <DialogTitle className="sr-only">Item settings</DialogTitle>
-          <div className="id-settings" style={{ padding: "16px 8px 8px", overflow: "auto" }}>
+          <div className="id-settings-host">
             <ItemSettingsPanel
               task={task}
               lists={lists}
               isTask={isTask}
               showLinks
               onPatch={patchItem}
-              onOpenAttribute={(id) => setAttributeSettingsId(id)}
+              onOpenAttribute={(id) => {
+                attributeLock.current = true
+                setAttributeSettingsId(id)
+              }}
             />
           </div>
         </DialogContent>
@@ -1729,8 +1743,12 @@ export function TaskDetailPopup({
       <AttributeSettingsDialog
         attributeId={attributeSettingsId}
         open={attributeSettingsId != null}
+        container={settingsHost.current ?? detailRef.current}
         onOpenChange={(next) => {
-          if (!next) setAttributeSettingsId(null)
+          if (!next) {
+            attributeLock.current = false
+            setAttributeSettingsId(null)
+          }
         }}
         draftTask={task}
         onPatchDraft={patchItem}

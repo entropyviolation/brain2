@@ -201,10 +201,10 @@ table uses.
 | `21-item-detail-analysis.png` | 2026-10-20 | fresh | Item detail → Analysis |
 | `21-item-detail-body.png` | 2026-10-20 | fresh | Item detail → Body |
 | `21-item-detail-dependencies.png` | 2026-10-20 | fresh | Item detail → Dependencies |
-| `21-item-detail-popup.png` | 2026-10-20 | fresh | Item detail → Details. Save lamp beside Save Changes (Saved / Unsaved changes). |
+| `21-item-detail-popup.png` | 2026-10-24 | fresh | Item detail → Details. Save lamp beside Save Changes. Brushed gear, no keycap, beside Minimize and Close. |
 | `21-item-detail-scheduling.png` | 2026-10-20 | fresh | Item detail → Scheduling |
 | `21-item-detail-subtasks.png` | 2026-10-20 | fresh | Item detail → Subtasks |
-| `21-item-detail-time.png` | 2026-10-20 | fresh | Item detail → Time |
+| `21-item-detail-time.png` | 2026-10-24 | fresh | Item detail → Time. Ledger of blocks, objectives, and logs with no painted block. |
 | `habits-noble-gas-rail.png` | 2026-09-20 | unknown | Habits control-panel crop; no sidecar |
 
 ---
@@ -222,7 +222,7 @@ Rendered by `app/page.tsx`:
 | Review (badge) | `components/Reviews/reviews.tsx` | Rituals menu (day sun/moon; week–year Start / Review) |
 | Morning | `components/Reviews/MorningReview.tsx` | Day morning ritual (wake, dream, intentions, affirmations, postpone) |
 | Settings | `components/Settings/SettingsDialog.tsx` | Home city, assumed finish time, backup, sync, **message ingest** (grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call / Text Shortcut AirDrop), **Screen Time** (ActivityWatch), item types, Second Brain |
-| Now | `components/cognitive-state.tsx` | Header popup: Current moment (Working on, Events, Thought process, Update state) above Tracking / Plan; day grid or day plan |
+| Now | `components/cognitive-state.tsx` | Header popup: Current moment (operation Working on, activity-pen clock, Events, Notes, Thought process, Update state) above Tracking / Plan; day grid or day plan |
 | Inbox | `components/inbox.tsx` | Unclarified captures |
 | Ingest | `components/ingest-log-dialog.tsx` | Phone-message ingest log. GPS tracking points hidden unless **Show GPS** |
 | Metrics | `components/Tracking/MetricLogger.tsx` | Wellbeing datapoint logger. Opens from Now → Current moment (both panes), not the header Capture cluster. |
@@ -390,12 +390,12 @@ Tracking and Habits; Screen Time still depends on a local ActivityWatch watcher.
 | `20-dialog-time-tracking.png` | Header Now dialog |
 | `20-dialog-metrics.png` | Now → Current moment → Metrics |
 | `20-dialog-completion.png` | Completion dialog (Undo reopens the task so the run can continue) |
-| `21-item-detail-popup.png` | Item detail → Details (save lamp beside Save Changes) |
+| `21-item-detail-popup.png` | Item detail → Details (save lamp; brushed gear beside Minimize and Close) |
 | `21-item-detail-scheduling.png` | Item detail → Scheduling |
 | `21-item-detail-dependencies.png` | Item detail → Dependencies |
 | `21-item-detail-subtasks.png` | Item detail → Subtasks |
 | `21-item-detail-analysis.png` | Item detail → Analysis |
-| `21-item-detail-time.png` | Item detail → Time |
+| `21-item-detail-time.png` | Item detail → Time (blocks, objectives, and logs) |
 | `21-item-detail-body.png` | Item detail → Body |
 
 ---

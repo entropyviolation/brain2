@@ -48,12 +48,15 @@ export function AttributeSettingsDialog({
   attributeId,
   open,
   onOpenChange,
+  container = null,
   draftTask,
   onPatchDraft,
 }: {
   attributeId: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Mount inside the dialog already open so that dialog stays put. */
+  container?: HTMLElement | null
   /** The item whose detail is open, so a rename or delete lands on its draft too. */
   draftTask?: Task | null
   onPatchDraft?: (patch: Partial<Task>) => void
@@ -171,6 +174,7 @@ export function AttributeSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        container={container}
         className="id95-dialog id95 id-attr-settings z-[100] sm:max-w-lg max-h-[85vh] overflow-hidden !flex flex-col"
         overlayClassName="z-[100]"
         data-ui-name="Attribute settings"
