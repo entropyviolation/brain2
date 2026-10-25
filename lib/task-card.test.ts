@@ -131,6 +131,64 @@ describe("setEstimate", () => {
     expect(b[0].estimatedDuration).toBe(30)
     expect(b[0].estimateLog?.map((e) => e.minutes)).toEqual([20, 30])
   })
+
+  it("logs a ghost accept once", async () => {
+    const { setEstimate } = await import("./task-card")
+    const accepted = setEstimate([{ id: "a", description: "a", completed: false }], "a", 25)
+    expect(accepted[0].estimatedDuration).toBe(25)
+    expect(accepted[0].estimateLog?.map((e) => e.minutes)).toEqual([25])
+    expect(setEstimate(accepted, "a", 25)[0].estimateLog).toHaveLength(1)
+  })
+})
+
+describe("noteTaskEstimate", () => {
+  const now = new Date("2026-10-25T12:00:00.000Z")
+  const base = task({ estimatedDuration: 300, estimateLog: [{ at: "2026-10-01T00:00:00.000Z", minutes: 300 }] })
+
+  it("appends when the task estimate changes and skips the same minutes", async () => {
+    const { noteTaskEstimate } = await import("./task-card")
+    const next = noteTaskEstimate(base, { ...base, estimatedDuration: 240 }, now)
+    expect(next.estimateLog?.map((e) => e.minutes)).toEqual([300, 240])
+    expect(next.estimateLog?.[1].at).toBe(now.toISOString())
+    const copy = { ...next, estimatedDuration: 240 }
+    const again = noteTaskEstimate(next, copy, now)
+    expect(again).toBe(copy)
+    expect(again.estimateLog).toHaveLength(2)
+  })
+
+  it("keeps a longer stored log when the draft's copy is stale", async () => {
+    const { noteTaskEstimate } = await import("./task-card")
+    const renamed = noteTaskEstimate(base, { ...base, description: "Finish CDs", estimateLog: undefined }, now)
+    expect(renamed.estimateLog).toEqual(base.estimateLog)
+    expect(renamed.estimatedDuration).toBe(300)
+  })
+
+  it("logs a task estimate in the store and leaves the step log in place", async () => {
+    const { setEstimate } = await import("./task-card")
+    const { useTaskStore } = await import("./task-store")
+    useTaskStore.getState().clearAllData()
+    const step = { id: "a", description: "insert", completed: false, estimatedDuration: 20, estimateLog: [{ at: "2026-10-01T00:00:00.000Z", minutes: 20 }] }
+    useTaskStore.getState().addTask({
+      id: "t",
+      description: "Finish CDs",
+      type: "task",
+      stage: "list",
+      createdAt: new Date("2026-10-01T00:00:00.000Z"),
+      completed: false,
+      lists: [],
+      estimatedDuration: 300,
+      subtasks: [step],
+    })
+    const stored = () => useTaskStore.getState().tasks.find((row) => row.id === "t")!
+    const stepped = setEstimate(stored().subtasks, "a", 35)
+    useTaskStore.getState().updateTask({ ...stored(), subtasks: stepped, estimatedDuration: 180 })
+    expect(stored().estimatedDuration).toBe(180)
+    expect(stored().estimateLog?.map((e) => e.minutes)).toEqual([180])
+    expect(stored().subtasks?.[0].estimatedDuration).toBe(35)
+    expect(stored().subtasks?.[0].estimateLog?.map((e) => e.minutes)).toEqual([20, 35])
+    useTaskStore.getState().updateTask({ ...stored(), estimatedDuration: 180 })
+    expect(stored().estimateLog).toHaveLength(1)
+  })
 })
 
 describe("tierEstimates", () => {

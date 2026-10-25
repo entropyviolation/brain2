@@ -25,6 +25,8 @@ export interface InstagramStatus {
     exportDate: string
     builtAt: string
     ffmpeg: boolean
+    /** Media files Google Drive would not download. The report was still built. */
+    skipped?: number
   } | null
   lastError: { at: string; step: string; message: string; stderr?: string; exportName?: string } | null
   running: boolean

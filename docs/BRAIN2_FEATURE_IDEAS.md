@@ -53,7 +53,7 @@ or a dead field.
 | 15 | CPM solver | shipped | `lib/critical-path.ts` + Gantt highlight |
 | 16 | PERT three-points | partial | Field + solver; no capture UI on the item |
 | 18 / 254 | Dependency DAG | shipped | Scheduler Dependencies / `DependencyGraph` (in-house, not React Flow) |
-| 19 | WIP warning | shipped | To Do Filters & Sort + yellow chrome warning (`todo-prefs`) |
+| 19 | WIP warning | partial | Soft cap still in To Do settings and on the load lamp (`todo-prefs`). The lace line `N in progress (cap M) — warning only, not a block` is hidden (2026-10-25). |
 | 20 | Kanban | shipped (Modules only) | Workspace Kanban; **stripped from Lists** on purpose (v10) |
 | 21 | Velocity | not shipped | Points exist; no throughput chart |
 | 25 | Predecessor/successor chips | partial | Dependencies tab + typed links; not chips |

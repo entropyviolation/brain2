@@ -56,7 +56,7 @@ timegrid store when that dialog opens.
 
 `SessionDebriefHost` (`components/Home/Tracking/session-debrief-dialog.tsx`) is
 mounted with them. It stays empty until Working on now stops, then opens the
-sitting review.
+optional end-of-session reflection. Skip leaves the task open.
 
 ## Files
 

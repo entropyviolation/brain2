@@ -4,7 +4,9 @@
  * A painted block is an event, not a color: it has a start, an end, a primary
  * pen plus optional secondaries, a display name, any number of variants, and
  * notes. A Mood block also carries This stretch: any name, then the body,
- * the water, and the heaps. Activity blocks do not. This is the one editor
+ * the water, and the heaps. Activity blocks do not. **show in timegrid**
+ * leaves this editor and scrolls that block into the Time Grid.
+ * This is the one editor
  * for all of that, opened from the Time Grid,
  * the Activity Log, or the Day Log, so the views can never drift apart on what
  * a block means. It must open on the click — sleep/pen-action sync stays on
@@ -98,6 +100,7 @@ import "./tracking-chrome.css"
 import "./entry-dialog.css"
 import "./tracking-settings.css"
 import { CertaintyToggle, DriveCommuteSection, EdgeAnchor, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
+import { showBlockInTimegrid } from "@/components/Home/Tracking/show-in-timegrid"
 import { certaintyPatch, edgeOf, surer, refitTransit, settleAnchors, worseOf, type EdgeState } from "@/lib/entry-edges"
 import { transitPenOf } from "@/lib/transit-suggest"
 import { travelMinutes } from "@/lib/transit-time"
@@ -1133,6 +1136,21 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           <div className="flex flex-wrap items-center gap-2">
             <Button className="flex-1" onClick={save}>
               Save {isInstant(entry) ? "event" : "block"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              title="Open this block on the Time Grid"
+              onClick={() => {
+                if (!entry.id) return
+                const id = entry.id
+                guard.guardAction(() => {
+                  window.setTimeout(() => showBlockInTimegrid(id), 0)
+                  onClose()
+                })
+              }}
+            >
+              show in timegrid
             </Button>
             {!isInstant(entry) && (
               <>

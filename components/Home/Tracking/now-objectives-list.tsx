@@ -226,11 +226,11 @@ function ObjectivesEditor({
   }
 
   return (
-    <div className="trk-now-obj-editor" data-ui-name="Objectives for right now">
+    <div className="trk-now-obj-editor b2-now" data-ui-name="Objectives for right now">
       <div className="trk-now-obj-hide-row">
         <button
           type="button"
-          className="trk-now-obj-hide"
+          className="todo-cap is-mod trk-now-obj-hide"
           aria-pressed={hideCompleted}
           onClick={() => setHideCompleted((value) => !value)}
         >
@@ -275,19 +275,19 @@ function ObjectivesEditor({
                   {open ? (
                     <div className="trk-now-obj-detail">
                       {onRemove ? (
-                        <button type="button" className="trk-now-obj-mode" onClick={() => onRemove(row.id)}>
+                        <button type="button" className="todo-cap trk-now-obj-mode" onClick={() => onRemove(row.id)}>
                           Delete
                         </button>
                       ) : null}
                       {!done && onSaveForLater ? (
-                        <button type="button" className="trk-now-obj-mode" onClick={() => onSaveForLater(row.id)}>
+                        <button type="button" className="todo-cap trk-now-obj-mode" onClick={() => onSaveForLater(row.id)}>
                           Save for later
                         </button>
                       ) : null}
                       {onAttach ? (
                         <button
                           type="button"
-                          className="trk-now-obj-mode"
+                          className="todo-cap trk-now-obj-mode"
                           aria-expanded={attachId === row.id}
                           onClick={() => (attachId === row.id ? setAttachId(null) : openAttach(row))}
                         >
@@ -322,7 +322,7 @@ function ObjectivesEditor({
                           </ul>
                           <button
                             type="button"
-                            className="ops-btn trk-now-obj-add-btn"
+                            className="todo-cap is-primary trk-now-obj-add-btn"
                             disabled={!attachQuery.trim()}
                             onClick={() => {
                               onAttach(row.id, { createName: attachQuery.trim() })
@@ -347,7 +347,7 @@ function ObjectivesEditor({
                       {onSetCompletes ? (
                         <button
                           type="button"
-                          className="trk-now-obj-mode"
+                          className="todo-cap trk-now-obj-mode"
                           aria-pressed={objectiveCompletesTarget(row)}
                           title={
                             objectiveCompletesTarget(row)
@@ -387,13 +387,13 @@ function ObjectivesEditor({
           }}
         />
         <div className="trk-now-obj-add-actions">
-          <button type="button" className="ops-btn trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
+          <button type="button" className="todo-cap is-primary trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
             Add objective
           </button>
           {onAddCompleted ? (
             <button
               type="button"
-              className="ops-btn trk-now-obj-add-btn"
+              className="todo-cap trk-now-obj-add-btn"
               disabled={!draft.trim()}
               onClick={submitCompleted}
             >
@@ -511,7 +511,7 @@ export function NowObjectivesList({
           <div
             ref={panelRef}
             id={panelId}
-            className="trk-now-obj-pop"
+            className="trk-now-obj-pop b2-now"
             role="dialog"
             aria-label={label}
             data-testid="now-objectives-pop"
@@ -539,11 +539,11 @@ export function NowObjectivesList({
       : null
 
   return (
-    <div className="trk-now-obj-trigger-wrap">
+    <div className="trk-now-obj-trigger-wrap b2-now">
       <button
         ref={triggerRef}
         type="button"
-        className={`ops-btn trk-now-obj-trigger${open ? " open" : ""}${active > 0 ? " has-active" : ""}`}
+        className={`todo-cap trk-now-obj-trigger${open ? " open" : ""}${active > 0 ? " has-active" : ""}`}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={label}
