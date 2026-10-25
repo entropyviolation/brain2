@@ -145,7 +145,7 @@ This is probably the single largest win for reload and open/close lag. Do it onl
 
 ### Step 4 — Calm the timers
 
-_Last mapped: 2026-10-20_ — **Done** (not committed).
+_Last mapped: 2026-10-25_ — **Done.**
 
 - Done: `tickWorkSession` and `tickPenColorSession` skip the write when the live Tracking block already ends at the rounded active end (`liveEntryUpToDate` in `lib/operation-work-session.ts`). A moved or missing block still repaints.
 - Done: `hooks/useMessageIngest.ts` browser hub poll is a self-scheduling timeout: 1 s while messages arrive, 5 s when the queue is empty, paused while the tab is hidden, and snapped to an immediate poll when it becomes visible.
