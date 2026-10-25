@@ -191,7 +191,7 @@ export function GoalsAnalytics() {
                 </tbody>
               </table>
               <p className="an-acc-math">
-                The orange tick is where a straight line from start (or creation) to deadline says you should be. Gap =
+                The orange tick is where a straight line from start (or creation) to deadline says you should be. Without dates, a day, week, month, season or year goal is paced across the current one. Gap =
                 progress − time elapsed, in percentage points. Needed / day = (target − current) ÷ days left. Goals
                 with no end date show —.
               </p>

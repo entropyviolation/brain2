@@ -174,19 +174,62 @@ export interface GoalPace {
 
 const DAY_MS = 86_400_000
 
-/** Straight-line pace for a goal with a start and an end. */
+/**
+ * The calendar period a repeating goal sits in (day, week, month, season, year).
+ * Used for pace when the goal has no explicit dates. Weeks start Monday.
+ */
+export function periodSpan(kind: string | undefined, now = new Date()): { start: number; end: number } | null {
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const d = now.getDate()
+  switch (kind) {
+    case "day":
+      return { start: new Date(y, m, d).getTime(), end: new Date(y, m, d + 1).getTime() }
+    case "week": {
+      const offset = (now.getDay() + 6) % 7
+      return { start: new Date(y, m, d - offset).getTime(), end: new Date(y, m, d - offset + 7).getTime() }
+    }
+    case "month":
+      return { start: new Date(y, m, 1).getTime(), end: new Date(y, m + 1, 1).getTime() }
+    case "quarter": {
+      const q = Math.floor(m / 3) * 3
+      return { start: new Date(y, q, 1).getTime(), end: new Date(y, q + 3, 1).getTime() }
+    }
+    case "year":
+      return { start: new Date(y, 0, 1).getTime(), end: new Date(y + 1, 0, 1).getTime() }
+    default:
+      return null
+  }
+}
+
+/**
+ * Straight-line pace for a goal with a start and an end. Explicit dates win;
+ * otherwise a day / week / month / season / year goal is paced across the
+ * current calendar period.
+ */
 export function goalPace(
-  goal: { target: number; current: number; createdAt: Date; startDate?: Date; endDate?: Date; deadline?: Date },
+  goal: {
+    target: number
+    current: number
+    createdAt: Date
+    startDate?: Date
+    endDate?: Date
+    deadline?: Date
+    periodKind?: string
+  },
   now = new Date(),
 ): GoalPace {
   const progress = goal.target > 0 ? Math.min(1, Math.max(0, goal.current / goal.target)) : 0
-  const start = toTime(goal.startDate) ?? toTime(goal.createdAt)
-  const end = toTime(goal.deadline) ?? toTime(goal.endDate)
+  const explicitEnd = toTime(goal.deadline) ?? toTime(goal.endDate)
+  const span = explicitEnd === null ? periodSpan(goal.periodKind, now) : null
+  const start = span?.start ?? toTime(goal.startDate) ?? toTime(goal.createdAt)
+  const end = span?.end ?? explicitEnd
   if (start === null || end === null || end <= start) {
     return { elapsed: null, progress, gap: null, daysLeft: null, neededPerDay: null }
   }
   const elapsed = Math.min(1, Math.max(0, (now.getTime() - start) / (end - start)))
-  const daysLeft = Math.max(0, Math.ceil((end - now.getTime()) / DAY_MS))
+  // Less one hour so a DST shift inside the span does not add a day.
+  const daysLeft = Math.max(0, Math.ceil((end - now.getTime()) / DAY_MS - 1 / 24))
   const remaining = Math.max(0, goal.target - goal.current)
   return {
     elapsed,
