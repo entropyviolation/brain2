@@ -114,9 +114,11 @@ export function CaptureShorthandHelp({ variant }: { variant: "quick" | "bulk" })
             <code className="text-foreground">category:Research</code>
           </li>
           <li>
-            Tracking log: <code className="text-foreground">log: left room</code> — the same write as the
-            Telegram bot. A dark blue <span className="text-foreground">LOG</span> mark. Not a list, and
-            not Inbox.
+            Tracking log: <code className="text-foreground">log: left room</code> and{" "}
+            <code className="text-foreground">thought process: the strand</code> — the same write as the
+            Telegram bot, and the Log or Thought Process list in the Tracking folder. A dark blue{" "}
+            <span className="text-foreground">LOG</span> or <span className="text-foreground">THOUGHT</span> mark.
+            Not a new list, and not Inbox.
           </li>
           <li>
             Monkey brain: <code className="text-foreground">-mb</code> or{" "}

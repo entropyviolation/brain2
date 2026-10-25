@@ -18,6 +18,7 @@ export const QUICK_ADD_WROTE_MS = 60_000
 
 /** Successful `log:` / `log-` / `log ` write. Not Inbox. */
 export const QUICK_ADD_LOG_WROTE = "Item added to the tracking log from Quick Add"
+export const QUICK_ADD_THOUGHT_WROTE = "Item added to the tracking log and Thought Process from Quick Add"
 
 type WroteNotice = { id: number; text: string }
 

@@ -206,8 +206,12 @@ describe("QuickAdd", () => {
     expect(screen.getByText(/does not go to Inbox/i)).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Log" }))
 
-    expect(useTaskStore.getState().tasks).toHaveLength(0)
-    expect(useTaskStore.getState().lists.some((list) => list.name.toLowerCase() === "log")).toBe(false)
+    const filed = useTaskStore.getState().tasks
+    expect(filed).toHaveLength(1)
+    expect(filed[0]?.type).toBe("log")
+    expect(filed[0]?.lists).toContain("list-tracking-log")
+    expect(filed[0]?.stage).not.toBe("inbox")
+    expect(useTaskStore.getState().folders.some((folder) => folder.name === "Tracking")).toBe(true)
     const entry = useTimeTrackingStore.getState().entries.find((row) => row.title === "left room")
     expect(entry?.kind).toBe("instant")
     expect(entry?.scopeId).toBe("activity")
