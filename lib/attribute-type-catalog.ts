@@ -26,7 +26,7 @@ export interface AttributeTypeInfo {
 
 const INFO: Record<AttributeType, Omit<AttributeTypeInfo, "type" | "label">> = {
   string: { glyph: "Aa", group: "Words", blurb: "Free text, one line or a paragraph.", example: "Author · Address · Booking ref" },
-  multistring: { glyph: "≡", group: "Words", blurb: "Several short entries kept as chips.", example: "Layovers · Genres · Nicknames" },
+  multistring: { glyph: "≡", group: "Words", blurb: "Several short entries, as bubbles or lines.", example: "Layovers · Genres · Nicknames" },
   link: { glyph: "↗", group: "Words", blurb: "A web address you can open.", example: "Letterboxd page · PDF link" },
   phone: { glyph: "☏", group: "Words", blurb: "One or more phone numbers you can call or text.", example: "Old and new number · Work line" },
   number: { glyph: "#", group: "Numbers", blurb: "A number, with an optional unit.", example: "Cost $ · Width in · Pages" },
@@ -41,7 +41,7 @@ const INFO: Record<AttributeType, Omit<AttributeTypeInfo, "type" | "label">> = {
   file: { glyph: "▤", group: "Media", blurb: "One attached file of any kind.", example: "Ticket PDF · Lease" },
   multifile: { glyph: "▥", group: "Media", blurb: "Several attached files.", example: "Receipts · Chapters" },
   item: { glyph: "◇", group: "References", blurb: "Points at another item in your vault.", example: "Matched book · Host · Project" },
-  list: { glyph: "☰", group: "References", blurb: "Points at one of your lists.", example: "Packing list · Source list" },
+  list: { glyph: "☰", group: "References", blurb: "One of your lists, with its items.", example: "Packing list · Source list" },
 }
 
 export const ATTRIBUTE_TYPE_GROUPS: AttributeTypeGroup[] = ["Words", "Numbers", "Choices", "Time", "Media", "References"]

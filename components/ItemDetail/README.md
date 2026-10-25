@@ -5,11 +5,10 @@ where one record shows every honest join — tags, typed links, lists, schedule,
 body, history — so the same item can be **used in as many rooms as possible**
 (Lists, Scheduler, Tracking, Modules, Reviews, Analytics). Isolation is a bug.
 
-> **Planned.** Unsaved guard on every way out, and a rich Links tab for
-> every item: [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).
+> Every way out is guarded. See **Unsaved guard and known gaps**.
 >
-> **Planned.** Past that: relation vocabulary v2, rules with proofs, a
-> densify shelf, checks, matrix and path views, and a shared proposal inbox:
+> The Links tab is in `links/` (composer, ledger, radial plate, matrix, path).
+> What that redesign still leaves open is the status board in
 > [`docs/LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md).
 
 ## Unsaved guard and known gaps
@@ -54,6 +53,8 @@ _Last mapped: 2026-10-20_
 
 ## Public door
 
+_Last mapped: 2026-10-24_
+
 Popup and page are both public entries.
 
 - **Popup** — `TaskDetailPopup` from `@/components/ItemDetail/ItemDetailPopup`. Callers: the app shell (`app/page.tsx`), Lists, Scheduler, Home, Plan, To Do, Mobile, the friend mission sheet, and friend mission detail.
@@ -61,7 +62,7 @@ Popup and page are both public entries.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
 
-Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `item-detail-chrome.css`.
+Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `ItemSettingsPanel`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `InboxClarifyKey`, `item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
 `useItemDetailDraft.commitDraft` → `commitItemEdit` (patch + History line).
@@ -89,7 +90,7 @@ while the live draft matches the stored item, pink **Unsaved changes** as soon
 as it does not (including keystrokes that have not re-rendered the rest of the
 view). It stays up the whole time the item is open, so Save is confirmed by
 the lamp returning to Saved. **Cmd/Ctrl+S** saves that same draft while this
-surface is in front. A dialog stacked on top keeps the chord. Velvet / orb
+surface is in front. A dialog stacked on top keeps the chord. An inbox item (stage chip INBOX, not completed) gets a smaller **Clarify** key beside that chip. It commits the live draft (including uncommitted keystrokes) through `clarifyInboxItems`, the same leave-inbox path as inbox Save & Clarify. Hover is pale cyber blue. Velvet / orb
 contents inside the panel are not flattened.
 
 Both
@@ -132,11 +133,13 @@ Missed Opportunities list instead of Completed. When one of the item’s lists h
 
 ## Layout (Details, Notes, Resources, Links)
 
+_Last mapped: 2026-10-24_
+
 Identity leads: the fascia holds the CRT title, then the item's **type plates**
 (lamp in the type color; double-click opens the type editor) and the stage
 chip, then the keys. Details is two regions: the main column starts with the
 **Attributes** instrument (`ItemAttributesSection`), then the description and
-task fields; the rail beside it is where the item lives: Lists, Tags, a
+task fields. The Detailed Description field keeps the height you drag it to while you switch tabs or reopen that item in this session (`sizeKey` on `IsolatedTextarea`, `brain2-textarea-h`). The rail beside it is where the item lives: Lists, Tags, a
 **Notes** peek (one-line add for today plus the latest entries), Sent, Status.
 
 Every item, not only tasks, gets these tabs:
@@ -162,14 +165,13 @@ Every item, not only tasks, gets these tabs:
 - **Links** — the Related picker and backlinks (moved out of the rail).
 
 Notes and Resources are `ItemDetailPanel`s that `resolveDetailView` adds to
-every item; a list can hide them (List Settings → detail panels). Links and
-History are shell tabs. Tab keys carry phosphor counts. Notes, resources, and
+every item; a list can hide them (List Settings → detail panels). This item can hide or show its own tabs from **Settings** (`hiddenDetailPanels` / `shownDetailPanels` on the item). **Details** stays. Links and History are shell tabs and can be hidden on this item. **Settings** is always there; the fascia gear opens it. Tab keys carry phosphor counts. Notes, resources, and
 attribute edits all go through the draft, so Save and the lamp cover them,
 and `commitItemEdit` keeps `noteLog` / `resources` as item fields. Search reads
 note text, resource names, captions, and extracted text.
 
 **Attributes** sit at the top of Details with a count of filled cells and an
-**Add attribute** key that opens `AttributeCreator` right there. Each cell
+**Add attribute** key that opens `AttributeCreator` right there. **Add attribute** is a pale silver keycap (`.id-keycap`), the same cap as To do word keys. Each cell
 shows a type glyph, the name, and where it comes from (the type, a list, or
 "This item only" with a remove key). Every type has a readable editor in
 `components/Lists/attributes/AttributeValueField.tsx` (option keys, toggle
@@ -177,6 +179,8 @@ chips with lamps, chip entry, goal meter, formula readout, Today / Now with
 "in 3 days", link host key, searchable item reference, list chip, galleries,
 file chips with kind plates). `lib/attribute-type-catalog.ts` holds each
 type's glyph, one-line description, and example.
+
+_Last mapped: 2026-10-24._ A **text list** (`multistring`) can show **Bubbles** (chips; drag to reorder) or **Lines** (one entry per line; the cell header already names the attribute). The choice is remembered per attribute id (`brain2-text-list-view`). Double-click an entry to edit it in a white box that grows with the text. Enter commits. **Make Brain2 List** creates a list whose default name is the attribute name, plus one item per line, then turns an item-only text list into a **list reference** (`asListReference` in `lib/text-list-to-list.ts`). A shared definition stays a text list and keeps `textListIds`, and the cell shows that list's items instead of the old lines. A **list reference** uses the same Bubbles and Lines face for that list's items. In Bubbles, a click opens that item in a popup over this one. In Lines, double-click renames the item. Double-click the list title to open the list. Renaming the list or the attribute does not rename the other.
 
 **Attribute Demo.** `lib/attribute-demo.ts` seeds an "Attribute Demo" list
 with one attribute of every type and one item, "Cybernetics (attribute
@@ -186,12 +190,14 @@ Attribute Demo item →** creates it if missing and opens it.
 
 ## Files
 
-_Last mapped: 2026-10-21._
+_Last mapped: 2026-10-24._
 
 | File | Purpose |
 |------|---------|
 | `useItemDetailDraft.ts` | The de-duplication seam: subscribes to the task store, loads the selected task into local draft state, and exposes the shared mutators (`addToCategory`, `removeFromCategory`, `setLists`, `addDependency`, `removeDependency`, `addTag`, `removeTag`, `addLink`, `removeLink`) plus store actions (`updateTask`, `addTask`, `deleteTask`) and `commitDraft` (ItemDetail save door → `commitItemEdit`). `getDraft` / `touchDraft` hold keystrokes that have not re-rendered the tree; `subscribeDraft` lets the save lamp follow those writes. `setTask` applies functional updates to that same ref, so a later field write keeps uncommitted keystrokes. `addDependency` returns `{ ok: false, cycleLabel }` instead of writing when `findCyclePath` would loop. Tag/link mutators delegate to the pure helpers in `lib/links.ts` and operate on the draft. |
 | `ItemSaveFlag.tsx` | Fascia lamp beside Save Changes (popup) and beside Edit / Save Changes (page). Always visible. **Saved** (green) when the live draft matches the stored item; **Unsaved changes** (pink) otherwise. `role="status"`. |
+| `InboxClarifyKey.tsx` | Small **Clarify** key beside the INBOX stage chip when the open item is not completed. Commits the live draft through `clarifyInboxItems`. |
+| `ItemSettingsPanel.tsx` | Settings tab. Copyable item id, this item's attribute display names, and which tabs this item shows. A name opens that attribute's settings. |
 | `useItemDetailSaveHotkey.ts` | **Cmd/Ctrl+S** calls the shell’s save while that item-detail root is in front. Skips the chord when another open dialog sits above it. Prevents the browser page-save dialog. |
 | `useItemDetailDraft.test.tsx` | Cycle guard: refuse a reverse edge; accept an acyclic add. |
 | `ItemActivityPanel.tsx` | Explorer sunken History well: when / what changed. Empty until the first recorded save. |
@@ -210,13 +216,13 @@ _Last mapped: 2026-10-21._
 | `ItemNotesLog.tsx` | Notes tab: composer (day, time stamp, Cmd/Ctrl+Enter), pinned standing note (`Task.notes`), dated entries grouped by day. `NotesPeek` is the rail face. |
 | `ItemResourcesPanel.tsx` | Resources tab: drop tray with Auto / Copy / Link (desktop), cards, viewer (image / PDF / audio / video / text / folder), caption, Open / Download / Remove; linked files add Show in Finder and Locate…. |
 | `ItemResourcesPanel.test.tsx` | Linking on drop and from the folder picker, following a move, Missing and Locate, and the web fallback, with a mocked `fileLinks` bridge. |
-| `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. _Last mapped: 2026-10-16:_ `onLiveValue(id, value)` gets text, number and link keys before blur; both shells write it with `touchDraft`, so Cmd+S keeps unblurred text. |
+| `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. _Last mapped: 2026-10-24:_ `onLiveValue(id, value)` gets text, number and link keys before blur; both shells write it with `touchDraft`, so Cmd+S keeps unblurred text. Text lists and list references pass `textListIds`, `attributeLabels`, `onBindTextList`, and `onOpenTextList`. The cell name uses `attributeLabels` when this item set one. **Add attribute** is `.id-keycap`. |
 | `item-attributes.test.tsx` | Hero/featured layout + attribute creator for catalog-style types. |
 | `BodyPanel.tsx` | The `"body"` detail panel for document-type items. Default face is **rendered prose** (HTML stripped to plain when the body looks like markup); an explicit **Source** / **Rendered** toggle reveals the raw editor — never a raw-HTML face by default. Markdown still uses `RichTextEditor`. Persists through `useTaskStore.updateTask`, debounced (default 500ms) with a flush on blur/unmount. Props: `taskId`, `readOnly?`, `debounceMs?`. |
-| `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute: a type palette grouped by Words / Numbers / Choices / Time / Media / References with a description of the chosen type, its settings (options, unit, labels, formula, scope), name, target, and initial value. The attribute can be added to one of the item's lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
+| `AttributeCreator.tsx` | Inline control for defining a brand-new typed attribute: a type palette grouped by Words / Numbers / Choices / Time / Media / References with a description of the chosen type, its settings (options, unit, labels, formula, scope), name, target, and initial value. **Scope list** on a list or item attribute, and **Source list** on a selection, are the searchable list picker (`SingleListPicker`: search, **Any list** or **Choose a list**, **New list**). **Add to** stays a short menu of the lists this item already belongs to. The attribute can be added to one of those lists — persisted onto that list's `itemAttributes` schema so every item in the list gains it — or kept on just this item. Props: `categories`, `itemCategoryIds`, `existingIds`, `onCreate(def, value, listId)`. |
 | `ItemTagChip.tsx` | One item-tag chip. Value is the string name. When `normalizeTag(name)` matches a Tracking catalog tag, shows that tag’s color bead. Double-click opens `openTagSettings(id)` or `openTagSettingsFromName(name)`. Used by `TagInput` and Item Detail view-mode badges. |
 | `TagInput.tsx` | Presentational chip/token tag editor. Renders applied tags as removable `ItemTagChip`s and a text field that adds a tag on Enter/comma, with autocomplete suggestions drawn from all tags in use across `taskRepository.getAll()` (catalog matches show a bead in the list). Normalization via `lib/links.ts`. Props: `tags`, `onAdd`, `onRemove`. Chips stay strings. They are not Tracking tag ids. A Tracking catalog rename follows a string that used the old normalized name (`lib/catalog-tag.ts`). |
-| `links/` | The Links tab. See **Links tab** above. _Last mapped: 2026-10-16._ The target search ends with Create "<query>": it adds the item to the task store at once (type = the relation's first `toTypes`, else item). The link itself stays a draft. Type selects use `NativeSelect`. _Last mapped: 2026-10-16_ ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L3–L6): `use-links-graph.ts` computes derived edges (only with **with derived** on), the shelf, density and checks for the open draft. The panel adds a readout row, a view switch (Radial · Matrix `LinkMatrix.tsx` · Path `LinkPath.tsx` · Ledger), `SuggestionShelf.tsx` (accept = draft link, dismiss = `dismissedLinkSuggestions`, mute per viewer), and `EdgeInspector.tsx` (proof card on **why?**). The composer pre-checks a new link: an acyclic loop asks `window.confirm`; other checks show as a note. Ledger rows show a neutral **check** tag and hide Confirm on `quiet` relations. |
+| `links/` | The Links tab. See **Links tab** above. _Last mapped: 2026-10-16._ The target search ends with Create "<query>": it adds the item to the task store at once (type = the relation's first `toTypes`, else item). The link itself stays a draft. Type selects use `NativeSelect`. _Last mapped: 2026-10-16_ ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L3–L6): `use-links-graph.ts` computes derived edges (only with **with derived** on), the shelf, density and checks for the open draft. The panel adds a readout row and a view switch: Radial (`LinkConstellation.tsx`), Matrix (`LinkMatrix.tsx`), Path (`LinkPath.tsx`), Ledger (`LinkLedger.tsx`). `LinkComposer.tsx` is the sentence that adds a link. `relation-phrase.ts` guesses the reverse of a new relation phrase for `NewRelationForm`. `SuggestionShelf.tsx` accepts a draft link, dismisses one (`dismissedLinkSuggestions`), or mutes it for this viewer. `EdgeInspector.tsx` is the proof card on **why?**. The composer pre-checks a new link: an acyclic loop asks `window.confirm`; other checks show as a note. Ledger rows show a neutral **check** tag and hide Confirm on `quiet` relations. |
 | `ItemDetail.test.tsx` | Vitest coverage for the presentational pieces: `TagInput` (add/remove, catalog bead, double-click → tag settings), and `RichLinksPanel` (sentence add, remove, inverse-labelled incoming links with Confirm, one mutual row, Create a relation, a suggested edge with Dismiss). |
 | `ItemDetailPopup.test.tsx` | Popup hides scheduling / Complete / scheduler chrome for non-task types (e.g. Furniture). History tab; save records the ledger. |
 | `ItemDetailPage.test.tsx` | Full-screen detail follows `resolveDetailView`; Task chrome gated. History tab; save records estimated-duration changes. A habit-linked item shows notes, a completion summary, and **Habit settings**. A generic item does not. The list chip opens that list id. |
@@ -279,8 +285,7 @@ _Last mapped: 2026-10-16._ Today a step is a `Subtask` in `task.subtasks` with n
 
 ## Dependencies
 
-`addDependency` on the shared hook walks `findCyclePath`. A loop opens
-`CycleConfirmDialog` (“This would loop”) and does **not** write the edge.
+Dependencies on the page and the popup are `ItemPicker` in multi mode (search, tick the items that must finish first). A loop still refuses. `addDependency` on the shared hook walks `findCyclePath`. A loop opens `CycleConfirmDialog` (“This would loop”) and does **not** write the edge.
 
 ## Tags & Links
 

@@ -12,6 +12,7 @@
 "use client"
 
 import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
+import { InboxClarifyKey } from "@/components/ItemDetail/InboxClarifyKey"
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
 import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
@@ -24,6 +25,7 @@ import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
 import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
 import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { ItemPicker } from "@/components/Lists/item-picker"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { openStepItem } from "@/lib/step-item-stack"
@@ -77,9 +79,11 @@ import {
   Rocket,
   History,
   TimerOff,
+  Settings,
   Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
 import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
@@ -103,6 +107,7 @@ import { markMissedOpportunity } from "@/lib/services/completion-service"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
 import { useTaskStore } from "@/lib/task-store"
+import { asListReference } from "@/lib/text-list-to-list"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
 import { dateInputValue, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
@@ -167,7 +172,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
   const [isEditing, setIsEditing] = useState(false)
-  const [selectedDependency, setSelectedDependency] = useState("")
   const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
@@ -183,9 +187,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const caps = detailView.capabilities
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
   const detailTabs = useMemo(() => {
-    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details"), "history"]
+    const hidden = new Set(task?.hiddenShellTabs ?? [])
+    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details")]
+    if (!hidden.has("history")) tabs.push("history")
+    tabs.push("settings")
     return tabs
-  }, [visiblePanels])
+  }, [visiblePanels, task?.hiddenShellTabs])
   const [detailTab, setDetailTab] = useState(() => {
     const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
     return stored || "details"
@@ -361,20 +368,21 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     [task, persistSubtasks],
   )
 
-  const handleAddDependency = useCallback(() => {
-    const result = addDependency(selectedDependency)
-    if (!result.ok) {
-      setCycleLabel(result.cycleLabel)
-      return
-    }
-    if (selectedDependency) setSelectedDependency("")
-  }, [addDependency, selectedDependency])
-
-  // Get available tasks for dependencies (excluding current task and its subtasks)
-  const availableDependencies = allTasks.filter(
-    (t) => t.id !== effectiveId && !t.completed && t.parentTaskId !== effectiveId,
+  const syncDependencies = useCallback(
+    (ids: string[]) => {
+      if (!task) return
+      const prev = task.dependencies ?? []
+      const added = ids.find((id) => !prev.includes(id))
+      const removed = prev.filter((id) => !ids.includes(id))
+      if (added && removed.length === 0) {
+        const result = addDependency(added)
+        if (!result.ok) setCycleLabel(result.cycleLabel)
+        return
+      }
+      for (const id of removed) removeDependency(id)
+    },
+    [task, addDependency, removeDependency],
   )
-
 
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
@@ -417,6 +425,34 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       }),
     [guardAction, folders, onBack],
   )
+  const bindTextList = useCallback(
+    (attributeId: string, listId: string) => {
+      const id = task?.id
+      if (!id) return
+      const current = getDraft()
+      if (!current || current.id !== id) return
+      const converted = asListReference(current, attributeId, listId)
+      const owns = current.itemAttributeDefinitions?.some((def) => def.id === attributeId) ?? false
+      const stamp = (base: Task): Task => ({
+        ...base,
+        attributes: owns ? { ...(base.attributes ?? {}), [attributeId]: listId } : base.attributes,
+        itemAttributeDefinitions: owns ? converted.itemAttributeDefinitions : base.itemAttributeDefinitions,
+        textListIds: converted.textListIds,
+      })
+      const stored = useTaskStore.getState().tasks.find((row) => row.id === id)
+      if (stored) updateTask(stamp(stored))
+      setOriginalTask(originalTask?.id === id ? stamp(originalTask) : stored ? stamp(stored) : converted)
+      setTask(converted)
+    },
+    [task?.id, originalTask, getDraft, updateTask, setOriginalTask, setTask],
+  )
+  const patchItem = useCallback(
+    (patch: Partial<Task>) => {
+      touchDraft(patch)
+      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+    },
+    [touchDraft, setTask],
+  )
 
   const commitNotes = useCallback(
     (notes: string) => {
@@ -458,7 +494,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     )
   }
 
-  const tabCount = visiblePanels.length + 1
+  const tabCount = detailTabs.length
   // Old person notes still on personProfile.noteLog count too (3.3 fold).
   const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
 
@@ -580,6 +616,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
             {task.completed ? "Completed" : task.stage}
           </Badge>
+          <InboxClarifyKey task={task} getDraft={getDraft} commitDraft={commitDraft} />
+          <button
+            type="button"
+            className="id-btn id-btn-icon id-settings-key"
+            aria-label="Item settings"
+            title="Item settings"
+            onClick={() => setDetailTab("settings")}
+          >
+            <Settings className="h-4 w-4" />
+          </button>
           {task.actualDuration && (
             <Badge variant="outline" className="id-chip">
               <Timer className="h-3 w-3" />
@@ -614,9 +660,15 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
           {visiblePanels.includes("analysis") && (
             <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
           )}
+          {detailTabs.includes("history") && (
           <TabsTrigger value="history" className="id-tab-secondary">
             <History className="h-4 w-4" />
             History
+          </TabsTrigger>
+          )}
+          <TabsTrigger value="settings" className="id-tab-secondary">
+            <Settings className="h-4 w-4" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -686,6 +738,10 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   }
                   onCreateAttribute={handleCreateAttribute}
                   onOpenItem={openItem}
+                  attributeLabels={task.attributeLabels}
+                  textListIds={task.textListIds}
+                  onBindTextList={bindTextList}
+                  onOpenTextList={handleNavigateToList}
                 />
               </div>
               {isTask && (
@@ -1183,26 +1239,20 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
               {isEditing && (
                 <div className="space-y-2">
-                  <Label>Add Dependency</Label>
-                  <div className="flex gap-2">
-                    <Select value={selectedDependency} onValueChange={setSelectedDependency}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select a task" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDependencies
-                          .filter((t) => !(task.dependencies ?? []).includes(t.id))
-                          .map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              {t.description}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleAddDependency} disabled={!selectedDependency}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Label>Add dependency</Label>
+                  <ItemPicker
+                    mode="multi"
+                    searchLabel="Add dependency"
+                    choices={allTasks
+                      .filter(
+                        (t) =>
+                          t.id !== effectiveId &&
+                          ((task.dependencies ?? []).includes(t.id) || (!t.completed && t.parentTaskId !== effectiveId)),
+                      )
+                      .map((t) => ({ id: t.id, title: itemTitleOrUntitled(t), icon: t.icon }))}
+                    selected={task.dependencies ?? []}
+                    onChange={syncDependencies}
+                  />
                 </div>
               )}
             </CardContent>
@@ -1422,6 +1472,9 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
         <TabsContent value="history" className="space-y-6">
           <ItemActivityPanel itemId={task.id} />
+        </TabsContent>
+        <TabsContent value="settings" className="space-y-6">
+          <ItemSettingsPanel task={task} lists={lists} isTask={isTask} showLinks={false} onPatch={patchItem} />
         </TabsContent>
       </Tabs>
       </div>
