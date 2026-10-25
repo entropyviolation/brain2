@@ -3,18 +3,21 @@
  *
  * Renders the correct input for a single attribute value based on its type.
  * Each type reads as what it holds:
- *  - string: auto-growing text · multistring: chips (Enter or comma adds)
+ *  - list: the list's items, bubbles or lines. A bubble opens that item. A line renames it.
+ *    Double-click the list title to open the list.
+ *  - string: auto-growing text · multistring: Bubbles (chips, drag to reorder) or Lines;
+ *    double-click an entry to edit in a white box that grows with the text; Make Brain2 List builds a list from the lines
  *  - number: unit suffix, −/+ keys for whole numbers · goal: x / y + meter
  *  - boolean: checkbox or rocker with a Yes / No word · selection: keys or chips
  *  - color: swatch, hex, and preset chips · datetime: Today / Now + how far away
  *  - link: field + Open key showing the host · item: searchable typeahead
- *  - list: list picker · image / multiimage: preview / gallery
+ *  - image / multiimage: preview / gallery
  *  - file / multifile: file chips · formula: computed readout
  * Used by the values editors (Lists, Inbox, Item detail).
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { createPortal } from "react-dom"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
@@ -33,9 +36,13 @@ import { useTaskStore } from "@/lib/task-store"
 import { putAttachment } from "@/lib/attachments"
 import { useAttachmentSrcList } from "@/hooks/use-attachment-src"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { StringPicker } from "@/components/Lists/item-picker"
 import { formatBytes, resourceKind, RESOURCE_KIND_LABEL } from "@/lib/item-resources"
 import { asArray, asFile, asFiles, asGoal, fileToFileValue } from "./helpers"
-import { itemTitle } from "@/lib/item-utils"
+import { reorderStrings, textListToBrainList } from "@/lib/text-list-to-list"
+import { itemTitle, createListItem } from "@/lib/item-utils"
+import { pushItemLayer } from "@/lib/step-item-stack"
+import { iconFor } from "@/components/Icons/Icon"
 import { formatHandle, normalizeHandle } from "@/lib/phone-sync/handles"
 import "./attribute-fields.css"
 
@@ -60,8 +67,24 @@ function SelectionValueEditor({
     return def.options || []
   }, [def, tasks])
 
+  const current = typeof value === "string" ? value : ""
+
   if (options.length === 0) {
     return <span className="attr-empty-hint">No options yet. Name them in this attribute&apos;s settings.</span>
+  }
+
+  if (options.length > MAX_KEY_OPTIONS) {
+    const multiple = !!def.allowMultiple
+    const chosen = multiple ? asArray(value) : current ? [current] : []
+    return (
+      <StringPicker
+        options={options}
+        mode={multiple ? "multi" : "single"}
+        selected={chosen}
+        searchLabel={def.name || "Search options"}
+        onChange={(next) => onChange(multiple ? (next.length ? next : undefined) : next[0] || undefined)}
+      />
+    )
   }
 
   if (def.allowMultiple) {
@@ -87,7 +110,6 @@ function SelectionValueEditor({
     )
   }
 
-  const current = typeof value === "string" ? value : ""
   const short = options.length <= MAX_KEY_OPTIONS && options.every((o) => o.length <= 18)
   if (short) {
     return (
@@ -126,17 +148,121 @@ function SelectionValueEditor({
   )
 }
 
+const TEXT_LIST_VIEW_KEY = "brain2-text-list-view"
+
+type TextListView = "bubbles" | "lines"
+
+type TextListBinding = {
+  listId?: string
+  onBind: (listId: string) => void
+  onOpen?: (listId: string) => void
+}
+
+function readTextListView(attributeId: string): TextListView {
+  try {
+    const raw = localStorage.getItem(TEXT_LIST_VIEW_KEY)
+    if (!raw) return "bubbles"
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "bubbles"
+    return (parsed as Record<string, unknown>)[attributeId] === "lines" ? "lines" : "bubbles"
+  } catch {
+    return "bubbles"
+  }
+}
+
+function writeTextListView(attributeId: string, view: TextListView) {
+  try {
+    const raw = localStorage.getItem(TEXT_LIST_VIEW_KEY)
+    let bag: Record<string, unknown> = {}
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        bag = { ...(parsed as Record<string, unknown>) }
+      }
+    }
+    bag[attributeId] = view
+    localStorage.setItem(TEXT_LIST_VIEW_KEY, JSON.stringify(bag))
+  } catch {
+    /* private mode or a full disk */
+  }
+}
+
+function FitEntry({
+  value,
+  label,
+  onChange,
+  onCommit,
+  onCancel,
+}: {
+  value: string
+  label: string
+  onChange: (value: string) => void
+  onCommit: () => void
+  onCancel: () => void
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  useEffect(() => {
+    ref.current?.focus()
+  }, [])
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      className="attr-edit-box"
+      value={value}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onCommit()
+        } else if (e.key === "Escape") {
+          e.preventDefault()
+          e.stopPropagation()
+          onCancel()
+        }
+      }}
+      onBlur={onCommit}
+    />
+  )
+}
+
 function MultiStringEditor({
+  attributeId,
   value,
   onChange,
   label,
+  textListBinding,
 }: {
+  attributeId?: string
   value: AttributeValue
   onChange: (v: AttributeValue) => void
   label?: string
+  textListBinding?: TextListBinding
 }) {
   const arr = asArray(value)
+  const lists = useTaskStore((s) => s.lists)
   const [draft, setDraft] = useState("")
+  const [view, setView] = useState<TextListView>(() => (attributeId ? readTextListView(attributeId) : "bubbles"))
+  const [editing, setEditing] = useState<number | null>(null)
+  const [editDraft, setEditDraft] = useState("")
+  const [dragging, setDragging] = useState<number | null>(null)
+  const dragFrom = useRef<number | null>(null)
+  const editingIndex = useRef<number | null>(null)
+  const editDraftRef = useRef("")
+  const boundList = textListBinding?.listId ? lists.find((row) => row.id === textListBinding.listId) : undefined
+
+  const choose = (next: TextListView) => {
+    setView(next)
+    if (attributeId) writeTextListView(attributeId, next)
+  }
 
   const commit = () => {
     const parts = draft
@@ -157,30 +283,167 @@ function MultiStringEditor({
     }
   }
 
-  return (
-    <div className="attr-chip-field">
-      {arr.map((s, i) => (
-        <span key={`${s}-${i}`} className="attr-chip">
-          {s}
-          <button
-            type="button"
-            className="attr-chip-x"
-            aria-label={`Remove ${s}`}
-            onClick={() => onChange(arr.filter((_, idx) => idx !== i))}
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={onKeyDown}
-        onBlur={commit}
-        placeholder={arr.length ? "Add…" : "Type, then Enter"}
-        aria-label={label ? `Add to ${label}` : "Add entry"}
-        className="attr-chip-input"
-      />
+  const beginEdit = (i: number) => {
+    const text = arr[i] ?? ""
+    editingIndex.current = i
+    editDraftRef.current = text
+    setEditing(i)
+    setEditDraft(text)
+  }
+
+  const finishEdit = (commitEdit: boolean) => {
+    const i = editingIndex.current
+    if (i == null) return
+    editingIndex.current = null
+    setEditing(null)
+    if (!commitEdit) return
+    const original = arr[i]
+    if (original === undefined) return
+    const next = editDraftRef.current.trim()
+    if (next === original) return
+    if (!next) {
+      onChange(arr.filter((_, idx) => idx !== i))
+      return
+    }
+    const copy = arr.slice()
+    copy[i] = next
+    onChange(copy)
+  }
+
+  const removeAt = (i: number) => {
+    if (editingIndex.current === i) {
+      editingIndex.current = null
+      setEditing(null)
+    }
+    onChange(arr.filter((_, idx) => idx !== i))
+  }
+
+  const makeList = () => {
+    const { list, items } = textListToBrainList(label || "List", arr)
+    const store = useTaskStore.getState()
+    store.addList(list)
+    for (const item of items) store.addTask(item)
+    textListBinding?.onBind(list.id)
+  }
+
+  const addInput = (
+    <input
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={onKeyDown}
+      onBlur={commit}
+      placeholder={arr.length ? "Add…" : "Type, then Enter"}
+      aria-label={label ? `Add to ${label}` : "Add entry"}
+      className="attr-chip-input"
+    />
+  )
+
+  const editInput = (original: string) => (
+    <FitEntry
+      value={editDraft}
+      label={`Edit ${original}`}
+      onChange={(next) => {
+        editDraftRef.current = next
+        setEditDraft(next)
+      }}
+      onCommit={() => finishEdit(true)}
+      onCancel={() => finishEdit(false)}
+    />
+  )
+
+  const removeButton = (s: string, i: number) => (
+    <button
+      type="button"
+      className="attr-chip-x"
+      aria-label={`Remove ${s}`}
+      onClick={() => removeAt(i)}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      <X className="h-3 w-3" />
+    </button>
+  )
+
+  return boundList && attributeId ? (
+    <ListRefField
+      attributeId={attributeId}
+      value={boundList.id}
+      onChange={() => {}}
+      onOpenList={textListBinding?.onOpen}
+      locked
+    />
+  ) : (
+    <div className="attr-textlist">
+      <div className="attr-textlist-bar" role="group" aria-label={label ? `${label} view` : "Text list view"}>
+        <button type="button" className="attr-view-key" aria-pressed={view === "bubbles"} onClick={() => choose("bubbles")}>
+          Bubbles
+        </button>
+        <button type="button" className="attr-view-key" aria-pressed={view === "lines"} onClick={() => choose("lines")}>
+          Lines
+        </button>
+      </div>
+      {view === "lines" ? (
+        <>
+          <ul className="attr-lines">
+            {arr.map((s, i) => (
+              <li
+                key={`${i}-${s}`}
+                className={`attr-line${editing === i ? " is-editing" : ""}`}
+                onDoubleClick={() => editing !== i && beginEdit(i)}
+              >
+                {editing === i ? editInput(s) : <span className="attr-line-text">{s}</span>}
+                {removeButton(s, i)}
+              </li>
+            ))}
+          </ul>
+          <div className="attr-chip-field">{addInput}</div>
+        </>
+      ) : (
+        <div className="attr-chip-field">
+          {arr.map((s, i) => (
+            <span
+              key={`${i}-${s}`}
+              className={`attr-chip${dragging === i ? " is-dragging" : ""}${editing === i ? " is-editing" : ""}`}
+              draggable={editing !== i}
+              onDragStart={(e) => {
+                dragFrom.current = i
+                const token = i
+                requestAnimationFrame(() => {
+                  if (dragFrom.current === token) setDragging(token)
+                })
+                try {
+                  e.dataTransfer.effectAllowed = "move"
+                  e.dataTransfer.setData("text/plain", String(i))
+                } catch {
+                  /* jsdom fires drag events without dataTransfer */
+                }
+              }}
+              onDragEnd={() => {
+                dragFrom.current = null
+                setDragging(null)
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const from = dragFrom.current
+                if (from == null) return
+                const next = reorderStrings(arr, from, i)
+                if (next !== arr) onChange(next)
+              }}
+            >
+              {editing === i ? (
+                editInput(s)
+              ) : (
+                <span onDoubleClick={() => beginEdit(i)}>{s}</span>
+              )}
+              {removeButton(s, i)}
+            </span>
+          ))}
+          {addInput}
+        </div>
+      )}
+        <button type="button" className="attr-make-list" onClick={makeList}>
+          Make Brain2 List
+        </button>
     </div>
   )
 }
@@ -507,7 +770,11 @@ function ItemRefField({
     <div className="attr-ref">
       {selected || selectedId ? (
         <span className="attr-ref-chip">
-          <span className="attr-ref-dot" style={{ background: selectedList?.color ?? "var(--chrome-lo, #808080)" }} />
+          <img
+            className="attr-ref-orb"
+            alt=""
+            src={iconFor(selectedList?.id ?? selectedId ?? "item", selectedList?.icon ?? selected?.icon)}
+          />
           <span className="truncate">{selected ? itemTitle(selected) : "Missing item"}</span>
           {selectedList && <span className="attr-ref-list">{selectedList.name}</span>}
           <button type="button" className="attr-chip-x" aria-label="Clear item" onClick={() => onChange(undefined)}>
@@ -559,7 +826,7 @@ function ItemRefField({
                     setOpen(false)
                   }}
                 >
-                  <span className="attr-ref-dot" style={{ background: list?.color ?? "#808080" }} />
+                  <img className="attr-ref-orb" alt="" src={iconFor(list?.id ?? t.id, list?.icon ?? t.icon)} />
                   <span className="truncate">{itemTitle(t)}</span>
                   {list && <span className="attr-ref-list">{list.name}</span>}
                 </button>
@@ -572,32 +839,105 @@ function ItemRefField({
   )
 }
 
-/** One chosen list as a chip; the full picker opens only while choosing. */
-function ListRefField({ value, onChange, label }: { value: AttributeValue; onChange: (v: AttributeValue) => void; label: string }) {
+/** A list reference: the list's own items, in the same bubbles / lines face as a text list. */
+function ListRefField({
+  attributeId,
+  value,
+  onChange,
+  onOpenList,
+  locked = false,
+}: {
+  attributeId: string
+  value: AttributeValue
+  onChange: (v: AttributeValue) => void
+  onOpenList?: (listId: string) => void
+  /** A text list already joined to this list. Hide Change list. */
+  locked?: boolean
+}) {
   const lists = useTaskStore((s) => s.lists)
+  const tasks = useTaskStore((s) => s.tasks)
   const [choosing, setChoosing] = useState(false)
+  const [view, setView] = useState<TextListView>(() => readTextListView(attributeId))
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState("")
+  const editHold = useRef("")
+  const [addDraft, setAddDraft] = useState("")
   const id = typeof value === "string" && value ? value : null
-  const list = id ? lists.find((l) => l.id === id) : undefined
-  return (
-    <div className="space-y-2">
-      <div className="attr-ref">
-        {id && (
-          <span className="attr-ref-chip">
-            <span className="attr-ref-dot" style={{ background: list?.color ?? "var(--chrome-lo, #808080)" }} />
-            <span className="truncate">{list?.name ?? "Missing list"}</span>
-            <button type="button" className="attr-chip-x" aria-label="Clear list" onClick={() => onChange(undefined)}>
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        )}
+  const list = id ? lists.find((row) => row.id === id) : undefined
+  const members = useMemo(() => (id ? tasks.filter((row) => row.lists?.includes(id)) : []), [tasks, id])
+
+  const choose = (next: TextListView) => {
+    setView(next)
+    writeTextListView(attributeId, next)
+  }
+
+  const finish = (commitEdit: boolean) => {
+    const taskId = editingId
+    setEditingId(null)
+    if (!commitEdit || !taskId) return
+    const next = editHold.current.trim()
+    const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
+    if (!task || !next || itemTitle(task) === next) return
+    useTaskStore.getState().updateTask({ ...task, title: next, description: next })
+  }
+
+  const addItem = () => {
+    const name = addDraft.trim()
+    if (!name || !id) return
+    useTaskStore.getState().addTask(createListItem(name, [id]))
+    setAddDraft("")
+  }
+
+  if (!list) {
+    return (
+      <div className="space-y-2">
         <button type="button" className="attr-mini-key" aria-expanded={choosing} onClick={() => setChoosing((v) => !v)}>
-          {choosing ? "Done" : id ? "Change list" : "Choose list"}
+          {choosing ? "Done" : "Choose list"}
         </button>
+        {choosing && (
+          <ListPicker
+            mode="single"
+            selected={id ? [id] : []}
+            onChange={(ids) => {
+              onChange(ids[0])
+              if (ids[0]) setChoosing(false)
+            }}
+            compact
+          />
+        )}
       </div>
+    )
+  }
+
+  return (
+    <div className="attr-textlist">
+      <div className="attr-textlist-bar" role="group" aria-label={`${list.name} view`}>
+        <button type="button" className="attr-view-key" aria-pressed={view === "bubbles"} onClick={() => choose("bubbles")}>
+          Bubbles
+        </button>
+        <button type="button" className="attr-view-key" aria-pressed={view === "lines"} onClick={() => choose("lines")}>
+          Lines
+        </button>
+        {locked ? null : (
+        <button type="button" className="attr-view-key" aria-expanded={choosing} onClick={() => setChoosing((v) => !v)}>
+          {choosing ? "Done" : "Change list"}
+        </button>
+        )}
+      </div>
+      <button
+        type="button"
+        className="attr-ref-chip attr-list-card"
+        data-no95
+        title="Double-click to open this list"
+        onDoubleClick={() => onOpenList?.(list.id)}
+      >
+        <img className="attr-ref-orb" alt="" src={iconFor(list.id, list.icon)} />
+        <span className="truncate">{list.name}</span>
+      </button>
       {choosing && (
         <ListPicker
           mode="single"
-          selected={id ? [id] : []}
+          selected={[list.id]}
           onChange={(ids) => {
             onChange(ids[0])
             if (ids[0]) setChoosing(false)
@@ -605,7 +945,63 @@ function ListRefField({ value, onChange, label }: { value: AttributeValue; onCha
           compact
         />
       )}
-      <span className="sr-only">{label}</span>
+      {view === "lines" ? (
+        <ul className="attr-lines">
+          {members.map((row) => (
+            <li
+              key={row.id}
+              className={`attr-line${editingId === row.id ? " is-editing" : ""}`}
+              onDoubleClick={() => {
+                if (editingId === row.id) return
+                const name = itemTitle(row)
+                editHold.current = name
+                setEditingId(row.id)
+                setEditDraft(name)
+              }}
+            >
+              {editingId === row.id ? (
+                <FitEntry
+                  value={editDraft}
+                  label={`Edit ${itemTitle(row)}`}
+                  onChange={(next) => {
+                    editHold.current = next
+                    setEditDraft(next)
+                  }}
+                  onCommit={() => finish(true)}
+                  onCancel={() => finish(false)}
+                />
+              ) : (
+                <span className="attr-line-text">{itemTitle(row)}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="attr-chip-field">
+          {members.map((row) => (
+            <button key={row.id} type="button" className="attr-ref-chip" data-no95 onClick={() => pushItemLayer(row.id)}>
+              <img className="attr-ref-orb" alt="" src={iconFor(row.id, row.icon)} />
+              <span className="truncate">{itemTitle(row)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="attr-chip-field">
+        <input
+          value={addDraft}
+          onChange={(e) => setAddDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault()
+              addItem()
+            }
+          }}
+          onBlur={addItem}
+          placeholder={members.length ? "Add…" : "Type, then Enter"}
+          aria-label={`Add to ${list.name}`}
+          className="attr-chip-input"
+        />
+      </div>
     </div>
   )
 }
@@ -834,6 +1230,8 @@ export function AttributeValueField({
   onLive,
   definitions,
   siblingValues,
+  textListBinding,
+  onOpenList,
 }: {
   def: AttributeDefinition
   value: AttributeValue
@@ -847,6 +1245,10 @@ export function AttributeValueField({
   definitions?: AttributeDefinition[]
   /** This item's other attribute values — required to compute formula results. */
   siblingValues?: Record<string, AttributeValue>
+  /** Set on a text list so Make Brain2 List can join the item. */
+  textListBinding?: TextListBinding
+  /** Double-click a list reference's title to open that list. */
+  onOpenList?: (listId: string) => void
 }) {
   const type = normalizeAttributeType(def.type)
   const label = def.name || "Value"
@@ -904,11 +1306,19 @@ export function AttributeValueField({
       return <DateValueEditor mode={mode} value={value} onChange={onChange} label={label} />
     }
     case "list":
-      return <ListRefField value={value} onChange={onChange} label={label} />
+      return <ListRefField attributeId={def.id} value={value} onChange={onChange} onOpenList={onOpenList} />
     case "item":
       return <ItemRefField def={def} value={value} onChange={onChange} />
     case "multistring":
-      return <MultiStringEditor value={value} onChange={onChange} label={label} />
+      return (
+        <MultiStringEditor
+          attributeId={def.id}
+          value={value}
+          onChange={onChange}
+          label={label}
+          textListBinding={textListBinding}
+        />
+      )
     case "selection":
       return <SelectionValueEditor def={def} value={value} onChange={onChange} />
     case "image":

@@ -132,6 +132,37 @@ describe("TaskDetailPopup", () => {
     expect(screen.getByText(/Plan team demo/)).toBeInTheDocument()
   })
 
+  it("clarifies an inbox item and saves the live title", () => {
+    useTaskStore.getState().addTask({
+      id: "inbox-idea",
+      description: "Raw idea",
+      title: "Raw idea",
+      stage: "inbox",
+      lists: ["na-list"],
+      completed: false,
+      createdAt: new Date(),
+      entropy: 0.9,
+      estimatedDuration: 30,
+      cognitiveLoad: 2,
+      urgency: 3,
+      importance: 3,
+      dependencies: [],
+      context: "@general",
+      rewardValue: 1,
+      allowPartialCompletion: false,
+      minimumChunkSize: 15,
+    })
+    render(<TaskDetailPopup taskId="inbox-idea" open onClose={onClose} />)
+    expect(screen.getByRole("button", { name: "Clarify" })).toBeInTheDocument()
+    fireEvent.change(screen.getByDisplayValue("Raw idea"), { target: { value: "Named idea" } })
+    fireEvent.click(screen.getByRole("button", { name: "Clarify" }))
+    const stored = useTaskStore.getState().tasks.find((t) => t.id === "inbox-idea")
+    expect(stored?.description).toBe("Named idea")
+    expect(stored?.title).toBe("Named idea")
+    expect(stored?.stage).toBe("clarified")
+    expect(screen.queryByRole("button", { name: "Clarify" })).not.toBeInTheDocument()
+  })
+
   it("saves unsaved changes with Cmd+S", async () => {
     render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
     fireEvent.change(screen.getByDisplayValue("Plan sprint demo"), { target: { value: "Plan team demo" } })
@@ -408,6 +439,47 @@ describe("TaskDetailPopup", () => {
     })
     const saved = useTaskStore.getState().tasks.find((t) => t.id === "popup-attr")
     expect(saved?.attributes?.author).toBe("Ada")
+  })
+
+  it("makes a Brain2 list from a text list and keeps the list id on the item", async () => {
+    const user = userEvent.setup()
+    useTaskStore.getState().addTask({
+      id: "listy",
+      description: "Shoot",
+      title: "Shoot",
+      stage: "list",
+      createdAt: new Date(),
+      completed: false,
+      lists: ["na-list"],
+      attributes: { todo: ["write script", "film"] },
+      itemAttributeDefinitions: [{ id: "todo", name: "To do", type: "multistring" }],
+    })
+    render(<TaskDetailPopup taskId="listy" open onClose={onClose} />)
+    await user.click(screen.getByRole("button", { name: "Make Brain2 List" }))
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "listy")
+    const listId = typeof saved?.attributes?.todo === "string" ? saved.attributes.todo : ""
+    expect(listId).toBeTruthy()
+    expect(saved?.textListIds?.todo).toBeUndefined()
+    expect(saved?.itemAttributeDefinitions?.find((def) => def.id === "todo")?.type).toBe("list")
+    expect(useTaskStore.getState().lists.some((list) => list.id === listId && list.name === "To do")).toBe(true)
+    const lines = useTaskStore
+      .getState()
+      .tasks.filter((row) => listId && row.lists?.includes(listId))
+      .map((row) => row.title)
+    expect(lines).toEqual(["write script", "film"])
+    expect(screen.getByRole("button", { name: "write script" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "film" })).toBeInTheDocument()
+  })
+
+  it("opens item settings and can hide a tab on this item", async () => {
+    const user = userEvent.setup()
+    render(<TaskDetailPopup taskId="popup-task" open onClose={onClose} />)
+    await user.click(screen.getByRole("button", { name: "Item settings" }))
+    expect(screen.getByRole("tab", { name: /Settings/i })).toHaveAttribute("data-state", "active")
+    expect(screen.getByTestId("item-id-line")).toHaveTextContent("popup-task")
+    await user.click(screen.getByRole("checkbox", { name: "Scheduling" }))
+    expect(screen.queryByRole("tab", { name: /Scheduling/i })).not.toBeInTheDocument()
+    expect(useTaskStore.getState().tasks.find((t) => t.id === "popup-task")?.hiddenDetailPanels).toBeUndefined()
   })
 })
 

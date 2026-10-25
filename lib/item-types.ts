@@ -28,6 +28,9 @@ import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withLocationType } from "@/lib/location-types"
+import { withDocumentType } from "@/lib/document-types"
+import { withPhotoType } from "@/lib/photo-types"
+import { withTrackingItemTypes } from "@/lib/tracking-item-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
 import { withPersonPhoneAttribute, withPersonType } from "@/lib/person-types"
@@ -78,7 +81,7 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   return withPersonType(
     withCatalogTypes(
       withFilmType(
-        withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes()))))),
+        withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
       ),
     ),
   )
@@ -264,6 +267,19 @@ export interface DetailListSource {
   hiddenDetailPanels?: ItemDetailPanel[]
 }
 
+/** Item-level tab prefs. `details` stays. Shown panels join the type's set; hidden panels leave it. */
+export function applyItemDetailPanels(
+  base: readonly ItemDetailPanel[],
+  item?: { hiddenDetailPanels?: ItemDetailPanel[]; shownDetailPanels?: ItemDetailPanel[] },
+): ItemDetailPanel[] {
+  const hidden = new Set(item?.hiddenDetailPanels ?? [])
+  const shown = item?.shownDetailPanels ?? []
+  const merged = new Set<ItemDetailPanel>([...base, ...shown])
+  const panels = DETAIL_PANEL_ORDER.filter((panel) => merged.has(panel) && (panel === "details" || !hidden.has(panel)))
+  if (!panels.includes("details")) panels.unshift("details")
+  return panels
+}
+
 export interface DetailViewResolution {
   panels: ItemDetailPanel[]
   capabilities: ItemTypeCapabilities
@@ -277,7 +293,12 @@ export interface DetailViewResolution {
  * items inherit Task capabilities so the hardcoded Task surface still works.
  */
 export function resolveDetailView(
-  item: { type?: ItemType; lists?: string[] },
+  item: {
+    type?: ItemType
+    lists?: string[]
+    hiddenDetailPanels?: ItemDetailPanel[]
+    shownDetailPanels?: ItemDetailPanel[]
+  },
   lists: DetailListSource[],
   types: ItemTypeDefinition[],
   opts?: { isTask?: boolean },
@@ -336,7 +357,7 @@ export function resolveDetailView(
   if (!panels.includes("details")) panels.unshift("details")
 
   return {
-    panels: panels.length ? panels : ["details"],
+    panels: applyItemDetailPanels(panels.length ? panels : ["details"], item),
     capabilities,
     layout: collectTypeLayout(typeDef?.id ?? item.type, types),
   }
