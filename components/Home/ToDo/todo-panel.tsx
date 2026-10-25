@@ -49,6 +49,10 @@ import JustStartMode from "@/components/Focus/JustStartMode"
 import { useTaskClockStarter } from "@/components/Focus/TaskClockStarter"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { stopTaskClock } from "@/lib/task-clock"
+import { offerPenDebrief } from "@/lib/session-debrief"
+import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { activeNowObjectives } from "@/lib/now-objective"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { openTaskBlockers } from "@/lib/prereqs"
 import { inheritedDue, unlockBreakdown } from "@/lib/unlock-value"
 import { TaskPrereqDialog } from "./TaskPrereqDialog"
@@ -716,6 +720,12 @@ export function TodoPanel({
     updateTask(withStatus(task, status))
   }
 
+  const clockObjectives = usePenColorSessionStore((state) => state.session?.nowObjectives)
+  const clockStop = useUnfinishedStop(activeNowObjectives(clockObjectives).length, (park) => {
+    const ended = stopTaskClock(undefined, new Date(), park ? { parkUnfinished: true } : undefined)
+    if (ended) offerPenDebrief(ended)
+  })
+
   // Phase 12: the task card borrows the panel's handlers for the lens it opened on.
   // Push counts read a ledger period (season reads month); Required and Prioritized
   // follow the lens itself, so the card and the season lid flip the same marks.
@@ -743,7 +753,7 @@ export function TodoPanel({
     clockTaskId,
     clockStepId,
     onClockStart: taskClock.start,
-    onClockStop: () => stopTaskClock(),
+    onClockStop: () => clockStop.request(),
     defaultEstimateMin,
     hoursLeft: workingHoursLeft("day", new Date()),
   }
@@ -843,7 +853,7 @@ export function TodoPanel({
       clockTaskId,
       clockStepId,
       onClockStart: taskClock.start,
-      onClockStop: () => stopTaskClock(),
+      onClockStop: () => clockStop.request(),
       unlockOf: (taskId: string) => {
         const breakdown = unlockBreakdown({ id: taskId }, tasks)
         if (!breakdown.count) return null
@@ -1360,6 +1370,7 @@ export function TodoPanel({
       data-season={periodTab === "quarter" ? seasonSlug(seasonOfDate(focusedDate)) : undefined}
       data-ui-docs="components/Home/ToDo/README.md"
     >
+      {clockStop.dialog}
       <div className="todo-window">
         <Tabs
           value={activeTodoTab}

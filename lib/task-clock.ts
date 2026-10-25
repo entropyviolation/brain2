@@ -143,12 +143,12 @@ export function startTaskClock(
   return { kind, session: usePenColorSessionStore.getState().session! }
 }
 
-/** Stop the clock if it is on this task. */
-export function stopTaskClock(taskId?: string, now = new Date(), opts?: { parkUnfinished?: boolean }): void {
+/** Stop the clock if it is on this task. Returns the sitting that just closed. */
+export function stopTaskClock(taskId?: string, now = new Date(), opts?: { parkUnfinished?: boolean }): PenColorSession | null {
   const session = usePenColorSessionStore.getState().session
-  if (!session) return
-  if (taskId && session.taskId !== taskId) return
-  stopPenColorSession(now, opts)
+  if (!session) return null
+  if (taskId && session.taskId !== taskId) return null
+  return stopPenColorSession(now, opts)
 }
 
 /** Tasks linked to this pen (`Task.penLinks`), in list order. Pure. */
@@ -274,13 +274,15 @@ export function completeClockStep(stepId: string): void {
   })
 }
 
-/** Mark the task on the clock complete, then stop. One undo step. */
-export function finishClockTask(park: boolean, now = new Date()): void {
+/** Mark the task on the clock complete, then stop. One undo step. Returns the sitting. */
+export function finishClockTask(park: boolean, now = new Date()): PenColorSession | null {
   const live = liveClock()
-  if (!live) return
+  if (!live) return null
   const taskId = live.taskId
+  let ended: PenColorSession | null = null
   runAsAction("finish the task on the clock", () => {
     if (taskId) completeTask(taskId)
-    stopPenColorSession(now, park ? { parkUnfinished: true } : undefined)
+    ended = stopPenColorSession(now, park ? { parkUnfinished: true } : undefined)
   })
+  return ended
 }

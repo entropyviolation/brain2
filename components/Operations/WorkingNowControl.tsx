@@ -28,6 +28,7 @@ import {
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { ItemPicker } from "@/components/Lists/item-picker"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { offerPenDebrief, reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives } from "@/lib/now-objective"
 
 export function useWorkSessionClock() {
@@ -79,11 +80,12 @@ export function WorkingNowControl({
   const elapsed =
     live && session ? formatElapsedClock(sessionElapsedMs(session, now)) : null
   const workStop = useUnfinishedStop(live ? activeNowObjectives(session?.nowObjectives).length : 0, (park) =>
-    stopWorkingOnOperation(new Date(), park ? { parkUnfinished: true } : undefined),
+    reviewWorkStop(park),
   )
-  const taskStop = useUnfinishedStop(activeNowObjectives(penObjectives).length, (park) =>
-    stopTaskClock(namedTask?.id, new Date(), park ? { parkUnfinished: true } : undefined),
-  )
+  const taskStop = useUnfinishedStop(activeNowObjectives(penObjectives).length, (park) => {
+    const ended = stopTaskClock(namedTask?.id, new Date(), park ? { parkUnfinished: true } : undefined)
+    if (ended) offerPenDebrief(ended)
+  })
 
   return (
     <span className="ops-menubar-now">

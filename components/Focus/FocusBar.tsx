@@ -6,11 +6,13 @@
  * (click opens that task), **Task** (the step on the clock, or a new one),
  * the step's estimate, the live clock, Objectives (tied to steps), Just Start,
  * Pause / Resume, and Stop. Stop first asks whether to save still-open
- * objectives for the next time this task or subtask is tracked. Then, when a
- * line is not a step yet, it asks whether to keep those free objectives as
- * steps of the task or leave them on the Tracking block.
+ * objectives for the next time this task or subtask is tracked. Yes parks
+ * them, No leaves them on this sitting, Cancel keeps the clock running.
+ * Then, when a line is not a step yet, it asks whether to keep those free
+ * objectives as steps of the task or leave them on the Tracking block.
  * Then the end-of-sitting strip (`SittingEnd`) pauses the clock and says
- * how long you sat and where you left it; its Keep or Skip stops the clock.
+ * how long you sat and where you left it; its Keep or Skip stops the clock
+ * and opens the sitting review.
  *
  * Sessions (slice H2): while a To Do session runs, **Park session** puts it
  * down (with an optional note to tomorrow-you). Otherwise **Session** and
@@ -22,7 +24,7 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
@@ -42,6 +44,8 @@ import {
   tiePenColorNowObjective,
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
+import { offerPenDebrief } from "@/lib/session-debrief"
+import { SessionHandoffNote } from "@/components/Home/Tracking/session-handoff-note"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useSessionPlanStore, parkLiveSession } from "@/lib/session-plan-store"
 import { activeNowObjectives } from "@/lib/now-objective"
@@ -66,6 +70,18 @@ export default function FocusBar() {
   const [satMinutes, setSatMinutes] = useState<number | null>(null)
   const [parkNote, setParkNote] = useState<string | null>(null)
   const sessionRuns = useSessionPlanStore((s) => s.open.some((p) => p.phase === "run"))
+
+  useEffect(() => {
+    if (asking !== "save") return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      setAsking(false)
+    }
+    window.addEventListener("keydown", onKey, true)
+    return () => window.removeEventListener("keydown", onKey, true)
+  }, [asking])
 
   if (!session?.taskId || !clock.task) return null
   const pen = scopes.find((scope) => scope.id === session.scopeId)?.pens.find((p) => p.id === session.penId)
@@ -119,13 +135,15 @@ export default function FocusBar() {
       data-ui-name="Focus bar"
       data-ui-docs="components/Focus/README.md"
     >
+      <SessionHandoffNote taskId={session.taskId} penId={session.penId} />
       {satMinutes != null ? (
         <SittingEnd
           task={clock.task}
           minutes={satMinutes}
           onDone={() => {
             setSatMinutes(null)
-            stopPenColorSession(new Date(), parkOnStop ? { parkUnfinished: true } : undefined)
+            const ended = stopPenColorSession(new Date(), parkOnStop ? { parkUnfinished: true } : undefined)
+            if (ended) offerPenDebrief(ended)
           }}
         />
       ) : parkNote !== null ? (
@@ -165,6 +183,9 @@ export default function FocusBar() {
           </button>
           <button data-no95 type="button" className="focus-bar-key" onClick={() => answerSave(false)}>
             No
+          </button>
+          <button data-no95 type="button" className="focus-bar-key" onClick={() => setAsking(false)}>
+            Cancel
           </button>
         </div>
       ) : asking === "steps" ? (

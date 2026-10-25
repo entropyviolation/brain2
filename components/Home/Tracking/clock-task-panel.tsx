@@ -28,6 +28,7 @@ import {
   setClockStep,
 } from "@/lib/task-clock"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { offerPenDebrief } from "@/lib/session-debrief"
 
 export function ClockTaskButton() {
   const session = usePenColorSessionStore((s) => s.session)
@@ -41,7 +42,8 @@ export function ClockTaskButton() {
   const task = session?.taskId ? tasks.find((row) => row.id === session.taskId) : undefined
   const step = task && session?.stepId ? findPlacedStep(task.subtasks, session.stepId)?.step : undefined
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) => {
-    finishClockTask(park)
+    const ended = finishClockTask(park)
+    if (ended) offerPenDebrief(ended)
     setOpen(false)
   })
 

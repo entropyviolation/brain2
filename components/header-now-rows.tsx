@@ -19,7 +19,6 @@ import {
   pauseWorkingOnOperation,
   resumeWorkingOnOperation,
   sessionElapsedMs,
-  stopWorkingOnOperation,
 } from "@/lib/operation-work-session"
 import {
   addPenColorCompletedObjective,
@@ -30,7 +29,6 @@ import {
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
-  stopPenColorSession,
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import {
@@ -44,6 +42,8 @@ import {
 } from "@/lib/operation-work-session"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { SessionHandoffNote } from "@/components/Home/Tracking/session-handoff-note"
+import { reviewPenStop, reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives, type NowObjective } from "@/lib/now-objective"
 import { attachChoicesForOperation, attachChoicesForPen, type ObjectiveAttachChoice } from "@/lib/unfinished-objectives"
 import { useClockTask } from "@/components/Focus/use-clock-task"
@@ -164,12 +164,13 @@ export function HeaderNowRows() {
       <legend>now</legend>
       <div className="b2-shell-now-body">
         {opSession && (
+          <>
           <NowRow
             name={opSession.title}
             elapsed={formatElapsedClock(sessionElapsedMs(opSession, opNow))}
             paused={isSessionPaused(opSession)}
             stopLabel={`Stop ${opSession.title}`}
-            onStop={(park) => stopWorkingOnOperation(new Date(), park ? { parkUnfinished: true } : undefined)}
+            onStop={(park) => reviewWorkStop(park)}
             onPauseToggle={() =>
               isSessionPaused(opSession) ? resumeWorkingOnOperation() : pauseWorkingOnOperation()
             }
@@ -183,15 +184,18 @@ export function HeaderNowRows() {
             onAttach={(id, target) => attachWorkNowObjective(id, target)}
             attachChoices={attachChoicesForOperation(tasks, opSession.operationId)}
           />
+          <SessionHandoffNote taskId={opSession.operationId} penId={opSession.penId || undefined} />
+          </>
         )}
         {penSession && (
+          <>
           <NowRow
             name={penName}
             color={penColor}
             elapsed={formatElapsedClock(sessionElapsedMs(penSession, penNow))}
             paused={isSessionPaused(penSession)}
             stopLabel={`Stop ${penName}`}
-            onStop={(park) => stopPenColorSession(new Date(), park ? { parkUnfinished: true } : undefined)}
+            onStop={(park) => reviewPenStop(park)}
             onPauseToggle={() =>
               isSessionPaused(penSession) ? resumePenColorSession() : pausePenColorSession()
             }
@@ -210,6 +214,8 @@ export function HeaderNowRows() {
             onOpen={penSession.taskId ? () => openItemDetailPopup(penSession.taskId!) : undefined}
             taskSlot={<ClockTaskButton />}
           />
+          <SessionHandoffNote taskId={penSession.taskId} penId={penSession.penId} />
+          </>
         )}
       </div>
     </fieldset>
