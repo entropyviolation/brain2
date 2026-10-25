@@ -132,7 +132,6 @@ export function TypeSpecificSchemaFields({
         </>
       )
     case "list":
-    case "item":
       return (
         <div className="basis-full min-w-0 space-y-1">
           <Label className="text-[10px]">Scope list (optional)</Label>
@@ -142,10 +141,13 @@ export function TypeSpecificSchemaFields({
             emptyLabel="Any list"
             searchLabel="Scope list"
             showCreate
+            showSelectedChips
             compact={false}
           />
         </div>
       )
+    case "item":
+      return null
     case "goal":
       return (
         <div className="flex gap-2 min-w-[180px]">
