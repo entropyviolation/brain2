@@ -24,7 +24,7 @@
 
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
 import { compactSpend } from "./spend"
-import { sameNowObjectives, type NowObjective } from "./now-objective"
+import { compactNowObjectives, sameNowObjectives, type NowObjective } from "./now-objective"
 import { sameFieldValues, type FieldValues } from "./pen-fields"
 
 export type { NowObjective } from "./now-objective"
@@ -659,6 +659,12 @@ export interface PaintRangeInput {
   /** Later calendar day for an explicit wrap. Not stored — slices carry `date`. */
   endDate?: string
   estimateOf?: { kind: "done" | "import"; id: string }
+  /** Task this stroke is for. Omitted on a plain paint. */
+  taskId?: string
+  /** Step on that task. Omitted when the block is the whole task. */
+  stepId?: string
+  /** Objectives accomplished on this stroke. */
+  nowObjectives?: NowObjective[]
 }
 
 function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: string): TimeEntry {
@@ -687,7 +693,19 @@ function entryFromPaint(input: PaintRangeInput, lo: number, hi: number, id: stri
     ...eventFields(input),
     ...moodReadingField(input.moodReading),
     ...spendPaintFields(input),
+    ...taskPaintFields(input),
   }
+}
+
+function taskPaintFields(
+  input: Pick<PaintRangeInput, "taskId" | "stepId" | "nowObjectives">,
+): Partial<Pick<TimeEntry, "taskId" | "stepId" | "nowObjectives">> {
+  const fields: Partial<Pick<TimeEntry, "taskId" | "stepId" | "nowObjectives">> = {}
+  if (input.taskId) fields.taskId = input.taskId
+  if (input.stepId) fields.stepId = input.stepId
+  const objectives = compactNowObjectives(input.nowObjectives)
+  if (objectives) fields.nowObjectives = objectives
+  return fields
 }
 
 function spendPaintFields(

@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import { HOME_WIDGET_LABEL } from "@/lib/home-widgets"
 import { useDashboardStore } from "@/lib/widgets/dashboard-store"
 import { widgetKind } from "@/lib/widgets/kinds"
@@ -90,9 +91,7 @@ export function HomeWidgetDialog({
         onPointerDownOutside={holdOutside}
         onInteractOutside={holdOutside}
       >
-        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={() => onOpenChange(false)}>
-          ×
-        </button>
+        <KeycapClose className="home-widget-dismiss" label="Close" onClick={() => onOpenChange(false)} />
         <DialogHeader className="home-widget-caption">
           <span className="home-widget-power" aria-hidden="true" />
           <DialogTitle>{view === "settings" ? `${caption} · Settings` : caption}</DialogTitle>
@@ -187,9 +186,7 @@ export function HideWidgetConfirm({
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel() }}>
       <DialogContent className="home-widget-dialog home-widget-instrument home-widget-hide-dialog" aria-describedby={undefined} hideClose>
-        <button type="button" className="home-widget-dismiss b2-close-key" aria-label="Close" onClick={onCancel}>
-          ×
-        </button>
+        <KeycapClose className="home-widget-dismiss" label="Close" onClick={onCancel} />
         <DialogHeader className="home-widget-caption">
           <span className="home-widget-power is-amber" aria-hidden="true" />
           <DialogTitle>Are you sure?</DialogTitle>

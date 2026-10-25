@@ -99,8 +99,11 @@ Line numbers are approximate (`~`). Fix them in a handoff when they move.
   - `handleNavigateToList` ~377: guarded (`guardAction`), then `onClose()`
     and `requestNavigateToListAfterPaint(listId, folders)`.
   - Guard ~360: `isDirty: isDraftDirty` (a function, read at call time).
-    `useItemDetailUnloadGuard` ~367 covers window close.
-    `unsavedDismissProps(guard.requestClose)` on `DialogContent` ~370;
+    `useItemDetailSession` pins the open item and saves it on reload
+    (the next load is the minimized dock, not a browser leave prompt).
+    A click on the page behind the popup saves and minimizes; Escape and
+    × still use `guard.requestClose`.
+    `layerSafeDismiss` on `DialogContent`;
     `<UnsavedChangesDialog {...guard.prompt} />` ~1467.
   - `writeDraft(patch)` ~355 = `touchDraft(patch)` + `setTask(merge)`.
   - Details tab ~526: `id-details-grid` → `id-details-main`. For a person
@@ -392,9 +395,12 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
      `handleNavigateToList`, `openHabitSettings`, and every `setOverrideId`
      go through `guard.guardAction`. Render `<UnsavedChangesDialog
      {...guard.prompt} />`. Do not prompt while `!isEditing` and clean.
-  2. Both shells: while dirty, `beforeunload` sets `returnValue` (browser
-     "leave site?"). One small hook used by both, registered only while the
-     surface is open.
+  2. Both shells: while open, `useItemDetailSession` pins the item and
+     writes the draft on `pagehide` / `beforeunload`. The browser does not
+     ask to leave. The next load opens the minimized dock. Decided
+     2026-10-24: a reload should keep the edit and come back parked, and a
+     click on the page behind the popup does that same save-and-minimize.
+     × and Back still ask.
   3. Look for other ways out while the popup is open: `grep -rn
      "COGS_NAVIGATE_TO_LIST_EVENT\|requestNavigateToList" components app lib`.
      If a global event can change room under an open dirty popup, route it
@@ -404,9 +410,9 @@ touch it: 0.2, 1.2, 3.1 (slot only), 6.5, 8.1. Run those in sequence.
 - **Tests**: page Back with a dirty draft prompts; clean Back leaves.
 - **Handoff**: Already in the tree; verified. Page ~381 has its own
   guard; Back, list badge, habit settings, and `setOverrideId` go through
-  `guardAction`. `useItemDetailUnloadGuard(active, isDirty)`
-  (`components/ItemDetail/useItemDetailUnloadGuard.ts`) is used by both
-  shells. Leave-path grep: only the two shells call
+  `guardAction`. `useItemDetailSession` (`useItemDetailUnloadGuard.ts`) is
+  used by both shells: reload saves and the shell restores the minimized
+  dock. Leave-path grep: only the two shells call
   `requestNavigateToListAfterPaint`; `COGS_NAVIGATE_TO_LIST_EVENT` is only
   heard by `app/page.tsx` ~237 and `useListsNavigation.ts` ~94, both after
   the shell already closed. **No global `registerLeaveGuard` was needed.**

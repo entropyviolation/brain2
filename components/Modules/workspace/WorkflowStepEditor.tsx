@@ -7,8 +7,9 @@
  * `WorkflowAction` kind) as an ordered, drag-reorderable step list. The source of
  * truth is the JSON shape — there is no DSL. Used inside `WorkflowBuilder`.
  *
- * Uses `NativeSelect` and plain inputs, styled to the app, so the builder stays
- * simple and keyboard-accessible. Tests pick options with `pickOption`.
+ * Uses `NativeSelect` for short enums. List choices use the searchable list
+ * picker — a `<select>` of every list does not fit. Tests pick enum options
+ * with `pickOption`.
  */
 "use client"
 
@@ -24,9 +25,9 @@ import type {
   WorkflowDefinition,
   WorkflowTrigger,
 } from "@/lib/types"
-import { useTaskStore } from "@/lib/task-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { NativeSelect } from "@/components/ui/native-select"
+import { SingleListPicker } from "@/components/Lists/list-picker"
 
 const SELECT_CLS =
   "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -133,7 +134,6 @@ export function WorkflowStepEditor({
   onSave: (def: WorkflowDefinition) => void
   onCancel: () => void
 }) {
-  const lists = useTaskStore((s) => s.lists)
   const allWorkflows = useWorkflowsStore((s) => s.workflows)
 
   const [name, setName] = useState(initial?.name ?? "")
@@ -290,19 +290,12 @@ export function WorkflowStepEditor({
         )}
         <div className="space-y-2">
           <Label className="text-xs">Limit to list (optional)</Label>
-          <NativeSelect
-            aria-label="Limit to list"
-            className={SELECT_CLS}
+          <SingleListPicker
             value={scopeCategoryId}
-            onChange={(e) => setScopeCategoryId(e.target.value)}
-          >
-            <option value="">Any list</option>
-            {lists.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </NativeSelect>
+            onValueChange={setScopeCategoryId}
+            emptyLabel="Any list"
+            searchLabel="Limit to list"
+          />
         </div>
       </section>
 
@@ -439,7 +432,6 @@ export function WorkflowStepEditor({
                     <ActionFields
                       action={a}
                       index={i}
-                      lists={lists}
                       workflows={otherWorkflows.map((w) => ({ id: w.id, name: w.name }))}
                       onChange={(next) => updateAction(i, next)}
                     />
@@ -490,13 +482,11 @@ export function WorkflowStepEditor({
 function ActionFields({
   action,
   index,
-  lists,
   workflows,
   onChange,
 }: {
   action: WorkflowAction
   index: number
-  lists: { id: string; name: string }[]
   workflows: { id: string; name: string }[]
   onChange: (next: WorkflowAction) => void
 }) {
@@ -516,14 +506,12 @@ function ActionFields({
   const categorySelect = (label: string, value: string, set: (v: string) => void) => (
     <div className="space-y-1">
       <Label className="text-[10px]">{label}</Label>
-      <NativeSelect aria-label={`${label} ${index + 1}`} className={`${SELECT_CLS} h-8`} value={value} onChange={(e) => set(e.target.value)}>
-        <option value="">Choose a list…</option>
-        {lists.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </NativeSelect>
+      <SingleListPicker
+        value={value}
+        onValueChange={set}
+        emptyLabel="Choose a list…"
+        searchLabel={`${label} ${index + 1}`}
+      />
     </div>
   )
 

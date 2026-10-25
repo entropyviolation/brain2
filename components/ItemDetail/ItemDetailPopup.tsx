@@ -12,6 +12,7 @@
 "use client"
 
 import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
+import { InboxClarifyKey } from "@/components/ItemDetail/InboxClarifyKey"
 import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
@@ -22,13 +23,14 @@ import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
 import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailUnloadGuard } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
 import { isReminderTask } from "@/lib/reminders"
 import { TagInput } from "@/components/ItemDetail/TagInput"
 import { RichLinksPanel, useItemEdges } from "@/components/ItemDetail/links/RichLinksPanel"
 import { edgeCount } from "@/lib/link-graph"
 import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
 import { ListPicker } from "@/components/Lists/list-picker"
+import { ItemPicker } from "@/components/Lists/item-picker"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
@@ -71,6 +73,15 @@ import {
   Undo2,
 } from "lucide-react"
 import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
+import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
+import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
+import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
+import { KeycapClose } from "@/components/keycap-close"
+import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
+import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
+import { ItemDetailDock } from "@/components/ItemDetail/ItemDetailDock"
+import { iconFor } from "@/components/Icons/Icon"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { ItemNotesLog, NotesPeek } from "@/components/ItemDetail/ItemNotesLog"
 import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
@@ -93,6 +104,7 @@ import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-uti
 import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
+import { asListReference } from "@/lib/text-list-to-list"
 import type { AttributeDefinition, AttributeValue, ItemTypeDefinition } from "@/lib/types"
 import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
@@ -107,7 +119,7 @@ import { CompletionDialog } from "@/components/Completion/CompletionDialog"
 import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
 import { SchedulingSummary } from "@/components/ItemDetail/SchedulingSummary"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
-import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
+import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import "./item-detail-chrome.css"
 
 /**
@@ -115,7 +127,10 @@ import "./item-detail-chrome.css"
  * (`StepItemStack`) is not "outside" this popup, so the popup underneath keeps
  * its place instead of closing.
  */
-function layerSafeDismiss<P extends ReturnType<typeof unsavedDismissProps>>(props: P): P {
+function layerSafeDismiss(handlers: {
+  onOutside: (event: Event) => void
+  onEscape: (event: KeyboardEvent) => void
+}) {
   const inLayer = (event: Event) => {
     const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as
       | Element
@@ -123,9 +138,12 @@ function layerSafeDismiss<P extends ReturnType<typeof unsavedDismissProps>>(prop
     return !!target?.closest?.("[data-item-layer]")
   }
   return {
-    ...props,
-    onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onPointerDownOutside(event)),
-    onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : props.onInteractOutside(event)),
+    onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
+    onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      event.preventDefault()
+      if (!inLayer(event)) handlers.onEscape(event)
+    },
   }
 }
 
@@ -141,6 +159,8 @@ interface TaskDetailPopupProps {
   layerHeader?: ReactNode
   /** Phase 11: Complete on a step item ticks the step instead of completing the item. */
   onStepComplete?: () => void
+  /** Open straight onto the dock. A reload uses this so the editor does not flash open. */
+  startMinimized?: boolean
 }
 
 export function TaskDetailPopup({
@@ -151,8 +171,12 @@ export function TaskDetailPopup({
   container = null,
   layerHeader,
   onStepComplete,
+  startMinimized = false,
 }: TaskDetailPopupProps) {
   const detailRef = useRef<HTMLDivElement>(null)
+  const settingsHost = useRef<HTMLDivElement>(null)
+  const settingsLock = useRef(false)
+  const attributeLock = useRef(false)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -195,7 +219,6 @@ export function TaskDetailPopup({
   const addItemType = useItemTypeStore((state) => state.addType)
   const deleteItemType = useItemTypeStore((state) => state.deleteType)
 
-  const [selectedDependency, setSelectedDependency] = useState("none")
   const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
 
@@ -207,17 +230,33 @@ export function TaskDetailPopup({
   const hasTask = !!task
   const taskType = task?.type
   const taskLists = task?.lists
+  const taskHiddenPanels = task?.hiddenDetailPanels
+  const taskShownPanels = task?.shownDetailPanels
+  const hiddenShell = task?.hiddenShellTabs
   const detailView = useMemo(
     () =>
       hasTask
-        ? resolveDetailView({ type: taskType, lists: taskLists }, lists, itemTypes, { isTask })
+        ? resolveDetailView(
+            { type: taskType, lists: taskLists, hiddenDetailPanels: taskHiddenPanels, shownDetailPanels: taskShownPanels },
+            lists,
+            itemTypes,
+            { isTask },
+          )
         : { panels: ["details"] as ItemDetailPanel[], capabilities: {}, layout: undefined },
-    [hasTask, taskType, taskLists, lists, itemTypes, isTask],
+    [hasTask, taskType, taskLists, taskHiddenPanels, taskShownPanels, lists, itemTypes, isTask],
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
   const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
-  const popupTabs = useMemo(() => [...visiblePanels, "links", "history"], [visiblePanels])
+  const popupTabs = useMemo(() => {
+    const shell = (["links", "history"] as const).filter((tab) => !(hiddenShell ?? []).includes(tab))
+    return [...visiblePanels, ...shell]
+  }, [visiblePanels, hiddenShell])
+  const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
+  const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
+  const [minimized, setMinimized] = useState(startMinimized)
+  const [dockShape, setDockShape] = useState<"bar" | "icon">("bar")
+  const minimizeLock = useRef(false)
   const [detailTab, setDetailTab] = useState(() => {
     const stored = effectiveId ? readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId] : null
     return stored || "details"
@@ -365,14 +404,21 @@ export function TaskDetailPopup({
     [itemTypes, updateItemType, addItemType],
   )
 
-  const handleAddDependency = useCallback(() => {
-    const result = addDependency(selectedDependency)
-    if (!result.ok) {
-      setCycleLabel(result.cycleLabel)
-      return
-    }
-    if (selectedDependency && selectedDependency !== "none") setSelectedDependency("none")
-  }, [addDependency, selectedDependency])
+  const syncDependencies = useCallback(
+    (ids: string[]) => {
+      if (!task) return
+      const prev = task.dependencies ?? []
+      const added = ids.find((id) => !prev.includes(id))
+      const removed = prev.filter((id) => !ids.includes(id))
+      if (added && removed.length === 0) {
+        const result = addDependency(added)
+        if (!result.ok) setCycleLabel(result.cycleLabel)
+        return
+      }
+      for (const id of removed) removeDependency(id)
+    },
+    [task, addDependency, removeDependency],
+  )
 
   const guard = useUnsavedGuard({
     open,
@@ -386,7 +432,16 @@ export function TaskDetailPopup({
     },
   })
   const { guardAction } = guard
-  useItemDetailUnloadGuard(open && Boolean(task), isDraftDirty)
+  useItemDetailSession(open && Boolean(task), effectiveId, handleSave)
+  const outsideHold = useRef(false)
+  outsideHold.current =
+    itemSettingsOpen ||
+    attributeSettingsId != null ||
+    editingItemType != null ||
+    !!cycleLabel ||
+    missAsk ||
+    reviewOpen ||
+    guard.prompt.open
 
   // Every way out of the popup asks about unsaved edits first.
   const openItem = useCallback(
@@ -395,13 +450,62 @@ export function TaskDetailPopup({
   )
   const itemEdges = useItemEdges(task)
 
+  const minimize = useCallback(() => {
+    const draft = getDraft()
+    if (draft && task && !snapshotsEqual(task, draft)) setTask({ ...draft })
+    minimizeLock.current = true
+    settingsLock.current = false
+    attributeLock.current = false
+    setItemSettingsOpen(false)
+    setAttributeSettingsId(null)
+    setMinimized(true)
+  }, [getDraft, setTask, task])
+  const saveAndMinimize = useCallback(() => {
+    handleSave()
+    minimize()
+  }, [handleSave, minimize])
+  const parkFromOutside = useCallback(
+    (event: Event) => {
+      event.preventDefault()
+      if (outsideHold.current) return
+      saveAndMinimize()
+    },
+    [saveAndMinimize],
+  )
   const handleNavigateToList = useCallback(
-    (listId: string) =>
-      guardAction(() => {
-        onClose()
-        requestNavigateToListAfterPaint(listId, folders)
-      }),
-    [guardAction, folders, onClose],
+    (listId: string) => {
+      minimize()
+      requestNavigateToListAfterPaint(listId, folders)
+    },
+    [folders, minimize],
+  )
+  const bindTextList = useCallback(
+    (attributeId: string, listId: string) => {
+      const id = task?.id
+      if (!id) return
+      const current = getDraft()
+      if (!current || current.id !== id) return
+      const converted = asListReference(current, attributeId, listId)
+      const owns = current.itemAttributeDefinitions?.some((def) => def.id === attributeId) ?? false
+      const stamp = (base: Task): Task => ({
+        ...base,
+        attributes: owns ? { ...(base.attributes ?? {}), [attributeId]: listId } : base.attributes,
+        itemAttributeDefinitions: owns ? converted.itemAttributeDefinitions : base.itemAttributeDefinitions,
+        textListIds: converted.textListIds,
+      })
+      const stored = useTaskStore.getState().tasks.find((row) => row.id === id)
+      if (stored) updateTask(stamp(stored))
+      setOriginalTask(originalTask?.id === id ? stamp(originalTask) : stored ? stamp(stored) : converted)
+      setTask(converted)
+    },
+    [task?.id, originalTask, getDraft, updateTask, setOriginalTask, setTask],
+  )
+  const patchItem = useCallback(
+    (patch: Partial<Task>) => {
+      touchDraft(patch)
+      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+    },
+    [touchDraft, setTask],
   )
   const cardHosts = useTaskCardStore((s) => s.hosts)
 
@@ -417,8 +521,6 @@ export function TaskDetailPopup({
           ? { taskId: task.id, stepId: undefined }
           : null
       : null
-
-  const availableTasksForDependencies = allTasks.filter((t) => t.id !== task.id && !(task.dependencies || []).includes(t.id))
 
   // Every item type assigned to this item: its own type plus any type pinned by
   // a list it belongs to (e.g. a task that also lives in a "Goals" list).
@@ -444,7 +546,16 @@ export function TaskDetailPopup({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={guard.handleOpenChange}>
+      <Dialog
+        open={open && !minimized}
+        onOpenChange={(next) => {
+          if (!next && (minimizeLock.current || settingsLock.current)) {
+            minimizeLock.current = false
+            return
+          }
+          guard.handleOpenChange(next)
+        }}
+      >
         <DialogContent
           ref={detailRef}
           className={`id95-dialog id95 sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col${stackAbove ? " z-[80]" : ""}`}
@@ -452,12 +563,20 @@ export function TaskDetailPopup({
           container={container}
           data-ui-name="Item detail"
           data-ui-docs="components/ItemDetail/README.md"
-          {...layerSafeDismiss(unsavedDismissProps(guard.requestClose))}
+          {...layerSafeDismiss({
+            onOutside: parkFromOutside,
+            onEscape: () => {
+              if (outsideHold.current) return
+              guard.requestClose()
+            },
+          })}
           data-item-layer={layerHeader !== undefined ? "" : undefined}
+          hideClose
         >
           <DialogTitle className="sr-only">Item detail</DialogTitle>
           {layerHeader}
           <div className="id-fascia">
+            <WorkingNowBanner itemId={task.id} />
             <div className="id-fascia-row">
               <div className="id-mark">
                 <span className="id-power-lamp is-on" aria-hidden />
@@ -471,6 +590,18 @@ export function TaskDetailPopup({
                   className="id-title-input id-title"
                   placeholder="Item name"
                 />
+              </div>
+              <div className="id-window-keys">
+                <ItemSettingsKey
+                  onClick={() => {
+                    settingsLock.current = true
+                    setItemSettingsOpen(true)
+                  }}
+                />
+                <button type="button" className="id-window-key id-minimize-key" data-no95 aria-label="Minimize" title="Minimize" onClick={minimize}>
+                  <span className="id-minimize-mark" aria-hidden />
+                </button>
+                <KeycapClose onClick={() => guard.requestClose()} />
               </div>
             </div>
             <div className="id-fascia-row id-meta">
@@ -491,6 +622,7 @@ export function TaskDetailPopup({
               <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
                 {task.completed ? "Completed" : task.stage}
               </Badge>
+              <InboxClarifyKey task={task} getDraft={getDraft} commitDraft={commitDraft} />
               {task.actualDuration && (
                 <Badge variant="outline" className="id-chip">
                   <Timer className="h-3 w-3" />
@@ -615,11 +747,13 @@ export function TaskDetailPopup({
                   {resourceCount > 0 && <span className="id-tab-count">{resourceCount}</span>}
                 </TabsTrigger>
                 )}
+                {popupTabs.includes("links") && (
                 <TabsTrigger value="links" className="flex items-center gap-2 id-tab-secondary">
                   <Link2 className="h-4 w-4" />
                   Links
                   {linkCount > 0 && <span className="id-tab-count">{linkCount}</span>}
                 </TabsTrigger>
+                )}
                 {visiblePanels.includes("analysis") && (
                 <TabsTrigger value="analysis" className="flex items-center gap-2 id-tab-secondary">
                   <Brain className="h-4 w-4" />
@@ -632,10 +766,12 @@ export function TaskDetailPopup({
                   Time
                 </TabsTrigger>
                 )}
+                {popupTabs.includes("history") && (
                 <TabsTrigger value="history" className="flex items-center gap-2 id-tab-secondary">
                   <History className="h-4 w-4" />
                   History
                 </TabsTrigger>
+                )}
               </TabsList>
 
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
@@ -696,6 +832,11 @@ export function TaskDetailPopup({
                           }
                           onCreateAttribute={handleCreateAttribute}
                           onOpenItem={openItem}
+                          attributeLabels={task.attributeLabels}
+                          hiddenAttributeIds={task.hiddenAttributeIds}
+                          textListIds={task.textListIds}
+                          onBindTextList={bindTextList}
+                          onOpenTextList={handleNavigateToList}
                         />
                       </div>
 
@@ -706,6 +847,7 @@ export function TaskDetailPopup({
                         </Label>
                         <IsolatedTextarea
                           id="task-description"
+                          sizeKey={`id-desc:${task.id}`}
                           value={task.taskDescription || ""}
                           onLiveChange={(taskDescription) => touchDraft({ taskDescription })}
                           onCommit={(taskDescription) =>
@@ -929,6 +1071,18 @@ export function TaskDetailPopup({
                     </div>
 
                     <aside className="id-details-rail" aria-label="Where this item lives">
+                      {isTask && (
+                        <div className="space-y-2">
+                          <Label className="id-rail-plate">Task card</Label>
+                          <ItemTaskCardKey
+                            task={task}
+                            onBeforeOpen={() => {
+                              if (stackAbove) clearItemLayers()
+                              else guard.requestClose()
+                            }}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-3">
                         <Label className="id-rail-plate">Lists</Label>
                         <div className="flex flex-wrap gap-2">
@@ -1411,30 +1565,15 @@ export function TaskDetailPopup({
                         Tasks that must be completed before this task can be started.
                       </p>
 
-                      <div className="flex gap-2">
-                        <Select value={selectedDependency} onValueChange={setSelectedDependency}>
-                          <SelectTrigger className="flex-1 focus-ring">
-                            <SelectValue placeholder="Select a task dependency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none" disabled>
-                              Select a task
-                            </SelectItem>
-                            {availableTasksForDependencies.map((availableTask) => (
-                              <SelectItem key={availableTask.id} value={availableTask.id}>
-                                {availableTask.description}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          onClick={handleAddDependency}
-                          disabled={selectedDependency === "none"}
-                          className="focus-ring"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <ItemPicker
+                        mode="multi"
+                        searchLabel="Add dependency"
+                        choices={allTasks
+                          .filter((t) => t.id !== task.id)
+                          .map((t) => ({ id: t.id, title: itemTitleOrUntitled(t), icon: t.icon }))}
+                        selected={task.dependencies ?? []}
+                        onChange={syncDependencies}
+                      />
 
                       <div className="space-y-2">
                         {(task.dependencies ?? []).length === 0 ? (
@@ -1573,20 +1712,12 @@ export function TaskDetailPopup({
                         <Input type="number" value={task.actualDuration ?? ""} readOnly className="bg-muted" />
                       </div>
                     </div>
-                    {(task.timeLogs?.length ?? 0) > 0 && (
-                      <ul className="text-sm space-y-1">
-                        {task.timeLogs!.map((log) => (
-                          <li key={log.id} className="flex justify-between border-b py-1">
-                            <span>{log.durationMinutes}m{log.location ? ` @ ${log.location}` : ""}{log.notes ? ` — ${log.notes}` : ""}</span>
-                            <span className="text-muted-foreground">{log.date}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
-                  <div className="p-4 bg-muted/30 rounded-lg border">
+                  <div className="id-bay">
                     <ItemPenTimeSection
                       task={task}
+                      editableTime={isTask}
+                      onPatch={patchItem}
                       onPenLinksChange={(penLinks) => {
                         touchDraft({ penLinks })
                         setTask((prev) => (prev ? { ...prev, penLinks } : prev))
@@ -1616,6 +1747,67 @@ export function TaskDetailPopup({
           </div>
         </DialogContent>
       </Dialog>
+      {minimized ? (
+        <ItemDetailDock
+          title={itemTitleOrUntitled(task)}
+          iconSrc={iconFor(task.id, task.icon)}
+          shape={dockShape}
+          onShape={setDockShape}
+          onRestore={() => setMinimized(false)}
+          onClose={() => guard.requestClose()}
+        />
+      ) : null}
+      <Dialog
+        open={itemSettingsOpen}
+        onOpenChange={(next) => {
+          if (!next && attributeLock.current) return
+          settingsLock.current = next
+          setItemSettingsOpen(next)
+        }}
+      >
+        <DialogContent
+          ref={settingsHost}
+          container={detailRef.current}
+          className="id95-dialog id95 z-[90] sm:max-w-xl max-h-[85vh] overflow-hidden !flex flex-col"
+          overlayClassName="z-[90]"
+          data-ui-name="Item settings"
+          onPointerDownOutside={(event) => {
+            const target = event.target as Element | null
+            if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+          }}
+          onInteractOutside={(event) => {
+            const target = event.target as Element | null
+            if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
+          }}
+        >
+          <div className="id-settings-host">
+            <ItemSettingsPanel
+              task={task}
+              lists={lists}
+              isTask={isTask}
+              showLinks
+              onPatch={patchItem}
+              onOpenAttribute={(id) => {
+                attributeLock.current = true
+                setAttributeSettingsId(id)
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      <AttributeSettingsDialog
+        attributeId={attributeSettingsId}
+        open={attributeSettingsId != null}
+        container={settingsHost.current ?? detailRef.current}
+        onOpenChange={(next) => {
+          if (!next) {
+            attributeLock.current = false
+            setAttributeSettingsId(null)
+          }
+        }}
+        draftTask={task}
+        onPatchDraft={patchItem}
+      />
       <UnsavedChangesDialog {...guard.prompt} />
 
       <CycleConfirmDialog

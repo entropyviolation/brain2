@@ -1020,7 +1020,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
 /* Square metal × is `.b2-close-key`. This only places it on the caption. */
 .home-widget-dismiss {
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 10px;
   z-index: 2;
 }
@@ -1031,7 +1031,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 0 28px 0 0;
+  padding: 0 40px 0 0;
   text-align: left;
 }
 
@@ -4285,13 +4285,13 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 .home95.home-weather-dialog.home-widget-instrument > .home-widget-dismiss {
-  top: 10px;
+  top: 8px;
   right: 10px;
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-dialog-title {
   background: transparent;
-  padding: 0 28px 0 0;
+  padding: 0 40px 0 0;
 }
 
 .home95.home-weather-dialog.home-widget-instrument .home-weather-dialog-title h2 {

@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { KeycapClose } from "@/components/keycap-close"
 import {
   periodBreakdownRows,
   periodBreakdownTitles,
@@ -71,14 +72,7 @@ export function HabitPeriodBreakdown({
           <DialogDescription className="sr-only">
             Habit titles in {title}. Closing writes nothing.
           </DialogDescription>
-          <button
-            type="button"
-            className="habit95-title-btn b2-close-key"
-            aria-label="Close"
-            onClick={() => onOpenChange(false)}
-          >
-            ×
-          </button>
+          <KeycapClose className="habit95-title-btn" label="Close" onClick={() => onOpenChange(false)} />
         </DialogHeader>
         <div className="habit95-body">
           <div className="habit95-list-popup-tools" role="group" aria-label="Which habits">

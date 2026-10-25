@@ -1,0 +1,153 @@
+/*
+ * components/keycap-close.css — the keycap ×
+ *
+ * Imported by keycap-close.tsx, so any caller gets this face.
+ * Grey modifier cap at rest (the Quick Add close). Hover and keyboard
+ * focus turn the plastic brick: face #7A3C31, lower face #78292E, a darker
+ * skirt, a warm legend. The skirt is an inset shadow, the way a keycap is.
+ * data-no95 on the button keeps the fascia lip off this paint.
+ */
+
+@property --kc-top {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c9ccd0;
+}
+@property --kc-top2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b9bdc1;
+}
+@property --kc-skirt {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #969a9f;
+}
+@property --kc-edge {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #55595d;
+}
+@property --kc-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #25282b;
+}
+@property --kc-lip {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --kc-sheen {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+
+body.win95-app button.keycap-close.keycap-close {
+  --kc-top: #c9ccd0;
+  --kc-top2: #b9bdc1;
+  --kc-skirt: #969a9f;
+  --kc-edge: #55595d;
+  --kc-ink: #25282b;
+  --kc-lip: rgba(255, 255, 255, 0.78);
+  --kc-sheen: rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  max-width: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  padding: 0 0 3px;
+  border: 1px solid var(--kc-edge);
+  border-radius: 4px;
+  background-color: var(--kc-top2);
+  background-image: linear-gradient(180deg, var(--kc-top), var(--kc-top2));
+  box-shadow:
+    inset 2px 0 0 var(--kc-skirt),
+    inset -2px 0 0 var(--kc-skirt),
+    inset 0 -4px 0 var(--kc-skirt),
+    inset 0 1px 0 var(--kc-sheen),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  color: var(--kc-ink);
+  cursor: pointer;
+  appearance: none;
+  line-height: 0;
+  transition:
+    transform 60ms ease,
+    box-shadow 60ms ease,
+    --kc-top 160ms ease,
+    --kc-top2 160ms ease,
+    --kc-skirt 160ms ease,
+    --kc-edge 160ms ease,
+    --kc-ink 160ms ease,
+    --kc-lip 160ms ease,
+    --kc-sheen 160ms ease;
+}
+
+body.win95-app button.keycap-close.keycap-close.is-corner {
+  position: absolute;
+  top: var(--b2-close-top, 1rem);
+  right: var(--b2-close-right, 1rem);
+  z-index: 3;
+}
+
+body.win95-app button.keycap-close.keycap-close:hover,
+body.win95-app button.keycap-close.keycap-close:focus-visible {
+  /* Named brick on the face, the wine just under it, a darker skirt. */
+  --kc-top: #7a3c31;
+  --kc-top2: #78292e;
+  --kc-skirt: #4e1a1e;
+  --kc-edge: #351316;
+  --kc-ink: #f6ebe4;
+  --kc-lip: rgba(42, 14, 16, 0.55);
+  --kc-sheen: rgba(255, 214, 200, 0.55);
+}
+
+body.win95-app button.keycap-close.keycap-close:focus-visible {
+  outline: 1px dotted #1c1e20;
+  outline-offset: 2px;
+}
+
+body.win95-app button.keycap-close.keycap-close:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--kc-skirt),
+    inset -2px 0 0 var(--kc-skirt),
+    inset 0 -2px 0 var(--kc-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.28);
+}
+
+body.win95-app button.keycap-close.keycap-close svg {
+  display: block;
+  width: 11px;
+  height: 11px;
+  overflow: visible;
+}
+
+.keycap-close .keycap-close-ink,
+.keycap-close .keycap-close-lip {
+  fill: none;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+}
+
+.keycap-close .keycap-close-ink {
+  stroke: var(--kc-ink);
+}
+
+.keycap-close .keycap-close-lip {
+  stroke: var(--kc-lip);
+  transform: translateY(0.65px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.win95-app button.keycap-close.keycap-close {
+    transition: none;
+  }
+}

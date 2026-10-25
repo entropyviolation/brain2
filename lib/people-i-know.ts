@@ -18,7 +18,6 @@
  */
 import { createListItem } from "@/lib/item-utils"
 import { PERSON_ATTR, PERSON_TYPE_ID } from "@/lib/person-types"
-import { phonePenId } from "@/lib/phone-sync/ids"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, PersonPipeline, Task } from "@/lib/types"
 
@@ -177,22 +176,11 @@ export function joinedCompanyPenIds(pipelines: readonly PersonPipeline[] | undef
 }
 
 /**
- * Pens whose time counts as time with this person: joined Company pens, plus
- * their iPhone Calls pen, so synced calls count too (`lib/person-time.ts`).
- * With `scopes`, every iPhone Calls pen linked to them counts as well
- * (`personId`, `lib/phone-sync/person-links.ts`), so a rename keeps the count.
+ * Pens whose time counts as time with this person: joined Company pens.
+ * Calls and texts are contact, not company (`lib/person-contact.ts`).
  */
-export function personTimePenIds(
-  person: Pick<Task, "title" | "description" | "id" | "personPipelines">,
-  scopes?: readonly { id: string; pens: readonly { id: string; personId?: string }[] }[],
-): string[] {
-  const name = person.title || person.description || person.id
-  const ids = [...joinedCompanyPenIds(person.personPipelines), phonePenId("call", name)]
-  const calls = scopes?.find((scope) => scope.id === "iphone-calls")
-  for (const pen of calls?.pens ?? []) {
-    if (pen.personId === person.id && !ids.includes(pen.id)) ids.push(pen.id)
-  }
-  return ids
+export function personTimePenIds(person: Pick<Task, "personPipelines">): string[] {
+  return joinedCompanyPenIds(person.personPipelines)
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   togglePenColorNowObjectiveComplete,
 } from "./pen-color-session"
 import { usePenColorSessionStore } from "./pen-color-session-store"
+import { useUnfinishedObjectivesStore } from "./unfinished-objectives-store"
 
 const AT = new Date(2026, 8, 21, 19, 36, 47)
 
@@ -43,6 +44,17 @@ describe("pen color session", () => {
     })
     expect(entry!.endMin).toBeGreaterThan(entry!.startMin)
     expect(useTaskStore.getState().tasks.some((t) => /worked on/i.test(t.description))).toBe(false)
+    expect(entry?.notes).toBe(
+      "added from Working On Now, task: none subtasks completed: none objectives completed: none",
+    )
+  })
+
+  it("leaves a hand-written block note alone when the clock refreshes", () => {
+    startPenColorSession("act-exercise", AT)
+    const entry = useTimeTrackingStore.getState().entries.find((e) => e.penId === "act-exercise")!
+    useTimeTrackingStore.getState().updateEntry(entry.id, { notes: "kept by hand" })
+    addPenColorNowObjective("finish the nest", AT)
+    expect(useTimeTrackingStore.getState().entries.find((e) => e.id === entry.id)?.notes).toBe("kept by hand")
   })
 
   it("grows the block while the timer runs and keeps it after stop", () => {
@@ -166,5 +178,20 @@ describe("pen color session", () => {
     expect(kept?.nowObjectives).toHaveLength(2)
     expect(kept?.nowObjectives?.[0].text).toBe("finish the nest")
     expect(kept?.nowObjectives?.[0].completedAt).toBeTruthy()
+  })
+
+  it("parks open objectives on stop and puts them back when that pen starts again", () => {
+    startPenColorSession("act-exercise", AT)
+    addPenColorNowObjective("carry this", AT)
+    const created = usePenColorSessionStore.getState().session?.nowObjectives?.[0].addedAt
+    stopPenColorSession(new Date(AT.getTime() + 120_000), { parkUnfinished: true })
+    expect(useUnfinishedObjectivesStore.getState().rows.map((row) => row.text)).toEqual(["carry this"])
+
+    startPenColorSession("act-exercise", new Date(AT.getTime() + 7 * 24 * 60 * 60_000))
+    const again = usePenColorSessionStore.getState().session?.nowObjectives?.[0]
+    expect(again?.text).toBe("carry this")
+    expect(again?.addedAt).toBe(created)
+    expect(again?.completedAt).toBeUndefined()
+    expect(useUnfinishedObjectivesStore.getState().rows).toEqual([])
   })
 })

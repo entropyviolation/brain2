@@ -38,8 +38,8 @@ export function phoneStamp(source: PhoneSyncSource, sourceId: string): { kind: t
 
 /**
  * Pen id for a person (or a bare number) on iPhone Texts / iPhone Calls. Same
- * ids as the BIM `text:` / `call:` verbs. People I Know uses the call pen to
- * count synced calls as time together (`personTimePenIds`).
+ * ids as the BIM `text:` / `call:` verbs. People I Know reads these pens for
+ * Last called and Last texted (`lib/person-contact.ts`), not time together.
  */
 export function phonePenId(kind: "text" | "call", name: string): string {
   return `iphone-${kind}-${slugApp(name)}`

@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
-import { personTimePenIds } from "@/lib/people-i-know"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { penHandle, relinkPhonePens, splitHandles, twinPenId, unlinkedPhoneHandles } from "./person-links"
 import { applyPhoneRecords } from "./write"
@@ -94,14 +93,12 @@ describe("phone sync with links", () => {
     expect(new Set(useTimeTrackingStore.getState().entries.map((e) => e.penId)).size).toBe(1)
   })
 
-  it("keeps one call pen across a rename and counts it as time together", () => {
+  it("keeps one call pen across a rename", () => {
     applyPhoneRecords([call("c1", "+15551234567")], [{ id: "p1", name: "Ana", phones: ["5551234567"] }])
     applyPhoneRecords([call("c2", "+15551234567")], [{ id: "p1", name: "Ana Ruiz", phones: ["5551234567"] }])
     const callPens = pens("iphone-calls")
     expect(callPens).toHaveLength(1)
     expect(callPens[0]).toMatchObject({ id: "iphone-call-ana", name: "Ana Ruiz", personId: "p1" })
-    const ids = personTimePenIds({ id: "p1", title: "Ana Ruiz", description: "", personPipelines: undefined }, useTimeTrackingStore.getState().scopes)
-    expect(ids).toContain("iphone-call-ana")
   })
 
   it("does not stamp a number on a pen matched by name only", () => {

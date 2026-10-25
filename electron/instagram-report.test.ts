@@ -220,6 +220,112 @@ describe("report state across origins", () => {
     expect(out.indexOf("brain2")).toBeLessThan(out.indexOf("REPORT"))
     expect(out.startsWith('<!doctype html><html lang="en"><head><script>')).toBe(true)
     expect(out).not.toMatch(/"<\/script>"/)
+    expect(out).toContain("open-account")
     expect(out.replace(/<script>\/\* brain2 \*\/.*?<\/script>/, "")).toBe(html)
+  })
+})
+
+type IgDrive = {
+  parseMetaFolderName: (n: string) => { key: string; date: string; id: string } | null
+  googleDriveDirs: (home: string) => string[]
+  watchedDirs: (config: Record<string, unknown>, o?: { home?: string }) => string[]
+  scanForExports: (dirs: string[]) => Array<{ key: string; date: string; kind: string; accountUnknown?: boolean; paths: string[] }>
+  pickExportToImport: (c: unknown[], state: Record<string, unknown>, config: Record<string, unknown>) => { key: string } | null
+  createInstagramWatcher: (o: { root: string; run: Run; now?: () => number; intervalMs?: number; home?: string }) => {
+    scan: () => Promise<{ ok: boolean; imported?: boolean }>
+    stop: () => void
+  }
+  saveConfigPatch: (root: string, patch: Record<string, unknown>) => unknown
+  exportAccount: (exportRoot: string) => string
+}
+const igd = nodeRequire("./instagram-report.js") as IgDrive
+const archive = nodeRequire("./instagram-archive.js") as { isArchived: (root: string, dir: string) => boolean }
+
+describe("Google Drive scheduled export", () => {
+  function myDrive() {
+    const d = path.join(home, "Library", "CloudStorage", "GoogleDrive-me@example.com", "My Drive")
+    fs.mkdirSync(d, { recursive: true })
+    return d
+  }
+
+  it("reads Meta's folder name as the export date", () => {
+    expect(igd.parseMetaFolderName("meta-2026-Oct-22-20-23-37")).toEqual({ key: "meta-2026-Oct-22-20-23-37", date: "2026-10-22", id: "202337" })
+    expect(igd.parseMetaFolderName("meta-2026-Foo-22-20-23-37")).toBeNull()
+    expect(igd.parseMetaFolderName("instagram-x-2026-10-22-a")).toBeNull()
+  })
+
+  it("finds My Drive for each signed-in account and watches it by default", () => {
+    const drive = myDrive()
+    expect(igd.googleDriveDirs(home)).toEqual([drive])
+    expect(igd.watchedDirs({ ...config, watchGoogleDrive: true }, { home })).toEqual([downloads, drive])
+    expect(igd.watchedDirs({ ...config, watchGoogleDrive: false }, { home })).toEqual([downloads])
+  })
+
+  it("takes an unzipped export, an instagram-* zip, or plain zips inside a meta folder", () => {
+    const drive = myDrive()
+    makeExportFolder(path.join(drive, "meta-2026-Oct-22-20-23-37"), "export")
+    const inner = path.join(drive, "meta-2026-Oct-23-20-00-00")
+    fs.mkdirSync(inner)
+    fs.writeFileSync(path.join(inner, "instagram-_entropyviolation_-2026-10-23-abc.zip"), "zip")
+    const plain = path.join(drive, "meta-2026-Oct-24-20-00-00")
+    fs.mkdirSync(plain)
+    fs.writeFileSync(path.join(plain, "part-2.zip"), "b")
+    fs.writeFileSync(path.join(plain, "part-1.zip"), "a")
+    const partial = path.join(drive, "meta-2026-Oct-25-20-00-00")
+    fs.mkdirSync(partial)
+    fs.writeFileSync(path.join(partial, "x.zip.part"), "a")
+
+    const c = igd.scanForExports([drive])
+    expect(c.map((x) => [x.key, x.date, x.kind])).toEqual([
+      ["meta-2026-Oct-22-20-23-37", "2026-10-22", "dir"],
+      ["meta-2026-Oct-23-20-00-00", "2026-10-23", "zip"],
+      ["meta-2026-Oct-24-20-00-00", "2026-10-24", "zip"],
+    ])
+    expect(c[2].paths.map((p) => path.basename(p))).toEqual(["part-1.zip", "part-2.zip"])
+    // No account in Meta's folder name: it is not filtered out by the handle.
+    expect(igd.pickExportToImport(c, { imported: {} }, config)?.key).toBe("meta-2026-Oct-24-20-00-00")
+  })
+
+  it("builds the newest export and still archives the ones it skipped", async () => {
+    const drive = myDrive()
+    makeExportFolder(path.join(drive, "meta-2026-Oct-22-20-23-37"), "export")
+    makeExportFolder(path.join(drive, "meta-2026-Oct-23-20-23-37"), "export")
+    makeExportFolder(path.join(drive, "meta-2026-Oct-24-20-23-37"), "export")
+    igd.saveConfigPatch(root, { ...config, downloadsDir: downloads })
+    let t = 1_000_000
+    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
+    // Drive may still be syncing a meta folder, so it waits for the tree to hold still.
+    expect((await w.scan()).imported).toBe(false)
+    t += ig.STABLE_MS
+    const r = await w.scan()
+    w.stop()
+    expect(r.imported).toBe(true)
+    expect(ig.loadState(root).current?.exportDate).toBe("2026-10-24")
+    for (const d of ["2026-10-22-202337", "2026-10-23-202337", "2026-10-24-202337"]) expect(archive.isArchived(root, d)).toBe(true)
+    // Skipped exports are archived, not kept as copies.
+    expect(fs.existsSync(path.join(root, "exports", "2026-10-22-202337"))).toBe(false)
+  })
+
+  it("reads the username in an export, and skips a meta folder for another account", async () => {
+    const drive = myDrive()
+    const other = makeExportFolder(path.join(drive, "meta-2026-Oct-22-20-23-37"), "export")
+    const info = path.join(other, "personal_information", "personal_information")
+    fs.mkdirSync(info, { recursive: true })
+    fs.writeFileSync(
+      path.join(info, "personal_information.json"),
+      JSON.stringify({ profile_user: [{ string_map_data: { Username: { value: "someone_else" } } }] }),
+    )
+    expect(igd.exportAccount(other)).toBe("someone_else")
+    igd.saveConfigPatch(root, { ...config, downloadsDir: downloads, handle: "_entropyviolation_" })
+    let t = 1_000_000
+    const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
+    await w.scan()
+    t += ig.STABLE_MS
+    const r = await w.scan()
+    w.stop()
+    expect(r.imported).toBe(false)
+    expect(ig.loadState(root).current).toBeNull()
+    expect(archive.isArchived(root, "2026-10-22-202337")).toBe(false)
+    expect(fs.existsSync(path.join(root, "exports", "2026-10-22-202337"))).toBe(false)
   })
 })
