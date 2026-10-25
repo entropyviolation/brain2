@@ -4,8 +4,10 @@
  * Shown while a task rides the Tracking pen clock (`lib/task-clock.ts`). One
  * thin strip of dark glass, the Just Start family: pen swatch, `Task › step`,
  * the step's estimate, the live clock, Objectives (tied to steps), Just Start,
- * Pause / Resume, and Stop. Stop asks once what to do with free objectives:
- * keep them as steps of the task, or leave them on the Tracking block.
+ * Pause / Resume, and Stop. Stop first asks whether to save still-open
+ * objectives for the next time this task or subtask is tracked. Then, when a
+ * line is not a step yet, it asks whether to keep those free objectives as
+ * steps of the task or leave them on the Tracking block.
  * Then the end-of-sitting strip (`SittingEnd`) pauses the clock and says
  * how long you sat and where you left it; its Keep or Skip stops the clock.
  *
@@ -26,17 +28,23 @@ import { usePenColorSessionClock } from "@/components/Home/Tracking/pen-color-no
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatElapsedClock, isSessionPaused, sessionElapsedMs } from "@/lib/operation-work-session"
 import {
+  addPenColorCompletedObjective,
   addPenColorNowObjective,
+  attachPenNowObjective,
   editPenColorNowObjectiveText,
   pausePenColorSession,
   removePenColorNowObjective,
   resumePenColorSession,
+  savePenObjectiveForLater,
   stopPenColorSession,
   tiePenColorNowObjective,
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useSessionPlanStore, parkLiveSession } from "@/lib/session-plan-store"
+import { activeNowObjectives } from "@/lib/now-objective"
+import { attachChoicesForPen } from "@/lib/unfinished-objectives"
+import { useTaskStore } from "@/lib/task-store"
 import { openSession } from "@/lib/session-open-store"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
 import JustStartMode from "./JustStartMode"
@@ -48,7 +56,9 @@ export default function FocusBar() {
   const { session, now } = usePenColorSessionClock()
   const clock = useClockTask(session)
   const scopes = useTimeTrackingStore((s) => s.scopes)
-  const [asking, setAsking] = useState(false)
+  const tasks = useTaskStore((s) => s.tasks)
+  const [asking, setAsking] = useState<false | "save" | "steps">(false)
+  const [parkOnStop, setParkOnStop] = useState(false)
   const [justStart, setJustStart] = useState(false)
   const [satMinutes, setSatMinutes] = useState<number | null>(null)
   const [parkNote, setParkNote] = useState<string | null>(null)
@@ -57,8 +67,10 @@ export default function FocusBar() {
   if (!session?.taskId || !clock.task) return null
   const pen = scopes.find((scope) => scope.id === session.scopeId)?.pens.find((p) => p.id === session.penId)
   const paused = isSessionPaused(session)
-  const free = (session.nowObjectives ?? []).filter((row) => !row.stepId)
+  const active = activeNowObjectives(session.nowObjectives)
+  const free = (session.nowObjectives ?? []).filter((row) => !row.stepId && !row.completedAt)
   const estimate = clock.step?.estimatedDuration
+  const attachChoices = attachChoicesForPen(tasks, session.penId, session.taskId)
 
   // The end-of-sitting strip (Phase 15 A): pause so the minutes hold still, stop on Keep or Skip.
   const endSitting = () => {
@@ -69,11 +81,21 @@ export default function FocusBar() {
   }
 
   const stop = () => {
-    if (free.length && !asking) {
-      setAsking(true)
+    if (active.length && !asking) {
+      setAsking("save")
+      return
+    }
+    if (free.length && asking !== "steps") {
+      setAsking("steps")
       return
     }
     endSitting()
+  }
+
+  const answerSave = (park: boolean) => {
+    setParkOnStop(park)
+    if (free.length) setAsking("steps")
+    else endSitting()
   }
 
   const keepAsSteps = () => {
@@ -100,7 +122,7 @@ export default function FocusBar() {
           minutes={satMinutes}
           onDone={() => {
             setSatMinutes(null)
-            stopPenColorSession()
+            stopPenColorSession(new Date(), parkOnStop ? { parkUnfinished: true } : undefined)
           }}
         />
       ) : parkNote !== null ? (
@@ -128,7 +150,21 @@ export default function FocusBar() {
             Keep going
           </button>
         </div>
-      ) : asking ? (
+      ) : asking === "save" ? (
+        <div className="focus-bar-ask" role="alertdialog" aria-label="Save unfinished objectives">
+          <span className="focus-bar-ask-text">
+            {active.length === 1
+              ? "1 objective is still open. Save it for the next time you track this?"
+              : `${active.length} objectives are still open. Save them for the next time you track this?`}
+          </span>
+          <button data-no95 type="button" className="focus-bar-key is-primary" onClick={() => answerSave(true)}>
+            Yes
+          </button>
+          <button data-no95 type="button" className="focus-bar-key" onClick={() => answerSave(false)}>
+            No
+          </button>
+        </div>
+      ) : asking === "steps" ? (
         <div className="focus-bar-ask" role="alertdialog" aria-label="Free objectives">
           <span className="focus-bar-ask-text">
             {free.length === 1 ? "1 objective isn't a step yet." : `${free.length} objectives aren't steps yet.`}
@@ -163,9 +199,13 @@ export default function FocusBar() {
             objectives={session.nowObjectives}
             contextName={clock.path}
             onAdd={(text) => addPenColorNowObjective(text)}
+            onAddCompleted={(text) => addPenColorCompletedObjective(text)}
             onEditText={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleComplete={(id) => togglePenColorNowObjectiveComplete(id)}
             onRemove={(id) => removePenColorNowObjective(id)}
+            onSaveForLater={(id) => savePenObjectiveForLater(id)}
+            onAttach={(id, target) => attachPenNowObjective(id, target)}
+            attachChoices={attachChoices}
             stepChoices={clock.stepChoices}
             onTieStep={clock.onTieStep}
             onSetCompletes={clock.onSetCompletes}

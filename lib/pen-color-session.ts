@@ -10,6 +10,9 @@
  * A task may ride the clock (`taskId` / `stepId`, set by `lib/task-clock.ts`).
  * Then the painted blocks carry the task and step, Stop logs the span on the
  * task (`lib/task-clock-log.ts`), and objectives tied to steps tick them.
+ * Each painted block's notes say it was added from Working On Now, with the
+ * task and the subtasks and objectives finished on this sitting. A note you
+ * rewrote by hand is left as you wrote it.
  */
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -24,7 +27,10 @@ import {
 } from "@/lib/operation-work-session"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
 import {
+  addCompletedNowObjective,
   addNowObjective,
+  attachNowObjective,
+  bankOpenStint,
   compactNowObjectives,
   editNowObjectiveText,
   parseObjectiveClock,
@@ -35,10 +41,21 @@ import {
   type NowObjective,
 } from "@/lib/now-objective"
 import {
+  createTaskForObjective,
+  homeForObjective,
+  homesForPen,
+  homesForTask,
+  mergeResumed,
+  toParked,
+} from "@/lib/unfinished-objectives"
+import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
+import {
   addStepForObjective,
   applyObjectiveToStep,
+  clockNoteField,
   logTaskClockSpan,
   matchStepForObjective,
+  workingOnNowBlockNote,
 } from "@/lib/task-clock-log"
 import { sessionElapsedMs as elapsedMsOf } from "@/lib/operation-work-session"
 
@@ -54,12 +71,27 @@ export {
   sessionActiveEnd,
 } from "@/lib/operation-work-session"
 
-function writeObjectivesOnto(ids: string[], nowObjectives: NowObjective[] | undefined): void {
+/** Title, task, objectives, and the Working On Now note. Skips a note you rewrote. */
+function stampClockEntries(
+  session: Pick<PenColorSession, "title" | "taskId" | "stepId" | "nowObjectives">,
+  ids: string[],
+): void {
   const tracking = useTimeTrackingStore.getState()
-  const next = compactNowObjectives(nowObjectives)
+  const note = workingOnNowBlockNote(session)
+  const nowObjectives = compactNowObjectives(session.nowObjectives)
   for (const id of ids) {
-    tracking.updateEntry(id, { nowObjectives: next })
+    const entry = tracking.entries.find((row) => row.id === id)
+    tracking.updateEntry(id, {
+      title: session.title,
+      nowObjectives,
+      ...taskFields(session),
+      ...clockNoteField(entry?.notes, note),
+    })
   }
+}
+
+function writeObjectivesOnto(session: PenColorSession): void {
+  stampClockEntries(session, session.trackingEntryIds ?? [])
 }
 
 function patchPenColorObjectives(
@@ -71,7 +103,7 @@ function patchPenColorObjectives(
   const nowObjectives = mutated.length ? mutated : undefined
   const next: PenColorSession = { ...session, nowObjectives }
   usePenColorSessionStore.getState().setSession(next)
-  writeObjectivesOnto(session.trackingEntryIds ?? [], nowObjectives)
+  writeObjectivesOnto(next)
   return next
 }
 
@@ -109,7 +141,6 @@ function paintSlices(
     tracking.paintMinutes(slice.date, session.scopeId, slice.startMin, slice.endMin, session.penId, undefined, spanId)
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) {
-      tracking.updateEntry(id, { title: session.title, nowObjectives, ...taskFields(session) })
       ids.push(id)
     }
   }
@@ -147,14 +178,7 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
       `pen-color-${session.startedAt}`,
     )
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
-    if (id) {
-      tracking.updateEntry(id, {
-        title: session.title,
-        nowObjectives: compactNowObjectives(session.nowObjectives),
-        ...taskFields(session),
-      })
-      ids.push(id)
-    }
+    if (id) ids.push(id)
   }
   return ids
 }
@@ -187,21 +211,43 @@ export function startPenColorSession(penId: string, now = new Date()): PenColorS
       trackingEntryIds: [],
     }
     const trackingEntryIds = paintSlices(slices, draft)
-    const session: PenColorSession = { ...draft, trackingEntryIds }
+    let session: PenColorSession = { ...draft, trackingEntryIds }
+    const resumed = mergeResumed(
+      undefined,
+      useUnfinishedObjectivesStore.getState().take(homesForPen(located.scopeId, located.pen.id)),
+      now,
+    )
+    if (resumed?.length) session = { ...session, nowObjectives: resumed }
     usePenColorSessionStore.getState().setSession(session)
+    if (resumed?.length) writeObjectivesOnto(session)
     syncSliceDays(trackingEntryIds, slices)
     return session
   })
 }
 
-/** Close the live pen block at active end and leave the painted minutes editable. */
-export function stopPenColorSession(now = new Date()): PenColorSession | null {
+/**
+ * Close the live pen block at active end and leave the painted minutes editable.
+ * `parkUnfinished` banks the open stints and copies still-open objectives onto
+ * the unfinished list for this pen, task, or subtask. They stay on this block.
+ */
+export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: boolean }): PenColorSession | null {
   return runAsAction("stop pen color", () => {
-    const session = usePenColorSessionStore.getState().session
+    let session = usePenColorSessionStore.getState().session
     if (!session) return null
+    const end = sessionActiveEnd(session, now)
+    if (opts?.parkUnfinished && session.nowObjectives?.length) {
+      const banked = session.nowObjectives.map((row) => bankOpenStint(row, end))
+      const parked = banked.flatMap((row) => {
+        const home = homeForObjective(row, session!)
+        const packed = home ? toParked(row, home) : null
+        return packed ? [packed] : []
+      })
+      if (parked.length) useUnfinishedObjectivesStore.getState().upsert(parked)
+      session = { ...session, nowObjectives: banked }
+      usePenColorSessionStore.getState().setSession(session)
+    }
 
     let ids = session.trackingEntryIds ?? []
-    const end = sessionActiveEnd(session, now)
     if (locatePen(session.penId)) {
       const slices = splitIntoDaySlices(new Date(session.startedAt), end)
       ids = paintSlices(slices, session)
@@ -211,7 +257,12 @@ export function stopPenColorSession(now = new Date()): PenColorSession | null {
     usePenColorSessionStore.getState().clearSession()
     if (session.taskId) {
       logTaskClockSpan(
-        { taskId: session.taskId, stepId: session.stepId, trackingEntryIds: ids },
+        {
+          taskId: session.taskId,
+          stepId: session.stepId,
+          trackingEntryIds: ids,
+          nowObjectives: session.nowObjectives,
+        },
         new Date(session.startedAt),
         now,
         elapsedMsOf(session, now.getTime()),
@@ -289,6 +340,57 @@ export function addPenColorNowObjective(text: string, now = new Date(), stepId?:
   )
 }
 
+/** Already done during this sitting. Start is unknown, and not before the session began. */
+export function addPenColorCompletedObjective(text: string, now = new Date()): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  return withoutUndo(() =>
+    patchPenColorObjectives((list) => addCompletedNowObjective(list, text, new Date(session.startedAt), now)),
+  )
+}
+
+/**
+ * Take the objective off this sitting without counting the open stint, and
+ * park it for the task, subtask, pen, or operation it belongs to.
+ */
+export function savePenObjectiveForLater(id: string): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  const row = session.nowObjectives?.find((item) => item.id === id)
+  if (!row || row.completedAt) return session
+  const home = homeForObjective(row, session)
+  const parked = home ? toParked(row, home) : null
+  return runAsAction("save objective for later", () => {
+    if (parked) useUnfinishedObjectivesStore.getState().upsert([parked])
+    return patchPenColorObjectives((list) => removeNowObjective(list, id))
+  })
+}
+
+/** Attach the objective to a task or one of its steps. `createName` makes the task first. */
+export function attachPenNowObjective(
+  id: string,
+  target: { taskId: string; stepId?: string } | { createName: string },
+): PenColorSession | null {
+  const session = usePenColorSessionStore.getState().session
+  if (!session) return null
+  return runAsAction("attach objective", () => {
+    let taskId: string | undefined
+    let stepId: string | undefined
+    if ("createName" in target) {
+      taskId =
+        createTaskForObjective(target.createName, { scopeId: session.scopeId, penId: session.penId }) ?? undefined
+    } else {
+      taskId = target.taskId
+      stepId = target.stepId
+    }
+    if (!taskId) return session
+    const next = patchPenColorObjectives((list) => attachNowObjective(list, id, { taskId: taskId!, stepId }))
+    const row = next?.nowObjectives?.find((item) => item.id === id)
+    if (row?.completedAt) applyObjectiveToStep({ taskId: row.taskId ?? next?.taskId, stepId: row.stepId }, row)
+    return next
+  })
+}
+
 /**
  * Point an objective at a step of the task on the clock. `"new"` makes a step
  * from the objective's text (beside the step on the clock); `undefined` unties it.
@@ -320,7 +422,7 @@ export function tiePenColorNowObjective(id: string, stepId: string | "new" | und
 export function setPenColorNowObjectiveCompletes(id: string, completes: boolean): PenColorSession | null {
   const next = withoutUndo(() => patchPenColorObjectives((list) => setNowObjectiveCompletes(list, id, completes)))
   const row = next?.nowObjectives?.find((o) => o.id === id)
-  if (next?.taskId && row?.completedAt) applyObjectiveToStep(next, row)
+  if ((next?.taskId || row?.taskId) && row?.completedAt) applyObjectiveToStep(next ?? {}, row)
   return next
 }
 
@@ -331,7 +433,7 @@ export function editPenColorNowObjectiveText(id: string, text: string): PenColor
 export function togglePenColorNowObjectiveComplete(id: string, now = new Date()): PenColorSession | null {
   const next = withoutUndo(() => patchPenColorObjectives((list) => toggleNowObjectiveComplete(list, id, now)))
   const row = next?.nowObjectives?.find((o) => o.id === id)
-  if (next?.taskId && row) applyObjectiveToStep(next, row)
+  if (row && (row.taskId || next?.taskId)) applyObjectiveToStep(next ?? {}, row)
   return next
 }
 
@@ -344,21 +446,24 @@ export function setPenColorSessionTask(
 ): PenColorSession | null {
   const session = usePenColorSessionStore.getState().session
   if (!session) return null
-  const next: PenColorSession = { ...session }
+  let next: PenColorSession = { ...session }
   if (ref) {
     next.taskId = ref.taskId
     if (ref.stepId) next.stepId = ref.stepId
     else delete next.stepId
     if (ref.title) next.title = ref.title
+    const resumed = mergeResumed(
+      next.nowObjectives,
+      useUnfinishedObjectivesStore.getState().take(homesForTask(ref.taskId, ref.stepId)),
+      new Date(),
+    )
+    if (resumed !== next.nowObjectives) next = { ...next, nowObjectives: resumed }
   } else {
     delete next.taskId
     delete next.stepId
   }
   usePenColorSessionStore.getState().setSession(next)
-  const tracking = useTimeTrackingStore.getState()
-  for (const entryId of next.trackingEntryIds ?? []) {
-    tracking.updateEntry(entryId, { title: next.title, taskId: next.taskId, stepId: next.stepId })
-  }
+  stampClockEntries(next, next.trackingEntryIds ?? [])
   return next
 }
 

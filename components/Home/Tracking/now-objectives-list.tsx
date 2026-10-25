@@ -10,14 +10,24 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import type { NowObjective } from "@/lib/now-objective"
-import { activeNowObjectives, objectiveCompletesTarget } from "@/lib/now-objective"
+import { activeNowObjectives, objectiveCompletesTarget, objectiveWorkedMs } from "@/lib/now-objective"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
 export interface NowObjectivesHandlers {
   onAdd: (text: string) => void
+  /** Log an objective already finished during this sitting. Start is unknown. */
+  onAddCompleted?: (text: string) => void
   onEditText: (id: string, text: string) => void
   onToggleComplete: (id: string) => void
   onRemove?: (id: string) => void
+  /** Park it for the task or subtask and take it off this sitting. The open stint does not count. */
+  onSaveForLater?: (id: string) => void
+  /**
+   * Attach to a task or subtask of the current activity, or create a task
+   * (`createName`) from the search text.
+   */
+  onAttach?: (id: string, target: { taskId: string; stepId?: string } | { createName: string }) => void
+  attachChoices?: { taskId: string; stepId?: string; label: string }[]
   /**
    * With a task on the clock: its open steps, and how to tie an objective to
    * one (`"new"` makes a step from the objective; `undefined` unties it).
@@ -40,10 +50,15 @@ interface NowObjectivesListProps extends NowObjectivesHandlers {
 const clockLabel = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
 
-/** "3:12 PM → 3:40 PM · 28m" for one objective. */
-export function objectiveSpanLabel(row: Pick<NowObjective, "addedAt" | "completedAt">): string {
+/** "3:12 PM → 3:40 PM · 28m" for one objective. Unknown starts name no duration. */
+export function objectiveSpanLabel(
+  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt">,
+  now = new Date(),
+): string {
   if (!row.completedAt) return `added ${clockLabel(row.addedAt)}`
-  const mins = Math.max(0, Math.round((Date.parse(row.completedAt) - Date.parse(row.addedAt)) / 60_000))
+  if (row.startUnknown) return `completed ${clockLabel(row.completedAt)} · start unknown`
+  const ms = objectiveWorkedMs(row, now) ?? Math.max(0, Date.parse(row.completedAt) - Date.parse(row.addedAt))
+  const mins = Math.max(0, Math.round(ms / 60_000))
   return `${clockLabel(row.addedAt)} → ${clockLabel(row.completedAt)} · ${mins}m`
 }
 
@@ -161,17 +176,30 @@ function GrowText({ value, onChange, onBlur }: { value: string; onChange: (v: st
 function ObjectivesEditor({
   objectives,
   onAdd,
+  onAddCompleted,
   onEditText,
   onToggleComplete,
   onRemove,
+  onSaveForLater,
+  onAttach,
+  attachChoices,
   stepChoices,
   onTieStep,
   onSetCompletes,
   autoFocusAdd,
 }: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean }) {
   const [draft, setDraft] = useState("")
+  const [hideCompleted, setHideCompleted] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [attachId, setAttachId] = useState<string | null>(null)
+  const [attachQuery, setAttachQuery] = useState("")
   const addRef = useRef<HTMLInputElement>(null)
   const list = objectives ?? []
+  const shown = hideCompleted ? list.filter((row) => !row.completedAt) : list
+  const attachWords = attachQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const attachShown = (attachChoices ?? []).filter((choice) =>
+    attachWords.every((word) => choice.label.toLowerCase().includes(word)),
+  )
 
   useEffect(() => {
     if (autoFocusAdd) addRef.current?.focus()
@@ -184,16 +212,50 @@ function ObjectivesEditor({
     setDraft("")
   }
 
+  const submitCompleted = () => {
+    const text = draft.trim()
+    if (!text || !onAddCompleted) return
+    onAddCompleted(text)
+    setDraft("")
+  }
+
+  const openAttach = (row: NowObjective) => {
+    setOpenId(row.id)
+    setAttachId(row.id)
+    setAttachQuery(row.text)
+  }
+
   return (
     <div className="trk-now-obj-editor" data-ui-name="Objectives for right now">
+      <div className="trk-now-obj-hide-row">
+        <button
+          type="button"
+          className="trk-now-obj-hide"
+          aria-pressed={hideCompleted}
+          onClick={() => setHideCompleted((value) => !value)}
+        >
+          {hideCompleted ? "Show completed" : "Hide completed"}
+        </button>
+      </div>
       <ul className="trk-now-obj-list" aria-label="Objectives for right now">
         {list.length === 0 ? (
           <li className="trk-now-obj-empty">What are you trying to finish this instant?</li>
+        ) : shown.length === 0 ? (
+          <li className="trk-now-obj-empty">Completed objectives are hidden.</li>
         ) : (
-          list.map((row) => {
+          shown.map((row) => {
             const done = Boolean(row.completedAt)
+            const open = openId === row.id
             return (
-              <li key={row.id} className={done ? "trk-now-obj-row done" : "trk-now-obj-row"}>
+              <li
+                key={row.id}
+                className={done ? "trk-now-obj-row done" : open ? "trk-now-obj-row is-open" : "trk-now-obj-row"}
+                onClick={(event) => {
+                  const target = event.target as HTMLElement
+                  if (target.closest("textarea, input, button, select, a")) return
+                  setOpenId((current) => (current === row.id ? null : row.id))
+                }}
+              >
                 <button
                   type="button"
                   className="trk-now-obj-check"
@@ -210,6 +272,69 @@ function ObjectivesEditor({
                     }}
                   />
                   <div className="trk-now-obj-meta">{objectiveSpanLabel(row)}</div>
+                  {open ? (
+                    <div className="trk-now-obj-detail">
+                      {onRemove ? (
+                        <button type="button" className="trk-now-obj-mode" onClick={() => onRemove(row.id)}>
+                          Delete
+                        </button>
+                      ) : null}
+                      {!done && onSaveForLater ? (
+                        <button type="button" className="trk-now-obj-mode" onClick={() => onSaveForLater(row.id)}>
+                          Save for later
+                        </button>
+                      ) : null}
+                      {onAttach ? (
+                        <button
+                          type="button"
+                          className="trk-now-obj-mode"
+                          aria-expanded={attachId === row.id}
+                          onClick={() => (attachId === row.id ? setAttachId(null) : openAttach(row))}
+                        >
+                          Attach to task/subtask
+                        </button>
+                      ) : null}
+                      {onAttach && attachId === row.id ? (
+                        <div className="trk-now-obj-picker">
+                          <input
+                            className="trk-now-obj-add-field"
+                            value={attachQuery}
+                            aria-label={`Find a task for ${row.text}`}
+                            placeholder="Search tasks"
+                            onChange={(event) => setAttachQuery(event.target.value)}
+                          />
+                          <ul className="trk-now-obj-picker-list" role="listbox" aria-label="Tasks and subtasks">
+                            {attachShown.map((choice) => (
+                              <li key={`${choice.taskId}:${choice.stepId ?? ""}`}>
+                                <button
+                                  type="button"
+                                  role="option"
+                                  onClick={() => {
+                                    onAttach(row.id, { taskId: choice.taskId, stepId: choice.stepId })
+                                    setAttachId(null)
+                                  }}
+                                >
+                                  {choice.label}
+                                </button>
+                              </li>
+                            ))}
+                            {attachShown.length === 0 ? <li className="trk-now-obj-empty">No task matches.</li> : null}
+                          </ul>
+                          <button
+                            type="button"
+                            className="ops-btn trk-now-obj-add-btn"
+                            disabled={!attachQuery.trim()}
+                            onClick={() => {
+                              onAttach(row.id, { createName: attachQuery.trim() })
+                              setAttachId(null)
+                            }}
+                          >
+                            {attachQuery.trim() ? `Create “${attachQuery.trim()}”` : "Create task"}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {onTieStep ? (
                     <div className="trk-now-obj-tie">
                       <StepSearchPicker
@@ -261,9 +386,21 @@ function ObjectivesEditor({
             }
           }}
         />
-        <button type="button" className="ops-btn trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
-          Add
-        </button>
+        <div className="trk-now-obj-add-actions">
+          <button type="button" className="ops-btn trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
+            Add objective
+          </button>
+          {onAddCompleted ? (
+            <button
+              type="button"
+              className="ops-btn trk-now-obj-add-btn"
+              disabled={!draft.trim()}
+              onClick={submitCompleted}
+            >
+              Completed objective
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   )
@@ -272,9 +409,13 @@ function ObjectivesEditor({
 export function NowObjectivesList({
   objectives,
   onAdd,
+  onAddCompleted,
   onEditText,
   onToggleComplete,
   onRemove,
+  onSaveForLater,
+  onAttach,
+  attachChoices,
   stepChoices,
   onTieStep,
   onSetCompletes,
@@ -346,9 +487,13 @@ export function NowObjectivesList({
         <ObjectivesEditor
           objectives={objectives}
           onAdd={onAdd}
+          onAddCompleted={onAddCompleted}
           onEditText={onEditText}
           onToggleComplete={onToggleComplete}
           onRemove={onRemove}
+          onSaveForLater={onSaveForLater}
+          onAttach={onAttach}
+          attachChoices={attachChoices}
           stepChoices={stepChoices}
           onTieStep={onTieStep}
           onSetCompletes={onSetCompletes}
@@ -376,9 +521,13 @@ export function NowObjectivesList({
             <ObjectivesEditor
               objectives={objectives}
               onAdd={onAdd}
+              onAddCompleted={onAddCompleted}
               onEditText={onEditText}
               onToggleComplete={onToggleComplete}
               onRemove={onRemove}
+              onSaveForLater={onSaveForLater}
+              onAttach={onAttach}
+              attachChoices={attachChoices}
               stepChoices={stepChoices}
               onTieStep={onTieStep}
               onSetCompletes={onSetCompletes}

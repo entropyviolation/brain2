@@ -5165,13 +5165,87 @@ textarea.trk-now-obj-text {
 
 .trk-now-obj-add {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trk-now-obj-add-actions {
+  display: flex;
   gap: 4px;
   min-width: 0;
 }
 
 .trk-now-obj-add-btn {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+}
+
+.trk-now-obj-hide-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trk-now-obj-hide {
+  padding: 0 6px;
+  border: 1px solid #808080;
+  border-radius: 2px;
+  background: #e8e6e0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1e2a24;
+  cursor: pointer;
+}
+
+.trk-now-obj-hide[aria-pressed="true"] {
+  background: #cfc;
+}
+
+.trk-now-obj-row.is-open {
+  background: #f4f4f0;
+}
+
+.trk-now-obj-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trk-now-obj-stop-back {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.trk-now-obj-stop {
+  width: min(22rem, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid #404040;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d4d0c8 0%, #c0c0c0 100%);
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 #808080,
+    2px 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.trk-now-obj-stop p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #111;
+}
+
+.trk-now-obj-stop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .trk-now-obj-inline {

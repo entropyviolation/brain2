@@ -893,8 +893,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `lib/time-tracking-store.ts` + `components/Home/Tracking/time-grid.tsx`; header
   **Now** opens a wide popup (`cognitive-state.tsx` → `components/header-tracking/`).
   The caption is **Recent now** or **Upcoming now**. **Current moment** (Activity,
-  Location, Mood, Company, with when each was last true, plus Working on, Events,
-  and Thought process) sits above the Tracking / Plan switch and is shared.
+  Location, Mood, Company, with when each was last true, plus the operation
+  Working on clock, an activity-pen clock, Events, Notes, and Thought process)
+  sits above the Tracking / Plan switch and is shared.
   **Update state** can extend one block through now or start a separate block
   at this minute. Tracking adds the day grid and day notes. Plan adds tasks,
   planned actions, and the day plan log. Home → Tracking stays the full desk.
@@ -1192,7 +1193,16 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   not write a Done row and does not replace the Operations clock.
   Both clocks carry **objectives for right now** (`lib/now-objective.ts`,
   `TimeEntry.nowObjectives`): a popup checklist on the live row (header now well
-  and desk strips) to add or mark complete without growing the fascia; the list
+  and desk strips). **Add objective** stamps this moment. **Completed objective**
+  logs a line already finished this sitting, start unknown, not before the
+  session began. Hide completed folds done rows of this sitting. A row click
+  (away from the text and the checkbox) offers Delete, Save for later, and
+  Attach to a task or subtask of the current activity (or a new task named from
+  the objective). Save for later parks it on that task or subtask
+  (`lib/unfinished-objectives-store.ts`) and takes it off this sitting, so the
+  wait does not count as work. Stop, while any objective is still open, asks
+  whether to save them. Yes puts them on that store and they are on the list
+  from the start the next time that pen, task, or subtask is tracked. The list
   mirrors onto the painted block and stays editable in the block editor. Not
   Home → Goals, and not the Tracking Objective pen (`so:`).
 - **Sleep / wake log** — ✅ `lib/sleep-log.ts` (pure model) + `lib/sleep-store.ts`
