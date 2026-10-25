@@ -16,6 +16,7 @@ File: `components/Analytics/TransitionsView.tsx`. Math: `signal-stats.ts` (`penT
 2. **Matrix.** Row = from-pen, column = to-pen, shade = P(to | from). Rows sum to 1.
    - Controls: P / Count toggle, Busiest first / A–Z order, Min N× slider that hides faint cells.
    - The diagonal is hatched. Staying is not a switch.
+   - Click a cell (or Enter on it) to list the days that switch happened on, with ×n. Click again or Clear to close. _Added 2026-10-25._
    - Pen names now show in full with an ellipsis. They were cut to 8 letters.
 3. **Where you land, where you leave.** Signed bars. Net = switches in − switches out. Right of the centre line = a pen you land on. Left = a pen you leave from. The right column adds next-pen predictability.
 4. **Return loops.** A → B → A on the same day. Loop rate = loops ÷ every three-step window. Top 8 pairs as bars.
@@ -37,5 +38,4 @@ From known work. No new search was run in this pass.
 
 ## Planned
 
-- Click a matrix cell to list the days that switch happened on.
 - Second-order chain (A → B → ?) once there is enough data.

@@ -25,6 +25,28 @@ export function penDaySequences(entries: TimeEntry[], dateKeys: readonly string[
   return out
 }
 
+/** Days on which `fromId` → `toId` happened, with how many times, newest first. */
+export function switchDays(
+  entries: TimeEntry[],
+  dateKeys: readonly string[],
+  scopeId: string,
+  fromId: string,
+  toId: string,
+): { date: string; count: number }[] {
+  const out: { date: string; count: number }[] = []
+  for (const date of dateKeys) {
+    let prev: string | null = null
+    let count = 0
+    for (const e of entriesForDay(entries, date, scopeId)) {
+      if (entryMinutes(e) <= 0 || e.penId === prev) continue
+      if (prev === fromId && e.penId === toId) count++
+      prev = e.penId
+    }
+    if (count) out.push({ date, count })
+  }
+  return out.reverse()
+}
+
 export type PenFlow = {
   id: string
   outCount: number

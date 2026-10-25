@@ -6,6 +6,7 @@ import {
   operationNeglect,
   penFlows,
   returnLoops,
+  switchDays,
   wakingRate,
   weekdayMeans,
 } from "./time-flow-stats"
@@ -22,6 +23,12 @@ describe("time-flow-stats", () => {
     expect(a).toMatchObject({ outCount: 4, inCount: 3, net: -1, exitBits: 1, predictability: 0 })
     expect(b).toMatchObject({ exitBits: 0, predictability: 1 })
     expect(c).toMatchObject({ outCount: 0, inCount: 2, predictability: null })
+  })
+
+  it("switchDays lists days for one from → to pair", () => {
+    const e = (id: string, date: string, penId: string, s: number) => ({ id, date, scopeId: "s", penId, startMin: s, endMin: s + 30 })
+    const entries = [e("1", "2026-10-01", "a", 0), e("2", "2026-10-01", "b", 30), e("3", "2026-10-01", "a", 60), e("4", "2026-10-01", "b", 90), e("5", "2026-10-02", "b", 0), e("6", "2026-10-02", "a", 30)]
+    expect(switchDays(entries, ["2026-10-01", "2026-10-02"], "s", "a", "b")).toEqual([{ date: "2026-10-01", count: 2 }])
   })
 
   it("returnLoops counts A→B→A per day", () => {
