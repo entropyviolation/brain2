@@ -39,6 +39,8 @@ const PARTIAL_SUFFIXES = [".crdownload", ".download", ".part", ".partial", ".tmp
 /** A zip must hold the same size and mtime this long before it is opened. */
 const STABLE_MS = 10_000
 const ARCHIVE_RETRY_MS = 60 * 60_000
+// Drive writes a daily export file by file, sometimes with long gaps.
+const DRIVE_STABLE_MS = 15 * 60_000
 const RUN_TIMEOUT_MS = 45 * 60_000
 
 /** Outside requests the report may make; both are opt-in inside the report. */
@@ -264,13 +266,16 @@ function treeStats(dir, { fs = nodeFs, limit = 50_000 } = {}) {
 }
 
 /**
- * One `meta-…` folder from a scheduled Drive export. Inside it, in this order:
- * an unzipped export, `instagram-…` zips or folders, or any zips (taken as
- * the parts of one export). Its name gives the date; the account is taken
- * from an `instagram-<account>-…` name inside when there is one.
+ * One `meta-…` folder from a scheduled Drive export. Meta keeps one such
+ * folder and adds each day's export inside it as an unzipped
+ * `instagram-<account>-<date>-<id>` folder (seen 2026-10-25), so every
+ * export inside is its own candidate. Also taken: the folder itself as one
+ * unzipped export, or plain zips as the parts of one export (named by the
+ * folder). Drive may still be syncing, so each candidate carries a tree
+ * fingerprint and one with no files yet is skipped.
  */
 function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
-  const base = { key: meta.key, account: "", accountUnknown: true, date: meta.date, id: meta.id, paths: [], size: 0, mtimeMs: 0 }
+  const base = { key: meta.key, account: "", accountUnknown: true, date: meta.date, id: meta.id, paths: [], size: 0, mtimeMs: 0, fromDrive: true }
   const st = (p) => {
     try {
       return fs.statSync(p)
@@ -278,26 +283,32 @@ function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
       return null
     }
   }
-  if (findExportRoot(folder, { fs, depth: 2 })) {
-    // Drive may still be syncing files into it, so the whole tree is the fingerprint.
-    const s = st(folder)
-    const t = treeStats(folder, { fs })
-    return { ...base, kind: "dir", paths: [folder], size: t.size, treeCount: t.count, mtimeMs: Math.max(t.mtimeMs, s ? s.mtimeMs : 0) }
+  const withTree = (c) => {
+    if (c.kind !== "dir") return c
+    const t = treeStats(c.paths[0], { fs })
+    if (!t.count) return null
+    const s = st(c.paths[0])
+    return { ...c, size: t.size, treeCount: t.count, mtimeMs: Math.max(t.mtimeMs, s ? s.mtimeMs : 0) }
+  }
+  if (findExportRoot(folder, { fs, depth: 0 })) {
+    const c = withTree({ ...base, kind: "dir", paths: [folder] })
+    return c ? [c] : []
   }
   const inner = scanForExports([folder], { fs })
-  if (inner.length) {
-    const c = inner[inner.length - 1]
-    return { ...c, key: meta.key, date: meta.date, id: meta.id, accountUnknown: false }
+  if (inner.length) return inner.map((c) => withTree({ ...c, fromDrive: true })).filter(Boolean)
+  if (findExportRoot(folder, { fs, depth: 2 })) {
+    const c = withTree({ ...base, kind: "dir", paths: [folder] })
+    return c ? [c] : []
   }
   let names = []
   try {
     names = fs.readdirSync(folder)
   } catch {
-    return null
+    return []
   }
-  if (names.some((n) => PARTIAL_SUFFIXES.some((s) => n.toLowerCase().endsWith(s)))) return null
+  if (names.some((n) => PARTIAL_SUFFIXES.some((s) => n.toLowerCase().endsWith(s)))) return []
   const zips = names.filter((n) => n.toLowerCase().endsWith(".zip")).sort()
-  if (!zips.length) return null
+  if (!zips.length) return []
   const c = { ...base, kind: "zip" }
   for (const z of zips) {
     const s = st(path.join(folder, z))
@@ -306,7 +317,7 @@ function scanMetaFolder(folder, meta, { fs = nodeFs } = {}) {
     c.size += s.size
     c.mtimeMs = Math.max(c.mtimeMs, s.mtimeMs)
   }
-  return c.paths.length ? c : null
+  return c.paths.length ? [c] : []
 }
 
 /**
@@ -327,8 +338,7 @@ function scanForExports(dirs, { fs = nodeFs } = {}) {
       if (PARTIAL_SUFFIXES.some((s) => e.name.toLowerCase().endsWith(s))) continue
       const meta = e.isDirectory() ? parseMetaFolderName(e.name) : null
       if (meta) {
-        const c = scanMetaFolder(path.join(dir, e.name), meta, { fs })
-        if (c) groups.set(c.key, c)
+        for (const c of scanMetaFolder(path.join(dir, e.name), meta, { fs })) groups.set(c.key, c)
         continue
       }
       const parsed = parseExportName(e.name)
@@ -396,14 +406,14 @@ function createStabilityTracker(now = () => Date.now()) {
   const seen = new Map()
   return {
     isStable(c) {
-      if (c.kind === "dir" && !c.accountUnknown) return true
+      if (c.kind === "dir" && !c.fromDrive) return true
       const fp = exportFingerprint(c)
       const prev = seen.get(c.key)
       if (!prev || prev.fp !== fp) {
         seen.set(c.key, { fp, since: now() })
         return false
       }
-      return now() - prev.since >= STABLE_MS
+      return now() - prev.since >= (c.fromDrive ? DRIVE_STABLE_MS : STABLE_MS)
     },
   }
 }
@@ -909,7 +919,7 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
     }
     if (!pick) return { ok: true, imported: false }
     if (!tracker.isStable(pick)) {
-      setTimeout(() => scan(), STABLE_MS + 500).unref?.()
+      setTimeout(() => scan(), (pick.fromDrive ? DRIVE_STABLE_MS : STABLE_MS) + 500).unref?.()
       return { ok: true, imported: false, waiting: pick.key }
     }
     running = true
@@ -976,6 +986,7 @@ function createInstagramWatcher({ root, fs = nodeFs, run = defaultRun, onChange 
 
 module.exports = {
   REPORT_CSP,
+  DRIVE_STABLE_MS,
   STABLE_MS,
   UI_STATE_KEYS,
   accountMatches,

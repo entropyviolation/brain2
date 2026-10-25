@@ -188,8 +188,16 @@ function orderedExports(index) {
     .sort((a, b) => (a.date === b.date ? a.dir.localeCompare(b.dir) : a.date < b.date ? -1 : 1))
 }
 
+/**
+ * Exports that held DMs, in order. One with no DM threads (cut short, or
+ * still syncing when read) says nothing about what was removed.
+ */
+function messageExports(index) {
+  return orderedExports(index).filter((e) => e.threads !== 0)
+}
+
 function rank(index) {
-  const pos = new Map(orderedExports(index).map((e, i) => [e.dir, i]))
+  const pos = new Map(messageExports(index).map((e, i) => [e.dir, i]))
   return (dir) => (pos.has(dir) ? pos.get(dir) : -1)
 }
 
@@ -239,6 +247,7 @@ async function archiveExport(root, { exportDir, exportRoot, date }, { fs = nodeF
     await storeBlob(fs, root, file, sha)
     manifest[rel.split(path.sep).join("/")] = { sha, size: (await fs.promises.stat(file)).size }
   }
+  if (!Object.keys(manifest).length) throw new Error(`export ${exportDir} has no files yet`)
   writeJson(fs, path.join(archiveDir(root), "manifests", `${exportDir}.json`), manifest)
 
   const threads = readExportThreads(fs, exportRoot)
@@ -246,7 +255,7 @@ async function archiveExport(root, { exportDir, exportRoot, date }, { fs = nodeF
   index.exports[exportDir] = { date, archivedAt: new Date(now()).toISOString(), files: Object.keys(manifest).length, threads: Object.keys(threads).length, messages: count }
 
   const merged = loadMessages(root, { fs })
-  mergeThreads(merged, threads, exportDir, rank(index))
+  if (Object.keys(threads).length) mergeThreads(merged, threads, exportDir, rank(index))
   writeJson(fs, path.join(archiveDir(root), "messages.json"), merged)
   writeJson(fs, path.join(archiveDir(root), "index.json"), index)
   return { ok: true, skipped: false, files: Object.keys(manifest).length, messages: count }
@@ -259,8 +268,8 @@ async function archiveExport(root, { exportDir, exportRoot, date }, { fs = nodeF
  */
 function removedMessages(root, { fs = nodeFs } = {}) {
   const index = loadIndex(root, { fs })
-  const order = orderedExports(index)
-  if (order.length < 2) return { exports: order.length, rows: [] }
+  const order = messageExports(index)
+  if (order.length < 2) return { exports: orderedExports(index).length, rows: [] }
   const pos = rank(index)
   const dateOf = (dir) => (index.exports[dir] ? index.exports[dir].date : dir)
   const merged = loadMessages(root, { fs })
@@ -292,7 +301,7 @@ function removedMessages(root, { fs = nodeFs } = {}) {
     }
   }
   rows.sort((a, b) => b.ts - a.ts)
-  return { exports: order.length, rows }
+  return { exports: orderedExports(index).length, rows }
 }
 
 /** Archive every export folder the report pipeline still has that is not archived yet. */

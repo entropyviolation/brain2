@@ -29,6 +29,7 @@ type Ig = {
   injectBridge: (html: string, ui: Record<string, string>) => string
   publicStatus: (root: string) => { hasReport: boolean; current: { exportDate: string } | null }
   STABLE_MS: number
+  DRIVE_STABLE_MS: number
 }
 const ig = nodeRequire("./instagram-report.js") as Ig
 
@@ -278,12 +279,26 @@ describe("Google Drive scheduled export", () => {
     const c = igd.scanForExports([drive])
     expect(c.map((x) => [x.key, x.date, x.kind])).toEqual([
       ["meta-2026-Oct-22-20-23-37", "2026-10-22", "dir"],
-      ["meta-2026-Oct-23-20-00-00", "2026-10-23", "zip"],
+      ["instagram-_entropyviolation_-2026-10-23-abc", "2026-10-23", "zip"],
       ["meta-2026-Oct-24-20-00-00", "2026-10-24", "zip"],
     ])
     expect(c[2].paths.map((p) => path.basename(p))).toEqual(["part-1.zip", "part-2.zip"])
     // No account in Meta's folder name: it is not filtered out by the handle.
     expect(igd.pickExportToImport(c, { imported: {} }, config)?.key).toBe("meta-2026-Oct-24-20-00-00")
+  })
+
+  it("takes each day's instagram-* folder inside one meta folder, skipping one with no files yet", () => {
+    const drive = myDrive()
+    const meta = path.join(drive, "meta-2026-Oct-22-20-23-37")
+    makeExportFolder(meta, "instagram-_entropyviolation_-2026-10-22-20PSWrsW")
+    makeExportFolder(meta, "instagram-_entropyviolation_-2026-10-23-gUaaX5zH")
+    // Meta's next day, folders made but no files synced yet.
+    fs.mkdirSync(path.join(meta, "instagram-_entropyviolation_-2026-10-24-zzzzzzzz", "your_instagram_activity"), { recursive: true })
+    const c = igd.scanForExports([drive])
+    expect(c.map((x) => [x.key, x.date])).toEqual([
+      ["instagram-_entropyviolation_-2026-10-22-20PSWrsW", "2026-10-22"],
+      ["instagram-_entropyviolation_-2026-10-23-gUaaX5zH", "2026-10-23"],
+    ])
   })
 
   it("builds the newest export and still archives the ones it skipped", async () => {
@@ -296,7 +311,7 @@ describe("Google Drive scheduled export", () => {
     const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
     // Drive may still be syncing a meta folder, so it waits for the tree to hold still.
     expect((await w.scan()).imported).toBe(false)
-    t += ig.STABLE_MS
+    t += ig.DRIVE_STABLE_MS
     const r = await w.scan()
     w.stop()
     expect(r.imported).toBe(true)
@@ -320,7 +335,7 @@ describe("Google Drive scheduled export", () => {
     let t = 1_000_000
     const w = igd.createInstagramWatcher({ root, run: fakeRun([]), intervalMs: 1e9, home, now: () => t })
     await w.scan()
-    t += ig.STABLE_MS
+    t += ig.DRIVE_STABLE_MS
     const r = await w.scan()
     w.stop()
     expect(r.imported).toBe(false)
