@@ -557,7 +557,14 @@ export interface Task extends Item {
   listAddedAt?: Record<string, string>
   // ---- Next-actions / scheduling fields (optional; only meaningful for items
   // in the Next Actions folder tree — see lib/item-utils.ts) ----------------
-  estimatedDuration?: number // minutes
+  estimatedDuration?: number // minutes — the typed estimate, not the sum of parts
+  /**
+   * Every value this task's own estimate has had, oldest first.
+   * Same shape as `Subtask.estimateLog`. `updateTask` appends a row when
+   * `estimatedDuration` changes (`noteTaskEstimate` in `lib/task-card.ts`).
+   * Setting the same minutes again does not add a row. Step edits stay on the step.
+   */
+  estimateLog?: { at: string; minutes: number }[]
   actualDuration?: number // minutes - set when task is completed
   /**
    * How firmly `actualDuration` is known.

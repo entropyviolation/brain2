@@ -8,6 +8,7 @@
 "use client"
 
 import { DashReading } from "../dash/dash-primitives"
+import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
 import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
 import { formatPercent } from "@/lib/step-progress"
 import type { StepTier } from "@/lib/types"
@@ -37,6 +38,8 @@ export interface TaskCardPeriodProps {
 }
 
 export function TaskCardPeriod(p: TaskCardPeriodProps) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const over = p.remaining > p.dayLeft
   const rank = (t: StepTier | "none") => (t === "none" ? -1 : STEP_TIERS.indexOf(t))
   return (
@@ -47,13 +50,13 @@ export function TaskCardPeriod(p: TaskCardPeriodProps) {
       <div className="tcp-glass">
         <div className="tcp-pod" title={`Minutes painted on this task this ${p.period}, against all time`}>
           <span className="tcp-leg">Spent</span>
-          <DashReading text={`${p.periodMinutes}m`} />
-          <span className="tcp-cap">of {p.allTimeMinutes}m all time</span>
+          <DashReading text={dur(p.periodMinutes)} />
+          <span className="tcp-cap">of {dur(p.allTimeMinutes)} all time</span>
         </div>
         <div className={`tcp-pod${over ? " is-over" : ""}`} title={`Minutes still needed to reach ${STEP_TIER_LABEL[p.level]}, against the working time left today`}>
           <span className="tcp-leg">Left · {STEP_TIER_SHORT[p.level]}</span>
-          <DashReading text={`${p.remaining}m`} />
-          <span className="tcp-cap">{over ? `only ${p.dayLeft}m free today` : `${p.dayLeft}m free today`}</span>
+          <DashReading text={dur(p.remaining)} />
+          <span className="tcp-cap">{over ? `only ${dur(p.dayLeft)} free today` : `${dur(p.dayLeft)} free today`}</span>
         </div>
       </div>
 
@@ -107,7 +110,7 @@ export function TaskCardPeriod(p: TaskCardPeriodProps) {
         <span className="tcp-leg">Sessions</span>
         {p.sessions.length ? p.sessions.slice(-5).map((s, i) => <span key={i} className="tcp-chip">{s.title || "Session"}{s.tier && s.tier !== "none" ? ` · ${STEP_TIER_SHORT[s.tier]}` : ""}</span>) : <em>None yet. A planned session that holds this task shows here.</em>}
       </p>
-      {p.penPool ? <p className="is-quiet">Pen overall {p.penPool}m, not tagged to this task.</p> : null}
+      {p.penPool ? <p className="is-quiet">Pen overall {dur(p.penPool)}, not tagged to this task.</p> : null}
       {p.attentionNote ? <p className="is-quiet">{p.attentionNote}</p> : null}
     </section>
   )

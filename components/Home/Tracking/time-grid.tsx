@@ -92,6 +92,14 @@ import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
 import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/tracking-tool-mode"
 import { depthOptions, maxTreeDepth } from "@/lib/pen-tree"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
+import {
+  clearTimegridReveal,
+  peekTimegridReveal,
+  subscribeTimegridReveal,
+  timegridBlockHour,
+  timegridHourScrollTop,
+} from "@/components/Home/Tracking/timegrid-reveal"
+import { parseLocalDate } from "@/lib/date-utils"
 import { CellSizeKeys } from "@/components/Home/Tracking/cell-size-keys"
 import { FillRangeControl } from "@/components/Home/Tracking/fill-range-control"
 import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkChromeStack, TrkPlotBezel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
@@ -263,6 +271,11 @@ const DayHourRow = memo(function DayHourRow({
             <div
               key={c}
               data-minute={minute}
+              data-entry-id={
+                cellEntry && cellEntry.startMin >= minute && cellEntry.startMin < minute + gridStep
+                  ? cellEntry.id
+                  : undefined
+              }
               className={`${cellPaintClass({
                 painted: Boolean(pen) || (inStroke && !erasing),
                 quarter: onQuarter,
@@ -300,7 +313,14 @@ const DayHourRow = memo(function DayHourRow({
           )
         })}
         {labels.map((label) => (
-          <TrkBlockLabel key={label.id} name={label.name} color={label.color} left={label.left} width={label.width} />
+          <TrkBlockLabel
+            key={label.id}
+            entryId={label.id}
+            name={label.name}
+            color={label.color}
+            left={label.left}
+            width={label.width}
+          />
         ))}
         {entries.overlayInstants.map((event) => {
           const ghost = ghosts.find((g) => g.scope.id === event.scopeId)
@@ -324,6 +344,7 @@ const DayHourRow = memo(function DayHourRow({
             <button
               key={event.id}
               type="button"
+              data-entry-id={event.id}
               className="trk-instant"
               aria-label={`${minutesToLabel(event.startMin)} · ${entryDisplayName(event, eventPen?.name)}`}
               style={{
@@ -428,6 +449,8 @@ export function TimeGrid({
   const [stroke, setStroke] = useState<{ lo: number; hi: number } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const sparkTimer = useRef<number | null>(null)
+  const [revealNonce, setRevealNonce] = useState(0)
+  useEffect(() => subscribeTimegridReveal(() => setRevealNonce((n) => n + 1)), [])
 
   const flashStroke = useCallback((lo: number, hi: number) => {
     if (sparkTimer.current) window.clearTimeout(sparkTimer.current)
@@ -652,16 +675,35 @@ export function TimeGrid({
   useLayoutEffect(() => {
     const root = gridRef.current
     if (!root) return
-    const hour = startHour
+    const pending = peekTimegridReveal()
+    const headerGrid = Boolean(root.closest(".htk-desk"))
+    const canReveal = Boolean(pending && !headerGrid && !lockDate && span === "day" && !scrolling && scope)
+    if (canReveal && pending && pending.scopeId === scope?.id && pending.date !== dk) {
+      const next = parseLocalDate(pending.date)
+      if (!next) clearTimegridReveal(pending.entryId)
+      else setDate(next)
+      return
+    }
+    const reveal = canReveal && pending && pending.scopeId === scope?.id && pending.date === dk ? pending : null
+    const hour = reveal ? timegridBlockHour(reveal.startMin) : startHour
     const align = () => {
       const row = root.querySelector(`[data-hour="${hour}"]`) as HTMLElement | null
       const ruler = root.querySelector(".sticky") as HTMLElement | null
-      const top = row
-        ? Math.max(0, row.offsetTop - (ruler?.offsetHeight ?? 0))
-        : hour * rowHeight
+      const top = timegridHourScrollTop(hour, rowHeight, row ? row.offsetTop : null, ruler?.offsetHeight ?? 0)
       aligning.current = true
       root.scrollTop = top
       aligning.current = false
+      if (reveal) {
+        root.dataset.revealedEntry = reveal.entryId
+        root.dataset.revealHour = String(hour)
+        const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(reveal.entryId) : reveal.entryId
+        const block = root.querySelector(`[data-entry-id="${escaped}"]`)
+        const target = block instanceof HTMLElement ? block : row
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ block: "center", inline: "nearest" })
+        }
+        clearTimegridReveal(reveal.entryId)
+      }
       if (root.clientHeight <= 0) return
       const start = Math.max(0, Math.floor(root.scrollTop / rowHeight) - 1)
       const end = Math.min(24, Math.ceil((root.scrollTop + root.clientHeight) / rowHeight) + 2)
@@ -670,7 +712,7 @@ export function TimeGrid({
     align()
     const id = requestAnimationFrame(align)
     return () => cancelAnimationFrame(id)
-  }, [dk, awake?.wake, rowHeight])
+  }, [dk, awake?.wake, rowHeight, startHour, span, scrolling, scope?.id, lockDate, revealNonce, setDate])
 
   const openEntry = openEntryId ? entries.find((e) => e.id === openEntryId) : undefined
   useEffect(() => {

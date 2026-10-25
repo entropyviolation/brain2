@@ -15,7 +15,7 @@
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { formatDuration } from "@/lib/time-entries"
+import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
 import { placeSteps } from "@/lib/next-step"
 import { stepActualAccount, taskActualAccount, taskActualSegments } from "@/lib/tracked-time"
 import { flattenSteps } from "@/lib/todo-steps"
@@ -32,6 +32,8 @@ export function TaskCardTimeAside({
   focusStepId?: string
   onWrite: (patch: Partial<Task>) => void
 }) {
+  const unit = useTaskCardTimeUnit()
+  const dur = (n: number) => formatStatMinutes(n, unit)
   const entries = useTimeTrackingStore((s) => s.entries)
   const [open, setOpen] = useState(false)
   const focus = focusStepId ? flattenSteps(task.subtasks).find((step) => step.id === focusStepId) : undefined
@@ -54,18 +56,18 @@ export function TaskCardTimeAside({
     <section className="tcs-time tcs-control-card" aria-label="Time">
       <h3>Time</h3>
       <p className="ipt-total">
-        <strong>{formatDuration(account.total)}</strong> {focus ? "on this step" : "tracked"}
+        <strong>{dur(account.total)}</strong> {focus ? "on this step" : "tracked"}
       </p>
       {account.unlabeled > 0 || account.children.length > 0 ? (
         <ul className="ipt-actuals" aria-label="Where the actual minutes sit">
           {account.unlabeled > 0 ? (
             <li>
-              {formatDuration(account.unlabeled)} {focus ? "on this step only" : "on this task only"}
+              {dur(account.unlabeled)} {focus ? "on this step only" : "on this task only"}
             </li>
           ) : null}
           {account.children.map((child) => (
             <li key={child.id}>
-              {formatDuration(child.total)} on {names.get(child.id) ?? "a part"}
+              {dur(child.total)} on {names.get(child.id) ?? "a part"}
             </li>
           ))}
         </ul>

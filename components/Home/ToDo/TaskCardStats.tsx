@@ -8,9 +8,12 @@
  */
 "use client"
 
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
-import { compactDuration } from "@/lib/time-entries"
+import { formatStatMinutes, useTaskCardTimeControls, useTaskCardTimeUnit } from "./task-card-unit"
+
+export { CardMinutes, formatStatMinutes, TaskCardTimeUnit, useTaskCardTimeUnit } from "./task-card-unit"
+export type { TaskCardTimeUnit } from "./task-card-unit"
 import { DashReading } from "../dash/dash-primitives"
 import { TreeMath } from "@/components/steps/TreeMath"
 import { splitStats, type TierSplit } from "@/lib/tree-math"
@@ -18,6 +21,7 @@ import { formatPercent } from "@/lib/step-progress"
 import { effectiveDurationMinutes } from "@/lib/todo-steps"
 import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
 import { tierEstimates } from "@/lib/task-card"
+import { useTaskStore } from "@/lib/task-store"
 import type { StepTier, Subtask } from "@/lib/types"
 import { SpentBlocks, type SpentBlocksScope } from "./SpentBlocks"
 import type { ActualAccount } from "@/lib/tracked-time"
@@ -65,38 +69,6 @@ export interface TaskCardStatsData {
 const stamp = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—")
 
-const UNIT_KEY = "brain2-task-card-time-unit"
-export type TaskCardTimeUnit = "h" | "m"
-
-const TimeUnitContext = createContext<{ unit: TaskCardTimeUnit; setUnit: (unit: TaskCardTimeUnit) => void } | null>(null)
-
-/** Hours or minutes for every duration on the stat row. Default minutes. */
-export function TaskCardTimeUnit({ children }: { children: ReactNode }) {
-  const [unit, setUnitState] = useState<TaskCardTimeUnit>(() => {
-    if (typeof window === "undefined") return "m"
-    return window.localStorage.getItem(UNIT_KEY) === "h" ? "h" : "m"
-  })
-  const setUnit = (next: TaskCardTimeUnit) => {
-    setUnitState(next)
-    try {
-      window.localStorage.setItem(UNIT_KEY, next)
-    } catch {
-      /* private mode */
-    }
-  }
-  return <TimeUnitContext.Provider value={{ unit, setUnit }}>{children}</TimeUnitContext.Provider>
-}
-
-export function useTaskCardTimeUnit(): TaskCardTimeUnit {
-  return useContext(TimeUnitContext)?.unit ?? "m"
-}
-
-/** Minutes read `325m`. Hours use `compactDuration`, including `0h45`. */
-export function formatStatMinutes(minutes: number, unit: TaskCardTimeUnit): string {
-  const n = Math.max(0, Math.round(minutes))
-  return unit === "h" ? compactDuration(n, true) : `${n}m`
-}
-
 function R({ k, children, hint }: { k: string; children: ReactNode; hint?: string }) {
   return (
     <div className="tcs-r" title={hint}>
@@ -125,8 +97,8 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
   const [open, setOpen] = useState<string | null>(null)
   const [localEstTier, setLocalEstTier] = useState<StepTier>("exceptional")
   const wrap = useRef<HTMLDivElement>(null)
-  const timeUnit = useContext(TimeUnitContext)
-  const unit = timeUnit?.unit ?? "m"
+  const timeUnit = useTaskCardTimeControls()
+  const unit = useTaskCardTimeUnit()
   const dur = (n: number) => formatStatMinutes(n, unit)
   const signedDur = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${dur(Math.abs(n))}`
   const stats = splitStats(d.view, d.tierOf)
@@ -138,7 +110,12 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
       if (focus) wrap.current?.querySelector<HTMLElement>(`[data-stat="${open}"]`)?.focus()
     }
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close(true)
-    const onDown = (e: PointerEvent) => !wrap.current?.contains(e.target as Node) && close(false)
+    const onDown = (e: PointerEvent) => {
+      const node = e.target
+      if (!(node instanceof Node) || wrap.current?.contains(node)) return
+      if (node instanceof Element && node.closest("[data-spent-step-pop]")) return
+      close(false)
+    }
     document.addEventListener("keydown", onKey)
     document.addEventListener("pointerdown", onDown)
     return () => {
@@ -147,7 +124,23 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
     }
   }, [open])
 
-  const byTier = tierEstimates(d.view, d.ownEst, d.stepSpent, d.estLog, d.rootCompleted, d.spent)
+  // The whole-task card passes the root step's log, which is empty when the
+  // card is the task itself. The task's own history lives on `Task.estimateLog`.
+  const taskEstimateLog = useTaskStore((s) => {
+    if (d.spentOnly !== "on this task only") return undefined
+    const id = d.spentScope?.taskId
+    if (!id) return undefined
+    return s.tasks.find((t) => t.id === id)?.estimateLog
+  })
+  const log = d.spentOnly === "on this task only" ? (taskEstimateLog ?? []) : (d.estLog ?? [])
+  const byTier = tierEstimates(
+    d.view,
+    d.ownEst,
+    d.stepSpent,
+    d.spentOnly === "on this task only" ? taskEstimateLog : d.estLog,
+    d.rootCompleted,
+    d.spent,
+  )
   const activeEstTier = d.estimateTier ?? localEstTier
   const activeDetail = byTier[activeEstTier]
   const activeEst = activeEstTier === "exceptional" && activeDetail.estimate === 0 && d.est > 0 ? d.est : activeDetail.estimate
@@ -156,7 +149,6 @@ export function TaskCardStats({ data: d }: { data: TaskCardStatsData }) {
   const own = d.ownEst ?? 0
   const unsplit = activeParts > 0 && activeEst > activeParts ? activeEst - activeParts : 0
   const fromParts = activeParts > own
-  const log = d.estLog ?? []
   const parts = d.view.map((s) => ({ s, m: effectiveDurationMinutes(s.estimatedDuration, s.subtasks) }))
   const biggest = parts.reduce((a, b) => (b.m > a.m ? b : a), { s: undefined as Subtask | undefined, m: 0 })
   const cards: { id: string; label: string; value: string; sub?: string; wide?: boolean; testId?: string; body: ReactNode }[] = [

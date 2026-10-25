@@ -21,6 +21,7 @@ vi.mock("@/components/Home/Tracking/entry-dialog", () => ({
 }))
 
 import { SpentBlocks } from "./SpentBlocks"
+import { TaskCardTimeUnit } from "./task-card-unit"
 
 describe("SpentBlocks", () => {
   beforeEach(() => {
@@ -28,6 +29,7 @@ describe("SpentBlocks", () => {
     if (close) fireEvent.click(close)
     resetAllStores()
     entryDialog.mockClear()
+    localStorage.removeItem("brain2-task-card-time-unit")
   })
 
   it("shows a pen's color on a written block and double-click opens that block", () => {
@@ -77,5 +79,43 @@ describe("SpentBlocks", () => {
     fireEvent.keyDown(end, { key: "Enter" })
     expect(useTimeTrackingStore.getState().entries.find((item) => item.id === "e-pen")!.endMin).toBe(660)
     expect(entryDialog).not.toHaveBeenCalled()
+  })
+
+  it("reads block lengths in hours when that unit is on", () => {
+    localStorage.setItem("brain2-task-card-time-unit", "h")
+    useTaskStore.getState().addTask({ id: "t1", description: "Chaos", completed: false } as Task)
+    useTimeTrackingStore.setState({
+      entries: [{ id: "e-pen", date: "2026-10-20", scopeId: "activity", startMin: 540, endMin: 657, taskId: "t1" }],
+    } as never)
+    render(
+      <TaskCardTimeUnit>
+        <SpentBlocks scope={{ taskId: "t1", names: new Map() }} />
+      </TaskCardTimeUnit>,
+    )
+    expect(screen.getByText("1h57")).toBeTruthy()
+    expect(screen.queryByText("117m")).toBeNull()
+  })
+
+  it("filters steps from a search field", () => {
+    useTaskStore.getState().addTask({
+      id: "t1",
+      description: "Chaos",
+      completed: false,
+      subtasks: [
+        { id: "insert", description: "Insert", completed: false },
+        { id: "fronts", description: "fronts", completed: false, subtasks: [{ id: "carve", description: "fix signature carvings", completed: false }] },
+      ],
+    } as Task)
+    useTimeTrackingStore.setState({
+      entries: [{ id: "e-bare", date: "2026-10-23", scopeId: "activity", startMin: 700, endMin: 730, taskId: "t1" }],
+    } as never)
+    render(<SpentBlocks scope={{ taskId: "t1", names: new Map() }} />)
+    fireEvent.click(screen.getByRole("button", { name: "Step for 30m on 2026-10-23" }))
+    const search = screen.getByRole("combobox", { name: "Search steps" })
+    fireEvent.change(search, { target: { value: "carving" } })
+    expect(screen.getByRole("option", { name: /fix signature carvings/ })).toBeTruthy()
+    expect(screen.queryByRole("option", { name: "Insert" })).toBeNull()
+    fireEvent.click(screen.getByRole("option", { name: /fix signature carvings/ }))
+    expect(useTimeTrackingStore.getState().entries.find((item) => item.id === "e-bare")!.stepId).toBe("carve")
   })
 })
