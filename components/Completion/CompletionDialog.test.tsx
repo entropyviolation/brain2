@@ -392,4 +392,26 @@ describe("CompletionDialog", () => {
     expect(saved?.completedCertainty).toBe("estimated")
     expect(saved?.completionReview).toBeUndefined()
   })
+
+  it("stores an unknown finish without moving the stamp or showing a clock", async () => {
+    const user = userEvent.setup()
+    const completedDate = new Date(2026, 5, 20, 12, 0, 0, 0)
+    useTaskStore.getState().setTasks([makeTask({ id: "t1", description: "INVOICE NOWWW", completedDate })])
+
+    render(<CompletionDialog taskId="t1" basePoints={1} onClose={vi.fn()} />)
+    expect(screen.getByTestId("completion-task-title")).toHaveTextContent("INVOICE NOWWW")
+    fireEvent.change(screen.getByLabelText("Done date"), { target: { value: "2026-06-01" } })
+    await user.click(screen.getByRole("button", { name: "Unknown finish" }))
+    expect(screen.queryByLabelText("Done date")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Yesterday" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("switch", { name: "Add a quick reflection" }))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+
+    const saved = useTaskStore.getState().tasks.find((t) => t.id === "t1")
+    expect(saved?.completedDate).toEqual(completedDate)
+    expect(saved?.completedCertainty).toBe("unknown")
+    expect(saved?.timeRough).toBeUndefined()
+    expect(saved?.completionReview?.completedAt).toEqual(completedDate)
+    expect(saved?.completionReview?.completedCertainty).toBe("unknown")
+  })
 })

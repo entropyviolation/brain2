@@ -3,8 +3,9 @@
  *
  * One period card, opened full width: tasks sitting at this grain, tasks
  * assigned to a finer period inside it, and Undone work that is still open
- * to push, dismiss, or finish. A pushed or discarded placement leaves this
- * working queue and stays on the task for analytics.
+ * to push, dismiss, miss, or finish. A pushed, dismissed, or missed placement
+ * leaves this working queue and stays on the task. So does a task already
+ * placed on a current or future day, week, or month.
  */
 import {
   formatLocalDateKey,
@@ -31,7 +32,7 @@ import type {
   StoredBlockedReason,
   Task,
 } from "@/lib/types"
-import { getTasksForPeriod } from "./scheduler-utils"
+import { getTasksForPeriod, liveScheduleIsAhead, tasksMovedAheadForPeriod } from "./scheduler-utils"
 
 const RANK: Record<SchedulePlacementPeriod, number> = { year: 1, month: 2, week: 3, day: 4 }
 
@@ -46,11 +47,22 @@ export interface ScheduleCardDetailTarget {
   parentValue?: string
 }
 
+/** Rows the past card hides until an advanced toggle is on. The placements stay. */
+export interface UndoneArchive {
+  moved: Task[]
+  pushed: Task[]
+  dismissed: Task[]
+  missed: Task[]
+}
+
+export const EMPTY_UNDONE_ARCHIVE: UndoneArchive = { moved: [], pushed: [], dismissed: [], missed: [] }
+
 export interface CardDetailRows {
   here: Task[]
   finer: Task[]
   undone: Task[]
   past: boolean
+  archive: UndoneArchive
 }
 
 function weekTouchesMonth(value: string, monthKey: string): boolean {
@@ -138,6 +150,32 @@ function openPlacement(placement: SchedulePlacement): boolean {
   return placement.resolved == null
 }
 
+function exactPlacement(task: Task, card: SchedulePlacementPeriod, value: string): SchedulePlacement | undefined {
+  return (task.schedulePlacements ?? []).find(
+    (placement) => placement.period === card && (card === "week" ? sameWeekKey(placement.value, value) : placement.value === value),
+  )
+}
+
+function archiveForPast(tasks: Task[], card: SchedulePlacementPeriod, value: string, moved: Task[]): UndoneArchive {
+  const pushed: Task[] = []
+  const dismissed: Task[] = []
+  const missed: Task[] = []
+  for (const task of tasks) {
+    if (isClearedFromWork(task)) continue
+    const resolved = exactPlacement(task, card, value)?.resolved
+    if (resolved === "missed") missed.push(task)
+    else if (resolved === "pushed") pushed.push(task)
+    else if (resolved === "clarified") dismissed.push(task)
+  }
+  const settled = new Set([...pushed, ...dismissed, ...missed].map((task) => task.id))
+  return {
+    moved: moved.filter((task) => !settled.has(task.id)),
+    pushed,
+    dismissed,
+    missed,
+  }
+}
+
 function hasOpenPlacementInCard(task: Task, card: SchedulePlacementPeriod, value: string, now: Date): boolean {
   return (task.schedulePlacements ?? []).some((placement) => {
     if (!openPlacement(placement)) return false
@@ -164,15 +202,17 @@ export function partitionCardDetail(
 
   if (past) {
     const queued = getTasksForPeriod(tasks, card, value, now, now)
-    const seen = new Set(queued.map((task) => task.id))
+    const moved = tasksMovedAheadForPeriod(tasks, card, value, now, now)
+    const seen = new Set([...queued, ...moved].map((task) => task.id))
     undone.push(...queued)
     for (const task of tasks) {
       if (seen.has(task.id) || isClearedFromWork(task)) continue
       if (!hasOpenPlacementInCard(task, card, value, now)) continue
       seen.add(task.id)
-      undone.push(task)
+      if (liveScheduleIsAhead(task, now)) moved.push(task)
+      else undone.push(task)
     }
-    return { here, finer, undone, past }
+    return { here, finer, undone, past, archive: archiveForPast(tasks, card, value, moved) }
   }
 
   for (const task of tasks) {
@@ -194,7 +234,7 @@ export function partitionCardDetail(
     if (waiting) undone.push(task)
   }
 
-  return { here, finer, undone, past }
+  return { here, finer, undone, past, archive: EMPTY_UNDONE_ARCHIVE }
 }
 
 function periodRefDate(period: SchedulePlacementPeriod, value: string): Date {
@@ -211,7 +251,7 @@ function markOpenPlacementsInCard(
   placements: SchedulePlacement[] | undefined,
   card: SchedulePlacementPeriod,
   value: string,
-  resolved: "pushed" | "clarified",
+  resolved: "pushed" | "clarified" | "missed",
   now: Date,
 ): SchedulePlacement[] {
   let next = markSchedulePlacementResolved(placements, card, value, resolved)
@@ -266,6 +306,22 @@ export function pushCardWorkingQueue(
   return {
     ...stepped,
     schedulePlacements,
+  }
+}
+
+/**
+ * Hide this period from the Scheduler queue as a missed opportunity.
+ * The placement stays, marked missed, and the live assignment is kept.
+ * This does not set the task's completion status.
+ */
+export function missCardWorkingQueue(
+  task: Task,
+  card: SchedulePlacementPeriod,
+  value: string,
+  now: Date = new Date(),
+): Partial<Task> {
+  return {
+    schedulePlacements: markOpenPlacementsInCard(task.schedulePlacements, card, value, "missed", now),
   }
 }
 

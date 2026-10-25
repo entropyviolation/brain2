@@ -23,6 +23,9 @@ export interface PhoneArchive {
   setCursor: (source: PhoneSyncSource, cursor: string) => void
   logRun: (run: PhoneSyncRun) => void
   runs: () => PhoneSyncRun[]
+  /** Missing file or missing key means on. Only an explicit `false` is off. */
+  getEnabled: (source: PhoneSyncSource) => boolean
+  setEnabled: (source: PhoneSyncSource, on: boolean) => void
 }
 
 function readJson<T>(file: string, fallback: T): T {
@@ -47,6 +50,7 @@ export function openPhoneArchive(dataDir: string): PhoneArchive {
   const messagesFile = path.join(dir, "messages.jsonl")
   const cursorsFile = path.join(dir, "cursors.json")
   const runsFile = path.join(dir, "runs.json")
+  const enabledFile = path.join(dir, "enabled.json")
 
   let seen: Set<string> | null = null
   const loadAll = (): MessageRecord[] => {
@@ -103,6 +107,14 @@ export function openPhoneArchive(dataDir: string): PhoneArchive {
     },
     runs() {
       return readJson<PhoneSyncRun[]>(runsFile, [])
+    },
+    getEnabled(source) {
+      return readJson<Partial<Record<PhoneSyncSource, boolean>>>(enabledFile, {})[source] !== false
+    },
+    setEnabled(source, on) {
+      const map = readJson<Partial<Record<PhoneSyncSource, boolean>>>(enabledFile, {})
+      map[source] = on
+      writeJson(enabledFile, map)
     },
   }
 }

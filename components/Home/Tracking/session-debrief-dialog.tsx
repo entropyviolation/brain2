@@ -1,16 +1,17 @@
 /**
  * components/Home/Tracking/session-debrief-dialog.tsx
  *
- * After Working on now stops, one sheet for the sitting that just passed:
- * estimates against the minutes, when each step was worked, completion,
- * the log note, a note for next time, satisfaction, energy, and what got
- * in the way. Done writes them. Close leaves the clock's log as it is.
+ * After Working on now stops, an optional end-of-session reflection.
+ * Estimates against the minutes, the log note, a note for next time,
+ * satisfaction, energy, and what got in the way. Save writes them.
+ * Skip leaves the clock's log as it is. Neither marks the task completed.
+ * That is the completion reflection, a different sheet.
  *
  * `SessionDebriefHost` is mounted once on the app page.
  */
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import {
   saveSessionDebrief,
@@ -63,16 +64,25 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
   const [satisfaction, setSatisfaction] = useState<number | undefined>(undefined)
   const [energy, setEnergy] = useState<SittingEnergy | undefined>(undefined)
   const [blocker, setBlocker] = useState("")
-  const [taskCompleted, setTaskCompleted] = useState(draft.taskCompleted)
   const [taskEstimate, setTaskEstimate] = useState(minutesField(draft.taskEstimate))
   const [logMinutes, setLogMinutes] = useState(String(draft.activeMinutes))
   const [steps, setSteps] = useState(() =>
     draft.steps.map((step) => ({
       stepId: step.stepId,
-      completed: step.completed,
       estimated: minutesField(step.estimated),
     })),
   )
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      event.stopPropagation()
+      dismiss()
+    }
+    window.addEventListener("keydown", onKey, true)
+    return () => window.removeEventListener("keydown", onKey, true)
+  }, [dismiss])
 
   const started = new Date(draft.startedAt)
   const ended = new Date(draft.endedAt)
@@ -86,11 +96,14 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
   const touchedVersus = touched.length ? versusLabel(touchedEstimate, touchedSpent) : ""
 
   const done = () => {
-    const edits: DebriefStepEdit[] = steps.map((step) => ({
-      stepId: step.stepId,
-      completed: step.completed,
-      estimated: readMinutes(step.estimated),
-    }))
+    const edits: DebriefStepEdit[] = steps.map((step) => {
+      const prev = draft.steps.find((row) => row.stepId === step.stepId)
+      return {
+        stepId: step.stepId,
+        completed: prev?.completed ?? false,
+        estimated: readMinutes(step.estimated),
+      }
+    })
     saveSessionDebrief(draft, {
       note,
       handoff,
@@ -99,7 +112,6 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
       satisfaction,
       energy,
       blocker,
-      taskCompleted,
       taskEstimate: readMinutes(taskEstimate),
       logMinutes: readMinutes(logMinutes) ?? draft.activeMinutes,
       steps: edits,
@@ -116,17 +128,17 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
   return createPortal(
     <div className="trk-debrief-back" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && dismiss()}>
       <div
-        className="trk-debrief"
+        className="trk-debrief b2-now"
         role="dialog"
         aria-labelledby="trk-debrief-title"
         data-testid="session-debrief"
-        data-ui-name="Sitting review"
+        data-ui-name="End of session"
       >
         <header className="trk-debrief-head">
           {draft.penColor ? <span className="trk-debrief-swatch" style={{ background: draft.penColor }} aria-hidden /> : null}
           <div>
             <h2 id="trk-debrief-title" className="trk-debrief-title">
-              This sitting
+              End of this session
             </h2>
             <p className="trk-debrief-path">{draft.path}</p>
             <p className="trk-debrief-when">
@@ -150,16 +162,15 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
             <p className="trk-debrief-caption">The painted block stays. This number is the log.</p>
           </div>
 
+          <p className="trk-debrief-caption">
+            Optional. {draft.taskId ? (draft.taskCompleted ? `${draft.taskTitle} was already done. ` : `${draft.taskTitle} stays open. `) : ""}
+            Skip leaves this session ended without notes.
+          </p>
+
           {draft.taskId ? (
             <section className="trk-debrief-section">
-              <h3 className="trk-debrief-k">Task and steps</h3>
+              <h3 className="trk-debrief-k">This session</h3>
               <div className="trk-debrief-task">
-                <input
-                  type="checkbox"
-                  aria-label={`${draft.taskTitle} completed`}
-                  checked={taskCompleted}
-                  onChange={(event) => setTaskCompleted(event.target.checked)}
-                />
                 <span className="trk-debrief-name">{draft.taskTitle}</span>
                 <div className="trk-debrief-meta">
                   <label>
@@ -186,12 +197,6 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
                 const versus = versusLabel(estimated, step.sittingMinutes)
                 return (
                   <div key={step.stepId} className="trk-debrief-step" style={{ marginLeft: step.depth * 12 }}>
-                    <input
-                      type="checkbox"
-                      aria-label={`${step.label} completed`}
-                      checked={edit?.completed ?? false}
-                      onChange={(event) => setStep(step.stepId, { completed: event.target.checked })}
-                    />
                     <span className="trk-debrief-name">{step.label}</span>
                     <div className="trk-debrief-meta">
                       <label>
@@ -265,12 +270,13 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
           </fieldset>
 
           <fieldset className="trk-debrief-section">
-            <legend>How satisfied are you with what you got done?</legend>
+            <legend>How satisfied are you with this session?</legend>
             <div className="trk-debrief-scale" role="radiogroup" aria-label="Satisfaction with this sitting">
               {SATISFACTION.map((mark) => (
                 <button
                   key={mark.value}
                   type="button"
+                  className={`todo-cap${satisfaction === mark.value ? " is-on" : ""}`}
                   aria-pressed={satisfaction === mark.value}
                   onClick={() => setSatisfaction((current) => (current === mark.value ? undefined : mark.value))}
                 >
@@ -287,6 +293,7 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
                 <button
                   key={mark.value}
                   type="button"
+                  className={`todo-cap${energy === mark.value ? " is-on" : ""}`}
                   aria-pressed={energy === mark.value}
                   onClick={() => setEnergy((current) => (current === mark.value ? undefined : mark.value))}
                 >
@@ -302,11 +309,11 @@ function SessionDebriefDialog({ draft }: { draft: SessionDebriefDraft }) {
           </label>
         </div>
         <div className="trk-debrief-actions">
-          <button type="button" onClick={dismiss}>
-            Close
+          <button type="button" className="todo-cap" onClick={dismiss}>
+            Skip
           </button>
-          <button type="button" onClick={done}>
-            Done
+          <button type="button" className="todo-cap is-primary" onClick={done}>
+            Save
           </button>
         </div>
       </div>

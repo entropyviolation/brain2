@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Subtask } from "@/lib/types"
-import { splitStats, tierSplit, treeDepth } from "@/lib/tree-math"
+import { splitPercent, splitStats, tierSplit, treeDepth } from "@/lib/tree-math"
 import { effectiveTierMap } from "@/lib/step-tiers"
 
 const leaf = (id: string, completed = false, tier?: Subtask["tier"]) => ({ id, description: id, completed, tier }) as Subtask
@@ -18,6 +18,9 @@ describe("tree-math", () => {
     const s = splitStats(tree, effectiveTierMap(tree))
     expect(s.raw).toBe(0.5)
     expect(s.split).toBeCloseTo((0.5 + 1 + 0.25) / 3)
+    expect(splitPercent(tree)).toBe(58)
+    expect(splitPercent(undefined)).toBe(0)
+    expect(splitPercent([])).toBe(0)
     expect(treeDepth(tree)).toBe(3)
   })
   it("levels split by exact tier, ticked parent counts its leaves", () => {

@@ -187,6 +187,35 @@ describe("finish certainty", () => {
     expect(roundTrip.doneDate).toBe("2026-06-19")
     expect(roundTrip.doneTime).toBe("15:40")
   })
+
+  it("keeps an unknown finish on the existing stamp and ignores the draft clock", () => {
+    const stamp = new Date(2026, 5, 20, 12, 0, 0, 0)
+    const unknown = clockWriteFromDraft(
+      { ...base, completedDate: stamp },
+      {
+        durationCertainty: "unspecified",
+        durationMinutes: "",
+        startCertainty: "unspecified",
+        startTime: "",
+        doneCertainty: "unknown",
+        doneDate: "2026-06-01",
+        doneTime: "01:00",
+      },
+    )
+    expect(unknown.writeDone).toBe(true)
+    expect(unknown.completedCertainty).toBe("unknown")
+    expect(unknown.completedDate).toEqual(stamp)
+    expect(unknown.timeRough).toBeUndefined()
+
+    const roundTrip = clockDraftFromTask({
+      ...base,
+      completedDate: stamp,
+      completedCertainty: "unknown",
+    })
+    expect(roundTrip.doneCertainty).toBe("unknown")
+    expect(roundTrip.doneDate).toBe("2026-06-20")
+    expect(roundTrip.doneTime).toBe("12:00")
+  })
 })
 
 describe("summarizeCompletionReviews", () => {

@@ -5,7 +5,8 @@
  * app derived rather than observed are marked **est.** (`lib/estimated-values.ts`)
  * — a tilde on the numbers and a chip that opens an inline editor, so confirming
  * "yes, 7:50–8:30, 40 minutes" or correcting it takes one click from the Done list
- * instead of waiting for the review. When history has two observed sessions of
+ * instead of waiting for the review. A finish marked unknown reads **Time unknown**
+ * and does not print the mark-done stamp as a clock. When history has two observed sessions of
  * the same title (or named type), a read-only **usually ~N** glance sits beside
  * that — it never rewrites `estimatedDuration`.
  *
@@ -61,6 +62,7 @@ export function CompletionTimeLine({
   const durationAssumed = isEstimated(task.estimates, "actualDuration")
   const windowAssumed = isEstimated(task.estimates, "completedDate") || isEstimated(task.estimates, "startedAt")
   const finishRough = task.completedCertainty === "estimated"
+  const finishUnknown = task.completedCertainty === "unknown"
   const windowMarked = windowAssumed || finishRough
 
   const save = () => {
@@ -106,11 +108,15 @@ export function CompletionTimeLine({
 
   return (
     <div className="todo-time">
-      <span>
-        {showDate && `${format(completedAt, "MMM d")}, `}
-        {windowMarked && "~"}
-        {formatCompletionWindow(task.startedAt, completedAt)}
-      </span>
+      {finishUnknown ? (
+        <span>Time unknown</span>
+      ) : (
+        <span>
+          {showDate && `${format(completedAt, "MMM d")}, `}
+          {windowMarked && "~"}
+          {formatCompletionWindow(task.startedAt, completedAt)}
+        </span>
+      )}
       {duration !== undefined && (
         <>
           <span aria-hidden>·</span>

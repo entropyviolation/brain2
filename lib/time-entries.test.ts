@@ -4,6 +4,7 @@ import {
   clearRange,
   entriesOnDate,
   entryAt,
+  compactDuration,
   formatDuration,
   mergeAdjacent,
   minuteMap,
@@ -310,6 +311,19 @@ describe("formatting", () => {
     expect(formatDuration(45)).toBe("45m")
     expect(formatDuration(60)).toBe("1h")
     expect(formatDuration(95)).toBe("1h 35m")
+  })
+
+  it("compactDuration pairs share one shape", () => {
+    expect(compactDuration(427)).toBe("7h07")
+    expect(compactDuration(25)).toBe("25")
+    expect(compactDuration(120)).toBe("2h00")
+    expect(compactDuration(45, true)).toBe("0h45")
+    const hours = 427 >= 60 || 325 >= 60
+    expect([compactDuration(427, hours), compactDuration(325, hours)]).toEqual(["7h07", "5h25"])
+    const short = 40 >= 60 || 30 >= 60
+    expect([compactDuration(40, short), compactDuration(30, short)]).toEqual(["40", "30"])
+    const mixed = 427 >= 60 || 40 >= 60
+    expect([compactDuration(427, mixed), compactDuration(40, mixed)]).toEqual(["7h07", "0h40"])
   })
 })
 

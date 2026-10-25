@@ -632,14 +632,16 @@ async function main() {
     try {
       const { startLocationDrain } = await import("../lib/phone-sync/location-drain")
       const { openPhoneArchive } = await import("../lib/phone-sync/archive")
+      const locationArchive = openPhoneArchive(join(ROOT, "data"))
       startLocationDrain({
         boxUrl: CAPTURE_URL,
         token: CAPTURE_TOKEN,
         privateKey: readFileSync(CAPTURE_KEY_FILE, "utf8").trim(),
         open: openSealed,
-        archive: openPhoneArchive(join(ROOT, "data")),
+        archive: locationArchive,
         beforeApply: rehydrateFromDisk,
         onWrote: flushTracking,
+        paused: () => !locationArchive.getEnabled("location"),
       })
     } catch (err) {
       console.error(`[phone-hub] location drain off: ${err instanceof Error ? err.message : err}`)
@@ -692,7 +694,10 @@ async function startPhoneSync() {
         // Pick up edits the app made since the last read. A stale copy that lacks
         // a newer Tracking block is refused whole by the vault guard, phone rows too.
         await rehydrateFromDisk()
-        const runs = await runPhoneSync({ archive, apply, onWrote: flushTracking }, readers)
+        const runs = await runPhoneSync(
+          { archive, apply, onWrote: flushTracking, enabled: (source) => archive.getEnabled(source) },
+          readers,
+        )
         for (const run of runs) {
           if (run.error) console.error(`[phone-hub] phone sync ${run.source}: ${run.error}`)
           else if (run.written) console.log(`[phone-hub] phone sync ${run.source}: +${run.written}`)
