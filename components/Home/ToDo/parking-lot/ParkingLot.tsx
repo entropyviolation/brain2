@@ -1,7 +1,7 @@
 /**
  * components/Home/ToDo/parking-lot/ParkingLot.tsx — the parked popup's lot
  *
- * Draws every parked session in the chosen scene (rack, well or garage) and
+ * Draws every parked session in the chosen scene (rack, well, sanctuary garage or night garage) and
  * reports picks. three.js and the scene load only when a scene mode is on, so
  * Classic costs nothing. The scene handle goes to `sceneRef` so Resume can
  * play its motion before the session resumes.
@@ -16,7 +16,8 @@ import "./parking-lot.css"
 const LOADERS: Record<Exclude<ParkingLotMode, "classic">, () => Promise<{ mount: MountLot }>> = {
   rack: () => import("./scene-rack"),
   well: () => import("./scene-well"),
-  garage: () => import("./scene-garage"),
+  garage: () => import("./scene-sanctuary"),
+  night: () => import("./scene-garage"),
 }
 
 function prefersReducedMotion(): boolean {
