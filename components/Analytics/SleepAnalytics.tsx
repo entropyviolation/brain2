@@ -285,8 +285,8 @@ function BodyClock({ jetlag, sri }: { jetlag: SocialJetlag | null; sri: { sri: n
         <StudioReadout
           label="Regularity (SRI)"
           value={sri ? Math.round(sri.sri) : "not yet"}
-          note={sri ? `${sri.pairs} back-to-back pairs · 100 = same every day` : "needs 2 back-to-back night pairs"}
-          tip="Sleep Regularity Index (Phillips et al. 2017): chance you are in the same state (asleep or awake) at the same minute on consecutive days, scaled −100 to 100. Computed on the 6 PM → noon window only, so naps are not in it."
+          note={sri ? `${sri.pairs} back-to-back pairs · 100 = same every day · all-nighters left out` : "needs 2 back-to-back night pairs"}
+          tip="Sleep Regularity Index (Phillips et al. 2017): chance you are in the same state (asleep or awake) at the same minute on consecutive days, scaled −100 to 100. Computed on the 6 PM → noon window only, so naps are not in it. A day marked as an all-nighter has no night, so it breaks the pair instead of counting as awake."
         />
       </div>
       <p className="an-n">Free nights are Friday and Saturday. These are your logs set against published methods, not a diagnosis.</p>

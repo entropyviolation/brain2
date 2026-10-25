@@ -70,14 +70,15 @@ const WHEEL_RINGS = 8
  */
 function CycleWheel({ runs }: { runs: readonly CycleRun[] }) {
   const shown = runs.filter((r) => r.hasOnset).slice(-WHEEL_RINGS)
-  const slots = Math.min(45, Math.max(28, ...shown.map((r) => r.days.length)))
+  const slots = Math.max(28, ...shown.map((r) => r.days.length))
   const C = 160
   const R0 = 30
   const RW = Math.min(30, 110 / Math.max(1, shown.length))
   const step = (2 * Math.PI) / slots
   const p = (r: number, a: number) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`
   return (
-    <svg className="an-tr-svg" viewBox="0 0 320 320" style={{ maxWidth: 360, margin: "0 auto" }} role="img" aria-label="Cycle wheel">
+    <div className="an-tr-wheel">
+    <svg className="an-tr-svg" viewBox="0 0 320 320" role="img" aria-label="Cycle wheel">
       <defs>
         <pattern id="an-tr-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="4" stroke="#ffffff" strokeWidth="1.6" />
@@ -110,6 +111,7 @@ function CycleWheel({ runs }: { runs: readonly CycleRun[] }) {
         )
       })}
     </svg>
+    </div>
   )
 }
 
@@ -538,7 +540,7 @@ export function CyclePhaseView() {
           <section className="an-plate" data-testid="cycle-phase-wheel">
             <p className="an-canvas-title">Cycle wheel</p>
             <p className="an-canvas-kicker">
-              One ring per cycle in this window, oldest inside. Day 1 is the first marked bleed day, at the top,
+              One ring per cycle, up to the latest {WHEEL_RINGS}, oldest shown inside. Day 1 is the first marked bleed day, at the top,
               running clockwise. Hatched days are estimated, not logged.
             </p>
             <div className="an-readouts">
