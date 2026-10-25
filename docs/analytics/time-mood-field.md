@@ -10,7 +10,7 @@ File: `components/Analytics/MoodFieldView.tsx`. Readings: `lib/mood-reading.ts` 
 
 ## Plates
 1. **How to read this**: now a collapsed `<details>` (was five always-open paragraphs).
-2. **Mood pens** mosaic and **Hour × day**.
+2. **Mood pens** mosaic, with a ranked list of names, time and share under it (the mosaic alone showed no names). Then **Hour × day**.
 3. **Mood wheel** (IIB *Colours in Cultures*): rings = 7-day slices of the window (from the first day, oldest inside), wedges = top 12 mood pens, each cell the pen's own color, stronger with more minutes. **Light a word** dims every other wedge. Helper: `weekPenGrid`.
 4. **Mood table** (IIB *Periodic taxonomy*): one tile per mood pen with a two-letter symbol, minutes, stretches, distinct days and last date, grouped by the pen it counts as ("Top level" when it has none). Sort by most time, most recent, most stretches. Helper: `penTiles`.
 5. **Same word**: each word is a collapsible group (open when it has ≤ 3 stretches), with a find box when there are more than 4 words.
