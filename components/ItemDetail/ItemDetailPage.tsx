@@ -47,6 +47,7 @@ import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFiel
 import { isReminderTask } from "@/lib/reminders"
 import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
 import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
+import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
 import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -897,6 +898,16 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
             </div>
 
             <div className="space-y-6">
+              {isTask && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Task card</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ItemTaskCardKey task={task} onBeforeOpen={requestClose} />
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardHeader>
                   <CardTitle>Type</CardTitle>
