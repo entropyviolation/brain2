@@ -18,7 +18,7 @@ import { parse } from "node:url"
 import net from "node:net"
 import os from "node:os"
 import next from "next"
-import { parseLsofFpc, reclaimablePids } from "./dev-port.mjs"
+import { findRunningCogsPort, parseLsofFpc, reclaimablePids } from "./dev-port.mjs"
 import { handleSyncApi, syncDataPath } from "./sync-api.mjs"
 import { handlePersistApi, sharedPersistPath } from "./persist-api.mjs"
 import { handleIngestApi, ingestDataPath } from "./ingest-api.mjs"
@@ -110,6 +110,32 @@ async function pickPort(start, maxTries = 15) {
   }
   throw new Error(`No free port from ${start}–${start + maxTries - 1}. Kill old node/next processes and retry.`)
 }
+
+/**
+ * One dev stack at a time. A second Next dev server costs ~1-5 GB and a lot of CPU, so if a
+ * healthy one is already up we reuse it instead of starting another (or killing it).
+ * The process stays alive as a watcher: `concurrently -k` would otherwise tear Electron down.
+ */
+async function reuseRunningServer() {
+  const ports = strictPort ? [preferredPort] : Array.from({ length: 15 }, (_, i) => preferredPort + i)
+  const running = await findRunningCogsPort(ports)
+  if (running === null) return
+  console.log("")
+  console.log(`[cogs-dev] A dev server is already running on http://127.0.0.1:${running}; reusing it.`)
+  console.log(`[cogs-dev] Not starting a second one. Stop the first (Ctrl-C there) to start fresh.`)
+  console.log("")
+  const watch = setInterval(async () => {
+    if (!(await findRunningCogsPort([running]))) process.exit(0)
+  }, 5000)
+  const quit = () => {
+    clearInterval(watch)
+    process.exit(0)
+  }
+  process.on("SIGINT", quit)
+  process.on("SIGTERM", quit)
+  await new Promise(() => {})
+}
+if (process.env.COGS_ALLOW_SECOND_SERVER !== "1") await reuseRunningServer()
 
 let port
 if (strictPort) {

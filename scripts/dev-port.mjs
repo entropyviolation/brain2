@@ -32,3 +32,26 @@ export function reclaimablePids(procs) {
   if (procs.some((p) => !RECLAIMABLE.test(p.command || ""))) return null
   return [...new Set(procs.map((p) => p.pid).filter((id) => Number.isFinite(id) && id > 0))]
 }
+
+/**
+ * Is a healthy cogs dev server already answering on `port`?
+ * Only our own `/api/health` ("ok") counts, so a foreign or hung listener is not "ours".
+ */
+export async function isCogsServer(port, fetchImpl = fetch, timeoutMs = 1500) {
+  try {
+    const res = await fetchImpl(`http://127.0.0.1:${port}/api/health`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    return res.ok && (await res.text()).trim() === "ok"
+  } catch {
+    return false
+  }
+}
+
+/** First port in `ports` that already runs a cogs dev server, or `null`. */
+export async function findRunningCogsPort(ports, probe = isCogsServer) {
+  for (const port of ports) {
+    if (await probe(port)) return port
+  }
+  return null
+}

@@ -1123,7 +1123,7 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | `screenshot-reel-server.mjs` | Serve the evolution reel and `feature-notes.json` (`npm run screenshot-reel`) |
 | `write-screenshot-reel.mjs` | Same server entry, kept next to the archive helper |
 | `cogs-dev-server.mjs`     | Next + `/api/health` + `/api/sync` + `/api/persist` + `/api/ingest` + `/api/notes` + `/api/screentime` on one port; Electron strict-port reclaim of leftover Node |
-| `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM |
+| `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM; `/api/health` probe so a second dev stack reuses the running one |
 | `persist-api.mjs`         | Chrome/Electron shared persist hub: every record-bearing vault is shrink-guarded, append-only logs only grow, and a write that loses rows journals the old copy into `data/recovery-backups/` |
 | `ingest-api.mjs`          | Dev hub for Telegram pending messages / replies |
 | `phone-hub.mjs` / `phone-hub.ts` | Always-on Telegram executor (`npm run phone:hub`), including photo/PDF download |
