@@ -13,19 +13,29 @@
  * - An active task turns "in progress".
  *
  * Stop is the pen clock's Stop: the span is logged on the task there.
+ *
+ * While the clock is already running, the header and the desk can put a task
+ * on it, move which step is current, add a step, or finish the task and stop.
+ * The painted minutes stay one block. The block's note names the task and
+ * what this sitting finished.
  */
 import type { Subtask, Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
+import { runAsAction } from "@/lib/action-history"
+import { completeTask } from "@/lib/services/completion-service"
 import {
   addPenColorNowObjective,
   setPenColorSessionTask,
   startPenColorSession,
   stopPenColorSession,
+  togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import { activeNowObjectives } from "@/lib/now-objective"
-import { findPlacedStep } from "@/lib/next-step"
+import { findPlacedStep, placeSteps, stepPath } from "@/lib/next-step"
+import { addNestedStep } from "@/lib/todo-steps"
+import { createTaskForObjective } from "@/lib/unfinished-objectives"
 import { markTaskInProgress } from "@/lib/task-clock-log"
 import { itemTitle } from "@/lib/item-utils"
 
@@ -154,4 +164,123 @@ export function setTaskPenLinked(taskId: string, scopeId: string, penId: string,
   const rest = (task.penLinks ?? []).filter((link) => link.penId !== penId)
   const next = linked ? [...rest, { scopeId, penId }] : rest
   store.updateTask({ ...task, penLinks: next.length ? next : undefined })
+}
+
+function liveClock() {
+  return usePenColorSessionStore.getState().session
+}
+
+function clockTask(taskId: string | undefined): Task | undefined {
+  if (!taskId) return undefined
+  return useTaskStore.getState().tasks.find((task) => task.id === taskId)
+}
+
+/** Put this task on the clock that is already running. The block is not split. */
+export function assignTaskOnClock(taskId: string, stepId?: string): StartTaskClockResult {
+  const live = liveClock()
+  return runAsAction("task on the clock", () =>
+    startTaskClock(taskId, {
+      stepId,
+      penId: live?.penId,
+      rememberPen: !!live?.penId,
+    }),
+  )
+}
+
+/** Make a task named from the field and put it on the live clock, linked to this pen. */
+export function createTaskOnClock(name: string): string | null {
+  const live = liveClock()
+  if (!live) return null
+  return runAsAction("task on the clock", () => {
+    const id = createTaskForObjective(name, { scopeId: live.scopeId, penId: live.penId })
+    if (!id) return null
+    startTaskClock(id, { penId: live.penId })
+    return id
+  })
+}
+
+/** The step this sitting is on. Passing none clears it. The block stays one block. */
+export function setClockStep(stepId: string | undefined): void {
+  const live = liveClock()
+  const task = clockTask(live?.taskId)
+  if (!live?.taskId || !task) return
+  runAsAction("step on the clock", () => {
+    setPenColorSessionTask({ taskId: task.id, stepId, title: itemTitle(task) || live.title })
+    if (!stepId) return
+    const step = findPlacedStep(task.subtasks, stepId)?.step
+    const session = usePenColorSessionStore.getState().session
+    const already = activeNowObjectives(session?.nowObjectives).some((row) => row.stepId === step?.id)
+    if (step && !already) addPenColorNowObjective(step.description, new Date(), step.id)
+  })
+}
+
+/** A new step beside the one on the clock (or at the top, when none is). It becomes the current step. */
+export function addClockStep(description: string): string | undefined {
+  const text = description.trim()
+  const live = liveClock()
+  const task = clockTask(live?.taskId)
+  if (!text || !live?.taskId || !task) return undefined
+  return runAsAction("step on the clock", () => {
+    const path = live.stepId ? stepPath(task.subtasks, live.stepId) : null
+    const parentId = path?.length ? path[path.length - 1].id : null
+    const before = new Set(placeSteps(task.subtasks).map((placed) => placed.step.id))
+    const subtasks = addNestedStep(task.subtasks, parentId, { description: text })
+    useTaskStore.getState().updateTask({ ...task, subtasks })
+    const made = placeSteps(subtasks).find((placed) => !before.has(placed.step.id))
+    if (!made) return undefined
+    setPenColorSessionTask({ taskId: task.id, stepId: made.step.id, title: itemTitle(task) || live.title })
+    addPenColorNowObjective(made.step.description, new Date(), made.step.id)
+    return made.step.id
+  })
+}
+
+/**
+ * Finish this step and move the clock to the next open one.
+ * The minutes stay on the one block. The finished step stays on it through its objective.
+ */
+export function completeClockStep(stepId: string): void {
+  const live = liveClock()
+  const task = clockTask(live?.taskId)
+  if (!live?.taskId || !task) return
+  const step = findPlacedStep(task.subtasks, stepId)?.step
+  if (!step || step.completed) return
+  const finishedIndex = placeSteps(task.subtasks).findIndex((placed) => placed.step.id === stepId)
+  runAsAction("complete the step on the clock", () => {
+    const session = usePenColorSessionStore.getState().session
+    const row = session?.nowObjectives?.find((item) => item.stepId === stepId && !item.completedAt)
+    if (row) togglePenColorNowObjectiveComplete(row.id)
+    else {
+      addPenColorNowObjective(step.description, new Date(), stepId)
+      const added = usePenColorSessionStore.getState().session?.nowObjectives?.find(
+        (item) => item.stepId === stepId && !item.completedAt,
+      )
+      if (added) togglePenColorNowObjectiveComplete(added.id)
+    }
+    const fresh = clockTask(live.taskId)
+    if (!fresh) return
+    const after = placeSteps(fresh.subtasks)
+    const next =
+      after.find((placed, index) => !placed.step.completed && index > finishedIndex) ??
+      after.find((placed) => !placed.step.completed)
+    if (!next) {
+      setPenColorSessionTask({ taskId: fresh.id, title: itemTitle(fresh) || live.title })
+      return
+    }
+    setPenColorSessionTask({ taskId: fresh.id, stepId: next.step.id, title: itemTitle(fresh) || live.title })
+    const open = activeNowObjectives(usePenColorSessionStore.getState().session?.nowObjectives)
+    if (!open.some((item) => item.stepId === next.step.id)) {
+      addPenColorNowObjective(next.step.description, new Date(), next.step.id)
+    }
+  })
+}
+
+/** Mark the task on the clock complete, then stop. One undo step. */
+export function finishClockTask(park: boolean): void {
+  const live = liveClock()
+  if (!live) return
+  const taskId = live.taskId
+  runAsAction("finish the task on the clock", () => {
+    if (taskId) completeTask(taskId)
+    stopPenColorSession(new Date(), park ? { parkUnfinished: true } : undefined)
+  })
 }

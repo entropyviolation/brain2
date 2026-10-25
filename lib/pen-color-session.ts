@@ -136,14 +136,12 @@ function paintSlices(
   const tracking = useTimeTrackingStore.getState()
   const spanId = `pen-color-${session.startedAt}`
   const ids: string[] = []
-  const nowObjectives = compactNowObjectives(session.nowObjectives)
   for (const slice of slices) {
     tracking.paintMinutes(slice.date, session.scopeId, slice.startMin, slice.endMin, session.penId, undefined, spanId)
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
-    if (id) {
-      ids.push(id)
-    }
+    if (id) ids.push(id)
   }
+  stampClockEntries(session, ids)
   return ids
 }
 
@@ -180,6 +178,7 @@ function extendLiveEntry(session: PenColorSession, now: Date): string[] {
     const id = coveringEntryId(slice.date, session.scopeId, session.penId, slice.startMin)
     if (id) ids.push(id)
   }
+  stampClockEntries(session, ids)
   return ids
 }
 
