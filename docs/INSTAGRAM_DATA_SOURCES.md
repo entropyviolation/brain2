@@ -62,9 +62,9 @@ Main spawns `profiles.py` with the chosen account's cookie in the `IG_COOKIE` en
 
 ### Automatic exports
 
-_Checked: 2026-10-23_
+_Checked: 2026-10-25_
 
-**Scheduled export (found, not tested).** Meta's developer docs say Accounts Center can send an export to Google Drive or Dropbox again and again, from daily to yearly, for one to three years (for example `ONCE_A_MONTH_FOR_ONE_YEAR`). The details, and what still needs one real run to confirm, are in `docs/INSTAGRAM_AUTO_UPDATE.md` (PR #27). If it works for an Instagram JSON export, this is the main path. Drive or Dropbox syncs each export to a local folder, and the Instagram view's watcher picks it up. No request, email or password step is needed. Until a real run works, the monthly reminder in that doc stays on.
+**Scheduled export (lands in Drive; one copy failed, now read file by file).** Meta's developer docs say Accounts Center can send an export to Google Drive or Dropbox again and again, from daily to yearly, for one to three years (for example `ONCE_A_MONTH_FOR_ONE_YEAR`). Athena's account sends a JSON, all-information export to Google Drive once a day. It arrives as one `meta-…` folder in My Drive with each day's `instagram-…` folder inside it (`docs/INSTAGRAM_AUTO_UPDATE.md`). On 2026-10-23 a copy of that folder failed because Google Drive canceled `copyfile` on one online-only DM photo (`ECANCELED`). The folder stays in Drive, streamed. It is not in iCloud, and it does not need to be available offline. Brain2 reads each file instead, retries a cancel, and skips a photo that still will not download so the day still imports. The monthly reminder stays until a full run has finished after that change.
 
 **Fallback: automated requests (planned, only if the scheduled export fails).**
 
