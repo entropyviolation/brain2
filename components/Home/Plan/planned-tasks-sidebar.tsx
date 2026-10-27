@@ -7,7 +7,9 @@
  * period. Day / week / month share search, sort, To Do / Habits / Next actions
  * filters, packed wells, gems, and period quick-add (the same records as
  * Home → To Do). Empty stays reserved furniture. Day-rail rows write
- * `lib/plan-drag.ts` so a drop on the agenda actually plans. Habits show
+ * `lib/plan-drag.ts` so a drop on the agenda actually plans. The phone passes
+ * `onPlaceItem` and each row gains a Plan key; desktop callers omit it, so
+ * those rows stay as they were. Habits show
  * `HabitRowGem` / `resolveTaskGem`; To Do and Next actions show the Lists
  * orb/trinket (`iconFor` through `HabitGemImg`). Double-click any row opens
  * `TaskDetailPopup` via `onTaskClick` — same path as the rest of Plan.
@@ -61,6 +63,11 @@ interface PlannedTasksSidebarProps {
   onUnscheduleTask?: (taskId: string) => void
   onUnscheduleEvent?: (eventId: string) => void
   onUnschedulePlannedAction?: (actionId: string) => void
+  /**
+   * Phone only. A visible Plan key — the touch stand-in for dragging the row
+   * onto a day or an hour. Desktop callers omit it, so the rail DOM stays the same.
+   */
+  onPlaceItem?: (item: { kind: "task" | "habit"; id: string; title: string }) => void
 }
 
 function matchesQuery(query: string, ...fields: Array<string | undefined>): boolean {
@@ -114,6 +121,29 @@ function RailListOrb({ task }: { task: Pick<Task, "id" | "icon"> }) {
   return <HabitGemImg src={iconFor(task.id, task.icon)} className="plan-rail-gem" width={16} height={16} />
 }
 
+function PlaceKey({
+  title,
+  onPlace,
+}: {
+  title: string
+  onPlace: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="plan-rail-plan"
+      aria-label={`Plan ${title}`}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation()
+        onPlace()
+      }}
+    >
+      Plan
+    </button>
+  )
+}
+
 export function PlannedTasksSidebar({
   mode,
   currentDate,
@@ -121,6 +151,7 @@ export function PlannedTasksSidebar({
   onUnscheduleTask,
   onUnscheduleEvent,
   onUnschedulePlannedAction,
+  onPlaceItem,
 }: PlannedTasksSidebarProps) {
   const tasks = useTaskStore((s) => s.tasks)
   const folders = useTaskStore((s) => s.folders)
@@ -346,6 +377,12 @@ export function PlannedTasksSidebar({
               {habit.name}
               <span className="plan-rail-meta">{habitMeta(mode)}</span>
             </div>
+            {onPlaceItem ? (
+              <PlaceKey
+                title={habit.name}
+                onPlace={() => onPlaceItem({ kind: "habit", id: habit.id, title: habit.name })}
+              />
+            ) : null}
           </div>
         ))}
 
@@ -369,6 +406,12 @@ export function PlannedTasksSidebar({
             {(task.estimatedDuration ?? 0) > 0 && (
               <span className="plan-rail-mins">{task.estimatedDuration}m</span>
             )}
+            {onPlaceItem ? (
+              <PlaceKey
+                title={itemTitle(task)}
+                onPlace={() => onPlaceItem({ kind: "task", id: task.id, title: itemTitle(task) })}
+              />
+            ) : null}
           </div>
         ))}
 
@@ -392,6 +435,12 @@ export function PlannedTasksSidebar({
             {(task.estimatedDuration ?? 0) > 0 && (
               <span className="plan-rail-mins">{task.estimatedDuration}m</span>
             )}
+            {onPlaceItem ? (
+              <PlaceKey
+                title={itemTitle(task)}
+                onPlace={() => onPlaceItem({ kind: "task", id: task.id, title: itemTitle(task) })}
+              />
+            ) : null}
           </div>
         ))}
       </div>

@@ -1,0 +1,855 @@
+/**
+ * components/Home/Plan/plan-phone.css — Phone Plan
+ *
+ * Rules under `.plan-phone` do not match the desktop fascia. The desktop
+ * window and the portaled event windows change only inside the 767px block
+ * at the bottom of this file.
+ *
+ * The shape follows Apple Calendar and a Fantastical day: a compact sticky
+ * bar, a large title that scrolls away, a month of circles and dots, a week
+ * strip, a thumbable agenda, and sheets from the bottom. Sideways motion
+ * changes the period. Vertical motion stays in the scroller. Springs are the
+ * iOS sheet curve. Reduce Motion drops them.
+ */
+
+.plan95:has(.plan-phone) {
+  min-height: calc(100dvh - 6.5rem);
+  height: calc(100dvh - 6.5rem);
+}
+
+.plan-phone {
+  --phone-bg: #f2f2f7;
+  --phone-card: #ffffff;
+  --phone-ink: #1c1c1e;
+  --phone-sub: rgba(60, 60, 67, 0.6);
+  --phone-line: rgba(60, 60, 67, 0.18);
+  --phone-fill: rgba(120, 120, 128, 0.16);
+  --phone-bar: rgba(255, 255, 255, 0.82);
+  --phone-mint: #8cd4a5;
+  --phone-mint-ink: #143226;
+  --phone-selected: #1c1c1e;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--phone-bg);
+  color: var(--phone-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.25;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+
+.plan-phone button {
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+.plan-phone-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.plan-phone-nav,
+.plan-phone-dock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: var(--phone-bar);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.plan-phone-nav {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  min-height: 52px;
+  padding: 2px 6px 0;
+  z-index: 2;
+}
+
+.plan-phone-nav > button,
+.plan-phone-dock > button,
+.plan-phone-seg button,
+.plan-phone-week button,
+.plan-phone-sheet-head button,
+.plan-phone-choice,
+.plan-phone-row-main,
+.plan-phone-row-more,
+.plan-phone-agenda-head button,
+.plan-phone-cell-hit,
+.plan-phone-season-title,
+.plan-phone .plan-rail-plan,
+.plan-phone .plan-add button,
+.plan-phone .plan-rail-filters button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.plan-phone-nav > button,
+.plan-phone-dock > button,
+.plan-phone-sheet-head button,
+.plan-phone-agenda-head button {
+  border: 0;
+  background: transparent;
+  color: #0a84ff;
+  font-size: 17px;
+  font-weight: 400;
+  border-radius: 10px;
+}
+
+.plan-phone-nav > button:active,
+.plan-phone-dock > button:active,
+.plan-phone-choice:active,
+.plan-phone-row-main:active {
+  opacity: 0.55;
+}
+
+.plan-phone-add {
+  font-size: 28px !important;
+  font-weight: 300 !important;
+  line-height: 1;
+}
+
+.plan-phone-nav-copy {
+  min-width: 0;
+  text-align: center;
+}
+
+.plan-phone-nav-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan-phone-nav-sub {
+  margin: 0;
+  color: var(--phone-sub);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.plan-phone-seg {
+  display: flex;
+  gap: 0;
+  margin: 6px 12px 8px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--phone-fill);
+  flex-shrink: 0;
+}
+
+.plan-phone-seg button {
+  flex: 1;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--phone-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plan-phone-seg button[aria-selected="true"] {
+  background: var(--phone-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 0 rgba(0, 0, 0, 0.04);
+}
+
+.plan-phone-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 0 8px 8px;
+  flex-shrink: 0;
+}
+
+.plan-phone-week button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--phone-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.plan-phone-week-num {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.plan-phone-week button[aria-pressed="true"] .plan-phone-week-num {
+  background: var(--phone-selected);
+  color: #fff;
+}
+
+.plan-phone-week button[data-today="true"]:not([aria-pressed="true"]) .plan-phone-week-num {
+  color: var(--phone-mint-ink);
+  box-shadow: inset 0 0 0 1.5px var(--phone-mint);
+}
+
+.plan-phone-week button[data-past="true"] {
+  color: var(--phone-sub);
+}
+
+.plan-phone-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+
+.plan-phone-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.plan-phone-stage {
+  padding-bottom: 12px;
+}
+
+.plan-phone-large {
+  margin: 2px 16px 10px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.plan-phone-weekdays,
+.plan-phone-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.plan-phone-weekdays {
+  padding: 0 6px;
+  color: var(--phone-sub);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.plan-phone-month {
+  padding-bottom: 8px;
+}
+
+.plan-phone-month-grid {
+  padding: 0 4px;
+}
+
+.plan-phone-cell,
+.plan-phone-month-grid > .plan-phone-cell-hit {
+  min-height: 48px;
+}
+
+.plan-phone-cell-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  width: 100%;
+  min-height: 48px;
+  padding: 2px 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.plan-phone-cell[data-outside="true"],
+.plan-phone-cell-hit[data-outside="true"] {
+  opacity: 0.35;
+}
+
+.plan-phone-num {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-phone-cell-hit[data-selected="true"] .plan-phone-num,
+.plan-phone-week button[aria-pressed="true"] .plan-phone-week-num {
+  background: var(--phone-selected);
+  color: #fff;
+}
+
+.plan-phone-cell-hit[data-today="true"][data-selected="true"] .plan-phone-num {
+  background: var(--phone-mint);
+  color: var(--phone-mint-ink);
+}
+
+.plan-phone-cell-hit[data-today="true"]:not([data-selected="true"]) .plan-phone-num {
+  box-shadow: inset 0 0 0 1.5px var(--phone-mint);
+  color: var(--phone-mint-ink);
+}
+
+.plan-phone-cell-hit[data-past="true"]:not([data-selected="true"]) .plan-phone-num {
+  color: var(--phone-sub);
+}
+
+.plan-phone-dots {
+  display: flex;
+  gap: 3px;
+  min-height: 6px;
+  align-items: center;
+}
+
+.plan-phone-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--phone-mint-ink);
+}
+
+.plan-phone-gems {
+  display: flex;
+  gap: 1px;
+  min-height: 12px;
+}
+
+.plan-phone-gems img {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.plan-phone-season {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 8px 12px;
+}
+
+.plan-phone-season-title {
+  border: 0;
+  background: transparent;
+  color: #0a84ff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-align: left;
+  padding: 0 8px;
+}
+
+.plan-phone-agenda {
+  padding-top: 8px;
+}
+
+.plan-phone-agenda-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 16px 8px;
+}
+
+.plan-phone-agenda-head h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.plan-phone-list {
+  list-style: none;
+  margin: 0 12px 12px;
+  padding: 0;
+  background: var(--phone-card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.plan-phone-row,
+.plan-phone-ghost,
+.plan-phone-sun,
+.plan-phone-now,
+.plan-phone-empty {
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  box-shadow: inset 4px 0 0 var(--bar, transparent), inset 0 -0.5px 0 var(--phone-line);
+}
+
+.plan-phone-row[data-kind="plan"] {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(196, 180, 154, 0.18) 6px,
+    rgba(196, 180, 154, 0.18) 7px
+  );
+}
+
+.plan-phone-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 8px 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.plan-phone-time {
+  flex: 0 0 4.6rem;
+  color: var(--phone-sub);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.plan-phone-row-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.plan-phone-row-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.plan-phone-row-detail {
+  color: var(--phone-sub);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.plan-phone-row-more {
+  flex: 0 0 auto;
+  border: 0;
+  border-left: 0.5px solid var(--phone-line);
+  background: transparent;
+  color: #0a84ff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 12px;
+}
+
+.plan-phone-ghost {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--phone-sub);
+  border: 1px dashed var(--phone-line);
+  box-shadow: none;
+  pointer-events: none;
+  margin: 0;
+}
+
+.plan-phone-ghost .plan-phone-row-title,
+.plan-phone-ghost .plan-phone-row-detail {
+  display: block;
+}
+
+.plan-phone-sun,
+.plan-phone-now,
+.plan-phone-empty {
+  align-items: center;
+  padding: 8px 14px;
+  color: var(--phone-sub);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: inset 0 -0.5px 0 var(--phone-line);
+}
+
+.plan-phone-now {
+  color: var(--phone-mint-ink);
+  gap: 8px;
+}
+
+.plan-phone-now i {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--phone-mint);
+}
+
+.plan-phone-anchor {
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.plan-phone-empty {
+  justify-content: center;
+  min-height: 64px;
+  color: var(--phone-sub);
+  font-weight: 500;
+}
+
+.plan-phone-dock {
+  justify-content: space-around;
+  min-height: 48px;
+  padding: 4px 8px max(8px, env(safe-area-inset-bottom));
+  border-top: 0.5px solid var(--phone-line);
+  z-index: 2;
+}
+
+.plan-phone-dock > button {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plan-phone-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.plan-phone-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.36);
+  min-height: 0;
+  min-width: 0;
+}
+
+.plan-phone-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - 12px));
+  border-radius: 16px 16px 0 0;
+  background: var(--phone-bg);
+  color: var(--phone-ink);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.plan-phone-grabber {
+  width: 36px;
+  height: 5px;
+  margin: 8px auto 0;
+  border-radius: 999px;
+  background: rgba(60, 60, 67, 0.3);
+}
+
+.plan-phone-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px 0 16px;
+}
+
+.plan-phone-sheet-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.plan-phone-sheet-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 0 12px 8px;
+}
+
+.plan-phone-choice {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--phone-card);
+  color: var(--phone-ink);
+  font-size: 17px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.plan-phone-latches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan95 .plan-phone .plan-rail {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.plan95 .plan-phone .plan-rail-item {
+  min-height: 44px;
+  align-items: center;
+}
+
+.plan95 .plan-phone .plan-rail-plan {
+  margin-left: auto;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--phone-mint);
+  color: var(--phone-mint-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plan95 .plan-phone .plan-add input,
+.plan95 .plan-phone .plan-rail-tools input,
+.plan95 .plan-phone .plan-rail-tools select,
+.plan-phone-sheet textarea,
+.plan-phone-sheet input,
+.plan-phone-sheet select {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.plan95 .plan-phone #plan-gem-mode,
+.plan95 .plan-phone #plan-dark-mode {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+  color: #1c1c1e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  text-align: left;
+  padding: 0 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .plan-phone-stage[data-dir="1"],
+  .plan-phone-stage[data-dir="-1"] {
+    animation: plan-phone-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .plan-phone-stage[data-dir="1"] {
+    --plan-phone-dx: 28px;
+  }
+
+  .plan-phone-stage[data-dir="-1"] {
+    --plan-phone-dx: -28px;
+  }
+
+  .plan-phone-sheet {
+    animation: plan-phone-sheet-in 0.46s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .plan-phone-scrim {
+    animation: plan-phone-fade 0.28s ease;
+  }
+}
+
+@keyframes plan-phone-in {
+  from {
+    opacity: 0.72;
+    transform: translateX(var(--plan-phone-dx, 18px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes plan-phone-sheet-in {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes plan-phone-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-phone-stage,
+  .plan-phone-sheet,
+  .plan-phone-scrim {
+    animation: none !important;
+  }
+}
+
+.plan95[data-plan-dark="true"] .plan-phone,
+.plan-phone[data-plan-dark="true"] {
+  --phone-bg: #000000;
+  --phone-card: #1c1c1e;
+  --phone-ink: #f2f2f7;
+  --phone-sub: rgba(235, 235, 245, 0.6);
+  --phone-line: rgba(255, 255, 255, 0.12);
+  --phone-fill: rgba(120, 120, 128, 0.32);
+  --phone-bar: rgba(28, 28, 30, 0.82);
+  --phone-selected: #f2f2f7;
+  --phone-mint-ink: #143226;
+}
+
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-nav > button,
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-dock > button,
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-season-title,
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-row-more,
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-agenda-head button,
+.plan-phone[data-plan-dark="true"] .plan-phone-nav > button,
+.plan-phone[data-plan-dark="true"] .plan-phone-dock > button {
+  color: #64d2ff;
+}
+
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-week button[aria-pressed="true"] .plan-phone-week-num,
+.plan95[data-plan-dark="true"] .plan-phone .plan-phone-cell-hit[data-selected="true"] .plan-phone-num {
+  color: #000;
+}
+
+.plan95[data-plan-dark="true"] .plan-phone #plan-gem-mode,
+.plan95[data-plan-dark="true"] .plan-phone #plan-dark-mode {
+  background: #1c1c1e;
+  color: #f2f2f7;
+}
+
+/* Phone-only. Desktop widths never enter this block. */
+@media (max-width: 767px) {
+  .plan95 > .plan-window {
+    display: none !important;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - 8px)) !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding: 8px 16px max(16px, env(safe-area-inset-bottom)) !important;
+    overflow: auto !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    font-size: 16px !important;
+    background: #f2f2f7 !important;
+    color: #1c1c1e !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog-lg {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog-caption {
+    min-height: 44px;
+    background: transparent !important;
+    color: #1c1c1e !important;
+    padding: 4px 0 8px !important;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog-caption h2 {
+    color: #1c1c1e !important;
+    text-shadow: none !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog .plan95-title-btn,
+  html[data-plan-phone="true"] body .plan95-dialog .plan95-dialog-actions button,
+  html[data-plan-phone="true"] body .plan95-dialog button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  html[data-plan-phone="true"] body .plan95-dialog textarea,
+  html[data-plan-phone="true"] body .plan95-dialog select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  html[data-plan-phone="true"] body .plan95-dialog input:focus,
+  html[data-plan-phone="true"] body .plan95-dialog textarea:focus,
+  html[data-plan-phone="true"] body .plan95-dialog select:focus {
+    outline: 2px solid #000080;
+    box-shadow: inset 0 0 0 2px #000080;
+  }
+
+  html[data-plan-phone-dark="true"] body .plan95-dialog {
+    background: #1c1c1e !important;
+    color: #f2f2f7 !important;
+  }
+
+  html[data-plan-phone-dark="true"] body .plan95-dialog-caption,
+  html[data-plan-phone-dark="true"] body .plan95-dialog-caption h2 {
+    color: #f2f2f7 !important;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  html[data-plan-phone="true"] body .plan95-dialog {
+    animation: plan-phone-sheet-in 0.46s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  html[data-plan-phone="true"] body .plan95-dialog {
+    animation: none !important;
+  }
+}
