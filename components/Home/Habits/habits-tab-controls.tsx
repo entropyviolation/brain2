@@ -7,7 +7,7 @@
  * Hide Done, Mask done and missed, Highlight priorities, and Streaks and multipliers live in the Views band. Lamps are
  * Loading Bar and Small LEDs.
  * New habit sits in the foot, above the gem oval. Grade numbers and store
- * writes stay at the habit-tracker call site.
+ * writes stay in `tracker/` (the desktop page and its panes).
  */
 "use client"
 

@@ -2,7 +2,7 @@
  * components/Home/Habits/habits-phone.tsx — Phone Habits
  *
  * Phone page. Mounted only from `HabitsPhonePage` when the viewport is at
- * most 767px. The desktop console stays in `habit-tracker.tsx` and is not
+ * most 767px. The desktop console stays in `tracker/habits-desktop-page.tsx` and is not
  * rendered here.
  * One scrolling page: sticky header, period keys, one grade strip, a
  * one-period list with a horizontal drag between periods, and a thumb bar.

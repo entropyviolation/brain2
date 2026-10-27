@@ -3,7 +3,7 @@
  *
  * Its own page. `WeeklyTaskTracker` mounts this when the viewport is at
  * most 767px, and does not mount the desktop console. This file owns the
- * phone data wiring. The desktop tree stays in `habit-tracker.tsx`.
+ * phone data wiring. The desktop tree stays in `tracker/habits-desktop-page.tsx`.
  */
 "use client"
 
