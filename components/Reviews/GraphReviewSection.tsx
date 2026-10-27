@@ -3,7 +3,8 @@
  * (LINKS_REDESIGN L9.1, L9.2). Describe first: link edits per week,
  * linkability per type, mean clustering. Infer second: five vault-wide
  * suggestions, the newest checks, and the open inbox count. Read-only:
- * opening an item is the way to act on a row.
+ * opening an item is the way to act on a row. The day spine under it is the
+ * same: Offer sends a same-as proposal to the inbox, and Accept there writes.
  */
 "use client"
 
@@ -16,6 +17,7 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { relationLabel } from "@/lib/links"
 import { useTaskStore } from "@/lib/task-store"
+import { DaySpineReadout } from "@/components/Reviews/DaySpineReadout"
 
 export function GraphReviewSection() {
   const tasks = useTaskStore((s) => s.tasks)
@@ -65,6 +67,7 @@ export function GraphReviewSection() {
         </>
       ) : null}
       <p className="text-xs text-muted-foreground">{open} open proposal{open === 1 ? "" : "s"} in the inbox (Item types → Relations → Inbox).</p>
+      <DaySpineReadout />
     </div>
   )
 }

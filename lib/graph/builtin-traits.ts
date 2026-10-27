@@ -39,4 +39,13 @@ export const BUILTIN_TRAITS: Record<string, Partial<RelationDef>> = {
   "born-in": { traits: { functional: 1 } },
   "located-in": { traits: { transitive: true, acyclic: true } },
   "location-of": { traits: { transitive: true, acyclic: true } },
+  // Identity. A person accepts `same-as`. The two records stay.
+  "same-as": {
+    description: "Two records the person says are one. Neither is deleted.",
+    phrases: { forward: ["$s is the same as $o"], inverse: ["$o is the same as $s"] },
+  },
+  "different-from": {
+    description: "Two records the person says are not one. Stops a later same-as suggestion.",
+    phrases: { forward: ["$s is different from $o"], inverse: ["$o is different from $s"] },
+  },
 }

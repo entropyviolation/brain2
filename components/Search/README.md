@@ -11,7 +11,7 @@ hotkey opens it) and is available on every tab.
 | --- | --- |
 | `../../lib/search.ts` | **Pure, framework-free** ranked search. `searchItems(query, items, opts?)` returns `SearchResult[]` (`{ item, score, matchedOn }`). Case-insensitive, multi-term AND, deterministic. Also exports the `SearchResult` / `SearchField` types and a `displayTitle(item)` helper. No React / store / I/O dependencies. |
 | `../../lib/search.test.ts` | Vitest unit tests for the ranker: title > tag > notes, multi-term AND, case-insensitivity, empty query → `[]`, tags, no-match, determinism, and `limit`. |
-| `GlobalSearch.tsx` | The palette (`data-ui-name="Search"`). One dialog. Snapshots items, lists, and folders on open, runs `searchItems`, and renders the ranked hits. Up/Down move, Enter opens, Esc closes — from the field or anywhere in the palette that is not an Advanced control. |
+| `GlobalSearch.tsx` | The palette (`data-ui-name="Search"`). One dialog. Snapshots items, lists, and folders on open, runs `searchItems`, and renders the ranked hits. A house question (`lib/graph/pattern-questions.ts`) replaces the hit list with triples and one template sentence, or "No triple supports an answer." Other text stays node lookup. Up/Down move, Enter opens, Esc closes — from the field or anywhere in the palette that is not an Advanced control. |
 | `search-chrome.css` | Milled fascia for `.b2-search`: sunken query well, result well, phosphor lamp on the active row. Same face tokens as the header (`--fascia-*`, `--hab-crt-green`). Imported from `app/layout.tsx` so the lazy palette does not paint unskinned. |
 | `useGlobalSearchHotkey.ts` | `{ open, setOpen }`. Toggles on Cmd/Ctrl-K. Shift and Alt chords are ignored (Cmd/Ctrl-Shift-A opens Quick Add). Key repeat does not toggle. Mounts nothing by itself. The header magnifying glass calls the same `setOpen(true)`. |
 | `GlobalSearch.test.tsx` | Palette behavior: empty copy, click and Enter open the right id and kind, highlight returns to the first hit when the query changes, arrows work from Advanced, rows show type / list / date, hidden-only empty state. |
@@ -78,3 +78,4 @@ full-page item so the desk is visible.
 - Changing the query or the Advanced filters moves the highlight back to the
   first hit, so Enter opens the best match.
 - Cmd/Ctrl-K toggles the palette. Cmd/Ctrl-Shift-A opens Quick Add and does not toggle search.
+- A house question is not a node lookup. The grammar is in `lib/graph/pattern-questions.ts`: `who with <person> during <date>..<date>` or a trip title, `places with one person`, `captures never linked`, `where from <name>`, `what reads <id>`, `day <YYYY-MM-DD>`, `people unseen`, and `? <subject> <relation> <object>` with `*` as a wildcard. The sentence is omitted when no triple matched.

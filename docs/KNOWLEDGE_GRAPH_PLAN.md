@@ -1,9 +1,11 @@
 # Brain2 knowledge graph plan
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-**Status: Planned. Source material, not a wave.** Nothing here is built
-unless a line says **Landed**. This file opens no wave in
+**Status: Planned, with a partial landing on 2026-10-27.** Nothing here is built
+unless a line says **Landed**. The day spine, identity proposals, observation
+evidence, machinery answers, and Cmd-K house questions are **Landed** only in
+the slices named in the register under §5. This file opens no wave in
 [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md). A piece of it ships only when a wave
 there claims it. Wave 10 (Ontology) and Wave 12 (Wiki links) are the nearest
 homes.
@@ -823,10 +825,11 @@ edge view is a property graph.
 
 ## 5. Proposals
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-Every proposal is **Planned**. Each names the paper section, the files it
-would touch, and the law it must clear. Families:
+Every proposal is **Planned** except the partial landings in the register.
+Each names the paper section, the files it would touch, and the law it must
+clear. Families:
 
 | Prefix | Family | Count |
 |---|---|---|
@@ -850,9 +853,22 @@ would touch, and the law it must clear. Families:
 | KG-PT | Patterns and taxonomies ([BW]) | 10 |
 | KG-NL | Natural language without a model ([BW]) | 8 |
 
+### Landed in part, 2026-10-27
+
+| Id | What a person can call | Still not built |
+|---|---|---|
+| KG-D1, KG-D2, KG-D10, KG-D11 | `lib/graph/vault-graph.ts` `projectVault`. Blocks, completions, captures, spans, reviews. Addresses `day:`, `week:`, `month:`, `season:` (calendar quarter), `year:`, `block:`, `pen:`, `item:`, `message:`. | The rest of the stores. Habit cells. GPS name file. Full attribute and list hyperedges (KG-D3–D9, D13–D15). |
+| KG-D12 | Applied ingest events as `message:` nodes with `produced`. | A Telegram event is not "messaged this person". |
+| KG-C1 | `nested-in` from day up to year. `peopleDuring` meets block minutes. | The rest of KG-C. |
+| KG-I4, KG-I6 | `same-as` / `different-from` in `RELATIONS`. `lib/graph/identity-match.ts` proposes. Accept in the graph inbox writes a recorded `same-as`. Dismiss stays a dismissal. | No automatic merge. `same-as` groups are not folded on every query. Tag identity and external ids stay planned. |
+| KG-Q1, KG-Q5 | `lib/graph/pattern-questions.ts`. One triple `? s p o` with `*`, plus the house questions. Cmd-K shows triples and a template sentence. | Variables, paths, optional, aggregates, saved patterns. |
+| KG-NL2, KG-NL3 | Template sentences in that same module and in Cmd-K. | BIM, read-aloud, a full phrase table per predicate. |
+| KG-M2, KG-M3 | `lib/graph/machinery.ts` `whereFrom` and `whatReadsThis`. Shown under the weekly graph review. | Delete-confirm chrome. A row for every store key (KG-M1 stays planned). |
+| E3 | Observation addresses count in `lib/belief-strength.ts` at trust 1. `evidenceMissingFromSpine` lists addresses the spine no longer has. The belief is not rewritten. | No `formulation` type (GS-5 is still planned). Beliefs are the records that carry evidence links. |
+
 ### 5.1 Data model (KG-D)
 
-**KG-D1 · The vault edge view.** A pure `lib/graph/vault-graph.ts` that reads
+**KG-D1 · The vault edge view.** **Landed in part, 2026-10-27** — see the register. A pure `lib/graph/vault-graph.ts` that reads
 every store and yields one list of triples: `{ s, p, o, graph, order, at? }`.
 Every row in §3.1 becomes a predicate (`member-of`, `connected-to`,
 `nested-in`, `filed-in`, `blocks`, `part-of`, `ref:<attrId>`, `type`,
@@ -863,7 +879,7 @@ over the legacy stores, so updates never need propagating. Wave 10 open item 2
 ("habits, sleep, minutes, and plan prose stay fast projections of Items") is
 the same idea from the other side. Law: one write door (read only).
 
-**KG-D2 · Node addresses for non-item records.** A prefixed id scheme the
+**KG-D2 · Node addresses for non-item records.** **Landed in part, 2026-10-27** — day, week, month, season, year, block, pen, item, message. A prefixed id scheme the
 edge view and every graph surface share: `item:<id>`, `list:<id>`,
 `folder:<id>`, `type:<id>`, `pen:<id>`, `scope:<id>`, `tag:<normalized>`,
 `habit:<id>`, `event:<id>`, `goal:<id>`, `objective:<id>`, `review:<key>`,
@@ -912,18 +928,18 @@ whole set ("Reading list · for 2027", "Gift ideas · for person X"). Today list
 facts live in list settings. The edge view emits them as `list:<id>` edges.
 Paper: §2.1.5 (hypernodes).
 
-**KG-D10 · Blocks as n-ary events.** Read a painted block as one event node
+**KG-D10 · Blocks as n-ary events.** **Landed in part, 2026-10-27** — pen, who, and place on the block. Read a painted block as one event node
 with qualifiers: pen, secondary pens, variant answers ("Who?"), scope, minutes,
 counts-as chain. That is a neo-Davidsonian event (§6.2.4): one existential
 event with roles. Lets queries ask "blocks where Who = Ian and Location = Ocean
 Beach". File: `lib/tracking-summary.ts` (read side only).
 
-**KG-D11 · Completions as events.** Same treatment for a completion: the item,
+**KG-D11 · Completions as events.** **Landed in part, 2026-10-27** — `completed-on` only. Same treatment for a completion: the item,
 the tier or grade (GS-9), the `timeLogs` slice, the Done day, the habit cells
 it fed, the points row. Today those are five records in four stores joined by
 code. Paper: §3.3.1 (turn the relation into a node).
 
-**KG-D12 · Messages as events.** Each applied Telegram message becomes an
+**KG-D12 · Messages as events.** **Landed in part, 2026-10-27** — applied events, plus iPhone text and call blocks as `messaged`. Each applied Telegram message becomes an
 event node with `captured-by`, `produced` (the items and blocks it wrote), and
 `sent-at`. The applied-message log in `brain2-ingest-store` already holds the
 join. Paper: §3.3.1 PROV (an activity generated entities).
@@ -1028,7 +1044,7 @@ members differ in an edge (the bisimilar version) so "Books with an author" and
 
 ### 5.3 Query (KG-Q)
 
-**KG-Q1 · Pattern syntax.** A tiny, deterministic pattern language over the
+**KG-Q1 · Pattern syntax.** **Landed in part, 2026-10-27** — one triple and `*`, in `pattern-questions.ts`. A tiny, deterministic pattern language over the
 edge view: `?b type Book · ?b supports ?x · ?x type Belief`. Variables start
 with `?`. Names resolve through titles and aliases (KG-I2). Homomorphism
 semantics by default; `distinct` for set semantics. Pure, in
@@ -1045,7 +1061,7 @@ covers most "what is missing" questions.
 **KG-Q4 · Aggregates.** `count`, `sum`, `avg`, `min`, `max`, `group by`, over
 literal values and minutes. Paper: §2.2.4. Reuses `lib/formula.ts` arithmetic.
 
-**KG-Q5 · Patterns in Cmd-K.** A leading `?` in `GlobalSearch.tsx` switches
+**KG-Q5 · Patterns in Cmd-K.** **Landed in part, 2026-10-27** — `?` and the house questions. Node lookup stays. A leading `?` in `GlobalSearch.tsx` switches
 from keyword to pattern. Results show as a small table with the witness path
 per row. Paper: §9.2.4 graph-pattern access, here local.
 
@@ -1162,7 +1178,7 @@ description to disambiguate (Santiago, capital of Chile). Brain2's equivalent
 is one line under the title in pickers: type, first list, and one key attribute
 ("Sam · Person · People I Know · met 2024"). Derived, not stored.
 
-**KG-I4 · `same-as` without deleting.** A symmetric `same-as` relation for two
+**KG-I4 · `same-as` without deleting.** **Landed in part, 2026-10-27** — the relation and the accept write. Query-time groups are not built. A symmetric `same-as` relation for two
 records the person says are one, when deleting either would lose a source:
 an Instagram row and a People I Know person, a Letterboxd film and a Film DNA
 item, two imports of one book. The reader consolidates them on query (§8.1.3).
@@ -1171,7 +1187,7 @@ item, two imports of one book. The reader consolidates them on query (§8.1.3).
 **KG-I5 · `different-from`.** The opposite mark, stored as a link: "Sam (work)
 is not Sam (climbing)". Stops future suggestions from pairing them (§4.1.2).
 
-**KG-I6 · Person identity across rooms.** One read: a person node gathers the
+**KG-I6 · Person identity across rooms.** **Landed in part, 2026-10-27** — candidates, not a gathered biography. One read: a person node gathers the
 People I Know item, the Company pen, the who-pen details, Instagram rows, gift
 ideas, Telegram mentions, and `same-as` partners. `lib/people-sync.ts` keeps
 writing its three records; the graph shows them as one person.
@@ -1205,7 +1221,7 @@ ambiguity rule ("close ties become ambiguous so the bot can ask").
 
 ### 5.6 Context and time (KG-C)
 
-**KG-C1 · Day and period nodes as hubs.** Every dated record emits an edge to
+**KG-C1 · Day and period nodes as hubs.** **Landed in part, 2026-10-27** — the streams `projectVault` actually reads. Every dated record emits an edge to
 its `day:` node, and days roll up to `week:`, `month:`, `season:`, `year:`
 through `lib/period-keys.ts` and `lib/seasons.ts`. The partial order is the
 paper's context dimension (§3.3.5). Expansion E1 builds on it.
@@ -1634,12 +1650,12 @@ squares, Analytics views, Telegram replies, exports). Edges: `reads`,
 `writes`, `feeds`. A unit test fails when a store key in
 `lib/storage-keys.ts` or a sync file has no manifest row.
 
-**KG-M2 · Lineage for any number.** "Why is this 4?" on a habit cell, a points
+**KG-M2 · Lineage for any number.** **Landed in part, 2026-10-27** — `whereFrom` for the seven named derivations. "Why is this 4?" on a habit cell, a points
 row, a grade, a list count, or an Analytics figure walks the machinery graph
 back to the records that produced it. The answer is the GS-7 Structural
 Differential stack with real rows in it.
 
-**KG-M3 · Impact before delete.** Deleting a pen, list, tag, habit, or type
+**KG-M3 · Impact before delete.** **Landed in part, 2026-10-27** — `whatReadsThis` and Cmd-K `what reads`. The delete confirm is not wired. Deleting a pen, list, tag, habit, or type
 first lists what reads it: habits linked by tag, membership rules naming the
 list, workflows that trigger on it, module views bound to it, formulas that
 `LOOKUP` it. Win95 confirm with the count. [BW] impact analysis.
@@ -1832,12 +1848,12 @@ and an *inverse* phrase, with short and long forms and `$s`/`$o` slots
 `inverseLabel`; this generalises them. Each type names the field used to refer
 to its members (title, name, pen name).
 
-**KG-NL2 · "What the vault knows about X."** One generic generator walks a
+**KG-NL2 · "What the vault knows about X."** **Landed in part, 2026-10-27** — template sentences for the house questions, not a walk of every edge. One generic generator walks a
 node's edges and attributes and prints sentences from KG-NL1. Item detail
 gets a **Read aloud** text panel; BIM answers "tell me about Sam". It reads
 the record; it never interprets it (law 7 and GS-3 copy rules apply).
 
-**KG-NL3 · Rule-based questions in BIM.** Patterns over words, in the
+**KG-NL3 · Rule-based questions in BIM.** **Landed in part, 2026-10-27** — the questions run in Cmd-K, not in BIM. Patterns over words, in the
 existing grammar style: "who did I see on Tuesday", "what blocks X", "when did
 I last Y", "what supports Z", "how much X this week". Each maps to a pattern
 (KG-Q1) and replies with the answer plus the pattern it ran, as [BW] prints
@@ -2070,10 +2086,11 @@ names a gap in the schema or in capture.
 
 ## 7. Expansions
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-Five directions that use many proposals at once. Each is **Planned** and
-large. None starts without a wave.
+Five directions that use many proposals at once. Each was **Planned**.
+E1–E5 are **Landed in part, 2026-10-27**, in the slices in the §5 register.
+The rest of each expansion stays planned. None of this opened a wave.
 
 ### E1 · The Day Graph: a temporal knowledge graph of a life
 

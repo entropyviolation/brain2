@@ -168,6 +168,31 @@ describe("GlobalSearch", () => {
     expect(screen.getByText("0 shown")).toBeInTheDocument()
   })
 
+  it("answers a house question with triples and stays on node lookup otherwise", async () => {
+    const user = userEvent.setup()
+    addItem({ id: "milk", description: "Buy milk", type: "task" })
+    renderSearch()
+    const box = screen.getByRole("combobox", { name: "Search items" })
+
+    await user.type(box, "where from belief strength")
+    const answer = screen.getByTestId("pattern-answer")
+    expect(answer).toHaveTextContent("Belief strength is derived from")
+    expect(answer).toHaveTextContent("derived")
+    expect(screen.queryByRole("option", { name: /Buy milk/i })).not.toBeInTheDocument()
+
+    await user.clear(box)
+    await user.type(box, "milk")
+    expect(screen.queryByTestId("pattern-answer")).not.toBeInTheDocument()
+    expect(screen.getByRole("option", { name: /Buy milk/i })).toBeInTheDocument()
+  })
+
+  it("says when no triple supports a pattern", async () => {
+    const user = userEvent.setup()
+    renderSearch()
+    await user.type(screen.getByRole("combobox", { name: "Search items" }), "places with one person")
+    expect(screen.getByTestId("pattern-answer")).toHaveTextContent("No triple supports an answer.")
+  })
+
   it("closes on Escape", async () => {
     const user = userEvent.setup()
     renderSearch()
