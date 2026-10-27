@@ -401,6 +401,16 @@ export const BIM_COMMAND_CATALOG: CatalogEntry[] = [
     status: "active",
   },
   {
+    id: "nfc",
+    category: "log",
+    primary: "nfc:",
+    forms: ["nfc:"],
+    format: "`nfc:vitamin-d` · `nfc:door` · `nfc:shower`",
+    explanation:
+      "NFC tag saved in Settings → Message ingest. Colon required, so bare `nfc` stays a log line. The id is the tag slug. A known tag writes its tracking instant at the send time (`generatedBy.kind` `text`, id `nfc:{tag}:{iso}`). An intake class uses the Intake pen. Optional minutes paint an estimated block on the Activity pen named for that title, ending at the scan. A bound daily habit is marked done or gains 1. The BIM line is `nfc:…`, so a keyword source does not count it again. A door tag alternates `left` and `back`. The same tag within 20 seconds is ignored. Unknown ids write nothing. The signed shortcut is `docs/shortcuts/NFC to Brain2.shortcut`.",
+    status: "active",
+  },
+  {
     id: "switch",
     category: "log",
     primary: "switch:",

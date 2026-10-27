@@ -71,6 +71,7 @@ describe("ingestIncoming", () => {
       shortcuts: {},
       groceryListId: null,
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
+      nfcTags: [],
       seenIngestKeys: [],
       phoneHubUrl: "",
       livePins: {},

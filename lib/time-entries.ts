@@ -197,8 +197,10 @@ export interface TimeEntry {
   /**
    * Set when another record produced this block rather than a brush stroke —
    * the sleep log (`lib/sleep-sync.ts`) or Screen Time sync (`lib/screentime/sync.ts`).
-   * `id` is the local calendar day (`YYYY-MM-DD`). Phone sync (`lib/phone-sync/`) is the
-   * exception: its `id` is one source record (`messages:<guid>`), never a day. Each generator replaces only
+   * `id` is the local calendar day (`YYYY-MM-DD`) for sleep, screen time, and a text log.
+   * Phone sync (`lib/phone-sync/`) uses one source record (`messages:<guid>`).
+   * An NFC scan uses `nfc:{tagId}:{iso}` (and `nfc:{tagId}:span:{iso}` on the duration block)
+   * so a second tap does not replace the first. Each generator replaces only
    * its own kind+id, so re-deriving is idempotent and can never quietly delete
    * time the user painted by hand.
    */

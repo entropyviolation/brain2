@@ -230,6 +230,12 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 - **Forms / aliases:** `intake:`, `intake food:`, `intake drink:`, `intake drug:`
 - **Does:** Food, drink, medicine, or any intake — the Intake row of the Tracking log. Food is a subset of intake. Always a point — no duration. Pen: Intake. No time uses the send time. A following clock uses that time on the send date. `intake food:` / `intake drink:` / `intake drug:` set `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`. Bare `intake:` leaves `intakeClass` unset and sets `eventKind` to `intake`. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` stores the minute for placement only. A line under the event is the note. `ate` / `drank` / `took` keep the Text log pen and set the same class. Vertical line on the Tracking grid. A later block leaves the point.
 
+### `nfc:`
+
+- **Format:** `nfc:vitamin-d` · `nfc:door` · `nfc:shower`
+- **Forms / aliases:** `nfc:`
+- **Does:** NFC tag saved in Settings → Message ingest. Colon required, so bare `nfc` stays a log line. The id is the tag slug. A known tag writes its tracking instant at the send time (`generatedBy.kind` `text`, id `nfc:{tag}:{iso}`). An intake class uses the Intake pen. Optional minutes paint an estimated block on the Activity pen named for that title, ending at the scan. A bound daily habit is marked done or gains 1. The BIM line is `nfc:…`, so a keyword source does not count it again. A door tag alternates `left` and `back`. The same tag within 20 seconds is ignored. Unknown ids write nothing. The signed shortcut is `docs/shortcuts/NFC to Brain2.shortcut`.
+
 ### `switch:`
 
 - **Format:** `switch: location from: home to: ralphs` · `switch: activity from: working on brain2 to: working on foxtide 6:37pm` · `switch: company Elijah` · `switch: to cleaning` · `switch: from email to cleaning`

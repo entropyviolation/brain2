@@ -23,6 +23,8 @@ import { generatePairingCode, unpairedSenders } from "@/lib/ingest/pairing"
 import { sanitizeShortcutAlias } from "@/lib/ingest/expand"
 import { ingestIncoming, ingestIncomingAsync } from "@/lib/ingest/executor"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { nfcLine, nfcSlug, type NfcHabitCredit, type NfcTagKind } from "@/lib/ingest/nfc-tag"
+import { useHabitsStore } from "@/lib/habits-store"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { useTaskStore } from "@/lib/task-store"
 import { getTelegramDesktop } from "@/lib/ingest/telegram-bridge"
@@ -536,6 +538,8 @@ export function MessageIngestPanel() {
         ))}
       </div>
 
+      <NfcTagsSection />
+
       <details className="text-sm">
         <summary className="cursor-pointer font-medium">iPhone Notes Shortcut</summary>
         <div className="mt-2 space-y-2 text-xs text-muted-foreground">
@@ -573,11 +577,13 @@ export function MessageIngestPanel() {
             AirDrop the signed files next to the Notes dump:{" "}
             <code className="text-foreground">Screen Time to Brain2.shortcut</code>,{" "}
             <code className="text-foreground">iPhone Call to Brain2.shortcut</code>,{" "}
-            <code className="text-foreground">iPhone Text to Brain2.shortcut</code>{" "}
+            <code className="text-foreground">iPhone Text to Brain2.shortcut</code>,{" "}
+            <code className="text-foreground">NFC to Brain2.shortcut</code>{" "}
             in <code className="text-foreground">docs/shortcuts/</code>. Same Telegram Send Message as Notes
             — pick the @brain2_phone_bot chat on import. Recipes:{" "}
             <code className="text-foreground">screen-time-to-brain2.md</code>,{" "}
-            <code className="text-foreground">iphone-calls-and-texts-to-brain2.md</code>.
+            <code className="text-foreground">iphone-calls-and-texts-to-brain2.md</code>,{" "}
+            <code className="text-foreground">nfc-tags.md</code>.
           </p>
           <ol className="list-decimal pl-5 space-y-1">
             <li>Pair this Telegram account (code above).</li>
@@ -659,6 +665,254 @@ export function MessageIngestPanel() {
           Photo of a receipt or notebook, or a PDF. Local OCR — same path as Telegram.
         </p>
       </div>
+    </div>
+  )
+}
+
+const fieldClass = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+
+interface NfcDraft {
+  id: string
+  name: string
+  kind: NfcTagKind
+  title: string
+  intakeClass: "" | "food" | "drink" | "drug"
+  minutes: string
+  leftTitle: string
+  backTitle: string
+  habitId: string
+  habitCredit: NfcHabitCredit
+}
+
+function emptyNfcDraft(): NfcDraft {
+  return {
+    id: "",
+    name: "",
+    kind: "instant",
+    title: "",
+    intakeClass: "",
+    minutes: "",
+    leftTitle: "left",
+    backTitle: "back",
+    habitId: "",
+    habitCredit: "done",
+  }
+}
+
+function NfcTagsSection() {
+  const tags = useIngestStore((s) => s.nfcTags)
+  const upsertNfcTag = useIngestStore((s) => s.upsertNfcTag)
+  const removeNfcTag = useIngestStore((s) => s.removeNfcTag)
+  const tasks = useHabitsStore((s) => s.tasks)
+  const habits = tasks.filter((task) => !task.frequency || task.frequency === "daily")
+  const [draft, setDraft] = useState<NfcDraft>(emptyNfcDraft)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [copyNote, setCopyNote] = useState<string | null>(null)
+
+  const line = nfcLine(draft.id || draft.name)
+
+  const handleSave = () => {
+    const minutes = Number(draft.minutes)
+    const saved = useIngestStore.getState().nfcTags.find((tag) => tag.id === (editingId ?? nfcSlug(draft.id || draft.name)))
+    upsertNfcTag({
+      id: draft.id || draft.name,
+      name: draft.name || draft.id,
+      kind: draft.kind,
+      title: draft.title || draft.name || draft.id,
+      intakeClass: draft.kind === "instant" && draft.intakeClass ? draft.intakeClass : undefined,
+      minutes: draft.kind === "instant" && Number.isFinite(minutes) ? minutes : undefined,
+      leftTitle: draft.leftTitle,
+      backTitle: draft.backTitle,
+      habitId: draft.habitId || undefined,
+      habitCredit: draft.habitCredit,
+      lastAt: saved?.lastAt,
+      lastSide: saved?.lastSide,
+    })
+    if (editingId && editingId !== nfcSlug(draft.id || draft.name)) removeNfcTag(editingId)
+    setDraft(emptyNfcDraft())
+    setEditingId(null)
+  }
+
+  const handleEdit = (id: string) => {
+    const tag = useIngestStore.getState().nfcTags.find((row) => row.id === id)
+    if (!tag) return
+    setEditingId(tag.id)
+    setDraft({
+      id: tag.id,
+      name: tag.name,
+      kind: tag.kind,
+      title: tag.title,
+      intakeClass: tag.intakeClass ?? "",
+      minutes: tag.minutes ? String(tag.minutes) : "",
+      leftTitle: tag.leftTitle,
+      backTitle: tag.backTitle,
+      habitId: tag.habitId ?? "",
+      habitCredit: tag.habitCredit,
+    })
+  }
+
+  const handleCopy = async (id: string) => {
+    const text = nfcLine(id)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyNote(`Copied ${text}`)
+    } catch {
+      setCopyNote(text)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>NFC tags</Label>
+      <p className="text-xs text-muted-foreground">
+        A sticker sends <code className="text-foreground">{line || "nfc:vitamin-d"}</code> through BIM.
+        The scan writes a tracking instant and, when you pick one, today’s daily habit.
+        The same tag within 20 seconds is ignored. A door tag alternates left and back.
+        AirDrop <code className="text-foreground">docs/shortcuts/NFC to Brain2.shortcut</code> and attach
+        a copy to each sticker (Shortcuts → Automation → NFC).
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Input
+          aria-label="NFC tag id"
+          placeholder="vitamin-d"
+          value={draft.id}
+          onChange={(e) => setDraft({ ...draft, id: e.target.value })}
+        />
+        <Input
+          aria-label="NFC tag name"
+          placeholder="Vitamin D"
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+        />
+        <select
+          aria-label="NFC tag kind"
+          className={fieldClass}
+          value={draft.kind}
+          onChange={(e) => setDraft({ ...draft, kind: e.target.value === "toggle" ? "toggle" : "instant" })}
+        >
+          <option value="instant">Instant</option>
+          <option value="toggle">Door toggle</option>
+        </select>
+        {draft.kind === "instant" ? (
+          <>
+            <Input
+              aria-label="NFC event title"
+              placeholder="vitamin D"
+              value={draft.title}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            />
+            <select
+              aria-label="NFC intake class"
+              className={fieldClass}
+              value={draft.intakeClass}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  intakeClass: e.target.value === "food" || e.target.value === "drink" || e.target.value === "drug" ? e.target.value : "",
+                })
+              }
+            >
+              <option value="">Event</option>
+              <option value="drug">Drug</option>
+              <option value="food">Food</option>
+              <option value="drink">Drink</option>
+            </select>
+            <Input
+              aria-label="NFC duration minutes"
+              placeholder="Minutes, optional"
+              inputMode="numeric"
+              value={draft.minutes}
+              onChange={(e) => setDraft({ ...draft, minutes: e.target.value })}
+            />
+          </>
+        ) : (
+          <>
+            <Input
+              aria-label="NFC left title"
+              placeholder="left"
+              value={draft.leftTitle}
+              onChange={(e) => setDraft({ ...draft, leftTitle: e.target.value })}
+            />
+            <Input
+              aria-label="NFC back title"
+              placeholder="back"
+              value={draft.backTitle}
+              onChange={(e) => setDraft({ ...draft, backTitle: e.target.value })}
+            />
+          </>
+        )}
+        <select
+          aria-label="NFC daily habit"
+          className={fieldClass}
+          value={draft.habitId}
+          onChange={(e) => setDraft({ ...draft, habitId: e.target.value })}
+        >
+          <option value="">No daily habit</option>
+          {habits.map((habit) => (
+            <option key={habit.id} value={habit.id}>
+              {habit.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="NFC habit credit"
+          className={fieldClass}
+          value={draft.habitCredit}
+          onChange={(e) => setDraft({ ...draft, habitCredit: e.target.value === "add" ? "add" : "done" })}
+        >
+          <option value="done">Mark done</option>
+          <option value="add">Add 1</option>
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={handleSave} disabled={!nfcSlug(draft.id || draft.name)}>
+          {editingId ? "Update tag" : "Add tag"}
+        </Button>
+        {editingId ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setEditingId(null)
+              setDraft(emptyNfcDraft())
+            }}
+          >
+            Cancel
+          </Button>
+        ) : null}
+      </div>
+      {tags.map((tag) => (
+        <div key={tag.id} className="flex items-center justify-between gap-2 text-sm">
+          <span className="min-w-0">
+            <code>{nfcLine(tag.id)}</code>
+            <span className="text-muted-foreground"> · {tag.name}</span>
+            {tag.lastAt ? (
+              <span className="block text-xs text-muted-foreground">
+                Last scan {new Date(tag.lastAt).toLocaleString()}
+                {tag.lastSide ? ` · ${tag.lastSide === "out" ? "left" : "back"}` : ""}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex shrink-0 gap-1">
+            <Button type="button" size="sm" variant="ghost" onClick={() => void handleCopy(tag.id)}>
+              Copy
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => handleEdit(tag.id)}>
+              Edit
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              aria-label={`Remove ${tag.name}`}
+              onClick={() => removeNfcTag(tag.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </span>
+        </div>
+      ))}
+      {copyNote ? <p className="text-xs text-muted-foreground">{copyNote}</p> : null}
     </div>
   )
 }
