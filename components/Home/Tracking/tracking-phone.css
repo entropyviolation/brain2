@@ -1,0 +1,625 @@
+/**
+ * components/Home/Tracking/tracking-phone.css — Phone Tracking only
+ *
+ * Every rule hangs off `.trk-phone` or `.trk-phone-sheet`, which the desk
+ * does not render. A viewport of 768px and wider never mounts that tree.
+ * The block editor's phone anchor lives in `entry-dialog.css`.
+ */
+
+.trk-phone {
+  --trk-phone-tray: calc(118px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: 0 env(safe-area-inset-right, 0px) 24px env(safe-area-inset-left, 0px);
+  color: #1c1c1e;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.trk-phone[data-tray="true"] {
+  padding-bottom: calc(var(--trk-phone-tray) + 16px);
+}
+
+.trk-phone-head {
+  position: sticky;
+  top: calc(var(--home-tabs-top, 0px) + var(--home-tabs-height, 0px));
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  background: rgba(242, 242, 247, 0.92);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  box-shadow: inset 0 -0.5px 0 rgba(60, 60, 67, 0.18);
+}
+
+.trk-phone-date {
+  touch-action: pan-y;
+}
+
+.trk-phone-kicker {
+  margin: 0;
+  color: #636366;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.trk-phone-date h2 {
+  margin: 0;
+  color: #1c1c1e;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  animation: trk-phone-date-in 380ms cubic-bezier(0.22, 1.15, 0.36, 1);
+}
+
+.trk-phone-date-keys {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.trk-phone-chev,
+.trk-phone-utilities button,
+.trk-phone-days button,
+.trk-phone-span button,
+.trk-phone-tray-key,
+.trk-phone-sheet-done,
+.trk-phone-sheet-action,
+.trk-phone-infinite-jump button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trk-phone-chev {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.trk-phone-days {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.trk-phone-days::-webkit-scrollbar {
+  display: none;
+}
+
+.trk-phone-days button {
+  flex: 1 0 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 2px;
+  color: #636366;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.trk-phone-days button strong {
+  color: #1c1c1e;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.trk-phone-days button[aria-pressed="true"] {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.trk-phone-days button[aria-pressed="true"] strong {
+  color: #7dffc4;
+}
+
+.trk-phone-utilities,
+.trk-phone-span,
+.trk-phone-infinite-jump {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.trk-phone-span,
+.trk-phone-infinite-jump {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 8px 12px 0;
+}
+
+.trk-phone-infinite-jump {
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 8px;
+}
+
+.trk-phone-utilities button[aria-pressed="true"],
+.trk-phone-span button[aria-pressed="true"],
+.trk-phone-tray-key[aria-pressed="true"] {
+  background: #1c1c1e;
+  color: #7dffc4;
+}
+
+.trk-phone-views {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  height: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.trk-phone-views [role="tab"] {
+  min-height: 44px;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.trk-phone-views [role="tab"][data-state="active"] {
+  background: #1c1c1e;
+  color: #7dffc4;
+}
+
+.trk-phone .trk-deck {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: auto;
+  margin: 0;
+  padding: 4px 0 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trk-phone .trk-deck-slot,
+.trk-phone .trk-deck-slot.is-narrow,
+.trk-phone .trk-deck-slot.is-legend {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: auto;
+  height: auto;
+  min-width: 44px;
+  min-height: 0;
+}
+
+.trk-phone .trk-ckey,
+body.win95-app .trk-phone .trk-ckey {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  width: auto;
+  min-width: 72px;
+  height: auto;
+  min-height: 44px !important;
+  padding: 6px 10px;
+  box-shadow: none;
+}
+
+.trk-phone .trk-ckey::after {
+  display: none;
+}
+
+.trk-phone .trk-cled,
+body.win95-app .trk-phone .trk-cled {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+.trk-phone .trk-deck-caption.is-ghost,
+body.win95-app .trk-phone .trk-deck-caption.is-ghost {
+  position: relative;
+  bottom: auto;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.trk-phone-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+.trk-phone-surface,
+.trk-phone-notes {
+  min-width: 0;
+}
+
+.trk-phone-timeline {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  margin: 8px 12px 0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(60, 60, 67, 0.12);
+  overflow: hidden;
+}
+
+.trk-phone-hours {
+  color: #8e8e93;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk-phone-hours > div {
+  box-sizing: border-box;
+  padding: 2px 6px 0 0;
+  text-align: right;
+}
+
+.trk-phone-plot {
+  position: relative;
+  touch-action: pan-y;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 55px,
+    rgba(60, 60, 67, 0.14) 55px,
+    rgba(60, 60, 67, 0.14) 56px
+  );
+}
+
+.trk-phone-plot[data-paint="true"] {
+  touch-action: none;
+}
+
+.trk-phone-block,
+.trk-phone-instant,
+.trk-phone-stroke {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  z-index: 3;
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  padding: 4px 8px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.trk-phone-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.trk-phone-block.is-ghost {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.trk-phone-block.is-suggestion {
+  z-index: 2;
+  pointer-events: none;
+  color: #1c1c1e;
+  background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0 6px, transparent 6px 12px);
+  outline: 1px dashed #8e8e93;
+}
+
+.trk-phone-block-name,
+.trk-phone-block-when,
+.trk-phone-instant {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.trk-phone-block-when {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.trk-phone-instant {
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  width: auto;
+  max-width: calc(100% - 8px);
+  color: #111;
+  cursor: pointer;
+}
+
+.trk-phone-stroke {
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.45;
+  outline: 2px solid rgba(28, 28, 30, 0.35);
+}
+
+.trk-phone-markers {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.trk-phone .trk-marker-label {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.trk-phone-tracked,
+.trk-phone-note,
+.trk-phone-empty {
+  margin: 8px 16px;
+  color: #636366;
+  font-size: 15px;
+}
+
+.trk-phone-tray {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  box-shadow: inset 0 0.5px 0 rgba(60, 60, 67, 0.2);
+}
+
+.trk-phone-tray-keys {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.trk-phone-tray-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px;
+  font-size: 13px;
+}
+
+.trk-phone-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.trk-phone-tray .trk-latch {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  justify-content: center;
+}
+
+.trk-phone-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.trk-phone-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+}
+
+.trk95.trk-phone-sheet {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: auto;
+}
+
+.trk-phone-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(86vh, 760px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-radius: 16px 16px 0 0;
+  background: #f2f2f7;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+  animation: trk-phone-sheet-in 420ms cubic-bezier(0.22, 1.15, 0.36, 1);
+}
+
+.trk-phone-sheet-grab {
+  width: 36px;
+  height: 5px;
+  margin: 8px auto 0;
+  border-radius: 3px;
+  background: rgba(60, 60, 67, 0.28);
+}
+
+.trk-phone-sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px 10px;
+}
+
+.trk-phone-sheet-bar h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.trk-phone-sheet-done {
+  padding: 0 14px;
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.trk-phone-sheet-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 12px 16px;
+  touch-action: pan-y;
+}
+
+.trk-phone-sheet-action {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.trk-phone-sheet .trk-cell-knob {
+  width: 64px;
+  height: 64px;
+}
+
+.trk-phone-more,
+.trk-phone-now,
+.trk-phone-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trk-phone-sheet .trk-push,
+.trk-phone-sheet button,
+.trk-phone-sheet input,
+.trk-phone-sheet select,
+.trk-phone-sheet textarea,
+.trk-phone .trk-period-chev,
+.trk-phone .trk-period-today,
+.trk-phone .trk-latch,
+.trk-phone .trk-notes-fold,
+.trk-phone .trk-gap-add,
+.trk-phone .trk-span-switch button,
+.trk-phone .trk-logbook-modes button,
+.trk-phone .trk-daylog-pen {
+  min-height: 44px;
+}
+
+.trk-phone .trk-log-row {
+  min-height: 44px;
+}
+
+.trk-phone .trk-logbook-modes,
+.trk-phone .trk-span-switch {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trk-phone .trk-logbook-modes button,
+.trk-phone .trk-span-switch button {
+  flex: 0 0 auto;
+}
+
+.trk-phone .trk-week-plot,
+.trk-phone .trk-infinite {
+  max-height: min(70vh, 640px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+}
+
+.trk-phone-notes {
+  margin: 0 12px;
+}
+
+@keyframes trk-phone-date-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0.35;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes trk-phone-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .trk95.trk-dialog.trk-log-sheet {
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(88vh, 760px) !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk-phone-date h2,
+  .trk-phone-sheet {
+    animation: none;
+  }
+
+  .trk-phone,
+  .trk-phone-sheet-body,
+  .trk-phone-days,
+  .trk-phone .trk-deck,
+  .trk-phone .trk-logbook-modes {
+    scroll-behavior: auto;
+  }
+}
