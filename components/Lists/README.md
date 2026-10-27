@@ -1,14 +1,46 @@
+## Agent card
+
+_Last mapped: 2026-10-27_
+
+The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open. Visual work follows `docs/DESIGN_STYLE.md`. Lists is the visual standard.
+
+Write door: list and folder records commit in `lib/task-store.ts` (`updateList`, `setLists`, `setFolders`). An existing item uses `commitItemEdit` (`lib/commit-item-edit.ts`), which persists through `updateTask`. `setTasks` is the bulk replace for merge and import. Other rooms import `EnhancedCategoryView` from `enhanced-list-view.tsx`.
+
+Readers that must stay in step: Scheduler, Tracking, Modules, Reviews, Data, and Home To Do. The shell (`app/page.tsx`) and Mobile (`components/Mobile/MobileApp.tsx`) mount `EnhancedCategoryView`.
+
+Test: `npx vitest run components/Lists/__tests__/enhanced-list-view.integration.test.tsx`
+
+Plan: `docs/LIST_SETTINGS_REDESIGN.md` (list settings sheet; shipped, this README is the behavior).
+
+Do not touch: velvet and photographed orbs. The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
+
 # `components/Lists/` — Lists (File Manager)
 
-The **Lists** top-level tab. A Windows 95/98–styled file manager for folders, lists (categories), and items — the Explorer face of the **second brain**, not a silo. A row here is the same item Scheduler, Tracking, Modules, Reviews, and **Analytics** (the heart) can use. New rows default to generic `item` (or the list’s default `itemTypeId` from its type allowlist); they are not Tasks unless created as Next Actions. All item data flows through **`lib/task-store.ts`**.
+_Last mapped: 2026-10-27_
+
+**Purpose.** The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open.
+
+**Invariant.** Lists is the visual standard for the app. See `docs/DESIGN_STYLE.md`.
+
+**Write door.** List and folder records commit in `lib/task-store.ts` (`updateList`, `setLists`, `setFolders`). An existing item uses the door in `lib/README.md`: `commitItemEdit`, which persists through `updateTask`. `setTasks` is the bulk replace for merge and import.
+
+**Readers.** Scheduler, Tracking, Modules, Reviews, Data, and Home To Do stay on those rows. The shell (`app/page.tsx`) and Mobile (`components/Mobile/MobileApp.tsx`) mount `EnhancedCategoryView`.
+
+**Test.** `npx vitest run components/Lists/__tests__/enhanced-list-view.integration.test.tsx`
+
+**Plan.** `docs/LIST_SETTINGS_REDESIGN.md` (list settings sheet; shipped, this README is the behavior).
+
+**Leave alone.** Velvet and photographed orbs. The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
+
+The **Lists** top-level tab. A Windows 95/98–styled file manager for folders, lists (categories), and items — the Explorer face of the **second brain**, not a silo. A row here is the same item Scheduler, Tracking, Modules, Reviews, and **Data** (the heart) can use. New rows default to generic `item` (or the list’s default `itemTypeId` from its type allowlist); they are not Tasks unless created as Next Actions. The write door is in the agent card.
 
 ## Public door
 
 Other rooms may import the orchestrator `EnhancedCategoryView` from `enhanced-list-view.tsx`. The shell (`app/page.tsx`) and Mobile (`components/Mobile/MobileApp.tsx`) already do. No hook in `hooks/` is imported outside this folder.
 
-This room writes items and lists through `lib/task-store.ts`, and view prefs through `lib/lists-ui-store.ts`.
+The write door is in the agent card. View prefs go through `lib/lists-ui-store.ts`.
 
-`views/`, `dialogs/`, and CSS are interior. Current practice: Inbox (`components/inbox.tsx`) imports `MergeItemsConfirmDialog` and `MergeItemsDialog` from `dialogs/`. The app shell (`app/layout.tsx`) and Operations (`components/Operations/OperationTasksPanel.tsx`) import `filemanager98.css`.
+`views/`, `dialogs/`, and CSS are interior. Current practice: Inbox (`components/inbox/inbox-view.tsx`) imports `MergeItemsConfirmDialog` and `MergeItemsDialog` from `dialogs/`. The app shell (`app/layout.tsx`) and Operations (`components/Operations/OperationTasksPanel.tsx`) import `filemanager98.css`.
 
 **Visual gold standard.** Lists is the reference for Brain2 look-and-feel: milled
 Explorer **frame** (brushed silver toolbars, Display/View mode deck with reserved
@@ -23,11 +55,13 @@ chrome, never plainer contents. See [`docs/DESIGN_STYLE.md`](../../docs/DESIGN_S
 
 ## Architecture
 
-`enhanced-list-view.tsx` (`EnhancedCategoryView`) is the single client **orchestrator** (2,035 lines). It subscribes to the task vault (`tasks`, `lists`, `folders`), item types, goals count, modules, and a wide slice of `lists-ui-store`. Any of those updates re-renders the toolbar, folder tree, open view, inspector, and dialogs that stay mounted. It composes hooks, views, dialogs, and navigation. The `.fm-window` root is `data-ui-name="Lists"` with a one-line `data-ui-help` and `data-ui-docs` pointing here (Names overlay). Dialog roots (`List settings`, `Lists settings`, `Folder settings`, `New list`, `New folder`) and the right-rail **List inspector** / **Sheet fullscreen** overlay carry the same docs path so Names can read them on popups. State logic and UI are split into focused, testable modules:
+_Last mapped: 2026-10-27._
+
+`enhanced-list-view.tsx` (`EnhancedCategoryView`) is the client **orchestrator** (710 lines). It subscribes to the task vault (`tasks`, `lists`, `folders`), item types, goals count, modules, and a wide slice of `lists-ui-store`. Any of those updates re-renders the toolbar, folder tree, open view, inspector, and dialogs that stay mounted. It composes `board/` and the Lists hooks. The `.fm-window` root stays in this file: `data-ui-name="Lists"` with a one-line `data-ui-help` and `data-ui-docs` pointing here (Names overlay). Dialog roots (`List settings`, `Lists settings`, `Folder settings`, `New list`, `New folder`) and the right-rail **List inspector** (`board/lists-inspector.tsx`) / **Sheet fullscreen** overlay carry the same docs path so Names can read them on popups. Other rooms still import `EnhancedCategoryView` from `enhanced-list-view.tsx`. The public `onTaskSelect` prop stays on the signature and is not called. State logic and UI are split into focused, testable modules:
 
 ```
 components/Lists/
-├── enhanced-list-view.tsx         # Orchestrator — layout, store wiring, dialog mounting
+├── enhanced-list-view.tsx         # Orchestrator — store subscriptions, hook calls, fm98 shell
 ├── MODULE_LISTS.md                # Module Lists import: Tidy/Trip field map, merge, plans
 ├── LIST_LINKS.md                  # Connected lists: membership links, exclusions, unlink
 ├── LIST_RULES.md                  # Auto-add rules: lists that fill themselves (type, other lists, due within N days…)
@@ -59,6 +93,8 @@ components/Lists/
 ├── lib/list-icon-force-links-overlay.test.tsx # Mount fixture for gravity/pile agents
 ├── lib/list-icon-fling-juice.ts   # Grab/grabbing class names + ghost-trail sample helpers
 ├── lib/lists-location-choice.ts   # Clear search when the user chooses a folder location
+├── lib/lists-shelf-sync.ts        # Shelf equality and the maintenance key (title edits do not rerun it)
+├── lib/open-list-chrome.ts        # Pure open-target name, icon, and offered displays
 ├── attributes/
 │   ├── helpers.ts                 # value coercion, effectiveDef, mergeListAttributes, formatAttributeValue
 │   ├── AttributeSchemaEditor.tsx  # Define a list's attribute schema
@@ -70,7 +106,26 @@ components/Lists/
 │   ├── useListsSearch.ts          # Search term + reset key + filtered folders/lists/tasks (item hits capped)
 │   ├── useListsDragDrop.ts        # Drag-and-drop state and handlers
 │   ├── useListsSelection.ts       # Select mode + bulk list selection
-│   └── useListsTaskActions.ts     # Task create, complete, missed-opportunity, bulk-add helpers
+│   ├── useListsTaskActions.ts     # Task create, complete, missed-opportunity, bulk-add helpers
+│   ├── useListsShelfMaintenance.ts # Dedupe, hydration, idle shelf sync. Does not subscribe. Equality bail stays
+│   ├── useListsShelf.ts           # Task index (prev ref), getters, grid entries
+│   ├── useOpenListItems.ts        # Open-list pipeline: membership, type filter, caption search, shownTasks
+│   ├── useListsClipboard.ts       # Window copy/paste. Surface ref stays on the orchestrator
+│   ├── useListsCreate.ts          # New list and new folder, including the search-text seed
+│   ├── useListsDuplicate.ts       # Duplicate selection, folder, or list
+│   ├── useFolderContextMenu.ts    # Folder menu state and in-place rename
+│   ├── useListsCsvImport.ts       # Spreadsheet parse and import. Hidden file input stays in the window
+│   ├── useListsSelectionActions.ts # Placement, select-all, delete, merge. One placement computation
+│   └── useListsIconChrome.ts      # Icon picker, folder organize epoch, list-desktop epochs
+├── board/                         # Interior. Not a public door
+│   ├── lists-title-bar.tsx        # Title bar. Minimize and Maximize have no onClick
+│   ├── lists-address-bar.tsx      # Address status row
+│   ├── lists-status-bar.tsx       # This folder, Tree, Smart lists, period-ledger checkbox
+│   ├── lists-select-strip.tsx     # Select strip and the band measure (+ 3 for the margin)
+│   ├── list-inner-caption.tsx     # Caption keys. Search state stays in useOpenListItems
+│   ├── lists-inspector.tsx        # Four exclusive inspector branches
+│   ├── lists-main-pane.tsx        # Search, habits, objectives, open list, then folder views
+│   └── lists-dialog-host.tsx      # Dialogs and popups beside the window
 ├── navigation/
 │   ├── FolderTree.tsx             # Sidebar: Quick Access (Home / All / Item Types / Module Lists) + folder tree
 │   └── BreadcrumbNav.tsx          # Address bar breadcrumb text
@@ -236,6 +291,8 @@ Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list set
 
 ## Key features
 
+_Last mapped: 2026-10-27._
+
 - **Built-in lists on Home**: Home already shows whatever is in `homePinned` (`lib/lists-ui-store.ts` — Show in Home / Pin to Home). `lib/home-system-lists.ts` writes the app's singleton lists into that same array when they are created and when they are already in the vault, including a list that feature adopted by name. There is no second pin and no stored "unpinned" flag, so taking one of these ids off Home puts it back. Other pins still toggle. Send to Scheduler (`scheduleable`) is a different switch and is not changed. The set is **Reminders**, **People I Know**, **People I follow on Instagram**, **People who follow me on Instagram**, the five Instagram analysis lists, **eventually**, **Completed**, **Missed Opportunities**, the standing **Habits** list, the Inventory list the app creates (`list-inventory` only — a pantry or fridge already named by the person stays theirs), **affirmations**, **needed**, **notes to ingest**, and **Parked**. Left off on purpose: ordinary lists, folders, All Items, the dated Next Actions To Do lists (Home already has the smart Daily / Weekly / Monthly / Season lists), period To do / Done / Undone lists, per-operation lists, and module template lists.
 - **Reminders**: a built-in list named **Reminders** (`lib/reminders.ts`, id `reminders`, or an existing list of that name flagged `reminderList`). Add asks for a name, a time, once / every day / weekdays / every week / every month / every year / each new moon / each full moon, and Text me / Persistent (both on). The header popup adds quick-when chips and a roomier compose plate. The row stores that on `scheduledDate`, `scheduledTime`, and `reminder` — not `repeatSettings`. **Text me** and **Persistent** live on that same object. Both omit to on, so a reminder already saved still texts and still nags until someone turns a switch off. The tick also seeds **new moon tonight** and **full moon tonight** once each (bell from local midnight of the Meeus phase day; Inbox and Telegram at 18:00 local; after deliver or dismiss they advance to the next lunation). The header Reminders popup uses the same compose form to schedule a new row without opening Lists. While the app is open, a due reminder is copied into the Inbox and, when Text me is on, texted through the paired Telegram chat. Text me off skips the text, still writes the Inbox, and stores `Text me is off` on `reminder.telegramNote`. The same occurrence is not sent twice. A recurring reminder then waits for the next future time (a closed laptop catches up once). A one-time reminder stays on the list and does not fire again. If Telegram is not paired, has no token, or the send fails, the Inbox copy is still written and the row keeps why the text was skipped. Persistent keeps the current occurrence in the header bell until Dismiss. Off still inboxes and texts, and does not sit in the bell. Dismiss is not delete: once leaves the bell for good; daily and weekly leave until the next cycle, and that occurrence is not sent again. Delete and duplicate of the list are refused. Bulk add is hidden here so a reminder is not filed without a time. Opening the item edits the clock. The list is not sent to the Scheduler. It stays pinned on Lists Home.
 - **People I Know**: a built-in list (`lib/people-i-know.ts`, id `people-i-know`, or an existing list of that name flagged `peopleList`). Created after the task vault hydrates. Items are the catalog **Person** type. Birthday and standing notes are attributes. The rest of the biography lives on `Task.personProfile` (full name, nicknames, an optional relation, date met with an Est. mark, Instagram, address precision, dated notes, interactions, gift notes, and Close). How long known and time since last seen are derived on the person. Last seen counts Saw them plus Company blocks painted with a joined pen. A stored block join from before still counts. The birthday plaque draws a pixel cake; a later folder of cake PNGs is not built yet. **Pipelines** join a Company pen. Company time is every Company block painted with that pen, so a block does not need its own join. List settings shows stored joins and can add or remove a pen. A stored company-timeblock row is kept and can be removed; it is not how Company time is chosen. Pen settings are where a person is attached to a pen. A Company block shows the people on its pen. A later pipeline kind is kept on the row. Rename stays. Delete is refused. A duplicate does not keep the flag, so the copy is an ordinary list. The list is not sent to the Scheduler. It stays pinned on Lists Home.
@@ -269,13 +326,13 @@ Default, Checklist, Icons, Details (table), and **Spreadsheet** — per-list set
 
 - **Toolbar**: Two brushed bays. Top: **New** (list/folder/import), Settings, Select, Search. Bottom: the **View / Display** mode deck (Icons/List/Details/Cards or Default/Checklist/Icons/Details/Spreadsheet) so keys always own a full row — reserved LED gutter, container-query short codes when narrow, equal-fill full words when wide. Folder Icons still puts **Auto-organize** on that row. List Icons Display always reserves **Auto-organize**, **Gravity**, **⚙** (Gravity settings), and **PILE UP** width on that row (hidden until Desktop is on) so the velvet stage does not jump; **Reset** / **Skip to stable** appear while Gravity is on. The Desktop switch stays on the inspector. **Gravity** is a ModeKey-style toggle (dark LED + “Off” when off; pressed CRT face + lit green LED + “On” when on) — not a HabitBarRocker; settings is a separate gear, never a fourth toggle mode. Archive browsing is the Completed / Missed Opportunities lists under Next Actions — those toolbar buttons are gone.
 - **Status bar**: two counts, labeled. Left is **This folder** (open location); right is **Tree** (all folders and lists). Do not drop one as a duplicate. Type is 12px so the counts stay readable. **Smart lists** sits beside the counts; in global All, **Show to do / done / undone** sits next to it.
-- **Inspector** (`data-ui-name="List inspector"`): facts first (count, type, last touched — 12px), then actions. While Display is Icons, a **Desktop** rocker (`HabitBarRocker`) sits at the top of those actions for a list, All Items, or a smart list. **Add Item / Bulk add**, and the Default-view plain-text clipboard key, live only in the content sunken pane (one place per verb — not duplicated on this rail). **Delete List lives only in List Settings** (red **Delete** in **Dangerous actions**, beside **Clear list**). The right rail does not offer Delete. Folder **All Items** and Home **All** still get **List Settings** for view prefs; those dialogs have no Delete / Clear. Inclusion checkboxes (lists in a folder All, folders in Home All) live on this rail. **Filter types** appears when ≥2 distinct types are present (or the open list’s allowlist has ≥2): exact-id show/hide, empty hidden = show all (`lib/list-type-filter.ts`).
+- **Inspector** (`board/lists-inspector.tsx`, `data-ui-name="List inspector"`): facts first (count, type, last touched — 12px), then actions. While Display is Icons, a **Desktop** rocker (`HabitBarRocker`) sits at the top of those actions for a list, All Items, or a smart list. **Add Item / Bulk add**, and the Default-view plain-text clipboard key, live only in the content sunken pane (one place per verb — not duplicated on this rail). **Delete List lives only in List Settings** (red **Delete** in **Dangerous actions**, beside **Clear list**). The right rail does not offer Delete. Folder **All Items** and Home **All** still get **List Settings** for view prefs; those dialogs have no Delete / Clear. Inclusion checkboxes (lists in a folder All, folders in Home All) live on this rail. **Filter types** appears when ≥2 distinct types are present (or the open list’s allowlist has ≥2): exact-id show/hide, empty hidden = show all (`lib/list-type-filter.ts`).
 - **Content Default**: title (`.fm-read-name`) and metadata (`.fm-read-meta`) split with a hairline — name is the reading column; type/U·I/date chips stay in the quieter meta bay.
 - **Cards**: metadata skim on mill face (less white slab). **Icons** stay the orb desktop.
 - **Clear list**: List Settings → Dangerous actions → **Clear list** → Win95 **Are you sure?** confirm. Confirm empties membership on this list (`removeTaskFromList` via `updateTask`, so connected-list exclusions stick). Items are not deleted; other lists keep them; the empty list remains. Cancel is a no-op.
 - **Type scale**: smallest Lists type is 10px (title glyphs, tree ±, orb badges, toolbar `.fm-btn-sm` left alone). Reading chrome is 11–13px: Default names / inspector facts / status 12px; U·I meta and inspector buttons 11px; Quick Access labels stay 13px.
 - **Open-list caption**: the inner caption bar over an open list shows the **list's name** (not the display mode — the Display deck already lights the active mode). Its keys are one family (`.fm-cap-key`, `filemanager98.css`): 30px rounded gunmetal caps with a specular lip, pressed foot, and stamped 16px marks (`CaptionKeyGlyph`) — **Search**, **Add item**, **List settings** (lists and All Items), **Close**. They opt out of the square fascia skin with `data-no95`; the caption × here is one of these keys, not `KeycapClose`.
-- **One-list search**: the caption's magnifier key turns the right half of the caption into a CRT search field for **this list only** (the name keeps the left half). Names only by default; the **All fields** lamp also reads description, notes, body, why, consequences, context, tags, subtasks, and every attribute value (file names and extracted text included). Every word must match. It filters whatever display is on, shows a live match count, and never touches membership. Esc clears, Esc again (or the key) closes; opening another list resets it. `filterListItemsBySearch` in `lib/list-item-sort.ts`. The toolbar search (below) still searches the whole vault.
+- **One-list search**: the caption's magnifier key turns the right half of the caption into a CRT search field for **this list only** (the name keeps the left half). Names only by default; the **All fields** lamp also reads description, notes, body, why, consequences, context, tags, subtasks, and every attribute value (file names and extracted text included). Every word must match. It filters whatever display is on, shows a live match count, and never touches membership. Esc clears, Esc again (or the key) closes; opening another list resets it. The pipeline lives in `hooks/useOpenListItems.ts` (`shownTasks`). The bar is `board/list-inner-caption.tsx`. `filterListItemsBySearch` in `lib/list-item-sort.ts`. The toolbar search (below) still searches the whole vault.
 - **Toolbar search**: The field owns keystrokes (`ToolbarSearch`) and filters through `useListsSearch` (folders, lists, and items; item hits capped). Parent filter state is updated from the field, never written back into it (that write-back is what skipped letters). Clear / opening a hit bumps `searchResetKey` to wipe the field. The toolbar vault scan is deferred with `useDeferredValue` the same way Folder List view defers its local search, so hits may follow the field by a frame. **Choosing a location** (Quick Access, folder tree, Up, opening a folder icon) calls `chooseListsLocation` so search clears and the folder's real contents show — you are not trapped in the previous query. Typing still searches; only a location choice clears. Select mode on the results panel is described under **Select mode** above. The **select mode control strip**’s Add to folder bay has its own folder search (empty = all destinations; no-match empty state; scroll when many).
 
 ## Open-target state machine
@@ -291,7 +348,7 @@ List/folder/habit/smart views are opened via a reducer in `open-target.ts`:
 | `CLOSE` | Return to folder browser |
 
 Managed by `useListsNavigation`; auto-closes if the underlying category is deleted.
-External jumps (item detail list chip, global search, Analytics) call
+External jumps (item detail list chip, global search, Data) call
 `applyListsNavigation` / `requestNavigateToList`, which persist state and fire
 `cogs-navigate-to-list`. The hook applies `location` / `openTarget` in place — the
 app shell no longer remounts `EnhancedCategoryView` via a nav key.
@@ -307,9 +364,9 @@ app shell no longer remounts `EnhancedCategoryView` via a nav key.
 
 ## Mount cost
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-27._
 
-Every task-store write re-serializes the whole vault (3.7 MB on a 6,900-item vault). In Electron it also re-parses it to count records before the hub POST (`lib/persist-storage.ts` `postHub`). So the mount effect in `enhanced-list-view.tsx` (~414) must not write when nothing changed:
+Every task-store write re-serializes the whole vault (3.7 MB on a 6,900-item vault). In Electron it also re-parses it to count records before the hub POST (`lib/persist-storage.ts` `postHub`). So the idle shelf sync in `hooks/useListsShelfMaintenance.ts` must not write when nothing changed. The orchestrator calls that hook. The hook does not subscribe. `sameFolderTree` / `sameListShelf` (`lib/lists-shelf-sync.ts`) still bail out so a wash sync does not publish a new folder tree or list shelf, and `scheduleMaintenanceKey` still ignores title edits:
 
 - `addListToFolder` / `removeListFromFolder` return the same state when the list is already filed (or not filed). Module Lists sync calls them for every module list on each mount.
 - The Trip/Tidy import (`mergeImportedItem`) keeps an item's schedule once the record's day sits in `schedulePlacements`. Otherwise the import and the day rollover (`hooks/use-day-rollover.ts`) undo each other.

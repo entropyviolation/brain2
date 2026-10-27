@@ -11,6 +11,8 @@ at instantiate time, so they only need the folder filer.
 
 ## Where Module Lists come from
 
+_Last mapped: 2026-10-27._
+
 ```
 Module Lists/                          folder-module-lists  (hidden from global All)
   {Module title} Lists/                module-lists-{moduleId}
@@ -25,8 +27,9 @@ Module Lists/                          folder-module-lists  (hidden from global 
 `syncModuleListFolders` creates the two folder levels and files any list with
 `createdByModuleId` (or an unfiled list a workspace view binds).
 `syncModuleListContents` then upserts Tidy / Trip records into those lists.
-Both run when the Lists tab hydrates (`enhanced-list-view.tsx`) and when a
-template is instantiated (`instantiateModuleTemplate`).
+Both run when the Lists tab hydrates (`hooks/useListsShelfMaintenance.ts`,
+which the orchestrator calls) and when a template is instantiated
+(`instantiateModuleTemplate`).
 
 Stable ids (`mll-{moduleId}-…` lists, `mli-{moduleId}-…` items) make re-import
 update in place instead of duplicating.
@@ -37,7 +40,7 @@ update in place instead of duplicating.
 |---------|--------|-------|
 | Tidy UI (`TidyView`) | **Items first** (`persistHouseCleaningItems`), dual-write `module.config.houseCleaning` for one release | Items when present, else config shim |
 | Trip Itinerary UI | **Items first** (`persistTripItineraryItems`), dual-write `module.config.tripItinerary` for one release | Schedule from Items when present; day meta from config |
-| Module Lists items | same Item ids (silent upsert via import helpers, no workflows / points) | Lists, search, Analytics |
+| Module Lists items | same Item ids (silent upsert via import helpers, no workflows / points) | Lists, search, Data |
 
 Wave 10 made Items the write path for mapped fields. Config dual-write is a
 **one-release shim** (session chrome + day meta + unmigrated vaults). Full

@@ -40,7 +40,7 @@ Rows: `list-content/ListContentDefault.tsx`. Folder **All Items** uses the same 
 
 ## Sort
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-27._
 
 A clipboard key on the Bulk add / Add item row (Default display only) opens a read-only bulk-add paste of the rows on screen (`Tag:` headers included). **Copy all** copies the names only, one per line. **Close** hides the box. A **Sort** plate sits at the right of that row (Default
 display only). Pick a key; a direction key appears beside it (it is hidden on
@@ -88,11 +88,13 @@ read along whatever axis a thought actually varies on — see
 Helpers: `lib/list-item-sort.ts` (`sortListItems`, `listItemSortOptions`,
 `sanitizeListItemSort`), `resolveDefaultViewSort` / `setDefaultViewSort` in
 `lib/default-view-prefs.ts`. UI: `list-content/ListSortControl.tsx`. Sorting
-happens in `enhanced-list-view.tsx` (`shownTasks`) after the caption search.
+happens in `hooks/useOpenListItems.ts` (`shownTasks`) after the caption search.
 
 ## Search this list
 
-The open list's caption has a magnifier key. It splits the caption: the name
+_Last mapped: 2026-10-27._
+
+The open list's caption (`board/list-inner-caption.tsx`) has a magnifier key. Search state and the filter live in `hooks/useOpenListItems.ts`. The caption splits: the name
 stays on the left, a CRT search field takes the right half. Names only by
 default; **All fields** also reads notes, body, tags, subtasks, and attribute
 values. See [`README.md`](README.md) → One-list search.
