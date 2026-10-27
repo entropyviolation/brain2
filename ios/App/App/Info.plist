@@ -45,6 +45,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NFCReaderUsageDescription</key>
+	<string>BRAIN2 reads a sticker so a tap can log that tag. The sticker stays blank.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BRAIN2 records the places you visit so Location fills itself in.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

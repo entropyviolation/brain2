@@ -1,8 +1,9 @@
 /**
  * lib/ingest/nfc-tag.ts — NFC tag records for phone taps
  *
- * A sticker does not write the vault. The phone sends `nfc:{id}` through BIM,
- * or `nfc:{id} 2` when this scan’s count is not the saved quantity.
+ * A sticker does not write the vault. The phone sends `nfc:{id}` through BIM
+ * or `POST /api/scan` on the phone hub, or `nfc:{id} 2` when this scan’s count
+ * is not the saved quantity.
  * The id is the slug stored here. Settings → NFC tags keeps the list.
  * A second tap of the same tag inside 20 seconds is a double-read.
  */
@@ -51,6 +52,38 @@ export function nfcSlug(raw: string): string {
 
 export function nfcLine(id: string): string {
   return `nfc:${nfcSlug(id)}`
+}
+
+/** `nfc:{id}` or `nfc:{id} {n}`. A null quantity omits the number so the saved count is used. */
+export function nfcScanLine(id: string, quantity: number | null): string {
+  const slug = nfcSlug(id)
+  if (!slug) return ""
+  if (quantity == null) return `nfc:${slug}`
+  return `nfc:${slug} ${nfcQuantity(quantity)}`
+}
+
+/** Drug, food, or drink instants ask how many. A door or a plain event does not. */
+export function nfcTagAsksQuantity(tag: { kind: NfcTagKind; intakeClass?: string | null }): boolean {
+  return tag.kind === "instant" && (tag.intakeClass === "food" || tag.intakeClass === "drink" || tag.intakeClass === "drug")
+}
+
+export interface NfcTagCatalogRow {
+  id: string
+  name: string
+  kind: NfcTagKind
+  intakeClass?: NfcTag["intakeClass"]
+  quantity?: number
+}
+
+/** Fields the phone needs to name a chip and decide whether to ask how many. */
+export function nfcTagCatalog(tags: readonly NfcTag[]): NfcTagCatalogRow[] {
+  return tags.map((tag) => ({
+    id: tag.id,
+    name: tag.name,
+    kind: tag.kind,
+    ...(tag.intakeClass ? { intakeClass: tag.intakeClass } : {}),
+    ...(tag.kind === "instant" ? { quantity: nfcQuantity(tag.quantity) } : {}),
+  }))
 }
 
 /** Split `adderall 2` into the slug and an optional count (1–99). A bare id keeps quantity null. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { hubRequestAuthorized, isGatedHubPath, tokensEqual } from "./hub-auth"
+import { hubRequestAuthorized, isGatedHubPath, scanDoorAuthorized, tokensEqual } from "./hub-auth"
 
 describe("hub auth", () => {
   it("gates the vault routes only", () => {
@@ -13,6 +13,15 @@ describe("hub auth", () => {
 
   it("is open when no token is set", () => {
     expect(hubRequestAuthorized("", undefined)).toBe(true)
+  })
+
+  it("shuts the scan door when no token is set", () => {
+    expect(scanDoorAuthorized("", "Bearer anything")).toBe(false)
+    expect(scanDoorAuthorized("", undefined)).toBe(false)
+    expect(scanDoorAuthorized("s3cret", undefined)).toBe(false)
+    expect(scanDoorAuthorized("s3cret", "Bearer s3cret")).toBe(true)
+    expect(isGatedHubPath("/api/scan")).toBe(false)
+    expect(isGatedHubPath("/api/nfc/tags")).toBe(false)
   })
 
   it("needs the exact bearer token when set", () => {

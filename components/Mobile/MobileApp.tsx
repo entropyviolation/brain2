@@ -18,6 +18,7 @@ import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { MobileLogin } from "@/components/Mobile/MobileLogin"
 import { MobilePullCard } from "@/components/Mobile/MobilePullCard"
 import { MobileLocationCard } from "@/components/Mobile/MobileLocationCard"
+import { MobileNfcCard } from "@/components/Mobile/MobileNfcCard"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
 import { APP_NAME } from "@/lib/app-brand"
@@ -89,6 +90,7 @@ export function MobileApp() {
         <PersistStatusBanner />
         <MobilePullCard />
         <MobileLocationCard />
+        <MobileNfcCard />
         {tab === "home" ? (
           <HomeDashboard />
         ) : (

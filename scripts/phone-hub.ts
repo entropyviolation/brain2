@@ -4,13 +4,15 @@
  *
  *   npm run phone:hub
  *
- * Token: gitignored `.env.local` / COGS_TELEGRAM_BOT_TOKEN
- * Poll is the default. Webhook: COGS_TELEGRAM_WEBHOOK=https://host/telegram/webhook
- * Port (persist + webhook): COGS_PHONE_HUB_PORT=8787
- * Capture box (Oracle VM keeps sealed texts, this drains them): COGS_CAPTURE_BOX_URL + COGS_CAPTURE_TOKEN
- * Drain extras: COGS_DRAIN_STALE_MINUTES (default 30; older texts get a "(from 3h ago)" reply line),
- *   COGS_DRAIN_HEALTHCHECK_URL (pinged <= 1/min after a good fetch, `/fail` on fetch or decrypt errors)
- * Vault API token (set on any public host): COGS_PHONE_HUB_TOKEN
+ * Token: gitignored `.env.local` / BRAIN2_TELEGRAM_BOT_TOKEN
+ * Poll is the default. Webhook: BRAIN2_TELEGRAM_WEBHOOK=https://host/telegram/webhook
+ * Port (persist + webhook): BRAIN2_PHONE_HUB_PORT=8787
+ * Capture box (Oracle VM keeps sealed texts, this drains them): BRAIN2_CAPTURE_BOX_URL + BRAIN2_CAPTURE_TOKEN
+ * Drain extras: BRAIN2_DRAIN_STALE_MINUTES (default 30; older texts get a "(from 3h ago)" reply line),
+ *   BRAIN2_DRAIN_HEALTHCHECK_URL (pinged <= 1/min after a good fetch, `/fail` on fetch or decrypt errors)
+ * Vault API token (set on any public host): BRAIN2_PHONE_HUB_TOKEN
+ * Scan door (bearer required even when the vault routes are open): POST /api/scan
+ * Tag list for the phone reader: GET /api/nfc/tags (same bearer)
  *
  * Desktop Electron yields when data/phone-hub-status.json is fresh so Telegram
  * is not consumed twice. Push the vault from Settings → Sync vault.
@@ -28,7 +30,7 @@ import { open as openSealed } from "./sealed-box.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
 import { flushScheduledPersist } from "../lib/persist-storage"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
-import { tokensEqual, hubRequestAuthorized, isGatedHubPath } from "../lib/ingest/hub-auth"
+import { tokensEqual, hubRequestAuthorized, isGatedHubPath, scanDoorAuthorized } from "../lib/ingest/hub-auth"
 import { createChatQueue } from "../lib/ingest/chat-queue"
 import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates"
 import { createDeferredAlbum } from "../lib/ingest/deferred-album"
@@ -42,6 +44,7 @@ import {
 } from "../lib/ingest/telegram-ui.mjs"
 import type { IngestTransport } from "../lib/ingest/deliver-reply"
 import type { IncomingTelegramPayload } from "../lib/ingest/telegram-bridge"
+import { brain2Env, brain2EnvLine } from "../lib/brain2-env.mjs"
 
 type ExecutorModule = typeof import("../lib/ingest/executor")
 type HydratedStore = {
@@ -59,15 +62,15 @@ installPhoneHubGlobals()
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const STATUS_FILE = join(ROOT, "data", "phone-hub-status.json")
 const OFFSET_FILE = join(ROOT, "data", "telegram-offset.json")
-const PHONE_SYNC_MS = Math.max(15, Number(process.env.COGS_PHONE_SYNC_SECONDS) || 60) * 1000
-/** Let gitignored .env.local / .env supply any COGS_* setting the shell did not. */
+const PHONE_SYNC_MS = Math.max(15, Number(brain2Env("PHONE_SYNC_SECONDS")) || 60) * 1000
+/** Let gitignored .env.local / .env supply any BRAIN2_* or COGS_* setting the shell did not. */
 function loadEnvFiles() {
   for (const name of [".env.local", ".env"]) {
     const file = join(ROOT, name)
     if (!existsSync(file)) continue
     try {
       for (const row of readFileSync(file, "utf8").split(/\r?\n/)) {
-        const m = /^\s*(COGS_[A-Z0-9_]+)\s*=\s*(.*)$/.exec(row)
+        const m = /^\s*((?:BRAIN2|COGS)_[A-Z0-9_]+)\s*=\s*(.*)$/.exec(row)
         if (!m || process.env[m[1]!] !== undefined) continue
         const value = m[2]!.trim().replace(/^["']|["']$/g, "")
         if (value) process.env[m[1]!] = value
@@ -79,31 +82,28 @@ function loadEnvFiles() {
 }
 loadEnvFiles()
 
-const PORT = Number(process.env.COGS_PHONE_HUB_PORT || 8787)
-const WEBHOOK = String(process.env.COGS_TELEGRAM_WEBHOOK || "").trim()
+const PORT = Number(brain2Env("PHONE_HUB_PORT") || 8787)
+const WEBHOOK = String(brain2Env("TELEGRAM_WEBHOOK") || "").trim()
 /** Bearer token for the vault API. Empty = open (localhost only!). */
-const HUB_TOKEN = String(process.env.COGS_PHONE_HUB_TOKEN || "").trim()
+const HUB_TOKEN = String(brain2Env("PHONE_HUB_TOKEN") || "").trim()
 /** Capture-box mode: pull sealed updates from the Oracle VM instead of polling Telegram. */
-const CAPTURE_URL = String(process.env.COGS_CAPTURE_BOX_URL || "").trim().replace(/\/+$/, "")
-const CAPTURE_TOKEN = String(process.env.COGS_CAPTURE_TOKEN || "").trim()
+const CAPTURE_URL = String(brain2Env("CAPTURE_BOX_URL") || "").trim().replace(/\/+$/, "")
+const CAPTURE_TOKEN = String(brain2Env("CAPTURE_TOKEN") || "").trim()
 const CAPTURE_KEY_FILE =
-  String(process.env.COGS_CAPTURE_PRIVATE_KEY_FILE || "").trim() || join(homedir(), ".brain2", "capture-private.key")
+  String(brain2Env("CAPTURE_PRIVATE_KEY_FILE") || "").trim() || join(homedir(), ".brain2", "capture-private.key")
 const CAPTURE_STATE_FILE = join(ROOT, "data", "capture-drain.json")
-const DRAIN_STALE_MINUTES = drainStaleMinutes(process.env.COGS_DRAIN_STALE_MINUTES)
-const DRAIN_HEALTHCHECK_URL = String(process.env.COGS_DRAIN_HEALTHCHECK_URL || "").trim()
-const WEBHOOK_SECRET = String(process.env.COGS_TELEGRAM_WEBHOOK_SECRET || "").trim()
+const DRAIN_STALE_MINUTES = drainStaleMinutes(brain2Env("DRAIN_STALE_MINUTES"))
+const DRAIN_HEALTHCHECK_URL = String(brain2Env("DRAIN_HEALTHCHECK_URL") || "").trim()
+const WEBHOOK_SECRET = String(brain2Env("TELEGRAM_WEBHOOK_SECRET") || "").trim()
 
 function tokenFromEnvFiles() {
-  const fromEnv = String(process.env.COGS_TELEGRAM_BOT_TOKEN || "").trim()
+  const fromEnv = String(brain2Env("TELEGRAM_BOT_TOKEN") || "").trim()
   if (fromEnv) return fromEnv
   for (const name of [".env.local", ".env"]) {
     const file = join(ROOT, name)
     if (!existsSync(file)) continue
     try {
-      const text = readFileSync(file, "utf8")
-      const line = text.split(/\r?\n/).find((row) => row.startsWith("COGS_TELEGRAM_BOT_TOKEN="))
-      if (!line) continue
-      const value = line.slice("COGS_TELEGRAM_BOT_TOKEN=".length).trim().replace(/^["']|["']$/g, "")
+      const value = brain2EnvLine(readFileSync(file, "utf8"), "TELEGRAM_BOT_TOKEN")
       if (value) return value
     } catch {
       /* ignore */
@@ -114,7 +114,7 @@ function tokenFromEnvFiles() {
 
 const TOKEN = tokenFromEnvFiles()
 if (!TOKEN) {
-  console.error("[phone-hub] Set COGS_TELEGRAM_BOT_TOKEN or gitignored .env.local")
+  console.error("[phone-hub] Set BRAIN2_TELEGRAM_BOT_TOKEN or gitignored .env.local")
   process.exit(1)
 }
 
@@ -524,6 +524,11 @@ function readBody(req: HttpRequest): Promise<string> {
   })
 }
 
+function authorizationHeader(req: HttpRequest): string | undefined {
+  const header = req.headers.authorization
+  return Array.isArray(header) ? header[0] : header
+}
+
 async function onRequest(req: HttpRequest, res: ServerResponse) {
   if (!guardBrowserOrigin(req, res)) return
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`)
@@ -538,6 +543,40 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
   }
   if (pathname === "/api/ingest/status" && req.method === "GET") {
     sendJson(res, 200, { ok: true, polling: true, hub: true, pending: 0, mode: CAPTURE_URL ? "capture-box" : WEBHOOK ? "webhook" : "poll" })
+    return
+  }
+  if ((pathname === "/api/scan" && req.method === "POST") || (pathname === "/api/nfc/tags" && req.method === "GET")) {
+    if (!scanDoorAuthorized(HUB_TOKEN, authorizationHeader(req))) {
+      sendJson(res, 401, { ok: false, error: "hub token required" })
+      return
+    }
+    if (pathname === "/api/nfc/tags") {
+      const { useIngestStore } = await import("../lib/ingest/ingest-store")
+      const { nfcTagCatalog } = await import("../lib/ingest/nfc-tag")
+      sendJson(res, 200, { ok: true, tags: nfcTagCatalog(useIngestStore.getState().nfcTags) })
+      return
+    }
+    const raw = await readBody(req)
+    if (raw.length > 4000) {
+      sendJson(res, 400, { ok: false, error: "body too large" })
+      return
+    }
+    let body: unknown
+    try {
+      body = JSON.parse(raw || "{}")
+    } catch {
+      sendJson(res, 400, { ok: false, error: "JSON body required" })
+      return
+    }
+    const { parseScanDoorRequest, applyScanDoor, scanDoorResponse } = await import("../lib/ingest/scan-door")
+    const parsed = parseScanDoorRequest(body)
+    if (!parsed.ok) {
+      sendJson(res, 400, { ok: false, error: parsed.error })
+      return
+    }
+    const result = await applyScanDoor(body)
+    flushVault()
+    sendJson(res, 200, scanDoorResponse(result))
     return
   }
   if (pathname === "/telegram/webhook" && req.method === "POST") {
@@ -614,9 +653,9 @@ async function main() {
     })
   })
   await new Promise<void>((resolve) => server.listen(PORT, "0.0.0.0", resolve))
-  console.log(`[phone-hub] persist + status on http://127.0.0.1:${PORT}`)
+  console.log(`[phone-hub] persist + scan on http://127.0.0.1:${PORT}`)
   if (!HUB_TOKEN) {
-    console.warn("[phone-hub] COGS_PHONE_HUB_TOKEN is unset: the vault API is open to anyone who can reach this port. Set it on any public host.")
+    console.warn("[phone-hub] BRAIN2_PHONE_HUB_TOKEN is unset: the vault API is open to anyone who can reach this port. Set it on any public host.")
   }
 
   try {
@@ -627,7 +666,7 @@ async function main() {
 
   if (CAPTURE_URL) {
     if (!CAPTURE_TOKEN) {
-      console.error("[phone-hub] COGS_CAPTURE_BOX_URL needs COGS_CAPTURE_TOKEN")
+      console.error("[phone-hub] BRAIN2_CAPTURE_BOX_URL needs BRAIN2_CAPTURE_TOKEN")
       process.exit(1)
     }
     console.log(`[phone-hub] capture-box drain from ${CAPTURE_URL} — the VM polls Telegram; do not also poll here or run Electron ingest`)
@@ -685,7 +724,7 @@ async function startPhoneSync() {
   const { openPhoneArchive } = await import("../lib/phone-sync/archive")
   const { runPhoneSync } = await import("../lib/phone-sync/runner")
   const { applyPhoneRecords, textDaysFromEnv } = await import("../lib/phone-sync/write")
-  const textDays = textDaysFromEnv(process.env.COGS_PHONE_SYNC_TEXT_DAYS)
+  const textDays = textDaysFromEnv(brain2Env("PHONE_SYNC_TEXT_DAYS"))
   const archive = openPhoneArchive(join(ROOT, "data"))
   let running = false
   const tick = async () => {
