@@ -24,6 +24,9 @@
  * columns and the span grade share `habitMonthWindowStarts` (default: January
  * through this month).
  * Grade meters are glass noble-gas tubes (`noble-gas-tube.tsx`).
+ *
+ * `WeeklyTaskTracker` only chooses a page. At max-width 767px it mounts
+ * `HabitsPhonePage`. At 768px and up it mounts the desktop tree below.
  */
 "use client"
 
@@ -79,6 +82,8 @@ import {
   isSameLocalWeek,
 } from "@/lib/date-utils"
 import { WeekNavigation } from "@/components/Home/Habits/week-navigation"
+import { useHabitsPhone } from "@/components/Home/Habits/use-habits-phone"
+import { HabitsPhonePage } from "@/components/Home/Habits/habits-phone-page"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useReviewsStore, localDayKey } from "@/lib/reviews-store"
@@ -196,7 +201,7 @@ const IDLE_GOOD_DAYS: GoodDaySummary = {
   },
 }
 
-export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: Date }) {
+function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: Date }) {
   useHabitTrackingSync()
   const hydrated = usePersistHydrated(useHabitsStore.persist)
   const tasks = useHabitsStore((s) => s.tasks)
@@ -1059,7 +1064,71 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
   const monthPlanColumn = habitMonthView ? monthSheetPeriods[0] : undefined
   const seasonPlanColumn = habitSeasonView ? seasonSheetPeriods[0] : undefined
   const dayPlanKey = formatLocalDateKey(currentDate)
-
+  const habitDialogs = (
+    <>
+      <TaskFormDialog
+        open={showTaskForm}
+        onOpenChange={setShowTaskForm}
+        onSubmit={handleAddTask as (t: Task) => void}
+        onDelete={(taskId) => {
+          deleteTaskFromStore(taskId)
+          setShowTaskForm(false)
+          setEditingTask(null)
+        }}
+        initialTask={editingTask}
+        defaultFrequency={defaultFrequency}
+      />
+      <GradeBreakdownDialog
+        open={showGradeBreakdown}
+        onOpenChange={setShowGradeBreakdown}
+        result={activeGrade}
+        onToleranceChange={setGradeTolerance}
+        accomplishmentThreshold={accomplishmentThreshold}
+        accomplishmentBonus={accomplishmentBonus}
+        periodUnit={gradePeriodUnit}
+        usePriority={gradeUsePriority}
+        onUsePriorityChange={setGradeUsePriority}
+        priorityScore={activePrioGrade}
+        weekAverage={habitTab === "daily" ? weekAverage : null}
+      />
+      <OutputGradeBreakdownDialog
+        open={showOutputGradeBreakdown}
+        onOpenChange={setShowOutputGradeBreakdown}
+        result={activeOutput}
+        onToleranceChange={setOutputGradeTolerance}
+        periodUnit={gradePeriodUnit}
+        usePriority={outputUsePriority}
+        onUsePriorityChange={setOutputUsePriority}
+        priorityScore={activePrioOutput}
+      />
+      <GoodDaysDialog
+        open={showGoodDays}
+        onOpenChange={setShowGoodDays}
+        summary={goodDays}
+        period={habitTab === "daily" ? null : goodPeriod}
+        onThresholdChange={setAccomplishmentThreshold}
+        onBonusChange={setAccomplishmentBonus}
+        usePriority={goodDaysUsePriority}
+        onUsePriorityChange={setGoodDaysUsePriority}
+        todayOverall={
+          habitTab === "daily" ? rawDayCompletionPercent(dailyTasks, weeklyData, goodDayAsOf, dailyExempt) : 0
+        }
+        todayPriority={todayPrioRaw}
+      />
+      <SettingsDialog
+        open={showSettings}
+        onOpenChange={setShowSettings}
+        tasks={tasks}
+        weeklyData={weeklyData}
+        onImportData={importData}
+        onResetData={resetData}
+        accomplishmentThreshold={accomplishmentThreshold}
+        accomplishmentBonus={accomplishmentBonus}
+        onAccomplishmentThresholdChange={setAccomplishmentThreshold}
+        onAccomplishmentBonusChange={setAccomplishmentBonus}
+      />
+    </>
+  )
   return (
     <div className="hab-frame" data-ui-name="Habits" data-ui-docs="components/Home/Habits/README.md">
       <Tabs className="hab-frame-tabs" value={habitTab} onValueChange={(v) => setHabitTab(v as typeof habitTab)}>
@@ -1557,73 +1626,17 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
         </TabsContent>
       </Tabs>
 
-      <TaskFormDialog
-        open={showTaskForm}
-        onOpenChange={setShowTaskForm}
-        onSubmit={handleAddTask as (t: Task) => void}
-        onDelete={(taskId) => {
-          deleteTaskFromStore(taskId)
-          setShowTaskForm(false)
-          setEditingTask(null)
-        }}
-        initialTask={editingTask}
-        defaultFrequency={defaultFrequency}
-      />
-
-      <GradeBreakdownDialog
-        open={showGradeBreakdown}
-        onOpenChange={setShowGradeBreakdown}
-        result={activeGrade}
-        onToleranceChange={setGradeTolerance}
-        accomplishmentThreshold={accomplishmentThreshold}
-        accomplishmentBonus={accomplishmentBonus}
-        periodUnit={gradePeriodUnit}
-        usePriority={gradeUsePriority}
-        onUsePriorityChange={setGradeUsePriority}
-        priorityScore={activePrioGrade}
-        weekAverage={habitTab === "daily" ? weekAverage : null}
-      />
-
-      <OutputGradeBreakdownDialog
-        open={showOutputGradeBreakdown}
-        onOpenChange={setShowOutputGradeBreakdown}
-        result={activeOutput}
-        onToleranceChange={setOutputGradeTolerance}
-        periodUnit={gradePeriodUnit}
-        usePriority={outputUsePriority}
-        onUsePriorityChange={setOutputUsePriority}
-        priorityScore={activePrioOutput}
-      />
-
-      <GoodDaysDialog
-        open={showGoodDays}
-        onOpenChange={setShowGoodDays}
-        summary={goodDays}
-        period={habitTab === "daily" ? null : goodPeriod}
-        onThresholdChange={setAccomplishmentThreshold}
-        onBonusChange={setAccomplishmentBonus}
-        usePriority={goodDaysUsePriority}
-        onUsePriorityChange={setGoodDaysUsePriority}
-        todayOverall={
-          habitTab === "daily" ? rawDayCompletionPercent(dailyTasks, weeklyData, goodDayAsOf, dailyExempt) : 0
-        }
-        todayPriority={todayPrioRaw}
-      />
-
-      <SettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-        tasks={tasks}
-        weeklyData={weeklyData}
-        onImportData={importData}
-        onResetData={resetData}
-        accomplishmentThreshold={accomplishmentThreshold}
-        accomplishmentBonus={accomplishmentBonus}
-        onAccomplishmentThresholdChange={setAccomplishmentThreshold}
-        onAccomplishmentBonusChange={setAccomplishmentBonus}
-      />
+      {habitDialogs}
     </div>
   )
+}
+
+
+/** Phone page or desktop console. The two trees never mount together. */
+export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: Date }) {
+  const phone = useHabitsPhone()
+  if (phone) return <HabitsPhonePage currentDate={currentDate} />
+  return <HabitsDesktopPage currentDate={currentDate} />
 }
 
 export default WeeklyTaskTracker
