@@ -1,0 +1,7 @@
+{
+  "id": "book-tasting",
+  "name": "Book Tasting",
+  "version": "1.0.0",
+  "description": "A reading list plus a PDF shelf: a matcher that links each PDF to its book (with confidence + unmatched flags) and a \"taste it\" quiz that shows a random snippet and asks you to guess the title.",
+  "nativeTemplate": "book-tasting"
+}

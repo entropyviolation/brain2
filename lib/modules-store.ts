@@ -17,6 +17,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { useModuleHtmlStore } from "@/lib/module-html-store"
+import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import type { HouseCleaningState } from "@/lib/house-cleaning"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
@@ -72,6 +73,11 @@ export type ModuleViewKind =
   | "grad-search"
   /** An uploaded .html file run in a sandboxed frame with the `window.brain2` bridge. */
   | "html"
+  /**
+   * A downloaded package folder (html, css, js, assets) in a sandboxed frame.
+   * For new packages. Not the renderer for Tidy, the trip, Film DNA, or GradSearch.
+   */
+  | "package-app"
 
 /**
  * A weighted criterion for the `decision-matrix` view. Each criterion binds to a
@@ -182,6 +188,9 @@ export interface ModuleViewConfig {
   htmlListIds?: string[]
   /** html: the user allowed the page to create and edit items on those lists. */
   htmlCanWrite?: boolean
+  // ---- package-app ----
+  /** package-app: key into `lib/module-package-app-store.ts` holding the folder. */
+  packageAppId?: string
 }
 
 export interface ModuleView {
@@ -246,6 +255,21 @@ export interface ModuleConfig {
    * dual-written for one release (session chrome + read shim).
    */
   houseCleaning?: HouseCleaningState
+  /**
+   * Create-only package binding (`lib/module-package.ts`). The package id and
+   * the slot-role → list-id map for this instance. Absent on template
+   * instances. Not a record tree.
+   */
+  package?: ModulePackageConfig
+}
+
+/** Slot binding written by `installModulePackage` onto a new instance. */
+export interface ModulePackageConfig {
+  /** Package file `id` (not the instance id). */
+  id: string
+  version: string
+  /** Slot role → list id minted for this instance. */
+  slots: Record<string, string>
 }
 
 export interface ModuleInstance {
@@ -322,6 +346,9 @@ export const useModulesStore = create<ModulesState>()(
           // An uploaded page is the module's own code: it goes with the module.
           for (const v of state.modules.find((m) => m.id === id)?.views ?? []) {
             if (v.config.htmlDocId) useModuleHtmlStore.getState().removeDoc(v.config.htmlDocId)
+            if (v.kind === "package-app" && v.config.packageAppId) {
+              useModulePackageAppStore.getState().removeApp(v.config.packageAppId)
+            }
           }
           return { modules: state.modules.filter((m) => m.id !== id) }
         }),
