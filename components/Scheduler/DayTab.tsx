@@ -58,6 +58,7 @@ export function DayTab({
             dayTasks.map((task) =>
               renderTaskItem(task, {
                 showUnschedule: true,
+                openOn: "double",
                 fromPeriod: dayFrom.period,
                 fromValue: dayFrom.value,
               }),
@@ -67,7 +68,7 @@ export function DayTab({
       </aside>
       {detail ?? <div className="sch-pane">
         <div className="sch-pane-head">
-          <button type="button" className="sch-bucket-name" aria-label="Open this day" onClick={onOpenDay}>
+          <button type="button" data-no95="" className="sch-bucket-name" aria-label="Open this day" onClick={onOpenDay}>
             Daily Agenda
           </button>
         </div>

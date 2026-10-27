@@ -113,7 +113,7 @@ export function AlwaysTab({
           {availableTasks.length === 0 ? (
             <p className="sch-vacant">0 available</p>
           ) : (
-            availableTasks.map((task) => renderTaskItem(task, { showCheckbox: true }))
+            availableTasks.map((task) => renderTaskItem(task, { showCheckbox: true, openOn: "double" }))
           )}
         </div>
       </aside>

@@ -1,7 +1,7 @@
 /**
  * EnhancedScheduler — chrome + scheduling behavior tests.
  */
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -9,10 +9,12 @@ import { useTaskStore } from "@/lib/task-store"
 import { readListsNavigation } from "@/lib/app-navigation"
 import { useListsUiStore } from "@/lib/lists-ui-store"
 import type { Task, List } from "@/lib/types"
+import { getWeekString } from "@/lib/date-utils"
 import { EnhancedScheduler } from "./enhanced-scheduler"
 
 vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
-  TaskDetailPopup: () => null,
+  TaskDetailPopup: ({ taskId, open }: { taskId: string | null; open: boolean }) =>
+    open ? <div data-testid="item-detail">{taskId}</div> : null,
 }))
 
 describe("EnhancedScheduler", () => {
@@ -320,7 +322,7 @@ describe("EnhancedScheduler", () => {
     expect(pastBucket).toBeTruthy()
 
     const x = within(pastBucket as HTMLElement).getByTitle("Unschedule")
-    await user.click(x)
+    fireEvent.click(x)
 
     const after = useTaskStore.getState().tasks.find((t) => t.id === "past-hist")
     expect(after?.schedulePlacements ?? []).toEqual([])
@@ -348,5 +350,89 @@ describe("EnhancedScheduler", () => {
     expect(readListsNavigation().openTarget).toEqual({ type: "category", id: list!.id })
     expect(useListsUiStore.getState().folderView).toBe("list")
     expect(useListsUiStore.getState().listDisplay[list!.id]).toBe("default")
+  })
+
+  it("opens item detail on double-click in a period list, and on click inside a period cell", async () => {
+    const user = userEvent.setup()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 8, 2, 10, 0, 0))
+    useTaskStore.setState({
+      tasks: [{ ...unscheduledTask, scheduledMonth: "2026-09" }],
+      lists: [list],
+      folders: [],
+    })
+
+    const { unmount } = render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("tab", { name: "Month" }))
+
+    const sidebar = document.querySelector(".sch-pane") as HTMLElement
+    const listTitle = within(sidebar).getByText("Plan quarterly review")
+    await user.click(listTitle)
+    expect(screen.queryByTestId("item-detail")).not.toBeInTheDocument()
+    await user.dblClick(listTitle)
+    expect(screen.getByTestId("item-detail")).toHaveTextContent("task-unscheduled")
+    unmount()
+
+    useTaskStore.setState({
+      tasks: [{ ...unscheduledTask, scheduledWeek: getWeekString(new Date(2026, 8, 2)) }],
+      lists: [list],
+      folders: [],
+    })
+    render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("tab", { name: "Month" }))
+    const bucket = screen.getByText("Plan quarterly review").closest(".sch-bucket") as HTMLElement
+    await user.click(within(bucket).getByText("Plan quarterly review"))
+    expect(screen.getByTestId("item-detail")).toHaveTextContent("task-unscheduled")
+  })
+
+  it("× on a month list takes the task off that period and keeps the item", async () => {
+    const user = userEvent.setup()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 8, 2, 10, 0, 0))
+    useTaskStore.setState({
+      tasks: [{ ...unscheduledTask, scheduledMonth: "2026-09" }],
+      lists: [list],
+      folders: [],
+    })
+
+    render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("tab", { name: "Month" }))
+    const sidebar = document.querySelector(".sch-pane") as HTMLElement
+    const x = within(sidebar).getByRole("button", { name: "Unschedule" })
+    fireEvent.click(x)
+
+    const after = useTaskStore.getState().tasks.find((task) => task.id === "task-unscheduled")
+    expect(after).toBeTruthy()
+    expect(after?.scheduledMonth).toBeUndefined()
+    expect(after?.description).toBe("Plan quarterly review")
+  })
+
+  it("logs a period-card estimate as the user duration for today", async () => {
+    const user = userEvent.setup()
+    const year = String(new Date().getFullYear())
+    useTaskStore.setState({
+      tasks: [{ ...unscheduledTask, scheduledYear: year, estimatedDuration: 45 }],
+      lists: [list],
+      folders: [],
+    })
+
+    render(<EnhancedScheduler />)
+    await user.click(screen.getByRole("button", { name: "Open This Year" }))
+    const field = screen.getByRole("textbox", { name: "Estimate for Plan quarterly review" })
+    await user.clear(field)
+    await user.type(field, "90{Enter}")
+
+    const after = useTaskStore.getState().tasks.find((task) => task.id === "task-unscheduled")
+    expect(after?.estimatedDuration).toBe(90)
+    const logged = after?.estimateLog?.at(-1)
+    expect(logged?.minutes).toBe(90)
+    const at = logged ? new Date(logged.at) : null
+    expect(at?.getFullYear()).toBe(new Date().getFullYear())
+    expect(at?.getMonth()).toBe(new Date().getMonth())
+    expect(at?.getDate()).toBe(new Date().getDate())
+
+    await user.clear(field)
+    await user.type(field, "90{Enter}")
+    expect(useTaskStore.getState().tasks.find((task) => task.id === "task-unscheduled")?.estimateLog).toHaveLength(1)
   })
 })
