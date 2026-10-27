@@ -118,6 +118,32 @@ describe("action history", () => {
     expect(useTimeTrackingStore.getState().entries[0].penId).toBe("act-work")
   })
 
+  it("keeps a live log a stale rehydrate has not stored yet", async () => {
+    useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 320, 320, "act-work", undefined, undefined, undefined, {
+      kind: "instant",
+      title: "Woke in night",
+    })
+    const id = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "Woke in night")?.id
+    expect(id).toBeTruthy()
+    const key = persistKey("timegrid-store")
+    const parsed = JSON.parse(localStorage.getItem(key) ?? "{}") as {
+      state?: { entries?: { id: string }[]; removedEntryIds?: string[] }
+    }
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        ...parsed,
+        state: {
+          ...(parsed.state ?? {}),
+          entries: (parsed.state?.entries ?? []).filter((entry) => entry.id !== id),
+          removedEntryIds: [],
+        },
+      }),
+    )
+    await useTimeTrackingStore.persist.rehydrate()
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === id)?.title).toBe("Woke in night")
+  })
+
   it("tombstones an undone block so a stale rehydrate cannot paint it back", async () => {
     useTimeTrackingStore.getState().paintMinutes(DAY, "activity", 540, 600, "act-work")
     const id = useTimeTrackingStore.getState().entries[0]?.id

@@ -1,9 +1,9 @@
 /**
  * components/Home/Tracking/now-objectives-list.test.tsx
  */
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { NowObjectivesList } from "./now-objectives-list"
 import type { NowObjective } from "@/lib/now-objective"
 
@@ -18,6 +18,10 @@ const seed: NowObjective[] = [
 ]
 
 describe("NowObjectivesList", () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it("opens a popup without requiring layout change, adds and completes", async () => {
     const user = userEvent.setup()
     const onAdd = vi.fn()
@@ -94,5 +98,77 @@ describe("NowObjectivesList", () => {
     expect(screen.getByTestId("now-objectives-inline")).toBeInTheDocument()
     expect(screen.queryByTestId("now-objectives-trigger")).not.toBeInTheDocument()
     expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
+  })
+
+  it("keeps objective text local, then calls onEditText once after the pause", () => {
+    vi.useFakeTimers()
+    const onEditText = vi.fn()
+    render(
+      <NowObjectivesList
+        mode="inline"
+        objectives={seed}
+        onAdd={() => {}}
+        onEditText={onEditText}
+        onToggleComplete={() => {}}
+      />,
+    )
+    const field = screen.getByDisplayValue("finish the nest")
+    fireEvent.change(field, { target: { value: "finish the nes" } })
+    fireEvent.change(field, { target: { value: "finish the nest!" } })
+    fireEvent.change(field, { target: { value: "finish the nest!!" } })
+    expect(field).toHaveValue("finish the nest!!")
+    expect(onEditText).not.toHaveBeenCalled()
+    act(() => {
+      vi.advanceTimersByTime(399)
+    })
+    expect(onEditText).not.toHaveBeenCalled()
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(onEditText).toHaveBeenCalledTimes(1)
+    expect(onEditText).toHaveBeenCalledWith("a", "finish the nest!!")
+  })
+
+  it("flushes objective text on blur without waiting out the pause", () => {
+    vi.useFakeTimers()
+    const onEditText = vi.fn()
+    render(
+      <NowObjectivesList
+        mode="inline"
+        objectives={seed}
+        onAdd={() => {}}
+        onEditText={onEditText}
+        onToggleComplete={() => {}}
+      />,
+    )
+    const field = screen.getByDisplayValue("finish the nest")
+    fireEvent.change(field, { target: { value: "nest" } })
+    expect(onEditText).not.toHaveBeenCalled()
+    fireEvent.blur(field)
+    expect(onEditText).toHaveBeenCalledTimes(1)
+    expect(onEditText).toHaveBeenCalledWith("a", "nest")
+    act(() => {
+      vi.advanceTimersByTime(400)
+    })
+    expect(onEditText).toHaveBeenCalledTimes(1)
+  })
+
+  it("flushes a pending objective edit when the field unmounts", () => {
+    vi.useFakeTimers()
+    const onEditText = vi.fn()
+    const { unmount } = render(
+      <NowObjectivesList
+        mode="inline"
+        objectives={seed}
+        onAdd={() => {}}
+        onEditText={onEditText}
+        onToggleComplete={() => {}}
+      />,
+    )
+    fireEvent.change(screen.getByDisplayValue("finish the nest"), { target: { value: "late letters" } })
+    expect(onEditText).not.toHaveBeenCalled()
+    unmount()
+    expect(onEditText).toHaveBeenCalledTimes(1)
+    expect(onEditText).toHaveBeenCalledWith("a", "late letters")
   })
 })

@@ -19,7 +19,9 @@
  *
  * Changing the times re-lays the block over the day and clears whatever it lands
  * on, exactly as painting would — so the grid can never end up double-booked.
- * Start/End default to the block's calendar day; a **Date** latch is optional.
+ * Start/End default to the block's calendar day; one **Date** key reveals both
+ * dates. A lock on start, end, or duration decides which of the other two
+ * moves. Duration can be marked estimated on its own.
  *
  * A block derived from the sleep log is edited here like any other, and the edit
  * travels back: `lib/sleep-sync.ts` rereads the night from its blocks, so moving
@@ -28,14 +30,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Scissors, Trash2 } from "lucide-react"
+import { Lock, LockOpen, Scissors, Trash2 } from "lucide-react"
 import { runAsAction } from "@/lib/action-history"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
@@ -44,14 +45,19 @@ import {
   assignedPenIds,
   entriesForSpan,
   entryDisplayName,
+  applySpanEdit,
+  calendarDaysBetween,
   formatDuration,
   parseDurationInput,
+  readSpanClock,
+  writeSpanClock,
   isInstant,
   isSleepBlock,
   minutesToLabel,
   minutesToTimeString,
   spanMinutes,
   timeStringToMinutes,
+  type SpanLock,
 } from "@/lib/time-entries"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { CompanionSection } from "@/components/Home/Tracking/companion-section"
@@ -93,7 +99,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { openStepChoices } from "@/lib/task-clock-log"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { isSpendEntry, parseSpendAmount, spendAmountInput, spendSourceOptions } from "@/lib/spend"
-import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
+import { parseLocalDate } from "@/lib/date-utils"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
 import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import "./tracking-chrome.css"
@@ -119,6 +125,39 @@ interface EntryDialogProps {
 function blockFloor(entry: Pick<TimeEntry, "date" | "startMin">): Date {
   const [year, month, day] = entry.date.split("-").map(Number)
   return new Date(year, (month || 1) - 1, day || 1, Math.floor(entry.startMin / 60), entry.startMin % 60, 0, 0)
+}
+
+function SpanLockButton({
+  edge,
+  locked,
+  onLock,
+}: {
+  edge: SpanLock
+  locked: boolean
+  onLock: () => void
+}) {
+  const name = edge === "start" ? "Start" : edge === "end" ? "End" : "Duration"
+  return (
+    <button
+      type="button"
+      className="trk-span-lock"
+      data-no95=""
+      aria-pressed={locked}
+      aria-label={locked ? `${name} locked` : `Lock ${name}`}
+      title={locked ? `${name} stays put when the others change` : `Lock ${name}. The other two follow each other.`}
+      onClick={onLock}
+    >
+      {locked ? <Lock size={12} strokeWidth={2.25} aria-hidden /> : <LockOpen size={12} strokeWidth={2.25} aria-hidden />}
+    </button>
+  )
+}
+
+function initialSpanLock(entry: TimeEntry): SpanLock {
+  if (entry.spanLock === "start" || entry.spanLock === "end" || entry.spanLock === "duration") return entry.spanLock
+  const endLinked = Boolean(entry.endEventId || entry.endJoinId)
+  const startLinked = Boolean(entry.startEventId || entry.startJoinId)
+  if (endLinked && !startLinked) return "end"
+  return "start"
 }
 
 function nightLabel(date: string): string {
@@ -171,8 +210,9 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
   const [to, setTo] = useState(minutesToTimeString(last.endMin % 1440))
   const [fromDate, setFromDate] = useState(origin.date)
   const [toDate, setToDate] = useState(last.date)
-  const [showFromDate, setShowFromDate] = useState(false)
-  const [showToDate, setShowToDate] = useState(false)
+  const [showDates, setShowDates] = useState(origin.date !== last.date)
+  const [spanLock, setSpanLock] = useState<SpanLock>(initialSpanLock(entry))
+  const [durationEstimated, setDurationEstimated] = useState(entry.durationEstimated === true)
   const [splitAt, setSplitAt] = useState(
     minutesToTimeString(Math.round((entry.startMin + entry.endMin) / 2)),
   )
@@ -349,7 +389,9 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         notes: notes.trim() || undefined,
         nowObjectives,
         ...certaintyPatch(startC, endC),
-        precision: assumed || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+        precision: assumed || durationEstimated || worseOf(startC, endC) !== "exact" ? "estimated" : undefined,
+        spanLock,
+        durationEstimated: durationEstimated || undefined,
         startEventId,
         endEventId,
         startJoinId,
@@ -538,59 +580,104 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     onClose()
   }
 
-  // Duration is derived from Start/End. Typing one moves the free end: End normally,
-  // Start when only the end is linked to an event or neighbour. Unknown ends have no length.
+  // One of start, end, or duration is locked. Editing either free value
+  // rewrites the other. Unknown ends have no length.
   const [durDraft, setDurDraft] = useState<string | null>(null)
   const startLinked = Boolean(startEventId || startJoinId)
   const endLinked = Boolean(endEventId || endJoinId)
   const durationApplies = !isInstant(entry) && (startOff || startC !== "unknown") && (endOff || endC !== "unknown")
-  const draftDurationMin = (() => {
+  const currentSpan = () => {
     const s = timeStringToMinutes(from)
     const e = timeStringToMinutes(to)
     if (s === null || e === null) return null
-    const a = parseLocalDate(fromDate)
-    const b = parseLocalDate(toDate)
-    const days = a && b ? Math.round((b.getTime() - a.getTime()) / 86_400_000) : 0
-    const end = days === 0 && e === 0 ? 1440 : e + days * 1440
-    return end > s ? end - s : null
+    return readSpanClock(fromDate, s, toDate, e)
+  }
+  const draftDurationMin = currentSpan() ? (currentSpan()!.end - currentSpan()!.start) : null
+  const placeSpan = (startAbs: number, endAbs: number) => {
+    const written = writeSpanClock(fromDate, startAbs, endAbs)
+    if (!written) return
+    const startMoved = written.from !== from || written.fromDate !== fromDate
+    const endMoved = written.to !== to || written.toDate !== toDate
+    setFrom(written.from)
+    setFromDate(written.fromDate)
+    setTo(written.to)
+    setToDate(written.toDate)
+    setDurDraft(null)
+    if (startMoved && (startEventId || startJoinId)) {
+      setStartEventId(undefined)
+      setStartJoinId(undefined)
+    }
+    if (endMoved && (endEventId || endJoinId)) {
+      setEndEventId(undefined)
+      setEndJoinId(undefined)
+    }
+  }
+  const editSpan = (edit: SpanLock, value: number) => {
+    const cur = currentSpan()
+    if (!cur) return false
+    const next = applySpanEdit({ lock: spanLock, start: cur.start, end: cur.end, edit, value })
+    if (!next) return false
+    placeSpan(next.start, next.end)
+    return true
+  }
+  const onStartTime = (time: string) => {
+    const clock = timeStringToMinutes(time)
+    if (clock === null || !durationApplies || !editSpan("start", clock)) {
+      setFrom(time)
+      setDurDraft(null)
+    }
+  }
+  const onEndTime = (time: string) => {
+    const clock = timeStringToMinutes(time)
+    if (clock === null || !durationApplies) {
+      setTo(time)
+      setDurDraft(null)
+      return
+    }
+    const days = calendarDaysBetween(fromDate, toDate)
+    const endAbs = days === 0 && clock === 0 ? 1440 : clock + days * 1440
+    if (!editSpan("end", endAbs)) {
+      setTo(time)
+      setDurDraft(null)
+    }
+  }
+  const onStartDate = (date: string) => {
+    const clock = timeStringToMinutes(from)
+    if (!date || clock === null || spanLock !== "duration" || !durationApplies) {
+      setFromDate(date)
+      return
+    }
+    const shift = calendarDaysBetween(fromDate, date)
+    if (!editSpan("start", clock + shift * 1440)) setFromDate(date)
+  }
+  const onEndDate = (date: string) => {
+    const clock = timeStringToMinutes(to)
+    if (!date || clock === null || spanLock !== "duration" || !durationApplies) {
+      setToDate(date)
+      return
+    }
+    const days = calendarDaysBetween(fromDate, date)
+    const endAbs = days === 0 && clock === 0 ? 1440 : clock + days * 1440
+    if (!editSpan("end", endAbs)) setToDate(date)
+  }
+  const durationHelp = (() => {
+    if (durDraft !== null && parseDurationInput(durDraft) === null) {
+      return "Use minutes or hours, such as 45, 1:30 or 1h 30m."
+    }
+    const linked = startLinked || endLinked ? " A linked clock lets go when it has to move." : ""
+    if (spanLock === "end") return `Calculated from the clocks. End is locked, so a typed length moves Start.${linked}`
+    if (spanLock === "duration") return `Length is locked. Changing Start or End moves the other clock.${linked}`
+    return `Calculated from the clocks. Start is locked, so a typed length moves End.${linked}`
   })()
-  const durationSource = startLinked && endLinked ? "linked" : startLinked || endLinked ? "partly linked" : "from start and end"
   const commitDuration = () => {
     const text = durDraft
     setDurDraft(null)
     const d = text === null ? null : parseDurationInput(text)
-    const s = timeStringToMinutes(from)
-    const e = timeStringToMinutes(to)
-    if (d === null || s === null || e === null) return
-    const a = parseLocalDate(fromDate)
-    // Both ends linked: your typed length wins, so the end lets go of its link.
-    if (startLinked && endLinked) {
-      setEndEventId(undefined)
-      setEndJoinId(undefined)
-    }
-    const b = parseLocalDate(toDate)
-    if (endLinked && !startLinked) {
-      const days = a && b ? Math.round((b.getTime() - a.getTime()) / 86_400_000) : 0
-      const endAbs = (e === 0 && days === 0 ? 1440 : e) + days * 1440
-      const startAbs = endAbs - d
-      const dayShift = Math.floor(startAbs / 1440)
-      if (a && dayShift !== 0) {
-        const moved = new Date(a)
-        moved.setDate(moved.getDate() + dayShift)
-        setFromDate(formatLocalDateKey(moved))
-      }
-      setFrom(minutesToTimeString(((startAbs % 1440) + 1440) % 1440))
-      return
-    }
-    const endAbs = s + d
-    const dayShift = Math.floor((endAbs === 1440 ? 0 : endAbs) / 1440)
-    if (a) {
-      const moved = new Date(a)
-      moved.setDate(moved.getDate() + dayShift)
-      setToDate(formatLocalDateKey(moved))
-    }
-    setTo(minutesToTimeString(endAbs % 1440))
+    if (d === null) return
+    editSpan("duration", d)
   }
+  const heroMin =
+    durDraft !== null && parseDurationInput(durDraft) !== null ? parseDurationInput(durDraft) : draftDurationMin
 
   const splitHere = () => {
     const at = timeStringToMinutes(splitAt)
@@ -621,6 +708,8 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
     to,
     fromDate,
     toDate,
+    spanLock,
+    durationEstimated,
     title,
     fieldTexts,
     notes,
@@ -679,7 +768,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
 
         <div className="space-y-3">
           <p className="trk-help">
-            {formatDuration(durationMin)} in {scope?.name ?? "this scope"}
+            {formatDuration(!isInstant(entry) && draftDurationMin != null ? draftDurationMin : durationMin)} in {scope?.name ?? "this scope"}
             {crossesMidnight ? " · continues past midnight" : ""}
             {pen && title.trim() && title.trim() !== pen.name ? ` · pen ${pen.name}` : ""}
           </p>
@@ -692,56 +781,121 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <OptionalClock
-              id="entry-from"
-              label={isInstant(entry) ? "When" : sleep ? "Fell asleep" : "Start"}
-              time={from}
-              date={fromDate}
-              showDate={showFromDate}
-              onTime={setFrom}
-              onDate={setFromDate}
-              onToggleDate={() => setShowFromDate((open) => !open)}
-              estimateBasis={
-                sleep && assumed
-                  ? sleepClockEstimateBasis(
-                      entry.generatedBy?.kind === "sleep" ? "remembered" : "painted",
-                      "asleep",
-                    )
-                  : undefined
-              }
-            />
-            {!isInstant(entry) && (
+          <div className="trk-section trk-entry-clocks">
+            <div className={`trk-clock-grid${isInstant(entry) ? " is-one" : ""}`}>
               <OptionalClock
-                id="entry-to"
-                label={sleep ? "Woke up" : "End"}
-                time={to}
-                date={toDate}
-                showDate={showToDate}
-                onTime={setTo}
-                onDate={setToDate}
-                onToggleDate={() => setShowToDate((open) => !open)}
+                id="entry-from"
+                label={isInstant(entry) ? "When" : sleep ? "Fell asleep" : "Start"}
+                time={from}
+                date={fromDate}
+                showDate={false}
+                hideDateToggle
+                labelAdornment={
+                  durationApplies ? (
+                    <SpanLockButton edge="start" locked={spanLock === "start"} onLock={() => setSpanLock("start")} />
+                  ) : undefined
+                }
+                onTime={onStartTime}
+                onDate={onStartDate}
+                onToggleDate={() => setShowDates((open) => !open)}
                 estimateBasis={
                   sleep && assumed
                     ? sleepClockEstimateBasis(
                         entry.generatedBy?.kind === "sleep" ? "remembered" : "painted",
-                        "awake",
+                        "asleep",
                       )
                     : undefined
                 }
               />
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 trk-edge-row">
-            <CertaintyToggle edge="start" value={startOff ? null : startC} onChange={(v) => { setStartOff(v === null); setStartC(v ?? "exact") }} />
-            {!isInstant(entry) ? <CertaintyToggle edge="end" value={endOff ? null : endC} onChange={(v) => { setEndOff(v === null); setEndC(v ?? "exact") }} /> : <span />}
+              {!isInstant(entry) && (
+                <OptionalClock
+                  id="entry-to"
+                  label={sleep ? "Woke up" : "End"}
+                  time={to}
+                  date={toDate}
+                  showDate={false}
+                  hideDateToggle
+                  labelAdornment={
+                    durationApplies ? (
+                      <SpanLockButton edge="end" locked={spanLock === "end"} onLock={() => setSpanLock("end")} />
+                    ) : undefined
+                  }
+                  onTime={onEndTime}
+                  onDate={onEndDate}
+                  onToggleDate={() => setShowDates((open) => !open)}
+                  estimateBasis={
+                    sleep && assumed
+                      ? sleepClockEstimateBasis(
+                          entry.generatedBy?.kind === "sleep" ? "remembered" : "painted",
+                          "awake",
+                        )
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+            <div className={`trk-edge-row trk-cert-row${isInstant(entry) ? " is-one" : ""}`}>
+              <CertaintyToggle edge="start" value={startOff ? null : startC} onChange={(v) => { setStartOff(v === null); setStartC(v ?? "exact") }} />
+              {!isInstant(entry) ? <CertaintyToggle edge="end" value={endOff ? null : endC} onChange={(v) => { setEndOff(v === null); setEndC(v ?? "exact") }} /> : null}
+            </div>
+            <div className="trk-entry-clock-foot">
+              <button
+                type="button"
+                className="trk-entry-key is-compact"
+                data-no95=""
+                aria-pressed={showDates}
+                onClick={() => setShowDates((open) => !open)}
+              >
+                {showDates ? "Hide date" : "Date"}
+              </button>
+              {showDates ? (
+                <div className={`trk-clock-dates${isInstant(entry) ? " is-one" : ""}`}>
+                  <Input
+                    id="entry-from-date"
+                    className="trk-clock-date"
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => onStartDate(e.target.value)}
+                    aria-label={`${isInstant(entry) ? "When" : sleep ? "Fell asleep" : "Start"} date`}
+                  />
+                  {!isInstant(entry) ? (
+                    <Input
+                      id="entry-to-date"
+                      className="trk-clock-date"
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => onEndDate(e.target.value)}
+                      aria-label={`${sleep ? "Woke up" : "End"} date`}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {durationApplies ? (
             <div className="trk-section trk-duration-edit">
-              <Label htmlFor="entry-duration" className="trk-section-title">
-                Duration
-              </Label>
+              <div className="trk-dur-kicker">
+                <Label htmlFor="entry-duration" className="trk-section-title">
+                  Duration
+                </Label>
+                <SpanLockButton edge="duration" locked={spanLock === "duration"} onLock={() => setSpanLock("duration")} />
+                <button
+                  type="button"
+                  className="trk-entry-key is-compact trk-dur-est"
+                  data-no95=""
+                  aria-pressed={durationEstimated}
+                  aria-label="Duration estimated"
+                  title="The length is a guess. The clocks can still be exact."
+                  onClick={() => setDurationEstimated((on) => !on)}
+                >
+                  ~ Est.
+                </button>
+              </div>
+              <p className="trk-dur-hero" data-testid="entry-duration-readout" data-estimated={durationEstimated ? "true" : "false"}>
+                {durationEstimated ? "~ " : ""}
+                {heroMin === null ? "—" : formatDuration(heroMin)}
+              </p>
               <Input
                 id="entry-duration"
                 aria-label="Duration"
@@ -758,13 +912,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
                   }
                 }}
               />
-              <p className="trk-help">
-                {durDraft !== null && parseDurationInput(durDraft) === null
-                  ? "Use minutes or hours, such as 45, 1:30 or 1h 30m."
-                  : startLinked && endLinked
-                    ? "Linked at both ends — typing a length unlinks End."
-                    : `Calculated ${durationSource}. Type a length to move ${endLinked && !startLinked ? "Start" : "End"}${startLinked || endLinked ? "; the linked end stays put" : ""}.`}
-              </p>
+              <p className="trk-help">{durationHelp}</p>
             </div>
           ) : null}
 
@@ -840,9 +988,9 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             />
           )}
 
-          <div className="flex items-center justify-between gap-2 trk-section">
-            <div>
-              <Label htmlFor="entry-assumed" className="cursor-pointer text-sm">
+          <div className="trk-section trk-assumed-row">
+            <div className="trk-assumed-copy">
+              <Label htmlFor="entry-assumed" className="trk-section-title cursor-pointer">
                 Assumed / reconstructed
               </Label>
               <p className="trk-help">
@@ -850,7 +998,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
                 time.
               </p>
             </div>
-            <Switch id="entry-assumed" checked={assumed} onCheckedChange={setAssumed} />
+            <Switch id="entry-assumed" className="trk-assumed-switch" checked={assumed} onCheckedChange={setAssumed} />
           </div>
 
           {!isInstant(entry) && (
@@ -934,7 +1082,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
 
           {pen && (
             <div className="trk-section space-y-1.5">
-              <Label>{pen.variantLabel || "Detail"}</Label>
+              <Label className="trk-section-title">{pen.variantLabel || "Detail"}</Label>
               <p className="trk-help">
                 Tick every one that applies. Each option is a pen that counts as {pen.name} — add one here or nest a
                 pen under it, and it shows in both places. Double-click an option to open that pen. Analytics shows{" "}
@@ -971,7 +1119,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           {/* A tag on a block, not on the pen: four hours at the zoo were also
               four hours of walking, without every zoo visit becoming exercise. */}
           <div className="trk-section space-y-1.5">
-            <Label>Also counts as</Label>
+            <Label className="trk-section-title">Also counts as</Label>
             <p className="trk-help">
               Tags decide which habits this time feeds, across every scope.{" "}
               {assignedPens.length
@@ -997,7 +1145,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
                         current.includes(tag.id) ? current.filter((t) => t !== tag.id) : [...current, tag.id],
                       )
                     }}
-                    mark={always ? <span className="text-[9px]">always</span> : undefined}
+                    mark={always ? <span className="trk-tag-always">always</span> : undefined}
                   />
                 )
               })}
@@ -1015,22 +1163,22 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
                   createAndAttachTag()
                 }}
               />
-              <Button size="sm" variant="outline" className="h-7" onClick={createAndAttachTag} disabled={!newTag.trim()}>
+              <button type="button" className="trk-entry-key is-compact" data-no95="" onClick={createAndAttachTag} disabled={!newTag.trim()}>
                 Add tag
-              </Button>
+              </button>
             </div>
             {pen && extraTagIds.length > 0 && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
+              <button
+                type="button"
+                className="trk-entry-key is-compact"
+                data-no95=""
                 onClick={() => {
                   setPenTags(entry.scopeId, pen.id, [...(pen.tags ?? []), ...extraTagIds])
                   setTagIds([])
                 }}
               >
                 Always tag {pen.name} as {extraTagNames}
-              </Button>
+              </button>
             )}
           </div>
 
@@ -1048,7 +1196,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
               <div className="trk-entry-fields-grid">
                 {blockFields.map((row) => (
                   <div key={row.field.id} className={row.field.kind === "text" ? "trk-entry-field is-wide" : "trk-entry-field"}>
-                    <Label htmlFor={`entry-field-${row.field.id}`}>
+                    <Label htmlFor={`entry-field-${row.field.id}`} className="trk-section-title">
                       {row.field.name}
                       <span className="trk-entry-field-from">
                         {row.source === "kept" ? " · kept" : row.source === "tag" ? ` · ${row.sourceName} tag` : ""}
@@ -1070,7 +1218,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           {pen && !isMood && !spendEntry ? (
             <button
               type="button"
-              className="trk-entry-fields-door"
+              className="trk-entry-key is-compact trk-entry-fields-door"
               data-no95=""
               onClick={() => openPenSettings(scope?.id ?? entry.scopeId, pen.id)}
             >
@@ -1129,29 +1277,11 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
           />
 
           <div>
-            <Label htmlFor="entry-notes">Notes</Label>
+            <Label htmlFor="entry-notes" className="trk-section-title">Notes</Label>
             <Textarea id="entry-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button className="flex-1" onClick={save}>
-              Save {isInstant(entry) ? "event" : "block"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              title="Open this block on the Time Grid"
-              onClick={() => {
-                if (!entry.id) return
-                const id = entry.id
-                guard.guardAction(() => {
-                  window.setTimeout(() => showBlockInTimegrid(id), 0)
-                  onClose()
-                })
-              }}
-            >
-              show in timegrid
-            </Button>
+          <div className="trk-entry-tools">
             {!isInstant(entry) && (
               <>
                 <Label htmlFor="entry-split" className="sr-only">
@@ -1165,28 +1295,52 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
                   title="Minute to split at"
                   aria-label="Split at"
                 />
-                <Button
-                  variant="outline"
+                <button
+                  type="button"
+                  className="trk-entry-key is-mod trk-entry-icon"
+                  data-no95=""
                   title="Split this block at the chosen minute into two blocks of the same pen"
                   onClick={splitHere}
                   disabled={entry.endMin - entry.startMin < 2}
                 >
-                  <Scissors className="h-4 w-4" />
+                  <Scissors className="h-4 w-4" aria-hidden />
                   <span className="sr-only">Split block</span>
-                </Button>
+                </button>
               </>
             )}
-            <Button
-              variant="outline"
-              className="text-destructive"
+            <button
+              type="button"
+              className="trk-entry-key is-mod trk-entry-icon"
+              data-no95=""
               onClick={() => {
                 removeEntry(entry.id)
                 onClose()
               }}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden />
               <span className="sr-only">Delete block</span>
-            </Button>
+            </button>
+          </div>
+          <div className="trk-entry-actions">
+            <button type="button" className="trk-entry-key is-primary" data-no95="" onClick={save}>
+              Save {isInstant(entry) ? "event" : "block"}
+            </button>
+            <button
+              type="button"
+              className="trk-entry-key"
+              data-no95=""
+              title="Open this block on the Time Grid"
+              onClick={() => {
+                if (!entry.id) return
+                const id = entry.id
+                guard.guardAction(() => {
+                  window.setTimeout(() => showBlockInTimegrid(id), 0)
+                  onClose()
+                })
+              }}
+            >
+              show in timegrid
+            </button>
           </div>
         </div>
       </DialogContent>

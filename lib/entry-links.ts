@@ -15,9 +15,10 @@
  *
  * - **This instance only** — `attachCompanion`. The BBQ at Ian's was social; a
  *   Tuesday of working from Ian's spare room is not. One click, no rule.
- * - **Always** — `PenLink` on the pen (`TrackPen.links`). "Ian's House always
- *   means Social" is a standing fact about the pen, applied by `applyPenLinks`
- *   every time that pen is painted.
+ * - **Always** — `PenLink` on the source pen only (`TrackPen.links`). "Driving
+ *   always means Location · Transit" is a fact about Driving. Painting Transit
+ *   does not paint Driving, and the reverse rule is a separate link on Transit
+ *   if you want one. `applyPenLinks` reads the pen you just painted.
  *
  * ## One rule, everywhere: never overwrite a statement
  *
@@ -35,8 +36,8 @@ import type { TrackPen, TrackScope } from "@/lib/time-tracking-store"
 import { COMPANY, variantPerson } from "@/lib/people-sync"
 
 /**
- * A standing cross-scope implication carried by a pen: painting it means that
- * pen, in that scope, is true for the same minutes.
+ * A one-way standing implication on the source pen: painting that pen means the
+ * named pen is true for the same minutes. The named pen does not point back.
  */
 export interface PenLink {
   scopeId: string

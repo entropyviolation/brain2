@@ -7,6 +7,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { LogShelfDialog } from "@/components/Home/Tracking/log-shelf-dialog"
 import { ensureCountForKeyword, useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
 import { logKeywordPhrase, useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -77,7 +78,7 @@ function TickEditor({ count }: { count: CountStatus }) {
   )
 }
 
-function CountRow({ count, today }: { count: CountStatus; today: string }) {
+function CountRow({ count, today, expanded = false }: { count: CountStatus; today: string; expanded?: boolean }) {
   const renameCount = useCountStatusesStore((state) => state.renameCount)
   const removeCount = useCountStatusesStore((state) => state.removeCount)
   const incrementCount = useCountStatusesStore((state) => state.incrementCount)
@@ -140,7 +141,7 @@ function CountRow({ count, today }: { count: CountStatus; today: string }) {
       <button type="button" aria-label={`Delete ${count.name}`} onClick={() => removeCount(count.id)}>
         Delete
       </button>
-      {editing ? <TickEditor count={count} /> : null}
+      {expanded || editing ? <TickEditor count={count} /> : null}
     </li>
   )
 }
@@ -148,6 +149,7 @@ function CountRow({ count, today }: { count: CountStatus; today: string }) {
 export function CountStatusesSection() {
   const counts = useCountStatusesStore((state) => state.counts)
   const addCount = useCountStatusesStore((state) => state.addCount)
+  const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [intake, setIntake] = useState<"" | IntakeClass>("")
   const [keyword, setKeyword] = useState("")
@@ -171,7 +173,12 @@ export function CountStatusesSection() {
 
   return (
     <section className="trk-aside-well trk-count-statuses" aria-label="Counts" data-testid="tracking-counts">
-      <h3 className="trk-logbook-heading">Counts</h3>
+      <h3 className="trk-logbook-heading">
+        <button type="button" className="trk-logbook-heading-open" onClick={() => setOpen(true)} title="Open counts">
+          Counts
+          <span aria-hidden="true"> ›</span>
+        </button>
+      </h3>
       <p className="trk-logbook-note">A named tally. Each + is one time. Examples: joints, days happy.</p>
       <div className="trk-logbook-add trk-count-create">
         <input
@@ -228,6 +235,22 @@ export function CountStatusesSection() {
           ))}
         </ul>
       ) : null}
+      <LogShelfDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Counts"
+        description="A named tally. Each + is one time. Times can be corrected here."
+      >
+        {counts.length === 0 ? (
+          <p className="trk-shelf-empty">No counts yet.</p>
+        ) : (
+          <ul className="trk-count-list">
+            {counts.map((count) => (
+              <CountRow key={count.id} count={count} today={today} expanded />
+            ))}
+          </ul>
+        )}
+      </LogShelfDialog>
     </section>
   )
 }

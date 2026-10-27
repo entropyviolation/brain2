@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,6 +44,8 @@ function OptionalClock({
   onDate,
   onToggleDate,
   estimateBasis,
+  hideDateToggle = false,
+  labelAdornment,
 }: {
   id: string
   label: string
@@ -55,11 +57,18 @@ function OptionalClock({
   onToggleDate: () => void
   /** When set, the clock wears ~ and a dashed est. chip (tooltip = basis). */
   estimateBasis?: string
+  /** The block editor draws one Date key for both clocks. */
+  hideDateToggle?: boolean
+  /** Sits beside the label (the span lock). */
+  labelAdornment?: ReactNode
 }) {
   return (
     <div className="trk-clock-field">
       <div className="trk-clock-head">
-        <Label htmlFor={id}>{label}</Label>
+        <span className="trk-clock-label">
+          <Label htmlFor={id}>{label}</Label>
+          {labelAdornment}
+        </span>
         <div className="trk-clock-head-trail">
           {estimateBasis ? (
             <span
@@ -69,9 +78,11 @@ function OptionalClock({
               est.
             </span>
           ) : null}
-          <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
-            {showDate ? "Hide date" : "Date"}
-          </button>
+          {hideDateToggle ? null : (
+            <button type="button" className="trk-date-toggle" aria-pressed={showDate} onClick={onToggleDate}>
+              {showDate ? "Hide date" : "Date"}
+            </button>
+          )}
         </div>
       </div>
       {showDate && (

@@ -281,7 +281,7 @@ export function BlockPenSection({
                   {!onBlock.has(pen.id) ? (
                     <button
                       type="button"
-                      className="trk-blockpen-act"
+                      data-no95="" className="trk-entry-key is-compact trk-blockpen-act"
                       aria-label={`Add ${pen.name}`}
                       onClick={() => add(pen.id, "extra")}
                     >
@@ -291,7 +291,7 @@ export function BlockPenSection({
                   {!isPrimary ? (
                     <button
                       type="button"
-                      className="trk-blockpen-act"
+                      data-no95="" className="trk-entry-key is-compact trk-blockpen-act"
                       aria-label={`Use ${pen.name} as primary`}
                       onClick={() => add(pen.id, "primary")}
                     >
@@ -308,10 +308,10 @@ export function BlockPenSection({
                 <span className="trk-blockpen-result-name">
                   Create “{query.trim()}”
                 </span>
-                <button type="button" className="trk-blockpen-act" onClick={() => create("extra")}>
+                <button type="button" data-no95="" className="trk-entry-key is-compact trk-blockpen-act" onClick={() => create("extra")}>
                   + Add
                 </button>
-                <button type="button" className="trk-blockpen-act" onClick={() => create("primary")}>
+                <button type="button" data-no95="" className="trk-entry-key is-compact trk-blockpen-act" onClick={() => create("primary")}>
                   ★ Primary
                 </button>
               </li>
@@ -324,7 +324,7 @@ export function BlockPenSection({
         groupName === null ? (
           <button
             type="button"
-            className="trk-blockpen-group-open"
+            data-no95="" className="trk-entry-key is-compact trk-blockpen-group-open"
             onClick={() => {
               setGroupName("")
               setGroupColor(stablePenColor(assigned.join("|")))
@@ -357,7 +357,7 @@ export function BlockPenSection({
             />
             <button
               type="button"
-              className="trk-blockpen-act"
+              data-no95="" className="trk-entry-key is-compact trk-blockpen-act"
               disabled={!groupName.trim()}
               onClick={() => {
                 onNameGroup(groupName.trim(), groupColor, assigned)
@@ -366,7 +366,7 @@ export function BlockPenSection({
             >
               Save group
             </button>
-            <button type="button" className="trk-blockpen-act" onClick={() => setGroupName(null)}>
+            <button type="button" data-no95="" className="trk-entry-key is-compact trk-blockpen-act" onClick={() => setGroupName(null)}>
               Cancel
             </button>
             <p className="trk-help w-full">

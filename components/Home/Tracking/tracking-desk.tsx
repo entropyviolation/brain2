@@ -79,7 +79,7 @@ export function TrackingDesk({
                 <h2>Tracking</h2>
               </div>
               <div className="trk-view-bay">
-                <div className="hab-view-changer trk-view-keys">
+                <div className="hab-view-changer trk-view-keys b2-keycap-tab">
                   <TabsList aria-label="Tracking view">
                     <TabsTrigger value="grid">Time Grid</TabsTrigger>
                     <TabsTrigger value="activity">Activity Log</TabsTrigger>

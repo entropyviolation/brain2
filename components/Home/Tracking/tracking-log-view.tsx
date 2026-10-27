@@ -36,6 +36,7 @@ import { addDays, addWeeks, format, subDays, subWeeks } from "date-fns"
 import { CountStatusesSection } from "@/components/Home/Tracking/count-statuses-section"
 import { CycleLogSection } from "@/components/Home/Tracking/cycle-log-section"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
+import { LogShelfDialog } from "@/components/Home/Tracking/log-shelf-dialog"
 import { SpendingDialog } from "@/components/Home/Tracking/spending-dialog"
 import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log-week"
 import { TelegramFeedWell } from "@/components/Home/Tracking/telegram-feed-well"
@@ -62,6 +63,9 @@ import {
 export { loggedFlag }
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { formatSpendAmount, parseSpendAmount, spendSourceOptions, summarizeSpend } from "@/lib/spend"
+import { materializeMissingFeedLogs } from "@/lib/ingest/file-feed-row"
+import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
@@ -391,7 +395,7 @@ function LogListWell({
     <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"} data-face={face}>
       <h3 className="trk-logbook-heading">
         {onTitleOpen ? (
-          <button type="button" className="trk-logbook-heading-open" onClick={onTitleOpen} aria-label={`${title} detail`} title={`Open ${title.toLowerCase()} detail`}>
+          <button type="button" className="trk-logbook-heading-open" onClick={onTitleOpen} title={`Open ${title.toLowerCase()}`}>
             {title}
             <span aria-hidden="true"> ›</span>
           </button>
@@ -489,6 +493,13 @@ export function TrackingLogView({
   const [locationPenId, setLocationPenId] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [spendingOpen, setSpendingOpen] = useState(false)
+  const [shelf, setShelf] = useState<string | null>(null)
+  const feedRows = useTelegramFeedStore((s) => s.rows)
+  const ingestEvents = useIngestStore((s) => s.events)
+  useEffect(() => {
+    if (feedRows.length === 0) return
+    materializeMissingFeedLogs(ingestEvents)
+  }, [feedRows, ingestEvents])
   const nameFieldRef = useRef<HTMLInputElement | null>(null)
   const [span, setSpan] = useState<"day" | "week">(() => getTrackingViewPrefs().logSpan)
   const isWeek = lockDate ? false : span === "week"
@@ -951,6 +962,7 @@ export function TrackingLogView({
               key={list.id}
               title={list.title}
               rows={grouped[list.id]}
+              onTitleOpen={() => setShelf(list.id)}
               onOpen={setOpenEntryId}
               onRemove={removeEntry}
             />
@@ -961,6 +973,7 @@ export function TrackingLogView({
               title="Intake"
               note="Intake with no food, drink, or drug class."
               rows={grouped.intake}
+              onTitleOpen={() => setShelf("intake")}
               onOpen={setOpenEntryId}
               onRemove={removeEntry}
             />
@@ -971,6 +984,7 @@ export function TrackingLogView({
             note="Any repeated phrase can be counted later. Example: left room."
             rows={grouped.event}
             face="steel"
+            onTitleOpen={() => setShelf("event")}
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
@@ -980,6 +994,7 @@ export function TrackingLogView({
             note="A strand from what you are doing, to what it leads to, to how it feels."
             rows={grouped.thought}
             face="steel"
+            onTitleOpen={() => setShelf("thought")}
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
@@ -990,6 +1005,7 @@ export function TrackingLogView({
               rows={grouped.switch}
               copyFor={(entry) => switchLogCopy(entry, penName.get(entry.penId))}
               metaFor={(entry) => scopeName(entry.scopeId)}
+              onTitleOpen={() => setShelf("switch")}
               onOpen={setOpenEntryId}
               onRemove={removeEntry}
             />
@@ -1000,6 +1016,43 @@ export function TrackingLogView({
       )}
 
       <CycleLogSection date={dateKey} />
+
+      {(
+        [
+          ["food", "Food", grouped.food, "What was eaten this day."],
+          ["drink", "Drink", grouped.drink, "What was drunk this day."],
+          ["drug", "Drugs", grouped.drug, "What was taken this day."],
+          ["intake", "Intake", grouped.intake, "Intake with no food, drink, or drug class."],
+          ["event", "Events", grouped.event, "Any repeated phrase can be counted later. Example: left room."],
+          ["thought", "Thought process", grouped.thought, "A strand from what you are doing, to what it leads to, to how it feels."],
+          ["switch", "Switch", grouped.switch, "From one thing to the next."],
+        ] as const
+      ).map(([id, title, rows, note]) => (
+        <LogShelfDialog
+          key={id}
+          open={shelf === id}
+          onOpenChange={(next) => setShelf(next ? id : null)}
+          title={title}
+          description={note}
+        >
+          {rows.length === 0 ? (
+            <p className="trk-shelf-empty">{EMPTY_SHELF[title] ?? "Nothing logged this day."}</p>
+          ) : (
+            <div className="trk-log">
+              {rows.map((entry) => (
+                <LogRow
+                  key={entry.id}
+                  entry={entry}
+                  copy={id === "switch" ? switchLogCopy(entry, penName.get(entry.penId)) : undefined}
+                  meta={id === "switch" ? scopeName(entry.scopeId) : undefined}
+                  onOpen={setOpenEntryId}
+                  onRemove={removeEntry}
+                />
+              ))}
+            </div>
+          )}
+        </LogShelfDialog>
+      ))}
 
       <SpendingDialog
         open={spendingOpen}

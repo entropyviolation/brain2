@@ -21,6 +21,7 @@ import { useUserSettingsStore } from "@/lib/user-settings-store"
 import { DEFAULT_GOAL_FOCUS_MULTIPLIER } from "@/lib/goal-focus"
 import { DEFAULT_RITUAL_COMPLETION_BONUS, DEFAULT_RITUAL_SECTION_POINTS } from "@/lib/ritual-points"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
@@ -159,6 +160,7 @@ export function resetAllStores() {
   usePenColorSessionStore.setState({ session: null })
   useUnfinishedObjectivesStore.setState({ rows: [] })
   useSessionDebriefStore.setState({ pending: null, handoffs: [], reviews: [] })
+  useTelegramFeedStore.setState({ rows: [] })
   useIngestStore.setState({
     enabled: true,
     allowGroups: false,

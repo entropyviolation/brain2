@@ -122,11 +122,42 @@ describe("Also happening", () => {
     fireEvent.click(screen.getByRole("button", { name: /Make it always/ }))
 
     expect(locationPen(penId)?.links).toEqual([{ scopeId: "activity", penId: "act-social", variantIds: undefined }])
+    const social = useTimeTrackingStore
+      .getState()
+      .scopes.find((s) => s.id === "activity")
+      ?.pens.find((p) => p.id === "act-social")
+    expect(social?.links).toBeUndefined()
+    expect(screen.getByText(/Ian's House always means Social/)).toBeInTheDocument()
+    expect(screen.getByText(/Social does not always mean Ian's House/)).toBeInTheDocument()
 
-    // A later afternoon at Ian's now paints Social by itself.
+    // A later afternoon at Ian's now paints Social by itself. Painting Social does not paint Ian's House.
     useTimeTrackingStore.getState().paintMinutes("2026-09-24", "location", 600, 660, penId)
     expect(activityOn("2026-09-24")).toHaveLength(1)
     expect(activityOn("2026-09-24")[0]).toMatchObject({ penId: "act-social", startMin: 600, endMin: 660 })
+    useTimeTrackingStore.getState().paintMinutes("2026-09-25", "activity", 600, 660, "act-social")
+    expect(entriesForDay(useTimeTrackingStore.getState().entries, "2026-09-25", "location")).toHaveLength(0)
+  })
+
+  it("shows Screen Time, calls, and texts only when a value is already there", () => {
+    const { entry } = paintIan()
+    const { unmount } = render(<EntryDialog entry={entry} onClose={() => {}} />)
+
+    expect(screen.queryByText("Screen Time")).not.toBeInTheDocument()
+    expect(screen.queryByText("iPhone Screen Time")).not.toBeInTheDocument()
+    expect(screen.queryByText("iPhone Calls")).not.toBeInTheDocument()
+    expect(screen.queryByText("iPhone Texts")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Attach screen time/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Attach iphone/i })).not.toBeInTheDocument()
+    unmount()
+
+    useTimeTrackingStore.getState().paintMinutes(KEY, "screentime", 780, 840, "st-cat-media")
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+
+    expect(screen.getByText("Screen Time")).toBeInTheDocument()
+    expect(screen.getByText("Media")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Attach screen time/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Make it always/ })).not.toBeInTheDocument()
+    expect(screen.queryByText("iPhone Calls")).not.toBeInTheDocument()
   })
 
   it("drops the rule again when un-pinned", () => {

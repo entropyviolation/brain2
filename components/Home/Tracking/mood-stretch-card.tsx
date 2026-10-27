@@ -151,7 +151,7 @@ export function MoodStretchCard({
           A mood here is the whole organism answering. The silent body comes first. The word is a map laid on it. A hard
           word can feed the body and keep the hour going.
         </p>
-        <Label htmlFor="mood-body">Body</Label>
+        <Label htmlFor="mood-body" className="trk-section-title">Body</Label>
         <p className="trk-help">
           The territory, under every name. Heat, weight, breath, pulse, hunger, the chest, the jaw. Write the body.
           This layer has no opinion.
@@ -179,13 +179,13 @@ export function MoodStretchCard({
           There is no inner dial. What meets you is a story told about the hour’s settings, and the leanings those
           settings leave ready. This is the water the rest of the day swims in.
         </p>
-        <Label htmlFor="mood-vibe">Vibe</Label>
+        <Label htmlFor="mood-vibe" className="trk-section-title">Vibe</Label>
         <p className="trk-help">
           A phrase for the climate of the hour, not a verdict on a life. ‘Slightly uphill.’ ‘Thin light.’ ‘Everything at
           a distance.’
         </p>
         <Input id="mood-vibe" value={reading.vibe ?? ""} onChange={(e) => setText("vibe", e.target.value)} />
-        <Label htmlFor="mood-shorthand">Shorthand</Label>
+        <Label htmlFor="mood-shorthand" className="trk-section-title">Shorthand</Label>
         <p className="trk-help">
           The sentence the mind is offering, usually too large: ‘I am in a bad mood,’ ‘nothing works.’ Write it as the
           story. It was composed after the body. It can be revised.
@@ -261,7 +261,7 @@ export function MoodStretchCard({
           value={reading.enjoyment}
           onChange={(raw) => setRank("enjoyment", raw)}
         />
-        <Label htmlFor="mood-word">Name</Label>
+        <Label htmlFor="mood-word" className="trk-section-title">Name</Label>
         <p className="trk-help">
           The recognition. Any word, including one never stored here. It matches this stretch to a memory, and the match
           is not the event. This hour is not the other hours this word has named, and the word is not you.
@@ -300,7 +300,7 @@ export function MoodStretchCard({
           value={reading.grasping}
           onChange={(raw) => setRank("grasping", raw)}
         />
-        <Label htmlFor="mood-about">About that</Label>
+        <Label htmlFor="mood-about" className="trk-section-title">About that</Label>
         <p className="trk-help">
           What the mind is doing with the state — keeping it, refusing it, explaining it, becoming it. If a lighter
           doing is honestly available — a little room, a little kindness toward the hour — you may write that beside it.
@@ -339,7 +339,7 @@ function RankField({
   const id = `mood-${rank}`
   return (
     <div className="trk-mood-rank">
-      <Label htmlFor={id}>
+      <Label htmlFor={id} className="trk-section-title">
         {RANK_LABEL[rank]} <span className="trk-mood-scale">1–10</span>
       </Label>
       <Input
