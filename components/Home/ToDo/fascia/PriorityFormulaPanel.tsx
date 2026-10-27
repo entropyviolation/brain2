@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/PriorityFormulaPanel.tsx — Priority formula: weights, saved formulas, and the math
+ * components/Home/ToDo/fascia/PriorityFormulaPanel.tsx — Priority formula: weights, saved formulas, and the math
  *
  * Saved formulas live in `todo-prefs` (`formulas`); applying one writes its
  * weights to the task store, the one source the sort reads. The math view is
@@ -16,7 +16,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { DEFAULT_PRIORITY_WEIGHTS, normalizePriorityInputs, priorityBreakdown, unlocksWeight } from "@/lib/priority"
 import { unlockContextFor, urgencyFloorForDue } from "@/lib/unlock-value"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
-import { setTodoPrefs, useTodoPrefs } from "./todo-prefs"
+import { setTodoPrefs, useTodoPrefs } from "../todo-prefs"
 
 type Key = "urgency" | "importance" | "cognitiveLoad" | "entropy" | "unlocks"
 

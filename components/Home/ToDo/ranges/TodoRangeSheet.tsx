@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TodoRangeSheet.tsx — Other view: a named "done before" range
+ * components/Home/ToDo/ranges/TodoRangeSheet.tsx — Other view: a named "done before" range
  *
  * Load a range, edit its name and dates, open its List, add tasks. Tasks on
  * the range's List show here; new ones get the range end as their deadline.
@@ -12,7 +12,7 @@ import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { NativeSelect } from "@/components/ui/native-select"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { setTodoPrefs, useTodoPrefs, type TodoRange } from "./todo-prefs"
+import { setTodoPrefs, useTodoPrefs, type TodoRange } from "../todo-prefs"
 import {
   createTodoRange,
   deleteTodoRange,
@@ -22,7 +22,7 @@ import {
   tasksInRange,
   updateTodoRange,
 } from "./todo-ranges"
-import { createScheduledTodoTask } from "./todo-utils"
+import { createScheduledTodoTask } from "../todo-utils"
 
 const DAY = 86_400_000
 

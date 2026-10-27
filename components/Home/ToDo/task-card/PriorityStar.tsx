@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/PriorityStar.tsx — The task card's priority star
+ * components/Home/ToDo/task-card/PriorityStar.tsx — The task card's priority star
  *
  * Works like Prioritize habit: a press is an intent that must be reaffirmed.
  * The face is silver chrome. Shine is `priorityStarShine` (`priorityStarFade`:

@@ -1,4 +1,4 @@
-/* components/Home/ToDo/priority-star.css — silver chrome task-card star.
+/* components/Home/ToDo/task-card/priority-star.css — silver chrome task-card star.
    Outranks the green prioritized keycap in task-card.css. Shine is --tc-star-shine (0–1). */
 
 body.win95-app .task-card button.task-card-jewel.is-prioritized.is-icon.tc-star.task-card-keycap[aria-pressed="true"],

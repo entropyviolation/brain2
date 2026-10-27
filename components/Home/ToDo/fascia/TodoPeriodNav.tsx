@@ -1,12 +1,12 @@
 /**
- * components/Home/ToDo/TodoPeriodNav.tsx — Date navigation for To-Do periods
+ * components/Home/ToDo/fascia/TodoPeriodNav.tsx — Date navigation for To-Do periods
  *
  * Prev / centered label / Next / Today — same furniture as Plan’s period toolbar.
  */
 "use client"
 
 import { navigateDate } from "@/components/Scheduler/scheduler-utils"
-import { getPeriodNavLabel, isCurrentPeriod, type TodoPeriod } from "./todo-utils"
+import { getPeriodNavLabel, isCurrentPeriod, type TodoPeriod } from "../todo-utils"
 
 export function TodoPeriodNav({
   period,

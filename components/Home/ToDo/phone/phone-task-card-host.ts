@@ -8,7 +8,7 @@ import {
   todoPeriodKey,
   workingHoursLeft,
 } from "@/lib/todo-commitment"
-import type { TaskCardHost } from "../TaskCard"
+import type { TaskCardHost } from "../task-card/TaskCard"
 import type { useTodoTime } from "../use-todo-time"
 import type { TodoPeriod } from "../todo-utils"
 import type { TodoTab } from "./phone-constants"

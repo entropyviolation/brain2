@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TaskCardPeriod.tsx — "This day": how the task stands in the period
+ * components/Home/ToDo/task-card/TaskCardPeriod.tsx — "This day": how the task stands in the period
  *
  * Two Dash readouts (spent, left for the chosen level), flip-able marks, one
  * bar per level that sets the card's level when clicked, pushes in plain words,
@@ -7,8 +7,8 @@
  */
 "use client"
 
-import { DashReading } from "../dash/dash-primitives"
-import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
+import { DashReading } from "../../dash/dash-primitives"
+import { formatStatMinutes, useTaskCardTimeUnit } from "../TaskCardStats"
 import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
 import { formatPercent } from "@/lib/step-progress"
 import type { StepTier } from "@/lib/types"

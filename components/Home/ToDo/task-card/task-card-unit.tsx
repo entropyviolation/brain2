@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/task-card-unit.tsx — Hours or minutes on the task card
+ * components/Home/ToDo/task-card/task-card-unit.tsx — Hours or minutes on the task card
  *
  * One switch for every duration on the card. Minutes read `325m`. Hours use
  * `compactDuration`, including `0h45`. The choice is `brain2-task-card-time-unit`.

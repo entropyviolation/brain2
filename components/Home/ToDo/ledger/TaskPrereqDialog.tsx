@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TaskPrereqDialog.tsx — "Needs…" for a whole task
+ * components/Home/ToDo/ledger/TaskPrereqDialog.tsx — "Needs…" for a whole task
  *
  * What this task waits on: other tasks, written to `Task.dependencies` (the
  * field Available now, Scheduler, Just Start and the critical path read). The
@@ -17,7 +17,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { itemTitle, itemTitleOrUntitled } from "@/lib/item-utils"
 import { addTaskPrereq, removeTaskPrereq } from "@/lib/prereqs"
 import { isClearedFromWork } from "@/lib/completion-status"
-import { createScheduledTodoTask } from "./todo-utils"
+import { createScheduledTodoTask } from "../todo-utils"
 import "@/components/Home/Plan/plan-chrome.css"
 
 export function TaskPrereqDialog({ taskId, onClose }: { taskId: string | null; onClose: () => void }) {

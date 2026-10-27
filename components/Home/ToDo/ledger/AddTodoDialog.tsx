@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/AddTodoDialog.tsx — "Add Task" dialog for the To-Do panel
+ * components/Home/ToDo/ledger/AddTodoDialog.tsx — "Add Task" dialog for the To-Do panel
  *
  * Collects a description and tier. Scheduled to the active period at the
  * focused date. Self-contained form state; emits a completed draft via `onAdd`.

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { useTaskStore } from "@/lib/task-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { getTodoPrefs, resetTodoPrefsForTests } from "./todo-prefs"
+import { getTodoPrefs, resetTodoPrefsForTests } from "../todo-prefs"
 import { createTodoRange, deleteTodoRange, syncRangeDeadlines, tasksInRange, todoTitle, todoViewPhrase, updateTodoRange } from "./todo-ranges"
-import { createScheduledTodoTask } from "./todo-utils"
+import { createScheduledTodoTask } from "../todo-utils"
 
 const now = new Date(2026, 9, 20, 10)
 const prefs = { titleBase: "To do", titleByView: {} }

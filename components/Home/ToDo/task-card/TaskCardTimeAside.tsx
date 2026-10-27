@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TaskCardTimeAside.tsx — Time in the task card's side bar
+ * components/Home/ToDo/task-card/TaskCardTimeAside.tsx — Time in the task card's side bar
  *
  * A short account of the same minutes as the Spent ledger: the total, the
  * minutes indicated only here, and each direct part. The block list stays
@@ -15,7 +15,7 @@
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
+import { formatStatMinutes, useTaskCardTimeUnit } from "../TaskCardStats"
 import { placeSteps } from "@/lib/next-step"
 import { stepActualAccount, taskActualAccount, taskActualSegments } from "@/lib/tracked-time"
 import { flattenSteps } from "@/lib/todo-steps"

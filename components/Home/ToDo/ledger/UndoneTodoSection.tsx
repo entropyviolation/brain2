@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/UndoneTodoSection.tsx — Past-period residue
+ * components/Home/ToDo/ledger/UndoneTodoSection.tsx — Past-period residue
  *
  * Tasks that were scheduled for a day, week, or month that has ended and were
  * not finished. Each period stays on this list on its own, including after a
@@ -11,7 +11,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Task, TodoItem } from "@/lib/types"
 import { isCancelled, isClearedFromWork } from "@/lib/completion-status"
-import { getTodoUndoneTitle, undoneLivesOnLabel, type TodoPeriod } from "./todo-utils"
+import { getTodoUndoneTitle, undoneLivesOnLabel, type TodoPeriod } from "../todo-utils"
 import { itemTitle } from "@/lib/item-utils"
 
 export function UndoneTodoSection({

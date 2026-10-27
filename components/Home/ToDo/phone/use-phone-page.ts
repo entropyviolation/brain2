@@ -31,7 +31,7 @@ import {
 import { taskMatchesAssignedQuery } from "@/lib/todo-steps"
 import type { TodoItem } from "@/lib/types"
 import { useTodoPrefs } from "../todo-prefs"
-import { useTodoRanges } from "../TodoRangeSheet"
+import { useTodoRanges } from "../ranges/TodoRangeSheet"
 import { useRitesSun } from "../use-rites-sun"
 import { useTodoTime } from "../use-todo-time"
 import { pinPrioritizedFirst, type TodoPeriod } from "../todo-utils"

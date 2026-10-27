@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/AddDoneDialog.tsx — Log unplanned completed work
+ * components/Home/ToDo/ledger/AddDoneDialog.tsx — Log unplanned completed work
  *
  * Adds a task that is already done (retroactive capture) for the focused period.
  */

@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/CardSection.tsx — A titled, optionally collapsible zone of the task card
+ * components/Home/ToDo/task-card/CardSection.tsx — A titled, optionally collapsible zone of the task card
  *
  * The whole title row is the toggle (`aria-expanded`). Open or shut is a view
  * preference kept in localStorage under `storageKey` (default open; storage

@@ -7,7 +7,7 @@
 import type { Task, TodoItem } from "@/lib/types"
 import { isClearedFromWork, isOpen } from "@/lib/completion-status"
 import { comfortDialT, comfortWord } from "../TodoLoadPanel"
-import { tasksInRange } from "../todo-ranges"
+import { tasksInRange } from "../ranges/todo-ranges"
 import { DEFAULT_TODO_PREFS } from "../todo-prefs"
 import { isPastTodoPeriod, type TodoPeriod } from "../todo-utils"
 import type { TodoTab } from "./todo-desk-constants"

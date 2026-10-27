@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * todo-pace.tsx — Your own pace, in Show / Sort / Pace (Phase 6)
+ * components/Home/ToDo/fascia/todo-pace.tsx — Your own pace, in Show / Sort / Pace (Phase 6)
  *
  * Each pace with a field to override it, and the ghost switch. Reads
  * `lib/estimate-pace.ts`; writes only To Do prefs, never an estimate.
@@ -10,7 +10,7 @@ import { useState } from "react"
 import { findPen } from "@/lib/tracked-time"
 import { PACE_MIN_SAMPLES, paceFor, paceKey, paceSampleCount, type PaceSample, type PaceScope } from "@/lib/estimate-pace"
 import type { TrackScope } from "@/lib/time-tracking-store"
-import { setTodoPrefs } from "./todo-prefs"
+import { setTodoPrefs } from "../todo-prefs"
 
 function PaceRow({
   label,

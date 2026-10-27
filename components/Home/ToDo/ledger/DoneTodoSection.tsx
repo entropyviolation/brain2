@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/DoneTodoSection.tsx — Collapsible completed-tasks list
+ * components/Home/ToDo/ledger/DoneTodoSection.tsx — Collapsible completed-tasks list
  *
  * Shows tasks completed in the focused day/week/month with a shortcut to log
  * unplanned wins. Each row carries when the work happened (`CompletionTimeLine`).
@@ -10,12 +10,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import type { Task, TodoItem } from "@/lib/types"
 import { hasUnconfirmedEstimates } from "@/lib/estimated-values"
 import type { ConfirmedTimes } from "@/lib/services/completion-time-service"
-import { getTaskCompletionDate, type TodoPeriod } from "./todo-utils"
+import { getTaskCompletionDate, type TodoPeriod } from "../todo-utils"
 import { AddDoneDialog } from "./AddDoneDialog"
 import { CompletionTimeLine } from "./CompletionTimeLine"
 import { itemTitle } from "@/lib/item-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { attentionGiven, attentionGivenLabel } from "./attention-given"
+import { attentionGiven, attentionGivenLabel } from "../attention-given"
 
 // Phase 15 B: the level reached shows as lit facts; unreached levels read "—".
 const LEVELS = ["min", "goal", "exceptional"] as const

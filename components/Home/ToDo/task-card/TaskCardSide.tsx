@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TaskCardSide.tsx — The task card's right bar: node detail
+ * components/Home/ToDo/task-card/TaskCardSide.tsx — The task card's right bar: node detail
  *
  * One step selected: `NodeDetail` (path, actual against estimate, the first
  * level inside, points, needs, unlocks). Several: `SelectionSummary`. None:
@@ -32,7 +32,7 @@ import { NOTICE_PROMPT, needsNotice, withNoticeAnswer } from "@/lib/notice-dot"
 import { massDone, openSubCard, setEstimate, taskPointsWithSource } from "@/lib/task-card"
 import { openStepItem, pushItemLayer } from "@/lib/step-item-stack"
 import { Mosaic } from "@/components/steps/TreeMath"
-import { ItemPenLinksField, withClockPen } from "@/components/ItemDetail/ItemPenTime"
+import { ItemPenLinksField, withClockPen } from "@/components/ItemDetail/tabs/time/ItemPenTime"
 import { PACE_MIN_SAMPLES, paceFor, paceKey, paceSampleCount, type PaceSample } from "@/lib/estimate-pace"
 import { stepPenLinks } from "@/lib/task-clock"
 import { placeSteps } from "@/lib/next-step"
@@ -42,8 +42,8 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { makeNoteEntry } from "@/lib/item-notes"
 import { EstimateCell } from "./EstimateCell"
 import { SpentDiary, type SpentBlocksScope } from "./SpentBlocks"
-import { formatStatMinutes, useTaskCardTimeUnit } from "./TaskCardStats"
-import { SegDigits } from "../dash/dash-primitives"
+import { formatStatMinutes, useTaskCardTimeUnit } from "../TaskCardStats"
+import { SegDigits } from "../../dash/dash-primitives"
 
 type Write = (label: string, next: Subtask[]) => void
 interface Option {

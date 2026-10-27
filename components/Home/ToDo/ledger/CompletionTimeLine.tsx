@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/CompletionTimeLine.tsx — When a Done row happened
+ * components/Home/ToDo/ledger/CompletionTimeLine.tsx — When a Done row happened
  *
  * The meta line under a completed item: its clock window and duration. Values the
  * app derived rather than observed are marked **est.** (`lib/estimated-values.ts`)
