@@ -3,7 +3,8 @@
  *
  * One tap makes the figure an input. Enter saves and opens the next estimate
  * below it, so a whole branch can be estimated from the keyboard. Esc backs out.
- * The face follows the card's h/m switch. The caller writes through `setEstimate`
+ * The face follows the card's h/m switch. A bare number is minutes unless the
+ * text includes h (`parseDurationInput`). The caller writes through `setEstimate`
  * (`lib/task-card.ts`), which logs every change on the step (`estimateLog`).
  *
  * `suggestion` is the sum of the steps inside, shown in ghost blue when this
@@ -37,7 +38,7 @@ export function EstimateCell({ minutes, label, onSet, className = "", suggestion
       const n = Number(t)
       return Number.isFinite(n) && n >= 0 ? Math.max(0, Math.round(n)) : null
     }
-    if (/^\d+(?:\.\d+)?$/.test(t)) return Math.round(Number(t) * 60)
+    if (/^\d+(?:\.\d+)?$/.test(t)) return Math.max(0, Math.round(Number(t)))
     if (t === "0h" || t === "0h00") return 0
     return parseDurationInput(t)
   }

@@ -348,6 +348,29 @@ describe("TaskCard", () => {
     expect(reading()).toHaveAttribute("aria-label", "325m")
   })
 
+  it("stores a bare number as minutes while hours are showing", () => {
+    localStorage.setItem("brain2-task-card-time-unit", "h")
+    seed()
+    render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    const tree = screen.getByRole("tree", { name: "Steps" })
+    const typeEst = (name: string, value: string) => {
+      fireEvent.click(within(tree).getByRole("button", { name: `Estimate for ${name}` }))
+      const field = within(tree).getByRole("textbox", { name: `Estimate for ${name}` })
+      fireEvent.change(field, { target: { value } })
+      fireEvent.blur(field)
+    }
+    typeEst("insert", "10")
+    expect(steps().find((step) => step.id === "insert")?.estimatedDuration).toBe(10)
+    expect(within(tree).getByRole("button", { name: "Estimate for insert" })).toHaveTextContent("0h10")
+    typeEst("label", "1h")
+    expect(steps().find((step) => step.id === "label")?.estimatedDuration).toBe(60)
+    expect(within(tree).getByRole("button", { name: "Estimate for label" })).toHaveTextContent("1h00")
+    typeEst("ship", "0h10")
+    expect(steps().find((step) => step.id === "ship")?.estimatedDuration).toBe(10)
+    expect(within(tree).getByRole("button", { name: "Estimate for ship" })).toHaveTextContent("0h10")
+  })
+
   it("shows a short duration as hours when that unit is on", () => {
     localStorage.setItem("brain2-task-card-time-unit", "h")
     seed({ estimatedDuration: 45, subtasks: [] })

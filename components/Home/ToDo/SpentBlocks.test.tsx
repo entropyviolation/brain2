@@ -96,6 +96,34 @@ describe("SpentBlocks", () => {
     expect(screen.queryByText("117m")).toBeNull()
   })
 
+  it("stores a bare number as minutes on a logged duration while hours are showing", () => {
+    localStorage.setItem("brain2-task-card-time-unit", "h")
+    useTaskStore.getState().addTask({
+      id: "t1",
+      description: "Chaos",
+      completed: false,
+      timeLogs: [{ id: "log1", date: "2026-10-20", durationMinutes: 25, taskId: "t1" }],
+    } as Task)
+    render(
+      <TaskCardTimeUnit>
+        <SpentBlocks scope={{ taskId: "t1", names: new Map() }} />
+      </TaskCardTimeUnit>,
+    )
+    const field = screen.getByLabelText("Logged minutes") as HTMLInputElement
+    expect(field.value).toBe("0h25")
+    const commit = (value: string) => {
+      const input = screen.getByLabelText("Logged minutes")
+      fireEvent.change(input, { target: { value } })
+      fireEvent.blur(input)
+    }
+    commit("10")
+    expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(10)
+    commit("1h")
+    expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(60)
+    commit("0h10")
+    expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(10)
+  })
+
   it("filters steps from a search field", () => {
     useTaskStore.getState().addTask({
       id: "t1",

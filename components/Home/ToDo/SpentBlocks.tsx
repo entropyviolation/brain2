@@ -4,7 +4,8 @@
  * One row per stretch in `taskActualSegments`, so the rows add up to the
  * total. A block's clocks and step can be edited, and the block can be
  * deleted, through the same time-grid calls as the grid. Durations follow the
- * card's h/m switch. The step is a searchable picker. A typed log and a
+ * card's h/m switch. A typed bare number is minutes unless the text includes
+ * h. Start and end stay wall-clock times. The step is a searchable picker. A typed log and a
  * saved actual with no block are their own rows: change the duration, point
  * the log at a step, or clear it.
  *
@@ -107,7 +108,7 @@ function readDuration(raw: string, hours: boolean): number | null {
     const n = Number(t)
     return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
   }
-  if (/^\d+(?:\.\d+)?$/.test(t)) return Math.round(Number(t) * 60)
+  if (/^\d+(?:\.\d+)?$/.test(t)) return Math.max(0, Math.round(Number(t)))
   if (t === "0h" || t === "0h00") return 0
   return parseDurationInput(t)
 }
