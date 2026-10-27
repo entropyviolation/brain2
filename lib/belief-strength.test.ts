@@ -178,4 +178,13 @@ describe("computeBeliefStrength", () => {
     expect(s).toBeGreaterThan(0.9)
     expect(s).toBeLessThanOrEqual(1)
   })
+
+  it("counts an observation address at trust 1 and still ignores an unknown item", () => {
+    const onlyBlock = computeBeliefStrengthDetailed(belief([link("supported-by", "block:b1@2026-10-27", "strong-support")]), [])
+    expect(onlyBlock.contributingLinks).toBe(1)
+    expect(onlyBlock.strength).toBeGreaterThan(0.5)
+    const unknown = computeBeliefStrengthDetailed(belief([link("supported-by", "missing-source", "strong-support")]), [])
+    expect(unknown.contributingLinks).toBe(0)
+    expect(unknown.strength).toBe(0.5)
+  })
 })

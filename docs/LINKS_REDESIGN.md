@@ -101,7 +101,7 @@ edges with reasons, not because anything writes itself.
 
 ## 2. What exists today
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
 **Storage.** `Task.links: ItemLink[]` (`lib/types.ts` ~79):
 `{ id, relation, targetId, stance?, weight? }`. Stored on the source item
@@ -110,9 +110,11 @@ only. Backlinks are found by scanning (`useTaskStore.getBacklinks`,
 
 **Built-in relations.** `RELATIONS` in `lib/links.ts`: blocks, supports,
 refutes, reviews, goal-of, checklist-of, objective-of, subgoal-of, part-of,
-phase-of, resource-of, related, plus the evidence pair (`supported-by`,
-`refuted-by`) with `stance`. Unknown ids read as symmetric and show the raw
-id. `relationLabel`, `inverseRelation` and `inverseRelationLabel` fall back
+phase-of, resource-of, related, the symmetric identity pair `same-as` and
+`different-from` (a person accepts `same-as`; a dismissal does not write
+`different-from`), plus the evidence pair (`supported-by`, `refuted-by`)
+with `stance`. Unknown ids read as symmetric and show the raw id.
+`relationLabel`, `inverseRelation` and `inverseRelationLabel` fall back
 to the registry.
 
 **Registry.** `lib/relation-registry.ts`: built-ins, then code seeds (person
