@@ -2,8 +2,8 @@
 /**
  * Optional always-on Telegram poller for Brain2 message ingest.
  *
- *   gitignored `.env.local` with COGS_TELEGRAM_BOT_TOKEN, or
- *   COGS_TELEGRAM_BOT_TOKEN=… npm run ingest
+ *   gitignored `.env.local` with BRAIN2_TELEGRAM_BOT_TOKEN, or
+ *   BRAIN2_TELEGRAM_BOT_TOKEN=… npm run ingest
  *
  * Writes pending messages to data/message-ingest.json. The renderer (with
  * `npm run dev`) drains /api/ingest/pending. Do not run this at the same time
@@ -16,6 +16,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readIngestStore, writeIngestStore, ingestDataPath } from "./ingest-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
+import { brain2Env, brain2EnvLine } from "../lib/brain2-env.mjs"
 import {
   allowedUpdatesParam,
   callbackQueryToIncoming,
@@ -23,17 +24,14 @@ import {
 } from "../lib/ingest/telegram-ui.mjs"
 
 function tokenFromEnvFiles() {
-  const fromEnv = String(process.env.COGS_TELEGRAM_BOT_TOKEN || "").trim()
+  const fromEnv = String(brain2Env("TELEGRAM_BOT_TOKEN") || "").trim()
   if (fromEnv) return fromEnv
   const root = join(dirname(fileURLToPath(import.meta.url)), "..")
   for (const name of [".env.local", ".env"]) {
     const file = join(root, name)
     if (!existsSync(file)) continue
     try {
-      const text = readFileSync(file, "utf8")
-      const line = text.split(/\r?\n/).find((row) => row.startsWith("COGS_TELEGRAM_BOT_TOKEN="))
-      if (!line) continue
-      const value = line.slice("COGS_TELEGRAM_BOT_TOKEN=".length).trim().replace(/^["']|["']$/g, "")
+      const value = brain2EnvLine(readFileSync(file, "utf8"), "TELEGRAM_BOT_TOKEN")
       if (value) return value
     } catch {
       /* ignore */
@@ -44,7 +42,7 @@ function tokenFromEnvFiles() {
 
 const TOKEN = tokenFromEnvFiles()
 if (!TOKEN) {
-  console.error("[cogs-ingest] Set COGS_TELEGRAM_BOT_TOKEN or gitignored .env.local")
+  console.error("[cogs-ingest] Set BRAIN2_TELEGRAM_BOT_TOKEN or gitignored .env.local")
   process.exit(1)
 }
 

@@ -9,9 +9,9 @@ Wants=network-online.target tailscaled.service
 User=brain2
 EnvironmentFile=/etc/brain2-capture.env
 WorkingDirectory=/opt/brain2-capture
-# Wait (up to ~2 min) until tailscale0 holds the address in COGS_CAPTURE_BIND.
+# Wait (up to ~2 min) until tailscale0 holds the address in BRAIN2_CAPTURE_BIND.
 # If it never appears the unit fails and Restart=always tries again.
-ExecStartPre=/bin/sh -c 'i=0; while [ $$i -lt 60 ]; do ip -4 -o addr show dev tailscale0 | grep -q "inet $COGS_CAPTURE_BIND/" && exit 0; i=$$((i+1)); sleep 2; done; echo "tailnet address $COGS_CAPTURE_BIND not up" >&2; exit 1'
+ExecStartPre=/bin/sh -c 'bind="${BRAIN2_CAPTURE_BIND:-$COGS_CAPTURE_BIND}"; i=0; while [ $$i -lt 60 ]; do ip -4 -o addr show dev tailscale0 | grep -q "inet $bind/" && exit 0; i=$$((i+1)); sleep 2; done; echo "tailnet address $bind not up" >&2; exit 1'
 TimeoutStartSec=150
 ExecStart=/usr/bin/node /opt/brain2-capture/capture-box.mjs
 Restart=always

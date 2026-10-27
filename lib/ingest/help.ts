@@ -209,7 +209,7 @@ READ
 ALWAYS ON
 Pinned grocery card survives a closed laptop. For live replies 24/7:
   npm run phone:hub
-Webhook: COGS_TELEGRAM_WEBHOOK on the hub. One Telegram poller at a time.
+Webhook: BRAIN2_TELEGRAM_WEBHOOK on the hub. One Telegram poller at a time.
 
 PAIR
 • pair: 123456  |  /start 123456 — from Settings → Message ingest

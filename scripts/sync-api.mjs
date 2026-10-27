@@ -6,14 +6,15 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
 const DATA_DIR = path.join(ROOT, "data")
 const DATA_FILE = path.join(DATA_DIR, "mobile-sync.json")
 
-const USER = process.env.COGS_SYNC_USER || "admin"
-const PASS = process.env.COGS_SYNC_PASS || "admin"
+const USER = brain2Env("SYNC_USER") || "admin"
+const PASS = brain2Env("SYNC_PASS") || "admin"
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })

@@ -6,10 +6,11 @@
 import http from "node:http"
 import os from "node:os"
 import { handleSyncApi, syncDataPath } from "./sync-api.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
-const PORT = Number(process.env.COGS_SYNC_PORT || 3847)
-const USER = process.env.COGS_SYNC_USER || "admin"
-const PASS = process.env.COGS_SYNC_PASS || "admin"
+const PORT = Number(brain2Env("SYNC_PORT") || 3847)
+const USER = brain2Env("SYNC_USER") || "admin"
+const PASS = brain2Env("SYNC_PASS") || "admin"
 
 function lanAddresses() {
   try {

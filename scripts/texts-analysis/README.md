@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Python pipeline behind Analytics → Texts. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
 
-Code only. Data, output and the venv live in the home folder, `~/texts-analysis` by default (`COGS_TEXTS_HOME`). The `.gitignore` refuses `data/`, `out/`, `.venv/`, `.env` and database files here too.
+Code only. Data, output and the venv live in the home folder, `~/texts-analysis` by default (`BRAIN2_TEXTS_HOME`). The `.gitignore` refuses `data/`, `out/`, `.venv/`, `.env` and database files here too.
 
 ## Files
 

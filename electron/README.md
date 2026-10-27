@@ -25,7 +25,7 @@ custom `app://` protocol; in development it loads the Next dev server at
 | `telegram-file.js` | `getFile` download of Telegram photos and PDFs for ingest. |
 | `apple-notes.js` / `apple-notes.jxa` | _Last mapped: 2026-10-27_ Notes.app reader (iCloud / iPhone + On My Mac). Modes: `preview` (titles/dates), `snippet` (short body for swipe cards), `bodies` (full text for bulk-add / park). The fallback error redacts a home-directory path before it reaches the window. |
 | `activitywatch.js` | Loopback client for a running ActivityWatch install (`127.0.0.1:5600`). Modes: `health` (`/api/0/info`), `events` (window / AFK / optional web buckets). Never embeds aw-server. |
-| `texts-report.js` | _Last mapped: 2026-10-22_ Analytics → **Texts**. Starts `scripts/texts-analysis/serve.py` from the home folder's venv (`~/texts-analysis`, `COGS_TEXTS_HOME`) on `127.0.0.1:8765` (`COGS_TEXTS_PORT`) when the view asks. Reads `/api/status`, posts `/api/refresh`. Checks hourly and refreshes once a day after 04:00 local (`dailyRunDue`). Kills the server on quit. Channels `cogs:texts:*`. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md`](../docs/TEXTS_ANALYTICS_PLAN.md). |
+| `texts-report.js` | _Last mapped: 2026-10-22_ Analytics → **Texts**. Starts `scripts/texts-analysis/serve.py` from the home folder's venv (`~/texts-analysis`, `BRAIN2_TEXTS_HOME`) on `127.0.0.1:8765` (`BRAIN2_TEXTS_PORT`) when the view asks. Reads `/api/status`, posts `/api/refresh`. Checks hourly and refreshes once a day after 04:00 local (`dailyRunDue`). Kills the server on quit. Channels `cogs:texts:*`. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md`](../docs/TEXTS_ANALYTICS_PLAN.md). |
 | `entitlements.mac.plist` | Hardened runtime + Apple Events so packaged Mac builds can ask to control Notes. |
 | `ipc/` | **Scaffolding** for the future `DataSource` IPC bridge (Phase 10). `channels.js` holds the channel-name constants (mirror of `COGS_IPC_CHANNELS` in `lib/data/sources/ipc-data-source.ts`); not yet imported by `main.js`. See `ipc/README.md`. |
 
@@ -37,7 +37,7 @@ electron-builder). Output installers go to `dist/` (git-ignored).
 `electron:dev` starts `scripts/cogs-dev-server.mjs` directly under
 `concurrently -k` — not via `npm run dev` — so the kill signal reaches the
 server instead of only the npm wrapper, which used to leave an orphan holding
-port 3000. With `COGS_STRICT_PORT=1` it never hops to another port (Electron
+port 3000. With `BRAIN2_STRICT_PORT=1` it never hops to another port (Electron
 always loads 3000). A leftover **Node** listener from an OOM abort is SIGTERM’d
 on the next start (`scripts/dev-port.mjs`); anything else still refuses. The
 script also sets `NODE_OPTIONS=--max-old-space-size=8192`. Next’s own dev
@@ -45,13 +45,13 @@ webpack cache is already on disk with `maxMemoryGenerations: 0`, which is what
 keeps a long Fast Refresh session from heap-aborting. `next.config.mjs` only
 adds watch ignores; it must not replace that cache object.
 
-_Last mapped: 2026-10-27._ `electron:local` (`scripts/electron-local.mjs`) opens the production build in the same Electron window. Run `npm run build` first. It serves `out/` on port 3000 through `scripts/cogs-prod-server.mjs`, with the same `/api` handlers as local dev (persist, sync, ingest, notes, screen time, Instagram, phone-sync), so the page origin and the vault path stay `http://localhost:3000`. The first run calls `scripts/backup-data.mjs` (the `data/` archive under `~/Brain2Backups`) before it serves or launches, then writes `~/Brain2Backups/.electron-local-first-export` so later runs skip that export. If port 3000 is already taken it stops and does not kill that process. `electron:dev` is unchanged and stays the edit loop.
+_Last mapped: 2026-10-27._ `electron:local` (`scripts/electron-local.mjs`) opens the production build in the same Electron window. Run `npm run build` first. It serves `out/` on port 3000 through `scripts/cogs-prod-server.mjs`, with the same `/api` handlers as local dev (persist, sync, ingest, notes, screen time, Chrome history, Instagram, phone-sync), so the page origin and the vault path stay `http://localhost:3000`. The Brain2 Chrome extension posts a finished day to `/api/chrome-history` on that port. A packaged `app://` window has no such route; the extension’s JSON file in Downloads is the export there. The first run calls `scripts/backup-data.mjs` (the `data/` archive under `~/Brain2Backups`) before it serves or launches, then writes `~/Brain2Backups/.electron-local-first-export` so later runs skip that export. If port 3000 is already taken it stops and does not kill that process. `electron:dev` is unchanged and stays the edit loop.
 
 ## Apple Notes ingest
 
 `ipcMain.handle("cogs:notes:fetchAppleNotes")` runs `osascript` against **Notes.app** (macOS only). The preview walks each account folder and reads ids, titles, and modification dates in bulk, then keeps notes inside the chosen dates. One fetch runs at a time; a new one stops the previous `osascript`. Notes that have synced through iCloud show up with On My Mac. Packaged builds declare `NSAppleEventsUsageDescription` and Apple Events entitlements (`entitlements.mac.plist`). Restart `electron:dev` after changing the JXA/preload bridge.
 
-DevTools do not open on launch. Set `COGS_DEVTOOLS=1` to detach them, or use Cmd-Opt-I. A detached inspector on this vault is enough to make the window feel frozen.
+DevTools do not open on launch. Set `BRAIN2_DEVTOOLS=1` to detach them, or use Cmd-Opt-I. A detached inspector on this vault is enough to make the window feel frozen.
 
 The renderer UI is `components/notes-ingest.tsx` (**From Notes** in Settings and Lists settings). In local `npm run dev` / `electron:dev`, Chrome at `http://localhost:3000` can use the same reader through `/api/notes` (loopback only; phones on the LAN are refused).
 

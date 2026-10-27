@@ -44,9 +44,9 @@ export interface LocationStatus {
 export interface LocationUploadConfig {
   /** The capture box's upload route, for example `http://100.x.y.z:8788/upload`. */
   uploadUrl: string
-  /** Upload-only token (`COGS_CAPTURE_UPLOAD_TOKEN`). Not the hub's pull token. */
+  /** Upload-only token (`BRAIN2_CAPTURE_UPLOAD_TOKEN`). Not the hub's pull token. */
   token: string
-  /** `COGS_CAPTURE_PUBLIC_KEY`, base64 SPKI DER. */
+  /** `BRAIN2_CAPTURE_PUBLIC_KEY`, base64 SPKI DER. */
   publicKey: string
 }
 

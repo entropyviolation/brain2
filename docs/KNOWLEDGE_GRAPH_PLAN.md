@@ -1586,7 +1586,7 @@ this; describe it in these terms in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md).
 
 **KG-P7 · Usage policies per subgraph.** Mark subgraphs private to this
 device: cycle marks, sleep, mood, intake, a person's notes. Exports, the hub,
-screenshots (`COGS_FRESH=0` passes), and friend surfaces honour the mark.
+screenshots (`BRAIN2_FRESH=0` passes), and friend surfaces honour the mark.
 Paper: §9.3.2.
 
 **KG-P8 · Field-level encryption for the hub.** Encrypt marked subgraphs

@@ -13,9 +13,9 @@
   <string>__REPO_PATH__</string>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>COGS_BACKUP_DIR</key>
+    <key>BRAIN2_BACKUP_DIR</key>
     <string>__BACKUP_DIR__</string>
-    <key>COGS_BACKUP_KEEP</key>
+    <key>BRAIN2_BACKUP_KEEP</key>
     <string>14</string>
   </dict>
   <key>StartCalendarInterval</key>

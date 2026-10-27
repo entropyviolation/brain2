@@ -46,14 +46,14 @@ function fakeChatDb(): string {
 
 describe("readMessagesBatch", () => {
   let file: string
-  const prev = process.env.COGS_MESSAGES_DB
+  const prev = process.env.BRAIN2_MESSAGES_DB
   beforeEach(() => {
     file = fakeChatDb()
-    process.env.COGS_MESSAGES_DB = file
+    process.env.BRAIN2_MESSAGES_DB = file
   })
   afterEach(() => {
-    if (prev === undefined) delete process.env.COGS_MESSAGES_DB
-    else process.env.COGS_MESSAGES_DB = prev
+    if (prev === undefined) delete process.env.BRAIN2_MESSAGES_DB
+    else process.env.BRAIN2_MESSAGES_DB = prev
   })
 
   it("maps rows, skips tapbacks, and returns the last ROWID", async () => {

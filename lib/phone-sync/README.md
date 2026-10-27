@@ -4,7 +4,7 @@ _Last mapped: 2026-10-25_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `COGS_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health, phone Screen Time, email, and DMs are listed and not built.
+Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `BRAIN2_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health, phone Screen Time, email, and DMs are listed and not built.
 
 ## Flow
 
@@ -31,11 +31,11 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `status.ts` | The Settings row list (title, permission, which ones switch) and `latestRun`. No disk. |
 | `readers.ts` | Node only. The list the hub runs. Each Wave 1 agent adds one line. |
 | `calls.ts` | `ZCALLRECORD` row → `CallRecord`. Core Data time (seconds since 2001-01-01), service name, and the cursor `"<ZDATE>\|<ZUNIQUE_ID>"`. Any duration counts as answered. Pure. Built 2026-10-22. |
-| `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `COGS_CALLS_DB` overrides the path. Loaded by `readers.ts`. |
+| `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `BRAIN2_CALLS_DB` overrides the path. Loaded by `readers.ts`. |
 | `messages.ts` | `chat.db` row → `MessageRecord`. Apple time (nanoseconds since 2001, or seconds on old rows), `attributedBody` typedstream → text, group members. Tapbacks and group events map to null. Pure. Built 2026-10-22. |
-| `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `COGS_MESSAGES_DB` overrides the path. Needs Node 22.13+. Loaded by `readers.ts`. |
+| `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `BRAIN2_MESSAGES_DB` overrides the path. Needs Node 22.13+. Loaded by `readers.ts`. |
 | `location.ts` | iPhone location batches → Location rows. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
-| `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `COGS_CAPTURE_BOX_URL` is set. |
+| `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `BRAIN2_CAPTURE_BOX_URL` is set. |
 
 ## Rules that keep it safe
 
@@ -63,9 +63,9 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 
 ## Hub
 
-`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `COGS_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows. A source whose `enabled.json` entry is `false` is skipped for that tick. The location drain uses the same file: off means it waits and does not pull.
+`scripts/phone-hub.ts` → `startPhoneSync()` loads `readers.ts`, and with at least one reader runs every `BRAIN2_PHONE_SYNC_SECONDS` (default 60, minimum 15). Each tick keeps reading while a source still returns rows, so the first run catches up in one go. It logs each run and calls `flushTracking` after a run that wrote rows. A source whose `enabled.json` entry is `false` is skipped for that tick. The location drain uses the same file: off means it waits and does not pull.
 
-_Last mapped: 2026-10-22_ Texts older than `COGS_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
+_Last mapped: 2026-10-22_ Texts older than `BRAIN2_PHONE_SYNC_TEXT_DAYS` (default 30; `0` keeps every text out) stay in the disk archive only and do not become Tracking rows (`inTrackWindow` in `write.ts`). Tracking lives in localStorage, and one Mac had 302k texts back to 2018. Calls always count.
 
 _Last mapped: 2026-10-22_ **Hub storage.** `scripts/phone-hub.mjs` loads `phone-hub-polyfill.mjs` natively, and `phone-hub.ts` loads it again through jiti. That makes two module copies. `fillLocalStorage` and `dumpLocalStorage` must use the installed `globalThis.localStorage`; before this fix, the stores started empty and nothing the hub wrote reached the vault. Each sync pass also calls `rehydrateFromDisk()` first, so app edits made in between are not refused by the vault guard.
 

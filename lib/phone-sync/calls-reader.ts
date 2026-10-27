@@ -5,19 +5,20 @@
  * reads up to `CALLS_PAGE` rows past the cursor, oldest first. The first run
  * starts from the beginning; each run after catches up one page at a time.
  * Needs macOS, "Calls from iPhone" on, and Full Disk Access for the hub.
- * `COGS_CALLS_DB` points at another file (tests). Rows map in `calls.ts`.
+ * `BRAIN2_CALLS_DB` points at another file (tests). Rows map in `calls.ts`.
  */
 import os from "node:os"
 import path from "node:path"
 import { decodeCallCursor, encodeCallCursor, rowToCallRecord, type CallHistoryRow } from "./calls"
 import type { PhoneReader } from "./runner"
 import type { CallRecord } from "./types"
+import { brain2Env } from "@/lib/brain2-env.mjs"
 
 export const CALLS_PAGE = 1000
 
 export function callHistoryPath(env: Record<string, string | undefined> = process.env): string {
   return (
-    env.COGS_CALLS_DB ||
+    brain2Env("CALLS_DB", env) ||
     path.join(os.homedir(), "Library", "Application Support", "CallHistoryDB", "CallHistory.storedata")
   )
 }
@@ -29,7 +30,7 @@ const OPTIONAL_COLUMNS = ["ZNAME", "ZCALLTYPE", "ZSERVICE_PROVIDER"]
 type Db = import("node:sqlite").DatabaseSync
 
 function openCallHistory(file: string): Db {
-  const custom = Boolean(process.env.COGS_CALLS_DB)
+  const custom = Boolean(brain2Env("CALLS_DB"))
   if (!custom && process.platform !== "darwin") {
     throw new Error("Call history needs macOS: it is read from the Mac's CallHistory.storedata.")
   }

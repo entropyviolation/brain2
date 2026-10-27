@@ -17,8 +17,8 @@ Analytics gains a **Texts** group. Its one view, **Report**, shows the texts ana
 | Part | Where | What it does |
 |------|-------|--------------|
 | Pipeline | `scripts/texts-analysis/` (Python) | Copies `chat.db` and Contacts into the home folder, computes aggregates, writes the report. |
-| Home | `~/texts-analysis` (`COGS_TEXTS_HOME`) | `data/` (database copies), `out/` (summary, report, per-chat message files, notes database), `.venv`. Never in the repo. |
-| Server | `scripts/texts-analysis/serve.py` | Serves the report on `127.0.0.1:8765` (`COGS_TEXTS_PORT`). Holds notes and labels. Runs AI jobs and refreshes. |
+| Home | `~/texts-analysis` (`BRAIN2_TEXTS_HOME`) | `data/` (database copies), `out/` (summary, report, per-chat message files, notes database), `.venv`. Never in the repo. |
+| Server | `scripts/texts-analysis/serve.py` | Serves the report on `127.0.0.1:8765` (`BRAIN2_TEXTS_PORT`). Holds notes and labels. Runs AI jobs and refreshes. |
 | Desktop bridge | `electron/texts-report.js` | Starts the server when the view opens. Checks hourly and runs the refresh once a day, the first check after 04:00 local. |
 | View | `components/Analytics/TextsReportView.tsx` | Frames the report unchanged. Shows the last update and **Update now**. |
 

@@ -18,7 +18,7 @@ _Last mapped: 2026-10-22_
 | Info.plist | `ios/App/App/Info.plist` | Built. Both usage strings and `UIBackgroundModes` → `location`. |
 | JS bridge | `lib/mobile/location-bridge.ts` | Built. No-op off the phone. `locationChip` gives the chip words, shown on the Location card. |
 | Box upload | `scripts/capture-upload.mjs` | Built as its own file, mounted by `capture-box.mjs`. An ack names its kind, so it never drops another kind's rows. |
-| Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` starts it when `COGS_CAPTURE_BOX_URL` is set. |
+| Hub drain | `lib/phone-sync/location-drain.ts` | Built. `scripts/phone-hub.ts` starts it when `BRAIN2_CAPTURE_BOX_URL` is set. |
 | Rows | `lib/phone-sync/location.ts` | Built. See [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md) → Location. |
 
 Changes from the brief:
@@ -26,7 +26,7 @@ Changes from the brief:
 - **Its own door, not `applyPhoneRecords`.** `types.ts` has a `location` source but no location record, and `write.ts` writes only texts and calls. `location.ts` writes Location itself, with the same ids and stamp helpers.
 - **Visits are blocks, moves are instants.** `gps:` paints a short block ending at each fix. A significant move is not a stay, so it is an instant. A closed visit is a block from arrive to leave. Nothing between events is filled in.
 - **Its own queue on the box.** Uploads go to `uploads.jsonl` with their own sequence numbers, not the Telegram queue, so the Telegram drain is untouched. Routes: `POST /upload`, `GET /uploads`, `POST /uploads/ack`.
-- **Two tokens.** The phone holds `COGS_CAPTURE_UPLOAD_TOKEN`, which can only add. The hub pulls and acks with `COGS_CAPTURE_TOKEN`. A lost phone cannot read or empty the queue.
+- **Two tokens.** The phone holds `BRAIN2_CAPTURE_UPLOAD_TOKEN`, which can only add. The hub pulls and acks with `BRAIN2_CAPTURE_TOKEN`. A lost phone cannot read or empty the queue.
 - **The phone seals.** Swift CryptoKit builds the same `v1.` sealed form as `scripts/sealed-box.mjs` (X25519, HKDF-SHA256, AES-256-GCM). `scripts/capture-upload.test.ts` builds a seal the Swift way and checks `open` takes it.
 
 Honest gaps:
@@ -41,18 +41,18 @@ Honest gaps:
 
 To switch it on:
 
-1. On the VM, copy `capture-box.mjs` and `capture-upload.mjs` into `/opt/brain2-capture/`, set `COGS_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box. From the Mac:
+1. On the VM, copy `capture-box.mjs` and `capture-upload.mjs` into `/opt/brain2-capture/`, set `BRAIN2_CAPTURE_UPLOAD_TOKEN` in `/etc/brain2-capture.env`, and restart the box. From the Mac:
    ```bash
    scp scripts/capture-box.mjs scripts/capture-upload.mjs <you>@<vm>:/tmp/
    ssh <you>@<vm>
    sudo cp /tmp/capture-box.mjs /tmp/capture-upload.mjs /opt/brain2-capture/
-   echo "COGS_CAPTURE_UPLOAD_TOKEN=$(openssl rand -hex 32)" | sudo tee -a /etc/brain2-capture.env >/dev/null
+   echo "BRAIN2_CAPTURE_UPLOAD_TOKEN=$(openssl rand -hex 32)" | sudo tee -a /etc/brain2-capture.env >/dev/null
    sudo grep -E 'UPLOAD_TOKEN|PUBLIC_KEY' /etc/brain2-capture.env   # the two values the phone needs
    sudo systemctl restart brain2-capture && systemctl status brain2-capture --no-pager
    ```
    Then from the Mac: `curl http://brain2-capture:8788/health`.
    Install Tailscale on the iPhone too, signed in to the same account. The box is reachable only on the tailnet, so the upload URL is `http://brain2-capture:8788/upload`.
-2. Run the hub with `COGS_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
+2. Run the hub with `BRAIN2_CAPTURE_BOX_URL` set. It drains location uploads beside the Telegram queue.
 3. In Xcode: build to the phone. On the Location card, fill in and save Upload setup; saving goes straight on to asking for location and starting. Allow location, and pick "Always" when iOS offers it. iOS may grant "While Using" first and offer "Always" later; recording starts either way, and the chip says "set to Always" until then.
 
 ## Job

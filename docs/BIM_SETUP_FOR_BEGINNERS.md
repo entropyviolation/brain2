@@ -31,7 +31,7 @@ every minute. If the waves stop, the friend texts you on Telegram.
 - Your chat id is `8902429750`. The mailbox only keeps letters from that chat.
 - A folder of ready-to-copy files is at `~/.brain2/vm-bundle/`. It has the mailbox
   program and a settings file with your secrets already filled in.
-- Your Mac's `.env.local` already has the pickup password (`COGS_CAPTURE_TOKEN`).
+- Your Mac's `.env.local` already has the pickup password (`BRAIN2_CAPTURE_TOKEN`).
 
 **Still to do:** back up the key (Part 1), Healthchecks (2), Tailscale (3),
 Oracle (4), put the mailbox on Oracle (5), connect the Mac (6), test (7).
@@ -59,7 +59,7 @@ Strangers get no reply.
   `/start 123456` (your real code). Or if you texted the bot before and were
   refused, it appears under **Texted but not paired**: press **Pair**.
 - The number shown for your chat is your chat id. Yours is `8902429750`. That
-  number goes in `COGS_CAPTURE_CHAT_IDS` on the mailbox. Done already.
+  number goes in `BRAIN2_CAPTURE_CHAT_IDS` on the mailbox. Done already.
 - Brain2 pairing and the mailbox list are two separate locks. A chat needs to be
   on both to get through.
 
@@ -85,8 +85,8 @@ You make **two** checks: one for the mailbox, one for your Mac picking up.
    Grace 30 minutes (your Mac sleeps, so be gentle), Telegram on. Copy its URL too.
 5. Put the URLs in:
    - Mailbox URL: open `~/.brain2/vm-bundle/brain2-capture.env` and put it after
-     `COGS_HEALTHCHECK_URL=`.
-   - Mac URL: in `.env.local` add a line `COGS_DRAIN_HEALTHCHECK_URL=<second url>`.
+     `BRAIN2_HEALTHCHECK_URL=`.
+   - Mac URL: in `.env.local` add a line `BRAIN2_DRAIN_HEALTHCHECK_URL=<second url>`.
 
 You are done when both checks show on the site as "New" (grey). They turn green
 after the first wave.
@@ -174,7 +174,7 @@ look for the nearest one.
    sudo chmod 600 /etc/brain2-capture.env
    sudo nano /etc/brain2-capture.env
    ```
-   In the editor, put your `TAILIP` after `COGS_CAPTURE_BIND=` (and check the
+   In the editor, put your `TAILIP` after `BRAIN2_CAPTURE_BIND=` (and check the
    Healthchecks URL is there). Save with Ctrl+O, Enter, then exit with Ctrl+X.
 6. **Start it and make it always start:**
    ```bash
@@ -200,9 +200,9 @@ look for the nearest one.
 
 1. In `.env.local` (in the brain2 folder) uncomment/add:
    ```
-   COGS_CAPTURE_BOX_URL=http://brain2-capture:8788
+   BRAIN2_CAPTURE_BOX_URL=http://brain2-capture:8788
    ```
-   (`COGS_CAPTURE_TOKEN` is already there. It must match the one on the VM; it does,
+   (`BRAIN2_CAPTURE_TOKEN` is already there. It must match the one on the VM; it does,
    they came from the same file.)
 2. **Turn off the desktop app's own Telegram listening** (Settings → Message
    ingest → switch it off). Two listeners at once fight each other.
@@ -226,8 +226,8 @@ look for the nearest one.
 | What you see | Try |
 | --- | --- |
 | `curl` to the box times out | Is Tailscale connected on the Mac? `tailscale status` on both machines. |
-| `401` from the box | The pickup password differs. Compare `COGS_CAPTURE_TOKEN` in `.env.local` and `/etc/brain2-capture.env`. |
-| Box exits at start | `journalctl -u brain2-capture -n 30`. Usually `COGS_CAPTURE_CHAT_IDS` or `COGS_CAPTURE_BIND` is empty. |
+| `401` from the box | The pickup password differs. Compare `BRAIN2_CAPTURE_TOKEN` in `.env.local` and `/etc/brain2-capture.env`. |
+| Box exits at start | `journalctl -u brain2-capture -n 30`. Usually `BRAIN2_CAPTURE_CHAT_IDS` or `BRAIN2_CAPTURE_BIND` is empty. |
 | BIM never replies | Is `phone:hub` running? Is the desktop app's own listener off? |
 | 409 errors | Two things are listening to Telegram. Stop the extras. |
 | Lost the key | The locked envelopes are gone. Make a new key (`mv` the old file first), update the public key on the VM. New letters work. |

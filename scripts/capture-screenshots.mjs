@@ -6,10 +6,10 @@
  *   node scripts/capture-screenshots.mjs
  *
  * Options (env):
- *   COGS_URL=http://localhost:3000
+ *   BRAIN2_URL=http://localhost:3000
  *   PW_CHANNEL=chrome
- *   COGS_FRESH=1   — clear localStorage before load (consistent seed data)
- *   COGS_ONLY=01-home-daily-habits.png  — capture + rewrite sidecar for listed files only (comma-separated)
+ *   BRAIN2_FRESH=1   — clear localStorage before load (consistent seed data)
+ *   BRAIN2_ONLY=01-home-daily-habits.png  — capture + rewrite sidecar for listed files only (comma-separated)
  *
  * Before the app boots, init scripts write throwaway Zustand blobs (tracking,
  * sleep, tasks/operations, modules, goals, habit completions, plan logs).
@@ -22,12 +22,13 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { SHOTS, GLOBAL_HEADER } from "./screenshot-manifest.mjs"
 import { archiveShot, writeReelIndex } from "./screenshot-archive.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.join(__dirname, "..", "docs", "screenshots")
-const BASE = process.env.COGS_URL ?? "http://localhost:3000"
-const FRESH = process.env.COGS_FRESH !== "0"
-const ONLY = (process.env.COGS_ONLY ?? "")
+const BASE = brain2Env("URL") ?? "http://localhost:3000"
+const FRESH = brain2Env("FRESH") !== "0"
+const ONLY = (brain2Env("ONLY") ?? "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean)
@@ -1469,7 +1470,7 @@ async function main() {
   await mkdir(OUT, { recursive: true })
 
   // Rewrite sidecars and the reel from the manifest without opening a browser.
-  if (process.env.COGS_TEXT_ONLY === "1") {
+  if (brain2Env("TEXT_ONLY") === "1") {
     await writeDescriptions()
     try {
       const reel = writeReelIndex(OUT)
