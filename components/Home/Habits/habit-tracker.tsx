@@ -1138,7 +1138,7 @@ export function WeeklyTaskTracker({ currentDate = new Date() }: { currentDate?: 
           </div>
         </div>
 
-        <div className="habit-grades hab-view-changer">
+        <div className="habit-grades hab-view-changer b2-keycap-tab">
           <TabsList aria-label="Habit period" className="hab-period-keys">
             <TabsTrigger value="daily">Daily{hydrated ? ` (${dailyTasks.length})` : ""}</TabsTrigger>
             <TabsTrigger value="weekly">Weekly{hydrated ? ` (${weeklyTasks.length})` : ""}</TabsTrigger>

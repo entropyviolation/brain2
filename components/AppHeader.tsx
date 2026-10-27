@@ -16,11 +16,16 @@
  * the first time they open, so a refresh does not download a closed door.
  * The Now popup loads when that key opens. Narrower than the group, whole
  * clusters wrap onto the full shell; a cluster wider than
- * the shell scrolls inside its bay. Keys do not flex-shrink, and phosphor
+ * the shell scrolls inside its bay. On a viewport 520px or narrower the
+ * same keys sit in a title bar, a scrolling Go strip, and two short tool
+ * rows (`shell-chrome.css`). A wider window keeps the one-row mill. Keys do not flex-shrink, and phosphor
  * counts stay on them. Nav and Go go black with a green legend on focus; Go’s current tab stays that CRT. A press is the old 1px milled sink. System is a gear (Settings), a question mark (Names
  * help mode), a magnifying glass (Search), and a bell (current reminders).
  * The question mark latches (`aria-pressed`) and gains a diagonal strike while
  * Names is on. Icon keys show engraved glyphs; word keys stay words.
+ * The Friend nameplate matches Nav, Go, and Rituals. Its fold is a hairline
+ * with a centered bar. Header letters have no white shadow. The Rituals
+ * count sits in the middle of its key.
  * Nested bevels from IRIX/TENO — not a cockpit restyle and not a SaaS navbar.
  *
  * Spec: §8.2 (dashboard top bar / global quick actions).
@@ -149,6 +154,25 @@ export function AppHeader({
   const [friendFolded, toggleFriend] = useFold("brain2-shell-friend-folded")
   useEffect(() => {
     performance.mark("brain2-shell-ready")
+  }, [])
+
+  /* Phone Go strip scrolls. Keep the current tab in view. A wide shell
+     does not overflow, and a test render has no width, so both return. */
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>('[data-testid="app-header"]')
+    const list = header?.querySelector<HTMLElement>('[data-ui-name="App tabs"]')
+    if (!header || !list) return
+    const reveal = () => {
+      if (window.innerWidth > 520 || header.clientWidth < 200) return
+      const active = list.querySelector<HTMLElement>('[role="tab"][data-state="active"]')
+      if (!active) return
+      const left = active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2
+      list.scrollTo({ left: Math.max(0, left) })
+    }
+    reveal()
+    const obs = new MutationObserver(reveal)
+    obs.observe(list, { attributes: true, subtree: true, attributeFilter: ["data-state"] })
+    return () => obs.disconnect()
   }, [])
 
   return (

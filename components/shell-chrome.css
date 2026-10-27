@@ -16,11 +16,14 @@
  * live now well is a content-sized peer beside them. A wide shell is one
  * row. Narrower than the group, whole clusters wrap onto the full shell;
  * a cluster wider than the shell scrolls inside its bay. Keys do not
- * flex-shrink. Counts stay on the keys.
+ * flex-shrink. Counts stay on the keys. A viewport 520px or narrower
+ * (the block at the bottom of this file) uses a title bar, a scrolling
+ * Go strip, and two short tool rows. A wider window keeps this mill.
  *
  * The now well (`header-now-box.tsx`) lives in Capture, as a peer of the
  * Capture keys; absent when idle. Sticky pin + shelf so the desk scrolls
- * under it. Do not restyle module interiors or the tab strip from here.
+ * under it. Do not restyle module interiors from here. The phone block
+ * at the bottom of this file does restyle the Go strip, and only there.
  */
 
 .b2-shell {
@@ -133,6 +136,9 @@
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   color: #111;
   -webkit-font-smoothing: none;
+  /* The pixel face has one weight. A synthetic bold paints a white fringe
+     around every letter on the mill. */
+  font-synthesis: none;
 }
 
 .b2-shell-caption {
@@ -292,13 +298,19 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
     linear-gradient(180deg, var(--chrome-mist-2) 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
   background-image: var(--b2-shell-mill),
     linear-gradient(180deg, var(--chrome-mist-2) 0%, var(--b2-shell-face) 45%, var(--b2-shell-brush) 100%);
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 12px;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 400;
+  font-synthesis: none;
   letter-spacing: 0.14em;
   line-height: 1;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+  -webkit-text-stroke: 0;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     inset 0 -1px 0 rgba(60, 64, 68, 0.35),
@@ -375,7 +387,8 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
 html[data-pcb-ink="dark"] .b2-shell-brand .baby-nest-name,
 html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   color: #111;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
+  font-synthesis: none;
   font-size: 12px;
   line-height: 1.2;
   max-width: 9.5rem;
@@ -572,9 +585,10 @@ body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:focus-visible {
   white-space: nowrap;
   color: #1a1c1e;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
+  font-synthesis: none;
   line-height: 1.1;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
 }
 
 .b2-shell-now-elapsed {
@@ -794,7 +808,7 @@ body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([
     linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--b2-shell-brush) 40%, var(--chrome-inset) 100%);
   color: #111;
   border-color: transparent;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  text-shadow: none;
   outline: 0;
   box-shadow: var(--b2-shell-key-pressed);
   transform: translate(0, 1px);
@@ -1189,43 +1203,66 @@ body.win95-app .b2-shell-now .trk-now-obj-trigger.has-active {
 
 .b2-shell-fold,
 body.win95-app .b2-shell .b2-shell-group button.b2-shell-fold,
-body.win95-app .b2-shell-rail button.b2-shell-fold {
+body.win95-app .b2-shell button.b2-shell-fold {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 18px !important;
+  box-sizing: border-box;
+  width: 9px !important;
   min-width: 0 !important;
-  height: 18px !important;
+  height: 9px !important;
   min-height: 0 !important;
-  margin: 0 0 0 5px !important;
-  padding: 0 0 2px !important;
+  margin: 0 0 0 3px !important;
+  padding: 0 !important;
   vertical-align: middle;
-  border: 1px solid var(--cap-edge, #6e7378);
-  border-radius: 3px;
-  background: linear-gradient(180deg, var(--todo-cap-top, #f1f3f5), var(--todo-cap-top2, #dfe2e6));
-  box-shadow:
-    inset 1px 0 0 var(--todo-cap-skirt, #b3b8be),
-    inset -1px 0 0 var(--todo-cap-skirt, #b3b8be),
-    inset 0 -2px 0 var(--todo-cap-skirt, #b3b8be),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  font: 700 11px/1 inherit;
-  color: var(--todo-cap-leg, #1f2226);
+  border: 1px solid rgba(42, 44, 46, 0.55);
+  border-radius: 1px;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  text-shadow: none;
   cursor: pointer;
 }
 
+/* Geometric bar. The en dash sat high in the pixel face. */
+.b2-shell-fold::before,
+.b2-shell-fold::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #2a2c2e;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.b2-shell-fold::before {
+  width: 5px;
+  height: 1px;
+}
+
+.b2-shell-fold[aria-expanded="false"]::after {
+  width: 1px;
+  height: 5px;
+}
+
 .b2-shell-fold:hover,
-body.win95-app .b2-shell-rail button.b2-shell-fold:hover:not(:disabled) {
-  background: linear-gradient(180deg, #f7f8f9, var(--todo-cap-top2, #dfe2e6));
+body.win95-app .b2-shell button.b2-shell-fold:hover:not(:disabled) {
+  border-color: #2a2c2e;
+  background: transparent;
+  background-image: none;
 }
 
 .b2-shell-fold:active,
 body.win95-app .b2-shell button.b2-shell-fold:active {
-  transform: translateY(1px);
-  box-shadow:
-    inset 1px 0 0 var(--todo-cap-skirt, #b3b8be),
-    inset -1px 0 0 var(--todo-cap-skirt, #b3b8be),
-    inset 0 -1px 0 var(--todo-cap-skirt, #b3b8be);
+  transform: none;
+  border-color: #2a2c2e;
+  box-shadow: none;
 }
 
 /* Folded Friend: just the picture. */
@@ -1237,10 +1274,26 @@ body.win95-app .b2-shell button.b2-shell-fold:active {
   padding-inline: 10px;
 }
 
-/* Rituals: the legend names it, so the key is just the count. */
+/* Rituals: the legend names it, so the key is just the count, dead center. */
 .b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) .b2-key-word,
 .b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) svg {
   display: none;
+}
+
+body.win95-app .b2-shell-rituals .b2-shell-keys > button:has(.b2-shell-count) {
+  position: relative;
+  flex: 0 0 34px;
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+}
+
+body.win95-app .b2-shell-rituals .b2-shell-count {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
 }
 
 /* Friend avatar is a round porthole. */
@@ -1395,4 +1448,334 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   min-height: 26px;
   padding: 2px 8px 5px;
   font-size: 11px;
+}
+
+/* Phone shell. Keyed off the viewport so this can restyle `.b2-shell`
+   itself (a container query cannot). A wider window keeps the mill above.
+   Same keys, three bands: a title bar clear of the status bar, a sideways
+   Go strip with the whole word on each key, then Capture + Rituals and
+   Friend + System on short rows. */
+@media (max-width: 520px) {
+  .b2-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "caption nav"
+      "tabs tabs"
+      "stage stage"
+      "shelf shelf";
+    gap: 0;
+    padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+    background-color: var(--b2-shell-face);
+    background-image: none;
+    box-shadow: 0 1px 0 var(--b2-shell-frame);
+  }
+
+  .b2-shell-caption {
+    grid-area: caption;
+    box-sizing: border-box;
+    min-height: calc(48px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 4px 0 12px;
+  }
+
+  .b2-shell-caption .brain2-mark,
+  html[data-pcb-ink="dark"] .b2-shell-caption .brain2-mark,
+  html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
+    font-size: 16px;
+    letter-spacing: 0.18em;
+  }
+
+  .b2-shell-body {
+    display: contents;
+  }
+
+  .b2-shell-nav {
+    grid-area: nav;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: env(safe-area-inset-top, 0px) 10px 0 0;
+    border-radius: 0;
+    background: var(--b2-shell-blue-light);
+    box-shadow: none;
+  }
+
+  .b2-shell-nav .b2-shell-keys {
+    gap: 6px;
+  }
+
+  .b2-shell-nav > legend,
+  .b2-shell-tabs > legend,
+  .b2-shell-rituals > legend,
+  .b2-shell-system > legend,
+  .b2-shell-capture > legend {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .b2-shell-group.b2-shell-tabs {
+    grid-area: tabs;
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: var(--b2-shell-face);
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"][role="tablist"] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"][role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"],
+  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    max-width: none;
+    height: 48px;
+    padding: 6px 12px 5px;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
+    max-width: none;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.1;
+    letter-spacing: 0.04em;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Stage is a real box again (desktop makes it display:contents).
+     Keys stay content-wide: capture and Rituals share the first row,
+     friend sits beside the system icons on the second. */
+  .b2-shell-stage {
+    grid-area: stage;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    column-gap: 6px;
+    row-gap: 8px;
+    padding: 8px 8px 8px;
+    overflow: visible;
+  }
+
+  .b2-shell-brand,
+  .b2-shell-rituals,
+  .b2-shell-system,
+  .b2-shell-capture {
+    width: max-content;
+    max-width: 100%;
+    margin: 0;
+    padding: 2px 2px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .b2-shell-capture {
+    order: 1;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .b2-shell-rituals {
+    order: 2;
+    margin-left: 0;
+  }
+
+  .b2-shell-brand {
+    order: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 9rem;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .b2-shell-system {
+    order: 4;
+    margin-left: auto;
+  }
+
+  .b2-shell-brand > legend {
+    position: static;
+    transform: none;
+    display: flex;
+    align-items: center;
+    flex: none;
+    width: auto;
+    height: auto;
+    margin: 0 4px 0 0;
+    padding: 0;
+    overflow: visible;
+    clip: auto;
+    font-size: 0;
+    line-height: 0;
+    letter-spacing: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .b2-shell-brand > legend .b2-shell-fold {
+    font-size: 0;
+    line-height: 0;
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 !important;
+  }
+
+  .b2-shell-brand > legend .b2-shell-fold::before {
+    width: 12px;
+    height: 1px;
+  }
+
+  .b2-shell-brand > legend .b2-shell-fold[aria-expanded="false"]::after {
+    width: 1px;
+    height: 12px;
+  }
+
+  .b2-shell-brand .baby-nest {
+    min-width: 0;
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  .b2-shell-brand .baby-nest-crt {
+    width: 40px;
+    height: 40px;
+    padding: 3px;
+  }
+
+  .b2-shell-brand .baby-nest-wordmark {
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .b2-shell-brand .baby-nest-name,
+  html[data-pcb-ink="dark"] .b2-shell-brand .baby-nest-name,
+  html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .b2-shell-brand .baby-nest-controls {
+    flex-wrap: nowrap;
+  }
+
+  .b2-shell-capture .b2-shell-now {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .b2-shell-capture .b2-shell-keys,
+  .b2-shell-system .b2-shell-keys,
+  .b2-shell-rituals .b2-shell-keys {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  body.win95-app .b2-shell-rail button.b2-shell-icon,
+  .b2-shell-rail .b2-shell-keys > button.b2-shell-icon,
+  .b2-shell-rail .b2-shell-keys > *:has(button.b2-shell-icon) {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  body.win95-app .b2-shell-nav button {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  body.win95-app .b2-shell-capture .b2-shell-keys > button,
+  body.win95-app .b2-shell-rituals .b2-shell-keys > button {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max-content;
+    max-width: none;
+    min-height: 40px;
+    height: 40px;
+    padding-inline: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* The Rituals legend is hidden up here, so the word stays on the key. */
+  .b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) .b2-key-word {
+    display: inline;
+  }
+
+  body.win95-app .b2-shell-rituals .b2-shell-count {
+    position: static;
+    top: auto;
+    left: auto;
+    margin: 0 0 0 4px;
+    transform: none;
+  }
+
+  .b2-shell-shelf {
+    grid-area: shelf;
+    margin: 0;
+  }
 }

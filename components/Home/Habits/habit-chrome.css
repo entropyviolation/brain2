@@ -7,7 +7,9 @@
  * Attention. Header, Daily/Weekly/Monthly keys, period nav, Settings / New habit,
  * and the Habits Tab Control Panel share the house milled fascia
  * (docs/DESIGN_STYLE.md#milled-fascia) — brushed silver bays, engraved nameplates,
- * CRT title, active period key = CRT + round power lamp. CRT overlay is `.hab-crt`
+ * CRT title. Period keys and the Tracking view keys are latching keycaps
+ * (`.b2-keycap-tab`): silver skirt at rest, selected key = CRT + round power
+ * lamp. _Last mapped: 2026-10-27._ CRT overlay is `.hab-crt`
  * (off). `.hab-view-changer` is also used on Home Tracking (Time Grid / Activity
  * Log / Day Log, and day-notes List / Bulk / Latest) so those keys match.
  * Grade detail popups use the portaled `.hab-grade-sheet` milled skin (outside
@@ -584,8 +586,9 @@ body.win95-app .hab95 .habit-week-nav-range {
   box-shadow: var(--hab-sunken);
 }
 
-/* Daily / Weekly / Monthly (and Tracking kin): equal keys in one milled bay;
- * active key is a CRT with a round power lamp — not a sunken gray folder tab. */
+/* Daily / Weekly / Monthly (and Tracking kin): latching keycaps in one bay.
+ * The face lives in `app/win95.css` (`.b2-keycap-tab`). Active stays CRT
+ * plus the round power lamp. _Last mapped: 2026-10-27_ */
 .hab95 .hab-view-changer,
 .trk95 .hab-view-changer,
 body.win95-app .hab95 .hab-view-changer,
@@ -627,7 +630,7 @@ body.win95-app .hab95 .hab-view-changer [role="tablist"].hab-period-keys {
 .hab95 .hab-view-changer [role="tablist"].hab-period-keys [role="tab"],
 body.win95-app .hab95 .hab-view-changer [role="tablist"].hab-period-keys [role="tab"] {
   min-width: 0;
-  padding: 4px 2px 5px;
+  padding: 3px 2px 8px;
   font-size: 9px;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -648,20 +651,11 @@ body.win95-app .trk95 .hab-view-changer [role="tab"] {
   min-width: 0;
   min-height: 28px;
   height: auto;
-  padding: 4px 10px 5px;
-  border-radius: var(--r-2, 2px);
+  padding: 3px 10px 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .hab95 .hab-view-changer [role="tab"][data-state="active"],
@@ -695,6 +689,14 @@ body.win95-app .trk95 .hab-view-changer [role="tab"][data-state="active"]::befor
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+.hab95 .hab-view-changer [role="tab"]:active,
+.trk95 .hab-view-changer [role="tab"]:active,
+body.win95-app .hab95 .hab-view-changer [role="tab"]:active,
+body.win95-app .trk95 .hab-view-changer [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
 }
 
 .hab95 .habit-week-grade,

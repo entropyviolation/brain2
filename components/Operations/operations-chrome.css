@@ -2,7 +2,9 @@
  * components/Operations/operations-chrome.css — milled fascia for Operations
  *
  * Brushed silver bays, engraved nameplates, CRT titles, raised metal keys,
- * equal-fill view keys (active = CRT + power lamp). Same verbs as before.
+ * equal-fill view keys are latching keycaps (`.b2-keycap-tab` in `app/win95.css`):
+ * silver skirt at rest, active = CRT + power lamp, press = milled sink.
+ * _Last mapped: 2026-10-27._ Same verbs as before.
  * docs/DESIGN_STYLE.md#milled-fascia. Portaled dialogs use `.ops95-dialog`.
  */
 
@@ -53,11 +55,11 @@
     inset 0 10px 14px rgba(0, 0, 0, 0.4);
 
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
-  font-size: 12px;
+  font-size: 14px; /* room type; named sizes below sit +2px on the old 10–15 scale */
   color: var(--o-ink);
   -webkit-font-smoothing: none;
-  height: min(78vh, 820px);
-  min-height: 520px;
+  height: min(82vh, 880px);
+  min-height: 540px;
   --muted-foreground: 0 0% 25%;
   accent-color: var(--o-blue);
 }
@@ -77,9 +79,9 @@
 .ops95 .ops-fascia {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--r-3, 3px);
   background: var(--o-mill);
   box-shadow: var(--o-bay-ring);
@@ -89,14 +91,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ops95 .ops-mark {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
+  gap: 6px;
+  min-height: 44px;
   min-width: 0;
   flex: 1 1 auto;
   padding: 4px 14px 4px 8px;
@@ -112,9 +114,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-crt) !important;
   text-shadow: var(--o-crt-glow);
@@ -143,8 +145,8 @@
 }
 
 .ops95 .ops-title-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--o-crt);
   filter: drop-shadow(0 0 2px var(--o-crt));
@@ -204,9 +206,9 @@
   flex: 1;
   margin: 0;
   min-width: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-crt) !important;
   text-shadow: var(--o-crt-glow);
@@ -217,8 +219,8 @@
 .ops95 .ops-title-btn:not(.b2-close-key),
 .ops95 .ops-btn {
   box-sizing: border-box;
-  min-height: 28px;
-  padding: 4px 12px 5px;
+  min-height: 30px;
+  padding: 3px 10px 4px;
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20 !important;
@@ -226,9 +228,9 @@
   background: var(--o-key-face) !important;
   box-shadow: var(--o-key-ring);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
   display: inline-flex;
@@ -243,11 +245,11 @@
 }
 
 .ops95 .ops-title-btn:not(.b2-close-key) {
-  min-width: 28px;
-  min-height: 28px;
-  height: 28px;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 6px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -294,9 +296,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: var(--r-3, 3px);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 30%),
@@ -319,16 +321,16 @@
 .ops95 select,
 .ops95 .native-select {
   box-sizing: border-box;
-  height: 32px;
-  min-height: 32px;
-  padding: 6px 12px;
+  height: 34px;
+  min-height: 34px;
+  padding: 4px 10px;
   border: none;
   border-radius: var(--r-2, 2px);
   background: #fff;
   color: #000;
   box-shadow: var(--o-field);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.35;
 }
 
@@ -352,7 +354,7 @@
   color: #000;
   box-shadow: var(--o-field);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
   resize: vertical;
 }
@@ -382,8 +384,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 6px;
   overflow: auto;
 }
 
@@ -395,9 +397,9 @@
   margin: 0 3px 3px;
   padding: 6px 10px;
   border-radius: var(--r-2, 2px);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -459,8 +461,8 @@
 .ops95 .ops-vacant strong {
   display: block;
   margin-bottom: 8px;
-  letter-spacing: 0.14em;
-  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   opacity: 0.85;
@@ -510,14 +512,14 @@
 }
 
 .ops95 .ops-preset-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .ops95 .ops-preset-desc {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
   opacity: 0.85;
 }
@@ -526,14 +528,14 @@
 
 .ops95 .ops-board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
 }
 
 .ops95 .ops-card {
   display: flex;
   flex-direction: column;
-  min-height: 108px;
+  min-height: 100px;
   padding: 2px;
   border: none;
   border-radius: var(--r-3, 3px);
@@ -574,9 +576,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
 }
@@ -587,11 +589,11 @@
 
 .ops95 .ops-card-body {
   flex: 1;
-  padding: 8px;
+  padding: 6px 8px;
   background: #fff;
   box-shadow: var(--o-field);
   color: #222;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -610,9 +612,9 @@
 
 .ops95 .ops-card-meta {
   flex: 0 0 auto;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--chrome-ink-soft);
 }
@@ -630,9 +632,9 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
     0 0 0 1px var(--chrome-lip);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -707,20 +709,20 @@
 }
 
 .ops95 .ops-tab-pane {
-  padding: 10px 8px 12px;
+  padding: 6px 6px 8px;
 }
 
 .ops95 .ops-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
 .ops95 .ops-brief {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 @media (min-width: 720px) {
@@ -740,9 +742,9 @@
 .ops95 .ops-deck {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding: 12px 12px 12px;
+  padding: 10px;
   border-radius: var(--r-3, 3px);
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
@@ -759,9 +761,9 @@
   justify-content: space-between;
   gap: 8px;
   padding: 2px 2px 8px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -800,9 +802,9 @@
 .ops95 .ops-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
-  padding: 12px 12px 12px;
+  padding: 10px;
   border: none;
   border-radius: var(--r-3, 3px);
   background:
@@ -820,9 +822,9 @@
   width: auto;
   margin: 0;
   padding: 0 0 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -832,9 +834,9 @@
   display: block;
   margin: 0;
   padding: 2px 4px 0;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
@@ -871,9 +873,9 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--o-phosphor);
   text-shadow: var(--o-crt-glow);
@@ -886,8 +888,8 @@
 }
 
 .ops95 .ops-heat-cell {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--r-1, 1px);
   box-shadow: inset 1px 1px rgba(255, 255, 255, 0.12), inset -1px -1px #000;
 }
@@ -897,7 +899,7 @@
   align-items: center;
   gap: 4px;
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.85;
   color: var(--o-phosphor);
 }
@@ -905,8 +907,8 @@
 .ops95 .ops-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: 6px;
+  padding: 5px 8px;
   border-radius: var(--r-2, 2px);
   background: #fff;
   box-shadow: var(--o-field);
@@ -929,7 +931,7 @@
 
 .ops95 .ops-hint {
   margin: 0;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--chrome-ink-soft);
 }
 
@@ -943,9 +945,9 @@
 .ops95 .ops-log li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 5px 8px;
+  font-size: 13px;
   border-bottom: 1px solid #d0d0d0;
 }
 
@@ -953,7 +955,7 @@
   background: var(--chrome-cloud);
 }
 
-/* ---- View keys (equal-fill bay; active = CRT) -------------------------- */
+/* ---- View keys (latching keycaps; active = CRT + lamp) --------------- */
 
 body.win95-app .ops95 .ops-view-keys[role="tablist"],
 .ops95 .ops-view-keys[role="tablist"],
@@ -996,7 +998,7 @@ body.win95-app .ops95 .ops-view-keys[role="tablist"],
 .ops95 .ops-home-instrument {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ops95 .ops-heat-cell.is-cold {
@@ -1009,21 +1011,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"],
   position: relative;
   flex: 1 1 0;
   min-width: 4.5rem;
-  min-height: 28px;
-  padding: 5px 12px 6px 22px;
-  border-radius: var(--r-2, 2px);
-  font-size: 11px;
+  min-height: 30px;
+  padding: 3px 10px 8px 20px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .ops95 [role="tab"]::before {
@@ -1060,6 +1053,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
     0 0 5px rgba(125, 255, 196, 0.7);
 }
 
+body.win95-app .ops95 .ops-view-keys [role="tab"]:active,
+.ops95 .ops-view-keys [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
+}
+
 .ops95 .ops-field-plan {
   min-height: 28rem;
   padding: 8px;
@@ -1073,9 +1072,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95 .ops-inline-label {
   margin: 0;
   padding: 0;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -1087,7 +1086,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   height: 26px;
   min-height: 26px;
   padding: 2px 24px 2px 8px;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: var(--r-2, 2px);
 }
 
@@ -1095,7 +1094,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -1113,7 +1112,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95 .ops-check em {
   font-style: normal;
   color: var(--chrome-ink-soft);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .ops95 .ops-filter {
@@ -1131,7 +1130,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1165,9 +1164,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   margin: 0;
   padding: 4px 8px;
   border-radius: var(--r-2, 2px);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -1219,9 +1218,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   gap: 3px;
   padding: 2px 6px;
   border-radius: var(--r-2, 2px);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #1c1e20;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -1276,7 +1275,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   gap: 4px;
   padding: 4px 8px;
   border-radius: var(--r-2, 2px);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   background: var(--o-key-face);
@@ -1316,7 +1315,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops95 .ops-kind-form label {
   display: block;
   margin-bottom: 2px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1341,9 +1340,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops95 .ops-part-group h3 {
   margin: 0 0 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
@@ -1376,7 +1375,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 }
 
 .ops95 .ops-part-open span {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: normal;
   color: var(--chrome-ink-soft);
   text-shadow: none;
@@ -1446,7 +1445,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   color: #000;
   box-shadow: var(--o-raised), 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .ops95-dialog > button.absolute {
@@ -1471,16 +1470,16 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops95-dialog .ops-hint {
   margin: 0;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--chrome-ink-soft);
 }
 
 .ops95-dialog label {
   display: block;
   margin-bottom: 3px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
@@ -1518,7 +1517,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   background: var(--o-key-face) !important;
   box-shadow: var(--o-key-ring);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1561,9 +1560,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   width: auto;
   margin: 0;
   padding: 0 0 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--o-nameplate);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -1581,7 +1580,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   color: #000;
   box-shadow: var(--o-field);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .ops95-dialog .ops-add-row {
@@ -1608,9 +1607,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   gap: 3px;
   padding: 2px 6px;
   border-radius: var(--r-2, 2px);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #1c1e20;
   background: var(--o-key-face);
@@ -1664,12 +1663,12 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 }
 
 .ops95-dialog .ops-check strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .ops95-dialog .ops-check em {
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--chrome-ink-soft);
 }
 
@@ -1702,14 +1701,14 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 }
 
 .ops95-dialog .ops-preset strong {
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .ops95-dialog .ops-preset em {
   font-style: normal;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--chrome-ink-soft);
   text-shadow: none;
 }
@@ -1782,7 +1781,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   padding: 8px 10px;
   border-radius: var(--r-3, 3px);
   font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
-  font-size: 12px;
+  font-size: 14px;
   color: #000;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
@@ -1821,9 +1820,9 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #2a2c2e;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -1843,7 +1842,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
     var(--o-field),
     inset 0 1px 0 #fff;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -1881,7 +1880,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   background: transparent;
   color: #1f2226;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
   text-align: left;
   cursor: pointer;
@@ -1900,7 +1899,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 
 .ops-now-bar .ops-now-empty {
   padding: 4px 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: #3a3d40;
 }
 
@@ -1916,7 +1915,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
   background: var(--o-key-face);
   box-shadow: var(--o-key-ring);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1938,7 +1937,7 @@ body.win95-app .ops95 .ops-view-keys [role="tab"][data-state="active"],
 .ops-now-bar .ops-now-meta {
   flex: 1 1 12rem;
   min-width: 0;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--chrome-ink-soft);
 }
 

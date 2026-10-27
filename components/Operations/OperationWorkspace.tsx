@@ -284,7 +284,7 @@ export function OperationWorkspace({
             onValueChange={(next) => setTab(next as OperationPanelId)}
             className="ops-main min-w-0 flex min-h-0 flex-col"
           >
-            <TabsList className="ops-view-keys ops-view-clusters flex h-auto w-full flex-wrap justify-start rounded-none">
+            <TabsList className="ops-view-keys ops-view-clusters b2-keycap-tab flex h-auto w-full flex-wrap justify-start rounded-none">
               {(() => {
                 const planDo = new Set<OperationPanelId>([
                   "home",
