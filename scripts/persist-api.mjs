@@ -43,6 +43,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
@@ -609,9 +610,11 @@ function handleRecoveryBackupsApi(req, res, pathname) {
 
 /** @returns {Promise<boolean>} true if handled */
 export async function handlePersistApi(req, res, pathname) {
-  if (pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")) {
-    return handleRecoveryBackupsApi(req, res, pathname)
-  }
+  const recovery = pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")
+  const persist = pathname === "/api/persist" || pathname === "/api/persist/health"
+  if (!recovery && !persist) return false
+  if (!guardBrowserOrigin(req, res)) return true
+  if (recovery) return handleRecoveryBackupsApi(req, res, pathname)
   if (pathname !== "/api/persist" && pathname !== "/api/persist/health") return false
 
   if (req.method === "OPTIONS") {

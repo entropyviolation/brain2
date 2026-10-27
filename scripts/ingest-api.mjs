@@ -5,6 +5,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
@@ -77,6 +78,7 @@ function readBody(req) {
 
 export async function handleIngestApi(req, res, pathname) {
   if (!pathname.startsWith("/api/ingest")) return false
+  if (!guardBrowserOrigin(req, res)) return true
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {})
     return true

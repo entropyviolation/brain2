@@ -1,6 +1,6 @@
 /**
  * scripts/build-iphone-phone-shortcuts.mjs — Write + sign Screen Time / Call /
- * Text / Location / NFC
+ * Text / Location / NFC / NFC dose
  *
  * Same pipeline as scripts/build-iphone-notes-shortcut.mjs: JSON workflow →
  * binary plist → `shortcuts sign --mode anyone`. AirDrop the signed files
@@ -426,14 +426,25 @@ const NFC = {
   notify: "BB555555-5555-4555-A555-555555555555",
 }
 
+const DOSE = {
+  comment: "CC111111-1111-4111-A111-111111111111",
+  askId: "CC222222-2222-4222-A222-222222222222",
+  askQty: "CC333333-3333-4333-A333-333333333333",
+  message: "CC444444-4444-4444-A444-444444444444",
+  setOutgoing: "CC3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "CC555555-5555-4555-A555-555555555555",
+  notify: "CC666666-6666-4666-A666-666666666666",
+}
+
 export function buildNfcWorkflow() {
   const actions = [
     action("is.workflow.actions.comment", NFC.comment, {
       WFCommentActionText:
         `Sends nfc:tag-id to ${BOT}.\n` +
         `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
-        `Type the tag id from Settings → Message ingest (vitamin-d), not the whole line.\n` +
-        `For a sticker that should run with no question, duplicate this Shortcut and replace the Ask with the text nfc:your-id.`,
+        `Type the tag id from Settings → NFC tags (vitamin-d), not the whole line.\n` +
+        `For a sticker that should run with no question, duplicate this Shortcut and replace the Ask with the text nfc:your-id.\n` +
+        `A dose that sometimes changes count uses NFC dose to Brain2 instead.`,
     }),
     action("is.workflow.actions.ask", NFC.ask, {
       WFAskActionPrompt: "Tag id? (vitamin-d, door, shower — the id from Brain2, not nfc:)",
@@ -463,12 +474,151 @@ export function buildNfcWorkflow() {
   })
 }
 
+const BOUND = {
+  comment: "DD111111-1111-4111-A111-111111111111",
+  askQty: "DD222222-2222-4222-A222-222222222222",
+  message: "DD333333-3333-4333-A333-333333333333",
+  setOutgoing: "DD3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "DD444444-4444-4444-A444-444444444444",
+  notify: "DD555555-5555-4555-A555-555555555555",
+}
+
+/** Download name for one saved tag. The id is already inside the shortcut. */
+export function nfcShortcutDownloadName(name, id) {
+  const label =
+    String(name || id || "tag")
+      .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 60) || "tag"
+  return `NFC ${label}.shortcut`
+}
+
+/**
+ * One sticker. The tag id is baked in, so the automation does not ask for it.
+ * A dose asks how many (blank uses the quantity saved on the tag). A door or
+ * a plain event sends `nfc:{id}` with no question. Returns null for a bad id.
+ */
+export function buildBoundNfcWorkflow({ id, name, askQuantity } = {}) {
+  const slug = String(id || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null
+  const display = String(name || slug)
+    .replace(/[\u0000-\u001f]/g, " ")
+    .trim()
+    .slice(0, 80) || slug
+  const shortcutName = `NFC ${display}`.slice(0, 90)
+  const actions = askQuantity
+    ? [
+        action("is.workflow.actions.comment", BOUND.comment, {
+          WFCommentActionText:
+            `Sends nfc:${slug} and a count to ${BOT}.\n` +
+            `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+            `How many is optional: blank uses the quantity saved on this tag.\n` +
+            `Attach this Shortcut to Automation → NFC for this sticker. Turn Ask Before Running off.`,
+        }),
+        action("is.workflow.actions.ask", BOUND.askQty, {
+          WFAskActionPrompt: "How many? Leave blank to use the quantity saved on the tag.",
+          WFInputType: "Text",
+          CustomOutputName: "How many",
+        }),
+        action("is.workflow.actions.gettext", BOUND.message, {
+          WFTextActionText: textWithTokens([`nfc:${slug} `, { uuid: BOUND.askQty, name: "How many" }]),
+        }),
+        setOutgoing(BOUND.setOutgoing, BOUND.message),
+        sendMessage(BOUND.send),
+        action("is.workflow.actions.notification", BOUND.notify, {
+          WFNotificationActionBody: `Sent ${slug} to Brain2.`,
+          WFNotificationActionTitle: "Brain2",
+        }),
+      ]
+    : [
+        action("is.workflow.actions.comment", BOUND.comment, {
+          WFCommentActionText:
+            `Sends nfc:${slug} to ${BOT}.\n` +
+            `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+            `Attach this Shortcut to Automation → NFC for this sticker. Turn Ask Before Running off.`,
+        }),
+        action("is.workflow.actions.gettext", BOUND.message, {
+          WFTextActionText: textWithTokens([`nfc:${slug}`]),
+        }),
+        setOutgoing(BOUND.setOutgoing, BOUND.message),
+        sendMessage(BOUND.send),
+        action("is.workflow.actions.notification", BOUND.notify, {
+          WFNotificationActionBody: `Sent ${slug} to Brain2.`,
+          WFNotificationActionTitle: "Brain2",
+        }),
+      ]
+
+  return wrapWorkflow({
+    name: shortcutName,
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: BOUND.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+  })
+}
+
+export function buildNfcDoseWorkflow() {
+  const actions = [
+    action("is.workflow.actions.comment", DOSE.comment, {
+      WFCommentActionText:
+        `Sends nfc:tag-id and a count to ${BOT}.\n` +
+        `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+        `Tag id is the slug from Settings → NFC tags. How many is optional: blank uses the quantity saved on that tag.\n` +
+        `For a bottle, duplicate this Shortcut, delete the tag-id Ask, and set the text to nfc:adderall plus a space plus How many.`,
+    }),
+    action("is.workflow.actions.ask", DOSE.askId, {
+      WFAskActionPrompt: "Tag id? (adderall — the id from Brain2, not nfc:)",
+      WFInputType: "Text",
+      CustomOutputName: "Tag Id",
+    }),
+    action("is.workflow.actions.ask", DOSE.askQty, {
+      WFAskActionPrompt: "How many? Leave blank to use the quantity saved on the tag.",
+      WFInputType: "Text",
+      CustomOutputName: "How many",
+    }),
+    action("is.workflow.actions.gettext", DOSE.message, {
+      WFTextActionText: textWithTokens([
+        "nfc:",
+        { uuid: DOSE.askId, name: "Tag Id" },
+        " ",
+        { uuid: DOSE.askQty, name: "How many" },
+      ]),
+    }),
+    setOutgoing(DOSE.setOutgoing, DOSE.message),
+    sendMessage(DOSE.send),
+    action("is.workflow.actions.notification", DOSE.notify, {
+      WFNotificationActionBody: "Sent NFC dose to Brain2.",
+      WFNotificationActionTitle: "Brain2",
+    }),
+  ]
+
+  return wrapWorkflow({
+    name: "NFC dose to Brain2",
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: DOSE.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+  })
+}
+
 export const PHONE_SHORTCUTS = [
   { name: "Screen Time to Brain2", build: buildScreenTimeWorkflow },
   { name: "iPhone Call to Brain2", build: buildCallWorkflow },
   { name: "iPhone Text to Brain2", build: buildTextWorkflow },
   { name: "Location to Brain2", build: buildLocationWorkflow },
   { name: "NFC to Brain2", build: buildNfcWorkflow },
+  { name: "NFC dose to Brain2", build: buildNfcDoseWorkflow },
 ]
 
 function writePlistJson(workflow, jsonPath) {

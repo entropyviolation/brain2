@@ -9,6 +9,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { isLoopbackRemoteAddress } from "./screentime-api.mjs"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -73,6 +74,7 @@ export function writePhoneSyncEnabled(dataDir, source, on) {
 export async function handlePhoneSyncApi(req, res, pathname, deps = {}) {
   const route = String(pathname || "").replace(/\/$/, "") || "/"
   if (route !== "/api/phone-sync/status" && route !== "/api/phone-sync/enabled") return false
+  if (!guardBrowserOrigin(req, res)) return true
 
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {})

@@ -45,8 +45,13 @@ the existing process.
 The hub's `/api/persist` and `/api/recovery-backups` serve the **whole vault**.
 They are unauthenticated unless `COGS_PHONE_HUB_TOKEN` is set. When set, those
 routes need `Authorization: Bearer <token>` (`lib/ingest/hub-auth.ts`).
-`/health`, `/api/ingest/status`, and the Telegram webhook (its own secret) stay
-open. Settings → Message ingest → **Hub token** sends it on Sync vault. The hub
+_Last mapped: 2026-10-27_ A browser page on a public origin cannot read them:
+`lib/ingest/request-origin.mjs` refuses that `Origin` and does not send
+`Access-Control-Allow-Origin: *`. No `Origin` (a Shortcut or curl) is still
+allowed, and the process listens on `0.0.0.0`, so a token is what closes the
+vault to other machines. `/health`, `/api/ingest/status`, and the Telegram
+webhook (its own secret, compared in constant time) stay open to non-browser
+clients. Settings → Message ingest → **Hub token** sends it on Sync vault. The hub
 warns at startup when the token is unset. Alternative: bind to a private network
 (Tailscale) and skip public exposure.
 

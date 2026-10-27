@@ -1,8 +1,9 @@
 /**
  * lib/ingest/nfc-tag.ts — NFC tag records for phone taps
  *
- * A sticker does not write the vault. The phone sends `nfc:{id}` through BIM.
- * The id is the slug stored here. Settings → Message ingest keeps the list.
+ * A sticker does not write the vault. The phone sends `nfc:{id}` through BIM,
+ * or `nfc:{id} 2` when this scan’s count is not the saved quantity.
+ * The id is the slug stored here. Settings → NFC tags keeps the list.
  * A second tap of the same tag inside 20 seconds is a double-read.
  */
 import type { IntakeClass } from "@/lib/time-entries"
@@ -23,6 +24,11 @@ export interface NfcTag {
   intakeClass?: IntakeClass
   /** Minutes painted as a block ending at the scan. Instant tags only. */
   minutes?: number
+  /**
+   * How many this scan logs when the line has no number. Instant tags only.
+   * `nfc:adderall 2` overrides it for that one text. Missing means 1.
+   */
+  quantity?: number
   leftTitle: string
   backTitle: string
   /** Door toggle. `out` was the last scan (logged left). `in` logged back. */
@@ -47,6 +53,26 @@ export function nfcLine(id: string): string {
   return `nfc:${nfcSlug(id)}`
 }
 
+/** Split `adderall 2` into the slug and an optional count (1–99). A bare id keeps quantity null. */
+export function parseNfcCommand(payload: string): { id: string; quantity: number | null } {
+  let text = payload.trim().replace(/^nfc\s*[:：]\s*/i, "")
+  const match = /^(.*\S)\s+(\d{1,2})$/.exec(text)
+  let quantity: number | null = null
+  if (match) {
+    const count = Number(match[2])
+    if (count >= 1 && count <= 99) {
+      text = match[1]
+      quantity = count
+    }
+  }
+  return { id: nfcSlug(text), quantity }
+}
+
+export function nfcQuantity(raw: unknown): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return 1
+  return Math.min(99, Math.max(1, Math.floor(raw)))
+}
+
 export function sanitizeNfcTag(raw: Partial<NfcTag> | null | undefined): NfcTag | null {
   if (!raw || typeof raw !== "object") return null
   const id = nfcSlug(typeof raw.id === "string" ? raw.id : "")
@@ -62,6 +88,7 @@ export function sanitizeNfcTag(raw: Partial<NfcTag> | null | undefined): NfcTag 
     kind === "instant" && typeof raw.minutes === "number" && Number.isFinite(raw.minutes) && raw.minutes >= 1
       ? Math.min(24 * 60, Math.floor(raw.minutes))
       : undefined
+  const quantity = kind === "instant" ? nfcQuantity(raw.quantity) : undefined
   const leftTitle = typeof raw.leftTitle === "string" && raw.leftTitle.trim() ? raw.leftTitle.trim() : "left"
   const backTitle = typeof raw.backTitle === "string" && raw.backTitle.trim() ? raw.backTitle.trim() : "back"
   const lastSide = raw.lastSide === "out" || raw.lastSide === "in" ? raw.lastSide : undefined
@@ -74,6 +101,7 @@ export function sanitizeNfcTag(raw: Partial<NfcTag> | null | undefined): NfcTag 
     title,
     ...(intake && kind === "instant" ? { intakeClass: intake } : {}),
     ...(minutes ? { minutes } : {}),
+    ...(quantity ? { quantity } : {}),
     leftTitle,
     backTitle,
     ...(lastSide ? { lastSide } : {}),

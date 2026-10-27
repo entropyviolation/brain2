@@ -232,9 +232,9 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 ### `nfc:`
 
-- **Format:** `nfc:vitamin-d` · `nfc:door` · `nfc:shower`
+- **Format:** `nfc:vitamin-d` · `nfc:adderall 2` · `nfc:door`
 - **Forms / aliases:** `nfc:`
-- **Does:** NFC tag saved in Settings → Message ingest. Colon required, so bare `nfc` stays a log line. The id is the tag slug. A known tag writes its tracking instant at the send time (`generatedBy.kind` `text`, id `nfc:{tag}:{iso}`). An intake class uses the Intake pen. Optional minutes paint an estimated block on the Activity pen named for that title, ending at the scan. A bound daily habit is marked done or gains 1. The BIM line is `nfc:…`, so a keyword source does not count it again. A door tag alternates `left` and `back`. The same tag within 20 seconds is ignored. Unknown ids write nothing. The signed shortcut is `docs/shortcuts/NFC to Brain2.shortcut`.
+- **Does:** NFC tag saved in Settings → NFC tags. Colon required, so bare `nfc` stays a log line. The id is the tag slug. A trailing number is that scan’s quantity (`nfc:adderall 2`); without one, the tag’s saved quantity is used (1 when unset). An intake title is written with the count in front (`2 10 mg adderall`). A known tag writes its tracking instant at the send time (`generatedBy.kind` `text`, id `nfc:{tag}:{iso}`). An intake class uses the Intake pen. Optional minutes paint an estimated block on the Activity pen named for that title, ending at the scan. A bound daily habit is marked done or gains that quantity. The BIM line is `nfc:…`, so a keyword source does not count it again. A door tag alternates `left` and `back` and ignores the number. The same tag within 20 seconds is ignored. Unknown ids write nothing. Settings → NFC tags downloads a signed shortcut for that id (`docs/shortcuts/nfc-tags.md`). A dose asks how many. A door sends the line. The shared `NFC to Brain2.shortcut` and `NFC dose to Brain2.shortcut` files still ask for the id.
 
 ### `switch:`
 

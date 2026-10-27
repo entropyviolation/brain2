@@ -9,7 +9,8 @@
  * `/api/screentime` queries a running ActivityWatch install (loopback only).
  * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
  * `/api/phone-sync` reads the phone-sync run log (loopback only, no message bodies).
- *
+ * A public website `Origin` is refused (`lib/ingest/request-origin.mjs`).
+ * Shortcuts and this app stay allowed.
  *   npm run dev
  *   npm run mobile:dev
  */

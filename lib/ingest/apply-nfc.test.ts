@@ -56,7 +56,7 @@ describe("nfc scans", () => {
     })
     const first = applyNfcScan("vitamin-d", NOW)
     expect(first.status).toBe("ok")
-    expect(first.reply).toContain("Logged vitamin D")
+    expect(first.reply).toContain("Logged 1 vitamin D")
     expect(first.reply).toContain("Drink water: done")
     const again = applyNfcScan("nfc:vitamin-d", later(19))
     expect(again.status).toBe("ignored")
@@ -64,7 +64,7 @@ describe("nfc scans", () => {
     expect(nfcRows().filter((entry) => entry.kind === "instant")).toHaveLength(1)
     const instant = nfcRows().find((entry) => entry.kind === "instant")
     expect(instant).toMatchObject({
-      title: "vitamin D",
+      title: "1 vitamin D",
       intakeClass: "drug",
       eventKind: "intake.drug",
     })
@@ -87,6 +87,41 @@ describe("nfc scans", () => {
     expect(applyNfcScan("pages", later(21)).status).toBe("ok")
     const day = formatLocalDateKey(NOW)
     expect(useHabitsStore.getState().weeklyData[day]?.["task-8"]?.value).toBe(2)
+  })
+
+  it("logs a quantity on one scan and still ignores a second tap", () => {
+    useIngestStore.getState().upsertNfcTag({
+      id: "adderall",
+      name: "Adderall",
+      kind: "instant",
+      title: "10 mg adderall",
+      intakeClass: "drug",
+      quantity: 1,
+      habitId: "task-8",
+      habitCredit: "add",
+    })
+    const result = applyNfcScan("adderall 2", NOW)
+    expect(result.status).toBe("ok")
+    expect(result.reply).toContain("Logged 2 10 mg adderall")
+    expect(result.reply).toContain("+2 (total 2 pages)")
+    const instant = nfcRows().find((entry) => entry.kind === "instant")
+    expect(instant?.title).toBe("2 10 mg adderall")
+    const day = formatLocalDateKey(NOW)
+    expect(useHabitsStore.getState().weeklyData[day]?.["task-8"]?.value).toBe(2)
+    expect(applyNfcScan("nfc:adderall 1", later(5)).status).toBe("ignored")
+  })
+
+  it("uses the saved quantity when the line has no number", () => {
+    useIngestStore.getState().upsertNfcTag({
+      id: "adderall",
+      name: "Adderall",
+      kind: "instant",
+      title: "10 mg adderall",
+      intakeClass: "drug",
+      quantity: 2,
+    })
+    const result = applyNfcScan("nfc:adderall", NOW)
+    expect(result.reply).toContain("Logged 2 10 mg adderall")
   })
 
   it("alternates a door tag between left and back", () => {
