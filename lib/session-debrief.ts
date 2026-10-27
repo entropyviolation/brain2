@@ -19,7 +19,7 @@ import { formatObjectiveWhen, objectiveWorkedMs } from "@/lib/now-objective"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
 import type { WorkSession } from "@/lib/work-session-store"
 import type { Subtask, Task, TimeLogEntry, TimeLogSessionReview } from "@/lib/types"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 import { clockNoteField, clockPathLabel } from "@/lib/task-clock-log"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
@@ -64,10 +64,6 @@ function minutesOrNull(value: number | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : null
 }
 
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-}
-
 function clockFace(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ""
@@ -100,7 +96,7 @@ function penLogIds(task: Task | undefined, session: { trackingEntryIds?: string[
   const ids = new Set(session.trackingEntryIds ?? [])
   const painted = task.timeLogs.filter((log) => log.entryIds?.some((id) => ids.has(id)))
   if (painted.length) return painted.map((log) => log.id)
-  const start = hhmm(new Date(session.startedAt))
+  const start = formatLocalHhmm(new Date(session.startedAt))
   const date = formatLocalDateKey(new Date(session.startedAt))
   const loose = [...task.timeLogs].reverse().find((log) => log.date === date && log.startTime === start && log.stepId === session.stepId)
   return loose ? [loose.id] : []
@@ -338,8 +334,8 @@ function patchLogs(logs: TimeLogEntry[] | undefined, draft: SessionDebriefDraft,
     next.push({
       id: `tl-debrief-${draft.startedAt}`,
       date: formatLocalDateKey(started),
-      startTime: hhmm(started),
-      endTime: hhmm(ended),
+      startTime: formatLocalHhmm(started),
+      endTime: formatLocalHhmm(ended),
       durationMinutes: answers.logMinutes,
       notes: note || undefined,
       taskId: draft.taskId,

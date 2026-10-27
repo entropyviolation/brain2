@@ -1,3 +1,8 @@
+/** Escape text so it can sit inside a `RegExp` source. */
+export function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
 /** Stable string hash for deterministic indexing (orbs, icon slots, etc.). */
 export function hashString(str: string): number {
   let h = 0

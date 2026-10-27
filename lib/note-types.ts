@@ -4,7 +4,7 @@
  * Defines the built-in-style `note` `ItemTypeDefinition` that turns Brain2 into a
  * lightweight second brain: a `note` is a free-form document whose primary
  * content is its rich-text/markdown `Item.body`, surfaced through the `"body"`
- * detail panel (`components/ItemDetail/BodyPanel.tsx`). Notes aren't actionable —
+ * detail panel (`components/ItemDetail/tabs/body/BodyPanel.tsx`). Notes aren't actionable —
  * they don't schedule or complete — but they participate fully in tags, links,
  * and lists like any other item.
  *

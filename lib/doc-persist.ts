@@ -16,7 +16,7 @@ import { NOTE_ATTR, NOTE_TYPE_ID } from "@/lib/note-types"
 import { isAllowedFont } from "@/lib/google-fonts"
 import type { Task } from "@/lib/types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
-import { isDemoProfile } from "@/lib/storage-keys"
+import { idbAvailable, isDemoProfile } from "@/lib/storage-keys"
 
 const LIVE_DB_NAME = "cogs-docs"
 const DEMO_DB_NAME = "brain2-demo-docs"
@@ -43,14 +43,6 @@ export interface PersistedDoc {
 
 const memory = new Map<string, PersistedDoc>()
 const writeChains = new Map<string, Promise<void>>()
-
-function idbAvailable(): boolean {
-  try {
-    return typeof indexedDB !== "undefined" && indexedDB != null
-  } catch {
-    return false
-  }
-}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

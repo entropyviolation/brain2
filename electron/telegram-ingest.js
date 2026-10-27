@@ -11,6 +11,7 @@ const { app, ipcMain, safeStorage } = require("electron")
 const { brain2Env, brain2EnvLine } = require("../lib/brain2-env.cjs")
 const { pathToFileURL } = require("url")
 const { extractTelegramMessage, hydrateTelegramUpdate } = require("./telegram-file")
+const { chunkTelegramText } = require("./telegram-message.cjs")
 const fs = require("fs")
 const path = require("path")
 
@@ -308,24 +309,6 @@ function stopPolling() {
   polling = false
   pollAbort = true
   return { ok: true, polling: false }
-}
-
-/** Telegram sendMessage cap is 4096; split on newlines so list dumps stay readable. */
-function chunkTelegramText(text, max = 3900) {
-  const source = String(text || "")
-  if (!source) return []
-  if (source.length <= max) return [source]
-  const chunks = []
-  let rest = source
-  while (rest.length > max) {
-    let cut = rest.lastIndexOf("\n", max)
-    if (cut < max * 0.45) cut = rest.lastIndexOf(" ", max)
-    if (cut < max * 0.45) cut = max
-    chunks.push(rest.slice(0, cut).replace(/[ \t]+$/g, ""))
-    rest = rest.slice(cut).replace(/^\n+/, "")
-  }
-  if (rest) chunks.push(rest)
-  return chunks.filter((part) => part.length > 0)
 }
 
 function registerTelegramIpc(getMainWindow) {

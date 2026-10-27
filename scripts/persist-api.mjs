@@ -44,6 +44,7 @@ import path from "node:path"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { readBody } from "./local-api-json.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
@@ -519,15 +520,6 @@ export function vaultDropReason(name, existing, incoming, refused) {
 function journalVaultDrop(name, existing, incoming, refused) {
   const reason = vaultDropReason(name, existing, incoming, refused)
   if (reason) journalVaultSnapshot(name, existing, reason)
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
 }
 
 /** Safe filename only — never creates the folder, never writes a snapshot. */

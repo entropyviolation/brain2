@@ -40,6 +40,7 @@ describe("textListToBrainList", () => {
   it("builds a list and one item per non-empty line", () => {
     const { list, items } = textListToBrainList("To do", ["write script", " film ", ""])
     expect(list.name).toBe("To do")
+    expect(list.scheduleable).toBe(false)
     expect(items).toHaveLength(2)
     expect(items.map((item) => item.title)).toEqual(["write script", "film"])
     expect(items.every((item) => item.lists?.[0] === list.id && item.lists.length === 1)).toBe(true)

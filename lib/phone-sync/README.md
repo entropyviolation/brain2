@@ -4,7 +4,7 @@ _Last mapped: 2026-10-25_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `BRAIN2_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health, phone Screen Time, email, and DMs are listed and not built.
+Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `BRAIN2_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/imports/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health, phone Screen Time, email, and DMs are listed and not built.
 
 ## Flow
 

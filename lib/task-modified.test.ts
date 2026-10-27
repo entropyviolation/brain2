@@ -26,6 +26,14 @@ describe("task modified stamp", () => {
     expect(bare.modifiedAt).toBeUndefined()
   })
 
+  it("stamps a row whose clock is not a real time", () => {
+    const prev = task({ createdAt: new Date(NaN) })
+    const now = new Date("2026-10-27T15:00:00.000Z")
+    const edited = withModifiedStamp(prev, { ...prev, description: "Renamed" }, now)
+    expect(edited.modifiedAt).toBe(now.toISOString())
+    expect(withModifiedStamp(prev, { ...prev }, now).modifiedAt).toBeUndefined()
+  })
+
   it("orders by the stamp ahead of an older created date", () => {
     const older = task({
       id: "older",

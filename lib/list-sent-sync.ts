@@ -13,8 +13,8 @@
 
 import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
-import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
 import { habitWriteIsQuiet, useHabitsStore } from "@/lib/habits-store"
+import { bucketFor, periodKeyFor, writePeriod } from "@/lib/habit-period-write"
 import { effectiveHabitCount, listRoutingFromLink } from "@/lib/habit-completion-pipeline"
 import {
   applyListLengthCount,
@@ -24,39 +24,13 @@ import {
   membershipAfterWeeklySentClear,
   reportedListSentPercent,
 } from "@/lib/list-sent"
-import { quarterKey } from "@/lib/seasons"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import { useTaskStore } from "@/lib/task-store"
-import type { TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
+import type { WeeklyTask } from "@/lib/types"
 
 function listens(task: WeeklyTask): boolean {
   const link = task.listSentLink
   return !!task.completionSources?.includes("listSent") && !!link?.listId && link.enabled !== false
-}
-
-function bucketFor(task: WeeklyTask, state: ReturnType<typeof useHabitsStore.getState>): WeeklyData {
-  const freq = task.frequency || "daily"
-  if (freq === "monthly") return state.monthlyHabitData
-  if (freq === "quarterly") return state.quarterlyHabitData
-  if (freq === "weekly") return state.weeklyHabitData
-  return state.weeklyData
-}
-
-function periodKeyFor(task: WeeklyTask, rangeStart: Date): string {
-  const freq = task.frequency || "daily"
-  if (freq === "weekly") return getWeekString(rangeStart)
-  if (freq === "monthly") return formatLocalMonthKey(rangeStart)
-  if (freq === "quarterly") return quarterKey(rangeStart)
-  return formatLocalDateKey(rangeStart)
-}
-
-function writePeriod(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
-  const habits = useHabitsStore.getState()
-  const freq = task.frequency || "daily"
-  if (freq === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (freq === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else if (freq === "weekly") habits.updateWeeklyHabitCompletion(task.id, anchor, next)
-  else habits.updateCompletion(task.id, anchor, next)
 }
 
 let syncing = false

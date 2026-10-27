@@ -269,7 +269,7 @@ function assertKnownKeys(obj: JsonRecord, allowed: Set<string>, path: string): v
   }
 }
 
-function reqString(value: unknown, path: string): string {
+export function reqString(value: unknown, path: string): string {
   if (typeof value !== "string" || value.trim() === "") fail(`${path} must be a non-empty string`)
   return value.trim()
 }
@@ -439,13 +439,13 @@ export function parseModulePackage(input: unknown): ModulePackage {
   }
 }
 
-function makeIds(): (suffix: string) => string {
+export function makeIds(): (suffix: string) => string {
   const seed = Date.now().toString(36)
   let n = 0
   return (suffix: string) => `pkg-${seed}-${(n++).toString(36)}-${suffix}`
 }
 
-function resolveRole(role: string, slots: Map<string, string>, path: string): string {
+export function resolveRole(role: string, slots: Map<string, string>, path: string): string {
   const id = slots.get(role)
   if (!id) fail(`${path} names unknown slot "${role}"`)
   return id
@@ -461,7 +461,7 @@ function resolveAttributes(attrs: AttributeDefinition[] | undefined, slots: Map<
   })
 }
 
-function resolveViewConfig(config: ModuleViewConfig, slots: Map<string, string>, path: string): ModuleViewConfig {
+export function resolveViewConfig(config: ModuleViewConfig, slots: Map<string, string>, path: string): ModuleViewConfig {
   const next: ModuleViewConfig = { ...config }
   for (const key of LIST_ROLE_FIELDS) {
     const value = next[key]

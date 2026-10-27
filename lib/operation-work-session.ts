@@ -48,9 +48,11 @@ import {
 } from "@/lib/now-objective"
 import {
   createTaskForObjective,
+  fileObjectivesOnTask,
   homeForObjective,
   homesForOperation,
   mergeResumed,
+  objectivesAttachedToTask,
   toParked,
 } from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
@@ -702,7 +704,9 @@ export function attachWorkNowObjective(
         : target.taskId
     if (!taskId) return session
     const stepId = "createName" in target ? undefined : target.stepId
-    return patchWorkNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+    const next = patchWorkNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+    fileObjectivesOnTask(taskId, objectivesAttachedToTask(next?.nowObjectives, taskId))
+    return next
   })
 }
 

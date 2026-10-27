@@ -13,7 +13,7 @@
  * A native userData file store can reuse the same uri field later.
  */
 import type { FileValue, Task } from "@/lib/types"
-import { isDemoProfile } from "@/lib/storage-keys"
+import { idbAvailable, isDemoProfile } from "@/lib/storage-keys"
 
 export const ATTACHMENT_URI_PREFIX = "idb:"
 const LIVE_DB_NAME = "cogs-attachments"
@@ -65,14 +65,6 @@ function isFileValue(v: unknown): v is FileValue {
     typeof (v as FileValue).uri === "string" &&
     typeof (v as FileValue).mime === "string"
   )
-}
-
-function idbAvailable(): boolean {
-  try {
-    return typeof indexedDB !== "undefined" && indexedDB != null
-  } catch {
-    return false
-  }
 }
 
 function openDb(): Promise<IDBDatabase> {

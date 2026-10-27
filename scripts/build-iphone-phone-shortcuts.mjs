@@ -19,6 +19,7 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { action, textWithTokens } from "./iphone-shortcut-actions.mjs"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const OUT_DIR = join(ROOT, "docs", "shortcuts")
@@ -57,35 +58,6 @@ function variable(name, extra = {}) {
   return {
     Value: { Type: "Variable", VariableName: name, ...extra },
     WFSerializationType: "WFTextTokenAttachment",
-  }
-}
-
-function textWithTokens(parts) {
-  let string = ""
-  const attachmentsByRange = {}
-  for (const part of parts) {
-    if (typeof part === "string") {
-      string += part
-      continue
-    }
-    const start = string.length
-    string += "\uFFFC"
-    attachmentsByRange[`{${start}, 1}`] = {
-      Type: part.uuid ? "ActionOutput" : "Variable",
-      ...(part.uuid ? { OutputUUID: part.uuid, OutputName: part.name } : { VariableName: part.name }),
-      ...(part.aggrandizements ? { Aggrandizements: part.aggrandizements } : {}),
-    }
-  }
-  return {
-    Value: { string, attachmentsByRange },
-    WFSerializationType: "WFTextTokenString",
-  }
-}
-
-function action(identifier, uuid, params) {
-  return {
-    WFWorkflowActionIdentifier: identifier,
-    WFWorkflowActionParameters: { UUID: uuid, ...params },
   }
 }
 

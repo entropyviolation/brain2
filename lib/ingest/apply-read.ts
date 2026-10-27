@@ -29,6 +29,7 @@ import { applyMainInfo } from "./apply-glossary"
 import { BIM_PING } from "./bim"
 import { parkLooseText } from "./apply-iphone-notes"
 import { resolveName, type Named } from "./name-resolve"
+import { formatClock } from "./clock-pen"
 import { minutesPastMidnight } from "./times"
 import type { ApplyResult, IngestIntentKind, NameCandidate, PendingClarify } from "./types"
 
@@ -713,15 +714,6 @@ function penAt(now: Date, scopeId: string): string | null {
   const scope = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)
   const pen = scope?.pens.find((p) => p.id === hit.penId)
   return pen?.name ?? hit.title ?? null
-}
-
-function formatClock(min: number): string {
-  const wrapped = ((Math.floor(min) % 1440) + 1440) % 1440
-  const h = Math.floor(wrapped / 60)
-  const m = wrapped % 60
-  const am = h < 12
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`
 }
 
 function formatDay(date: Date): string {

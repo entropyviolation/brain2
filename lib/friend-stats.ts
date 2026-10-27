@@ -6,6 +6,7 @@
  * Every 20 points is one level. A new level starts the bar over.
  */
 
+import { formatLocalDateKey } from "@/lib/date-utils"
 import type { FriendPersonality } from "@/lib/baby-animal-personality"
 import { titleLoveBoost } from "@/lib/baby-animal-personality"
 import { isBeforeDeadline, type FriendMission, type FriendMissionLogEntry } from "@/lib/friend-mission"
@@ -39,10 +40,7 @@ export function bondProgress(points: number, wearCount: number): BondProgress {
 
 /** Local calendar day `YYYY-MM-DD`. */
 export function localDayKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
+  return formatLocalDateKey(date)
 }
 
 function dayFromKey(key: string): Date {

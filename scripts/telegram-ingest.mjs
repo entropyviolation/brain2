@@ -16,6 +16,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { readIngestStore, writeIngestStore, ingestDataPath } from "./ingest-api.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
+import { chunkTelegramText } from "../electron/telegram-message.mjs"
 import { brain2Env, brain2EnvLine } from "../lib/brain2-env.mjs"
 import {
   allowedUpdatesParam,
@@ -65,23 +66,6 @@ async function api(method, params = {}) {
   const data = await res.json()
   if (!data.ok) throw new Error(data.description || `HTTP ${res.status}`)
   return data.result
-}
-
-function chunkTelegramText(text, max = 3900) {
-  const source = String(text || "")
-  if (!source) return []
-  if (source.length <= max) return [source]
-  const chunks = []
-  let rest = source
-  while (rest.length > max) {
-    let cut = rest.lastIndexOf("\n", max)
-    if (cut < max * 0.45) cut = rest.lastIndexOf(" ", max)
-    if (cut < max * 0.45) cut = max
-    chunks.push(rest.slice(0, cut).replace(/[ \t]+$/g, ""))
-    rest = rest.slice(cut).replace(/^\n+/, "")
-  }
-  if (rest) chunks.push(rest)
-  return chunks.filter((part) => part.length > 0)
 }
 
 async function flushReplies() {

@@ -81,4 +81,14 @@ describe("demo vault", () => {
     expect(rows.some((row) => row.links?.length)).toBe(true)
     expect(rows.some((row) => typeof row.attributes?.partFormulas === "string")).toBe(true)
   })
+
+  it("copies description into title when a task row omitted one", () => {
+    writeDataProfile("demo")
+    ensureDemoVault({ force: true })
+    const tasks = JSON.parse(readAliasedLocal(persistKey("task-storage")) ?? "{}")
+    const rows = tasks.state.tasks as Array<{ id: string; title?: string; description: string }>
+    const glaze = rows.find((row) => row.id === "demo-inbox-glaze")
+    expect(glaze?.description).toBe("Try a celadon test tile on the leftover cone 6 batch")
+    expect(glaze?.title).toBe(glaze?.description)
+  })
 })
