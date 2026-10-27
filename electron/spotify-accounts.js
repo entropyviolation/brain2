@@ -15,6 +15,7 @@ const fs = require("fs")
 const path = require("path")
 const crypto = require("crypto")
 const { safeStorageCipher } = require("./instagram-accounts")
+const { openExternalWeb } = require("./external-url")
 
 const CHANNELS = {
   status: "cogs:spotify:status",
@@ -311,13 +312,13 @@ function openLoginWindow({ BrowserWindow, session, shell, parent, url, state }) 
       }
       if (!hostAllowed(target)) {
         event.preventDefault()
-        shell.openExternal(target)
+        openExternalWeb(shell, target)
       }
     }
     win.webContents.on("will-redirect", watch)
     win.webContents.on("will-navigate", watch)
     win.webContents.setWindowOpenHandler(({ url: opened }) => {
-      if (/^https?:/i.test(opened)) shell.openExternal(opened)
+      openExternalWeb(shell, opened)
       return { action: "deny" }
     })
     win.on("closed", () => finish(null))

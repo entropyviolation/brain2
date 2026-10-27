@@ -168,4 +168,24 @@ describe("app:// static resolver", () => {
     expect(() => resolve("%")).toThrow()
     expect(() => resolve("%")).toThrow()
   })
+
+  it("stays inside the export when the pathname is absolute or climbs out", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brain2-static-"))
+    const outside = path.join(os.tmpdir(), `brain2-outside-${process.pid}.txt`)
+    fs.writeFileSync(path.join(dir, "index.html"), "home")
+    fs.writeFileSync(outside, "secret")
+    const fsImpl = {
+      existsSync: fs.existsSync,
+      statSync: fs.statSync,
+      realpathSync: fs.realpathSync,
+    }
+    const resolve = createStaticFileResolver(fsImpl, dir)
+    expect(resolve("/etc/passwd")).toBe(path.join(dir, "index.html"))
+    expect(resolve("/../../../../../../etc/passwd")).toBe(path.join(dir, "index.html"))
+    const link = path.join(dir, "leak.txt")
+    fs.symlinkSync(outside, link)
+    expect(resolve("/leak.txt")).toBe(path.join(dir, "index.html"))
+    fs.rmSync(dir, { recursive: true, force: true })
+    fs.rmSync(outside, { force: true })
+  })
 })

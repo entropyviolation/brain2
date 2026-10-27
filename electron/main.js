@@ -22,6 +22,7 @@ const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cach
 const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
 const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc } = require("./instagram-ipc")
+const { isAppNavigationUrl, isBlankPopup, openExternalWeb } = require("./external-url")
 
 const isDev = !app.isPackaged
 
@@ -65,6 +66,12 @@ const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
 const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
 const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
 const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
+
+// NFC tag shortcut. MUST match electron/nfc-shortcut.js + preload.
+function registerNfcShortcutIpcHandlers() {
+  const { registerNfcShortcutIpc } = require("./nfc-shortcut")
+  registerNfcShortcutIpc()
+}
 
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -129,15 +136,7 @@ function createWindow() {
     win.loadURL("app://local/")
   }
 
-  // Open external links (http/https) in the user's default browser instead of
-  // inside the desktop window.
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url)
-      return { action: "deny" }
-    }
-    return { action: "allow" }
-  })
+  installAppNavigationGuard(win)
 
   mainWindow = win
   win.on("closed", () => {
@@ -262,14 +261,7 @@ function openPopoutWindow(target) {
   })
 
   win.loadURL(url)
-
-  win.webContents.setWindowOpenHandler(({ url: opened }) => {
-    if (opened.startsWith("http://") || opened.startsWith("https://")) {
-      shell.openExternal(opened)
-      return { action: "deny" }
-    }
-    return { action: "allow" }
-  })
+  installAppNavigationGuard(win)
 }
 
 /** Register the module pop-out IPC handler. */
@@ -288,12 +280,71 @@ function windowWebPreferences() {
     preload: path.join(__dirname, "preload.js"),
     contextIsolation: true,
     nodeIntegration: false,
+    nodeIntegrationInWorker: false,
+    nodeIntegrationInSubFrames: false,
     sandbox: true,
+    webSecurity: true,
+    allowRunningInsecureContent: false,
+    webviewTag: false,
     // Default Blink waits until a script is hot, so each pop-out recompiles
     // the same Next bundles. Cache on the first compile instead.
     v8CacheOptions: "bypassHeatCheck",
     additionalArguments: [hubRevArgument(sharedPersist.revToken())],
   }
+}
+
+/**
+ * Keep the preload on the app origin. http(s) leaves via the system browser.
+ * A print popup (`about:blank`) gets an empty preload, not `window.desktop`.
+ * Login windows are separate and do not call this.
+ */
+function installAppNavigationGuard(win) {
+  const stayOrLeave = (event, url) => {
+    if (isAppNavigationUrl(url, { isDev })) return
+    event.preventDefault()
+    openExternalWeb(shell, url)
+  }
+  win.webContents.on("will-navigate", stayOrLeave)
+  win.webContents.on("will-redirect", stayOrLeave)
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isBlankPopup(url)) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            preload: path.join(__dirname, "blank-preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+            nodeIntegrationInWorker: false,
+            nodeIntegrationInSubFrames: false,
+            sandbox: true,
+            webSecurity: true,
+            webviewTag: false,
+          },
+        },
+      }
+    }
+    openExternalWeb(shell, url)
+    return { action: "deny" }
+  })
+  win.webContents.on("will-attach-webview", (event) => {
+    event.preventDefault()
+  })
+}
+
+/** Microphone, location, and clipboard prompts. Other prompts are refused. */
+function installPermissionGuard(ses) {
+  const allow = new Set([
+    "media",
+    "geolocation",
+    "clipboard-read",
+    "clipboard-sanitized-write",
+    "fullscreen",
+    "notifications",
+  ])
+  ses.setPermissionRequestHandler((_contents, permission, callback) => {
+    callback(allow.has(permission))
+  })
 }
 
 /** Read the Chrome-seeded hub file. Never writes Chrome's profile. */
@@ -419,6 +470,8 @@ function registerQuickCaptureShortcut() {
 }
 
 app.whenReady().then(async () => {
+  const { session } = require("electron")
+  installPermissionGuard(session.defaultSession)
   if (!isDev) {
     protocol.handle("app", (request) => {
       const { pathname } = new URL(request.url)
@@ -446,6 +499,7 @@ app.whenReady().then(async () => {
     registerSpotifyAccountsIpcHandlers,
     registerTextsIpcHandlers,
     registerInstagramIpcHandlers,
+    registerNfcShortcutIpcHandlers,
   ]) {
     try {
       register()

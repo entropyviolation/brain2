@@ -14,6 +14,7 @@
 const fs = require("fs")
 const path = require("path")
 const crypto = require("crypto")
+const { openExternalWeb } = require("./external-url")
 
 const CHANNELS = {
   status: "cogs:instagram-accounts:status",
@@ -347,11 +348,11 @@ function openLoginWindow({ BrowserWindow, session, shell, parent }) {
     win.webContents.on("will-navigate", (event, url) => {
       if (!hostAllowed(url)) {
         event.preventDefault()
-        shell.openExternal(url)
+        openExternalWeb(shell, url)
       }
     })
     win.webContents.setWindowOpenHandler(({ url }) => {
-      if (/^https?:/i.test(url)) shell.openExternal(url)
+      openExternalWeb(shell, url)
       return { action: "deny" }
     })
     win.loadURL(LOGIN_URL)
