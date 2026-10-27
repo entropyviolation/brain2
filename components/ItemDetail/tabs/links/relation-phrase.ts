@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/relation-phrase.ts — A first guess at the
+ * components/ItemDetail/tabs/links/relation-phrase.ts — A first guess at the
  * reverse of a new relation phrase, for `NewRelationForm`. Always editable.
  *
  * - "is a member of" / "is the coach of" / "is part of" → "has member" …

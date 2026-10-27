@@ -14,7 +14,7 @@ import {
 } from "@/lib/item-types"
 import { isTaskItem } from "@/lib/item-utils"
 import type { Folder, ItemTypeDefinition, Task } from "@/lib/types"
-import type { ItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import type { ItemDetailDraft } from "@/components/ItemDetail/draft/useItemDetailDraft"
 
 export function useItemDetailPageView({
   task,

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemRewardField.tsx — Details-tab Reward Value
+ * components/ItemDetail/tabs/details/ItemRewardField.tsx — Details-tab Reward Value
  *
  * The number is `Task.pointsOverride`, the same field the task card's
  * On done dial writes. Empty clears it, so the list rule can return.

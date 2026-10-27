@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkComposer.tsx — One sentence that adds a
+ * components/ItemDetail/tabs/links/LinkComposer.tsx — One sentence that adds a
  * link (PD 6.2): `{this item} [relation ▾] [search… other item] [Link]`.
  *
  * The relation box (`RelationCombobox`) lists this type's relations first and
@@ -13,12 +13,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { LinkTargetSearch } from "@/components/ItemDetail/links/LinkTargetSearch"
+import { LinkTargetSearch } from "@/components/ItemDetail/tabs/links/LinkTargetSearch"
 import { createListItem } from "@/lib/item-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { NewRelationForm } from "@/components/ItemDetail/links/NewRelationForm"
-import { RelationCombobox } from "@/components/ItemDetail/links/RelationCombobox"
-import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
+import { NewRelationForm } from "@/components/ItemDetail/tabs/links/NewRelationForm"
+import { RelationCombobox } from "@/components/ItemDetail/tabs/links/RelationCombobox"
+import type { LinkItemFacts } from "@/components/ItemDetail/tabs/links/link-items"
 import { edgeKey, type EgoEdge } from "@/lib/link-graph"
 import { relationsFor, getRelationDef } from "@/lib/relation-registry"
 import type { Task } from "@/lib/types"

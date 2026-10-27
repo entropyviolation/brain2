@@ -1,17 +1,17 @@
 // Page-only Time, Body, Notes, Resources, and History tabs. Not for ItemDetailPopup, the To do drawer, or the task card.
 
 import type { Dispatch, SetStateAction } from "react"
-import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
-import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
-import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
-import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
-import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
+import { BodyPanel } from "@/components/ItemDetail/tabs/body/BodyPanel"
+import { ItemActivityPanel } from "@/components/ItemDetail/tabs/history/ItemActivityPanel"
+import { ItemNotesLog } from "@/components/ItemDetail/tabs/notes/ItemNotesLog"
+import { ItemPenTimeSection } from "@/components/ItemDetail/tabs/time/ItemPenTime"
+import { ItemResourcesPanel } from "@/components/ItemDetail/tabs/resources/ItemResourcesPanel"
 import { PersonNotes } from "@/components/People/person-notes"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TabsContent } from "@/components/ui/tabs"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import type { ItemDetailPanel, Task } from "@/lib/types"
-import type { ItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import type { ItemDetailDraft } from "@/components/ItemDetail/draft/useItemDetailDraft"
 
 export function ItemDetailPageLedgerTabs({
   visiblePanels,

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemSettingsKey.tsx — Chrome gear for item settings
+ * components/ItemDetail/chrome/ItemSettingsKey.tsx — Chrome gear for item settings
  *
  * The brushed gear, with no keycap around it. The hit target matches the
  * neighboring window keys (26px). On the popup it sits in the title row

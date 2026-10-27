@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkPath.tsx — Path view (L6.2): pick a second
+ * components/ItemDetail/tabs/links/LinkPath.tsx — Path view (L6.2): pick a second
  * item; the shortest relation path reads left to right as a ruler.
  */
 "use client"

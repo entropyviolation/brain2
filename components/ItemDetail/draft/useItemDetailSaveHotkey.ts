@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/useItemDetailSaveHotkey.ts — Cmd/Ctrl+S on item detail
+ * components/ItemDetail/draft/useItemDetailSaveHotkey.ts — Cmd/Ctrl+S on item detail
  *
  * Saves the open draft the same way Save Changes does. The chord is taken
  * only while this surface is in front: a dialog stacked above it (the item

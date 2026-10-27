@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { LinksHarness } from "@/components/ItemDetail/links/rich-links-test-utils"
+import { LinksHarness } from "@/components/ItemDetail/tabs/links/rich-links-test-utils"
 import { createListItem } from "@/lib/item-utils"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { relationLabel } from "@/lib/links"

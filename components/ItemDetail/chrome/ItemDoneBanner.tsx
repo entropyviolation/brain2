@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemDoneBanner.tsx — A finished task says so, loudly
+ * components/ItemDetail/chrome/ItemDoneBanner.tsx — A finished task says so, loudly
  *
  * Shown on a task that is marked completed. Names the day it was finished and
  * offers **Mark incomplete**, which reopens the item and changes nothing else

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemAttributesSection.tsx — Attributes panel for item detail
+ * components/ItemDetail/attributes/ItemAttributesSection.tsx — Attributes panel for item detail
  *
  * The shared "Attributes" instrument used by both ItemDetail variants. It sits
  * at the top of Details, not under every other section:
@@ -31,7 +31,7 @@ import { normalizeAttributeType } from "@/lib/attribute-utils"
 import { attributeIsWide, attributeTypeInfo } from "@/lib/attribute-type-catalog"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useAttachmentSrc } from "@/hooks/use-attachment-src"
-import { AttributeCreator } from "@/components/ItemDetail/AttributeCreator"
+import { AttributeCreator } from "@/components/ItemDetail/attributes/AttributeCreator"
 
 function humanizeId(id: string): string {
   return id

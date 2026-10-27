@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react"
 import { formatHistoryLine, ITEM_ACTIVITY_STORAGE_KEY, listItemActivity, type ItemActivityEntry } from "@/lib/item-activity"
-import "./item-detail-chrome.css"
+import "@/components/ItemDetail/chrome/item-detail-chrome.css"
 
 export function ItemActivityPanel({ itemId }: { itemId: string }) {
   const [entries, setEntries] = useState<ItemActivityEntry[]>(() => listItemActivity(itemId))

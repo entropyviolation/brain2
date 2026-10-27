@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkMatrix.tsx — Matrix view (L6.1). Rows and
+ * components/ItemDetail/tabs/links/LinkMatrix.tsx — Matrix view (L6.1). Rows and
  * columns are the item and its neighbours; a filled cell is a link, hued by
  * family; an outlined empty cell is an open triad.
  */

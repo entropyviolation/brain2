@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemTagChip.tsx — Item-tag chip (string value)
+ * components/ItemDetail/tags/ItemTagChip.tsx — Item-tag chip (string value)
  *
  * Item tags stay free-text strings. When `normalizeTag(name)` matches a
  * Tracking catalog tag, the chip shows that tag’s color bead. Double-click

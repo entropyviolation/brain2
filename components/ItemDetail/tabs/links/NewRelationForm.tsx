@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/NewRelationForm.tsx — Make a new relation word
+ * components/ItemDetail/tabs/links/NewRelationForm.tsx — Make a new relation word
  * inline, from the composer's Create row (PD 6.2).
  *
  * Phrase, reverse phrase (first guess from `guessReversePhrase`, editable),
@@ -12,7 +12,7 @@
 
 import { useState } from "react"
 import { NativeSelect } from "@/components/ui/native-select"
-import { guessReversePhrase } from "@/components/ItemDetail/links/relation-phrase"
+import { guessReversePhrase } from "@/components/ItemDetail/tabs/links/relation-phrase"
 import { createRelationPair } from "@/lib/relation-registry"
 import { useItemTypeStore } from "@/lib/item-type-store"
 

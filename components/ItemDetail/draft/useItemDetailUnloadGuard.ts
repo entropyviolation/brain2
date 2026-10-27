@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/useItemDetailUnloadGuard.ts — Item detail across a reload
+ * components/ItemDetail/draft/useItemDetailUnloadGuard.ts — Item detail across a reload
  *
  * While a detail surface is open, its item id is pinned (`brain2-item-detail-dock`).
  * Refresh or a closed window saves the live draft and leaves that pin, so the

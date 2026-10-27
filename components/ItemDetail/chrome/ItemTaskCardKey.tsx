@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemTaskCardKey.tsx — Open this task's To Do card
+ * components/ItemDetail/chrome/ItemTaskCardKey.tsx — Open this task's To Do card
  *
  * Sits in the Details rail (and the page's right column) for every task,
  * including a step item. A step opens the parent's card at that step.

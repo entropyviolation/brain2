@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/HabitLinkedDetail.tsx — Notes and habit standing
+ * components/ItemDetail/type-views/HabitLinkedDetail.tsx — Notes and habit standing
  *
  * Shown in the Details main pane when the item's `sourceHabitId` attribute
  * points at a habit. Notes are the item's existing `notes` field. The

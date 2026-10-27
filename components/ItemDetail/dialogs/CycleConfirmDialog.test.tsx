@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
-import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
+import { CycleConfirmDialog } from "@/components/ItemDetail/dialogs/CycleConfirmDialog"
 
 describe("CycleConfirmDialog", () => {
   it("explains the loop and dismisses without an add-anyway action", async () => {

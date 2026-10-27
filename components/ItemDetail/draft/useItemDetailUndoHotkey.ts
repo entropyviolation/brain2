@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/useItemDetailUndoHotkey.ts — Cmd/Ctrl+Z on item detail
+ * components/ItemDetail/draft/useItemDetailUndoHotkey.ts — Cmd/Ctrl+Z on item detail
  *
  * Undoes the last edit to the open draft (a moved or unnested step, a delete,
  * a tag, a link) and Cmd/Ctrl+Shift+Z / Ctrl+Y redoes it. Taken in the capture
@@ -12,7 +12,7 @@
 
 import { useEffect, type RefObject } from "react"
 import { isNativeUndoTarget, isRedoChord, isUndoChord } from "@/hooks/useUndoHotkey"
-import { itemDetailIsFront } from "@/components/ItemDetail/useItemDetailSaveHotkey"
+import { itemDetailIsFront } from "@/components/ItemDetail/draft/useItemDetailSaveHotkey"
 
 export function useItemDetailUndoHotkey(
   rootRef: RefObject<HTMLElement | null>,

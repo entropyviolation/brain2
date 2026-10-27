@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/RelationCombobox.tsx — Pick the relation word
+ * components/ItemDetail/tabs/links/RelationCombobox.tsx — Pick the relation word
  * in the Links composer (PD 6.2).
  *
  * A text box that searches every relation this item can use, in sections:

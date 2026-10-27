@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemTypeViewCards.tsx — Type cards on item detail
+ * components/ItemDetail/type-views/ItemTypeViewCards.tsx — Type cards on item detail
  *
  * One type stays a nameplate. Two or more are a switch: click a card and the
  * detail view uses that type's panels, capabilities, and layout. The item

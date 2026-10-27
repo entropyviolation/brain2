@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/EdgeInspector.tsx — One edge as a property
+ * components/ItemDetail/tabs/links/EdgeInspector.tsx — One edge as a property
  * sheet (LINKS_REDESIGN §9.3, §13; L3.4 proof card, L6.3 inspector):
  * relation, direction, order, checks, and for a derived edge the rule
  * sentence and each step, each step opening its item.

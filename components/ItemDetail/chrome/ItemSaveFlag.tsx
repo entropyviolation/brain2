@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemSaveFlag.tsx — Saved / unsaved lamp
+ * components/ItemDetail/chrome/ItemSaveFlag.tsx — Saved / unsaved lamp
  *
  * Always on the item-detail fascia. Green when the live draft matches the
  * stored item, amber while it does not — including keystrokes that have not

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemDetailDock.tsx — Minimized item detail
+ * components/ItemDetail/chrome/ItemDetailDock.tsx — Minimized item detail
  *
  * A minimized item detail popup stays mounted, so its draft stays. The dock
  * holds either a short bar (title and close) or the item's icon. Close asks

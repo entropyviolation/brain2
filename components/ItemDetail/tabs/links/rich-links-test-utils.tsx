@@ -3,9 +3,9 @@
  * through `egoEdges` against the store, like the host panel will (6.5).
  */
 import { useState } from "react"
-import { LinkComposer } from "@/components/ItemDetail/links/LinkComposer"
-import { LinkLedger, visibleEdges } from "@/components/ItemDetail/links/LinkLedger"
-import { useLinkItems } from "@/components/ItemDetail/links/link-items"
+import { LinkComposer } from "@/components/ItemDetail/tabs/links/LinkComposer"
+import { LinkLedger, visibleEdges } from "@/components/ItemDetail/tabs/links/LinkLedger"
+import { useLinkItems } from "@/components/ItemDetail/tabs/links/link-items"
 import { egoEdges } from "@/lib/link-graph"
 import { addLink, removeLink } from "@/lib/links"
 import type { Task } from "@/lib/types"

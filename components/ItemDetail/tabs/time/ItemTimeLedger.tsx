@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemTimeLedger.tsx — Time on a task, editable
+ * components/ItemDetail/tabs/time/ItemTimeLedger.tsx — Time on a task, editable
  *
  * The Time tab for a task (and for a step's item). Blocks painted with this
  * task — pen clock, To Do start, a hand correction — list here with their

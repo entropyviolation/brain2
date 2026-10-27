@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/use-links-graph.ts — Everything the Links tab
+ * components/ItemDetail/tabs/links/use-links-graph.ts — Everything the Links tab
  * reasons about one item (LINKS_REDESIGN L3.3, L4, L5.2): derived edges with
  * proofs (only with **with derived** on), the suggestion shelf, the density
  * readout, and checks. Ego-scoped; nothing here is stored (invariant 7).

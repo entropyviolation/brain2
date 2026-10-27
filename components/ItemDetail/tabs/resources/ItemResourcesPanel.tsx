@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemResourcesPanel.tsx — Files attached to an item
+ * components/ItemDetail/tabs/resources/ItemResourcesPanel.tsx — Files attached to an item
  *
  * Any file can be attached to any item as a resource: a PDF, a picture, a
  * recording, a spreadsheet, a ticket. Drop files on the tray or use Attach

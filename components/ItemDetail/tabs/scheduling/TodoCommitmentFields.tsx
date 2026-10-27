@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/TodoCommitmentFields.tsx — Required / prioritized
+ * components/ItemDetail/tabs/scheduling/TodoCommitmentFields.tsx — Required / prioritized
  *
  * One row per To Do period this item is already assigned to. Scheduling is
  * what assigns it. These switches only add required or prioritized.

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemScheduleFlags.tsx — Send to Scheduler + Auto-push
+ * components/ItemDetail/tabs/scheduling/ItemScheduleFlags.tsx — Send to Scheduler + Auto-push
  *
  * Shared by the popup and page scheduling tabs. Same copy and the same
  * inherit-on / force-off scheduleable wiring. Date, week, month, year, and

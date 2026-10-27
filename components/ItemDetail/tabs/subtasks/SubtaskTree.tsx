@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/SubtaskTree.tsx — Nested subtasks with minutes
+ * components/ItemDetail/tabs/subtasks/SubtaskTree.tsx — Nested subtasks with minutes
  *
  * The Subtasks tab: its own outline, not the To Do lid's `StepTree`. One row
  * per step: tick, name, parts, minutes, the nested sum, **Open** (the step's

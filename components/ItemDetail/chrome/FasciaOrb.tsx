@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/FasciaOrb.tsx — The item's orb at the left of the
+ * components/ItemDetail/chrome/FasciaOrb.tsx — The item's orb at the left of the
  * CRT title (PD 8.2). 28px, the same image the Lists desktop shows
  * (`iconFor(id, icon)`). Click → `OrbPickerDialog`; a pick or Reset calls
  * `onPick(icon | undefined)`, which the shell writes on the draft (`icon` is

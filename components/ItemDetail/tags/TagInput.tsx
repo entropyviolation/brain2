@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/TagInput.tsx — Chip/token tag editor
+ * components/ItemDetail/tags/TagInput.tsx — Chip/token tag editor
  *
  * Presentational tag input: renders applied tags as removable chips and a text
  * field that adds a tag on Enter/comma, with autocomplete suggestions drawn from
@@ -18,7 +18,7 @@ import { X, Tag as TagIcon } from "lucide-react"
 import { normalizeTag } from "@/lib/links"
 import { taskRepository } from "@/lib/data/task-repository"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { ItemTagChip, matchCatalogTag } from "@/components/ItemDetail/ItemTagChip"
+import { ItemTagChip, matchCatalogTag } from "@/components/ItemDetail/tags/ItemTagChip"
 
 interface TagInputProps {
   tags: string[]
