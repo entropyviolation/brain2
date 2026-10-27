@@ -24,7 +24,7 @@ interface TaskCardState {
   stepId?: string
   /** Open the card with this step as its root: the tree and totals show only what is inside it. */
   rootStepId?: string
-  /** How many hosts (`todo-panel`) are mounted; item detail shows **Card** only when one is. */
+  /** How many desk hosts are mounted. The phone switch does not register one. Item detail shows **Card** only when a host is. */
   hosts: number
 }
 

@@ -23,7 +23,7 @@ import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
 import { useTaskStore } from "@/lib/task-store"
 import { placeSteps } from "@/lib/next-step"
-import { tieNowObjectiveToStep } from "@/lib/now-objective"
+import { formatObjectiveWhen, tieNowObjectiveToStep } from "@/lib/now-objective"
 import { whenLabel } from "@/lib/session-debrief"
 import { compactDuration, parseDurationInput } from "@/lib/time-entries"
 import { formatStatMinutes, useTaskCardTimeUnit } from "./task-card-unit"
@@ -386,6 +386,7 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
 
   const line = (row: ActualSegment) => {
     const entry = entryOf(row.entryId)
+    const objective = row.objectiveId ? entry?.nowObjectives?.find((item) => item.id === row.objectiveId) : undefined
     const whole = !!(entry && row.kind === "block" && !row.objectiveId && row.startMin === entry.startMin && row.endMin === entry.endMin)
     const where = row.stepId ? (names.get(row.stepId) ?? "a step") : "whole task"
     const mark = blockPen(row.kind, entry ? entry.penId : row.penId, scopes)
@@ -400,7 +401,9 @@ export function SpentBlocks({ scope }: { scope: SpentBlocksScope }) {
       <li key={row.id} onDoubleClick={openDetail}>
         <span className="tcs-spent-span">
           {mark ? <span className="task-card-pen-dot" style={{ backgroundColor: mark.color, display: "inline-block", flex: "none" }} title={mark.name} aria-hidden /> : null}
-          {whole && entry ? (
+          {objective ? (
+            formatObjectiveWhen(objective)
+          ) : whole && entry ? (
             <>
               <ClockField value={entry.startMin} label={`Start on ${row.date}`} onCommit={(m) => entry.endMin > m && updateEntry(entry.id, { startMin: m })} />
               <i aria-hidden>–</i>
@@ -535,7 +538,10 @@ export function SpentDiary({ scope }: { scope: SpentBlocksScope }) {
             </h4>
             <ul>
               {list.map((row) => {
-                const when = stretchWhen(row)
+                const objective = row.objectiveId
+                  ? entries.find((item) => item.id === row.entryId)?.nowObjectives?.find((item) => item.id === row.objectiveId)
+                  : undefined
+                const when = objective ? formatObjectiveWhen(objective) : stretchWhen(row)
                 return (
                   <li key={row.id} className="tcs-diary-row">
                     {when ? <span className="tcs-diary-when">{when}</span> : <span className="tcs-diary-when">logged</span>}
