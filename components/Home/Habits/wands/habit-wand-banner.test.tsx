@@ -1,3 +1,4 @@
+/** components/Home/Habits/wands/habit-wand-banner.test.tsx */
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import { HabitWandBanner } from "./habit-wand-banner"

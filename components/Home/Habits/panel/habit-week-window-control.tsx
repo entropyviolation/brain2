@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-week-window-control.tsx — Weekly window plate
+ * components/Home/Habits/panel/habit-week-window-control.tsx — Weekly window plate
  *
  * Milled keys in the same bay as the Months plate. 7 weeks, this civil month,
  * this app quarter, 4 weeks, or this synodic month. One hint line under the keys.

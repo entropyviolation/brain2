@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-heatmap.tsx — Compact completion mosaic
+ * components/Home/Habits/sheet/habit-heatmap.tsx — Compact completion mosaic
  *
  * Rows of soft squares, newest on the right. Scroll left to load older
  * columns (daily days, weekly weeks, or monthly months) without a hard stop.

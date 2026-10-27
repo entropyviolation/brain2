@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-phone.tsx — Phone Habits
+ * components/Home/Habits/phone/habits-phone.tsx — Phone Habits
  *
  * Phone page. Mounted only from `HabitsPhonePage` when the viewport is at
  * most 767px. The desktop console stays in `tracker/habits-desktop-page.tsx` and is not
@@ -25,12 +25,12 @@ import {
 } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
-import { HabitCompletionCell } from "@/components/Home/Habits/habit-completion-cell"
-import { HabitCompletionDetail } from "@/components/Home/Habits/habit-completion-detail"
-import { HabitRowName } from "@/components/Home/Habits/habit-row-name"
-import { HabitPercentReadout } from "@/components/Home/Habits/habit-percent-readout"
-import { HabitPeriodBreakdown } from "@/components/Home/Habits/habit-period-breakdown"
-import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/habit-span-breakdown"
+import { HabitCompletionCell } from "@/components/Home/Habits/sheet/habit-completion-cell"
+import { HabitCompletionDetail } from "@/components/Home/Habits/sheet/habit-completion-detail"
+import { HabitRowName } from "@/components/Home/Habits/sheet/habit-row-name"
+import { HabitPercentReadout } from "@/components/Home/Habits/sheet/habit-percent-readout"
+import { HabitPeriodBreakdown } from "@/components/Home/Habits/dialogs/habit-period-breakdown"
+import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
 import { habitSpanBreakdown, type SpanUnit } from "@/lib/habit-span-breakdown"
 import { habitStatReadingContext, loggedAmountForColumn } from "@/lib/habit-stat-pipeline"
 import { listRoutingFromLink } from "@/lib/habit-completion-pipeline"

@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-phone-screen.tsx
+ * components/Home/Habits/phone/habits-phone-screen.tsx
  *
  * Phone page body. `HabitsPhonePage` renders this. The desktop console
  * does not. Grids, the panel, and the dialogs are the same data doors
@@ -9,21 +9,21 @@
 
 import type { ReactNode } from "react"
 import { format } from "date-fns"
-import { HabitsPhone, type HabitsPhonePeriod } from "@/components/Home/Habits/habits-phone"
-import { HabitWandBanner } from "@/components/Home/Habits/habit-wand-banner"
-import { TaskGrid } from "@/components/Home/Habits/task-grid"
+import { HabitsPhone, type HabitsPhonePeriod } from "@/components/Home/Habits/phone/habits-phone"
+import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
+import { TaskGrid } from "@/components/Home/Habits/sheet/task-grid"
 import {
   PeriodHabitList,
   type PeriodColumn,
 } from "@/components/Home/Habits/period-habit-list"
-import { HabitHeatmap } from "@/components/Home/Habits/habit-heatmap"
+import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
 import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
 import type { PlanTextPeriod } from "@/lib/plan-text"
-import { HabitsControlPanel } from "@/components/Home/Habits/habits-control-panel"
-import { HabitsTabControls } from "@/components/Home/Habits/habits-tab-controls"
-import type { HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
-import { HabitMonthWindowControl } from "@/components/Home/Habits/habit-month-window-control"
-import { HabitWeekWindowControl } from "@/components/Home/Habits/habit-week-window-control"
+import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
+import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
+import type { HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
+import { HabitMonthWindowControl } from "@/components/Home/Habits/panel/habit-month-window-control"
+import { HabitWeekWindowControl } from "@/components/Home/Habits/panel/habit-week-window-control"
 import {
   calculateDayPercentageAV,
   calculatePeriodColumnPercentage,

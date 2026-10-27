@@ -73,7 +73,7 @@ import {
   attachPriorityReasoning,
   neglectPrioritySentence,
 } from "@/lib/habit-priority"
-import { PriorityReasonDialog } from "@/components/Home/Habits/PriorityReasonDialog"
+import { PriorityReasonDialog } from "@/components/Home/Habits/dialogs/PriorityReasonDialog"
 import { useTaskStore } from "@/lib/task-store"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { habitPeriodPointsKey } from "@/lib/habit-points"

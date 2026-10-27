@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/week-navigation.tsx — Habit week picker
+ * components/Home/Habits/period/week-navigation.tsx — Habit week picker
  *
  * Previous / next period, Today / This month, and the date-range nameplate.
  * Raised metal keys + engraved range inside the milled Habits fascia.

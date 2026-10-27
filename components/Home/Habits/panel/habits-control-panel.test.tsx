@@ -1,10 +1,11 @@
+/** components/Home/Habits/panel/habits-control-panel.test.tsx */
 import { render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { HABITS_CONTROL_PANEL_DEFAULT_WIDTH, HABITS_CONTROL_PANEL_NAME } from "@/lib/habits-control-panel"
 import { HabitsControlPanel } from "./habits-control-panel"
-import "./habit-chrome.css"
+import "../habit-chrome.css"
 
 describe("HabitsControlPanel", () => {
   beforeEach(() => {

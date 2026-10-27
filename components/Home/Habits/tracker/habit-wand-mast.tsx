@@ -5,7 +5,7 @@
  */
 "use client"
 
-import { HabitWandBanner } from "@/components/Home/Habits/habit-wand-banner"
+import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
 
 export function HabitWandMast({
   exemptionWand,

@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-completion-cell.tsx — Shared habit cell
+ * components/Home/Habits/sheet/habit-completion-cell.tsx — Shared habit cell
  *
  * One completion cell for Daily (`TaskGrid`) and Weekly / Monthly / Season
  * (`PeriodHabitList`): exemption wand → HabitExemptCell → BOOLEAN /
@@ -40,7 +40,7 @@ import { trackingUnitLabel } from "@/lib/habit-tracking"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useThemeStore } from "@/lib/theme-store"
-import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/habit-led-lamp"
+import { HabitExemptCell, HabitLedLamp } from "@/components/Home/Habits/sheet/habit-led-lamp"
 import { HabitSourceDetail } from "@/components/Home/Habits/habit-source-detail"
 import { HabitNumberField, HabitTextField } from "@/components/Home/Habits/habit-value-field"
 import { cellOpensSourceDetail } from "@/lib/habit-source-square"

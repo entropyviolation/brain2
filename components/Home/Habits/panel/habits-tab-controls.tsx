@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-tab-controls.tsx — Per-tab control stack
+ * components/Home/Habits/panel/habits-tab-controls.tsx — Per-tab control stack
  *
  * Three bands inside HabitsControlPanel. Meters report the sheet (grade tubes,
  * one shared through line, good-period plate). Sheet changes the sheet (window,
@@ -13,10 +13,10 @@
 
 import type { ReactNode } from "react"
 import { Plus } from "lucide-react"
-import type { HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
+import type { HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
 import { CockpitSwitch } from "@/components/Home/Habits/cockpit-switch"
-import { ExemptionWandButton } from "@/components/Home/Habits/exemption-wand-button"
-import { MissedOpWandButton } from "@/components/Home/Habits/missed-op-wand-button"
+import { ExemptionWandButton } from "@/components/Home/Habits/wands/exemption-wand-button"
+import { MissedOpWandButton } from "@/components/Home/Habits/wands/missed-op-wand-button"
 import { NobleGasTube } from "@/components/Home/Habits/noble-gas-tube"
 import { GOOD_DAYS_LOOKBACK } from "@/lib/habit-accomplishment"
 

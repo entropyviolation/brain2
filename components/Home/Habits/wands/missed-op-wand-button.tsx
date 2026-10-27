@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/missed-op-wand-button.tsx — Missed op wand
+ * components/Home/Habits/wands/missed-op-wand-button.tsx — Missed op wand
  *
  * Sits under Exemption wand. Pressed, an eligible cell toggles “definitely
  * not done.” Complete and exempt cells stay grey and do not take the mark.
@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { WandMark } from "@/components/Home/Habits/exemption-wand-button"
+import { WandMark } from "@/components/Home/Habits/wands/exemption-wand-button"
 
 export function MissedOpWandButton({
   on,

@@ -11,7 +11,7 @@ import { appendPlanEntry, getPlanEntries } from "@/lib/plan-text"
 import { APP_NAV_KEYS, writeStoredDate } from "@/lib/app-navigation"
 import { formatLocalDateKey } from "@/lib/date-utils"
 
-vi.mock("@/components/Home/Habits/task-grid", () => ({
+vi.mock("@/components/Home/Habits/sheet/task-grid", () => ({
   TaskGrid: () => <div data-testid="task-grid">Task Grid</div>,
 }))
 
@@ -35,7 +35,7 @@ vi.mock("@/components/Home/Habits/settings-dialog", () => ({
   SettingsDialog: () => null,
 }))
 
-vi.mock("@/components/Home/Habits/week-navigation", () => ({
+vi.mock("@/components/Home/Habits/period/week-navigation", () => ({
   WeekNavigation: () => <div data-testid="week-navigation">Week Navigation</div>,
 }))
 

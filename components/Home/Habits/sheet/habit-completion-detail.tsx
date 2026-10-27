@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-completion-detail.tsx
+ * components/Home/Habits/sheet/habit-completion-detail.tsx
  *
  * The period-detail column: current / target, then one source line.
  * Shown only on the single-period sheet. Writes nothing.

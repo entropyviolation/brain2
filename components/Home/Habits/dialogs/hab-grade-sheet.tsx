@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * components/Home/Habits/hab-grade-sheet.tsx — Shared grade sheet chrome
+ * components/Home/Habits/dialogs/hab-grade-sheet.tsx — Shared grade sheet chrome
  *
  * One path: CRT figure, proof (rows + pinned average), Curve and the priority
  * switch, then Plasma in its own bay. The glass holds only the grade.
@@ -43,7 +43,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ColorSwatch } from "@/components/ui/color-swatch"
-import { PriorityMathPanel } from "@/components/Home/Habits/priority-math"
+import { PriorityMathPanel } from "@/components/Home/Habits/dialogs/priority-math"
 
 export interface HabGradeProofRow {
   key: string
