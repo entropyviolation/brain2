@@ -367,7 +367,7 @@ One row per operation (`id` defaults to `operation:${operationId}`). The after-a
 
 | field | type | class | persisted? | notes |
 |---|---|---|---|---|
-| `blockedReasons` | `Record<string, StoredBlockedReason>?` | canonical | yes | Why the operation was missed or abandoned, keyed by operation id. Written by the slim **Why missed** dialog (`OperationMissReasonDialog`), including when the stage becomes abandoned. The after-action report does not write it. A later after-action save merges so a miss note stays. |
+| `blockedReasons` | `Record<string, StoredBlockedReason>?` | canonical | yes | Why the operation was missed or abandoned, keyed by operation id. Written by `OperationMissReasonDialog` when the stage becomes abandoned (no menubar button). The after-action report does not write it. A later after-action save merges so a miss note stays. _Last mapped: 2026-10-27_ |
 
 ## `ItemTypeDefinition` (`lib/types.ts`) — the type-extensibility seam
 

@@ -197,9 +197,15 @@ function buildTasks(now: Date): Task[] {
         [OPERATION_ATTR.mission]: "Get the studio firing again before the October class.",
         [OPERATION_ATTR.stage]: "active",
         [OPERATION_ATTR.categories]: ["studio", "maintenance"],
-        [OPERATION_ATTR.homeNotes]: "Controller board is on order. Document each wiring photo.",
         [OPERATION_ATTR.trackingTagIds]: ["tag-work"],
       },
+      noteLog: [
+        {
+          id: "note_legacy_demo-op-kiln_homenotes",
+          date: "2026-06-01",
+          text: "Controller board is on order. Document each wiring photo.",
+        },
+      ],
     }),
     task({
       id: "demo-op-phase-photos",

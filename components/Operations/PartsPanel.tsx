@@ -1,10 +1,11 @@
 /**
- * components/Operations/PartsPanel.tsx — Formulas, part pages, ideas, glance
+ * components/Operations/PartsPanel.tsx — Formulas, part pages, notes, glance
  *
  * The Parts tab. A kind is a formula (Issue → Articles of drafted / written /
- * formatted; or just Room). Each part has its own page: its stages, the parts
- * inside it, and ideas that are not tasks. The board tallies the labels you
- * choose to keep in view.
+ * formatted; or just Room). Each part page is name, status (stage progression
+ * and one status report), a to-do list for that part, then notes. Stages are
+ * stored on the part. They do not create tasks. The board tallies the labels
+ * you choose to keep in view.
  */
 "use client"
 
@@ -19,7 +20,9 @@ import {
   glanceMeters,
   instanceTaskProgress,
   instancesOf,
-  partTaskFor,
+  partFinishChecked,
+  partStageChecked,
+  partTodoTasks,
   readPartFormulas,
   readPartInstances,
   resolveGlanceSelection,
@@ -27,22 +30,33 @@ import {
   type PartFormula,
   type PartInstance,
 } from "@/lib/operation-parts"
+import { itemTitle } from "@/lib/item-utils"
 import type { Task } from "@/lib/types"
 import {
   addPartIdea,
   addPartInstance,
+  addPartTodo,
   deletePartFormula,
   deletePartInstance,
   removePartIdea,
   renamePartInstance,
   savePartFormula,
+  setPartCurrentStage,
+  setPartFinishStep,
+  setPartStatusReport,
   setPartsGlance,
   setTaskCompleted,
-  syncAllPartTasks,
 } from "./operation-actions"
 import { NativeSelect } from "@/components/ui/native-select"
 
-export function PartsPanel({ operation }: { operation: Task }) {
+export function PartsPanel({
+  operation,
+  onOpenItem,
+}: {
+  operation: Task
+  /** Opens that task in the item-detail popup. Choosing a part still stays on its page. */
+  onOpenItem?: (id: string) => void
+}) {
   const tasks = useTaskStore((s) => s.tasks)
   const live = tasks.find((task) => task.id === operation.id) ?? operation
   const formulas = useMemo(
@@ -54,10 +68,6 @@ export function PartsPanel({ operation }: { operation: Task }) {
     [live],
   )
   const [openId, setOpenId] = useState<string | null>(null)
-
-  useEffect(() => {
-    syncAllPartTasks(operation.id)
-  }, [operation.id])
 
   useEffect(() => {
     setOpenId(null)
@@ -74,6 +84,7 @@ export function PartsPanel({ operation }: { operation: Task }) {
         instances={instances}
         tasks={tasks}
         onOpen={setOpenId}
+        onOpenItem={onOpenItem}
         onBack={() => setOpenId(open.parentInstanceId)}
       />
     )
@@ -295,7 +306,13 @@ function PartsBoard({
             />
           </div>
           <div className="ops-kind-form-actions">
-            <button type="button" className="ops-btn ops-btn-default" onClick={saveKind} disabled={!kindName.trim()}>
+            <button
+              type="button"
+              className="ops-btn ops-btn-default ops-keycap is-primary"
+              data-no95=""
+              onClick={saveKind}
+              disabled={!kindName.trim()}
+            >
               {editingId ? "Save kind" : "Add kind"}
             </button>
             {editingId && (
@@ -395,7 +412,7 @@ function PartCard({
   const meta = [
     progress.total > 0 ? `${progress.done}/${progress.total}` : null,
     nested > 0 ? `${nested} inside` : null,
-    ideaCount > 0 ? `${ideaCount} idea${ideaCount === 1 ? "" : "s"}` : null,
+    ideaCount > 0 ? `${ideaCount} note${ideaCount === 1 ? "" : "s"}` : null,
   ]
     .filter(Boolean)
     .join(" · ")
@@ -420,6 +437,7 @@ function PartPage({
   instances,
   tasks,
   onOpen,
+  onOpenItem,
   onBack,
 }: {
   operationId: string
@@ -428,28 +446,56 @@ function PartPage({
   instances: PartInstance[]
   tasks: Task[]
   onOpen: (id: string) => void
+  onOpenItem?: (id: string) => void
   onBack: () => void
 }) {
   const formula = formulas.find((entry) => entry.id === instance.formulaId)
   const [title, setTitle] = useState(instance.title)
-  const [ideaDraft, setIdeaDraft] = useState("")
+  const [report, setReport] = useState(instance.statusReport ?? "")
+  const [noteDraft, setNoteDraft] = useState("")
+  const [todoDraft, setTodoDraft] = useState("")
   const [childDrafts, setChildDrafts] = useState<Record<string, string>>({})
 
   useEffect(() => {
     setTitle(instance.title)
   }, [instance.id, instance.title])
 
+  useEffect(() => {
+    setReport(instance.statusReport ?? "")
+  }, [instance.id, instance.statusReport])
+
   const commitTitle = () => {
     if (title.trim() && title.trim() !== instance.title) renamePartInstance(operationId, instance.id, title)
   }
 
-  const submitIdea = () => {
-    if (!ideaDraft.trim()) return
-    addPartIdea(operationId, instance.id, ideaDraft)
-    setIdeaDraft("")
+  const commitReport = () => {
+    if (report.trim() !== (instance.statusReport ?? "")) setPartStatusReport(operationId, instance.id, report)
+  }
+
+  const submitNote = () => {
+    if (!noteDraft.trim()) return
+    addPartIdea(operationId, instance.id, noteDraft)
+    setNoteDraft("")
+  }
+
+  const submitTodo = () => {
+    if (!todoDraft.trim()) return
+    addPartTodo(operationId, instance.id, todoDraft)
+    setTodoDraft("")
+  }
+
+  const toggleStage = (label: string, checked: boolean) => {
+    if (!formula) return
+    const idx = formula.stages.findIndex((stage) => stage.toLowerCase() === label.toLowerCase())
+    if (idx < 0) return
+    const next = checked ? formula.stages[idx] : idx === 0 ? "" : formula.stages[idx - 1]
+    setPartCurrentStage(operationId, instance.id, next)
   }
 
   const crumbs = breadcrumb(instance, instances)
+  const todos = partTodoTasks(tasks, instance.id)
+  const openTodos = todos.filter((task) => !task.completed)
+  const doneTodos = todos.filter((task) => task.completed)
 
   return (
     <div className="ops-panel">
@@ -474,29 +520,155 @@ function PartPage({
           onBlur={commitTitle}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
         />
+      </div>
 
-        {formula && (formula.stages.length > 0 || formula.finishSteps.length > 0) && (
+      <div className="ops-deck">
+        <div className="ops-deck-head">
+          Status
+          <span>This part</span>
+        </div>
+        <p className="ops-label">Current stage</p>
+        {formula && formula.stages.length > 0 ? (
           <ul className="ops-part-steps">
             {formula.stages.map((label) => (
-              <StepRow
+              <StageRow
                 key={`stage-${label}`}
                 label={label}
-                task={partTaskFor(tasks, instance.id, "stage", label)}
-              />
-            ))}
-            {formula.finishSteps.map((label) => (
-              <StepRow
-                key={`finish-${label}`}
-                label={label}
-                task={partTaskFor(tasks, instance.id, "finish", label)}
-                note="when finished"
+                checked={partStageChecked(instance, formula, label, tasks)}
+                onToggle={(checked) => toggleStage(label, checked)}
               />
             ))}
           </ul>
+        ) : (
+          <p className="ops-hint">This kind has no stages.</p>
         )}
-        {formula && formula.stages.length === 0 && formula.finishSteps.length === 0 && (
-          <p className="ops-hint">This kind has no stages. It is a place for the parts and ideas inside it.</p>
+        {formula && formula.finishSteps.length > 0 && (
+          <>
+            <p className="ops-label">When finished</p>
+            <ul className="ops-part-steps">
+              {formula.finishSteps.map((label) => (
+                <StageRow
+                  key={`finish-${label}`}
+                  label={label}
+                  checked={partFinishChecked(instance, label, tasks)}
+                  onToggle={(checked) => setPartFinishStep(operationId, instance.id, label, checked)}
+                />
+              ))}
+            </ul>
+          </>
         )}
+        <label className="ops-label" htmlFor="ops-part-status">
+          Latest status report
+        </label>
+        <textarea
+          id="ops-part-status"
+          className="ops-input ops-part-report"
+          rows={2}
+          value={report}
+          placeholder="Where this part stands…"
+          onChange={(e) => setReport(e.target.value)}
+          onBlur={commitReport}
+        />
+      </div>
+
+      <div className="ops-deck">
+        <div className="ops-deck-head">
+          To do
+          <span>Tasks for this part</span>
+        </div>
+        {todos.length === 0 ? (
+          <p className="ops-hint">No to-dos yet.</p>
+        ) : (
+          <ul className="ops-part-steps">
+            {[...openTodos, ...doneTodos].map((task) => (
+              <li key={task.id} className="ops-part-step">
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  aria-label={`Mark done ${itemTitle(task)}`}
+                  onChange={(e) => setTaskCompleted(task.id, e.target.checked)}
+                />
+                {onOpenItem ? (
+                  <button
+                    type="button"
+                    className={`ops-item-hit${task.completed ? " line-through" : ""}`}
+                    data-no95=""
+                    onClick={() => onOpenItem(task.id)}
+                  >
+                    {itemTitle(task)}
+                  </button>
+                ) : (
+                  <span className={task.completed ? "line-through" : undefined}>{itemTitle(task)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="ops-add-row">
+          <input
+            className="ops-input"
+            value={todoDraft}
+            aria-label="New to-do"
+            placeholder="Add a to-do…"
+            onChange={(e) => setTodoDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitTodo()}
+          />
+          <button
+            type="button"
+            className="ops-btn ops-btn-default ops-keycap is-primary"
+            data-no95=""
+            onClick={submitTodo}
+            disabled={!todoDraft.trim()}
+          >
+            Add task
+          </button>
+        </div>
+      </div>
+
+      <div className="ops-deck">
+        <div className="ops-deck-head">
+          Notes
+          <span>This part</span>
+        </div>
+        <p className="ops-hint">Notes for this part.</p>
+        {instance.ideas.length === 0 ? (
+          <p className="ops-hint">No notes yet.</p>
+        ) : (
+          <ul className="ops-idea-list">
+            {instance.ideas.map((idea) => (
+              <li key={idea.id} className="ops-idea">
+                <span>{idea.text}</span>
+                <button
+                  type="button"
+                  className="ops-btn ops-icon-btn"
+                  aria-label={`Remove note ${idea.text}`}
+                  onClick={() => removePartIdea(operationId, instance.id, idea.id)}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="ops-add-row">
+          <input
+            className="ops-input"
+            value={noteDraft}
+            aria-label="New note"
+            placeholder="Add a note…"
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitNote()}
+          />
+          <button
+            type="button"
+            className="ops-btn ops-btn-default ops-keycap is-primary"
+            data-no95=""
+            onClick={submitNote}
+            disabled={!noteDraft.trim()}
+          >
+            Add note
+          </button>
+        </div>
       </div>
 
       {formula &&
@@ -551,70 +723,28 @@ function PartPage({
             </div>
           )
         })}
-
-      <div className="ops-deck">
-        <div className="ops-deck-head">
-          Ideas
-          <span>Not to-dos</span>
-        </div>
-        <p className="ops-hint">Notes that belong to this part. They stay here and do not join To do.</p>
-        {instance.ideas.length === 0 ? (
-          <p className="ops-hint">No ideas yet.</p>
-        ) : (
-          <ul className="ops-idea-list">
-            {instance.ideas.map((idea) => (
-              <li key={idea.id} className="ops-idea">
-                <span>{idea.text}</span>
-                <button
-                  type="button"
-                  className="ops-btn ops-icon-btn"
-                  aria-label={`Remove idea ${idea.text}`}
-                  onClick={() => removePartIdea(operationId, instance.id, idea.id)}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="ops-add-row">
-          <input
-            className="ops-input"
-            value={ideaDraft}
-            aria-label="New idea"
-            placeholder="Save an idea…"
-            onChange={(e) => setIdeaDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitIdea()}
-          />
-          <button type="button" className="ops-btn" onClick={submitIdea} disabled={!ideaDraft.trim()}>
-            Add idea
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
 
-function StepRow({
+function StageRow({
   label,
-  task,
-  note,
+  checked,
+  onToggle,
 }: {
   label: string
-  task: Task | undefined
-  note?: string
+  checked: boolean
+  onToggle: (checked: boolean) => void
 }) {
   return (
     <li className="ops-part-step">
       <input
         type="checkbox"
-        checked={!!task?.completed}
-        disabled={!task}
+        checked={checked}
         aria-label={`Toggle ${label}`}
-        onChange={(e) => task && setTaskCompleted(task.id, e.target.checked)}
+        onChange={(e) => onToggle(e.target.checked)}
       />
-      <span className={task?.completed ? "line-through" : undefined}>{label}</span>
-      {note && <em className="ops-hint">{note}</em>}
+      <span className={checked ? "line-through" : undefined}>{label}</span>
     </li>
   )
 }

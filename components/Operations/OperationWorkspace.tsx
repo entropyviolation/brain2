@@ -4,19 +4,21 @@
  * The full-screen workspace for a single Operation. Its tab strip is **not
  * fixed**: it is built from the panels this operation has switched on
  * (`resolveOperationPanels`), so a computer-work op can be Home + Tasks + Log
- * while a trip adds Timeline, Locations, and a Plan doc. The **Settings** dialog
- * on the menubar is where that choice (plus categories, mission, stage, target
- * date) is made.
+ * while a trip adds Timeline, Locations, and a Plan doc. The back arrow returns
+ * to the board. A gear keycap on the title row opens settings (panel choice,
+ * categories, mission, stage, target date).
  *
  * Self-contained: it reads/writes only through the task store + the
  * `operation-actions` helpers, so mounting it needs just an `operationId` (and
- * optional `onBack` / `onOpenItem`).
+ * optional `onBack`). Item clicks open `TaskDetailPopup` over this window.
+ * A shell `onOpenItem` is accepted and not called, so the operation stays
+ * mounted.
  */
 "use client"
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Rocket } from "lucide-react"
+import { Rocket, Settings } from "lucide-react"
 import { useTaskStore } from "@/lib/task-store"
 import {
   OPERATION_ATTR,
@@ -51,6 +53,8 @@ import {
 import type { Task } from "@/lib/types"
 import { getOperationTaskTree } from "@/lib/operations"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
+import "@/components/ItemDetail/item-detail-chrome.css"
 import "./operations-chrome.css"
 
 /** Body for one enabled tab panel. */
@@ -71,7 +75,7 @@ function PanelBody({
     case "phases":
       return <PhasesPanel operation={operation} onOpenItem={onOpenItem} />
     case "parts":
-      return <PartsPanel operation={operation} />
+      return <PartsPanel operation={operation} onOpenItem={onOpenItem} />
     case "timeline":
       return <OperationTimelinePanel operation={operation} onOpenItem={onOpenItem} />
     case "locations":
@@ -91,7 +95,7 @@ function OpsScrollPane({ slot, children }: { slot: string; children: ReactNode }
   const ref = useRef<HTMLDivElement>(null)
   usePersistedScroll(slot, ref)
   return (
-    <div ref={ref} className="h-full min-h-0 overflow-auto">
+    <div ref={ref} className="ops-scroll h-full min-h-0 overflow-auto">
       {children}
     </div>
   )
@@ -100,10 +104,13 @@ function OpsScrollPane({ slot, children }: { slot: string; children: ReactNode }
 export function OperationWorkspace({
   operationId,
   onBack,
-  onOpenItem,
 }: {
   operationId: string
   onBack?: () => void
+  /**
+   * The shell's full-page opener. Item clicks do not call it. They open
+   * `TaskDetailPopup` over this workspace, and the operation stays mounted.
+   */
   onOpenItem?: (id: string) => void
 }) {
   const operation = useTaskStore((s) => s.tasks.find((t) => t.id === operationId))
@@ -117,6 +124,7 @@ export function OperationWorkspace({
   )
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
   const [postMortemOpen, setPostMortemOpen] = useState(false)
   const [whyMissedOpen, setWhyMissedOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -213,7 +221,14 @@ export function OperationWorkspace({
         <div className="ops-fascia">
           <div className="ops-fascia-row">
             {onBack && (
-              <button type="button" className="ops-title-btn" onClick={onBack} title="Back to board" aria-label="Back">
+              <button
+                type="button"
+                className="ops-title-btn ops-keycap ops-keycap-back"
+                data-no95=""
+                onClick={onBack}
+                title="Back to board"
+                aria-label="Back"
+              >
                 ←
               </button>
             )}
@@ -248,22 +263,21 @@ export function OperationWorkspace({
               )}
             </div>
             <span className={`ops-stage ops-stage-${opStage}`}>{opStage}</span>
+            <button
+              type="button"
+              className="ops-title-btn ops-keycap ops-keycap-back ops-fascia-gear"
+              data-no95=""
+              onClick={() => setSettingsOpen(true)}
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Settings aria-hidden />
+            </button>
           </div>
 
           <div className="ops-menubar">
-            {onBack && (
-              <button type="button" className="ops-btn" onClick={onBack}>
-                Board
-              </button>
-            )}
-            <button type="button" className="ops-btn" onClick={() => setSettingsOpen(true)}>
-              Settings
-            </button>
             <button type="button" className="ops-btn" onClick={() => setPostMortemOpen(true)}>
               After-action report
-            </button>
-            <button type="button" className="ops-btn" onClick={() => setWhyMissedOpen(true)}>
-              Why missed
             </button>
             {categories.length > 0 && (
               <span className="ops-chip-row ops-menubar-chips">
@@ -323,7 +337,7 @@ export function OperationWorkspace({
             {tabPanels.map((id) => (
               <TabsContent key={id} value={id} className="ops-tab-pane mt-2 min-h-0 flex-1 overflow-hidden">
                 <OpsScrollPane slot={opsPanelScrollSlot(operation.id, id)}>
-                  <PanelBody panelId={id} operation={operation} onOpenItem={onOpenItem} />
+                  <PanelBody panelId={id} operation={operation} onOpenItem={(itemId) => setDetailTaskId(itemId)} />
                 </OpsScrollPane>
               </TabsContent>
             ))}
@@ -331,7 +345,7 @@ export function OperationWorkspace({
 
           {showRail && !wideTab && (
             <aside className="ops-rail">
-              <ToDoNextRail operation={operation} onOpenItem={onOpenItem} />
+              <ToDoNextRail operation={operation} onOpenItem={(itemId) => setDetailTaskId(itemId)} />
             </aside>
           )}
         </div>
@@ -358,6 +372,11 @@ export function OperationWorkspace({
         operation={operation}
         open={whyMissedOpen}
         onClose={() => setWhyMissedOpen(false)}
+      />
+      <TaskDetailPopup
+        taskId={detailTaskId}
+        open={detailTaskId != null}
+        onClose={() => setDetailTaskId(null)}
       />
     </div>
   )

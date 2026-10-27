@@ -4,6 +4,8 @@
  * Brushed silver bays, engraved nameplates, CRT titles, raised metal keys,
  * equal-fill view keys are latching keycaps (`.b2-keycap-tab` in `app/win95.css`):
  * silver skirt at rest, active = CRT + power lamp, press = milled sink.
+ * A few word keys are the house ortholinear cap (`.ops-keycap`, same skirt as
+ * `.todo-cap`): back arrow, Settings, Add kind, and the settings-dialog keys.
  * _Last mapped: 2026-10-27._ Same verbs as before.
  * docs/DESIGN_STYLE.md#milled-fascia. Portaled dialogs use `.ops95-dialog`.
  */
@@ -92,6 +94,15 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+.ops95 .ops-fascia-gear {
+  margin-left: auto;
+}
+
+.ops95 .ops-fascia-gear svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ops95 .ops-mark {
@@ -339,6 +350,13 @@
   padding-right: 28px;
 }
 
+/* Stage only. The shared right padding leaves room for a native dropdown
+   arrow. This field draws its own chevron, so that gutter sat the icon
+   inward. Other selects keep the shared padding. _Last mapped: 2026-10-27_ */
+.ops95 #op-stage.native-select {
+  padding-right: 6px;
+}
+
 .ops95 textarea {
   display: block;
   box-sizing: border-box;
@@ -377,6 +395,66 @@
   flex: 1;
   width: auto;
   min-width: 0;
+}
+
+.ops95 .ops-res-add {
+  flex-wrap: wrap;
+}
+
+.ops95 .ops-res-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ops95 .ops-res {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: var(--r-2, 2px);
+  background: #fff;
+  box-shadow: var(--o-field);
+}
+
+.ops95 .ops-res-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ops95 .ops-res-kind {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.ops95 .ops-res-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.ops95 .ops-res-name a {
+  color: inherit;
+}
+
+.ops95 .ops-res-where {
+  margin: 0;
+  font-size: 11px;
+  color: var(--chrome-ink-soft, #3a3d40);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ops95 .ops-body {
@@ -712,6 +790,14 @@
   padding: 6px 6px 8px;
 }
 
+/* The pane is the scrollport. Decks paint a 1px ring outside their box; with
+   no inset that ring (and anything sitting on the left edge) is clipped and
+   cannot be scrolled back into view. _Last mapped: 2026-10-27_ */
+.ops95 .ops-scroll {
+  box-sizing: border-box;
+  padding: 3px;
+}
+
 .ops95 .ops-panel {
   display: flex;
   flex-direction: column;
@@ -737,6 +823,23 @@
   gap: 5px;
   min-width: 0;
   width: 100%;
+}
+
+/* Mission starts one line tall and grows with the text. Beats the fixed
+   `.ops-input` height and the room-wide textarea min-height. _Last mapped: 2026-10-27_ */
+.ops95 textarea.ops-mission {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  max-height: none;
+  margin: 0;
+  padding: 6px 10px;
+  line-height: 1.35;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  field-sizing: content;
 }
 
 .ops95 .ops-deck {
@@ -914,6 +1017,20 @@
   box-shadow: var(--o-field);
 }
 
+/* The item name in a queue, phase, or part-task row. Flat text, not a key. */
+.ops95 .ops-item-hit {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 .ops95 .ops-phase {
   border-radius: var(--r-3, 3px);
   background: var(--o-mill);
@@ -953,6 +1070,103 @@
 
 .ops95 .ops-log li:nth-child(even) {
   background: var(--chrome-cloud);
+}
+
+.ops95 .ops-log-pens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+
+.ops95 .ops-log-pens-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--o-nameplate);
+}
+
+.ops95 .ops-log-pen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 8px 2px 4px;
+  border: none;
+  border-radius: var(--r-2, 2px);
+  background: #fff;
+  box-shadow: var(--o-field);
+  font: inherit;
+  font-size: 13px;
+  color: var(--o-ink);
+  cursor: pointer;
+}
+
+.ops95 .ops-log-pen[aria-pressed="true"] {
+  box-shadow: var(--o-key-ring);
+}
+
+.ops95 .ops-log-pen-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: var(--o-field);
+  border-radius: var(--r-2, 2px);
+}
+
+.ops95 .ops-log-pen-search {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+}
+
+.ops95 .ops-log-pen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 11rem;
+  overflow: auto;
+}
+
+.ops95 .ops-log-pen-list .ops-log-pen {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.ops95 .ops-log-pen.is-active {
+  outline: 1px solid #9ad7ff;
+  outline-offset: -1px;
+}
+
+.ops95 .ops-log-pen-check {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.ops95 .ops-log-pen-empty {
+  margin: 0;
+  padding: 6px 4px;
+  font-size: 13px;
+  color: var(--chrome-ink-soft);
+}
+
+.ops95 .ops-log-swatch {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 1px solid #1c1e20;
+  box-shadow: inset 1px 1px rgba(255, 255, 255, 0.45);
+}
+
+.ops95 .ops-log-swatch.is-empty {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
 }
 
 /* ---- View keys (latching keycaps; active = CRT + lamp) --------------- */
@@ -999,6 +1213,26 @@ body.win95-app .ops95 .ops-view-keys[role="tablist"],
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.ops95 .ops-home-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ops95 .ops-home-head .ops-label {
+  display: inline;
+  padding: 0;
+}
+
+.ops95 .ops-notes-log.id95 {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+  gap: 0;
 }
 
 .ops95 .ops-heat-cell.is-cold {
@@ -1392,11 +1626,32 @@ body.win95-app .ops95 .ops-view-keys [role="tab"]:active,
   margin-left: auto;
 }
 
+.ops95 .ops-part-report {
+  display: block;
+  width: 100%;
+  min-height: 3.2rem;
+  margin-top: 4px;
+  resize: vertical;
+}
+
 .ops95 .ops-listhost {
   min-height: 12rem;
   border-radius: var(--r-2, 2px);
   background: var(--o-surface);
   box-shadow: var(--o-sunken);
+}
+
+/* The Lists skin's root is `height: 100%`. Inside this bay that would chase
+   the workspace height. Let the task list size to its rows. */
+.ops95 .ops-listhost.fm98 {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ops95 .ops-listhost .fm-sunken {
+  min-height: 10rem;
+  flex: 1 1 auto;
 }
 
 /* ---- Portaled dialogs (Settings / After-action) ----------------------- */
@@ -1966,4 +2221,156 @@ body.win95-app .ops95 .ops-view-keys [role="tab"]:active,
   max-width: min(16rem, 70vw);
   background: var(--chrome-face, #c0c0c0);
   box-shadow: var(--w95-raised, inset -1px -1px #404040, inset 1px 1px #fff);
+}
+
+/* Word keys that should read as physical keycaps. Same skirt as `.todo-cap`
+   (docs/DESIGN_STYLE.md#keycaps). `data-no95` opts out of the global mill lip
+   so the skirt stays the paint. Primary is the navy lamp and ring; danger
+   keeps the maroon legend and a maroon ring. _Last mapped: 2026-10-27._ */
+body.win95-app .ops95 button.ops-keycap[data-no95],
+body.win95-app .ops95-dialog button.ops-keycap[data-no95] {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 28px;
+  height: auto;
+  padding: 3px 10px 6px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) !important;
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) !important;
+  color: #1f2226 !important;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  filter: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+body.win95-app .ops95 button.ops-keycap[data-no95]:hover:not(:disabled),
+body.win95-app .ops95-dialog button.ops-keycap[data-no95]:hover:not(:disabled) {
+  filter: none;
+}
+
+body.win95-app .ops95 button.ops-keycap[data-no95]:active:not(:disabled),
+body.win95-app .ops95-dialog button.ops-keycap[data-no95]:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.win95-app .ops95 button.ops-keycap[data-no95]:focus-visible,
+body.win95-app .ops95-dialog button.ops-keycap[data-no95]:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+body.win95-app .ops95 button.ops-keycap[data-no95]:disabled,
+body.win95-app .ops95-dialog button.ops-keycap[data-no95]:disabled {
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  color: #7d8185 !important;
+  cursor: default;
+  outline: none;
+  transform: none;
+  filter: none;
+}
+
+body.win95-app .ops95 button.ops-keycap.is-primary[data-no95]:not(:disabled),
+body.win95-app .ops95-dialog button.ops-keycap.is-primary[data-no95]:not(:disabled) {
+  --cap-edge: #2a3570;
+  color: #1a2556 !important;
+  outline: 2px solid #22306c;
+  outline-offset: 1px;
+}
+
+body.win95-app .ops95 button.ops-keycap.is-primary[data-no95]::before,
+body.win95-app .ops95-dialog button.ops-keycap.is-primary[data-no95]::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: #22306c;
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+body.win95-app .ops95 button.ops-keycap.is-primary[data-no95]:disabled::before,
+body.win95-app .ops95-dialog button.ops-keycap.is-primary[data-no95]:disabled::before {
+  background: #8a90a8;
+  box-shadow: none;
+}
+
+body.win95-app .ops95-dialog button.ops-keycap.is-danger[data-no95] {
+  --cap-edge: #6b2424;
+  color: #800000 !important;
+  outline: 2px solid #800000;
+  outline-offset: 1px;
+}
+
+body.win95-app .ops95 button.ops-keycap.ops-keycap-back[data-no95] {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 0 3px;
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+  flex-shrink: 0;
+}
+
+body.win95-app .ops95-dialog button.ops-preset.ops-keycap[data-no95] {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  min-height: 0;
+  padding: 8px 12px 11px;
+  text-align: left;
+  white-space: normal;
+  text-transform: none;
+}
+
+body.win95-app .ops95-dialog button.ops-preset.ops-keycap[data-no95] strong {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #1f2226;
+}
+
+body.win95-app .ops95-dialog button.ops-preset.ops-keycap[data-no95] em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  color: var(--chrome-ink-soft, #3a3d40);
+  text-shadow: none;
 }

@@ -223,7 +223,13 @@ export function OperationSettingsDialog({
                   <option key={name} value={name} />
                 ))}
               </datalist>
-              <button type="button" className="ops-btn" onClick={commitCategory} disabled={!categoryDraft.trim()}>
+              <button
+                type="button"
+                className="ops-btn ops-keycap"
+                data-no95=""
+                onClick={commitCategory}
+                disabled={!categoryDraft.trim()}
+              >
                 Add category
               </button>
             </div>
@@ -350,7 +356,8 @@ export function OperationSettingsDialog({
                 <button
                   key={preset.id}
                   type="button"
-                  className="ops-preset"
+                  className="ops-preset ops-keycap"
+                  data-no95=""
                   onClick={() => applyOperationPreset(operation.id, preset.id)}
                 >
                   <strong>{preset.name}</strong>
@@ -365,14 +372,19 @@ export function OperationSettingsDialog({
             <p className="ops-hint">
               Removes this operation, its to-do list, its phases, and its parts.
             </p>
-            <button type="button" className="ops-btn ops-btn-danger" onClick={() => setConfirmDelete(true)}>
+            <button
+              type="button"
+              className="ops-btn ops-btn-danger ops-keycap is-danger"
+              data-no95=""
+              onClick={() => setConfirmDelete(true)}
+            >
               Delete operation
             </button>
           </fieldset>
         </div>
 
         <div className="ops-actions">
-          <button type="button" className="ops-btn ops-btn-default" onClick={onClose}>
+          <button type="button" className="ops-btn ops-btn-default ops-keycap is-primary" data-no95="" onClick={onClose}>
             Done
           </button>
         </div>

@@ -6,7 +6,7 @@
  * so this board can group by category — an operation that is both *paid* and
  * *foxtide job* appears under both — filter to a subset of categories with a
  * checkbox strip (the same affordance as the Lists All view), and sort within
- * each group by name, stage, target date, or recency.
+ * each group by name, stage, target date, newest created, or recently modified.
  *
  * New operations are created inline from a **preset**, which decides the panels
  * the workspace starts with (nothing is assumed to be trip-shaped). Selecting an
@@ -49,11 +49,7 @@ const SORT_LABELS: Record<OperationSortMode, string> = {
   stage: "Stage",
   target: "Target date",
   recent: "Newest",
-}
-
-interface OperationsViewProps {
-  /** Optional callback to open a non-operation item elsewhere in the app. */
-  onTaskSelect?: (taskId: string) => void
+  modified: "Recently modified",
 }
 
 function OperationCard({ operation, onOpen }: { operation: Task; onOpen: () => void }) {
@@ -90,7 +86,7 @@ function OperationCard({ operation, onOpen }: { operation: Task; onOpen: () => v
   )
 }
 
-export function OperationsView({ onTaskSelect }: OperationsViewProps) {
+export function OperationsView() {
   const tasks = useTaskStore((s) => s.tasks)
   const hydrated = usePersistHydrated(useTaskStore.persist)
   const [selectedId, setSelectedId] = useState<string | null>(() => readStoredId(APP_NAV_KEYS.opsId))
@@ -151,11 +147,7 @@ export function OperationsView({ onTaskSelect }: OperationsViewProps) {
 
   if (selectedId) {
     return (
-      <OperationWorkspace
-        operationId={selectedId}
-        onBack={() => setSelectedId(null)}
-        onOpenItem={onTaskSelect}
-      />
+      <OperationWorkspace operationId={selectedId} onBack={() => setSelectedId(null)} />
     )
   }
 

@@ -7,10 +7,12 @@
  * ordinary tasks — they carry the operation's list membership (so they appear in
  * the Lists tab, All Items, and search) and a `has-part` link to the operation
  * (so they feed its progress bar and the Queue rail). Steps from phases and
- * stage/finish tasks from parts are filed onto the same list.
+ * to-dos filed on a part share that list. A part's stage checklist does not.
  *
  * Display mode (default / checklist / table / spreadsheet) is remembered per
- * list in `lib/lists-ui-store.ts`, exactly like the Lists tab.
+ * list in `lib/lists-ui-store.ts`, exactly like the Lists tab. The list is
+ * hosted in `.fm98` so reading rows, orbs, and add-task keys use the Lists
+ * chrome (those rules are scoped under `.fm98` and do not apply on their own).
  */
 "use client"
 
@@ -93,12 +95,12 @@ export function OperationTasksPanel({
       </div>
 
       <p className="ops-hint">
-        Every task for this operation, including steps from phases and parts. Ideas stay on
-        their part. Items live in the <strong>{list.name}</strong> list, so they show up in
-        Lists and search too.
+        Tasks for this operation, including steps from phases and to-dos filed on a part.
+        A part's stage checklist and notes stay on the part. Items live in the{" "}
+        <strong>{list.name}</strong> list, so they show up in Lists and search too.
       </p>
 
-      <div className="ops-listhost">
+      <div className="ops-listhost fm98">
         <ListContentPanel
           tasks={items}
           currentDisplay={currentDisplay}

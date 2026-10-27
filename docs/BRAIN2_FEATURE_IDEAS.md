@@ -1371,15 +1371,14 @@ left out, let the person delay the label. The entries below stay a menu.
      action in `components/ItemDetail/ItemDetailPage.tsx` that re-types the `Item`
      and seeds an operation workspace via `lib/module-templates.ts`.
 
-203. **Operation Home tab with a notes pad + work/neglect heatmap.** **Status:** shipped — Operation Home notes + neglect heatmap. Each
-     operation opens to a landing page with a free-text notes area and a calendar
+203. **Operation Home tab with a notes pad + work/neglect heatmap.** **Status:** shipped — Home uses the item note log (`Task.noteLog` / standing `Task.notes`), the same log as item detail, plus the neglect heatmap. A leftover `homeNotes` string is folded into that log. The free-text pad was dropped so the two notes could not drift. Each
+     operation opens to a landing page with that log and a calendar
      heatmap of how much you've worked on vs. neglected it. **From the doc:**
      "Home: the home page for the operation, with a text area for the user to
      input and save notes… there is also a heatmap showing the user how much they
-     work on/neglect the project" (`cogs_operations.pdf`). **In Brain2:** a
-     workspace **notes** view + a per-operation heatmap built from `Task.timeLogs`
-     / `points-store` completions (reuse the Analytics habit-heatmap renderer in
-     `components/Analytics/enhanced-analytics.tsx`).
+     work on/neglect the project" (`cogs_operations.pdf`). **In Brain2:** the
+     workspace Home note log + a per-operation heatmap built from `Task.timeLogs`
+     (see `components/Operations/OperationHome.tsx`).
 
 204. **Phases as checkpoints with explicit completion criteria.** **Status:** shipped — PhasesPanel / `phase-of`. An operation
      can define ordered "phases"; phase N is complete when its criteria/goals are
@@ -1398,11 +1397,12 @@ left out, let the person delay the label. The entries below stay a menu.
      scheduling helper in `lib/scheduling.ts` that resolves project-week offsets
      into concrete `Task.deadline` dates.
 
-206. **Log-while-working stream per operation.** **Status:** shipped — OperationLogFeed from `timeLogs`. A running, timestamped work log
+206. **Log-while-working stream per operation.** **Status:** shipped — OperationLogFeed is a chronological list: a **created** line from the operation's `createdAt`, then `timeLogs`. A running, timestamped work log
      you append to in the moment, distinct from the static notes pad. **From the
      doc:** "Log while working on!!! Notes !!! for sure" (`cogs_operations.pdf`).
      **In Brain2:** append entries to `Task.timeLogs` (`TimeLogEntry` already carries
-     `notes`/`date`) surfaced as a chronological feed in the operation workspace.
+     `notes`/`date`). The Log tab shows those punches and a **created** line from
+     the operation's `createdAt`, oldest first. _Last mapped: 2026-10-27._
 
 207. **"To do next" immediate-next-steps rail.** **Status:** shipped — ToDoNextRail. Every operation keeps a short,
      always-visible queue of the immediate next physical actions, separate from
