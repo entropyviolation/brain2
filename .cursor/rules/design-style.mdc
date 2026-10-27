@@ -1,0 +1,22 @@
+---
+description: Lists visual standard, keycaps, and screen prohibitions while styling
+globs: "**/*.css,components/**/*.tsx"
+alwaysApply: false
+---
+
+# Design style
+
+Lists is the visual standard. The frame may be milled. The interior stays velvet and orbs. Explorer verbs stay. Do not turn that interior into a Habits console.
+
+A word key is the pale silver ortholinear keycap (`.todo-cap`): nearly square, a 3–4px corner, a gradient face, a darker skirt, a dark legend. Seafoam and cornflower are the only other plastics. Do not invent a new word-button shape. Never cream, yellow, or orange caps. Pause, Play, and Stop stay the transport disc.
+
+Do not hide working chrome behind a File, Capture, or Review menu, or a popover that swallows those doors. Do not restack a working instrument into floating white cards. Do not sand a module’s own interior into `components/ui/`. A quote on screen must be real, verified, and carry a source. Do not invent a line and set it in quotation marks. Do not avoid philosophy.
+
+Do not add chrome to look busy. Do not put a foreign border color on a panel. No UI text tells the person what they should do. Metal is silver mirror chrome. Never choose gold or brass.
+
+The full authority is `docs/DESIGN_STYLE.md`. This card does not change the standard. When the visual standard itself changes, edit `docs/DESIGN_STYLE.md`.
+
+```text
+❌ BAD: a new pill for a word, a white card per stat, Capture tucked in a menu
+✅ GOOD: `.todo-cap` for a word key, one instrument, the door still on the machine
+```

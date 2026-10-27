@@ -4,6 +4,8 @@
 
 Every room folder has a `README.md`, and `lib/README.md` covers `lib/`. Read those before mapping code yourself.
 
+When you change code, follow `.cursor/rules/update-docs-after-each-step.mdc`: once, at the end of the task, the colocated README (and a spec, style, or overview sentence only when that claim is now false). The tree, the gallery, and a repo-wide sync are `.cursor/rules/doc-sync.mdc`, and only when asked.
+
 When you map a module in depth (by reading it or through a subagent), write back anything future agents would otherwise have to re-derive:
 
 - Add findings that are missing from that folder's README, or that disagree with it. Fix the README where the code wins. Where the doc describes intent the code has not reached yet, label it **Planned**.
@@ -14,7 +16,3 @@ When you map a module in depth (by reading it or through a subagent), write back
 Design language is in `docs/DESIGN_STYLE.md`. Redesign plans live in `docs/*_REDESIGN.md`.
 
 Style slants (Hipgnosis, retrofuturism) live in `docs/mockups/slants/`. Use one only when asked for it by name. A slant never changes the house style.
-
-## Do not merge the three task editors
-
-Item detail → Subtasks, the To do drawer and the To do task card all edit one task on purpose. They have different jobs, so they keep different UI and components. Do not merge them or make one mirror another without allie's yes. Why: `components/Home/ToDo/README.md` → "Three ways to edit a task stay separate".

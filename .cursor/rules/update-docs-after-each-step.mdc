@@ -1,35 +1,28 @@
 ---
-description: After each implementation step, fully update every doc that the change affects
+description: At the end of a coding task, update the colocated README and any doc whose claim is now false
 alwaysApply: true
 ---
 
-# Update docs after each step
+# Docs at the end of a task
 
-Do not batch documentation until the end of a task. After **each** completed step (new file, behavior change, API/type change, UI change, rename, or delete), update **every** doc that the change makes stale. Then continue.
+Once, when the task is done, update the docs this change made stale. Not after every file.
 
-## What to touch
+## Write
 
-- Colocated `README.md` in the folder you changed (`components/Lists/README.md`, `lib/README.md`, …) — architecture trees, file lists, and behavior notes.
-- Parent folder READMEs if the change is visible there (`components/README.md`, `app/README.md`).
-- Root `README.md` for user-facing features, overview claims, or the repository map.
-- `docs/README.md` if the docs index itself changed.
-- `docs/SPEC_MAPPING.md` when a spec’d feature moves between missing / partial / implemented.
-- `docs/tree.md` and `docs/tree.txt` when files or folders are added, moved, or removed (`npm run tree`).
-- `docs/screenshots/` PNG + `.txt` sidecars when a captured view’s UI or copy changed (`npm run capture-screenshots` while the app is running). See `docs/screenshots/README.md`.
+- The colocated `README.md` next to the code: what the behavior is now, and why it left an existing plan if it did. If files were added, renamed, or removed in that folder, update that README's file list. Edit the stale sentences. Do not rewrite a whole section for a one-line change.
+- `docs/SPEC_MAPPING.md` only when a spec item moved between missing / partial / implemented.
+- `docs/DESIGN_STYLE.md` only when the visual standard itself changed.
+- A parent README (`components/README.md`, `app/README.md`) or the root `README.md` only when a user-facing overview sentence is now false.
 
-Skip docs that are unrelated. Do not invent entries in `docs/BRAIN2_FEATURE_IDEAS.md` unless the work was specifically about that idea bank.
+## Skip
 
-## How
+`docs/tree.md`, `docs/tree.txt`, screenshot recapture, and unrelated docs. File-header comments stay in the source. Skip `docs/BRAIN2_FEATURE_IDEAS.md` unless the work was about that idea bank.
 
-Match the existing README style (purpose sentence, file tree, short behavior notes). Fully rewrite stale sections; do not leave old names, paths, or “coming soon” that are now shipped.
-
-When the work departs from what was asked, or from the plan already written in the docs — a new idea, a renamed concept, a dropped piece of scope, a different default, a metric that was not in the catalog, a layout decision that contradicts an earlier note — update the docs that describe that feature **in the same step**. Say what was decided and why, not only which files changed. Do not leave the old plan stating the abandoned behavior.
+The tree, the gallery, and a repo-wide sync are a separate pass: `.cursor/rules/doc-sync.mdc`. Run that when asked to update the tree, sync docs, refresh the gallery, or prepare a push.
 
 ```text
-❌ BAD: land the Lists checkbox filter, then “docs at the end”
-✅ GOOD: ship the filter, then in the same step update
-   components/Lists/README.md (tree + behavior) and any screenshot write-up
-   for the Lists content view
+❌ BAD: after each new file, regenerate tree.txt and recapture screenshots
+✅ GOOD: finish the feature, then fix the stale sentences in components/Lists/README.md
 ❌ BAD: ship a new default and leave the plan describing the old one
-✅ GOOD: rewrite that note in the same step — the decision, and why
+✅ GOOD: in that same end-of-task pass, say what was decided and why
 ```

@@ -24,6 +24,12 @@ module live here:
   cards keep their bindings. The gray field stays. Phosphor stays on the
   analytics stat.
 
+## File length
+
+_Last mapped: 2026-10-27._
+
+Files under `components/Modules` are allowed to be long. They are ported workspace apps (Tidy, itinerary, grad search, and the other module bodies). Length there is expected. Do not split them for line count alone.
+
 ## Public door
 
 Other rooms may mount **`ModulesPanel`** (`modules-panel.tsx`) — the Modules tab,
@@ -142,7 +148,7 @@ list (`categoryId`) and kind-specific options (`groupAttrId`/`valueAttrId`,
 `scheduleSync` (turn finalized dated items into events).
 
 The lists, items, and attributes a workspace operates on are **ordinary Brain2
-data** in `task-store` — so they also show up in Lists, Scheduler, Analytics, etc.
+data** in `task-store` — so they also show up in Lists, Scheduler, Data, etc.
 Templates and the grid live in `lib/module-templates.ts` and
 `components/spreadsheet/SheetGrid.tsx`.
 

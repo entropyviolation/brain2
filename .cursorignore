@@ -1,0 +1,22 @@
+# Generated file listing (`npm run tree`). The room map `docs/tree.md` stays searchable.
+docs/tree.txt
+
+# Screenshot gallery (PNGs, sidecar notes, viewer). Not code.
+docs/screenshots/
+
+# Capacitor iOS project (Xcode, Swift shell, Pods). Confirmed at repo-root
+# `ios/`. App UI stays under `components/` and `app/`.
+ios/
+
+# Source-library essays. They stay in the repo for the human. Open one only
+# when a room card links it. Room READMEs, `docs/DESIGN_STYLE.md`,
+# `docs/SPEC_MAPPING.md`, and `docs/*_REDESIGN.md` stay searchable.
+docs/jungideas.md
+docs/JungBrain2.md
+docs/ScienceandSanityBrain2.md
+docs/cyberneticsbrain2.md
+docs/brain2taoism.md
+docs/KNOWLEDGE_GRAPH_PLAN.md
+docs/AstrologyPredictions.md
+docs/monthpredictions.md
+docs/BRAIN2_FEATURE_IDEAS.md
