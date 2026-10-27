@@ -1,8 +1,11 @@
 # NFC tags to Brain2
 
-A sticker does not write the vault. iOS binds a Personal Automation to the
-tag’s hardware id, so the sticker can be blank. The automation sends one
-line to the paired bot. Brain2 looks that id up in Settings → **NFC tags**
+A sticker does not write the vault, and Brain2 does not write the sticker.
+Shortcuts has no action that programs an NFC chip. iOS binds a Personal
+Automation to the tag’s hardware id, so the sticker stays blank. There is
+no second “write” shortcut to run once and delete. The phone remembers the
+chip when you scan it in Automation → NFC. The run shortcut opens Telegram
+with one line filled in. Tap Send. Brain2 looks that id up in Settings → **NFC tags**
 and writes the tracking instant, plus today’s daily habit when the tag is
 bound to one.
 
@@ -12,8 +15,9 @@ Downloads and shows it in Finder. The tag id is already in the file, so the
 automation does not ask which sticker this is.
 
 - A Drug, Food, or Drink tag asks **How many?** Blank uses the quantity saved
-  on the tag. `2` sends `nfc:adderall 2`.
-- A door or a plain event sends `nfc:{id}` and asks nothing.
+  on the tag. `2` opens Telegram with `nfc:adderall 2`. Tap Send.
+- A door or a plain event opens Telegram with `nfc:{id}` and asks nothing.
+  Tap Send.
 
 The two shared files are still here if you would rather type the id yourself:
 
@@ -34,10 +38,16 @@ Regenerate after a wire-format change: `npm run shortcut:iphone-phone`
 (`scripts/build-iphone-phone-shortcuts.mjs`). To sign one name:
 `node scripts/build-iphone-phone-shortcuts.mjs "NFC dose to Brain2"`.
 
-Do **not** use `https://t.me/share` or `tg://msg`. These files use Telegram
-**Send Message**: Get Text → Set Variable **Outgoing** → Send Message
-content = Variable Outgoing only. A dose still has an Ask for the count. A
-per-tag door shortcut has no Ask.
+The per-tag file from Settings does **not** use Send Message. Telegram only
+accepts that action for a saved person whose id starts with `tg`. A bot chat
+fails, and Shortcuts shows “unknown error”. The file URL-encodes the line
+and opens `tg://resolve?domain=brain2_phone_bot&text=…`. Tap Send. That
+message is a normal bot text. `https://t.me/share` and a bare `tg://msg`
+still do not arrive, because they never address this bot.
+
+The shared files (`NFC to Brain2`, `NFC dose to Brain2`) still use Send
+Message for a hand-typed id. A dose from Settings asks how many, then opens
+the chat. A door opens the chat with no question.
 
 ## Install
 
@@ -45,12 +55,15 @@ per-tag door shortcut has no Ask.
    the title is the name without the count (`10 mg adderall`), intake is
    Drug, Food, or Drink, and Quantity is the usual count (1).
 2. Click the download button on that row. The signed file lands in Downloads.
-   Double-click it, or AirDrop it. On the iPhone, Settings → Shortcuts →
+   Delete any older copy of that shortcut on the iPhone first. Double-click
+   the new file, or AirDrop it. On the iPhone, Settings → Shortcuts →
    **Allow Untrusted Shortcuts** if the switch is there, then Add Shortcut.
-3. When it asks who to message, pick the **@brain2_phone_bot** chat.
-4. Shortcuts → Automation → NFC → pick that sticker → run the shortcut you
-   just added. Turn Ask Before Running off. A dose still asks how many. A
-   door does not ask.
+3. Run it once. Telegram opens with the line filled in. Tap **Send**.
+4. Shortcuts → Automation → **+** → **NFC** → Scan → hold the phone on the
+   blank sticker → name it → **Run Immediately** → turn Notify When Run off
+   → New Blank Automation → **Run Shortcut** → the shortcut from step 2.
+   A dose still asks how many, then opens Telegram. A door opens Telegram
+   with the line ready. The chip itself stays empty. Tap Send each time.
 
 Desktop test: Settings → Message ingest → Simulate `nfc:adderall 2`.
 

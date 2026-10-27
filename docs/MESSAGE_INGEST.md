@@ -295,7 +295,7 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | Forward a **PDF** (caption `pdf: title` optional) | Docs item; extract text with pdfjs / desktop `extractPdfText` |
 | `inv` / `inv oats` / `pantry` | Dump or bump the pantry list |
 | `pin` / `live` / `snapshot` | Refresh the pinned grocery card (+ a one-line now). The reply is that card. |
-| `n stuck in aisle 4` / `note: left room at 8:15` / `jot:` / `memo:` | Text log instant, the Tracking log Note row. No clock uses send time. `at 8:15` is that minute. A clock with no word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: "estimated"`). `unknown` keeps that minute for placement. Also appended onto the block covering that minute. A second line is the note. |
+| `n stuck in aisle 4` / `note: left room at 8:15` / `jot:` / `memo:` | Text log instant, the Tracking log Note row (no `eventKind`). No clock uses send time. `at 8:15` is that minute. A clock with no word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: "estimated"`). `unknown` keeps that minute for placement. BIM still appends onto the block covering that minute. The Tracking log composer does not. A second line is the note. |
 | `tp: Opening the editor to fix the clock, then the dishes, relieved it is a small fix` / `TP:` / `thought process:` / `log: tp:` | Thought process: a guiding strand of this moment, from what you are doing, to what it leads to, to how it feels. Why you are doing something, what you expect to do next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth. Colon required, so bare `tp` and bare `thought process` stay capture. Activity instant, pen **Text log**, `eventKind` `thought-process`. The first line is the title; lines under it are the note. No time uses send time. Clocks are `parseExpectedWhen`, the same reader as a log line: a bare clock is military, `1pm` / `1:00 PM` / `1:00 p.m.` are 13:00, `7/4/26` is July 4, 2026. `est` / `unknown` still work. The same instant is also a Thought Process item on Lists → Tracking → Thought Process. |
 | `n loc: crowded` / `n mood: low` / `n activity: deep work` | Same tick on that Tracking scope, and on the block covering that minute |
 | `day: tired` / `daynote:` / `n day:` | Tracking day jot (append log). Bare `day` → `today` |
@@ -429,11 +429,11 @@ to send `text: Name body`. Recipe:
 ### Tracker notes
 
 `n` / `note:` / `jot:` / `memo:` write a Text log instant, the Tracking log
-Note row. No clock uses send time. `note: left room at 8:15` uses that minute.
+Note row (no `eventKind`). No clock uses send time. `note: left room at 8:15` uses that minute.
 A clock with no word is exact. `est` / `estimated` / `~` is estimated. `unknown`
 keeps that minute for placement. The first line is the title; lines under it
 are the note. If a block covers that minute, the same text is also appended
-there. `day:` / `n day:` stay the Tracking day jot (`lib/day-notes-persist.ts`)
+there. The Tracking log composer and the bottom-of-list note add do not append. `day:` / `n day:` stay the Tracking day jot (`lib/day-notes-persist.ts`)
 and do not become a tick, and do not read a clock. A later paint or erase of
 those minutes leaves the point.
 

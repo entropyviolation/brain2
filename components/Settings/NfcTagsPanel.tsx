@@ -172,9 +172,10 @@ export function NfcTagsPanel() {
         scan is more than the saved quantity: <code className="text-foreground">nfc:adderall 2</code>. A dose title
         is the name without the count (<code className="text-foreground">10 mg adderall</code>). The count is
         written in front, including 1. The same tag within 20 seconds is ignored, so one tap cannot log twice.
-        Pair the bot in Message ingest. The download button on a saved tag writes a signed shortcut into Downloads.
-        A dose (Drug, Food, or Drink) asks how many. A door or a plain event sends its line with no question.
-        Double-click the file, pick the bot chat, then Shortcuts → Automation → NFC → that sticker. Turn Ask Before
+        Pair the bot in Message ingest. The download button writes a signed shortcut into Downloads. Nothing is
+        written on the sticker. The shortcut opens Telegram with the line already filled in. Tap Send. A dose
+        (Drug, Food, or Drink) asks how many first. A door does not ask. Delete any older copy, add this one, then
+        Shortcuts → Automation → NFC → scan the blank sticker → run this shortcut immediately. Turn Ask Before
         Running off.
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
