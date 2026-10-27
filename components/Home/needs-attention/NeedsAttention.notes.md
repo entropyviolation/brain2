@@ -14,8 +14,8 @@ clicks those actions.
 | --- | --- |
 | `lib/needs-attention.ts` | Pure selector `getNeedsAttention(tasks, opts?)` + `groupNeedsAttentionByReason`, reason labels, `clarifyNeedsAttentionItem`, `splitNeedsAttentionItem`. No store writes. |
 | `lib/needs-attention.test.ts` | Vitest unit tests for every reason, exclusions, thresholds, multi-reason items, grouping, and the queue helpers. |
-| `components/Home/NeedsAttention.tsx` | The fascia. Reads `taskRepository.getAll()` + goals-store, runs the selector, groups by reason, hides categories from the key row, and offers clarify (inbox only) / split / delete on neglected / zombie / unclarified rows that exist in the item store. The gem count stays 0 until the task and goals persist snapshots have hydrated, so server HTML matches the client. Hidden category keys are read after that same mount. |
-| `components/Home/NeedsAttention.test.tsx` | Card tests (jsdom / Vitest mocks only). |
+| `components/Home/needs-attention/NeedsAttention.tsx` | The fascia. Reads `taskRepository.getAll()` + goals-store, runs the selector, groups by reason, hides categories from the key row, and offers clarify (inbox only) / split / delete on neglected / zombie / unclarified rows that exist in the item store. The gem count stays 0 until the task and goals persist snapshots have hydrated, so server HTML matches the client. Hidden category keys are read after that same mount. |
+| `components/Home/needs-attention/NeedsAttention.test.tsx` | Card tests (jsdom / Vitest mocks only). |
 | `tests/integration/needs-attention.test.ts` | Selector over a reset in-memory store snapshot. |
 
 ## Reasons & thresholds

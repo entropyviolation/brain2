@@ -1,5 +1,5 @@
 /**
- * plan-phone.test.tsx — Phone Plan stays off the desktop tree.
+ * components/Home/Plan/phone/plan-phone.test.tsx — Phone Plan stays off the desktop tree.
  */
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -10,9 +10,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
-import { PlanPanel } from "./plan-panel"
+import { PlanPanel } from "../plan-panel"
 import { PlanPhone } from "./plan-phone"
-import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
+import { PlannedTasksSidebar } from "../rail/planned-tasks-sidebar"
 import { placeRailItem } from "./plan-phone-place"
 import { PLAN_PHONE_QUERY } from "./use-plan-phone"
 
@@ -179,7 +179,7 @@ describe("Plan phone", () => {
 
   it("keeps phone overrides for the shared window and dialogs inside the 767px block", () => {
     const dir = join(process.cwd(), "components/Home/Plan")
-    const css = readFileSync(join(dir, "plan-phone.css"), "utf8")
+    const css = readFileSync(join(dir, "phone/plan-phone.css"), "utf8")
     const chrome = readFileSync(join(dir, "plan-chrome.css"), "utf8")
     const gate = css.indexOf("@media (max-width: 767px)")
     expect(gate).toBeGreaterThan(0)

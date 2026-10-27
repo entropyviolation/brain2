@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/week-view.tsx — Week calendar view
+ * components/Home/Plan/views/week-view.tsx — Week calendar view
  *
  * Seven-day hourly grid. Elapsed columns use `data-past` gray furniture from
  * the wall clock (`useLiveToday`), the same cutoff as Month. Clicking an hour
@@ -18,13 +18,13 @@ import { eventCoversDay } from "@/lib/event-links"
 import { format, addWeeks, subWeeks } from "date-fns"
 import { tasksTimedOnDays } from "@/lib/item-slices"
 import type { CalendarEvent } from "@/lib/types"
-import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
+import { PlannedTasksSidebar } from "../rail/planned-tasks-sidebar"
 import { PlanPeriodNav } from "./plan-period-nav"
-import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
+import { PlanTextLog, planPeriodStampProps } from "../plan-text-log"
 import { itemTitle } from "@/lib/item-utils"
 import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
 import { consumePlanDragClick, readPlanDrag, writePlanDrag } from "@/lib/plan-drag"
-import { usePlanPointerDrop } from "./use-plan-rail-drag"
+import { usePlanPointerDrop } from "../rail/use-plan-rail-drag"
 import { hhmmToMinutes, movePlacement, placementFromDrop, type PlannedAction } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import {
@@ -35,7 +35,7 @@ import {
   planChipTooltip,
   planEventTimeLabel,
   resolvePlanColor,
-} from "./plan-chip"
+} from "../plan-chip"
 
 interface WeekViewProps {
   currentDate: Date

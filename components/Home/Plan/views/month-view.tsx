@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/month-view.tsx — Month calendar view
+ * components/Home/Plan/views/month-view.tsx — Month calendar view
  *
  * Gray month grid inside the Plan window: event/task chips, drag-and-drop onto
  * a date, click a cell to open Day view, the Planned Tasks rail, and the
@@ -35,14 +35,14 @@ import {
 } from "date-fns"
 import type { CalendarEvent } from "@/lib/types"
 import { consumePlanDragClick, readPlanDrag } from "@/lib/plan-drag"
-import { usePlanPointerDrop } from "./use-plan-rail-drag"
+import { usePlanPointerDrop } from "../rail/use-plan-rail-drag"
 import { hhmmToMinutes, placementFromDrop, type PlannedAction } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { habitScheduleMinutes } from "@/lib/habit-time-estimate"
 import { PlanPeriodNav } from "./plan-period-nav"
-import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
-import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
+import { PlannedTasksSidebar } from "../rail/planned-tasks-sidebar"
+import { PlanTextLog, planPeriodStampProps } from "../plan-text-log"
 import { itemTitle } from "@/lib/item-utils"
 import {
   PLAN_MONTH_CHIP_LIMIT,
@@ -51,8 +51,8 @@ import {
   PlanMore,
   planChipTooltip,
   planEventTimeLabel,
-} from "./plan-chip"
-import { PlanGemDayBody } from "./plan-gem-day-body"
+} from "../plan-chip"
+import { PlanGemDayBody } from "../gem/plan-gem-day-body"
 
 interface MonthViewProps {
   currentDate: Date

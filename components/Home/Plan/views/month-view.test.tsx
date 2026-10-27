@@ -9,7 +9,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { TaskType } from "@/lib/types"
 import { MonthView } from "./month-view"
 
-vi.mock("./planned-tasks-sidebar", () => ({
+vi.mock("../rail/planned-tasks-sidebar", () => ({
   PlannedTasksSidebar: () => <div data-testid="planned-sidebar">Planned Sidebar</div>,
 }))
 

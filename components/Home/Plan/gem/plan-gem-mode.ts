@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-gem-mode.ts — Plan month gem-and-trinket latch
+ * components/Home/Plan/gem/plan-gem-mode.ts — Plan month gem-and-trinket latch
  *
  * Optional persistable look for past days in Month view. Default is off so
  * the current chip listing stays the normal view. Same `1`/`0` localStorage

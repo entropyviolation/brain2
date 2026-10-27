@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/day-view.tsx — Day calendar view
+ * components/Home/Plan/views/day-view.tsx — Day calendar view
  *
  * Hour-by-hour day grid showing time-slotted tasks and events, the planned-tasks
  * rail (items for this day not yet given a time), and the auto-growing Day Plan
@@ -39,13 +39,13 @@ import {
 } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { DEFAULT_WAKE_MIN, firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
-import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
-import { AgendaGrid } from "./agenda-grid"
-import { PlanChip, planChipTooltip, planEventTimeLabel } from "./plan-chip"
+import { PlannedTasksSidebar } from "../rail/planned-tasks-sidebar"
+import { AgendaGrid } from "../agenda-grid"
+import { PlanChip, planChipTooltip, planEventTimeLabel } from "../plan-chip"
 import { PlanPeriodNav } from "./plan-period-nav"
-import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
-import { PlannedActionDialog } from "./planned-action-dialog"
-import { planDayTrackedGhosts } from "./plan-tracked-ghosts"
+import { PlanTextLog, planPeriodStampProps } from "../plan-text-log"
+import { PlannedActionDialog } from "../planned-action-dialog"
+import { planDayTrackedGhosts } from "../plan-tracked-ghosts"
 
 interface DayViewProps {
   currentDate: Date

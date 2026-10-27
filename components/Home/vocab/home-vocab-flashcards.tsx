@@ -1,5 +1,5 @@
 /**
- * components/Home/home-vocab-flashcards.tsx — Flashcards for favorited words
+ * components/Home/vocab/home-vocab-flashcards.tsx — Flashcards for favorited words
  *
  * The deck is one language's favorites. The front is a cool index card on
  * graph rule (picture, word, reading); flip turns it to the phosphor glass

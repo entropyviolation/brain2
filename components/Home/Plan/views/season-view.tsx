@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/season-view.tsx — Season (quarter) calendar
+ * components/Home/Plan/views/season-view.tsx — Season (quarter) calendar
  *
  * Three months of the calendar quarter, named as a season, plus the written
  * season plan. A day click opens Day view. Padding cells from the neighboring
@@ -23,8 +23,8 @@ import {
   shiftQuarter,
 } from "@/lib/seasons"
 import { PlanPeriodNav } from "./plan-period-nav"
-import { PlanTextLog, planPeriodStampProps } from "./plan-text-log"
-import { PlanChip, planEventTimeLabel } from "./plan-chip"
+import { PlanTextLog, planPeriodStampProps } from "../plan-text-log"
+import { PlanChip, planEventTimeLabel } from "../plan-chip"
 
 interface SeasonViewProps {
   currentDate: Date

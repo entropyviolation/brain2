@@ -6,7 +6,7 @@ import { getWeekDates, getWeekStartDate, getWeekString } from "@/lib/date-utils"
 import { format } from "date-fns"
 import { WeekView } from "./week-view"
 
-vi.mock("./planned-tasks-sidebar", () => ({
+vi.mock("../rail/planned-tasks-sidebar", () => ({
   PlannedTasksSidebar: () => <div data-testid="planned-sidebar">Planned Sidebar</div>,
 }))
 

@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-period-nav.tsx — Date toolbar for Plan
+ * components/Home/Plan/views/plan-period-nav.tsx — Date toolbar for Plan
  *
  * Period nameplate date with metal prev/next/today keys. Day, Week, Month, and
  * Season views share this so the four desks use one navigator. Date math stays

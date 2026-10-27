@@ -1,5 +1,5 @@
 /**
- * components/Home/planet-skins.ts — Photographic globes for the solar chart
+ * components/Home/moon/planet-skins.ts — Photographic globes for the solar chart
  *
  * Cylindrical maps in `public/planets/` are projected onto a disk. The wide
  * chart keeps a 96px buffer. A close-up or facts zoom passes a pixel size
@@ -14,7 +14,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { SATURN_RING } from "@/lib/solar-system"
+import { SATURN_RING, smoothstep } from "@/lib/solar-system"
 
 export type GlobeLight = {
   x: number
@@ -135,11 +135,6 @@ function bucketSpin(spin: number | undefined): number {
   const turns = wrap01(spin ?? 0)
   const q = Math.round(turns * 100) / 100
   return q >= 1 ? 0 : q
-}
-
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
-  return t * t * (3 - 2 * t)
 }
 
 function clampByte(n: number): number {

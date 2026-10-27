@@ -1,5 +1,5 @@
 /**
- * components/Home/home-sky-motion.tsx — View width and time rate for the Moon chart
+ * components/Home/moon/home-sky-motion.tsx — View width and time rate for the Moon chart
  *
  * Two sliders, the scale of the view, and how fast eight familiar motions
  * would cross a 1,000 px screen. The dots move at that speed. Reset returns

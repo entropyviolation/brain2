@@ -9,9 +9,9 @@ import type { Task } from "@/lib/types"
 import type { TimeEntry } from "@/lib/time-entries"
 import { DayView } from "./day-view"
 import { WeekView } from "./week-view"
-import { HOUR_HEIGHT } from "./agenda-grid"
+import { HOUR_HEIGHT } from "../agenda-grid"
 
-vi.mock("./planned-tasks-sidebar", () => ({
+vi.mock("../rail/planned-tasks-sidebar", () => ({
   PlannedTasksSidebar: () => <div data-testid="planned-sidebar" />,
 }))
 

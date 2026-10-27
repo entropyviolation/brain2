@@ -1,5 +1,5 @@
 /**
- * components/Home/home-sky-scale.tsx — Full-frame powers-of-ten card
+ * components/Home/moon/home-sky-scale.tsx — Full-frame powers-of-ten card
  *
  * One decade fills the glass. Moon and Earth are the photographs in
  * `public/planets` (a projected globe when the chart has painted one).
@@ -13,7 +13,7 @@
  */
 "use client"
 
-import { GalaxySchematic } from "@/components/Home/sky-galaxy"
+import { GalaxySchematic } from "@/components/Home/moon/sky-galaxy"
 import {
   SCALE_PHOTO_SRC,
   scaleExponent,

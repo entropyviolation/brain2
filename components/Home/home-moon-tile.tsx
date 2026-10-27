@@ -14,9 +14,9 @@ import { useEffect, useMemo, useState } from "react"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { formatMajorWhen, moonGlance } from "@/lib/lunar"
 import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-widget-dialog"
-import { MoonOrrery } from "@/components/Home/home-moon-orrery"
-import { MoonPhaseDisk } from "@/components/Home/home-moon-phase"
-import { PixelMoon } from "@/components/Home/home-moon-sprite"
+import { MoonOrrery } from "@/components/Home/moon/home-moon-orrery"
+import { MoonPhaseDisk } from "@/components/Home/moon/home-moon-phase"
+import { PixelMoon } from "@/components/Home/moon/home-moon-sprite"
 
 export function MoonTile({
   currentDate,

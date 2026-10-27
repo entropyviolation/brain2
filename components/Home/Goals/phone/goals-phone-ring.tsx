@@ -1,5 +1,5 @@
 /**
- * components/Home/Goals/goals-phone-ring.tsx — progress ring for phone Goals
+ * components/Home/Goals/phone/goals-phone-ring.tsx — progress ring for phone Goals
  *
  * One ring, drawn from 12 o'clock. The number stays in HTML next to it.
  * Stroke motion is a spring ease; reduced motion drops the transition in CSS.

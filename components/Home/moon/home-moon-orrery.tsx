@@ -1,5 +1,5 @@
 /**
- * components/Home/home-moon-orrery.tsx — Solar system in the Moon detail
+ * components/Home/moon/home-moon-orrery.tsx — Solar system in the Moon detail
  *
  * Heliocentric ecliptic chart of the eight planets. Orbits stay √r.
  * Disks use displayBodyRadiusPx, so the Sun stays larger than Jupiter.
@@ -66,8 +66,8 @@ import {
   tourChartFactor,
   tourPlace,
 } from "@/lib/sky-scale"
-import { ScaleField, ScalePower } from "@/components/Home/home-sky-scale"
-import { SkyMotionBar } from "@/components/Home/home-sky-motion"
+import { ScaleField, ScalePower } from "@/components/Home/moon/home-sky-scale"
+import { SkyMotionBar } from "@/components/Home/moon/home-sky-motion"
 import { displayBodyRadiusPx, kmPerPxForOrbit, trueBodyRadiusPx } from "@/lib/sky-bodies"
 import { moonAngle, moonsOf, planetFacts } from "@/lib/sky-moons"
 import {
@@ -82,10 +82,10 @@ import {
   type PlanetId,
   type PlanetPlace,
 } from "@/lib/solar-system"
-import { CLOSE_GLOBE, sunLight, usePlanetSkins, type GlobeLight } from "@/components/Home/planet-skins"
-import { SKY_STAR_DOTS } from "@/components/Home/naked-eye-stars"
-import { StarIdentifyLabels, StarIdentifyPanel } from "@/components/Home/star-identify"
-import { GalaxyBand, GalaxySchematic, showGalaxySchematic } from "@/components/Home/sky-galaxy"
+import { CLOSE_GLOBE, sunLight, usePlanetSkins, type GlobeLight } from "@/components/Home/moon/planet-skins"
+import { SKY_STAR_DOTS } from "@/components/Home/moon/naked-eye-stars"
+import { StarIdentifyLabels, StarIdentifyPanel } from "@/components/Home/moon/star-identify"
+import { GalaxyBand, GalaxySchematic, showGalaxySchematic } from "@/components/Home/moon/sky-galaxy"
 
 const VB = { w: 520, h: 400 }
 const CX = 260

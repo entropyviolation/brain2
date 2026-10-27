@@ -1,5 +1,5 @@
 /**
- * components/Home/Goals/use-goals-phone.ts — phone gate for Home → Goals
+ * components/Home/Goals/phone/use-goals-phone.ts — phone gate for Home → Goals
  *
  * The room already restyles a few wells at 720px (`goals-chrome.css`). The
  * phone tree uses that same query so the mill and the phone UI never both

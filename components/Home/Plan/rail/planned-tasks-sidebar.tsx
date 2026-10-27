@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/planned-tasks-sidebar.tsx — Planned tasks rail
+ * components/Home/Plan/rail/planned-tasks-sidebar.tsx — Planned tasks rail
  *
  * Context-aware Explorer rail for Plan month/week/day. Each mode shows tasks
  * that belong in that period but haven't been placed on a finer schedule yet,
@@ -50,7 +50,7 @@ import {
   formatCapacityLine,
   plannedMinutesForDay,
   wakingWindowMinutes,
-} from "./plan-capacity"
+} from "../plan-capacity"
 import { NativeSelect } from "@/components/ui/native-select"
 
 export type PlannedSidebarMode = "month" | "week" | "day"

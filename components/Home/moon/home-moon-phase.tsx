@@ -1,5 +1,5 @@
 /**
- * components/Home/home-moon-phase.tsx — Photographic moon for the detail header
+ * components/Home/moon/home-moon-phase.tsx — Photographic moon for the detail header
  *
  * The Home tile keeps the 8-bit sprite. This disk is the detail only.
  * `public/planets/moon.jpg` is the cylindrical map the chart already uses,
@@ -11,6 +11,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { smoothstep } from "@/lib/solar-system"
 
 /** CSS pixels. Markers are percentages of this square, so the paint can be sharper. */
 export const MOON_PHASE_DISK = 252
@@ -47,11 +48,6 @@ export function moonPhaseLight(cycle: number): { x: number; y: number; z: number
   const turns = ((cycle % 1) + 1) % 1
   const ang = turns * Math.PI * 2
   return { x: Math.sin(ang), y: 0, z: -Math.cos(ang) }
-}
-
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
-  return t * t * (3 - 2 * t)
 }
 
 /** 0 night, 1 day. The midpoint sits on the geometric terminator. */

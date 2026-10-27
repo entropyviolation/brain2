@@ -17,9 +17,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { VocabDictionaryFold, VocabLookup } from "@/components/Home/home-vocab-dictionary"
-import { VocabFlashcards } from "@/components/Home/home-vocab-flashcards"
-import { VocabThousand } from "@/components/Home/home-vocab-thousand"
+import { VocabDictionaryFold, VocabLookup } from "@/components/Home/vocab/home-vocab-dictionary"
+import { VocabFlashcards } from "@/components/Home/vocab/home-vocab-flashcards"
+import { VocabThousand } from "@/components/Home/vocab/home-vocab-thousand"
 import { isThousandLang, isVocabKnown, thousandListId } from "@/lib/vocab-lists"
 import { useTaskStore } from "@/lib/task-store"
 import { useDashboardStore } from "@/lib/widgets/dashboard-store"

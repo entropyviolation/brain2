@@ -1,5 +1,5 @@
 /**
- * components/Home/naked-eye-stars.ts — Backdrop for the Moon chart
+ * components/Home/moon/naked-eye-stars.ts — Backdrop for the Moon chart
  *
  * 1625 Hipparcos stars, visual magnitude 5.00 and brighter (ESA 1997).
  * The 288 at V ≤ 3.50 are the first field; their places, V, and B−V are unchanged.

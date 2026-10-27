@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/use-plan-phone.ts — Phone gate for Plan
+ * components/Home/Plan/phone/use-plan-phone.ts — Phone gate for Plan
  *
  * Phone layout mounts only when this matches. The desktop tree stays mounted
  * otherwise, including on the server (snapshot is false). 767px is the phone

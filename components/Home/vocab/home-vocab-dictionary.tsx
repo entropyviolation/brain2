@@ -1,5 +1,5 @@
 /**
- * components/Home/home-vocab-dictionary.tsx — Full dictionary entry for a vocab word
+ * components/Home/vocab/home-vocab-dictionary.tsx — Full dictionary entry for a vocab word
  *
  * The whole Wiktionary entry for the word, from the dictionary written in
  * that language (`lib/vocab-dictionary.ts`): IPA, every sense with its

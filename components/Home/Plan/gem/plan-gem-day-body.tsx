@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-gem-day-body.tsx — Past-day gem-mode cell body
+ * components/Home/Plan/gem/plan-gem-day-body.tsx — Past-day gem-mode cell body
  *
  * Month view only. Events stay Plan chips. Completed habits/list items become
  * clickable gems/orbs (same assets as Habits + Lists). Incomplete scheduled
@@ -23,7 +23,7 @@ import {
   PlanMore,
   planChipTooltip,
   planEventTimeLabel,
-} from "./plan-chip"
+} from "../plan-chip"
 import { planGemChipTaskIds, planGemTokensForDay } from "./plan-gem-day"
 import "./plan-gem-mode.css"
 

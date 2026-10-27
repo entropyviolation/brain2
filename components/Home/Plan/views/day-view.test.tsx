@@ -6,11 +6,11 @@ import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { DayView } from "./day-view"
 
-vi.mock("./planned-tasks-sidebar", () => ({
+vi.mock("../rail/planned-tasks-sidebar", () => ({
   PlannedTasksSidebar: () => <div data-testid="planned-sidebar">Planned Sidebar</div>,
 }))
 
-vi.mock("./agenda-grid", () => ({
+vi.mock("../agenda-grid", () => ({
   AgendaGrid: () => <div data-testid="agenda-grid">Agenda Grid</div>,
 }))
 

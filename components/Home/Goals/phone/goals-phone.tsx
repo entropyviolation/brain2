@@ -1,5 +1,5 @@
 /**
- * components/Home/Goals/goals-phone.tsx — phone Goals
+ * components/Home/Goals/phone/goals-phone.tsx — phone Goals
  *
  * A grouped list with a sticky bar, a period pager, progress rings, and
  * bottom sheets. Mounted only when `useGoalsPhone` is true. The desktop
@@ -8,7 +8,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { format } from "date-fns"
 import { useGoalsStore, taskObjectiveMultiplier } from "@/lib/goals-store"
 import { pointsRuleValue } from "@/lib/points-rules-live"
 import { usePointsStore } from "@/lib/points-store"
@@ -25,7 +24,7 @@ import {
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { formatCrtNumber } from "@/lib/crt-number"
-import { parseLocalDate } from "@/lib/date-utils"
+import { formatDriftDay, taskCompletionDate } from "../direction-dates"
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import type { Goal, Objective, PriorityPeriod, Task } from "@/lib/types"
 import { useGoalsReducedMotion } from "./use-goals-phone"
@@ -46,18 +45,6 @@ import "./goals-phone.css"
 const WINDOW_DAYS = 30
 const STALE_DAYS = 14
 
-function taskCompletionDate(task: Task): Date | undefined {
-  if (task.completedDate) return new Date(task.completedDate)
-  if (task.completionReview?.completedAt) return new Date(task.completionReview.completedAt)
-  const chunks = task.completedChunks ?? []
-  if (chunks.length) {
-    const last = chunks[chunks.length - 1]
-    if (last?.date) return new Date(last.date)
-  }
-  if (task.scheduledDate) return new Date(task.scheduledDate)
-  return task.createdAt ? new Date(task.createdAt) : undefined
-}
-
 function toActionRecords(tasks: Task[]): ActionRecord[] {
   return tasks.map((task) => {
     const contributed = [...(task.contributesToObjectiveIds ?? []), ...(task.contributesToGoalIds ?? [])].map((targetId) => ({
@@ -72,11 +59,6 @@ function toActionRecords(tasks: Task[]): ActionRecord[] {
       links: [...(task.links ?? []), ...contributed],
     }
   })
-}
-
-function formatDriftDay(key: string): string {
-  const date = parseLocalDate(key)
-  return date ? format(date, "MMM d") : key
 }
 
 function PriorityMarks({ objective }: { objective: Objective }) {

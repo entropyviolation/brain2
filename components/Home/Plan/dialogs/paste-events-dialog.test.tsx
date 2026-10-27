@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/paste-events-dialog.test.tsx — Paste events dialog
+ * components/Home/Plan/dialogs/paste-events-dialog.test.tsx — Paste events dialog
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
