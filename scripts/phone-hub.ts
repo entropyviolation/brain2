@@ -27,7 +27,8 @@ import { handlePersistApi, mergeSharedPersistItems, readSharedPersist } from "./
 import { open as openSealed } from "./sealed-box.mjs"
 import { hydrateTelegramUpdate } from "./telegram-file.mjs"
 import { flushScheduledPersist } from "../lib/persist-storage"
-import { hubRequestAuthorized, isGatedHubPath } from "../lib/ingest/hub-auth"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { tokensEqual, hubRequestAuthorized, isGatedHubPath } from "../lib/ingest/hub-auth"
 import { createChatQueue } from "../lib/ingest/chat-queue"
 import { advanceConfirmedOffset } from "../lib/ingest/confirm-updates"
 import { createDeferredAlbum } from "../lib/ingest/deferred-album"
@@ -524,6 +525,7 @@ function readBody(req: HttpRequest): Promise<string> {
 }
 
 async function onRequest(req: HttpRequest, res: ServerResponse) {
+  if (!guardBrowserOrigin(req, res)) return
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`)
   const pathname = url.pathname
   if (req.method === "OPTIONS") {
@@ -541,7 +543,8 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
   if (pathname === "/telegram/webhook" && req.method === "POST") {
     if (WEBHOOK_SECRET) {
       const header = req.headers["x-telegram-bot-api-secret-token"]
-      if (header !== WEBHOOK_SECRET) {
+      const given = Array.isArray(header) ? header[0] : header
+      if (!tokensEqual(WEBHOOK_SECRET, typeof given === "string" ? given : undefined)) {
         sendJson(res, 403, { ok: false })
         return
       }
@@ -549,8 +552,8 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
     let update: TelegramUpdate
     try {
       update = JSON.parse((await readBody(req)) || "{}")
-    } catch (err) {
-      sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "bad update" })
+    } catch {
+      sendJson(res, 400, { ok: false, error: "bad update" })
       return
     }
     try {
@@ -561,7 +564,8 @@ async function onRequest(req: HttpRequest, res: ServerResponse) {
       }
       sendJson(res, 200, { ok: true })
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: err instanceof Error ? err.message : "write failed" })
+      console.error("[phone-hub] webhook", err instanceof Error ? err.message : err)
+      sendJson(res, 500, { ok: false, error: "write failed" })
     }
     return
   }

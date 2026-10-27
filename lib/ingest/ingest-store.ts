@@ -72,7 +72,7 @@ interface IngestState {
   groceryListId: string | null
   /** Editable discrete-event trigger patterns (smoked weed, ate {item}, …). */
   discreteEventTriggers: DiscreteTriggerDef[]
-  /** NFC stickers. A phone tap sends `nfc:{id}`. */
+  /** NFC stickers. A phone tap sends `nfc:{id}` or `nfc:{id} {n}`. */
   nfcTags: NfcTag[]
   /** Recently processed Telegram update/message keys (dedupe). */
   seenIngestKeys: string[]

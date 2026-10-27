@@ -194,7 +194,10 @@ function recordInFeed(message: IncomingMessage, now: Date): void {
   }
 }
 
-function markFeedOutcome(message: IncomingMessage, outcome: { kind: string; status: IngestEvent["status"]; summary: string }): void {
+function markFeedOutcome(
+  message: IncomingMessage,
+  outcome: { kind: string; status: IngestEvent["status"]; summary: string; entryId?: string },
+): void {
   try {
     const row = feedRowFromIncoming(message)
     if (row) useTelegramFeedStore.getState().markOutcome(row.id, outcome)
@@ -835,6 +838,12 @@ function logAndReturn(message: IncomingMessage, result: ApplyResult): ApplyResul
   // or rewrite the persist hub on every Live Location tick.
   if (isGpsTrackingLogEvent(event)) useGpsIngestLog.getState().push(event)
   else useIngestStore.getState().appendEvent(event)
-  markFeedOutcome(message, { kind: result.kind, status, summary })
+  const entryId = result.status === "ok" ? result.itemIds?.[0] : undefined
+  markFeedOutcome(message, {
+    kind: result.kind,
+    status,
+    summary,
+    ...(entryId ? { entryId } : {}),
+  })
   return result
 }

@@ -8,6 +8,7 @@
  */
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 
 const require = createRequire(fileURLToPath(import.meta.url))
 
@@ -45,6 +46,7 @@ function defaultFetchAppleNotes(range) {
 export async function handleNotesApi(req, res, pathname, deps = {}) {
   const path = String(pathname || "").replace(/\/$/, "") || "/"
   if (path !== "/api/notes" && path !== "/api/notes/health") return false
+  if (!guardBrowserOrigin(req, res)) return true
 
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {})

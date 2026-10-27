@@ -3,8 +3,8 @@
  *
  * Looks up the tag, ignores a second read inside 20 seconds, paints a Tracking
  * instant (intake or a log line), and an optional block ending at the scan.
- * A bound daily habit is marked done or gains 1. The BIM line stays `nfc:…`,
- * so a keyword source does not count the same tap again.
+ * A bound daily habit is marked done or gains the scan’s quantity. The BIM line
+ * stays `nfc:…`, so a keyword source does not count the same tap again.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -13,14 +13,15 @@ import { PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { applyDiscreteLog, applyIntake } from "./apply-discrete-event"
 import { writeHabit } from "./apply-habit"
 import { useIngestStore } from "./ingest-store"
-import { nfcSlug, nfcTapIsDebounced, type NfcTag } from "./nfc-tag"
+import { nfcQuantity, nfcTapIsDebounced, parseNfcCommand, type NfcTag } from "./nfc-tag"
 import { minutesPastMidnight } from "./times"
 import type { ApplyResult } from "./types"
 
 const ACTIVITY = "activity"
 
 export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
-  const id = nfcSlug(payload)
+  const parsed = parseNfcCommand(payload)
+  const id = parsed.id
   if (!id) {
     return {
       status: "error",
@@ -33,7 +34,7 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
     return {
       status: "error",
       kind: "nfc",
-      reply: `No NFC tag “${id}”. Add it in Settings → Message ingest.`,
+      reply: `No NFC tag “${id}”. Add it in Settings → NFC tags.`,
     }
   }
   if (nfcTapIsDebounced(tag.lastAt, now)) {
@@ -46,8 +47,9 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
   }
 
   const goingOut = tag.kind === "toggle" && tag.lastSide !== "out"
-  const title =
-    tag.kind === "toggle" ? (goingOut ? tag.leftTitle : tag.backTitle) : tag.title
+  const quantity = tag.kind === "instant" ? (parsed.quantity ?? nfcQuantity(tag.quantity)) : 1
+  const sideTitle = tag.kind === "toggle" ? (goingOut ? tag.leftTitle : tag.backTitle) : tag.title
+  const title = loggedTitle(tag, sideTitle, quantity)
   const painted = tag.intakeClass
     ? applyIntake(title, now, tag.intakeClass)
     : applyDiscreteLog(title, now, { keywordQuery: false })
@@ -58,7 +60,7 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
   const stamp = `nfc:${tag.id}:${now.toISOString()}`
   stampGenerated(painted.itemIds, stamp)
   const spanId = tag.kind === "instant" && tag.minutes ? paintDuration(title, tag.minutes, now, tag.id) : undefined
-  const habitNote = tag.habitId ? creditHabit(tag.habitId, tag.habitCredit, now) : null
+  const habitNote = tag.habitId ? creditHabit(tag.habitId, tag.habitCredit, now, quantity) : null
 
   useIngestStore.getState().touchNfcTag(tag.id, {
     lastAt: now.toISOString(),
@@ -85,7 +87,13 @@ function stampGenerated(ids: string[] | undefined, stamp: string): void {
   }
 }
 
-function creditHabit(habitId: string, credit: NfcTag["habitCredit"], now: Date): string {
+function loggedTitle(tag: NfcTag, title: string, quantity: number): string {
+  if (tag.kind === "toggle") return title
+  if (tag.intakeClass || quantity > 1) return `${quantity} ${title}`
+  return title
+}
+
+function creditHabit(habitId: string, credit: NfcTag["habitCredit"], now: Date, quantity: number): string {
   const habit = useHabitsStore.getState().tasks.find((row) => row.id === habitId)
   if (!habit) return "That habit disappeared."
   if (habit.frequency && habit.frequency !== "daily") {
@@ -95,14 +103,14 @@ function creditHabit(habitId: string, credit: NfcTag["habitCredit"], now: Date):
     const dateKey = formatLocalDateKey(now)
     const previous = useHabitsStore.getState().weeklyData[dateKey]?.[habit.id]
     const goal = habit.goal ?? previous?.goal ?? 0
-    const value = (previous?.value ?? 0) + 1
+    const value = (previous?.value ?? 0) + quantity
     useHabitsStore.getState().updateCompletion(habit.id, now, {
       value,
       goal,
       completed: goal > 0 ? value >= goal : true,
     })
     const unit = habit.unit ? ` ${habit.unit}` : ""
-    return `${habit.name}: +1 (total ${value}${unit})`
+    return `${habit.name}: +${quantity} (total ${value}${unit})`
   }
   const result = writeHabit(habit, "", now)
   return "reply" in result && result.reply ? result.reply : habit.name
