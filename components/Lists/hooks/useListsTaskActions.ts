@@ -24,6 +24,7 @@ import { addTag } from "@/lib/links"
 import { resolveCompletionPoints } from "@/lib/item-utils"
 import { taskRepository } from "@/lib/data/task-repository"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
+import { applyItemTypeToNewTask } from "@/lib/item-type-lists"
 import type { OpenTarget } from "@/components/Lists/types"
 
 /** A new task scheduled onto a period To do list. Membership stays empty; the list is a view. */
@@ -94,11 +95,13 @@ export function useListsTaskActions(
         if (openTarget.id === "daily") base.scheduledDate = now
         else if (openTarget.id === "weekly") base.scheduledWeek = getWeekString(now)
         else base.scheduledMonth = formatLocalMonthKey(now)
+      } else if (openTarget.type === "item-type") {
+        Object.assign(base, applyItemTypeToNewTask(base, openTarget.id, types))
       }
       addTask(base)
       onDone()
     },
-    [buildBaseTask, addTask],
+    [buildBaseTask, addTask, types],
   )
 
   const handleBulkAddToOpen = useCallback(
@@ -143,12 +146,14 @@ export function useListsTaskActions(
           tagged.stage = "list"
         } else if (openTarget.type === "folder-all" && currentFolder) {
           Object.assign(tagged, assignTaskToFolderUncategorized(tagged, currentFolder))
+        } else if (openTarget.type === "item-type") {
+          Object.assign(tagged, applyItemTypeToNewTask(tagged, openTarget.id, types))
         }
         addTask(tagged)
       }
       onDone()
     },
-    [buildBaseTask, addTask],
+    [buildBaseTask, addTask, types],
   )
 
   const handleAddTaskToCategory = useCallback(

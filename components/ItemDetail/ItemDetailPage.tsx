@@ -92,16 +92,21 @@ import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
 import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
 import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
 import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
-import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
+import { upgradeTaskToOperation } from "@/components/Operations"
+import { isOperation } from "@/lib/operations"
 import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import {
+  activeDetailTypeId,
   assignedItemTypes,
   BUILTIN_ITEM_TYPE_ID,
   BUILTIN_TASK_TYPE_ID,
   resolveDetailView,
   type DetailViewResolution,
 } from "@/lib/item-types"
+import { ItemTypeViewCards } from "@/components/ItemDetail/ItemTypeViewCards"
+import { ComputerProjectDetail } from "@/components/ItemDetail/ComputerProjectDetail"
+import { COMPUTER_PROJECT_DESK_ATTRS, COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
 import { isClearedFromWork, withCompleted } from "@/lib/completion-status"
 import { CompletionDialog } from "@/components/Completion/CompletionDialog"
@@ -182,12 +187,29 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
   const isTask = task ? isTaskItem(task, folders) : false
+  const [typePick, setTypePick] = useState<{ itemId: string | undefined; typeId: string | null }>({
+    itemId: undefined,
+    typeId: null,
+  })
+  if (typePick.itemId !== task?.id) {
+    setTypePick({ itemId: task?.id, typeId: null })
+  }
+  const primaryTypeId = task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
+  const itemTypes_assigned = task
+    ? assignedItemTypes({ type: primaryTypeId, lists: task.lists ?? [] }, lists, itemTypes)
+    : []
+  const activeTypeId = activeDetailTypeId(
+    String(primaryTypeId),
+    typePick.typeId,
+    itemTypes_assigned.map((type) => String(type.id)),
+  )
+  const viewAsTypeId = activeTypeId !== String(primaryTypeId) ? activeTypeId : undefined
   const detailView = useMemo<DetailViewResolution>(
     () =>
       task
-        ? resolveDetailView(task, lists, itemTypes, { isTask })
+        ? resolveDetailView(task, lists, itemTypes, { isTask, viewAsTypeId })
         : { panels: ["details"], capabilities: {}, layout: undefined },
-    [task, lists, itemTypes, isTask],
+    [task, lists, itemTypes, isTask, viewAsTypeId],
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
@@ -390,15 +412,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     },
     [task, addDependency, removeDependency],
   )
-
-  // Every item type assigned to this item: its own type plus any type pinned by
-  // a list it belongs to (e.g. a task that also lives in a "Goals" list).
-  const itemTypes_assigned = assignedItemTypes(
-    { type: task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID), lists: task?.lists ?? [] },
-    lists,
-    itemTypes,
-  )
-  const primaryTypeId = task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
 
   const sourceHabitId = sourceHabitIdOf(task?.attributes)
 
@@ -608,11 +621,11 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  disabled={task.type === OPERATION_TYPE_ID}
+                  disabled={isOperation(task)}
                   onClick={() => upgradeTaskToOperation(task.id)}
                 >
                   <Rocket className="h-4 w-4 mr-2" />
-                  {task.type === OPERATION_TYPE_ID ? "Already an Operation" : "Upgrade to Operation"}
+                  {isOperation(task) ? "Already an Operation" : "Upgrade to Operation"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -621,6 +634,15 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
         <ItemDoneBanner task={task} onReopen={handleReopen} onEditReview={() => setReviewOpen(true)} />
           {reviewOpen ? <CompletionDialog taskId={task.id} basePoints={0} edit onClose={() => setReviewOpen(false)} /> : null}
         <div className="id-fascia-row id-meta">
+          {itemTypes_assigned.length > 1 ? (
+            <ItemTypeViewCards
+              types={itemTypes_assigned}
+              activeId={activeTypeId}
+              primaryId={String(primaryTypeId)}
+              onSelect={(typeId) => setTypePick({ itemId: task.id, typeId })}
+              onEdit={setEditingItemType}
+            />
+          ) : null}
           <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
             {task.completed ? "Completed" : task.stage}
           </Badge>
@@ -637,7 +659,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
       <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="id-body w-full">
         <TabsList
-          className="id-view-keys"
+          className="id-view-keys b2-keycap-tab"
           style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
         >
           {visiblePanels.includes("body") && <TabsTrigger value="body">Body</TabsTrigger>}
@@ -715,19 +737,40 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                   onHabitSettings={openHabitSettings}
                 />
               ) : null}
+              {activeTypeId === COMPUTER_PROJECT_TYPE_ID ? (
+                <ComputerProjectDetail
+                  task={task}
+                  onLiveAttr={(id, value) =>
+                    touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
+                  }
+                  onCommitAttr={(id, value) => {
+                    const attributes = { ...(getDraft()?.attributes ?? {}), [id]: value }
+                    touchDraft({ attributes })
+                    setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                  }}
+                  onPatch={(patch) => {
+                    touchDraft(patch)
+                    setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                  }}
+                  onOpenItem={openItem}
+                />
+              ) : null}
               <div className="id-bay">
                 <ItemAttributesSection
                   attributes={task.attributes || {}}
                   itemCategoryIds={task.lists ?? []}
                   categories={lists}
                   itemAttributeDefinitions={task.itemAttributeDefinitions}
-                  itemType={task.type}
+                  itemType={viewAsTypeId ?? task.type}
                   layout={detailView.layout}
-                  omitAttributeIds={
-                    itemShowsPersonPipelines(task, lists)
+                  omitAttributeIds={[
+                    ...(itemShowsPersonPipelines(task, lists)
                       ? [PERSON_ATTR.birthday, PERSON_ATTR.phone, PERSON_ATTR.notes]
-                      : undefined
-                  }
+                      : []),
+                    ...(activeTypeId === COMPUTER_PROJECT_TYPE_ID || task.type === COMPUTER_PROJECT_TYPE_ID
+                      ? [...COMPUTER_PROJECT_DESK_ATTRS]
+                      : []),
+                  ]}
                   onLiveValue={(id, value) =>
                     touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
                   }
@@ -909,7 +952,14 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
                           backgroundColor: `${type.color ?? "#cbd5e1"}20`,
                           borderColor: type.color ?? "#cbd5e1",
                         }}
-                        title="Double-click to view or edit this type"
+                        title={
+                          itemTypes_assigned.length > 1
+                            ? "Show this type's detail view. Double-click to edit the type."
+                            : "Double-click to view or edit this type"
+                        }
+                        onClick={() => {
+                          if (itemTypes_assigned.length > 1) setTypePick({ itemId: task.id, typeId: String(type.id) })
+                        }}
                         onDoubleClick={() => setEditingItemType(type)}
                       >
                         <span

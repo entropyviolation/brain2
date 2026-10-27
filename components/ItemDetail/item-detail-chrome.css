@@ -2,8 +2,10 @@
  * components/ItemDetail/item-detail-chrome.css — milled fascia for Item detail
  *
  * Brushed silver bays, engraved nameplates, CRT title readout, raised metal
- * keys, equal-fill detail tabs (active = CRT + round power lamp), and the
- * save lamp (green Saved / pink Unsaved changes). Looks for the lamp live in
+ * keys. Detail tabs are latching keycaps (`.b2-keycap-tab` in `app/win95.css`):
+ * silver skirt at rest, active = CRT + the round power lamp (dim when off),
+ * press = milled sink. _Last mapped: 2026-10-27._ The save lamp is green
+ * Saved / pink Unsaved changes. Looks for the lamp live in
  * `.id-save-flag`. Fields / save / complete / delete / tab meaning stay.
  * docs/DESIGN_STYLE.md#milled-fascia. Do not flatten velvet/orb contents.
  */
@@ -984,7 +986,7 @@ body.win95-app :is(.id95, .id95-dialog) button.id-keycap:active:not(:disabled) {
   font-size: 12px;
 }
 
-/* ---- View keys (equal-fill bay; active = CRT + lamp) ------------------- */
+/* ---- View keys (latching keycaps; active = CRT + lamp) -------------- */
 
 body.win95-app .id95 .id-view-keys[role="tablist"],
 .id95 .id-view-keys[role="tablist"],
@@ -1019,8 +1021,7 @@ body.win95-app .id95 .id-view-keys [role="tab"],
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 0 8px 0 22px !important;
-  border-radius: var(--r-2, 3px);
+  padding: 2px 8px 7px 22px !important;
   font-family: var(--font-dmmono), ui-monospace, Menlo, monospace !important;
   font-size: 10.5px;
   font-weight: 500;
@@ -1028,16 +1029,7 @@ body.win95-app .id95 .id-view-keys [role="tab"],
   letter-spacing: 0.09em;
   white-space: nowrap;
   text-transform: uppercase;
-  color: #23272a !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, var(--chrome-key-sheen), var(--chrome-mill-soft)) !important;
-  box-shadow:
-    inset 0 1px 0 #fff,
-    inset 0 -2px 0 rgba(0, 0, 0, 0.14),
-    0 0 0 1px var(--chrome-ring-deep),
-    0 1px 2px rgba(0, 0, 0, 0.22);
+  color: #1f2226 !important;
   transition: transform 80ms ease, box-shadow 80ms ease, filter 120ms ease;
 }
 
@@ -1078,6 +1070,13 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
   background: var(--id-crt-glass) !important;
   box-shadow: var(--id-crt-ring), inset 0 2px 4px rgba(0, 0, 0, 0.55);
   transform: translateY(1px);
+}
+
+body.win95-app .id95 .id-view-keys [role="tab"]:active,
+.id95 .id-view-keys [role="tab"]:active,
+.id95-dialog .id-view-keys [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
 }
 
 .id95 .id-view-keys [role="tab"][data-state="active"]::before,
@@ -1475,6 +1474,132 @@ body.win95-app .id95 .id-view-keys [role="tab"][data-state="active"],
   font-size: 9px;
   letter-spacing: 0.06em;
   color: var(--chrome-lo);
+}
+
+.id95 .id-type-plate.is-switch,
+.id95-dialog .id-type-plate.is-switch {
+  cursor: pointer;
+}
+
+.id95 .id-type-plate.is-view,
+.id95-dialog .id-type-plate.is-view {
+  background: #070c0a;
+  color: #7dffc4;
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.45);
+  box-shadow: inset 0 0 0 1px #7dffc4;
+}
+
+.id95 .id-type-plate.is-view .id-type-primary,
+.id95-dialog .id-type-plate.is-view .id-type-primary {
+  color: #7dffc4;
+}
+
+/* Computer Project desk — same milled bay, not a new skin. */
+.id95 .cp-desk,
+.id95-dialog .cp-desk {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.id95 .cp-desk-grid,
+.id95-dialog .cp-desk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.id95 .cp-span,
+.id95-dialog .cp-span {
+  grid-column: 1 / -1;
+}
+
+.id95 .cp-field,
+.id95-dialog .cp-field,
+.id95 .cp-block,
+.id95-dialog .cp-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.id95 .cp-label,
+.id95-dialog .cp-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--id-nameplate);
+}
+
+.id95 .cp-quiet,
+.id95-dialog .cp-quiet {
+  margin: 0;
+  font-size: 12px;
+  color: var(--chrome-lo);
+}
+
+.id95 .cp-input,
+.id95-dialog .cp-input,
+.id95 .cp-desk input,
+.id95-dialog .cp-desk input,
+.id95 .cp-desk textarea,
+.id95-dialog .cp-desk textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: #111;
+  background: #fff;
+  border: 2px solid;
+  border-color: #808080 #fff #fff #808080;
+  padding: 3px 6px;
+}
+
+.id95 .cp-link,
+.id95-dialog .cp-link {
+  font-size: 12px;
+  color: #000080;
+}
+
+.id95 .cp-rows,
+.id95-dialog .cp-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.id95 .cp-row,
+.id95-dialog .cp-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 6px;
+  background: var(--id-key-face);
+  box-shadow: var(--id-key-ring);
+  border: 0;
+  cursor: pointer;
+}
+
+.id95 .cp-add,
+.id95-dialog .cp-add,
+.id95 .cp-block-head,
+.id95-dialog .cp-block-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.id95 .cp-add .cp-input,
+.id95-dialog .cp-add .cp-input {
+  flex: 1;
 }
 
 /* ---- Tab counts (phosphor digits on a key) ---------------------------- */

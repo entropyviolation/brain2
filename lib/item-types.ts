@@ -24,6 +24,7 @@ import type {
   ItemTypeRule,
 } from "@/lib/types"
 import { withOperationType } from "@/lib/operation-types"
+import { withComputerProjectType } from "@/lib/computer-project-types"
 import { withNoteType } from "@/lib/note-types"
 import { withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
@@ -46,6 +47,7 @@ export const SYSTEM_TYPE_IDS = [
   BUILTIN_ITEM_TYPE_ID,
   "note",
   "operation",
+  "computer-project",
 ] as const
 
 export const DETAIL_PANEL_ORDER: ItemDetailPanel[] = [
@@ -78,10 +80,12 @@ export interface AttributeSource {
 export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   // Item + Task ship first; Operation, Note, Book, Person, Flight, and catalog
   // starters merge in via idempotent helpers so each module owns its definition.
-  return withPersonType(
-    withCatalogTypes(
-      withFilmType(
-        withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+  return withComputerProjectType(
+    withPersonType(
+      withCatalogTypes(
+        withFilmType(
+          withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+        ),
       ),
     ),
   )
@@ -287,11 +291,18 @@ export interface DetailViewResolution {
 }
 
 /**
- * Resolve which detail tabs, capabilities, and layout an item should show.
- * Type panels (or capability inference) first, lists may add panels, then
- * hiddenDetailPanels and capabilities filter the result. Next-action / Task
- * items inherit Task capabilities so the hardcoded Task surface still works.
+ * Which assigned type the detail view is showing. A pick counts only when that
+ * type is actually assigned; otherwise the primary type stays.
  */
+export function activeDetailTypeId(
+  primaryTypeId: string,
+  picked: string | null | undefined,
+  assignedIds: readonly string[],
+): string {
+  if (picked && assignedIds.includes(picked)) return picked
+  return primaryTypeId
+}
+
 export function resolveDetailView(
   item: {
     type?: ItemType
@@ -301,10 +312,20 @@ export function resolveDetailView(
   },
   lists: DetailListSource[],
   types: ItemTypeDefinition[],
-  opts?: { isTask?: boolean },
+  opts?: { isTask?: boolean; viewAsTypeId?: ItemType },
 ): DetailViewResolution {
-  const isTask = opts?.isTask ?? false
-  const ownType = exactType(types, item.type)
+  // Type panels (or capability inference) first, lists may add panels, then
+  // hiddenDetailPanels and capabilities filter the result. Next-action / Task
+  // items inherit Task capabilities so the hardcoded Task surface still works,
+  // unless `viewAsTypeId` is set — then that type's profile is the view.
+  const viewAs = opts?.viewAsTypeId
+  const viewType = viewAs ? exactType(types, viewAs) : undefined
+  // A chosen view uses that type alone. The Next Actions task surface stays
+  // only when nobody has switched the view away from the item's own type.
+  const isTask = viewAs
+    ? viewAs === BUILTIN_TASK_TYPE_ID
+    : (opts?.isTask ?? false)
+  const ownType = viewType ?? exactType(types, item.type)
   const fallbackId = isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID
   const typeDef = ownType ?? exactType(types, fallbackId)
 
@@ -325,7 +346,7 @@ export function resolveDetailView(
   const hidden = new Set(memberLists.flatMap((l) => l.hiddenDetailPanels ?? []))
 
   const merged = new Set<ItemDetailPanel>([...typePanels, ...listAdded])
-  if (item.type === "note") merged.add("body")
+  if ((typeDef?.id ?? item.type) === "note") merged.add("body")
   for (const panel of UNIVERSAL_DETAIL_PANELS) merged.add(panel)
 
   const typeListed = new Set(typeDef?.detailPanels ?? [])

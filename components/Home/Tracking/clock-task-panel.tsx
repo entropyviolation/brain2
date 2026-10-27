@@ -18,7 +18,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { ensureStepItem } from "@/lib/step-items"
-import { OPERATION_TYPE_ID } from "@/lib/operation-types"
+import { isOperation } from "@/lib/operations"
 import { findPlacedStep, placeSteps } from "@/lib/next-step"
 import { activeNowObjectives } from "@/lib/now-objective"
 import { tasksLinkedToPen } from "@/lib/task-clock"
@@ -52,7 +52,7 @@ export function ClockTaskButton() {
   const choices = useMemo(() => {
     if (!session) return []
     const openTasks = tasks.filter(
-      (row) => !row.completed && !row.stepOf && row.type !== OPERATION_TYPE_ID,
+      (row) => !row.completed && !row.stepOf && !isOperation(row),
     )
     const linked = new Set(tasksLinkedToPen(openTasks, session.penId).map((row) => row.id))
     const ordered = [...openTasks.filter((row) => linked.has(row.id)), ...openTasks.filter((row) => !linked.has(row.id))]

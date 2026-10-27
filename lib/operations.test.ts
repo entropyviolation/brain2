@@ -25,6 +25,7 @@ import {
   sortOperations,
 } from "@/lib/operations"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
+import { COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 import type { Task, TimeLogEntry } from "@/lib/types"
 
 const NOW = new Date("2026-06-23T12:00:00.000Z")
@@ -50,8 +51,9 @@ function daysAgo(days: number): Date {
 }
 
 describe("isOperation", () => {
-  it("is true only for tasks typed as operation", () => {
+  it("is true for an operation and for a computer project", () => {
     expect(isOperation(makeTask({ type: OPERATION_TYPE_ID }))).toBe(true)
+    expect(isOperation(makeTask({ type: COMPUTER_PROJECT_TYPE_ID }))).toBe(true)
     expect(isOperation(makeTask({ type: "task" }))).toBe(false)
     expect(isOperation(makeTask())).toBe(false)
     expect(isOperation(null)).toBe(false)

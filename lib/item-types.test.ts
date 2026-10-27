@@ -7,6 +7,7 @@ import {
   composeListAttributes,
   composeListDefaults,
   resolveItemSchema,
+  activeDetailTypeId,
   assignedItemTypes,
   itemsOfType,
   gatherItemRules,
@@ -353,6 +354,35 @@ describe("resolveDetailView", () => {
       types,
     )
     expect(view.panels).not.toContain("scheduling")
+  })
+
+  it("switches the whole profile when viewAsTypeId is set", () => {
+    const asBook = resolveDetailView({ type: "task", lists: [] }, [], types, { isTask: true, viewAsTypeId: "book" })
+    expect(asBook.panels).toEqual(["details", "notes", "resources"])
+    expect(asBook.layout?.heroImageAttrId).toBe("cover")
+    expect(asBook.capabilities.subtasks).toBeFalsy()
+    const asTask = resolveDetailView({ type: "book", lists: [] }, [], types, { viewAsTypeId: "task" })
+    expect(asTask.panels).toEqual(expect.arrayContaining(["scheduling", "subtasks", "analysis"]))
+  })
+
+  it("keeps a computer project on the operation ancestor and its own desk panels", () => {
+    const project = types.find((t) => t.id === "computer-project")
+    expect(project?.parentTypeId).toBe("operation")
+    const assigned = assignedItemTypes({ type: "computer-project", lists: [] }, [], types)
+    expect(assigned.map((t) => t.id)).toEqual(["operation", "computer-project"])
+    const view = resolveDetailView({ type: "computer-project", lists: [] }, [], types)
+    expect(view.panels).toEqual(expect.arrayContaining(["details", "body", "subtasks", "time"]))
+    expect(view.panels).not.toContain("scheduling")
+    const asOperation = resolveDetailView({ type: "computer-project", lists: [] }, [], types, {
+      viewAsTypeId: "operation",
+    })
+    expect(asOperation.panels).toContain("analysis")
+    expect(asOperation.panels).not.toContain("body")
+  })
+
+  it("ignores a type-view pick that is not assigned", () => {
+    expect(activeDetailTypeId("task", "book", ["task"])).toBe("task")
+    expect(activeDetailTypeId("task", "book", ["task", "book"])).toBe("book")
   })
 
   it("ships book, furniture, resource, shopping catalog types", () => {

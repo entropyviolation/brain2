@@ -100,7 +100,10 @@ import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
 import { markMissedOpportunity } from "@/lib/services/completion-service"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
-import { assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
+import { activeDetailTypeId, assignedItemTypes, BUILTIN_ITEM_TYPE_ID, BUILTIN_TASK_TYPE_ID, resolveDetailView } from "@/lib/item-types"
+import { ItemTypeViewCards } from "@/components/ItemDetail/ItemTypeViewCards"
+import { ComputerProjectDetail } from "@/components/ItemDetail/ComputerProjectDetail"
+import { COMPUTER_PROJECT_DESK_ATTRS, COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import { asListReference } from "@/lib/text-list-to-list"
@@ -125,7 +128,8 @@ import "./item-detail-chrome.css"
 /**
  * Phase 11: a click or focus inside an item layer stacked on top
  * (`StepItemStack`) is not "outside" this popup, so the popup underneath keeps
- * its place instead of closing.
+ * its place instead of closing. Escape closes the top dialog. Radix already
+ * gives that key only to the highest dialog.
  */
 function layerSafeDismiss(handlers: {
   onOutside: (event: Event) => void
@@ -142,7 +146,13 @@ function layerSafeDismiss(handlers: {
     onInteractOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
     onEscapeKeyDown: (event: KeyboardEvent) => {
       event.preventDefault()
-      if (!inLayer(event)) handlers.onEscape(event)
+      const target = event.target instanceof Element ? event.target : null
+      const layer = target?.closest("[data-item-layer]")
+      const dialog = target?.closest('[role="dialog"]')
+      // Escape reaches only the highest dialog. That dialog closes. A different
+      // item-layer node (not this dialog) is left alone, same as a click there.
+      if (layer && layer !== dialog) return
+      handlers.onEscape(event)
     },
   }
 }
@@ -225,14 +235,31 @@ export function TaskDetailPopup({
   // A "task" item type (anything in Next Actions, plus items explicitly typed
   // "task") gets the full set of task features/panels.
   const isTask = task ? isTaskItem(task, folders) : false
-  // `resolveDetailView` reads only `type` and `lists`, so typing elsewhere
-  // in the draft does not recompute the panels.
+  const [typePick, setTypePick] = useState<{ itemId: string | undefined; typeId: string | null }>({
+    itemId: undefined,
+    typeId: null,
+  })
+  if (typePick.itemId !== task?.id) {
+    setTypePick({ itemId: task?.id, typeId: null })
+  }
+  // `resolveDetailView` reads type, lists, and the chosen type view, so typing
+  // elsewhere in the draft does not recompute the panels.
   const hasTask = !!task
   const taskType = task?.type
   const taskLists = task?.lists
   const taskHiddenPanels = task?.hiddenDetailPanels
   const taskShownPanels = task?.shownDetailPanels
   const hiddenShell = task?.hiddenShellTabs
+  const primaryTypeId = taskType ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
+  const assignedTypes = hasTask
+    ? assignedItemTypes({ type: primaryTypeId, lists: taskLists ?? [] }, lists, itemTypes)
+    : []
+  const activeTypeId = activeDetailTypeId(
+    String(primaryTypeId),
+    typePick.typeId,
+    assignedTypes.map((type) => String(type.id)),
+  )
+  const viewAsTypeId = activeTypeId !== String(primaryTypeId) ? activeTypeId : undefined
   const detailView = useMemo(
     () =>
       hasTask
@@ -240,10 +267,10 @@ export function TaskDetailPopup({
             { type: taskType, lists: taskLists, hiddenDetailPanels: taskHiddenPanels, shownDetailPanels: taskShownPanels },
             lists,
             itemTypes,
-            { isTask },
+            { isTask, viewAsTypeId },
           )
         : { panels: ["details"] as ItemDetailPanel[], capabilities: {}, layout: undefined },
-    [hasTask, taskType, taskLists, taskHiddenPanels, taskShownPanels, lists, itemTypes, isTask],
+    [hasTask, taskType, taskLists, taskHiddenPanels, taskShownPanels, lists, itemTypes, isTask, viewAsTypeId],
   )
   const visiblePanels = detailView.panels
   const caps = detailView.capabilities
@@ -273,7 +300,7 @@ export function TaskDetailPopup({
     writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
   }, [effectiveId, detailTab])
 
-  const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
+  const activeDetailTab = popupTabs.some((tab) => tab === detailTab) ? detailTab : "details"
 
   const commitReminder = useCallback(
     (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
@@ -522,14 +549,6 @@ export function TaskDetailPopup({
           : null
       : null
 
-  // Every item type assigned to this item: its own type plus any type pinned by
-  // a list it belongs to (e.g. a task that also lives in a "Goals" list).
-  const assignedTypes = assignedItemTypes(
-    { type: task.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID), lists: task.lists ?? [] },
-    lists,
-    itemTypes,
-  )
-  const primaryTypeId = task.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
   const sentListIds = (task.lists ?? []).filter((id) => lists.some((list) => list.id === id && list.sentThisWeek === true))
   const sentOnThoseLists = sentListIds.length > 0 && sentListIds.every((id) => isSentOnList(task, id))
   const handleToggleSent = () => {
@@ -605,20 +624,13 @@ export function TaskDetailPopup({
               </div>
             </div>
             <div className="id-fascia-row id-meta">
-              {assignedTypes.map((type) => (
-                <button
-                  key={type.id}
-                  type="button"
-                  className="id-type-plate"
-                  style={{ ["--id-type-color" as string]: type.color ?? "#cbd5e1" }}
-                  title="Double-click to view or edit this type"
-                  onDoubleClick={() => setEditingItemType(type)}
-                >
-                  <span className="id-type-lamp" aria-hidden />
-                  {type.name}
-                  {type.id === primaryTypeId && assignedTypes.length > 1 && <span className="id-type-primary">primary</span>}
-                </button>
-              ))}
+              <ItemTypeViewCards
+                types={assignedTypes}
+                activeId={activeTypeId}
+                primaryId={String(primaryTypeId)}
+                onSelect={(typeId) => setTypePick({ itemId: task.id, typeId })}
+                onEdit={setEditingItemType}
+              />
               <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
                 {task.completed ? "Completed" : task.stage}
               </Badge>
@@ -702,7 +714,7 @@ export function TaskDetailPopup({
 
           <div className="id-dialog-scroll">
             <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="flex-1 min-h-0 flex flex-col">
-              <TabsList className="id-view-keys">
+              <TabsList className="id-view-keys b2-keycap-tab">
                 {visiblePanels.includes("body") && (
                 <TabsTrigger value="body" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
@@ -807,19 +819,40 @@ export function TaskDetailPopup({
                           }
                         />
                       ) : null}
+                      {activeTypeId === COMPUTER_PROJECT_TYPE_ID ? (
+                        <ComputerProjectDetail
+                          task={task}
+                          onLiveAttr={(id, value) =>
+                            touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
+                          }
+                          onCommitAttr={(id, value) => {
+                            const attributes = { ...(getDraft()?.attributes ?? {}), [id]: value }
+                            touchDraft({ attributes })
+                            setTask((prev) => (prev ? { ...prev, attributes } : prev))
+                          }}
+                          onPatch={(patch) => {
+                            touchDraft(patch)
+                            setTask((prev) => (prev ? { ...prev, ...patch } : prev))
+                          }}
+                          onOpenItem={openItem}
+                        />
+                      ) : null}
                       <div className="id-bay">
                         <ItemAttributesSection
                           attributes={task.attributes || {}}
                           itemCategoryIds={task.lists ?? []}
                           categories={lists}
                           itemAttributeDefinitions={task.itemAttributeDefinitions}
-                          itemType={task.type}
+                          itemType={viewAsTypeId ?? task.type}
                           layout={detailView.layout}
-                          omitAttributeIds={
-                            itemShowsPersonPipelines(task, lists)
+                          omitAttributeIds={[
+                            ...(itemShowsPersonPipelines(task, lists)
                               ? [PERSON_ATTR.birthday, PERSON_ATTR.phone, PERSON_ATTR.notes]
-                              : undefined
-                          }
+                              : []),
+                            ...(activeTypeId === COMPUTER_PROJECT_TYPE_ID || task.type === COMPUTER_PROJECT_TYPE_ID
+                              ? [...COMPUTER_PROJECT_DESK_ATTRS]
+                              : []),
+                          ]}
                           onLiveValue={(id, value) =>
                             touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
                           }

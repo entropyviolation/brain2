@@ -226,6 +226,8 @@ function isValidOpenTarget(value: unknown): value is OpenTarget {
       return true
     case "folder-all":
       return typeof t.folderId === "string"
+    case "item-type":
+      return typeof t.id === "string" && t.id.length > 0
     default:
       return false
   }
@@ -269,6 +271,8 @@ function detailListIdFor(state: ListsNavigationState): string {
       return state.openTarget.folderId
     case "objectives":
       return "objectives"
+    case "item-type":
+      return state.openTarget.id
     default:
       return state.location
   }

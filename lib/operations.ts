@@ -30,6 +30,7 @@ import {
   operationCategoryKey,
   type OperationStage,
 } from "@/lib/operation-types"
+import { COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 
 /**
  * Relation ids the Operations feature uses (added to `lib/links.ts` upfront).
@@ -45,9 +46,12 @@ export const OP_REL = {
   resourceOf: "resource-of",
 } as const
 
-/** True when a task is an Operation (directed enterprise). */
+/**
+ * True when a task is an Operation. Computer Project is a subtype, so those
+ * items stay on the Operations board and in the operation workspace.
+ */
 export function isOperation(task: Pick<Task, "type"> | null | undefined): boolean {
-  return task?.type === OPERATION_TYPE_ID
+  return task?.type === OPERATION_TYPE_ID || task?.type === COMPUTER_PROJECT_TYPE_ID
 }
 
 // --- Hours rollup ----------------------------------------------------------
