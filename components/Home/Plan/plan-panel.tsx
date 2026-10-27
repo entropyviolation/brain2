@@ -191,7 +191,7 @@ export function PlanPanel({
                   Add Plan
                 </button>
               </div>
-              <TabsList className="plan-view-keys">
+              <TabsList className="plan-view-keys b2-keycap-tab">
                 <TabsTrigger value="quarter">Season</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>

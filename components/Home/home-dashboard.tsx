@@ -189,7 +189,7 @@ export function HomeDashboard() {
         className={habitsConsole ? "hab-body home-body w-full" : "home-body w-full"}
       >
         <TabsList
-          className="home-tabs"
+          className="home-tabs b2-keycap-tab"
           data-ui-name="Home tabs"
           data-ui-docs="components/Home/README.md"
           aria-label="Home view"

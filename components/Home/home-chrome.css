@@ -6,8 +6,10 @@
  * Covers the overview strip between the app tabs and the Home sub-tab bay
  * (review banner, date plate, today's progress, Needs Attention), plus the
  * five equal Home keys themselves. Scoped under `.home95` for the TOP strip;
- * Home tabs use `data-ui-name="Home tabs"` with `body.win95-app` specificity
- * (same recipe as App tabs in `app/win95.css`). The date plate is a milled
+ * Home tabs use `data-ui-name="Home tabs"` with `body.win95-app` specificity.
+ * Those five keys are latching keycaps (`.b2-keycap-tab` in `app/win95.css`):
+ * silver skirt at rest, selected key a CRT with the green on-light.
+ * _Last mapped: 2026-10-27._ The date plate is a milled
  * bay: weekday in a CRT, calendar date on a nameplate with a power lamp,
  * Widgets as a raised key. CRT numerals use `--hab-crt-green` (`#7dffc4`) +
  * `--hab-crt-glow`. Each tile is nameplate + CRT + full-width silver footer.
@@ -4668,11 +4670,11 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 }
 
 /*
- * Home sub-tab row (`data-ui-name="Home tabs"`) — same milled fascia recipe as
- * App tabs in `app/win95.css`: one brushed silver bay, five equal keys, active
- * key = CRT black glass `#070c0a` + round phosphor power lamp, engraved
- * uppercase labels, phosphor text `#7dffc4`. Air sits ABOVE the bay (margin-top);
- * panels sit flush under the keys (`.home-pane` / `.home-body` kill mt-2/mt-6).
+ * Home sub-tab row (`data-ui-name="Home tabs"`). _Last mapped: 2026-10-27_
+ * Five latching keycaps (`.b2-keycap-tab` in `app/win95.css`): pale silver
+ * skirt at rest, selected key = CRT black glass `#070c0a` + green legend
+ * `#7dffc4` + the round phosphor lamp. A press is the milled sink. Air sits
+ * ABOVE the bay (margin-top); panels sit flush under the keys.
  */
 body.win95-app .home-body {
   display: flex;
@@ -4732,30 +4734,11 @@ body.win95-app .home-tabs [role="tab"] {
   gap: 8px;
   height: auto;
   min-height: 36px;
-  padding: 8px 8px;
-  border-radius: var(--r-2, 2px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.16) 12%, transparent 28%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 30%, var(--chrome-face, #c0c0c0) 62%, var(--chrome-key-shade) 100%);
-  color: #1c1e20;
+  padding: 6px 10px 10px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px var(--chrome-ring-deep),
-    0 1px 0 var(--chrome-lip);
-}
-
-body.win95-app [data-ui-name="Home tabs"] [role="tab"]:active,
-body.win95-app .home-tabs [role="tab"]:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.4),
-    0 0 0 1px var(--chrome-pressed);
 }
 
 body.win95-app [data-ui-name="Home tabs"] [role="tab"][data-state="active"],
@@ -4787,6 +4770,12 @@ body.win95-app .home-tabs [role="tab"][data-state="active"]::before {
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+body.win95-app [data-ui-name="Home tabs"] [role="tab"]:active,
+body.win95-app .home-tabs [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
 }
 
 /* Day / week / month / season plan log on Habits. Sibling of `.hab-desk`,

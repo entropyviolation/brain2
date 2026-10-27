@@ -88,7 +88,7 @@ fact, in neutral ink.
 - The person's own words (a ritual prompt, a note, an affirmation) are theirs.
   The rule covers chrome, not what they typed.
 
-Phase 15 B audit: [`TODO_REDESIGN.md`](TODO_REDESIGN.md).
+Phase 15 B audit: [`TODO_REDESIGN.md`](TODO_REDESIGN.md) (resolved 2026-10-27; the rule above is what still binds).
 
 ---
 
@@ -478,7 +478,7 @@ the required start for every new tab.
 | **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. Visual dashboard plates (Milled style) and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
 | **CRT** | The value in black glass (`#040a08`–`#070c0a`), a faint phosphor bloom at the top, a gunmetal ring. One green: `--hab-crt-green` (`#7dffc4`) and `--hab-crt-glow`. Pad the glyphs (about 8px 14px). Do not paint phosphor straight on the mill. |
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
-| **Key** | Raised metal: specular top lip, mill, pressed foot. Sibling keys share the bay equally. Active mode is the CRT plus the power lamp. |
+| **Key** | A main room switcher (Home, Tracking, Habits period, Operations, Item detail, Plan, Scheduler, Inbox partitions) is a latching [keycap](#keycaps): pale silver skirt at rest, a gap so each cap reads alone. The selected key stays CRT glass plus the round green on-light. A press is the milled sink (`--fascia-key-pressed`) and a 1px drop. There is no keyframe flash. Other fascia keys stay raised metal: specular top lip, mill, pressed foot. |
 
 A title-bar × is the keycap close (`KeycapClose`; see [Keycaps](#keycaps)),
 including Settings and every dialog that uses the shared close. It sits in
@@ -546,7 +546,7 @@ Shipped example: `PointsDial` in `components/Home/ToDo/TaskCardSide.tsx`, styled
 
 ### Keycaps
 
-_Last mapped: 2026-10-26_
+_Last mapped: 2026-10-27_
 
 Allie likes this button and wants more of it. A word key is this cap. Reach for the pale silver one. Seafoam and cornflower are the only other plastics, for a word key that needs a color. Do not invent a new word-button shape.
 
@@ -557,7 +557,7 @@ Word keys use the ortholinear keycap, from a round-screen terminal allie picked.
 - **Primary cap** (+ Add task, Done): the silver cap with a navy legend, a small navy lamp before the word, and a 2px navy ring. Class `.todo-cap.is-primary`. Navy `#22306c`.
 - **Seafoam cap:** the same cap in seafoam. Top `#d4f3e8` → `#b7e6d4`, skirt `#7ebfa8`, edge `#3f7564`, legend `#102820`. Class `.todo-cap.is-seafoam`.
 - **Cornflower cap:** the same cap in cornflower. Top `#dce6fb` → `#c0d0f6`, skirt `#8aa6e0`, edge `#4a6298`, legend `#17243f`. Class `.todo-cap.is-cornflower`.
-- **Latching keys** (the span keys): a lamp at the left, lit green and sunken when current.
+- **Latching keys** (the span keys, and every main room switcher): a lamp at the left. Span keys sink and light green when current. Main switchers (Home’s five rooms, Tracking’s four views, Habits period, Operations HOME / TO DO / PHASES / PARTS / LOG, Item detail, Plan’s season row, Scheduler’s period row, Inbox partitions) use the same pale cap at rest. The selected key does not sink into grey: it stays the CRT, black glass `#070c0a`, green legend `#7dffc4`, phosphor `--hab-crt-glow`. The on-light stays the small round green lamp (about 7–8px, `#f4fff8` → `#7dffc4` → `#0b4a32`). Operations and Item detail also keep a dim lamp on the keys that are off. A press is the existing milled sink plus a 1px drop. There is no keyframe flash. Class `.b2-keycap-tab` in `app/win95.css`, on the bay. Header Go keys are already this cap; their CRT glyph stands in for the lamp. To Do span keys stay `.todo-span-key` and are the reference, not a second paint.
 - A pressed or on key drops by about 2px and its skirt shrinks.
 - Never cream, yellow, or orange caps.
 
@@ -567,7 +567,7 @@ A milled fascia key (a bay’s raised metal, the title-bar close key) is a diffe
 
 Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × stays the gunmetal caption key.
 
-Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. Working on Now word keys reuse it too. Those strips and popups are not inside `.todo95`, so the same cap is also at the end of `components/shell-chrome.css`, on `.b2-now`. The pinned header paints the same skirt on its own press keys (Nav, Go, Friend chat and gallery, the Friend fold, Rituals, System, Capture) without requiring the class, because the mill button skin would flatten it. Nav Back/Forward and the Go keys stay that cap at rest. Focus, and Go’s current tab, turn black with a green legend (the CRT). A press is the old 1px milled sink. Quick Add is the primary cap. The completion popup's word keys (Undo, Skip, Save, Done at, Add) reuse it in `components/Completion/completion-dialog.css` (`.completion-dialog`); that caption is its own full-width CRT bar. Play, pause, and stop on the clock stay the transport disc. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
+Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. Working on Now word keys reuse it too. Those strips and popups are not inside `.todo95`, so the same cap is also at the end of `components/shell-chrome.css`, on `.b2-now`. The pinned header paints the same skirt on its own press keys (Nav, Go, Friend chat and gallery, Rituals, System, Capture) without requiring the class, because the mill button skin would flatten it. The Friend fold is a hairline on the Friend nameplate, the same 12px height as Nav, Go, and Rituals, with a centered bar. Nav Back/Forward and the Go keys stay that cap at rest. Focus, and Go’s current tab, turn black with a green legend (the CRT). Those words have no white shadow and no synthetic bold stroke. The Rituals count is centered on its key. A press is the old 1px milled sink. Quick Add is the primary cap. The completion popup's word keys (Undo, Skip, Save, Done at, Add) reuse it in `components/Completion/completion-dialog.css` (`.completion-dialog`); that caption is its own full-width CRT bar. Play, pause, and stop on the clock stay the transport disc. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
 
 The task card header draws this skirt in `task-card.css` (`.task-card-keycap`), not `.todo-cap`, because the card's own key skin flattens a shared cap. Those keys are ↗ Item, Just Start, Just 25, Session with this, Required, and Prioritized. Just Start's face is deep indigo (`#1B143D`, skirt `#070E31`; hover and active a slightly lighter indigo, white legend). Required lights warm when on. Prioritized keeps a soft green glow. The CD transport stays the disc. The push flag is the card's one violet: dusty `#7d6bb8` at one push, deeper by twenty, wash `#b39cff`.
 
@@ -924,9 +924,7 @@ instrument and Needs Attention are already on a machine face.
 - **Sand close (shipped, opt-in).** Add/Edit Habit crumbles from the title-bar
   × into lit grains, heaps, then blows off (`useWindowSandClose`). Any other
   captioned window can use the same hook. Reduced motion snaps shut.
-- **App tabs (shipped).** One brushed bay, equal keys, the active key a CRT
-  with a round power lamp (`win95.css`). Home’s five sub-tabs use the same
-  bay (`data-ui-name="Home tabs"`).
+- **App tabs (shipped).** Header Go keys are pale silver keycaps. Focus and the current tab are the black CRT with a green legend; a press is the milled sink (`app/win95.css`). Home’s five sub-tabs, and the other main room switchers, are the same cap with the green on-light kept (`data-ui-name="Home tabs"`, `.b2-keycap-tab`).
 - **Lists auto-organize.** Folder Icons may leave a fading trace of snowflakes
   or cursor-pixels (`FolderViewIcons.tsx`). List Icons desktop uses the same
   velvet pack without that trail. **PILE UP** is the separate live container

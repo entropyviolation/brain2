@@ -2,15 +2,17 @@
  * components/Analytics/analytics-chrome.css — Analytics window
  *
  * Title bar + status bar stay Lists furniture. Chrome (range bay, left index)
- * is house milled fascia — brushed bays, engraved nameplates, equal metal keys,
- * active key = CRT `#070c0a` + round power lamp, phosphor label `#7dffc4` only.
+ * is house milled fascia — brushed bays, engraved nameplates. Group and view
+ * keys are latching keycaps at this layer (silver skirt, active = CRT
+ * `#070c0a` + round power lamp, phosphor `#7dffc4`). _Last mapped: 2026-10-27._
  * Studio canvases stay a light instrument interior (Karla, ink on face-gray
  * `var(--chrome-face)`, white plot wells, phosphor traces `#3dff8a` only — not a dark CRT
  * theme, not cream). Empty / thin frames stay honest.
  * docs/DESIGN_STYLE.md#milled-fascia
  *
  * `analytics-atlas.css` loads after this file and re-skins the same selectors
- * (cobalt band, card catalog, FIG. plates). Layout and behavior live here.
+ * (cabinet drawers, index cards, cobalt band, FIG. plates). That skin stays.
+ * Layout and behavior live here.
  */
 
 .fm98.an95 {
@@ -313,13 +315,18 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 5px 10px 6px 22px;
-  background: var(--an-key-face);
-  border: none;
-  border-radius: var(--r-2, 2px);
-  box-shadow: var(--an-key-ring);
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 4px 10px 8px 22px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  color: #1f2226;
+  text-shadow: none;
   cursor: pointer;
   text-align: left;
   top: auto;

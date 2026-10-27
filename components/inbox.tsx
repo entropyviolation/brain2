@@ -1276,7 +1276,7 @@ export function Inbox({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="inbox-partitions" role="tablist" aria-label="Inbox partitions">
+          <div className="inbox-partitions b2-keycap-tab" role="tablist" aria-label="Inbox partitions">
             <button
               type="button"
               role="tab"

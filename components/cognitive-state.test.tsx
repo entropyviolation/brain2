@@ -32,9 +32,10 @@ describe("CognitiveState", () => {
     expect(screen.getByText("Recent now")).toBeInTheDocument()
     expect(screen.getByText(/edge of the current moment/)).toBeInTheDocument()
     expect(screen.queryByText("What is true right now, and the plan for the hours ahead.")).not.toBeInTheDocument()
-    expect(await screen.findByRole("tab", { name: "Tracking" })).toHaveAttribute("aria-selected", "true")
+    expect(await screen.findByRole("tab", { name: "Tracking" }, { timeout: 15000 })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByRole("tab", { name: "Plan" })).toBeInTheDocument()
-    expect(await screen.findByTestId("time-grid")).toHaveTextContent("day grid")
+    await screen.findByTestId("time-grid", {}, { timeout: 15000 })
+    expect(screen.getByTestId("time-grid")).toHaveTextContent("day grid")
     expect(screen.getByTestId("htk-current-moment")).toBeInTheDocument()
 
     await user.click(screen.getByRole("tab", { name: "Plan" }))

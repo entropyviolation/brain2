@@ -18,7 +18,7 @@ Writes **task-store** (`updateTask`, `deleteTask`, and the scheduling, completio
 
 **Interiors** stay in this folder: the funnel (`AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell`), `SchedulerTaskItem`, `SchedulerFilters`, `ScheduleCardDetail`, `GanttView`, `DependencyGraph`, and `project-network.ts`. The other helpers in `scheduler-utils.ts` and `schedule-card-detail.ts` stay here too.
 
-The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as equal view keys (active = CRT + round power lamp), Always → Day as equal period keys in one bay, engraved Address / View / Period nameplates, raised metal toolbar keys. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
+The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as the small view keys, Always → Day as latching keycaps (`.b2-keycap-tab`; selected key = CRT + green on-light). _Last mapped: 2026-10-27._ Engraved Address / View / Period nameplates, raised metal toolbar keys. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
 
 ## Files
 
@@ -28,7 +28,7 @@ the period/filter logic is independently testable.
 | File | Purpose |
 |------|---------|
 | `enhanced-scheduler.tsx` | **Orchestrator**: window chrome, store wiring, task-item renderer; toolbar **Funnel / Gantt / Dependencies** (`schedulerView`) and period keys. View mode + calendar cursor persist across refresh / tab switch. |
-| `scheduler-chrome.css` | Milled fascia: CRT title, view/period key bays, Address nameplate, metal keys — scoped under `.sch95`. Funnel / Gantt / graph contents untouched. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
+| `scheduler-chrome.css` | Milled fascia: CRT title, view-mode keys, Always→Day latching keycaps, Address nameplate, metal keys — scoped under `.sch95`. _Last mapped: 2026-10-27._ Funnel / Gantt / graph contents untouched. Also imported from `app/layout.tsx` so Fast Refresh cannot drop it. |
 | `scheduler-utils.ts` | **Pure logic**: available/scheduleable filtering + sort (`isTaskScheduleable`, `nextTaskScheduleableFlag`), per-period queries, schedule/unschedule field updates, calendar grid builders, navigation (`navigateDate` clamps month and year onto the last real day, so the 31st and 29 Feb do not skip a period), overview-box assignment, `taskIdsForDragSchedule` (multi-drag selection payload). Unmet-dep check is `lib/available-tasks.ts`. Unit-tested in `scheduler-utils.test.ts`. To Do month Previous / Next uses the same stepper. |
 | `project-network.ts` | **Pure glue**: `buildProjectNetwork()` selects "project" tasks (any in a dependency relation, or scheduleable with a duration), derives precedence edges, and runs the CPM solver (`lib/critical-path`); `toLayoutEdges()` adapts edges for `lib/graph-layout`. Shared by the Gantt + Graph views |
 | `GanttView.tsx` | **Gantt document** (plain SVG): one row per task (orb + label), bars positioned by CPM earliest-start and sized by duration, dependency arrows, slack tracks, critical path. Click a row to open the task. Not editable |

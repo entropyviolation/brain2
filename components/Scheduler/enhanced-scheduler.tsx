@@ -516,7 +516,7 @@ export function EnhancedScheduler() {
             onValueChange={(value) => setActiveTab(value as SchedulePeriod)}
             className="sch-funnel"
           >
-            <TabsList className="sch-period-tabs">
+            <TabsList className="sch-period-tabs b2-keycap-tab">
               <TabsTrigger value="always">Always</TabsTrigger>
               <TabsTrigger value="year">Year</TabsTrigger>
               <TabsTrigger value="quarter">Season</TabsTrigger>
