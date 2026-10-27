@@ -1,10 +1,13 @@
 /**
  * lib/browser-history.ts — Chrome history export → analysis (Sources → Browser)
  *
- * Pure. Input is the "Quick Chrome History Export" JSON (one array per profile).
- * Rows are deduped within and across profiles by (visitTime, url). Nothing
- * here reads a store or the network. YouTube topics come from the page title
- * only (the export has no channel or description), so they are keyword guesses.
+ * Pure. Input is one file per Chrome profile from Quick Chrome History Export
+ * (JSON, CSV, or the row objects of its Excel file) or a Google Takeout
+ * "Browser History" JSON. Rows merge across profiles. A visit already kept
+ * (same URL, same millisecond, or the same second when one side lost
+ * milliseconds) is not added again. Nothing here reads a store or the network.
+ * YouTube topics come from the page title only (the export has no channel or
+ * description), so they are keyword guesses.
  */
 
 export interface RawVisit {
@@ -38,33 +41,299 @@ export function hostOf(url: string): string {
   }
 }
 
+/** File name without the export extension. That name is the profile label. */
+export function profileLabel(filename: string): string {
+  const base = filename.replace(/\.(json|csv|xlsx|xls)$/i, "").trim()
+  return base || "Chrome"
+}
+
+function stringField(row: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const v = row[key]
+    if (typeof v === "string" && v.trim()) return v.trim()
+    if (typeof v === "number" && Number.isFinite(v)) return String(v)
+  }
+  return null
+}
+
+/** Chrome's clock (microseconds since 1601) and Unix seconds, ms, or µs → Unix ms. */
+export function coerceVisitTime(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) return epochMs(raw)
+  if (typeof raw === "string" && raw.trim()) {
+    const text = raw.trim()
+    if (/^\d+(\.\d+)?$/.test(text)) return epochMs(Number(text))
+    const parsed = Date.parse(text)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return null
+}
+
+function epochMs(n: number): number | null {
+  if (!(n > 0)) return null
+  // WebKit/Chrome microseconds since 1601-01-01 (~1.3e16 in the 2020s).
+  if (n > 1e16) {
+    const ms = n / 1000 + Date.UTC(1601, 0, 1)
+    return ms > 0 ? ms : null
+  }
+  if (n > 1e14) return n / 1000
+  if (n > 1e11) return n
+  if (n > 1e9) return n * 1000
+  return null
+}
+
+/** Local calendar date plus clock time, as Quick Chrome History Export writes them. */
+export function localDateTime(date: unknown, time: unknown): number | null {
+  if (date instanceof Date && Number.isFinite(date.getTime()) && (time == null || time === "")) return date.getTime()
+  const dateText = typeof date === "number" && date > 20000 && date < 80000 ? excelSerial(date) : typeof date === "string" ? date.trim() : ""
+  if (!dateText) return null
+  const parts = /^(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})$/.exec(dateText)
+  if (!parts) return null
+  let year: number
+  let month: number
+  let day: number
+  if (parts[1].length === 4) {
+    year = Number(parts[1])
+    month = Number(parts[2])
+    day = Number(parts[3])
+  } else {
+    month = Number(parts[1])
+    day = Number(parts[2])
+    year = Number(parts[3])
+    if (year < 100) year += 2000
+    if (month > 12 && day <= 12) {
+      const swap = month
+      month = day
+      day = swap
+    }
+  }
+  let hour = 0
+  let minute = 0
+  let second = 0
+  if (typeof time === "number" && time >= 0 && time < 1) {
+    const total = Math.round(time * 86400)
+    hour = Math.floor(total / 3600)
+    minute = Math.floor((total % 3600) / 60)
+    second = total % 60
+  } else if (typeof time === "string" && time.trim()) {
+    const clock = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]m)?$/i.exec(time.trim())
+    if (!clock) return null
+    hour = Number(clock[1])
+    minute = Number(clock[2])
+    second = clock[3] ? Number(clock[3]) : 0
+    const ampm = clock[4]?.toLowerCase()
+    if (ampm) {
+      if (hour === 12) hour = ampm === "am" ? 0 : 12
+      else if (ampm === "pm") hour += 12
+    }
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return null
+  const stamp = new Date(year, month - 1, day, hour, minute, second).getTime()
+  return Number.isFinite(stamp) ? stamp : null
+}
+
+function excelSerial(serial: number): string {
+  const utc = new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86400000)
+  return `${utc.getUTCMonth() + 1}/${utc.getUTCDate()}/${utc.getUTCFullYear()}`
+}
+
+/** One export row → a visit, or null when the url or the time is missing. */
+export function coerceRaw(row: unknown): RawVisit | null {
+  if (!row || typeof row !== "object") return null
+  const record = row as Record<string, unknown>
+  const url = stringField(record, ["url", "URL", "Url"])
+  if (!url || url.length > 8000) return null
+  let visitTime = coerceVisitTime(record.visitTime ?? record.lastVisitTime ?? record.time_usec ?? record.visit_time)
+  if (visitTime == null) visitTime = localDateTime(record.date ?? record.Date, record.time ?? record.Time)
+  if (visitTime == null) return null
+  const transition = (stringField(record, ["transition", "page_transition", "Transition"]) ?? "link").toLowerCase()
+  return { visitTime, url, title: stringField(record, ["title", "Title"]) ?? "", transition }
+}
+
+export function visitsFromRecords(rows: unknown[]): RawVisit[] {
+  const out: RawVisit[] = []
+  for (const row of rows) {
+    const visit = coerceRaw(row)
+    if (visit) out.push(visit)
+  }
+  return out
+}
+
+/** Brain2 Chrome extension envelope, or a bare visit list. Null when nothing in it is a visit. */
+export function historyFileFromPayload(payload: unknown, fallbackProfile = "Chrome"): HistoryFile | null {
+  if (Array.isArray(payload)) {
+    const rows = visitsFromRecords(payload)
+    return rows.length ? { profile: fallbackProfile, rows } : null
+  }
+  if (!payload || typeof payload !== "object") return null
+  const record = payload as Record<string, unknown>
+  if (!Array.isArray(record.visits)) return null
+  const rows = visitsFromRecords(record.visits)
+  if (!rows.length) return null
+  const named = typeof record.profile === "string" ? record.profile.trim().slice(0, 80) : ""
+  return { profile: named || fallbackProfile, rows }
+}
+
+function unwrapHistory(parsed: unknown): unknown[] | null {
+  if (Array.isArray(parsed)) return parsed
+  if (!parsed || typeof parsed !== "object") return null
+  const record = parsed as Record<string, unknown>
+  for (const key of ["history", "History", "Browser History", "visits", "rows"]) {
+    if (Array.isArray(record[key])) return record[key]
+  }
+  return null
+}
+
+function splitCsv(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let cell = ""
+  let quoted = false
+  const src = text.replace(/^\uFEFF/, "")
+  for (let i = 0; i < src.length; i++) {
+    const char = src[i]
+    if (quoted) {
+      if (char === '"') {
+        if (src[i + 1] === '"') {
+          cell += '"'
+          i++
+        } else quoted = false
+      } else cell += char
+    } else if (char === '"') quoted = true
+    else if (char === ",") {
+      row.push(cell)
+      cell = ""
+    } else if (char === "\n") {
+      row.push(cell)
+      rows.push(row)
+      row = []
+      cell = ""
+    } else if (char !== "\r") cell += char
+  }
+  if (cell.length || row.length) {
+    row.push(cell)
+    rows.push(row)
+  }
+  return rows.filter((line) => line.some((value) => value.trim()))
+}
+
+/** JSON or CSV text from a history export. Throws a short Error when nothing in it is a visit. */
+export function parseHistoryExport(text: string): RawVisit[] {
+  const trimmed = text.replace(/^\uFEFF/, "").trim()
+  if (!trimmed) throw new Error("This file is empty.")
+  let rows: unknown[] | null = null
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      throw new Error("This is not a Chrome history export.")
+    }
+    rows = unwrapHistory(parsed)
+    if (!rows) throw new Error("This is not a Chrome history export.")
+  } else {
+    const table = splitCsv(trimmed)
+    const header = table[0]?.map((cell) => cell.trim().toLowerCase()) ?? []
+    if (!header.includes("url")) throw new Error("This is not a Chrome history export.")
+    rows = table.slice(1).map((line) => {
+      const record: Record<string, string> = {}
+      header.forEach((key, index) => {
+        if (key) record[key] = line[index] ?? ""
+      })
+      return record
+    })
+  }
+  const visits = visitsFromRecords(rows)
+  if (!visits.length) throw new Error("This file has no visits with a url and a time.")
+  return visits
+}
+
+function visitOf(row: RawVisit, profile: string): Visit | null {
+  if (!row || typeof row.visitTime !== "number" || typeof row.url !== "string") return null
+  return {
+    t: row.visitTime,
+    url: row.url,
+    host: hostOf(row.url),
+    title: row.title ?? "",
+    transition: row.transition ?? "link",
+    profile,
+  }
+}
+
 export function mergeHistory(files: HistoryFile[]): Visit[] {
   const seen = new Set<string>()
   const out: Visit[] = []
-  for (const f of files) {
-    for (const r of f.rows) {
-      if (!r || typeof r.visitTime !== "number" || typeof r.url !== "string") continue
-      const key = `${Math.round(r.visitTime)}|${r.url}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push({
-        t: r.visitTime,
-        url: r.url,
-        host: hostOf(r.url),
-        title: r.title ?? "",
-        transition: r.transition ?? "link",
-        profile: f.profile,
-      })
+  for (const file of files) {
+    const within = new Map<string, number>()
+    for (const row of file.rows) {
+      const visit = visitOf(row, file.profile)
+      if (!visit) continue
+      const key = `${Math.round(visit.t)}|${visit.url}`
+      const ordinal = (within.get(key) ?? 0) + 1
+      within.set(key, ordinal)
+      const id = `${key}#${ordinal}`
+      if (seen.has(id)) continue
+      seen.add(id)
+      out.push(visit)
     }
   }
   return out.sort((a, b) => a.t - b.t)
 }
 
-/** Add new files to what is already kept. Nothing already kept is ever dropped, so history past Chrome's 90-day window survives later exports. */
+/**
+ * Add files to what is already kept. A later export never removes older visits,
+ * and a visit already stored is not added again. CSV and Excel times are whole
+ * seconds, so those match a visit in the same second.
+ */
 export function mergeInto(existing: Visit[], files: HistoryFile[]): Visit[] {
-  const seen = new Set(existing.map((v) => `${Math.round(v.t)}|${v.url}`))
-  const fresh = mergeHistory(files).filter((v) => !seen.has(`${Math.round(v.t)}|${v.url}`))
+  const incoming = mergeHistory(files)
+  if (!incoming.length) return existing
+  const byUrl = new Map<string, Visit[]>()
+  for (const visit of existing) {
+    const list = byUrl.get(visit.url)
+    if (list) list.push(visit)
+    else byUrl.set(visit.url, [visit])
+  }
+  for (const list of byUrl.values()) list.sort((a, b) => a.t - b.t)
+  const incByUrl = new Map<string, Visit[]>()
+  for (const visit of incoming) {
+    const list = incByUrl.get(visit.url)
+    if (list) list.push(visit)
+    else incByUrl.set(visit.url, [visit])
+  }
+  const fresh: Visit[] = []
+  for (const [url, rows] of incByUrl) {
+    rows.sort((a, b) => a.t - b.t)
+    const have = byUrl.get(url)
+    if (!have) fresh.push(...rows)
+    else fresh.push(...unmatched(have, rows))
+  }
   return fresh.length ? [...existing, ...fresh].sort((a, b) => a.t - b.t) : existing
+}
+
+function unmatched(have: Visit[], rows: Visit[]): Visit[] {
+  const used = new Uint8Array(have.length)
+  let start = 0
+  const out: Visit[] = []
+  for (const visit of rows) {
+    const second = Math.floor(visit.t / 1000)
+    const aligned = visit.t % 1000 === 0
+    while (start < have.length && Math.floor(have[start].t / 1000) < second) start++
+    let exact = -1
+    let loose = -1
+    for (let j = start; j < have.length; j++) {
+      if (Math.floor(have[j].t / 1000) > second) break
+      if (used[j]) continue
+      if (Math.round(have[j].t) === Math.round(visit.t)) {
+        exact = j
+        break
+      }
+      if (loose < 0 && (aligned || have[j].t % 1000 === 0)) loose = j
+    }
+    const match = exact >= 0 ? exact : loose
+    if (match >= 0) used[match] = 1
+    else out.push(visit)
+  }
+  return out
 }
 
 /* ---------- categories ---------- */

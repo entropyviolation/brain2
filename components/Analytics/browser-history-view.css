@@ -2,7 +2,10 @@
  * components/Analytics/browser-history-view.css — Sources → Browser
  */
 .fm98.an95 .an-bh { display: flex; flex-direction: column; gap: 12px; color: var(--an-ink); font-size: 12px; }
+.fm98.an95 .an-bh.is-drop { outline: 1px dashed currentColor; outline-offset: 4px; }
 .fm98.an95 .an-bh-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.fm98.an95 .an-bh-profiles { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; }
+.fm98.an95 .an-bh-profiles span { opacity: 0.8; }
 .fm98.an95 .an-bh-btn { border: 1px solid currentColor; background: transparent; color: inherit; padding: 3px 10px; font: inherit; cursor: pointer; }
 .fm98.an95 .an-bh-err { color: #a3201a; margin: 0; }
 .fm98.an95 .an-bh-note { margin: 0 0 6px; opacity: 0.7; line-height: 1.4; }
