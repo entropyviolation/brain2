@@ -14,7 +14,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { TaskType } from "@/lib/types"
 import { EnhancedTaskDetail } from "@/components/ItemDetail/ItemDetailPage"
-import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 
 describe("EnhancedTaskDetail", () => {
   const onBack = vi.fn()

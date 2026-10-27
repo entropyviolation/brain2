@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/RichLinksPanel.tsx — The Links tab
+ * components/ItemDetail/tabs/links/RichLinksPanel.tsx — The Links tab
  *
  * Constellation, then the sentence composer, then the ledger, for any item.
  * Edges come from `lib/link-graph.ts`: this draft's own links plus links
@@ -11,10 +11,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { LinkComposer } from "@/components/ItemDetail/links/LinkComposer"
-import { LinkConstellation } from "@/components/ItemDetail/links/LinkConstellation"
-import { LinkLedger, visibleEdges } from "@/components/ItemDetail/links/LinkLedger"
-import { useLinkItems } from "@/components/ItemDetail/links/link-items"
+import { LinkComposer } from "@/components/ItemDetail/tabs/links/LinkComposer"
+import { LinkConstellation } from "@/components/ItemDetail/tabs/links/LinkConstellation"
+import { LinkLedger, visibleEdges } from "@/components/ItemDetail/tabs/links/LinkLedger"
+import { useLinkItems } from "@/components/ItemDetail/tabs/links/link-items"
 import { itemLinkTypeId } from "@/lib/item-types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -26,11 +26,11 @@ import { parseNodeId, structureEdges } from "@/lib/structure-edges"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { openStepItem } from "@/lib/step-item-stack"
 import type { Task } from "@/lib/types"
-import { EdgeInspector } from "@/components/ItemDetail/links/EdgeInspector"
-import { LinkMatrix } from "@/components/ItemDetail/links/LinkMatrix"
-import { LinkPath } from "@/components/ItemDetail/links/LinkPath"
-import { SuggestionShelf } from "@/components/ItemDetail/links/SuggestionShelf"
-import { useLinksGraph } from "@/components/ItemDetail/links/use-links-graph"
+import { EdgeInspector } from "@/components/ItemDetail/tabs/links/EdgeInspector"
+import { LinkMatrix } from "@/components/ItemDetail/tabs/links/LinkMatrix"
+import { LinkPath } from "@/components/ItemDetail/tabs/links/LinkPath"
+import { SuggestionShelf } from "@/components/ItemDetail/tabs/links/SuggestionShelf"
+import { useLinksGraph } from "@/components/ItemDetail/tabs/links/use-links-graph"
 import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import "./rich-links.css"

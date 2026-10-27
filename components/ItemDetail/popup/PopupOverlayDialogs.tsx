@@ -8,9 +8,9 @@
 
 import type { RefObject } from "react"
 import type { ItemTypeDefinition, List, Task } from "@/lib/types"
-import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
-import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
-import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
+import { AttributeSettingsDialog } from "@/components/ItemDetail/attributes/AttributeSettingsDialog"
+import { CycleConfirmDialog } from "@/components/ItemDetail/dialogs/CycleConfirmDialog"
+import { ItemSettingsPanel } from "@/components/ItemDetail/dialogs/ItemSettingsPanel"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { Dialog, DialogContent } from "@/components/ui/dialog"

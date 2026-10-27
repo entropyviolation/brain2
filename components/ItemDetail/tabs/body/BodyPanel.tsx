@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/BodyPanel.tsx — "Body" detail panel (document items)
+ * components/ItemDetail/tabs/body/BodyPanel.tsx — "Body" detail panel (document items)
  *
  * The `"body"` item-detail panel (Feature 4, Worker D). Renders the
  * `RichTextEditor` over an item's `Item.body` markdown and persists edits back to

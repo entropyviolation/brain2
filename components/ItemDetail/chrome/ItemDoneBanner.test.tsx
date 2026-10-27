@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
-import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
+import { ItemDoneBanner } from "@/components/ItemDetail/chrome/ItemDoneBanner"
 import { withCompleted } from "@/lib/completion-status"
 import type { Task } from "@/lib/types"
 

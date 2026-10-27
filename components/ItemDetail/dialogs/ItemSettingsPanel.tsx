@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemSettingsPanel.tsx — Item settings
+ * components/ItemDetail/dialogs/ItemSettingsPanel.tsx — Item settings
  *
  * The item-settings popup (fascia gear) for one item. The header is Settings.
  * Plates under it hold the item id, every attribute (show, shared name, type,

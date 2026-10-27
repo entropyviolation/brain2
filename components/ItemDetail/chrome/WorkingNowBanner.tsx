@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/WorkingNowBanner.tsx — Live clock strip
+ * components/ItemDetail/chrome/WorkingNowBanner.tsx — Live clock strip
  *
  * A small recording lamp at the top of item detail while this item is the
  * pen clock's task, or a parent of that item. Electric blue is the one

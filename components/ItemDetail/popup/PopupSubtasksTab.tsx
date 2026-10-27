@@ -9,7 +9,7 @@
 import type { Dispatch, SetStateAction } from "react"
 import type { Task } from "@/lib/types"
 import { CheckCircle } from "lucide-react"
-import { StepItemSubtasks, SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
+import { StepItemSubtasks, SubtaskTree } from "@/components/ItemDetail/tabs/subtasks/SubtaskTree"
 import { openStepItem } from "@/lib/step-item-stack"
 import { TabsContent } from "@/components/ui/tabs"
 

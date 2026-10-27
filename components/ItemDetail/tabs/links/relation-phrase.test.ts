@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { guessReversePhrase } from "@/components/ItemDetail/links/relation-phrase"
+import { guessReversePhrase } from "@/components/ItemDetail/tabs/links/relation-phrase"
 
 describe("guessReversePhrase", () => {
   it.each([

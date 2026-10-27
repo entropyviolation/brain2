@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemEstimateField.tsx — Estimated duration LiveInput
+ * components/ItemDetail/tabs/details/ItemEstimateField.tsx — Estimated duration LiveInput
  *
  * Shared draft wiring for the Details-tab duration field on popup and page.
  * This is the task's own `estimatedDuration`, not the parts rollup.

@@ -2,7 +2,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
+import { SubtaskTree } from "@/components/ItemDetail/tabs/subtasks/SubtaskTree"
 import { SplitStepsComposer } from "@/components/ItemDetail/page/SplitStepsComposer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkConstellation.tsx — The radial plate
+ * components/ItemDetail/tabs/links/LinkConstellation.tsx — The radial plate
  * (PD 6.4; "Constellation" in the plan, "radial plate" in UI copy per
  * `docs/LINKS_REDESIGN.md` §13).
  *
@@ -28,8 +28,8 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { iconFor } from "@/components/Icons/Icon"
-import { DIRECTION_WORD, edgePhrase } from "@/components/ItemDetail/links/LinkLedger"
-import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
+import { DIRECTION_WORD, edgePhrase } from "@/components/ItemDetail/tabs/links/LinkLedger"
+import type { LinkItemFacts } from "@/components/ItemDetail/tabs/links/link-items"
 import {
   grabGravityBody,
   prefersGravityReducedMotion,

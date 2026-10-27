@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
-import { LinkConstellation } from "@/components/ItemDetail/links/LinkConstellation"
+import { LinkConstellation } from "@/components/ItemDetail/tabs/links/LinkConstellation"
 import { layoutPlate } from "@/lib/link-constellation-layout"
 import type { EgoEdge } from "@/lib/link-graph"
 

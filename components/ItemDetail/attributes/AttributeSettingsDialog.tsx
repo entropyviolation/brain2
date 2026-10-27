@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/AttributeSettingsDialog.tsx — Attribute settings
+ * components/ItemDetail/attributes/AttributeSettingsDialog.tsx — Attribute settings
  *
  * A popup over item detail for the attribute itself: the name every item
  * shares, a copyable id, the type, when it was created, where it is defined,

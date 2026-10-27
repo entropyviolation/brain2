@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/SchedulingSummary.tsx — Scheduling tab readout
+ * components/ItemDetail/tabs/scheduling/SchedulingSummary.tsx — Scheduling tab readout
  *
  * One CRT strip that answers "where does this item sit right now": its
  * placement (day and time, week, month, or year), its deadline, whether it is

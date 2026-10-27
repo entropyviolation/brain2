@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/link-items.ts — What the Links tab shows about
+ * components/ItemDetail/tabs/links/link-items.ts — What the Links tab shows about
  * another item: its type ids (for relation scope), type plate name, first
  * list name, and title. Reads the stores once per render through
  * `useLinkItems`. Nothing here imports `components/People/` (8.1 reuses it).

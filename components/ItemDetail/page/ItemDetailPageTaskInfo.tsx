@@ -1,8 +1,8 @@
 // Page-only Task Information card for the full-screen item detail. Not for ItemDetailPopup, the To do drawer, or the task card.
 
 import type { Dispatch, SetStateAction } from "react"
-import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
-import { ItemRewardField } from "@/components/ItemDetail/ItemRewardField"
+import { ItemEstimateField } from "@/components/ItemDetail/tabs/details/ItemEstimateField"
+import { ItemRewardField } from "@/components/ItemDetail/tabs/details/ItemRewardField"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"

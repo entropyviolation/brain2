@@ -9,7 +9,7 @@
 import type { Dispatch, SetStateAction } from "react"
 import type { Task } from "@/lib/types"
 import { Timer } from "lucide-react"
-import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
+import { ItemPenTimeSection } from "@/components/ItemDetail/tabs/time/ItemPenTime"
 import { Input } from "@/components/ui/input"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"

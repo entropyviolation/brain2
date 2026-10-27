@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemNotesLog.tsx — Dated notes on any item
+ * components/ItemDetail/tabs/notes/ItemNotesLog.tsx — Dated notes on any item
  *
  * Notes are a log by default: each entry is stamped with the day (and clock)
  * it is about, newest first, grouped under day plates. The composer sits on

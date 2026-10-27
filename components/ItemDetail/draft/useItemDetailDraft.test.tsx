@@ -8,7 +8,7 @@ import { resetLocalStorage } from "@/tests/test-utils"
 import { resetItemActivity } from "@/lib/item-activity"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
+import { useItemDetailDraft } from "@/components/ItemDetail/draft/useItemDetailDraft"
 
 function CycleHarness({ taskId }: { taskId: string }) {
   const { task, addDependency } = useItemDetailDraft(taskId)

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/SuggestionShelf.tsx — "Might be missing"
+ * components/ItemDetail/tabs/links/SuggestionShelf.tsx — "Might be missing"
  * (LINKS_REDESIGN §7, L4.3). At most five rows: other item, relation, one
  * reason line. ✓ writes a draft link, ✕ stores the key on the item
  * (`dismissedLinkSuggestions`), Mute hides the source everywhere.

@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/useItemDetailDraft.ts — Shared item-detail draft state
+ * components/ItemDetail/draft/useItemDetailDraft.ts — Shared item-detail draft state
  *
  * The logic both detail variants (popup + page) share: subscribe to the task
  * store, load the selected task into local draft state, and the

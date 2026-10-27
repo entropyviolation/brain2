@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/AttributeCreator.tsx — Create attributes from item detail
+ * components/ItemDetail/attributes/AttributeCreator.tsx — Create attributes from item detail
  *
  * Inline control for defining a brand-new typed attribute while looking at an
  * item. The type is picked from a palette of keys grouped by what they hold

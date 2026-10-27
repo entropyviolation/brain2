@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkLedger.tsx — Every link around this item,
+ * components/ItemDetail/tabs/links/LinkLedger.tsx — Every link around this item,
  * as text (PD 6.3). The full-text twin of the radial plate.
  *
  * Groups by relation as read from this item. Each row: orb, title, type
@@ -18,7 +18,7 @@
 import { getRelationDef } from "@/lib/relation-registry"
 import { useMemo } from "react"
 import { iconFor } from "@/components/Icons/Icon"
-import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
+import type { LinkItemFacts } from "@/components/ItemDetail/tabs/links/link-items"
 import type { EdgeDirection, EgoEdge } from "@/lib/link-graph"
 import { relationLabel } from "@/lib/links"
 import "./rich-links.css"

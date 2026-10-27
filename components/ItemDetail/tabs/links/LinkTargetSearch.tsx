@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/links/LinkTargetSearch.tsx — Find the other item in
+ * components/ItemDetail/tabs/links/LinkTargetSearch.tsx — Find the other item in
  * the Links composer (PD 6.2).
  *
  * Typeahead over every item: 20px orb, title, type plate, first list name.
@@ -12,7 +12,7 @@
 
 import { useId, useMemo, useState } from "react"
 import { iconFor } from "@/components/Icons/Icon"
-import type { LinkItemFacts } from "@/components/ItemDetail/links/link-items"
+import type { LinkItemFacts } from "@/components/ItemDetail/tabs/links/link-items"
 import type { Task } from "@/lib/types"
 
 const LIMIT = 8

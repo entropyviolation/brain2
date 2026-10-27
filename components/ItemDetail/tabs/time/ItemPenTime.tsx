@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ItemPenTime.tsx — Pens on an item, and the time they add up to
+ * components/ItemDetail/tabs/time/ItemPenTime.tsx — Pens on an item, and the time they add up to
  *
  * Phase 5 of `docs/TODO_REDESIGN.md`. `ItemPenLinksField` edits `Task.penLinks`
  * (the same list **Remember for this task** writes; the first link is the clock
@@ -18,7 +18,7 @@ import { ancestorChains, isDescendant } from "@/lib/pen-tree"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { findPen, partsMinutes, timeTrio, trackedTimeForItem } from "@/lib/tracked-time"
 import type { Task } from "@/lib/types"
-import { ItemTimeLedger } from "@/components/ItemDetail/ItemTimeLedger"
+import { ItemTimeLedger } from "@/components/ItemDetail/tabs/time/ItemTimeLedger"
 import { PenChainVisual } from "@/components/Home/Tracking/pen-chain-visual"
 import { PEN_COLOR_OPEN_TITLE, openPenSettings, penColorDoubleClick } from "@/components/Home/Tracking/open-pen-settings"
 import "./item-pen-time.css"

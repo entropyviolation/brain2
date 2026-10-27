@@ -23,10 +23,10 @@ import { ItemDetailPageSubtasks } from "@/components/ItemDetail/page/ItemDetailP
 import { ItemDetailPageTabList } from "@/components/ItemDetail/page/ItemDetailPageTabList"
 import { useItemDetailPageCommands } from "@/components/ItemDetail/page/useItemDetailPageCommands"
 import { useItemDetailPageView } from "@/components/ItemDetail/page/useItemDetailPageView"
-import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
-import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
-import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
+import { useItemDetailDraft } from "@/components/ItemDetail/draft/useItemDetailDraft"
+import { useItemDetailSession } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
+import { useItemDetailSaveHotkey } from "@/components/ItemDetail/draft/useItemDetailSaveHotkey"
+import { useItemDetailUndoHotkey } from "@/components/ItemDetail/draft/useItemDetailUndoHotkey"
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { Tabs } from "@/components/ui/tabs"
 import { useItemTypeStore } from "@/lib/item-type-store"
@@ -34,7 +34,7 @@ import { peekHabitSettingsReturn } from "@/lib/habit-list-item"
 import { requestNavigateToListAfterPaint } from "@/lib/app-navigation"
 import { useTaskStore } from "@/lib/task-store"
 import type { ItemTypeDefinition, Task } from "@/lib/types"
-import "./item-detail-chrome.css"
+import "@/components/ItemDetail/chrome/item-detail-chrome.css"
 
 interface EnhancedTaskDetailProps {
   taskId: string

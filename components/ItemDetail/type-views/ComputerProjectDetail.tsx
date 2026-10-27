@@ -1,5 +1,5 @@
 /**
- * components/ItemDetail/ComputerProjectDetail.tsx — Computer Project desk
+ * components/ItemDetail/type-views/ComputerProjectDetail.tsx — Computer Project desk
  *
  * The item-detail face for type Computer Project. Status, repository, next
  * actions, milestones, project notes, and tracked time are the operation's
@@ -27,7 +27,7 @@ import {
   selectToDoNext,
 } from "@/lib/operations"
 import { addPart, addPhase } from "@/components/Operations/operation-actions"
-import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { ItemNotesLog } from "@/components/ItemDetail/tabs/notes/ItemNotesLog"
 import { foldOperationHomeNotes } from "@/lib/operations"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { APP_NAV_KEYS, writeStoredId, writeStoredTab } from "@/lib/app-navigation"
