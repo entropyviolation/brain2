@@ -57,6 +57,8 @@ describe("TodoPanel phone", () => {
     expect(container.querySelector(".todo-window")).toBeNull()
     expect(container.querySelector(".todo-fascia")).toBeNull()
     expect(container.querySelector(".todo-desk-plate")).toBeNull()
+    expect(container.querySelector(".todo-sheet")).toBeNull()
+    expect(container.querySelector(".todo-season-row")).toBeNull()
     expect(screen.getByRole("tab", { name: "Day" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByText("Finish slides")).toBeInTheDocument()
     expect(container.querySelector("[data-ui-name='Assigned composer']")).toBeTruthy()

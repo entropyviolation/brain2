@@ -6,10 +6,10 @@
  * column picker, mass edit, points (own and per step), prerequisites (Needs chips,
  * what this unlocks and any inherited due date), the notice-dot answers
  * and the period values. It writes through the same store calls as the lid
- * (`onStepsChange` = the panel's `handleSteps`, `updateTask`), so the lid,
+ * (`onStepsChange` = the panel's `handleSteps` in `desk/use-todo-desk-actions.ts`, `updateTask`), so the lid,
  * the card and item detail always agree. **↗ Item** opens item detail on top
  * (`pushItemLayer`); item detail's **Card** opens this. Mounted once in
- * `todo-panel.tsx`; which task is open lives in `lib/task-card.ts`.
+ * `desk/todo-desk-overlays.tsx`; which task is open lives in `lib/task-card.ts`.
  */
 "use client"
 
