@@ -27,7 +27,7 @@ Facts the old essay still got wrong. Do not put them back:
 - The closed-row Done cell is σ (`splitPercent` in `lib/tree-math.ts`), not three B/G/E percents. B / G / E stay on the lid, the task card, and item detail.
 - The task card's Order lane is gone. Unlock counts stay on the column. Node size by unlock value is not a feature.
 - Just Start order in `startOrderFor` (`lib/next-step.ts`) is already level, then step unlock value, then estimate, then spark.
-- **Padded for you** is wired in `SessionPlanner.tsx` (`sessionPadded`, `sessionPaceFactor`).
+- **Padded for you** is wired in `session-planner/draft-view.tsx`, still reached through `SessionPlanner.tsx` (`sessionPadded`, `sessionPaceFactor`).
 - Plan day view already offers **Session in this time** and writes a block with `source: "session"`.
 
 ## Decisions
@@ -36,7 +36,7 @@ _Last mapped: 2026-10-27._ These still bind. A change that breaks one needs alli
 
 | # | Question | Decided |
 |---|----------|---------|
-| 1 | Name for a short "right now" plan | **Session** |
+| 1 | Name for a short "right now" plan | **Session**. In prose, a **planned work session**: a name, a length set first, and tiered assignments. Working on now is an **open work session** on the same pen clock. Play inside a Session starts that open work session. The words "named" and "timed" do not separate them. See the To Do README. |
 | 2 | Tier labels | **Bare minimum / Goal / Exceptional**. Stored ids stay `min`, `goal`, `exceptional` (and the older completion-tier ids). A rename needs a migration |
 | 5 | Steps as items | **When needed.** A step becomes an item the first time it needs notes, files, or links |
 | 6 | Name of the popup | **To Do task card** ("task card") |
@@ -76,4 +76,4 @@ _Last mapped: 2026-10-27._ Chosen, not forgotten. Do not rebuild these from the 
 
 ## Not this file
 
-These notes live in the To Do README and were not part of this close. This file does not reopen them and does not cancel them: the node-detail lab, the B/G/E score on the Home day lamp and Analytics, `estimateLog` feeding pace, a global note kind, load and pace math drawings, and the Solarpunk garage mockup.
+These notes live in the To Do README and were not part of this close. This file does not reopen them and does not cancel them: the node-detail lab, the B/G/E score on the Home day lamp and Data, `estimateLog` feeding pace, a global note kind, load and pace math drawings, and the Solarpunk garage mockup.

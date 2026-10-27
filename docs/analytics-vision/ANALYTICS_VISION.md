@@ -1,4 +1,4 @@
-# Analytics vision
+# Data vision
 
 This is the fullest analytics tab this app’s data can support. It is synthesized from five section reports — [Tracking](01-tracking.md), [Habits](02-habits.md), [Plan](03-plan.md), [Now](04-now.md), and [Telegram](05-telegram.md) — and it was written without looking at the current analytics UI. Those five documents stay the detailed source. This one carries each section’s implementation far enough that a reader of only this file knows what to compute, then designs the joins across domains.
 
@@ -94,7 +94,7 @@ There is no `updatedAt` on the row. A later drag, split, or repaint replaces the
 | Tags are a property of time | Pen `tags` mean “always.” `TimeEntry.tagIds` are extras. `effectiveTagIds` unions the primary pen, every secondary pen, and block tags. |
 | Tag minutes are unioned across scopes | The same minute painted Work in Activity and Work-tagged in Location counts once for the Work tag. |
 | Within one tag, minutes are a set | Overlapping blocks that share a tag do not add. |
-| Display depth is a lens | `TrackScope.displayDepth` (`null` = Exact) never rewrites paint. At a collapsed depth, each distinct ancestor gets a share, and the shares sum to the block. An ancestor reached twice is paid once. Analytics picks a depth without writing `displayDepth`. |
+| Display depth is a lens | `TrackScope.displayDepth` (`null` = Exact) never rewrites paint. At a collapsed depth, each distinct ancestor gets a share, and the shares sum to the block. An ancestor reached twice is paid once. Data picks a depth without writing `displayDepth`. |
 | Variants have two totals | **Reach** overlaps and can exceed the parent. **Split** partitions the parent, unlabeled included. |
 | Hidden pens still count | `hiddenPenIds` only removes a pen from the well. |
 | Companion links fill blanks | A `PenLink` paints the other scope only on minutes that scope left empty, unless someone asked to overwrite. |
@@ -129,7 +129,7 @@ Screen Time category roots share six names and **different ids** (`st-cat-work` 
 
 **Open-until-midnight.** `at:`, `mood:`, `start:` of an activity pen, and `currently` paint from the current minute through the end of that local day. The next switch overwrites only the remainder. `stopped` truncates to now. `track: name 30m` paints a closed window. A tail that ends at 1440, with no matching `spanId` continuing at 0 the next day, is **asserted through the end of the day**, not observed minute by minute.
 
-**Sessions.** At most one work session and one pen-color session. Fields include `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`. Pause is accumulated milliseconds, not a painted block. When the session ends, the blocks remain and the pointer is cleared, including pause totals. Header **Update state** extends the open stretch up to now or paints this minute with a seam. It erases future minutes. It never paints through midnight.
+**Open work sessions.** At most one Operations work session and one pen-color work session (Working on now). A planned work session (To Do → Session) is a separate record; play inside it uses the pen clock. Fields include `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`. Pause is accumulated milliseconds, not a painted block. When the session ends, the blocks remain and the pointer is cleared, including pause totals. Header **Update state** extends the open stretch up to now or paints this minute with a seam. It erases future minutes. It never paints through midnight.
 
 **Sun.** `DaySunTimes` for a local date and a lat/lng pin: `sunriseMinutes`, `sunsetMinutes`. Cached per `YYYY-MM-DD|lat|lng`; first write wins. Default pin in the astronomy helper is San Diego. This is a clock, not a pen.
 
@@ -228,7 +228,7 @@ Edit history of a block. Coordinates on the row. An `eventId` on a confirmed blo
 
 ## Habits
 
-Source: [02-habits.md](02-habits.md). Habits already score themselves. Analytics keeps the app’s percents, curves, floors, and point rules, and asks the questions those numbers were not given room to answer. It does not invent a second grade.
+Source: [02-habits.md](02-habits.md). Habits already score themselves. Data keeps the app’s percents, curves, floors, and point rules, and asks the questions those numbers were not given room to answer. It does not invent a second grade.
 
 ### Entities and grains
 
@@ -476,7 +476,7 @@ Birth or move history of an event or a free block. Attendance. A done flag on a 
 
 Source: [04-now.md](04-now.md). Now is the header door onto the present. It does not have a private database. Almost every save lands in a store that Tracking, Plan, Operations, or ingest also write. The dialog’s open and close, which pane was showing, which lane was selected, and the draft clocks die when the dialog closes. There is no persisted sample of “the user looked at Now,” no cognitive-state enum, and no assertion log.
 
-Analytics of Now is analytics of a short-horizon state reconstructed from occupancy, with a thin set of true event times beside it. Reconstructed presence is not an observed check-in. Capture doors (Ingest, From Notes, Phone Notes) do not log the present moment.
+Data of Now is analytics of a short-horizon state reconstructed from occupancy, with a thin set of true event times beside it. Reconstructed presence is not an observed check-in. Capture doors (Ingest, From Notes, Phone Notes) do not log the present moment.
 
 ### Entities and grains
 
@@ -490,7 +490,7 @@ Analytics of Now is analytics of a short-horizon state reconstructed from occupa
 
 `presencePaintEnd` is `min(floor(now) + 1, 1440)`. A now-stamp does not paint through midnight and does not wrap. It is also a deletion of the rest of today on that lane. `spanId` is not set by the Now stamp or the sequence painter. `moodReading` is copied forward when Update continues a neighbor that already had one. The lane picker does not edit the nine ranks. Until a reading is stored, mood analytics here is categorical.
 
-`loggedAt` on a lane is not an assertion timestamp. It is the latest minute that fact still names. A live work or pen-color hint can display a current name with no covering block. Historical analytics never see the hint. Analytics of “what was true” uses coverage. Analytics of “what the dialog would have shown” may use last-known, labeled as the fallback, not as fact.
+`loggedAt` on a lane is not an assertion timestamp. It is the latest minute that fact still names. A live work or pen-color hint can display a current name with no covering block. Historical analytics never see the hint. Data of “what was true” uses coverage. Data of “what the dialog would have shown” may use last-known, labeled as the fallback, not as fact.
 
 A **presence frame** at local minute `t` on date `d` is the 4-tuple of covering non-instant intervals. A component is missing when no interval covers `t`. Do not impute it. Joint state is the tuple of the components that are present.
 
@@ -1485,7 +1485,7 @@ One room, always one click from the landing card. It is the legend for trust. Ea
 
 **Goal edits rewrite the habit past.** The current `goal`, `increment`, `startValue`, `threshold`, `grace`, `floorPercent`, link mode, and `completionSources` overwrite the habit. Historical percents recompute. A retarget from 10 pages to 5 rewrites a logged 5 from 50% to 100%. You cannot date it. `completion.goal` is not the divisor the grade uses. Climb staircases for last year are wrong if `increment` changed last month. Every goal chart says this. The measurement audit lists goals whose current `goal` sits below the median historical `value` as a suspicion, not a proof.
 
-**Deleted habits lose their cells.** There is no archive. `deleteTask` strips the four maps and `habitExemptions`. Grades that included the habit cannot be reconstructed. Orphan planned actions remain, `sourceId` pointing nowhere. Orphan cells whose id is gone from `tasks` are ignored. Analytics recomputes from the live store or it will disagree with the tubes.
+**Deleted habits lose their cells.** There is no archive. `deleteTask` strips the four maps and `habitExemptions`. Grades that included the habit cannot be reconstructed. Orphan planned actions remain, `sourceId` pointing nowhere. Orphan cells whose id is gone from `tasks` are ignored. Data recomputes from the live store or it will disagree with the tubes.
 
 **Plan drags that vanish.** An event drag keeps the id and replaces `date` or the clock. The old day is gone. There is no tombstone. A multi-day `endDate` is not shifted by a month drop that writes `date` only, so a span can invert. A live funnel move writes no placement, because the period did not end unfinished. The first durable trace is the placement appended when a period ends still open. Day unschedule deletes a to-do’s placement. Week and month unschedule keep the planned action and coarsen the task: grain leak. `deleteAction` removes the block and leaves the task scheduled. `deleteEvent` can leave checklist tasks aimed at a missing id. Those tasks stay in adherence. Show the dangling link.
 

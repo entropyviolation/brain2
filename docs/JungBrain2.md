@@ -24,11 +24,11 @@ Labels in the product:
 | Dream symbols | Symbol |
 | Impasse prompt | Ask sideways |
 | Whole-life arc | Season |
-| Sixth Analytics group | Meaning |
+| Sixth Data group | Meaning |
 
 ## Decisions that keep the current app intact
 
-**Meaning group toggle.** One setting, `showMeaningViews`, on `lib/user-settings-store.ts`, default **on**. Settings copy: "Show Meaning views in Analytics." When off, the studio index omits the Meaning group and a remembered Meaning tab falls back to Habits. Capture, marks, dream items, seasons, affect, and Ask sideways keep writing. Turning the setting back on shows the same records. Causal groups are unchanged either way.
+**Meaning group toggle.** One setting, `showMeaningViews`, on `lib/user-settings-store.ts`, default **on**. Settings copy: "Show Meaning views in Data." When off, the studio index omits the Meaning group and a remembered Meaning tab falls back to Habits. Capture, marks, dream items, seasons, affect, and Ask sideways keep writing. Turning the setting back on shows the same records. Causal groups are unchanged either way.
 
 **Season is not a `ReviewPeriod`.** `ReviewPeriod` stays `"day" | "week" | "month" | "quarter" | "year"` (`lib/types.ts`). A season is its own record with a start date, an optional end date, a name, and an aim. Direction and the ribbon compute over that date span. Period math, the review dropdown, and the period cursor do not grow a sixth key.
 
@@ -128,11 +128,11 @@ Essay feature 1, the library half. Lane: `lib/`. No UI.
 
 Done when those four cases pass and the function does not import a store.
 
-Do not add an Analytics tab in this slice. Do not export search's tokenizer. Do not persist series.
+Do not add an Data tab in this slice. Do not export search's tokenizer. Do not persist series.
 
 ### JG-2 — Meaning group and Coincidence Log
 
-Essay change 1 and feature 1, the view. Depends on JG-1. Lane: Analytics, plus the settings field.
+Essay change 1 and feature 1, the view. Depends on JG-1. Lane: Data, plus the settings field.
 
 - `components/Analytics/analytics-tabs.ts`: sixth group `id: "meaning"`, label `Meaning`, tabs `coincidence`, `symbols`, `exceptions`. Help strings say what the view lists and that a mark is the person's. `symbols` and `exceptions` render an empty studio frame until JG-4 and JG-6 ("Nothing recorded in this window yet.").
 - `analytics-tabs.test.ts`: the six ids, and `groupForTab("coincidence")` is `meaning`. Existing five groups keep their ids and order.
@@ -146,7 +146,7 @@ Do not move Observatory. Do not change a causal chart. Do not auto-mark.
 
 ### JG-3 — Named outliers
 
-Essay change 5, before the interview exists. Lane: Analytics. May proceed beside JG-2 after JG-1 is not required; this slice does not import coincidence.
+Essay change 5, before the interview exists. Lane: Data. May proceed beside JG-2 after JG-1 is not required; this slice does not import coincidence.
 
 `lib/named-outliers.ts` returns the two or three most extreme days in a numeric daily series (highest and lowest), each with `dateKey`, value, and optional `itemId`. Needs at least 20 days in the series before a tail is named; below that, return none and do not add a sentence.
 
@@ -158,7 +158,7 @@ Do not change grade math. Do not color a new scale. Do not require an interview 
 
 ### JG-4 — Exception interview
 
-Essay feature 2. Depends on JG-3's day picker. Lane: Reviews, then Analytics.
+Essay feature 2. Depends on JG-3's day picker. Lane: Reviews, then Data.
 
 `lib/exception-days.ts` flags a local date in the top or bottom 5% of a trailing 90-day series for habits %, points, mood, or reflection. Same 20-day floor. A day that is extreme on two metrics lists both.
 
@@ -172,7 +172,7 @@ Do not block finishing the morning ritual. Do not invent the note. Do not add th
 
 ### JG-5 — Affect on capture
 
-Essay change 2. Lane: capture. Independent of JG-2; can run beside JG-3 and JG-4. Does not touch Analytics charts until a follow-up inside this same slice wires read-only filters.
+Essay change 2. Lane: capture. Independent of JG-2; can run beside JG-3 and JG-4. Does not touch Data charts until a follow-up inside this same slice wires read-only filters.
 
 Optional one-tap on Quick Add, the Inbox row, and BIM parse: Calm, Charged, Low, Stuck. BIM suffixes `!!`, `!?`, `--` as decided above. Stored as `affect` + `affectAt` on the item. Unmarked items stay unmarked.
 
@@ -226,13 +226,13 @@ Do not delete declined rows. Do not shame. Do not call a model to phrase the mis
 
 ### JG-9 — Life seasons
 
-Essay feature 5. Lane: Goals, then Analytics. Independent of JG-1–8. Does not edit `ReviewPeriod`.
+Essay feature 5. Lane: Goals, then Data. Independent of JG-1–8. Does not edit `ReviewPeriod`.
 
 `lib/life-seasons.ts`: list of `LifeSeason`, persist, seasons must not overlap. Starting one ends the open season the day before `startedOn`. Name and aim are required strings. No default seasons are seeded.
 
 `DirectionReport.tsx` already knows served and neglected objectives. Add a range argument for an arbitrary inclusive span (the season's dates) without removing the current period-key path. Home → Goals gains a Season strip: name, aim, start, end. One open season.
 
-`SeasonsRibbon` in Analytics → Goals (Accuracy group, existing Goals view, not the Meaning group): horizontal bands, one per season, using the alluvial layout in `studio-plots.tsx` only if it already accepts categorical bands; otherwise a simple labeled bar row. Each band lists objectives served, neglected, and newly risen (neglected in the previous season, served in this one). Empty vault: one sentence, no fake seasons.
+`SeasonsRibbon` in Data → Goals (Accuracy group, existing Goals view, not the Meaning group): horizontal bands, one per season, using the alluvial layout in `studio-plots.tsx` only if it already accepts categorical bands; otherwise a simple labeled bar row. Each band lists objectives served, neglected, and newly risen (neglected in the previous season, served in this one). Empty vault: one sentence, no fake seasons.
 
 Done when two non-overlapping seasons round-trip, an overlap is rejected, Direction for a season uses only that span, and day/week/month/quarter/year reviews still open.
 
@@ -262,7 +262,7 @@ Claim one slice. JG-5, JG-7, and JG-9 share no files with JG-1 and can run besid
 
 | Slice | Owns | Does not touch |
 | --- | --- | --- |
-| JG-1 | `lib/coincidence.ts` | Analytics tabs, stores |
+| JG-1 | `lib/coincidence.ts` | Data tabs, stores |
 | JG-2 | `analytics-tabs.ts`, `CoincidenceView.tsx`, `coincidence-marks.ts`, `showMeaningViews` | Observatory, causal charts |
 | JG-3 | `lib/named-outliers.ts`, Calibration, Habits, Cross-section | Grade formulas |
 | JG-4 | `lib/exception-days.ts`, `MorningReview.tsx`, density tooltip, `ExceptionsView.tsx` | Evening review |
@@ -279,7 +279,7 @@ A person can open Meaning and see dated series with observed and expected counts
 
 ## Docs each slice updates
 
-After the slice, in the same change: the colocated README, [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) (check the bullet), and the Analytics screenshot pair only when a view's copy changed (`npm run capture-screenshots` while the app is running). [`SPEC_MAPPING.md`](SPEC_MAPPING.md) stays put; this wave is not a spec-docx item.
+After the slice, in the same change: the colocated README and [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) (check the bullet). A Data screenshot is a gallery sync when a view's copy changed (`BRAIN2_ONLY`, `.cursor/rules/doc-sync.mdc`), not a full recapture. [`SPEC_MAPPING.md`](SPEC_MAPPING.md) stays put; this wave is not a spec-docx item.
 
 ## Source notes
 

@@ -42,7 +42,7 @@ Goals / Climb / Text) so cheap ticks sit together. Same completion math.
 The Tracking “Sleep this day” form is gone. Do not put it back.
 
 Morning Review (`#morning-bedtime`, `#morning-waketime`) and the block-editor
-sleep clocks (`entry-dialog.tsx`) wear `~` and the dashed **est.** chip when
+sleep clocks (`entry-dialog/entry-clocks.tsx`) wear `~` and the dashed **est.** chip when
 the value is still assumed (remembered sleep log or painted Sleep). Basis copy
 comes from `sleepClockEstimateBasis` in `lib/estimated-values.ts`. Editing the
 clock clears the mark; Save writes `definite` / `estimated` on the night.
@@ -100,6 +100,6 @@ Moon / Countdown quieter. Habits control: tubes lead, sheet lamps quieter,
 willpower reward-scale. Just Start keeps mill phosphor Done. Plan week/month
 inherit Day rail voice. Period data: Habits coarser periods follow Home day.
 World write: ItemDetail → `commitItemEdit`; ingest finish → `applyLinkedEffects`.
-Tracking / Lists / Scheduler / Analytics / Ops / Modules / Docs / dialogs
+Tracking / Lists / Scheduler / Data / Ops / Modules / Docs / dialogs
 polished per DESIGN_STYLE. Wave 10: body search, description mirror, Tidy/Trip
 Items dual-write shim.

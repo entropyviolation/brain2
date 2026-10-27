@@ -18,12 +18,12 @@ Paste this checklist into every wave-lead prompt. Source: `docs/analytics-plan/0
 - [ ] Raw, curved, and blend stay apart.
 - [ ] Stamps only. Do not invent times.
 - [ ] Missing is an empty frame.
-- [ ] No restyle outside Analytics.
+- [ ] No restyle outside Data.
 - [ ] Language readings are labeled guesses.
 
 ## Screenshot rule
 
-If a view’s pixels or copy change, update the `docs/screenshots` sidecar in that wave (`npm run capture-screenshots` while the app is running).
+If a view’s pixels or copy change, the gallery update is on demand (`.cursor/rules/doc-sync.mdc`): `BRAIN2_ONLY` for that view while the app is running. A full recapture is a gallery day, not a step of the wave.
 
 If a view only moves to a new group, update the capture script’s group-then-view click in the same wave (`scripts/capture-screenshots.mjs` clicks the group tab, then the view tab). The old id must still resolve.
 
@@ -162,7 +162,7 @@ Brief: `docs/analytics-plan/01-preserve.md`.
 
 Runs after Wave A, after Wave B, and after Wave C. It does not redesign.
 
-Runs the Analytics tests that already sit beside the views:
+Runs the Data tests that already sit beside the views:
 
 - `analytics-tabs.test.ts`
 - `analytics-range.test.ts`

@@ -1,6 +1,6 @@
-# Analytics vision
+# Data vision
 
-This folder is a product design for the analytics tab Brain2’s stored records can support. It is synthesized from Tracking, Habits, Plan, Now, and Telegram. It ignores the current analytics UI on purpose: nothing here audits or describes the Analytics tab that already ships.
+This folder is a product design for the Data tab (formerly Analytics) Brain2’s stored records can support. It is synthesized from Tracking, Habits, Plan, Now, and Telegram. It ignores the current Data UI on purpose: nothing here audits or describes the Data tab that already ships.
 
 | File | What it covers |
 | --- | --- |
