@@ -282,7 +282,7 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
     return {
       status: "ignored",
       kind: "unknown",
-      summary: "Duplicate Telegram update",
+      summary: source.channel === "hub" ? "Duplicate scan" : "Duplicate Telegram update",
     }
   }
 
@@ -296,6 +296,18 @@ function authorizeIncoming(message: IncomingMessage, now: Date): ApplyResult | n
 
   const intent = parseMessage(text, now)
   const isPair = intent.kind === "pair"
+
+  // The bearer token on POST /api/scan is the check. A hub line is not a Telegram chat.
+  if (source.channel === "hub") {
+    if (isPair) {
+      return logAndReturn(message, {
+        status: "ignored",
+        kind: "pair",
+        summary: "Scan door accepts nfc: only",
+      })
+    }
+    return null
+  }
 
   if (source.channel !== "simulate") {
     const allowed =

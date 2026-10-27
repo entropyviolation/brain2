@@ -18,6 +18,7 @@ Texts, calls, and location are a different door: Settings → **Phone sync**
 | `MobileLogin.tsx` | Credentials: **admin** / **admin** |
 | `MobilePullCard.tsx` | One-tap manual pull from the shared hub |
 | `MobileLocationCard.tsx` | iPhone location. Shows only in the iOS build. Upload setup (URL, upload-only token, capture public key), Save goes straight on to Turn on (asks While Using, then Always, then starts). Recording stays on across launches until Turn off. **Set to Always** opens iPhone Settings while only While Using is granted. Send now. The plugin keeps the setup; the card stores nothing. See [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md). |
+| `MobileNfcCard.tsx` | _Last mapped: 2026-10-27_ iPhone NFC. Shows only in the iOS build (`BrainNfc`). Hub URL and hub token stay in the app. Scan reads the sticker’s hardware id. The first tap picks which saved tag that chip is (`brain2-nfc-chips`). A dose asks how many. Blank posts `nfc:{id}`. A door or a plain event posts with no question. `POST /api/scan` on `npm run phone:hub`. The Simulator cannot scan. Shortcuts stay. See [`docs/shortcuts/nfc-tags.md`](../../docs/shortcuts/nfc-tags.md). |
 | `lib/mobile-auth.ts` | sessionStorage login (no app-data keys) |
 | `lib/mobile-sync.ts` | HTTP client for the hub (`/api/sync` on the dev server) |
 
@@ -46,7 +47,7 @@ npm run mobile:ios:init   # first time only — adds ios/ project
 npm run mobile:ios        # static site, sync, launch an iPhone Simulator
 ```
 
-`npm run mobile:ios` can run while `npm run dev` is up. Next's static export always compiles into `.next`, which the dev server already owns, so the iOS script builds in `.mobile-build` and copies `out/` back (`scripts/mobile-static-build.mjs`). It then syncs `ios/` and launches an iPhone Simulator (`scripts/mobile-ios-sim.mjs`). A booted iPhone is used when one is already running; otherwise the first available iPhone. To install on a physical iPhone, open `ios/App/App.xcworkspace` in Xcode → **Signing & Capabilities** → your Team → Run.
+`npm run mobile:ios` can run while `npm run dev` is up. Next's static export always compiles into `.next`, which the dev server already owns, so the iOS script builds in `.mobile-build` and copies `out/` back (`scripts/mobile-static-build.mjs`). It then syncs `ios/` and launches an iPhone Simulator (`scripts/mobile-ios-sim.mjs`). A booted iPhone is used when one is already running; otherwise the first available iPhone. To install on a physical iPhone, open `ios/App/App.xcworkspace` in Xcode → **Signing & Capabilities** → your Team → Run. NFC reading also needs the **NFC Tag Reading** capability on the App ID `com.cogs.mobile`. A free Apple ID can still install the app. It cannot scan a sticker. The Simulator cannot scan one either. The entitlement is `ios/App/App/App.entitlements` (`NDEF` and `TAG`). This build reads the chip and does not write it.
 
 If `pod install` complains about UTF-8, the npm scripts already export `LANG=en_US.UTF-8`.
 

@@ -294,4 +294,9 @@ export interface IncomingMessage {
   attachments?: IncomingAttachment[]
   /** Test / simulate seam: skip Tesseract and use this OCR blob. */
   ocrText?: string
+  /**
+   * Client id for `POST /api/scan`. The dedupe key is `msg:hub:scan:<id>`.
+   * A retry with the same id does not log twice.
+   */
+  scanId?: string
 }
