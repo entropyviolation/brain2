@@ -477,6 +477,12 @@ export interface Task extends Item {
    */
   captureOrigin?: CaptureOrigin
   createdAt: Date
+  /**
+   * ISO time of the last content change through `updateTask`. Absent on rows
+   * that have not been saved since this field existed. Not `createdAt`.
+   * Stays a string so the persist Date reviver does not turn it into a Date.
+   */
+  modifiedAt?: string
   completed: boolean
   /**
    * When the task last transitioned to completed. Stamped centrally by the task
@@ -966,17 +972,27 @@ export interface ItemNoteEntry {
   pushCount?: number
 }
 
-/** A file attached to an item as a resource. Same blob storage as `file` attributes. */
+/** A file, file reference, or web link attached to an item as a resource. */
 export interface ItemResource extends FileValue {
   /** ISO time it was attached. */
   addedAt: string
   /** Optional caption: what this file is for. */
   caption?: string
   /**
+   * What this resource is for on the item that holds it. On an operation,
+   * that is the use in this operation. Same list as Item Detail → Resources.
+   */
+  useNote?: string
+  /**
    * Set when the file stays where it is on the computer instead of being
    * copied (`uri` is then `link:<id>`). Desktop only. `docs/RESOURCE_LINKS.md`.
    */
   link?: ResourceLink
+  /**
+   * Web address. `uri` is `url:<id>`, so attachment storage never treats it
+   * as a copied file.
+   */
+  url?: string
 }
 
 /** Where a linked resource lives on disk, and how to find it after a move. */
