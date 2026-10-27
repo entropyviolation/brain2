@@ -97,7 +97,7 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `receipt-parse.ts` | Product lines from receipt OCR |
 | `media-album.ts` | Collapse Telegram `media_group_id` bursts |
 | `bytes.ts` | data-URL helpers |
-| `apply-note.ts` | `n` / `note:` / `jot:` / `memo:` is a Text log instant at send time, or at a clock on the line (`est` / `estimated` / `~` estimated, `unknown` placement). Also appended to the block covering that minute. `day:` / `n day:` stay the day jot and do not read a clock. |
+| `apply-note.ts` | _Last mapped: 2026-10-27._ `n` / `note:` / `jot:` / `memo:` is a Text log instant at send time, or at a clock on the line (`est` / `estimated` / `~` estimated, `unknown` placement). Also appended to the block covering that minute. The Tracking log composer and the shelf’s bottom note add do not use this path (`paintLogNoteInstant`); they do not append. `day:` / `n day:` stay the day jot and do not read a clock. |
 | `apply-iphone-notes.ts` | `iphone-notes:` Shortcut dump → park on iPhone Notes Store / Parked; `2/3` continuations; skip by `iphone:` id. `parkLooseText` parks free text that named nothing. Generate the signed shortcut with `npm run shortcut:iphone-notes` ([recipe](../../docs/shortcuts/dump-iphone-notes-to-brain2.md)); it is not in the repo. |
 | `apply-pin.ts` | `pin` refreshes the grocery card. `pin todo` refreshes today's Home → To Do card. The two pins are separate |
 | `apply-now.ts` | `now` with a payload and `/now`: doing now, just did, about to do. Bare `now` stays status |
