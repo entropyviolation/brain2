@@ -184,7 +184,10 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   so a store trip can read the last list with the laptop off. The live grocery
   list is the Settings picker (`groc` / bare `store`); other open shopping-list
   counts sit once on that pinned card, and the dump reply is the same card. Live 24/7 replies:
-  `npm run phone:hub` (hydrate persist, own Telegram, webhook optional).
+  `npm run phone:hub` (hydrate persist, own Telegram, webhook optional,
+  `POST /api/scan` for one `nfc:` line while the hub is awake). The iPhone
+  app can read a blank sticker and post that line. The signed Shortcut stays
+  until that scan is proven ([`shortcuts/nfc-tags.md`](shortcuts/nfc-tags.md)).
   Dedupe stores `telegramMessageId`. An update with neither id is logged with a
   null dedupe key and is not applied.
   Shortcuts: `got:` / `bought:` (or a real open grocery line), `n …` (a discrete tick at send time, also on the covering
@@ -374,17 +377,28 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   To do tab keeps the panel id `tasks`), and `trackingTagIds` (Tracking-library
   tags so **Working on this now** can auto-fill linked Goal / Yes-No habits).
   The home board hides completed and inactive operations (`done`, `paused`,
-  `abandoned`, or `completed`) until **Show archived**. Settings can **delete**
+  `abandoned`, or `completed`) until **Show archived**. Sort includes
+  **Recently modified** (`Task.modifiedAt`). Home notes are the item note log
+  (`Task.noteLog`), not a separate pad; a leftover `homeNotes` attribute is
+  folded into that log. Settings can **delete**
   the operation after an Are you sure dialog. **Parts** are formulas
   (`partFormulas` / `partInstances`): a kind such as Issue → Article
   (drafted → written → formatted, then ordered / printed) or a plain Room.
-  Each part has its own page. Stage and finish steps are tasks and join To do;
-  ideas on a part are not tasks. Glance meters are chosen with **Metrics**.
+  Each part page is name, then status (current stage on the part, plus one
+  status report), then that part's to-dos, then notes. The stage progression
+  does not create or complete to-dos. Notes are the part's `ideas` and are
+  not tasks. Glance meters are chosen with **Metrics** and read the part's
+  stage. Older stage tasks already on the operation stay.
   Same composition idea as `ItemTypeDefinition.detailPanels` /
   `List.detailPanels`, applied per *item*. Panel ids migrate
   `activities`→`locations` and `itinerary`→`timeline`. Live work sessions
   (`lib/operation-work-session.ts`) stamp To Do Done, `timeLogs`, and the
-  Tracking minute grid from one clock. See `lib/operation-types.ts`,
+  Tracking minute grid from one clock. The Log tab
+  (`components/Operations/OperationLogFeed.tsx`) lists those punches oldest
+  first and always includes a **created** row from the operation's `createdAt`,
+  including when no time has been logged. Pen colors on the log are `Task.penLinks`.
+  Double-clicking a punch opens the matching Tracking block (`EntryDialog`) when
+  the punch shares that block's id or start and end. _Last mapped: 2026-10-27._ See `lib/operation-types.ts`,
   `lib/operation-parts.ts`, `components/Operations/README.md`.
 
 ## §6 Next Actions / Lists — ✅/🟡
@@ -425,9 +439,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Lists panel reused outside the Lists tab** — ✅ an Operation's **To do** panel
   mounts `list-content/ListContentPanel` over a real per-operation list
   (`lib/operation-lists.ts`, filed in an **Operations** folder). Phase steps and
-  part stage/finish tasks are filed onto that list, so operation work is
-  ordinary items and appears in Lists / All Items / search. Ideas on parts are
-  not list items.
+  to-dos filed on a part are on that list, so operation work is ordinary items
+  and appears in Lists / All Items / search. A part's stage checklist and its
+  notes are not list items. Older stage tasks already created stay on the list.
 - Category shape — ✅ `TaskCategory`; **nested categories / sublists** — ✅
   `parentCategoryId` + `lib/list-tree.ts` (ancestor/descendant/move-cycle
   helpers), nesting rendered in `FolderTree.tsx`/`BreadcrumbNav.tsx`, per-category
@@ -1372,8 +1386,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   **Other** stores the typed note beside the token. The same optional shape is
   asked on Scheduler and To Do **Push** (`SchedulePlacement.missReason`), on
   marking a task missed and on header-plan **Skip** when the linked task is
-  still open (`Task.missReason`), and on an operation marked abandoned or via
-  menubar **Why missed** (`OperationReview.blockedReasons`). A habit
+  still open (`Task.missReason`), and on an operation marked abandoned
+  (`OperationReview.blockedReasons`; no menubar **Why missed** button). A habit
   missed-opportunity wand stores `TaskCompletion.missReason` as a string.
   Skip, close, or a blank save still does the action. Dismiss, grades, and the
   after-action form stay silent. Analytics → Reviews lists the dated notes
