@@ -18,7 +18,8 @@
  * Connected lists (`List.linkedTargetListIds`) auto-join membership through
  * `addTask` / `updateTask` / `addListLink`; see `lib/list-links.ts`.
  * `updateTask` appends `Task.estimateLog` when `estimatedDuration` changes
- * (`noteTaskEstimate`). The same minutes again adds no row.
+ * (`noteTaskEstimate`). The same minutes again adds no row. A content change
+ * stamps `Task.modifiedAt` (ISO string, `lib/task-modified.ts`). A no-op save leaves that clock.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -79,6 +80,7 @@ import { withArchiveListMembership } from "@/lib/archive-lists"
 import { keptCreatedAt } from "@/lib/date-utils"
 import { keptCaptureOrigin } from "@/lib/capture-origin"
 import { noteTaskEstimate } from "@/lib/task-card"
+import { withModifiedStamp } from "@/lib/task-modified"
 
 // Date-typed fields on persisted Task / List objects. The persist reviver
 // only resurrects Dates for these keys so it never converts unrelated strings
@@ -502,10 +504,11 @@ export const useTaskStore = create<TaskState>()(
               withArchiveListMembership(linked, prev, state.lists, state.folders),
               new Date(),
             )
+            const stamped = withModifiedStamp(prev, archived)
             before = prev
-            after = archived
+            after = stamped
             const newTasks = [...state.tasks]
-            newTasks[index] = archived
+            newTasks[index] = stamped
             return { tasks: newTasks }
           }
           return state

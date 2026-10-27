@@ -21,6 +21,10 @@
  *
  * Removing a resource takes it off the item draft. The stored bytes are kept
  * so Discard can bring it back.
+ *
+ * A web link is the same record with `url` set (`webLinkResource`). `useNote`
+ * is what the resource is for on this item — the operation Resources tab
+ * writes that same field.
  */
 "use client"
 
@@ -31,7 +35,7 @@ import { Download, ExternalLink, FolderOpen, Link2, Paperclip, Search, Trash2 } 
 import type { ItemResource } from "@/lib/types"
 import { fileToFileValue } from "@/components/Lists/attributes/helpers"
 import { enrichWithText, useFileHref } from "@/components/Lists/attributes/AttributeValueField"
-import { formatBytes, resourceKind, RESOURCE_KIND_LABEL, toResource, type ResourceKind } from "@/lib/item-resources"
+import { formatBytes, isWebLinkResource, resourceKind, RESOURCE_KIND_LABEL, toResource, type ResourceKind } from "@/lib/item-resources"
 import {
   displayPath,
   getFileLinkBridge,
@@ -189,13 +193,27 @@ function CaptionField({ resource, onCaption }: { resource: ItemResource; onCapti
   )
 }
 
+function UseNoteField({ resource, onUseNote }: { resource: ItemResource; onUseNote: (note: string) => void }) {
+  return (
+    <IsolatedInput
+      value={resource.useNote ?? ""}
+      onCommit={onUseNote}
+      placeholder="What this is for here"
+      aria-label="What this is for here"
+      className="h-8"
+    />
+  )
+}
+
 function StoredViewer({
   resource,
   onCaption,
+  onUseNote,
   onRemove,
 }: {
   resource: ItemResource
   onCaption: (caption: string) => void
+  onUseNote: (note: string) => void
   onRemove: () => void
 }) {
   const kind = resourceKind(resource)
@@ -222,6 +240,7 @@ function StoredViewer({
         </span>
       </div>
       <CaptionField resource={resource} onCaption={onCaption} />
+      <UseNoteField resource={resource} onUseNote={onUseNote} />
       <div className="id-res-glass" data-kind={kind}>
         <PreviewGlass kind={kind} href={href} resource={resource} />
       </div>
@@ -235,6 +254,7 @@ function LinkedViewer({
   status,
   bridge,
   onCaption,
+  onUseNote,
   onRemove,
   onLocate,
 }: {
@@ -242,6 +262,7 @@ function LinkedViewer({
   status: LinkStatus | undefined
   bridge: FileLinkBridge | undefined
   onCaption: (caption: string) => void
+  onUseNote: (note: string) => void
   onRemove: () => void
   onLocate: () => void
 }) {
@@ -296,6 +317,7 @@ function LinkedViewer({
       )}
       {openError && <p className="text-xs text-destructive">{openError}</p>}
       <CaptionField resource={resource} onCaption={onCaption} />
+      <UseNoteField resource={resource} onUseNote={onUseNote} />
       <div className="id-res-glass" data-kind={kind}>
         {!bridge ? (
           <p className="id-res-glass-note">Linked on another computer. It is not copied here; open it there.</p>
@@ -315,6 +337,44 @@ function LinkedViewer({
           <PreviewGlass kind={kind} href={href} resource={resource} />
         )}
       </div>
+    </div>
+  )
+}
+
+function WebLinkViewer({
+  resource,
+  onCaption,
+  onUseNote,
+  onRemove,
+}: {
+  resource: ItemResource
+  onCaption: (caption: string) => void
+  onUseNote: (note: string) => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="id-res-viewer" aria-label={`Viewing ${resource.name}`}>
+      <div className="id-res-viewer-head">
+        <span className="attr-file-kind" data-kind="link">
+          {RESOURCE_KIND_LABEL.link}
+        </span>
+        <span className="id-res-viewer-name">{resource.name}</span>
+        <span className="id-res-viewer-keys">
+          <a className="attr-mini-key" href={resource.url} target="_blank" rel="noreferrer">
+            <ExternalLink className="h-3 w-3" /> Open
+          </a>
+          <button type="button" className="attr-mini-key id-res-remove" onClick={onRemove} aria-label={`Remove ${resource.name}`}>
+            <Trash2 className="h-3 w-3" /> Remove
+          </button>
+        </span>
+      </div>
+      {resource.url && (
+        <p className="id-res-path" title={resource.url}>
+          {resource.url}
+        </p>
+      )}
+      <CaptionField resource={resource} onCaption={onCaption} />
+      <UseNoteField resource={resource} onUseNote={onUseNote} />
     </div>
   )
 }
@@ -517,10 +577,23 @@ export function ItemResourcesPanel({ resources, onChange }: ItemResourcesPanelPr
             (() => {
               const onCaption = (caption: string) =>
                 write(list.map((r) => (r.id === selected.id ? { ...r, caption: caption.trim() || undefined } : r)))
+              const onUseNote = (useNote: string) =>
+                write(list.map((r) => (r.id === selected.id ? { ...r, useNote: useNote.trim() || undefined } : r)))
               const onRemove = () => {
                 const next = list.filter((r) => r.id !== selected.id)
                 write(next)
                 setSelectedId(next[0]?.id ?? null)
+              }
+              if (isWebLinkResource(selected)) {
+                return (
+                  <WebLinkViewer
+                    key={selected.id}
+                    resource={selected}
+                    onCaption={onCaption}
+                    onUseNote={onUseNote}
+                    onRemove={onRemove}
+                  />
+                )
               }
               return isLinkedResource(selected) ? (
                 <LinkedViewer
@@ -529,11 +602,18 @@ export function ItemResourcesPanel({ resources, onChange }: ItemResourcesPanelPr
                   status={linkStatus[selected.id]}
                   bridge={bridge}
                   onCaption={onCaption}
+                  onUseNote={onUseNote}
                   onRemove={onRemove}
                   onLocate={() => void locate(selected)}
                 />
               ) : (
-                <StoredViewer key={selected.id} resource={selected} onCaption={onCaption} onRemove={onRemove} />
+                <StoredViewer
+                  key={selected.id}
+                  resource={selected}
+                  onCaption={onCaption}
+                  onUseNote={onUseNote}
+                  onRemove={onRemove}
+                />
               )
             })()}
         </>

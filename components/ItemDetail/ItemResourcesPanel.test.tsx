@@ -2,6 +2,7 @@ import { useState } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { ItemResourcesPanel } from "./ItemResourcesPanel"
+import { webLinkResource } from "@/lib/item-resources"
 import { linkedResource, type FileLinkBridge, type LinkStat } from "@/lib/resource-links"
 import type { ItemResource } from "@/lib/types"
 
@@ -100,6 +101,16 @@ describe("ItemResourcesPanel links", () => {
     fireEvent.click(screen.getByTestId("resource-locate"))
     await waitFor(() => expect(screen.getByTestId("resource-path")).toHaveTextContent("/Volumes/Backup/Big.psd"))
     expect(screen.queryByText("Missing")).toBeNull()
+  })
+
+  it("writes the use note on the same resource", () => {
+    const link = webLinkResource("https://example.com/spec", new Date("2026-10-27T00:00:00Z"))!
+    const onChange = vi.fn()
+    render(<Harness initial={[link]} onChange={onChange} />)
+    const note = screen.getByRole("textbox", { name: "What this is for here" })
+    fireEvent.change(note, { target: { value: "the spec" } })
+    fireEvent.blur(note)
+    expect(onChange.mock.calls.at(-1)?.[0][0]).toMatchObject({ url: "https://example.com/spec", useNote: "the spec" })
   })
 
   it("explains a link made on another computer", () => {
