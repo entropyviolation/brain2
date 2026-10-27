@@ -1,9 +1,12 @@
+/**
+ * components/Home/Tracking/grids/superimpose-bar.test.tsx
+ */
 import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { SuperimposeBar } from "./superimpose-bar"
-import { getTrackingViewPrefs, resetTrackingViewPrefs, setTrackingViewPrefs } from "./tracking-view-prefs"
+import { getTrackingViewPrefs, resetTrackingViewPrefs, setTrackingViewPrefs } from "../tracking-view-prefs"
 
 beforeEach(() => {
   resetAllStores()

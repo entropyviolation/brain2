@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/mood-stretch-card.tsx — This stretch
+ * components/Home/Tracking/block-editor/mood-stretch-card.tsx — This stretch
  *
  * Mood blocks only. Three parts, every field optional: the body, the water,
  * and the heaps. The name is any word. Existing pens sit under it as equal

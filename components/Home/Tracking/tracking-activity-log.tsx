@@ -53,12 +53,9 @@ import { buildDoneTodoItems } from "@/components/Home/ToDo/todo-utils"
 import { proposeDoneEstimates } from "@/lib/estimate-proposals"
 import { getTaskCompletionDate } from "@/lib/completion-status"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
-import { isTrackingPaintSentinel } from "@/components/Home/Tracking/tracking-tool-mode"
+import { isTrackingPaintSentinel } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
-
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
+import { formatLocalDateKey } from "@/lib/date-utils"
 
 
 interface TrackingActivityLogProps {
@@ -87,7 +84,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
   const [logging, setLogging] = useState<{ startMin: number; endMin: number } | false>(false)
   const untrackedNotes = useTimeTrackingStore((s) => s.untrackedNotes)
   const setUntrackedNote = useTimeTrackingStore((s) => s.setUntrackedNote)
-  const dk = dateKey(currentDate)
+  const dk = formatLocalDateKey(currentDate)
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
 
   const dayEntries = useMemo(
@@ -140,7 +137,7 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
       doneItems.map((item) => {
         const task = tasks.find((candidate) => candidate.id === item.id)
         const completed = task ? getTaskCompletionDate(task) : null
-        const sameDay = completed ? dateKey(completed) === dk : false
+        const sameDay = completed ? formatLocalDateKey(completed) === dk : false
         const minutes = task?.actualDuration || item.estimatedDuration || 30
         return {
           id: item.id,

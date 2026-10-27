@@ -1,9 +1,12 @@
+/**
+ * components/Home/Tracking/tracking-log/tracking-log-week.test.tsx
+ */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { format } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
-import { submitTrackingLog } from "./tracking-log-model"
+import { submitTrackingLog } from "../tracking-log-model"
 import { TrackingLogWeek } from "./tracking-log-week"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 

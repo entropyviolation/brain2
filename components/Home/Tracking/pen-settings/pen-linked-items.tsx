@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-linked-items.tsx — Linked items, in Pen settings
+ * components/Home/Tracking/pen-settings/pen-linked-items.tsx — Linked items, in Pen settings
  *
  * The pen side of `Task.penLinks` (Phase 5, `docs/TODO_REDESIGN.md`). Item
  * detail edits the same field from the task side. Lists the tasks linked to
@@ -16,7 +16,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { setTaskPenLinked, tasksLinkedToPen } from "@/lib/task-clock"
 import { isOpen } from "@/lib/completion-status"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
-import "@/components/ItemDetail/item-pen-time.css"
+import "@/components/ItemDetail/tabs/time/item-pen-time.css"
 
 export function PenLinkedItems({ scopeId, penId, penName }: { scopeId: string; penId: string; penName: string }) {
   const tasks = useTaskStore((s) => s.tasks)

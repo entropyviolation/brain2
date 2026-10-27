@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/pen-settings/pen-settings-dialog.test.tsx
+ */
 import { describe, expect, it, beforeEach } from "vitest"
 import { render, screen, fireEvent, within } from "@testing-library/react"
 import { PenSettingsDialog } from "./pen-settings-dialog"

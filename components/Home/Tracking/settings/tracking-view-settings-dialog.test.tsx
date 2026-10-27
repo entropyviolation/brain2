@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/settings/tracking-view-settings-dialog.test.tsx
+ */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -5,7 +8,7 @@ import {
   getTrackingViewPrefs,
   resetTrackingViewPrefs,
   TRACKING_FILL_CLOCK_LABELS,
-} from "./tracking-view-prefs"
+} from "../tracking-view-prefs"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"

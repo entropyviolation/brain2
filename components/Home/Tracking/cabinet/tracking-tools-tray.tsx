@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-tools-tray.tsx — Paint tools, not pens
+ * components/Home/Tracking/cabinet/tracking-tools-tray.tsx — Paint tools, not pens
  *
  * Draw / Erase / Scissors live in `.trk-tools-tray` on the far-right
  * `.trk-tools-rail` of `TrkPenToolsRow`. They are radios: selected = inset mill

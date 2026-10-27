@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-phone.css — Phone Tracking only
+ * components/Home/Tracking/phone/tracking-phone.css — Phone Tracking only
  *
  * Every rule hangs off `.trk-phone` or `.trk-phone-sheet`, which the desk
  * does not render. A viewport of 768px and wider never mounts that tree.

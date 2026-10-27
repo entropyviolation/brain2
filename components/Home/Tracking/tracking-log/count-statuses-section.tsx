@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/count-statuses-section.tsx — Counts under the composer
+ * components/Home/Tracking/tracking-log/count-statuses-section.tsx — Counts under the composer
  *
  * One beveled well. A count is a name, a total, +, and a short time list.
  * Examples: joints, days happy.
@@ -7,7 +7,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogShelfDialog } from "@/components/Home/Tracking/log-shelf-dialog"
+import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
 import { ensureCountForKeyword, useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
 import { logKeywordPhrase, useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { formatLocalDateKey } from "@/lib/date-utils"

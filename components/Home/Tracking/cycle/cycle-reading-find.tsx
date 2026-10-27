@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cycle-reading-find.tsx — Find in the cycle reading
+ * components/Home/Tracking/cycle/cycle-reading-find.tsx — Find in the cycle reading
  *
  * Cmd+F / Ctrl+F while Cycle detail is open. The dialog owns the shortcut.
  * This file splits text, paints marks, and stamps which match is current

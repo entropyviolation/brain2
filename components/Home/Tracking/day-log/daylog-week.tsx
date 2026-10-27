@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/daylog-week.tsx — Day Log week of plan vs tracked
+ * components/Home/Tracking/day-log/daylog-week.tsx — Day Log week of plan vs tracked
  *
  * Seven columns for the week containing `currentDate`. The today column follows
  * the wall clock, not the selected day. Same data rules as the single-day Day
@@ -29,8 +29,8 @@ import { formatDuration, timeStringToMinutes } from "@/lib/time-entries"
 import { tagTotals } from "@/lib/tracking-summary"
 import { SLEEP_TAG_ID } from "@/lib/sleep-log"
 import { useLiveToday } from "@/lib/use-current-date"
-import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
-import "./daylog-week.css"
+import { WeekSummaryNest } from "@/components/Home/Tracking/day-summary/tracking-summaries"
+import "../daylog-week.css"
 
 const HOUR_H = 28
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)

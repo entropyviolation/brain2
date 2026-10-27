@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/level-categories-settings.tsx — Level categories per view
+ * components/Home/Tracking/settings/level-categories-settings.tsx — Level categories per view
  *
  * Tracking settings → General. One card per view: its named levels broadest
  * first (Country › State › City › Neighborhood), each renamable, movable up or

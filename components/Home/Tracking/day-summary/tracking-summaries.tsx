@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-summaries.tsx — Retrospective period summaries
+ * components/Home/Tracking/day-summary/tracking-summaries.tsx — Retrospective period summaries
  *
  * What actually happened, written after the fact. Not the Plan text, and not
  * the painted tracking blocks. A day is one editor. A week shows a truncated

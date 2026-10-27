@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/trk-time-markers.tsx — Now / sunrise / sunset lines
+ * components/Home/Tracking/grids/trk-time-markers.tsx — Now / sunrise / sunset lines
  *
  * These lines are part of the instrument. Do not remove them. The day grid
  * runs time left-to-right inside each hour row, so the markers are vertical.

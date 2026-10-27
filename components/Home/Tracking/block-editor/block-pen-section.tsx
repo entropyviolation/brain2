@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/block-pen-section.tsx — Pens on one painted block
+ * components/Home/Tracking/block-editor/block-pen-section.tsx — Pens on one painted block
  *
  * One multi-select, like adding lists to an item. Chips show every pen on the
  * block. The primary chip (filled star, **Primary**) paints the grid. Every
@@ -30,7 +30,7 @@ import { orderPens, type PenSortMode } from "@/lib/pen-sort"
 import { PEN_PALETTE, stablePenColor, type TrackPen, type TrackTag } from "@/lib/time-tracking-store"
 import { PEN_COLOR_OPEN_TITLE } from "@/components/Home/Tracking/open-pen-settings"
 import { inkOnFill } from "@/components/Home/Tracking/trk-instrument"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 const SUGGEST_LIMIT = 12
 

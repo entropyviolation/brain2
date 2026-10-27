@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/day-log/confirm-planned-dialog.test.tsx
+ */
 import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"

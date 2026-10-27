@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/summary-reference.tsx — Read-only day reference
+ * components/Home/Tracking/day-summary/summary-reference.tsx — Read-only day reference
  *
  * Sits above the Day summary field. Toggle Plans, Events, Thoughts, and Log to
  * read what the day held while writing what actually happened. Nothing here
@@ -11,11 +11,11 @@ import { useMemo, useState } from "react"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { entryDisplayName, entriesOnDate, formatDuration, minutesToLabel } from "@/lib/time-entries"
-import { penNameById } from "./discrete-log-instants"
+import { penNameById } from "../discrete-log-instants"
 import { feedOutcomeLabel, feedRowDayKey, feedRowMinute } from "@/lib/ingest/telegram-feed"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { asLogEntry, classifyLogBookRow, compareLogRows, logClockLabel, switchLogCopy } from "./tracking-log-model"
+import { asLogEntry, classifyLogBookRow, compareLogRows, logClockLabel, switchLogCopy } from "../tracking-log-model"
 
 type Shelf = "plans" | "events" | "thoughts" | "log" | "telegram"
 const SHELVES: { id: Shelf; label: string }[] = [

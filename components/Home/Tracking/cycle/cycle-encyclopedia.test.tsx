@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/cycle/cycle-encyclopedia.test.tsx
+ */
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import { CycleEncyclopedia } from "./cycle-encyclopedia"

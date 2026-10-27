@@ -29,7 +29,7 @@ import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-p
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
-import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
+import { PenSwatches } from "@/components/Home/Tracking/cabinet/pen-swatches"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { ClockTime } from "@/components/Home/Tracking/now-time-button"
 import "./tracking-chrome.css"

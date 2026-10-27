@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/confirm-planned-dialog.tsx — Plan became real
+ * components/Home/Tracking/day-log/confirm-planned-dialog.tsx — Plan became real
  *
  * Day Log ghosts are the plan (prospective). Confirming one paints the same
  * window onto the active Tracking pen (retrospective) and, when the plan was a
@@ -18,12 +18,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { completeTask } from "@/lib/services/completion-service"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
+import { PenSwatches } from "@/components/Home/Tracking/cabinet/pen-swatches"
 import type { CalendarEvent, Task } from "@/lib/types"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { TEMPORAL_POLARITY_HELP, temporalAttr } from "@/lib/temporal-polarity"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 export function ConfirmPlannedDialog({
   dateKey,

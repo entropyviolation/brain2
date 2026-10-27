@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/company-roster.tsx — Who was on a Company block
+ * components/Home/Tracking/block-editor/company-roster.tsx — Who was on a Company block
  *
  * One list, one row per person: color, name, a Present | Talking switch, and ×.
  * The block's first person is marked **main** and has no ×, because removing the

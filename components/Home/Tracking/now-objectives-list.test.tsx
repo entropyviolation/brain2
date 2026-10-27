@@ -212,7 +212,8 @@ describe("NowObjectivesList", () => {
     expect(onMoveToNext).toHaveBeenCalledWith("a")
   })
 
-  it("says tie to step until a row is tied, then shows both mode buttons", () => {
+  it("says tie to step until a row is tied, then shows both mode buttons", async () => {
+    const user = userEvent.setup()
     const rows: NowObjective[] = [
       { id: "free", text: "loose", addedAt: "2026-10-10T12:00:00.000Z", lane: "next" },
       {
@@ -236,10 +237,25 @@ describe("NowObjectivesList", () => {
         stepChoices={[{ id: "s1", label: "Cut the tray" }]}
         onTieStep={() => {}}
         onSetCompletes={() => {}}
+        onAttach={() => {}}
       />,
     )
+    expect(screen.queryByRole("button", { name: "Task step for loose" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Attach to task" })).not.toBeInTheDocument()
+    const openRow = async (text: string) => {
+      const field = screen.getByDisplayValue(text)
+      const meta = field.closest("li")?.querySelector(".trk-now-obj-meta")
+      if (!meta) throw new Error(`no detail target for ${text}`)
+      await user.click(meta)
+    }
+    await openRow("loose")
     expect(screen.getByRole("button", { name: "Task step for loose" })).toHaveTextContent("tie to step")
+    expect(screen.getByRole("button", { name: "Attach to task" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Attach to task/subtask" })).not.toBeInTheDocument()
+    await openRow("cut")
     expect(screen.getByRole("button", { name: "Task step for cut" })).toHaveTextContent("Cut the tray")
+    expect(screen.getByRole("button", { name: "Attach to task" })).toBeInTheDocument()
+    await openRow("whole")
     expect(screen.getByRole("button", { name: "Task step for whole" })).toHaveTextContent("tie to step")
     const counts = screen.getByRole("button", { name: "counts toward" })
     const finishes = screen.getByRole("button", { name: "finishes step" })

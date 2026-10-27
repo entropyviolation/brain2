@@ -32,7 +32,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react"
 import { timeStringToMinutes } from "@/lib/time-entries"
 import { persistKey, readAliasedLocal, writeAliasedLocal } from "@/lib/storage-keys"
-import { DEFAULT_PEN_TRAY, isPenTrayId, parsePenTray, type PenTrayId } from "./pen-tray-bg"
+import { DEFAULT_PEN_TRAY, isPenTrayId, parsePenTray, type PenTrayId } from "./cabinet/pen-tray-bg"
 
 export type TrackingViewPrefs = {
   /** HH:MM fallback start for Time Grid Fill when the day is fully untracked. */

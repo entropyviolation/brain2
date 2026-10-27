@@ -1,8 +1,11 @@
+/**
+ * components/Home/Tracking/tags/tag-settings-dialog.test.tsx
+ */
 import { describe, expect, it, beforeEach, vi } from "vitest"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { TagSettingsDialog } from "./tag-settings-dialog"
-import { TagSettingsHost } from "./tag-settings-host"
-import { openTagSettings, openTagSettingsFromName } from "./open-tag-settings"
+import { TagSettingsHost } from "../tag-settings-host"
+import { openTagSettings, openTagSettingsFromName } from "../open-tag-settings"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useTaskStore } from "@/lib/task-store"

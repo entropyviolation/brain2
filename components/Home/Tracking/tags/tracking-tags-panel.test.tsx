@@ -1,10 +1,13 @@
+/**
+ * components/Home/Tracking/tags/tracking-tags-panel.test.tsx
+ */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TrackingTagsPanel } from "./tracking-tags-panel"
-import { TagSettingsHost } from "./tag-settings-host"
-import { openTagSettings } from "./open-tag-settings"
+import { TagSettingsHost } from "../tag-settings-host"
+import { openTagSettings } from "../open-tag-settings"
 
 beforeEach(() => {
   resetAllStores()

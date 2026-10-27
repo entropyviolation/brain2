@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/grid-stroke.ts — What a cell shows while the pointer is down
+ * components/Home/Tracking/grids/grid-stroke.ts — What a cell shows while the pointer is down
  *
  * A stroke is one block, committed on release. Until then the grid only
  * previews. Minutes that already wear this pen keep the fill they had, so
@@ -17,6 +17,31 @@ export interface CellFill {
 
 /** The wash laid over minutes an erase stroke will clear. */
 export const ERASE_WASH = "#fca5a5"
+
+/**
+ * True when [lo, hi) still meets this row in the same clipped span.
+ * Day, week, and infinite rows share this so a stroke skips rows it does not touch.
+ */
+export function strokeOverlapUnchanged(
+  prevLo: number,
+  prevHi: number,
+  nextLo: number,
+  nextHi: number,
+  rowLo: number,
+  rowHi: number,
+): boolean {
+  const clip = (lo: number, hi: number): [number, number] | null => {
+    if (!(hi > rowLo && lo < rowHi)) return null
+    const a = Math.max(lo, rowLo)
+    const b = Math.min(hi, rowHi)
+    return b > a ? [a, b] : null
+  }
+  const prev = clip(prevLo, prevHi)
+  const next = clip(nextLo, nextHi)
+  if (prev === next) return true
+  if (!prev || !next) return false
+  return prev[0] === next[0] && prev[1] === next[1]
+}
 
 export function strokeCellStyle(opts: {
   inStroke: boolean

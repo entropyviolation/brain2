@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/log-keywords-settings.tsx — Phrases for `log` / `log:`
+ * components/Home/Tracking/settings/log-keywords-settings.tsx — Phrases for `log` / `log:`
  *
  * Lives in Tracking view settings. Add, rename, and remove.
  * The row does not wrap a lone control. Empty until the person saves a phrase.

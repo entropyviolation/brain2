@@ -1,10 +1,13 @@
+/**
+ * components/Home/Tracking/cabinet/tracking-tools-tray.test.tsx
+ */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { ERASE, SCISSORS, PenPalette } from "./pen-palette"
+import { ERASE, SCISSORS, PenPalette } from "../pen-palette"
 import { resetTrackingPaintToolMemory } from "./tracking-tool-mode"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 function paintTray() {
   return document.querySelector(".trk-tools-tray") as HTMLElement

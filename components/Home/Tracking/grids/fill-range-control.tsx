@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/fill-range-control.tsx — Time Grid Fill well
+ * components/Home/Tracking/grids/fill-range-control.tsx — Time Grid Fill well
  *
  * Start–end clocks plus Fill, extracted from `time-grid.tsx` so date-nav work
  * can land beside it without a merge fight. Defaults to the longest empty
@@ -24,8 +24,8 @@ import {
   emptyBlocksForDay,
   longestEmptyBlockIndex,
   type EmptyBlock,
-} from "@/components/Home/Tracking/empty-blocks"
-import "./tracking-chrome.css"
+} from "@/components/Home/Tracking/grids/empty-blocks"
+import "../tracking-chrome.css"
 
 function gapKey(blocks: EmptyBlock[]): string {
   return blocks.map((b) => `${b.startMin}-${b.endMin}-${b.wraps ? "w" : ""}`).join("|")

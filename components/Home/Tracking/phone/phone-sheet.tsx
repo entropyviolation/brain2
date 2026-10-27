@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/phone-sheet.tsx — Bottom sheet for phone Tracking
+ * components/Home/Tracking/phone/phone-sheet.tsx — Bottom sheet for phone Tracking
  *
  * A tray of tools stays one row. Pens, Fill, Now, Find, and the recorder
  * open here so they do not eat the day. Escape, the scrim, and Done close it.

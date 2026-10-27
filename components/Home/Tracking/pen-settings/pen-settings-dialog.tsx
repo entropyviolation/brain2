@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-settings-dialog.tsx — Per-pen settings
+ * components/Home/Tracking/pen-settings/pen-settings-dialog.tsx — Per-pen settings
  *
  * Opened from the pen palette in the TimeGrid. Renames and recolors the pen, and
  * manages the things layered on top of it:
@@ -33,27 +33,27 @@ import { useTimeTrackingStore, type PenActionFormat, type TrackPen } from "@/lib
 import { validParents } from "@/lib/pen-tree"
 import { useHabitsStore } from "@/lib/habits-store"
 import { activeTrackingLink } from "@/lib/habit-tracking"
-import { PenParentPicker } from "@/components/Home/Tracking/pen-parent-picker"
+import { PenParentPicker } from "@/components/Home/Tracking/pen-settings/pen-parent-picker"
 import { PenChainVisual } from "@/components/Home/Tracking/pen-chain-visual"
-import { PenActionFormatEditor } from "@/components/Home/Tracking/pen-action-format-editor"
+import { PenActionFormatEditor } from "@/components/Home/Tracking/pen-settings/pen-action-format-editor"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
 import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
-import { CrossViewDetailPicker } from "@/components/Home/Tracking/cross-view-detail-picker"
+import { CrossViewDetailPicker } from "@/components/Home/Tracking/pen-settings/cross-view-detail-picker"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
-import { PenRecentBlocks } from "@/components/Home/Tracking/pen-recent-blocks"
-import { PenLinkedItems } from "@/components/Home/Tracking/pen-linked-items"
+import { PenRecentBlocks } from "@/components/Home/Tracking/pen-settings/pen-recent-blocks"
+import { PenLinkedItems } from "@/components/Home/Tracking/pen-settings/pen-linked-items"
 import { CatalogTagChip } from "@/components/Home/Tracking/catalog-tag-chip"
-import { PenLevelPicker } from "@/components/Home/Tracking/pen-level-picker"
-import { PenPlaceEditor } from "@/components/Home/Tracking/pen-place-editor"
-import { PenPersonLink } from "@/components/Home/Tracking/pen-person-link"
+import { PenLevelPicker } from "@/components/Home/Tracking/pen-settings/pen-level-picker"
+import { PenPlaceEditor } from "@/components/Home/Tracking/pen-settings/pen-place-editor"
+import { PenPersonLink } from "@/components/Home/Tracking/pen-settings/pen-person-link"
 import { PHONE_PEN_SCOPE_IDS } from "@/lib/phone-sync/person-links"
 import { PenFieldsEditor } from "@/components/Home/Tracking/pen-fields-editor"
 import { fieldsForBlock, type PenField } from "@/lib/pen-fields"
-import "./tracking-settings.css"
+import "../tracking-settings.css"
 
 /** Nameless fields are dropped; an empty list is stored as none. */
 function cleanFields(fields: PenField[]): PenField[] | undefined {
@@ -62,7 +62,7 @@ function cleanFields(fields: PenField[]): PenField[] | undefined {
 }
 import { TAG_OPEN_TITLE } from "@/components/Home/Tracking/open-tag-settings"
 import type { PenSettingsNav } from "@/components/Home/Tracking/pen-settings-host"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 interface PenSettingsDialogProps {
   scopeId: string

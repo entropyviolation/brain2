@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/phone-day-timeline.tsx — One day, hours down the page
+ * components/Home/Tracking/phone/phone-day-timeline.tsx — One day, hours down the page
  *
  * The desktop day plot lays minutes left to right inside each hour. A thumb
  * cannot paint that. This timeline is the same minutes: drag paints, a tap
@@ -33,22 +33,22 @@ import { penTotals, tagTotals, totalsFor } from "@/lib/tracking-summary"
 import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
 import { awakeWindowFor } from "@/lib/sleep-sync"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
-import { useTransitSuggestions } from "@/components/Home/Tracking/use-transit-suggestions"
-import { ghostAttr, useGhostScopes } from "@/components/Home/Tracking/ghost-layers"
+import { useTransitSuggestions } from "@/components/Home/Tracking/grids/use-transit-suggestions"
+import { ghostAttr, useGhostScopes } from "@/components/Home/Tracking/grids/ghost-layers"
 import {
   penNameById,
   scopeTicksWithDiscreteLogs,
   tickPen,
   withoutDiscreteLogs,
 } from "@/components/Home/Tracking/discrete-log-instants"
-import { ERASE, SCISSORS, noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
+import { ERASE, SCISSORS, noPaint } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
 import { setRibbonPercent, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { inkOnFill, TrkRibbon, TrkTagStrip } from "@/components/Home/Tracking/trk-instrument"
-import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/trk-time-markers"
+import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/grids/trk-time-markers"
 import {
   clearTimegridReveal,
   peekTimegridReveal,

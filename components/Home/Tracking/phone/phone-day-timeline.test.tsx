@@ -1,9 +1,12 @@
+/**
+ * components/Home/Tracking/phone/phone-day-timeline.test.tsx
+ */
 import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { minuteMap } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { ERASE, SCISSORS } from "./tracking-tool-mode"
+import { ERASE, SCISSORS } from "../cabinet/tracking-tool-mode"
 import { PhoneDayTimeline } from "./phone-day-timeline"
 
 const day = new Date(2026, 5, 20, 12, 0, 0)

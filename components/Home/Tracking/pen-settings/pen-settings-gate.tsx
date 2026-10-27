@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-settings-gate.tsx — Pen settings once a target exists
+ * components/Home/Tracking/pen-settings/pen-settings-gate.tsx — Pen settings once a target exists
  *
  * Loaded by `pen-settings-host.tsx` only after the open bus delivers a pen.
  * This module reads the timegrid store and renders `PenSettingsDialog`.
@@ -8,7 +8,7 @@
 "use client"
 
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { PenSettingsDialog } from "@/components/Home/Tracking/pen-settings-dialog"
+import { PenSettingsDialog } from "@/components/Home/Tracking/pen-settings/pen-settings-dialog"
 import type { PenSettingsNav } from "@/components/Home/Tracking/pen-settings-host"
 import type { PenSettingsTarget } from "@/components/Home/Tracking/open-pen-settings"
 

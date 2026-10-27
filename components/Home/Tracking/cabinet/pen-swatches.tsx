@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-swatches.tsx — Searchable pen picker
+ * components/Home/Tracking/cabinet/pen-swatches.tsx — Searchable pen picker
  *
  * Pens sit as named beads in a plain sunken well. Search flattens matches
  * with their path. Recent / A–Z / Tree is chosen by the palette; a query
@@ -18,7 +18,7 @@ import { inkOnFill } from "@/components/Home/Tracking/trk-instrument"
 import { ancestorChain } from "@/lib/pen-tree"
 import { orderPens, orderedChildren, type PenSortMode } from "@/lib/pen-sort"
 import { PEN_PALETTE, type TrackPen, type TrackTag } from "@/lib/time-tracking-store"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 function PenBead({
   pen,

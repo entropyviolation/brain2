@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/use-tracking-phone.ts — Phone gate for Home Tracking
+ * components/Home/Tracking/phone/use-tracking-phone.ts — Phone gate for Home Tracking
  *
  * The house has no single phone width: Goals uses 720, this desk's stack
  * query is 760, Home chrome uses 640. Habits, Plan, To Do, and Tracking

@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { DriveCommuteSection, EdgeAnchor, NextBlockSection, TransitSection } from "@/components/Home/Tracking/entry-edges"
+import { DriveCommuteSection, EdgeAnchor, NextBlockSection, TransitSection } from "@/components/Home/Tracking/block-editor/entry-edges"
 import type { EdgeState } from "@/lib/entry-edges"
 import { timeStringToMinutes, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import type { TrackScope } from "@/lib/time-tracking-store"

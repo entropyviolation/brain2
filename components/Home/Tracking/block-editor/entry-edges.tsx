@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/entry-edges.tsx — Entry dialog sections for a block's ends
+ * components/Home/Tracking/block-editor/entry-edges.tsx — Entry dialog sections for a block's ends
  *
  * Per-end certainty, the end linked to a logged event, the next block, and
  * (Location only) transit to the next block. Logic lives in `lib/entry-edges.ts`.

@@ -51,7 +51,7 @@ import {
   timeStringToMinutes,
   type SpanLock,
 } from "@/lib/time-entries"
-import { CompanionSection } from "@/components/Home/Tracking/companion-section"
+import { CompanionSection } from "@/components/Home/Tracking/block-editor/companion-section"
 import {
   entryFieldValue,
   fieldInputText,
@@ -62,7 +62,7 @@ import {
 } from "@/lib/pen-fields"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
-import { MoodStretchCard } from "@/components/Home/Tracking/mood-stretch-card"
+import { MoodStretchCard } from "@/components/Home/Tracking/block-editor/mood-stretch-card"
 import { compactMoodReading, moodPenColor, normalizeWord, type MoodReading } from "@/lib/mood-reading"
 import type { NowObjective } from "@/lib/now-objective"
 import { attachChoicesForPen } from "@/lib/unfinished-objectives"

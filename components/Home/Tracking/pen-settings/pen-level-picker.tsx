@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-level-picker.tsx — Which named level a pen sits on
+ * components/Home/Tracking/pen-settings/pen-level-picker.tsx — Which named level a pen sits on
  *
  * Lives under Counts as in pen settings. The view's level categories read as a
  * ladder, broadest first (Country › State › City › Neighborhood); a key per

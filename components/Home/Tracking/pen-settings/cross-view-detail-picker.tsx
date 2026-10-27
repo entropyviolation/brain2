@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cross-view-detail-picker.tsx — Detail from another view
+ * components/Home/Tracking/pen-settings/cross-view-detail-picker.tsx — Detail from another view
  *
  * Pen settings, under "Break this pen down by…". Pick another view (Company is
  * first when it exists), search its pens, click one to add it as a detail of
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { orderPens } from "@/lib/pen-sort"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 const LIMIT = 24
 

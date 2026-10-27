@@ -17,6 +17,7 @@ import {
   phaseForDate,
   resetLogCycleMarks,
   submitTrackingLog,
+  visibleNoteBody,
   type LogTimeEntry,
 } from "./tracking-log-model"
 
@@ -402,5 +403,13 @@ describe("tracking log model", () => {
       title: "tea",
       eventKind: "spend",
     })
+  })
+})
+
+describe("visibleNoteBody", () => {
+  it("drops the pipeline stamp and keeps the words", () => {
+    expect(visibleNoteBody(undefined)).toBe("")
+    expect(visibleNoteBody("left room\nfrom text pipeline\nfrom text message at 8:15am")).toBe("left room")
+    expect(visibleNoteBody("  kept  \n\nfrom text pipeline")).toBe("kept")
   })
 })

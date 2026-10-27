@@ -1,10 +1,13 @@
+/**
+ * components/Home/Tracking/block-editor/show-in-timegrid.test.ts
+ */
 import { beforeEach, describe, expect, it } from "vitest"
 import { APP_NAV_KEYS, APP_TABS, readStoredDate, readStoredTab } from "@/lib/app-navigation"
 import { closeTaskCard, openTaskCard, useTaskCardStore } from "@/lib/task-card"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
 import { showBlockInTimegrid } from "./show-in-timegrid"
-import { peekTimegridReveal, resetTimegridReveal, timegridBlockHour, timegridHourScrollTop } from "./timegrid-reveal"
+import { peekTimegridReveal, resetTimegridReveal, timegridBlockHour, timegridHourScrollTop } from "../timegrid-reveal"
 
 beforeEach(() => {
   resetAllStores()

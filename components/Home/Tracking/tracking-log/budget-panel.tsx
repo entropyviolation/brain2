@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * components/Home/Tracking/budget-panel.tsx — The Budget tab of the Spending dialog.
+ * components/Home/Tracking/tracking-log/budget-panel.tsx — The Budget tab of the Spending dialog.
  *
  * One month of money in and out from every source. Spending comes from the
  * Tracking log (edits write back to those entries); earnings and hand-added

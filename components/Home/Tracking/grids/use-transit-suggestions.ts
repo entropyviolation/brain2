@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/use-transit-suggestions.ts — Tentative transit tiles for one Location day
+ * components/Home/Tracking/grids/use-transit-suggestions.ts — Tentative transit tiles for one Location day
  *
  * Candidates come from `lib/transit-suggest.ts`; each is priced once by
  * `lib/transit-time.ts`. Returns blocks to draw. Nothing is written to the store.

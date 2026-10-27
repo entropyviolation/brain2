@@ -1,11 +1,14 @@
+/**
+ * components/Home/Tracking/grids/week-grid.test.tsx
+ */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { undoLastAction } from "@/lib/action-history"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { TimeGrid } from "./time-grid"
+import { TimeGrid } from "../time-grid"
 import { WeekGrid, weekRowBand } from "./week-grid"
-import { getTrackingViewPrefs, resetTrackingViewPrefs, setTrackingViewPrefs } from "./tracking-view-prefs"
+import { getTrackingViewPrefs, resetTrackingViewPrefs, setTrackingViewPrefs } from "../tracking-view-prefs"
 
 /** A Wednesday, so the week runs Mon 15th – Sun 21st. */
 const WEDNESDAY = new Date(2026, 8, 16, 12, 0, 0)

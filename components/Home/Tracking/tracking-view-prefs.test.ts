@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { persistKey } from "@/lib/storage-keys"
-import { DEFAULT_PEN_TRAY } from "./pen-tray-bg"
+import { DEFAULT_PEN_TRAY } from "./cabinet/pen-tray-bg"
 import {
   DEFAULT_TRACKING_VIEW_PREFS,
   getTrackingViewPrefs,

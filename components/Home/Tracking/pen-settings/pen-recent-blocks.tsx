@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-recent-blocks.tsx — Recent blocks in this pen's color
+ * components/Home/Tracking/pen-settings/pen-recent-blocks.tsx — Recent blocks in this pen's color
  *
  * A short, scrollable list inside Pen settings: the latest entries whose
  * primary pen is this one (the blocks the grid colors with it), newest first.
@@ -13,7 +13,7 @@ import { useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
 import { entryDisplayName, formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { parseLocalDate } from "@/lib/date-utils"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 /** Enough to scroll back a few weeks without walking the whole vault into the DOM. */
 export const PEN_RECENT_LIMIT = 40

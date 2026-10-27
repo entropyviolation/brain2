@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/superimpose-bar.tsx — faint second view
+ * components/Home/Tracking/grids/superimpose-bar.tsx — faint second view
  *
  * One milled row under the view-mode bar and above the time plot. It edits
  * the overlay for the view you are standing on (`superimposeByScope`). Off
@@ -28,7 +28,7 @@ import {
   toggleScopeSuperimposeMulti,
   useTrackingViewPrefs,
 } from "@/components/Home/Tracking/tracking-view-prefs"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 /** Half sun, half crescent: the sunrise / sunset lines key. */
 function SunMoonGlyph() {

@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-person-link.tsx — Which person a phone pen is
+ * components/Home/Tracking/pen-settings/pen-person-link.tsx — Which person a phone pen is
  *
  * Pen settings → Person, on iPhone Texts and iPhone Calls pens only. Search
  * People I Know and pick one: the pen's number is saved on that person and

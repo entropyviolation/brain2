@@ -1,9 +1,12 @@
+/**
+ * components/Home/Tracking/block-editor/companion-section.test.tsx
+ */
 import { render, screen, fireEvent } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { entriesForDay } from "@/lib/time-entries"
-import { EntryDialog } from "./entry-dialog"
+import { EntryDialog } from "../entry-dialog"
 
 const KEY = "2026-09-17"
 
