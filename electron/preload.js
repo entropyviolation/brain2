@@ -2,7 +2,7 @@
  * electron/preload.js — Electron preload (context-isolated)
  *
  * Runs in the renderer before the web app loads and exposes a minimal, read-only
- * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, `saveNfcShortcut`, …) via `contextBridge`.
+ * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, `saveNfcShortcut`, `codeDocs`, …) via `contextBridge`.
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
@@ -47,6 +47,12 @@ const QUICK_CAPTURE_IPC_CHANNEL = "quick-capture:open"
 // electron/ipc/channels.js. Consumed by lib/file-extract.ts.
 const EXTRACT_PDF_TEXT_IPC_CHANNEL = "cogs:file:extractPdfText"
 
+// Code documentation reader. MUST match `CODE_DOCS_LIST` / `CODE_DOCS_READ`
+// in electron/code-docs.js. The dev server answers the same files over HTTP;
+// `app://` uses this bridge.
+const CODE_DOCS_LIST = "cogs:code-docs:list"
+const CODE_DOCS_READ = "cogs:code-docs:read"
+
 // Linked resources (Item Detail → Resources). MUST match `FILE_LINK_CHANNELS`
 // in electron/file-links.js. Consumed by lib/resource-links.ts.
 const FILE_LINK_CHANNELS = {
@@ -59,7 +65,7 @@ const FILE_LINK_CHANNELS = {
   previewUrl: "cogs:link:previewUrl",
 }
 
-// Instagram report (Analytics → Sources → Instagram). MUST match
+// Instagram report (Data → Sources → Instagram). MUST match
 // `INSTAGRAM_CHANNELS` in electron/instagram-ipc.js. Consumed by lib/instagram-report.ts.
 const INSTAGRAM_CHANNELS = {
   status: "cogs:instagram:status",
@@ -86,7 +92,7 @@ const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 // electron/ipc/channels.js.
 const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
 
-// Analytics → Texts (electron/texts-report.js). MUST match electron/main.js +
+// Data → Texts (electron/texts-report.js). MUST match electron/main.js +
 // electron/ipc/channels.js. Consumed by lib/texts-report.ts.
 const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
 const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
@@ -354,7 +360,7 @@ contextBridge.exposeInMainWorld("desktop", {
   fetchAppleNotes: (range) => ipcRenderer.invoke(FETCH_APPLE_NOTES_IPC_CHANNEL, range),
   // Query local ActivityWatch. Resolves to health or window/afk/web events.
   fetchScreenTime: (req) => ipcRenderer.invoke(FETCH_SCREENTIME_IPC_CHANNEL, req),
-  // Analytics → Texts: loopback report server. Each resolves to `{ ok, … }`.
+  // Data → Texts: loopback report server. Each resolves to `{ ok, … }`.
   texts: {
     ensureServer: () => ipcRenderer.invoke(TEXTS_ENSURE_SERVER_IPC_CHANNEL),
     status: () => ipcRenderer.invoke(TEXTS_STATUS_IPC_CHANNEL),
@@ -362,6 +368,11 @@ contextBridge.exposeInMainWorld("desktop", {
   },
   // Settings → NFC tags. Signs that tag's shortcut and writes it to Downloads.
   saveNfcShortcut: (spec) => ipcRenderer.invoke(NFC_SIGN_SHORTCUT_IPC_CHANNEL, spec),
+  // Repo docs folder for the header CODE DOCUMENTATION reader.
+  codeDocs: {
+    list: () => ipcRenderer.invoke(CODE_DOCS_LIST),
+    read: (rel) => ipcRenderer.invoke(CODE_DOCS_READ, rel),
+  },
   // Linked resources: keep a file or folder where it is (docs/RESOURCE_LINKS.md).
   fileLinks: {
     // Electron 32 dropped File.path; webUtils reads it for a dropped or picked File.

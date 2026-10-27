@@ -10,6 +10,7 @@
  * `/api/chrome-history` takes the Brain2 Chrome extension's nightly export (loopback only).
  * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
  * `/api/phone-sync` reads the phone-sync run log (loopback only, no message bodies).
+ * `/api/code-docs` reads the repo `docs/` folder for the header code-documentation reader.
  * A public website `Origin` is refused (`lib/ingest/request-origin.mjs`).
  * Shortcuts and this app stay allowed.
  *   npm run dev
@@ -30,6 +31,7 @@ import { handleScreenTimeApi } from "./screentime-api.mjs"
 import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
+import { handleCodeDocsApi } from "./code-docs-api.mjs"
 import { brain2Env } from "../lib/brain2-env.mjs"
 
 const hostname = "0.0.0.0"
@@ -179,6 +181,7 @@ const server = createServer(async (req, res) => {
     if (await handleChromeHistoryApi(req, res, pathname)) return
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
+    if (await handleCodeDocsApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
     console.error("[cogs-dev] request error", err)

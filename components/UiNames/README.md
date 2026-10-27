@@ -34,7 +34,7 @@ root), not every field.
 |-----------|------|
 | `data-ui-name` | Human noun on the nameplate |
 | `data-ui-help` | Optional one-liner under the name on the nameplate. Do not put essays here. Plan inner desks (Month Plan, calendars, Planned tasks) use this so hover is not only the outer **Plan** window. |
-| `data-ui-docs` | Repo-relative path to the README that `update-docs-after-each-step` already keeps current |
+| `data-ui-docs` | Repo-relative path to the README the end-of-task docs rule keeps current |
 | `data-ui-docs-anchor` | Optional existing `##` heading slug. Do not invent headings for this. |
 
 New major panel **or popup**: add these attrs in the **same step** as the README update.
@@ -51,6 +51,6 @@ Deepest `[data-ui-name]` wins (`Element.closest`), so stamp inner roots (Month P
 
 Store: `lib/ui-names-store.ts` (`{ mode: "off" \| "names" }`, `setMode`, `toggle("names")`, persist `brain2-ui-names`). Included in the Settings full backup.
 
-Header **Names** sits in the System group after Settings. Search follows it. The key is a question mark; it latches (`aria-pressed`) while on, with a diagonal strike, and the tooltip reads **Names help mode**. Mobile chrome is skipped in v1.
+Header **Names** sits in the System group after Settings. Search follows it. The key is a question mark; it latches (`aria-pressed`) while on, with a diagonal strike, and the tooltip reads **Names help mode**. While Names is on, a **CODE DOCUMENTATION** key appears beside the question mark and opens the `docs/` reader (`components/CodeDocs/`). That open turns Names off (normal cursor, no nameplate) and hides the key. The question mark does not turn Names back on while the reader is open. Mobile chrome is skipped in v1.
 
 This is not Lists `fm-inspector`.

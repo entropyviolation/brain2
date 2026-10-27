@@ -22,6 +22,7 @@ import { handleScreenTimeApi } from "./screentime-api.mjs"
 import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
+import { handleCodeDocsApi } from "./code-docs-api.mjs"
 
 const require = createRequire(import.meta.url)
 const { createStaticFileResolver } = require("../electron/static-file.js")
@@ -81,6 +82,7 @@ const server = createServer(async (req, res) => {
     if (await handleChromeHistoryApi(req, res, pathname)) return
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
+    if (await handleCodeDocsApi(req, res, pathname)) return
     if (pathname.startsWith("/api/")) {
       res.statusCode = 404
       res.setHeader("content-type", "text/plain")

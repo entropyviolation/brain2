@@ -12,7 +12,7 @@ Two laws hold the house together:
    possible.** Lists, Scheduler, Tracking, Habits, Docs, Modules, Reviews, and
    search are rooms on the same graph — not separate products that happen to
    share a name. Isolation is a bug.
-2. **Analytics is the heart.** The rest of the house writes the vault. Analytics
+2. **Data is the heart** (the desk tab formerly called Analytics). The rest of the house writes the vault. Data
    is mass personal data and information-resource collection, presentation, and
    analysis — and the place that turns that mass into endless tools. Capture
    without analysis is a filing cabinet.
@@ -32,7 +32,7 @@ It captures the full range of a person's working thoughts (reminders, to-dos,
 ideas, plans, activity/feeling logs, and reflections) and organizes them into a
 small number of interconnected structures — an **Inbox**, **Lists** (categories
 and folders), a **Scheduler/Calendar**, **Goals**, **Habits**, **Time
-Tracking**, **Modules**, **Reviews**, and **Analytics**. Timed reminders live
+Tracking**, **Modules**, **Reviews**, and **Data**. Timed reminders live
 on the built-in **Reminders** list: at the chosen time the open app drops a
 copy in the Inbox and, unless Text me is off, texts the paired Telegram chat.
 Persistent reminders also sit on the header bell until dismissed; that popup
@@ -80,9 +80,9 @@ The aim is for Brain2 to do all of this at once:
   actually think. The same item should schedule, paint time, feed a habit, sit
   in a module, appear in review, and chart — as many honest uses as it can
   bear.
-- **Analytics as the heart.** Track yourself on any number of metrics, then
+- **Data as the heart.** Track yourself on any number of metrics, then
   collect, present, and analyze that mass of personal data so the next tool can
-  be invented from it. Other tabs live in the graph; Analytics is where the
+  be invented from it. Other tabs live in the graph; Data is where the
   graph becomes instrument.
 - **A planning and reflection engine.** Built-in **daily / weekly / monthly /
   quarterly / yearly reflections** assist planning. A quarter is a calendar
@@ -104,7 +104,7 @@ layout, and preferences. House Cleaning (`lib/house-cleaning.ts`,
 `module.config.houseCleaning`) and Trip Itinerary (`lib/trip-itinerary.ts`,
 `module.config.tripItinerary`) are the two existing violations, kept as debt,
 not the pattern to copy. Records that stay Items show up in Lists and
-Cmd/Ctrl-K, reach the Scheduler, Habits, Tracking, points, and Analytics, and
+Cmd/Ctrl-K, reach the Scheduler, Habits, Tracking, points, and Data, and
 can be created from a text message. **Infinite adaptability, one nervous
 system:** one body that can grow organs and still be one graph. Five laws are
 in force — Item is the only noun, config is layout not domain, one write door,
@@ -126,7 +126,7 @@ schemas, seed data, views, and workflows for an **Itinerary Creator**, a
 **House Cleaning App** (Tidy), a **Budget Tracker**, a **Book Tasting** shelf, a
 **Film DNA Lab**. **GradSearch** is the graduate-program explorer with the full catalog
 inside the module. List-backed templates sit on the same `Item` / `ItemType` / attribute foundation,
-so their data also flows through Lists, Scheduler, and Analytics. Reusable module
+so their data also flows through Lists, Scheduler, and Data. Reusable module
 **definitions** (blueprints) can be saved, re-instantiated, and exported/imported.
 
 **Later, unbuilt.** An install wizard that ports an arbitrary `.tsx` app
@@ -161,7 +161,7 @@ starters. Itinerary weather uses Open-Meteo (`lib/weather-client.ts`).
 body, folders, Google Fonts, images, PDF ingest); a **global Cmd/Ctrl-K search**
 palette (`components/Search/`) over all items; a consolidated **item detail**
 surface (`components/ItemDetail/`) with tags, typed links, related items, a
-**History** tab (append-only `lib/item-activity.ts`), item settings from the gear, dependency-cycle refuse,
+**History** tab (append-only `lib/item-activity.ts`: one line per change, plus Working-on-now sittings), item settings from the gear, dependency-cycle refuse,
 a **Clarify** key on inbox items, text lists that can become list references,
 and a rich-text/markdown body (`components/Editor/`); **Set up Second Brain**
 (Source/Belief item types) and full **JSON backup/restore** from the header
@@ -169,7 +169,7 @@ and a rich-text/markdown body (`components/Editor/`); **Set up Second Brain**
 **metric logger** (`components/Tracking/`).
 
 **Planning & analytics depth (built):** the **Scheduler** adds dependency and
-**Gantt/critical-path** views. **Analytics** is the heart of that depth — not a
+**Gantt/critical-path** views. **Data** is the heart of that depth — not a
 report tab: **calibration** (estimate vs. actual), **streaks**,
 **plan-vs-reality**, **regret**, correlation, context-switch heatmaps, a
 **Cross-section** density over the shared range, an **Overcommit** early-warning
@@ -188,7 +188,7 @@ keywords, discrete events + `log:` / `intake:` / `st:` / `so:` / `transit:`, `n 
 `at: gym`, `do:`, `to do today:`, `gm`, `review`, `gps:`,
 `screen: Instagram 30m`, `call: Jane 12m`, `text: Jane on my way`, `iphone-notes:` from the iOS Shortcut).
 Send `info` for basics, `{prefix} info` / `{prefix} commands` for one family, or
-`all commands` for every keyword. They land through the same writes as the desktop. `gps:` and Live Location still paint Location; a place seen more than once (within 80 m) can be named on Analytics → Places, and the next pin there uses that name. Those points stay off the Message ingest log unless you **Show GPS**. Pairing stays put across a refresh. Grocery dumps
+`all commands` for every keyword. They land through the same writes as the desktop. `gps:` and Live Location still paint Location; a place seen more than once (within 80 m) can be named on Data → Places, and the next pin there uses that name. Those points stay off the Message ingest log unless you **Show GPS**. Pairing stays put across a refresh. Grocery dumps
 **pin** in the chat so you can read the list at the store with the laptop off.
 Inbox and tracking stamps use the Telegram send time. There is no morning
 autotext: `gm` runs only while `phone:hub` or the desktop poller is awake.
@@ -267,7 +267,7 @@ because correcting it is cheap and nothing pretends to be observed.
 - **Next.js 15** (App Router) + **React 19**, exported as a fully static site
   (`output: "export"` → `out/`).
 - **TypeScript**, **Tailwind CSS**, **shadcn/ui** (Radix-based primitives in
-  `components/ui/`), **lucide-react** icons, **recharts** for Analytics.
+  `components/ui/`), **lucide-react** icons, **recharts** for Data.
 - **Windows 95 skin** — global retro chrome via `app/win95.css` (`body.win95-app`),
   loaded from `app/layout.tsx` together with module skins so Next Fast Refresh
   cannot drop them. Lists adds its own Win98 file-manager layer
@@ -314,7 +314,7 @@ that exists is the manual phone hub. See
 
 ```
 app/page.tsx
-├── Pinned mill title bar (full width): BRAIN2 caption + Nav Back/Forward + friend jewel (click → suggestion bubble) | Review | Settings gear | Names ? | Search | Now | now (live Working sessions only) | Inbox | Quick Add (Bulk and Plain inside; Plain default off; Cmd/Ctrl-Shift-A)   (+ Cmd/Ctrl-K search, Cmd/Ctrl-Z undo). Metrics is the wellbeing key on Current moment inside Now. Ingest, From Notes, and Phone Notes are in Settings and Lists settings.
+├── Pinned mill title bar (full width): BRAIN2 caption + Nav Back/Forward + friend jewel (click → suggestion bubble) | Review | Settings gear | Names ? (while on: CODE DOCUMENTATION opens the docs reader and turns Names off) | Search | Now | now (live Working sessions only) | Inbox | Quick Add (Bulk and Plain inside; Plain default off; Cmd/Ctrl-Shift-A)   (+ Cmd/Ctrl-K search, Cmd/Ctrl-Z undo). Metrics is the wellbeing key on Current moment inside Now. Ingest, From Notes, and Phone Notes are in Settings and Lists settings.
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals | Tracking
     ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet). Quick Access → Item Types is one live list per item type.
@@ -322,7 +322,7 @@ app/page.tsx
     ├── Scheduler ─ Always → Year → Month → Week → Day funnel (+ dependency / gantt)
     ├── Operations ─ Graphic tool for a project (work, ideas, data, progress); category board hides archived; Parts + To do (Win95 command center). Computer Project is an Operation subtype with its own item-detail desk.
     ├── Modules ─── User-built mini-apps (workspaces) + dashboard widgets
-    └── Analytics ─ heart of the house: vault → presentation, analysis, new tools
+    └── Data ─ heart of the house: vault → presentation, analysis, new tools
 ```
 
 Selecting a task from **Lists** (or Modules, Inbox, or global search) opens the
@@ -376,9 +376,9 @@ Together, In conversation — not an Activity called hanging out. **Screen Time*
 Brain2 is the meaning layer, not a window watcher. AFK stays untracked. ActivityWatch only records
 from when its watchers run — it cannot import Apple Screen Time or anything from before install.
 A successful sync with 0 blocks means AW had nothing usable yet, not a broken pipe. Settings → Screen Time
-connects and syncs; Analytics → Time → Screen Time reports active vs untracked. Chrome history is separate: the Brain2 extension (`extensions/chrome-history`) exports each finished local day at 12:05am, saves `Downloads/Brain2 Chrome/`, and, when this app is open at localhost:3000, files it under Analytics → Sources → Browser. Older months stay after Chrome drops them. Pens can **nest**
+connects and syncs; Data → Time → Screen Time reports active vs untracked. Chrome history is separate: the Brain2 extension (`extensions/chrome-history`) exports each finished local day at 12:05am, saves `Downloads/Brain2 Chrome/`, and, when this app is open at localhost:3000, files it under Data → Sources → Browser. Older months stay after Chrome drops them. Pens can **nest**
 (trash under Cleaning, a park under Out under Mexico); **Show as** picks how coarse
-the grid and Analytics read. **Counts as** is a searchable picker: a pen may
+the grid and Data read. **Counts as** is a searchable picker: a pen may
 count as several others (`parentIds`). `parentId` stays the display parent,
 first in that list. Persist **v14** copies an old `parentId` into `parentIds`.
 **Show as** colors that first chain, so the grid keeps one color. A block's
@@ -386,7 +386,7 @@ minutes count once in the day. At Exact the painted pen gets the whole block;
 at a collapsed depth each distinct ancestor gets a share, and those shares sum
 to the block. A secondary pen still receives the full block. A block
 is **certain** unless marked assumed (hatched in the pen color; sleep **est.** is steel, not yellow);
-Analytics can hide assumed time. **Done this day** can **Place as assumed**
+Data can hide assumed time. **Done this day** can **Place as assumed**
 (a hatched block in an open gap, `estimateOf` kind `done`). **Confirm** clears
 that hatch, and the same confirm clears an import that was already estimated.
 **Find** on the Time Grid bezel and the Activity Log searches display name,
@@ -396,10 +396,10 @@ then jumps to the block (`lib/tracking-search.ts`). A painted block can carry a 
 (defaults to the pen) and **secondary pens** whose tags still feed habits. A pen
 can carry a **default action format** so a Walking block logs "Went for a walk"
 into To-Do Done. A pen can also carry overlapping
-**variants**, so Analytics shows the share of a category first and then breaks
+**variants**, so Data shows the share of a category first and then breaks
 that share down.
 
-Analytics → Time → **Tracking** uses the same search as **Find blocks**. A jump
+Data → Time → **Tracking** uses the same search as **Find blocks**. A jump
 outlines the block on the period filmstrip and opens the editor. **Show matches
 in this view** redraws the Tracking measures on that set only. **Days** and
 **Weeks** strips give one cell per period, colored by the pen at the current
@@ -431,7 +431,7 @@ Thursday and 10 PM Thursday both belong to Thursday. Either end is enough;
 **Add stretch** logs a second pair (the 10 PM bedtime pairs with Friday's 5 AM
 wake). Mark each as estimated or certain; filling both paints the stretch on the
 Sleep pen (split at midnight), logs it in To-Do Done, counts toward sleep habits,
-and analyzes it in Analytics → **Sleep**. It reads the other direction too: sleep
+and analyzes it in Data → **Sleep**. It reads the other direction too: sleep
 painted straight onto the grid is reconciled back into the log, and **editing a
 derived sleep block corrects the night**. A tracking fill of 11 PM–2 AM continues
 onto the next morning as one block. Those times are the app's source of truth for
@@ -461,7 +461,7 @@ Brain2 is **offline-first and stays that way**. Highlights:
   (hydrate persist, optional webhook). Grocery dumps pin in the chat for
   laptop-off reads. Writes reuse capture/habit/tracking paths; `groc` / `read:` /
   `lists` / `info` dump data back as plain text (bare `g` is Inbox only; `-mb` / `-monkey` dumps a capture in Monkey brain; `-p` / `-plain` stores a capture as written). Text-pipeline
-  tracker rows show in Analytics **Text events** / **Text spans**. Analytics → Time → **Log** counts and plots any repeated event phrase (left room) plus food, drink, and drug instants. Token is gitignored `.env.local`
+  tracker rows show in Data **Text events** / **Text spans**. Data → Time → **Log** counts and plots any repeated event phrase (left room) plus food, drink, and drug instants. Token is gitignored `.env.local`
   or Electron `safeStorage`. See [`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md).
 - **Electron main is a thin shell**, not the source of truth. IPC and Mongo
   files under `electron/ipc/` and `lib/data/mongo/` are unwired scaffolding.
@@ -516,7 +516,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/Modules/` | Composable dashboard modules + workspaces | [`components/Modules/README.md`](components/Modules/README.md) |
 | `components/Analytics/` | Heart of the app: collection, presentation, analysis, next tools | [`components/Analytics/README.md`](components/Analytics/README.md) |
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup; type-owned tabs + History; cycle refuse) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
-| `components/ItemTypes/` | Manage item types (Settings + Analytics) | [`components/ItemTypes/README.md`](components/ItemTypes/README.md) |
+| `components/ItemTypes/` | Manage item types (Settings + Data) | [`components/ItemTypes/README.md`](components/ItemTypes/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
 | `components/Search/` | Global Cmd/Ctrl-K search palette | [`components/Search/README.md`](components/Search/README.md) |
 | `components/Settings/` | Grouped index and search (You, Appearance, Points, Data, Imports, Library). Points rules opens from Automatic point allocation. Data profile (Live/Demo), window gray (design-ref gray swatches, classic `#c0c0c0` default), Bouba/Kiki corners, desktop PCB, backup/restore, Message ingest (Telegram), NFC tags, item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
@@ -576,15 +576,15 @@ derived Sleep sits on already-painted Work, with
 **tags on time** — standing pen tags plus tags pinned to a single block — that
 auto-fill linked daily habits across scopes (the habit Tags row and Auto-fill from Tracking edit that same tag catalog; the count stays one name and the minutes stay ids), per-pen **nesting**, **Recent** sort,
 and **variants**,
-**Working on right now** for a searched pen color (or a Create row when the typed name is new in that view; timer from this second, a block of that color beside Operations **Working on this now**, under the Tracking view switcher in `.trk-now-module`),
+**Working on right now** for a searched pen color (or a Create row when the typed name is new in that view; timer from this second, a block of that color beside Operations **Working on this now**, under the Tracking view switcher in `.trk-now-module`; both clocks are open work sessions — a pen, or a task and subtask on that pen — and a To Do **Session** is a planned work session whose play starts this pen clock),
 an **Activity Log** where every block is editable (plus **Log activity** on the Time Grid rail with TIME/DIV / view modes, and on Activity Log / Day Log’s plan-style `.trk-period` date bar — optional name, notes, optional **Date** on start/end, **Now** inside the clock popup, and discrete events — untracked-gap row as a grid with a 22px `.trk-gap-add` **+**, Done-for-day), a **Day Log** with local **Day \| Week** (default Day) that overlays painted time on the plan as **one continuous slab** per stretch in day mode and a seven-column plan-vs-tracked week board otherwise (click a ghost to confirm it, completing tasks so dependents unlock; click Sleep to edit; week date heading returns to that day), a **Tracking log** with local **Day \| Week** (default Day; not persisted) — day shelves for that day’s food, drink, drugs, and any repeated event phrase (left room), or a seven-column week board of those log lines (click a date heading to open that day) — composer modes Event, Switch, Intake (then Food / Drink / Drug), Spent (amount, what, and source — integer cents, a Spent shelf with the day’s total), Note, and Thought process; **Counts** under the composer (joints, days happy — each + keeps a time; an optional keyword increments on `log:`); the shared clock stays visible; Now stamps the current time; Estimated and Unknown are mutually exclusive checkboxes — plus, when Enable cycle tracking is on, a **Show cycle** / **Hide cycle** well (closed until opened) for bleeding, spotting, and ovulation marks whose phase is labeled from bleed days and ovulation marks, and a cycle detail popup with Clinical, Chinese medicine, and Esoteric lenses (four short sections; Clinical and Chinese medicine also show a sourced reference that does not change with the day, herbs as traditional roles with no doses; the Apple Watch note is not in the popup; the reference is not a diagnosis or a prescription), per-day **tracking notes** (metal well collapsed to legend + Expand; Expand opens a tall composer and tall history; white composer, gunmetal frame matching the fascia, no cream lace, 4px inset so List / Bulk / Latest / Copy / Submit note stay whole, hint text 11px; persist overlay so reload keeps them), **scissors** (split at a minute; same-pen adjacent merge unless cut), clickable **Sleep** (fell asleep / woke up; steel **est.** / certain; dialog opens immediately), optional infinite day/week from the grid toolbar (virtualized, origin-stable) and pen-image mosaic, hide pens per view, selected-pen settings vs view settings, cross-scope
 **attachment** (one click to say the same hours were also *Social*, as a one-off
-or as a standing rule on the pen), and an Analytics Tracking tab with percentage
+or as a standing rule on the pen), and an Data Tracking tab with percentage
 views, category depth, an include-assumed switch, plus variant and tag drill-downs; a two-field
 **sleep log** that derives painted Sleep blocks, a Done row and habit minutes from
 a bedtime and a wake time (each marked estimated or certain), reads nights back
 off the grid when they were painted instead of typed **or when a derived block is
-retimed there**, and feeds an Analytics
+retimed there**, and feeds an Data
 **Sleep** tab for duration, timing, regularity, extremes, trend and naps counted
 apart from nights;
 **habit time estimates** (minutes per unit of a
@@ -602,7 +602,7 @@ task missed, skipping a still-open task from the header plan, or turning on a
 habit’s missed-opportunity wand can take it too (the habit cell stores a
 string, and grades ignore it). An operation marked abandoned stores that why on the operation review
 (there is no menubar **Why missed** button) without changing the
-after-action report. Analytics → Reviews lists those notes with counts by
+after-action report. Data → Reviews lists those notes with counts by
 token and by source. Assumed times and an
 optional **Est.** mark, a night glance at the time grid / day log / activity log
 in the real pen colors, a wake-up reminder and what matters most (shown the next
@@ -615,8 +615,8 @@ north, six questions, and a closing. Closing saves a draft; submitting awards po
 per completed section — each answered question — + 30, Settings → Points → Points rules). The Star Lord Report uses the same section points and bonus, one
 section per answered question. Per-task
 post-mortems (a later note from Reflect) save on close when something changed.
-Analytics → Reflection shows satisfaction, distraction, and those later notes.
-Analytics → Operations shows the after-action means (execution, planning,
+Data → Reflection shows satisfaction, distraction, and those later notes.
+Data → Operations shows the after-action means (execution, planning,
 morale), hours logged, and the written summary, what worked, what failed, and
 lessons for the range.
 The completion popup — separate from those rituals — awards 3 points plus 0.1
@@ -661,12 +661,12 @@ multipliers); Scheduler **dependency / Gantt** views; **global
 Cmd/Ctrl-K search**; consolidated **ItemDetail** with tags/links/rich-text body;
 **Second Brain** item types + **JSON backup/restore** (header Settings);
 Plan **Paste Events**; Plan Day rail **To Do / Habits / Next actions** (Lists orbs on to-dos and next actions, habit gems on habits; double-click opens detail) drag onto the agenda to plan (notes + time, persist `brain2-planned-actions`, not events and not habit completion); Day agenda fills the column beside a long rail and outlines past tracked blocks (same painted intervals as Day Log; future hours stay clear); optional Plan **Dark** / **light mode** chrome; optional Plan **Gem and trinket** / **no gem no trinket** month mode (past days);
-and Analytics charts
+and Data charts
 plus Brain2 views (calibration, streaks, plan-vs-reality, regret).
 
 **Not yet matching the spec** (tracked in [`docs/SPEC_MAPPING.md`](docs/SPEC_MAPPING.md)):
 unified Item fields (§5), auto-progress / penalties on the Goals→Objectives model (§10),
-the full Reviews cadence (§13), the full set of spec Analytics views (§15), and
+the full Reviews cadence (§13), the full set of spec Data views (§15), and
 fully automatic carry-over (§7.7). Multi-device sync beyond the manual phone hub
 is not built. MongoDB Atlas, `@brain2/core`, and Expo are speculation, not that gap's plan.
 
