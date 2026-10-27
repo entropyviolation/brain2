@@ -3,7 +3,8 @@
  *
  * Native `<input type="color">` chips collapse inside padded UA chrome, so a
  * 22×18 control (the Tracking "New pen" row) showed a sliver of color. This
- * wraps the same input in a raised bezel and stretches the swatch to fill it.
+ * wraps the same input and stretches the swatch to the edges of the bezel.
+ * Do not inset the chip: a silver gutter around the color reads as empty space.
  * Use it anywhere a hex color is picked — Tracking pens, tags, Habits, Lists.
  */
 "use client"

@@ -313,21 +313,23 @@ body.win95-app .bg-card {
  * Buttons: raised metal keys (specular lip + mill + pressed foot).
  * Utility background-color still wins; we only add image + ring. Skip tabs,
  * switches, opt-outs (`data-no95`), title-bar close keys (`.b2-close-key`),
- * and the header fold (`.b2-shell-fold`).
+ * the header fold (`.b2-shell-fold`), and transport discs (`.dvd-key`).
  * That lip is translucent on purpose — it must not be the only paint on a
  * close key, or the title bar shows through.
  * Dash widget faces (`.vd-face`) are excluded too. Each extra `:not()` raises
  * this rule, and it was outranking the face reset in `dash.css` (`all: unset`),
- * so the lip painted a glass wash over the cluster. _Last mapped: 2026-10-27._
+ * so the lip painted a glass wash over the cluster. The same raise squared the
+ * CD discs (their own rule had one fewer `:not()`). `.dvd-key` stays off this
+ * skin so a later exception cannot do that again. _Last mapped: 2026-10-27._
  */
-body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face) {
+body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
   border-radius: var(--r-2, 2px);
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.1) 14%, transparent 30%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px);
   box-shadow: var(--fascia-key-ring);
 }
-body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(:disabled):active {
+body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
   box-shadow: var(--fascia-key-pressed);
 }
 
@@ -716,7 +718,7 @@ body.win95-app [role="listbox"] {
 }
 
 /* CRT-ish caption on unskinned shadcn DialogTitle (h2.font-semibold.tracking-tight).
- * Analytics drills / popups (.an-drill, .an-popup) opt out — crisp titles in analytics-chrome.css.
+ * Data drills / popups (.an-drill, .an-popup) opt out — crisp titles in analytics-chrome.css.
  * The completion popup paints its own full-width bar in completion-dialog.css.
  * The tracking block editor (`.trk-entry`) paints its own bar out to the close key. */
 body.win95-app
@@ -845,9 +847,10 @@ body.win95-app *::-webkit-scrollbar-corner {
 }
 .cogs-color-swatch input[type="color"] {
   position: absolute;
-  inset: 2px;
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
