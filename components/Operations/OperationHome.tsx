@@ -1,33 +1,58 @@
 /**
- * components/Operations/OperationHome.tsx — Operation home (notes pad + heatmap)
+ * components/Operations/OperationHome.tsx — Operation home (note log + heatmap)
  *
- * The "home base" tab of an Operation workspace: a free-text notes pad (the
- * operation's `homeNotes` attribute), a mission line, the stage selector, an
- * overall-progress bar, and the work/neglect heatmap built from the time logged
- * across the operation's whole task tree (`lib/operations.buildHeatmap`).
+ * The home tab of an Operation workspace: mission (one line, growing with the
+ * text), stage, progress (phases and the to-do list), the item note log
+ * (`Task.noteLog` and the standing `Task.notes` — the same notes as item
+ * detail), and the work/neglect heatmap (`lib/operations.buildHeatmap`).
+ * **Open item detail** hosts `TaskDetailPopup` over this page.
+ * A leftover `homeNotes` attribute is folded into that log.
  */
 "use client"
 
 import { trackedTimeForItems } from "@/lib/tracked-time"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import {
   buildHeatmap,
+  foldOperationHomeNotes,
   getOperationTaskTree,
+  getPhases,
   minutesToHours,
   neglectedDays,
   operationProgress,
   type HeatCell,
+  type PhaseProgress,
 } from "@/lib/operations"
+import { collectOperationTodoTasks } from "@/lib/operation-parts"
+import { findOperationTaskList } from "@/lib/operation-lists"
 import {
   OPERATION_ATTR,
   OPERATION_STAGES,
   type OperationStage,
 } from "@/lib/operation-types"
 import type { Task } from "@/lib/types"
-import { setHomeNotes, setMission, setStage } from "./operation-actions"
+import { setMission, setStage } from "./operation-actions"
 import { NativeSelect } from "@/components/ui/native-select"
+import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
+import "@/components/ItemDetail/item-detail-chrome.css"
+
+/**
+ * The bar is the mean of the phase rollup and the to-do list, skipping a side
+ * whose total is zero so an empty list does not drag the other to 0%. Phases
+ * come from `operationProgress` (only when the operation has phases — the
+ * parts fallback is the to-do list, not a phase count). To-dos are
+ * `collectOperationTodoTasks`. Same two readings the workspace already keeps.
+ */
+function homeProgressPercent(phase: PhaseProgress, todoDone: number, todoTotal: number): number {
+  const fractions: number[] = []
+  if (phase.total > 0) fractions.push(phase.done / phase.total)
+  if (todoTotal > 0) fractions.push(todoDone / todoTotal)
+  if (fractions.length === 0) return 0
+  return Math.round((fractions.reduce((sum, fraction) => sum + fraction, 0) / fractions.length) * 100)
+}
 
 /** Cold days read hotter (neglect signal); worked days stay phosphor green. */
 const HEAT_COLORS: Record<number, string> = {
@@ -53,47 +78,99 @@ function HeatGrid({ cells }: { cells: HeatCell[] }) {
   )
 }
 
+function writeOperationNotes(operationId: string, patch: Partial<Task>): void {
+  const store = useTaskStore.getState()
+  const latest = store.tasks.find((task) => task.id === operationId)
+  if (!latest) return
+  const folded = foldOperationHomeNotes(latest)
+  store.updateTask({
+    ...folded,
+    ...patch,
+    attributes: folded.attributes,
+    noteLog: patch.noteLog !== undefined ? patch.noteLog : folded.noteLog,
+    notes: patch.notes !== undefined ? patch.notes : folded.notes,
+  })
+}
+
 export function OperationHome({ operation }: { operation: Task }) {
   const allTasks = useTaskStore((s) => s.tasks)
+  const lists = useTaskStore((s) => s.lists)
   const trackingEntries = useTimeTrackingStore((s) => s.entries)
-  const [notesDraft, setNotesDraft] = useState<string>(
-    typeof operation.attributes?.[OPERATION_ATTR.homeNotes] === "string"
-      ? (operation.attributes[OPERATION_ATTR.homeNotes] as string)
-      : "",
-  )
+  const live = allTasks.find((task) => task.id === operation.id) ?? operation
+  const [detailOpen, setDetailOpen] = useState(false)
+  const notes = useMemo(() => foldOperationHomeNotes(live), [live])
   const [missionDraft, setMissionDraft] = useState<string>(
     typeof operation.attributes?.[OPERATION_ATTR.mission] === "string"
       ? (operation.attributes[OPERATION_ATTR.mission] as string)
       : "",
   )
+  const missionRef = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = missionRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [missionDraft])
+
+  useEffect(() => {
+    const latest = useTaskStore.getState().tasks.find((task) => task.id === operation.id)
+    if (!latest) return
+    const folded = foldOperationHomeNotes(latest)
+    if (folded !== latest) useTaskStore.getState().updateTask(folded)
+  }, [operation.id, live.attributes])
 
   const stage = (operation.attributes?.[OPERATION_ATTR.stage] as OperationStage) ?? "planning"
 
-  const { cells, hours, neglected, progress } = useMemo(() => {
+  const { cells, hours, neglected, phaseDone, phaseTotal, todoDone, todoTotal, percent } = useMemo(() => {
     const tree = getOperationTaskTree(operation.id, allTasks)
     const timeContributors = [operation, ...tree]
     const cells = buildHeatmap(timeContributors, { days: 35 })
-    // Logs plus Tracking blocks (linked pens, the task clock), each minute once.
     const totalMinutes = trackedTimeForItems(timeContributors, trackingEntries).total
+    const phases = getPhases(operation.id, allTasks)
+    const phase =
+      phases.length > 0
+        ? operationProgress(operation.id, allTasks)
+        : { done: 0, total: 0, fraction: 0, complete: false }
+    const listId = findOperationTaskList(live, lists)?.id ?? null
+    const todos = collectOperationTodoTasks(operation.id, allTasks, listId)
+    const todoDone = todos.filter((task) => task.completed).length
     return {
       cells,
       hours: minutesToHours(totalMinutes),
       neglected: neglectedDays(cells),
-      progress: operationProgress(operation.id, allTasks),
+      phaseDone: phase.done,
+      phaseTotal: phase.total,
+      todoDone,
+      todoTotal: todos.length,
+      percent: homeProgressPercent(phase, todoDone, todos.length),
       totalMinutes,
     }
-  }, [operation, allTasks, trackingEntries])
+  }, [operation, allTasks, lists, live, trackingEntries])
 
   return (
     <div className="ops-panel ops-home-instrument">
+      <div className="ops-home-head">
+        <span className="ops-label">This operation</span>
+        <button
+          type="button"
+          className="ops-btn ops-keycap"
+          data-no95=""
+          onClick={() => setDetailOpen(true)}
+        >
+          Open item detail
+        </button>
+      </div>
+
       <div className="ops-brief">
         <div className="ops-field">
           <label className="ops-label" htmlFor="op-mission">
             Mission
           </label>
-          <input
+          <textarea
+            ref={missionRef}
             id="op-mission"
-            className="ops-input"
+            className="ops-input ops-mission"
+            rows={1}
             value={missionDraft}
             onChange={(e) => setMissionDraft(e.target.value)}
             onBlur={() => setMission(operation.id, missionDraft)}
@@ -123,27 +200,33 @@ export function OperationHome({ operation }: { operation: Task }) {
         <legend>Progress</legend>
         <div className="flex items-center justify-between text-[11px]">
           <span>
-            {progress.done}/{progress.total} phases · {Math.round(progress.fraction * 100)}%
+            {phaseDone}/{phaseTotal} phases · {todoDone}/{todoTotal} to-dos · {percent}%
           </span>
         </div>
-        <div className="ops-progress" role="progressbar" aria-valuenow={Math.round(progress.fraction * 100)}>
-          <span style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
+        <div
+          className="ops-progress"
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${phaseDone} of ${phaseTotal} phases, ${todoDone} of ${todoTotal} to-dos`}
+        >
+          <span style={{ width: `${percent}%` }} />
         </div>
       </fieldset>
 
       <div className="ops-pad">
-        <label className="ops-label" htmlFor="op-notes">
-          NOTES
-        </label>
-        <textarea
-          id="op-notes"
-          className="ops-notes"
-          value={notesDraft}
-          onChange={(e) => setNotesDraft(e.target.value)}
-          onBlur={() => setHomeNotes(operation.id, notesDraft)}
-          rows={8}
-          placeholder="Plans, decisions, links…"
-        />
+        <span className="ops-label" id="op-notes-label">
+          Notes
+        </span>
+        <div className="id95 ops-notes-log" aria-labelledby="op-notes-label">
+          <ItemNotesLog
+            entries={notes.noteLog}
+            standing={notes.notes}
+            onChangeEntries={(noteLog) => writeOperationNotes(operation.id, { noteLog })}
+            onChangeStanding={(text) => writeOperationNotes(operation.id, { notes: text })}
+          />
+        </div>
       </div>
 
       <div className="ops-scope">
@@ -162,6 +245,8 @@ export function OperationHome({ operation }: { operation: Task }) {
           <span>hot</span>
         </div>
       </div>
+
+      <TaskDetailPopup taskId={operation.id} open={detailOpen} onClose={() => setDetailOpen(false)} />
     </div>
   )
 }

@@ -4,8 +4,9 @@
  * Lists an operation's phase tasks (linked via `has-phase`/`phase-of`), each
  * with a completion bar derived from its step tasks (`lib/operations.evaluatePhase`).
  * Phases and steps can be added inline; a new step is also filed on the
- * operation's To do list. Toggling done and opening a task delegate to the task
- * store / parent. The Parts tab is a separate formula layer (`PartsPanel`).
+ * operation's To do list. Toggling done writes the task store. The name and
+ * the Open arrow ask the parent to open item detail over the operation.
+ * The Parts tab is a separate formula layer (`PartsPanel`).
  */
 "use client"
 
@@ -51,11 +52,28 @@ function PhaseRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={`truncate text-sm font-medium ${progress.complete ? "line-through" : ""}`}>
-              {phase.description}
-            </span>
+            {onOpenItem ? (
+              <button
+                type="button"
+                className={`ops-item-hit truncate text-sm font-medium ${progress.complete ? "line-through" : ""}`}
+                data-no95=""
+                onClick={() => onOpenItem(phase.id)}
+              >
+                {phase.description}
+              </button>
+            ) : (
+              <span className={`truncate text-sm font-medium ${progress.complete ? "line-through" : ""}`}>
+                {phase.description}
+              </span>
+            )}
             {onOpenItem && (
-              <button type="button" className="ops-btn ops-icon-btn" onClick={() => onOpenItem(phase.id)} title="Open phase">
+              <button
+                type="button"
+                className="ops-btn ops-icon-btn"
+                onClick={() => onOpenItem(phase.id)}
+                title="Open phase"
+                aria-label={`Open ${phase.description}`}
+              >
                 ↗
               </button>
             )}
@@ -92,11 +110,28 @@ function PhaseRow({
                   onChange={(e) => setTaskCompleted(part.id, e.target.checked)}
                   aria-label="Toggle step complete"
                 />
-                <span className={`flex-1 truncate text-sm ${part.completed ? "line-through" : ""}`}>
-                  {part.description}
-                </span>
+                {onOpenItem ? (
+                  <button
+                    type="button"
+                    className={`ops-item-hit truncate text-sm ${part.completed ? "line-through" : ""}`}
+                    data-no95=""
+                    onClick={() => onOpenItem(part.id)}
+                  >
+                    {part.description}
+                  </button>
+                ) : (
+                  <span className={`flex-1 truncate text-sm ${part.completed ? "line-through" : ""}`}>
+                    {part.description}
+                  </span>
+                )}
                 {onOpenItem && (
-                  <button type="button" className="ops-btn ops-icon-btn" onClick={() => onOpenItem(part.id)} title="Open step">
+                  <button
+                    type="button"
+                    className="ops-btn ops-icon-btn"
+                    onClick={() => onOpenItem(part.id)}
+                    title="Open step"
+                    aria-label={`Open ${part.description}`}
+                  >
                     ↗
                   </button>
                 )}

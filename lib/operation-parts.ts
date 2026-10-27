@@ -1,18 +1,20 @@
 /**
- * lib/operation-parts.ts — Part formulas, instances, ideas, and glance meters
+ * lib/operation-parts.ts — Part formulas, instances, stage, notes, and glance meters
  *
  * A **part** is a piece of an operation with its own page. A **kind** is the
  * formula for that piece:
  *
  *   - Fashion Magazine has a kind "Issue" whose finish steps are ordered, then
  *     printed, and a child kind "Article" whose stages are drafted → written →
- *     formatted. An idea can sit on the issue or on one article.
+ *     formatted. A note can sit on the issue or on one article.
  *   - Clean the house can be a kind "Room" with no stages at all — Living room,
- *     Bedroom — each still a page that can hold ideas.
+ *     Bedroom — each still a page that can hold notes.
  *
- * Formulas and instances (including ideas) live on the operation as JSON
- * attributes. Stages and finish steps are real tasks, so they join the To do
- * list. Ideas are not tasks.
+ * Formulas and instances live on the operation as JSON attributes. A part's
+ * current stage, finish checks, status report, and notes (stored as `ideas`)
+ * live on the instance. Moving through stages does not create or complete
+ * tasks. Notes are not tasks. A part's to-dos are ordinary tasks on the
+ * operation list, tagged with that part's id.
  *
  * Pure: no store imports. Mutations live in `operation-actions.ts`.
  */
@@ -58,7 +60,16 @@ export interface PartIdea {
   createdAt: string
 }
 
-/** One part: an issue, an article, a room. */
+/**
+ * One part: an issue, an article, a room.
+ *
+ * `currentStage` is the furthest stage reached, a label from the kind.
+ * Absent means the part was saved before stages lived here — readers may
+ * still show older stage tasks. `""` means none reached.
+ * `statusReport` is the one current line about this part.
+ * `completedFinish` lists finish-step labels marked done. Absent means the
+ * same legacy fallback as `currentStage`.
+ */
 export interface PartInstance {
   id: string
   formulaId: string
@@ -66,6 +77,9 @@ export interface PartInstance {
   /** The part this one sits inside, when the kind is nested. */
   parentInstanceId: string | null
   ideas: PartIdea[]
+  currentStage?: string
+  statusReport?: string
+  completedFinish?: string[]
 }
 
 export interface GlanceMeter {
@@ -184,13 +198,25 @@ export function readPartInstances(value: unknown): PartInstance[] {
     if (!id || !formulaId || !title || ids.has(id)) continue
     ids.add(id)
     const parent = typeof record.parentInstanceId === "string" ? record.parentInstanceId.trim() : ""
-    out.push({
+    const instance: PartInstance = {
       id,
       formulaId,
       title,
       parentInstanceId: parent || null,
       ideas: readIdeas(record.ideas),
-    })
+    }
+    if (Object.prototype.hasOwnProperty.call(record, "currentStage")) {
+      instance.currentStage = typeof record.currentStage === "string" ? record.currentStage.trim() : ""
+    }
+    if (Object.prototype.hasOwnProperty.call(record, "statusReport")) {
+      instance.statusReport = typeof record.statusReport === "string" ? record.statusReport.trim() : ""
+    }
+    if (Object.prototype.hasOwnProperty.call(record, "completedFinish")) {
+      instance.completedFinish = Array.isArray(record.completedFinish)
+        ? normalizePartLabels(record.completedFinish)
+        : []
+    }
+    out.push(instance)
   }
   const idSet = new Set(out.map((instance) => instance.id))
   return out.map((instance) => ({
@@ -331,18 +357,103 @@ export function partTaskFor(
   )
 }
 
+/** A task that was spawned as a stage or finish mirror. Real part to-dos have no such role. */
+export function isPartFormulaMirror(task: Pick<Task, "attributes">): boolean {
+  const role = attrString(task, PART_TASK_ATTR.role)
+  return role === "stage" || role === "finish"
+}
+
+/**
+ * Furthest stage reached. A stored `currentStage` wins (`""` is none).
+ * When the field is absent, a contiguous run of completed stage tasks still
+ * counts, so a part from before this field keeps that prefix.
+ */
+export function resolvedCurrentStage(
+  instance: PartInstance,
+  formula: PartFormula | undefined,
+  tasks: Task[],
+): string {
+  if (!formula || formula.stages.length === 0) return ""
+  if (instance.currentStage !== undefined) {
+    const key = instance.currentStage.trim().toLowerCase()
+    if (!key) return ""
+    return formula.stages.find((label) => label.toLowerCase() === key) ?? ""
+  }
+  let furthest = ""
+  for (const label of formula.stages) {
+    if (!partTaskFor(tasks, instance.id, "stage", label)?.completed) break
+    furthest = label
+  }
+  return furthest
+}
+
+/**
+ * Whether this stage box is checked. Once `currentStage` is stored, the
+ * check is the prefix through that stage. Before that, each older stage
+ * task still shows on its own and is not rewritten.
+ */
+export function partStageChecked(
+  instance: PartInstance,
+  formula: PartFormula | undefined,
+  label: string,
+  tasks: Task[],
+): boolean {
+  if (!formula) return false
+  const key = label.toLowerCase()
+  const idx = formula.stages.findIndex((stage) => stage.toLowerCase() === key)
+  if (idx < 0) return false
+  if (instance.currentStage !== undefined) {
+    const current = resolvedCurrentStage(instance, formula, tasks)
+    if (!current) return false
+    const currentIdx = formula.stages.findIndex((stage) => stage.toLowerCase() === current.toLowerCase())
+    return currentIdx >= idx
+  }
+  return !!partTaskFor(tasks, instance.id, "stage", label)?.completed
+}
+
+/** Whether a finish step is checked. Stored `completedFinish` wins over older tasks. */
+export function partFinishChecked(instance: PartInstance, label: string, tasks: Task[]): boolean {
+  const key = label.toLowerCase()
+  if (instance.completedFinish !== undefined) {
+    return instance.completedFinish.some((entry) => entry.toLowerCase() === key)
+  }
+  return !!partTaskFor(tasks, instance.id, "finish", label)?.completed
+}
+
+function labelMarkedDone(
+  instance: PartInstance,
+  formula: PartFormula | undefined,
+  label: string,
+  tasks: Task[],
+): boolean {
+  if (!formula) return false
+  const key = label.toLowerCase()
+  if (formula.stages.some((stage) => stage.toLowerCase() === key)) {
+    return partStageChecked(instance, formula, label, tasks)
+  }
+  if (formula.finishSteps.some((step) => step.toLowerCase() === key)) {
+    return partFinishChecked(instance, label, tasks)
+  }
+  return false
+}
+
+/** To-dos filed on this part. Stage and finish mirrors stay off this list. */
+export function partTodoTasks(tasks: Task[], instanceId: string): Task[] {
+  return tasks.filter(
+    (task) => attrString(task, PART_TASK_ATTR.instanceId) === instanceId && !isPartFormulaMirror(task),
+  )
+}
+
 export function instanceTaskProgress(
   instance: PartInstance,
   formula: PartFormula | undefined,
   tasks: Task[],
 ): { done: number; total: number } {
   if (!formula) return { done: 0, total: 0 }
-  const slots: { role: PartTaskRole; label: string }[] = [
-    ...formula.stages.map((label) => ({ role: "stage" as const, label })),
-    ...formula.finishSteps.map((label) => ({ role: "finish" as const, label })),
-  ]
-  const done = slots.filter((slot) => partTaskFor(tasks, instance.id, slot.role, slot.label)?.completed).length
-  return { done, total: slots.length }
+  const done =
+    formula.stages.filter((label) => partStageChecked(instance, formula, label, tasks)).length +
+    formula.finishSteps.filter((label) => partFinishChecked(instance, label, tasks)).length
+  return { done, total: formula.stages.length + formula.finishSteps.length }
 }
 
 function instanceIsFinished(instance: PartInstance, formula: PartFormula | undefined, tasks: Task[]): boolean {
@@ -376,12 +487,7 @@ export function glanceMeters(
       }
       const relevant = instances.filter((instance) => formulaHasLabel(byId.get(instance.formulaId), label))
       const done = relevant.filter((instance) =>
-        tasks.some(
-          (task) =>
-            attrString(task, PART_TASK_ATTR.instanceId) === instance.id &&
-            attrString(task, PART_TASK_ATTR.label).toLowerCase() === label.toLowerCase() &&
-            task.completed,
-        ),
+        labelMarkedDone(instance, byId.get(instance.formulaId), label, tasks),
       ).length
       return { label, done, total: relevant.length }
     })
@@ -390,8 +496,11 @@ export function glanceMeters(
 
 /**
  * Tasks that belong on the operation's To do list: the list itself, checklist
- * steps of each phase, and stage/finish tasks from parts. Ideas are not here.
- * De-duplicated. The operation itself is excluded.
+ * steps of each phase, and tasks tagged to this operation. That includes a
+ * part's own to-dos, and any stage or finish mirrors created before the stage
+ * lived on the part. Notes are not here. De-duplicated. The operation itself
+ * is excluded. `evaluatePhase` does not read part stages — a phase completes
+ * from its own step tasks.
  */
 export function collectOperationTodoTasks(
   operationId: string,

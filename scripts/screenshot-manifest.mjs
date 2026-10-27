@@ -442,7 +442,7 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
     area: "Operations → Log",
     view: "Operation workspace → Log",
     sources: ["components/Operations/OperationLogFeed.tsx"],
-    description: `Reverse-chronological time log for the operation and its task tree, plus the punch-in form. Seeded minutes on the operation and on Reserve the Headlands Inn.`,
+    description: `Chronological log (oldest first) for the operation and its task tree: a created line from the operation's createdAt, then time punches, plus the punch-in form. With no punches the created line stays beside "No time logged yet." Seeded minutes on the operation and on Reserve the Headlands Inn.`,
   },
   {
     file: "10-operations-settings.png",

@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
@@ -27,11 +27,14 @@ import {
   selectToDoNext,
 } from "@/lib/operations"
 import { addPart, addPhase } from "@/components/Operations/operation-actions"
+import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { foldOperationHomeNotes } from "@/lib/operations"
+import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { APP_NAV_KEYS, writeStoredId, writeStoredTab } from "@/lib/app-navigation"
 import { COGS_NAV_RESTORE_EVENT } from "@/lib/screen-location"
 import { COMPUTER_PROJECT_ATTR } from "@/lib/computer-project-types"
 import type { AttributeValue, ItemLink, Task } from "@/lib/types"
-import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
+import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { NativeSelect } from "@/components/ui/native-select"
 
 function textAttr(task: Task, id: string): string {
@@ -71,6 +74,19 @@ export function ComputerProjectDetail({
   const [nextName, setNextName] = useState("")
   const [phaseName, setPhaseName] = useState("")
   const [stackDraft, setStackDraft] = useState<string | null>(null)
+
+  const notes = useMemo(() => foldOperationHomeNotes(task), [task])
+
+  useEffect(() => {
+    const stored = useTaskStore.getState().tasks.find((row) => row.id === task.id)
+    if (stored) {
+      const foldedStore = foldOperationHomeNotes(stored)
+      if (foldedStore !== stored) useTaskStore.getState().updateTask(foldedStore)
+    }
+    if (notes === task) return
+    if (stored && (stored === task || snapshotsEqual(stored, task))) return
+    onPatch({ noteLog: notes.noteLog, attributes: notes.attributes })
+  }, [task, notes, onPatch])
 
   const phases = useMemo(() => getPhases(task.id, tasks), [task.id, tasks])
   const next = useMemo(() => {
@@ -305,11 +321,16 @@ export function ComputerProjectDetail({
 
       <div className="cp-block">
         <span className="cp-label">Project notes</span>
-        <IsolatedTextarea
-          value={textAttr(task, OPERATION_ATTR.homeNotes)}
-          placeholder="Notes for this project"
-          onLiveChange={(value) => onLiveAttr(OPERATION_ATTR.homeNotes, value)}
-          onCommit={(value) => onCommitAttr(OPERATION_ATTR.homeNotes, value)}
+        <ItemNotesLog
+          entries={notes.noteLog}
+          standing={notes.notes}
+          onChangeEntries={(noteLog) =>
+            onPatch(notes === task ? { noteLog } : { noteLog, attributes: notes.attributes })
+          }
+          onLiveStanding={(text) => onPatch({ notes: text })}
+          onChangeStanding={(text) =>
+            onPatch(notes === task ? { notes: text } : { notes: text, noteLog: notes.noteLog, attributes: notes.attributes })
+          }
         />
       </div>
 

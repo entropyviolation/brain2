@@ -13,4 +13,4 @@ GLOBAL CHROME (all screens)
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC
-Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including an idea. Glance meters and the new-kind form.
+Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including a note. Glance meters and the new-kind form. A part page is name, status (current stage and latest status report), to-do, notes. Stages are stored on the part and do not create to-dos.

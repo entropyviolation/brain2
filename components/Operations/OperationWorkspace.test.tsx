@@ -16,6 +16,26 @@ vi.mock("./OperationFieldPlanPanels", () => ({
   OperationPlanDocPanel: () => <p>Plan panel</p>,
 }))
 
+vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
+  TaskDetailPopup: ({
+    taskId,
+    open,
+    onClose,
+  }: {
+    taskId: string | null
+    open: boolean
+    onClose: () => void
+  }) =>
+    open ? (
+      <div role="dialog" aria-label="Item detail">
+        <span>detail:{taskId}</span>
+        <button type="button" onClick={onClose}>
+          Close item detail
+        </button>
+      </div>
+    ) : null,
+}))
+
 function seedOperation(attributes: Record<string, unknown> = {}): Task {
   const op: Task = {
     id: "op_1",
@@ -195,6 +215,130 @@ describe("OperationWorkspace", () => {
     await user.click(within(screen.getByRole("dialog", { name: "Are you sure?" })).getByRole("button", { name: "Delete" }))
     expect(useTaskStore.getState().tasks.some((t) => t.id === "op_1")).toBe(false)
     expect(onBack).toHaveBeenCalled()
+  })
+
+  it("opens settings from the title-row gear", async () => {
+    const user = userEvent.setup()
+    seedOperation()
+    render(<OperationWorkspace operationId="op_1" onBack={() => undefined} />)
+
+    const gear = screen.getByRole("button", { name: "Settings" })
+    expect(gear.closest(".ops-fascia-row")).toBeTruthy()
+    expect(gear.closest(".ops-menubar")).toBeNull()
+    expect(gear).not.toHaveTextContent(/settings/i)
+    const menubar = document.querySelector(".ops-menubar")
+    expect(menubar?.textContent ?? "").not.toMatch(/settings/i)
+    expect(menubar?.textContent ?? "").not.toMatch(/\bboard\b/i)
+
+    await user.click(gear)
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+  })
+
+  it("adds a link and a use note on the operation's own resources", async () => {
+    const user = userEvent.setup()
+    seedOperation({ [OPERATION_ATTR.panels]: ["home", "resources"] })
+    render(<OperationWorkspace operationId="op_1" />)
+
+    await user.click(screen.getByRole("tab", { name: "Resources" }))
+    const addLink = screen.getByRole("button", { name: "Add link" })
+    expect(addLink.className).toContain("ops-keycap")
+    expect(addLink.className).toContain("is-primary")
+    expect(screen.getByRole("button", { name: "Add file" }).className).toContain("ops-keycap")
+    expect(screen.getByRole("button", { name: "Reference file" }).className).toContain("ops-keycap")
+
+    await user.type(screen.getByLabelText("Link address"), "https://example.com/spec")
+    await user.click(addLink)
+
+    const note = screen.getByLabelText("What example.com/spec is for here")
+    await user.type(note, "the build spec")
+    await user.tab()
+
+    const stored = useTaskStore.getState().tasks.find((t) => t.id === "op_1")?.resources
+    expect(stored).toHaveLength(1)
+    expect(stored?.[0]).toMatchObject({ url: "https://example.com/spec", useNote: "the build spec", name: "example.com/spec" })
+    expect(stored?.[0]?.uri).toMatch(/^url:/)
+  })
+
+  it("references a file in place instead of copying it", async () => {
+    const user = userEvent.setup()
+    const pick = vi.fn(async () => [
+      { path: "/Users/me/Design/Brief.pdf", name: "Brief.pdf", isDir: false, size: 12, fileId: "1:2" },
+    ])
+    ;(window as unknown as { desktop?: unknown }).desktop = {
+      fileLinks: {
+        pathForFile: () => "",
+        pick,
+        stat: async () => null,
+        resolve: async () => ({ status: "ok" }),
+        open: async () => "",
+        reveal: () => undefined,
+        extractText: async () => "",
+        previewUrl: async () => "",
+      },
+    }
+    seedOperation({ [OPERATION_ATTR.panels]: ["resources"] })
+    render(<OperationWorkspace operationId="op_1" />)
+
+    await user.click(screen.getByRole("tab", { name: "Resources" }))
+    await user.click(screen.getByRole("button", { name: "Reference file" }))
+
+    expect(pick).toHaveBeenCalledWith({ folders: false })
+    const stored = useTaskStore.getState().tasks.find((t) => t.id === "op_1")?.resources
+    expect(stored?.[0]?.link?.path).toBe("/Users/me/Design/Brief.pdf")
+    expect(stored?.[0]?.uri).toMatch(/^link:/)
+    delete (window as unknown as { desktop?: unknown }).desktop
+  })
+
+  it("does not put Why missed on the menubar", () => {
+    seedOperation()
+    render(<OperationWorkspace operationId="op_1" />)
+    expect(screen.queryByRole("button", { name: "Why missed" })).not.toBeInTheDocument()
+  })
+
+  it("opens a queue item in the detail popup and does not navigate", async () => {
+    const user = userEvent.setup()
+    const navigate = vi.fn()
+    seedOperation()
+    useTaskStore.getState().addTask({
+      id: "task_van",
+      description: "Book the van",
+      stage: "clarified",
+      createdAt: new Date("2026-01-02"),
+      completed: false,
+      lists: [],
+      links: [],
+    })
+    useTaskStore.setState({
+      tasks: useTaskStore.getState().tasks.map((task) =>
+        task.id === "op_1"
+          ? { ...task, links: [{ id: "link-van", relation: "has-part", targetId: "task_van" }] }
+          : task,
+      ),
+    })
+    render(<OperationWorkspace operationId="op_1" onOpenItem={navigate} />)
+
+    await user.click(screen.getByRole("button", { name: "Book the van" }))
+    expect(screen.getByRole("dialog", { name: "Item detail" })).toBeInTheDocument()
+    expect(screen.getByText("detail:task_van")).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+    expect(screen.getByRole("tab", { name: "Home" })).toHaveAttribute("data-state", "active")
+
+    await user.click(screen.getByRole("button", { name: "Close item detail" }))
+    expect(screen.queryByRole("dialog", { name: "Item detail" })).not.toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Home" })).toHaveAttribute("data-state", "active")
+
+    await user.click(screen.getByRole("button", { name: "Open Book the van" }))
+    expect(screen.getByText("detail:task_van")).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Close item detail" }))
+
+    await user.click(screen.getByRole("tab", { name: "To do" }))
+    await user.click(await screen.findByTitle("Book the van"))
+    expect(screen.getByText("detail:task_van")).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Close item detail" }))
+    expect(screen.getByRole("tab", { name: "To do" })).toHaveAttribute("data-state", "active")
+    expect(screen.getByRole("heading", { name: "Foxtide rebuild" })).toBeInTheDocument()
   })
 
   it("restores the last workspace panel after remount", async () => {

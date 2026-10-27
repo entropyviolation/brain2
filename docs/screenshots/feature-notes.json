@@ -5836,7 +5836,7 @@
   },
   "10-operations-parts.png": {
     "name": "Operation workspace → Parts",
-    "description": "Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including an idea. Glance meters and the new-kind form.",
+    "description": "Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including a note. Glance meters and the new-kind form. A part page is name, status (current stage and latest status report), to-do, notes.",
     "styleNotes": "",
     "docPath": "components/Operations/README.md",
     "features": [
@@ -5850,7 +5850,7 @@
       {
         "id": "seed-1",
         "name": "Kinds (Day, nested Stop) from partFormulas, and",
-        "description": "Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including an idea.",
+        "description": "Kinds (Day, nested Stop) from partFormulas, and instances (Saturday headlands, Point Reyes pull-off) from partInstances, including a note.",
         "styleNotes": "",
         "improvements": ""
       },
@@ -6097,7 +6097,7 @@
       {
         "id": "seed-2",
         "name": "Menubar",
-        "description": "Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, Why missed (optional preset and note on the operation review; closing without Save writes nothing; marking the stage abandoned opens the same dialog), category chips, Working now.",
+        "description": "Menubar: Settings (panels, categories, tracking tags, presets, Delete operation with Are you sure), After-action report, category chips, Working now. Marking the stage abandoned opens the why-missed dialog (optional preset and note; closing without Save writes nothing). There is no menubar Why missed button.",
         "styleNotes": "",
         "improvements": ""
       },

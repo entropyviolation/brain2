@@ -23,6 +23,7 @@ import {
   groupOperationsByCategory,
   filterOperationsByCategory,
   sortOperations,
+  foldOperationHomeNotes,
 } from "@/lib/operations"
 import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import { COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
@@ -400,6 +401,29 @@ describe("operation categories on the home board", () => {
     const old = makeOp("old", "Old", ["x"], { createdAt: daysAgo(10) })
     const fresh = makeOp("fresh", "Fresh", ["x"], { createdAt: NOW })
     expect(sortOperations([old, fresh], "recent").map((o) => o.id)).toEqual(["fresh", "old"])
+
+    const touched = makeOp("touched", "Touched", ["x"], {
+      createdAt: daysAgo(30),
+      modifiedAt: NOW.toISOString(),
+    })
+    const untouched = makeOp("untouched", "Untouched", ["x"], { createdAt: daysAgo(1) })
+    expect(sortOperations([untouched, touched], "modified").map((o) => o.id)).toEqual(["touched", "untouched"])
+  })
+
+  it("folds a legacy home notes blob into the item note log once", () => {
+    const op = makeOp("kiln", "Kiln", ["x"], {
+      createdAt: new Date("2026-06-01T15:00:00"),
+      attributes: { [OPERATION_ATTR.homeNotes]: "  Controller board is on order.  " },
+      noteLog: [{ id: "n1", date: "2026-06-02", text: "Already logged" }],
+    })
+    const folded = foldOperationHomeNotes(op)
+    expect(folded.attributes?.[OPERATION_ATTR.homeNotes]).toBeUndefined()
+    expect(folded.noteLog?.map((entry) => entry.text)).toEqual([
+      "Already logged",
+      "Controller board is on order.",
+    ])
+    expect(folded.noteLog?.[1]).toMatchObject({ id: "note_legacy_kiln_homenotes", date: "2026-06-01" })
+    expect(foldOperationHomeNotes(folded)).toBe(folded)
   })
 })
 

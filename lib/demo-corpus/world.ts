@@ -280,7 +280,6 @@ export function extraTasks(now: Date): Task[] {
           [OPERATION_ATTR.mission]: "One poster on the door before the October class, and a broadside for the firing party.",
           [OPERATION_ATTR.stage]: "active",
           [OPERATION_ATTR.categories]: ["studio", "print"],
-          [OPERATION_ATTR.homeNotes]: "Iron black first. The red is a second pass and can slip.",
           [OPERATION_ATTR.trackingTagIds]: ["tag-craft"],
           [OPERATION_ATTR.trackingPenId]: "act-press",
           [OPERATION_ATTR.taskListId]: "list-letterpress",
@@ -317,6 +316,13 @@ export function extraTasks(now: Date): Task[] {
             },
           ]),
         },
+        noteLog: [
+          {
+            id: "note_legacy_demo-op-press_homenotes",
+            date: "2026-06-01",
+            text: "Iron black first. The red is a second pass and can slip.",
+          },
+        ],
         links: [
           { id: "lnk-press-phase-lock", relation: "has-phase", targetId: "demo-op-press-lock" },
           { id: "lnk-press-phase-ink", relation: "has-phase", targetId: "demo-op-press-ink" },

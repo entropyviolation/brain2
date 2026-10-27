@@ -59,11 +59,11 @@ _Last mapped: 2026-10-20_
 
 ## Public door
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-27_
 
 Popup and page are both public entries.
 
-- **Popup** — `TaskDetailPopup` from `@/components/ItemDetail/ItemDetailPopup`. Callers: the app shell (`app/page.tsx`), Lists, Scheduler, Home, Plan, To Do, Mobile, the friend mission sheet, and friend mission detail.
+- **Popup** — `TaskDetailPopup` from `@/components/ItemDetail/ItemDetailPopup`. Callers: the app shell (`app/page.tsx`), Lists, Scheduler, Home, Plan, To Do, Mobile, Operations Home (**Open item detail**, over the operation page), the friend mission sheet, and friend mission detail. _Last mapped: 2026-10-27_
 - **Page** — `EnhancedTaskDetail` from `@/components/ItemDetail/ItemDetailPage`. Callers: the app shell, the module popout, and the sheet popout.
 
 `useItemDetailDraft` is an interior. Its callers are the popup and the page.
@@ -127,7 +127,7 @@ type such as Book / Furniture shows Details (and a cover / featured fields when
 (`lib/computer-project-types.ts`, parent Operation) opens on a desk
 (`ComputerProjectDetail`): status, mission, repository, branch, local path,
 stack, next milestone, linked next actions (`has-part`), phases as milestones
-(`has-phase`), project notes (`homeNotes`), tracked time, and **Open in Operations**.
+(`has-phase`), project notes (the item note log, `Task.noteLog`), tracked time, and **Open in Operations**.
 A phase is not listed again under next actions. Those fields
 are real attributes, links, and tracked minutes.
 The Subtasks tab stays the existing item-detail tree. Switching the card to
@@ -179,17 +179,20 @@ Every item, not only tasks, gets these tabs:
   `Task.resources`): drop on the tray or Attach files. Bytes go to the
   attachments IndexedDB like `file` attributes; an image shows itself, PDFs /
   audio / video / text preview in the viewer well, with Open, Download, and a
-  caption. Remove takes it off the draft and keeps the stored bytes so Discard
-  can bring it back. Text is extracted in the background where possible.
+  caption. **What this is for here** is `ItemResource.useNote` — the same
+  field the operation Resources tab writes, because both edit this list. A
+  web link is the same record with `url` set (`uri` is `url:<id>`). Remove
+  takes it off the draft and keeps the stored bytes so Discard can bring it
+  back. Text is extracted in the background where possible.
   On desktop a file or folder can be **linked** instead of copied (see
-  Linked resources below).
+  Linked resources below). _Last mapped: 2026-10-27._
 - **Links** — the Related picker and backlinks (moved out of the rail).
 
 Notes and Resources are `ItemDetailPanel`s that `resolveDetailView` adds to
 every item; a list can hide them (List Settings → detail panels). This item can hide or show its own tabs from **Item settings** (`hiddenDetailPanels` / `shownDetailPanels` on the item). **Details** stays. Links and History are shell tabs and can be hidden on this item. Item settings is not a tab. The chrome gear (`ItemSettingsKey`) is the brushed gear with no keycap, the same 26px hit target as Minimize. It opens Settings as a dialog on top of the item (`data-ui-name="Item settings"`). The popup keeps that dialog inside the item, so the gear does not close the item. On the popup the gear, minimize, and close sit in the title row beside the CRT, under a step item's breadcrumb bar so they do not cover the readout. Settings has a header and plates for the item id, attributes, and tabs, with room for later controls. Opening a list from the popup minimizes it and keeps the draft. That dialog can hide an attribute on this item (`hiddenAttributeIds`) and open **Attribute settings** for the shared definition. Tab keys carry phosphor counts. Notes, resources, and
 attribute edits all go through the draft, so Save and the lamp cover them,
 and `commitItemEdit` keeps `noteLog` / `resources` as item fields. Search reads
-note text, resource names, captions, and extracted text.
+note text, resource names, captions, use notes, web addresses, and extracted text.
 
 **Attributes** sit at the top of Details with a count of filled cells and an
 **Add attribute** key that opens `AttributeCreator` right there. **Add attribute** is a pale silver keycap (`.id-keycap`), the same cap as To do word keys. Each cell
@@ -242,8 +245,8 @@ _Last mapped: 2026-10-24._
 | `SubtaskTree.tsx` | Subtasks tab for both shells. Its own small outline (nested `ul.id-sub-list`, `li.id-sub-item`), not the shared `StepTree` the To Do lid uses; names and nesting match the lid, the markup and keys do not. Each row: name (edit in place), parts (`n/m`), minutes (edit in place), the sum of the steps inside, **+** (add a step inside) and delete. A name field adds a step on Enter. Phase 11: `onOpenStep` (dot click and ↗ open the step's item on top) and `StepItemSubtasks` (a step item's Subtasks tab). **Planned** here (they exist only in `StepTree`): drag and Alt+↑/↓ / Tab moves, Shift/Cmd multi-select, remembered folds, Hide locked and Show next only. |
 | `ItemDetailPage.tsx` | Full-screen detail/editor opened from the app shell (`data-ui-name="Item detail"` on the page root). Names still runs via the layout host. Task-only chrome (duration, urgency, molecular breakdown) is gated; other types get an adapted details view. A Reminders-list item shows When / Repeat / Text me / Persistent on Details; those fields write through immediately. A People I Know person shows the biography (optional relation, Close, gift notes, and the Gift ideas list when that list exists), then **Pipelines** (Company time follows the joined pen), on Details. Birthday and standing notes are edited in the biography. The birthday plaque draws a pixel cake; a later PNG folder is not loaded. Exports `EnhancedTaskDetail`. The last tab persists across refresh. A refresh while this page is open saves the draft, and the next load shows the minimized dock, not this page. Double-click a list badge calls `requestNavigateToListAfterPaint` with that badge’s list id (the parent folder when the list is filed). The shell’s navigate event closes the page. When the screen was opened from a habit, that double-click does **not** take Back’s return to habit settings — Back and **Habit settings** still do. The desk stays mounted underneath; long lists window their rows so the jump can paint. The fascia lamp shows **Saved** or **Unsaved changes** the whole time the page is open, including while Edit is the action (a clean item reads Saved). Save / complete (with `actualDuration`) / missed / delete / `SplitStepsComposer` stay page-only. Subtasks are the `SubtaskTree` on `task.subtasks` and save as you edit; deleting a step also deletes an older Task-backed subtask with the same id. |
 | `ItemNotesLog.tsx` | Notes tab: composer (day, time stamp, Cmd/Ctrl+Enter), pinned standing note (`Task.notes`), dated entries grouped by day. `NotesPeek` is the rail face. |
-| `ItemResourcesPanel.tsx` | Resources tab: drop tray with Auto / Copy / Link (desktop), cards, viewer (image / PDF / audio / video / text / folder), caption, Open / Download / Remove; linked files add Show in Finder and Locate…. |
-| `ItemResourcesPanel.test.tsx` | Linking on drop and from the folder picker, following a move, Missing and Locate, and the web fallback, with a mocked `fileLinks` bridge. |
+| `ItemResourcesPanel.tsx` | _Last mapped: 2026-10-27._ Resources tab: drop tray with Auto / Copy / Link (desktop), cards, viewer (image / PDF / audio / video / text / folder / web link), caption, use note, Open / Download / Remove; linked files add Show in Finder and Locate…. |
+| `ItemResourcesPanel.test.tsx` | Linking on drop and from the folder picker, following a move, Missing and Locate, the use note, and the web fallback, with a mocked `fileLinks` bridge. |
 | `ItemTypeViewCards.tsx` | _Last mapped: 2026-10-27._ Fascia type cards. One type is a nameplate. Two or more switch the detail view (`viewAsTypeId`). Double-click opens the type editor. |
 | `ComputerProjectDetail.tsx` | _Last mapped: 2026-10-27._ Computer Project desk on Details: status, repo, next actions (`has-part`), milestones (`has-phase`, not repeated in next actions), notes, tracked time. Writes operation and computer-project attributes through the draft. Add action / Add milestone create linked tasks immediately. |
 | `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. _Last mapped: 2026-10-24:_ `onLiveValue(id, value)` gets text, number and link keys before blur; both shells write it with `touchDraft`, so Cmd+S keeps unblurred text. Text lists and list references pass `textListIds`, `attributeLabels`, `onBindTextList`, and `onOpenTextList`. The cell name uses `attributeLabels` when this item set one. **Add attribute** is `.id-keycap`. |

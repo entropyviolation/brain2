@@ -10,9 +10,12 @@ import {
   formulaDescendantIds,
   glanceLabelUniverse,
   glanceMeters,
+  partInstancesAttribute,
+  partTodoTasks,
   readPartFormulas,
   readPartInstances,
   resolveGlanceSelection,
+  PARTS_ATTR,
 } from "@/lib/operation-parts"
 
 const NOW = new Date("2026-06-23T12:00:00.000Z")
@@ -131,5 +134,59 @@ describe("part formulas", () => {
     expect(todo).not.toContain("neon cover")
     expect(todo).not.toContain("Research")
     expect(todo).not.toContain("Fashion magazine")
+  })
+
+  it("stores the current stage and status report on the part, and counts that stage without a task", () => {
+    const formulas = readPartFormulas([
+      { id: "article", name: "Article", stages: ["drafted", "written", "formatted"] },
+    ])
+    const raw = [
+      {
+        id: "cover",
+        formulaId: "article",
+        title: "Cover",
+        currentStage: "written",
+        statusReport: "Waiting on the scan.",
+        ideas: [],
+      },
+      {
+        id: "blank",
+        formulaId: "article",
+        title: "Blank",
+        currentStage: "",
+        statusReport: "",
+        ideas: [],
+      },
+    ]
+    const instances = readPartInstances(raw)
+    expect(instances[0].currentStage).toBe("written")
+    expect(instances[0].statusReport).toBe("Waiting on the scan.")
+    expect(instances[1].currentStage).toBe("")
+    expect(instances[1].statusReport).toBe("")
+
+    const roundTrip = readPartInstances(JSON.parse(partInstancesAttribute(instances)[PARTS_ATTR.instances]))
+    expect(roundTrip[0].currentStage).toBe("written")
+    expect(roundTrip[1].currentStage).toBe("")
+
+    const meters = glanceMeters(formulas, instances, [], glanceLabelUniverse(formulas))
+    expect(meters.find((meter) => meter.label === "drafted")).toEqual({ label: "drafted", done: 1, total: 2 })
+    expect(meters.find((meter) => meter.label === "written")).toEqual({ label: "written", done: 1, total: 2 })
+    expect(meters.find((meter) => meter.label === "formatted")).toEqual({ label: "formatted", done: 0, total: 2 })
+
+    const mirror = task({
+      id: "mirror",
+      description: "Cover — drafted",
+      attributes: {
+        [PART_TASK_ATTR.instanceId]: "cover",
+        [PART_TASK_ATTR.role]: "stage",
+        [PART_TASK_ATTR.label]: "drafted",
+      },
+    })
+    const real = task({
+      id: "real",
+      description: "Scan the art",
+      attributes: { [PART_TASK_ATTR.instanceId]: "cover", [PART_TASK_ATTR.operationId]: "op" },
+    })
+    expect(partTodoTasks([mirror, real], "cover").map((item) => item.description)).toEqual(["Scan the art"])
   })
 })
