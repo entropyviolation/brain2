@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 Pen settings UI Lab</title>
+<style>
+@font-face {
+  font-family: "w95fa";
+  src: url("/fonts/w95fa.woff") format("woff");
+  font-display: swap;
+}
+:root {
+  --crt: #7dffc4;
+  --bench: #1e2028;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 920px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  color: var(--crt);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .88; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.bench hr { border: none; border-top: 1px solid #3a3d48; margin: 10px 0; }
+.now { margin: 8px 0; }
+.now strong { color: var(--crt); font-weight: 700; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.presets button, .plan summary, #restorePen {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.presets button[aria-pressed="true"] {
+  background: #070c0a;
+  color: var(--crt);
+  border-color: var(--crt);
+}
+.plan { margin: 8px 0 4px; }
+.plan summary { display: inline-block; margin-bottom: 6px; }
+.plan-body { line-height: 1.45; opacity: .92; }
+.plan-body p { margin: 0 0 8px; }
+.plan-body h3 { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--crt); }
+.plan-body ul { margin: 0 0 8px; padding-left: 16px; }
+.plan-body li { margin: 0 0 6px; }
+.bench :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .8;
+}
+.stage-cap strong { color: var(--crt); font-weight: 650; }
+
+.stage-well {
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    #3a3d40;
+}
+.frame { position: relative; width: min(100%, calc(var(--panel) * 1px)); }
+.lab-note { margin: 0; font-size: 10px; opacity: .65; }
+.reset {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin: 4px 0 8px;
+}
+
+.pen {
+  --ink: #111111;
+  --titlebg: #070c0a;
+  --titlefg: #7dffc4;
+  --well: #070c0a;
+  --wellfg: #f4f7f5;
+  --field: #ffffff;
+  --fieldfg: #111111;
+  --key: #d8d8d8;
+  --keyfg: #111111;
+  --line: #808080;
+  --hi: #ffffff;
+  --lo: #808080;
+  --mid: #dfdfdf;
+  --frame: #0a0a0a;
+  --nameplate: #2a2c2e;
+  --danger: #7a2424;
+  --accent: #000080;
+  --rim: #ffffff;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--maxh) * 1vh);
+  overflow: hidden;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  font-weight: var(--weight);
+  letter-spacing: calc(var(--btrack) * 0.01em);
+  line-height: calc(var(--leading) / 100);
+  border: calc(var(--bw) * 1px) solid var(--frame);
+  border-radius: calc(var(--rad) * 1px);
+  filter: contrast(calc(var(--ctr) / 100));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.75),
+    inset 0 calc(var(--inset) * -1px) 0 rgba(0,0,0,.18),
+    0 calc(var(--shy) * 1px) calc(var(--shb) * 1px) rgba(0,0,0, calc(var(--shop) / 100));
+}
+.pen :focus-visible { outline: calc(var(--focus) * 1px) solid var(--accent); outline-offset: 2px; }
+.pen button, .pen input, .pen select { font: inherit; color: inherit; }
+.pen input[type="text"], .pen input[type="search"], .pen select {
+  width: 100%;
+  background: var(--field);
+  color: var(--fieldfg);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--crad) * 1px);
+  padding: calc(var(--fpy) * 1px) calc(var(--fpx) * 1px);
+  min-height: calc(var(--fpy) * 2px + 1.2em);
+}
+.sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); border: 0;
+}
+.cap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tgap) * 1px);
+  padding: calc(var(--tpad) * 1px) calc(var(--pad) * 1px);
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125,255,196,.14), transparent 46%),
+    var(--titlebg);
+  color: var(--titlefg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 8px 12px rgba(0,0,0,.4);
+}
+.cap h2 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: calc(var(--tsize) * 1px);
+  font-weight: var(--tweight);
+  letter-spacing: calc(var(--ttrack) * 0.01em);
+  text-transform: var(--title-case);
+  font-variant: var(--title-variant);
+  text-shadow: 0 0 calc(var(--glow) * 1px) color-mix(in srgb, var(--titlefg) 55%, transparent);
+}
+.navpen { display: inline-flex; gap: calc(var(--rgap) * 0.6px); }
+.close, .navpen button, .key, .tag, .level, .chain-node, .recent-row { cursor: pointer; }
+.close {
+  width: calc(var(--close) * 1px);
+  height: calc(var(--close) * 1px);
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: min(calc(var(--crad) * 1px), 4px);
+  background: linear-gradient(#c9ccd0, #b9bdc1);
+  color: #1f2226;
+  box-shadow: inset 0 calc(var(--skirt) * -1px) 0 #969a9f, 0 0 0 1px #55595d;
+  font-weight: 700;
+}
+.close:hover, .close:focus-visible { background: #7a3c31; color: #f8ece8; }
+.navpen button {
+  min-width: calc(var(--close) * 0.85px);
+  min-height: calc(var(--close) * 0.85px);
+  border: 0;
+  border-radius: calc(var(--crad) * 1px);
+  background: var(--key);
+  color: var(--keyfg);
+  box-shadow: inset -1px -1px var(--frame), inset 1px 1px var(--hi), inset 0 calc(var(--skirt) * -1px) 0 var(--lo);
+}
+.navpen button:disabled { opacity: .35; cursor: default; }
+.body {
+  overflow: auto;
+  min-height: 0;
+  padding: calc(var(--pad) * 1px);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * 1px);
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--rgap) * 1px);
+  padding: calc(var(--spad) * 1px);
+  border-radius: calc(var(--crad) * 1px);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.06), transparent 28%),
+    repeating-linear-gradient(180deg, rgba(255,255,255, calc(var(--mill) / 100)) 0 1px, transparent 1px 2px),
+    color-mix(in srgb, var(--face) 86%, white);
+  box-shadow:
+    0 0 0 calc(var(--sring) * 1px) var(--rim),
+    inset 0 1px 0 rgba(255,255,255,.65),
+    inset 0 calc(var(--inset) * 1px) calc(var(--inset) * 1.4px) rgba(0,0,0,.12);
+}
+.section-title {
+  margin: 0;
+  font-size: calc(var(--ssize) * 1px);
+  font-weight: var(--sweight);
+  letter-spacing: calc(var(--strack) * 0.01em);
+  text-transform: var(--section-case);
+  color: var(--nameplate);
+  text-shadow: 0 1px 0 rgba(255,255,255,.78);
+}
+.help, .quiet, .also, .view-name, .fields-empty {
+  margin: 0;
+  font-size: calc(var(--hsize) * 1px);
+  line-height: calc(var(--hlead) / 100);
+  color: color-mix(in srgb, var(--ink) calc(var(--muted) * 1%), var(--face));
+}
+.help-short { display: none; }
+.row { display: flex; flex-wrap: wrap; gap: calc(var(--rgap) * 1px); align-items: center; }
+.row > input, .row > select { flex: 1 1 8rem; min-width: 0; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.mast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: calc(var(--mgap) * 1px);
+  align-items: end;
+  padding: calc(var(--mpad) * 1px);
+  border-radius: calc(var(--crad) * 1px);
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(125,255,196,.16), transparent 52%),
+    var(--well);
+  color: var(--wellfg);
+  box-shadow:
+    0 0 0 1px var(--frame),
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 calc(var(--welld) * 1px) calc(var(--welld) * 1.6px) rgba(0,0,0,.45);
+}
+.mast label { color: #c5d5cc; font-size: calc(var(--hsize) * 1px); }
+.mast input[type="text"] {
+  background: #121816;
+  color: var(--wellfg);
+  border-color: #222;
+}
+.color-bezel {
+  position: relative;
+  display: inline-block;
+  width: calc(var(--sww) * 1px);
+  height: calc(var(--swh) * 1px);
+  overflow: hidden;
+  background: var(--key);
+  border-radius: calc(var(--crad) * 1px);
+  box-shadow:
+    inset -1px -1px var(--frame),
+    inset 1px 1px var(--hi),
+    inset -2px -2px var(--lo),
+    inset 2px 2px var(--mid);
+}
+.color-bezel input[type="color"] {
+  position: absolute; inset: 2px;
+  width: calc(100% - 4px); height: calc(100% - 4px);
+  padding: 0; border: 0; background: transparent; cursor: pointer;
+}
+.color-bezel input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.color-bezel input[type="color"]::-webkit-color-swatch,
+.color-bezel input[type="color"]::-moz-color-swatch { border: 1px solid var(--lo); border-radius: 0; }
+.inked { filter: saturate(calc(var(--sat) / 100)); }
+.img-bead {
+  width: calc(var(--sww) * 0.7px);
+  height: calc(var(--swh) * 0.7px);
+  background:
+    repeating-linear-gradient(45deg, var(--pen) 0 4px, color-mix(in srgb, var(--pen) 60%, white) 4px 8px);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+}
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--chain) * 1px);
+  padding: calc(var(--cpad) * 1px);
+  background: var(--field);
+  color: var(--fieldfg);
+  border-radius: calc(var(--crad) * 1px);
+  box-shadow: inset 1px 1px var(--lo), inset -1px -1px var(--hi);
+}
+.chain-node, .tag, .level, .key, .recent-row {
+  border: 0;
+  border-radius: calc(var(--crad) * 1px);
+  background: var(--key);
+  color: var(--keyfg);
+  box-shadow:
+    inset -1px -1px var(--frame),
+    inset 1px 1px var(--hi),
+    inset -2px -2px var(--lo),
+    inset 2px 2px var(--mid),
+    inset 0 calc(var(--skirt) * -1px) 0 var(--lo);
+  padding: calc(var(--bpy) * 1px) calc(var(--bpx) * 1px);
+}
+.chain-node, .tag { display: inline-flex; align-items: center; gap: calc(var(--rgap) * 0.7px); }
+.chain-node.is-you { box-shadow: inset 0 0 0 2px var(--accent); }
+.chev { opacity: .7; }
+.bead {
+  width: calc(var(--bead) * 1px);
+  height: calc(var(--bead) * 1px);
+  flex: 0 0 auto;
+  background: var(--c, var(--pen));
+  border-radius: calc(var(--beadr) * 1%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+.levels { display: flex; flex-wrap: wrap; gap: calc(var(--rgap) * 0.7px); }
+.level[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,.35); }
+.tag[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 24%, var(--field)); color: var(--fieldfg); }
+.detail {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--rgap) * 1px);
+  padding: calc(var(--dpad) * 1px);
+  border-radius: calc(var(--crad) * 1px);
+  background: rgba(255,255,255,.28);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.12);
+}
+.detail .mini {
+  width: calc(var(--sww) * 0.5px);
+  height: calc(var(--swh) * 0.55px);
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: calc(var(--crad) * 1px);
+}
+.detail .mini input { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; }
+.view-name { display: block; letter-spacing: .08em; text-transform: uppercase; }
+.ghost { background: transparent; box-shadow: none; color: var(--danger); }
+.field-row, .format-row { display: flex; gap: calc(var(--rgap) * 1px); align-items: center; }
+.field-row input, .format-row input { flex: 1; }
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--rgap2) * 1px);
+  max-height: calc(var(--recent) * 1px);
+  overflow: auto;
+}
+.recent-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto auto 1fr auto;
+  gap: calc(var(--rgap) * 1px);
+  text-align: left;
+  align-items: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: calc(var(--bpy) * 0.6px) calc(var(--bpx) * 0.8px);
+  background: var(--field);
+  color: var(--fieldfg);
+  border-radius: calc(var(--crad) * 1px);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.chip button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0 2px; }
+.matches { display: flex; flex-direction: column; gap: 2px; }
+.matches button { text-align: left; }
+.actions { display: flex; gap: calc(var(--agap) * 1px); align-items: center; }
+.actions .save { flex: 1; font-weight: var(--tweight); color: #22306c; }
+.icon-key {
+  width: calc(var(--close) * 1.35px);
+  height: calc(var(--close) * 1.2px);
+  display: grid;
+  place-items: center;
+  color: var(--danger);
+}
+.status {
+  margin: 0;
+  padding: 0 calc(var(--pad) * 1px) calc(var(--pad) * 0.6px);
+  font-size: calc(var(--hsize) * 1px);
+  color: color-mix(in srgb, var(--ink) calc(var(--muted) * 1%), var(--face));
+}
+.status:empty { display: none; }
+.how {
+  margin: 0;
+  padding: calc(var(--spad) * 0.6px);
+  background: var(--field);
+  color: var(--fieldfg);
+  border-radius: calc(var(--crad) * 1px);
+  border: 1px solid var(--lo);
+}
+.how p { margin: 0 0 6px; }
+.how p:last-child { margin: 0; }
+code { font-family: ui-monospace, "Courier New", monospace; font-size: .92em; }
+.sheet {
+  width: min(420px, calc(100% - 24px));
+  background: var(--face);
+  color: var(--ink);
+  border: calc(var(--bw) * 1px) solid var(--frame);
+  border-radius: calc(var(--rad) * 1px);
+  padding: calc(var(--pad) * 1px);
+  box-shadow: 0 calc(var(--shy) * 1px) calc(var(--shb) * 1.4px) rgba(0,0,0,.35);
+  font-family: var(--ff);
+}
+.sheet h3 {
+  margin: 0 0 8px;
+  font-size: calc(var(--tsize) * 1px);
+  letter-spacing: calc(var(--ttrack) * 0.01em);
+  text-transform: uppercase;
+  color: var(--titlefg);
+  background: var(--titlebg);
+  padding: 4px 8px;
+}
+.sheet p { margin: 0 0 10px; }
+.sheet .row { justify-content: flex-end; }
+.guard, .delbox {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.35); padding: 12px;
+}
+.linkish { background: transparent; border: 0; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="shell.html">Shell</a>
+    <a href="home.html">Home</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="modules.html">Modules</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="settings.html">Settings</a>
+    <a href="pen-settings.html" aria-current="page">Pen</a>
+  </nav>
+  <h1>Pen settings lab</h1>
+  <p class="lede">Pen settings, as the app draws it. The sample is the Activity pen Exercise. The controls only change type, space, and chrome on this popup.</p>
+  <button type="button" class="reset" id="resetTune">Reset to the app</button>
+  <div id="tune"></div>
+</aside>
+
+<div class="stage" id="stage">
+  <div class="stage-cap">
+    <span>Sample <strong id="sampleName">Activity · Exercise</strong></span>
+    <button type="button" id="restorePen" hidden>Restore sample pen</button>
+  </div>
+  <div class="stage-well">
+    <div class="frame" id="frame">
+      <article class="pen" id="pen" data-ui-name="Pen settings">
+        <header class="cap">
+          <div class="navpen">
+            <button type="button" id="prevPen" aria-label="Previous pen">‹</button>
+            <button type="button" id="nextPen" aria-label="Next pen">›</button>
+          </div>
+          <h2 id="penTitle">Pen · Exercise</h2>
+          <button type="button" class="close" id="closePen" aria-label="Close">×</button>
+        </header>
+        <div class="body" id="penBody"></div>
+        <p class="status" id="penStatus" aria-live="polite"></p>
+      </article>
+      <div class="guard" id="guard" hidden>
+        <div class="sheet" role="dialog" aria-labelledby="guardTitle">
+          <h3 id="guardTitle">Unsaved changes</h3>
+          <p>You have unsaved changes. Are you sure you want to close this window?</p>
+          <div class="row">
+            <button type="button" class="key" id="saveClose">Save changes</button>
+            <button type="button" class="key" id="stay">Cancel</button>
+            <button type="button" class="key" id="discard">Exit without saving</button>
+          </div>
+        </div>
+      </div>
+      <div class="delbox" id="delBox" hidden>
+        <div class="sheet" role="dialog" aria-labelledby="delTitle">
+          <h3 id="delTitle">Delete pen</h3>
+          <p id="delCopy"></p>
+          <div class="row">
+            <button type="button" class="key" id="doDelete">Delete pen</button>
+            <button type="button" class="key" id="cancelDelete">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="lab-note">Image uses a stand-in mosaic so the tiling can be judged offline. The app opens the image picker. Delete uses the app’s warning in the page. The app uses the browser confirm.</p>
+</div>
+
+<script>
+(function () {
+  const FONTS = {
+    house: '"w95fa", Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif',
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif',
+    grotesk: 'Karla, "Avenir Next", "Segoe UI", system-ui, sans-serif',
+    system: 'system-ui, "Segoe UI", sans-serif',
+    mono: 'ui-monospace, "Courier New", Courier, monospace',
+    serif: 'Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif',
+    round: 'ui-rounded, "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", sans-serif',
+    typewriter: '"American Typewriter", "Courier New", Courier, monospace',
+    didot: 'Didot, "Bodoni MT", Georgia, serif'
+  };
+  const PALETTE = ["#3a6ea5","#3d9a62","#7d6bb8","#c4783a","#6b8f71","#d4a0b0","#1f4b3a","#c23b4a","#e6c15a","#4aa3b5","#8a5a3b","#2c2a4a","#d86b4a","#9bbf6a","#5c6bc0","#111111"];
+  const COMPANY = [
+    { name: "Sam", color: "#e0b060" },
+    { name: "Mina", color: "#8fb8d8" }
+  ];
+  const TASKS = ["Morning walk", "Call Elijah", "Stretch", "Write the week", "Grocery run"];
+  const FIELD_PRESETS = [
+    { id: "project", name: "Project / context", kind: "text" },
+    { id: "books", name: "Book(s)", kind: "text" },
+    { id: "pages", name: "Pages read", kind: "number", unit: "pages" }
+  ];
+
+  function pen(partial) {
+    return Object.assign({
+      image: false, parents: [], level: "None", levels: ["None", "Category", "Activity"],
+      tags: [], fields: [], formats: [], variantLabel: "", details: [], recent: [], linked: [], habit: "", deleted: false
+    }, partial);
+  }
+  let pens = [
+    pen({
+      id: "exercise", name: "Exercise", view: "Activity", color: "#3a6ea5",
+      parents: [{ name: "Body", color: "#c4783a", on: true, open: "body" }, { name: "Health", color: "#6b8f71", on: false, open: "" }],
+      level: "Activity",
+      tags: [{ name: "Movement", color: "#3a6ea5", on: true }, { name: "Outdoor", color: "#3d9a62", on: false }],
+      formats: ["Exercised {duration}"],
+      variantLabel: "Kind",
+      details: [
+        { name: "Walk", color: "#3d9a62", view: "", open: "walk" },
+        { name: "Gym", color: "#7d6bb8", view: "", open: "gym" },
+        { name: "Elijah", color: "#d4a0b0", view: "Company", open: "" }
+      ],
+      recent: [
+        { date: "Mon Oct 26", clock: "9:00–9:40", title: "Morning walk", dur: "40m" },
+        { date: "Sun Oct 25", clock: "6:10–6:55", title: "Gym", dur: "45m" },
+        { date: "Fri Oct 23", clock: "12:05–12:20", title: "", dur: "15m" }
+      ],
+      linked: ["Morning walk"],
+      habit: "Move daily"
+    }),
+    pen({
+      id: "walk", name: "Walk", view: "Activity", color: "#3d9a62",
+      parents: [{ name: "Exercise", color: "#3a6ea5", on: true, open: "exercise" }],
+      level: "Activity",
+      tags: [{ name: "Outdoor", color: "#3d9a62", on: true }, { name: "Movement", color: "#3a6ea5", on: true }],
+      formats: ["Went for a walk", "Went for a {minutes} minute walk at {location}"],
+      variantLabel: "Who with?",
+      recent: [{ date: "Mon Oct 26", clock: "9:00–9:40", title: "Morning walk", dur: "40m" }],
+      linked: ["Morning walk"],
+      habit: "Move daily"
+    }),
+    pen({
+      id: "gym", name: "Gym", view: "Activity", color: "#7d6bb8",
+      parents: [{ name: "Exercise", color: "#3a6ea5", on: true, open: "exercise" }],
+      level: "Activity",
+      tags: [{ name: "Movement", color: "#7d6bb8", on: true }],
+      formats: ["Gym {duration}"],
+      recent: [{ date: "Sun Oct 25", clock: "6:10–6:55", title: "", dur: "45m" }]
+    }),
+    pen({
+      id: "body", name: "Body", view: "Activity", color: "#c4783a",
+      level: "Category",
+      details: [
+        { name: "Exercise", color: "#3a6ea5", view: "", open: "exercise" },
+        { name: "Walk", color: "#3d9a62", view: "", open: "walk" }
+      ],
+      variantLabel: ""
+    })
+  ];
+  let index = 0;
+  let saved = {};
+  const initial = {};
+  pens.forEach(function (p) {
+    const copy = JSON.parse(JSON.stringify(p));
+    saved[p.id] = copy;
+    initial[p.id] = JSON.parse(JSON.stringify(copy));
+  });
+  const ui = {};
+  let linkQuery = "";
+  const stage = document.getElementById("stage");
+  const penEl = document.getElementById("pen");
+  const penBody = document.getElementById("penBody");
+  const statusEl = document.getElementById("penStatus");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c];
+    });
+  }
+  function norm(hex) {
+    return /^#[0-9a-f]{6}$/i.test(hex || "") ? hex.toLowerCase() : "#3a6ea5";
+  }
+  function live() { return pens[index]; }
+  function dirty() {
+    return JSON.stringify(live()) !== JSON.stringify(saved[live().id]);
+  }
+  function note(msg) { statusEl.textContent = msg || ""; }
+  function article(level) {
+    if (level === "Activity") return "an Activity";
+    if (level === "Category") return "a Category";
+    return level;
+  }
+  function levelLine(p) {
+    const name = p.name || "Untitled";
+    if (p.level === "None") return "No level category.";
+    const display = p.parents.filter(function (x) { return x.on; })[0];
+    if (!display) return name + " is " + article(p.level) + ".";
+    const parent = pens.find(function (x) { return x.name === display.name; });
+    if (parent && parent.level && parent.level !== "None") {
+      return name + " is " + article(p.level) + ", in " + display.name + " (" + parent.level + ").";
+    }
+    return name + " is " + article(p.level) + ", in " + display.name + ".";
+  }
+  function preview(p) {
+    const ctx = { minutes:"15", hours:"0.25", duration:"15m", name:p.name, pen:p.name, start:"1:00 PM", end:"1:15 PM" };
+    const lines = p.formats.map(function (s) { return s.trim(); }).filter(Boolean);
+    const ok = lines.filter(function (s) {
+      const keys = (s.match(/\{([^}]+)\}/g) || []).map(function (m) { return m.slice(1, -1).toLowerCase(); });
+      return keys.every(function (k) { return ctx[k]; });
+    });
+    if (!ok.length) return "(nothing — add a template with no optional variables, e.g. Went for a walk)";
+    return ok[0].replace(/\{([^}]+)\}/g, function (_, k) { return ctx[k.toLowerCase()] || ""; });
+  }
+  function bead(color, liveInk) {
+    const style = liveInk ? "" : ' style="--c:' + esc(norm(color)) + '"';
+    return '<i class="bead inked"' + style + ' aria-hidden="true"></i>';
+  }
+
+  function renderBody(opts) {
+    const p = live();
+    const active = document.activeElement;
+    const focusId = opts && opts.keep && active && penBody.contains(active) && active.id;
+    const pos = focusId ? active.selectionStart : null;
+    const name = p.name || "Untitled";
+    if (p.deleted) {
+      penBody.innerHTML = '<section class="section"><p class="quiet">This pen is deleted. Painted time using it as the primary will be cleared.</p><p class="quiet">Restore the sample from the lab bar. The app would close the dialog.</p></section>';
+    } else {
+      penBody.innerHTML = mastHTML(p) + imageHTML(p) + countsHTML(p) + tagsHTML(p) + fieldsHTML(p) + formatHTML(p) + detailHTML(p) + recentHTML(p) + linkedHTML(p) + habitHTML(p) + actionsHTML();
+    }
+    penEl.dataset.image = p.image ? "on" : "off";
+    penEl.style.setProperty("--pen", norm(p.color));
+    document.getElementById("penTitle").textContent = "Pen · " + name;
+    document.getElementById("sampleName").textContent = p.view + " · " + name;
+    document.getElementById("prevPen").disabled = index <= 0;
+    document.getElementById("nextPen").disabled = index >= pens.length - 1;
+    document.getElementById("delCopy").textContent = 'Delete pen "' + name + '"? Painted time using it as the primary will be cleared.';
+    document.getElementById("restorePen").hidden = !p.deleted;
+    syncSwatches();
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el) {
+        el.focus();
+        if (typeof pos === "number" && el.setSelectionRange) {
+          try { el.setSelectionRange(pos, pos); } catch (e) {}
+        }
+      }
+    }
+  }
+
+  function mastHTML(p) {
+    return '<section class="mast" aria-label="Name and color">' +
+      '<label class="color-bezel inked"><span class="sr">Pen color</span>' +
+      '<input id="penColor" type="color" value="' + esc(norm(p.color)) + '" aria-label="Pen color"></label>' +
+      '<div class="grow"><label for="penName">Name</label>' +
+      '<input id="penName" type="text" value="' + esc(p.name) + '" autocomplete="off"></div></section>';
+  }
+  function countsHTML(p) {
+    const name = p.name || "Untitled";
+    const parents = p.parents.map(function (parent, i) {
+      return '<label class="row"><input type="checkbox" data-act="parent" data-i="' + i + '"' + (parent.on ? " checked" : "") + '> ' +
+        bead(parent.color) + '<span>' + esc(parent.name) + '</span>' +
+        (parent.on && p.parents.filter(function (x) { return x.on; })[0] === parent ? '<span class="also">display parent</span>' : "") +
+        '</label>';
+    }).join("");
+    const ons = p.parents.filter(function (x) { return x.on; });
+    function chainNode(parent) {
+      if (parent.open) {
+        return '<button type="button" class="chain-node" data-act="open-pen" data-open="' + esc(parent.open) + '" title="Double-click to open ' + esc(parent.name) + '">' + bead(parent.color) + esc(parent.name) + '</button>';
+      }
+      return '<span class="chain-node">' + bead(parent.color) + esc(parent.name) + '</span>';
+    }
+    const chain = [];
+    if (ons[0]) {
+      chain.push(chainNode(ons[0]));
+      chain.push('<span class="chev" aria-hidden="true">›</span>');
+    }
+    chain.push('<span class="chain-node is-you" aria-current="true">' + bead(p.color, true) + esc(name) + '</span>');
+    if (ons.length > 1) {
+      chain.push('<span class="also">Also ' + ons.slice(1).map(function (parent) { return esc(parent.name); }).join(", ") + '</span>');
+    }
+    const branch = p.details.map(function (d) {
+      const open = d.open ? ' data-act="open-pen" data-open="' + esc(d.open) + '"' : (d.view ? ' data-act="open-view" data-view="' + esc(d.view) + '" data-name="' + esc(d.name) + '"' : "");
+      const tag = open ? "button" : "span";
+      return '<' + tag + (tag === "button" ? ' type="button"' : "") + ' class="chain-node"' + open + '>' + bead(d.color) + esc(d.name) + (d.view ? " · " + esc(d.view) : "") + '</' + tag + '>';
+    }).join("");
+    const levels = p.levels.map(function (level) {
+      return '<button type="button" class="level" data-act="level" data-level="' + esc(level) + '" aria-pressed="' + (p.level === level ? "true" : "false") + '">' + esc(level) + '</button>';
+    }).join("");
+    return '<section class="section counts"><h3 class="section-title">Counts as</h3>' +
+      '<p class="help help-full">Nest <strong>' + esc(name) + '</strong> under broader pens in this view. Tick several. The first is the display parent. Show as follows that chain, and the grid keeps one color. Other parents share the minutes so those rows sum to the block, not past it. Painting still writes this pen. A pen that counts as this one also appears in Detail below.</p>' +
+      '<p class="help help-short">Tick broader pens. The first is the display parent.</p>' +
+      parents +
+      '<div class="row create-row"><input id="newParent" type="text" placeholder="Create new pen" aria-label="New parent name"><input id="newParentColor" type="color" value="#6b8f71" aria-label="New parent color" style="width:42px;height:28px;padding:0;flex:0 0 auto"><button type="button" class="key" data-act="add-parent">Create</button></div>' +
+      '<div class="chain" aria-label="Color chain">' + chain.join("") + '</div>' +
+      (branch ? '<div class="row" aria-label="Pens that count as this one">' + branch + '</div>' : '') +
+      '<h3 class="section-title">Level category</h3>' +
+      '<div class="levels">' + levels + '</div>' +
+      '<p class="quiet">' + esc(levelLine(p)) + '</p></section>';
+  }
+  function imageHTML(p) {
+    return '<section class="section"><h3 class="section-title">Image</h3>' +
+      '<p class="help help-full">Optional. Used in place of the solid color on the grid, tiling into a mosaic. Color stays the fallback on the well and in totals.</p>' +
+      '<p class="help help-short">Optional mosaic on the grid. Color stays the fallback.</p>' +
+      '<div class="row">' + (p.image ? '<span class="img-bead inked" aria-hidden="true"></span>' : '') +
+      '<button type="button" class="key" data-act="image">' + (p.image ? "Change image" : "Choose image") + '</button>' +
+      (p.image ? '<button type="button" class="key" data-act="clear-image">Clear</button>' : '') +
+      '</div></section>';
+  }
+  function tagsHTML(p) {
+    const tags = p.tags.length ? p.tags.map(function (tag, i) {
+      return '<button type="button" class="tag" data-act="tag" data-i="' + i + '" aria-pressed="' + (tag.on ? "true" : "false") + '" aria-label="' + esc(tag.name) + '" title="Double-click to open tag settings" style="--c:' + esc(norm(tag.color)) + '">' + bead(tag.color) + esc(tag.name) + '</button>';
+    }).join("") : '<span class="quiet">No tags yet — add one below.</span>';
+    return '<section class="section"><h3 class="section-title">Tags</h3>' +
+      '<p class="help help-full">All time painted with this pen counts as these tags. Habits link tags to pull the time in automatically.</p>' +
+      '<p class="help help-short">Painted time counts as these tags.</p>' +
+      '<div class="row">' + tags + '</div>' +
+      '<div class="row"><input id="newTag" type="text" placeholder="New tag (e.g. Cleaning)" aria-label="New tag"><button type="button" class="key" data-act="add-tag">Add tag</button></div></section>';
+  }
+  function fieldsHTML(p) {
+    const name = p.name || "Untitled";
+    const rows = p.fields.map(function (field, i) {
+      return '<div class="field-row"><input type="text" data-act="field-name" data-i="' + i + '" aria-label="Field name ' + esc(field.name) + '" value="' + esc(field.name) + '">' +
+        '<select data-act="field-kind" data-i="' + i + '" aria-label="Kind for ' + esc(field.name) + '"><option value="text"' + (field.kind === "text" ? " selected" : "") + '>Text</option><option value="number"' + (field.kind === "number" ? " selected" : "") + '>Number</option></select>' +
+        (field.kind === "number" ? '<input type="text" data-act="field-unit" data-i="' + i + '" aria-label="Unit for ' + esc(field.name) + '" value="' + esc(field.unit || "") + '" placeholder="unit">' : '') +
+        '<button type="button" class="key ghost" data-act="remove-field" data-i="' + i + '">Remove</button></div>';
+    }).join("");
+    const presets = FIELD_PRESETS.map(function (field) {
+      const taken = p.fields.some(function (f) { return f.id === field.id; });
+      return '<button type="button" class="key" data-act="add-preset" data-id="' + field.id + '"' + (taken ? " disabled" : "") + '>' + esc(field.name) + '</button>';
+    }).join("");
+    const empty = p.fields.length ? "" : '<p class="fields-empty">No detail fields. Blocks on ' + esc(name) + ' ask only for the usual title and notes.</p>';
+    return '<section class="section"><h3 class="section-title">Detail fields</h3>' +
+      '<p class="help help-full">What a block on <strong>' + esc(name) + '</strong> asks for, beyond title and notes. A number can fill a habit, and every field is a variable in the Done-today title.</p>' +
+      '<p class="help help-short">Extra questions on a block of this pen.</p>' +
+      empty + rows +
+      '<div class="row">' + presets + '</div>' +
+      '<div class="row"><input id="newField" type="text" placeholder="Field name" aria-label="Field name"><select id="newFieldKind" aria-label="Field kind"><option value="text">Text</option><option value="number">Number</option></select><button type="button" class="key" data-act="add-field">Add field</button></div></section>';
+  }
+  function formatHTML(p) {
+    const id = p.id;
+    if (!ui[id]) ui[id] = { formatsOpen: p.formats.length > 0, helpOpen: false };
+    const open = ui[id].formatsOpen;
+    const rows = p.formats.map(function (line, i) {
+      return '<div class="format-row"><input type="text" id="fmt-' + i + '" data-act="format" data-i="' + i + '" aria-label="Template ' + (i + 1) + '" value="' + esc(line) + '"><button type="button" class="key ghost" data-act="remove-format" data-i="' + i + '">Remove</button></div>';
+    }).join("");
+    return '<section class="section"><div class="row"><h3 class="section-title grow">Default action format</h3>' +
+      '<button type="button" class="linkish" data-act="toggle-formats">' + (open ? "Hide formats" : "Show formats") + '</button></div>' +
+      '<p class="help help-full">Separate from habit links. A painted block can log a Done-today row (Home → To Do → Done) named from these templates.</p>' +
+      '<p class="help help-short">Done-today titles for a painted block.</p>' +
+      (open ? '<button type="button" class="linkish" data-act="toggle-help">' + (ui[id].helpOpen ? "Hide instructions" : "How templates work") + '</button>' +
+        (ui[id].helpOpen ? '<div class="how"><p>Write one line per situation. The most specific template whose placeholders all have values is used. If two fit equally, the one listed first wins. A line with no optional placeholders is the fallback.</p><p>Always filled: <code>{minutes}</code>, <code>{hours}</code>, <code>{duration}</code>, <code>{name}</code>, <code>{pen}</code>, <code>{start}</code>, <code>{end}</code>.</p><p>Only when present: <code>{location}</code>, <code>{project}</code>, and this pen’s detail fields.</p><p>Example: <code>Went for a walk</code> plus <code>Went for a {minutes} minute walk at {location}</code>. A block at a place uses the second. A block with no location uses the first.</p></div>' : '') +
+        rows + '<div class="row"><button type="button" class="key" data-act="add-format">Add format</button></div><p class="quiet" id="formatPreview">' + esc(preview(p)) + '</p>' : '') +
+      '</section>';
+  }
+  function detailHTML(p) {
+    const name = p.name || "Untitled";
+    const rows = p.details.map(function (d, i) {
+      const cross = !!d.view;
+      return '<div class="detail" data-cross="' + (cross ? "true" : "false") + '">' +
+        (cross
+          ? '<span class="bead inked" style="--c:' + esc(norm(d.color)) + '" title="Double-click to open ' + esc(d.name) + ' in ' + esc(d.view) + '" data-act="open-view" data-view="' + esc(d.view) + '" data-name="' + esc(d.name) + '"></span>'
+          : '<label class="mini"' + (d.open ? ' data-open="' + esc(d.open) + '" title="Double-click to open ' + esc(d.name) + '"' : '') + '>' + bead(d.color) + '<input type="color" data-act="detail-color" data-i="' + i + '" value="' + esc(norm(d.color)) + '" aria-label="Color for ' + esc(d.name) + '"></label>') +
+        (cross
+          ? '<span class="grow">' + esc(d.name) + '<span class="view-name">' + esc(d.view) + '</span></span>'
+          : '<input class="grow" type="text" data-act="detail-name" data-i="' + i + '" value="' + esc(d.name) + '" aria-label="Name for ' + esc(d.name) + '">') +
+        '<button type="button" class="key ghost" data-act="remove-detail" data-i="' + i + '" aria-label="Remove ' + esc(d.name) + '" title="' + (cross
+          ? 'Remove ' + esc(d.name) + ' as a detail. The ' + esc(d.view) + ' pen and its time stay.'
+          : 'Remove ' + esc(d.name) + ' — the pen stays in the well and no longer counts as this one. Painted minutes stay.') + '">Remove</button></div>';
+    }).join("");
+    const opts = COMPANY.map(function (c, i) {
+      return '<option value="' + i + '">' + esc(c.name) + ' · Company</option>';
+    }).join("");
+    const ph = p.variantLabel ? "New option (" + p.variantLabel + ")" : "New option (e.g. Elijah)";
+    return '<section class="section"><h3 class="section-title">Break this pen down by…</h3>' +
+      '<p class="help help-full">A detail of ' + esc(name) + ' is a pen that counts as it. Add Walk here and Walk appears in the well, counting as ' + esc(name) + '. Several can apply to the same minutes. Double-click a color to open that pen. Analytics shows the total first, then these.</p>' +
+      '<p class="help help-short">Details are pens that count as this one.</p>' +
+      '<input id="variantLabel" type="text" value="' + esc(p.variantLabel) + '" placeholder="What the options answer, e.g. Who with?" aria-label="Break this pen down by…">' +
+      rows +
+      '<div class="row"><input id="newDetail" type="text" placeholder="' + esc(ph) + '" aria-label="New option"><button type="button" class="key" data-act="add-detail">Add option</button></div>' +
+      '<div class="row"><label class="sr" for="crossPick">From another view</label><select id="crossPick" aria-label="From another view">' + opts + '</select><button type="button" class="key" data-act="add-cross">From another view</button></div></section>';
+  }
+  function recentHTML(p) {
+    const name = p.name || "Untitled";
+    const list = p.recent.length ? '<div class="recent-list" aria-label="Recent blocks with this pen">' + p.recent.map(function (row) {
+      return '<button type="button" class="recent-row" data-act="block" title="Open this block">' + bead(p.color, true) +
+        '<span>' + esc(row.date) + '</span><span>' + esc(row.clock) + '</span><span>' + esc(row.title && row.title !== name ? row.title : "") + '</span><span>' + esc(row.dur) + '</span></button>';
+    }).join("") + '</div>' : '<p class="quiet">Nothing painted with this pen yet.</p>';
+    return '<section class="section recent"><h3 class="section-title">Recent blocks</h3>' + list + '</section>';
+  }
+  function linkedHTML(p) {
+    const name = p.name || "Untitled";
+    const chips = p.linked.length ? p.linked.map(function (item, i) {
+      return '<span class="chip">' + esc(item) + '<button type="button" data-act="unlink" data-i="' + i + '" aria-label="Unlink ' + esc(item) + '">×</button></span>';
+    }).join("") : '<span class="quiet">No items linked.</span>';
+    const q = linkQuery.trim().toLowerCase();
+    const matches = q ? TASKS.filter(function (t) {
+      return t.toLowerCase().indexOf(q) !== -1 && p.linked.indexOf(t) === -1;
+    }) : [];
+    const matchHtml = matches.map(function (t) {
+      return '<button type="button" class="key" data-act="link" data-name="' + esc(t) + '">' + esc(t) + '</button>';
+    }).join("");
+    return '<section class="section"><h3 class="section-title">Linked items</h3>' +
+      '<p class="help help-full">Time painted with <strong>' + esc(name) + '</strong> counts on these tasks (item detail → Time). ▶ on a task paints with its first linked pen.</p>' +
+      '<p class="help help-short">Tasks this pen counts on.</p>' +
+      '<div class="row">' + chips + '</div>' +
+      '<input id="linkSearch" type="search" placeholder="Link a task…" aria-label="Link a task" value="' + esc(linkQuery) + '">' +
+      (matchHtml ? '<div class="matches">' + matchHtml + '</div>' : '') + '</section>';
+  }
+  function habitHTML(p) {
+    const on = p.tags.some(function (t) { return t.on; });
+    const text = p.habit && on
+      ? "Time with this pen counts toward: " + p.habit
+      : "No habit links these tags yet. Add one in Habits → edit a habit → Auto-fill from Tracking.";
+    return '<section class="section"><p class="quiet">' + esc(text) + '</p></section>';
+  }
+  function actionsHTML() {
+    return '<div class="actions"><button type="button" class="key save" data-act="save">Save pen</button>' +
+      '<button type="button" class="key icon-key" data-act="ask-delete" aria-label="Delete pen" title="Delete pen">' +
+      '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M6 2h4l1 1h3v2H2V3h3zm-2 4h8l-.7 8H4.7z"/></svg></button></div>';
+  }
+
+  function syncSwatches() {
+    const c = norm(live().color);
+    document.querySelectorAll(".palette button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(norm(b.dataset.color) === c));
+    });
+    const hex = document.getElementById("hexRead");
+    if (hex) hex.textContent = c;
+    const input = document.getElementById("penColor");
+    if (input && norm(input.value) !== c) input.value = c;
+  }
+  function setColor(hex) {
+    live().color = norm(hex);
+    penEl.style.setProperty("--pen", live().color);
+    syncSwatches();
+    touch();
+  }
+  function touch() {
+    if (dirty()) note("Unsaved changes.");
+  }
+  function savePen() {
+    saved[live().id] = JSON.parse(JSON.stringify(live()));
+    note("Saved.");
+  }
+  function revertPen(store) {
+    const id = live().id;
+    pens[index] = JSON.parse(JSON.stringify((store || saved)[id]));
+    linkQuery = "";
+    note("");
+    renderBody();
+  }
+  function openGuard(show) { document.getElementById("guard").hidden = !show; }
+  function requestClose() {
+    if (dirty()) openGuard(true);
+    else note("The app would close this dialog.");
+  }
+  function switchTo(id) {
+    if (!id || id === live().id) return;
+    savePen();
+    const next = pens.findIndex(function (p) { return p.id === id; });
+    if (next < 0) return;
+    index = next;
+    linkQuery = "";
+    note("");
+    renderBody();
+  }
+
+  function onClick(e) {
+    const t = e.target.closest("[data-act]");
+    if (!t || !penEl.contains(t)) return;
+    const p = live();
+    const act = t.dataset.act;
+    const i = Number(t.dataset.i);
+    if (act === "swatch") { setColor(t.dataset.color); return; }
+    if (act === "add-parent") {
+      const input = document.getElementById("newParent");
+      const name = input.value.trim();
+      if (!name) return;
+      const color = norm(document.getElementById("newParentColor").value);
+      p.parents.push({ name: name, color: color, on: true, open: "" });
+      renderBody(); touch(); return;
+    }
+    if (act === "level") { p.level = t.dataset.level; renderBody(); touch(); return; }
+    if (act === "image") { p.image = true; renderBody(); touch(); return; }
+    if (act === "clear-image") { p.image = false; renderBody(); touch(); return; }
+    if (act === "tag") { p.tags[i].on = !p.tags[i].on; renderBody(); touch(); return; }
+    if (act === "add-tag") {
+      const input = document.getElementById("newTag");
+      const name = input.value.trim();
+      if (!name) return;
+      p.tags.push({ name: name, color: norm(p.color), on: true });
+      renderBody(); touch(); return;
+    }
+    if (act === "add-preset") {
+      const field = FIELD_PRESETS.find(function (f) { return f.id === t.dataset.id; });
+      if (!field || p.fields.some(function (f) { return f.id === field.id; })) return;
+      p.fields.push(Object.assign({}, field));
+      renderBody(); touch(); return;
+    }
+    if (act === "add-field") {
+      const name = document.getElementById("newField").value.trim();
+      if (!name) return;
+      const kind = document.getElementById("newFieldKind").value;
+      const known = FIELD_PRESETS.find(function (f) { return f.name.toLowerCase() === name.toLowerCase(); });
+      if (known && !p.fields.some(function (f) { return f.id === known.id; })) p.fields.push(Object.assign({}, known));
+      else p.fields.push({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name: name, kind: kind, unit: kind === "number" ? "" : undefined });
+      renderBody(); touch(); return;
+    }
+    if (act === "remove-field") { p.fields.splice(i, 1); renderBody(); touch(); return; }
+    if (act === "toggle-formats") { ui[p.id].formatsOpen = !ui[p.id].formatsOpen; renderBody(); return; }
+    if (act === "toggle-help") { ui[p.id].helpOpen = !ui[p.id].helpOpen; renderBody(); return; }
+    if (act === "add-format") { ui[p.id].formatsOpen = true; p.formats.push(""); renderBody(); touch(); return; }
+    if (act === "remove-format") { p.formats.splice(i, 1); renderBody(); touch(); return; }
+    if (act === "add-detail") {
+      const name = document.getElementById("newDetail").value.trim();
+      if (!name) return;
+      p.details.push({ name: name, color: PALETTE[p.details.length % PALETTE.length], view: "", open: "" });
+      renderBody(); touch(); return;
+    }
+    if (act === "add-cross") {
+      const choice = COMPANY[Number(document.getElementById("crossPick").value)] || COMPANY[0];
+      p.details.push({ name: choice.name, color: choice.color, view: "Company", open: "" });
+      renderBody(); touch(); return;
+    }
+    if (act === "remove-detail") { p.details.splice(i, 1); renderBody(); touch(); return; }
+    if (act === "unlink") { p.linked.splice(i, 1); renderBody(); touch(); return; }
+    if (act === "link") {
+      if (p.linked.indexOf(t.dataset.name) === -1) p.linked.push(t.dataset.name);
+      linkQuery = "";
+      renderBody(); touch(); return;
+    }
+    if (act === "open-pen") { switchTo(t.dataset.open); return; }
+    if (act === "open-view") { note(t.dataset.name + " opens in " + t.dataset.view + "."); return; }
+    if (act === "block") { note("This row opens the block editor."); return; }
+    if (act === "save") { savePen(); return; }
+    if (act === "ask-delete") { document.getElementById("delBox").hidden = false; return; }
+  }
+  function onInput(e) {
+    const t = e.target;
+    const p = live();
+    if (t.id === "penName") {
+      p.name = t.value;
+      document.getElementById("penTitle").textContent = "Pen · " + (p.name || "Untitled");
+      document.getElementById("sampleName").textContent = p.view + " · " + (p.name || "Untitled");
+      touch();
+      return;
+    }
+    if (t.id === "penColor") { setColor(t.value); return; }
+    if (t.id === "variantLabel") { p.variantLabel = t.value; touch(); return; }
+    if (t.dataset.act === "format") {
+      p.formats[Number(t.dataset.i)] = t.value;
+      const el = document.getElementById("formatPreview");
+      if (el) el.textContent = preview(p);
+      touch();
+      return;
+    }
+    if (t.dataset.act === "detail-name") { p.details[Number(t.dataset.i)].name = t.value; touch(); return; }
+    if (t.dataset.act === "detail-color") { p.details[Number(t.dataset.i)].color = norm(t.value); touch(); return; }
+    if (t.dataset.act === "field-name") { p.fields[Number(t.dataset.i)].name = t.value; touch(); return; }
+    if (t.dataset.act === "field-unit") { p.fields[Number(t.dataset.i)].unit = t.value; touch(); return; }
+    if (t.dataset.act === "field-kind") { p.fields[Number(t.dataset.i)].kind = t.value; renderBody(); touch(); return; }
+    if (t.dataset.act === "parent") {
+      p.parents[Number(t.dataset.i)].on = t.checked;
+      renderBody(); touch(); return;
+    }
+    if (t.id === "linkSearch") { linkQuery = t.value; renderBody({ keep: true }); return; }
+  }
+  function onDbl(e) {
+    const tag = e.target.closest("[data-act='tag']");
+    if (tag) { note("Opens tag settings for " + tag.getAttribute("aria-label") + "."); return; }
+    const opener = e.target.closest("[data-act='open-pen']");
+    if (opener) { switchTo(opener.dataset.open); return; }
+    const view = e.target.closest("[data-act='open-view']");
+    if (view) { note(view.dataset.name + " opens in " + view.dataset.view + "."); return; }
+    const mini = e.target.closest(".mini");
+    if (mini && mini.dataset.open) switchTo(mini.dataset.open);
+  }
+  penEl.addEventListener("click", onClick);
+  penEl.addEventListener("input", onInput);
+  penEl.addEventListener("change", onInput);
+  penEl.addEventListener("dblclick", onDbl);
+  penEl.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    const id = e.target.id;
+    if (id === "newTag" || id === "newDetail" || id === "newParent" || id === "newField") {
+      e.preventDefault();
+      const map = { newTag: "add-tag", newDetail: "add-detail", newParent: "add-parent", newField: "add-field" };
+      onClick({ target: penEl.querySelector('[data-act="' + map[id] + '"]') });
+    }
+    if (id === "linkSearch") {
+      e.preventDefault();
+      const first = penBody.querySelector("[data-act='link']");
+      if (first) onClick({ target: first });
+    }
+  });
+
+  document.getElementById("prevPen").addEventListener("click", function () { if (index > 0) switchTo(pens[index - 1].id); });
+  document.getElementById("nextPen").addEventListener("click", function () { if (index < pens.length - 1) switchTo(pens[index + 1].id); });
+  document.getElementById("closePen").addEventListener("click", requestClose);
+  document.getElementById("saveClose").addEventListener("click", function () { savePen(); openGuard(false); });
+  document.getElementById("stay").addEventListener("click", function () { openGuard(false); });
+  document.getElementById("discard").addEventListener("click", function () { openGuard(false); revertPen(); note("Exited without saving."); });
+  document.getElementById("guard").addEventListener("click", function (e) { if (e.target.id === "guard") openGuard(false); });
+  document.getElementById("cancelDelete").addEventListener("click", function () { document.getElementById("delBox").hidden = true; });
+  document.getElementById("delBox").addEventListener("click", function (e) { if (e.target.id === "delBox") document.getElementById("delBox").hidden = true; });
+  document.getElementById("doDelete").addEventListener("click", function () {
+    document.getElementById("delBox").hidden = true;
+    live().deleted = true;
+    note('Delete pen "' + (live().name || "Untitled") + '"? Painted time using it as the primary will be cleared.');
+    renderBody();
+  });
+  document.getElementById("restorePen").addEventListener("click", function () {
+    const id = live().id;
+    saved[id] = JSON.parse(JSON.stringify(initial[id]));
+    revertPen(initial);
+    note("Sample restored.");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!document.getElementById("guard").hidden) openGuard(false);
+    if (!document.getElementById("delBox").hidden) document.getElementById("delBox").hidden = true;
+  });
+
+  const RANGES = [
+    ["Type", [
+      ["type", "Type size", 11, 22, 13],
+      ["tsize", "Title size", 11, 28, 13],
+      ["ssize", "Section title size", 9, 18, 11],
+      ["hsize", "Help size", 9, 16, 11],
+      ["weight", "Body weight", 400, 800, 400],
+      ["tweight", "Title weight", 400, 800, 700],
+      ["sweight", "Section weight", 400, 800, 700],
+      ["ttrack", "Title tracking", 0, 28, 12],
+      ["strack", "Section tracking", 0, 28, 14],
+      ["btrack", "Body tracking", -4, 16, 0],
+      ["leading", "Line height", 100, 180, 135],
+      ["hlead", "Help line height", 110, 190, 135]
+    ]],
+    ["Space", [
+      ["gap", "Section gap", 2, 28, 12],
+      ["pad", "Dialog padding", 4, 32, 12],
+      ["spad", "Section padding", 0, 24, 10],
+      ["rgap", "Row gap", 2, 20, 6],
+      ["fpy", "Field padding", 1, 14, 4],
+      ["fpx", "Field inset", 2, 18, 6],
+      ["mpad", "Mast padding", 4, 28, 12],
+      ["mgap", "Mast gap", 4, 28, 12],
+      ["chain", "Chain gap", 0, 20, 4],
+      ["cpad", "Chain padding", 0, 16, 6],
+      ["tpad", "Title padding", 2, 18, 6],
+      ["tgap", "Title gap", 2, 20, 8],
+      ["bpy", "Button padding", 1, 14, 3],
+      ["bpx", "Button inset", 4, 22, 8],
+      ["dpad", "Detail padding", 0, 16, 4],
+      ["agap", "Action gap", 2, 24, 8],
+      ["rgap2", "Recent gap", 0, 16, 4]
+    ]],
+    ["Frame", [
+      ["width", "Popup width", 320, 760, 512],
+      ["rad", "Outer radius", 0, 16, 3],
+      ["crad", "Control radius", 0, 14, 2],
+      ["beadr", "Bead radius", 0, 50, 50],
+      ["bw", "Border weight", 0, 6, 2],
+      ["sring", "Section ring", 0, 4, 1],
+      ["shy", "Shadow depth", 0, 40, 10],
+      ["shb", "Shadow blur", 0, 48, 18],
+      ["shop", "Shadow opacity", 0, 80, 28],
+      ["inset", "Inset", 0, 10, 2],
+      ["skirt", "Key skirt", 0, 8, 3],
+      ["mill", "Mill hairline", 0, 40, 14],
+      ["welld", "Well depth", 0, 28, 10],
+      ["maxh", "Popup height", 50, 96, 82],
+      ["close", "Close size", 18, 40, 26],
+      ["focus", "Focus ring", 0, 4, 2],
+      ["recent", "Recent list height", 60, 320, 160]
+    ]],
+    ["Ink and color", [
+      ["sww", "Swatch width", 28, 88, 56],
+      ["swh", "Swatch height", 20, 72, 40],
+      ["bead", "Bead size", 6, 24, 12],
+      ["sat", "Ink saturation", 0, 200, 100],
+      ["ctr", "Contrast", 70, 150, 100],
+      ["face", "Face gray", 140, 220, 192],
+      ["glow", "Title glow", 0, 24, 8],
+      ["muted", "Help ink", 30, 100, 80]
+    ]]
+  ];
+  const SELECTS = [
+    ["font", "Font", [
+      ["house", "House (w95fa, Tahoma)"],
+      ["tahoma", "Tahoma / MS Sans Serif"],
+      ["grotesk", "Karla, Avenir, Segoe"],
+      ["system", "System UI"],
+      ["mono", "UI monospace"],
+      ["serif", "Palatino, Georgia"],
+      ["round", "Rounded UI"],
+      ["typewriter", "Typewriter"],
+      ["didot", "Didot, Bodoni"]
+    ]],
+    ["titleCase", "Title case", [
+      ["uppercase", "Uppercase"],
+      ["none", "As written"],
+      ["small", "Small caps"]
+    ]],
+    ["sectionCase", "Section case", [
+      ["uppercase", "Uppercase"],
+      ["none", "As written"]
+    ]]
+  ];
+  const state = { font: "house", titleCase: "uppercase", sectionCase: "uppercase" };
+  RANGES.forEach(function (group) {
+    group[1].forEach(function (row) { state[row[0]] = row[4]; });
+  });
+  const CSSKEY = { width: "panel" };
+
+  function paint() {
+    stage.style.setProperty("--ff", FONTS[state.font] || FONTS.house);
+    stage.style.setProperty("--face", "rgb(" + state.face + "," + state.face + "," + state.face + ")");
+    if (state.titleCase === "small") {
+      stage.style.setProperty("--title-case", "lowercase");
+      stage.style.setProperty("--title-variant", "small-caps");
+    } else {
+      stage.style.setProperty("--title-case", state.titleCase);
+      stage.style.setProperty("--title-variant", "normal");
+    }
+    stage.style.setProperty("--section-case", state.sectionCase);
+    Object.keys(state).forEach(function (k) {
+      if (k === "font" || k === "titleCase" || k === "sectionCase" || k === "face") return;
+      stage.style.setProperty("--" + (CSSKEY[k] || k), String(state[k]));
+    });
+  }
+  function controlHTML() {
+    const selects = '<h2>Type</h2>' + SELECTS.map(function (sel) {
+      const opts = sel[2].map(function (opt) {
+        return '<option value="' + opt[0] + '"' + (state[sel[0]] === opt[0] ? " selected" : "") + '>' + opt[1] + '</option>';
+      }).join("");
+      return '<label>' + sel[1] + '<select data-key="' + sel[0] + '">' + opts + '</select></label>';
+    }).join("");
+    const ranges = RANGES.map(function (group, i) {
+      const rows = group[1].map(function (row) {
+        return '<label>' + row[1] + ' <span class="val">' + state[row[0]] + '</span><input type="range" data-key="' + row[0] + '" min="' + row[2] + '" max="' + row[3] + '" value="' + state[row[0]] + '"></label>';
+      }).join("");
+      return (i === 0 ? "" : '<h2>' + group[0] + '</h2>') + rows;
+    }).join("");
+    return selects + ranges;
+  }
+  function bindControls() {
+    document.getElementById("tune").innerHTML = controlHTML();
+    document.querySelectorAll("#tune [data-key]").forEach(function (el) {
+      function readControl() {
+        state[el.dataset.key] = el.type === "range" ? Number(el.value) : el.value;
+        const val = el.parentElement && el.parentElement.querySelector(".val");
+        if (val) val.textContent = el.value;
+        paint();
+      }
+      el.addEventListener("input", readControl);
+      if (el.tagName === "SELECT") el.addEventListener("change", readControl);
+    });
+  }
+  document.getElementById("resetTune").addEventListener("click", function () {
+    state.font = "house";
+    state.titleCase = "uppercase";
+    state.sectionCase = "uppercase";
+    RANGES.forEach(function (group) {
+      group[1].forEach(function (row) { state[row[0]] = row[4]; });
+    });
+    bindControls();
+    paint();
+  });
+  bindControls();
+  paint();
+  renderBody();
+})();
+</script>
+</body>
+</html>

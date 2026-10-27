@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item detail · Dependencies — UI lab</title>
+<style>
+:root {
+  --face: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  --tab-face: ui-monospace, "Courier New", monospace;
+  --type: 1;
+  --weight: 600;
+  --title-weight: 700;
+  --head-weight: 600;
+  --badge-weight: 700;
+  --track: 0.09em;
+  --leading: 1.35;
+  --title-size: 15px;
+  --head-size: 16px;
+  --tab-size: 10.5px;
+  --help-size: 13px;
+  --name-size: 14px;
+  --badge-size: 12px;
+  --rowh: 46px;
+  --gap: 8px;
+  --row-pad: 12px;
+  --row-gap: 12px;
+  --pad: 16px;
+  --win-pad: 8px;
+  --fascia-pad: 10px;
+  --section-gap: 16px;
+  --tab-h: 32px;
+  --tab-gap: 4px;
+  --picker: 168px;
+  --pick-row: 32px;
+  --key-h: 28px;
+  --search-h: 32px;
+  --card-r: 8px;
+  --row-r: 8px;
+  --badge-r: 6px;
+  --win-r: 3px;
+  --tab-r: 3px;
+  --border: 1px;
+  --border-style: solid;
+  --bevel: 2px;
+  --shadow: 10;
+  --row-shadow: 0;
+  --dot: 8px;
+  --dot-glow: 0px;
+  --lamp: 7px;
+  --lamp-glow: 6px;
+  --orb: 28px;
+  --icon: 16px;
+  --trash: 24px;
+  --check: 16px;
+  --badge-x: 7px;
+  --badge-y: 2px;
+  --tab-sink: 1px;
+  --desk: #008080;
+  --paper: #c0c0c0;
+  --card: #e4e4e7;
+  --rowc: #ffffff;
+  --ink: #111111;
+  --muted: #3f3f46;
+  --phosphor: #7dffc4;
+  --crt: #070c0a;
+  --done: #22c55e;
+  --wait: #eab308;
+  --accent: #18181b;
+  --badge-ink: #ffffff;
+  --pending-bg: #f4f4f5;
+  --key: #e6e6e6;
+  --keyink: #23272a;
+  --bay: #c5c8cc;
+  --line: #d4d4d8;
+  --contrast: 1;
+  --stripe: 0%;
+  --glow: 3px;
+  --sheen: 0.2;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 13px;
+  background: var(--desk);
+  color: #1a1c1e;
+}
+.lab {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+.lab-panel {
+  background: #c0c0c0;
+  color: #2a2c2e;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  padding: 10px;
+  align-self: start;
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: #dfffea;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background: rgba(0,0,0,.35);
+}
+.lab-sections a:hover { background: rgba(0,0,0,.5); }
+.lab-sections a[aria-current="page"] { background: #000080; color: #fff; border-color: #000080; }
+.lab-panel h1 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+  color: #2a2c2e;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78);
+}
+.lede { margin: 0 0 8px; font-size: 12px; line-height: 1.35; }
+fieldset {
+  border: 1px solid #808080;
+  margin: 0 0 8px;
+  padding: 6px 8px 8px;
+  background: #d8d8d8;
+}
+legend { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 4px; }
+.lab-panel label { display: block; font-size: 11px; margin: 6px 0 2px; color: #2a2c2e; }
+.lab-panel label span { float: right; font-variant-numeric: tabular-nums; }
+.lab-panel select, .lab-panel input[type=range] { width: 100%; font: inherit; }
+.colors { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+.colors label { margin: 2px 0; }
+.colors input[type=color] { width: 100%; height: 22px; padding: 0; border: 1px solid #808080; background: #fff; }
+.stage-wrap { min-width: 0; }
+.kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f4fff8;
+  text-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+.sample {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #f4fff8;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+.toast {
+  min-height: 1.3em;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #f4fff8;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+#stage { position: relative; min-height: 760px; }
+.window {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 980px);
+  font-family: var(--face);
+  font-size: calc(13px * var(--type));
+  line-height: var(--leading);
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--bevel) solid #fff;
+  border-color: #fff #404040 #404040 #fff;
+  border-radius: var(--win-r);
+  box-shadow: calc(var(--shadow) * .4px) calc(var(--shadow) * .65px) calc(var(--shadow) * 1.1px) rgba(0,0,0,.38);
+  padding: var(--win-pad);
+  filter: contrast(var(--contrast));
+}
+.fascia {
+  padding: var(--fascia-pad);
+  margin-bottom: 8px;
+  border-radius: var(--win-r);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--sheen)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #f7f7f7, var(--paper) 52%, color-mix(in srgb, var(--paper) 72%, #000));
+  box-shadow: 0 0 0 1px #8d8d8d, inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.25);
+}
+.fascia-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fascia-row + .fascia-row { margin-top: 8px; }
+.crt {
+  flex: 1 1 16rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--phosphor) 22%, transparent), transparent 48%),
+    var(--crt);
+  box-shadow: 0 0 0 1px #000, inset 0 10px 14px rgba(0,0,0,.4);
+  border-radius: 2px;
+  color: var(--phosphor);
+  font-weight: var(--title-weight);
+  font-size: var(--title-size);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  text-shadow: 0 0 var(--glow) var(--phosphor);
+}
+.power, .tab::before, .save-lamp, .type-lamp {
+  width: var(--lamp);
+  height: var(--lamp);
+  flex: none;
+  border-radius: 50%;
+}
+.power, .save-flag.is-saved .save-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--phosphor) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 var(--lamp-glow) color-mix(in srgb, var(--phosphor) 70%, transparent);
+}
+.orb {
+  width: var(--orb);
+  height: var(--orb);
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, #3a2a24 0 28%, #1a120e 29% 70%, #050807 72%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px color-mix(in srgb, var(--phosphor) 35%, transparent);
+  position: relative;
+}
+.orb::after {
+  content: "";
+  position: absolute;
+  left: 28%; right: 28%; bottom: 22%;
+  height: 28%;
+  border-radius: 0 0 40% 40%;
+  background: #c47a4a;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+}
+.title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.win-keys { display: flex; gap: 4px; margin-left: auto; }
+.win-key, .key, .trash, .sheet button {
+  font: inherit;
+  font-size: calc(12px * var(--type));
+  color: var(--keyink);
+  background: linear-gradient(180deg, #fff, var(--key));
+  border: 2px solid #fff;
+  border-color: #fff #5c5c5c #5c5c5c #fff;
+  min-height: var(--key-h);
+  padding: 2px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.win-key { width: var(--key-h); padding: 0; }
+.gear { font-size: calc(14px * var(--type)); line-height: 1; }
+.type-plate, .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 1px 8px;
+  background: linear-gradient(180deg, #fff, var(--key));
+  box-shadow: inset 0 0 0 1px #808080;
+  border-radius: 2px;
+  font-size: calc(11px * var(--type));
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--keyink);
+}
+.type-lamp {
+  background: radial-gradient(circle at 35% 30%, #fff, #cbd5e1 50%, #64748b);
+  box-shadow: 0 0 0 1px #333;
+}
+.keys { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.save-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--key-h);
+  padding: 2px 8px;
+  background: linear-gradient(180deg, #eee, #c8cccf);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+  font-size: calc(10px * var(--type));
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #2a2c2e;
+}
+.save-lamp {
+  background: radial-gradient(circle at 35% 30%, #ead0c8, #c45c66 46%, #4c2226);
+  box-shadow: 0 0 0 1px #3a181c, 0 0 var(--lamp-glow) rgba(196,92,102,.45);
+}
+.key.quiet { opacity: .72; }
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: var(--tab-gap);
+  margin: 0 0 8px;
+  padding: 4px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--sheen)) 0 1px, transparent 1px 2px),
+    var(--bay);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.18), 0 0 0 1px #8a8a8a;
+  border-radius: var(--tab-r);
+}
+.tab {
+  position: relative;
+  min-height: var(--tab-h);
+  padding: 4px 8px 4px calc(var(--lamp) + 14px);
+  font-family: var(--tab-face);
+  font-size: var(--tab-size);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--keyink);
+  background: linear-gradient(180deg, #fff, var(--key));
+  border: 0;
+  border-radius: var(--tab-r);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.14), 0 0 0 1px #6a6e72;
+  cursor: pointer;
+}
+.tab::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  margin-top: calc(var(--lamp) * -.5);
+  background: radial-gradient(circle at 35% 30%, #6a6e72, #2a2c2e 60%, #111);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.tab.secondary { opacity: .86; }
+.tab[aria-selected="true"] {
+  color: var(--phosphor);
+  text-shadow: 0 0 var(--glow) var(--phosphor);
+  background: radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--phosphor) 18%, transparent), transparent 48%), var(--crt);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.55), 0 0 0 1px #000;
+  transform: translateY(var(--tab-sink));
+}
+.tab[aria-selected="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--phosphor) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 var(--lamp-glow) color-mix(in srgb, var(--phosphor) 75%, transparent);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap);
+  background: var(--card);
+  color: var(--ink);
+  border: var(--border) var(--border-style) var(--line);
+  border-radius: var(--card-r);
+  padding: var(--pad);
+}
+.card h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--head-size);
+  font-weight: var(--head-weight);
+  line-height: var(--leading);
+}
+.card h2 svg { width: var(--icon); height: var(--icon); flex: none; }
+.help { margin: 0; font-size: var(--help-size); line-height: var(--leading); color: var(--muted); }
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--row-gap);
+  min-height: var(--rowh);
+  padding: 4px var(--row-pad);
+  background: var(--rowc);
+  color: var(--ink);
+  border: var(--border) var(--border-style) var(--line);
+  border-radius: var(--row-r);
+  box-shadow: 0 calc(var(--row-shadow) * .35px) calc(var(--row-shadow) * 1px) rgba(0,0,0,.28);
+}
+.rows .row:nth-child(even) {
+  background: color-mix(in srgb, var(--ink) var(--stripe), var(--rowc));
+}
+.dot {
+  width: var(--dot);
+  height: var(--dot);
+  flex: none;
+  border-radius: 50%;
+  background: var(--wait);
+  box-shadow: 0 0 var(--dot-glow) var(--wait), inset 0 0 0 1px rgba(0,0,0,.22);
+}
+.dot.is-done { background: var(--done); box-shadow: 0 0 var(--dot-glow) var(--done), inset 0 0 0 1px rgba(0,0,0,.22); }
+.name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--name-size);
+  font-weight: var(--weight);
+  line-height: var(--leading);
+}
+.badge {
+  flex: none;
+  font-size: var(--badge-size);
+  font-weight: var(--badge-weight);
+  letter-spacing: .04em;
+  line-height: 1.2;
+  padding: var(--badge-y) var(--badge-x);
+  border-radius: var(--badge-r);
+  background: var(--pending-bg);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.badge.done { background: var(--accent); color: var(--badge-ink); box-shadow: none; }
+.empty { margin: 0; font-style: italic; color: var(--muted); font-size: var(--help-size); }
+.picker {
+  background: var(--rowc);
+  color: var(--ink);
+  border: var(--border) var(--border-style) var(--line);
+  border-radius: var(--row-r);
+  overflow: hidden;
+}
+.pick-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: var(--border) var(--border-style) var(--line);
+  background: color-mix(in srgb, var(--ink) 4%, var(--card));
+}
+.pick-search svg { flex: none; opacity: .75; }
+.pick-search input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--name-size);
+  color: var(--ink);
+  background: var(--rowc);
+  border: var(--border) var(--border-style) var(--line);
+  min-height: var(--search-h);
+  padding: 2px 8px;
+  border-radius: calc(var(--row-r) * .5);
+}
+.pick-body { max-height: var(--picker); overflow: auto; padding: 4px; }
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--pick-row);
+  padding: 2px 6px;
+  border-radius: calc(var(--row-r) * .5);
+  font-size: var(--name-size);
+  cursor: pointer;
+}
+.pick-row:hover, .pick-row.on { background: color-mix(in srgb, var(--ink) 8%, var(--rowc)); }
+.pick-row input { width: var(--check); height: var(--check); accent-color: #000080; }
+.mini-orb {
+  width: calc(var(--orb) * .55);
+  height: calc(var(--orb) * .55);
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2a3330, #070c0a 70%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--phosphor) 30%, transparent);
+}
+.pick-foot { padding: 2px 8px 6px; font-size: calc(10px * var(--type)); color: var(--muted); }
+.trash {
+  width: var(--trash);
+  height: var(--trash);
+  min-height: var(--trash);
+  padding: 0;
+  flex: none;
+  font-size: calc(var(--trash) * .55);
+  line-height: 1;
+}
+.sheet {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.38);
+  padding: 16px;
+  z-index: 3;
+}
+.sheet .panel {
+  width: min(100%, 420px);
+  background: #c0c0c0;
+  color: #111;
+  border: 2px solid #fff;
+  border-color: #fff #404040 #404040 #fff;
+  padding: 12px;
+  box-shadow: 8px 8px 0 rgba(0,0,0,.35);
+  filter: none;
+}
+.sheet h3 { margin: 0 0 8px; font-size: 15px; }
+.sheet p { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
+.cycle-path {
+  font-family: "Courier New", Courier, monospace;
+  background: #fff;
+  color: #111;
+  padding: 6px 8px;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+.sheet .actions { display: flex; justify-content: flex-end; gap: 6px; padding-top: 8px; }
+@media (max-width: 980px) {
+  .lab { grid-template-columns: 1fr; }
+  .lab-panel { position: static; max-height: none; }
+}
+button:focus-visible, input:focus-visible {
+  outline: 1px dashed var(--phosphor);
+  outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+<div class="lab">
+  <aside class="lab-panel" id="controls">
+    <nav class="lab-sections" aria-label="UI lab sections">
+      <a href="index.html">Index</a>
+      <a href="habits.html">Habits</a>
+      <a href="plan.html">Plan</a>
+      <a href="todo.html">To do</a>
+      <a href="goals.html">Goals</a>
+      <a href="tracking.html">Tracking</a>
+      <a href="lists.html">Lists</a>
+      <a href="docs.html">Docs</a>
+      <a href="scheduler.html">Scheduler</a>
+      <a href="operations.html">Ops</a>
+      <a href="pen-settings.html">Pen</a>
+      <a href="timeblock.html">Timeblock</a>
+      <a href="baby-animal.html">Baby animal</a>
+      <a href="item-detail-dependencies.html" aria-current="page">Dependencies</a>
+    </nav>
+    <h1>Dependencies lab</h1>
+    <p class="lede">Item detail, Dependencies tab, as it is in the app. Studio kiln rebuild waits on the rows below. The controls only retune this screen.</p>
+
+    <fieldset>
+      <legend>Type</legend>
+      <label>Font
+        <select id="font">
+          <option value="tahoma">Tahoma (house)</option>
+          <option value="georgia">Georgia</option>
+          <option value="mono">Courier</option>
+          <option value="system">System</option>
+          <option value="palatino">Palatino</option>
+          <option value="gill">Gill Sans</option>
+        </select>
+      </label>
+      <label>Tab face
+        <select id="tabFace">
+          <option value="mono">Mono</option>
+          <option value="same">Same as text</option>
+        </select>
+      </label>
+      <label>Type size <span data-for="type">100%</span>
+        <input id="type" data-css="--type" data-scale="0.01" data-display="%" type="range" min="80" max="150" step="1" value="100">
+      </label>
+      <label>Name weight <span data-for="weight">600</span>
+        <input id="weight" data-css="--weight" type="range" min="400" max="800" step="50" value="600">
+      </label>
+      <label>Title weight <span data-for="titleWeight">700</span>
+        <input id="titleWeight" data-css="--title-weight" type="range" min="400" max="800" step="50" value="700">
+      </label>
+      <label>Heading weight <span data-for="headWeight">600</span>
+        <input id="headWeight" data-css="--head-weight" type="range" min="400" max="800" step="50" value="600">
+      </label>
+      <label>Badge weight <span data-for="badgeWeight">700</span>
+        <input id="badgeWeight" data-css="--badge-weight" type="range" min="400" max="800" step="50" value="700">
+      </label>
+      <label>Letter spacing <span data-for="track">0.09em</span>
+        <input id="track" data-css="--track" data-scale="0.01" data-suffix="em" data-digits="2" type="range" min="0" max="20" step="1" value="9">
+      </label>
+      <label>Line height <span data-for="leading">1.35</span>
+        <input id="leading" data-css="--leading" data-scale="0.01" data-digits="2" type="range" min="110" max="180" step="1" value="135">
+      </label>
+      <label>CRT title <span data-for="titleSize">15px</span>
+        <input id="titleSize" data-css="--title-size" data-suffix="px" type="range" min="12" max="28" step="1" value="15">
+      </label>
+      <label>Heading size <span data-for="headSize">16px</span>
+        <input id="headSize" data-css="--head-size" data-suffix="px" type="range" min="12" max="28" step="1" value="16">
+      </label>
+      <label>Tab size <span data-for="tabSize">10.5px</span>
+        <input id="tabSize" data-css="--tab-size" data-suffix="px" type="range" min="9" max="16" step="0.5" value="10.5">
+      </label>
+      <label>Help size <span data-for="helpSize">13px</span>
+        <input id="helpSize" data-css="--help-size" data-suffix="px" type="range" min="11" max="20" step="1" value="13">
+      </label>
+      <label>Name size <span data-for="nameSize">14px</span>
+        <input id="nameSize" data-css="--name-size" data-suffix="px" type="range" min="11" max="22" step="1" value="14">
+      </label>
+      <label>Badge size <span data-for="badgeSize">12px</span>
+        <input id="badgeSize" data-css="--badge-size" data-suffix="px" type="range" min="9" max="18" step="1" value="12">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Spacing</legend>
+      <label>Row height <span data-for="row">46px</span>
+        <input id="row" data-css="--rowh" data-suffix="px" type="range" min="32" max="80" step="1" value="46">
+      </label>
+      <label>Row gap <span data-for="gap">8px</span>
+        <input id="gap" data-css="--gap" data-suffix="px" type="range" min="0" max="28" step="1" value="8">
+      </label>
+      <label>Row padding <span data-for="rowPad">12px</span>
+        <input id="rowPad" data-css="--row-pad" data-suffix="px" type="range" min="4" max="28" step="1" value="12">
+      </label>
+      <label>In-row gap <span data-for="rowGap">12px</span>
+        <input id="rowGap" data-css="--row-gap" data-suffix="px" type="range" min="4" max="28" step="1" value="12">
+      </label>
+      <label>Card padding <span data-for="pad">16px</span>
+        <input id="pad" data-css="--pad" data-suffix="px" type="range" min="4" max="36" step="1" value="16">
+      </label>
+      <label>Window padding <span data-for="winPad">8px</span>
+        <input id="winPad" data-css="--win-pad" data-suffix="px" type="range" min="0" max="28" step="1" value="8">
+      </label>
+      <label>Fascia padding <span data-for="fasciaPad">10px</span>
+        <input id="fasciaPad" data-css="--fascia-pad" data-suffix="px" type="range" min="2" max="24" step="1" value="10">
+      </label>
+      <label>Section gap <span data-for="sectionGap">16px</span>
+        <input id="sectionGap" data-css="--section-gap" data-suffix="px" type="range" min="4" max="36" step="1" value="16">
+      </label>
+      <label>Tab height <span data-for="tabH">32px</span>
+        <input id="tabH" data-css="--tab-h" data-suffix="px" type="range" min="24" max="48" step="1" value="32">
+      </label>
+      <label>Tab gap <span data-for="tabGap">4px</span>
+        <input id="tabGap" data-css="--tab-gap" data-suffix="px" type="range" min="0" max="16" step="1" value="4">
+      </label>
+      <label>Picker height <span data-for="picker">168px</span>
+        <input id="picker" data-css="--picker" data-suffix="px" type="range" min="72" max="320" step="4" value="168">
+      </label>
+      <label>Picker row <span data-for="pickRow">32px</span>
+        <input id="pickRow" data-css="--pick-row" data-suffix="px" type="range" min="24" max="52" step="1" value="32">
+      </label>
+      <label>Key height <span data-for="keyH">28px</span>
+        <input id="keyH" data-css="--key-h" data-suffix="px" type="range" min="22" max="44" step="1" value="28">
+      </label>
+      <label>Search height <span data-for="searchH">32px</span>
+        <input id="searchH" data-css="--search-h" data-suffix="px" type="range" min="24" max="48" step="1" value="32">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Shape</legend>
+      <label>Border
+        <select id="borderStyle">
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+      </label>
+      <label>Border width <span data-for="border">1px</span>
+        <input id="border" data-css="--border" data-suffix="px" type="range" min="0" max="6" step="1" value="1">
+      </label>
+      <label>Window bevel <span data-for="bevel">2px</span>
+        <input id="bevel" data-css="--bevel" data-suffix="px" type="range" min="0" max="6" step="1" value="2">
+      </label>
+      <label>Window shadow <span data-for="shadow">10</span>
+        <input id="shadow" data-css="--shadow" type="range" min="0" max="48" step="1" value="10">
+      </label>
+      <label>Row shadow <span data-for="rowShadow">0</span>
+        <input id="rowShadow" data-css="--row-shadow" type="range" min="0" max="24" step="1" value="0">
+      </label>
+      <label>Card radius <span data-for="cardR">8px</span>
+        <input id="cardR" data-css="--card-r" data-suffix="px" type="range" min="0" max="28" step="1" value="8">
+      </label>
+      <label>Row radius <span data-for="rowR">8px</span>
+        <input id="rowR" data-css="--row-r" data-suffix="px" type="range" min="0" max="28" step="1" value="8">
+      </label>
+      <label>Badge radius <span data-for="badgeR">6px</span>
+        <input id="badgeR" data-css="--badge-r" data-suffix="px" type="range" min="0" max="20" step="1" value="6">
+      </label>
+      <label>Window radius <span data-for="winR">3px</span>
+        <input id="winR" data-css="--win-r" data-suffix="px" type="range" min="0" max="24" step="1" value="3">
+      </label>
+      <label>Tab radius <span data-for="tabR">3px</span>
+        <input id="tabR" data-css="--tab-r" data-suffix="px" type="range" min="0" max="20" step="1" value="3">
+      </label>
+      <label>Badge padding x <span data-for="badgeX">7px</span>
+        <input id="badgeX" data-css="--badge-x" data-suffix="px" type="range" min="2" max="16" step="1" value="7">
+      </label>
+      <label>Badge padding y <span data-for="badgeY">2px</span>
+        <input id="badgeY" data-css="--badge-y" data-suffix="px" type="range" min="0" max="10" step="1" value="2">
+      </label>
+      <label>Dot size <span data-for="dot">8px</span>
+        <input id="dot" data-css="--dot" data-suffix="px" type="range" min="4" max="22" step="1" value="8">
+      </label>
+      <label>Dot glow <span data-for="dotGlow">0px</span>
+        <input id="dotGlow" data-css="--dot-glow" data-suffix="px" type="range" min="0" max="16" step="1" value="0">
+      </label>
+      <label>Lamp size <span data-for="lamp">7px</span>
+        <input id="lamp" data-css="--lamp" data-suffix="px" type="range" min="4" max="16" step="1" value="7">
+      </label>
+      <label>Lamp glow <span data-for="lampGlow">6px</span>
+        <input id="lampGlow" data-css="--lamp-glow" data-suffix="px" type="range" min="0" max="18" step="1" value="6">
+      </label>
+      <label>Orb size <span data-for="orb">28px</span>
+        <input id="orb" data-css="--orb" data-suffix="px" type="range" min="16" max="48" step="1" value="28">
+      </label>
+      <label>Heading icon <span data-for="icon">16px</span>
+        <input id="icon" data-css="--icon" data-suffix="px" type="range" min="10" max="28" step="1" value="16">
+      </label>
+      <label>Remove key <span data-for="trash">24px</span>
+        <input id="trash" data-css="--trash" data-suffix="px" type="range" min="16" max="40" step="1" value="24">
+      </label>
+      <label>Checkbox <span data-for="check">16px</span>
+        <input id="check" data-css="--check" data-suffix="px" type="range" min="12" max="28" step="1" value="16">
+      </label>
+      <label>Tab sink <span data-for="tabSink">1px</span>
+        <input id="tabSink" data-css="--tab-sink" data-suffix="px" type="range" min="0" max="4" step="1" value="1">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Color</legend>
+      <div class="colors">
+        <label>Desk <input id="desk" data-css="--desk" type="color" value="#008080"></label>
+        <label>Paper <input id="paper" data-css="--paper" type="color" value="#c0c0c0"></label>
+        <label>Card <input id="card" data-css="--card" type="color" value="#e4e4e7"></label>
+        <label>Row <input id="rowc" data-css="--rowc" type="color" value="#ffffff"></label>
+        <label>Ink <input id="ink" data-css="--ink" type="color" value="#111111"></label>
+        <label>Muted <input id="muted" data-css="--muted" type="color" value="#3f3f46"></label>
+        <label>Phosphor <input id="phosphor" data-css="--phosphor" type="color" value="#7dffc4"></label>
+        <label>CRT <input id="crt" data-css="--crt" type="color" value="#070c0a"></label>
+        <label>Completed <input id="done" data-css="--done" type="color" value="#22c55e"></label>
+        <label>Pending <input id="wait" data-css="--wait" type="color" value="#eab308"></label>
+        <label>Badge <input id="accent" data-css="--accent" type="color" value="#18181b"></label>
+        <label>Badge ink <input id="badgeInk" data-css="--badge-ink" type="color" value="#ffffff"></label>
+        <label>Pending badge <input id="pendingBg" data-css="--pending-bg" type="color" value="#f4f4f5"></label>
+        <label>Key <input id="key" data-css="--key" type="color" value="#e6e6e6"></label>
+        <label>Key ink <input id="keyink" data-css="--keyink" type="color" value="#23272a"></label>
+        <label>Tab bay <input id="bay" data-css="--bay" type="color" value="#c5c8cc"></label>
+        <label>Border <input id="line" data-css="--line" type="color" value="#d4d4d8"></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Surface</legend>
+      <label>Contrast <span data-for="contrast">1.00</span>
+        <input id="contrast" data-css="--contrast" data-scale="0.01" data-digits="2" type="range" min="70" max="160" step="1" value="100">
+      </label>
+      <label>Row stripe <span data-for="stripe">0%</span>
+        <input id="stripe" data-css="--stripe" data-suffix="%" type="range" min="0" max="40" step="1" value="0">
+      </label>
+      <label>CRT glow <span data-for="glow">3px</span>
+        <input id="glow" data-css="--glow" data-suffix="px" type="range" min="0" max="16" step="1" value="3">
+      </label>
+      <label>Mill sheen <span data-for="sheen">0.20</span>
+        <input id="sheen" data-css="--sheen" data-scale="0.01" data-digits="2" type="range" min="0" max="60" step="1" value="20">
+      </label>
+    </fieldset>
+  </aside>
+
+  <div class="stage-wrap">
+    <p class="kicker">Item detail · Dependencies</p>
+    <p class="sample">Studio kiln rebuild · Elijah · Studio · Kiln pen · week of 26 Oct 2026</p>
+    <div id="stage"></div>
+    <p class="toast" id="toast" role="status"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var FONTS = {
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    georgia: 'Georgia, "Iowan Old Style", Palatino, serif',
+    mono: '"Courier New", Courier, monospace',
+    system: "system-ui, sans-serif",
+    palatino: 'Palatino, "Palatino Linotype", Georgia, serif',
+    gill: '"Gill Sans", "Trebuchet MS", sans-serif'
+  };
+  var MONO = 'ui-monospace, "Courier New", monospace';
+  var TABS = [
+    ["Body", false], ["Details", false], ["Scheduling", false], ["Dependencies", true],
+    ["Subtasks", false], ["Notes", false], ["Resources", false],
+    ["Links", true], ["Analysis", true], ["Time", true], ["History", true]
+  ];
+  var items = [
+    { id: "brick", title: "Brick delivery", done: true, on: true, order: 0 },
+    { id: "thermo", title: "Thermocouple order", done: false, on: true, order: 1 },
+    { id: "shelf", title: "Shelf wash", done: true, on: true, order: 2 },
+    { id: "log", title: "Elijah's firing log", done: false, on: true, order: 3 },
+    { id: "glaze", title: "Glaze test batch", done: true, on: true, order: 4 },
+    { id: "power", title: "Power check", done: false, on: true, order: 5 },
+    { id: "lid", title: "Lid seal", done: false, on: true, order: 6 },
+    { id: "photo", title: "Insurance photo", done: true, on: true, order: 7 },
+    { id: "cones", title: "Witness cones", done: false, on: true, order: 8 },
+    { id: "door", title: "Door brick course", done: true, on: true, order: 9 },
+    { id: "pyro", title: "Pyrometer calibration", done: false, on: false, order: 10 },
+    { id: "floor", title: "Studio floor sweep", done: false, on: false, order: 11 },
+    { id: "orton", title: "Orton cone pack", done: false, on: false, order: 12 },
+    { id: "wash", title: "Kiln wash mix", done: false, on: false, order: 13 },
+    { id: "bisque", title: "Bisque the test tiles", done: false, on: false, order: 14, loop: true }
+  ];
+  items.forEach(function (item) { item.base = item.on; });
+  var seq = 20;
+  var ui = { q: "", toast: "", cycle: null, guard: false };
+  var stage = document.getElementById("stage");
+  var root = document.documentElement;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function dirty() {
+    return items.some(function (item) { return item.on !== item.base; });
+  }
+  function selected() {
+    return items.filter(function (item) { return item.on; }).sort(function (a, b) { return a.order - b.order; });
+  }
+  function apply() {
+    document.querySelectorAll("[data-css]").forEach(function (el) {
+      var raw = el.value;
+      var shown = raw;
+      if (el.dataset.scale) {
+        raw = Number(el.value) * Number(el.dataset.scale);
+        shown = Number(raw).toFixed(el.dataset.digits || 0);
+      }
+      var suffix = el.dataset.suffix || "";
+      root.style.setProperty(el.dataset.css, raw + suffix);
+      var out = document.querySelector('[data-for="' + el.id + '"]');
+      if (out) out.textContent = el.dataset.display ? el.value + el.dataset.display : shown + (el.dataset.display ? "" : suffix);
+    });
+    root.style.setProperty("--face", FONTS[document.getElementById("font").value] || FONTS.tahoma);
+    root.style.setProperty("--tab-face", document.getElementById("tabFace").value === "same" ? "var(--face)" : MONO);
+    root.style.setProperty("--border-style", document.getElementById("borderStyle").value);
+    document.body.style.backgroundColor = document.getElementById("desk").value;
+  }
+
+  function rowHtml(item) {
+    var state = item.done ? "Completed" : "Pending";
+    return '<li class="row">' +
+      '<span class="dot' + (item.done ? " is-done" : "") + '" aria-hidden="true"></span>' +
+      '<span class="name">' + esc(item.title) + '</span>' +
+      '<span class="badge' + (item.done ? " done" : "") + '">' + state + '</span>' +
+      '<button type="button" class="trash" data-act="drop" data-id="' + item.id + '" aria-label="Remove ' + esc(item.title) + '" title="Remove">×</button>' +
+      '</li>';
+  }
+  function pickerHtml() {
+    var q = ui.q.trim().toLowerCase();
+    var matched = items.filter(function (item) {
+      return !q || item.title.toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return a.title.localeCompare(b.title); });
+    var pinned = items.filter(function (item) {
+      return item.on && q && item.title.toLowerCase().indexOf(q) === -1;
+    });
+    var rows = pinned.concat(matched);
+    var body = rows.length
+      ? rows.map(function (item) {
+          return '<label class="pick-row' + (item.on ? " on" : "") + '">' +
+            '<input type="checkbox" data-act="toggle" data-id="' + item.id + '"' + (item.on ? " checked" : "") + ' aria-label="' + esc(item.title) + '">' +
+            '<i class="mini-orb" aria-hidden="true"></i>' +
+            '<span>' + esc(item.title) + '</span>' +
+            '</label>';
+        }).join("")
+      : '<p class="empty" style="font-style:normal">No items match.</p>';
+    var n = selected().length;
+    return '<div class="picker">' +
+      '<div class="pick-search">' +
+        '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 9 L12 12" stroke="currentColor" stroke-width="1.4"/></svg>' +
+        '<input id="depSearch" aria-label="Add dependency" placeholder="Search items…" value="' + esc(ui.q) + '" autocomplete="off">' +
+      '</div>' +
+      '<div class="pick-body">' + body + '</div>' +
+      (n ? '<div class="pick-foot">Selected (' + n + ')</div>' : "") +
+      '</div>';
+  }
+  function listHtml() {
+    var rows = selected();
+    if (!rows.length) return '<p class="empty">No dependencies set</p>';
+    return '<ul class="rows">' + rows.map(rowHtml).join("") + '</ul>';
+  }
+  function tabsHtml() {
+    return '<div class="tabs" role="tablist" aria-label="Item detail">' + TABS.map(function (tab) {
+      var active = tab[0] === "Dependencies";
+      return '<button type="button" class="tab' + (tab[1] ? " secondary" : "") + '" role="tab" data-act="tab" data-tab="' + tab[0] + '"' +
+        (active ? ' aria-selected="true"' : ' aria-disabled="true" tabindex="-1"') + '>' + tab[0] + '</button>';
+    }).join("") + '</div>';
+  }
+  function sheetHtml() {
+    if (ui.cycle) {
+      return '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cycleTitle">' +
+        '<div class="panel"><h3 id="cycleTitle">This would loop</h3>' +
+        '<p>Adding that dependency would close a cycle. The graph cannot run until the loop is broken.</p>' +
+        '<p class="cycle-path">' + esc(ui.cycle) + '</p>' +
+        '<p>The dependency was not added.</p>' +
+        '<div class="actions"><button type="button" data-act="cycle-ok">OK</button></div></div></div>';
+    }
+    if (ui.guard) {
+      return '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="guardTitle">' +
+        '<div class="panel"><h3 id="guardTitle">Unsaved changes</h3>' +
+        '<p>You have unsaved changes. Are you sure you want to close this window?</p>' +
+        '<div class="actions">' +
+          '<button type="button" data-act="save-close">Save changes</button>' +
+          '<button type="button" data-act="guard-stay">Cancel</button>' +
+          '<button type="button" data-act="discard">Exit without saving</button>' +
+        '</div></div></div>';
+    }
+    return "";
+  }
+  function render() {
+    var focusSearch = document.activeElement && document.activeElement.id === "depSearch";
+    var caret = focusSearch ? document.activeElement.selectionStart : null;
+    var saved = !dirty();
+    stage.innerHTML =
+      '<div class="window" data-ui-name="Item detail">' +
+        '<div class="fascia">' +
+          '<div class="fascia-row">' +
+            '<div class="crt"><span class="power" aria-hidden="true"></span><span class="orb" aria-hidden="true"></span><span class="title">Studio kiln rebuild</span></div>' +
+            '<div class="win-keys">' +
+              '<button type="button" class="win-key" data-act="gear" aria-label="Item settings" title="Item settings"><span class="gear" aria-hidden="true">⚙</span></button>' +
+              '<button type="button" class="win-key" data-act="min" aria-label="Minimize" title="Minimize">–</button>' +
+              '<button type="button" class="win-key" data-act="close" aria-label="Close" title="Close">×</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="fascia-row">' +
+            '<span class="type-plate"><span class="type-lamp" aria-hidden="true"></span>Task</span>' +
+            '<span class="chip">scheduled</span>' +
+          '</div>' +
+          '<div class="fascia-row keys">' +
+            '<span class="save-flag' + (saved ? " is-saved" : "") + '" role="status"><span class="save-lamp" aria-hidden="true"></span>' + (saved ? "Saved" : "Unsaved changes") + '</span>' +
+            '<button type="button" class="key" data-act="save" title="Cmd/Ctrl+S">Save</button>' +
+            '<button type="button" class="key" data-act="complete">Complete</button>' +
+            '<button type="button" class="key" data-act="missed" title="Too late — file as a missed opportunity">Missed</button>' +
+            '<button type="button" class="key quiet" data-act="delete">Delete</button>' +
+          '</div>' +
+        '</div>' +
+        tabsHtml() +
+        '<section class="card" aria-label="Dependencies">' +
+          '<h2><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5" r="1.7" fill="none" stroke="currentColor"/><path d="M2.6 13c.4-2 1.7-3 3.4-3s3 1 3.4 3" fill="none" stroke="currentColor"/><circle cx="11.2" cy="5.4" r="1.4" fill="none" stroke="currentColor"/><path d="M9.4 13c.3-1.4 1.1-2.2 2.1-2.2 1 0 1.7.7 2.1 2.2" fill="none" stroke="currentColor"/></svg>Task Dependencies</h2>' +
+          '<p class="help">Tasks that must be completed before this task can be started.</p>' +
+          pickerHtml() +
+          listHtml() +
+        '</section>' +
+        sheetHtml() +
+      '</div>';
+    document.getElementById("toast").textContent = ui.toast;
+    if (focusSearch) {
+      var field = document.getElementById("depSearch");
+      if (field) {
+        field.focus();
+        var pos = caret == null ? field.value.length : caret;
+        field.setSelectionRange(pos, pos);
+      }
+    }
+  }
+
+  function toggle(id) {
+    var item = items.filter(function (row) { return row.id === id; })[0];
+    if (!item) return;
+    if (!item.on && item.loop) {
+      ui.cycle = "Studio kiln rebuild → " + item.title + " → Studio kiln rebuild";
+      ui.toast = "The dependency was not added.";
+      return;
+    }
+    item.on = !item.on;
+    if (item.on) item.order = ++seq;
+    ui.toast = item.on ? "Added " + item.title + "." : "Removed " + item.title + ".";
+  }
+
+  stage.addEventListener("input", function (e) {
+    if (e.target.id !== "depSearch") return;
+    ui.q = e.target.value;
+    render();
+  });
+  stage.addEventListener("change", function (e) {
+    if (!e.target.dataset || e.target.dataset.act !== "toggle") return;
+    toggle(e.target.dataset.id);
+    render();
+  });
+  stage.addEventListener("keydown", function (e) {
+    if (e.target.id === "depSearch" && e.key === "Enter") {
+      e.preventDefault();
+      var first = stage.querySelector(".pick-row input");
+      if (first) toggle(first.dataset.id);
+      render();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || (!ui.cycle && !ui.guard)) return;
+    ui.cycle = null;
+    ui.guard = false;
+    render();
+  });
+  stage.addEventListener("click", function (e) {
+    var node = e.target.closest("[data-act]");
+    if (!node || node.dataset.act === "toggle") return;
+    var act = node.dataset.act;
+    if (act === "drop") {
+      var item = items.filter(function (row) { return row.id === node.dataset.id; })[0];
+      if (item && item.on) {
+        item.on = false;
+        ui.toast = "Removed " + item.title + ".";
+      }
+    } else if (act === "tab") {
+      ui.toast = node.dataset.tab === "Dependencies"
+        ? "Dependencies is the open tab."
+        : node.dataset.tab + " stays on the item. This page is Dependencies.";
+    } else if (act === "save") {
+      items.forEach(function (item) { item.base = item.on; });
+      ui.toast = "Saved.";
+    } else if (act === "close") {
+      if (dirty()) ui.guard = true;
+      else ui.toast = "Close would leave item detail.";
+    } else if (act === "save-close") {
+      items.forEach(function (item) { item.base = item.on; });
+      ui.guard = false;
+      ui.toast = "Saved. Close would leave item detail.";
+    } else if (act === "guard-stay" || act === "cycle-ok") {
+      ui.guard = false;
+      ui.cycle = null;
+    } else if (act === "discard") {
+      items.forEach(function (item) { item.on = item.base; });
+      ui.guard = false;
+      ui.toast = "Exited without saving.";
+    } else if (act === "min") {
+      ui.toast = "Minimize parks the window. The list stays.";
+    } else if (act === "gear") {
+      ui.toast = "Item settings chooses which tabs this item shows.";
+    } else if (act === "complete") {
+      ui.toast = "Complete closes the item. It does not edit this list.";
+    } else if (act === "missed") {
+      ui.toast = "Missed files the item. It does not edit this list.";
+    } else if (act === "delete") {
+      ui.toast = "Delete is the window. This page keeps the list.";
+    }
+    render();
+  });
+
+  document.getElementById("controls").addEventListener("input", apply);
+  document.getElementById("controls").addEventListener("change", apply);
+  apply();
+  render();
+})();
+</script>
+</body>
+</html>

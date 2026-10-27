@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 UI lab · Item detail Time</title>
+<style>
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 980px) { body { grid-template-columns: 1fr; } }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  color: var(--crt);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .88; }
+.bench select, .bench input[type="range"], .bench input[type="color"] { width: 100%; }
+.bench input[type="color"] { height: 28px; padding: 2px; background: #2a2d36; border: 1px solid #555; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.bench hr { border: none; border-top: 1px solid #3a3d48; margin: 10px 0; }
+.now { margin: 8px 0; }
+.now strong { color: var(--crt); font-weight: 700; }
+.plan summary {
+  font: inherit;
+  font-size: 10px;
+  color: #e8e8ec;
+  background: #2a2d36;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.plan { margin: 8px 0 4px; }
+.plan summary { display: inline-block; margin-bottom: 6px; }
+.plan-body { line-height: 1.45; opacity: .92; }
+.plan-body p { margin: 0 0 8px; }
+.plan-body h3 { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--crt); }
+.bench :focus-visible, .item :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .85;
+}
+.stage-cap strong { color: var(--crt); font-weight: 650; }
+.stage-well {
+  flex: 1;
+  min-height: 560px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    #3a3d40;
+}
+.lab-note { margin: 0; font-size: 10px; opacity: .65; line-height: 1.4; }
+
+.frame { width: min(100%, calc(var(--panel) * 1px)); }
+.item {
+  --gap: calc(var(--space) * 1px);
+  width: 100%;
+  max-height: min(88vh, 980px);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  font-weight: calc(var(--weight) * 1);
+  letter-spacing: calc(var(--body-track) * .01em);
+  line-height: var(--leading);
+  border: calc(var(--bw) * 1px) solid var(--frame);
+  border-radius: calc(var(--rad) * 1px);
+  box-shadow:
+    inset 0 1px 0 var(--hi),
+    inset 0 calc(var(--shade) * -.12px) calc(var(--shade) * .35px) rgba(0,0,0,.45),
+    0 calc(var(--shade) * .2px) calc(var(--shade) * .7px) rgba(0,0,0,.28);
+  filter: contrast(var(--ctr)) saturate(var(--sat));
+}
+
+.fascia {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: calc(var(--pad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--mill)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--hi) 0%, var(--face) 48%, var(--lo) 100%);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 -1px 0 rgba(0,0,0,.25);
+}
+.title-row, .meta, .keys, .key-row, .save-cluster, .chip-row, .span-row, .obj-main, .obj-time, .obj-add, .add-actions, .ask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.title-row { justify-content: space-between; }
+.crt {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--title-ff);
+  font-size: calc(var(--title-size) * 1px);
+  font-weight: calc(var(--key-weight) * 1);
+  letter-spacing: .06em;
+  color: var(--crt);
+  text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 18%, transparent), transparent 48%),
+    var(--crtbg);
+  border-radius: var(--inner);
+  box-shadow: 0 0 0 1px var(--frame), inset 0 10px 14px rgba(0,0,0,.4);
+}
+.window-keys { display: flex; gap: 4px; flex: none; }
+.win-key, .key, .add, .tab {
+  border: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), transparent 30%), var(--key);
+  color: var(--ink);
+  border-radius: var(--inner);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 -2px 0 rgba(0,0,0,.18), 0 0 0 1px var(--line);
+}
+.win-key { width: calc(var(--key-h) * 1px); height: calc(var(--key-h) * 1px); padding: 0; }
+.win-key .min { display: block; width: 10px; height: 2px; margin: 0 auto; background: var(--ink); }
+.meta { flex-wrap: wrap; }
+.type-plate, .chip, .flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: var(--inner);
+  background: var(--bay);
+  color: var(--plate);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: .92em;
+}
+.type-lamp, .flag-lamp, .tab::before {
+  width: calc(var(--lamp) * 1px); height: calc(var(--lamp) * 1px); flex: none; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ececec, #4a4e52 55%, #111);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.type-lamp { background: radial-gradient(circle at 35% 30%, #fff, var(--type-color, #cbd5e1) 45%, #445 80%); }
+.flag { letter-spacing: .1em; text-transform: uppercase; font-size: .78em; font-weight: 700; }
+.flag.is-saved .flag-lamp {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 6px color-mix(in srgb, var(--crt) 65%, transparent);
+}
+.flag.is-unsaved .flag-lamp {
+  background: radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%);
+  box-shadow: 0 0 0 1px #3a181c, 0 0 6px rgba(197,110,116,.5);
+}
+.keys { flex-wrap: wrap; }
+.key { min-height: calc(var(--key-h) * 1px); padding: 4px 12px; font-weight: calc(var(--key-weight) * 1); }
+.key.primary { font-weight: calc(var(--key-weight) * 1); }
+.key.danger { color: var(--over); opacity: .85; }
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--tab-min) * 1px), 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.14) 0 1px, transparent 1px 2px),
+    var(--bay);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.16), 0 0 0 1px var(--line);
+}
+.tab {
+  position: relative;
+  min-height: calc(var(--key-h) * 1px);
+  padding: 0 8px 0 calc(var(--lamp) * 1px + 14px);
+  font-family: var(--title-ff);
+  font-size: calc(var(--tab-size) * 1px);
+  font-weight: calc(var(--plate-weight) * 1);
+  letter-spacing: calc(var(--track) * .01em);
+  text-transform: uppercase;
+  color: var(--plate);
+  text-shadow: 0 1px 0 rgba(255,255,255,.7);
+}
+.tab::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  margin-top: calc(var(--lamp) * -.5px);
+  background: radial-gradient(circle at 35% 30%, #ececec, #4a4e52 55%, #111);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.tab.secondary { font-size: calc(var(--tab-size) * .92px); }
+.tab[aria-current="page"] {
+  color: var(--crt);
+  text-shadow: 0 0 3px var(--crt);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt) 16%, transparent), transparent 50%),
+    var(--crtbg);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.5), 0 0 0 1px #1a1c1e;
+}
+.tab[aria-current="page"]::before {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt) 42%, #0a3a28 78%);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 6px color-mix(in srgb, var(--crt) 65%, transparent);
+}
+.scroll { padding: calc(var(--pad) * 1px); display: flex; flex-direction: column; gap: calc(var(--gap) + 8px); }
+.bay, .est {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: calc(var(--pad) * 1px);
+  background: color-mix(in srgb, var(--field) 55%, transparent);
+  border-radius: var(--inner);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.bay h3, .est h3, .logs h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: calc(var(--head) * 1px);
+  font-weight: calc(var(--key-weight) * 1);
+}
+.est-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.est-grid label, .add label {
+  display: grid;
+  gap: 2px;
+  font-size: calc(var(--plate-size) * 1px);
+  font-weight: calc(var(--plate-weight) * 1);
+  letter-spacing: calc(var(--track) * .01em);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field, .item select, .item input[type="text"], .item input[type="number"], .item input[type="date"], .item input[type="search"] {
+  height: calc(var(--row) * 1px);
+  width: 100%;
+  min-width: 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--inner);
+  font-weight: calc(var(--weight) * 1);
+  background: var(--field);
+  color: var(--ink);
+  box-shadow: inset 1px 1px var(--lo), inset -1px -1px var(--hi);
+  font-variant-numeric: tabular-nums;
+}
+.item input[type="number"] { font-variant-numeric: tabular-nums; }
+.clock, .mins { width: calc(var(--clock-w) * 1px); flex: none; }
+.quiet { margin: 0; color: var(--muted); font-size: calc(var(--plate-size) * 1.1px); opacity: var(--quiet); }
+.past { color: var(--over); font-weight: calc(var(--key-weight) * 1); }
+.total { margin: 0; font-variant-numeric: tabular-nums; }
+.total strong { font-size: calc(var(--total) * 1px); font-weight: calc(var(--key-weight) * 1); }
+.item input[type="checkbox"] { width: calc(var(--check) * 1px); height: calc(var(--check) * 1px); accent-color: var(--accent); }
+.split { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; }
+.split li + li { margin-top: 2px; }
+.bar {
+  height: calc(var(--bar) * 1px);
+  min-height: 2px;
+  background: var(--field);
+  border-radius: calc(var(--bar-rad) * 1px);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+  position: relative;
+}
+.bar .fill { display: block; height: 100%; background: var(--accent); width: 0; }
+.bar.is-over .fill { background: var(--over); }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap); }
+.chip-pen, .add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: calc(var(--chip-h) * 1px);
+  padding: 2px 8px;
+  border-radius: var(--inner);
+  background: var(--face);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: calc(var(--plate-size) * 1.15px);
+}
+.chip-pen.is-clock { box-shadow: inset 0 0 0 1px #209e82, inset 0 0 0 2px var(--line); }
+.add { border-style: dashed; background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.dot { width: calc(var(--dot) * 1px); height: calc(var(--dot) * 1px); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.35); flex: none; }
+.linkish {
+  border: 0; background: none; padding: 0 2px;
+  text-decoration: underline; color: inherit; font-size: .92em;
+}
+.linkish[aria-pressed="true"] { text-decoration: none; font-weight: 700; cursor: default; }
+.x { border: 0; background: none; color: inherit; opacity: .7; padding: 0 2px; }
+.x:hover, .x.is-sure { opacity: 1; }
+.picker { display: grid; gap: 4px; max-width: 320px; }
+.picker ul { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow: auto; box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--inner); }
+.picker li button { display: flex; width: 100%; align-items: center; gap: 6px; padding: 5px 8px; text-align: left; background: var(--field); border: 0; color: var(--ink); }
+.picker li button:hover { background: color-mix(in srgb, var(--accent) 12%, var(--field)); }
+
+.blocks { display: grid; gap: calc(var(--block-gap) * 1px); }
+.block {
+  display: grid;
+  gap: calc(var(--block-gap) * 1px);
+  padding: calc(var(--block-pad) * 1px);
+  background: color-mix(in srgb, var(--field) 72%, transparent);
+  border-radius: var(--inner);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.block-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.block-id { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; font-variant-numeric: tabular-nums; }
+.where, .k, .obj-label, .kind {
+  font-size: calc(var(--plate-size) * 1px);
+  font-weight: calc(var(--plate-weight) * 1);
+  letter-spacing: calc(var(--track) * .01em);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.where { margin-left: auto; }
+.fields {
+  display: grid;
+  grid-template-columns: calc(var(--label-w) * 1px) minmax(0, 1fr);
+  gap: calc(var(--field-gap) * 1px);
+  align-items: center;
+}
+.objs { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent); }
+.objs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.objs li { display: grid; gap: 4px; padding-bottom: 6px; border-bottom: 1px dotted var(--line); }
+.objs li.is-done .field { text-decoration: line-through; opacity: .75; }
+.obj-time b { font-variant-numeric: tabular-nums; }
+.logs h3 { margin: 4px 0; }
+.add-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--field) 45%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: var(--inner);
+}
+.add-form .wide { grid-column: 1 / -1; }
+.add-form .span2 { grid-column: span 2; }
+@media (max-width: 720px) {
+  .add-form { grid-template-columns: 1fr 1fr; }
+  .est-grid { grid-template-columns: 1fr; }
+}
+.ask { flex-wrap: wrap; }
+.ask p { flex: 1 1 100%; margin: 0; }
+.tab[aria-current="page"] { text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt); }
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="habits.html">Habits</a>
+    <a href="plan.html">Plan</a>
+    <a href="todo.html">To do</a>
+    <a href="goals.html">Goals</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="pen-settings.html">Pen</a>
+    <a href="timeblock.html">Timeblock</a>
+    <a href="baby-animal.html">Baby animal</a>
+    <a href="item-detail-time.html" aria-current="page">Time</a>
+  </nav>
+  <h1>Item detail · Time</h1>
+  <p class="lede">The Time tab on Studio kiln rebuild. Week of 26 Oct 2026. Elijah is in the notes. The place is the studio. The clock pen is Kiln. Other tabs stay closed.</p>
+  <details class="plan" open>
+    <summary>Plan</summary>
+    <div class="plan-body">
+      <p>This is the item-detail Time tab, the ledger on the task. It is not the Tracking timeblock popup. The frame is item detail: CRT title, type plate, stage, save lamp, action keys, and the tab bay with Time lit. Body through History stay in the bay and do not open.</p>
+      <h3>What stays</h3>
+      <p>Estimated (plan) against Actual (logged total). Pens, with clock on the pen ▶ paints with. The tracked total, est left or past est, where the minutes sit, the meter, and the trio of spent, est, and parts. Each painted block keeps When, Step, Label, Notes, and Objectives. Logs with no painted block stay under their own heading. Add time still takes a date, a start, an end, and a duration: any two fill in the third. A start and an end paint with the clock pen. A duration alone writes a log. Warm red is only the overrun. Points and a rate are not on this tab, so they are not here.</p>
+      <p>The bench only changes type, measure, and color on this same screen. The ceramic clock face stays in the app; this bench types the time.</p>
+    </div>
+  </details>
+  <p class="lede">Every control redraws this Time tab.</p>
+
+  <h2>Type</h2>
+  <label>Font
+    <select data-key="font">
+      <option value="house">House (Tahoma)</option>
+      <option value="system">System</option>
+      <option value="grotesk">Grotesk</option>
+      <option value="mono">Mono</option>
+      <option value="serif">Serif</option>
+      <option value="round">Round</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot</option>
+    </select>
+  </label>
+  <label>Title font
+    <select data-key="titlefont">
+      <option value="mono">Mono</option>
+      <option value="house">House (Tahoma)</option>
+      <option value="system">System</option>
+      <option value="grotesk">Grotesk</option>
+      <option value="serif">Serif</option>
+      <option value="round">Round</option>
+      <option value="typewriter">Typewriter</option>
+      <option value="didot">Didot</option>
+    </select>
+  </label>
+  <label>Type size <span class="val" data-for="type">12</span><input type="range" data-key="type" min="11" max="22" value="12"></label>
+  <label>Weight <span class="val" data-for="weight">400</span><input type="range" data-key="weight" min="300" max="800" step="50" value="400"></label>
+  <label>Key weight <span class="val" data-for="keyweight">700</span><input type="range" data-key="keyweight" min="400" max="900" step="50" value="700"></label>
+  <label>Nameplate weight <span class="val" data-for="plateweight">700</span><input type="range" data-key="plateweight" min="400" max="900" step="50" value="700"></label>
+  <label>Line height <span class="val" data-for="leading">135</span><input type="range" data-key="leading" min="100" max="180" value="135"></label>
+  <label>Nameplate size <span class="val" data-for="platesize">10</span><input type="range" data-key="platesize" min="8" max="16" value="10"></label>
+  <label>Nameplate tracking <span class="val" data-for="track">8</span><input type="range" data-key="track" min="0" max="28" value="8"></label>
+  <label>Body tracking <span class="val" data-for="bodytrack">0</span><input type="range" data-key="bodytrack" min="0" max="20" value="0"></label>
+  <label>Total size <span class="val" data-for="totalsize">13</span><input type="range" data-key="totalsize" min="12" max="40" value="13"></label>
+  <label>Heading size <span class="val" data-for="head">14</span><input type="range" data-key="head" min="11" max="28" value="14"></label>
+  <label>Title size <span class="val" data-for="titlesize">15</span><input type="range" data-key="titlesize" min="12" max="32" value="15"></label>
+  <label>Tab size <span class="val" data-for="tabsize">11</span><input type="range" data-key="tabsize" min="8" max="16" value="11"></label>
+  <label>CRT glow <span class="val" data-for="glow">3</span><input type="range" data-key="glow" min="0" max="18" value="3"></label>
+
+  <h2>Measure</h2>
+  <label>Row height <span class="val" data-for="row">26</span><input type="range" data-key="row" min="18" max="48" value="26"></label>
+  <label>Bar thickness <span class="val" data-for="barpx">6</span><input type="range" data-key="barpx" min="2" max="28" value="6"></label>
+  <label>Bar radius <span class="val" data-for="barrad">3</span><input type="range" data-key="barrad" min="0" max="20" value="3"></label>
+  <label>Spacing <span class="val" data-for="space">8</span><input type="range" data-key="space" min="2" max="24" value="8"></label>
+  <label>Plate padding <span class="val" data-for="pad">10</span><input type="range" data-key="pad" min="2" max="32" value="10"></label>
+  <label>Block padding <span class="val" data-for="blockpad">10</span><input type="range" data-key="blockpad" min="2" max="28" value="10"></label>
+  <label>Block gap <span class="val" data-for="blockgap">10</span><input type="range" data-key="blockgap" min="2" max="28" value="10"></label>
+  <label>Field gap <span class="val" data-for="fieldgap">8</span><input type="range" data-key="fieldgap" min="2" max="24" value="8"></label>
+  <label>Panel width <span class="val" data-for="width">880</span><input type="range" data-key="width" min="520" max="1100" value="880"></label>
+  <label>Radius <span class="val" data-for="radius">3</span><input type="range" data-key="radius" min="0" max="24" value="3"></label>
+  <label>Border <span class="val" data-for="border">2</span><input type="range" data-key="border" min="0" max="8" value="2"></label>
+  <label>Shadow depth <span class="val" data-for="shade">10</span><input type="range" data-key="shade" min="0" max="40" value="10"></label>
+  <label>Label column <span class="val" data-for="labelw">70</span><input type="range" data-key="labelw" min="48" max="140" value="70"></label>
+  <label>Clock width <span class="val" data-for="clockw">74</span><input type="range" data-key="clockw" min="48" max="120" value="74"></label>
+  <label>Pen dot <span class="val" data-for="dot">9</span><input type="range" data-key="dot" min="4" max="20" value="9"></label>
+  <label>Lamp size <span class="val" data-for="lamp">8</span><input type="range" data-key="lamp" min="4" max="16" value="8"></label>
+  <label>Chip height <span class="val" data-for="chiph">24</span><input type="range" data-key="chiph" min="16" max="44" value="24"></label>
+  <label>Tab min width <span class="val" data-for="tabmin">108</span><input type="range" data-key="tabmin" min="72" max="180" value="108"></label>
+  <label>Key height <span class="val" data-for="keyh">28</span><input type="range" data-key="keyh" min="20" max="48" value="28"></label>
+  <label>Checkbox <span class="val" data-for="check">14</span><input type="range" data-key="check" min="10" max="28" value="14"></label>
+  <label>Quiet ink <span class="val" data-for="quiet">100</span><input type="range" data-key="quiet" min="35" max="100" value="100"></label>
+  <label>Mill lines <span class="val" data-for="mill">18</span><input type="range" data-key="mill" min="0" max="70" value="18"></label>
+
+  <h2>Color</h2>
+  <label>Face <input type="color" data-key="face" value="#c0c0c0"></label>
+  <label>Ink <input type="color" data-key="ink" value="#111111"></label>
+  <label>Muted <input type="color" data-key="muted" value="#3a3e42"></label>
+  <label>Nameplate <input type="color" data-key="plate" value="#2a2c2e"></label>
+  <label>Field <input type="color" data-key="field" value="#ffffff"></label>
+  <label>Key <input type="color" data-key="key" value="#d8d8d8"></label>
+  <label>Bay <input type="color" data-key="bay" value="#d4d4d4"></label>
+  <label>Line <input type="color" data-key="line" value="#808080"></label>
+  <label>Highlight <input type="color" data-key="hi" value="#ffffff"></label>
+  <label>Shade tint <input type="color" data-key="lo" value="#808080"></label>
+  <label>Frame <input type="color" data-key="frame" value="#0a0a0a"></label>
+  <label>CRT <input type="color" data-key="crt" value="#7dffc4"></label>
+  <label>CRT glass <input type="color" data-key="crtbg" value="#070c0a"></label>
+  <label>Meter <input type="color" data-key="accent" value="#000080"></label>
+  <label>Overrun <input type="color" data-key="over" value="#7a2424"></label>
+  <label>Contrast <span class="val" data-for="contrast">100</span><input type="range" data-key="contrast" min="80" max="140" value="100"></label>
+  <label>Saturation <span class="val" data-for="sat">100</span><input type="range" data-key="sat" min="0" max="180" value="100"></label>
+</aside>
+
+<div class="stage" id="stage">
+  <div class="stage-cap">
+    <span>Sample <strong>Studio kiln rebuild</strong></span>
+    <span>Week of 26 Oct 2026</span>
+    <span id="labStatus" aria-live="polite"></span>
+  </div>
+  <div class="stage-well">
+    <div class="frame" id="frame">
+      <article class="item" id="item" data-ui-name="Item detail">
+        <header class="fascia">
+          <div class="title-row">
+            <h2 class="crt" id="crtTitle">Studio kiln rebuild</h2>
+            <div class="window-keys">
+              <button type="button" class="win-key" data-inert="settings" aria-label="Item settings" title="Item settings. This bench stays on Time.">⚙</button>
+              <button type="button" class="win-key" data-inert="minimize" aria-label="Minimize" title="Minimize. This bench stays on Time."><span class="min"></span></button>
+              <button type="button" class="win-key" data-inert="close" aria-label="Close" title="Close. This bench stays on Time.">×</button>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="type-plate"><span class="type-lamp" style="--type-color:#cbd5e1" aria-hidden="true"></span>Task</span>
+            <span class="chip">scheduled</span>
+          </div>
+          <div class="keys">
+            <div class="save-cluster">
+              <span class="flag is-saved" id="saveFlag"><span class="flag-lamp" aria-hidden="true"></span><span id="saveWord">Saved</span></span>
+              <button type="button" class="key primary" id="saveBtn">Save</button>
+            </div>
+            <button type="button" class="key primary" data-inert="complete">Complete</button>
+            <button type="button" class="key" data-inert="missed" title="Too late — file as a missed opportunity">Missed</button>
+            <button type="button" class="key" data-inert="card" title="Open the To Do task card">Card</button>
+            <button type="button" class="key danger" data-inert="delete">Delete</button>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Item detail">
+            <button type="button" class="tab" role="tab" data-inert="tab">Body</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Details</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Scheduling</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Dependencies</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Subtasks</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Notes</button>
+            <button type="button" class="tab" role="tab" data-inert="tab">Resources</button>
+            <button type="button" class="tab secondary" role="tab" data-inert="tab">Links</button>
+            <button type="button" class="tab secondary" role="tab" data-inert="tab">Analysis</button>
+            <button type="button" class="tab secondary" role="tab" aria-current="page">Time</button>
+            <button type="button" class="tab secondary" role="tab" data-inert="tab">History</button>
+          </div>
+        </header>
+        <div class="scroll">
+          <div id="bay"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+  <p class="lab-note">Tahoma stands in for the pixel face so the page works offline. The app’s Time tab opens the ceramic clock; this bench types the hour. Warm red is the estimate overrun only. Elijah and the studio are in the notes. Points stay on Details.</p>
+</div>
+
+<script>
+(function () {
+  const FONTS = {
+    house: 'Tahoma, "MS Sans Serif", Geneva, Verdana, sans-serif',
+    system: 'system-ui, "Segoe UI", sans-serif',
+    grotesk: '"Avenir Next", "Segoe UI", system-ui, sans-serif',
+    mono: 'ui-monospace, "Courier New", Courier, monospace',
+    serif: 'Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif',
+    round: 'ui-rounded, "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", sans-serif',
+    typewriter: '"American Typewriter", "Courier New", Courier, monospace',
+    didot: 'Didot, "Bodoni MT", Georgia, serif'
+  };
+  const STEPS = [
+    { id: "lid", name: "Coil the lid", est: 180 },
+    { id: "thermo", name: "Set the thermocouple", est: 90 },
+    { id: "glaze", name: "Mix glaze", est: 120 },
+    { id: "brick", name: "Wait on brick", est: 40 },
+    { id: "shelf", name: "Shelf wash", est: 45 }
+  ];
+  const WEEK = [
+    ["2026-10-26", "Mon Oct 26"],
+    ["2026-10-27", "Tue Oct 27"],
+    ["2026-10-28", "Wed Oct 28"],
+    ["2026-10-29", "Thu Oct 29"],
+    ["2026-10-30", "Fri Oct 30"],
+    ["2026-10-31", "Sat Oct 31"],
+    ["2026-11-01", "Sun Nov 1"]
+  ];
+  const DAY = Object.fromEntries(WEEK);
+
+  function obj(id, text, done, added, completed, step, finishes) {
+    return { id, text, done, added, completed, step, finishes: !!finishes };
+  }
+  let pens = [
+    { id: "kiln", name: "Kiln", color: "#c4783a" },
+    { id: "glazebench", name: "Glaze bench", color: "#4aa3b5" },
+    { id: "bisque", name: "Bisque", color: "#8a5a3b" },
+    { id: "wedge", name: "Wedging", color: "#7d6bb8" }
+  ];
+  let links = ["kiln", "glazebench"];
+  let blocks = [
+    { id: "b1", date: "2026-10-26", start: 550, end: 700, pen: "kiln", step: "lid", label: "Coil the lid",
+      notes: "First coil of the lid ring. Elijah turned the bat while the coil stacked.",
+      objectives: [
+        obj("o1", "Coil the lid ring", true, 550, 665, "lid", false),
+        obj("o2", "Even the gallery", true, 665, 700, "lid", true)
+      ] },
+    { id: "b2", date: "2026-10-26", start: 800, end: 875, pen: "kiln", step: "thermo", label: "Set the thermocouple",
+      notes: "Probe seated in the spy hole. Cold reading on the bench was 22.",
+      objectives: [obj("o3", "Set the thermocouple", true, 800, 875, "thermo", true)] },
+    { id: "b3", date: "2026-10-27", start: 520, end: 625, pen: "kiln", step: "glaze", label: "Mix glaze",
+      notes: "Studio white, specific gravity 1.45. Elijah mixed the last of the bucket.",
+      objectives: [obj("o4", "Mix the studio white", true, 520, 625, "glaze", false)] },
+    { id: "b4", date: "2026-10-27", start: 910, end: 965, pen: "kiln", step: "shelf", label: "Shelf wash",
+      notes: "Washed the top two kiln shelves. The third still holds old wash.",
+      objectives: [obj("o5", "Wash the top shelves", true, 910, 965, "shelf", false)] },
+    { id: "b5", date: "2026-10-28", start: 600, end: 735, pen: "kiln", step: "lid", label: "Coil the lid",
+      notes: "Second coil. The lid now sits flat on the gallery.",
+      objectives: [obj("o6", "Seat the lid on the gallery", true, 600, 735, "lid", true)] },
+    { id: "b6", date: "2026-10-29", start: 555, end: 640, pen: "kiln", step: "brick", label: "Wait on brick",
+      notes: "Called the brickyard. The soft brick is still on the truck.",
+      objectives: [obj("o7", "Check the brick order", false, 555, null, "brick", false)] },
+    { id: "b7", date: "2026-10-30", start: 840, end: 950, pen: "bisque", step: "glaze", label: "Mix glaze",
+      notes: "Three test tiles dipped in the new glaze. One crawled at the rim.",
+      objectives: [obj("o8", "Dip three test tiles", true, 840, 950, "glaze", false)] },
+    { id: "b8", date: "2026-10-31", start: 680, end: 785, pen: "kiln", step: "shelf", label: "Shelf wash",
+      notes: "Last shelf washed, kiln floor swept, studio left ready for the brick.",
+      objectives: [obj("o9", "Finish the shelf wash", true, 680, 785, "shelf", true)] }
+  ];
+  let logs = [
+    { id: "l1", date: "2026-10-28", start: null, end: null, duration: 40, step: "brick",
+      notes: "Stood at the studio bay door for the soft brick. The truck did not come." },
+    { id: "l2", date: "2026-10-26", start: 520, end: 540, duration: 20, step: "",
+      notes: "Session · swept the wedging table in the studio before the first coil." }
+  ];
+  let est = 960;
+  let savedEst = 960;
+  let dirtyFields = false;
+  let adding = true;
+  let picking = false;
+  let penQuery = "";
+  let sure = null;
+  let showAll = false;
+  let seq = 40;
+  let draft = {
+    date: "2026-11-01", start: "10:00", end: "10:40", duration: "40", step: "",
+    note: "Sweep the kiln floor after the shelf wash.",
+    objective: "",
+    objectives: [{ id: "d1", text: "Sweep the kiln floor", done: true }],
+    ask: null,
+    error: ""
+  };
+
+  const bay = document.getElementById("bay");
+  const item = document.getElementById("item");
+  const frame = document.getElementById("frame");
+
+  function uid(prefix) { seq += 1; return prefix + seq; }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(mins) {
+    const total = Math.max(0, Math.round(mins));
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    if (h === 0) return m + "m";
+    return m === 0 ? h + "h" : h + "h " + m + "m";
+  }
+  function face(min) { return Math.floor(min / 60) + ":" + String(min % 60).padStart(2, "0"); }
+  function hhmm(min) { return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0"); }
+  function parseClock(v) {
+    const m = String(v).trim().match(/^(\d{1,2})(?::?(\d{2}))?$/);
+    if (!m) return null;
+    const min = Number(m[1]) * 60 + Number(m[2] || 0);
+    return min >= 0 && min <= 1440 && Number(m[2] || 0) < 60 ? min : null;
+  }
+  function parseDuration(raw) {
+    const s = String(raw).trim();
+    if (!s) return null;
+    if (/^\d+$/.test(s)) return Number(s);
+    let n = 0;
+    let hit = false;
+    const h = s.match(/(\d+)\s*h/i);
+    const m = s.match(/(\d+)\s*m/i);
+    if (h) { n += Number(h[1]) * 60; hit = true; }
+    if (m) { n += Number(m[1]); hit = true; }
+    return hit ? n : null;
+  }
+  function dayLabel(date) { return DAY[date] || date; }
+  function penById(id) { return pens.find(function (p) { return p.id === id; }); }
+  function stepName(id) {
+    const step = STEPS.find(function (s) { return s.id === id; });
+    return step ? step.name : "";
+  }
+  function clockPen() { return links[0] ? penById(links[0]) : null; }
+  function parts() { return STEPS.reduce(function (n, s) { return n + s.est; }, 0); }
+  function logKind(notes) {
+    const text = notes || "";
+    if (text.indexOf("Session") === 0) return "Session";
+    if (text.indexOf("Clock") === 0) return "Clock";
+    if (text.indexOf("Working on now") === 0) return "Now";
+    return "Log";
+  }
+  function val(key) {
+    const el = document.querySelector('[data-key="' + key + '"]');
+    return el ? el.value : "";
+  }
+  function num(key) { return Number(val(key)); }
+
+  function account() {
+    const linked = {};
+    links.forEach(function (id) { linked[id] = true; });
+    const blockKeys = new Set();
+    const penKeys = new Set();
+    const stepOf = new Map();
+    const sorted = blocks.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : a.start - b.start;
+    });
+    sorted.forEach(function (b) {
+      const isPen = !!linked[b.pen];
+      for (let m = b.start; m < b.end; m++) {
+        const k = b.date + ":" + m;
+        if (blockKeys.has(k)) continue;
+        blockKeys.add(k);
+        if (isPen) penKeys.add(k);
+        if (!stepOf.has(k)) stepOf.set(k, b.step || "");
+      }
+    });
+    let logMinutes = 0;
+    const loose = {};
+    logs.forEach(function (log) {
+      if (log.date && log.start != null && log.end != null && log.end > log.start) {
+        const take = Math.min(log.duration || (log.end - log.start), log.end - log.start);
+        for (let m = log.start; m < log.start + take; m++) {
+          const k = log.date + ":" + m;
+          if (blockKeys.has(k) || stepOf.has(k)) continue;
+          stepOf.set(k, log.step || "");
+          logMinutes += 1;
+        }
+      } else {
+        const key = log.step || "";
+        loose[key] = (loose[key] || 0) + (log.duration || 0);
+        logMinutes += log.duration || 0;
+      }
+    });
+    const byStep = {};
+    stepOf.forEach(function (step) { byStep[step] = (byStep[step] || 0) + 1; });
+    Object.keys(loose).forEach(function (step) { byStep[step] = (byStep[step] || 0) + loose[step]; });
+    const blockMinutes = blockKeys.size;
+    const penMinutes = penKeys.size;
+    return {
+      total: blockMinutes + logMinutes,
+      penMinutes: penMinutes,
+      clockMinutes: blockMinutes - penMinutes,
+      logMinutes: logMinutes,
+      byStep: byStep,
+      unlabeled: byStep[""] || 0
+    };
+  }
+
+  function status(text) {
+    document.getElementById("labStatus").textContent = text || "";
+  }
+  function paintLamp() {
+    const unsaved = dirtyFields || est !== savedEst;
+    const flag = document.getElementById("saveFlag");
+    flag.classList.toggle("is-saved", !unsaved);
+    flag.classList.toggle("is-unsaved", unsaved);
+    document.getElementById("saveWord").textContent = unsaved ? "Unsaved changes" : "Saved";
+  }
+  function markDirty() { dirtyFields = true; paintLamp(); }
+
+  function applyChrome() {
+    const rad = num("radius");
+    item.style.setProperty("--ff", FONTS[val("font")] || FONTS.house);
+    item.style.setProperty("--title-ff", FONTS[val("titlefont")] || FONTS.mono);
+    item.style.setProperty("--weight", val("weight"));
+    item.style.setProperty("--key-weight", val("keyweight"));
+    item.style.setProperty("--plate-weight", val("plateweight"));
+    item.style.setProperty("--leading", String(num("leading") / 100));
+    item.style.setProperty("--type", val("type"));
+    item.style.setProperty("--total", val("totalsize"));
+    item.style.setProperty("--head", val("head"));
+    item.style.setProperty("--title-size", val("titlesize"));
+    item.style.setProperty("--tab-size", val("tabsize"));
+    item.style.setProperty("--plate-size", val("platesize"));
+    item.style.setProperty("--track", val("track"));
+    item.style.setProperty("--body-track", val("bodytrack"));
+    item.style.setProperty("--glow", val("glow"));
+    item.style.setProperty("--mill", String(num("mill") / 100));
+    item.style.setProperty("--space", val("space"));
+    item.style.setProperty("--pad", val("pad"));
+    item.style.setProperty("--block-pad", val("blockpad"));
+    item.style.setProperty("--block-gap", val("blockgap"));
+    item.style.setProperty("--field-gap", val("fieldgap"));
+    item.style.setProperty("--row", val("row"));
+    item.style.setProperty("--bar", val("barpx"));
+    item.style.setProperty("--bar-rad", val("barrad"));
+    item.style.setProperty("--rad", String(rad));
+    item.style.setProperty("--inner", rad + "px");
+    item.style.setProperty("--bw", val("border"));
+    item.style.setProperty("--shade", val("shade"));
+    item.style.setProperty("--label-w", val("labelw"));
+    item.style.setProperty("--clock-w", val("clockw"));
+    item.style.setProperty("--dot", val("dot"));
+    item.style.setProperty("--lamp", val("lamp"));
+    item.style.setProperty("--chip-h", val("chiph"));
+    item.style.setProperty("--tab-min", val("tabmin"));
+    item.style.setProperty("--key-h", val("keyh"));
+    item.style.setProperty("--check", val("check"));
+    item.style.setProperty("--quiet", String(num("quiet") / 100));
+    item.style.setProperty("--ctr", String(num("contrast") / 100));
+    item.style.setProperty("--sat", String(num("sat") / 100));
+    ["face", "ink", "muted", "plate", "field", "key", "bay", "line", "hi", "lo", "frame", "crt", "crtbg", "accent", "over"].forEach(function (key) {
+      item.style.setProperty("--" + key, val(key));
+    });
+    frame.style.setProperty("--panel", val("width"));
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      const out = document.querySelector('.val[data-for="' + el.dataset.key + '"]');
+      if (out) out.textContent = el.value;
+    });
+  }
+
+  function stepOptions(selected, emptyLabel) {
+    const head = '<option value="">' + esc(emptyLabel) + "</option>";
+    return head + STEPS.map(function (s) {
+      return '<option value="' + s.id + '"' + (s.id === selected ? " selected" : "") + ">" + esc(s.name) + "</option>";
+    }).join("");
+  }
+  function penDot(id) {
+    const pen = penById(id);
+    const color = pen ? pen.color : "transparent";
+    return '<span class="dot" style="background:' + esc(color) + '" aria-hidden="true"></span>';
+  }
+
+  function blockHTML(b) {
+    const pen = penById(b.pen);
+    const where = b.step ? stepName(b.step) : "Whole task";
+    const objs = (b.objectives || []).map(function (row) {
+      const mins = row.done && row.completed != null && row.added != null ? Math.max(0, row.completed - row.added) : null;
+      return '<li class="' + (row.done ? "is-done" : "") + '" data-oid="' + esc(row.id) + '">' +
+        '<div class="obj-main">' +
+          '<input type="checkbox" data-act="obj-done" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '"' + (row.done ? " checked" : "") + ' aria-label="Done: ' + esc(row.text) + '">' +
+          '<input class="field" data-act="obj-text" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" value="' + esc(row.text) + '" aria-label="Objective ' + esc(row.text) + '">' +
+          '<button type="button" class="x" data-act="obj-x" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" aria-label="Remove objective ' + esc(row.text) + '">×</button>' +
+        "</div>" +
+        '<div class="obj-time">' +
+          '<input class="field clock" data-act="obj-clock" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" data-which="added" value="' + (row.added == null ? "" : face(row.added)) + '" aria-label="Added time for ' + esc(row.text) + '">' +
+          "<i aria-hidden=\"true\">→</i>" +
+          '<input class="field clock" data-act="obj-clock" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" data-which="completed" value="' + (row.completed == null ? "" : face(row.completed)) + '" placeholder="open" aria-label="Done time for ' + esc(row.text) + '">' +
+          (mins != null ? "<b>" + mins + "m</b>" : "") +
+        "</div>" +
+        '<div class="obj-time">' +
+          '<select class="field" data-act="obj-step" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" aria-label="Step for ' + esc(row.text) + '">' + stepOptions(row.step, "No step") + "</select>" +
+          (row.step ? '<button type="button" class="linkish" data-act="finishes" data-id="' + esc(b.id) + '" data-oid="' + esc(row.id) + '" aria-pressed="' + (row.finishes ? "true" : "false") + '">' + (row.finishes ? "finished step" : "counts toward") + "</button>" : "") +
+        "</div></li>";
+    }).join("");
+    return '<li class="block" data-id="' + esc(b.id) + '" style="--pen:' + esc(pen ? pen.color : "var(--accent)") + '">' +
+      '<div class="block-head"><div class="block-id">' +
+        "<time datetime=\"" + esc(b.date) + "\">" + esc(dayLabel(b.date)) + "</time>" +
+        "<b data-dur=\"" + esc(b.id) + "\">" + fmt(b.end - b.start) + "</b>" +
+        penDot(b.pen) +
+        '<span>' + esc(pen ? pen.name : "Block") + "</span>" +
+        '<span class="where">' + esc(where) + "</span>" +
+      "</div>" +
+      (sure === b.id
+        ? '<button type="button" class="x is-sure" data-act="delete" data-id="' + esc(b.id) + '">delete?</button>'
+        : '<button type="button" class="x" data-act="sure" data-id="' + esc(b.id) + '" aria-label="Delete the block on ' + esc(b.date) + " at " + face(b.start) + '">×</button>') +
+      "</div>" +
+      '<div class="fields">' +
+        '<span class="k">When</span><span class="span-row clocks">' +
+          '<input class="field" type="date" data-act="date" data-id="' + esc(b.id) + '" value="' + esc(b.date) + '" aria-label="Date of the block on ' + esc(b.date) + " at " + face(b.start) + '">' +
+          '<input class="field clock" data-act="clock" data-id="' + esc(b.id) + '" data-which="start" value="' + face(b.start) + '" aria-label="Start of the block on ' + esc(b.date) + " at " + face(b.start) + '">' +
+          "<i aria-hidden=\"true\">–</i>" +
+          '<input class="field clock" data-act="clock" data-id="' + esc(b.id) + '" data-which="end" value="' + face(b.end) + '" aria-label="End of the block on ' + esc(b.date) + " at " + face(b.start) + '">' +
+        "</span>" +
+        '<span class="k">Step</span>' +
+        '<select class="field" data-act="step" data-id="' + esc(b.id) + '" aria-label="Step for the block on ' + esc(b.date) + " at " + face(b.start) + '">' + stepOptions(b.step, "Whole task") + "</select>" +
+        '<span class="k">Label</span>' +
+        '<input class="field" data-act="label" data-id="' + esc(b.id) + '" value="' + esc(b.label) + '" placeholder="' + esc(pen ? pen.name : "What this block was") + '" aria-label="Label of the block on ' + esc(b.date) + " at " + face(b.start) + '">' +
+        '<span class="k">Notes</span>' +
+        '<input class="field" data-act="notes" data-id="' + esc(b.id) + '" value="' + esc(b.notes) + '" placeholder="A longer note" title="' + esc(b.notes) + '" aria-label="Notes of the block on ' + esc(b.date) + " at " + face(b.start) + '">' +
+      "</div>" +
+      '<div class="objs"><p class="obj-label">Objectives</p>' +
+        (objs ? '<ul aria-label="Objectives on this block">' + objs + "</ul>" : "") +
+        '<div class="obj-add">' +
+          '<input class="field" data-act="new-obj" data-id="' + esc(b.id) + '" placeholder="Objective" aria-label="Add an objective on ' + esc(b.date) + " at " + face(b.start) + '">' +
+          '<button type="button" class="add" data-act="add-obj" data-id="' + esc(b.id) + '">Add</button>' +
+        "</div></div></li>";
+  }
+
+  function logHTML(log) {
+    const from = log.start == null ? "" : face(log.start);
+    const to = log.end == null ? "" : face(log.end);
+    return '<li class="block" data-log="' + esc(log.id) + '">' +
+      '<div class="block-head"><div class="block-id">' +
+        '<span class="kind">' + logKind(log.notes) + "</span>" +
+        "<time datetime=\"" + esc(log.date) + "\">" + esc(dayLabel(log.date)) + "</time>" +
+        "<b>" + log.duration + "m</b>" +
+      "</div>" +
+      (sure === log.id
+        ? '<button type="button" class="x is-sure" data-act="delete-log" data-id="' + esc(log.id) + '">delete?</button>'
+        : '<button type="button" class="x" data-act="sure" data-id="' + esc(log.id) + '" aria-label="Delete log ' + esc(log.id) + '">×</button>') +
+      "</div>" +
+      '<div class="fields">' +
+        '<span class="k">When</span><span class="span-row">' +
+          '<input class="field" type="date" data-act="log-date" data-id="' + esc(log.id) + '" value="' + esc(log.date) + '" aria-label="Date of log ' + esc(log.id) + '">' +
+          '<input class="field clock" data-act="log-clock" data-id="' + esc(log.id) + '" data-which="start" value="' + esc(from) + '" placeholder="open" aria-label="Start of log ' + esc(log.id) + '">' +
+          "<i aria-hidden=\"true\">–</i>" +
+          '<input class="field clock" data-act="log-clock" data-id="' + esc(log.id) + '" data-which="end" value="' + esc(to) + '" placeholder="open" aria-label="End of log ' + esc(log.id) + '">' +
+          '<input class="field mins" data-act="log-mins" data-id="' + esc(log.id) + '" value="' + esc(String(log.duration)) + '" aria-label="Minutes of log ' + esc(log.id) + '">' +
+          '<span class="quiet">m</span>' +
+        "</span>" +
+        '<span class="k">Step</span>' +
+        '<select class="field" data-act="log-step" data-id="' + esc(log.id) + '" aria-label="Step for log ' + esc(log.id) + '">' + stepOptions(log.step, "Whole task") + "</select>" +
+        '<span class="k">Note</span>' +
+        '<input class="field" data-act="log-notes" data-id="' + esc(log.id) + '" value="' + esc(log.notes) + '" placeholder="What this time was" aria-label="Note for log ' + esc(log.id) + '">' +
+      "</div></li>";
+  }
+
+  function chipsHTML() {
+    if (!links.length && !picking) {
+      return '<span class="quiet">No pen linked. Link one and new paint from the clock counts here.</span>' +
+        '<button type="button" class="add" data-act="pick">Link pen</button>';
+    }
+    const chips = links.map(function (id, i) {
+      const pen = penById(id);
+      const name = pen ? pen.name : "Missing pen";
+      return '<span class="chip-pen' + (i === 0 ? " is-clock" : "") + '" title="' + (i === 0 ? "Clock pen: ▶ paints with this one." : "") + '">' +
+        penDot(id) + esc(name) +
+        '<button type="button" class="linkish" data-act="clock-pen" data-id="' + esc(id) + '" aria-pressed="' + (i === 0 ? "true" : "false") + '" aria-label="' + (i === 0 ? "Clock pen " + esc(name) : "Make " + esc(name) + " the clock pen") + '"' + (i === 0 ? " disabled" : "") + ">clock</button>" +
+        '<button type="button" class="x" data-act="unlink" data-id="' + esc(id) + '" aria-label="Unlink ' + esc(name) + '">×</button></span>';
+    }).join("");
+    const add = picking ? "" : '<button type="button" class="add" data-act="pick">Link pen</button>';
+    return chips + add;
+  }
+
+  function pickerHTML() {
+    if (!picking) return "";
+    const q = penQuery.trim().toLowerCase();
+    const linked = {};
+    links.forEach(function (id) { linked[id] = true; });
+    const rows = pens.filter(function (p) {
+      if (linked[p.id]) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 8);
+    const exact = pens.some(function (p) { return p.name.toLowerCase() === q; });
+    const opts = rows.map(function (p) {
+      return '<li><button type="button" data-act="link" data-id="' + esc(p.id) + '">' + penDot(p.id) + esc(p.name) + "</button></li>";
+    }).join("");
+    const create = q && !exact ? '<li><button type="button" data-act="new-pen">New pen “' + esc(penQuery.trim()) + '”</button></li>' : "";
+    const empty = !opts && !create ? '<li class="quiet" style="padding:5px 8px">No pens match.</li>' : "";
+    return '<div class="picker"><input class="field" id="penSearch" type="search" placeholder="Find a pen…" aria-label="Find a pen" value="' + esc(penQuery) + '">' +
+      '<ul role="listbox" aria-label="Pens">' + opts + create + empty + "</ul></div>";
+  }
+
+  function askHTML() {
+    if (!draft.ask) return "";
+    const buttons = draft.ask.choices.map(function (choice, i) {
+      return '<button type="button" class="add" data-act="ask" data-i="' + i + '">' + esc(choice.label) + "</button>";
+    }).join("");
+    return '<div class="ask wide" role="group" aria-label="Update the other times"><p>' + esc(draft.ask.message) + "</p>" +
+      buttons + '<button type="button" class="add" data-act="ask-leave">Leave these</button></div>';
+  }
+
+  function addHTML() {
+    if (!adding) return '<button type="button" class="add" data-act="open-add">Add time</button>';
+    const pen = clockPen();
+    const objs = draft.objectives.map(function (item) {
+      return '<li><input type="checkbox" data-act="draft-done" data-oid="' + esc(item.id) + '"' + (item.done ? " checked" : "") + ' aria-label="Done: ' + esc(item.text) + '"> <span>' + esc(item.text) + '</span> <button type="button" class="x" data-act="draft-x" data-oid="' + esc(item.id) + '" aria-label="Remove objective ' + esc(item.text) + '">×</button></li>';
+    }).join("");
+    return '<form class="add-form" id="addForm">' +
+      '<label>Date<input class="field" type="date" data-act="draft" data-field="date" value="' + esc(draft.date) + '" required></label>' +
+      '<label>Start<input class="field" data-act="draft" data-field="start" value="' + esc(draft.start) + '" placeholder="optional" aria-label="Start" inputmode="numeric"></label>' +
+      '<label>End<input class="field" data-act="draft" data-field="end" value="' + esc(draft.end) + '" placeholder="optional" aria-label="End" inputmode="numeric"></label>' +
+      '<label>Duration<input class="field" data-act="draft" data-field="duration" value="' + esc(draft.duration) + '" placeholder="optional" aria-label="Duration"></label>' +
+      '<label class="span2">Step<select class="field" data-act="draft" data-field="step" aria-label="Step">' + stepOptions(draft.step, "Whole task") + "</select></label>" +
+      '<label class="wide">Note<input class="field" data-act="draft" data-field="note" value="' + esc(draft.note) + '" aria-label="Note"></label>' +
+      '<div class="wide"><span class="k">Objectives</span>' +
+        (objs ? '<ul aria-label="Objectives for this block">' + objs + "</ul>" : "") +
+        '<div class="obj-add"><input class="field" id="draftObj" data-act="draft" data-field="objective" value="' + esc(draft.objective) + '" placeholder="What got done" aria-label="Objective">' +
+        '<button type="button" class="add" data-act="draft-add">Add</button></div></div>' +
+      askHTML() +
+      '<div class="add-actions wide"><button type="submit" class="add">' + (pen ? "Add this block" : "Add this log") + '</button>' +
+        '<button type="button" class="add" data-act="cancel-add">Cancel</button></div>' +
+      '<p class="quiet wide">' + (pen
+        ? "A start and an end paint with " + esc(pen.name) + ". A duration alone writes a log."
+        : "No pen is linked. This writes a time log.") +
+        " Any two of start, end, and duration fill in the third.</p>" +
+      (draft.error ? '<p class="quiet wide">' + esc(draft.error) + "</p>" : "") +
+      "</form>";
+  }
+
+  function orderedBlocks() {
+    return blocks.slice().sort(function (a, b) {
+      if (a.date === b.date) return b.start - a.start;
+      return a.date < b.date ? 1 : -1;
+    });
+  }
+
+  function renderBay() {
+    const active = document.activeElement;
+    const focusAct = active && bay.contains(active) ? active.dataset.act : "";
+    const focusId = active && active.id ? active.id : "";
+    const shown = showAll ? orderedBlocks() : orderedBlocks().slice(0, 12);
+    const hidden = blocks.length - shown.length;
+    const list = shown.length
+      ? '<ul class="blocks" aria-label="Blocks of time on this task">' + shown.map(blockHTML).join("") + "</ul>"
+      : "";
+    const more = blocks.length > 12
+      ? '<button type="button" class="add" data-act="more">' + (showAll ? "Show fewer" : "+ " + hidden + " more") + "</button>"
+      : "";
+    const logRows = logs.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    const logBlock = logRows.length
+      ? '<div class="logs"><h3>Logged, no painted block</h3><ul class="blocks" aria-label="Time logs without a painted block">' + logRows.map(logHTML).join("") + "</ul></div>"
+      : "";
+    const empty = !blocks.length && !logs.length
+      ? '<p class="quiet">No time is tagged to this yet. A session, the pen clock, or a To Do start writes it here.</p>'
+      : "";
+    bay.innerHTML =
+      '<section class="est" aria-label="Estimated vs actual time">' +
+        "<h3>Estimated vs actual time</h3>" +
+        '<div class="est-grid">' +
+          '<label>Estimated (plan)<input class="field" id="est" type="number" min="0" inputmode="numeric" value="' + esc(String(est)) + '" placeholder="minutes" aria-label="Estimated (plan)"></label>' +
+          '<label>Actual (logged total)<input class="field" id="actual" type="number" readonly value="" aria-label="Actual (logged total)"></label>' +
+        "</div></section>" +
+      '<section class="bay" aria-label="Pens and tracked time">' +
+        "<h3>Pens and tracked time</h3>" +
+        '<div class="chips" data-ui-name="Item pens">' + chipsHTML() + "</div>" +
+        pickerHTML() +
+        '<div data-ui-name="Task time">' +
+          '<p class="total" id="figSentence"></p>' +
+          '<ul class="split" id="figSplit" aria-label="Where the actual minutes sit"></ul>' +
+          '<div class="bar" id="figBar" role="meter" aria-label="Tracked against estimate"></div>' +
+          '<p class="quiet" id="figTrio"></p>' +
+          '<p class="quiet" id="figSources"></p>' +
+          '<p class="quiet" id="figPool"></p>' +
+          empty + list + more + logBlock + addHTML() +
+        "</div></section>";
+    paintFigures();
+    const next = (focusId && document.getElementById(focusId)) ||
+      (focusAct && bay.querySelector('[data-act="' + focusAct + '"]'));
+    if (next && next.focus) next.focus();
+  }
+
+  function paintFigures() {
+    const acc = account();
+    const spent = acc.total;
+    const over = est > 0 && spent > est;
+    const left = est > 0 ? (est >= spent ? fmt(est - spent) + " est left" : fmt(spent - est) + " past est") : "";
+    const sentence = document.getElementById("figSentence");
+    if (!sentence) return;
+    sentence.innerHTML = "<strong>" + fmt(spent) + "</strong> tracked" +
+      (left ? " · <span class=\"" + (over ? "past" : "") + "\">" + esc(left) + "</span>" : "");
+    const split = [];
+    if (acc.unlabeled > 0) split.push("<li>" + fmt(acc.unlabeled) + " on this task only</li>");
+    STEPS.forEach(function (s) {
+      const n = acc.byStep[s.id] || 0;
+      if (n > 0) split.push("<li>" + fmt(n) + " on " + esc(s.name) + "</li>");
+    });
+    document.getElementById("figSplit").innerHTML = split.join("");
+    const bar = document.getElementById("figBar");
+    bar.classList.toggle("is-over", over);
+    bar.setAttribute("aria-valuemin", "0");
+    bar.setAttribute("aria-valuemax", String(est || 0));
+    bar.setAttribute("aria-valuenow", String(Math.min(spent, est || spent)));
+    const width = est > 0 ? Math.min(100, spent / est * 100) : 0;
+    bar.innerHTML = '<span class="fill" style="width:' + width + '%"></span>';
+    const trio = document.getElementById("figTrio");
+    const bits = [];
+    if (spent > 0) bits.push(fmt(spent));
+    if (est > 0) bits.push("est " + est);
+    if (parts() > 0) bits.push("parts " + parts());
+    trio.textContent = bits.join(" · ");
+    trio.setAttribute("aria-label", "Estimate, parts and time spent");
+    const sources = [];
+    if (acc.penMinutes > 0) sources.push(fmt(acc.penMinutes) + " by pen");
+    if (acc.clockMinutes > 0) sources.push(fmt(acc.clockMinutes) + " on the clock");
+    if (acc.logMinutes > 0) sources.push(fmt(acc.logMinutes) + " logged");
+    document.getElementById("figSources").textContent = sources.join(" · ");
+    const pool = document.getElementById("figPool");
+    if (links.indexOf("kiln") !== -1) {
+      pool.hidden = false;
+      pool.textContent = "pen overall 35m (not tagged to this)";
+      pool.title = "Time on the linked pen that is not tagged with this task.";
+    } else {
+      pool.hidden = true;
+      pool.textContent = "";
+    }
+    const actual = document.getElementById("actual");
+    if (actual) actual.value = String(spent);
+    document.querySelectorAll("[data-dur]").forEach(function (node) {
+      const b = blocks.find(function (row) { return row.id === node.dataset.dur; });
+      if (b) node.textContent = fmt(b.end - b.start);
+    });
+    paintLamp();
+  }
+
+  function findBlock(id) { return blocks.find(function (b) { return b.id === id; }); }
+  function findLog(id) { return logs.find(function (l) { return l.id === id; }); }
+  function findObj(block, oid) { return (block.objectives || []).find(function (o) { return o.id === oid; }); }
+
+  function timeAsk(edited, start, end, duration) {
+    const choices = [];
+    function push(label, s, e, d) {
+      if (d < 1 || e <= s || e > 1440 || s < 0) return;
+      choices.push({ label: label, start: hhmm(s), end: hhmm(e), duration: String(d) });
+    }
+    if (edited === "start" && start != null) {
+      if (duration != null) push("Move the end to " + face(start + duration), start, start + duration, duration);
+      if (end != null && end > start) push("Set the duration to " + fmt(end - start), start, end, end - start);
+    } else if (edited === "end" && end != null) {
+      if (duration != null) push("Move the start to " + face(end - duration), end - duration, end, duration);
+      if (start != null && end > start) push("Set the duration to " + fmt(end - start), start, end, end - start);
+    } else if (edited === "duration" && duration != null) {
+      if (start != null) push("Move the end to " + face(start + duration), start, start + duration, duration);
+      if (end != null) push("Move the start to " + face(end - duration), end - duration, end, duration);
+    }
+    if (!choices.length) return null;
+    return { message: "Start, end, and duration no longer match.", choices: choices };
+  }
+
+  function readDraftFrom(el) {
+    const field = el.dataset.field;
+    if (!field) return;
+    draft[field] = el.value;
+  }
+
+  function reconcile(edited) {
+    const s = parseClock(draft.start);
+    const e = parseClock(draft.end);
+    const d = parseDuration(draft.duration);
+    const have = [s, e, d].filter(function (n) { return n != null; }).length;
+    draft.error = "";
+    if (have < 2) { draft.ask = null; return; }
+    if (have === 2) {
+      const filled = s != null && e != null && e > s ? { start: s, end: e, duration: e - s }
+        : s != null && d != null && s + d <= 1440 ? { start: s, end: s + d, duration: d }
+        : e != null && d != null && e - d >= 0 ? { start: e - d, end: e, duration: d }
+        : null;
+      if (!filled || filled.end <= filled.start) {
+        draft.error = "The end is not after the start.";
+        return;
+      }
+      draft.start = hhmm(filled.start);
+      draft.end = hhmm(filled.end);
+      draft.duration = String(filled.duration);
+      draft.ask = null;
+      return;
+    }
+    if (s != null && e != null && d != null && e - s === d) {
+      draft.start = hhmm(s);
+      draft.end = hhmm(e);
+      draft.duration = String(d);
+      draft.ask = null;
+      return;
+    }
+    draft.ask = timeAsk(edited, s, e, d);
+  }
+
+  function commitAdd() {
+    if (draft.ask) { draft.error = "Choose which time to update."; renderBay(); return; }
+    let s = parseClock(draft.start);
+    let en = parseClock(draft.end);
+    let d = parseDuration(draft.duration);
+    const filled = [s, en, d].filter(function (n) { return n != null; }).length;
+    if (filled === 2) {
+      if (s != null && en != null && en > s) d = en - s;
+      else if (s != null && d != null && s + d <= 1440) en = s + d;
+      else if (en != null && d != null && en - d >= 0) s = en - d;
+      else { draft.error = "The end is not after the start."; renderBay(); return; }
+    }
+    if (s != null && en != null && d != null && en - s !== d) {
+      draft.ask = timeAsk("duration", s, en, d);
+      draft.error = "Choose which time to update.";
+      renderBay();
+      return;
+    }
+    const pending = draft.objective.trim();
+    const list = draft.objectives.map(function (item) { return { text: item.text, done: item.done }; });
+    if (pending) list.push({ text: pending, done: true });
+    const step = draft.step || "";
+    const note = draft.note.trim();
+    if (s != null && en != null && en > s && clockPen()) {
+      blocks.push({
+        id: uid("b"), date: draft.date, start: s, end: en, pen: clockPen().id, step: step,
+        label: note || clockPen().name,
+        notes: note,
+        objectives: list.map(function (item) {
+          return obj(uid("o"), item.text, item.done, s, item.done ? en : null, step, false);
+        })
+      });
+    } else if ((d != null && s == null && en == null) || (s != null && en != null && en > s)) {
+      const text = [note].concat(list.map(function (item) { return item.text; })).filter(Boolean).join(" · ");
+      logs.push({
+        id: uid("l"), date: draft.date, start: s, end: en, duration: d || (en - s), step: step, notes: text || "Log"
+      });
+    } else {
+      draft.error = "Enter a duration, or a start and an end.";
+      renderBay();
+      return;
+    }
+    adding = false;
+    draft.objective = "";
+    draft.objectives = [];
+    draft.ask = null;
+    draft.error = "";
+    markDirty();
+    renderBay();
+    status("Time added.");
+  }
+
+  bay.addEventListener("input", function (e) {
+    const t = e.target;
+    if (t.id === "est") {
+      est = Math.max(0, Number.parseInt(t.value, 10) || 0);
+      paintFigures();
+      return;
+    }
+    if (t.id === "penSearch") {
+      penQuery = t.value;
+      const caret = t.selectionStart;
+      renderBay();
+      const again = document.getElementById("penSearch");
+      if (again) {
+        again.focus();
+        if (typeof caret === "number") again.setSelectionRange(caret, caret);
+      }
+      return;
+    }
+    if (t.dataset.act === "draft") { readDraftFrom(t); return; }
+    const id = t.dataset.id;
+    if (t.dataset.act === "label") { const b = findBlock(id); if (b) b.label = t.value; markDirty(); }
+    if (t.dataset.act === "notes") { const b = findBlock(id); if (b) { b.notes = t.value; t.title = t.value; } markDirty(); }
+    if (t.dataset.act === "obj-text") {
+      const b = findBlock(id); const row = b && findObj(b, t.dataset.oid);
+      if (row) row.text = t.value;
+      markDirty();
+    }
+    if (t.dataset.act === "log-notes") { const log = findLog(id); if (log) log.notes = t.value; markDirty(); }
+    if (t.dataset.act === "log-mins") { const log = findLog(id); if (log) log.duration = Math.max(1, Number.parseInt(t.value, 10) || log.duration); }
+  });
+
+  bay.addEventListener("change", function (e) {
+    const t = e.target;
+    const id = t.dataset.id;
+    if (t.dataset.act === "date") {
+      const b = findBlock(id);
+      if (b && t.value) { b.date = t.value; markDirty(); renderBay(); }
+    }
+    if (t.dataset.act === "step") {
+      const b = findBlock(id);
+      if (b) { b.step = t.value; markDirty(); renderBay(); }
+    }
+    if (t.dataset.act === "obj-done") {
+      const b = findBlock(id);
+      const row = b && findObj(b, t.dataset.oid);
+      if (row) {
+        row.done = t.checked;
+        row.completed = t.checked ? b.end : null;
+        markDirty();
+        renderBay();
+      }
+    }
+    if (t.dataset.act === "obj-step") {
+      const b = findBlock(id);
+      const row = b && findObj(b, t.dataset.oid);
+      if (row) { row.step = t.value; if (!t.value) row.finishes = false; markDirty(); renderBay(); }
+    }
+    if (t.dataset.act === "log-date") { const log = findLog(id); if (log && t.value) { log.date = t.value; markDirty(); renderBay(); } }
+    if (t.dataset.act === "log-step") { const log = findLog(id); if (log) { log.step = t.value; markDirty(); renderBay(); } }
+    if (t.dataset.act === "draft" && t.dataset.field === "step") draft.step = t.value;
+    if (t.dataset.act === "draft" && t.dataset.field === "date") draft.date = t.value;
+    if (t.dataset.act === "draft-done") {
+      const row = draft.objectives.find(function (item) { return item.id === t.dataset.oid; });
+      if (row) row.done = t.checked;
+    }
+  });
+
+  bay.addEventListener("focusout", function (e) {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const id = t.dataset.id;
+    if (t.dataset.act === "clock") {
+      const b = findBlock(id);
+      const min = parseClock(t.value);
+      if (!b || min == null) { t.value = b ? face(t.dataset.which === "start" ? b.start : b.end) : t.value; return; }
+      if (t.dataset.which === "start" && min < b.end) b.start = min;
+      if (t.dataset.which === "end" && min > b.start) b.end = min;
+      t.value = face(t.dataset.which === "start" ? b.start : b.end);
+      markDirty();
+      paintFigures();
+    }
+    if (t.dataset.act === "obj-clock") {
+      const b = findBlock(id);
+      const row = b && findObj(b, t.dataset.oid);
+      if (!row) return;
+      if (!t.value.trim() && t.dataset.which === "completed") {
+        row.completed = null;
+        row.done = false;
+        markDirty();
+        renderSoon();
+        return;
+      }
+      const min = parseClock(t.value);
+      if (min == null) return;
+      if (t.dataset.which === "added") row.added = min;
+      else { row.completed = min; row.done = true; }
+      markDirty();
+      renderSoon();
+    }
+    if (t.dataset.act === "log-clock") {
+      const log = findLog(id);
+      if (!log) return;
+      if (!t.value.trim()) {
+        if (t.dataset.which === "start") log.start = null;
+        else log.end = null;
+        markDirty();
+        paintFigures();
+        return;
+      }
+      const min = parseClock(t.value);
+      if (min == null) return;
+      if (t.dataset.which === "start") log.start = min;
+      else log.end = min;
+      if (log.start != null && log.end != null && log.end > log.start) log.duration = log.end - log.start;
+      markDirty();
+      renderSoon();
+    }
+    if (t.dataset.act === "log-mins") {
+      const log = findLog(id);
+      const mins = Number.parseInt(t.value, 10);
+      if (!log || !Number.isFinite(mins) || mins < 1) return;
+      log.duration = mins;
+      if (log.start != null) log.end = Math.min(1440, log.start + mins);
+      markDirty();
+      paintFigures();
+    }
+    if (t.dataset.act === "draft" && (t.dataset.field === "start" || t.dataset.field === "end" || t.dataset.field === "duration")) {
+      readDraftFrom(t);
+      if (t.dataset.field === "duration" && t.value.trim() && parseDuration(t.value) == null) {
+        draft.error = "Duration is minutes, like 90 or 1h 30m.";
+        renderSoon();
+        return;
+      }
+      reconcile(t.dataset.field);
+      renderSoon();
+    }
+  });
+
+  function renderSoon() { setTimeout(renderBay, 0); }
+
+  bay.addEventListener("click", function (e) {
+    const t = e.target.closest("[data-act]");
+    if (!t || !bay.contains(t)) return;
+    const act = t.dataset.act;
+    const id = t.dataset.id;
+    if (act === "sure") { sure = id; renderBay(); }
+    if (act === "delete") { blocks = blocks.filter(function (b) { return b.id !== id; }); sure = null; markDirty(); renderBay(); }
+    if (act === "delete-log") { logs = logs.filter(function (l) { return l.id !== id; }); sure = null; markDirty(); renderBay(); }
+    if (act === "more") { showAll = !showAll; renderBay(); }
+    if (act === "pick") { picking = true; penQuery = ""; renderBay(); const s = document.getElementById("penSearch"); if (s) s.focus(); }
+    if (act === "clock-pen") {
+      if (links[0] === id) return;
+      links = [id].concat(links.filter(function (p) { return p !== id; }));
+      markDirty();
+      renderBay();
+    }
+    if (act === "unlink") {
+      links = links.filter(function (p) { return p !== id; });
+      markDirty();
+      renderBay();
+    }
+    if (act === "link") {
+      if (links.indexOf(id) === -1) links.push(id);
+      picking = false;
+      penQuery = "";
+      markDirty();
+      renderBay();
+    }
+    if (act === "new-pen") {
+      const name = penQuery.trim() || "New pen";
+      const pen = { id: uid("p"), name: name, color: "hsl(" + Math.round(Math.random() * 360) + " 45% 42%)" };
+      pens.push(pen);
+      links.push(pen.id);
+      picking = false;
+      penQuery = "";
+      markDirty();
+      renderBay();
+    }
+    if (act === "add-obj") {
+      const b = findBlock(id);
+      const input = bay.querySelector('[data-act="new-obj"][data-id="' + id + '"]');
+      const text = input ? input.value.trim() : "";
+      if (!b || !text) return;
+      b.objectives.push(obj(uid("o"), text, false, b.start, null, "", false));
+      markDirty();
+      renderBay();
+    }
+    if (act === "obj-x") {
+      const b = findBlock(id);
+      if (!b) return;
+      b.objectives = b.objectives.filter(function (row) { return row.id !== t.dataset.oid; });
+      markDirty();
+      renderBay();
+    }
+    if (act === "finishes") {
+      const b = findBlock(id);
+      const row = b && findObj(b, t.dataset.oid);
+      if (!row) return;
+      row.finishes = !row.finishes;
+      markDirty();
+      renderBay();
+    }
+    if (act === "open-add") { adding = true; renderBay(); }
+    if (act === "cancel-add") { adding = false; draft.ask = null; draft.error = ""; renderBay(); }
+    if (act === "draft-add") {
+      const text = (draft.objective || "").trim();
+      if (!text) return;
+      draft.objectives.push({ id: uid("d"), text: text, done: true });
+      draft.objective = "";
+      renderBay();
+    }
+    if (act === "draft-x") {
+      draft.objectives = draft.objectives.filter(function (item) { return item.id !== t.dataset.oid; });
+      renderBay();
+    }
+    if (act === "ask") {
+      const choice = draft.ask && draft.ask.choices[Number(t.dataset.i)];
+      if (!choice) return;
+      draft.start = choice.start;
+      draft.end = choice.end;
+      draft.duration = choice.duration;
+      draft.ask = null;
+      draft.error = "";
+      renderBay();
+    }
+    if (act === "ask-leave") { draft.ask = null; renderBay(); }
+  });
+
+  bay.addEventListener("submit", function (e) {
+    if (e.target.id === "addForm") { e.preventDefault(); commitAdd(); }
+  });
+  bay.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && picking) { picking = false; penQuery = ""; renderBay(); }
+    if (e.key === "Enter" && e.target.id === "penSearch") {
+      e.preventDefault();
+      const btn = bay.querySelector('[data-act="link"], [data-act="new-pen"]');
+      if (btn) btn.click();
+    }
+    if (e.key === "Enter" && e.target.dataset.act === "new-obj") {
+      e.preventDefault();
+      const btn = e.target.parentElement.querySelector('[data-act="add-obj"]');
+      if (btn) btn.click();
+    }
+    if (e.key === "Enter" && e.target.id === "draftObj") {
+      e.preventDefault();
+      const text = e.target.value.trim();
+      if (!text) return;
+      draft.objectives.push({ id: uid("d"), text: text, done: true });
+      draft.objective = "";
+      renderBay();
+    }
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", function () {
+    dirtyFields = false;
+    savedEst = est;
+    paintLamp();
+    status("Saved.");
+  });
+  document.querySelectorAll("[data-inert]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const kind = btn.dataset.inert;
+      if (kind === "tab") status("This bench stays on Time.");
+      else if (kind === "complete" || kind === "missed" || kind === "delete" || kind === "card") status("Those keys stay on the frame. This bench edits time.");
+      else status("This bench stays on Time.");
+    });
+  });
+
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    el.addEventListener("input", applyChrome);
+    el.addEventListener("change", applyChrome);
+  });
+
+  applyChrome();
+  renderBay();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Lab — To Do</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/Home/ToDo/todo-chrome.css">
+<link rel="stylesheet" href="/components/dvd-transport-keys.css">
+<link rel="stylesheet" href="/components/Home/Habits/percent-led-bar.css">
+<style>
+html, body { height: 100%; }
+body.win95-app {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--chrome-face, #c0c0c0);
+}
+.lab-bench {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 12px;
+  align-items: end;
+  max-height: 34vh;
+  overflow: auto;
+  padding: 8px 12px 10px;
+  background: linear-gradient(180deg, #ececec, #c0c0c0);
+  border-bottom: 2px solid #808080;
+  box-shadow: inset 0 -1px #fff;
+  font-family: Tahoma, "MS Sans Serif", sans-serif;
+  font-size: 11px;
+  color: #111;
+}
+.lab-bench h1, .lab-bench p { grid-column: 1 / -1; }
+.lab-bench h1 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #000080;
+}
+.lab-bench p { margin: 0; line-height: 1.35; }
+.lab-bench label { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.lab-bench select, .lab-bench input[type="range"] { width: 100%; }
+.lab-bench button { justify-self: start; }
+body.win95-app main.lab-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--chrome-face, #c0c0c0);
+  padding: 12px 16px 40px;
+}
+#desk[data-layout="stack"] .todo-fascia-row.is-keys { flex-direction: column; align-items: stretch; }
+#desk[data-layout="stack"] .todo-view-keys { width: 100%; }
+#desk[data-layout="rail"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(17rem, 30vw);
+  align-items: end;
+  column-gap: 12px;
+}
+#desk[data-layout="rail"] .todo-window { min-width: 0; }
+#desk[data-layout="rail"] .todo-desk-plate { margin-top: 0; }
+#desk[data-layout="rail"] .todo-desk-plate img { max-width: 17rem; }
+.todo-fascia[data-layout="stack"] .todo-fascia-row.is-keys { flex-direction: column; align-items: stretch; }
+.todo-view-keys[data-layout="stack"] { grid-auto-flow: row; width: 100%; }
+.todo-load[data-layout="stack"] { flex-direction: column; }
+.todo-ledger[data-layout="stack"] { gap: 10px; }
+.todo-ledger[data-layout="rail"] .todo-table { column-gap: 12px; }
+.todo-desk-plate[data-layout="stack"] img { max-width: 24rem; }
+.todo-desk-plate[data-layout="rail"] { justify-content: flex-start; }
+.todo-desk-plate[data-layout="rail"] img { max-width: 16rem; }
+</style>
+</head>
+<body class="win95-app">
+<aside class="lab-bench" id="bench">
+  <h1>To Do lab</h1>
+  <p>House desk. Controls stay off until you move them. Reset returns this still.</p>
+  <label>Scope
+    <select id="scope">
+      <option value="whole">Whole section</option>
+      <option value="fascia">Fascia</option>
+      <option value="keys">Period keys</option>
+      <option value="load">Load strip</option>
+      <option value="rows">Task rows</option>
+      <option value="plate">Dove plate</option>
+    </select>
+  </label>
+  <label>Type face
+    <select id="face">
+      <option value="house">House</option>
+      <option value="tahoma">Tahoma</option>
+      <option value="serif">Georgia</option>
+      <option value="mono">Mono</option>
+    </select>
+  </label>
+  <label>Type scale <output id="scale-out">1</output>
+    <input id="scale" type="range" min="75" max="140" value="100">
+  </label>
+  <label>Density <output id="density-out">house</output>
+    <input id="density" type="range" min="0" max="100" value="50">
+  </label>
+  <label>Radius <output id="radius-out">house</output>
+    <input id="radius" type="range" min="0" max="100" value="50">
+  </label>
+  <label>Layout
+    <select id="layout">
+      <option value="house">House</option>
+      <option value="stack">Stack</option>
+      <option value="rail">Rail</option>
+    </select>
+  </label>
+  <label>Palette
+    <select id="palette">
+      <option value="house">House</option>
+      <option value="cool">Cool</option>
+      <option value="warm">Warm</option>
+      <option value="dusk">Dusk</option>
+    </select>
+  </label>
+  <button type="button" id="reset">Reset</button>
+</aside>
+<main class="lab-stage">
+  <div class="todo95" id="desk" data-ui-name="To Do">
+    <div class="todo-window">
+      <div class="todo-tabs">
+        <div class="todo-fascia" data-ui-name="To Do fascia">
+          <div class="todo-fascia-row is-screen">
+            <div class="todo-screen">
+              <div class="todo-mark">
+                <img src="/orbs-removebackground/448ae68b9ae037e75aa2fa0533760d31.png" alt="" class="todo-title-orb">
+                <h2>To do today</h2>
+                <span class="todo-mark-count" title="Open">2</span>
+              </div>
+              <button type="button" data-no95 class="todo-load-readout" id="load-toggle" aria-expanded="true" aria-label="Load: 8.3h left · 2h 10m est · fits. Hide the load instrument" title="Time, comfort and scope">
+                <svg class="todo-load-needle" viewBox="0 0 26 14" aria-hidden="true">
+                  <path d="M2 13 A11 11 0 0 1 24 13" fill="none" stroke="#3f9c74" stroke-width="1.5"></path>
+                  <path d="M13 13 L9.8 4.6" stroke="#7dffc4" stroke-width="1.6"></path>
+                  <circle cx="13" cy="13" r="1.6" fill="#7dffc4"></circle>
+                </svg>
+                <span class="todo-load-readout-text">8.3h left · 2h 10m est · fits</span>
+                <span class="todo-load-caret" aria-hidden="true">▴</span>
+              </button>
+            </div>
+            <button type="button" class="todo-gear" data-no95 aria-label="To Do settings" title="To do settings (every view)">
+              <img class="todo-gear-globe" src="/todo/settings-globe.jpg" alt="" aria-hidden="true">
+            </button>
+          </div>
+          <div class="todo-fascia-row is-keys">
+            <div class="todo-period" data-ui-name="Period nameplate">
+              <button type="button" class="todo-btn todo-btn-icon" title="Previous" aria-label="Previous day">‹</button>
+              <h3>Monday, Oct 26, 2026</h3>
+              <button type="button" class="todo-btn todo-btn-icon" title="Next" aria-label="Next day">›</button>
+              <button type="button" class="todo-btn" disabled>Today</button>
+            </div>
+            <div class="todo-span">
+              <span class="todo-span-legend" aria-hidden="true">Span</span>
+              <div class="todo-view-keys" role="tablist" data-ui-name="Period keys">
+                <button type="button" role="tab" class="todo-span-key" data-state="active" aria-selected="true" aria-label="Day">
+                  <span class="todo-span-lamp" aria-hidden="true"></span>
+                  <span class="todo-span-word">Day</span>
+                  <small class="todo-span-sub" aria-hidden="true">Mon 26</small>
+                </button>
+                <button type="button" role="tab" class="todo-span-key" data-state="inactive" aria-selected="false" aria-label="Week">
+                  <span class="todo-span-lamp" aria-hidden="true"></span>
+                  <span class="todo-span-word">Week</span>
+                  <small class="todo-span-sub" aria-hidden="true">Oct 26–Nov 1</small>
+                </button>
+                <button type="button" role="tab" class="todo-span-key" data-state="inactive" aria-selected="false" aria-label="Month">
+                  <span class="todo-span-lamp" aria-hidden="true"></span>
+                  <span class="todo-span-word">Month</span>
+                  <small class="todo-span-sub" aria-hidden="true">October</small>
+                </button>
+                <button type="button" role="tab" class="todo-span-key" data-state="inactive" aria-selected="false" aria-label="Season">
+                  <span class="todo-span-lamp" aria-hidden="true"></span>
+                  <span class="todo-span-word">Season</span>
+                  <small class="todo-span-sub" aria-hidden="true">Winter</small>
+                </button>
+                <button type="button" role="tab" class="todo-span-key" data-state="inactive" aria-selected="false" aria-label="Other">
+                  <span class="todo-span-lamp" aria-hidden="true"></span>
+                  <span class="todo-span-word">Other</span>
+                  <small class="todo-span-sub" aria-hidden="true">named ranges</small>
+                </button>
+              </div>
+            </div>
+            <span class="todo-keys-grow" aria-hidden="true"></span>
+            <div class="todo-actions" role="group" aria-label="Task actions">
+              <button type="button" class="todo-btn todo-cap is-primary todo-add-key" title="New task, or find one in your lists that already exists">+ Add task ▾</button>
+              <span class="todo-actions-pair">
+                <button type="button" class="todo-btn todo-session-key" title="Plan a time box in three tiers and work through it">Session</button>
+                <button type="button" class="todo-btn todo-sessions-key" title="Drafts, parked and done sessions">Sessions</button>
+              </span>
+            </div>
+            <div class="todo-show-keys">
+              <button type="button" data-no95 class="todo-cap is-mod todo-show-key" id="show-key" aria-expanded="false" aria-controls="todo-show-tray" title="Filters: Available now, All tasks, Hide locked, Show next only, Tier, Status, Formula, Open list">
+                <span class="todo-show-lamp" aria-hidden="true"></span>
+                Show
+              </button>
+              <div class="todo-sort-keys" role="group" aria-label="Sort order">
+                <label class="todo-inline-field">
+                  <span class="todo-label" id="todo-sort-label">Sort</span>
+                  <select id="todo-sort" aria-labelledby="todo-sort-label">
+                    <option>Tier</option>
+                    <option selected>Priority</option>
+                    <option>Name</option>
+                    <option>Date created</option>
+                    <option>Date added</option>
+                    <option>Days pushed</option>
+                    <option>Duration</option>
+                  </select>
+                </label>
+                <button type="button" class="todo-btn todo-btn-icon" title="Descending — click for ascending" aria-label="Sort descending" aria-pressed="true">
+                  <svg class="todo-sort-arrow" viewBox="0 0 12 14" aria-hidden="true">
+                    <path d="M6 1.5V12M2 8.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="todo-fascia-tray" id="todo-show-tray" hidden>
+            <div class="todo-filters" aria-label="Filters and sort" data-ui-name="Show / Sort / Pace">
+              <div class="todo-strip-group todo-filters-row" role="group" aria-label="Show">
+                <span class="todo-label">Show</span>
+                <label class="todo-chip" title="Show all tasks"><input type="checkbox"> Available now</label>
+                <label class="todo-chip"><input type="checkbox"> All tasks</label>
+                <label class="todo-chip"><input type="checkbox"> Hide locked</label>
+                <label class="todo-chip"><input type="checkbox"> Show next only</label>
+              </div>
+              <div class="todo-filters-row is-tune">
+                <div class="todo-segment todo-tier-keys" role="radiogroup" aria-label="Step tier">
+                  <span class="todo-label">Tier</span>
+                  <button type="button" role="radio" class="todo-chiclet is-on" aria-checked="true">All</button>
+                  <button type="button" role="radio" class="todo-chiclet" aria-checked="false">B</button>
+                  <button type="button" role="radio" class="todo-chiclet" aria-checked="false">G</button>
+                  <button type="button" role="radio" class="todo-chiclet" aria-checked="false">E</button>
+                </div>
+                <span class="todo-strip-rule" aria-hidden="true"></span>
+                <label class="todo-inline-field">
+                  <span class="todo-label">Status</span>
+                  <select aria-label="Status">
+                    <option>Open</option>
+                    <option>Active &amp; available</option>
+                    <option>Active</option>
+                    <option>Partial</option>
+                    <option>Deferred</option>
+                    <option>Cancelled</option>
+                    <option>All</option>
+                  </select>
+                </label>
+                <span class="todo-strip-rule" aria-hidden="true"></span>
+                <button type="button" class="todo-btn">Formula</button>
+                <button type="button" class="todo-btn todo-open-list" title="Open To do 10/26 in Lists">Open list</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="todo-stage">
+          <div class="todo-body">
+            <div role="tabpanel" data-state="active">
+              <div class="todo-sheet" data-ui-name="Period sheet">
+                <h3 class="todo-sheet-title">Today's Tasks</h3>
+                <div class="todo-load todo-ldi" id="load-strip" aria-label="Period load" data-ui-name="Period load">
+                  <div class="todo-ldi-well is-time">
+                    <div class="todo-ldi-lab">
+                      <span>Time · working day</span>
+                      <span>now 14:40</span>
+                    </div>
+                    <svg class="todo-ldi-scale" viewBox="0 0 300 50" preserveAspectRatio="none" aria-hidden="true">
+                      <defs>
+                        <pattern id="todo-ldi-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                          <line x1="0" y1="0" x2="0" y2="4" stroke="#8e9296" stroke-width="1.2"></line>
+                        </pattern>
+                      </defs>
+                      <rect x="12" y="9" width="122.7" height="12" fill="url(#todo-ldi-hatch)" stroke="#8e9296" stroke-width=".6"></rect>
+                      <rect x="134.7" y="7" width="153.3" height="16" fill="rgba(61,255,138,.28)" stroke="#2c9e5a" stroke-width=".8"></rect>
+                      <rect x="134.7" y="11" width="39.9" height="8" fill="#9ad7ff" stroke="#3d7fa8" stroke-width=".8"></rect>
+                      <line x1="12" y1="24" x2="288" y2="24" stroke="#2a2c2e" stroke-width=".9"></line>
+                      <g stroke="#2a2c2e" stroke-width=".7">
+                        <line x1="12" y1="24" x2="12" y2="33"></line>
+                        <line x1="30.4" y1="24" x2="30.4" y2="28"></line>
+                        <line x1="48.8" y1="24" x2="48.8" y2="28"></line>
+                        <line x1="67.2" y1="24" x2="67.2" y2="33"></line>
+                        <line x1="85.6" y1="24" x2="85.6" y2="28"></line>
+                        <line x1="104" y1="24" x2="104" y2="28"></line>
+                        <line x1="122.4" y1="24" x2="122.4" y2="33"></line>
+                        <line x1="140.8" y1="24" x2="140.8" y2="28"></line>
+                        <line x1="159.2" y1="24" x2="159.2" y2="28"></line>
+                        <line x1="177.6" y1="24" x2="177.6" y2="33"></line>
+                        <line x1="196" y1="24" x2="196" y2="28"></line>
+                        <line x1="214.4" y1="24" x2="214.4" y2="28"></line>
+                        <line x1="232.8" y1="24" x2="232.8" y2="33"></line>
+                        <line x1="251.2" y1="24" x2="251.2" y2="28"></line>
+                        <line x1="269.6" y1="24" x2="269.6" y2="28"></line>
+                        <line x1="288" y1="24" x2="288" y2="33"></line>
+                      </g>
+                      <g font-family="w95fa, monospace" font-size="7" fill="#55595d" text-anchor="middle">
+                        <text x="12" y="44">8</text>
+                        <text x="67.2" y="44">11</text>
+                        <text x="122.4" y="44">14</text>
+                        <text x="177.6" y="44">17</text>
+                        <text x="232.8" y="44">20</text>
+                        <text x="288" y="44">23</text>
+                      </g>
+                      <path d="M134.7 2 L134.7 34" stroke="#a35cff" stroke-width="1.4"></path>
+                      <path d="M131.7 1 L137.7 1 L134.7 5 Z" fill="#a35cff"></path>
+                    </svg>
+                    <div class="todo-ldi-lcd">
+                      <span class="todo-ldi-figure" title="Working hours left before 11pm.">8.3h<small>Working hours left</small></span>
+                      <span class="todo-ldi-figure todo-load-estimate">2h 10m<small>Est hours of work remaining</small><small class="todo-casio-sub">2 tasks</small></span>
+                      <span class="todo-ldi-figure" title="Time already given to these open tasks">0m<small>Spent on these</small></span>
+                    </div>
+                    <div class="todo-ldi-legend">
+                      <span class="todo-ldi-lamp is-green" aria-hidden="true"></span> left
+                      <span class="todo-ldi-lamp is-blue" aria-hidden="true"></span> est
+                      <span class="todo-ldi-lamp is-violet" aria-hidden="true"></span> now
+                    </div>
+                  </div>
+                  <div class="todo-ldi-well is-comfort todo-load-comfort" title="Estimated hours × 2 ÷ working hours left.">
+                    <div class="todo-ldi-lab"><span>Comfort</span><span>manageable</span></div>
+                    <div class="todo-ldi-crt">
+                      <svg class="todo-ldi-dial" viewBox="0 0 120 120" role="img" aria-label="Comfort dial 0.52, manageable">
+                        <defs>
+                          <linearGradient id="todo-dial-mil" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#eef1f3"></stop>
+                            <stop offset=".35" stop-color="#8e9399"></stop>
+                            <stop offset=".55" stop-color="#d4d8dc"></stop>
+                            <stop offset="1" stop-color="#3c4044"></stop>
+                          </linearGradient>
+                          <radialGradient id="todo-dial-glass" cx="42%" cy="36%" r="70%">
+                            <stop offset="0" stop-color="#0d1614"></stop>
+                            <stop offset=".7" stop-color="#030605"></stop>
+                            <stop offset="1" stop-color="#000"></stop>
+                          </radialGradient>
+                          <radialGradient id="todo-dial-pearl" cx="36%" cy="32%" r="70%">
+                            <stop offset="0" stop-color="#ffffff"></stop>
+                            <stop offset=".3" stop-color="#eef0f6"></stop>
+                            <stop offset=".65" stop-color="#c3c6d4"></stop>
+                            <stop offset=".88" stop-color="#9ea6bd"></stop>
+                            <stop offset="1" stop-color="#d9e6f2"></stop>
+                          </radialGradient>
+                          <filter id="todo-dial-bloom" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="1.6"></feGaussianBlur></filter>
+                        </defs>
+                        <circle cx="60" cy="60" r="58.5" fill="url(#todo-dial-mil)" stroke="#2a2c2e" stroke-width="1"></circle>
+                        <circle cx="60" cy="60" r="55" fill="none" stroke="#5c6064" stroke-width="2.4" stroke-dasharray=".8 1.1" opacity=".55"></circle>
+                        <circle cx="60" cy="60" r="52.5" fill="url(#todo-dial-glass)" stroke="#1a1c1e" stroke-width="1.2"></circle>
+                        <circle cx="60" cy="60" r="50.6" fill="none" stroke="#9ad7ff" stroke-width=".5" opacity=".35"></circle>
+                        <g class="todo-dial-sweep" fill="none" stroke="#9ad7ff" stroke-width=".35" opacity=".22">
+                          <circle cx="66" cy="60" r="30"></circle>
+                          <circle cx="54" cy="60" r="30"></circle>
+                          <circle cx="60" cy="60" r="34" stroke-dasharray="1 5"></circle>
+                        </g>
+                        <g shape-rendering="crispEdges">
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-128.3 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-121.7 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-115.1 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-108.6 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-102 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-95.4 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-88.8 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-82.3 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-75.7 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-69.1 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-62.5 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-55.9 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-49.3 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-42.8 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-36.2 60 60)" fill="#5dff9a" class="is-lit"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-29.6 60 60)" fill="#173a26"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-23 60 60)" fill="#173a26"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-16.5 60 60)" fill="#173a26"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-9.9 60 60)" fill="#173a26"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(-3.3 60 60)" fill="#173a26"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(3.3 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(9.9 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(16.4 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(23 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(29.6 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(36.2 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(42.8 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(49.3 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(55.9 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(62.5 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(69.1 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(75.7 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(82.3 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(88.8 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(95.4 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(102 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(108.6 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(115.2 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(121.7 60 60)" fill="#1a3343"></rect>
+                          <rect x="57.8" y="14.4" width="4.4" height="5.2" transform="rotate(128.3 60 60)" fill="#1a3343"></rect>
+                        </g>
+                        <g class="todo-dial-halo"><circle cx="38.34" cy="22.86" r="8" fill="#cfe9ff" opacity=".45" filter="url(#todo-dial-bloom)"></circle></g>
+                        <circle cx="38.34" cy="22.86" r="5.4" fill="url(#todo-dial-pearl)" stroke="#5c6470" stroke-width=".4"></circle>
+                        <circle cx="36.54" cy="20.96" r="1.2" fill="#fff" opacity=".9"></circle>
+                        <text x="60" y="66" text-anchor="middle" font-family="w95fa, monospace" font-size="17" letter-spacing=".5" fill="#5dff9a" filter="url(#todo-dial-bloom)" opacity=".7">0.52×</text>
+                        <text x="60" y="66" text-anchor="middle" font-family="w95fa, monospace" font-size="17" letter-spacing=".5" fill="#b9ffd6">0.52×</text>
+                        <text x="60" y="77" text-anchor="middle" font-family="w95fa, monospace" font-size="7" letter-spacing=".3" fill="#3f9c74">est×2 ÷ left</text>
+                      </svg>
+                      <div class="todo-ldi-crt-side">
+                        <span class="todo-ldi-crt-lcd">fits · 3h 58m spare</span>
+                        <ul class="todo-ldi-crt-legend" aria-label="Comfort 0.52 · manageable">
+                          <li class="is-on"><i style="--c:#5dff9a" aria-hidden="true"></i>manageable</li>
+                          <li><i style="--c:#9ad7ff" aria-hidden="true"></i>overfilled</li>
+                          <li><i style="--c:#b48cff" aria-hidden="true"></i>more than fits</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="todo-ldi-well is-scope todo-load-scope">
+                    <div class="todo-ldi-lab"><span>Scope</span><span>counts toward load</span></div>
+                    <div class="todo-ldi-pearls" role="group" aria-label="Estimated time filter">
+                      <button type="button" data-no95 class="todo-ldi-pearl is-lit" aria-pressed="true" aria-label="All assigned"><i class="todo-ldi-pearl-bead" aria-hidden="true"></i><span>All assigned</span></button>
+                      <button type="button" data-no95 class="todo-ldi-pearl" aria-pressed="false" aria-label="Required"><i class="todo-ldi-pearl-bead" aria-hidden="true"></i><span>Required</span></button>
+                      <button type="button" data-no95 class="todo-ldi-pearl" aria-pressed="false" aria-label="Required + prioritized"><i class="todo-ldi-pearl-bead" aria-hidden="true"></i><span>Required + prioritized</span></button>
+                    </div>
+                    <div class="todo-ldi-pips" title="Under the soft cap">
+                      <span class="todo-ldi-pips-lab">In progress</span>
+                      <i class="todo-ldi-pip" aria-hidden="true"></i>
+                      <i class="todo-ldi-pip" aria-hidden="true"></i>
+                      <i class="todo-ldi-pip" aria-hidden="true"></i>
+                      <span class="todo-ldi-pips-num">0 of cap 3</span>
+                    </div>
+                    <div class="todo-ldi-lcds">
+                      <div><small>Required</small><b class="todo-ldi-mini-lcd">40m</b></div>
+                      <div><small>Assigned</small><b class="todo-ldi-mini-lcd">1h 30m</b></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="todo-ledger">
+                  <section class="todo-band is-required" role="region" aria-label="Required" data-ui-name="Required">
+                    <h4 class="todo-list-title is-required">Required <span class="todo-list-count">1</span></h4>
+                    <div class="todo-table" role="table">
+                      <div class="todo-table-head" role="row">
+                        <span class="todo-table-head-name">Task</span>
+                        <span class="todo-table-head-cell" title="Tier">Tier</span>
+                        <span class="todo-table-head-cell" title="Active or in progress">State</span>
+                        <span class="todo-table-head-cell" title="Share of steps finished">Done</span>
+                        <span class="todo-table-head-cell" title="Minutes that count">Time</span>
+                        <span class="todo-table-head-cell" title="Steps finished of all steps">Steps</span>
+                        <span class="todo-table-head-verbs">Actions</span>
+                        <span class="todo-table-head-push" title="Pushes">Pushes</span>
+                      </div>
+                      <div class="todo-row" role="row">
+                        <div class="todo-row-closed">
+                          <div class="todo-row-nameplate">
+                            <button type="button" class="todo-row-name" data-no95 title="Reply to June">Reply to June</button>
+                          </div>
+                          <span class="todo-cell todo-cell-tier">
+                            <select class="todo-nixie" aria-label="Tier for Reply to June">
+                              <option>A+</option><option>A</option><option>A/B</option><option selected>B</option><option>C</option><option>D</option>
+                            </select>
+                          </span>
+                          <span class="todo-cell todo-cell-state">
+                            <button type="button" class="todo-status-lamp is-live" aria-label="Active"><span class="todo-status-pip" aria-hidden="true"></span></button>
+                          </span>
+                          <span class="todo-cell todo-cell-done todo-row-mins" title="0% complete">
+                            <span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Complete 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8">
+                              <span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span>
+                              <span class="hab-pled-bar-read">0%</span>
+                            </span>
+                          </span>
+                          <span class="todo-cell todo-cell-time" title="40 minutes that count"><span class="todo-mins-read">40</span></span>
+                          <span class="todo-cell todo-cell-steps"><span class="todo-cell-blank">–</span></span>
+                          <div class="todo-row-verbs" role="toolbar" aria-label="Task actions">
+                            <button type="button" class="todo-card-key" data-no95 title="Open task card" aria-label="Open task card for Reply to June">
+                              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"></path></svg>
+                            </button>
+                            <button type="button" class="dvd-key todo-row-clock" data-dvd-mark="play" aria-label="Working on Reply to June now — start its pen clock" title="Working on Reply to June now — start its pen clock">
+                              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">
+                                <g class="dvd-key-lip" transform="translate(0 0.7)"><polygon points="6.35,2.85 14.15,8 6.35,13.15"></polygon></g>
+                                <g class="dvd-key-ink"><polygon points="6.35,2.85 14.15,8 6.35,13.15"></polygon></g>
+                              </svg>
+                            </button>
+                          </div>
+                          <span class="todo-cell todo-cell-push"><span class="todo-push-tube is-zero" title="Pushed ×0">0</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="todo-band is-assigned" role="region" aria-label="Assigned" data-ui-name="Assigned">
+                    <div class="todo-assigned-bar">
+                      <h4 class="todo-list-title">Assigned <span class="todo-list-count">1</span></h4>
+                      <label class="todo-search">
+                        <span class="todo-visually-hidden">Search</span>
+                        <input type="search" placeholder="Search assigned tasks" aria-label="Search assigned tasks">
+                      </label>
+                    </div>
+                    <div class="todo-table" role="table">
+                      <div class="todo-table-head" role="row">
+                        <span class="todo-table-head-name">Task</span>
+                        <span class="todo-table-head-cell">Tier</span>
+                        <span class="todo-table-head-cell">State</span>
+                        <span class="todo-table-head-cell">Done</span>
+                        <span class="todo-table-head-cell">Time</span>
+                        <span class="todo-table-head-cell">Steps</span>
+                        <span class="todo-table-head-verbs">Actions</span>
+                        <span class="todo-table-head-push">Pushes</span>
+                      </div>
+                      <div class="todo-row" role="row">
+                        <div class="todo-row-closed">
+                          <div class="todo-row-nameplate">
+                            <button type="button" class="todo-row-name" data-no95 title="Mend the dove plate">Mend the dove plate</button>
+                          </div>
+                          <span class="todo-cell todo-cell-tier">
+                            <select class="todo-nixie" aria-label="Tier for Mend the dove plate">
+                              <option>A+</option><option selected>A</option><option>A/B</option><option>B</option><option>C</option><option>D</option>
+                            </select>
+                          </span>
+                          <span class="todo-cell todo-cell-state">
+                            <button type="button" class="todo-status-lamp is-live" aria-label="Active"><span class="todo-status-pip" aria-hidden="true"></span></button>
+                          </span>
+                          <span class="todo-cell todo-cell-done todo-row-mins" title="0% complete">
+                            <span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Complete 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8">
+                              <span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span>
+                              <span class="hab-pled-bar-read">0%</span>
+                            </span>
+                          </span>
+                          <span class="todo-cell todo-cell-time" title="90 minutes that count"><span class="todo-mins-read">1h30</span></span>
+                          <span class="todo-cell todo-cell-steps"><span class="todo-cell-blank">–</span></span>
+                          <div class="todo-row-verbs" role="toolbar" aria-label="Task actions">
+                            <button type="button" class="todo-card-key" data-no95 title="Open task card" aria-label="Open task card for Mend the dove plate">
+                              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9 2h5v5M14 2 7.5 8.5M12 9.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"></path></svg>
+                            </button>
+                            <button type="button" class="dvd-key todo-row-clock" data-dvd-mark="play" aria-label="Working on Mend the dove plate now — start its pen clock" title="Working on Mend the dove plate now — start its pen clock">
+                              <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">
+                                <g class="dvd-key-lip" transform="translate(0 0.7)"><polygon points="6.35,2.85 14.15,8 6.35,13.15"></polygon></g>
+                                <g class="dvd-key-ink"><polygon points="6.35,2.85 14.15,8 6.35,13.15"></polygon></g>
+                              </svg>
+                            </button>
+                          </div>
+                          <span class="todo-cell todo-cell-push"><span class="todo-push-tube is-zero" title="Pushed ×0">0</span></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="todo-composer" data-ui-name="Assigned composer">
+                      <input type="text" class="todo-composer-name" placeholder="Add a task…" aria-label="Add a task">
+                      <select class="todo-nixie" aria-label="Composer tier" title="Tier A">
+                        <option>A+</option><option selected>A</option><option>A/B</option><option>B</option><option>C</option><option>D</option>
+                      </select>
+                      <button type="button" class="todo-btn todo-composer-add">Add</button>
+                      <button type="button" class="todo-btn todo-log-done">Log done</button>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="todo-status" data-ui-name="Status bar">
+        <span>Day view · Monday, Oct 26, 2026</span>
+        <span class="todo-status-count">2 open</span>
+      </div>
+    </div>
+    <div class="todo-desk-plate" data-desk-plate="todo" aria-hidden="true" data-ui-name="To Do plate">
+      <img src="/orbs-removebackground/448ae68b9ae037e75aa2fa0533760d31.png" alt="" draggable="false">
+    </div>
+  </div>
+</main>
+<style id="tune"></style>
+<script>
+(function () {
+  var desk = document.getElementById("desk")
+  var tune = document.getElementById("tune")
+  var ids = ["scope", "face", "scale", "density", "radius", "layout", "palette"]
+  var faces = {
+    tahoma: "Tahoma, \"MS Sans Serif\", sans-serif",
+    serif: "Georgia, \"Iowan Old Style\", Palatino, serif",
+    mono: "ui-monospace, Menlo, monospace"
+  }
+  var palettes = {
+    cool: "hue-rotate(-10deg) saturate(0.94)",
+    warm: "sepia(0.08) saturate(0.96)",
+    dusk: "brightness(0.97) contrast(1.03) saturate(0.9)"
+  }
+  var scopes = {
+    whole: "#desk",
+    fascia: "#desk .todo-fascia",
+    keys: "#desk .todo-view-keys",
+    load: "#desk .todo-load",
+    rows: "#desk .todo-ledger",
+    plate: "#desk .todo-desk-plate"
+  }
+  function clamp(n, a, b) { return Math.min(b, Math.max(a, n)) }
+  function val(id) { return document.getElementById(id).value }
+  function house() {
+    return val("face") === "house" && val("layout") === "house" && val("palette") === "house" &&
+      val("scale") === "100" && val("density") === "50" && val("radius") === "50"
+  }
+  function clearLayout() {
+    desk.querySelectorAll("[data-layout]").forEach(function (el) { el.removeAttribute("data-layout") })
+    desk.removeAttribute("data-layout")
+  }
+  function apply() {
+    var scaleN = Number(val("scale"))
+    var densityN = Number(val("density"))
+    var radiusN = Number(val("radius"))
+    document.getElementById("scale-out").textContent = (clamp(scaleN / 100, 0.9, 1.15)).toFixed(2)
+    document.getElementById("density-out").textContent = densityN === 50 ? "house" : (clamp(0.94 + densityN / 100 * 0.12, 0.94, 1.06)).toFixed(2)
+    document.getElementById("radius-out").textContent = radiusN === 50 ? "house" : String(clamp(Math.round(4 + radiusN / 100 * 6), 4, 10)) + "px"
+    clearLayout()
+    if (house()) { tune.textContent = ""; return }
+    var sel = scopes[val("scope")] || "#desk"
+    var node = document.querySelector(sel)
+    var rules = []
+    var decls = []
+    if (val("face") !== "house") decls.push("font-family:" + faces[val("face")])
+    if (scaleN !== 100) decls.push("font-size:calc(12px * " + clamp(scaleN / 100, 0.9, 1.15) + ")")
+    if (densityN !== 50) decls.push("zoom:" + clamp(0.94 + densityN / 100 * 0.12, 0.94, 1.06))
+    if (val("palette") !== "house") decls.push("filter:" + palettes[val("palette")])
+    if (decls.length) rules.push(sel + "{" + decls.join(";") + "}")
+    if (radiusN !== 50 && node) {
+      var r = clamp(Math.round(4 + radiusN / 100 * 6), 4, 10)
+      rules.push(sel + ", " + sel + " .todo-row, " + sel + " .todo-cap, " + sel + " button, " + sel + " input, " + sel + " select{border-radius:" + r + "px}")
+    }
+    if (val("layout") !== "house" && node) node.setAttribute("data-layout", val("layout"))
+    tune.textContent = rules.join("\n")
+  }
+  ids.forEach(function (id) { document.getElementById(id).addEventListener("input", apply) })
+  document.getElementById("reset").addEventListener("click", function () {
+    document.getElementById("scope").value = "whole"
+    document.getElementById("face").value = "house"
+    document.getElementById("scale").value = "100"
+    document.getElementById("density").value = "50"
+    document.getElementById("radius").value = "50"
+    document.getElementById("layout").value = "house"
+    document.getElementById("palette").value = "house"
+    document.getElementById("todo-show-tray").hidden = true
+    document.getElementById("show-key").setAttribute("aria-expanded", "false")
+    document.getElementById("load-strip").hidden = false
+    document.getElementById("load-toggle").setAttribute("aria-expanded", "true")
+    document.querySelector(".todo-load-caret").textContent = "▴"
+    apply()
+  })
+  document.getElementById("show-key").addEventListener("click", function () {
+    var tray = document.getElementById("todo-show-tray")
+    tray.hidden = !tray.hidden
+    this.setAttribute("aria-expanded", String(!tray.hidden))
+  })
+  document.getElementById("load-toggle").addEventListener("click", function () {
+    var strip = document.getElementById("load-strip")
+    strip.hidden = !strip.hidden
+    var open = !strip.hidden
+    this.setAttribute("aria-expanded", String(open))
+    document.querySelector(".todo-load-caret").textContent = open ? "▴" : "▾"
+  })
+  apply()
+})()
+</script>
+</body>
+</html>

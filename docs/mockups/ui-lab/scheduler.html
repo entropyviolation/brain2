@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler UI Lab</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/Scheduler/scheduler-chrome.css">
+<style>
+  html, body { margin: 0; min-height: 100%; background: #1a1c1e; color: #e6e4df; }
+  .lab {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+    align-items: start;
+    font-family: Tahoma, "Segoe UI", sans-serif;
+    font-size: 12px;
+  }
+  .bench {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    padding: 10px;
+    background: #2a2c2e;
+    color: #e6e4df;
+    box-shadow: inset 0 0 0 1px #4a4e52;
+  }
+  .bench h1 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lab-sections { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
+  .lab-sections a {
+    color: #c8e8d8;
+    text-decoration: none;
+    padding: 2px 5px;
+    box-shadow: inset 0 0 0 1px #4a4e52;
+  }
+  .lab-sections a[aria-current="page"] { background: #070c0a; color: #7dffc4; }
+  .bench label { display: block; margin: 8px 0 2px; }
+  .bench select, .bench input[type="range"], .bench button { width: 100%; }
+  .bench .val { float: right; color: #9aa09c; font-variant-numeric: tabular-nums; }
+  .bench button {
+    margin-top: 12px;
+    padding: 6px 8px;
+    background: #3a3e42;
+    color: #f4f6f8;
+    border: 0;
+    box-shadow: inset 0 0 0 1px #6a6e72;
+    cursor: pointer;
+  }
+  .bench p { margin: 8px 0 0; color: #9aa09c; line-height: 1.35; }
+  .stage {
+    background: #008080;
+    padding: 10px;
+    min-height: calc(100vh - 24px);
+  }
+  .stage [hidden] { display: none !important; }
+  .stage, .stage * { box-sizing: border-box; }
+  .sch95 button { margin: 0; border: 0; background-color: transparent; font-family: inherit; }
+
+  .sch95[data-lab="whole"] {
+    font-family: var(--lab-face, var(--w95-font, Tahoma, sans-serif));
+    font-size: calc(12px * var(--lab-scale, 1));
+    --r-2: var(--lab-r2, 2px);
+    --r-3: var(--lab-r3, 3px);
+  }
+  .sch95[data-lab="whole"] .sch-window {
+    gap: calc(6px * var(--lab-density, 1));
+    padding: calc(3px * var(--lab-density, 1));
+  }
+  .sch95[data-lab="fascia"] .sch-title-bar,
+  .sch95[data-lab="fascia"] .sch-toolbar,
+  .sch95[data-lab="fascia"] .sch-address,
+  .sch95[data-lab="fascia"] .sch-status {
+    font-family: var(--lab-face, inherit);
+    --r-2: var(--lab-r2, 2px);
+    --r-3: var(--lab-r3, 3px);
+  }
+  .sch95[data-lab="fascia"] .sch-mark h2 { font-size: calc(16px * var(--lab-scale, 1)); }
+  .sch95[data-lab="fascia"] .sch-btn { font-size: calc(11px * var(--lab-scale, 1)); }
+  .sch95[data-lab="fascia"] .sch-title-bar,
+  .sch95[data-lab="fascia"] .sch-toolbar,
+  .sch95[data-lab="fascia"] .sch-address {
+    padding-top: calc(6px * var(--lab-density, 1));
+    padding-bottom: calc(6px * var(--lab-density, 1));
+  }
+  .sch95[data-lab="keys"] .sch-period-tabs {
+    font-family: var(--lab-face, inherit);
+    gap: calc(4px * var(--lab-density, 1));
+    padding: calc(4px * var(--lab-density, 1));
+    --r-2: var(--lab-r2, 2px);
+    --r-3: var(--lab-r3, 3px);
+  }
+  .sch95[data-lab="keys"] .sch-period-tabs [role="tab"] {
+    font-size: calc(11px * var(--lab-scale, 1));
+    min-height: calc(28px * var(--lab-density, 1));
+  }
+  .sch95[data-lab="cards"] .sch-bucket-card,
+  .sch95[data-lab="cards"] .sch-bucket-grid .sch-bucket {
+    font-family: var(--lab-face, inherit);
+    --r-2: var(--lab-r2, 2px);
+    --r-3: var(--lab-r3, 3px);
+  }
+  .sch95[data-lab="cards"] .sch-bucket-card .sch-bucket-title,
+  .sch95[data-lab="cards"] .sch-task-title { font-size: calc(12px * var(--lab-scale, 1)); }
+  .sch95[data-lab="cards"] .sch-always-cards { gap: calc(8px * var(--lab-density, 1)); }
+  .sch95[data-lab="cards"] .sch-bucket-card { min-height: calc(6.75rem * var(--lab-density, 1)); }
+  .sch95[data-lab="cards"] .sch-task { min-height: calc(28px * var(--lab-density, 1)); }
+
+  .sch95[data-layout="stack"][data-lab="whole"] .sch-split { grid-template-columns: 1fr; }
+  .sch95[data-layout="stack"][data-lab="whole"] .sch-always-cards,
+  .sch95[data-layout="stack"][data-lab="cards"] .sch-always-cards { grid-template-columns: 1fr; }
+  .sch95[data-layout="stack"][data-lab="keys"] .sch-period-tabs { flex-wrap: wrap; }
+  .sch95[data-layout="stack"][data-lab="keys"] .sch-period-tabs [role="tab"] { flex: 1 1 30%; }
+  .sch95[data-layout="stack"][data-lab="fascia"] .sch-view-keys { flex: 1 1 100%; }
+  .sch95[data-layout="compact"][data-lab="whole"] .sch-split { grid-template-columns: 12rem minmax(0, 1fr); }
+  .sch95[data-layout="compact"][data-lab="cards"] .sch-bucket-card { min-height: 5rem; }
+  .sch95[data-layout="compact"][data-lab="keys"] .sch-period-tabs [role="tab"] { letter-spacing: 0.04em; padding-left: 4px; padding-right: 4px; }
+  .sch95[data-layout="compact"][data-lab="fascia"] .sch-toolbar { gap: 4px; padding-left: 6px; padding-right: 6px; }
+  .sch95[data-layout="airy"][data-lab="whole"] .sch-split { grid-template-columns: 18rem minmax(0, 1fr); gap: 10px; }
+  .sch95[data-layout="airy"][data-lab="cards"] .sch-always-cards { gap: 14px; }
+  .sch95[data-layout="airy"][data-lab="keys"] .sch-period-tabs { gap: 8px; padding: 8px; }
+  .sch95[data-layout="airy"][data-lab="fascia"] .sch-title-bar,
+  .sch95[data-layout="airy"][data-lab="fascia"] .sch-toolbar { padding-left: 14px; padding-right: 14px; }
+
+  .sch95[data-palette="warm"][data-lab="whole"],
+  .sch95[data-palette="warm"][data-lab="fascia"] .sch-title-bar,
+  .sch95[data-palette="warm"][data-lab="fascia"] .sch-toolbar,
+  .sch95[data-palette="warm"][data-lab="fascia"] .sch-address,
+  .sch95[data-palette="warm"][data-lab="fascia"] .sch-status,
+  .sch95[data-palette="warm"][data-lab="keys"] .sch-period-tabs,
+  .sch95[data-palette="warm"][data-lab="cards"] .sch-bucket-card {
+    --chrome-face: #c8b49a; --chrome-mid: #e6d4be; --chrome-hi: #fff8ee; --chrome-lo: #8a7560;
+    --chrome-sheen: #ead8c4; --chrome-shade: #a89078; --chrome-key-sheen: #f3e6d6; --chrome-key-mid: #e0cbb4;
+    --chrome-key-shade: #b89a7c; --chrome-inset: #c4aa90; --chrome-ring: #6e5c4c; --chrome-ring-deep: #5c4c3e;
+    --chrome-nickel: #c8b6a4; --chrome-mill-soft: #d4c0aa; --chrome-grade-sheen: #d2c0ac; --chrome-foot: #b09a84;
+    --chrome-mist: #f4ebe1; --s-surface: #c8b49a; --s-face: #e6d4be; --s-highlight: #fff8ee; --s-shadow: #8a7560;
+    --s-crt: #ffe08a; --s-crt-glow: 0 0 3px #ffe08a; --s-nameplate: #2a241c;
+  }
+  .sch95[data-palette="cool"][data-lab="whole"],
+  .sch95[data-palette="cool"][data-lab="fascia"] .sch-title-bar,
+  .sch95[data-palette="cool"][data-lab="fascia"] .sch-toolbar,
+  .sch95[data-palette="cool"][data-lab="fascia"] .sch-address,
+  .sch95[data-palette="cool"][data-lab="fascia"] .sch-status,
+  .sch95[data-palette="cool"][data-lab="keys"] .sch-period-tabs,
+  .sch95[data-palette="cool"][data-lab="cards"] .sch-bucket-card {
+    --chrome-face: #b7c3cc; --chrome-mid: #d5e0e6; --chrome-hi: #f7fbff; --chrome-lo: #6e7c88;
+    --chrome-sheen: #d4e2ea; --chrome-shade: #8ea0ac; --chrome-key-sheen: #eef4f8; --chrome-key-mid: #c9d6de;
+    --chrome-key-shade: #8fa3b0; --chrome-inset: #a8b8c2; --chrome-ring: #4e5e6a; --chrome-ring-deep: #3e4e58;
+    --chrome-nickel: #b4c2cc; --chrome-mill-soft: #c5d2da; --chrome-grade-sheen: #c5d0d8; --chrome-foot: #93a4ae;
+    --chrome-mist: #eef3f6; --s-surface: #b7c3cc; --s-face: #d5e0e6; --s-highlight: #f7fbff; --s-shadow: #6e7c88;
+    --s-crt: #b7e4ff; --s-crt-glow: 0 0 3px #b7e4ff; --s-nameplate: #1c242c;
+  }
+  .sch95[data-palette="paper"][data-lab="whole"],
+  .sch95[data-palette="paper"][data-lab="fascia"] .sch-title-bar,
+  .sch95[data-palette="paper"][data-lab="fascia"] .sch-toolbar,
+  .sch95[data-palette="paper"][data-lab="fascia"] .sch-address,
+  .sch95[data-palette="paper"][data-lab="fascia"] .sch-status,
+  .sch95[data-palette="paper"][data-lab="keys"] .sch-period-tabs {
+    --s-crt: #d7c27a; --s-crt-glow: 0 0 3px #d7c27a; --s-nameplate: #3a3224;
+  }
+  .sch95[data-palette="paper"][data-lab="cards"] .sch-bucket-card,
+  .sch95[data-palette="paper"][data-lab="whole"] .sch-bucket-card { background: #f7f1e4; color: #2c2416; }
+  .sch95[data-palette="dusk"][data-lab="whole"],
+  .sch95[data-palette="dusk"][data-lab="fascia"] .sch-title-bar,
+  .sch95[data-palette="dusk"][data-lab="fascia"] .sch-toolbar,
+  .sch95[data-palette="dusk"][data-lab="fascia"] .sch-address,
+  .sch95[data-palette="dusk"][data-lab="fascia"] .sch-status,
+  .sch95[data-palette="dusk"][data-lab="keys"] .sch-period-tabs,
+  .sch95[data-palette="dusk"][data-lab="cards"] .sch-bucket-card {
+    --chrome-face: #9aa0a4; --chrome-mid: #c4c8cc; --chrome-hi: #eef0f2; --chrome-lo: #5c6064;
+    --chrome-sheen: #b4b8bc; --chrome-shade: #7a8084; --chrome-key-sheen: #d8dcde; --chrome-key-mid: #b0b4b8;
+    --chrome-key-shade: #7c8286; --chrome-inset: #8e9498; --chrome-ring: #3e4448; --chrome-ring-deep: #2e3438;
+    --chrome-nickel: #a0a6aa; --chrome-mill-soft: #b0b6ba; --chrome-grade-sheen: #aeb4b8; --chrome-foot: #80868a;
+    --chrome-mist: #e4e6e8; --s-surface: #9aa0a4; --s-face: #c4c8cc; --s-highlight: #eef0f2; --s-shadow: #5c6064;
+    --s-ink: #111; --s-nameplate: #1c1e20;
+  }
+  .sch95[data-palette="dusk"][data-lab="cards"] .sch-bucket-card { background: #f4f6f8; color: #111; }
+</style>
+</head>
+<body>
+<div class="lab">
+  <aside class="bench">
+    <nav class="lab-sections" aria-label="UI lab sections">
+      <a href="index.html">Index</a>
+      <a href="shell.html">Shell</a>
+      <a href="home.html">Home</a>
+      <a href="lists.html">Lists</a>
+      <a href="docs.html">Docs</a>
+      <a href="scheduler.html" aria-current="page">Scheduler</a>
+      <a href="operations.html">Operations</a>
+      <a href="modules.html">Modules</a>
+      <a href="analytics.html">Analytics</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+    <h1>Scheduler</h1>
+    <label>Scope
+      <select id="scope">
+        <option value="whole">Whole section</option>
+        <option value="fascia">Fascia</option>
+        <option value="keys">Period keys</option>
+        <option value="cards">Cards</option>
+      </select>
+    </label>
+    <label>Type face
+      <select id="face">
+        <option value="house">House</option>
+        <option value="plain">Plain</option>
+        <option value="serif">Serif</option>
+        <option value="mono">Mono</option>
+      </select>
+    </label>
+    <label>Type scale <span class="val" id="scale-val">100</span>
+      <input id="scale" type="range" min="90" max="118" value="100">
+    </label>
+    <label>Density <span class="val" id="density-val">50</span>
+      <input id="density" type="range" min="28" max="72" value="50">
+    </label>
+    <label>Radius <span class="val" id="radius-val">50</span>
+      <input id="radius" type="range" min="0" max="100" value="50">
+    </label>
+    <label>Layout
+      <select id="layout">
+        <option value="house">House</option>
+        <option value="stack">Stack</option>
+        <option value="compact">Compact</option>
+        <option value="airy">Airy</option>
+      </select>
+    </label>
+    <label>Palette
+      <select id="palette">
+        <option value="house">House</option>
+        <option value="warm">Warm mill</option>
+        <option value="cool">Cool mill</option>
+        <option value="paper">Paper</option>
+        <option value="dusk">Dusk</option>
+      </select>
+    </label>
+    <button type="button" id="reset">Reset</button>
+    <p>House values leave the window untouched. Reset clears every override.</p>
+  </aside>
+
+  <div class="stage">
+    <div class="sch95" id="sch">
+      <div class="sch-window">
+        <div class="sch-title-bar">
+          <div class="sch-mark">
+            <img src="/orbs-removebackground/e3fa8d960221b20c0ecf09edfcc6ec12.png" alt="" class="sch-title-orb" width="22" height="22">
+            <h2 id="cap">Scheduler — Funnel</h2>
+          </div>
+          <div class="sch-title-bar-controls" aria-hidden="true">
+            <span class="sch-title-btn">_</span>
+            <span class="sch-title-btn">□</span>
+          </div>
+        </div>
+
+        <div class="sch-toolbar" role="toolbar" aria-label="Scheduler view">
+          <span class="sch-label">View</span>
+          <div class="sch-view-keys" role="group" aria-label="View mode">
+            <button type="button" class="sch-btn" data-view="funnel" aria-pressed="true">Funnel</button>
+            <button type="button" class="sch-btn" data-view="gantt" aria-pressed="false">Gantt</button>
+            <button type="button" class="sch-btn" data-view="graph" aria-pressed="false">Dependencies</button>
+          </div>
+          <div class="sch-period-nav" id="period-nav" hidden>
+            <span class="sch-toolbar-split" aria-hidden="true"></span>
+            <span class="sch-label">Period</span>
+            <button type="button" class="sch-btn sch-btn-icon" aria-label="Previous period">◀</button>
+            <span class="sch-period-nav-label" id="period-label">2026</span>
+            <button type="button" class="sch-btn sch-btn-icon" aria-label="Next period">▶</button>
+            <button type="button" class="sch-btn">Today</button>
+          </div>
+        </div>
+
+        <div class="sch-address">
+          <span class="sch-label">Address</span>
+          <div class="sch-address-field" id="addr">Funnel \ Always</div>
+        </div>
+
+        <div class="sch-funnel" id="funnel">
+          <div class="sch-period-tabs" role="tablist" aria-label="Period">
+            <button type="button" class="sch-period" role="tab" data-period="always" data-state="active" aria-selected="true">Always</button>
+            <button type="button" class="sch-period" role="tab" data-period="year" data-state="inactive" aria-selected="false">Year</button>
+            <button type="button" class="sch-period" role="tab" data-period="quarter" data-state="inactive" aria-selected="false">Season</button>
+            <button type="button" class="sch-period" role="tab" data-period="month" data-state="inactive" aria-selected="false">Month</button>
+            <button type="button" class="sch-period" role="tab" data-period="week" data-state="inactive" aria-selected="false">Week</button>
+            <button type="button" class="sch-period" role="tab" data-period="day" data-state="inactive" aria-selected="false">Day</button>
+          </div>
+          <div class="sch-body" id="funnel-body">
+            <div role="tabpanel" class="sch-funnel" data-period="always" data-state="active">
+              <div class="sch-split">
+                <aside class="sch-pane">
+                  <div class="sch-pane-head">Available Tasks</div>
+                  <div class="sch-pane-tools">
+                    <div class="sch-filters">
+                      <button type="button" class="sch-btn" aria-expanded="false">Filters &amp; Sort</button>
+                    </div>
+                  </div>
+                  <div class="sch-pane-body">
+                    <p class="sch-vacant">0 available</p>
+                  </div>
+                </aside>
+                <div class="sch-always-board">
+                  <p class="sch-hint">Drag onto a card. Today and Tomorrow use the real date. An unfinished past period rolls up one level (day → week → month → year), unless Auto-push is on — then it moves to the next To Do period of the same grain. Gray past cells keep history; × or drag them to clear that placement or move the task live again. Eventually / Later files it on the Next Actions list “eventually”, with no period.</p>
+                  <div class="sch-bucket-grid cols-2 sch-always-cards">
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for This Year.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open This Year">This Year</button></span><span class="sch-bucket-count">0</span></div>
+                      <p class="sch-bucket-empty">Empty</p>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for This Month.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open This Month">This Month</button></span><span class="sch-bucket-count">1</span></div>
+                      <div class="sch-bucket-body">
+                        <div class="sch-task task-item" draggable="true" style="border-left:3px solid #4a7ab5">
+                          <img src="/orbs-removebackground/e80ba1de2fbb364e28dd05dfd563fec1.png" alt="" class="sch-task-orb" width="22" height="22" draggable="false">
+                          <div class="sch-task-main"><p class="sch-task-title">Letters</p><div class="sch-task-meta"><span>40m</span><span>u2</span><span>i5</span></div></div>
+                          <button type="button" class="sch-btn sch-task-x" title="Unschedule">×</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for Next Month.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open Next Month">Next Month</button></span><span class="sch-bucket-count">0</span></div>
+                      <p class="sch-bucket-empty">Empty</p>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for This Week.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open This Week">This Week</button></span><span class="sch-bucket-count">1</span></div>
+                      <div class="sch-bucket-body">
+                        <div class="sch-task task-item" draggable="true" style="border-left:3px solid #c4785a">
+                          <img src="/orbs-removebackground/ea4ab2aa1cdf96918d6b8f7b2d1bfa58.png" alt="" class="sch-task-orb" width="22" height="22" draggable="false">
+                          <div class="sch-task-main"><p class="sch-task-title">Mend the dove</p><div class="sch-task-meta"><span>90m</span><span>u3</span><span>i4</span></div></div>
+                          <button type="button" class="sch-btn sch-task-x" title="Unschedule">×</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for Next Week.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open Next Week">Next Week</button></span><span class="sch-bucket-count">0</span></div>
+                      <p class="sch-bucket-empty">Empty</p>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for Mon, Oct 26.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open Today">Today</button><span class="sch-bucket-sub">Mon, Oct 26</span></span><span class="sch-bucket-count">0</span></div>
+                      <p class="sch-bucket-empty">Empty</p>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Schedules this task for Tue, Oct 27.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open Tomorrow">Tomorrow</button><span class="sch-bucket-sub">Tue, Oct 27</span></span><span class="sch-bucket-count">0</span></div>
+                      <p class="sch-bucket-empty">Empty</p>
+                    </div>
+                    <div class="sch-bucket sch-bucket-card" data-past="false" title="Adds the task to the Next Actions list “eventually”. No year, month, week, or day is set.">
+                      <div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name" aria-label="Open Eventually / Later">Eventually / Later</button></span><span class="sch-bucket-count">1</span></div>
+                      <div class="sch-bucket-body">
+                        <div class="sch-task task-item" draggable="true" style="border-left:3px solid #7d8a62">
+                          <img src="/orbs-removebackground/831b14cbe9d7b991ce4401068aad4966.png" alt="" class="sch-task-orb" width="22" height="22" draggable="false">
+                          <div class="sch-task-main"><p class="sch-task-title">Eventually</p><div class="sch-task-meta"><span>15m</span><span>u1</span><span>i2</span></div></div>
+                          <button type="button" class="sch-btn sch-task-x" title="Unschedule">×</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sch-body" id="doc-body" hidden></div>
+
+        <div class="sch-status">
+          <span>0 available · 2 scheduled</span>
+          <span id="status-side">Always · 8 reserved bucket(s)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var sch = document.getElementById("sch");
+  var faces = {
+    plain: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    serif: 'Georgia, "Times New Roman", serif',
+    mono: '"Courier New", Courier, monospace'
+  };
+  var periods = {
+    always: { addr: "Funnel \\ Always", side: "Always · 8 reserved bucket(s)", nav: null },
+    year: { addr: "Funnel \\ Year \\ 2026", side: "Year · 8 reserved bucket(s)", nav: "2026" },
+    quarter: { addr: "Funnel \\ Season \\ Quarter 2026 Q4 (Winter)", side: "Season · 8 reserved bucket(s)", nav: "Quarter 2026 Q4 (Winter)" },
+    month: { addr: "Funnel \\ Month \\ October 2026", side: "Month · 8 reserved bucket(s)", nav: "October 2026" },
+    week: { addr: "Funnel \\ Week \\ 10/26-11/1", side: "Week · 8 reserved bucket(s)", nav: "10/26-11/1" },
+    day: { addr: "Funnel \\ Day \\ 10/26/26", side: "Day · 8 reserved bucket(s)", nav: "10/26/26" }
+  };
+  var view = "funnel";
+  var period = "always";
+  var letters = task("Letters", 40, 2, 5, "/orbs-removebackground/e80ba1de2fbb364e28dd05dfd563fec1.png", "#4a7ab5");
+  var dove = task("Mend the dove", 90, 3, 4, "/orbs-removebackground/ea4ab2aa1cdf96918d6b8f7b2d1bfa58.png", "#c4785a");
+
+  function task(title, mins, u, i, orb, color) {
+    return '<div class="sch-task task-item" draggable="true" style="border-left:3px solid ' + color + '">'
+      + '<img src="' + orb + '" alt="" class="sch-task-orb" width="22" height="22" draggable="false">'
+      + '<div class="sch-task-main"><p class="sch-task-title">' + title + '</p>'
+      + '<div class="sch-task-meta"><span>' + mins + 'm</span><span>u' + u + '</span><span>i' + i + '</span></div></div>'
+      + '<button type="button" class="sch-btn sch-task-x" title="Unschedule">×</button></div>';
+  }
+
+  function line(title, opts) {
+    opts = opts || {};
+    var cls = "sch-bucket" + (opts.current ? " is-current" : "") + (opts.past ? " is-past" : "");
+    return '<div class="' + cls + '" data-past="' + (opts.past ? "true" : "false") + '">'
+      + '<div class="sch-bucket-line"><span class="sch-bucket-title"><button type="button" class="sch-bucket-name">'+ title + '</button></span>'
+      + (opts.badge ? '<span class="sch-bucket-badge">' + opts.badge + '</span>' : '')
+      + '<span class="sch-bucket-count">' + (opts.body ? "1" : "0") + '</span></div>'
+      + (opts.body ? '<div class="sch-bucket-body">' + opts.body + '</div>' : '')
+      + '</div>';
+  }
+
+  function split(title, vacant, grid) {
+    return '<div class="sch-split"><aside class="sch-pane"><div class="sch-pane-head">' + title + '</div>'
+      + '<div class="sch-pane-body">' + vacant + '</div></aside>' + grid + '</div>';
+  }
+
+  function panel(key) {
+    if (key === "year") {
+      var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return split("Year 2026", '<p class="sch-vacant">0 at this period</p>',
+        '<div class="sch-bucket-grid cols-3">' + months.map(function (name) {
+          return line(name, name === "October" ? { current: true, badge: "Current", body: letters } : {});
+        }).join("") + '</div>');
+    }
+    if (key === "quarter") {
+      return split("Quarter 2026 Q4 (Winter)", '<p class="sch-vacant">0 at this period</p>',
+        '<div class="sch-bucket-grid cols-3">'
+        + line("October", { current: true, badge: "This month", body: letters })
+        + line("November") + line("December") + '</div>');
+    }
+    if (key === "month") {
+      var weeks = [
+        ["Week 9/28-10/4", true], ["Week 10/5-10/11", true], ["Week 10/12-10/18", true],
+        ["Week 10/19-10/25", true], ["Week 10/26-11/1", false], ["Week 11/2-11/8", false]
+      ];
+      return split("Month Tasks", letters,
+        '<div class="sch-bucket-grid cols-2">' + weeks.map(function (row) {
+          var current = row[0] === "Week 10/26-11/1";
+          return line(row[0], { past: row[1], current: current, badge: current ? "This Week" : "", body: current ? dove : "" });
+        }).join("") + '</div>');
+    }
+    if (key === "week") {
+      var days = ["Mon 26","Tue 27","Wed 28","Thu 29","Fri 30","Sat 31","Sun 1"];
+      return split("Week Tasks", dove,
+        '<div class="sch-bucket-grid cols-2">' + days.map(function (name) {
+          return line(name, name === "Mon 26" ? { current: true, badge: "Today" } : {});
+        }).join("") + '</div>');
+    }
+    if (key === "day") {
+      var hours = "";
+      for (var h = 0; h < 24; h++) {
+        var label = (h < 10 ? "0" : "") + h + ":00";
+        hours += '<div class="sch-hour"><div class="sch-hour-label">' + label + '</div><div class="sch-hour-slot"></div></div>';
+      }
+      return '<div class="sch-split"><aside class="sch-pane"><div class="sch-pane-head">Today\'s Tasks</div>'
+        + '<div class="sch-pane-body"><p class="sch-vacant">0 for this day</p></div></aside>'
+        + '<div class="sch-pane"><div class="sch-pane-head"><button type="button" class="sch-bucket-name">Daily Agenda</button></div>'
+        + '<div class="sch-pane-body"><div class="sch-agenda">' + hours + '</div></div></div></div>';
+    }
+    return "";
+  }
+
+  function showPeriod(key) {
+    period = key;
+    document.querySelectorAll("#funnel [role='tab']").forEach(function (tab) {
+      var on = tab.getAttribute("data-period") === key;
+      tab.setAttribute("data-state", on ? "active" : "inactive");
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    var body = document.getElementById("funnel-body");
+    var pane = body.querySelector('[data-period="' + key + '"]');
+    if (!pane && key !== "always") {
+      pane = document.createElement("div");
+      pane.setAttribute("role", "tabpanel");
+      pane.className = "sch-funnel";
+      pane.setAttribute("data-period", key);
+      pane.innerHTML = panel(key);
+      body.appendChild(pane);
+    }
+    body.querySelectorAll("[role='tabpanel']").forEach(function (el) {
+      el.setAttribute("data-state", el.getAttribute("data-period") === key ? "active" : "inactive");
+    });
+    var meta = periods[key];
+    document.getElementById("addr").textContent = meta.addr;
+    document.getElementById("status-side").textContent = meta.side;
+    document.getElementById("period-nav").hidden = !meta.nav;
+    if (meta.nav) document.getElementById("period-label").textContent = meta.nav;
+  }
+
+  function showView(next) {
+    view = next;
+    document.querySelectorAll("[data-view]").forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-view") === next ? "true" : "false");
+    });
+    var funnel = document.getElementById("funnel");
+    var doc = document.getElementById("doc-body");
+    if (next === "funnel") {
+      funnel.hidden = false;
+      doc.hidden = true;
+      document.getElementById("cap").textContent = "Scheduler — Funnel";
+      showPeriod(period);
+      return;
+    }
+    funnel.hidden = true;
+    document.getElementById("period-nav").hidden = true;
+    doc.hidden = false;
+    if (next === "gantt") {
+      document.getElementById("cap").textContent = "Scheduler — Gantt";
+      document.getElementById("addr").textContent = "Gantt";
+      document.getElementById("status-side").textContent = "Gantt document";
+      doc.innerHTML = '<div class="sch-doc sch-doc-frame"><div class="sch-doc-legend"><span>Project length: —</span><span><span class="sch-swatch-crit"></span> Critical path</span><span><span class="sch-swatch-slack"></span> Has slack</span></div><div class="sch-path-empty" role="status">Nothing on the path yet. Link dependencies and a duration estimate.</div></div>';
+    } else {
+      document.getElementById("cap").textContent = "Scheduler — Dependencies";
+      document.getElementById("addr").textContent = "Dependencies";
+      document.getElementById("status-side").textContent = "Dependency document";
+      doc.innerHTML = '<div class="sch-doc sch-doc-frame"><div class="sch-doc-legend"><span>0 tasks</span><span><span class="sch-swatch-crit"></span> Critical</span></div><div class="sch-path-empty" role="status">Nothing on the path yet. Link tasks with dependencies.</div></div>';
+    }
+  }
+
+  document.getElementById("funnel").addEventListener("click", function (event) {
+    var tab = event.target.closest("[data-period]");
+    if (tab) showPeriod(tab.getAttribute("data-period"));
+  });
+  document.querySelector(".sch-view-keys").addEventListener("click", function (event) {
+    var btn = event.target.closest("[data-view]");
+    if (btn) showView(btn.getAttribute("data-view"));
+  });
+
+  function read() {
+    return {
+      scope: document.getElementById("scope").value,
+      face: document.getElementById("face").value,
+      scale: +document.getElementById("scale").value,
+      density: +document.getElementById("density").value,
+      radius: +document.getElementById("radius").value,
+      layout: document.getElementById("layout").value,
+      palette: document.getElementById("palette").value
+    };
+  }
+
+  function dirty(s) {
+    return s.face !== "house" || s.scale !== 100 || s.density !== 50 || s.radius !== 50 || s.layout !== "house" || s.palette !== "house";
+  }
+
+  function apply() {
+    var s = read();
+    document.getElementById("scale-val").textContent = String(s.scale);
+    document.getElementById("density-val").textContent = String(s.density);
+    document.getElementById("radius-val").textContent = String(s.radius);
+    if (!dirty(s)) {
+      sch.removeAttribute("data-lab");
+      sch.removeAttribute("data-layout");
+      sch.removeAttribute("data-palette");
+      ["--lab-face", "--lab-scale", "--lab-density", "--lab-r2", "--lab-r3"].forEach(function (name) {
+        sch.style.removeProperty(name);
+      });
+      return;
+    }
+    var scale = Math.min(1.16, Math.max(0.9, s.scale / 100));
+    var density = Math.min(1.14, Math.max(0.86, 1 + (s.density - 50) / 50 * 0.22));
+    var t = Math.min(1, Math.max(-1, (s.radius - 50) / 50));
+    sch.dataset.lab = s.scope;
+    if (s.layout === "house") sch.removeAttribute("data-layout");
+    else sch.dataset.layout = s.layout;
+    if (s.palette === "house") sch.removeAttribute("data-palette");
+    else sch.dataset.palette = s.palette;
+    if (s.face === "house") sch.style.removeProperty("--lab-face");
+    else sch.style.setProperty("--lab-face", faces[s.face]);
+    sch.style.setProperty("--lab-scale", scale.toFixed(3));
+    sch.style.setProperty("--lab-density", density.toFixed(3));
+    sch.style.setProperty("--lab-r2", Math.min(5, Math.max(1, 2 + t * 2)).toFixed(2) + "px");
+    sch.style.setProperty("--lab-r3", Math.min(7, Math.max(2, 3 + t * 3)).toFixed(2) + "px");
+  }
+
+  ["scope", "face", "scale", "density", "radius", "layout", "palette"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", apply);
+    document.getElementById(id).addEventListener("change", apply);
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    document.getElementById("scope").value = "whole";
+    document.getElementById("face").value = "house";
+    document.getElementById("scale").value = "100";
+    document.getElementById("density").value = "50";
+    document.getElementById("radius").value = "50";
+    document.getElementById("layout").value = "house";
+    document.getElementById("palette").value = "house";
+    apply();
+    showView("funnel");
+    showPeriod("always");
+  });
+})();
+</script>
+</body>
+</html>

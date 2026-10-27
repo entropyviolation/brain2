@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeblock UI Lab</title>
+<style>
+:root {
+  --desk: #008080;
+  --phosphor: #7dffc4;
+  --ink: #2a2c2e;
+  --paper: #c0c0c0;
+  --well: #fff;
+  --section: #d4d6da;
+  --line: #808080;
+  --pen: #c4784a;
+  --face: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  --type: 13px;
+  --title: 13px;
+  --label: 11px;
+  --help: 11px;
+  --title-w: 700;
+  --body-w: 500;
+  --title-track: 0.12em;
+  --label-track: 0.14em;
+  --lh: 1.35;
+  --gap: 12px;
+  --pad: 10px;
+  --sec-pad: 10px;
+  --inner: 6px;
+  --col-gap: 8px;
+  --action-gap: 8px;
+  --chip-gap: 6px;
+  --pop-w: 512px;
+  --dlg-h: 780px;
+  --r: 3px;
+  --ctrl-r: 2px;
+  --bw: 2px;
+  --sh: 0.45;
+  --bevel: 1;
+  --close: 22px;
+  --title-pad: 6px 10px;
+  --mix: 0;
+  --glow: 0;
+  --scan: 0;
+  --clock: 1;
+  --row: 32px;
+  --btn: 32px;
+  --cert: 26px;
+  --swatch: 18px;
+  --chip: 12px;
+  --notes: 52px;
+  --split-w: 7.5rem;
+  --input-pad: 5px 8px;
+  --switch: 22px;
+  --case: uppercase;
+  --align: flex-start;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 13px;
+  background: var(--desk);
+  color: #1a1c1e;
+}
+.lab {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+.lab-panel {
+  background: #c0c0c0;
+  color: #2a2c2e;
+  border: 2px solid;
+  border-color: #fff #808080 #808080 #fff;
+  padding: 10px;
+  align-self: start;
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: #dfffea;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background: rgba(0,0,0,.35);
+}
+.lab-sections a:hover { background: rgba(0,0,0,.5); }
+.lab-sections a[aria-current="page"] { background: #000080; color: #fff; border-color: #000080; }
+.lab-panel h1 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78);
+}
+.lede { margin: 0 0 8px; font-size: 12px; line-height: 1.4; }
+fieldset {
+  border: 1px solid #808080;
+  margin: 0 0 8px;
+  padding: 6px 8px 8px;
+  background: #d8d8d8;
+}
+legend { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 4px; }
+.lab-panel label { display: block; font-size: 11px; margin: 6px 0 2px; }
+.lab-panel label span { float: right; font-variant-numeric: tabular-nums; }
+.lab-panel select, .lab-panel input[type=range] { width: 100%; font: inherit; }
+.stage-wrap { min-width: 0; }
+.kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f4fff8;
+  text-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+.toast {
+  min-height: 1.3em;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #f4fff8;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+.stage-grid {
+  position: relative;
+  min-height: calc(100vh - 48px);
+  display: grid;
+  place-items: center;
+  padding: 28px 16px;
+  background: var(--desk);
+}
+.stage-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--scan);
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.18) 2px, rgba(0,0,0,.18) 3px);
+}
+.editor {
+  position: relative;
+  z-index: 1;
+  width: min(100%, var(--pop-w));
+  max-height: var(--dlg-h);
+  overflow: auto;
+  padding: var(--pad);
+  border-radius: var(--r);
+  border: var(--bw) solid;
+  border-color:
+    color-mix(in srgb, #fff calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #404040 calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #404040 calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #fff calc(var(--bevel) * 100%), var(--line));
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.16) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, color-mix(in srgb, #fff 28%, var(--paper)), var(--paper) 52%, color-mix(in srgb, #000 10%, var(--paper)));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 calc(var(--sh) * 12px) calc(var(--sh) * 28px) rgba(0,0,0, calc(var(--sh) * 0.4));
+  color: var(--ink);
+  font-family: var(--face);
+  font-size: var(--type);
+  font-weight: var(--body-w);
+  line-height: var(--lh);
+}
+.dlg-head { display: flex; align-items: flex-start; gap: var(--inner); margin-bottom: var(--gap); }
+.crt {
+  flex: 1;
+  margin: 0;
+  min-height: 28px;
+  padding: var(--title-pad);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: var(--align);
+  align-items: baseline;
+  gap: 0.2em 0.45em;
+  border-radius: var(--ctrl-r);
+  color: color-mix(in srgb, var(--pen) calc(var(--mix) * 50%), var(--phosphor));
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--phosphor) 16%, transparent), transparent 46%),
+    #070c0a;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pen) calc(var(--mix) * 40%), #000), inset 0 8px 12px rgba(0,0,0,.35);
+  font-size: var(--title);
+  font-weight: var(--title-w);
+  letter-spacing: var(--title-track);
+  text-transform: var(--case);
+  line-height: var(--lh);
+  text-shadow: 0 0 calc(var(--glow) * 10px) var(--phosphor);
+}
+.crt-time { white-space: nowrap; }
+.close {
+  width: var(--close);
+  height: var(--close);
+  flex: 0 0 auto;
+  background: #c0c0c0;
+  color: #111;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #fff #404040 #404040 #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: calc(var(--close) * 0.55);
+  line-height: 1;
+  border-radius: var(--ctrl-r);
+}
+.help { margin: 0; font-size: var(--help); line-height: var(--lh); font-weight: var(--body-w); color: var(--ink); }
+.sec {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--inner);
+  margin-top: var(--gap);
+  padding: var(--sec-pad);
+  border-radius: var(--ctrl-r);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.05), transparent 28%),
+    var(--section);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.5),
+    0 0 0 1px color-mix(in srgb, var(--pen) calc(var(--mix) * 65%), var(--line));
+}
+.sec-title {
+  margin: 0;
+  font-size: var(--label);
+  font-weight: var(--title-w);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+}
+.clock-grid, .cert-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--col-gap); }
+label.field { display: flex; flex-direction: column; gap: calc(var(--inner) * 0.6); font-size: var(--label); font-weight: var(--title-w); letter-spacing: var(--label-track); }
+.editor input, .editor textarea {
+  font: inherit;
+  font-weight: var(--body-w);
+  font-size: var(--type);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  background: var(--well);
+  border: var(--bw) solid;
+  border-color:
+    color-mix(in srgb, #404040 calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #fff calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #fff calc(var(--bevel) * 100%), var(--line))
+    color-mix(in srgb, #404040 calc(var(--bevel) * 100%), var(--line));
+  border-radius: var(--ctrl-r);
+  padding: var(--input-pad);
+  min-height: var(--row);
+  width: 100%;
+  min-width: 0;
+}
+.clock-grid input {
+  min-height: calc(var(--row) * var(--clock));
+  font-size: calc(var(--type) * var(--clock));
+}
+.editor textarea { min-height: var(--notes); resize: vertical; }
+.cert { display: flex; min-width: 0; }
+.cert button {
+  flex: 1;
+  min-height: var(--cert);
+  font: inherit;
+  font-size: var(--label);
+  font-weight: var(--title-w);
+  padding: 2px 4px;
+  cursor: pointer;
+  background: var(--well);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 0;
+}
+.cert button + button { border-left: 0; }
+.cert button:first-child { border-radius: var(--ctrl-r) 0 0 var(--ctrl-r); }
+.cert button:last-child { border-radius: 0 var(--ctrl-r) var(--ctrl-r) 0; }
+.cert button[aria-checked="true"] {
+  background: color-mix(in srgb, var(--pen) calc(var(--mix) * 40%), #1f3a37);
+  color: #e9fff6;
+}
+.edge-option, .door, .keycap, .tag, .pen-chip, .next, .edge-chip, .switch button {
+  font-family: inherit;
+}
+.edge-option, .door {
+  align-self: flex-start;
+  width: auto;
+  min-height: var(--btn);
+  padding: 3px 8px;
+  background: color-mix(in srgb, var(--well) 72%, var(--paper));
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--ctrl-r);
+  cursor: pointer;
+  font-size: var(--type);
+  font-weight: var(--body-w);
+}
+.edge-chip, .next {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--well);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--ctrl-r);
+  font-size: var(--type);
+  font-weight: var(--title-w);
+}
+.next span, .edge-chip span { font-size: var(--help); font-weight: var(--body-w); }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.switch button {
+  flex: 0 0 auto;
+  width: calc(var(--switch) * 1.9);
+  height: var(--switch);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #8a8e92;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+.switch button[aria-checked="true"] { background: #1f3a37; }
+.switch button i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(var(--switch) - 6px);
+  height: calc(var(--switch) - 6px);
+  border-radius: 50%;
+  background: #fff;
+}
+.switch button[aria-checked="true"] i { left: calc(100% - var(--switch) + 4px); }
+.pens, .ticks { display: flex; flex-wrap: wrap; gap: var(--chip-gap); }
+.pen-chip, .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: calc(var(--chip) * 0.25) calc(var(--chip) * 0.7);
+  background: var(--well);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--chip);
+  font-weight: var(--body-w);
+}
+.pen-chip i, .tag i {
+  width: var(--swatch);
+  height: var(--swatch);
+  border-radius: 50%;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+.tag i { width: calc(var(--swatch) * 0.5); height: calc(var(--swatch) * 0.5); }
+.tag { cursor: pointer; }
+.tag[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 0; }
+.tag em { font-style: normal; font-size: 0.75em; letter-spacing: 0.06em; text-transform: uppercase; }
+.pen-chip .star, .pen-chip .x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 2px;
+}
+.add-row { display: flex; gap: var(--chip-gap); align-items: center; }
+.add-row input { flex: 1; }
+.comp { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: var(--chip-gap); align-items: center; font-size: var(--type); }
+.comp-view { font-size: var(--label); font-weight: var(--title-w); letter-spacing: var(--label-track); text-transform: uppercase; }
+.obj { display: flex; gap: 8px; align-items: flex-start; font-size: var(--type); font-weight: var(--body-w); text-transform: none; letter-spacing: 0; }
+.obj input { width: auto; min-height: 0; margin-top: 3px; }
+.obj small { display: block; font-size: var(--help); }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--action-gap);
+  align-items: center;
+  margin-top: var(--gap);
+}
+.split-time { width: var(--split-w); flex: 0 0 auto; }
+.keycap {
+  min-height: var(--btn);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: var(--type);
+  font-weight: var(--title-w);
+  color: #1f2226;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border: 1px solid #6e7378;
+  box-shadow: inset 0 1px 0 #fff;
+  border-radius: var(--ctrl-r);
+  cursor: pointer;
+}
+.keycap.save { flex: 1 1 140px; color: #22306c; box-shadow: inset 0 1px 0 #fff, 0 0 0 2px #22306c; }
+.keycap.danger { color: #7a1c1c; }
+.gone { display: flex; flex-direction: column; gap: var(--inner); align-items: flex-start; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #7dffc4;
+  outline-offset: 2px;
+}
+@media (max-width: 860px) {
+  .lab { grid-template-columns: 1fr; }
+  .lab-panel { position: relative; top: 0; max-height: none; }
+}
+</style>
+</head>
+<body>
+<div class="lab">
+  <aside class="lab-panel" id="controls">
+    <nav class="lab-sections" aria-label="UI lab sections">
+      <a href="index.html">Index</a>
+      <a href="shell.html">Shell</a>
+      <a href="home.html">Home</a>
+      <a href="lists.html">Lists</a>
+      <a href="docs.html">Docs</a>
+      <a href="scheduler.html">Scheduler</a>
+      <a href="operations.html">Ops</a>
+      <a href="timeblock.html" aria-current="page">Timeblock</a>
+    </nav>
+    <h1>Timeblock lab</h1>
+    <p class="lede">Tracking entry. The block editor, as it opens from the grid. One dialog.</p>
+    <fieldset>
+      <legend>Type</legend>
+      <label for="font">Font</label>
+      <select id="font">
+        <option value="house" selected>House (Tahoma / MS Sans Serif)</option>
+        <option value="karla">Karla stand-in (Avenir / Segoe)</option>
+        <option value="verdana">Verdana</option>
+        <option value="trebuchet">Trebuchet</option>
+        <option value="georgia">Georgia</option>
+        <option value="mono">Courier</option>
+        <option value="round">Avenir / Segoe</option>
+      </select>
+      <label for="titleCase">Title case</label>
+      <select id="titleCase">
+        <option value="upper" selected>Uppercase</option>
+        <option value="none">As written</option>
+      </select>
+      <label for="titleAlign">Title align</label>
+      <select id="titleAlign">
+        <option value="start" selected>Start</option>
+        <option value="center">Center</option>
+      </select>
+      <label for="typeSize">Type size <span id="v-typeSize">13</span></label>
+      <input id="typeSize" type="range" min="11" max="20" value="13">
+      <label for="titleSize">Title size <span id="v-titleSize">13</span></label>
+      <input id="titleSize" type="range" min="11" max="22" value="13">
+      <label for="labelSize">Label size <span id="v-labelSize">11</span></label>
+      <input id="labelSize" type="range" min="9" max="16" value="11">
+      <label for="helpSize">Help size <span id="v-helpSize">11</span></label>
+      <input id="helpSize" type="range" min="10" max="16" value="11">
+      <label for="titleWeight">Title weight <span id="v-titleWeight">700</span></label>
+      <input id="titleWeight" type="range" min="400" max="800" step="50" value="700">
+      <label for="bodyWeight">Body weight <span id="v-bodyWeight">500</span></label>
+      <input id="bodyWeight" type="range" min="400" max="700" step="50" value="500">
+      <label for="titleTrack">Title tracking <span id="v-titleTrack">12</span></label>
+      <input id="titleTrack" type="range" min="0" max="28" value="12">
+      <label for="labelTrack">Label tracking <span id="v-labelTrack">14</span></label>
+      <input id="labelTrack" type="range" min="0" max="28" value="14">
+      <label for="lineHeight">Line height <span id="v-lineHeight">135</span></label>
+      <input id="lineHeight" type="range" min="110" max="180" value="135">
+    </fieldset>
+    <fieldset>
+      <legend>Space</legend>
+      <label for="sectionGap">Section gap <span id="v-sectionGap">12</span></label>
+      <input id="sectionGap" type="range" min="2" max="28" value="12">
+      <label for="dialogPad">Dialog padding <span id="v-dialogPad">10</span></label>
+      <input id="dialogPad" type="range" min="4" max="28" value="10">
+      <label for="sectionPad">Section padding <span id="v-sectionPad">10</span></label>
+      <input id="sectionPad" type="range" min="2" max="24" value="10">
+      <label for="innerGap">Inner gap <span id="v-innerGap">6</span></label>
+      <input id="innerGap" type="range" min="0" max="18" value="6">
+      <label for="colGap">Column gap <span id="v-colGap">8</span></label>
+      <input id="colGap" type="range" min="0" max="24" value="8">
+      <label for="actionGap">Action gap <span id="v-actionGap">8</span></label>
+      <input id="actionGap" type="range" min="0" max="20" value="8">
+      <label for="chipGap">Chip gap <span id="v-chipGap">6</span></label>
+      <input id="chipGap" type="range" min="0" max="16" value="6">
+    </fieldset>
+    <fieldset>
+      <legend>Frame</legend>
+      <label for="popupWidth">Popup width <span id="v-popupWidth">512</span></label>
+      <input id="popupWidth" type="range" min="340" max="760" value="512">
+      <label for="dialogHeight">Dialog height <span id="v-dialogHeight">780</span></label>
+      <input id="dialogHeight" type="range" min="420" max="960" value="780">
+      <label for="dialogRadius">Dialog radius <span id="v-dialogRadius">3</span></label>
+      <input id="dialogRadius" type="range" min="0" max="20" value="3">
+      <label for="controlRadius">Control radius <span id="v-controlRadius">2</span></label>
+      <input id="controlRadius" type="range" min="0" max="16" value="2">
+      <label for="border">Border <span id="v-border">2</span></label>
+      <input id="border" type="range" min="0" max="6" value="2">
+      <label for="shadow">Shadow <span id="v-shadow">45</span></label>
+      <input id="shadow" type="range" min="0" max="100" value="45">
+      <label for="bevel">Bevel <span id="v-bevel">100</span></label>
+      <input id="bevel" type="range" min="0" max="100" value="100">
+      <label for="closeSize">Close size <span id="v-closeSize">22</span></label>
+      <input id="closeSize" type="range" min="16" max="36" value="22">
+      <label for="titlePad">Title padding <span id="v-titlePad">6</span></label>
+      <input id="titlePad" type="range" min="2" max="16" value="6">
+    </fieldset>
+    <fieldset>
+      <legend>Color</legend>
+      <label for="contrast">Contrast <span id="v-contrast">100</span></label>
+      <input id="contrast" type="range" min="70" max="140" value="100">
+      <label for="colorAmt">Color amount <span id="v-colorAmt">0</span></label>
+      <input id="colorAmt" type="range" min="0" max="100" value="0">
+      <label for="phosphor">Phosphor <span id="v-phosphor">100</span></label>
+      <input id="phosphor" type="range" min="0" max="100" value="100">
+      <label for="glow">Title glow <span id="v-glow">0</span></label>
+      <input id="glow" type="range" min="0" max="100" value="0">
+      <label for="well">Well brightness <span id="v-well">100</span></label>
+      <input id="well" type="range" min="35" max="100" value="100">
+      <label for="sectionShade">Section shade <span id="v-sectionShade">40</span></label>
+      <input id="sectionShade" type="range" min="0" max="100" value="40">
+      <label for="backdrop">Backdrop <span id="v-backdrop">12</span></label>
+      <input id="backdrop" type="range" min="0" max="100" value="12">
+      <label for="scan">Scanlines <span id="v-scan">0</span></label>
+      <input id="scan" type="range" min="0" max="100" value="0">
+    </fieldset>
+    <fieldset>
+      <legend>Parts</legend>
+      <label for="clockSize">Clock size <span id="v-clockSize">100</span></label>
+      <input id="clockSize" type="range" min="70" max="160" value="100">
+      <label for="rowHeight">Row height <span id="v-rowHeight">32</span></label>
+      <input id="rowHeight" type="range" min="24" max="52" value="32">
+      <label for="buttonHeight">Button height <span id="v-buttonHeight">32</span></label>
+      <input id="buttonHeight" type="range" min="24" max="48" value="32">
+      <label for="certHeight">Certainty height <span id="v-certHeight">26</span></label>
+      <input id="certHeight" type="range" min="20" max="44" value="26">
+      <label for="switchSize">Switch size <span id="v-switchSize">22</span></label>
+      <input id="switchSize" type="range" min="16" max="36" value="22">
+      <label for="swatch">Swatch size <span id="v-swatch">18</span></label>
+      <input id="swatch" type="range" min="8" max="28" value="18">
+      <label for="chipSize">Chip size <span id="v-chipSize">12</span></label>
+      <input id="chipSize" type="range" min="10" max="18" value="12">
+      <label for="notesHeight">Notes height <span id="v-notesHeight">52</span></label>
+      <input id="notesHeight" type="range" min="36" max="140" value="52">
+      <label for="splitWidth">Split width <span id="v-splitWidth">120</span></label>
+      <input id="splitWidth" type="range" min="72" max="180" value="120">
+      <label for="inputPad">Input padding <span id="v-inputPad">5</span></label>
+      <input id="inputPad" type="range" min="2" max="14" value="5">
+    </fieldset>
+  </aside>
+  <div class="stage-wrap">
+    <p class="kicker" id="kicker">Tracking entry</p>
+    <div id="stage"></div>
+    <p class="toast" id="toast" role="status"></p>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var FONTS = {
+    house: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    karla: 'Karla, "Avenir Next", "Segoe UI", system-ui, sans-serif',
+    verdana: "Verdana, Geneva, sans-serif",
+    trebuchet: '"Trebuchet MS", Verdana, sans-serif',
+    georgia: 'Georgia, "Iowan Old Style", "Palatino Linotype", serif',
+    mono: '"Courier New", Courier, ui-monospace, monospace',
+    round: '"Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif'
+  };
+  var EXTRA_COLORS = ["#3d6b5a", "#6b3d5a", "#3d4f6b", "#8d5a3c"];
+  var BLOCKS = {
+    kiln: {
+      id: "kiln", view: "Activity", title: "Studio kiln", pen: "Kiln", penColor: "#c4784a",
+      extras: [{ name: "Glaze", color: "#7a8c4a" }],
+      startMin: 13 * 60 + 15, endMin: 15 * 60 + 45, startC: "exact", endC: "estimated",
+      assumed: false, showDate: false, splitAt: "2:30 PM", splitOn: false, date: "2026-10-26",
+      dateLabel: "Mon Oct 26",
+      details: [{ name: "Handbuilding", on: true }, { name: "Throwing", on: false }],
+      tags: [
+        { name: "Making", color: "#6b4a2a", always: true, on: true },
+        { name: "Studio", color: "#2f6b45", always: false, on: true },
+        { name: "People", color: "#2f4a6b", always: false, on: false }
+      ],
+      project: "Studio kiln rebuild",
+      companions: [
+        { view: "Location", text: "Studio" },
+        { view: "Company", text: "Elijah" },
+        { view: "Mood", text: "" }
+      ],
+      log: "Logs · 1 · thought process · the lid still sticks · 2:05 PM",
+      nextId: "press", prevName: "Lunch", prevEnd: "1:15 PM", startLinked: true,
+      notes: "Cone 6, slow cool. The lid still sticks.",
+      objectives: [
+        { text: "Log the cone", done: true, meta: "added → done · 12m" },
+        { text: "Photograph the load", done: false, meta: "open" }
+      ]
+    },
+    press: {
+      id: "press", view: "Activity", title: "Letterpress", pen: "Ink", penColor: "#243e6b",
+      extras: [{ name: "Poster", color: "#6b3a3a" }],
+      startMin: 16 * 60, endMin: 17 * 60 + 30, startC: "exact", endC: "exact",
+      assumed: false, showDate: false, splitAt: "4:40 PM", splitOn: false, date: "2026-10-26",
+      dateLabel: "Mon Oct 26",
+      details: [{ name: "Poster", on: true }, { name: "Cards", on: false }],
+      tags: [
+        { name: "Making", color: "#6b4a2a", always: true, on: true },
+        { name: "Print", color: "#6b2f3a", always: false, on: true }
+      ],
+      project: "Fall hours poster",
+      companions: [
+        { view: "Location", text: "Studio" },
+        { view: "Company", text: "" },
+        { view: "Mood", text: "Steady" }
+      ],
+      log: "Logs · 1 · note · damp paper · 4:20 PM",
+      nextId: null, prevName: "Studio kiln", prevEnd: "3:45 PM", startLinked: true,
+      notes: "Pass two. Damp paper, light impression.",
+      objectives: [{ text: "Pull a proof", done: false, meta: "open" }]
+    }
+  };
+  var ui = { block: "kiln", over: {}, toast: "" };
+  var stage = document.getElementById("stage");
+  var READOUTS = ["typeSize", "titleSize", "labelSize", "helpSize", "titleWeight", "bodyWeight", "titleTrack", "labelTrack", "lineHeight", "sectionGap", "dialogPad", "sectionPad", "innerGap", "colGap", "actionGap", "chipGap", "popupWidth", "dialogHeight", "dialogRadius", "controlRadius", "border", "shadow", "bevel", "closeSize", "titlePad", "contrast", "colorAmt", "phosphor", "glow", "well", "sectionShade", "backdrop", "scan", "clockSize", "rowHeight", "buttonHeight", "certHeight", "switchSize", "swatch", "chipSize", "notesHeight", "splitWidth", "inputPad"];
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function num(id) { return +document.getElementById(id).value; }
+  function val(id) { return document.getElementById(id).value; }
+  function mix(a, b, t) {
+    var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    function ch(shift) {
+      var va = (pa >> shift) & 255, vb = (pb >> shift) & 255;
+      return Math.round(va + (vb - va) * t);
+    }
+    return "#" + [ch(16), ch(8), ch(0)].map(function (v) { return v.toString(16).padStart(2, "0"); }).join("");
+  }
+  function fmt(min) {
+    var m = ((min % 1440) + 1440) % 1440;
+    var h = Math.floor(m / 60);
+    var mins = m % 60;
+    var h12 = h % 12 || 12;
+    return h12 + ":" + String(mins).padStart(2, "0") + " " + (h >= 12 ? "PM" : "AM");
+  }
+  function formatDuration(minutes) {
+    var total = Math.max(0, Math.round(minutes));
+    var h = Math.floor(total / 60), m = total % 60;
+    if (h === 0) return m + "m";
+    return m === 0 ? h + "h" : h + "h " + m + "m";
+  }
+  function parseDuration(s) {
+    var t = String(s).trim().toLowerCase(), m;
+    if ((m = /^(\d+)\s*h\s*(\d+)\s*m$/.exec(t))) return +m[1] * 60 + +m[2];
+    if ((m = /^(\d+)\s*h$/.exec(t))) return +m[1] * 60;
+    if ((m = /^(\d+):(\d{2})$/.exec(t))) return +m[1] * 60 + +m[2];
+    if ((m = /^(\d+)\s*m$/.exec(t))) return +m[1];
+    if ((m = /^(\d+)$/.exec(t))) return +m[1];
+    return null;
+  }
+  function parseClock(s) {
+    var m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i.exec(String(s).trim());
+    if (!m) return null;
+    var h = +m[1], min = m[2] ? +m[2] : 0, ap = (m[3] || "").toLowerCase();
+    if (!ap && h < 13 && m[2]) return null;
+    if (ap === "pm" && h < 12) h += 12;
+    if (ap === "am" && h === 12) h = 0;
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  }
+  function gapText(gap) {
+    if (gap <= 0) return "back to back";
+    if (gap < 60) return gap + " min later";
+    var h = Math.floor(gap / 60), m = gap % 60;
+    return h + "h " + (m ? m + "m " : "") + "later";
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function materialize(id) {
+    var b = BLOCKS[id], o = ui.over[id] || {}, out = clone(b);
+    ["title", "notes", "pen", "penColor", "project", "startMin", "endMin", "startC", "endC", "assumed", "showDate", "splitAt", "splitOn", "startLinked", "endLinked", "deleted", "date"].forEach(function (k) {
+      if (o[k] !== undefined) out[k] = o[k];
+    });
+    if (o.extras) out.extras = clone(o.extras);
+    if (o.tags) out.tags = clone(o.tags);
+    if (o.details) out.details = clone(o.details);
+    if (o.objectives) out.objectives = clone(o.objectives);
+    return out;
+  }
+  function setOver(id, patch, dirty) {
+    var next = Object.assign({}, ui.over[id] || {}, patch);
+    if (dirty) next.dirty = true;
+    ui.over[id] = next;
+  }
+  function apply() {
+    var c = num("contrast") / 100;
+    var ink = c >= 1 ? mix("#2a2c2e", "#000000", Math.min(0.7, (c - 1) / 0.4)) : mix("#2a2c2e", "#c0c0c0", (1 - c) * 0.5);
+    var root = document.documentElement;
+    root.style.setProperty("--desk", mix("#008080", "#021414", num("backdrop") / 100));
+    root.style.setProperty("--phosphor", mix("#4e9a78", "#7dffc4", num("phosphor") / 100));
+    root.style.setProperty("--face", FONTS[val("font")] || FONTS.house);
+    stage.style.setProperty("--ink", ink);
+    stage.style.setProperty("--well", mix("#8e9296", "#ffffff", num("well") / 100));
+    stage.style.setProperty("--section", mix("#f3f3f3", "#9ea3a8", num("sectionShade") / 100));
+    stage.style.setProperty("--pen", materialize(ui.block).penColor);
+    stage.style.setProperty("--type", num("typeSize") + "px");
+    stage.style.setProperty("--title", num("titleSize") + "px");
+    stage.style.setProperty("--label", num("labelSize") + "px");
+    stage.style.setProperty("--help", num("helpSize") + "px");
+    stage.style.setProperty("--title-w", String(num("titleWeight")));
+    stage.style.setProperty("--body-w", String(num("bodyWeight")));
+    stage.style.setProperty("--title-track", (num("titleTrack") / 100) + "em");
+    stage.style.setProperty("--label-track", (num("labelTrack") / 100) + "em");
+    stage.style.setProperty("--lh", String(num("lineHeight") / 100));
+    stage.style.setProperty("--gap", num("sectionGap") + "px");
+    stage.style.setProperty("--pad", num("dialogPad") + "px");
+    stage.style.setProperty("--sec-pad", num("sectionPad") + "px");
+    stage.style.setProperty("--inner", num("innerGap") + "px");
+    stage.style.setProperty("--col-gap", num("colGap") + "px");
+    stage.style.setProperty("--action-gap", num("actionGap") + "px");
+    stage.style.setProperty("--chip-gap", num("chipGap") + "px");
+    stage.style.setProperty("--pop-w", num("popupWidth") + "px");
+    stage.style.setProperty("--dlg-h", num("dialogHeight") + "px");
+    stage.style.setProperty("--r", num("dialogRadius") + "px");
+    stage.style.setProperty("--ctrl-r", num("controlRadius") + "px");
+    stage.style.setProperty("--bw", num("border") + "px");
+    stage.style.setProperty("--sh", String(num("shadow") / 100));
+    stage.style.setProperty("--bevel", String(num("bevel") / 100));
+    stage.style.setProperty("--close", num("closeSize") + "px");
+    stage.style.setProperty("--title-pad", num("titlePad") + "px " + Math.round(num("titlePad") * 1.6) + "px");
+    stage.style.setProperty("--mix", String(num("colorAmt") / 100));
+    stage.style.setProperty("--glow", String(num("glow") / 100));
+    stage.style.setProperty("--scan", String(num("scan") / 100));
+    stage.style.setProperty("--clock", String(num("clockSize") / 100));
+    stage.style.setProperty("--row", num("rowHeight") + "px");
+    stage.style.setProperty("--btn", num("buttonHeight") + "px");
+    stage.style.setProperty("--cert", num("certHeight") + "px");
+    stage.style.setProperty("--switch", num("switchSize") + "px");
+    stage.style.setProperty("--swatch", num("swatch") + "px");
+    stage.style.setProperty("--chip", num("chipSize") + "px");
+    stage.style.setProperty("--notes", num("notesHeight") + "px");
+    stage.style.setProperty("--split-w", num("splitWidth") + "px");
+    stage.style.setProperty("--input-pad", num("inputPad") + "px " + Math.round(num("inputPad") * 1.6) + "px");
+    stage.style.setProperty("--case", val("titleCase") === "none" ? "none" : "uppercase");
+    stage.style.setProperty("--align", val("titleAlign") === "center" ? "center" : "flex-start");
+    READOUTS.forEach(function (id) {
+      var node = document.getElementById("v-" + id);
+      if (node) node.textContent = val(id);
+    });
+  }
+  function cert(edge, value) {
+    var levels = [["exact", "Exact", "You know this time"], ["estimated", "~ Est.", "Roughly this time"], ["unknown", "?", "Placed, never observed"]];
+    return '<div class="cert" role="radiogroup" aria-label="' + (edge === "start" ? "Start" : "End") + ' certainty">' + levels.map(function (l) {
+      return '<button type="button" role="radio" aria-checked="' + (value === l[0]) + '" data-act="cert" data-edge="' + edge + '" data-level="' + l[0] + '" title="' + l[2] + '">' + l[1] + "</button>";
+    }).join("") + "</div>";
+  }
+  function pensHTML(b) {
+    var all = [{ name: b.pen, color: b.penColor, primary: true }].concat(b.extras.map(function (e) {
+      return { name: e.name, color: e.color, primary: false };
+    }));
+    return '<div class="pens">' + all.map(function (p) {
+      return '<span class="pen-chip"><i style="background:' + p.color + '"></i>' + esc(p.name) +
+        ' <button type="button" class="star" data-act="star" data-name="' + esc(p.name) + '" aria-label="' + (p.primary ? "Primary" : "Make primary") + '">' + (p.primary ? "★" : "☆") + "</button>" +
+        (p.primary ? "" : '<button type="button" class="x" data-act="remove-pen" data-name="' + esc(p.name) + '" aria-label="Remove ' + esc(p.name) + '">×</button>') +
+        "</span>";
+    }).join("") + '</div><div class="add-row"><input data-field="newPen" aria-label="Add a pen" placeholder="Add a pen" /><button type="button" class="keycap" data-act="add-pen">Add</button></div>';
+  }
+  function editorHTML(b) {
+    if (b.deleted) {
+      return '<article class="editor" data-ui-name="Tracking entry"><header class="dlg-head"><h2 class="crt">' + esc(b.title) + '</h2><button type="button" class="close" data-act="close" aria-label="Close">×</button></header><div class="gone"><p class="help">Deleted. Undo puts the block back.</p><button type="button" class="keycap" data-act="undo">Undo</button></div></article>';
+    }
+    var dur = formatDuration(b.endMin - b.startMin);
+    var help = dur + " in " + b.view + (b.title.trim() && b.title.trim() !== b.pen ? " · pen " + b.pen : "");
+    var startAnchor = b.startLinked
+      ? '<div class="edge-chip"><span>Previous timeblock, ends where this starts: ' + esc(b.prevName) + " · " + esc(b.prevEnd) + '</span><button type="button" class="edge-option" data-act="unlink" data-edge="start">Unlink</button></div>'
+      : '<p class="help">Tie this start to an event you logged or to the neighbouring block. They stay one moment; the surer time wins.</p><button type="button" class="edge-option" data-act="linkstart">After ' + esc(b.prevName) + " · " + esc(b.prevEnd) + "</button>";
+    var endAnchor;
+    if (b.endLinked && b.nextId) {
+      var linked = materialize(b.nextId);
+      endAnchor = '<div class="edge-chip"><span>Next timeblock, starts where this ends: ' + esc(linked.title) + " · " + esc(fmt(linked.startMin)) + '</span><button type="button" class="edge-option" data-act="unlink" data-edge="end">Unlink</button></div>';
+    } else if (b.nextId) {
+      var nxt = materialize(b.nextId);
+      endAnchor = '<p class="help">Tie this end to an event you logged or to the neighbouring block. They stay one moment; the surer time wins.</p><button type="button" class="edge-option" data-act="linkend">Before ' + esc(nxt.title) + " · " + esc(fmt(nxt.startMin)) + "</button>";
+    } else endAnchor = '<p class="help">No neighbour after this end.</p>';
+    var next = b.nextId ? (function () {
+      var n = materialize(b.nextId);
+      return '<button type="button" class="next" data-act="open" data-id="' + n.id + '"><strong>' + esc(n.title) + "</strong><span>" + esc(fmt(n.startMin) + " – " + fmt(n.endMin) + " · " + gapText(n.startMin - b.endMin)) + "</span></button>";
+    })() : '<p class="help">Nothing recorded after this today.</p>';
+    var alwaysNames = b.tags.filter(function (t) { return t.always; }).map(function (t) { return t.name; }).join(", ") || "nothing yet";
+    var extrasOn = b.tags.filter(function (t) { return t.on && !t.always; });
+    var alwaysBtn = extrasOn.length ? '<button type="button" class="door" data-act="always-tag">Always tag ' + esc(b.pen) + " as " + esc(extrasOn.map(function (t) { return t.name; }).join(", ")) + "</button>" : "";
+    var comps = b.companions.map(function (c) {
+      var text = c.text ? esc(c.text) + " · " + esc(fmt(b.startMin) + "–" + fmt(b.endMin)) : "Nothing in these minutes";
+      var btn = c.text
+        ? (c.view === "Company" ? '<button type="button" class="edge-option" data-act="someone">+ Someone</button>' : '<button type="button" class="edge-option" data-act="annotate" data-view="' + esc(c.view) + '">Annotate</button>')
+        : '<button type="button" class="edge-option" data-act="attach" data-view="' + esc(c.view) + '">Attach</button>';
+      return '<div class="comp"><span class="comp-view">' + esc(c.view) + "</span><span>" + text + "</span>" + btn + "</div>";
+    }).join("");
+    var objs = b.objectives.map(function (o, i) {
+      return '<label class="obj"><input type="checkbox" data-act="obj" data-i="' + i + '"' + (o.done ? " checked" : "") + " /><span>" + esc(o.text) + "<small>" + esc(o.meta) + "</small></span></label>";
+    }).join("");
+    var linkedNote = b.startLinked ? " Type a length to move End; the linked end stays put." : " Type a length to move End.";
+    return '<article class="editor" data-ui-name="Tracking entry"><header class="dlg-head"><h2 class="crt"><span>' + esc(b.title) + '</span><span class="crt-time">· ' + esc(fmt(b.startMin) + " – " + fmt(b.endMin)) + '</span></h2><button type="button" class="close" data-act="close" aria-label="Close">×</button></header>' +
+      '<p class="help">' + esc(help) + "</p>" +
+      '<div class="clock-grid"><label class="field">Start<input data-field="start" aria-label="Start" value="' + esc(fmt(b.startMin)) + '" /></label><label class="field">End<input data-field="end" aria-label="End" value="' + esc(fmt(b.endMin)) + '" /></label></div>' +
+      '<div class="cert-row">' + cert("start", b.startC) + cert("end", b.endC) + "</div>" +
+      '<button type="button" class="edge-option" data-act="date">' + (b.showDate ? "Hide date" : "Date") + "</button>" +
+      (b.showDate ? '<label class="field">Date<input data-field="date" value="' + esc(b.date) + '" /></label><p class="help">A wrap can start one day and end the next. This block stays on ' + esc(b.dateLabel) + ".</p>" : "") +
+      '<section class="sec"><h3 class="sec-title">Duration</h3><input data-field="duration" aria-label="Duration" placeholder="1h 30m, 90, 1:30" value="' + esc(dur) + '" /><p class="help">Calculated from the clocks.' + linkedNote + "</p></section>" +
+      '<section class="sec"><h3 class="sec-title">Display name</h3><p class="help">Optional. Defaults to the pen name. Surfaces that show this block use this; counting still uses pens and tags.</p><input data-field="title" aria-label="Display name" value="' + esc(b.title) + '" placeholder="' + esc(b.pen) + '" /></section>' +
+      '<section class="sec"><div class="switch"><div><h3 class="sec-title">Assumed / reconstructed</h3><p class="help">Off means this is certain — you painted what happened. On hides it when Analytics excludes speculative time.</p></div><button type="button" role="switch" aria-checked="' + (b.assumed ? "true" : "false") + '" data-act="assumed" aria-label="Assumed / reconstructed"><i></i></button></div></section>' +
+      '<section class="sec"><h3 class="sec-title">Start anchor</h3>' + startAnchor + "</section>" +
+      '<section class="sec"><h3 class="sec-title">End anchor</h3>' + endAnchor + "</section>" +
+      '<section class="sec"><h3 class="sec-title">Next timeblock</h3>' + next + "</section>" +
+      '<section class="sec"><h3 class="sec-title">Pens</h3><p class="help">★ Primary paints the grid. ☆ on another chip makes it primary. × removes an extra.</p>' + pensHTML(b) + "</section>" +
+      '<section class="sec"><h3 class="sec-title">Detail</h3><p class="help">Tick every one that applies. Each option is a pen that counts as ' + esc(b.pen) + '.</p><div class="ticks">' + b.details.map(function (d) {
+        return '<button type="button" class="tag" data-act="detail" data-name="' + esc(d.name) + '" aria-pressed="' + d.on + '">' + esc(d.name) + "</button>";
+      }).join("") + "</div></section>" +
+      '<section class="sec"><h3 class="sec-title">Also counts as</h3><p class="help">Tags decide which habits this time feeds, across every scope. ' + esc(b.pen) + " always counts as " + esc(alwaysNames) + '.</p><div class="ticks">' + b.tags.map(function (t) {
+        return '<button type="button" class="tag" data-act="tag" data-name="' + esc(t.name) + '" aria-label="Tag: ' + esc(t.name) + '" aria-pressed="' + t.on + '"><i style="background:' + t.color + '"></i>' + esc(t.name) + (t.always ? " <em>always</em>" : "") + "</button>";
+      }).join("") + '</div><div class="add-row"><input data-field="newTag" aria-label="New tag for this block" placeholder="New tag…" /><button type="button" class="keycap" data-act="add-tag">Add tag</button></div>' + alwaysBtn + "</section>" +
+      '<section class="sec"><h3 class="sec-title">Details</h3><label class="field">Project <span class="help">· Work tag</span><input data-field="project" value="' + esc(b.project) + '" /></label><button type="button" class="door" data-act="fields-door">Edit detail fields</button></section>' +
+      '<section class="sec"><h3 class="sec-title">Also happening</h3>' + comps + '<p class="help">' + esc(b.log) + "</p></section>" +
+      '<section class="sec"><h3 class="sec-title">Live tracked from Brain 2, objectives:</h3>' + objs + '<div class="add-row"><input data-field="newObj" aria-label="New objective" placeholder="New objective" /><button type="button" class="keycap" data-act="add-obj">Add</button></div></section>' +
+      '<section class="sec"><label class="field" for="entry-notes">Notes</label><textarea id="entry-notes" data-field="notes">' + esc(b.notes) + "</textarea></section>" +
+      '<div class="actions"><button type="button" class="keycap save" data-act="save">Save block</button><button type="button" class="keycap" data-act="grid" title="Open this block on the Time Grid">show in timegrid</button><input class="split-time" data-field="splitAt" aria-label="Split at" title="Minute to split at" value="' + esc(b.splitAt) + '" /><button type="button" class="keycap" data-act="split" title="Split this block at the chosen minute into two blocks of the same pen">Split</button><button type="button" class="keycap danger" data-act="delete" aria-label="Delete block">Delete</button></div></article>';
+  }
+  function render() {
+    var b = materialize(ui.block);
+    stage.innerHTML = '<div class="stage-grid">' + editorHTML(b) + "</div>";
+    document.getElementById("kicker").textContent = "Tracking entry · " + b.view + " · " + b.title;
+    document.getElementById("toast").textContent = ui.toast || "";
+    apply();
+  }
+  function readField(blockId, field, value) {
+    var b = materialize(blockId);
+    if (field === "title" && value !== b.title) setOver(blockId, { title: value }, true);
+    else if (field === "notes" && value !== b.notes) setOver(blockId, { notes: value }, true);
+    else if (field === "project" && value !== b.project) setOver(blockId, { project: value }, true);
+    else if (field === "splitAt" && value !== b.splitAt) setOver(blockId, { splitAt: value }, true);
+    else if (field === "date" && value !== b.date) setOver(blockId, { date: value }, true);
+    else if (field === "duration") {
+      var mins = parseDuration(value);
+      if (mins == null) ui.toast = "Use minutes or hours, such as 45, 1:30 or 1h 30m.";
+      else if (mins < 1) ui.toast = "Duration needs at least a minute.";
+      else if (b.startMin + mins !== b.endMin) {
+        setOver(blockId, { endMin: b.startMin + mins }, true);
+        ui.toast = b.startLinked ? "End moved. Start stays on " + b.prevName + "." : "End moved.";
+      }
+    } else if (field === "start" || field === "end") {
+      var clock = parseClock(value);
+      var prev = field === "start" ? b.startMin : b.endMin;
+      if (clock == null) ui.toast = "Use a time such as 1:15 PM or 13:15.";
+      else if (clock === prev) return;
+      else if (field === "start" && clock >= b.endMin) ui.toast = "Start is not before End.";
+      else if (field === "end" && clock <= b.startMin) ui.toast = "End is before Start. Date can carry a wrap past midnight.";
+      else setOver(blockId, field === "start" ? { startMin: clock } : { endMin: clock }, true);
+    }
+  }
+  function commitLive(blockId) {
+    stage.querySelectorAll("[data-field]").forEach(function (el) {
+      var f = el.dataset.field;
+      if (f === "newTag" || f === "newPen" || f === "newObj") return;
+      readField(blockId, f, el.value);
+    });
+  }
+  function onStageClick(e) {
+    var t = e.target.closest("[data-act]");
+    if (!t || !stage.contains(t)) return;
+    var blockId = ui.block;
+    commitLive(blockId);
+    var b = materialize(blockId);
+    var act = t.dataset.act;
+    if (act === "open" && BLOCKS[t.dataset.id]) ui.block = t.dataset.id;
+    else if (act === "cert") setOver(blockId, t.dataset.edge === "start" ? { startC: t.dataset.level } : { endC: t.dataset.level }, true);
+    else if (act === "assumed") setOver(blockId, { assumed: !b.assumed }, true);
+    else if (act === "date") setOver(blockId, { showDate: !b.showDate }, true);
+    else if (act === "unlink") setOver(blockId, t.dataset.edge === "start" ? { startLinked: false } : { endLinked: false }, true);
+    else if (act === "linkstart") setOver(blockId, { startLinked: true }, true);
+    else if (act === "linkend") setOver(blockId, { endLinked: true }, true);
+    else if (act === "star") {
+      if (t.dataset.name === b.pen) ui.toast = "Primary paints the grid.";
+      else {
+        var extra = b.extras.filter(function (x) { return x.name === t.dataset.name; })[0];
+        if (extra) {
+          var rest = b.extras.filter(function (x) { return x.name !== extra.name; });
+          rest.push({ name: b.pen, color: b.penColor });
+          setOver(blockId, { pen: extra.name, penColor: extra.color, extras: rest }, true);
+        }
+      }
+    } else if (act === "remove-pen") setOver(blockId, { extras: b.extras.filter(function (x) { return x.name !== t.dataset.name; }) }, true);
+    else if (act === "add-pen") {
+      var penName = (stage.querySelector("[data-field=newPen]") || {}).value;
+      penName = penName ? penName.trim() : "";
+      if (!penName) ui.toast = "Type a pen name.";
+      else setOver(blockId, { extras: b.extras.concat({ name: penName, color: EXTRA_COLORS[b.extras.length % EXTRA_COLORS.length] }) }, true);
+    } else if (act === "detail") {
+      setOver(blockId, { details: b.details.map(function (d) { return { name: d.name, on: d.name === t.dataset.name ? !d.on : d.on }; }) }, true);
+    } else if (act === "tag") {
+      var tag = b.tags.filter(function (x) { return x.name === t.dataset.name; })[0];
+      if (tag && tag.always) ui.toast = "Assigned pens always count as " + tag.name + ".";
+      else setOver(blockId, { tags: b.tags.map(function (x) { return x.name === t.dataset.name ? Object.assign({}, x, { on: !x.on }) : Object.assign({}, x); }) }, true);
+    } else if (act === "add-tag") {
+      var tagName = (stage.querySelector("[data-field=newTag]") || {}).value;
+      tagName = tagName ? tagName.trim() : "";
+      if (!tagName) ui.toast = "Type a tag name.";
+      else setOver(blockId, { tags: b.tags.concat({ name: tagName, color: EXTRA_COLORS[b.tags.length % EXTRA_COLORS.length], always: false, on: true }) }, true);
+    } else if (act === "always-tag") setOver(blockId, { tags: b.tags.map(function (x) { return x.on ? Object.assign({}, x, { always: true }) : Object.assign({}, x); }) }, true);
+    else if (act === "annotate") ui.toast = "Annotate · " + (t.dataset.view || "companion") + " variants, on this block only.";
+    else if (act === "someone") ui.toast = "+ Someone adds another person on the Company block.";
+    else if (act === "attach") ui.toast = "Attach paints a " + (t.dataset.view || "") + " block for these minutes.";
+    else if (act === "obj") {
+      var i = +t.dataset.i;
+      setOver(blockId, { objectives: b.objectives.map(function (o, idx) {
+        if (idx !== i) return Object.assign({}, o);
+        var done = !o.done;
+        return { text: o.text, done: done, meta: done ? "added → done · just now" : "open" };
+      }) }, true);
+    } else if (act === "add-obj") {
+      var objText = (stage.querySelector("[data-field=newObj]") || {}).value;
+      objText = objText ? objText.trim() : "";
+      if (!objText) ui.toast = "Type an objective.";
+      else setOver(blockId, { objectives: b.objectives.concat({ text: objText, done: false, meta: "open" }) }, true);
+    } else if (act === "fields-door") ui.toast = "Edit detail fields opens pen settings for " + b.pen + ".";
+    else if (act === "save") ui.toast = "Save block.";
+    else if (act === "grid") ui.toast = "show in timegrid — Time Grid, this day, this block, Infinite scroll off.";
+    else if (act === "split") {
+      var at = parseClock(b.splitAt);
+      if (at == null || at <= b.startMin || at >= b.endMin) ui.toast = "Split at needs a minute inside the block.";
+      else { setOver(blockId, { splitOn: true }, true); ui.toast = "Split at " + fmt(at) + " into two " + b.pen + " blocks."; }
+    } else if (act === "delete") { setOver(blockId, { deleted: true }, true); ui.toast = "Deleted " + b.title + "."; }
+    else if (act === "undo") { setOver(blockId, { deleted: false }, false); ui.toast = "Restored " + b.title + "."; }
+    else if (act === "close") ui.toast = b.dirty ? "This draft has changes. Save, or exit without saving. Cancel stays." : "Closed.";
+    render();
+  }
+  stage.addEventListener("click", onStageClick);
+  stage.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var f = e.target.dataset && e.target.dataset.field;
+    if (f === "duration") { e.preventDefault(); readField(ui.block, f, e.target.value); render(); }
+    else if (f === "newTag" || f === "newPen" || f === "newObj") {
+      e.preventDefault();
+      var act = f === "newTag" ? "add-tag" : f === "newPen" ? "add-pen" : "add-obj";
+      var btn = stage.querySelector('[data-act="' + act + '"]');
+      if (btn) onStageClick({ target: btn });
+    }
+  });
+  stage.addEventListener("focusout", function (e) {
+    if (!e.target.dataset || !e.target.dataset.field) return;
+    var field = e.target.dataset.field;
+    if (field === "newTag" || field === "newPen" || field === "newObj") return;
+    var blockId = ui.block, value = e.target.value;
+    setTimeout(function () { readField(blockId, field, value); render(); }, 0);
+  });
+  document.getElementById("controls").addEventListener("input", apply);
+  document.getElementById("controls").addEventListener("change", apply);
+  render();
+})();
+</script>
+</body>
+</html>

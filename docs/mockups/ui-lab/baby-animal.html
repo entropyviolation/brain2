@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI lab — Baby animal friend</title>
+<style>
+:root { --navy: #000080; --silver: #c0c0c0; --chrome-edge: #808080; --ink: #1c140f; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  display: flex; min-height: 100vh; background: #1a1a1a; color: var(--ink);
+  font-family: "MS Sans Serif", Tahoma, "Geneva", sans-serif; font-size: 13px;
+}
+button, select, input, textarea { font: inherit; }
+.lab-dock {
+  width: min(420px, 100%); flex: none; max-height: 100vh; overflow: auto;
+  background: linear-gradient(180deg, #ececec, var(--silver));
+  border-right: 2px solid var(--chrome-edge); box-shadow: inset -1px 0 0 #fff;
+  padding: 8px 10px 18px; font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 6px; }
+.lab-sections a { color: var(--navy); text-decoration: none; padding: 2px 6px; border: 1px solid var(--chrome-edge); background: #fff; }
+.lab-sections a:hover { background: #dfdfdf; }
+.lab-sections a[aria-current="page"] { font-weight: 700; background: var(--navy); color: #fff; }
+.lab-title { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 10px; color: var(--navy); margin: 2px 0 4px; }
+.lab-note { margin: 0 0 8px; line-height: 1.35; }
+.reset {
+  margin: 0 0 8px; padding: 3px 8px; background: #fff; border: 1px solid var(--chrome-edge); cursor: pointer;
+}
+fieldset { border: 1px solid var(--chrome-edge); margin: 0 0 8px; padding: 6px 8px 8px; background: #ececec; }
+legend { font-weight: 700; color: var(--navy); padding: 0 4px; }
+.controls, .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+.controls label, .sliders label { display: flex; flex-direction: column; gap: 2px; }
+.controls select, .sliders input[type="range"] { width: 100%; }
+.sliders output { font-variant-numeric: tabular-nums; color: var(--navy); }
+.stage {
+  flex: 1; min-width: 0; min-height: 100vh; overflow: auto;
+  display: flex; justify-content: center; padding: 28px 16px 48px;
+  background: radial-gradient(circle at 50% 0%, #bdbdbd, #6e6e6e 70%);
+}
+.mount { width: min(960px, 100%); display: flex; justify-content: center; align-items: flex-start; }
+.popup {
+  --font: "MS Sans Serif", Tahoma, "Geneva", sans-serif;
+  --weight: 400;
+  --type: 13px;
+  --track: 0em;
+  --leading: 1.35;
+  --name: 18px;
+  --caption: 11px;
+  --mission-type: 14px;
+  --kicker: 0.06em;
+  --space: 8px;
+  --pad: 12px;
+  --scale: 1;
+  --popw: 860px;
+  --col: 260px;
+  --inset: 8px;
+  --tab-pad: 8px;
+  --key-pad: 4px 10px;
+  --foot: 6px;
+  --radius: 18px;
+  --key-radius: 6px;
+  --border: 1px;
+  --shadow: 10px;
+  --lift: 72;
+  --ink: 100;
+  --size: 220px;
+  --lace: 7px;
+  --lace-dot: 9px;
+  --shine: 0.7;
+  --nub: 8px;
+  --glow: 0.44;
+  --chat: 72px;
+  --tube-h: 22px;
+  --tube-w: 8px;
+  --tube-gap: 3px;
+  --nixie: 21px;
+  --mission-pad: 8px;
+  --phos: 100;
+  --gem: 18px;
+  --friend-hue: 50;
+  --warm: 50;
+  --sat: 100;
+  --contrast: 100;
+  position: relative;
+  width: min(var(--popw), 100%);
+  color: color-mix(in srgb, #1c140f calc(var(--ink) * 1%), #8a8a8a);
+  font-family: var(--font);
+  font-weight: var(--weight);
+  font-size: var(--type);
+  letter-spacing: var(--track);
+  line-height: var(--leading);
+  padding: var(--pad);
+  border-radius: var(--radius);
+  transform: scale(var(--scale));
+  transform-origin: center top;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255, var(--shine)), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, #fff calc(var(--lift) * 1%), #9a9a9a) 0%, #c8c8c8 42%, color-mix(in srgb, #5e5e5e calc((100 - var(--lift)) * 0.45%), #c8c8c8) 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0,0,0,.35),
+    0 0 0 var(--border) #2a2a2a,
+    0 var(--shadow) 0 #6e6e6e;
+  filter:
+    saturate(calc(var(--sat) / 100))
+    sepia(calc(max(0, var(--warm) - 50) * 0.004))
+    hue-rotate(calc((50 - var(--warm)) * 0.28deg))
+    contrast(calc(var(--contrast) / 100));
+}
+.x {
+  position: absolute; top: 8px; right: 10px; z-index: 4;
+  width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%;
+  background: linear-gradient(180deg, #f7f7f7, #b0b0b0); color: #1c140f;
+  font-weight: 800; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 0 #666;
+}
+.face {
+  display: grid;
+  grid-template-columns: minmax(160px, var(--col)) minmax(0, 1fr);
+  gap: var(--space);
+  align-items: start;
+}
+.portrait { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.window {
+  position: relative; height: var(--size); min-height: 96px; padding: 6px;
+  border-radius: max(4px, calc(var(--radius) - 4px));
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255, var(--shine)) 0 8%, transparent 22%),
+    linear-gradient(165deg, #f6f6f6, #c8c8c8 38%, #8c8c8c 72%, #d8d8d8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.35), 0 0 0 1px #808080;
+}
+.well {
+  position: absolute; inset: var(--inset); z-index: 1; overflow: hidden;
+  background: #d5d0c8; border-radius: 8px;
+}
+.popup[data-shape="arch"] .well { border-radius: 46% 46% 12px 12px; }
+.popup[data-shape="heart"] .well { border-radius: 48% 48% 44% 44%; }
+.popup[data-shape="oval"] .well { border-radius: 50%; }
+.popup[data-shape="round"] .well { border-radius: 50%; box-shadow: inset 0 0 0 6px rgba(255,255,255,.45); }
+.popup[data-shape="tribal"] .well { border-radius: 42% 42% 18px 18px; }
+.well svg { width: 100%; height: 100%; display: block; filter: hue-rotate(calc((var(--friend-hue) - 50) * 1.4deg)); }
+.popup[data-effect="sparkle"] .well::after,
+.popup[data-effect="heart"] .well::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 28%, rgba(255,255,255,.55) 46%, rgba(186,230,255,.35) 54%, transparent 72%);
+}
+.glow {
+  position: absolute; inset: var(--inset); z-index: 0; pointer-events: none; opacity: var(--glow);
+  background: radial-gradient(circle at 50% 42%, rgba(125,255,196,.55), transparent 68%);
+  border-radius: inherit;
+}
+.popup[data-effect="whisper"] .glow { background: radial-gradient(circle at 50% 42%, rgba(176,140,255,.55), transparent 70%); }
+.lace {
+  position: absolute; inset: var(--inset); z-index: 2; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--lace) #f4ead8;
+  background: radial-gradient(circle, rgba(90,52,32,.45) 1px, transparent 1.6px) 0 0 / var(--lace-dot) var(--lace-dot);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: var(--lace);
+}
+.nub {
+  position: absolute; z-index: 3; width: var(--nub); height: var(--nub); border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #9a9a9a 60%, #4a4a4a);
+  box-shadow: 0 1px 0 #333;
+}
+.popup[data-lace="0"] .lace { display: none; }
+.nub.nw { top: 10px; left: 10px; } .nub.ne { top: 10px; right: 10px; }
+.nub.sw { bottom: 10px; left: 10px; } .nub.se { bottom: 10px; right: 10px; }
+.hud { margin: 0; font-size: var(--caption); color: #1d6b45; letter-spacing: var(--kicker); }
+.name { margin: 0; font-size: var(--name); line-height: 1.2; font-weight: calc(var(--weight) + 200); }
+.idle { margin: 4px 0 0; color: #5c4d78; font-size: var(--caption); }
+.bubble {
+  display: flex; align-items: flex-start; gap: 8px; margin: 6px 0 0;
+  padding: 10px 10px 11px 12px; background: #fffef2; color: #3c2817;
+  border: 3px solid #3c2817; border-radius: 3px; box-shadow: 3px 3px 0 #1a120c;
+  font-size: var(--caption); font-weight: 700; line-height: 1.35;
+}
+.bubble button.line, .bubble .line {
+  margin: 0; flex: 1; padding: 0; border: 0; background: transparent; color: inherit;
+  font: inherit; font-weight: inherit; text-align: left; cursor: pointer;
+}
+.bubble.is-heart { background: #fff5f8; border-color: #8a2048; color: #4a1024; box-shadow: 3px 3px 0 #4a1024; }
+.bubble.is-sparkle { background: #f4f0ff; border-color: #3a2080; color: #1e1048; box-shadow: 3px 3px 0 #1e1048; }
+.bubble.is-stamp { transform: rotate(-1.4deg); background: #fff8e8; }
+.bubble.is-whisper { font-style: italic; font-weight: 600; }
+.say {
+  grid-column: 1; justify-self: center; width: var(--chat); height: var(--chat);
+  border: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, #e4e4e4 28%, #9a9a9a 70%, #5c5c5c);
+  box-shadow: inset 0 2px 0 #fff, inset 0 -3px 4px rgba(0,0,0,.35), 0 3px 0 #4a4a4a;
+  font-size: var(--caption); font-weight: 800; color: #1c140f; cursor: pointer;
+}
+.say:active { transform: translateY(2px); }
+.bond {
+  grid-column: 2; grid-row: 1 / span 2; padding: 8px;
+  border-radius: max(4px, calc(var(--radius) - 8px));
+  background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(0,0,0,.05));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+}
+.kicker { margin: 0 0 4px; font-weight: 800; letter-spacing: var(--kicker); font-size: var(--caption); }
+.tubes { display: flex; flex-wrap: wrap; gap: var(--tube-gap); }
+.cap {
+  width: var(--tube-w); height: var(--tube-h); border-radius: 3px; background: #d5d5d5;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+.cap.on { background: linear-gradient(180deg, #eafff6, #7dffc4 40%, #1d8a5a); box-shadow: 0 0 6px rgba(125,255,196,.8); }
+.points-row { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; }
+.nixie {
+  font-family: ui-monospace, Menlo, Consolas, monospace; color: #9fd4ff;
+  font-size: var(--nixie); font-weight: 700; text-shadow: 0 0 6px rgba(159,212,255,.7);
+}
+.streak, .unlock { margin: 4px 0 0; font-size: var(--caption); }
+.mission {
+  margin-top: var(--space); display: flex; flex-direction: column; gap: 6px;
+  padding: var(--mission-pad); border-radius: max(4px, calc(var(--radius) - 8px));
+  background: #07140f;
+  color: color-mix(in srgb, #d7ffe9 calc(var(--phos) * 1%), #6d7d74);
+  box-shadow: inset 0 0 0 1px rgba(125,255,196,.28);
+}
+.mission-main { display: flex; align-items: center; gap: 8px; }
+.lamp { width: 8px; height: 8px; border-radius: 50%; background: #c9a227; box-shadow: 0 0 6px #c9a227; flex: none; }
+.lamp.accepted { background: #7dffc4; box-shadow: 0 0 6px #7dffc4; }
+.mission-kicker { margin: 0; font-size: var(--caption); letter-spacing: var(--kicker); text-transform: uppercase; }
+.mission-title {
+  margin: 0; font-size: var(--mission-type); font-weight: 700; color: inherit; background: transparent;
+  border: 0; padding: 0; text-align: left; cursor: pointer;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.due {
+  margin-left: auto; padding: 2px 6px; background: #140404; color: #ff4d4d;
+  font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em;
+  font-size: var(--caption); text-shadow: 0 0 6px rgba(255,40,40,.8);
+}
+.actions { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; }
+.key {
+  border: 2px solid; border-color: #fff #404040 #404040 #fff; border-radius: var(--key-radius);
+  padding: var(--key-pad); background: linear-gradient(180deg, #fff, #c0c0c0 48%, #9a9a9a);
+  color: #111; font-weight: 700; font-size: var(--caption); cursor: pointer;
+}
+.key:disabled { color: #666; cursor: default; }
+.key:focus-visible, .say:focus-visible, .x:focus-visible, .task:focus-visible, .tabs button:focus-visible {
+  outline: 2px solid var(--navy); outline-offset: 1px;
+}
+.pay { margin: 0; font-size: var(--caption); }
+.tabs { display: flex; gap: 2px; margin-top: var(--space); }
+.tabs button {
+  border: 0; border-radius: 6px 6px 0 0; padding: 4px var(--tab-pad);
+  background: linear-gradient(180deg, #efefef, #bdbdbd); box-shadow: inset 0 1px 0 #fff;
+  font-weight: 800; font-size: var(--caption); color: #1c140f; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { background: #f7f7f7; }
+.panel { min-height: 88px; margin-top: 6px; }
+.j-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline;
+  padding: 4px 6px; background: transparent; border: 0; width: 100%; text-align: left;
+  color: inherit; cursor: pointer; font: inherit; font-size: var(--caption);
+}
+.j-row:hover, .j-row:focus-visible { background: var(--navy); color: #fff; }
+.j-note { margin: 0 0 4px 22px; font-size: var(--caption); }
+.gem { color: #1d8a5a; font-weight: 800; }
+.keep-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.keep {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center;
+  font-size: var(--caption);
+}
+.cameo { width: calc(var(--gem) + 10px); height: var(--gem); border-radius: 50%; border: 2px solid currentColor; }
+.keep.is-earned .cameo { background: #f4ead8; box-shadow: inset 0 0 0 2px #8a6040; }
+.keep.is-trace .cameo { border-style: dashed; opacity: .55; }
+.tube-mini { display: inline-block; width: 36px; height: 6px; background: #ddd; vertical-align: middle; margin-left: 4px; }
+.tube-mini i { display: block; height: 100%; background: #7dffc4; width: calc(var(--fill) * 100%); }
+.voice { display: flex; flex-direction: column; gap: var(--space); }
+.bay-title {
+  margin: 0 0 4px; padding: 3px 8px; text-align: center; letter-spacing: var(--kicker);
+  font-size: var(--caption); color: #1c140f;
+  background: repeating-linear-gradient(90deg, #d0d0d0 0 2px, #f4f4f4 2px 4px);
+  box-shadow: inset 0 0 0 1px #888;
+}
+.keys { display: flex; flex-wrap: wrap; gap: 4px; }
+.whims { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.saved-bay { padding: 6px; background: rgba(0,0,0,.06); box-shadow: inset 0 1px 3px rgba(0,0,0,.2); }
+.popup[data-push="celebrate"] .push-celebrate { box-shadow: 0 0 0 2px #e7b3c8, inset 0 1px 0 #fff; }
+.eq { display: flex; gap: 8px; align-items: flex-end; overflow-x: auto; padding-bottom: 4px; }
+.fader { width: 52px; flex: none; text-align: center; font-size: 10px; }
+.fader.dim { opacity: .55; }
+.slot { position: relative; height: 88px; width: 12px; margin: 4px auto; background: #141414; border-radius: 4px; }
+.fader .cap {
+  position: absolute; left: 50%; width: 22px; height: 8px; transform: translate(-50%, 50%);
+  bottom: calc(var(--v) * 1%); border-radius: 2px;
+  background: linear-gradient(180deg, #fff, #b5b5b5 55%, #6a6a6a);
+}
+.mix { margin: 6px 0; font-size: var(--caption); }
+.beads { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; padding: 0; list-style: none; }
+.beads li { background: #f4ead8; color: #24180f; border-radius: 999px; padding: 2px 8px; font-size: var(--caption); }
+.love-form, .why { display: flex; flex-direction: column; gap: 6px; }
+.love-form { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.love-form input, .why textarea {
+  background: #fff; color: #111; border: 2px solid; border-color: #808080 #fff #fff #808080; padding: 4px 6px;
+}
+.love-form input:focus, .why textarea:focus { outline: 2px solid var(--navy); }
+.footer {
+  display: flex; flex-wrap: wrap; gap: var(--foot); align-items: center; justify-content: flex-end;
+  margin-top: var(--space); padding-top: 6px;
+}
+.lamp-word { margin-right: auto; font-size: var(--caption); font-weight: 700; }
+.lamp-word.unsaved { color: #8a5a00; }
+.lamp-word.saved { color: #1d6b45; }
+.status { width: 100%; margin: 0; font-size: var(--caption); }
+.sheet, .cheer {
+  width: min(34rem, 100%); background: #c0c0c0; color: #111;
+  padding: 22px 24px 18px;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #404040, 4px 4px 0 #000;
+  font-size: var(--type); letter-spacing: var(--track);
+}
+.sheet h2, .cheer h2 { margin: 0; font-size: calc(var(--name) * 0.9); }
+.sheet-kicker { margin: 0 0 6px; font-size: var(--caption); font-weight: 700; letter-spacing: var(--kicker); text-transform: uppercase; color: var(--navy); }
+.task {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+  margin: 8px 0; padding: 12px 14px; border: 0; text-align: left; font: inherit;
+  color: var(--navy); background: #fff; box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff; cursor: pointer;
+}
+.task.static { cursor: default; color: #111; }
+.task:hover, .task:focus-visible { background: var(--navy); color: #fff; }
+.task.static:hover { background: #fff; color: #111; }
+.task b { font-size: var(--mission-type); }
+.said { margin: 0 0 8px; padding: 12px 14px; background: #fffef2; color: #3c2817; border: 3px solid #3c2817; font-weight: 700; }
+.blurb, .ask { margin: 0 0 8px; }
+.cover {
+  position: absolute; inset: 0; background: rgba(0,0,0,.35);
+  display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; z-index: 5;
+}
+.cover.item { z-index: 6; background: rgba(0,0,0,.45); }
+.cover.cheer { z-index: 7; }
+@media (max-width: 880px) {
+  body { flex-direction: column; }
+  .lab-dock { max-height: 46vh; width: auto; border-right: 0; border-bottom: 2px solid var(--chrome-edge); }
+  .face { grid-template-columns: 1fr; }
+  .bond { grid-column: 1; grid-row: auto; }
+}
+</style>
+</head>
+<body>
+<aside class="lab-dock" id="dock">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="shell.html">Shell</a>
+    <a href="home.html">Home</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="modules.html">Modules</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="settings.html">Settings</a>
+    <a href="baby-animal.html" aria-current="page">Friend</a>
+  </nav>
+  <p class="lab-title">UI lab — Baby animal friend</p>
+  <p class="lab-note">The friend instrument as it is. These controls only tune this screen.</p>
+  <button type="button" class="reset" id="reset">Reset tuning</button>
+  <fieldset>
+    <legend>Friend</legend>
+    <div class="controls">
+      <label>Species
+        <select id="species">
+          <option value="kitten" selected>cute small kitten</option>
+          <option value="owl">Baby Owl</option>
+          <option value="puppy">Baby Puppy</option>
+          <option value="crow">Baby Crow</option>
+          <option value="hedgehog">sweet little hedgehog</option>
+          <option value="lamb">sweet little lamb</option>
+          <option value="bunny">Little bunny</option>
+          <option value="mouse">Little mouse</option>
+          <option value="seal">Baby Seal</option>
+          <option value="fox">baby fox kit</option>
+        </select>
+      </label>
+      <label>Expression
+        <select id="expression">
+          <option value="content" selected>Content</option>
+          <option value="curious">Curious</option>
+          <option value="sleepy">Sleepy</option>
+          <option value="proud">Proud</option>
+          <option value="shy">Shy</option>
+        </select>
+      </label>
+      <label>Dialog effect
+        <select id="effect">
+          <option value="plain">Plain</option>
+          <option value="heart">Heart</option>
+          <option value="sparkle" selected>Sparkle</option>
+          <option value="stamp">Stamp</option>
+          <option value="whisper">Whisper</option>
+          <option value="bounce">Bounce</option>
+        </select>
+      </label>
+      <label>Tone
+        <select id="tone">
+          <option value="gentle">Gentle</option>
+          <option value="playful" selected>Playful</option>
+          <option value="direct">Direct</option>
+          <option value="coach">Coach</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Type</legend>
+    <div class="controls">
+      <label>Font
+        <select id="font">
+          <option value="system" selected>House (Tahoma)</option>
+          <option value="grotesk">Grotesk</option>
+          <option value="soft">Soft</option>
+          <option value="serif">Serif</option>
+          <option value="mono">Mono</option>
+        </select>
+      </label>
+    </div>
+    <div class="sliders">
+      <label>Weight <output id="weight-out"></output><input id="weight" type="range" min="400" max="800" step="50" value="400"></label>
+      <label>Type size <output id="type-out"></output><input id="type" type="range" min="11" max="22" value="13"></label>
+      <label>Letter spacing <output id="track-out"></output><input id="track" type="range" min="-2" max="16" value="0"></label>
+      <label>Line height <output id="leading-out"></output><input id="leading" type="range" min="100" max="180" value="135"></label>
+      <label>Name size <output id="name-out"></output><input id="name" type="range" min="14" max="36" value="18"></label>
+      <label>Caption size <output id="caption-out"></output><input id="caption" type="range" min="9" max="18" value="11"></label>
+      <label>Mission type <output id="missiontype-out"></output><input id="missiontype" type="range" min="12" max="32" value="14"></label>
+      <label>Kicker tracking <output id="kicker-out"></output><input id="kicker" type="range" min="0" max="24" value="6"></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Spacing and size</legend>
+    <div class="sliders">
+      <label>Spacing <output id="spacing-out"></output><input id="spacing" type="range" min="2" max="28" value="8"></label>
+      <label>Padding <output id="pad-out"></output><input id="pad" type="range" min="4" max="36" value="12"></label>
+      <label>Popup scale <output id="scale-out"></output><input id="scale" type="range" min="70" max="130" value="100"></label>
+      <label>Popup width <output id="popw-out"></output><input id="popw" type="range" min="520" max="980" value="860"></label>
+      <label>Portrait column <output id="col-out"></output><input id="col" type="range" min="160" max="420" value="260"></label>
+      <label>Window inset <output id="inset-out"></output><input id="inset" type="range" min="2" max="22" value="8"></label>
+      <label>Tab padding <output id="tabpad-out"></output><input id="tabpad" type="range" min="4" max="22" value="8"></label>
+      <label>Key padding <output id="keypad-out"></output><input id="keypad" type="range" min="2" max="16" value="4"></label>
+      <label>Footer gap <output id="foot-out"></output><input id="foot" type="range" min="2" max="20" value="6"></label>
+      <label>Friend size <output id="size-out"></output><input id="size" type="range" min="120" max="340" value="220"></label>
+      <label>Chat key <output id="chat-out"></output><input id="chat" type="range" min="48" max="120" value="72"></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Chrome</legend>
+    <div class="sliders">
+      <label>Radius <output id="radius-out"></output><input id="radius" type="range" min="0" max="36" value="18"></label>
+      <label>Key radius <output id="keyradius-out"></output><input id="keyradius" type="range" min="0" max="24" value="6"></label>
+      <label>Border <output id="border-out"></output><input id="border" type="range" min="0" max="8" value="1"></label>
+      <label>Shadow <output id="shadow-out"></output><input id="shadow" type="range" min="0" max="28" value="10"></label>
+      <label>Silver lift <output id="lift-out"></output><input id="lift" type="range" min="20" max="100" value="72"></label>
+      <label>Ink strength <output id="ink-out"></output><input id="ink" type="range" min="40" max="100" value="100"></label>
+      <label>Nub size <output id="nub-out"></output><input id="nub" type="range" min="0" max="18" value="8"></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Portrait and bond</legend>
+    <div class="sliders">
+      <label>Lace <output id="lace-out"></output><input id="lace" type="range" min="0" max="18" value="7"></label>
+      <label>Lace dots <output id="lacedot-out"></output><input id="lacedot" type="range" min="4" max="18" value="9"></label>
+      <label>Glass shine <output id="shine-out"></output><input id="shine" type="range" min="0" max="100" value="70"></label>
+      <label>Bond glow <output id="glow-out"></output><input id="glow" type="range" min="0" max="100" value="44"></label>
+      <label>Friend hue <output id="friendhue-out"></output><input id="friendhue" type="range" min="0" max="100" value="50"></label>
+      <label>Outline <output id="outline-out"></output><input id="outline" type="range" min="0" max="6" step="0.5" value="1.25"></label>
+      <label>Tube height <output id="tubeh-out"></output><input id="tubeh" type="range" min="8" max="40" value="22"></label>
+      <label>Tube width <output id="tubew-out"></output><input id="tubew" type="range" min="4" max="16" value="8"></label>
+      <label>Tube gap <output id="tubegap-out"></output><input id="tubegap" type="range" min="0" max="10" value="3"></label>
+      <label>Nixie size <output id="nixie-out"></output><input id="nixie" type="range" min="12" max="40" value="21"></label>
+      <label>Gem size <output id="gem-out"></output><input id="gem" type="range" min="10" max="36" value="18"></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Mission strip</legend>
+    <div class="sliders">
+      <label>Mission padding <output id="missionpad-out"></output><input id="missionpad" type="range" min="2" max="24" value="8"></label>
+      <label>Phosphor <output id="phos-out"></output><input id="phos" type="range" min="35" max="100" value="100"></label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Color</legend>
+    <div class="sliders">
+      <label>Warmth <output id="warmth-out"></output><input id="warmth" type="range" min="0" max="100" value="50"></label>
+      <label>Saturation <output id="sat-out"></output><input id="sat" type="range" min="40" max="160" value="100"></label>
+      <label>Contrast <output id="contrast-out"></output><input id="contrast" type="range" min="70" max="140" value="100"></label>
+    </div>
+  </fieldset>
+</aside>
+<main class="stage">
+  <div class="mount" id="mount"></div>
+</main>
+<script>
+const FONTS = {
+  system: '"MS Sans Serif", Tahoma, "Geneva", sans-serif',
+  grotesk: '"Avenir Next", "Segoe UI", Helvetica, sans-serif',
+  soft: '"ui-rounded", "Segoe UI", "Avenir Next", "Trebuchet MS", sans-serif',
+  serif: 'Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif',
+  mono: 'ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace'
+};
+const SHAPE = { plain: "arch", bounce: "arch", heart: "heart", stamp: "oval", whisper: "round", sparkle: "tribal" };
+const UNLOCKS = [
+  { level: 2, label: "oval cameo" },
+  { level: 3, label: "round medallion" },
+  { level: 4, label: "heart window" },
+  { level: 5, label: "tribal frame" }
+];
+const LINES = {
+  nextAction: {
+    playful: (t) => "Hey! Maybe do " + t + "?",
+    gentle: (t) => "Whenever you're ready, " + t + " is waiting.",
+    direct: (t) => "Next: " + t + ".",
+    coach: (t) => "Let's take on " + t + "."
+  },
+  habit: {
+    playful: (t) => "Daily habit time — " + t + "?",
+    gentle: (t) => t + " is still open on today's habits.",
+    direct: (t) => "Habit still open: " + t + ".",
+    coach: (t) => "Keep the streak alive with " + t + "."
+  },
+  todo: {
+    playful: (t) => "Ooh, " + t + " is on To Do today.",
+    gentle: (t) => t + " is on today's To Do when you want it.",
+    direct: (t) => "On today's To Do: " + t + ".",
+    coach: (t) => "Knock out " + t + " on today's list."
+  },
+  affection: {
+    playful: () => "I love you!",
+    gentle: () => "I love you. That's all.",
+    direct: () => "I love you.",
+    coach: () => "I love you. Keep going."
+  },
+  whim: {
+    playful: (t) => "Side quest: " + t + "!",
+    gentle: (t) => "A soft ask: " + t + ".",
+    direct: (t) => "Mission: " + t + ".",
+    coach: (t) => "Let's try " + t + "."
+  }
+};
+const SOURCE_LABEL = {
+  habit: "Daily habit", todo: "Today's To Do", nextAction: "Next Action", whim: "Soft mission", affection: "Just affection"
+};
+const WHIMS = [
+  ["doodle", "Draw a picture"], ["read", "Read a little"], ["walk", "Take a short walk"],
+  ["splash", "Water nearby"], ["stretch", "Stretch once"], ["nibble", "Eat something kind"],
+  ["soak", "Sit still a minute"], ["shiny", "Put one thing where it belongs"],
+  ["hop", "Hop or skip once"], ["curl", "Make a small nest"]
+];
+const VOICE = {
+  cuddly: { label: "Cuddly", tone: "gentle", effect: "heart", cadence: "chatty", push: "nudge", habit: 24, todo: 58, next: 22, urgency: 18, love: 72, whim: 36, reward: 48, suggest: 28 },
+  coach: { label: "Coach", tone: "coach", effect: "stamp", cadence: "occasional", push: "celebrate", habit: 22, todo: 28, next: 80, urgency: 64, love: 8, whim: 10, reward: 60, suggest: 44 },
+  wanderer: { label: "Wanderer", tone: "playful", effect: "sparkle", cadence: "quiet", push: "never", habit: 34, todo: 33, next: 33, urgency: 12, love: 18, whim: 55, reward: 32, suggest: 16 },
+  drill: { label: "Drill sergeant", tone: "direct", effect: "bounce", cadence: "eager", push: "insist", habit: 40, todo: 70, next: 48, urgency: 96, love: 0, whim: 0, reward: 84, suggest: 70 }
+};
+const SPECIES = {
+  kitten: { name: "cute small kitten", young: "kitten", source: "todo", title: "Sort the yarn drawer", loves: ["play", "yarn"], whim: "doodle", tone: "playful", cadence: "chatty", push: "nudge", points: 27, wear: 4, met: "Oct 6", streak: 1, tonesTried: 1, whimDone: true, noon: false, habit: 22, todo: 84, next: 30, urgency: 50, love: 20, whimRate: 18, reward: 40, suggest: 40, fur: "#e8b48a", belly: "#fff6ee", accent: "#c47b55" },
+  owl: { name: "Baby Owl", young: "owlet", source: "nextAction", title: "Read the field notes", loves: ["read", "book", "study"], whim: "read", tone: "coach", cadence: "quiet", push: "nudge", points: 46, wear: 8, met: "Sep 2", streak: 3, tonesTried: 2, whimDone: true, noon: false, habit: 18, todo: 24, next: 88, urgency: 50, love: 6, whimRate: 10, reward: 40, suggest: 40, fur: "#c4a574", belly: "#f3e6c8", accent: "#8a6a3a" },
+  puppy: { name: "Baby Puppy", young: "puppy", source: "todo", title: "Walk the block", loves: ["walk", "play"], whim: "walk", tone: "playful", cadence: "eager", push: "nudge", points: 9, wear: 2, met: "Oct 20", streak: 0, tonesTried: 1, whimDone: false, noon: false, habit: 24, todo: 88, next: 28, urgency: 50, love: 22, whimRate: 10, reward: 40, suggest: 40, fur: "#e0b06a", belly: "#fff8ee", accent: "#8a5a32" },
+  crow: { name: "Baby Crow", young: "crow", source: "nextAction", title: "File the receipts", loves: ["file", "write"], whim: "shiny", tone: "direct", cadence: "occasional", push: "nudge", points: 33, wear: 6, met: "Aug 18", streak: 2, tonesTried: 1, whimDone: true, noon: true, habit: 16, todo: 28, next: 90, urgency: 50, love: 4, whimRate: 8, reward: 40, suggest: 40, fur: "#3a3a44", belly: "#6a6a78", accent: "#e2b657" },
+  hedgehog: { name: "sweet little hedgehog", young: "hedgehog", source: "whim", title: "Make a small nest", loves: ["brush", "quiet"], whim: "curl", tone: "gentle", cadence: "quiet", push: "never", points: 18, wear: 5, met: "Oct 1", streak: 2, tonesTried: 1, whimDone: false, noon: false, habit: 88, todo: 20, next: 22, urgency: 50, love: 6, whimRate: 8, reward: 40, suggest: 40, fur: "#c48a62", belly: "#f3d2b8", accent: "#6b4428" },
+  lamb: { name: "sweet little lamb", young: "lamb", source: "habit", title: "Stretch", loves: ["stretch", "walk"], whim: "stretch", tone: "gentle", cadence: "occasional", push: "nudge", points: 22, wear: 7, met: "Sep 14", streak: 4, tonesTried: 1, whimDone: true, noon: false, habit: 90, todo: 22, next: 16, urgency: 50, love: 8, whimRate: 8, reward: 40, suggest: 40, fur: "#f7f4ee", belly: "#fff", accent: "#e7c2b0" },
+  bunny: { name: "Little bunny", young: "bunny", source: "habit", title: "Garden", loves: ["hop", "garden"], whim: "hop", tone: "playful", cadence: "eager", push: "nudge", points: 15, wear: 3, met: "Oct 12", streak: 1, tonesTried: 1, whimDone: false, noon: false, habit: 82, todo: 28, next: 18, urgency: 50, love: 16, whimRate: 14, reward: 40, suggest: 40, fur: "#f4f1ea", belly: "#fff", accent: "#f4b6c8" },
+  mouse: { name: "Little mouse", young: "mouse", source: "todo", title: "Write the note", loves: ["read", "write"], whim: "nibble", tone: "gentle", cadence: "quiet", push: "nudge", points: 4, wear: 1, met: "Oct 25", streak: 0, tonesTried: 1, whimDone: false, noon: false, habit: 28, todo: 76, next: 30, urgency: 50, love: 10, whimRate: 12, reward: 40, suggest: 40, fur: "#d9d0c8", belly: "#fff", accent: "#f0b0b8" },
+  seal: { name: "Baby Seal", young: "seal pup", source: "nextAction", title: "Rest the hands", loves: ["rest"], whim: "splash", tone: "gentle", cadence: "occasional", push: "nudge", points: 40, wear: 9, met: "Jul 30", streak: 2, tonesTried: 2, whimDone: true, noon: false, habit: 24, todo: 34, next: 78, urgency: 50, love: 16, whimRate: 10, reward: 40, suggest: 40, fur: "#8aa0ad", belly: "#e8eef0", accent: "#5c7380" },
+  fox: { name: "baby fox kit", young: "fox kit", source: "nextAction", title: "Plan the week", loves: ["plan"], whim: "doodle", tone: "playful", cadence: "chatty", push: "nudge", points: 21, wear: 3, met: "Oct 8", streak: 1, tonesTried: 1, whimDone: false, noon: false, habit: 14, todo: 32, next: 86, urgency: 50, love: 10, whimRate: 16, reward: 40, suggest: 40, fur: "#e07a3a", belly: "#fff6ee", accent: "#f2efe8" }
+};
+const DEFAULTS = {
+  species: "kitten", expression: "content", effect: "sparkle", tone: "playful", font: "system",
+  weight: 400, type: 13, track: 0, leading: 135, name: 18, caption: 11, missiontype: 14, kicker: 6,
+  spacing: 8, pad: 12, scale: 100, popw: 860, col: 260, inset: 8, tabpad: 8, keypad: 4, foot: 6, size: 220, chat: 72,
+  radius: 18, keyradius: 6, border: 1, shadow: 10, lift: 72, ink: 100, nub: 8,
+  lace: 7, lacedot: 9, shine: 70, glow: 44, friendhue: 50, outline: 1.25,
+  tubeh: 22, tubew: 8, tubegap: 3, nixie: 21, gem: 18, missionpad: 8, phos: 100,
+  warmth: 50, sat: 100, contrast: 100
+};
+const SLIDERS = Object.keys(DEFAULTS).filter((id) => document.getElementById(id) && document.getElementById(id).type === "range");
+const play = {
+  phase: "offer", sheet: false, cheer: false, item: false, preview: 0, tab: "today",
+  note: "", why: "", reason: "", stepTitle: "", dirty: false, saved: true, voice: null,
+  loves: null, loveDraft: "", status: "", cadence: "chatty", push: "nudge"
+};
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function val(id) { return document.getElementById(id).value; }
+function num(id) { return Number(document.getElementById(id).value); }
+function sp() { return SPECIES[val("species")] || SPECIES.kitten; }
+function weights() {
+  if (play.voice) return play.voice;
+  const s = sp();
+  return { habit: s.habit, todo: s.todo, next: s.next, urgency: s.urgency, love: s.love, whim: s.whimRate, reward: s.reward, suggest: s.suggest };
+}
+function loves() { return play.loves || sp().loves.slice(); }
+function payPoints() {
+  const scale = Math.max(0, Math.min(100, weights().reward));
+  return Math.max(1, Math.round(2 + scale / 12));
+}
+function bondOf() {
+  const s = sp();
+  const score = s.points + s.wear;
+  const level = 1 + Math.floor(score / 20);
+  const into = score % 20;
+  const next = UNLOCKS.find((row) => level < row.level);
+  let teaser = "";
+  if (next) {
+    const left = (next.level - 1) * 20 - score;
+    if (left > 0) teaser = left + " more → " + next.label;
+  }
+  return { level, into, teaser };
+}
+function mixOf(w) {
+  const sum = w.habit + w.todo + w.next;
+  if (sum <= 0) return { habit: 0, todo: 0, next: 0 };
+  const habit = Math.round((w.habit / sum) * 100);
+  const todo = Math.round((w.todo / sum) * 100);
+  let next = 100 - habit - todo;
+  if (next < 0) next = 0;
+  return { habit, todo, next };
+}
+function whimTitle(id) {
+  const row = WHIMS.find((item) => item[0] === id);
+  return row ? row[1] : "Draw a picture";
+}
+function spoken(kind) {
+  const tone = val("tone");
+  const s = sp();
+  if (kind === "affection") return LINES.affection[tone]();
+  if (kind === "whim") return LINES.whim[tone](whimTitle(s.whim));
+  return LINES[s.source][tone](s.title);
+}
+function blurb() {
+  const s = sp();
+  const t = s.title;
+  if (s.source === "habit") return "Open Habits and tick " + t + " for today. When it is done, this friend will try to give you a small point reward.";
+  if (s.source === "todo") return t + " is on today's To Do. Finish it there — the friend is watching that row.";
+  if (s.source === "nextAction") return t + " is an open Next Action. Complete it and this friend may pay extra points.";
+  if (s.source === "whim") return "This is not on a list. Do it in the real world, then tap I did it on the mission card.";
+  return "A hello, not a mission.";
+}
+function cheerLine() {
+  const s = sp();
+  const title = play.stepTitle || s.title;
+  const points = payPoints();
+  const pay = points === 1 ? "That's 1 friend point" : "That's " + points + " friend points";
+  const effect = val("effect");
+  const map = {
+    heart: s.name + " bumps your hand. " + title + " is finished. " + pay + ".",
+    sparkle: "Little sparks. " + s.name + " is proud you finished " + title + ". " + pay + ".",
+    stamp: s.name + " stamps a tiny gold star on " + title + ". " + pay + ".",
+    whisper: s.name + " whispers, well done. " + title + " is done. " + pay + ".",
+    bounce: s.name + " does a tiny happy hop. " + title + " is done. " + pay + ".",
+    plain: s.name + " sits up a little taller. " + title + " is done. " + pay + "."
+  };
+  return map[effect] || map.plain;
+}
+function countdown() {
+  const n = new Date();
+  const end = new Date(n);
+  end.setHours(24, 0, 0, 0);
+  let sec = Math.max(0, Math.floor((end - n) / 1000));
+  const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+  sec %= 3600;
+  const m = String(Math.floor(sec / 60)).padStart(2, "0");
+  sec %= 60;
+  return h + ":" + m + ":" + String(sec).padStart(2, "0");
+}
+function paint(fill) {
+  const sw = num("outline");
+  return 'fill="' + fill + '" stroke="#241c18" stroke-width="' + sw + '" stroke-linejoin="round"';
+}
+function eye(x, y, r, expr, side) {
+  const ink = "#241c18";
+  if (expr === "sleepy") return '<path d="M' + (x - r) + " " + y + " Q " + x + " " + (y + r) + " " + (x + r) + " " + y + '" fill="none" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/>';
+  const rr = expr === "shy" ? r * 0.72 : r;
+  const yy = expr === "shy" ? y + 3 : y;
+  const brow = expr === "curious" && side === "l"
+    ? '<path d="M' + (x - rr) + " " + (yy - rr - 2) + " q " + rr + " -7 " + (rr * 2) + ' 1" fill="none" stroke="' + ink + '" stroke-width="2" stroke-linecap="round"/>'
+    : "";
+  return brow + '<ellipse cx="' + x + '" cy="' + yy + '" rx="' + rr + '" ry="' + rr + '" fill="' + ink + '"/>' +
+    '<circle cx="' + (x + rr * 0.28) + '" cy="' + (yy - rr * 0.32) + '" r="' + (rr * 0.28) + '" fill="#fff"/>';
+}
+function mouth(x, y, expr) {
+  const d = expr === "proud" ? 9 : expr === "shy" ? 3 : 5;
+  if (expr === "sleepy") return '<path d="M' + (x - 6) + " " + y + ' h 12" fill="none" stroke="#241c18" stroke-width="2" stroke-linecap="round"/>';
+  return '<path d="M' + (x - 8) + " " + y + " q 8 " + d + ' 16 0" fill="none" stroke="#241c18" stroke-width="2" stroke-linecap="round"/>';
+}
+function face(cx, cy, expr, blushOn, eyeR) {
+  const r = eyeR || 5.5;
+  const gap = r + 8;
+  const eyes = eye(cx - gap, cy - 2, r, expr, "l") + eye(cx + gap, cy - 2, r, expr, "r");
+  const blush = blushOn
+    ? '<ellipse cx="' + (cx - 22) + '" cy="' + (cy + 8) + '" rx="7" ry="4" fill="#f3a3b0" opacity=".9"/><ellipse cx="' + (cx + 22) + '" cy="' + (cy + 8) + '" rx="7" ry="4" fill="#f3a3b0" opacity=".9"/>'
+    : "";
+  return eyes + blush + mouth(cx, cy + 14, expr);
+}
+function creature(id, expr) {
+  const s = SPECIES[id] || SPECIES.kitten;
+  const fur = paint(s.fur);
+  const belly = paint(s.belly);
+  const accent = paint(s.accent);
+  const blushOn = expr === "shy" || val("effect") === "heart";
+  let body = "";
+  let head = [80, 78];
+  if (id === "kitten") {
+    body = '<polygon points="46,58 58,22 74,56" ' + fur + '/><polygon points="86,56 102,22 114,58" ' + fur + '/>' +
+      '<ellipse cx="80" cy="128" rx="34" ry="26" ' + fur + '/><ellipse cx="80" cy="132" rx="18" ry="14" ' + belly + '/>' +
+      '<ellipse cx="80" cy="74" rx="36" ry="32" ' + fur + '/>' +
+      '<path d="M108 128 q24 8 18 28" fill="none" stroke="#241c18" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M48 78 h-16 M112 78 h16 M50 86 h-14 M110 86 h14" fill="none" stroke="#241c18" stroke-width="1.4"/>';
+    head = [80, 74];
+  } else if (id === "puppy") {
+    body = '<ellipse cx="48" cy="78" rx="16" ry="22" transform="rotate(-28 48 78)" ' + accent + '/><ellipse cx="112" cy="78" rx="16" ry="22" transform="rotate(28 112 78)" ' + accent + '/>' +
+      '<ellipse cx="80" cy="128" rx="36" ry="28" ' + fur + '/><ellipse cx="96" cy="122" rx="10" ry="8" ' + belly + '/>' +
+      '<ellipse cx="80" cy="78" rx="34" ry="32" ' + fur + '/><ellipse cx="80" cy="92" rx="16" ry="12" ' + belly + '/>' +
+      '<ellipse cx="80" cy="96" rx="5" ry="3.5" fill="#241c18"/>';
+    head = [80, 72];
+  } else if (id === "owl") {
+    body = '<polygon points="58,42 68,18 78,44" ' + accent + '/><polygon points="102,44 112,18 122,42" ' + accent + '/>' +
+      '<ellipse cx="80" cy="108" rx="40" ry="42" ' + fur + '/><ellipse cx="80" cy="118" rx="22" ry="24" ' + belly + '/>' +
+      '<ellipse cx="80" cy="74" rx="34" ry="30" ' + fur + '/><polygon points="74,88 80,98 86,88" ' + accent + '/>';
+    head = [80, 70];
+  } else if (id === "crow") {
+    body = '<ellipse cx="80" cy="112" rx="36" ry="34" ' + fur + '/><ellipse cx="80" cy="78" rx="30" ry="28" ' + fur + '/>' +
+      '<path d="M104 80 q22 6 16 22 q-14 2 -18 -6" ' + accent + '/><polygon points="92,86 118,92 92,98" ' + accent + '/>' +
+      '<path d="M62 146 q8 10 16 0 M90 146 q8 10 16 0" fill="none" stroke="#241c18" stroke-width="2"/>';
+    head = [78, 74];
+  } else if (id === "hedgehog") {
+    body = '<ellipse cx="96" cy="108" rx="40" ry="32" ' + accent + '/>' +
+      '<polygon points="70,86 78,64 86,88" ' + fur + '/><polygon points="86,80 98,54 108,84" ' + fur + '/><polygon points="108,78 122,56 128,90" ' + fur + '/>' +
+      '<ellipse cx="64" cy="104" rx="28" ry="26" ' + fur + '/><ellipse cx="62" cy="112" rx="14" ry="12" ' + belly + '/>';
+    head = [62, 100];
+  } else if (id === "lamb") {
+    body = '<circle cx="48" cy="70" r="16" ' + fur + '/><circle cx="112" cy="70" r="16" ' + fur + '/><circle cx="40" cy="100" r="18" ' + fur + '/><circle cx="120" cy="100" r="18" ' + fur + '/><circle cx="80" cy="56" r="18" ' + fur + '/><circle cx="80" cy="120" r="28" ' + fur + '/>' +
+      '<ellipse cx="80" cy="86" rx="26" ry="24" ' + accent + '/><ellipse cx="62" cy="70" rx="8" ry="14" ' + accent + '/><ellipse cx="98" cy="70" rx="8" ry="14" ' + accent + '/>';
+    head = [80, 84];
+  } else if (id === "bunny") {
+    body = '<ellipse cx="58" cy="42" rx="12" ry="28" ' + fur + '/><ellipse cx="102" cy="42" rx="12" ry="28" ' + fur + '/><ellipse cx="58" cy="46" rx="6" ry="16" ' + accent + '/><ellipse cx="102" cy="46" rx="6" ry="16" ' + accent + '/>' +
+      '<ellipse cx="80" cy="124" rx="32" ry="26" ' + fur + '/><circle cx="108" cy="132" r="10" ' + belly + '/><ellipse cx="80" cy="84" rx="32" ry="28" ' + fur + '/>';
+    head = [80, 82];
+  } else if (id === "mouse") {
+    body = '<circle cx="48" cy="62" r="18" ' + fur + '/><circle cx="112" cy="62" r="18" ' + fur + '/><circle cx="48" cy="62" r="9" ' + accent + '/><circle cx="112" cy="62" r="9" ' + accent + '/>' +
+      '<ellipse cx="80" cy="118" rx="28" ry="24" ' + fur + '/><ellipse cx="80" cy="80" rx="26" ry="24" ' + fur + '/>' +
+      '<path d="M108 124 q30 20 24 36" fill="none" stroke="#241c18" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<ellipse cx="80" cy="92" rx="5" ry="3" fill="#c46a78"/>';
+    head = [80, 78];
+  } else if (id === "seal") {
+    body = '<ellipse cx="80" cy="108" rx="48" ry="32" ' + fur + '/><ellipse cx="80" cy="116" rx="26" ry="16" ' + belly + '/>' +
+      '<ellipse cx="80" cy="74" rx="32" ry="28" ' + fur + '/><ellipse cx="42" cy="124" rx="14" ry="8" ' + fur + '/><ellipse cx="118" cy="124" rx="14" ry="8" ' + fur + '/>' +
+      '<path d="M52 78 h-12 M108 78 h12" fill="none" stroke="#241c18" stroke-width="1.3"/>';
+    head = [80, 70];
+  } else {
+    body = '<polygon points="52,58 64,16 78,54" ' + fur + '/><polygon points="102,54 116,16 128,58" ' + fur + '/><polygon points="58,28 64,18 70,32" ' + accent + '/><polygon points="110,32 116,18 122,28" ' + accent + '/>' +
+      '<ellipse cx="80" cy="126" rx="32" ry="26" ' + fur + '/><ellipse cx="80" cy="78" rx="32" ry="28" ' + fur + '/><ellipse cx="80" cy="90" rx="14" ry="10" ' + accent + '/>' +
+      '<path d="M112 130 q28 16 12 32" fill="none" stroke="#241c18" stroke-width="6" stroke-linecap="round"/><circle cx="122" cy="160" r="6" ' + belly + '/>';
+    head = [80, 74];
+  }
+  const tilt = expr === "curious" ? ' transform="rotate(-7 80 100)"' : (expr === "proud" ? ' transform="translate(0 -4)"' : "");
+  const eyeR = id === "owl" || id === "seal" ? 8.5 : 5.5;
+  return '<svg viewBox="0 0 160 176" role="img" aria-label="' + esc(s.name) + '"><rect width="160" height="176" fill="#d9d3cc"/><g' + tilt + '>' +
+    body + face(head[0], head[1], expr, blushOn, eyeR) + "</g></svg>";
+}
+function tubes(into) {
+  let html = "";
+  for (let i = 0; i < 20; i++) html += '<i class="cap' + (i < into ? " on" : "") + '"></i>';
+  return html;
+}
+function journalRows() {
+  const s = sp();
+  const current = {
+    title: play.stepTitle || s.title, source: SOURCE_LABEL[s.source],
+    status: play.phase === "accepted" || play.cheer ? "Accepted" : (play.reason ? "Declined" : "Offered"),
+    extra: play.reason || (play.stepTitle ? "Today's piece: " + play.stepTitle : ""), points: 0, day: "Oct 27", time: "8:05 AM"
+  };
+  const past = whimTitle(s.whim) === s.title ? "Stretch once" : whimTitle(s.whim);
+  return [
+    current,
+    { title: past, source: "Soft mission", status: "Finished", extra: "", points: s.whimDone ? payPoints() : 0, day: "Oct 24", time: "4:40 PM" },
+    { title: "Read a little", source: "Soft mission", status: "Declined", extra: "Not tonight.", points: 0, day: "Oct 22", time: "11:10 AM" }
+  ];
+}
+function badgeRows() {
+  const s = sp();
+  const bond = bondOf();
+  const step = !!play.stepTitle;
+  return [
+    ["First mission", true, 1, 1],
+    ["Took the first step", step, step ? 1 : 0, 1],
+    ["3-day streak", s.streak >= 3, Math.min(s.streak, 3), 3],
+    ["Worn 10 times", s.wear >= 10, Math.min(s.wear, 10), 10],
+    ["Finished before noon", s.noon, s.noon ? 1 : 0, 1],
+    ["Bond Lv 5", bond.level >= 5, Math.min(bond.level, 5), 5],
+    ["7-day streak", s.streak >= 7, Math.min(s.streak, 7), 7],
+    ["Tried every tone", s.tonesTried >= 4, Math.min(s.tonesTried, 4), 4],
+    ["Finished a whim", s.whimDone, s.whimDone ? 1 : 0, 1]
+  ];
+}
+function renderBubble(line) {
+  return '<div class="bubble is-' + esc(val("effect")) + '" role="status"><button type="button" class="line" data-act="open-sheet">' + esc(line) + "</button></div>";
+}
+function renderMission() {
+  const s = sp();
+  const accepted = play.phase === "accepted";
+  const declined = !!play.reason;
+  const whim = s.source === "whim";
+  let keys = "";
+  if (!accepted && !declined) keys = '<button type="button" class="key" data-act="accept">Accept</button>';
+  if (accepted && whim && !play.cheer) keys = '<button type="button" class="key" data-act="did-it">I did it</button>';
+  const clock = accepted ? '<span class="due" id="due">' + countdown() + "</span>" : "";
+  const pay = !accepted && !declined ? '<p class="pay">' + payPoints() + " friend points if you accept and finish before the end of today.</p>" : "";
+  return '<section class="mission"><div class="mission-main"><i class="lamp' + (accepted ? " accepted" : "") + '"></i><div>' +
+    '<p class="mission-kicker">' + esc(declined ? "Declined" : SOURCE_LABEL[s.source]) + "</p>" +
+    '<button type="button" class="mission-title" data-act="open-sheet">▶ ' + esc(play.stepTitle || s.title) + "</button></div>" + clock + "</div>" +
+    '<p class="pay">' + esc(declined ? play.reason : spoken("source")) + "</p>" +
+    (keys || pay ? '<div class="actions">' + keys + pay + "</div>" : "") + "</section>";
+}
+function renderFace() {
+  const s = sp();
+  const bond = bondOf();
+  const line = play.preview > 0 ? [spoken("source"), spoken("affection"), spoken("whim")][play.preview - 1] : "";
+  const streak = s.streak >= 2 ? '<p class="streak">' + s.streak + "-day streak</p>" : "";
+  return '<div class="face"><figure class="portrait"><div class="window"><div class="well">' + creature(val("species"), val("expression")) +
+    '</div><i class="glow"></i><i class="lace"></i><i class="nub nw"></i><i class="nub ne"></i><i class="nub sw"></i><i class="nub se"></i></div>' +
+    '<p class="hud">met ' + esc(s.met) + " · worn ×" + s.wear + "</p><h2 class=\"name\">" + esc(s.name) + "</h2>" +
+    (line ? renderBubble(line) : '<p class="idle">tap me ✦</p>') +
+    '</figure><button type="button" class="say" data-act="preview" title="Preview a line with these settings. Nothing is logged.">Chat</button>' +
+    '<section class="bond" aria-label="Bond"><p class="kicker">Bond Lv ' + bond.level + "</p>" +
+    '<div class="tubes" role="img" aria-label="' + bond.into + ' of 20 toward the next level">' + tubes(bond.into) + "</div>" +
+    '<p class="points-row"><svg width="' + num("gem") + '" height="' + num("gem") + '" viewBox="0 0 18 18" aria-hidden="true"><polygon points="9,1 16,7 9,17 2,7" fill="#7dffc4" stroke="#145c40"/></svg>' +
+    '<span class="nixie">' + s.points + "</span><span>friend points</span></p>" + streak +
+    (bond.teaser ? '<p class="unlock">' + esc(bond.teaser) + "</p>" : "") + "</section></div>";
+}
+function renderJournal(compact) {
+  return journalRows().slice(0, compact ? 2 : 3).map((row, index) => {
+    const gem = row.points ? '<span class="gem">+' + row.points + " ◆</span>" : "<span>" + esc(row.status) + "</span>";
+    return '<button type="button" class="j-row" data-act="open-sheet"><span>' + (index + 1) + "</span><span><b>" + esc(row.title) + "</b> · " + esc(row.source) + "<br>" + esc(row.day) + " " + esc(row.time) + "</span>" + gem + "</button>" +
+      (row.extra ? '<p class="j-note">' + esc(row.extra) + "</p>" : "");
+  }).join("");
+}
+function renderKeeps() {
+  return '<ul class="keep-list">' + badgeRows().map((row) => {
+    const fill = row[3] ? row[2] / row[3] : 0;
+    return '<li class="keep ' + (row[1] ? "is-earned" : "is-trace") + '"><i class="cameo"></i><span>' + esc(row[0]) + "</span><span>" + row[2] + "/" + row[3] + '<i class="tube-mini" style="--fill:' + fill + '"><i></i></i></span></li>';
+  }).join("") + "</ul>";
+}
+function renderVoice() {
+  const w = weights();
+  const mix = mixOf(w);
+  const key = (list, current, act) => list.map((item) => '<button type="button" class="key' + (current === item[0] ? " on" : "") + (act === "set-push" && item[0] === "celebrate" ? " push-celebrate" : "") + '" data-act="' + act + '" data-value="' + item[0] + '">' + item[1] + "</button>").join("");
+  const faders = [["Habits", w.habit], ["To Do", w.todo], ["Next", w.next], ["Urgency", w.urgency], ["Love", w.love], ["Whims", w.whim], ["Reward", w.reward], ["Suggest", w.suggest, "dim"]];
+  return '<div class="voice"><p class="bay-title">Voice</p><div class="keys">' + key([["gentle", "Gentle"], ["playful", "Playful"], ["direct", "Direct"], ["coach", "Coach"]], val("tone"), "set-tone") + "</div>" +
+    '<div class="keys">' + key([["plain", "Plain"], ["heart", "Heart"], ["sparkle", "Sparkle"], ["stamp", "Stamp"], ["whisper", "Whisper"], ["bounce", "Bounce"]], val("effect"), "set-effect") + "</div>" +
+    '<div class="whims">' + WHIMS.map((item) => '<button type="button" class="key' + (sp().whim === item[0] ? " on" : "") + '" data-act="preview-whim" data-value="' + item[0] + '">' + esc(item[1]) + "</button>").join("") + "</div>" +
+    '<div class="saved-bay"><p class="bay-title">On their own</p><div class="keys">' + key([["quiet", "Quiet"], ["occasional", "Sometimes"], ["chatty", "Chatty"], ["eager", "Eager"]], play.cadence, "set-cadence") + "</div>" +
+    '<div class="keys">' + key([["never", "Never"], ["nudge", "Nudge"], ["insist", "Insist"], ["celebrate", "Celebrate"]], play.push, "set-push") + '</div><p class="pay">Stored. A click still always speaks. Suggest waits for the later clock.</p></div>' +
+    '<p class="bay-title">Equalizer</p><div class="eq">' + faders.map((f) => '<div class="fader ' + (f[2] || "") + '"><div class="slot"><i class="cap" style="--v:' + f[1] + '"></i></div>' + f[0] + "<br>" + f[1] + "</div>").join("") + "</div>" +
+    '<p class="mix">Habits ' + mix.habit + "% · To Do " + mix.todo + "% · Next " + mix.next + "% · Finishing on time pays " + payPoints() + "</p>" +
+    '<div class="keys">' + Object.keys(VOICE).map((id) => '<button type="button" class="key" data-act="voice" data-value="' + id + '">' + VOICE[id].label + "</button>").join("") + "</div>" +
+    '<p class="pay">Title loves</p><ul class="beads">' + loves().map((word) => '<li>' + esc(word) + ' <button type="button" class="key" data-act="drop-love" data-value="' + esc(word) + '">×</button></li>').join("") + "</ul>" +
+    '<form class="love-form" data-act="add-love"><input id="love-add" aria-label="Add a title love" placeholder="Add a word" value="' + esc(play.loveDraft || "") + '"><button class="key" type="submit">Add</button></form>' +
+    '<p class="pay">Words in a title are offered more often. Favorite lists use the list picker. None are marked on this sample.</p></div>';
+}
+function renderPanel() {
+  if (play.tab === "personality") return renderVoice();
+  if (play.tab === "keepsakes") return renderKeeps();
+  if (play.tab === "journal") return renderJournal(false);
+  return renderJournal(true);
+}
+function renderTabs() {
+  return '<div class="tabs" role="tablist">' + [["today", "Today"], ["personality", "Personality"], ["keepsakes", "Keepsakes"], ["journal", "Journal"]].map((tab) =>
+    '<button type="button" role="tab" data-act="tab" data-value="' + tab[0] + '" aria-selected="' + (play.tab === tab[0] ? "true" : "false") + '">' + tab[1] + "</button>").join("") + "</div>";
+}
+function renderFooter() {
+  const lamp = play.dirty ? '<span class="lamp-word unsaved">Unsaved changes</span>' : '<span class="lamp-word saved">Saved</span>';
+  return '<footer class="footer">' + lamp + (play.status ? '<p class="status">' + esc(play.status) + "</p>" : "") +
+    '<button type="button" class="key" data-act="revert"' + (play.dirty ? "" : " disabled") + ">Revert</button>" +
+    '<button type="button" class="key" data-act="close">Close</button>' +
+    '<button type="button" class="key" data-act="save"' + (play.dirty ? "" : " disabled") + ">Save personality</button></footer>";
+}
+function renderSheet() {
+  const s = sp();
+  const who = s.name;
+  const opens = s.source === "todo" || s.source === "nextAction";
+  const title = play.stepTitle || s.title;
+  let body = "";
+  if (play.phase === "declined") {
+    body = '<p class="ask">Declined. ' + esc(play.reason) + '</p><button type="button" class="key" data-act="close-sheet">Close</button>';
+  } else if (play.phase === "offer") {
+    body = '<div class="actions"><p class="ask">' + payPoints() + ' friend points if you accept and finish before the end of today.</p>' +
+      '<button type="button" class="key" data-act="accept">Accept mission</button><button type="button" class="key" data-act="decline">Decline mission</button></div>';
+  } else if (play.phase === "breakdown") {
+    body = '<div class="actions"><p class="ask">' + esc(who) + ' tilts their head. Want me to break this into smaller tasks?</p>' +
+      '<button type="button" class="key" data-act="break-yes">Yes, break it down</button><button type="button" class="key" data-act="break-no">No, keep it whole</button></div>';
+  } else if (play.phase === "first") {
+    body = '<div class="actions"><p class="ask">Just the first step, then?</p><button type="button" class="key" data-act="first-yes">Yes, just the first step</button>' +
+      '<button type="button" class="key" data-act="first-no">No, not even that</button></div>';
+  } else if (play.phase === "why") {
+    body = '<form class="why" data-act="why"><label class="ask" for="why">' + esc(who) + ' nods. Why are you declining?</label>' +
+      '<textarea id="why" rows="3">' + esc(play.why) + '</textarea><button type="submit" class="key" id="decline-go"' + (play.why.trim() ? "" : " disabled") + ">Decline</button></form>";
+  } else if (play.phase === "accepted") {
+    body = '<p class="ask">Accepted. You have until the end of today. Finish it and ' + esc(who) + " will share the friend points.</p>" +
+      (play.stepTitle ? '<p class="ask">Today\'s piece: ' + esc(play.stepTitle) + "</p>" : "") +
+      '<div class="actions">' + (s.source === "whim" ? '<button type="button" class="key" data-act="did-it">I did it</button>' : "") +
+      '<button type="button" class="key" data-act="close-sheet">Close</button></div>';
+  }
+  const task = opens
+    ? '<button type="button" class="task" data-act="item"><span>' + esc(SOURCE_LABEL[s.source]) + "</span><b>" + esc(title) + "</b></button>"
+    : '<div class="task static"><span>' + esc(SOURCE_LABEL[s.source]) + "</span><b>" + esc(title) + "</b></div>";
+  return '<section class="sheet" role="dialog" aria-label="Mission"><p class="sheet-kicker">Mission from ' + esc(who) + "</p><h2>Mission from " + esc(who) + ":</h2>" +
+    task + '<p class="blurb">' + esc(blurb()) + '</p><p class="said">' + esc(spoken("source")) + "</p>" +
+    (play.note ? '<p class="ask">' + esc(play.note) + "</p>" : "") + body + "</section>";
+}
+function renderCheer() {
+  const extra = play.push === "celebrate" ? '<p class="ask">They saved a little extra fuss for this one.</p>' : "";
+  return '<section class="cheer" role="dialog" aria-label="You did it"><p class="sheet-kicker">' + esc(sp().name) + "</p><h2>You did it</h2><p class=\"ask\">" + esc(cheerLine()) + "</p>" + extra +
+    '<button type="button" class="key" data-act="close-cheer">Lovely</button></section>';
+}
+function renderItem() {
+  const s = sp();
+  return '<section class="sheet" role="dialog" aria-label="Item"><p class="sheet-kicker">' + esc(SOURCE_LABEL[s.source]) + "</p><h2>" + esc(s.title) + "</h2>" +
+    '<p class="blurb">The task opens here, over the mission. Close it to return to Accept or Decline.</p><button type="button" class="key" data-act="close-item">Close</button></section>';
+}
+function applyVars(el) {
+  const set = (name, value) => el.style.setProperty(name, value);
+  set("--font", FONTS[val("font")] || FONTS.system);
+  set("--weight", val("weight"));
+  set("--type", num("type") + "px");
+  set("--track", (num("track") / 100) + "em");
+  set("--leading", String(num("leading") / 100));
+  set("--name", num("name") + "px");
+  set("--caption", num("caption") + "px");
+  set("--mission-type", num("missiontype") + "px");
+  set("--kicker", (num("kicker") / 100) + "em");
+  set("--space", num("spacing") + "px");
+  set("--pad", num("pad") + "px");
+  set("--scale", String(num("scale") / 100));
+  set("--popw", num("popw") + "px");
+  set("--col", num("col") + "px");
+  set("--inset", num("inset") + "px");
+  set("--tab-pad", num("tabpad") + "px");
+  set("--key-pad", num("keypad") + "px " + (num("keypad") + 6) + "px");
+  set("--foot", num("foot") + "px");
+  set("--radius", num("radius") + "px");
+  set("--key-radius", num("keyradius") + "px");
+  set("--border", num("border") + "px");
+  set("--shadow", num("shadow") + "px");
+  set("--lift", String(num("lift")));
+  set("--ink", String(num("ink")));
+  set("--size", num("size") + "px");
+  set("--lace", num("lace") + "px");
+  set("--lace-dot", num("lacedot") + "px");
+  set("--shine", String(num("shine") / 100));
+  set("--nub", num("nub") + "px");
+  set("--glow", String(num("glow") / 100));
+  set("--chat", num("chat") + "px");
+  set("--tube-h", num("tubeh") + "px");
+  set("--tube-w", num("tubew") + "px");
+  set("--tube-gap", num("tubegap") + "px");
+  set("--nixie", num("nixie") + "px");
+  set("--mission-pad", num("missionpad") + "px");
+  set("--phos", String(num("phos")));
+  set("--gem", num("gem") + "px");
+  set("--friend-hue", String(num("friendhue")));
+  set("--warm", String(num("warmth")));
+  set("--sat", String(num("sat")));
+  set("--contrast", String(num("contrast")));
+}
+function render() {
+  const mount = document.getElementById("mount");
+  let covers = "";
+  if (play.sheet) covers += '<div class="cover">' + renderSheet() + "</div>";
+  if (play.item) covers += '<div class="cover item">' + renderItem() + "</div>";
+  if (play.cheer) covers += '<div class="cover cheer">' + renderCheer() + "</div>";
+  mount.innerHTML = '<article class="popup" data-effect="' + esc(val("effect")) + '" data-shape="' + SHAPE[val("effect")] + '" data-push="' + esc(play.push) + '" data-lace="' + (num("lace") < 1 ? "0" : "1") + '">' +
+    '<button type="button" class="x" data-act="close" aria-label="Dismiss friend details">×</button>' +
+    renderFace() + renderMission() + renderTabs() + '<div class="panel">' + renderPanel() + "</div>" + renderFooter() + covers + "</article>";
+  applyVars(mount.querySelector(".popup"));
+  SLIDERS.forEach((id) => {
+    const out = document.getElementById(id + "-out");
+    if (out) out.textContent = document.getElementById(id).value;
+  });
+}
+function setSelect(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+function markDirty() { play.dirty = true; play.saved = false; }
+function closeSheet() {
+  play.sheet = false;
+  play.item = false;
+  if (play.phase !== "accepted" && play.phase !== "declined") play.phase = "offer";
+  render();
+}
+function accept(step) {
+  play.phase = "accepted";
+  play.reason = "";
+  if (step) play.stepTitle = step;
+  render();
+}
+function onAct(act, node) {
+  const value = node && node.dataset ? node.dataset.value || "" : "";
+  if (act === "preview") { play.preview = play.preview % 3 + 1; play.status = "Preview only. The header Chat button is the one that logs an offer."; render(); return; }
+  if (act === "open-sheet") { play.sheet = true; render(); return; }
+  if (act === "close-sheet") { closeSheet(); return; }
+  if (act === "close") {
+    if (play.item) { play.item = false; render(); return; }
+    if (play.sheet) { closeSheet(); return; }
+    if (play.dirty && !window.confirm("Discard unsaved personality changes?")) return;
+    play.dirty = false; play.saved = true; play.status = "Closed. Unsaved personality edits would be discarded."; render(); return;
+  }
+  if (act === "accept") { accept(""); return; }
+  if (act === "decline") { play.phase = "breakdown"; play.sheet = true; render(); return; }
+  if (act === "break-yes") {
+    const title = sp().title;
+    play.note = "Smaller tasks: Set out " + title + " · " + title + " · Close " + title;
+    play.phase = "offer"; render(); return;
+  }
+  if (act === "break-no") { play.phase = "first"; render(); return; }
+  if (act === "first-yes") { accept("Start " + sp().title); return; }
+  if (act === "first-no") { play.phase = "why"; render(); return; }
+  if (act === "did-it") { play.cheer = true; play.sheet = false; render(); return; }
+  if (act === "close-cheer") { play.cheer = false; render(); return; }
+  if (act === "item") { play.item = true; render(); return; }
+  if (act === "close-item") { play.item = false; render(); return; }
+  if (act === "tab") { play.tab = value; render(); return; }
+  if (act === "set-tone") { setSelect("tone", value); markDirty(); render(); return; }
+  if (act === "set-effect") { setSelect("effect", value); markDirty(); render(); return; }
+  if (act === "set-cadence") { play.cadence = value; markDirty(); render(); return; }
+  if (act === "set-push") { play.push = value; markDirty(); render(); return; }
+  if (act === "preview-whim") { play.preview = 3; play.status = LINES.whim[val("tone")](whimTitle(value)); render(); return; }
+  if (act === "voice") {
+    const patch = VOICE[value];
+    if (!patch) return;
+    setSelect("tone", patch.tone);
+    setSelect("effect", patch.effect);
+    play.cadence = patch.cadence;
+    play.push = patch.push;
+    play.voice = patch;
+    markDirty();
+    render();
+    return;
+  }
+  if (act === "drop-love") { play.loves = loves().filter((word) => word !== value); markDirty(); render(); return; }
+  if (act === "save") { play.dirty = false; play.saved = true; play.status = "Saved. The page stays open."; render(); return; }
+  if (act === "revert") {
+    play.voice = null; play.loves = null; play.dirty = false; play.saved = true;
+    const s = sp();
+    setSelect("tone", s.tone);
+    play.cadence = s.cadence;
+    play.push = s.push;
+    render();
+  }
+}
+function resetTuning() {
+  Object.keys(DEFAULTS).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = String(DEFAULTS[id]);
+  });
+  play.voice = null;
+  play.loves = null;
+  play.cadence = "chatty";
+  play.push = "nudge";
+  render();
+}
+function init() {
+  document.getElementById("dock").addEventListener("input", (event) => {
+    if (!event.target.matches("input, select")) return;
+    if (event.target.id === "species") {
+      play.voice = null;
+      play.loves = null;
+      play.phase = "offer";
+      play.note = "";
+      play.stepTitle = "";
+      play.preview = 0;
+      play.reason = "";
+      play.cadence = sp().cadence;
+      play.push = sp().push;
+    }
+    render();
+  });
+  document.getElementById("reset").addEventListener("click", resetTuning);
+  document.getElementById("mount").addEventListener("click", (event) => {
+    const node = event.target.closest("[data-act]");
+    if (!node || node.closest("form")) return;
+    onAct(node.dataset.act, node);
+  });
+  document.getElementById("mount").addEventListener("input", (event) => {
+    if (event.target.id === "why") {
+      play.why = event.target.value;
+      const button = document.getElementById("decline-go");
+      if (button) button.disabled = !play.why.trim();
+    } else if (event.target.id === "love-add") play.loveDraft = event.target.value;
+  });
+  document.getElementById("mount").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (event.target.dataset.act === "why") {
+      const reason = play.why.trim();
+      if (!reason) return;
+      play.reason = reason;
+      play.phase = "declined";
+      play.sheet = false;
+      play.why = "";
+      play.status = "Declined. The reason is in the journal.";
+      render();
+    } else if (event.target.dataset.act === "add-love") {
+      const word = (play.loveDraft || "").trim();
+      if (!word) return;
+      const next = loves();
+      if (!next.includes(word)) next.push(word);
+      play.loves = next;
+      play.loveDraft = "";
+      markDirty();
+      render();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (play.item) { play.item = false; render(); return; }
+    if (play.cheer) { play.cheer = false; render(); return; }
+    if (play.sheet) closeSheet();
+  });
+  window.setInterval(() => {
+    const due = document.getElementById("due");
+    if (due) due.textContent = countdown();
+  }, 1000);
+  render();
+}
+if (typeof document !== "undefined") init();
+</script>
+</body>
+</html>

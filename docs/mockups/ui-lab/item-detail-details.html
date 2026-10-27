@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 item detail — Details</title>
+<style>
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 980px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt); opacity: .7; text-decoration: none;
+  padding: 2px 5px; border: 1px solid #444; border-radius: 3px;
+}
+.lab-sections a:hover, .lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px; color: var(--crt); letter-spacing: .12em;
+  text-transform: uppercase; margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  margin: 12px 0 6px; color: var(--crt); font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .88; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.now { margin: 8px 0; }
+.now strong, .stage-cap strong { color: var(--crt); font-weight: 650; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.presets button, .plan summary {
+  font: inherit; font-size: 10px; color: #e8e8ec; background: #2a2d36;
+  border: 1px solid #555; border-radius: 3px; padding: 4px 6px; cursor: pointer;
+}
+.presets button[aria-pressed="true"] { background: #070c0a; color: var(--crt); border-color: var(--crt); }
+.plan { margin: 8px 0 4px; }
+.plan summary { display: inline-block; margin-bottom: 6px; }
+.plan-body { line-height: 1.45; opacity: .92; }
+.plan-body p { margin: 0 0 8px; }
+.plan-body h3 { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--crt); }
+.plan-body ul { margin: 0 0 8px; padding-left: 16px; }
+.plan-body li { margin: 0 0 6px; }
+.bench :focus-visible, .item :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 11px; letter-spacing: .04em; opacity: .85; }
+.stage-well {
+  flex: 1; min-height: 480px; display: flex; justify-content: center; align-items: flex-start;
+  overflow: auto; padding: 28px 16px 40px; border-radius: 8px;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px), #3a3d40;
+}
+.stage[data-system="paper"] .stage-well { background: #e6e6e4; }
+.stage[data-system="walnut"] .stage-well {
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 11px), linear-gradient(180deg, #8a6244, #4a3020);
+}
+.stage[data-system="candy"] .stage-well {
+  background: radial-gradient(circle at 12px 12px, rgba(255,180,210,.45) 2px, transparent 3px), #fff0f6;
+  background-size: 28px 28px, auto;
+}
+.stage[data-system="blueprint"] .stage-well {
+  background: linear-gradient(#c5d7ea 1px, transparent 1px), linear-gradient(90deg, #c5d7ea 1px, transparent 1px), #e7eef6;
+  background-size: 22px 22px, 22px 22px, auto;
+}
+.stage[data-system="jewel"] .stage-well { background: radial-gradient(ellipse at 50% 0%, #2a2440, #0c0a10 70%); }
+.stage[data-system="dash"] .stage-well { background: linear-gradient(180deg, rgba(0,0,0,.45), transparent 28%), #041012; }
+.stage[data-system="instrument"] .stage-well {
+  background: linear-gradient(90deg, rgba(125,255,196,.05) 1px, transparent 1px), #14171c;
+  background-size: 18px 18px, auto;
+}
+.stage[data-system="ticket"] .stage-well { background: #d7c4a3; }
+.stage[data-layout="sheet"] .stage-well { padding: 0; justify-content: stretch; align-items: stretch; }
+.stage[data-layout="split"] .stage-well { align-items: stretch; }
+.frame { width: min(100%, calc(var(--panel) * 1px)); }
+.stage[data-layout="sheet"] .frame { width: 100%; min-height: 100%; display: flex; }
+.item {
+  --gap: calc(var(--space) * 1px);
+  width: 100%;
+  display: flex; flex-direction: column;
+  max-height: min(86vh, 940px);
+  overflow: hidden;
+  background: var(--face);
+  color: var(--ink);
+  font-family: var(--ff);
+  font-size: calc(var(--type) * 1px);
+  line-height: 1.35;
+  border: calc(var(--bw) * 1px) solid #0a0a0a;
+  border-radius: calc(var(--rad) * 1px);
+  box-shadow: var(--sh);
+  filter: contrast(var(--ctr));
+}
+.stage[data-layout="sheet"] .item { max-height: none; min-height: 100%; border-radius: 0; }
+.item[data-density="compact"] { --gap: calc(var(--space) * .65px); }
+.item[data-density="airy"] { --gap: calc(var(--space) * 1.4px); }
+.item[data-corners="square"] { border-radius: 0; }
+.item[data-corners="pill"] { border-radius: 28px; }
+.scroll { overflow: auto; padding: calc(var(--pad) * 1px); display: flex; flex-direction: column; gap: var(--gap); }
+.fascia {
+  padding: 10px 10px 8px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.22) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, #f4f4f4, var(--face) 55%, #9a9a9a);
+  border-bottom: 1px solid #6e6e6e;
+}
+.item[data-system="instrument"] .fascia,
+.item[data-system="dash"] .fascia,
+.item[data-system="jewel"] .fascia {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 40%), var(--face);
+  border-bottom-color: rgba(255,255,255,.12);
+}
+.title-row { display: flex; align-items: center; gap: 8px; }
+.crt {
+  flex: 1; min-width: 0;
+  margin: 0; padding: 7px 12px;
+  background: radial-gradient(ellipse at 18% 0%, rgba(125,255,196,.18), transparent 46%), var(--glass);
+  color: var(--crt-ink);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 1.05em;
+  letter-spacing: calc(var(--track) * .01em);
+  text-shadow: 0 0 3px var(--crt-ink);
+  border-radius: 2px;
+  box-shadow: inset 0 8px 12px rgba(0,0,0,.45), 0 0 0 1px #1a1c1e;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.item[data-chrome="win95"] .crt {
+  background: #000080; color: #fff; text-shadow: none; font-family: inherit; letter-spacing: 0;
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #000;
+}
+.item[data-chrome="nameplate"] .crt {
+  background: transparent; color: var(--ink); text-shadow: none; font-family: inherit;
+  box-shadow: none; border-bottom: 1px solid var(--line); border-radius: 0; padding-left: 0;
+}
+.item[data-chrome="ribbon"] .crt {
+  background: linear-gradient(#6b2a1a, #3d140e); color: #fff8e8; text-shadow: none; font-family: inherit;
+  border-radius: 0 0 10px 10px;
+}
+.item[data-chrome="hood"] .crt {
+  background: #04120e; color: var(--crt-ink); border-radius: 8px 8px 2px 2px;
+}
+.item[data-chrome="sticker"] .crt {
+  background: #fff; color: #c23b6e; text-shadow: none; font-family: inherit;
+  border: 2px dashed #f3a0c0; box-shadow: 3px 3px 0 #f3a0c0; border-radius: 14px;
+}
+.item[data-chrome="instrument"] .crt {
+  background: #06110d; color: var(--crt-ink); letter-spacing: .14em; text-transform: uppercase; font-size: .85em;
+}
+.item[data-chrome="registration"] .crt {
+  background: transparent; color: #12315c; text-shadow: none; font-family: ui-monospace, Menlo, monospace;
+  box-shadow: none; border: 1px solid #12315c; border-radius: 0;
+}
+.item[data-chrome="none"] .crt { background: transparent; color: var(--ink); text-shadow: none; box-shadow: none; font-family: inherit; }
+.win-keys { display: flex; gap: 4px; }
+.win-keys button, .key, .keycap {
+  font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line);
+  border-radius: 3px; padding: 3px 8px; cursor: pointer;
+}
+.item[data-corners="pill"] .key, .item[data-corners="pill"] .keycap, .item[data-corners="pill"] button.tab { border-radius: 999px; }
+.win-keys button { width: 26px; height: 26px; padding: 0; }
+.key.primary { background: var(--face); font-weight: 700; box-shadow: inset 0 1px 0 #fff; }
+.key.danger { color: var(--danger); opacity: .85; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.type-plate, .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink);
+  border-radius: 2px; font-size: .92em;
+}
+.lamp {
+  width: 8px; height: 8px; border-radius: 50%; background: #c4a574;
+  box-shadow: 0 0 0 1px #1a1c1e, inset 0 1px 0 #fff;
+}
+.save-flag { font-size: .85em; letter-spacing: .04em; }
+.save-flag[data-state="saved"] { color: #0d6b32; }
+.save-flag[data-state="dirty"] { color: #a1266b; }
+.item[data-system="dash"] .save-flag[data-state="saved"],
+.item[data-system="instrument"] .save-flag[data-state="saved"],
+.item[data-system="jewel"] .save-flag[data-state="saved"] { color: #7dffc4; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.tabbay {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 4px; padding: 4px; margin: 0;
+  background: repeating-linear-gradient(180deg, rgba(255,255,255,.16) 0 1px, transparent 1px 2px), var(--bay);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.18);
+}
+.tab {
+  font: inherit; color: #1f2226;
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border: 1px solid #6e7378; border-radius: 4px;
+  box-shadow: inset 2px 0 0 #b3b8be, inset -2px 0 0 #b3b8be, inset 0 -4px 0 #b3b8be, inset 0 1px 0 rgba(255,255,255,.85), 0 1px 0 rgba(0,0,0,.35);
+  min-height: 32px; padding: 4px 6px 8px; cursor: default;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+}
+.tab.secondary { min-height: 28px; font-size: .86em; letter-spacing: .06em; opacity: .86; }
+.tab[aria-selected="true"] {
+  background: var(--glass); color: var(--crt-ink);
+  box-shadow: inset 0 0 0 1px #1a3a2a;
+}
+.tab[aria-selected="true"]::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt-ink) 46%, #0a3a28);
+  box-shadow: 0 0 6px var(--crt-ink);
+}
+.tab:disabled { opacity: 1; }
+.tab.secondary:disabled { opacity: .86; }
+.count {
+  font-size: .75em; padding: 0 4px; border-radius: 8px;
+  background: rgba(0,0,0,.12); color: inherit;
+}
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(168px, calc(var(--rail) * 1px)); gap: calc(var(--gap) * 1.2); align-items: start; }
+.item[data-rail="below"] .grid { grid-template-columns: 1fr; }
+.item[data-rail="left"] .grid { grid-template-columns: minmax(168px, calc(var(--rail) * 1px)) minmax(0, 1fr); }
+.item[data-rail="left"] .rail { order: -1; }
+.item[data-hier="card"] .nums { order: -2; }
+.item[data-hier="card"] .desc { order: 3; }
+.item[data-hier="desk"] .grid { grid-template-columns: minmax(200px, 240px) minmax(0, 1fr); }
+.item[data-hier="desk"] .rail { order: -1; }
+.item[data-hier="bay"] .nums { order: -1; }
+.main, .rail { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.bay, .plate {
+  background: var(--field); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 3px; padding: 8px;
+}
+.item[data-plates="mill"] .bay {
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.35) 0 1px, transparent 1px 3px),
+    var(--field);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px var(--line);
+}
+.item[data-plates="hair"] .bay, .item[data-plates="hair"] .plate { background: transparent; box-shadow: none; }
+.item[data-plates="open"] .bay, .item[data-plates="open"] .plate { border: none; background: transparent; padding-left: 0; padding-right: 0; }
+.item[data-plates="cavity"] .bay {
+  background: var(--glass); color: var(--crt-ink); border-color: transparent;
+  box-shadow: inset 0 8px 16px rgba(0,0,0,.35);
+}
+.item[data-plates="cavity"] .bay .muted, .item[data-plates="cavity"] .bay .plate-label { color: var(--crt-ink); }
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.plate-label { font-size: .78em; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+.muted { color: var(--muted); font-size: .92em; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field span, .lab { font-weight: 650; }
+input[type="text"], input[type="number"], input[type="search"], textarea, select.native {
+  font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--line);
+  border-radius: 2px; padding: 6px 8px; width: 100%;
+  box-shadow: inset 1px 1px #c8c8c8;
+}
+.item[data-system="dash"] input, .item[data-system="dash"] textarea, .item[data-system="dash"] select.native,
+.item[data-system="instrument"] input, .item[data-system="instrument"] textarea, .item[data-system="instrument"] select.native,
+.item[data-system="jewel"] input, .item[data-system="jewel"] textarea, .item[data-system="jewel"] select.native {
+  background: #101614; color: #f3fff8; border-color: #2c4a3e;
+}
+.nums { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.item[data-fields="stack"] .nums { grid-template-columns: 1fr; }
+.suffix { position: relative; }
+.suffix em { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--muted); }
+.item[data-desc="short"] textarea { min-height: 2.6em; }
+.item[data-desc="hidden"] .desc { display: none; }
+.item[data-peek="off"] .peek { display: none; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 650; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--field); color: var(--ink);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #c4a574; }
+.x { border: none; background: transparent; color: inherit; cursor: pointer; padding: 0 2px; }
+.stat { display: flex; justify-content: space-between; gap: 8px; }
+.creator { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.groups { display: flex; flex-direction: column; gap: 6px; }
+.group-name { font-size: .75em; letter-spacing: .1em; text-transform: uppercase; }
+.type-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.type-row button { font: inherit; font-size: .85em; }
+.item[data-hier="card"] .crt { letter-spacing: .08em; }
+.toast { margin: 0; min-height: 1.2em; font-size: .85em; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .item { transition: none; } }
+
+.bench input[type="color"] { width: 100%; height: 22px; padding: 0; border: 1px solid #555; background: #111; }
+.stage {
+  --ff: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  --face: #c0c0c0; --ink: #111111; --field: #ffffff; --muted: #333333;
+  --crt-ink: #7dffc4; --glass: #070c0a; --line: #808080; --bay: #b5b5b5; --danger: #800000;
+  --saved: #0d6b32; --dirty: #a1266b; --lampc: #c4a574;
+  --sheen: #f4f4f4; --shade-metal: #9a9a9a;
+  --tabhi: #f1f3f5; --tablo: #dfe2e6; --tabink: #1f2226;
+  --well: #d4d4d4; --well-ink: #111111;
+  --panel: 780; --space: 8; --type: 12; --rad: 3; --bw: 2; --pad: 12; --track: 4;
+  --lead: 135; --title: 15; --glow: 3; --tabh: 32; --tabgap: 4; --tabcol: 108;
+  --lamp: 8; --keyh: 26; --wkey: 26; --keygap: 6; --metagap: 6; --chipr: 2;
+  --platepad: 8; --field-pad: 6; --fieldgap: 4; --count: 75; --shade: 12;
+  --brush-a: .22; --fascia-pad: 10; --ctr: 1; --sat: 1; --bri: 1;
+  --rail: 240; --card: 160; --cardgap: 8; --faceh: 72; --traypad: 10; --kind: 72;
+  --orbit: 280; --node: 85; --hub: 100; --hubpad: 6; --orb: 16;
+  --when: 148; --rowpad: 8; --wellpad: 4; --whensize: 100; --sumweight: 650;
+}
+.item {
+  line-height: calc(var(--lead) / 100);
+  filter: contrast(var(--ctr)) saturate(var(--sat)) brightness(var(--bri));
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, 0 calc(var(--shade) * .45px) calc(var(--shade) * 1px) rgba(0,0,0,.28);
+}
+.fascia {
+  padding: calc(var(--fascia-pad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--brush-a)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--sheen), var(--face) 55%, var(--shade-metal));
+}
+.crt { font-size: calc(var(--title) * 1px); text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt-ink); }
+.save-flag[data-state="saved"] { color: var(--saved); }
+.save-flag[data-state="dirty"] { color: var(--dirty); }
+.lamp { width: calc(var(--lamp) * 1px); height: calc(var(--lamp) * 1px); background: var(--lampc); }
+.tabbay { gap: calc(var(--tabgap) * 1px); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tabcol) * 1px), 1fr)); }
+.tab { min-height: calc(var(--tabh) * 1px); color: var(--tabink); background: linear-gradient(180deg, var(--tabhi), var(--tablo)); }
+.tab.secondary { min-height: calc((var(--tabh) - 4) * 1px); }
+.tab[aria-selected="true"]::before { width: calc(var(--lamp) * 1px); height: calc(var(--lamp) * 1px); }
+.keys, .win-keys { gap: calc(var(--keygap) * 1px); }
+.meta { gap: calc(var(--metagap) * 1px); }
+.key, .keycap { min-height: calc(var(--keyh) * 1px); border-radius: calc(var(--chipr) * 1px); }
+.win-keys button { width: calc(var(--wkey) * 1px); height: calc(var(--wkey) * 1px); }
+.bay, .plate, .viewer, .tray { padding: calc(var(--platepad) * 1px); }
+.plate-label, .hist h3, .group h4, .card .name, .viewer-head .name, .readout, .hint { letter-spacing: calc(var(--labeltrack) * .01em); }
+.field, .tray, .viewer, .sentence, .readout { gap: calc(var(--fieldgap) * 1px); }
+input[type="text"], input[type="number"], input[type="search"], textarea, select.native, .sentence select, .sentence input {
+  padding: calc(var(--field-pad) * 1px);
+}
+.count { font-size: calc(var(--count) / 100 * 1em); }
+.bay {
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.35) 0 1px, transparent 1px 3px),
+    var(--field);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px var(--line);
+}
+.cards { gap: calc(var(--cardgap) * 1px); grid-template-columns: repeat(auto-fill, minmax(calc(var(--card) * 1px), 1fr)); }
+.face { min-height: calc(var(--faceh) * 1px); }
+.tray { padding: calc(var(--traypad) * 1px); }
+.kind { font-size: calc(var(--kind) / 100 * 1em); }
+.picture { min-height: calc(var(--orbit) * 1px); }
+.node { font-size: calc(var(--node) / 100 * 1em); }
+.hub { font-size: calc(var(--hub) / 100 * 1em); padding: calc(var(--hubpad) * 1px); }
+.orb { width: calc(var(--orb) * 1px); height: calc(var(--orb) * 1px); }
+.row { grid-template-columns: calc(var(--when) * 1px) minmax(0, 1fr); padding: calc(var(--rowpad) * 1px); }
+.well { padding: calc(var(--wellpad) * 1px); background: var(--well); color: var(--well-ink); }
+.when { font-size: calc(var(--whensize) / 100 * 1em); }
+.summary { font-weight: var(--sumweight); }
+.dayhead, .order { display: none !important; }
+.changes[data-multi="no"] { display: none; }
+
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="item-detail-details.html" aria-current="page">Details</a>
+    <a href="item-detail-resources.html">Resources</a>
+    <a href="item-detail-links.html">Links</a>
+    <a href="item-detail-history.html">History</a>
+  </nav>
+  <h1>Details lab</h1>
+  <p class="lede">Item detail, Details tab, as it works for a task. Sample: Studio kiln rebuild. Week of Monday 26 Oct 2026. Person Elijah. Place Studio. Pen Kiln.</p>
+  <details class="plan" open>
+    <summary>Plan</summary>
+    <div class="plan-body">
+      <p>Attributes, the description, estimated duration, reward, urgency, importance, and repeated-task settings stay in the main column. The rail keeps Open task card, Lists, Tags, the notes peek, and Status. The other tabs stay in the bay and do not open.</p>
+      <p>The controls tune type, measure, and color of this one frame. They do not switch to another layout.</p>
+    </div>
+  </details>
+  <p class="lede">Every control changes this tab. The arrangement stays the one in the app.</p>
+  <label>Font
+  <select data-key="font">
+    <option value="house" selected>House (Tahoma)</option>
+    <option value="grotesk">Avenir, Segoe</option>
+    <option value="system">System UI</option>
+    <option value="mono">UI monospace</option>
+    <option value="serif">Palatino, Georgia</option>
+    <option value="round">Rounded UI</option>
+    <option value="typewriter">Typewriter</option>
+    <option value="didot">Didot, Bodoni</option>
+  </select>
+</label>
+  <h2>Type</h2>
+  <label>Type size <span class="val" data-val="type">12</span><input type="range" data-key="type" min="11" max="22" value="12"></label>
+  <label>Line height <span class="val" data-val="lead">135</span><input type="range" data-key="lead" min="110" max="180" value="135"></label>
+  <label>Title size <span class="val" data-val="title">15</span><input type="range" data-key="title" min="12" max="28" value="15"></label>
+  <label>Title tracking <span class="val" data-val="track">4</span><input type="range" data-key="track" min="0" max="24" value="4"></label>
+  <label>Label tracking <span class="val" data-val="labeltrack">12</span><input type="range" data-key="labeltrack" min="0" max="28" value="12"></label>
+  <label>Count size <span class="val" data-val="count">75</span><input type="range" data-key="count" min="60" max="110" value="75"></label>
+  <h2>Frame</h2>
+  <label>Frame width <span class="val" data-val="width">760</span><input type="range" data-key="width" min="420" max="1100" value="760"></label>
+  <label>Corner radius <span class="val" data-val="radius">3</span><input type="range" data-key="radius" min="0" max="16" value="3"></label>
+  <label>Border weight <span class="val" data-val="border">2</span><input type="range" data-key="border" min="0" max="6" value="2"></label>
+  <label>Content padding <span class="val" data-val="pad">12</span><input type="range" data-key="pad" min="4" max="32" value="12"></label>
+  <label>Section gap <span class="val" data-val="space">8</span><input type="range" data-key="space" min="2" max="28" value="8"></label>
+  <label>Shadow depth <span class="val" data-val="shade">12</span><input type="range" data-key="shade" min="0" max="48" value="12"></label>
+  <label>Contrast <span class="val" data-val="contrast">50</span><input type="range" data-key="contrast" min="0" max="100" value="50"></label>
+  <label>Saturation <span class="val" data-val="sat">100</span><input type="range" data-key="sat" min="0" max="200" value="100"></label>
+  <label>Brightness <span class="val" data-val="bri">100</span><input type="range" data-key="bri" min="40" max="140" value="100"></label>
+  <h2>Fascia and title</h2>
+  <label>Fascia padding <span class="val" data-val="fasciapad">10</span><input type="range" data-key="fasciapad" min="4" max="28" value="10"></label>
+  <label>Mill brush <span class="val" data-val="brush">22</span><input type="range" data-key="brush" min="0" max="80" value="22"></label>
+  <label>CRT glow <span class="val" data-val="glow">3</span><input type="range" data-key="glow" min="0" max="18" value="3"></label>
+  <label>Fascia <input type="color" data-key="face" value="#c0c0c0"></label>
+  <label>Fascia sheen <input type="color" data-key="sheen" value="#f4f4f4"></label>
+  <label>Fascia shade <input type="color" data-key="metal" value="#9a9a9a"></label>
+  <label>CRT glass <input type="color" data-key="glass" value="#070c0a"></label>
+  <label>CRT phosphor <input type="color" data-key="crt" value="#7dffc4"></label>
+  <h2>Tabs and keys</h2>
+  <label>Tab height <span class="val" data-val="tabh">32</span><input type="range" data-key="tabh" min="24" max="48" value="32"></label>
+  <label>Tab gap <span class="val" data-val="tabgap">4</span><input type="range" data-key="tabgap" min="0" max="14" value="4"></label>
+  <label>Tab column <span class="val" data-val="tabcol">108</span><input type="range" data-key="tabcol" min="72" max="180" value="108"></label>
+  <label>Power lamp <span class="val" data-val="lamp">8</span><input type="range" data-key="lamp" min="4" max="16" value="8"></label>
+  <label>Key height <span class="val" data-val="keyh">26</span><input type="range" data-key="keyh" min="20" max="44" value="26"></label>
+  <label>Window key <span class="val" data-val="wkey">26</span><input type="range" data-key="wkey" min="18" max="40" value="26"></label>
+  <label>Key gap <span class="val" data-val="keygap">6</span><input type="range" data-key="keygap" min="2" max="16" value="6"></label>
+  <label>Chip gap <span class="val" data-val="metagap">6</span><input type="range" data-key="metagap" min="2" max="16" value="6"></label>
+  <label>Chip radius <span class="val" data-val="chipr">2</span><input type="range" data-key="chipr" min="0" max="14" value="2"></label>
+  <label>Plate padding <span class="val" data-val="platepad">8</span><input type="range" data-key="platepad" min="2" max="24" value="8"></label>
+  <label>Field padding <span class="val" data-val="fieldpad">6</span><input type="range" data-key="fieldpad" min="2" max="16" value="6"></label>
+  <label>Field gap <span class="val" data-val="fieldgap">4</span><input type="range" data-key="fieldgap" min="2" max="16" value="4"></label>
+  <label>Type lamp <input type="color" data-key="lampc" value="#c4a574"></label>
+  <label>Tab highlight <input type="color" data-key="tabhi" value="#f1f3f5"></label>
+  <label>Tab shade <input type="color" data-key="tablo" value="#dfe2e6"></label>
+  <label>Tab ink <input type="color" data-key="tabink" value="#1f2226"></label>
+  <h2>Ink</h2>
+  <label>Ink <input type="color" data-key="ink" value="#111111"></label>
+  <label>Field <input type="color" data-key="field" value="#ffffff"></label>
+  <label>Muted ink <input type="color" data-key="muted" value="#333333"></label>
+  <label>Line <input type="color" data-key="line" value="#808080"></label>
+  <label>Tab bay <input type="color" data-key="bay" value="#b5b5b5"></label>
+  <label>Danger <input type="color" data-key="danger" value="#800000"></label>
+  <label>Saved lamp <input type="color" data-key="saved" value="#0d6b32"></label>
+  <label>Unsaved lamp <input type="color" data-key="dirty" value="#a1266b"></label>
+  <h2>Details</h2>
+  <label>Rail width <span class="val" data-val="railw">240</span><input type="range" data-key="railw" min="160" max="380" value="240"></label>
+  <label>Description rows <span class="val" data-val="rows">4</span><input type="range" data-key="rows" min="2" max="14" value="4"></label>
+</aside>
+<div class="stage" id="stage">
+  <div class="stage-cap">
+    <span>Sample <strong>Studio kiln rebuild</strong></span>
+    <span>Tab <strong>Details</strong></span>
+  </div>
+  <div class="stage-well">
+    <div class="frame">
+      <article class="item" id="item" data-ui-name="Item detail">
+        <header class="fascia">
+          <div class="title-row">
+            <h2 class="crt">Studio kiln rebuild</h2>
+            <div class="win-keys">
+              <button type="button" aria-label="Item settings" title="Item settings">⚙</button>
+              <button type="button" aria-label="Minimize" title="Minimize">–</button>
+              <button type="button" id="closeKey" aria-label="Close" title="Close">×</button>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="type-plate"><span class="lamp" aria-hidden="true"></span>Task</span>
+            <span class="chip">scheduled</span>
+            <span class="chip">Took 95m</span>
+          </div>
+          <div class="keys">
+            <span class="save-flag" id="lamp" data-state="saved">Saved</span>
+            <button type="button" class="key primary" id="saveBtn">Save</button>
+            <button type="button" class="key primary" id="completeBtn">Complete</button>
+            <button type="button" class="key" id="missedBtn">Missed</button>
+            <button type="button" class="key danger" id="deleteBtn">Delete</button>
+          </div>
+        </header>
+        <div class="tabbay" role="tablist" aria-label="Item detail">
+          <button type="button" class="tab" aria-selected="true">Details</button>
+          <button type="button" class="tab" disabled>Scheduling</button>
+          <button type="button" class="tab" disabled>Dependencies</button>
+          <button type="button" class="tab" disabled>Subtasks</button>
+          <button type="button" class="tab" disabled>Notes <span class="count">2</span></button>
+          <button type="button" class="tab" disabled>Resources <span class="count">4</span></button>
+          <button type="button" class="tab secondary" disabled>Links <span class="count">6</span></button>
+          <button type="button" class="tab secondary" disabled>Analysis</button>
+          <button type="button" class="tab secondary" disabled>Time</button>
+          <button type="button" class="tab secondary" disabled>History</button>
+        </div>
+        <div class="scroll">
+          <div class="grid">
+            <div class="main">
+              <section class="bay attrs" aria-label="Attributes">
+                <div class="head-row">
+                  <span class="plate-label">Attributes</span>
+                  <span class="muted" id="attrCount" title="0 of 0 filled">0/0</span>
+                  <button type="button" class="keycap" id="addAttr">Add attribute</button>
+                </div>
+                <p class="muted" id="attrEmpty">No attributes yet. Add one to record what this item is: an author, a price, a date, a photo, a link.</p>
+                <div id="attrCells"></div>
+                <div class="creator" id="creator" hidden>
+                  <p class="muted">Words / Numbers / Choices / Time / Media / References</p>
+                  <div class="groups" id="typePalette"></div>
+                  <div id="attrForm" hidden>
+                    <label class="field"><span id="pickedType">Name</span><input type="text" id="attrName" placeholder="Name"></label>
+                    <label class="field"><span>Add to</span>
+                      <select class="native" id="attrScope">
+                        <option value="item">This item only</option>
+                        <option value="list">Studio</option>
+                      </select>
+                    </label>
+                    <button type="button" class="key" id="commitAttr">Add</button>
+                  </div>
+                </div>
+              </section>
+              <section class="bay desc">
+                <label class="field">
+                  <span>Detailed Description</span>
+                  <textarea id="descBox" rows="4">The Skutt sits cold in the Studio. Rebuild the right-wall elements, replace the cracked floor brick under the second shelf, and wash the lid before the week of Monday 26 Oct 2026. Elijah is bringing the new element set. The pen for this sitting is Kiln.</textarea>
+                </label>
+              </section>
+              <section class="nums">
+                <label class="field"><span>Estimated Duration</span><span class="suffix"><input id="estimate" type="number" value="240"><em>min</em></span></label>
+                <label class="field"><span>Reward Value</span><input id="reward" type="number" min="0" value="40"></label>
+                <label class="field"><span>Urgency</span>
+                  <select class="native" id="urgency">
+                    <option value="1">1 - Low</option>
+                    <option value="2">2 - Medium-Low</option>
+                    <option value="3">3 - Medium</option>
+                    <option value="4" selected>4 - High</option>
+                    <option value="5">5 - Critical</option>
+                  </select>
+                </label>
+                <label class="field"><span>Importance</span>
+                  <select class="native" id="importance">
+                    <option value="1">1 - Low</option>
+                    <option value="2">2 - Medium-Low</option>
+                    <option value="3">3 - Medium</option>
+                    <option value="4">4 - High</option>
+                    <option value="5" selected>5 - Critical</option>
+                  </select>
+                </label>
+              </section>
+              <section class="bay">
+                <h3 class="plate-label">Repeated Task Settings</h3>
+                <label class="check"><input type="checkbox" id="repeated"> This is a repeated task</label>
+                <div id="repeatBody" hidden>
+                  <label class="field"><span>Repeat Type</span>
+                    <select class="native" id="repeatType">
+                      <option value="count">Must be completed X times total</option>
+                      <option value="frequency">Must be completed X times per period</option>
+                    </select>
+                  </label>
+                  <label class="field" id="countField"><span>Total times to complete</span><input type="number" min="1" value="1"></label>
+                  <div id="freqField" hidden class="nums">
+                    <label class="field"><span>Times per period</span><input type="number" min="1" value="1"></label>
+                    <label class="field"><span>Period</span>
+                      <select class="native">
+                        <option>Day</option>
+                        <option selected>Week</option>
+                        <option>Month</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <aside class="rail" aria-label="Where this item lives">
+              <section class="plate">
+                <div class="plate-label">Task card</div>
+                <button type="button" class="key" id="cardBtn">Open task card</button>
+              </section>
+              <section class="plate">
+                <div class="plate-label">Lists</div>
+                <div class="chip-row" id="lists">
+                  <span class="pill"><span class="dot"></span>Studio <button type="button" class="x" data-remove="list" aria-label="Remove Studio">×</button></span>
+                </div>
+                <label class="field"><span class="muted">Search lists…</span><input type="search" placeholder="Search lists…" value=""></label>
+              </section>
+              <section class="plate">
+                <div class="plate-label">Tags</div>
+                <div class="chip-row" id="tags">
+                  <span class="pill">kiln <button type="button" class="x" aria-label="Remove kiln">×</button></span>
+                  <span class="pill">elements <button type="button" class="x" aria-label="Remove elements">×</button></span>
+                  <span class="pill">brick <button type="button" class="x" aria-label="Remove brick">×</button></span>
+                </div>
+                <input type="text" id="tagBox" placeholder="Add a tag…" aria-label="Add a tag">
+              </section>
+              <section class="plate peek">
+                <div class="plate-label">Notes</div>
+                <input type="text" placeholder="Add a note for today…" aria-label="Add a note for today">
+                <p class="muted"><strong>Yesterday</strong> Cone 6 elements measured 14.2 ohm. One is open on the right wall.</p>
+                <p class="muted"><strong>Today</strong> Elijah can come after 4. Shelf posts are out.</p>
+                <button type="button" class="key" id="openNotes">Open notes →</button>
+              </section>
+              <section class="plate">
+                <h3 class="plate-label">Status</h3>
+                <label class="field"><span>Completion status</span>
+                  <select class="native" id="status">
+                    <option value="active" selected>Active</option>
+                    <option value="partial">Partial</option>
+                    <option value="deferred">Deferred</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="missed">Missed opportunity</option>
+                    <option value="done">Done</option>
+                  </select>
+                </label>
+                <p class="muted" id="statusHint">Open and ready to work on</p>
+                <div class="stat"><span>Created:</span><span>10/3/2026</span></div>
+                <div class="stat"><span>Lifecycle:</span><span>scheduled</span></div>
+                <div class="stat"><span>Completed:</span><span id="completedLine">No</span></div>
+                <div class="stat"><span>Deadline:</span><span>10/30/2026</span></div>
+                <div class="stat"><span>Actual Duration:</span><span>95 minutes</span></div>
+              </section>
+            </aside>
+          </div>
+          <p class="toast" id="toast" aria-live="polite"></p>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+
+  var FONTS = {
+    house: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    grotesk: 'Avenir, "Avenir Next", "Segoe UI", sans-serif',
+    system: "system-ui, sans-serif",
+    mono: 'ui-monospace, "SF Mono", Menlo, monospace',
+    serif: "Palatino, Georgia, serif",
+    round: '"Avenir Next", "Segoe UI", system-ui, sans-serif',
+    typewriter: '"American Typewriter", "Courier New", monospace',
+    didot: "Didot, Georgia, serif"
+  };
+  var MAP = {
+    type:"--type", lead:"--lead", title:"--title", track:"--track", labeltrack:"--labeltrack", count:"--count",
+    sumweight:"--sumweight", width:"--panel", radius:"--rad", border:"--bw", pad:"--pad", space:"--space",
+    shade:"--shade", fasciapad:"--fascia-pad", glow:"--glow", tabh:"--tabh", tabgap:"--tabgap", tabcol:"--tabcol",
+    lamp:"--lamp", keyh:"--keyh", wkey:"--wkey", keygap:"--keygap", metagap:"--metagap", chipr:"--chipr",
+    platepad:"--platepad", fieldpad:"--field-pad", fieldgap:"--fieldgap",
+    face:"--face", sheen:"--sheen", metal:"--shade-metal", glass:"--glass", crt:"--crt-ink",
+    lampc:"--lampc", tabhi:"--tabhi", tablo:"--tablo", tabink:"--tabink",
+    ink:"--ink", field:"--field", muted:"--muted", line:"--line", bay:"--bay", danger:"--danger",
+    saved:"--saved", dirty:"--dirty",
+    railw:"--rail", card:"--card", cardgap:"--cardgap", faceh:"--faceh", traypad:"--traypad", kind:"--kind",
+    orbit:"--orbit", node:"--node", hub:"--hub", hubpad:"--hubpad", orb:"--orb",
+    when:"--when", rowpad:"--rowpad", wellpad:"--wellpad", whensize:"--whensize",
+    well:"--well", wellink:"--well-ink"
+  };
+  var stage = document.getElementById("stage");
+  var item = document.getElementById("item");
+  function paint() {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      var key = el.dataset.key;
+      var val = el.value;
+      var shown = document.querySelector('[data-val="' + key + '"]');
+      if (shown) shown.textContent = val;
+      if (key === "font") { stage.style.setProperty("--ff", FONTS[val] || FONTS.house); return; }
+      if (key === "contrast") { stage.style.setProperty("--ctr", String(0.75 + Number(val) / 100 * 0.5)); return; }
+      if (key === "sat") { stage.style.setProperty("--sat", String(Number(val) / 100)); return; }
+      if (key === "bri") { stage.style.setProperty("--bri", String(0.7 + Number(val) / 100 * 0.6)); return; }
+      if (key === "brush") { stage.style.setProperty("--brush-a", String(Number(val) / 100)); return; }
+      if (key === "rows") { var box = document.getElementById("descBox"); if (box) box.rows = Number(val); return; }
+      if (key === "wellh") { document.querySelectorAll(".glass").forEach(function (g) { g.style.minHeight = val + "px"; }); return; }
+      if (MAP[key]) stage.style.setProperty(MAP[key], val);
+    });
+  }
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    el.addEventListener("input", paint);
+  });
+  paint();
+
+  var STATUS = { active:"Open and ready to work on", partial:"Started — some progress made, not finished", deferred:"Postponed for now; revisit later", cancelled:"Abandoned — will not be done", missed:"Too late — the window closed without doing it", done:"Completed" };
+  var TYPES = [["Words","Aa Text","≡ Text list","↗ Link","☏ Phone"],["Numbers","# Number","x/y Goal","ƒ Formula"],["Choices","◉ Yes / no","▾ Selection","▣ Color"],["Time","◷ Date and time"],["Media","▨ Image","▦ Gallery","▤ File","▥ Files"],["References","◇ Item","☰ List"]];
+  var lamp = document.getElementById("lamp");
+  function dirty() { lamp.dataset.state = "dirty"; lamp.textContent = "Unsaved changes"; }
+  item.addEventListener("input", dirty);
+  item.addEventListener("change", dirty);
+  document.getElementById("saveBtn").addEventListener("click", function () { lamp.dataset.state = "saved"; lamp.textContent = "Saved"; document.getElementById("toast").textContent = "Draft saved. The lamp returns to Saved."; });
+  document.getElementById("completeBtn").addEventListener("click", function () { document.getElementById("status").value = "done"; document.getElementById("statusHint").textContent = STATUS.done; document.getElementById("completedLine").textContent = "Yes"; document.getElementById("toast").textContent = "Complete closes the item in the app. Here it marks Done."; dirty(); });
+  document.getElementById("missedBtn").addEventListener("click", function () { document.getElementById("status").value = "missed"; document.getElementById("statusHint").textContent = STATUS.missed; document.getElementById("toast").textContent = "Missed files the row on Missed Opportunities."; dirty(); });
+  document.getElementById("deleteBtn").addEventListener("click", function () { document.getElementById("toast").textContent = "Delete asks before it removes Studio kiln rebuild."; });
+  document.getElementById("closeKey").addEventListener("click", function () { document.getElementById("toast").textContent = lamp.dataset.state === "dirty" ? "You have unsaved changes. Close asks before it drops the draft." : "Close leaves the item."; });
+  document.getElementById("cardBtn").addEventListener("click", function () { document.getElementById("toast").textContent = "Open task card closes detail and opens the To Do card for this task."; });
+  document.getElementById("openNotes").addEventListener("click", function () { document.getElementById("toast").textContent = "Open notes switches to the Notes tab."; });
+  document.getElementById("status").addEventListener("change", function (e) { document.getElementById("statusHint").textContent = STATUS[e.target.value] || ""; document.getElementById("completedLine").textContent = e.target.value === "done" ? "Yes" : "No"; });
+  document.getElementById("repeated").addEventListener("change", function (e) { document.getElementById("repeatBody").hidden = !e.target.checked; });
+  document.getElementById("repeatType").addEventListener("change", function (e) { var freq = e.target.value === "frequency"; document.getElementById("countField").hidden = freq; document.getElementById("freqField").hidden = !freq; });
+  document.getElementById("addAttr").addEventListener("click", function () { document.getElementById("creator").hidden = !document.getElementById("creator").hidden; });
+  var palette = document.getElementById("typePalette");
+  TYPES.forEach(function (row) { var wrap = document.createElement("div"); var name = document.createElement("div"); name.className = "group-name"; name.textContent = row[0]; wrap.appendChild(name); var buttons = document.createElement("div"); buttons.className = "type-row"; row.slice(1).forEach(function (label) { var b = document.createElement("button"); b.type = "button"; b.className = "key"; b.textContent = label; b.addEventListener("click", function () { document.getElementById("attrForm").hidden = false; document.getElementById("pickedType").textContent = label; document.getElementById("attrName").focus(); }); buttons.appendChild(b); }); wrap.appendChild(buttons); palette.appendChild(wrap); });
+  document.getElementById("commitAttr").addEventListener("click", function () { var name = document.getElementById("attrName").value.trim(); if (!name) return; var scope = document.getElementById("attrScope").value === "list" ? "List" : "This item only"; var cell = document.createElement("div"); cell.className = "plate"; var strong = document.createElement("strong"); strong.textContent = name; var span = document.createElement("span"); span.className = "muted"; span.textContent = " · " + document.getElementById("pickedType").textContent + " · " + scope; cell.appendChild(strong); cell.appendChild(span); document.getElementById("attrCells").appendChild(cell); document.getElementById("attrEmpty").hidden = true; var n = document.getElementById("attrCells").children.length; document.getElementById("attrCount").textContent = "0/" + n; document.getElementById("attrName").value = ""; dirty(); });
+  document.getElementById("tagBox").addEventListener("keydown", function (e) { if (e.key !== "Enter" && e.key !== ",") return; e.preventDefault(); var name = e.target.value.replace(/,/g, "").trim(); if (!name) return; var pill = document.createElement("span"); pill.className = "pill"; pill.appendChild(document.createTextNode(name + " ")); var x = document.createElement("button"); x.type = "button"; x.className = "x"; x.setAttribute("aria-label", "Remove " + name); x.textContent = "×"; x.addEventListener("click", function () { pill.remove(); dirty(); }); pill.appendChild(x); document.getElementById("tags").appendChild(pill); e.target.value = ""; dirty(); });
+  document.getElementById("tags").addEventListener("click", function (e) { if (e.target.classList.contains("x")) { e.target.parentElement.remove(); dirty(); } });
+  document.getElementById("lists").addEventListener("click", function (e) { if (e.target.classList.contains("x")) { e.target.parentElement.remove(); dirty(); } });
+
+})();
+</script>
+</body>
+</html>

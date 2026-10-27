@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Lab — Lists</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/Lists/filemanager98.css">
+<link rel="stylesheet" href="/components/keycap-close.css">
+<style>
+  html, body { height: 100%; }
+  body.win95-app { margin: 0; }
+  .lab {
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(210px, 248px) minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  .bench {
+    font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+    font-size: 12px;
+    color: #e8e8ec;
+    background: #1a1c20;
+    border: 1px solid #3c4048;
+    border-radius: 4px;
+    padding: 10px 10px 14px;
+    overflow: auto;
+    min-height: 0;
+  }
+  .bench h1 {
+    font-family: "w95fa", Tahoma, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7dffc4;
+    margin: 0 0 8px;
+  }
+  .lab-sections { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
+  .lab-sections a {
+    color: #c8cdd4;
+    text-decoration: none;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 5px;
+    border: 1px solid #3c4048;
+    border-radius: 2px;
+  }
+  .lab-sections a[aria-current="page"] { color: #7dffc4; border-color: #2f6b52; }
+  .bench label { display: block; margin: 8px 0 3px; color: #b7bcc4; }
+  .bench select, .bench input[type="range"] { width: 100%; }
+  .bench .val { float: right; color: #8b919a; font-variant-numeric: tabular-nums; }
+  .bench hr { border: 0; border-top: 1px solid #34383f; margin: 12px 0; }
+  .bench button[type="button"] { width: 100%; margin-top: 4px; }
+  .stage { min-width: 0; min-height: 0; height: 100%; }
+  .stage > .fm98 { height: 100%; }
+  @media (max-width: 860px) {
+    .lab {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(520px, 1fr);
+      height: auto;
+      min-height: 100%;
+    }
+    .stage { min-height: 640px; }
+  }
+</style>
+<style id="lab-css"></style>
+</head>
+<body class="win95-app">
+<div class="lab">
+  <aside class="bench" aria-label="Lab bench">
+    <nav class="lab-sections" aria-label="UI lab sections">
+      <a href="index.html">Index</a>
+      <a href="shell.html">Shell</a>
+      <a href="home.html">Home</a>
+      <a href="lists.html" aria-current="page">Lists</a>
+      <a href="docs.html">Docs</a>
+      <a href="scheduler.html">Scheduler</a>
+      <a href="operations.html">Operations</a>
+      <a href="modules.html">Modules</a>
+      <a href="analytics.html">Analytics</a>
+      <a href="settings.html">Settings</a>
+    </nav>
+    <h1>Lists</h1>
+    <label for="scope">Scope</label>
+    <select id="scope">
+      <option value="whole" selected>Whole section</option>
+      <option value="frame">Frame</option>
+      <option value="tree">Folder tree</option>
+      <option value="desktop">Velvet desktop</option>
+      <option value="orbs">Orbs and rows</option>
+    </select>
+    <label for="face">Type face</label>
+    <select id="face">
+      <option value="house" selected>House</option>
+      <option value="tahoma">Tahoma</option>
+      <option value="georgia">Georgia</option>
+      <option value="mono">Mono</option>
+    </select>
+    <label for="scale">Type scale <span class="val" id="scaleVal">1</span></label>
+    <input id="scale" type="range" min="0.9" max="1.2" step="0.02" value="1">
+    <label for="density">Density <span class="val" id="densityVal">1</span></label>
+    <input id="density" type="range" min="0.85" max="1.18" step="0.01" value="1">
+    <label for="radius">Radius <span class="val" id="radiusVal">2</span></label>
+    <input id="radius" type="range" min="0" max="6" step="1" value="2">
+    <label for="layout">Layout</label>
+    <select id="layout">
+      <option value="explorer" selected>Explorer</option>
+      <option value="wide">Wide</option>
+      <option value="narrow">Narrow</option>
+      <option value="stack">Stack</option>
+    </select>
+    <label for="palette">Palette</label>
+    <select id="palette">
+      <option value="house" selected>House</option>
+      <option value="cool">Cool</option>
+      <option value="warm">Warm</option>
+      <option value="ink">Ink</option>
+    </select>
+    <hr>
+    <button type="button" id="reset">Reset</button>
+  </aside>
+
+  <div class="stage" id="stage">
+    <div class="fm98">
+      <div class="fm-window" data-ui-name="Lists" data-ui-help="Folders, lists, and items in a file-manager window." data-ui-docs="components/Lists/README.md">
+        <div class="fm-title-bar">
+          <div class="fm-title-bar-text">
+            <img src="/folders-removebackground/0caa6b8344e695a983e084d311cce1d5.png" alt="" width="16" height="16">
+            Lists — File Manager
+          </div>
+          <div class="fm-title-bar-controls">
+            <button type="button" class="fm-title-btn" aria-label="Minimize">_</button>
+            <button type="button" class="fm-title-btn" aria-label="Maximize">□</button>
+            <button type="button" class="keycap-close" data-no95 aria-label="Close" title="Close">
+              <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden focusable="false">
+                <path class="keycap-close-lip" d="M3.15 3.15 L8.85 8.85 M8.85 3.15 L3.15 8.85"></path>
+                <path class="keycap-close-ink" d="M3.15 3.15 L8.85 8.85 M8.85 3.15 L3.15 8.85"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="fm-window-body">
+          <div class="fm-toolbar-stack">
+            <div class="fm-toolbar">
+              <button type="button" class="fm-btn fm-btn-sm" disabled>↑ Up</button>
+              <div class="fm-toolbar-sep" role="separator" aria-label="New"></div>
+              <button type="button" class="fm-btn fm-btn-sm">New List</button>
+              <button type="button" class="fm-btn fm-btn-sm">New Folder</button>
+              <button type="button" class="fm-btn fm-btn-sm" title="Import CSV, TSV, or Excel spreadsheet">Import spreadsheet</button>
+              <div class="fm-toolbar-sep" role="separator"></div>
+              <button type="button" class="fm-btn fm-btn-sm">Settings</button>
+              <button type="button" class="fm-btn fm-btn-sm">Select</button>
+              <div class="fm-toolbar-spacer"></div>
+              <span class="fm-search">
+                <input class="fm-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search folders, lists, items…" aria-label="Search folders, lists, and items">
+              </span>
+            </div>
+            <div class="fm-toolbar fm-toolbar-modes">
+              <div class="fm-mode-deck" data-ui-name="View">
+                <span class="fm-nameplate">View</span>
+                <div class="fm-view-keys" role="radiogroup" aria-label="Folder view">
+                  <button type="button" class="fm-btn fm-btn-sm fm-view-key active" role="radio" aria-checked="true" aria-label="Icons" title="Icons" data-view="icons">
+                    <span class="fm-view-key-led" aria-hidden="true"></span>
+                    <span class="fm-view-key-label">
+                      <span class="fm-view-key-full">Icons</span>
+                      <span class="fm-view-key-abbr">Icons</span>
+                    </span>
+                  </button>
+                  <button type="button" class="fm-btn fm-btn-sm fm-view-key" role="radio" aria-checked="false" aria-label="List" title="List" data-view="list">
+                    <span class="fm-view-key-led" aria-hidden="true"></span>
+                    <span class="fm-view-key-label">
+                      <span class="fm-view-key-full">List</span>
+                      <span class="fm-view-key-abbr">List</span>
+                    </span>
+                  </button>
+                  <button type="button" class="fm-btn fm-btn-sm fm-view-key" role="radio" aria-checked="false" aria-label="Details" title="Details" data-view="icons">
+                    <span class="fm-view-key-led" aria-hidden="true"></span>
+                    <span class="fm-view-key-label">
+                      <span class="fm-view-key-full">Details</span>
+                      <span class="fm-view-key-abbr">Det</span>
+                    </span>
+                  </button>
+                  <button type="button" class="fm-btn fm-btn-sm fm-view-key" role="radio" aria-checked="false" aria-label="Cards" title="Cards" data-view="icons">
+                    <span class="fm-view-key-led" aria-hidden="true"></span>
+                    <span class="fm-view-key-label">
+                      <span class="fm-view-key-full">Cards</span>
+                      <span class="fm-view-key-abbr">Cards</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="fm-toolbar-sep" role="separator" aria-label="Organize"></div>
+                <button type="button" class="fm-btn fm-btn-sm" title="Reset icon positions to a tidy grid">Auto-organize</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="fm-status-bar">
+            <div class="fm-status-field shrink">
+              <span class="fm-status-label">Address</span>
+            </div>
+            <div class="fm-status-field">Home</div>
+          </div>
+
+          <div class="fm-split">
+            <nav class="fm-sidebar" aria-label="Lists folders">
+              <div class="fm-sidebar-heading" id="fm-qa-heading">Quick Access</div>
+              <div class="fm-qa-list" role="list" aria-labelledby="fm-qa-heading">
+                <div role="listitem" class="fm-tree-item fm-qa-item active" data-tree>
+                  <span class="fm-qa-glyph" aria-hidden><img class="fm-tree-icon" src="/folders-removebackground/0caa6b8344e695a983e084d311cce1d5.png" alt="" draggable="false"></span>
+                  <span class="fm-tree-label">Home</span>
+                </div>
+                <div role="listitem" class="fm-tree-item fm-qa-item" data-tree>
+                  <span class="fm-qa-glyph" aria-hidden><img class="fm-tree-icon" src="/folders-removebackground/1c78bbeb2643c5365d67935b897278ca.png" alt="" draggable="false"></span>
+                  <span class="fm-tree-label">All</span>
+                </div>
+              </div>
+              <div class="fm-sidebar-heading" id="fm-folders-heading">Folders</div>
+              <div class="fm-folder-list" role="tree" aria-labelledby="fm-folders-heading">
+                <div role="treeitem" class="fm-tree-item fm-tree-folder" data-tree aria-selected="false" style="padding-left: 8px">
+                  <span class="fm-tree-toggle-spacer" aria-hidden></span>
+                  <img class="fm-tree-icon" src="/folders-removebackground/1fdeaa71d5cad6ca544929339504b99b.png" alt="" draggable="false">
+                  <span class="fm-tree-label">Letters</span>
+                </div>
+                <div role="treeitem" class="fm-tree-item fm-tree-folder" data-tree aria-selected="false" style="padding-left: 8px">
+                  <span class="fm-tree-toggle-spacer" aria-hidden></span>
+                  <img class="fm-tree-icon" src="/folders-removebackground/33d25fbca5713dadcb3423d29a62b1b0.png" alt="" draggable="false">
+                  <span class="fm-tree-label">People</span>
+                </div>
+              </div>
+              <div class="fm-sidebar-new">
+                <button type="button" class="fm-btn fm-btn-sm" style="width: 100%">+ New Folder</button>
+              </div>
+            </nav>
+
+            <div style="flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column">
+              <div class="fm-sunken fm-desktop velvet fm-icon-canvas" id="desk-icons" data-icon-pack="pack">
+                <div class="fm-icon-grid fm-icon-grid-free" style="position: relative; min-height: 480px; width: 100%">
+                  <div class="fm-icon fm-icon-free" data-icon-entry data-kind="list" style="position: absolute; left: 16px; top: 16px" title="People I Know">
+                    <div class="fm-icon-img-wrap">
+                      <img class="fm-icon-img" src="/orbs-removebackground/00122e5fb5c048f8ecdf43d83357c361.png" alt="" draggable="false">
+                    </div>
+                    <span class="fm-icon-label">People I Know (18)</span>
+                  </div>
+                  <div class="fm-icon fm-icon-free" data-icon-entry data-kind="list" style="position: absolute; left: 128px; top: 16px" title="To do this week">
+                    <div class="fm-icon-img-wrap">
+                      <img class="fm-icon-img" src="/orbs-removebackground/0022dfe6bb6b9a5b43020ea446cbf73b.png" alt="" draggable="false">
+                    </div>
+                    <span class="fm-icon-label">To do this week (7)</span>
+                  </div>
+                  <div class="fm-icon fm-icon-free" data-icon-entry data-kind="folder" style="position: absolute; left: 240px; top: 16px" title="Letters">
+                    <div class="fm-icon-img-wrap">
+                      <img class="fm-icon-img" src="/folders-removebackground/1fdeaa71d5cad6ca544929339504b99b.png" alt="" draggable="false">
+                    </div>
+                    <span class="fm-icon-label">Letters (4)</span>
+                  </div>
+                </div>
+              </div>
+              <div class="fm-sunken" id="desk-list" hidden>
+                <div class="fm-linklist">
+                  <div class="fm-link-row">
+                    <img class="fm-link-icon" src="/orbs-removebackground/00122e5fb5c048f8ecdf43d83357c361.png" alt="" draggable="false">
+                    <span class="fm-link-text">People I Know</span>
+                    <span class="fm-icon-badge">18</span>
+                  </div>
+                  <div class="fm-link-row">
+                    <img class="fm-link-icon" src="/orbs-removebackground/0022dfe6bb6b9a5b43020ea446cbf73b.png" alt="" draggable="false">
+                    <span class="fm-link-text">To do this week</span>
+                    <span class="fm-icon-badge">7</span>
+                  </div>
+                  <div class="fm-link-row">
+                    <img class="fm-link-icon" src="/folders-removebackground/1fdeaa71d5cad6ca544929339504b99b.png" alt="" draggable="false">
+                    <span class="fm-link-text">Letters</span>
+                    <span class="fm-icon-badge">4</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fm-status-bar">
+            <div class="fm-status-field">
+              <span class="fm-status-label">This folder:</span>
+              <span class="fm-crt-count">1 folder(s), 2 list(s)</span>
+            </div>
+            <div class="fm-status-field shrink" style="min-width: 180px">
+              <span class="fm-status-label">Tree:</span>
+              <span class="fm-crt-count">2 folder(s), 2 list(s)</span>
+            </div>
+            <div class="fm-status-field shrink" style="min-width: 90px">
+              <label style="display: flex; align-items: center; gap: 4; cursor: pointer">
+                <input type="checkbox" checked>
+                Smart lists
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var cssEl = document.getElementById("lab-css");
+  var scale = document.getElementById("scale");
+  var density = document.getElementById("density");
+  var radius = document.getElementById("radius");
+  var faces = {
+    tahoma: "Tahoma, Geneva, sans-serif",
+    georgia: "Georgia, 'Times New Roman', serif",
+    mono: "ui-monospace, 'Courier New', monospace"
+  };
+  var palettes = {
+    cool: { face: "#c5c9d0", sheen: "#d7dee8", shade: "#8f98a6", mid: "#d2d7e0", pewter: "#c5ccd6", ash: "#b4bdc8", velvet: "#2c2438" },
+    warm: { face: "#c8c2b6", sheen: "#ddd6c8", shade: "#a39888", mid: "#d9d0c4", pewter: "#d0c6b8", ash: "#c0b4a4", velvet: "#3a221c" },
+    ink: { face: "#b4b8bc", sheen: "#c8ccd0", shade: "#7e848a", mid: "#c4c8cc", pewter: "#b8bdc2", ash: "#a8aeb4", velvet: "#1a1218" }
+  };
+  var orbFilter = {
+    cool: "hue-rotate(8deg) saturate(1.05)",
+    warm: "hue-rotate(-8deg) saturate(1.04)",
+    ink: "saturate(0.92) brightness(0.97)"
+  };
+
+  function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+  function num(el, a, b, fallback) {
+    var n = parseFloat(el.value);
+    if (!isFinite(n)) n = fallback;
+    n = clamp(n, a, b);
+    return n;
+  }
+
+  function apply() {
+    var scope = document.getElementById("scope").value;
+    var face = document.getElementById("face").value;
+    var layout = document.getElementById("layout").value;
+    var palette = document.getElementById("palette").value;
+    var s = num(scale, 0.9, 1.2, 1);
+    var d = num(density, 0.85, 1.18, 1);
+    var r = Math.round(num(radius, 0, 6, 2));
+    scale.value = String(s);
+    density.value = String(d);
+    radius.value = String(r);
+    document.getElementById("scaleVal").textContent = s.toFixed(2);
+    document.getElementById("densityVal").textContent = d.toFixed(2);
+    document.getElementById("radiusVal").textContent = String(r);
+
+    var rules = [];
+    var root = scope === "whole" ? ".fm98"
+      : scope === "frame" ? ".fm98 .fm-title-bar, .fm98 .fm-toolbar, .fm98 .fm-status-bar, .fm98 .fm-mode-deck"
+      : scope === "tree" ? ".fm98 .fm-sidebar"
+      : scope === "desktop" ? ".fm98 .fm-desktop"
+      : ".fm98 .fm-icon, .fm98 .fm-link-row";
+
+    if (faces[face]) rules.push(root + " { font-family: " + faces[face] + "; }");
+
+    if (Math.abs(s - 1) > 0.001) {
+      var typeSel = {
+        whole: [
+          [".fm98", 12],
+          [".fm98 .fm-title-bar-text", 12],
+          [".fm98 .fm-btn", 11],
+          [".fm98 .fm-btn.fm-btn-sm", 10],
+          [".fm98 .fm-tree-item", 13],
+          [".fm98 .fm-sidebar-heading", 10],
+          [".fm98 .fm-status-field", 12],
+          [".fm98 .fm-icon-label", 11],
+          [".fm98 .fm-link-text", 14],
+          [".fm98 .fm-nameplate", 10]
+        ],
+        frame: [
+          [".fm98 .fm-title-bar-text", 12],
+          [".fm98 .fm-btn", 11],
+          [".fm98 .fm-btn.fm-btn-sm", 10],
+          [".fm98 .fm-status-field", 12],
+          [".fm98 .fm-nameplate", 10]
+        ],
+        tree: [
+          [".fm98 .fm-tree-item", 13],
+          [".fm98 .fm-sidebar-heading", 10],
+          [".fm98 .fm-sidebar .fm-btn.fm-btn-sm", 10]
+        ],
+        desktop: [
+          [".fm98 .fm-desktop .fm-icon-label", 11]
+        ],
+        orbs: [
+          [".fm98 .fm-icon-label", 11],
+          [".fm98 .fm-link-text", 14]
+        ]
+      };
+      typeSel[scope].forEach(function (pair) {
+        rules.push(pair[0] + " { font-size: calc(" + pair[1] + "px * " + s + "); }");
+      });
+    }
+
+    if (Math.abs(d - 1) > 0.001) {
+      if (scope === "whole" || scope === "frame") {
+        rules.push(".fm98 .fm-toolbar { gap: calc(6px * " + d + "); padding: calc(8px * " + d + ") calc(10px * " + d + "); }");
+        rules.push(".fm98 .fm-window { padding: calc(3px * " + d + "); }");
+        rules.push(".fm98 .fm-status-bar { gap: calc(6px * " + d + "); }");
+      }
+      if (scope === "whole" || scope === "tree") {
+        rules.push(".fm98 .fm-sidebar { padding: calc(4px * " + d + ") calc(2px * " + d + ") calc(6px * " + d + "); }");
+        rules.push(".fm98 .fm-tree-item { padding-top: calc(4px * " + d + "); padding-bottom: calc(4px * " + d + "); gap: calc(6px * " + d + "); }");
+      }
+      if (scope === "whole") rules.push(".fm98 .fm-split { gap: calc(3px * " + d + "); }");
+      if (scope === "desktop" || scope === "orbs" || scope === "whole") {
+        var icon = clamp(d, 0.9, 1.1);
+        rules.push(".fm98 .fm-icon-img-wrap { width: calc(72px * " + icon + "); height: calc(72px * " + icon + "); }");
+        rules.push(".fm98 .fm-icon-free { width: calc(104px * " + icon + "); }");
+      }
+    }
+
+    if (r !== 2) {
+      var r3 = Math.min(8, r + 1);
+      rules.push(root + " { --r-2: " + r + "px; --r-3: " + r3 + "px; }");
+    }
+
+    if (layout !== "explorer") {
+      if (scope === "whole" || scope === "tree") {
+        if (layout === "wide") rules.push(".fm98 .fm-sidebar { width: 268px; }");
+        if (layout === "narrow") rules.push(".fm98 .fm-sidebar { width: 168px; }");
+      }
+      if ((scope === "whole" || scope === "frame") && layout === "stack") {
+        rules.push(".fm98 .fm-split { flex-direction: column; }");
+        rules.push(".fm98 .fm-sidebar { width: auto; max-height: 38%; }");
+      }
+      if (scope === "frame" && layout === "wide") rules.push(".fm98 .fm-toolbar { flex-wrap: nowrap; }");
+      if (scope === "frame" && layout === "narrow") rules.push(".fm98 .fm-toolbar { gap: 4px; }");
+      if ((scope === "desktop" || scope === "orbs") && layout === "wide") {
+        rules.push(".fm98 .fm-icon-free { width: 120px; }");
+      }
+      if ((scope === "desktop" || scope === "orbs") && layout === "narrow") {
+        rules.push(".fm98 .fm-icon-free { width: 92px; }");
+      }
+      if ((scope === "desktop" || scope === "orbs" || scope === "whole") && layout === "stack" && scope !== "whole" && scope !== "frame") {
+        rules.push(".stage .fm98 .fm-icon-canvas .fm-icon-free { position: static; display: inline-block; vertical-align: top; margin: 10px 12px; }");
+      }
+    }
+
+    var sw = palettes[palette];
+    if (sw && scope === "whole") {
+      rules.push(".fm98 { --chrome-face: " + sw.face + "; --chrome-sheen: " + sw.sheen + "; --chrome-shade: " + sw.shade + "; --chrome-key-mid: " + sw.mid + "; --chrome-pewter: " + sw.pewter + "; --chrome-ash: " + sw.ash + "; --chrome-grade-sheen: " + sw.pewter + "; --fm-surface: " + sw.face + "; --fm-button-face: " + sw.mid + "; --fm-button-shadow: " + sw.shade + "; }");
+    }
+    if (sw && scope === "frame") {
+      rules.push(".fm98 { --chrome-face: " + sw.face + "; --chrome-sheen: " + sw.sheen + "; --chrome-shade: " + sw.shade + "; --chrome-ash: " + sw.ash + "; --chrome-grade-sheen: " + sw.pewter + "; --fm-surface: " + sw.face + "; --fm-button-face: " + sw.mid + "; --fm-button-shadow: " + sw.shade + "; }");
+    }
+    if (sw && scope === "tree") {
+      rules.push(".fm98 .fm-sidebar { --chrome-key-mid: " + sw.mid + "; --chrome-pewter: " + sw.pewter + "; background: repeating-linear-gradient(180deg, rgba(255,255,255,.1) 0 1px, transparent 1px 2px), " + sw.mid + "; }");
+      rules.push(".fm98 .fm-sidebar-heading { background: linear-gradient(180deg, rgba(255,255,255,.4) 0, transparent 42%), " + sw.pewter + "; }");
+    }
+    if (sw && scope === "desktop") {
+      rules.push(".fm98 .fm-desktop.velvet { background-color: " + sw.velvet + "; background-blend-mode: soft-light; }");
+    }
+    if (sw && scope === "orbs") {
+      rules.push(".fm98 .fm-icon-img, .fm98 .fm-link-icon { filter: drop-shadow(1px 2px 1px rgba(0,0,0,.35)) " + orbFilter[palette] + "; }");
+    }
+
+    cssEl.textContent = rules.join("\n");
+  }
+
+  ["scope", "face", "scale", "density", "radius", "layout", "palette"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", apply);
+    document.getElementById(id).addEventListener("change", apply);
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    document.getElementById("scope").value = "whole";
+    document.getElementById("face").value = "house";
+    document.getElementById("layout").value = "explorer";
+    document.getElementById("palette").value = "house";
+    scale.value = "1";
+    density.value = "1";
+    radius.value = "2";
+    cssEl.textContent = "";
+    apply();
+    showView("icons");
+    document.querySelectorAll(".fm-icon.selected, .fm-link-row.selected, .fm-tree-item.active").forEach(function (el) {
+      el.classList.remove("selected", "active");
+    });
+    var home = document.querySelector(".fm-qa-item");
+    if (home) home.classList.add("active");
+  });
+
+  function showView(which) {
+    var icons = document.getElementById("desk-icons");
+    var list = document.getElementById("desk-list");
+    var iconView = which === "icons";
+    icons.hidden = !iconView;
+    list.hidden = iconView;
+    document.querySelectorAll(".fm-view-key").forEach(function (btn) {
+      var on = btn.getAttribute("data-view") === which && btn.getAttribute("aria-label") === (which === "icons" ? "Icons" : "List");
+      if (which === "icons" && (btn.getAttribute("aria-label") === "Details" || btn.getAttribute("aria-label") === "Cards")) on = false;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  }
+
+  document.querySelectorAll(".fm-view-key").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var label = btn.getAttribute("aria-label");
+      showView(label === "List" ? "list" : "icons");
+      document.querySelectorAll(".fm-view-key").forEach(function (key) {
+        var on = key === btn;
+        key.classList.toggle("active", on);
+        key.setAttribute("aria-checked", on ? "true" : "false");
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-tree]").forEach(function (row) {
+    row.addEventListener("click", function () {
+      document.querySelectorAll("[data-tree]").forEach(function (other) {
+        other.classList.remove("active");
+        if (other.hasAttribute("aria-selected")) other.setAttribute("aria-selected", "false");
+      });
+      row.classList.add("active");
+      if (row.hasAttribute("aria-selected")) row.setAttribute("aria-selected", "true");
+    });
+  });
+
+  document.querySelectorAll(".fm-icon, .fm-link-row").forEach(function (row) {
+    row.addEventListener("click", function () {
+      var group = row.classList.contains("fm-icon") ? ".fm-icon" : ".fm-link-row";
+      document.querySelectorAll(group).forEach(function (other) { other.classList.remove("selected"); });
+      row.classList.add("selected");
+    });
+  });
+
+  apply();
+})();
+</script>
+</body>
+</html>

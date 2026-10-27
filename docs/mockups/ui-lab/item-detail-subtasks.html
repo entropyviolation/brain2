@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item detail · Subtasks — UI lab</title>
+<style>
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 13px;
+  background: #12141a;
+  color: #e4e4ea;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+@media (max-width: 920px) { body { grid-template-columns: 1fr; } }
+.bench {
+  background: var(--bench);
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 96vh;
+  overflow: auto;
+  font-size: 11px;
+}
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a {
+  color: var(--crt);
+  opacity: .7;
+  text-decoration: none;
+  padding: 2px 5px;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+.lab-sections a:hover { opacity: 1; }
+.lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  color: var(--crt);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  color: var(--crt);
+  font-weight: 700;
+}
+.bench label { display: block; margin: 7px 0 2px; opacity: .88; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.bench :focus-visible, .frame :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .8;
+}
+.stage-well {
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 28px 16px 40px;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.16), transparent 42%),
+    #6e736c;
+}
+
+.frame {
+  width: min(980px, 100%);
+  color: var(--ink, #111);
+  font-family: var(--face-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: var(--type, 13px);
+  font-weight: var(--weight, 400);
+  letter-spacing: var(--track, 0em);
+  line-height: var(--leading, 1.25);
+  background: var(--face, #c0c0c0);
+  border-radius: var(--frame-r, 0px);
+  padding: var(--win, 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .75)),
+    inset 0 calc(var(--bevel, 1) * -1px) 0 rgba(0,0,0,.28),
+    inset 0 0 0 var(--ring, 1px) var(--line, #5c6064),
+    0 var(--sh-y, 0px) var(--sh-blur, 0px) rgba(0,0,0, var(--sh-op, 0));
+}
+.fascia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--inner, 8px);
+  padding: var(--fascia, 10px);
+  border-radius: var(--bay-r, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255, var(--grain, .18)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--sheen, #d4d8dc) 0%, var(--face, #c0c0c0) 48%, var(--shade, #969a9e) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .75)),
+    0 0 0 var(--ring, 1px) var(--line, #5c6064);
+}
+.fascia-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--inner, 8px); }
+.mark {
+  display: flex;
+  align-items: center;
+  gap: var(--inner, 8px);
+  flex: 1 1 16rem;
+  min-width: 0;
+  min-height: calc(var(--lamp, 7px) * 4);
+  padding: 6px 12px 6px 8px;
+  border-radius: var(--key-r, 2px);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt, #7dffc4) 16%, transparent), transparent 48%),
+    #070c0a;
+  box-shadow: 0 0 0 var(--ring, 1px) #3a3e42, inset 0 10px 14px rgba(0,0,0,.4);
+}
+.lamp, .flag i, .tab::before {
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt, #7dffc4) 42%, #0a3a28 78%);
+}
+.lamp {
+  width: calc(var(--lamp, 7px) * 1.45);
+  height: calc(var(--lamp, 7px) * 1.45);
+  box-shadow: 0 0 0 1px #1a3a2a, 0 0 calc(var(--glow, 3px)) var(--crt, #7dffc4);
+}
+.title {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: var(--title, 15px);
+  font-weight: 700;
+  letter-spacing: var(--title-track, .12em);
+  text-transform: uppercase;
+  color: var(--crt, #7dffc4);
+  text-shadow: 0 0 var(--glow, 3px) var(--crt, #7dffc4);
+}
+.title input {
+  width: 100%;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-shadow: inherit;
+}
+.keys { display: flex; flex-wrap: wrap; gap: calc(var(--inner, 8px) * .75); margin-left: auto; align-items: center; }
+.flag, .chip, .key, .verb, .add, .split-go, .mol-flag {
+  font-family: var(--meta-font, ui-monospace, "Courier New", monospace);
+  font-size: var(--key, 10.5px);
+  font-weight: 700;
+  letter-spacing: var(--key-track, .1em);
+  text-transform: uppercase;
+  color: #1c1e20;
+  background: linear-gradient(180deg, var(--sheen, #eceef0), var(--face, #c0c4c8));
+  border: 0;
+  border-radius: var(--key-r, 2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .9)),
+    inset 0 calc(var(--bevel, 1) * -1px) 0 rgba(0,0,0,.2),
+    0 0 0 var(--ring, 1px) var(--line, #4a4e52);
+}
+.flag, .key, .add, .split-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--key-h, 28px);
+  padding: 4px var(--key-pad, 10px);
+  cursor: pointer;
+}
+.flag { cursor: default; box-shadow: inset 0 0 0 var(--ring, 1px) var(--line, #808080); }
+.flag i {
+  width: calc(var(--lamp, 7px) * 1.1);
+  height: calc(var(--lamp, 7px) * 1.1);
+  display: block;
+}
+.flag.is-unsaved i { background: radial-gradient(circle at 35% 30%, #ead0c8, #c56e74 42%, #4c2226 78%); box-shadow: 0 0 6px rgba(197,110,116,.45); }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--chip, 22px);
+  padding: 2px var(--key-pad, 8px);
+}
+.key.is-quiet { opacity: .85; color: #800000; }
+.meta { display: flex; flex-wrap: wrap; gap: calc(var(--inner, 8px) * .7); }
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: var(--tab-gap, 4px);
+  margin: var(--inner, 8px) var(--win, 3px);
+  padding: var(--tab-gap, 4px);
+  border-radius: var(--tab-r, 3px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255, var(--grain, .16)) 0 1px, transparent 1px 2px),
+    var(--well, #b4b8bc);
+  box-shadow: inset 0 1px 0 rgba(255,255,255, var(--hi, .4)), 0 0 0 var(--ring, 1px) var(--line, #5c6064);
+}
+.tab {
+  position: relative;
+  min-height: var(--tab-h, 32px);
+  border: 0;
+  border-radius: var(--tab-r, 3px);
+  padding: 0 8px 0 calc(var(--lamp, 7px) + 16px);
+  font-family: var(--meta-font, ui-monospace, "Courier New", monospace);
+  font-size: var(--tab, 10.5px);
+  font-weight: 500;
+  letter-spacing: var(--tab-track, .09em);
+  text-transform: uppercase;
+  color: var(--ink, #1c1e20);
+  background: linear-gradient(180deg, rgba(255,255,255, var(--hi, .85)), rgba(255,255,255,0) 46%), linear-gradient(180deg, var(--sheen, #eceef0), var(--face, #c0c4c8));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .9)),
+    inset 0 calc(var(--bevel, 1) * -1px) 0 rgba(0,0,0,.16),
+    0 0 0 var(--ring, 1px) var(--line, #4a4e52);
+}
+.tab::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: var(--lamp, 7px);
+  height: var(--lamp, 7px);
+  margin-top: calc(var(--lamp, 7px) / -2);
+  background: radial-gradient(circle at 35% 30%, #d0d4d8, #2a2c2e 62%);
+  box-shadow: 0 0 0 1px #1a1c1e;
+}
+.tab.is-quiet { min-height: calc(var(--tab-h, 32px) - 4px); }
+.tab[aria-selected="true"] {
+  color: var(--crt, #7dffc4);
+  text-shadow: 0 0 var(--glow, 3px) var(--crt, #7dffc4);
+  background:
+    radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--crt, #7dffc4) 16%, transparent), transparent 48%),
+    #070c0a;
+  box-shadow: 0 0 0 var(--ring, 1px) #3a3e42, inset 0 2px 4px rgba(0,0,0,.55);
+}
+.tab[aria-selected="true"]::before {
+  background: radial-gradient(circle at 35% 30%, #e8fff4, var(--crt, #7dffc4) 42%, #0a3a28 78%);
+  box-shadow: 0 0 var(--glow, 6px) var(--crt, #7dffc4);
+}
+.tab:disabled { cursor: default; }
+.body { padding: 0 var(--win, 4px) var(--bay, 12px); display: flex; flex-direction: column; gap: var(--bay-gap, 12px); }
+.bay {
+  border-radius: var(--bay-r, 3px);
+  padding: var(--bay, 12px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255, var(--grain, .12)) 0 1px, transparent 1px 2px),
+    var(--well, #c8ccd0);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .65)),
+    0 0 0 var(--ring, 1px) var(--line, #5c6064);
+}
+.bay h2 {
+  margin: 0 0 6px;
+  font-size: var(--head, 11px);
+  letter-spacing: var(--title-track, .14em);
+  text-transform: uppercase;
+  color: var(--ink, #111);
+}
+.help, .empty { margin: 0 0 8px; font-size: var(--help, 12px); color: var(--muted, #3e4348); }
+.notice {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: var(--row-r, 3px);
+  background: #070c0a;
+  color: #d8ffe9;
+  font-size: var(--help, 12px);
+}
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap, 4px); }
+.list .list {
+  margin: var(--gap, 4px) 0 0 var(--indent, 18px);
+  padding-left: var(--nest, 10px);
+  border-left: var(--guide-w, 1px) solid var(--guide, #5c6064);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--inner, 8px);
+  min-height: calc(var(--row-h, 20px) + var(--pad-y, 6px) * 2);
+  padding: var(--pad-y, 6px) var(--pad-x, 8px);
+  border-radius: var(--row-r, 3px);
+  background: linear-gradient(180deg, var(--row2, #eef0f2), var(--row, #cfd3d6));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255, var(--hi, .95)),
+    inset 0 calc(var(--bevel, 1) * -1px) 0 rgba(0,0,0,.12),
+    0 0 0 var(--ring, 1px) var(--line, #5c6064),
+    0 var(--sh-y, 0px) var(--sh-blur, 0px) rgba(0,0,0, var(--sh-op, 0));
+}
+.check {
+  width: var(--check, 13px);
+  height: var(--check, 13px);
+  flex: none;
+  margin: 0;
+  accent-color: #000080;
+}
+.name {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink, #111);
+  font: inherit;
+  font-size: 1em;
+  padding: 3px 6px;
+}
+.row[data-done="true"] .name { text-decoration: line-through; text-decoration-thickness: var(--strike, 1px); color: var(--done, #3a3e42); }
+.parts, .sum {
+  flex: none;
+  font-family: var(--meta-font, ui-monospace, "Courier New", monospace);
+  font-size: var(--meta, 11px);
+  color: var(--muted, #3e4348);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.min, .note, .context, .split, .add-input {
+  border: 0;
+  background: var(--field, #fff);
+  color: var(--field-ink, #111);
+  box-shadow:
+    inset 0 0 0 var(--ring, 1px) var(--line, #808080),
+    inset 0 var(--field-in, 2px) var(--field-in, 2px) rgba(0,0,0,.18);
+  font: inherit;
+  font-size: var(--meta, 12px);
+  padding: 3px 6px;
+}
+.min {
+  width: var(--min-w, 56px);
+  flex: none;
+  text-align: var(--min-align, right);
+  font-variant-numeric: tabular-nums;
+}
+.note, .context, .split, .add-input { width: 100%; }
+.context, .split { min-height: var(--field-h, 28px); }
+.split { min-height: calc(var(--field-h, 28px) * 2.4); }
+.verb, .mol-flag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--key-h, 24px);
+  height: var(--key-h, 24px);
+  padding: 0 var(--key-pad, 8px);
+  cursor: pointer;
+}
+.verb.open { color: #0b4a33; }
+.verb.del, .mol-del { color: #800000; }
+.verb svg { width: 1.15em; height: 1.15em; display: block; }
+.mol-flag { text-transform: none; letter-spacing: 0; font-family: inherit; }
+.mol-flag[aria-pressed="true"] { background: #1c1e20; color: #fff; }
+.add { align-self: flex-start; margin-top: var(--gap, 8px); }
+.sumline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: var(--gap, 8px);
+  padding-top: 6px;
+  border-top: var(--ring, 1px) solid var(--line, #5c6064);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--foot, 12px);
+  color: var(--ink, #111);
+}
+.mol-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pad-y, 8px);
+  margin: 0 0 var(--gap, 8px);
+  border-radius: var(--row-r, 3px);
+  background: color-mix(in srgb, var(--field, #fff) 35%, transparent);
+  box-shadow: inset 0 0 0 var(--ring, 1px) var(--line, rgba(0,0,0,.12));
+}
+.mol-top { display: flex; align-items: flex-start; gap: var(--inner, 8px); }
+.mol-name { flex: 1; min-width: 0; padding-top: 2px; color: var(--ink, #111); }
+.mol-card[data-done="true"] .mol-name { text-decoration: line-through; text-decoration-thickness: var(--strike, 1px); color: var(--done, #3a3e42); }
+.bay label { display: block; margin: 8px 0 4px; font-size: var(--help, 12px); font-weight: 700; color: var(--ink, #111); }
+.name:focus, .min:focus, .context:focus, .split:focus, .add-input:focus, .title input:focus {
+  outline: var(--ring, 2px) solid #000080;
+  outline-offset: 1px;
+  background: var(--field, #fff);
+  color: var(--field-ink, #111);
+}
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="habits.html">Habits</a>
+    <a href="plan.html">Plan</a>
+    <a href="todo.html">To do</a>
+    <a href="goals.html">Goals</a>
+    <a href="tracking.html">Tracking</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Ops</a>
+    <a href="pen-settings.html">Pen</a>
+    <a href="timeblock.html">Timeblock</a>
+    <a href="baby-animal.html">Baby animal</a>
+    <a href="item-detail-subtasks.html" aria-current="page">Subtasks</a>
+  </nav>
+  <h1>Subtasks lab</h1>
+  <p class="lede">Item detail, Subtasks tab, as it works now. Studio kiln rebuild, week of 26 Oct 2026. The controls only tune this screen.</p>
+  <div id="bench-controls"></div>
+</aside>
+
+<div class="stage">
+  <div class="stage-cap">
+    <span>Item detail · Subtasks</span>
+    <span>Studio kiln rebuild · week of 26 Oct 2026</span>
+  </div>
+  <div class="stage-well">
+    <article class="frame" id="frame">
+      <header class="fascia">
+        <div class="fascia-row">
+          <button type="button" class="key" id="backKey">Back</button>
+          <div class="mark">
+            <span class="lamp" aria-hidden="true"></span>
+            <h1 class="title"><input id="itemTitle" aria-label="Item name" value="Studio kiln rebuild"></h1>
+          </div>
+          <div class="keys">
+            <span class="flag is-saved" id="saveFlag"><i aria-hidden="true"></i> <span id="saveWord">Saved</span></span>
+            <button type="button" class="key" id="saveKey">Save</button>
+            <button type="button" class="key" id="completeKey">Complete</button>
+            <button type="button" class="key" id="missedKey">Missed</button>
+            <button type="button" class="key" id="cardKey">Card</button>
+            <button type="button" class="key is-quiet" id="deleteKey">Delete</button>
+          </div>
+        </div>
+        <div class="meta" aria-label="Item">
+          <span class="chip">Task</span>
+          <span class="chip">Active</span>
+          <span class="chip">Elijah</span>
+          <span class="chip">Studio</span>
+          <span class="chip">Pen Kiln</span>
+          <span class="chip">Week of 26 Oct 2026</span>
+        </div>
+      </header>
+      <div class="tabs" role="tablist" aria-label="Item detail">
+        <button type="button" class="tab" disabled>Details</button>
+        <button type="button" class="tab" disabled>Scheduling</button>
+        <button type="button" class="tab" disabled>Dependencies</button>
+        <button type="button" class="tab" aria-selected="true">Subtasks</button>
+        <button type="button" class="tab is-quiet" disabled>Links</button>
+        <button type="button" class="tab is-quiet" disabled>Analysis</button>
+        <button type="button" class="tab is-quiet" disabled>Time</button>
+        <button type="button" class="tab is-quiet" disabled>History</button>
+      </div>
+      <div class="body">
+        <p class="notice" id="notice" hidden></p>
+        <section class="bay" aria-label="Subtasks">
+          <h2>Subtasks</h2>
+          <p class="help">Use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the steps inside, whichever is larger.</p>
+          <p class="empty" id="empty" hidden>No steps yet.</p>
+          <ul class="list" id="tree"></ul>
+          <button type="button" class="add" id="addTop">+ Add step</button>
+          <div class="sumline" id="sumline"><span id="doneCount"></span><span id="estCount"></span></div>
+        </section>
+        <section class="bay" aria-label="Molecular breakdown">
+          <h2>Molecular breakdown</h2>
+          <p class="help">Split this task into as many separate steps as you can. If a step can’t be split further, mark it MOLECULAR. Give each step enough context to understand it on its own.</p>
+          <label for="splitBox">Split into steps (one per line)</label>
+          <textarea class="split" id="splitBox" rows="4" placeholder="1. Open the file&#10;2. Find the section&#10;3. Write the first sentence"></textarea>
+          <button type="button" class="split-go" id="splitGo" disabled>Add steps</button>
+          <div id="molList" style="margin-top:10px"></div>
+        </section>
+      </div>
+    </article>
+  </div>
+</div>
+
+<script>
+(function () {
+  var FONTS = {
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    system: "system-ui, sans-serif",
+    grotesk: '"Segoe UI", "Avenir Next", "Trebuchet MS", sans-serif',
+    mono: 'ui-monospace, "Courier New", monospace',
+    serif: "Palatino, Georgia, serif",
+    round: '"Trebuchet MS", "Segoe UI", sans-serif',
+    typewriter: '"Courier New", Courier, monospace'
+  };
+  var MONO = 'ui-monospace, "Courier New", monospace';
+  var GROUPS = [
+    {
+      title: "Type",
+      selects: [
+        ["font", "Font", [["tahoma", "Tahoma"], ["system", "System UI"], ["grotesk", "Segoe / Avenir"], ["mono", "UI monospace"], ["serif", "Palatino / Georgia"], ["round", "Trebuchet"], ["typewriter", "Typewriter"]], "tahoma"],
+        ["weight", "Weight", [["400", "Regular"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"]], "400"],
+        ["metaFace", "Meta face", [["mono", "Mono"], ["match", "Match text"]], "mono"]
+      ],
+      sliders: [
+        ["type", "Type size", 11, 22, 13, "px"],
+        ["leading", "Line height", 100, 180, 125, "em100"],
+        ["track", "Tracking", -2, 16, 0, "em100"],
+        ["title", "Title size", 12, 28, 15, "px"],
+        ["titleTrack", "Title tracking", 0, 24, 12, "em100"],
+        ["head", "Section size", 9, 18, 11, "px"],
+        ["tab", "Tab size", 9, 16, 10.5, "px"],
+        ["tabTrack", "Tab tracking", 0, 20, 9, "em100"],
+        ["key", "Key size", 9, 16, 10.5, "px"],
+        ["keyTrack", "Key tracking", 0, 20, 10, "em100"],
+        ["meta", "Count size", 9, 18, 11, "px"],
+        ["help", "Help size", 10, 18, 12, "px"],
+        ["foot", "Footer size", 10, 22, 12, "px"]
+      ]
+    },
+    {
+      title: "Rows",
+      selects: [
+        ["minAlign", "Minutes align", [["right", "Right"], ["left", "Left"], ["center", "Center"]], "right"]
+      ],
+      sliders: [
+        ["rowH", "Row height", 16, 48, 20, "px"],
+        ["gap", "Row gap", 0, 20, 4, "px"],
+        ["padX", "Row pad X", 0, 28, 8, "px"],
+        ["padY", "Row pad Y", 0, 20, 6, "px"],
+        ["inner", "Inner gap", 2, 24, 8, "px"],
+        ["indent", "Indent", 0, 72, 18, "px"],
+        ["nest", "Nest pad", 0, 28, 10, "px"],
+        ["guideW", "Guide width", 0, 8, 1, "px"],
+        ["guideA", "Guide strength", 0, 100, 80, ""],
+        ["check", "Checkbox", 12, 32, 13, "px"],
+        ["minW", "Minutes width", 36, 120, 56, "px"],
+        ["strike", "Strike weight", 1, 4, 1, "px"],
+        ["keyH", "Key height", 18, 44, 28, "px"],
+        ["keyPad", "Key pad", 2, 20, 8, "px"]
+      ]
+    },
+    {
+      title: "Frame",
+      sliders: [
+        ["win", "Window pad", 0, 20, 3, "px"],
+        ["fascia", "Fascia pad", 2, 28, 10, "px"],
+        ["bay", "Bay pad", 4, 32, 12, "px"],
+        ["bayGap", "Bay gap", 0, 32, 12, "px"],
+        ["tabH", "Tab height", 24, 52, 32, "px"],
+        ["tabGap", "Tab gap", 0, 14, 4, "px"],
+        ["lamp", "Lamp size", 4, 16, 7, "px"],
+        ["chip", "Chip height", 16, 36, 22, "px"],
+        ["fieldH", "Note height", 22, 88, 28, "px"]
+      ]
+    },
+    {
+      title: "Shape",
+      sliders: [
+        ["frameR", "Frame corner", 0, 28, 0, "px"],
+        ["bayR", "Bay corner", 0, 24, 3, "px"],
+        ["rowR", "Row corner", 0, 20, 3, "px"],
+        ["tabR", "Tab corner", 0, 20, 3, "px"],
+        ["keyR", "Key corner", 0, 16, 2, "px"]
+      ]
+    },
+    {
+      title: "Edge and shadow",
+      sliders: [
+        ["ring", "Border", 0, 4, 1, "px"],
+        ["bevel", "Bevel", 0, 6, 1, "px"],
+        ["fieldIn", "Field inset", 0, 8, 2, "px"],
+        ["shY", "Shadow distance", 0, 16, 0, "px"],
+        ["shBlur", "Shadow blur", 0, 28, 0, "px"],
+        ["shOp", "Shadow strength", 0, 80, 0, ""],
+        ["grain", "Mill grain", 0, 100, 40, ""],
+        ["hi", "Highlight", 0, 100, 75, ""]
+      ]
+    },
+    {
+      title: "Color and contrast",
+      sliders: [
+        ["metal", "Metal", 0, 100, 50, ""],
+        ["warmth", "Warmth", 0, 100, 50, ""],
+        ["contrast", "Contrast", 0, 100, 50, ""],
+        ["wellD", "Well depth", 0, 100, 28, ""],
+        ["lift", "Row lift", 0, 100, 48, ""],
+        ["crt", "CRT green", 0, 100, 50, ""],
+        ["glowA", "CRT glow", 0, 12, 3, "px"],
+        ["doneC", "Done contrast", 20, 100, 62, ""]
+      ]
+    }
+  ];
+
+  var state = {};
+  GROUPS.forEach(function (g) {
+    (g.selects || []).forEach(function (s) { state[s[0]] = s[3]; });
+    (g.sliders || []).forEach(function (s) { state[s[0]] = s[4]; });
+  });
+
+  var bench = document.getElementById("bench-controls");
+  bench.innerHTML = GROUPS.map(function (g) {
+    var selects = (g.selects || []).map(function (s) {
+      var opts = s[2].map(function (o) {
+        return '<option value="' + o[0] + '"' + (o[0] === s[3] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("");
+      return "<label>" + s[1] + '<select data-key="' + s[0] + '">' + opts + "</select></label>";
+    }).join("");
+    var sliders = (g.sliders || []).map(function (s) {
+      return "<label>" + s[1] + ' <span class="val" data-val="' + s[0] + '"></span><input type="range" data-key="' + s[0] + '" min="' + s[2] + '" max="' + s[3] + '" step="' + (String(s[4]).indexOf(".") >= 0 ? "0.5" : "1") + '" value="' + s[4] + '"></label>';
+    }).join("");
+    return "<h2>" + g.title + "</h2>" + selects + sliders;
+  }).join("");
+
+  var frame = document.getElementById("frame");
+  var tree = document.getElementById("tree");
+  var molList = document.getElementById("molList");
+
+  function mix(a, b, t) {
+    function p(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    var A = p(a), B = p(b);
+    return "#" + [0, 1, 2].map(function (i) {
+      return Math.max(0, Math.min(255, Math.round(A[i] + (B[i] - A[i]) * t))).toString(16).padStart(2, "0");
+    }).join("");
+  }
+  function ramp(t, a, b, c) {
+    return t < 0.5 ? mix(a, b, t / 0.5) : mix(b, c, (t - 0.5) / 0.5);
+  }
+  function hexA(hex, alpha) {
+    var n = parseInt(hex.slice(1), 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + alpha + ")";
+  }
+
+  function apply() {
+    var face = ramp(state.metal / 100, "#8a8e92", "#c0c0c0", "#e6e6e6");
+    var w = state.warmth / 100;
+    if (w < 0.5) face = mix(face, "#b4bec8", (0.5 - w) * 1.3);
+    else face = mix(face, "#d4c4ae", (w - 0.5) * 1.3);
+    var c = state.contrast / 100;
+    var ink = ramp(c, "#3a3e42", "#1a1a1a", "#000000");
+    var muted = ramp(c, "#5c6166", "#3e4348", "#1c2024");
+    var row = mix(face, "#f7f8f8", 0.15 + state.lift / 180);
+    var row2 = mix(row, "#ffffff", 0.2 + state.lift / 220);
+    var well = mix(mix(face, "#e4e6e8", 0.5), "#3e4448", state.wellD / 150);
+    var sheen = mix(face, "#ffffff", 0.42);
+    var shade = mix(face, "#1a1c1e", 0.22);
+    var line = mix(face, ink, 0.42);
+    var crt = ramp(state.crt / 100, "#b7ead4", "#7dffc4", "#f3fff8");
+    var done = mix("#7a8084", ink, state.doneC / 100);
+    var shOp = Math.max(state.shOp / 100, state.shY > 0 ? 0.22 : 0, state.shBlur > 0 ? 0.22 : 0);
+    var set = {
+      "--face-font": FONTS[state.font] || FONTS.tahoma,
+      "--meta-font": state.metaFace === "mono" ? MONO : "inherit",
+      "--weight": state.weight,
+      "--type": state.type + "px",
+      "--leading": String(state.leading / 100),
+      "--track": (state.track / 100) + "em",
+      "--title": state.title + "px",
+      "--title-track": (state.titleTrack / 100) + "em",
+      "--head": state.head + "px",
+      "--tab": state.tab + "px",
+      "--tab-track": (state.tabTrack / 100) + "em",
+      "--key": state.key + "px",
+      "--key-track": (state.keyTrack / 100) + "em",
+      "--meta": state.meta + "px",
+      "--help": state.help + "px",
+      "--foot": state.foot + "px",
+      "--row-h": state.rowH + "px",
+      "--gap": state.gap + "px",
+      "--pad-x": state.padX + "px",
+      "--pad-y": state.padY + "px",
+      "--inner": state.inner + "px",
+      "--indent": state.indent + "px",
+      "--nest": state.nest + "px",
+      "--guide-w": state.guideW + "px",
+      "--guide": hexA(line, state.guideA / 100),
+      "--check": state.check + "px",
+      "--min-w": state.minW + "px",
+      "--min-align": state.minAlign,
+      "--strike": state.strike + "px",
+      "--key-h": state.keyH + "px",
+      "--key-pad": state.keyPad + "px",
+      "--win": state.win + "px",
+      "--fascia": state.fascia + "px",
+      "--bay": state.bay + "px",
+      "--bay-gap": state.bayGap + "px",
+      "--tab-h": state.tabH + "px",
+      "--tab-gap": state.tabGap + "px",
+      "--lamp": state.lamp + "px",
+      "--chip": state.chip + "px",
+      "--field-h": state.fieldH + "px",
+      "--frame-r": state.frameR + "px",
+      "--bay-r": state.bayR + "px",
+      "--row-r": state.rowR + "px",
+      "--tab-r": state.tabR + "px",
+      "--key-r": state.keyR + "px",
+      "--ring": state.ring + "px",
+      "--bevel": String(state.bevel),
+      "--field-in": state.fieldIn + "px",
+      "--sh-y": state.shY + "px",
+      "--sh-blur": state.shBlur + "px",
+      "--sh-op": String(shOp),
+      "--grain": String(state.grain / 100 * 0.45),
+      "--hi": String(state.hi / 100),
+      "--glow": state.glowA + "px",
+      "--face": face,
+      "--ink": ink,
+      "--muted": muted,
+      "--row": row,
+      "--row2": row2,
+      "--well": well,
+      "--sheen": sheen,
+      "--shade": shade,
+      "--line": line,
+      "--crt": crt,
+      "--done": done,
+      "--field": "#ffffff",
+      "--field-ink": "#111111"
+    };
+    Object.keys(set).forEach(function (k) { frame.style.setProperty(k, set[k]); });
+    document.querySelectorAll("[data-val]").forEach(function (el) {
+      var key = el.getAttribute("data-val");
+      var spec = null;
+      GROUPS.forEach(function (g) {
+        (g.sliders || []).forEach(function (s) { if (s[0] === key) spec = s; });
+      });
+      if (!spec) return;
+      var v = state[key];
+      el.textContent = spec[5] === "em100" ? (v / 100).toFixed(2) + "em" : spec[5] === "px" ? (String(v).replace(/\.0$/, "") + "px") : String(v);
+    });
+  }
+
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    function read() {
+      state[el.getAttribute("data-key")] = el.type === "range" ? Number(el.value) : el.value;
+      apply();
+    }
+    el.addEventListener("input", read);
+    el.addEventListener("change", read);
+  });
+
+  var seq = 20;
+  function step(id, description, completed, minutes, extra) {
+    extra = extra || {};
+    return {
+      id: id,
+      description: description,
+      completed: !!completed,
+      estimatedDuration: minutes,
+      subtasks: extra.subtasks || [],
+      context: extra.context || "",
+      isMolecular: !!extra.isMolecular
+    };
+  }
+  var steps = [
+    step("brick", "Brick the firebox floor", true, 90, {
+      context: "Hard brick first, then the insulating course. Mortar is the bag labeled kiln, not the studio wall mix. Elijah left the trowel on the wedging table.",
+      subtasks: [
+        step("hard", "Lay the hard brick course", true, 40),
+        step("insul", "Set the insulating brick course", true, 35),
+        step("point", "Point the joints with kiln mortar", false, 25)
+      ]
+    }),
+    step("thermo", "Seat the thermocouple", false, 20, {
+      isMolecular: true,
+      context: "The port is on the right wall, one brick down from the spy. Elijah’s firing log names this probe TC-2."
+    }),
+    step("glaze", "Run the glaze tests", false, 15, {
+      context: "Tiles live in the glaze cabinet, second shelf. Cone 6 clear, the studio celadon, and the shino test ring. Do not fire the big bowls on this test.",
+      subtasks: [
+        step("cone", "Cone 6 clear on the test tile", true, 20),
+        step("celadon", "Celadon on the studio cup", false, 25),
+        step("shino", "Shino on the test ring", false, 25)
+      ]
+    }),
+    step("shelf", "Reset the kiln shelf", true, 30, {
+      isMolecular: true,
+      context: "Three short posts. The cracked shelf stays out. Wash the shelf that came through the last firing."
+    }),
+    step("lid", "Check the lid seal", false, 10, {
+      context: "The gap is at the front left. Soft brick, then a strip of fiber at the spy. The lid must drop without rocking.",
+      subtasks: [
+        step("soft", "Soft-brick the lid gap", false, 15),
+        step("fiber", "Fiber the spy hole", true, 10)
+      ]
+    }),
+    step("log", "Copy Elijah’s firing log", false, 40, {
+      isMolecular: true,
+      context: "The log is the black book on the studio bench. Copy the last cone 6 schedule onto the card inside the kiln lid."
+    }),
+    step("sweep", "Sweep the studio floor before the first fire", true, 15, {
+      isMolecular: true,
+      context: "Clay dust off the kiln legs and the path to the door, before anyone lights the burner."
+    }),
+    step("arch", "Dry the new arch overnight", false, undefined, {
+      isMolecular: true,
+      context: "No burner. The arch was laid Tuesday. Leave the damper cracked. Elijah checks it in the morning."
+    })
+  ];
+  var adding = null;
+  var dirty = false;
+  var TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/></svg>';
+
+  function ownMinutes(n) { return typeof n === "number" && n > 0 ? n : 0; }
+  function effective(minutes, kids) {
+    if (!kids || !kids.length) return ownMinutes(minutes);
+    var sum = kids.reduce(function (t, s) { return t + effective(s.estimatedDuration, s.subtasks); }, 0);
+    return Math.max(ownMinutes(minutes), sum);
+  }
+  function flatten(list) {
+    var out = [];
+    (list || []).forEach(function (s) {
+      out.push(s);
+      if (s.subtasks.length) out = out.concat(flatten(s.subtasks));
+    });
+    return out;
+  }
+  function progress(kids) {
+    var all = flatten(kids);
+    if (!all.length) return null;
+    return { completed: all.filter(function (s) { return s.completed; }).length, total: all.length };
+  }
+  function find(list, id) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
+      var inner = find(list[i].subtasks, id);
+      if (inner) return inner;
+    }
+    return null;
+  }
+  function mapSteps(list, id, fn) {
+    return list.map(function (s) {
+      if (s.id === id) return fn(s);
+      if (!s.subtasks.length) return s;
+      return Object.assign({}, s, { subtasks: mapSteps(s.subtasks, id, fn) });
+    });
+  }
+  function removeStep(list, id) {
+    return list.filter(function (s) { return s.id !== id; }).map(function (s) {
+      return Object.assign({}, s, { subtasks: removeStep(s.subtasks, id) });
+    });
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function markDirty() {
+    dirty = true;
+    var flag = document.getElementById("saveFlag");
+    flag.classList.add("is-unsaved");
+    flag.classList.remove("is-saved");
+    document.getElementById("saveWord").textContent = "Unsaved changes";
+  }
+  function say(text) {
+    var n = document.getElementById("notice");
+    n.hidden = !text;
+    n.textContent = text || "";
+  }
+  function rowHtml(s) {
+    var prog = progress(s.subtasks);
+    var eff = effective(s.estimatedDuration, s.subtasks);
+    var showSum = s.subtasks.length && eff > ownMinutes(s.estimatedDuration);
+    var kids = "";
+    if (s.subtasks.length || adding === s.id) {
+      kids = "<ul class=\"list\">" + s.subtasks.map(rowHtml).join("");
+      if (adding === s.id) kids += '<li class="item"><input class="add-input" data-add="' + esc(s.id) + '" placeholder="Name the step, then Enter" aria-label="New step name"></li>';
+      kids += "</ul>";
+    }
+    return '<li class="item"><div class="row" data-id="' + esc(s.id) + '" data-done="' + (s.completed ? "true" : "false") + '">' +
+      '<input type="checkbox" class="check" data-check="' + esc(s.id) + '"' + (s.completed ? " checked" : "") + ' aria-label="Done: ' + esc(s.description) + '">' +
+      '<input class="name" data-name="' + esc(s.id) + '" value="' + esc(s.description) + '" aria-label="Step name">' +
+      '<span class="parts" title="Nested steps done"' + (prog ? "" : " hidden") + ">" + (prog ? prog.completed + "/" + prog.total : "") + "</span>" +
+      '<input class="min" type="number" min="0" data-min="' + esc(s.id) + '" placeholder="min" value="' + (s.estimatedDuration ? esc(s.estimatedDuration) : "") + '" aria-label="Minutes for ' + esc(s.description) + '">' +
+      '<span class="sum" title="Sum of the steps inside"' + (showSum ? "" : " hidden") + ">" + (showSum ? "=" + eff + "m" : "") + "</span>" +
+      '<button type="button" class="verb open" data-open="' + esc(s.id) + '" aria-label="Open ' + esc(s.description) + '">Open</button>' +
+      '<button type="button" class="verb add" data-plus="' + esc(s.id) + '" aria-label="Add a step inside ' + esc(s.description) + '" title="Add a step inside">+</button>' +
+      '<button type="button" class="verb del" data-del="' + esc(s.id) + '" aria-label="Delete ' + esc(s.description) + '" title="Delete">' + TRASH + "</button>" +
+      "</div>" + kids + "</li>";
+  }
+  function paint() {
+    document.getElementById("empty").hidden = steps.length > 0 || adding === "";
+    tree.innerHTML = steps.map(rowHtml).join("");
+    document.getElementById("addTop").hidden = adding === "";
+    if (adding === "") {
+      var li = document.createElement("li");
+      li.className = "item";
+      li.innerHTML = '<input class="add-input" data-add="" placeholder="Name the step, then Enter" aria-label="New step name">';
+      tree.appendChild(li);
+    }
+    molList.innerHTML = steps.map(function (s) {
+      return '<article class="mol-card" data-id="' + esc(s.id) + '" data-done="' + (s.completed ? "true" : "false") + '">' +
+        '<div class="mol-top">' +
+          '<input type="checkbox" class="check" data-check="' + esc(s.id) + '"' + (s.completed ? " checked" : "") + ' aria-label="Done: ' + esc(s.description) + '">' +
+          '<span class="mol-name">' + esc(s.description) + "</span>" +
+          '<button type="button" class="mol-flag" data-mol="' + esc(s.id) + '" aria-pressed="' + (s.isMolecular ? "true" : "false") + '" title="Atomic step that can’t be split further">' + (s.isMolecular ? "MOLECULAR" : "Atomic?") + "</button>" +
+          '<button type="button" class="verb del mol-del" data-del="' + esc(s.id) + '" aria-label="Delete ' + esc(s.description) + '" title="Delete">' + TRASH + "</button>" +
+        "</div>" +
+        '<input class="context" data-context="' + esc(s.id) + '" placeholder="Context — what you need to know to do this step on its own…" value="' + esc(s.context) + '" aria-label="Context for ' + esc(s.description) + '">' +
+      "</article>";
+    }).join("");
+    var all = flatten(steps);
+    document.getElementById("sumline").hidden = !all.length;
+    document.getElementById("doneCount").textContent = all.length ? (all.filter(function (s) { return s.completed; }).length + " / " + all.length + " done") : "";
+    var total = effective(undefined, steps);
+    document.getElementById("estCount").textContent = all.length ? (total > 0 ? total + "m est" : "no estimate") : "";
+    var focusAdd = tree.querySelector(".add-input");
+    if (focusAdd) focusAdd.focus();
+  }
+  function refresh() {
+    document.querySelectorAll(".row[data-id]").forEach(function (row) {
+      var s = find(steps, row.dataset.id);
+      if (!s) return;
+      row.dataset.done = s.completed ? "true" : "false";
+      var box = row.querySelector("[data-check]");
+      if (box) box.checked = s.completed;
+      var name = row.querySelector("[data-name]");
+      if (name && document.activeElement !== name) name.value = s.description;
+      var prog = progress(s.subtasks);
+      var parts = row.querySelector(".parts");
+      parts.hidden = !prog;
+      parts.textContent = prog ? prog.completed + "/" + prog.total : "";
+      var eff = effective(s.estimatedDuration, s.subtasks);
+      var showSum = s.subtasks.length && eff > ownMinutes(s.estimatedDuration);
+      var sum = row.querySelector(".sum");
+      sum.hidden = !showSum;
+      sum.textContent = showSum ? "=" + eff + "m" : "";
+    });
+    document.querySelectorAll(".mol-card[data-id]").forEach(function (card) {
+      var s = find(steps, card.dataset.id);
+      if (!s) return;
+      card.dataset.done = s.completed ? "true" : "false";
+      var box = card.querySelector("[data-check]");
+      if (box) box.checked = s.completed;
+      card.querySelector(".mol-name").textContent = s.description;
+      var flag = card.querySelector("[data-mol]");
+      flag.setAttribute("aria-pressed", s.isMolecular ? "true" : "false");
+      flag.textContent = s.isMolecular ? "MOLECULAR" : "Atomic?";
+    });
+    var all = flatten(steps);
+    document.getElementById("sumline").hidden = !all.length;
+    document.getElementById("doneCount").textContent = all.length ? (all.filter(function (s) { return s.completed; }).length + " / " + all.length + " done") : "";
+    var total = effective(undefined, steps);
+    document.getElementById("estCount").textContent = all.length ? (total > 0 ? total + "m est" : "no estimate") : "";
+  }
+  function finishAdd(parentId, raw) {
+    adding = null;
+    var name = (raw || "").trim();
+    if (name) {
+      var born = step("s" + (++seq), name, false, undefined);
+      if (!parentId) steps = steps.concat([born]);
+      else steps = mapSteps(steps, parentId, function (s) { return Object.assign({}, s, { subtasks: s.subtasks.concat([born]) }); });
+      markDirty();
+    }
+    paint();
+  }
+
+  frame.addEventListener("mousedown", function (e) {
+    if (e.target.closest("button")) e.preventDefault();
+  });
+  frame.addEventListener("change", function (e) {
+    if (!e.target.matches("[data-check]")) return;
+    var id = e.target.getAttribute("data-check");
+    var on = e.target.checked;
+    steps = mapSteps(steps, id, function (s) { return Object.assign({}, s, { completed: on }); });
+    markDirty();
+    refresh();
+  });
+  frame.addEventListener("focusout", function (e) {
+    var t = e.target;
+    if (t.matches("[data-name]")) {
+      var id = t.getAttribute("data-name");
+      var s = find(steps, id);
+      var v = t.value.trim();
+      if (s && v && v !== s.description) {
+        steps = mapSteps(steps, id, function (step) { return Object.assign({}, step, { description: v }); });
+        markDirty();
+        refresh();
+      }
+    }
+    if (t.matches("[data-min]")) {
+      var idm = t.getAttribute("data-min");
+      var cur = find(steps, idm);
+      var n = Number(String(t.value).trim());
+      var minutes = Number.isFinite(n) && n > 0 ? n : undefined;
+      if (cur && minutes !== cur.estimatedDuration) {
+        steps = mapSteps(steps, idm, function (step) { return Object.assign({}, step, { estimatedDuration: minutes }); });
+        markDirty();
+        refresh();
+      }
+    }
+    if (t.matches("[data-context]")) {
+      var idc = t.getAttribute("data-context");
+      var curc = find(steps, idc);
+      if (curc && t.value !== curc.context) {
+        steps = mapSteps(steps, idc, function (step) { return Object.assign({}, step, { context: t.value }); });
+        markDirty();
+      }
+    }
+    if (t.matches(".add-input")) {
+      var parent = t.getAttribute("data-add");
+      var raw = t.value;
+      setTimeout(function () {
+        if (adding !== parent && !(parent === "" && adding === "")) return;
+        if (!tree.contains(t) && adding === null) return;
+        finishAdd(parent, raw);
+      }, 0);
+    }
+  });
+  frame.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (e.key === "Enter" && (t.matches("[data-name]") || t.matches("[data-min]") || t.matches(".add-input") || t.matches("[data-context]"))) {
+      e.preventDefault();
+      t.blur();
+    }
+    if (e.key === "Escape" && t.matches(".add-input")) {
+      adding = null;
+      t.value = "";
+      paint();
+    }
+  });
+  frame.addEventListener("click", function (e) {
+    var plus = e.target.closest("[data-plus]");
+    var del = e.target.closest("[data-del]");
+    var open = e.target.closest("[data-open]");
+    var mol = e.target.closest("[data-mol]");
+    var pending = tree.querySelector(".add-input");
+    if (e.target.closest("#addTop")) {
+      if (pending) finishAdd(pending.getAttribute("data-add"), pending.value);
+      adding = "";
+      paint();
+      return;
+    }
+    if (plus) {
+      if (pending) finishAdd(pending.getAttribute("data-add"), pending.value);
+      adding = plus.getAttribute("data-plus");
+      paint();
+      return;
+    }
+    if (del) {
+      var id = del.getAttribute("data-del");
+      var s = find(steps, id);
+      if (!s) return;
+      var inner = flatten(s.subtasks).length;
+      if (inner > 0 && !window.confirm('Delete "' + s.description + '" and its ' + inner + " nested steps?")) return;
+      steps = removeStep(steps, id);
+      markDirty();
+      paint();
+      return;
+    }
+    if (open) {
+      var opened = find(steps, open.getAttribute("data-open"));
+      say("Open would stack “" + (opened ? opened.description : "this step") + "” on top of Studio kiln rebuild. This lab stays on Subtasks.");
+    }
+    if (mol) {
+      var idm = mol.getAttribute("data-mol");
+      steps = mapSteps(steps, idm, function (s) { return Object.assign({}, s, { isMolecular: !s.isMolecular }); });
+      markDirty();
+      refresh();
+    }
+  });
+
+  function parseLines(text) {
+    return text.split(/\r?\n/).map(function (line) {
+      return line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, "").trim();
+    }).filter(Boolean);
+  }
+  document.getElementById("splitBox").addEventListener("input", function () {
+    document.getElementById("splitGo").disabled = !parseLines(this.value).length;
+  });
+  document.getElementById("splitGo").addEventListener("click", function () {
+    parseLines(document.getElementById("splitBox").value).forEach(function (name) {
+      steps.push(step("s" + (++seq), name, false, undefined));
+    });
+    document.getElementById("splitBox").value = "";
+    document.getElementById("splitGo").disabled = true;
+    markDirty();
+    paint();
+  });
+  document.getElementById("itemTitle").addEventListener("input", markDirty);
+  document.getElementById("saveKey").addEventListener("click", function () {
+    dirty = false;
+    var flag = document.getElementById("saveFlag");
+    flag.classList.add("is-saved");
+    flag.classList.remove("is-unsaved");
+    document.getElementById("saveWord").textContent = "Saved";
+    say("Saved on this sample. The lab does not write the vault.");
+  });
+  ["backKey", "completeKey", "missedKey", "cardKey", "deleteKey"].forEach(function (id) {
+    document.getElementById(id).addEventListener("click", function () {
+      say(this.textContent.trim() + " is an item-frame key. This lab stays on Subtasks.");
+    });
+  });
+
+  apply();
+  paint();
+})();
+</script>
+</body>
+</html>

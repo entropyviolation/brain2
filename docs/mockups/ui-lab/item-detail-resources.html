@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 item detail — Resources</title>
+<style>
+:root { --crt: #7dffc4; --bench: #1e2028; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, "Segoe UI", sans-serif; font-size: 13px;
+  background: #12141a; color: #e4e4ea; min-height: 100vh;
+  display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: 12px; padding: 12px;
+}
+@media (max-width: 980px) { body { grid-template-columns: 1fr; } }
+.bench { background: var(--bench); border: 1px solid #3a3d48; border-radius: 6px; padding: 10px; max-height: 96vh; overflow: auto; font-size: 11px; }
+.lab-sections { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-bottom: 8px; font-size: 10px; }
+.lab-sections a { color: var(--crt); opacity: .7; text-decoration: none; padding: 2px 5px; border: 1px solid #444; border-radius: 3px; }
+.lab-sections a:hover, .lab-sections a[aria-current="page"] { opacity: 1; background: #333; }
+.bench h1 { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--crt); letter-spacing: .12em; text-transform: uppercase; margin: 0 0 6px; }
+.lede { margin: 0 0 8px; opacity: .78; line-height: 1.4; }
+.bench h2 { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; margin: 12px 0 6px; color: var(--crt); }
+.bench label { display: block; margin: 7px 0 2px; }
+.bench select, .bench input[type="range"] { width: 100%; }
+.bench .val { float: right; opacity: .55; font-variant-numeric: tabular-nums; }
+.now { margin: 8px 0; }
+.now strong, .stage-cap strong { color: var(--crt); }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.presets button, .plan summary { font: inherit; font-size: 10px; color: #e8e8ec; background: #2a2d36; border: 1px solid #555; border-radius: 3px; padding: 4px 6px; cursor: pointer; }
+.presets button[aria-pressed="true"] { background: #070c0a; color: var(--crt); border-color: var(--crt); }
+.plan { margin: 8px 0 4px; }
+.plan summary { display: inline-block; margin-bottom: 6px; }
+.plan-body { line-height: 1.45; }
+.plan-body p { margin: 0 0 8px; }
+.plan-body h3 { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--crt); }
+.plan-body ul { margin: 0 0 8px; padding-left: 16px; }
+.plan-body li { margin: 0 0 6px; }
+.bench :focus-visible, .item :focus-visible { outline: 2px solid var(--crt); outline-offset: 2px; }
+.stage { min-height: calc(100vh - 24px); display: flex; flex-direction: column; gap: 8px; }
+.stage-cap { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 11px; }
+.stage-well { flex: 1; min-height: 480px; display: flex; justify-content: center; align-items: flex-start; overflow: auto; padding: 28px 16px 40px; border-radius: 8px; background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px), #3a3d40; }
+.stage[data-system="paper"] .stage-well { background: #e6e6e4; }
+.stage[data-system="walnut"] .stage-well { background: linear-gradient(180deg, #8a6244, #4a3020); }
+.stage[data-system="candy"] .stage-well { background: #fff0f6; }
+.stage[data-system="blueprint"] .stage-well { background: linear-gradient(#c5d7ea 1px, transparent 1px), linear-gradient(90deg, #c5d7ea 1px, transparent 1px), #e7eef6; background-size: 22px 22px, 22px 22px, auto; }
+.stage[data-system="jewel"] .stage-well { background: radial-gradient(ellipse at 50% 0%, #2a2440, #0c0a10 70%); }
+.stage[data-system="dash"] .stage-well { background: #041012; }
+.stage[data-system="instrument"] .stage-well { background: #14171c; }
+.stage[data-system="ticket"] .stage-well { background: #d7c4a3; }
+.stage[data-layout="sheet"] .stage-well { padding: 0; align-items: stretch; }
+.frame { width: min(100%, calc(var(--panel) * 1px)); }
+.stage[data-layout="sheet"] .frame { width: 100%; }
+.item {
+  width: 100%; display: flex; flex-direction: column; max-height: min(86vh, 940px); overflow: hidden;
+  background: var(--face); color: var(--ink); font-family: var(--ff); font-size: calc(var(--type) * 1px);
+  border: calc(var(--bw) * 1px) solid #0a0a0a; border-radius: calc(var(--rad) * 1px);
+  box-shadow: var(--sh); filter: contrast(var(--ctr));
+}
+.stage[data-layout="sheet"] .item { max-height: none; min-height: 100%; border-radius: 0; }
+.item[data-density="compact"] .scroll { gap: 6px; }
+.item[data-density="airy"] .scroll { gap: 16px; }
+.item[data-corners="square"] { border-radius: 0; }
+.item[data-corners="pill"] { border-radius: 28px; }
+.scroll { overflow: auto; padding: calc(var(--pad) * 1px); display: flex; flex-direction: column; gap: 10px; }
+.fascia { padding: 10px; background: repeating-linear-gradient(180deg, rgba(255,255,255,.22) 0 1px, transparent 1px 2px), linear-gradient(165deg, #f4f4f4, var(--face) 55%, #9a9a9a); border-bottom: 1px solid #6e6e6e; }
+.item[data-system="dash"] .fascia, .item[data-system="instrument"] .fascia, .item[data-system="jewel"] .fascia { background: var(--face); border-bottom-color: rgba(255,255,255,.12); }
+.title-row { display: flex; align-items: center; gap: 8px; }
+.crt { flex: 1; margin: 0; padding: 7px 12px; background: radial-gradient(ellipse at 18% 0%, rgba(125,255,196,.18), transparent 46%), var(--glass); color: var(--crt-ink); font-family: ui-monospace, Menlo, monospace; letter-spacing: calc(var(--track) * .01em); text-shadow: 0 0 3px var(--crt-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: inset 0 8px 12px rgba(0,0,0,.45); }
+.item[data-chrome="win95"] .crt { background: #000080; color: #fff; text-shadow: none; font-family: inherit; }
+.item[data-chrome="nameplate"] .crt { background: transparent; color: var(--ink); text-shadow: none; font-family: inherit; box-shadow: none; border-bottom: 1px solid var(--line); }
+.item[data-chrome="ribbon"] .crt { background: linear-gradient(#6b2a1a, #3d140e); color: #fff8e8; text-shadow: none; font-family: inherit; }
+.item[data-chrome="hood"] .crt { background: #04120e; color: var(--crt-ink); }
+.item[data-chrome="sticker"] .crt { background: #fff; color: #c23b6e; text-shadow: none; font-family: inherit; border: 2px dashed #f3a0c0; box-shadow: 3px 3px 0 #f3a0c0; }
+.item[data-chrome="instrument"] .crt { background: #06110d; color: var(--crt-ink); letter-spacing: .14em; text-transform: uppercase; font-size: .85em; }
+.item[data-chrome="registration"] .crt { background: transparent; color: #12315c; text-shadow: none; font-family: ui-monospace, Menlo, monospace; box-shadow: none; border: 1px solid #12315c; }
+.item[data-chrome="none"] .crt { background: transparent; color: var(--ink); text-shadow: none; box-shadow: none; font-family: inherit; }
+.meta, .keys, .tabbay { margin-top: 8px; }
+.meta, .keys { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.type-plate, .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid var(--line); background: var(--field); }
+.lamp { width: 8px; height: 8px; border-radius: 50%; background: #c4a574; box-shadow: 0 0 0 1px #111; }
+.save-flag[data-state="saved"] { color: #0d6b32; }
+.save-flag[data-state="dirty"] { color: #a1266b; }
+.item[data-system="dash"] .save-flag[data-state="saved"], .item[data-system="instrument"] .save-flag[data-state="saved"], .item[data-system="jewel"] .save-flag[data-state="saved"] { color: #7dffc4; }
+.key { font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 3px; padding: 4px 8px; cursor: pointer; }
+.key.primary { font-weight: 700; }
+.key.danger { color: var(--danger); }
+.win-keys button { width: 26px; height: 26px; }
+.tabbay { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 4px; padding: 4px; background: var(--bay); }
+.tab { font: inherit; color: #1f2226; background: linear-gradient(180deg, #f1f3f5, #dfe2e6); border: 1px solid #6e7378; border-radius: 4px; box-shadow: inset 2px 0 0 #b3b8be, inset -2px 0 0 #b3b8be, inset 0 -4px 0 #b3b8be, inset 0 1px 0 rgba(255,255,255,.85), 0 1px 0 rgba(0,0,0,.35); min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding-bottom: 4px; }
+.tab:disabled { opacity: 1; }
+.tab.secondary, .tab.secondary:disabled { min-height: 28px; font-size: .86em; opacity: .86; }
+.tab[aria-selected="true"] { background: var(--glass); color: var(--crt-ink); }
+.tab[aria-selected="true"]::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, var(--crt-ink) 50%, #0a3a28); }
+.count { font-size: .75em; padding: 0 4px; border-radius: 8px; background: rgba(0,0,0,.12); }
+.tray {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  padding: 10px; border: 1px dashed var(--line); background: var(--field); color: var(--ink);
+}
+.tray strong { display: block; }
+.modes { display: flex; gap: 4px; }
+.modes button[aria-checked="true"] { background: var(--glass); color: var(--crt-ink); }
+.res-status { display: flex; gap: 12px; font-size: .92em; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--card) * 1px), 1fr)); gap: 8px; }
+.card {
+  font: inherit; text-align: left; color: var(--ink); background: var(--field); border: 1px solid var(--line);
+  padding: 6px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+}
+.card[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--crt-ink); }
+.face { min-height: 72px; display: grid; place-items: center; background: #111; color: var(--crt-ink); position: relative; overflow: hidden; }
+.face svg { width: 100%; height: 72px; }
+.kind { position: absolute; left: 4px; top: 4px; font-size: .72em; letter-spacing: .08em; background: rgba(0,0,0,.55); color: #fff; padding: 1px 4px; }
+.badge { position: absolute; right: 4px; top: 4px; font-size: .72em; background: #143024; color: #7dffc4; padding: 1px 4px; }
+.badge.missing { background: #4a1820; color: #ffd0d8; }
+.card .name { font-weight: 650; }
+.card .meta { margin: 0; color: var(--muted); font-size: .85em; }
+.viewer { border: 1px solid var(--line); background: var(--field); color: var(--ink); padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.viewer-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.viewer-head .name { font-weight: 700; }
+.glass { min-height: 160px; background: #0c0c0c; color: #e8fff4; padding: 8px; overflow: auto; }
+.glass svg { width: 100%; height: 180px; }
+.glass pre { margin: 0; white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; color: #e8fff4; }
+.path { font-family: ui-monospace, Menlo, monospace; font-size: .88em; word-break: break-all; }
+.item[data-face="list"] .cards { grid-template-columns: 1fr; }
+.item[data-face="list"] .card { flex-direction: row; align-items: center; }
+.item[data-face="list"] .face { width: 72px; min-height: 48px; flex: none; }
+.item[data-face="list"] .face svg { height: 48px; }
+.item[data-face="polaroid"] .card { background: #fff; color: #1a1a1a; padding: 8px 8px 22px; transform: rotate(-1deg); box-shadow: 0 8px 14px rgba(0,0,0,.2); }
+.item[data-face="polaroid"] .card:nth-child(2n) { transform: rotate(1.4deg); }
+.item[data-face="packet"] .work { display: flex; flex-direction: column; }
+.item[data-face="packet"] .viewer { order: -1; }
+.item[data-face="film"] .cards { display: flex; overflow: auto; grid-template-columns: none; }
+.item[data-face="film"] .card { min-width: 140px; background: #1a120c; color: #f3e6d0; }
+.item[data-viewer="side"] .work { display: grid; grid-template-columns: minmax(180px, 34%) 1fr; gap: 8px; align-items: start; }
+.item[data-tray="quiet"] .tray { padding: 4px; border-style: solid; }
+.item[data-tray="hero"] .tray { padding: 22px; font-size: 1.05em; }
+.empty { color: var(--muted); }
+input[type="text"] { font: inherit; width: 100%; color: var(--ink); background: #fff; border: 1px solid var(--line); padding: 6px 8px; }
+.item[data-system="dash"] input, .item[data-system="instrument"] input, .item[data-system="jewel"] input { background: #101614; color: #f3fff8; }
+
+.bench input[type="color"] { width: 100%; height: 22px; padding: 0; border: 1px solid #555; background: #111; }
+.stage {
+  --ff: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  --face: #c0c0c0; --ink: #111111; --field: #ffffff; --muted: #333333;
+  --crt-ink: #7dffc4; --glass: #070c0a; --line: #808080; --bay: #b5b5b5; --danger: #800000;
+  --saved: #0d6b32; --dirty: #a1266b; --lampc: #c4a574;
+  --sheen: #f4f4f4; --shade-metal: #9a9a9a;
+  --tabhi: #f1f3f5; --tablo: #dfe2e6; --tabink: #1f2226;
+  --well: #d4d4d4; --well-ink: #111111;
+  --panel: 780; --space: 8; --type: 12; --rad: 3; --bw: 2; --pad: 12; --track: 4;
+  --lead: 135; --title: 15; --glow: 3; --tabh: 32; --tabgap: 4; --tabcol: 108;
+  --lamp: 8; --keyh: 26; --wkey: 26; --keygap: 6; --metagap: 6; --chipr: 2;
+  --platepad: 8; --field-pad: 6; --fieldgap: 4; --count: 75; --shade: 12;
+  --brush-a: .22; --fascia-pad: 10; --ctr: 1; --sat: 1; --bri: 1;
+  --rail: 240; --card: 160; --cardgap: 8; --faceh: 72; --traypad: 10; --kind: 72;
+  --orbit: 280; --node: 85; --hub: 100; --hubpad: 6; --orb: 16;
+  --when: 148; --rowpad: 8; --wellpad: 4; --whensize: 100; --sumweight: 650;
+}
+.item {
+  line-height: calc(var(--lead) / 100);
+  filter: contrast(var(--ctr)) saturate(var(--sat)) brightness(var(--bri));
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, 0 calc(var(--shade) * .45px) calc(var(--shade) * 1px) rgba(0,0,0,.28);
+}
+.fascia {
+  padding: calc(var(--fascia-pad) * 1px);
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,var(--brush-a)) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--sheen), var(--face) 55%, var(--shade-metal));
+}
+.crt { font-size: calc(var(--title) * 1px); text-shadow: 0 0 calc(var(--glow) * 1px) var(--crt-ink); }
+.save-flag[data-state="saved"] { color: var(--saved); }
+.save-flag[data-state="dirty"] { color: var(--dirty); }
+.lamp { width: calc(var(--lamp) * 1px); height: calc(var(--lamp) * 1px); background: var(--lampc); }
+.tabbay { gap: calc(var(--tabgap) * 1px); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tabcol) * 1px), 1fr)); }
+.tab { min-height: calc(var(--tabh) * 1px); color: var(--tabink); background: linear-gradient(180deg, var(--tabhi), var(--tablo)); }
+.tab.secondary { min-height: calc((var(--tabh) - 4) * 1px); }
+.tab[aria-selected="true"]::before { width: calc(var(--lamp) * 1px); height: calc(var(--lamp) * 1px); }
+.keys, .win-keys { gap: calc(var(--keygap) * 1px); }
+.meta { gap: calc(var(--metagap) * 1px); }
+.key, .keycap { min-height: calc(var(--keyh) * 1px); border-radius: calc(var(--chipr) * 1px); }
+.win-keys button { width: calc(var(--wkey) * 1px); height: calc(var(--wkey) * 1px); }
+.bay, .plate, .viewer, .tray { padding: calc(var(--platepad) * 1px); }
+.plate-label, .hist h3, .group h4, .card .name, .viewer-head .name, .readout, .hint { letter-spacing: calc(var(--labeltrack) * .01em); }
+.field, .tray, .viewer, .sentence, .readout { gap: calc(var(--fieldgap) * 1px); }
+input[type="text"], input[type="number"], input[type="search"], textarea, select.native, .sentence select, .sentence input {
+  padding: calc(var(--field-pad) * 1px);
+}
+.count { font-size: calc(var(--count) / 100 * 1em); }
+.bay {
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.35) 0 1px, transparent 1px 3px),
+    var(--field);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px var(--line);
+}
+.cards { gap: calc(var(--cardgap) * 1px); grid-template-columns: repeat(auto-fill, minmax(calc(var(--card) * 1px), 1fr)); }
+.face { min-height: calc(var(--faceh) * 1px); }
+.tray { padding: calc(var(--traypad) * 1px); }
+.kind { font-size: calc(var(--kind) / 100 * 1em); }
+.picture { min-height: calc(var(--orbit) * 1px); }
+.node { font-size: calc(var(--node) / 100 * 1em); }
+.hub { font-size: calc(var(--hub) / 100 * 1em); padding: calc(var(--hubpad) * 1px); }
+.orb { width: calc(var(--orb) * 1px); height: calc(var(--orb) * 1px); }
+.row { grid-template-columns: calc(var(--when) * 1px) minmax(0, 1fr); padding: calc(var(--rowpad) * 1px); }
+.well { padding: calc(var(--wellpad) * 1px); background: var(--well); color: var(--well-ink); }
+.when { font-size: calc(var(--whensize) / 100 * 1em); }
+.summary { font-weight: var(--sumweight); }
+.dayhead, .order { display: none !important; }
+.changes[data-multi="no"] { display: none; }
+
+</style>
+</head>
+<body>
+<aside class="bench" aria-label="Lab controls">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="item-detail-details.html">Details</a>
+    <a href="item-detail-resources.html" aria-current="page">Resources</a>
+    <a href="item-detail-links.html">Links</a>
+    <a href="item-detail-history.html">History</a>
+  </nav>
+  <h1>Resources lab</h1>
+  <p class="lede">Item detail, Resources tab. Drop tray, then cards, then the viewer. Sample files for the Studio kiln rebuild. Desktop linking is on.</p>
+  <details class="plan" open>
+    <summary>Plan</summary>
+    <div class="plan-body">
+      <p>Auto, Copy, and Link stay on the tray. Cards keep the kind plate, name, size, and day. The viewer keeps caption, Open, Download, Remove, and for a link the path, Show in Finder, and Locate.</p>
+      <p>The controls tune type, measure, and color of this one frame. They do not switch to another layout.</p>
+    </div>
+  </details>
+  <p class="lede">Every control changes this tab. The arrangement stays the one in the app.</p>
+  <label>Font
+  <select data-key="font">
+    <option value="house" selected>House (Tahoma)</option>
+    <option value="grotesk">Avenir, Segoe</option>
+    <option value="system">System UI</option>
+    <option value="mono">UI monospace</option>
+    <option value="serif">Palatino, Georgia</option>
+    <option value="round">Rounded UI</option>
+    <option value="typewriter">Typewriter</option>
+    <option value="didot">Didot, Bodoni</option>
+  </select>
+</label>
+  <h2>Type</h2>
+  <label>Type size <span class="val" data-val="type">12</span><input type="range" data-key="type" min="11" max="22" value="12"></label>
+  <label>Line height <span class="val" data-val="lead">135</span><input type="range" data-key="lead" min="110" max="180" value="135"></label>
+  <label>Title size <span class="val" data-val="title">15</span><input type="range" data-key="title" min="12" max="28" value="15"></label>
+  <label>Title tracking <span class="val" data-val="track">4</span><input type="range" data-key="track" min="0" max="24" value="4"></label>
+  <label>Label tracking <span class="val" data-val="labeltrack">12</span><input type="range" data-key="labeltrack" min="0" max="28" value="12"></label>
+  <label>Count size <span class="val" data-val="count">75</span><input type="range" data-key="count" min="60" max="110" value="75"></label>
+  <h2>Frame</h2>
+  <label>Frame width <span class="val" data-val="width">820</span><input type="range" data-key="width" min="420" max="1100" value="820"></label>
+  <label>Corner radius <span class="val" data-val="radius">3</span><input type="range" data-key="radius" min="0" max="16" value="3"></label>
+  <label>Border weight <span class="val" data-val="border">2</span><input type="range" data-key="border" min="0" max="6" value="2"></label>
+  <label>Content padding <span class="val" data-val="pad">12</span><input type="range" data-key="pad" min="4" max="32" value="12"></label>
+  <label>Section gap <span class="val" data-val="space">8</span><input type="range" data-key="space" min="2" max="28" value="8"></label>
+  <label>Shadow depth <span class="val" data-val="shade">12</span><input type="range" data-key="shade" min="0" max="48" value="12"></label>
+  <label>Contrast <span class="val" data-val="contrast">50</span><input type="range" data-key="contrast" min="0" max="100" value="50"></label>
+  <label>Saturation <span class="val" data-val="sat">100</span><input type="range" data-key="sat" min="0" max="200" value="100"></label>
+  <label>Brightness <span class="val" data-val="bri">100</span><input type="range" data-key="bri" min="40" max="140" value="100"></label>
+  <h2>Fascia and title</h2>
+  <label>Fascia padding <span class="val" data-val="fasciapad">10</span><input type="range" data-key="fasciapad" min="4" max="28" value="10"></label>
+  <label>Mill brush <span class="val" data-val="brush">22</span><input type="range" data-key="brush" min="0" max="80" value="22"></label>
+  <label>CRT glow <span class="val" data-val="glow">3</span><input type="range" data-key="glow" min="0" max="18" value="3"></label>
+  <label>Fascia <input type="color" data-key="face" value="#c0c0c0"></label>
+  <label>Fascia sheen <input type="color" data-key="sheen" value="#f4f4f4"></label>
+  <label>Fascia shade <input type="color" data-key="metal" value="#9a9a9a"></label>
+  <label>CRT glass <input type="color" data-key="glass" value="#070c0a"></label>
+  <label>CRT phosphor <input type="color" data-key="crt" value="#7dffc4"></label>
+  <h2>Tabs and keys</h2>
+  <label>Tab height <span class="val" data-val="tabh">32</span><input type="range" data-key="tabh" min="24" max="48" value="32"></label>
+  <label>Tab gap <span class="val" data-val="tabgap">4</span><input type="range" data-key="tabgap" min="0" max="14" value="4"></label>
+  <label>Tab column <span class="val" data-val="tabcol">108</span><input type="range" data-key="tabcol" min="72" max="180" value="108"></label>
+  <label>Power lamp <span class="val" data-val="lamp">8</span><input type="range" data-key="lamp" min="4" max="16" value="8"></label>
+  <label>Key height <span class="val" data-val="keyh">26</span><input type="range" data-key="keyh" min="20" max="44" value="26"></label>
+  <label>Window key <span class="val" data-val="wkey">26</span><input type="range" data-key="wkey" min="18" max="40" value="26"></label>
+  <label>Key gap <span class="val" data-val="keygap">6</span><input type="range" data-key="keygap" min="2" max="16" value="6"></label>
+  <label>Chip gap <span class="val" data-val="metagap">6</span><input type="range" data-key="metagap" min="2" max="16" value="6"></label>
+  <label>Chip radius <span class="val" data-val="chipr">2</span><input type="range" data-key="chipr" min="0" max="14" value="2"></label>
+  <label>Plate padding <span class="val" data-val="platepad">8</span><input type="range" data-key="platepad" min="2" max="24" value="8"></label>
+  <label>Field padding <span class="val" data-val="fieldpad">6</span><input type="range" data-key="fieldpad" min="2" max="16" value="6"></label>
+  <label>Field gap <span class="val" data-val="fieldgap">4</span><input type="range" data-key="fieldgap" min="2" max="16" value="4"></label>
+  <label>Type lamp <input type="color" data-key="lampc" value="#c4a574"></label>
+  <label>Tab highlight <input type="color" data-key="tabhi" value="#f1f3f5"></label>
+  <label>Tab shade <input type="color" data-key="tablo" value="#dfe2e6"></label>
+  <label>Tab ink <input type="color" data-key="tabink" value="#1f2226"></label>
+  <h2>Ink</h2>
+  <label>Ink <input type="color" data-key="ink" value="#111111"></label>
+  <label>Field <input type="color" data-key="field" value="#ffffff"></label>
+  <label>Muted ink <input type="color" data-key="muted" value="#333333"></label>
+  <label>Line <input type="color" data-key="line" value="#808080"></label>
+  <label>Tab bay <input type="color" data-key="bay" value="#b5b5b5"></label>
+  <label>Danger <input type="color" data-key="danger" value="#800000"></label>
+  <label>Saved lamp <input type="color" data-key="saved" value="#0d6b32"></label>
+  <label>Unsaved lamp <input type="color" data-key="dirty" value="#a1266b"></label>
+  <h2>Resources</h2>
+  <label>Card size <span class="val" data-val="card">160</span><input type="range" data-key="card" min="110" max="280" value="160"></label>
+  <label>Card gap <span class="val" data-val="cardgap">8</span><input type="range" data-key="cardgap" min="2" max="24" value="8"></label>
+  <label>Thumbnail height <span class="val" data-val="faceh">72</span><input type="range" data-key="faceh" min="48" max="180" value="72"></label>
+  <label>Viewer height <span class="val" data-val="wellh">180</span><input type="range" data-key="wellh" min="80" max="420" value="180"></label>
+  <label>Tray padding <span class="val" data-val="traypad">10</span><input type="range" data-key="traypad" min="4" max="32" value="10"></label>
+  <label>Kind plate size <span class="val" data-val="kind">72</span><input type="range" data-key="kind" min="60" max="120" value="72"></label>
+</aside>
+<div class="stage" id="stage">
+  <div class="stage-cap"><span>Sample <strong>Studio kiln rebuild</strong></span><span>Tab <strong>Resources</strong></span></div>
+  <div class="stage-well"><div class="frame">
+    <article class="item" id="item" data-ui-name="Item detail">
+      <header class="fascia">
+        <div class="title-row">
+          <h2 class="crt">Studio kiln rebuild</h2>
+          <div class="win-keys keys">
+            <button type="button" class="key" aria-label="Item settings">⚙</button>
+            <button type="button" class="key" aria-label="Minimize">–</button>
+            <button type="button" class="key" aria-label="Close">×</button>
+          </div>
+        </div>
+        <div class="meta"><span class="type-plate"><span class="lamp"></span>Task</span><span class="chip">scheduled</span><span class="chip">Took 95m</span></div>
+        <div class="keys">
+          <span class="save-flag" id="lampFlag" data-state="saved">Saved</span>
+          <button type="button" class="key primary" id="saveBtn">Save</button>
+          <button type="button" class="key primary">Complete</button>
+          <button type="button" class="key">Missed</button>
+          <button type="button" class="key danger">Delete</button>
+        </div>
+      </header>
+      <div class="tabbay" role="tablist" aria-label="Item detail">
+        <button type="button" class="tab" disabled>Details</button>
+        <button type="button" class="tab" disabled>Scheduling</button>
+        <button type="button" class="tab" disabled>Dependencies</button>
+        <button type="button" class="tab" disabled>Subtasks</button>
+        <button type="button" class="tab" disabled>Notes <span class="count">2</span></button>
+        <button type="button" class="tab" aria-selected="true">Resources <span class="count" id="tabCount">4</span></button>
+        <button type="button" class="tab secondary" disabled>Links <span class="count">6</span></button>
+        <button type="button" class="tab secondary" disabled>Analysis</button>
+        <button type="button" class="tab secondary" disabled>Time</button>
+        <button type="button" class="tab secondary" disabled>History</button>
+      </div>
+      <div class="scroll">
+        <section aria-label="Resources">
+          <div class="tray" id="tray">
+            <div><strong id="trayTitle">Drop files or folders here</strong><span id="trayHint">Link folders and files of 50 MB or more. Copy the rest.</span></div>
+            <div class="modes" role="radiogroup" aria-label="How to attach">
+              <button type="button" class="key" role="radio" data-mode="auto" aria-checked="true">Auto</button>
+              <button type="button" class="key" role="radio" data-mode="copy" aria-checked="false">Copy</button>
+              <button type="button" class="key" role="radio" data-mode="link" aria-checked="false">Link</button>
+            </div>
+            <button type="button" class="key primary" id="attachBtn">Attach files</button>
+            <button type="button" class="key" id="folderBtn">Link folder</button>
+          </div>
+          <p class="res-status" id="statusLine"><span id="fileCount">4 files</span><span>1.8 MB stored</span><span>2.4 MB linked</span></p>
+          <p class="empty" id="empty" hidden>No resources yet. A manual, a ticket, a scan, a reference photo: attach it here.</p>
+          <div class="work">
+            <div class="cards" id="cards">
+              <button type="button" class="card" data-id="crack" aria-pressed="true">
+                <span class="face"><span class="kind">IMG</span><svg viewBox="0 0 160 72" aria-hidden="true"><rect width="160" height="72" fill="#3a342e"/><path d="M20 50 C40 48 50 30 70 36 C90 42 100 20 140 28" stroke="#e7d7c4" fill="none" stroke-width="2"/><path d="M48 40 L62 58" stroke="#1a120c" stroke-width="3"/></svg></span>
+                <span class="name">kiln-floor-crack.jpg</span>
+                <span class="meta">1.8 MB · Yesterday</span>
+              </button>
+              <button type="button" class="card" data-id="pdf" aria-pressed="false">
+                <span class="face"><span class="kind">PDF</span><span class="badge">Linked</span><strong>PDF</strong></span>
+                <span class="name">Skutt KM-1227 wiring.pdf</span>
+                <span class="meta">2.4 MB · Sat Oct 24</span>
+              </button>
+              <button type="button" class="card" data-id="ohms" aria-pressed="false">
+                <span class="face"><span class="kind">TXT</span><strong>TXT</strong></span>
+                <span class="name">element-ohms.txt</span>
+                <span class="meta">4 KB · Today</span>
+              </button>
+              <button type="button" class="card" data-id="folder" aria-pressed="false">
+                <span class="face"><span class="kind">DIR</span><span class="badge">Linked</span><strong>DIR</strong></span>
+                <span class="name">Kiln manuals</span>
+                <span class="meta">3 files · Fri Oct 23</span>
+              </button>
+            </div>
+            <div id="viewers">
+              <article class="viewer" data-id="crack" aria-label="Viewing kiln-floor-crack.jpg">
+                <div class="viewer-head"><span class="kind">IMG</span><span class="name">kiln-floor-crack.jpg</span><span>1.8 MB</span>
+                  <span class="keys"><button type="button" class="key">Open</button><button type="button" class="key">Download</button><button type="button" class="key danger" data-remove="crack">Remove</button></span>
+                </div>
+                <input type="text" value="Crack under the second shelf, Studio, 26 Oct" aria-label="Caption">
+                <div class="glass"><svg viewBox="0 0 640 220"><rect width="640" height="220" fill="#2c2824"/><text x="16" y="28" fill="#e7d7c4" font-size="14" font-family="ui-monospace,monospace">Studio floor, second shelf, 26 Oct</text><path d="M40 150 C120 140 180 80 260 100 C340 120 400 60 600 90" stroke="#f3e6d0" fill="none" stroke-width="3"/><path d="M180 110 L230 180" stroke="#0c0c0c" stroke-width="6"/><text x="16" y="200" fill="#c4a574" font-size="12" font-family="ui-monospace,monospace">Soft brick, hairline running toward the right wall</text></svg></div>
+              </article>
+              <article class="viewer" data-id="pdf" hidden aria-label="Viewing Skutt KM-1227 wiring.pdf">
+                <div class="viewer-head"><span class="kind">PDF</span><span class="name">Skutt KM-1227 wiring.pdf</span><span>2.4 MB</span><span class="badge">Linked</span><span>✓ searchable</span>
+                  <span class="keys"><button type="button" class="key">Open</button><button type="button" class="key">Show in Finder</button><button type="button" class="key">Locate…</button><button type="button" class="key danger" data-remove="pdf">Remove</button></span>
+                </div>
+                <p class="path">~/Studio/Kiln/Skutt KM-1227 wiring.pdf</p>
+                <input type="text" value="Right-wall element diagram Elijah marked" aria-label="Caption">
+                <div class="glass"><p>Page 1 · KM-1227 · right wall</p><pre>L1 —— element top     14.2 Ω
+L2 —— element middle  open
+L2 —— element bottom  14.0 Ω
+Lid switch in series with the safety relay.</pre><p>A blank well means this window has no PDF viewer. Open shows it in a tab.</p></div>
+              </article>
+              <article class="viewer" data-id="ohms" hidden aria-label="Viewing element-ohms.txt">
+                <div class="viewer-head"><span class="kind">TXT</span><span class="name">element-ohms.txt</span><span>4 KB</span><span>✓ searchable</span>
+                  <span class="keys"><button type="button" class="key">Open</button><button type="button" class="key">Download</button><button type="button" class="key danger" data-remove="ohms">Remove</button></span>
+                </div>
+                <input type="text" value="Readings before the new set arrives" aria-label="Caption">
+                <div class="glass"><pre>Right wall, Skutt, Studio, 26 Oct 2026
+Top element      14.2 Ω   ok
+Middle           open
+Bottom           14.0 Ω   ok
+Elijah bringing the replacement set after 4.</pre></div>
+              </article>
+              <article class="viewer" data-id="folder" hidden aria-label="Viewing Kiln manuals">
+                <div class="viewer-head"><span class="kind">DIR</span><span class="name">Kiln manuals</span><span class="badge">Linked</span>
+                  <span class="keys"><button type="button" class="key">Open</button><button type="button" class="key">Show in Finder</button><button type="button" class="key">Locate…</button><button type="button" class="key danger" data-remove="folder">Remove</button></span>
+                </div>
+                <p class="path">~/Studio/Kiln/manuals</p>
+                <input type="text" value="Paper manuals and the element invoice" aria-label="Caption">
+                <div class="glass"><p>Folder · 3 files</p><pre>Skutt KM-1227 manual.pdf
+Element kit invoice.pdf
+Shelf post sizes.txt</pre></div>
+              </article>
+            </div>
+          </div>
+        </section>
+        <p class="empty" id="toast" aria-live="polite"></p>
+      </div>
+    </article>
+  </div></div>
+</div>
+<script>
+(function () {
+
+  var FONTS = {
+    house: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    grotesk: 'Avenir, "Avenir Next", "Segoe UI", sans-serif',
+    system: "system-ui, sans-serif",
+    mono: 'ui-monospace, "SF Mono", Menlo, monospace',
+    serif: "Palatino, Georgia, serif",
+    round: '"Avenir Next", "Segoe UI", system-ui, sans-serif',
+    typewriter: '"American Typewriter", "Courier New", monospace',
+    didot: "Didot, Georgia, serif"
+  };
+  var MAP = {
+    type:"--type", lead:"--lead", title:"--title", track:"--track", labeltrack:"--labeltrack", count:"--count",
+    sumweight:"--sumweight", width:"--panel", radius:"--rad", border:"--bw", pad:"--pad", space:"--space",
+    shade:"--shade", fasciapad:"--fascia-pad", glow:"--glow", tabh:"--tabh", tabgap:"--tabgap", tabcol:"--tabcol",
+    lamp:"--lamp", keyh:"--keyh", wkey:"--wkey", keygap:"--keygap", metagap:"--metagap", chipr:"--chipr",
+    platepad:"--platepad", fieldpad:"--field-pad", fieldgap:"--fieldgap",
+    face:"--face", sheen:"--sheen", metal:"--shade-metal", glass:"--glass", crt:"--crt-ink",
+    lampc:"--lampc", tabhi:"--tabhi", tablo:"--tablo", tabink:"--tabink",
+    ink:"--ink", field:"--field", muted:"--muted", line:"--line", bay:"--bay", danger:"--danger",
+    saved:"--saved", dirty:"--dirty",
+    railw:"--rail", card:"--card", cardgap:"--cardgap", faceh:"--faceh", traypad:"--traypad", kind:"--kind",
+    orbit:"--orbit", node:"--node", hub:"--hub", hubpad:"--hubpad", orb:"--orb",
+    when:"--when", rowpad:"--rowpad", wellpad:"--wellpad", whensize:"--whensize",
+    well:"--well", wellink:"--well-ink"
+  };
+  var stage = document.getElementById("stage");
+  var item = document.getElementById("item");
+  function paint() {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      var key = el.dataset.key;
+      var val = el.value;
+      var shown = document.querySelector('[data-val="' + key + '"]');
+      if (shown) shown.textContent = val;
+      if (key === "font") { stage.style.setProperty("--ff", FONTS[val] || FONTS.house); return; }
+      if (key === "contrast") { stage.style.setProperty("--ctr", String(0.75 + Number(val) / 100 * 0.5)); return; }
+      if (key === "sat") { stage.style.setProperty("--sat", String(Number(val) / 100)); return; }
+      if (key === "bri") { stage.style.setProperty("--bri", String(0.7 + Number(val) / 100 * 0.6)); return; }
+      if (key === "brush") { stage.style.setProperty("--brush-a", String(Number(val) / 100)); return; }
+      if (key === "rows") { var box = document.getElementById("descBox"); if (box) box.rows = Number(val); return; }
+      if (key === "wellh") { document.querySelectorAll(".glass").forEach(function (g) { g.style.minHeight = val + "px"; }); return; }
+      if (MAP[key]) stage.style.setProperty(MAP[key], val);
+    });
+  }
+  document.querySelectorAll("[data-key]").forEach(function (el) {
+    el.addEventListener("input", paint);
+  });
+  paint();
+
+  var HINTS = { auto:"Link folders and files of 50 MB or more. Copy the rest.", copy:"Store a copy inside Brain2. Works on every device and in backups.", link:"Keep the file where it is. No copy. Opens on this computer only." };
+  function dirty() { var f = document.getElementById("lampFlag"); f.dataset.state = "dirty"; f.textContent = "Unsaved changes"; }
+  document.getElementById("saveBtn").addEventListener("click", function () { var f = document.getElementById("lampFlag"); f.dataset.state = "saved"; f.textContent = "Saved"; });
+  item.addEventListener("input", dirty);
+  document.querySelectorAll("[data-mode]").forEach(function (b) { b.addEventListener("click", function () { document.querySelectorAll("[data-mode]").forEach(function (x) { x.setAttribute("aria-checked", "false"); }); b.setAttribute("aria-checked", "true"); document.getElementById("trayHint").textContent = HINTS[b.dataset.mode]; dirty(); }); });
+  function show(id) { document.querySelectorAll(".card").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.id === id)); }); document.querySelectorAll(".viewer").forEach(function (v) { v.hidden = v.dataset.id !== id; }); }
+  document.getElementById("cards").addEventListener("click", function (e) { var card = e.target.closest(".card"); if (card) show(card.dataset.id); });
+  document.getElementById("viewers").addEventListener("click", function (e) { var id = e.target.dataset && e.target.dataset.remove; if (!id) return; var card = document.querySelector('.card[data-id="' + id + '"]'); var view = document.querySelector('.viewer[data-id="' + id + '"]'); if (card) card.remove(); if (view) view.remove(); var left = document.querySelectorAll(".card"); document.getElementById("tabCount").textContent = String(left.length); document.getElementById("fileCount").textContent = left.length === 1 ? "1 file" : left.length + " files"; document.getElementById("empty").hidden = left.length !== 0; if (left[0]) show(left[0].dataset.id); dirty(); });
+  document.getElementById("attachBtn").addEventListener("click", function () { document.getElementById("toast").textContent = "Attach files opens the file picker. Copies go into the item. Links stay on disk."; });
+  document.getElementById("folderBtn").addEventListener("click", function () { document.getElementById("toast").textContent = "Link folder keeps the path. Kiln manuals is already linked."; });
+  var tray = document.getElementById("tray");
+  tray.addEventListener("dragover", function (e) { e.preventDefault(); document.getElementById("trayTitle").textContent = "Release to attach"; });
+  tray.addEventListener("dragleave", function () { document.getElementById("trayTitle").textContent = "Drop files or folders here"; });
+  tray.addEventListener("drop", function (e) { e.preventDefault(); document.getElementById("trayTitle").textContent = "Drop files or folders here"; document.getElementById("toast").textContent = "A drop uses the Auto, Copy, or Link choice."; });
+
+})();
+</script>
+</body>
+</html>
