@@ -15,7 +15,7 @@
 "use client"
 
 import type { NowObjective } from "@/lib/now-objective"
-import { objectiveWorkedMs } from "@/lib/now-objective"
+import { formatObjectiveWhen, objectiveWorkedMs } from "@/lib/now-objective"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
 import type { WorkSession } from "@/lib/work-session-store"
 import type { Subtask, Task, TimeLogEntry, TimeLogSessionReview } from "@/lib/types"
@@ -152,7 +152,12 @@ function stepsFor(
 function objectiveRows(list: readonly NowObjective[] | undefined, endedAt: Date): DebriefObjective[] {
   return (list ?? []).map((row) => {
     const window = objectiveWindow(row, endedAt)
-    return { text: row.text, completed: Boolean(row.completedAt), minutes: window.minutes, when: window.when }
+    return {
+      text: row.text,
+      completed: Boolean(row.completedAt),
+      minutes: window.minutes,
+      when: formatObjectiveWhen(row, endedAt),
+    }
   })
 }
 
@@ -173,6 +178,7 @@ function draftBase(input: {
   timeLogIds: string[]
   note: string
   operationId?: string
+  pauseSpans?: SessionDebriefDraft["pauseSpans"]
 }): SessionDebriefDraft {
   const path = input.task ? clockPathLabel(input.task, input.stepId) : input.title
   return {
@@ -193,6 +199,7 @@ function draftBase(input: {
     trackingEntryIds: input.trackingEntryIds,
     timeLogIds: input.timeLogIds,
     note: input.note,
+    ...(input.pauseSpans?.length ? { pauseSpans: input.pauseSpans.map((span) => ({ ...span })) } : {}),
     taskCompleted: Boolean(input.task?.completed),
     taskEstimate: minutesOrNull(input.task?.estimatedDuration),
     steps: stepsFor(input.task, input.stepId, input.objectives, input.startedAt, input.endedAt, input.activeMinutes),
@@ -228,6 +235,7 @@ export function buildPenDraft(
     timeLogIds: logIds,
     note: log?.notes ?? "",
     operationId: undefined,
+    pauseSpans: session.pauseSpans,
   })
 }
 
@@ -259,6 +267,7 @@ export function buildWorkDraft(
     timeLogIds,
     note: log?.notes ?? workedOnTitle(session.title),
     operationId: session.operationId,
+    pauseSpans: session.pauseSpans,
   })
 }
 
@@ -337,6 +346,7 @@ function patchLogs(logs: TimeLogEntry[] | undefined, draft: SessionDebriefDraft,
       ...(draft.stepId ? { stepId: draft.stepId } : {}),
       ...(draft.trackingEntryIds.length ? { entryIds: [...draft.trackingEntryIds] } : {}),
       ...(review ? { sessionReview: review } : {}),
+      ...(draft.pauseSpans?.length ? { pauseSpans: draft.pauseSpans.map((span) => ({ ...span })) } : {}),
     })
     return next
   }
@@ -344,6 +354,7 @@ function patchLogs(logs: TimeLogEntry[] | undefined, draft: SessionDebriefDraft,
   next = next.map((log) => {
     if (!draft.timeLogIds.includes(log.id)) return log
     const row: TimeLogEntry = { ...log, notes: note || undefined }
+    if (draft.pauseSpans?.length && !row.pauseSpans?.length) row.pauseSpans = draft.pauseSpans.map((span) => ({ ...span }))
     if (!stamped && review) {
       row.sessionReview = review
       stamped = true

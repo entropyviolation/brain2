@@ -1,12 +1,12 @@
-# Analytics vision: Now
+# Data vision: Now
 
 Now is the header door onto the present. The word key (`components/cognitive-state.tsx`, export name `CognitiveState`) opens one dialog. The caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The body is `components/header-tracking/`. Current moment sits above the pane switch on both sides: four presence lanes, a Metrics key, the operation Working on clock, an activity-pen clock, Events, Notes, Thought process, and Update state.
 
-This report designs an Analytics tab for that surface. It is grounded in the fields those writers actually leave behind. It does not describe any Analytics screen that already exists.
+This report designs an Data tab for that surface. It is grounded in the fields those writers actually leave behind. It does not describe any Data screen that already exists.
 
 The honest premise comes first. **Now does not have a private database.** Almost every save lands in a store that Home Tracking, Home Plan, Operations, or ingest also write. The dialog’s open/close, which pane was showing, which lane was selected, and the draft clocks are React state. They die when the dialog closes. There is no persisted sample of “the user looked at Now.” There is no cognitive-state enum, no trajectory table, and no assertion log that says “at 14:07:12 the user claimed Location = Library, estimated, via Update.”
 
-What survives is the **result** of those claims, mostly as minute-resolution intervals and instants in the time-tracking vault, plus a few records that do carry a writing time. Analytics of Now is therefore analytics of a **short-horizon state reconstructed from occupancy**, with a thin set of true event times beside it. The tab should say so in the chrome: reconstructed presence is not the same thing as an observed check-in.
+What survives is the **result** of those claims, mostly as minute-resolution intervals and instants in the time-tracking vault, plus a few records that do carry a writing time. Data of Now is therefore analytics of a **short-horizon state reconstructed from occupancy**, with a thin set of true event times beside it. The tab should say so in the chrome: reconstructed presence is not the same thing as an observed check-in.
 
 Capture doors (`components/capture-doors.tsx`, `components/capture-door-bus.ts`) were checked and set aside. They open Ingest, From Notes, and Phone Notes. They do not log the present moment.
 
@@ -16,7 +16,7 @@ Capture doors (`components/capture-doors.tsx`, `components/capture-door-bus.ts`)
 
 ### 1.1 Two layers
 
-| Layer | What it is | Can Analytics treat it as Now history? |
+| Layer | What it is | Can Data treat it as Now history? |
 | --- | --- | --- |
 | **Stored Now history** | Rows written by Now’s own functions, still readable after refresh | Yes, with the provenance limits below |
 | **Live pointers** | The same rows, or other sections’ rows, that Now is merely showing | Only as context. Do not count a desk paint as a Now check-in |
@@ -121,7 +121,7 @@ Grain: one instant, duration 0. Instants are **invisible to presence**. A though
 
 `eventKindSlug` lowercases, strips punctuation, and collapses spaces, so “left room” and “Left room.” count as one phrase. The list copy on Events says any repeated phrase can be counted later. That count is a frequency over instants, not a duration.
 
-No location is attached from this composer (`locationPenId` is omitted). No estimate flag is offered here; Now always sends `clock: "exact"`. The Home log can mark the same kinds estimated or unknown. A row with `clockCertainty: "estimated"` did not come from this composer’s current buttons, but Analytics cannot prove the converse: an exact instant might have come from the desk.
+No location is attached from this composer (`locationPenId` is omitted). No estimate flag is offered here; Now always sends `clock: "exact"`. The Home log can mark the same kinds estimated or unknown. A row with `clockCertainty: "estimated"` did not come from this composer’s current buttons, but Data cannot prove the converse: an exact instant might have come from the desk.
 
 `createdAt` is absent. For a Now submit, `startMin` is the minute of the click **if** the user did not later move the instant. That is a proxy for assertion time, contaminated by every other writer of Activity instants.
 
@@ -145,7 +145,7 @@ Questions: level and co-movement of the five scores; gap between the minute name
 
 #### E. Working on — a live pointer that leaves a recoverable start
 
-Current moment embeds `WorkingNowStrip`. It is the Operations clock, not a private Now session. Start / stop / tick live in `lib/operation-work-session.ts`. The blob in `useWorkSessionStore` (`brain2-work-session`) holds **at most one** session:
+This pointer is an open work session (Working on now). A planned work session (To Do → Session) is not stored here; when one is playing a task, the pen clock below is that open work session. Current moment embeds `WorkingNowStrip`. It is the Operations clock, not a private Now session. Start / stop / tick live in `lib/operation-work-session.ts`. The blob in `useWorkSessionStore` (`brain2-work-session`) holds **at most one** session:
 
 | Field | While live | After stop |
 | --- | --- | --- |
@@ -154,12 +154,13 @@ Current moment embeds `WorkingNowStrip`. It is the Operations clock, not a priva
 | `title` | operation name at start, copied onto the block title | On the blocks and on `timeLogs` |
 | `scopeId`, `penId` | where it paints | On the blocks |
 | `trackingEntryIds` | ids of the live slices | Cleared with the session. Ids on the entries remain until a merge replaces them |
-| `pausedAt` | ISO of the open pause | Cleared. Not a history of pauses |
-| `pausedAccumMs` | completed pause milliseconds | Cleared. Elapsed math uses it only while the session object exists |
+| `pausedAt` | ISO of the open pause | Cleared. The history is `pauseSpans`, not this pointer |
+| `pausedAccumMs` | completed pause milliseconds | Cleared. Elapsed math uses it only while the session object exists. Pause time is not worked time |
+| `pauseSpans` | `{ pausedAt, reason, resumedAt?, stoppedAt? }[]` | **Reasons for pausing work session.** Cleared from the singleton with the session. The same array is copied onto the operation `timeLogs` and onto each painted `TimeEntry`. `resumedAt` is the restart. `stoppedAt` is set when Stop closes a gap that never resumed. The log note also carries the readable timeline. Aggregate from `pauseSpans`, not from the prose |
 
 Paint is minute slices (`splitIntoDaySlices`). The clock starts at the exact second; the block starts at the minute that contains that second and grows on tick (`WORK_SESSION_TICK_MS`). Tick is silenced from undo. Stop writes Done / `timeLogs` / `actualDuration` on the operation.
 
-A second, independent singleton is the pen-color session (`brain2-pen-color-session`, `lib/pen-color-session.ts`): `penId`, `scopeId`, `title`, `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`. Span id `pen-color-${startedAt}`. It does not write a Done row. Current moment renders that strip under the operation clock, locked to Activity pens (`PenColorNowStrip` `scopeId="activity"`): search, assign, or create a pen, then start the same session the Tracking desk uses. A pen started on another view still shows on this strip while the session is live. The lanes also **read** the session as a live presence hint. Count that hint when explaining why a lane can say “current” with no covering block.
+A second open work session is the pen-color clock (`brain2-pen-color-session`, `lib/pen-color-session.ts`): `penId`, `scopeId`, `title`, `startedAt`, `trackingEntryIds`, `pausedAt`, `pausedAccumMs`, `pauseSpans`. Span id `pen-color-${startedAt}`. It does not write a Done row. A task on that clock gets the same `pauseSpans` and timeline on its `timeLogs`. A pen with no task still keeps the spans on the painted block. Current moment renders that strip under the operation clock, locked to Activity pens (`PenColorNowStrip` `scopeId="activity"`): search, assign, or create a pen, then start the same session the Tracking desk uses. A pen started on another view still shows on this strip while the session is live. The lanes also **read** the session as a live presence hint. Count that hint when explaining why a lane can say “current” with no covering block.
 
 The **usually ~N** chip is computed at render from the median of past `timeLogs` / unflagged `actualDuration` for that title or type (`usualDurationMinutes`). It is not stored on the session.
 
@@ -198,7 +199,7 @@ The day-plan line is an `AppendLogEntry`: `id`, `createdAt` (writing time, or nu
 | Skipped | `status: "missed"`, `missedAt`, `stage: "list"`. Ledger source still `"header-tracking"` |
 | Unplanned | New completed task, `attributes.headerTracking: "unplanned"`, `loggedAction: true`, `notes: "Not on the plan"`, optional estimate |
 
-Until those buttons exist, Analytics must not pretend skipped / followed / unplanned rows are coming from Now. It may still read `headerTracking: "plan"` tasks and their later `timeLogs` if some other surface completed them. That completion is an outside join.
+Until those buttons exist, Data must not pretend skipped / followed / unplanned rows are coming from Now. It may still read `headerTracking: "plan"` tasks and their later `timeLogs` if some other surface completed them. That completion is an outside join.
 
 `derivedDurationGap(planned, actual) = round(actual) - round(planned)` is a pure function. The UI is specified to mark that difference estimated because it is calculated. It is not a stored field.
 
@@ -239,7 +240,7 @@ Screen Time and the iPhone views are scopes in the vault. The Now README keeps t
 | Pen menu query | Component state | Search-without-choose is invisible. A choose that then isn’t saved is invisible |
 | `useTrackingUndoHotkey` while the dialog is open | In-memory `action-history`, max 40 snapshots, labels like `"paint"` / `"erase"`, **no timestamps** | Undo can remove the only copy of an assertion. Redo is the same stack. Neither is a dataset |
 | Live presence hint | Derived each render from the singleton session | Can disagree with the vault for the minutes before the first paint lands |
-| “Not a ticking clock” | `useCurrentMomentLanes` recomputes when entries, scopes, or the session identity change, not every minute | The **displayed** `loggedAt` can sit still between store writes. Analytics should read the vault, not scrape the label |
+| “Not a ticking clock” | `useCurrentMomentLanes` recomputes when entries, scopes, or the session identity change, not every minute | The **displayed** `loggedAt` can sit still between store writes. Data should read the vault, not scrape the label |
 | Capture-door bus | Window event, in-memory notes label | Not Now |
 
 ### 1.5 What you can reconstruct anyway
@@ -257,7 +258,7 @@ state(d, t) = (
 
 A component is **missing** when no non-instant interval on that scope covers `t`. Missing is not a value called “empty” in the data — the UI’s “—” is that absence. Do not impute it as a state in a Markov chain.
 
-A component is **stale-last** when the UI would show `kind: "last"`. That is a display rule (most recent interval with `startMin <= now`). It is not occupancy. Analytics of “what was true” must use coverage, not the last-known label. Analytics of “what the dialog would have shown” may use last-known, and should label it as the fallback the user saw, not as fact.
+A component is **stale-last** when the UI would show `kind: "last"`. That is a display rule (most recent interval with `startMin <= now`). It is not occupancy. Data of “what was true” must use coverage, not the last-known label. Data of “what the dialog would have shown” may use last-known, and should label it as the fallback the user saw, not as fact.
 
 **Joint state** is the tuple of the components that are present. That tuple is the closest thing the vault has to a cognitive-situational state. It is high-frequency (1-minute grain) and short-horizon (meaningful over hours, ragged over months wherever the user did not paint).
 
@@ -265,7 +266,7 @@ A component is **stale-last** when the UI would show `kind: "last"`. That is a d
 
 ## 2. Metric catalog
 
-Names below are the series an Analytics tab should compute. Each one says whether the inputs exist today.
+Names below are the series an Data tab should compute. Each one says whether the inputs exist today.
 
 ### 2.1 Presence
 
@@ -702,7 +703,7 @@ It does not host plan-versus-reality as a life score, screen time, habit grades,
 
 ### 7.1 Ephemeral UI with no history
 
-Opening Now, flipping Tracking / Plan, picking a lane, typing a name, checking est., and closing without Save leave no row. Analytics must not treat “days the dialog existed in the bundle” as use. The undo stack can erase a save in the same sitting; the erased block’s id is listed in `removedEntryIds` so a merge of two snapshots does not resurrect it. Those ids are tombstones, not a change log: they do not store the deleted payload. A deleted assertion is gone.
+Opening Now, flipping Tracking / Plan, picking a lane, typing a name, checking est., and closing without Save leave no row. Data must not treat “days the dialog existed in the bundle” as use. The undo stack can erase a save in the same sitting; the erased block’s id is listed in `removedEntryIds` so a merge of two snapshots does not resurrect it. Those ids are tombstones, not a change log: they do not store the deleted payload. A deleted assertion is gone.
 
 ### 7.2 Duplicate updates
 
@@ -714,7 +715,7 @@ Same minute, two scopes: two independent paints. Not a duplicate.
 
 A sequence step with `endMin <= startMin` is skipped and not counted in the painter’s return value. A row that fails `parseClock` is skipped. The user may have believed they saved it. The vault has no failed-stamp record.
 
-New pen names are case-insensitive matches (`trim` + lower). “Library” and “library” are one pen. Analytics should group by pen id, and show the stored spelling.
+New pen names are case-insensitive matches (`trim` + lower). “Library” and “library” are one pen. Data should group by pen id, and show the stored spelling.
 
 ### 7.3 Clock skew and the one-clock problem
 
@@ -724,11 +725,11 @@ All occupancy is **minutes past local midnight** on a `YYYY-MM-DD` key. There is
 - `createdAt` on a metric can fall on the other side of `at`.
 - Work `spanId` embeds the ISO string of that same wrong clock. Later slices still agree with it; they do not agree with true civil time.
 
-Analytics should not “fix” skew. It should flag days where metric lag is largely negative, or where a `spanId` timestamp’s minute disagrees with the block’s `startMin` by more than one minute, as **clock disagreement**, and exclude those days from lag percentiles with a visible count of exclusions.
+Data should not “fix” skew. It should flag days where metric lag is largely negative, or where a `spanId` timestamp’s minute disagrees with the block’s `startMin` by more than one minute, as **clock disagreement**, and exclude those days from lag percentiles with a visible count of exclusions.
 
 Midnight: Now’s presence stamp does not paint past the current minute and does not wrap to tomorrow. A work session can wrap (`spanId` shared across two dates). A sequence is today-only in the Update state UI. A plan pane can target another day while Current moment stays on real today — so a plan’s `scheduledDate` and the lanes’ `date` can differ. Do not join them by accident.
 
-The Tracking pane’s day notes and grid are pinned to `new Date()` when the pane mounts. The Plan pane has its own day state. A single Analytics “today” should be the local calendar day, not “whatever day the Plan pane was browsing.”
+The Tracking pane’s day notes and grid are pinned to `new Date()` when the pane mounts. The Plan pane has its own day state. A single Data “today” should be the local calendar day, not “whatever day the Plan pane was browsing.”
 
 ### 7.4 States with no duration
 
@@ -755,7 +756,7 @@ Continuing an estimated neighbor keeps the estimate. The user can believe they j
 
 ### 7.7 Two “now” clocks on screen
 
-Current moment’s lanes do not tick. Working-on’s elapsed clock does. A screenshot can show a lane `loggedAt` of 14:01 and an elapsed timer of 00:14:22. The vault’s block may already extend further if a tick painted and the lane memo has not rebuilt. Analytics jobs should read entries, sessions, and datapoints, never the rendered label.
+Current moment’s lanes do not tick. Working-on’s elapsed clock does. A screenshot can show a lane `loggedAt` of 14:01 and an elapsed timer of 00:14:22. The vault’s block may already extend further if a tick painted and the lane memo has not rebuilt. Data jobs should read entries, sessions, and datapoints, never the rendered label.
 
 ---
 

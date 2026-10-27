@@ -17,7 +17,7 @@
  * touch a store.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
+import { objectiveLane, objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
 import { numericFieldValue } from "@/lib/pen-fields"
 import type { TimeEntry } from "@/lib/time-entries"
 import type { Subtask } from "@/lib/types"
@@ -517,7 +517,7 @@ function attributeBlock(buckets: ActualBuckets, block: TimeEntry, stepIds: Reado
     if (!row.stepId || !stepIds.has(row.stepId)) continue
     const worked = objectiveMinutes(row)
     if (worked < 1) continue
-    const openStint = !row.completedAt && !!row.stintStartedAt
+    const openStint = objectiveLane(row) === "now" && !!row.stintStartedAt
     claimIds.add(row.stepId)
     const start = clockOnDate(openStint ? row.stintStartedAt : row.addedAt, block.date)
     const endClock = clockOnDate(row.completedAt, block.date)

@@ -137,7 +137,7 @@ export function startTaskClock(
   if (step) {
     const session = usePenColorSessionStore.getState().session
     const already = activeNowObjectives(session?.nowObjectives).find((row) => row.stepId === step.id)
-    if (!already) addPenColorNowObjective(step.description, now, step.id)
+    if (!already) addPenColorNowObjective(step.description, now, step.id, "now")
   }
 
   return { kind, session: usePenColorSessionStore.getState().session! }
@@ -210,7 +210,7 @@ export function setClockStep(stepId: string | undefined): void {
     const step = findPlacedStep(task.subtasks, stepId)?.step
     const session = usePenColorSessionStore.getState().session
     const already = activeNowObjectives(session?.nowObjectives).some((row) => row.stepId === step?.id)
-    if (step && !already) addPenColorNowObjective(step.description, new Date(), step.id)
+    if (step && !already) addPenColorNowObjective(step.description, new Date(), step.id, "now")
   })
 }
 
@@ -229,7 +229,7 @@ export function addClockStep(description: string): string | undefined {
     const made = placeSteps(subtasks).find((placed) => !before.has(placed.step.id))
     if (!made) return undefined
     setPenColorSessionTask({ taskId: task.id, stepId: made.step.id, title: itemTitle(task) || live.title })
-    addPenColorNowObjective(made.step.description, new Date(), made.step.id)
+    addPenColorNowObjective(made.step.description, new Date(), made.step.id, "now")
     return made.step.id
   })
 }
@@ -250,7 +250,7 @@ export function completeClockStep(stepId: string): void {
     const row = session?.nowObjectives?.find((item) => item.stepId === stepId && !item.completedAt)
     if (row) togglePenColorNowObjectiveComplete(row.id)
     else {
-      addPenColorNowObjective(step.description, new Date(), stepId)
+      addPenColorNowObjective(step.description, new Date(), stepId, "now")
       const added = usePenColorSessionStore.getState().session?.nowObjectives?.find(
         (item) => item.stepId === stepId && !item.completedAt,
       )
@@ -269,7 +269,7 @@ export function completeClockStep(stepId: string): void {
     setPenColorSessionTask({ taskId: fresh.id, stepId: next.step.id, title: itemTitle(fresh) || live.title })
     const open = activeNowObjectives(usePenColorSessionStore.getState().session?.nowObjectives)
     if (!open.some((item) => item.stepId === next.step.id)) {
-      addPenColorNowObjective(next.step.description, new Date(), next.step.id)
+      addPenColorNowObjective(next.step.description, new Date(), next.step.id, "now")
     }
   })
 }

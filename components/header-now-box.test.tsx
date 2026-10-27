@@ -1,7 +1,7 @@
 /**
  * components/header-now-box.test.tsx — header "now" well for live timers
  */
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -73,6 +73,9 @@ describe("HeaderNowBox", () => {
     expect(screen.getByText("0:05")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /Pause Foxtide rebuild/i }))
+    const pauseDialog = await screen.findByTestId("pause-reason-dialog")
+    await user.type(within(pauseDialog).getByRole("textbox", { name: "Reason for pausing" }), "coffee")
+    await user.click(within(pauseDialog).getByRole("button", { name: "Pause" }))
     expect(screen.getByRole("button", { name: /Resume Foxtide rebuild/i })).toHaveAttribute("data-dvd-mark", "play")
 
     await act(async () => {
@@ -125,7 +128,7 @@ describe("HeaderNowBox", () => {
     expect(await screen.findByTestId("now-objectives-pop")).toBeInTheDocument()
     expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
     expect(screen.getByRole("textbox", { name: "Add objective" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Mark objective complete: finish the nest/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Move to now: finish the nest/i })).toBeInTheDocument()
   })
 
   it("opens the task on the pen clock from the now row", async () => {

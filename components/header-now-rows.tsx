@@ -31,6 +31,8 @@ import {
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
+  movePenColorNowObjectiveToNext,
+  movePenColorNowObjectiveToNow,
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import {
@@ -40,10 +42,13 @@ import {
   editWorkNowObjectiveText,
   removeWorkNowObjective,
   saveWorkObjectiveForLater,
+  moveWorkNowObjectiveToNext,
+  moveWorkNowObjectiveToNow,
   toggleWorkNowObjectiveComplete,
 } from "@/lib/operation-work-session"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { usePauseReason } from "@/components/Home/Tracking/pause-reason-dialog"
 import { SessionHandoffNote } from "@/components/Home/Tracking/session-handoff-note"
 import { reviewPenStop, reviewWorkStop } from "@/lib/session-debrief"
 import { activeNowObjectives, type NowObjective } from "@/lib/now-objective"
@@ -83,6 +88,8 @@ function NowRow({
   color,
   objectives,
   onAddObjective,
+  onMoveObjectiveToNow,
+  onMoveObjectiveToNext,
   onAddCompleted,
   onEditObjective,
   onToggleObjective,
@@ -104,7 +111,9 @@ function NowRow({
   stopLabel: string
   color?: string
   objectives?: NowObjective[]
-  onAddObjective: (text: string) => void
+  onAddObjective: (text: string, lane: "now" | "next") => void
+  onMoveObjectiveToNow: (id: string) => void
+  onMoveObjectiveToNext: (id: string) => void
   onAddCompleted: (text: string) => void
   onEditObjective: (id: string, text: string) => void
   onToggleObjective: (id: string) => void
@@ -142,6 +151,8 @@ function NowRow({
         onAddCompleted={onAddCompleted}
         onEditText={onEditObjective}
         onToggleComplete={onToggleObjective}
+        onMoveToNow={onMoveObjectiveToNow}
+        onMoveToNext={onMoveObjectiveToNext}
         onRemove={onRemoveObjective}
         onSaveForLater={onSaveForLater}
         onAttach={onAttach}
@@ -166,6 +177,12 @@ export function HeaderNowRows() {
   const penColor = penScope?.pens.find((pen) => pen.id === penSession?.penId)?.color
   const clock = useClockTask(penSession)
   const tasks = useTaskStore((s) => s.tasks)
+  const pauseAsk = usePauseReason()
+  const pauseWithReason = (pause: (reason: string) => void) => {
+    void pauseAsk.ask().then((reason) => {
+      if (reason) pause(reason)
+    })
+  }
   const penName = penSession
     ? clock.path
       ? `${clock.path} · ${penScope?.pens.find((pen) => pen.id === penSession.penId)?.name ?? penSession.title}`
@@ -194,10 +211,14 @@ export function HeaderNowRows() {
             stopLabel={`Stop ${opSession.title}`}
             onStop={(park) => reviewWorkStop(park)}
             onPauseToggle={() =>
-              isSessionPaused(opSession) ? resumeWorkingOnOperation() : pauseWorkingOnOperation()
+              isSessionPaused(opSession)
+                ? resumeWorkingOnOperation()
+                : pauseWithReason((reason) => pauseWorkingOnOperation(new Date(), reason))
             }
             objectives={opSession.nowObjectives}
-            onAddObjective={(text) => addWorkNowObjective(text)}
+            onAddObjective={(text, lane) => addWorkNowObjective(text, new Date(), lane)}
+            onMoveObjectiveToNow={(id) => moveWorkNowObjectiveToNow(id)}
+            onMoveObjectiveToNext={(id) => moveWorkNowObjectiveToNext(id)}
             onAddCompleted={(text) => addWorkCompletedObjective(text)}
             onEditObjective={(id, text) => editWorkNowObjectiveText(id, text)}
             onToggleObjective={(id) => toggleWorkNowObjectiveComplete(id)}
@@ -219,10 +240,14 @@ export function HeaderNowRows() {
             stopLabel={`Stop ${penName}`}
             onStop={(park) => reviewPenStop(park)}
             onPauseToggle={() =>
-              isSessionPaused(penSession) ? resumePenColorSession() : pausePenColorSession()
+              isSessionPaused(penSession)
+                ? resumePenColorSession()
+                : pauseWithReason((reason) => pausePenColorSession(new Date(), reason))
             }
             objectives={penSession.nowObjectives}
-            onAddObjective={(text) => addPenColorNowObjective(text)}
+            onAddObjective={(text, lane) => addPenColorNowObjective(text, new Date(), undefined, lane)}
+            onMoveObjectiveToNow={(id) => movePenColorNowObjectiveToNow(id)}
+            onMoveObjectiveToNext={(id) => movePenColorNowObjectiveToNext(id)}
             onAddCompleted={(text) => addPenColorCompletedObjective(text)}
             onEditObjective={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleObjective={(id) => togglePenColorNowObjectiveComplete(id)}
@@ -246,6 +271,7 @@ export function HeaderNowRows() {
           </>
         )}
       </div>
+      {pauseAsk.dialog}
     </fieldset>
   )
 }

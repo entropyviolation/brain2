@@ -10,12 +10,13 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import type { NowObjective } from "@/lib/now-objective"
-import { activeNowObjectives, objectiveCompletesTarget, objectiveWorkedMs } from "@/lib/now-objective"
+import type { NowObjective, NowObjectiveLane } from "@/lib/now-objective"
+import { activeNowObjectives, formatObjectiveWhen, objectiveCompletesTarget, objectiveLane } from "@/lib/now-objective"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
 export interface NowObjectivesHandlers {
-  onAdd: (text: string) => void
+  /** Now starts a stint. Next waits, and its clock does not run. */
+  onAdd: (text: string, lane: NowObjectiveLane) => void
   /** Log an objective already finished during this sitting. Start is unknown. */
   onAddCompleted?: (text: string) => void
   /**
@@ -26,6 +27,10 @@ export interface NowObjectivesHandlers {
    */
   onEditText: (id: string, text: string) => void
   onToggleComplete: (id: string) => void
+  /** Next's square. Starts a Now stint. Does not complete the row. */
+  onMoveToNow?: (id: string) => void
+  /** Now's Next button. Banks the open stint and waits. */
+  onMoveToNext?: (id: string) => void
   onRemove?: (id: string) => void
   /** Park it for the task or subtask and take it off this sitting. The open stint does not count. */
   onSaveForLater?: (id: string) => void
@@ -57,21 +62,6 @@ interface NowObjectivesListProps extends NowObjectivesHandlers {
    * one Working on right now is painting.
    */
   allowAdd?: boolean
-}
-
-const clockLabel = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-
-/** "3:12 PM → 3:40 PM · 28m" for one objective. Unknown starts name no duration. */
-export function objectiveSpanLabel(
-  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt">,
-  now = new Date(),
-): string {
-  if (!row.completedAt) return `added ${clockLabel(row.addedAt)}`
-  if (row.startUnknown) return `completed ${clockLabel(row.completedAt)} · start unknown`
-  const ms = objectiveWorkedMs(row, now) ?? Math.max(0, Date.parse(row.completedAt) - Date.parse(row.addedAt))
-  const mins = Math.max(0, Math.round(ms / 60_000))
-  return `${clockLabel(row.addedAt)} → ${clockLabel(row.completedAt)} · ${mins}m`
 }
 
 /**
@@ -111,7 +101,7 @@ export function StepSearchPicker({
         title="Tie this objective to a step"
         onClick={() => setOpen(true)}
       >
-        {value ? `↳ ${current?.label ?? "step (done)"}` : "↳ not tied to a step"}
+        {value ? `↳ ${current?.label ?? "step (done)"}` : "↳ tie to step"}
       </button>
     )
   }
@@ -250,12 +240,55 @@ function GrowText({ value, onChange, onBlur }: { value: string; onChange: (v: st
   )
 }
 
+function ModePair({
+  row,
+  onSetCompletes,
+}: {
+  row: NowObjective
+  onSetCompletes: (id: string, completes: boolean) => void
+}) {
+  const onStep = !!row.stepId
+  const onTask = !!row.taskId && !onStep
+  if (!onStep && !onTask) return null
+  const finishes = objectiveCompletesTarget(row)
+  const options = onStep
+    ? [
+        { completes: false, label: "counts toward", title: "Ticking counts the time. The step stays open." },
+        { completes: true, label: "finishes step", title: "Ticking finishes the step." },
+      ]
+    : [
+        { completes: false, label: "just a line", title: "Ticking only records the line. The task stays open." },
+        { completes: true, label: "finishes task", title: "Ticking finishes the whole task." },
+      ]
+  return (
+    <div className="trk-now-obj-mode-pair" role="group" aria-label={`What ticking does for ${row.text}`}>
+      {options.map((option) => {
+        const selected = finishes === option.completes
+        return (
+          <button
+            key={option.label}
+            type="button"
+            className={`todo-cap trk-now-obj-mode${selected ? " is-raised" : " is-sunken"}`}
+            aria-pressed={selected}
+            title={option.title}
+            onClick={() => onSetCompletes(row.id, option.completes)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function ObjectivesEditor({
   objectives,
   onAdd,
   onAddCompleted,
   onEditText,
   onToggleComplete,
+  onMoveToNow,
+  onMoveToNext,
   onRemove,
   onSaveForLater,
   onAttach,
@@ -283,10 +316,10 @@ function ObjectivesEditor({
     if (autoFocusAdd) addRef.current?.focus()
   }, [autoFocusAdd])
 
-  const submit = () => {
+  const submit = (lane: NowObjectiveLane) => {
     const text = draft.trim()
     if (!text) return
-    onAdd(text)
+    onAdd(text, lane)
     setDraft("")
   }
 
@@ -315,14 +348,26 @@ function ObjectivesEditor({
           {hideCompleted ? "Show completed" : "Hide completed"}
         </button>
       </div>
-      <ul className="trk-now-obj-list" aria-label="Objectives for right now">
+      <div className="trk-now-obj-list" aria-label="Objectives for right now">
         {list.length === 0 ? (
-          <li className="trk-now-obj-empty">What are you trying to finish this instant?</li>
+          <p className="trk-now-obj-empty">What are you trying to finish this instant?</p>
         ) : shown.length === 0 ? (
-          <li className="trk-now-obj-empty">Completed objectives are hidden.</li>
+          <p className="trk-now-obj-empty">Completed objectives are hidden.</p>
         ) : (
-          shown.map((row) => {
+          (["now", "next", "done"] as const).map((section) => {
+            const rows = shown.filter((row) => {
+              if (row.completedAt) return section === "done"
+              return objectiveLane(row) === section
+            })
+            if (!rows.length) return null
+            const heading = section === "now" ? "Now" : section === "next" ? "Next" : "Done"
+            return (
+              <section key={section} className="trk-now-obj-section" aria-label={heading}>
+                <h3 className="trk-now-obj-heading">{heading}</h3>
+                <ul>
+                  {rows.map((row) => {
             const done = Boolean(row.completedAt)
+            const lane = objectiveLane(row)
             const open = openId === row.id
             return (
               <li
@@ -338,18 +383,36 @@ function ObjectivesEditor({
                   type="button"
                   className="trk-now-obj-check"
                   aria-pressed={done}
-                  aria-label={done ? `Reopen objective ${row.text}` : `Mark objective complete: ${row.text}`}
-                  onClick={() => onToggleComplete(row.id)}
+                  aria-label={
+                    done
+                      ? `Reopen objective ${row.text}`
+                      : lane === "next"
+                        ? `Move to now: ${row.text}`
+                        : `Mark objective complete: ${row.text}`
+                  }
+                  onClick={() => (lane === "next" ? onMoveToNow?.(row.id) : onToggleComplete(row.id))}
                 />
                 <div className="trk-now-obj-body">
-                  <GrowText
-                    value={row.text}
-                    onChange={(v) => onEditText(row.id, v)}
-                    onBlur={(v) => {
-                      if (!v.trim() && onRemove) onRemove(row.id)
-                    }}
-                  />
-                  <div className="trk-now-obj-meta">{objectiveSpanLabel(row)}</div>
+                  <div className="trk-now-obj-line">
+                    <GrowText
+                      value={row.text}
+                      onChange={(v) => onEditText(row.id, v)}
+                      onBlur={(v) => {
+                        if (!v.trim() && onRemove) onRemove(row.id)
+                      }}
+                    />
+                    {lane === "now" && onMoveToNext ? (
+                      <button
+                        type="button"
+                        className="todo-cap trk-now-obj-lane"
+                        aria-label={`Move to next: ${row.text}`}
+                        onClick={() => onMoveToNext(row.id)}
+                      >
+                        Next
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="trk-now-obj-meta">{formatObjectiveWhen(row)}</div>
                   {open ? (
                     <div className="trk-now-obj-detail">
                       {onRemove ? (
@@ -422,52 +485,41 @@ function ObjectivesEditor({
                         label={row.text}
                         onPick={(id) => onTieStep(row.id, id)}
                       />
-                      {onSetCompletes ? (
-                        <button
-                          type="button"
-                          className="todo-cap trk-now-obj-mode"
-                          aria-pressed={objectiveCompletesTarget(row)}
-                          title={
-                            objectiveCompletesTarget(row)
-                              ? row.stepId
-                                ? "Ticking this ticks the step. Click to make it only count toward the step."
-                                : "Ticking this finishes the whole task. Click to undo."
-                              : row.stepId
-                                ? "Counts toward the step; the step stays open. Click so ticking finishes it."
-                                : "Click so ticking this finishes the whole task."
-                          }
-                          onClick={() => onSetCompletes(row.id, !objectiveCompletesTarget(row))}
-                        >
-                          {objectiveCompletesTarget(row) ? (row.stepId ? "finishes step" : "finishes task") : row.stepId ? "counts toward" : "just a line"}
-                        </button>
-                      ) : null}
+                      {onSetCompletes ? <ModePair row={row} onSetCompletes={onSetCompletes} /> : null}
                     </div>
                   ) : null}
                 </div>
               </li>
             )
+                  })}
+                </ul>
+              </section>
+            )
           })
         )}
-      </ul>
+      </div>
       {allowAdd ? (
       <div className="trk-now-obj-add">
+        <div className="trk-now-obj-add-label">Add objective</div>
         <input
           ref={addRef}
           className="trk-now-obj-add-field"
           value={draft}
-          placeholder="Add objective"
           aria-label="Add objective"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault()
-              submit()
+              submit("now")
             }
           }}
         />
         <div className="trk-now-obj-add-actions">
-          <button type="button" className="todo-cap is-primary trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
-            Add objective
+          <button type="button" className="todo-cap is-primary trk-now-obj-add-btn" disabled={!draft.trim()} onClick={() => submit("now")}>
+            Now
+          </button>
+          <button type="button" className="todo-cap trk-now-obj-add-btn" disabled={!draft.trim()} onClick={() => submit("next")}>
+            Next
           </button>
           {onAddCompleted ? (
             <button
@@ -476,7 +528,7 @@ function ObjectivesEditor({
               disabled={!draft.trim()}
               onClick={submitCompleted}
             >
-              Completed objective
+              Completed
             </button>
           ) : null}
         </div>
@@ -492,6 +544,8 @@ export function NowObjectivesList({
   onAddCompleted,
   onEditText,
   onToggleComplete,
+  onMoveToNow,
+  onMoveToNext,
   onRemove,
   onSaveForLater,
   onAttach,
@@ -571,6 +625,8 @@ export function NowObjectivesList({
           onAddCompleted={onAddCompleted}
           onEditText={onEditText}
           onToggleComplete={onToggleComplete}
+          onMoveToNow={onMoveToNow}
+          onMoveToNext={onMoveToNext}
           onRemove={onRemove}
           onSaveForLater={onSaveForLater}
           onAttach={onAttach}
@@ -606,6 +662,8 @@ export function NowObjectivesList({
               onAddCompleted={onAddCompleted}
               onEditText={onEditText}
               onToggleComplete={onToggleComplete}
+              onMoveToNow={onMoveToNow}
+              onMoveToNext={onMoveToNext}
               onRemove={onRemove}
               onSaveForLater={onSaveForLater}
               onAttach={onAttach}

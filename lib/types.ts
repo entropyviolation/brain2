@@ -724,7 +724,7 @@ export interface Task extends Item {
   dayRatings?: Record<string, { importance?: number; excitement?: number }>
   /**
    * Resistance samples over time (morning walkthrough and elsewhere). Append-only;
-   * each reading keeps its timestamp so Analytics can show the series.
+   * each reading keeps its timestamp so Data can show the series.
    */
   resistanceReadings?: Array<{
     at: string
@@ -835,6 +835,12 @@ export interface TimeLogEntry {
    * Omitted when the review was closed without saving.
    */
   sessionReview?: TimeLogSessionReview
+  /**
+   * Reasons for pausing this sitting. One span per Pause.
+   * `stoppedAt` is set when Stop closed a gap that never resumed.
+   * Omitted when the sitting was not paused. No persist bump.
+   */
+  pauseSpans?: import("@/lib/work-pause").WorkPauseSpan[]
 }
 
 /** What the sitting review wrote onto one time log. A missing score was not asked. */
@@ -2390,7 +2396,7 @@ export interface PeriodReview {
     bestDayWhy?: string
     /** Morning gratitude list (often 10). Distinct from evening `gratitude`. */
     gratitude?: string[]
-    /** Where the ritual was completed — label text-pipeline rows in Analytics. */
+    /** Where the ritual was completed — label text-pipeline rows in Data. */
     source?: "telegram" | "desktop"
   }
   /**

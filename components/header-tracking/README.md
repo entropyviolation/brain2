@@ -2,6 +2,8 @@
 
 The header **Now** word key (`components/cognitive-state.tsx`) opens this popup. It is the edge of the current moment: the recent past that was not tracked yet, what is true now, and the short plan ahead. Home → Tracking (`components/Home/Tracking/tracking-desk.tsx`) is a different screen and is not this dialog.
 
+_Last mapped: 2026-10-27._ The operation clock and the activity-pen clock on Current moment are open work sessions (Working on now). A To Do **Session** is a planned work session. It is not drawn here. Play inside one starts the pen clock for that task or subtask. See [`components/Home/ToDo/README.md`](../Home/ToDo/README.md#open-work-sessions-and-planned-work-sessions).
+
 _Last mapped: 2026-10-25_
 
 The dialog caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The frame is the shared milled header dialog (`.hpp95` / `.hpp95-shell-only`), `min(96vw, 84rem)`. That is wide enough for the Home desk’s three bays side by side. Below the desk’s 980px container break they stack, as on Home.
@@ -35,7 +37,7 @@ _Last mapped: 2026-10-25._
 
 The **Tracking pane** mounts the Home desk’s bays: `PenPalette variant="rack"`, `TimeGrid desk` with `PenModeDeck`, and the time recorder column. The day summary sits under them in the same `.trk-lace` frame. All of it is inside a `.trk95` wrapper (`.htk-desk`), because the summary well’s styles are scoped to `.trk95`. Without it the well crowded the bottom of the dialog.
 
-Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Plan versus reality stays on Analytics.
+Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Plan versus reality stays on Data.
 
 ## Files
 

@@ -124,7 +124,7 @@ describe("objectives tied to steps", () => {
   })
 
   it("ticking a tied objective ticks the step with its own minutes, and unticking reopens it", () => {
-    addPenColorNowObjective("confirm wood", AT)
+    addPenColorNowObjective("confirm wood", AT, undefined, "now")
     const id = session()!.nowObjectives!.at(-1)!.id
     togglePenColorNowObjectiveComplete(id, later(12))
     const wood = task().subtasks![0].subtasks![0]
