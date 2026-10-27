@@ -1,5 +1,5 @@
 /**
- * components/Analytics/DiversityView.tsx — Shannon entropy + Gini + weekday cut
+ * components/Analytics/time/DiversityView.tsx — Shannon entropy + Gini + weekday cut
  *
  * Entropy of Tracking pens per day (H = −Σ p log₂ p of that day's minute
  * shares). Gini of the window's pen totals. Weekday vs weekend occupancy.
@@ -11,11 +11,11 @@ import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration } from "@/lib/time-entries"
 import { giniCoefficient, mean } from "@/lib/metrics"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
-import { CanvasTitle, PhosphorTrace, StudioReadout } from "./studio-kit"
-import { allocationGini, penMinutesByDay, weekdayWeekendCut } from "./signal-stats"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { CanvasTitle, PhosphorTrace, StudioReadout } from "../studio/studio-kit"
+import { allocationGini, penMinutesByDay, weekdayWeekendCut } from "../signal-stats"
 import { penTotalsAtDepth } from "@/lib/tracking-summary"
 import { NativeSelect } from "@/components/ui/native-select"
 

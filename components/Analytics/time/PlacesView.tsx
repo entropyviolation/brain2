@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PlacesView.tsx — Location-scope time mosaic
+ * components/Analytics/time/PlacesView.tsx — Location-scope time mosaic
  *
  * Time at each Location pen, plus the repeated GPS pins (`gps-places.ts`)
  * so a place seen more than once can be named. Depth uses the Location
@@ -22,9 +22,9 @@ import {
   subscribeGpsPlaces,
   type GpsPlace,
 } from "@/lib/ingest/gps-places"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SliceMosaic } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SliceMosaic } from "../studio/studio-kit"
 
 export function PlacesView() {
   const scopes = useTimeTrackingStore((s) => s.scopes)

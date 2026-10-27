@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TextPipelineView.tsx — Text-pipeline Tracking entries
+ * components/Analytics/time/TextPipelineView.tsx — Text-pipeline Tracking entries
  *
  * Phone / Telegram ingest stamps `generatedBy.kind === "text"`. Instants are
  * discrete events and switch markers; non-instants are currently / stopped /
@@ -19,9 +19,9 @@ import {
   type TimeEntry,
 } from "@/lib/time-entries"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 
 const PIPELINE_LABEL = "from text pipeline"
 

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/GrainStrips.tsx — Day and week category color
+ * components/Analytics/time/GrainStrips.tsx — Day and week category color
  *
  * Equal cells, one per day and (when the window spans two weeks) one per week.
  * Color is the pen that occupied the most minutes at the current display depth.

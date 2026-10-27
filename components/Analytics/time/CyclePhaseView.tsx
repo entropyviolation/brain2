@@ -1,5 +1,5 @@
 /**
- * components/Analytics/CyclePhaseView.tsx — Time → Cycle phase
+ * components/Analytics/time/CyclePhaseView.tsx — Time → Cycle phase
  *
  * Days in the shared window. The phase shown is assessCycleDay.
  * A bleed or ovulation mark stays marked. A guess is labeled estimated
@@ -20,7 +20,6 @@ import { useCycleMarksStore } from "@/lib/cycle-marks"
 import type { CycleBasis } from "@/lib/cycle-estimate"
 import { calculateDayPercentageAV } from "@/lib/calculations"
 import { exemptionTest } from "@/lib/habit-exemption"
-import { parseLocalDate } from "@/lib/date-utils"
 import { uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { resolveNights } from "@/lib/sleep-inference"
 import { sleepMinutes } from "@/lib/sleep-log"
@@ -29,10 +28,10 @@ import {
   asLogEntry,
   classifyLogInstant,
 } from "@/components/Home/Tracking/tracking-log-model"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeyOf } from "./analytics-range"
-import { CanvasTitle, StudioBars, StudioReadout } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeyOf, weekdayIndex } from "../chrome/analytics-range"
+import { CanvasTitle, StudioBars, StudioReadout } from "../studio/studio-kit"
 import {
   cyclePhaseEmptySentence,
   cyclePhaseReport,
@@ -44,11 +43,6 @@ import {
   type CyclePhaseMetricInput,
   type PhaseComparison,
 } from "./cycle-phase-stats"
-
-function weekdayIndex(key: string): number {
-  const d = parseLocalDate(key)
-  return d ? d.getDay() : 0
-}
 
 function formatCell(format: CyclePhaseMetricFormat, value: number | null): string {
   if (value === null) return "—"

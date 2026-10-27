@@ -1,5 +1,5 @@
 /**
- * components/Analytics/period-delta.ts — Current vs previous window pen deltas
+ * components/Analytics/time/period-delta.ts — Current vs previous window pen deltas
  *
  * Comparison math only. The previous calendar window comes from
  * `previousAnalyticsWindow` in analytics-range.ts (same stepper as the range

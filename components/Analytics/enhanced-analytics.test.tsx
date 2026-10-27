@@ -13,8 +13,8 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { EnhancedAnalytics } from "./enhanced-analytics"
-import { ANALYTICS_RANGE_STORAGE_KEY, DEFAULT_ANALYTICS_RANGE } from "./analytics-range"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { ANALYTICS_RANGE_STORAGE_KEY, DEFAULT_ANALYTICS_RANGE } from "./chrome/analytics-range"
+import { useAnalyticsRangeStore } from "./chrome/analytics-range-store"
 
 vi.mock("@/lib/screentime/prefs", () => ({
   DEFAULT_SCREENTIME_PREFS: {

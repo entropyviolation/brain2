@@ -1,5 +1,5 @@
 /**
- * components/Analytics/cycle-phase-concealed.tsx — Time → Cycle phase, closed
+ * components/Analytics/time/cycle-phase-concealed.tsx — Time → Cycle phase, closed
  *
  * The studio shell mounts this instead of `CyclePhaseView` when cycle tracking
  * is on and `cycleDetailsOpen` is false. The concealed sentence lives only

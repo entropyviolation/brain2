@@ -1,5 +1,5 @@
 /**
- * components/Analytics/AttributesView.tsx — Typed attribute distributions
+ * components/Analytics/library/AttributesView.tsx — Typed attribute distributions
  *
  * Fixed mosaics/histograms from schemas that already exist. Not a chart builder.
  */
@@ -9,8 +9,8 @@ import { useMemo, useState } from "react"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { useTaskStore } from "@/lib/task-store"
 import type { AttributeDefinition, AttributeValue } from "@/lib/types"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { StudioSelect, StudioBars } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { StudioSelect, StudioBars } from "../studio/studio-kit"
 
 function flattenDefs(
   types: { id: string; name: string; attributes?: AttributeDefinition[] }[],

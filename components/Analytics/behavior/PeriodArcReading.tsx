@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PeriodArcReading.tsx — Longer rituals, read back
+ * components/Analytics/behavior/PeriodArcReading.tsx — Longer rituals, read back
  *
  * One view for week, month, season, and year. Grouped by the same headings
  * as the ritual. Inspiration photos resolve through the attachment store.

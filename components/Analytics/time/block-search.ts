@@ -1,5 +1,5 @@
 /**
- * components/Analytics/block-search.ts — Find blocks on the Data surface
+ * components/Analytics/time/block-search.ts — Find blocks on the Data surface
  *
  * The matcher is `searchTracking` in `lib/tracking-search.ts` (display name,
  * notes, primary pen, secondary pens, counts-as chains, action-format

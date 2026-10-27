@@ -1,5 +1,5 @@
 /**
- * components/Analytics/SeasonsView.tsx — Life by season
+ * components/Analytics/behavior/SeasonsView.tsx — Life by season
  *
  * Four calendar quarters, named Spring / Summer / Fall / Winter.
  * This year and last year sit side by side: completions, points, and
@@ -23,7 +23,7 @@ import {
   seasonSlug,
   type SeasonName,
 } from "@/lib/seasons"
-import { StudioReadout } from "./studio-kit"
+import { StudioReadout } from "../studio/studio-kit"
 
 interface SeasonStat {
   key: string

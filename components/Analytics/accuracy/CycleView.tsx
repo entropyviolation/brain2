@@ -1,17 +1,17 @@
 /**
- * components/Analytics/CycleView.tsx — Stall, pushes, estimate confirmation
+ * components/Analytics/accuracy/CycleView.tsx — Stall, pushes, estimate confirmation
  */
 "use client"
 
 import { useMemo } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { isEstimated } from "@/lib/estimated-values"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { StudioBars, StudioReadout, PhosphorTrace } from "./studio-kit"
-import { BeeswarmChart } from "./studio-plots"
-import { openItemAges } from "./signal-stats"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { StudioBars, StudioReadout, PhosphorTrace } from "../studio/studio-kit"
+import { BeeswarmChart } from "../studio/studio-plots"
+import { openItemAges } from "../signal-stats"
 
 export function CycleView() {
   const tasks = useTaskStore((s) => s.tasks)

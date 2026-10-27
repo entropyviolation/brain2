@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TrackingContextPlates.tsx — Level ladder and company headcount
+ * components/Analytics/time/TrackingContextPlates.tsx — Level ladder and company headcount
  *
  * Two plates for Data → Tracking, both read-only over the tracking store.
  *
@@ -25,7 +25,7 @@ import type { TrackScope } from "@/lib/time-tracking-store"
 import { NO_LEVEL_ID, levelTotals, scopeLevels, scopeUsesLevels } from "@/lib/pen-levels"
 import { HEADCOUNT_BUCKETS, companyHeadcount } from "@/lib/company-headcount"
 import { penAtDepth } from "@/lib/pen-tree"
-import { SplitBar, StudioHelp, StudioReadout } from "./studio-kit"
+import { SplitBar, StudioHelp, StudioReadout } from "../studio/studio-kit"
 
 const NO_LEVEL_COLOR = "#d4d6d8"
 

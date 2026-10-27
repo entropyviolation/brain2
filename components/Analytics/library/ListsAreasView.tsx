@@ -1,16 +1,16 @@
 /**
- * components/Analytics/ListsAreasView.tsx — Category / list performance
+ * components/Analytics/library/ListsAreasView.tsx — Category / list performance
  */
 "use client"
 
 import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { openItemsInLists } from "./open-in-lists"
-import { CanvasTitle, SliceTreemap, StudioBars, StudioReadout } from "./studio-kit"
-import { listHerfindahl } from "./signal-stats"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { openItemsInLists } from "../studio/open-in-lists"
+import { CanvasTitle, SliceTreemap, StudioBars, StudioReadout } from "../studio/studio-kit"
+import { listHerfindahl } from "../signal-stats"
 
 export function ListsAreasView() {
   const tasks = useTaskStore((s) => s.tasks)

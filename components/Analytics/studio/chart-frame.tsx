@@ -1,5 +1,5 @@
 /**
- * components/Analytics/chart-frame.tsx — Honest empty / thin chart furniture
+ * components/Analytics/studio/chart-frame.tsx — Honest empty / thin chart furniture
  *
  * Keep the frame. When there is no series, one sentence lives inside it —
  * no axes, blank heatmaps, or KPI cards performing precision. A thin window

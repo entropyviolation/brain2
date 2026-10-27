@@ -1,5 +1,5 @@
 /**
- * components/Analytics/CrossSection.tsx — Linked density over the shared range
+ * components/Analytics/meta/CrossSection.tsx — Linked density over the shared range
  *
  * Small multiples of daily activity from habits, tracking, sleep, completions,
  * points, operations, and regret. One shared x-axis. Hover/pin a day to light
@@ -26,9 +26,9 @@ import { sleepMinutes } from "@/lib/sleep-log"
 import { buildHeatmap, isOperation } from "@/lib/operations"
 import { contextSwitchSeries } from "@/lib/metrics"
 import { entriesForDay } from "@/lib/time-entries"
-import { dateKeyOf, inRange } from "./analytics-range"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
+import { dateKeyOf, inRange, weekdayIndex } from "../chrome/analytics-range"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
 import {
   buildCrossSection,
   intensity,
@@ -36,11 +36,6 @@ import {
   readoutFor,
   type DensitySeries,
 } from "./cross-section"
-
-function weekdayIndex(key: string): number {
-  const d = parseLocalDate(key)
-  return d ? d.getDay() : 0
-}
 
 function cellFill(hue: number, value: number | null, domainMax: number): string {
   const kind = presenceOf(value)

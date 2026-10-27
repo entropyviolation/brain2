@@ -1,5 +1,5 @@
 /**
- * components/Analytics/StreaksWidget.tsx — Streaks (Brain2 §8b / §9.5)
+ * components/Analytics/behavior/StreaksWidget.tsx — Streaks (Brain2 §8b / §9.5)
  *
  * Current + longest streaks for habits and the daily review ritual. Not
  * clipped to the Data window. Home glance stays on Home.
@@ -15,8 +15,8 @@ import { useExemptionContext } from "@/lib/sleep-store"
 import { computeStreak, type StreakResult } from "@/lib/streaks"
 import { parseLocalDate, getWeekStartDate } from "@/lib/date-utils"
 import { habitWeekStreakSummary } from "@/lib/habit-week-streaks"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { StudioReadout } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { StudioReadout } from "../studio/studio-kit"
 
 interface StreakRow {
   id: string

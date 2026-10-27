@@ -1,5 +1,5 @@
 /**
- * components/Analytics/SpectrumView.tsx — Autocorrelation + periodogram + sleep CV
+ * components/Analytics/meta/SpectrumView.tsx — Autocorrelation + periodogram + sleep CV
  *
  * Lag-1 and lag-7 Pearson autocorrelation of daily habit % and of sleep
  * duration. Naive DFT periodogram of habit % (peak period in days). Coefficient
@@ -23,10 +23,10 @@ import {
   dominantPeriod,
   periodogram,
 } from "@/lib/metrics"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
-import { CanvasTitle, PhosphorTrace, StudioBars, StudioReadout } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { CanvasTitle, PhosphorTrace, StudioBars, StudioReadout } from "../studio/studio-kit"
 
 export function SpectrumView() {
   const habitTasks = useHabitsStore((s) => s.tasks)

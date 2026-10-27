@@ -1,5 +1,5 @@
 /**
- * components/Analytics/cross-section.ts — Shared-range density series
+ * components/Analytics/meta/cross-section.ts — Shared-range density series
  *
  * Pure. Each series is a day-aligned strip over the Data window. Missing
  * observations stay missing (never interpolated as zero). n is days with a

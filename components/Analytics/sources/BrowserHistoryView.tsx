@@ -1,5 +1,5 @@
 /**
- * components/Analytics/BrowserHistoryView.tsx — Sources → Browser
+ * components/Analytics/sources/BrowserHistoryView.tsx — Sources → Browser
  *
  * Chrome history exports (one file per profile: JSON, CSV, or Excel) merged
  * and analysed in the browser by `lib/browser-history.ts`. Kept visits only

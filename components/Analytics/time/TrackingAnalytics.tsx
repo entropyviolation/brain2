@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TrackingAnalytics.tsx — Where the time actually went
+ * components/Analytics/time/TrackingAnalytics.tsx — Where the time actually went
  *
  * Reads the same intervals the Time Grid paints and the Activity Log lists, and
  * totals them through the same module (`lib/tracking-summary.ts`) as occupancy —
@@ -56,20 +56,20 @@ import {
   type TrackingSlice,
 } from "@/lib/tracking-summary"
 import { effectiveTagIds } from "@/lib/tracked-time"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeysInclusive, previousAnalyticsWindow, type AnalyticsWindowUnit } from "./analytics-range"
-import { HourDayHeatmap, SlicePie, SplitBar, StudioCheck, StudioHelp, StudioReadout } from "./studio-kit"
-import { HourPenSmallMultiples, StudioSpark, ViolinHistogram } from "./studio-plots"
-import { buildHourDayGrid, buildHourPenRows } from "./hour-day"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeysInclusive, previousAnalyticsWindow, type AnalyticsWindowUnit } from "../chrome/analytics-range"
+import { HourDayHeatmap, SlicePie, SplitBar, StudioCheck, StudioHelp, StudioReadout } from "../studio/studio-kit"
+import { HourPenSmallMultiples, StudioSpark, ViolinHistogram } from "../studio/studio-plots"
+import { buildHourDayGrid, buildHourPenRows } from "../hour-day"
 import { useTaskStore } from "@/lib/task-store"
 import { tasksWithTimeLogOnDays } from "@/lib/item-slices"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { LogActivityDialog } from "@/components/Home/Tracking/log-activity-dialog"
-import { weekdayWeekendCut } from "./signal-stats"
-import { blockLengths } from "./studio-plot-stats"
-import { ANALYTICS_TAB_HELP } from "./analytics-tabs"
+import { weekdayWeekendCut } from "../signal-stats"
+import { blockLengths } from "../studio/studio-plot-stats"
+import { ANALYTICS_TAB_HELP } from "../chrome/analytics-tabs"
 import { buildAverageDayBoard } from "./average-day"
 import { AverageDayBoard } from "./AverageDayBoard"
 import { PeriodFilmstrip } from "./PeriodFilmstrip"

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TransitionsView.tsx — Markov matrix of Tracking pen changes
+ * components/Analytics/time/TransitionsView.tsx — Markov matrix of Tracking pen changes
  *
  * A transition is one block ending and the next (different) pen beginning on
  * the same day. P(j|i) = count(i→j) / count(i→·). Self-stays are skipped so
@@ -9,12 +9,12 @@
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
-import { CanvasTitle, StudioReadout } from "./studio-kit"
-import { AlluvialChart } from "./studio-plots"
-import { penTransitionMatrix } from "./signal-stats"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { CanvasTitle, StudioReadout } from "../studio/studio-kit"
+import { AlluvialChart } from "../studio/studio-plots"
+import { penTransitionMatrix } from "../signal-stats"
 import { NativeSelect } from "@/components/ui/native-select"
 
 export function TransitionsView() {

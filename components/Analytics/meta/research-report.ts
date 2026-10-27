@@ -1,5 +1,5 @@
 /**
- * components/Analytics/research-report.ts — Which vault shapes earn a report line
+ * components/Analytics/meta/research-report.ts — Which vault shapes earn a report line
  *
  * Pure. The view hands in rows already clipped to the shared Data window.
  * A section appears only when a stated rule clears its floor. Empty series are
@@ -7,7 +7,7 @@
  */
 import { computeStreak } from "@/lib/streaks"
 import { trend, type SeriesPoint } from "@/lib/metrics"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
 
 /** Days of habit %, tracking coverage, or sleep before an outlier is a finding. */
 export const RESEARCH_DAY_FLOOR = 5

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ContextSwitchHeatmap.tsx — Context-switching heatmap
+ * components/Analytics/time/ContextSwitchHeatmap.tsx — Context-switching heatmap
  *
  * A switch is a pen change: one block ending and another beginning. Shared
  * Data range; a sparse window is not a trend.
@@ -12,11 +12,11 @@ import { entriesForDay } from "@/lib/time-entries"
 import { parseLocalDate, formatLocalDateKey } from "@/lib/date-utils"
 import { contextSwitchSeries, contextSwitchValueSeries, trend, mean } from "@/lib/metrics"
 import { useTaskStore } from "@/lib/task-store"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
-import { DensityCalendar, StudioBars, StudioSelect } from "./studio-kit"
-import { hourLabel, switchCountsByHour } from "./hour-day"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { DensityCalendar, StudioBars, StudioSelect } from "../studio/studio-kit"
+import { hourLabel, switchCountsByHour } from "../hour-day"
 
 function addDays(d: Date, n: number) {
   const r = new Date(d)

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PeopleView.tsx — People: who you spend time with
+ * components/Analytics/time/PeopleView.tsx — People: who you spend time with
  *
  * Time → People. Everyone is a Company person pen (`isPersonPen`), the same
  * pens People I Know items join. Minutes with a person are the union of
@@ -26,10 +26,10 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { isPersonPen } from "@/lib/people-sync"
 import { personMinuteMasks, personTimeStats, cadenceSentence } from "@/lib/person-time"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeysInclusive, previousAnalyticsWindow } from "./analytics-range"
-import { ChartFrame } from "./chart-frame"
-import { StudioHelp, StudioReadout } from "./studio-kit"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeysInclusive, previousAnalyticsWindow } from "../chrome/analytics-range"
+import { ChartFrame } from "../studio/chart-frame"
+import { StudioHelp, StudioReadout } from "../studio/studio-kit"
 import { CompanyHeadcountPlate } from "./TrackingContextPlates"
 
 function count(mask: Uint8Array | undefined): number {

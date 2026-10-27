@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ReviewsView.tsx — Period reviews + morning reader + blocked mosaic
+ * components/Analytics/behavior/ReviewsView.tsx — Period reviews + morning reader + blocked mosaic
  */
 "use client"
 
@@ -9,10 +9,10 @@ import { useTaskStore } from "@/lib/task-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import type { PeriodReview } from "@/lib/types"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { SliceMosaic } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { SliceMosaic } from "../studio/studio-kit"
 import { PeriodArcReading } from "./PeriodArcReading"
 import { blockedReasonLabel, blockedReasonToken } from "@/lib/blocked-reason"
 import { collectMissReasonCorpus, MISS_SOURCE_LABEL } from "@/lib/miss-reason-corpus"

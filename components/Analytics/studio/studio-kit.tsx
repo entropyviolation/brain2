@@ -1,5 +1,5 @@
 /**
- * components/Analytics/studio-kit.tsx — Shared Data studio primitives
+ * components/Analytics/studio/studio-kit.tsx — Shared Data studio primitives
  *
  * Light instrument studio, honest findings, density calendars, hour×day heat,
  * pies, treemaps, and mosaics. Used by every Data view so the tab is one language.
@@ -12,7 +12,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { contrastRatio, relativeLuminance } from "@/lib/chrome-patina"
 import { formatCrtNumber } from "@/lib/crt-number"
-import { hourLabel, type HourDayGrid } from "./hour-day"
+import { hourLabel, type HourDayGrid } from "../hour-day"
 import { NativeSelect } from "@/components/ui/native-select"
 
 export const STUDIO_GRID = "#808080"

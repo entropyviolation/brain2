@@ -35,7 +35,7 @@ import { createPerson, ensurePeopleIKnowList, personPhoneNumbers, personRecords 
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { useTaskStore } from "@/lib/task-store"
 import { useTextsNavStore } from "@/lib/texts-report-nav"
-import { ChartFrame } from "./chart-frame"
+import { ChartFrame } from "./studio/chart-frame"
 
 type State =
   | { kind: "loading" }

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TagTrendBoard.tsx — Tag minutes as aligned bars
+ * components/Analytics/time/TagTrendBoard.tsx — Tag minutes as aligned bars
  *
  * Week bars come from `tagWeekTrend`. Month bars come from `tagMonthTrend`.
  * A zero bucket stays a hairline so tags share one axis. Bar color is the tag.

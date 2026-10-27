@@ -1,5 +1,5 @@
 /**
- * components/Analytics/TodoPulseView.tsx — Morning to-do walkthrough metrics
+ * components/Analytics/behavior/TodoPulseView.tsx — Morning to-do walkthrough metrics
  *
  * Tier, expected duration, points, day importance, resistance series, and
  * day excitement from the morning “Go through to do list” step (and any later
@@ -14,9 +14,9 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { getTierFromTask } from "@/components/Home/ToDo/todo-utils"
 import { parseLocalDate, formatLocalDateKey } from "@/lib/date-utils"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 
 const FIELD_HELP = {
   tier: "Priority band on the to-do (A+ … D). Maps to urgency/importance on the item.",

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/average-day.ts — Average-day ribbons for Tracking
+ * components/Analytics/time/average-day.ts — Average-day ribbons for Tracking
  *
  * Split each sample day into 15-minute slots (96). Attribute each minute to the
  * pen shown at the current display depth (primary pen only — grid color). When

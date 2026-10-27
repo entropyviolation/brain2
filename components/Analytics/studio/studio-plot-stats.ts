@@ -1,5 +1,5 @@
 /**
- * components/Analytics/studio-plot-stats.ts — Classical plot math for Data canvases
+ * components/Analytics/studio/studio-plot-stats.ts — Classical plot math for Data canvases
  *
  * KDE / histogram / horizon / beeswarm / alluvial layout / UpSet intersections /
  * weekday ridges. Primitives only — no store. Display lives in studio-plots.tsx.
@@ -10,7 +10,7 @@
  */
 import { parseLocalDate } from "@/lib/date-utils"
 import { entryMinutes, type TimeEntry } from "@/lib/time-entries"
-import type { TransitionCell } from "./signal-stats"
+import type { TransitionCell } from "../signal-stats"
 
 export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 

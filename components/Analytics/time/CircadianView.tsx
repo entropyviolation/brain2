@@ -1,15 +1,15 @@
 /**
- * components/Analytics/CircadianView.tsx — Hour × day occupancy atlas
+ * components/Analytics/time/CircadianView.tsx — Hour × day occupancy atlas
  */
 "use client"
 
 import { useMemo, useState } from "react"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { HourDayHeatmap, StudioSelect } from "./studio-kit"
-import { CyclePlot } from "./studio-plots"
-import { buildHourDayGrid, buildWeekdayHourCycle } from "./hour-day"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { HourDayHeatmap, StudioSelect } from "../studio/studio-kit"
+import { CyclePlot } from "../studio/studio-plots"
+import { buildHourDayGrid, buildWeekdayHourCycle } from "../hour-day"
 
 export function CircadianView() {
   const scopes = useTimeTrackingStore((s) => s.scopes)

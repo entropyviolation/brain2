@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PeriodFilmstrip.tsx — Whole-period chronological pen bar
+ * components/Analytics/time/PeriodFilmstrip.tsx — Whole-period chronological pen bar
  *
  * Echoes Home → Tracking's stacked ribbon language: pen color across time,
  * white well, milled rim. Segments click into the same entry / log dialogs.

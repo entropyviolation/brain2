@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ResearchReportView.tsx — Produce research report
+ * components/Analytics/meta/ResearchReportView.tsx — Produce research report
  *
  * Reads the same stores as the rest of Data and previews only the
  * shapes `buildResearchReport` keeps. Copy is plain text. No model call.
@@ -23,12 +23,12 @@ import { isNightEstimated, sleepMinutes } from "@/lib/sleep-log"
 import { resolveNights } from "@/lib/sleep-inference"
 import { plannedMinutesForDay } from "@/components/Home/Plan/plan-capacity"
 import { blockedReasonLabel } from "@/lib/blocked-reason"
-import { dateKeyOf } from "./analytics-range"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { ANALYTICS_TAB_HELP } from "./analytics-tabs"
-import { ChartFrame } from "./chart-frame"
-import { CanvasTitle, FindingBlock, PhosphorTrace, StudioBars } from "./studio-kit"
+import { dateKeyOf } from "../chrome/analytics-range"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { ANALYTICS_TAB_HELP } from "../chrome/analytics-tabs"
+import { ChartFrame } from "../studio/chart-frame"
+import { CanvasTitle, FindingBlock, PhosphorTrace, StudioBars } from "../studio/studio-kit"
 import { buildResearchReport, researchReportPlainText, type ResearchReportInput } from "./research-report"
 
 const MINUTES_PER_DAY = 24 * 60
