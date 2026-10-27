@@ -153,7 +153,7 @@ Default tab — date + the **Visual dashboard** (installed widget copies: points
 | [Habits/](#homehabits)      | `habit-tracker.tsx`, `task-grid.tsx`, `habit-completion-cell.tsx`, `habits-tab-controls.tsx`, `hab-grade-sheet.tsx`, `habit-row-name.tsx`, `habit-heatmap.tsx`, `habit-priority-bar.tsx`, `habit-sort-control.tsx`, `habit-month-window-control.tsx`, `habit-week-window-control.tsx`, `habit-led-lamp.tsx`, `percent-led.tsx`, `percent-led-bar.tsx`, `habit-percent-readout.tsx`, `habit-grid.css`, `habit-chrome.css`, `habit-gems.tsx`, `gem-picker.tsx`, `habits-control-panel.tsx`, `exemption-wand-button.tsx`, `missed-op-wand-button.tsx`, `habit-wand-banner.tsx`, `habit-wand-banner.css`, `willpower-gems.tsx`, `noble-gas-tube.tsx`, `grade-breakdown-dialog.tsx`, `output-grade-breakdown-dialog.tsx`, `good-days-dialog.tsx`, `priority-math.tsx`, `period-habit-list.tsx`, `week-navigation.tsx`, `daily-task-form*.tsx`, `PriorityReasonDialog.tsx`, `habit-tag-catalog.tsx`, `habit-list-popup.tsx`, `habit-sources-field.tsx`, `habit-source-detail.tsx`, `habit-period-breakdown.tsx`, `habit-span-breakdown.tsx`, `habit-completion-detail.tsx`, `habit-value-field.tsx`, `habit-form-dialog.css`, `settings-dialog.tsx` | `habits-store`, `time-tracking-store` (auto-fill tags) |
 | [Plan/](#homeplan)          | `plan-panel.tsx`, `plan-period-nav.tsx`, `plan-chrome.css`, `plan-theme.ts`, `plan-gem-mode.ts`, `plan-gem-mode-toggle.tsx`, `plan-gem-day.ts`, `plan-gem-day-body.tsx`, `plan-chip.tsx`, `plan-capacity.ts`, `plan-text-log.tsx`, `plan-tracked-ghosts.ts`, `season-view.tsx`, `month/week/day-view.tsx`, `agenda-grid.tsx`, `planned-tasks-sidebar.tsx`, `use-plan-rail-drag.ts`, `planned-action-dialog.tsx`, `event-dialog.tsx`, `paste-events-dialog.tsx`, `settings-dialog.tsx` | task, event, planned-action, plan-text, sleep-sync, time-tracking, unsaved-changes |
 | [ToDo/](#hometodo)          | `todo-panel.tsx`, `todo-filters.tsx`, `todo-prefs.ts`, `todo-chrome.css`, `TodoLoadPanel.tsx`, `TodoTable.tsx`, `TodoBreakdown.tsx`, `AddTodoDialog.tsx`, `DoneTodoSection.tsx`, `MissedTodoSection.tsx`, `UndoneTodoSection.tsx`, `AddDoneDialog.tsx`, `CompletionTimeLine.tsx`, `todo-utils.ts` | `task-store`, `todo-prefs` (`cogs-todo-prefs`), `lib/todo-commitment.ts`, `lib/todo-steps.ts` |
-| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `timegrid-reveal.ts`, `show-in-timegrid.ts`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `tracking-log-week.tsx`, `tracking-log-week.css`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `day-photos.tsx`, `pen-person-link.tsx`, `tracking-summaries.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `pen-settings-gate.tsx`, `open-pen-settings.ts`, `tag-settings-dialog.tsx`, `tag-settings-host.tsx`, `tag-settings-gate.tsx`, `open-tag-settings.ts`, `catalog-tag-chip.tsx`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
+| [Tracking/](#hometracking)  | `tracking-desk.tsx`, `time-grid.tsx`, `timegrid-reveal.ts`, `show-in-timegrid.ts`, `cell-size-keys.tsx`, `fill-range-control.tsx`, `empty-blocks.ts`, `week-grid.tsx`, `infinite-strip.tsx`, `infinite-window.ts`, `pen-palette.tsx`, `pen-mode-bar.tsx`, `tracking-tool-mode.ts`, `tracking-tools-tray.tsx`, `tool-detail.tsx`, `pen-swatches.tsx`, `trk-instrument.tsx`, `trk-time-markers.tsx`, `other-scope-hint.tsx`, `screentime-empty-hint.tsx`, `tracking-chrome.css`, `depth-control.tsx`, `tracking-find.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `tracking-log-week.tsx`, `tracking-log-week.css`, `count-statuses-section.tsx`, `tracking-log-model.ts`, `discrete-log-instants.ts`, `cycle-log-section.tsx`, `cycle-detail-dialog.tsx`, `cycle-reading-find.tsx`, `cycle-encyclopedia.tsx`, `cycle-encyclopedia.css`, `cycle-figures/five-phases.png`, `log-activity-dialog.tsx`, `log-shelf-dialog.tsx`, `now-time-button.tsx`, `actual-day-view.tsx`, `tracked-agenda-blocks.ts`, `daylog-week.tsx`, `daylog-week.css`, `confirm-planned-dialog.tsx`, `tracking-view-settings-dialog.tsx`, `tracking-day-notes.tsx`, `day-photos.tsx`, `pen-person-link.tsx`, `tracking-summaries.tsx`, `tracking-undo.ts`, `pen-settings-dialog.tsx`, `pen-settings-host.tsx`, `pen-settings-gate.tsx`, `open-pen-settings.ts`, `tag-settings-dialog.tsx`, `tag-settings-host.tsx`, `tag-settings-gate.tsx`, `open-tag-settings.ts`, `catalog-tag-chip.tsx`, `pen-parent-picker.tsx`, `pen-chain-visual.tsx`, `pen-action-format-editor.tsx`, `entry-dialog.tsx`, `mood-stretch-card.tsx`, `block-pen-section.tsx`, `secondary-pens-field.tsx`, `tracking-tags-panel.tsx`, `tracking-tags-well.css` | time-tracking, task, event, `cycle-marks` |
 
 Shared **selected day** via `lib/use-current-date.ts` — overview, Plan, the To Do day lens, and Tracking (a chosen other day persists across refresh / tab switches; a cursor left on today catches up after missed midnights, including on the next launch). To Do week, month, and season nameplates stay local. The date plate is the wall clock.
 
@@ -445,6 +445,8 @@ dialog. The after-action report does not write that field.
 
 ### Modules
 
+_Last mapped: 2026-10-27._
+
 Composable widget dashboard + a full user-buildable **workspace** "mini-app"
 platform: bind lists, compose views, author **workflows** (Zapier-style rules),
 and **pop out** a module into its own window.
@@ -456,7 +458,10 @@ and **pop out** a module into its own window.
 | `module-helpers.ts`        | Pure helpers + `MODULE_META`, `MODULE_VIEW_KINDS` registry, rule/stat options |
 | `module-bodies.tsx`        | `ModuleCard` + per-type widget bodies (analytics, list summary, writing prompt, list explorer, random task, rules) |
 | `ModuleConfigDialog.tsx`   | Add/configure widget form                                     |
-| `workspace/ModuleBuilderDialog.tsx` | New-module chooser: build from scratch, saved definitions, or one-click templates |
+| `workspace/ModuleBuilderDialog.tsx` | New-module chooser: build from scratch, **Install package**, saved definitions, one-click templates, Upload HTML, or a widget. Template cards call `instantiateModuleTemplate` |
+| `workspace/ModulePackageInstallDialog.tsx` | **Install package**: pick a JSON file. Create-only and `nativeTemplate` call `installModulePackage`. `policy: "bind"` is scored first; `"ask"`, `"none"`, or a refusal shows candidates and installs nothing |
+| `workspace/module-package-install.ts` | That dialog's gate. Bind matches reference an existing list and do not rewrite it |
+| `workspace/package-app/PackageAppView.tsx` | `package-app` view: downloaded folder in a sandboxed frame (`brain2-module-package-app`). Compiled views and uploaded HTML stay on their own paths |
 | `workspace/ModuleWorkspace.tsx` | Full-screen mini-app — tabbed views, drag-reorder, Settings/Workflows/Pop-out, plan-sync |
 | `workspace/ModulePopoutView.tsx` | Standalone module render for `/popout/?module=<id>` |
 | `workspace/module-popout.ts` | `/popout/?module=<id>` routing + `openModulePopout` |
@@ -473,8 +478,11 @@ and **pop out** a module into its own window.
 **Templates:** `lib/module-templates.ts` builds one-click mini-apps — **Itinerary**
 (Plan `doc` + printable `itinerary-doc` + Activities `trip-map` + City Places +
 plan-sync workflow; migrate via `lib/itinerary-migrate.ts`), **Budget**
-(optional-inclusion rollup dashboard),
-**Book Tasting** (PDF→book `matcher` + `quiz`), **Film DNA Lab** (`film-dna`
+(optional-inclusion rollup dashboard; lists, attributes, and views from
+`lib/packages/golden/budget.json`; sample rows stay in the builder),
+**Book Tasting** (PDF→book `matcher` + `quiz`; lists, views, and the PDF workflow
+from `lib/packages/golden/book-tasting.json`; sample books and PDF text stay in
+the builder), **Film DNA Lab** (`film-dna`
 shelves / Watch / Blend / Letterboxd import), **House Cleaning App** (Tidy:
 self-contained `house-cleaning` view), and **GradSearch** (single `grad-search`
 explorer over the bundled catalog — no lists) — each scaffolding lists +
@@ -492,8 +500,9 @@ The same service also runs type/list **implied actions** (`logAction` /
 `incrementHabit`).
 Specialized view kinds: **`matcher`**, **`quiz`**, **`dashboard`**,
 **`timeline`**, **`doc`**, **`itinerary-doc`**, **`trip-map`**, **`film-dna`**,
-**`house-cleaning`**, **`grad-search`**
-(alongside **`decision-matrix`** / **`kanban`**).
+**`house-cleaning`**, **`grad-search`**, **`html`**, **`package-app`**
+(alongside **`decision-matrix`** / **`kanban`**). `package-app` is a downloaded
+folder in `lib/module-package-app-store.ts`. Uploaded HTML stays the `html` view.
 
 **Stores:** `modules-store` (instances; persist v2), `module-definitions`
 (reusable blueprints), `workflows-store`.
@@ -624,7 +633,9 @@ helpers in `lib/affirmations.ts`).
   and ingest, **Message ingest** (`MessageIngestPanel` — Telegram pairing,
   grocery pin, always-on hub, shortcuts, iPhone Notes / Screen Time / Call /
   Text Shortcut AirDrop, cheat-sheet, simulate message + scan; see
-  [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), **Phone sync** (`PhoneSyncPanel`
+  [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), **NFC tags** (`NfcTagsPanel` —
+  sticker id, dose quantity, daily habit; `nfc:adderall 2`; see
+  [`shortcuts/nfc-tags.md`](shortcuts/nfc-tags.md); the download button signs that tag’s `.shortcut` into Downloads), **Phone sync** (`PhoneSyncPanel`
   — texts, calls, and location on/off, last run; Health, email, and DMs listed
   as not built), **Screen Time** (`ScreenTimePanel`
   — ActivityWatch URL, lookback, Sync now), **Import from Instagram data**
@@ -845,8 +856,11 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `person-types.ts` | Catalog **Person** (birthday and standing notes) + `withPersonType`. Further biography is `Task.personProfile` |
 | `person-profile.ts` | Person biography on `Task.personProfile`: name, nicknames, optional relation, date met, Instagram, address precision, dated notes, interactions, gift notes, Close. Known-for, last saw, and the birthday countdown are derived. Company time follows pen color |
 | `inbox-recent-lists.ts` | Persist / suggest recently used lists for Inbox walk |
-| `item-types.ts` | Type registry helpers, `resolveDetailView`, `mergeTypeRegistry`, schema composition over list allowlists, rule evaluation + implied-action effects |
+| `item-types.ts` | Type registry helpers, `resolveDetailView` (`viewAsTypeId`), `activeDetailTypeId`, `mergeTypeRegistry`, schema composition over list allowlists, rule evaluation + implied-action effects |
+| `item-type-lists.ts` | Virtual Quick Access Item Types lists: one per type, membership by `Task.type` and subtypes |
 | `list-item-types.ts` | Per-list `itemTypeIds` allowlist + `itemTypeId` default helpers |
+| `computer-project-types.ts` | System type Computer Project, child of Operation |
+| `operation-item-stamp.ts` | Idempotent load stamp: generic items that already carry operation fields become type `operation` |
 | `list-type-filter.ts` | View-only show/hide by exact item type id (Lists inspector Filter types) |
 | `implied-actions.ts` | Log Done actions + increment habits from type/list rules |
 | `item-type-recipes.ts` | Starter schemas + implied-action hints for the type editor (includes Film) |
@@ -866,7 +880,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `cycle-lens-chinese.ts` | Four short sections plus `chineseEncyclopedia` and `tcmSources`. Herbs are traditional roles, with no doses. Test: `cycle-lens-chinese.test.ts` |
 | `cycle-lens-esoteric.ts` | Four short sections for the cycle popup |
 | `cycle-lens-copy.ts` | Cycle detail prose barrel: Clinical, Chinese medicine, Esoteric. Phase is not stored |
-| `ingest/` | Phone-message ingest (Telegram first): parser, `dh:` / `log:` / `intake:` / `switch:` / `log categories` / `st:` / `so:` / `transit:` / `cycle:`, grocery/notes/pin, list dumps (`Name:` then lines; grocery headers use the store list; identical open items ask see / again / dismiss; `before 9/12:` is due that day), capture (`-mb` / `-monkey` → Monkey brain; `-p` / `-plain` stores the line as written; date, time, duration, and priority stay in the title), receipt OCR, journal/PDF Docs scans, `iphone-notes` park, iPhone Screen Time / Calls / Texts, plan log / to-do / morning review / `gps:` (collected on Location; a repeated place within 80 m can be named on Analytics → Places; hidden on the ingest log unless **Show GPS**; stamps use Telegram send time), list/folder/inbox read-back, `/quicklists`, Now capture (`now` with a payload; bare `now` stays status), pairing that a refresh cannot wipe, dedupe that logs a null Telegram id instead of applying, always-on hub, private slash menu (`start`, `help`, `now`, `quicklists`, `info`) and inline buttons on clarify / duplicate / receipt questions — [`ingest/README.md`](../lib/ingest/README.md) |
+| `ingest/` | Phone-message ingest (Telegram first). _Last mapped: 2026-10-27_ `file-feed-row.ts` files a Telegram text onto a Tracking log shelf without removing it from the feed. adds a browser Origin gate (`request-origin.mjs`) on the dev server and phone hub so a public website cannot read the vault. See [`ingest/README.md`](../lib/ingest/README.md). Parser, `dh:` / `log:` / `intake:` / `switch:` / `log categories` / `st:` / `so:` / `transit:` / `cycle:`, grocery/notes/pin, list dumps (`Name:` then lines; grocery headers use the store list; identical open items ask see / again / dismiss; `before 9/12:` is due that day), capture (`-mb` / `-monkey` → Monkey brain; `-p` / `-plain` stores the line as written; date, time, duration, and priority stay in the title), receipt OCR, journal/PDF Docs scans, `iphone-notes` park, iPhone Screen Time / Calls / Texts, plan log / to-do / morning review / `gps:` (collected on Location; a repeated place within 80 m can be named on Analytics → Places; hidden on the ingest log unless **Show GPS**; stamps use Telegram send time), list/folder/inbox read-back, `/quicklists`, Now capture (`now` with a payload; bare `now` stays status), pairing that a refresh cannot wipe, dedupe that logs a null Telegram id instead of applying, always-on hub, private slash menu (`start`, `help`, `now`, `quicklists`, `info`) and inline buttons on clarify / duplicate / receipt questions — [`ingest/README.md`](../lib/ingest/README.md) |
 | `smart-parse.ts` | Smart-capture parser: colon paths, dates/times/priority/duration (those words stay in the title), `-mb` / `-monkey`, `-p` / `-plain` (store the line as written), `parsePathHeader`. List slot `all` is resolved by capture-target |
 | `capture-origin.ts` | `Task.captureOrigin`, set once. Walk labels BIM, Quick Add, Bulk Add, From notes, Phone Notes, or Scheduled. No stored door stays blank. Not `createdAt` |
 | `capture-target.ts` | Create/resolve folder+list from a capture path; build Inbox vs filed tasks. `folder: all: item` files on that folder's All Items. Plain capture creates neither. A list created here is not sent to the Scheduler. New captures can pass `origin` |
@@ -908,9 +922,14 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `spreadsheet-keys.ts` | Pure grid interaction model: cell navigation, range math, clipboard TSV, and selection stats (Sum/Avg/Min/Max/Count) |
 | `sheet-a1.ts` | A1-notation math: column letters ↔ index, `parseA1`/`formatA1`, `isCellFormula`, `extractA1Refs`, and `shiftFormula` (relative-ref rewriting for fill-drag, `$`-absolute aware) |
 | `sheet-eval.ts` | Evaluates per-cell `=A1` formulas against a grid accessor (reuses `lib/formula`, resolves cross-cell refs recursively with cycle detection) |
-| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / House Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank); instantiate also projects Tidy/Trip into Module Lists |
+| `module-templates.ts` | Pre-built workspace mini-app templates (Itinerary v2 doc/map/print / House Cleaning / Budget / Book-Tasting / Film DNA Lab / Blank). Budget and Book Tasting read `packages/golden/*.json` for lists, attributes, views, and workflows; seeds and `templateId` stay in the builders. Instantiate also projects Tidy/Trip into Module Lists |
 | `module-lists.ts` | Module Lists folder tree + hide-from-All + `createdByModuleId` filing |
 | `module-list-import.ts` / `-shared` / `-tidy` / `-trip` | Tidy chores + Trip days → nested Module Lists items (idempotent) |
+| `module-package.ts` | Create-only module package JSON + `installModulePackage`. The builder's **Install package** control calls it for create-only files and `nativeTemplate`. A bind file is scored in the dialog and is not passed here |
+| `module-package-app.ts` / `module-package-app-store.ts` | `package-app` folder inlined into a sandboxed frame. Persist key `brain2-module-package-app`, separate from `brain2-module-html` |
+| `module-slot-score.ts` | Pure `scoreSlot`. Auto-bind only on full attribute cover and Jaccard ≥ 0.75, one list. `"ask"` / `"none"` bind nothing. `policy: "create"` is refused. No store writes |
+| `packages/golden/` | `budget.json`, `book-tasting.json` — lists, attributes, views, workflows. Builders still stamp seeds and `templateId` |
+| `packages/native/` | One facade per current template (`nativeTemplate` plus the name). Installing that file commits `buildModuleTemplate` |
 | `module-plan-sync.ts` | Push finalized module items into Plan text |
 | `itinerary-assemble.ts` | Pure day-block assembly for printable itineraries |
 | `itinerary-migrate.ts` | Upgrade older Itinerary workspaces to the v2 view set |
@@ -1001,13 +1020,19 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 
 ## electron/
 
-Desktop shell — dev: `localhost:3000`; prod: `app://` → `out/`.
+_Last mapped: 2026-10-27_
+
+Desktop shell — dev: `localhost:3000`; prod: `app://` → `out/`. The main window stays on that origin. http(s) leaves through the system browser. `app://` files stay inside `out/`.
 
 | File         | Purpose                                          |
 | ------------ | ------------------------------------------------ |
-| `main.js`    | Main process, `app://` scheme, BrowserWindow, static serving, optional PDF→text + Apple Notes + ActivityWatch IPC + Telegram long-poll. Pins `userData` to `cogs` (`user-data-path.js`) so a brand rename cannot orphan the vault. |
+| `main.js`    | Main process, `app://` scheme, BrowserWindow, static serving, optional PDF→text + Apple Notes + ActivityWatch IPC + Telegram long-poll. Pins `userData` to `cogs` (`user-data-path.js`) so a brand rename cannot orphan the vault. Navigation guard and permission prompts live here. |
+| `external-url.js` | App-origin check and http(s)-only `shell.openExternal`. |
+| `blank-preload.js` | Empty preload for the print popup. |
+| `static-file.js` | `app://` file lookup kept inside `out/`. |
 | `user-data-path.js` | Stable Electron Application Support folder (`cogs`). Unit-tested. |
-| `preload.js` | Context-isolated `window.desktop` API (incl. `extractPdfText`, `fetchAppleNotes`, `fetchScreenTime`, `telegram`) |
+| `preload.js` | Context-isolated `window.desktop` API (incl. `extractPdfText`, `fetchAppleNotes`, `fetchScreenTime`, `telegram`, `saveNfcShortcut`) |
+| `nfc-shortcut.js` | Signs one saved NFC tag (`shortcuts sign`) and writes `NFC {name}.shortcut` into Downloads. |
 | `telegram-ingest.js` | Telegram `getUpdates` poller; token via `safeStorage` or gitignored `.env.local`; downloads photo/PDF bytes; yields to `npm run phone:hub`; pins grocery |
 | `telegram-file.js` | `getFile` download of Telegram photos and PDFs |
 | `apple-notes.js` / `apple-notes.jxa` | Notes.app reader (`preview` / `snippet` / `bodies`) for iCloud / iPhone + On My Mac; used by IPC and `/api/notes` |
@@ -1066,7 +1091,7 @@ these; Lists / Plan / Scheduler window chrome may not.
 | `ARCHITECTURE_MODULARITY.md` | Platform vs duplicated chrome; foundation-first refactor order; deliberate *do not extract* list |
 | `MESSAGE_INGEST.md` | Phone-message ingest (**BIM**): command language, manuals, hub, pin, pairing, Shortcuts, OCR |
 | `BIM_COMMANDS.md` | Complete BIM command catalog (every verb/alias/expansion/preset/GM reply/retired `g`) |
-| `shortcuts/` | Signed AirDrop files in the repo: [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut), [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut), [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut), [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut), [`NFC to Brain2.shortcut`](shortcuts/NFC%20to%20Brain2.shortcut). Dump iPhone Notes is the recipe [`dump-iphone-notes-to-brain2.md`](shortcuts/dump-iphone-notes-to-brain2.md) plus `npm run shortcut:iphone-notes` (`Dump iPhone Notes to Brain2.wflow.json` will not import; the signed `.shortcut` is not in the repo). Other recipes: [`screen-time-to-brain2.md`](shortcuts/screen-time-to-brain2.md), [`iphone-calls-and-texts-to-brain2.md`](shortcuts/iphone-calls-and-texts-to-brain2.md), [`iphone-location-to-brain2.md`](shortcuts/iphone-location-to-brain2.md), [`nfc-tags.md`](shortcuts/nfc-tags.md) |
+| `shortcuts/` | Signed AirDrop files in the repo: [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut), [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut), [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut), [`Location to Brain2.shortcut`](shortcuts/Location%20to%20Brain2.shortcut), [`NFC to Brain2.shortcut`](shortcuts/NFC%20to%20Brain2.shortcut), [`NFC dose to Brain2.shortcut`](shortcuts/NFC%20dose%20to%20Brain2.shortcut). Dump iPhone Notes is the recipe [`dump-iphone-notes-to-brain2.md`](shortcuts/dump-iphone-notes-to-brain2.md) plus `npm run shortcut:iphone-notes` (`Dump iPhone Notes to Brain2.wflow.json` will not import; the signed `.shortcut` is not in the repo). Other recipes: [`screen-time-to-brain2.md`](shortcuts/screen-time-to-brain2.md), [`iphone-calls-and-texts-to-brain2.md`](shortcuts/iphone-calls-and-texts-to-brain2.md), [`iphone-location-to-brain2.md`](shortcuts/iphone-location-to-brain2.md), [`nfc-tags.md`](shortcuts/nfc-tags.md) |
 | `DESIGN_STYLE.md` | UI gold standard — **Habits is the favorite / most developed interior** (look there first); house motifs (brain, light bulb, graph nodes); Lists chrome + velvet/orbs; feral module skins |
 | `DESIGN_REFS.md` | Catalog of `designrefs/` (43 images) — ideas / direct assets / apply language; desktop PCB shipped; Habits interior now; Home equal-height weather modules later |
 | `PLAN_OF_ACTION.md` | Combined multi-agent work order (screens + mechanics; conflicts resolved). Wave 13 points at the map-and-territory build. Wave 14 points at the meaning-layer build. Wave 15 points at the steersman build |
@@ -1130,6 +1155,8 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | `screenshot-reel-server.mjs` | Serve the evolution reel and `feature-notes.json` (`npm run screenshot-reel`) |
 | `write-screenshot-reel.mjs` | Same server entry, kept next to the archive helper |
 | `cogs-dev-server.mjs`     | Next + `/api/health` + `/api/sync` + `/api/persist` + `/api/ingest` + `/api/notes` + `/api/screentime` on one port; Electron strict-port reclaim of leftover Node |
+| `cogs-prod-server.mjs`    | _Last mapped: 2026-10-27._ Production `out/` plus the same `/api` handlers, on port 3000. Used by `electron:local`. |
+| `electron-local.mjs`      | _Last mapped: 2026-10-27._ `npm run electron:local`. First run calls `backup-data.mjs`, then the prod server and Electron. Does not replace `electron:dev`. |
 | `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM; `/api/health` probe so a second dev stack reuses the running one |
 | `persist-api.mjs`         | Chrome/Electron shared persist hub: every record-bearing vault is shrink-guarded, append-only logs only grow, and a write that loses rows journals the old copy into `data/recovery-backups/` |
 | `ingest-api.mjs`          | Dev hub for Telegram pending messages / replies |
@@ -1141,7 +1168,10 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | `telegram-ingest.mjs`     | Optional queue-only Telegram poller (`npm run ingest`) |
 | `dump-chrome-localstorage.mjs` | Snapshot Chrome localhost localStorage into the hub |
 | `build-iphone-notes-shortcut.mjs` | Write + sign Dump iPhone Notes (`npm run shortcut:iphone-notes`). The signed `.shortcut` is generated and is not in the repo. `Dump iPhone Notes to Brain2.wflow.json` will not import. Find Notes 1001 + Pick a note; no `properties.notes` / Adjust Date |
-| `build-iphone-phone-shortcuts.mjs` | Write + sign Screen Time / Call / Text / Location `.shortcut` files (`npm run shortcut:iphone-phone`) |
+| `build-iphone-phone-shortcuts.mjs` | Write + sign Screen Time / Call / Text / Location / NFC `.shortcut` files (`npm run shortcut:iphone-phone`). `buildBoundNfcWorkflow` is the per-tag file Settings downloads. |
+| `mobile-static-build.mjs` | _Last mapped: 2026-10-27._ Static export for Capacitor while `npm run dev` owns `.next`. Stages `.mobile-build`, runs `next build` there, copies `out/` back (`npm run mobile:ios`) |
+| `mobile-ios-ats.mjs` | Allow the iOS app to call the LAN hub over HTTP |
+| `mobile-ios-sim.mjs` | _Last mapped: 2026-10-27._ Launch BRAIN2 on an iPhone Simulator (`npx cap run ios`) |
 
 ---
 

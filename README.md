@@ -317,10 +317,10 @@ app/page.tsx
 ├── Pinned mill title bar (full width): BRAIN2 caption + Nav Back/Forward + friend jewel (click → suggestion bubble) | Review | Settings gear | Names ? | Search | Now | now (live Working sessions only) | Inbox | Quick Add (Bulk and Plain inside; Plain default off; Cmd/Ctrl-Shift-A)   (+ Cmd/Ctrl-K search, Cmd/Ctrl-Z undo). Metrics is the wellbeing key on Current moment inside Now. Ingest, From Notes, and Phone Notes are in Settings and Lists settings.
 └── Tabs
     ├── Home ────── Habits | Plan | To Do | Goals | Tracking
-    ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet)
+    ├── Lists ───── Win98 file manager (folders, lists, items, orb gallery, spreadsheet). Quick Access → Item Types is one live list per item type.
     ├── Docs ────── WYSIWYG notes (folders, fonts, images, PDF ingest)
     ├── Scheduler ─ Always → Year → Month → Week → Day funnel (+ dependency / gantt)
-    ├── Operations ─ Graphic tool for a project (work, ideas, data, progress); category board hides archived; Parts + To do (Win95 command center)
+    ├── Operations ─ Graphic tool for a project (work, ideas, data, progress); category board hides archived; Parts + To do (Win95 command center). Computer Project is an Operation subtype with its own item-detail desk.
     ├── Modules ─── User-built mini-apps (workspaces) + dashboard widgets
     └── Analytics ─ heart of the house: vault → presentation, analysis, new tools
 ```
@@ -474,6 +474,7 @@ Brain2 is **offline-first and stays that way**. Highlights:
 npm install --legacy-peer-deps   # react-day-picker peer-dep needs this flag
 npm run dev                      # web dev server at http://localhost:3000
 npm run electron:dev             # Next dev server + Electron window
+npm run electron:local           # production out/ on port 3000 + Electron (build first)
 npm run build                    # static export to out/
 npm run electron:build           # package desktop installers into dist/
 npm test                         # vitest unit + integration tests
@@ -484,6 +485,8 @@ npm run shortcut:iphone-phone    # write + sign Screen Time / Call / Text / Loca
 npm run shortcut:iphone-location # alias of shortcut:iphone-phone (includes Location to Brain2)
 npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 ```
+
+_Last mapped: 2026-10-27._ `electron:local` is the production window. `npm run build` writes `out/`. The script then serves that folder on port 3000 with the same `/api` handlers as `npm run dev`, and opens Electron on `http://localhost:3000`. The first run exports `data/` with `scripts/backup-data.mjs` before it serves. Later runs skip the export. It leaves port 3000 alone when something else is already listening. `electron:dev` is still the edit loop.
 
 `electron:dev` runs the dev server directly (not through a nested `npm run dev`)
 so Ctrl-C kills it instead of orphaning a listener on port 3000. It also sets
@@ -516,7 +519,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/ItemTypes/` | Manage item types (Settings + Analytics) | [`components/ItemTypes/README.md`](components/ItemTypes/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |
 | `components/Search/` | Global Cmd/Ctrl-K search palette | [`components/Search/README.md`](components/Search/README.md) |
-| `components/Settings/` | Grouped index and search (You, Appearance, Points, Data, Imports, Library). Points rules opens from Automatic point allocation. Data profile (Live/Demo), window gray (design-ref gray swatches, classic `#c0c0c0` default), Bouba/Kiki corners, desktop PCB, backup/restore, Message ingest (Telegram), item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
+| `components/Settings/` | Grouped index and search (You, Appearance, Points, Data, Imports, Library). Points rules opens from Automatic point allocation. Data profile (Live/Demo), window gray (design-ref gray swatches, classic `#c0c0c0` default), Bouba/Kiki corners, desktop PCB, backup/restore, Message ingest (Telegram), NFC tags, item types, Second Brain setup, manual mobile hub | [`components/Settings/README.md`](components/Settings/README.md) |
 | `components/Focus/` | Just-Start anti-paralysis mode | [`components/Focus/README.md`](components/Focus/README.md) |
 | `components/Mobile/` | Sideload Home + Lists shell; manual hub pull | [`components/Mobile/README.md`](components/Mobile/README.md) |
 | `components/Icons/` | Shared icon system: orb picker + photographed folder icons | [`components/Icons/README.md`](components/Icons/README.md) |

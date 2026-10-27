@@ -214,7 +214,11 @@ export function ItemTimeLedger({
   const tracked = useMemo(
     () =>
       trackedTimeForItem(
-        { id: record.id, penLinks: record.penLinks ?? task.penLinks, timeLogs: record.timeLogs, estimatedDuration: task.estimatedDuration, subtasks: record.subtasks },
+        {
+          id: record.id,
+          penLinks: record.penLinks ?? task.penLinks,
+          timeLogs: record.timeLogs,
+        },
         entries,
         { penScope: "tagged" },
       ),
