@@ -19,6 +19,7 @@ import { handlePersistApi } from "./persist-api.mjs"
 import { handleIngestApi, ingestDataPath } from "./ingest-api.mjs"
 import { handleNotesApi } from "./notes-api.mjs"
 import { handleScreenTimeApi } from "./screentime-api.mjs"
+import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
 
@@ -77,6 +78,7 @@ const server = createServer(async (req, res) => {
     if (await handleIngestApi(req, res, pathname)) return
     if (await handleNotesApi(req, res, pathname)) return
     if (await handleScreenTimeApi(req, res, pathname)) return
+    if (await handleChromeHistoryApi(req, res, pathname)) return
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
     if (pathname.startsWith("/api/")) {
@@ -129,6 +131,7 @@ server.listen(port, hostname, () => {
   console.log(`[cogs-prod] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
   console.log(`[cogs-prod] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
   console.log(`[cogs-prod] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
+  console.log(`[cogs-prod] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
   console.log(`[cogs-prod] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
   console.log(`[cogs-prod] data:    ${syncDataPath()}`)
   console.log("")

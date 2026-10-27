@@ -1,32 +1,21 @@
 /**
  * components/Analytics/BrowserHistoryView.tsx — Sources → Browser
  *
- * Chrome history exports (one JSON per profile) merged and analysed in the
- * browser by `lib/browser-history.ts`. Files are kept in IndexedDB on this
- * computer (they are too big for localStorage) and never uploaded. The shared
- * date range does not apply here.
+ * Chrome history exports (one file per profile: JSON, CSV, or Excel) merged
+ * and analysed in the browser by `lib/browser-history.ts`. Kept visits only
+ * grow: a later file adds visits that are not already here. Files stay in
+ * IndexedDB on this computer (they are too big for localStorage) and are never
+ * sent anywhere. The Brain2 Chrome extension files yesterday on its own when
+ * this app is open. The shared date range does not apply here.
  */
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { analyse, mergeInto, type HistoryAnalysis, type HistoryFile, type Visit } from "@/lib/browser-history"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { analyse, mergeHistory, mergeInto, parseHistoryExport, profileLabel, visitsFromRecords, type HistoryAnalysis, type HistoryFile, type Visit } from "@/lib/browser-history"
+import { loadKeptVisits, saveKeptVisits } from "@/lib/browser-history-store"
+import { CHROME_HISTORY_KEPT } from "@/lib/chrome-history-inbox"
 import { applyChromeHistory } from "@/lib/chrome-sessions"
 import "./browser-history-view.css"
-
-const DB = "brain2-browser-history"
-
-function idb<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB, 1)
-    open.onupgradeneeded = () => open.result.createObjectStore("files")
-    open.onerror = () => reject(open.error)
-    open.onsuccess = () => {
-      const req = run(open.result.transaction("files", mode).objectStore("files"))
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => reject(req.error)
-    }
-  })
-}
 
 const fmt = (n: number) => n.toLocaleString("en-US")
 const day = (t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -383,81 +372,181 @@ function Report({ a }: { a: HistoryAnalysis }) {
   )
 }
 
+async function readExport(file: File): Promise<HistoryFile> {
+  const lower = file.name.toLowerCase()
+  if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+    const XLSX = await import("xlsx")
+    const book = XLSX.read(await file.arrayBuffer(), { type: "array" })
+    const sheet = book.Sheets[book.SheetNames[0]]
+    if (!sheet) throw new Error("This file has no visits with a url and a time.")
+    const rows = visitsFromRecords(XLSX.utils.sheet_to_json(sheet, { raw: false, defval: "" }))
+    if (!rows.length) throw new Error("This file has no visits with a url and a time.")
+    return { profile: profileLabel(file.name), rows }
+  }
+  return { profile: profileLabel(file.name), rows: parseHistoryExport(await file.text()) }
+}
+
 export function BrowserHistoryView() {
   const [visits, setVisits] = useState<Visit[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  const [over, setOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const queue = useRef<HistoryFile[]>([])
+  const visitsRef = useRef<Visit[] | null>(null)
+  visitsRef.current = visits
 
   // Kept rows only ever grow: a later export that no longer holds old visits never removes them.
-  useEffect(() => {
-    idb<Visit[] | undefined>("readonly", (s) => s.get("visits") as IDBRequest<Visit[] | undefined>)
-      .then(async (v) => {
-        if (v) return v
-        const old = await idb<HistoryFile[] | undefined>("readonly", (s) => s.get("all") as IDBRequest<HistoryFile[] | undefined>)
-        return old?.length ? mergeInto([], old) : []
+  const loadGen = useRef(0)
+  const reloadKept = useCallback(() => {
+    const token = ++loadGen.current
+    loadKeptVisits()
+      .then((kept) => {
+        if (token === loadGen.current) setVisits(kept)
       })
-      .then(setVisits)
-      .catch(() => setVisits([]))
+      .catch(() => {
+        if (token === loadGen.current) setVisits([])
+      })
   }, [])
 
+  useEffect(() => {
+    reloadKept()
+    const onKept = (event: Event) => {
+      const added = (event as CustomEvent<{ added?: number }>).detail?.added
+      if (typeof added === "number" && added > 0) {
+        setNote(`${fmt(added)} new visit${added === 1 ? "" : "s"} from the Chrome extension.`)
+      }
+      reloadKept()
+    }
+    window.addEventListener(CHROME_HISTORY_KEPT, onKept)
+    return () => window.removeEventListener(CHROME_HISTORY_KEPT, onKept)
+  }, [reloadKept])
+
   const [painting, setPainting] = useState(false)
-  const paint = useCallback(async (v: Visit[]) => {
+  const paint = useCallback(async (v: Visit[], summary?: string) => {
     setPainting(true)
     const r = await applyChromeHistory(v, (done, total) => setNote(`Painting Screen Time… ${done} of ${total}`))
     setPainting(false)
-    setNote(`Screen Time: ${r.added} new block${r.added === 1 ? "" : "s"} painted from ${r.runs} site stretches (${r.updated} stretched). Existing blocks and edits are left alone.`)
+    const screen = `Screen Time: ${r.added} new block${r.added === 1 ? "" : "s"} painted from ${r.runs} site stretches (${r.updated} stretched). Existing blocks and edits are left alone.`
+    setNote(summary ? `${summary} ${screen}` : screen)
   }, [])
+
+  const commit = useCallback(
+    (added: HistoryFile[]) => {
+      const base = visitsRef.current
+      if (!base) {
+        queue.current.push(...added)
+        setNote("Reading the history already on this computer, then adding these files.")
+        return
+      }
+      const incoming = mergeHistory(added)
+      const next = mergeInto(base, added)
+      const addedN = next.length - base.length
+      const alreadyN = Math.max(0, incoming.length - addedN)
+      const files = added.length === 1 ? "1 file" : `${added.length} files`
+      const summary = addedN === 0
+        ? `No new visits in ${files}. ${fmt(base.length)} already kept.`
+        : `${fmt(addedN)} new visit${addedN === 1 ? "" : "s"} from ${files}.${alreadyN ? ` ${fmt(alreadyN)} already kept.` : ""} ${fmt(next.length)} in all.`
+      setNote(summary)
+      if (next === base) return
+      visitsRef.current = next
+      setVisits(next)
+      saveKeptVisits(next).catch(() => setErr("Could not keep the history on this computer; it will be gone on reload."))
+      void paint(next, summary)
+    },
+    [paint],
+  )
+
+  useEffect(() => {
+    if (visits === null || !queue.current.length) return
+    const batch = queue.current
+    queue.current = []
+    commit(batch)
+  }, [visits, commit])
 
   const onPick = useCallback(
     async (list: FileList | null) => {
-      if (!list || visits === null) return
+      const files = list ? Array.from(list) : []
+      if (inputRef.current) inputRef.current.value = ""
+      if (!files.length) return
       setErr(null)
       const added: HistoryFile[] = []
-      for (const f of Array.from(list)) {
+      const problems: string[] = []
+      const labels = new Map<string, number>()
+      for (const file of files) {
         try {
-          const rows = JSON.parse(await f.text())
-          if (!Array.isArray(rows) || !rows.every((r) => r && typeof r.url === "string")) throw new Error("not a history export")
-          added.push({ profile: f.name.replace(/\.json$/i, ""), rows })
-        } catch {
-          setErr(`${f.name} is not a Chrome history export (a JSON list with url and visitTime).`)
+          const parsed = await readExport(file)
+          const n = (labels.get(parsed.profile) ?? 0) + 1
+          labels.set(parsed.profile, n)
+          added.push(n === 1 ? parsed : { ...parsed, profile: `${parsed.profile} ${n}` })
+        } catch (error) {
+          problems.push(`${file.name}: ${error instanceof Error ? error.message : "This is not a Chrome history export."}`)
         }
       }
+      if (problems.length) setErr(problems.join(" "))
       if (!added.length) return
-      const next = mergeInto(visits, added)
-      setNote(`${fmt(next.length - visits.length)} new visits kept (${fmt(next.length)} total).`)
-      setVisits(next)
-      idb("readwrite", (s) => s.put(next, "visits")).catch(() => setErr("Could not keep the history on this computer; it will be gone on reload."))
-      void paint(next)
+      commit(added)
     },
-    [visits, paint],
+    [commit],
   )
 
   const analysis = useMemo(() => (visits?.length ? analyse(visits) : null), [visits])
 
   return (
-    <div className="an-bh">
+    <div
+      className={`an-bh${over ? " is-drop" : ""}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setOver(true)
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setOver(false)
+        void onPick(e.dataTransfer.files)
+      }}
+    >
       <div className="an-bh-bar">
         <label className="an-bh-btn">
           Add history files
-          <input type="file" accept=".json,application/json" multiple hidden onChange={(e) => onPick(e.target.files)} />
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".json,.csv,.xlsx,.xls,application/json,text/csv"
+            multiple
+            hidden
+            onChange={(e) => void onPick(e.target.files)}
+          />
         </label>
         {visits?.length ? (
           <>
-            <span>{fmt(visits.length)} visits kept. New files add to these; nothing is removed.</span>
+            <span>{fmt(visits.length)} visits kept. A new file only adds visits that are not already here.</span>
             <button type="button" className="an-bh-btn" disabled={painting} onClick={() => void paint(visits)}>
               {painting ? "Painting…" : "Paint on Screen Time"}
             </button>
           </>
         ) : null}
       </div>
+      {analysis ? (
+        <p className="an-bh-profiles">
+          {analysis.profiles.map(([name, n]) => (
+            <span key={name}>
+              {name} · {fmt(n)}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {note ? <p className="an-bh-note">{note}</p> : null}
       {err ? <p className="an-bh-err">{err}</p> : null}
       {visits === null ? null : analysis ? (
         <Report a={analysis} />
       ) : (
         <p className="an-bh-note">
-          Export each Chrome profile with the Quick Chrome History Export extension, then add the JSON files here. Profiles are merged; the file name
-          becomes the profile name. Chrome keeps about 90 days, so keep adding files: older visits stay here after Chrome drops them. Files stay on this computer.
+          The Brain2 Chrome extension (<code>extensions/chrome-history</code>) sends yesterday just after midnight when this app is open at localhost:3000.
+          A JSON file also lands in Downloads → Brain2 Chrome. Or add a Quick Chrome History Export file (JSON, CSV, or Excel) or drop it here. The file
+          name is the profile name — that extension always saves <code>history.json</code>, so rename each one (Work.json, Phone.json) before adding.
+          Profiles are merged. Adding a file again only keeps visits that were not already here, so a later export does not wipe the older months Chrome has
+          dropped. Files stay on this computer.
         </p>
       )}
     </div>

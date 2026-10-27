@@ -7,6 +7,7 @@
  * between Chrome and Electron in local dev. `/api/notes` reads Apple Notes
  * on this Mac (loopback only) so Chrome localhost can ingest without Electron IPC.
  * `/api/screentime` queries a running ActivityWatch install (loopback only).
+ * `/api/chrome-history` takes the Brain2 Chrome extension's nightly export (loopback only).
  * `/api/instagram` serves the Instagram report the desktop app built (loopback only).
  * `/api/phone-sync` reads the phone-sync run log (loopback only, no message bodies).
  * A public website `Origin` is refused (`lib/ingest/request-origin.mjs`).
@@ -26,12 +27,14 @@ import { handlePersistApi, sharedPersistPath } from "./persist-api.mjs"
 import { handleIngestApi, ingestDataPath } from "./ingest-api.mjs"
 import { handleNotesApi } from "./notes-api.mjs"
 import { handleScreenTimeApi } from "./screentime-api.mjs"
+import { handleChromeHistoryApi } from "./chrome-history-api.mjs"
 import { handleInstagramApi } from "./instagram-api.mjs"
 import { handlePhoneSyncApi } from "./phone-sync-api.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
 const hostname = "0.0.0.0"
 const preferredPort = Number(process.env.PORT || 3000)
-const strictPort = process.env.COGS_STRICT_PORT === "1"
+const strictPort = brain2Env("STRICT_PORT") === "1"
 
 function lanAddresses() {
   try {
@@ -138,7 +141,7 @@ async function reuseRunningServer() {
   process.on("SIGTERM", quit)
   await new Promise(() => {})
 }
-if (process.env.COGS_ALLOW_SECOND_SERVER !== "1") await reuseRunningServer()
+if (brain2Env("ALLOW_SECOND_SERVER") !== "1") await reuseRunningServer()
 
 let port
 if (strictPort) {
@@ -173,6 +176,7 @@ const server = createServer(async (req, res) => {
     if (await handleIngestApi(req, res, pathname)) return
     if (await handleNotesApi(req, res, pathname)) return
     if (await handleScreenTimeApi(req, res, pathname)) return
+    if (await handleChromeHistoryApi(req, res, pathname)) return
     if (await handleInstagramApi(req, res, pathname)) return
     if (await handlePhoneSyncApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
@@ -209,6 +213,7 @@ server.listen(port, hostname, () => {
   console.log(`[cogs-dev] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
   console.log(`[cogs-dev] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
   console.log(`[cogs-dev] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
+  console.log(`[cogs-dev] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
   console.log(`[cogs-dev] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
   console.log(`[cogs-dev] data:    ${syncDataPath()}`)
   console.log("")

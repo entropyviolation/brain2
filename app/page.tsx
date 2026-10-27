@@ -19,7 +19,8 @@
  * past periods and `useProcessInboxTodo` adds today's "process inbox
  * information" To Do when the revisit Inbox has more than 100 open ideas.
  * `useReminderTick` delivers due Reminders to the Inbox and Telegram while
- * this window is open. `useSystemHomeListPins`, `usePeopleIKnowList`,
+ * this window is open. `useChromeHistoryInbox` files a finished Chrome day
+ * from the Brain2 extension when one is waiting. `useSystemHomeListPins`, `usePeopleIKnowList`,
  * `useCloseGiftIdeas`, `useInstagramFollowingList`, and
  * `useInstagramFollowersList` start on idle after the desk nav mark
  * (`brain2-nav-ready`), not during first paint: the pins keep the built-in
@@ -55,6 +56,7 @@ import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { useDayScheduleRollover } from "@/hooks/use-day-rollover"
 import { useProcessInboxTodo } from "@/hooks/use-inbox-process-todo"
 import { useReminderTick } from "@/hooks/use-reminder-tick"
+import { useChromeHistoryInbox } from "@/hooks/use-chrome-history-inbox"
 import { useListMembershipRulesTick } from "@/hooks/use-list-membership-rules-tick"
 import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
@@ -203,6 +205,7 @@ export default function Home() {
   useDayScheduleRollover()
   useProcessInboxTodo()
   useReminderTick()
+  useChromeHistoryInbox()
   useListMembershipRulesTick()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
@@ -461,7 +464,7 @@ export default function Home() {
             )}
             {warm.includes("operations") && (
               <DeskTab tab="operations" active={activeTab === "operations"}>
-                <OperationsView onTaskSelect={handleTaskSelect} />
+                <OperationsView />
               </DeskTab>
             )}
             {warm.includes("modules") && (
