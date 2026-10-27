@@ -8,8 +8,8 @@
 
 import { format } from "date-fns"
 import { Settings } from "lucide-react"
-import { WeekNavigation } from "@/components/Home/Habits/week-navigation"
-import { habitsCalendarKey, habitsViewedMonth } from "@/components/Home/Habits/habits-period-cursor"
+import { WeekNavigation } from "@/components/Home/Habits/period/week-navigation"
+import { habitsCalendarKey, habitsViewedMonth } from "@/components/Home/Habits/period/habits-period-cursor"
 import { addCalendarDays, formatDateRange, isSameLocalWeek } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, shiftQuarter } from "@/lib/seasons"
 import type { HabitFreqTab } from "@/lib/app-navigation"

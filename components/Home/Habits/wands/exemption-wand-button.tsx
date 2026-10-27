@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/exemption-wand-button.tsx — Exemption wand
+ * components/Home/Habits/wands/exemption-wand-button.tsx — Exemption wand
  *
  * A small wand on the Habits control panel. Press it and the sheet becomes
  * yes/no lamps for “this period is not required.” An exempt lamp is grey,

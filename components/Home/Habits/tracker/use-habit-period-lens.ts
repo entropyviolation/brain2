@@ -13,7 +13,7 @@ import {
   habitsViewedQuarter,
   habitsViewedWeekStart,
   retainHabitsWeekDates,
-} from "@/components/Home/Habits/habits-period-cursor"
+} from "@/components/Home/Habits/period/habits-period-cursor"
 import { getWeekDates } from "@/lib/date-utils"
 import { APP_NAV_KEYS, readStoredDate, writeStoredDate } from "@/lib/app-navigation"
 import { resolveHomeCursor } from "@/lib/use-current-date"

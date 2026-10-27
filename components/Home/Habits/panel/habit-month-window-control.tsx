@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-month-window-control.tsx — Monthly window plate
+ * components/Home/Habits/panel/habit-month-window-control.tsx — Monthly window plate
  *
  * Milled keys in the same bay as Sort Habits. Year so far, 12 months, or
  * since the stored birthday. Month and day are two number fields — no calendar.

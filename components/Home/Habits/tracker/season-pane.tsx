@@ -7,7 +7,7 @@
 "use client"
 
 import { PeriodHabitList, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
-import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/habits-tab-controls"
+import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
 import { calculatePeriodColumnPercentage } from "@/lib/calculations"
 import { quarterLabel, seasonOfDate, seasonSlug } from "@/lib/seasons"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"

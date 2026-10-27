@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-wand-banner.tsx — wand-view status lamp
+ * components/Home/Habits/wands/habit-wand-banner.tsx — wand-view status lamp
  *
  * A pinned one-line strip for the open wand. Exemption wand and Missed op
  * wand are different hues. Null paints nothing, so the sheet does not keep

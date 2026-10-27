@@ -7,8 +7,8 @@
 "use client"
 
 import { PeriodHabitList, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
-import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/habits-tab-controls"
-import { HabitWeekWindowControl } from "@/components/Home/Habits/habit-week-window-control"
+import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
+import { HabitWeekWindowControl } from "@/components/Home/Habits/panel/habit-week-window-control"
 import { calculatePeriodColumnPercentage } from "@/lib/calculations"
 import type { HabitWeekWindowMode } from "@/lib/habit-week-window"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"

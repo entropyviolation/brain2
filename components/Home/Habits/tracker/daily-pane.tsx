@@ -8,9 +8,9 @@
 "use client"
 
 import { format } from "date-fns"
-import { TaskGrid } from "@/components/Home/Habits/task-grid"
-import { HabitHeatmap } from "@/components/Home/Habits/habit-heatmap"
-import { HabitsTabControls } from "@/components/Home/Habits/habits-tab-controls"
+import { TaskGrid } from "@/components/Home/Habits/sheet/task-grid"
+import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
+import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
 import { calculateDayPercentageAV } from "@/lib/calculations"
 import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"

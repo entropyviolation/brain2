@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-period-cursor.ts — Habits period lens adapter
+ * components/Home/Habits/period/habits-period-cursor.ts — Habits period lens adapter
  *
  * Period truth is the shared Home day (`lib/use-current-date.ts`). These
  * helpers only adapt that day into week / month / season anchors for Habits

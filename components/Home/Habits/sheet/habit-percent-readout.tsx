@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-percent-readout.tsx — Row/column % display
+ * components/Home/Habits/sheet/habit-percent-readout.tsx — Row/column % display
  *
  * Loading Bar on → thin glass thermometer (compact row, or a wider Day View tube).
  * Off → numeric dot-matrix LED. Both sit in the same `.habit-pct` slot so
@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { PercentLed } from "@/components/Home/Habits/percent-led"
+import { PercentLed } from "@/components/Home/Habits/sheet/percent-led"
 import { PercentLedBar } from "@/components/Home/Habits/percent-led-bar"
 import { useHabitsStore } from "@/lib/habits-store"
 

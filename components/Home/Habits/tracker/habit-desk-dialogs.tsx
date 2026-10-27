@@ -7,9 +7,9 @@
 "use client"
 
 import { TaskFormDialog } from "@/components/Home/Habits/daily-task-form-dialog"
-import { GradeBreakdownDialog } from "@/components/Home/Habits/grade-breakdown-dialog"
-import { OutputGradeBreakdownDialog } from "@/components/Home/Habits/output-grade-breakdown-dialog"
-import { GoodDaysDialog } from "@/components/Home/Habits/good-days-dialog"
+import { GradeBreakdownDialog } from "@/components/Home/Habits/dialogs/grade-breakdown-dialog"
+import { OutputGradeBreakdownDialog } from "@/components/Home/Habits/dialogs/output-grade-breakdown-dialog"
+import { GoodDaysDialog } from "@/components/Home/Habits/dialogs/good-days-dialog"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { rawDayCompletionPercent, type GoodDaySummary, type GoodPeriodSummary } from "@/lib/habit-accomplishment"
 import type { OutputGradeResult, WeekGradeResult } from "@/lib/calculations"

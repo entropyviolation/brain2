@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/good-days-dialog.tsx — Good day / week / month / season plate
+ * components/Home/Habits/dialogs/good-days-dialog.tsx — Good day / week / month / season plate
  *
  * Presentational. The top line is how many whole points the current period
  * still needs (`pointsStillNeededPhrase`). Daily lists the last 30 days and
@@ -20,7 +20,7 @@ import {
   type GoodPeriodSummary,
   type OlderAverageVsToday,
 } from "@/lib/habit-accomplishment"
-import { PriorityMathPanel } from "@/components/Home/Habits/priority-math"
+import { PriorityMathPanel } from "@/components/Home/Habits/dialogs/priority-math"
 import { format } from "date-fns"
 
 interface GoodDaysDialogProps {

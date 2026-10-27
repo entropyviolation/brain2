@@ -7,8 +7,8 @@
  */
 "use client"
 
-import { useHabitsPhone } from "@/components/Home/Habits/use-habits-phone"
-import { HabitsPhonePage } from "@/components/Home/Habits/habits-phone-page"
+import { useHabitsPhone } from "@/components/Home/Habits/phone/use-habits-phone"
+import { HabitsPhonePage } from "@/components/Home/Habits/phone/habits-phone-page"
 import { HabitsDesktopPage } from "@/components/Home/Habits/tracker/habits-desktop-page"
 import "./habit-grid.css"
 import "./habit-chrome.css"

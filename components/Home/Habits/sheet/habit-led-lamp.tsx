@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-led-lamp.tsx — Skeuomorphic panel lamp
+ * components/Home/Habits/sheet/habit-led-lamp.tsx — Skeuomorphic panel lamp
  *
  * Shared Yes/No lamp for Daily / Weekly / Monthly sheets (and any other
  * boolean). **Small LEDs** ON (default): 15px silver-chrome rim + smoked glass
@@ -20,7 +20,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { booleanLampState, type HabitLampState } from "@/lib/habit-led"
 import { useHabitsStore } from "@/lib/habits-store"
-import "./habit-led-lamp.css"
+import "../habit-led-lamp.css"
 
 /**
  * Paint `checked` on the click. The grade / points / coverage scan waits for

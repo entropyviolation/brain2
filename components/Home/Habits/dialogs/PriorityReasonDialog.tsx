@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/PriorityReasonDialog.tsx — Optional why this habit
+ * components/Home/Habits/dialogs/PriorityReasonDialog.tsx — Optional why this habit
  * is being prioritized.
  *
  * Opens after Prioritize habit has already refreshed the star. Skip, the

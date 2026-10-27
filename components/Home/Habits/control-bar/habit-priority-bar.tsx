@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-priority-bar.tsx — Control bar above a habit sheet
+ * components/Home/Habits/control-bar/habit-priority-bar.tsx — Control bar above a habit sheet
  *
  * One strip inside the grid pane on daily, weekly, monthly, and season.
  * Edit default order (only while Default is the active sort) and SORT:
@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { HabitSortControl } from "@/components/Home/Habits/habit-sort-control"
+import { HabitSortControl } from "@/components/Home/Habits/control-bar/habit-sort-control"
 import type { HabitSortMode } from "@/lib/habit-sort"
 import type { HabitFrequency } from "@/lib/types"
 

@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/task-grid.tsx — Habit grid
+ * components/Home/Habits/sheet/task-grid.tsx — Habit grid
  *
  * Compact spreadsheet: gem/edit | wrapping name + streak | 7 weekdays
  * (or Day View: the selected day only, larger bold titles) | week % readout
@@ -34,18 +34,18 @@ import { autoPriorityWeight, effectivePriorityWeight, priorityMarkPercent, prior
 import { pointerBeforeId, reorderIdList } from "@/lib/habit-order"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HabitEditGemButton } from "@/components/Home/Habits/habit-gems"
-import { HabitCompletionCell } from "@/components/Home/Habits/habit-completion-cell"
-import { HabitCompletionDetail } from "@/components/Home/Habits/habit-completion-detail"
-import { HabitRowName } from "@/components/Home/Habits/habit-row-name"
-import { HabitPercentReadout } from "@/components/Home/Habits/habit-percent-readout"
-import { HabitPeriodBreakdown } from "@/components/Home/Habits/habit-period-breakdown"
-import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/habit-span-breakdown"
+import { HabitCompletionCell } from "@/components/Home/Habits/sheet/habit-completion-cell"
+import { HabitCompletionDetail } from "@/components/Home/Habits/sheet/habit-completion-detail"
+import { HabitRowName } from "@/components/Home/Habits/sheet/habit-row-name"
+import { HabitPercentReadout } from "@/components/Home/Habits/sheet/habit-percent-readout"
+import { HabitPeriodBreakdown } from "@/components/Home/Habits/dialogs/habit-period-breakdown"
+import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
 import { periodBreakdownWindowTitle } from "@/lib/habit-period-breakdown"
 import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
 import { habitContributesWillpowerStone } from "@/lib/willpower-stones"
 import { useTaskStore } from "@/lib/task-store"
 import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
-import "./habit-grid.css"
+import "../habit-grid.css"
 
 interface TaskGridProps {
   tasks: Task[]

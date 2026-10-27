@@ -4,7 +4,7 @@
  * Same ids and labels as the desktop page built inline. Not wrapped in
  * `useCallback`. The phone page keeps its own copy.
  */
-import type { HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
+import type { HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
 import type { HabitFrequency } from "@/lib/types"
 
 export type HabitViewToggleFlags = {

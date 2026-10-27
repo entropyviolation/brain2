@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/percent-led.tsx — Dot-matrix percent readout
+ * components/Home/Habits/sheet/percent-led.tsx — Dot-matrix percent readout
  *
  * Photoreal 5×7 LED module for row and column totals. Value is the same
  * rounded percentage the old pastel bars showed.

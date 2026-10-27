@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-control-panel.tsx
+ * components/Home/Habits/panel/habits-control-panel.tsx
  *
  * Home Dashboard Habits Tab Control Panel — the right-hand column on
  * every Habits frequency tab: grades, streaks, cockpit
@@ -9,7 +9,7 @@
 "use client"
 
 import { useEffect, type CSSProperties, type ReactNode } from "react"
-import { WillpowerGems } from "@/components/Home/Habits/willpower-gems"
+import { WillpowerGems } from "@/components/Home/Habits/panel/willpower-gems"
 import {
   HABITS_CONTROL_PANEL_DEFAULT_WIDTH,
   HABITS_CONTROL_PANEL_NAME,

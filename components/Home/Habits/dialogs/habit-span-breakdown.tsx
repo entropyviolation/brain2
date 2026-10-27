@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-span-breakdown.tsx — Far-right span %
+ * components/Home/Habits/dialogs/habit-span-breakdown.tsx — Far-right span %
  *
  * Double-click the % at the end of a habit row. The window is that habit and
  * the span. A habit that prints a current/target lists that amount beside
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { KeycapClose } from "@/components/keycap-close"
 import { percentLedText } from "@/lib/habit-led"
 import type { HabitSpanBreakdown } from "@/lib/habit-span-breakdown"
-import "./habit-form-dialog.css"
+import "../habit-form-dialog.css"
 
 function NameList({
   rows,

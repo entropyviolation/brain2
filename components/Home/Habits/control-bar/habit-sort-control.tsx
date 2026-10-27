@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-sort-control.tsx — Sort on the Priority bar
+ * components/Home/Habits/control-bar/habit-sort-control.tsx — Sort on the Priority bar
  *
  * A visible SORT: label, a milled `habit95-select` (not a native OS popup),
  * and one direction key. The list portals to the document on the shared menu

@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-row-name.tsx — Title + meta under it
+ * components/Home/Habits/sheet/habit-row-name.tsx — Title + meta under it
  *
  * Name column is text only. Streak and multiplier sit on a second line.
  */

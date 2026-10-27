@@ -1,3 +1,4 @@
+/** components/Home/Habits/period/habits-period-cursor.test.ts */
 import { describe, expect, it } from "vitest"
 import { formatLocalDateKey, getWeekDates } from "@/lib/date-utils"
 import { monthAnchorFromDay, quarterAnchorFromDay, weekAnchorFromDay } from "@/lib/use-current-date"

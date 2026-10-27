@@ -1,12 +1,12 @@
 /**
- * components/Home/Habits/output-grade-breakdown-dialog.tsx — Perfect Output grade
+ * components/Home/Habits/dialogs/output-grade-breakdown-dialog.tsx — Perfect Output grade
  *
  * Thin wrapper over HabGradeSheet: OutputGradeResult habit proof table,
  * `outputGradeTubeColor` store key, Perfect output title/copy.
  */
 "use client"
 
-import { gradeHeroDelta, HabGradeProof, HabGradeSheet } from "@/components/Home/Habits/hab-grade-sheet"
+import { gradeHeroDelta, HabGradeProof, HabGradeSheet } from "@/components/Home/Habits/dialogs/hab-grade-sheet"
 import { type OutputGradeResult } from "@/lib/calculations"
 import { blendPriorityScore } from "@/lib/habit-priority"
 import { useHabitsStore } from "@/lib/habits-store"

@@ -1,12 +1,12 @@
 /**
- * components/Home/Habits/grade-breakdown-dialog.tsx — Week grade breakdown
+ * components/Home/Habits/dialogs/grade-breakdown-dialog.tsx — Week grade breakdown
  *
  * Thin wrapper over HabGradeSheet: WeekGradeResult day proof table,
  * `gradeTubeColor` store key, period titles, day/week lift notes.
  */
 "use client"
 
-import { gradeHeroDelta, HabGradeProof, HabGradeSheet } from "@/components/Home/Habits/hab-grade-sheet"
+import { gradeHeroDelta, HabGradeProof, HabGradeSheet } from "@/components/Home/Habits/dialogs/hab-grade-sheet"
 import { type WeekGradeDay, type WeekGradeResult } from "@/lib/calculations"
 import {
   DEFAULT_ACCOMPLISHMENT_BONUS,

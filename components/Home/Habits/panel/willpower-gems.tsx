@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/willpower-gems.tsx — Willpower gems
+ * components/Home/Habits/panel/willpower-gems.tsx — Willpower gems
  *
  * Photographed object at the foot of the Home Dashboard Habits Tab
  * Control Panel. The plate is a skeuomorphic oval button: chrome rim,
@@ -76,7 +76,7 @@ import {
   type WillpowerWorld,
 } from "@/lib/willpower-physics"
 import type { WillpowerStone } from "@/lib/willpower-stones"
-import "./habit-form-dialog.css"
+import "../habit-form-dialog.css"
 
 export const DEFAULT_WILLPOWER_ORB = orbFor("willpower")
 

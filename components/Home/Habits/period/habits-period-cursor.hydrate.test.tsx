@@ -1,3 +1,4 @@
+/** components/Home/Habits/period/habits-period-cursor.hydrate.test.tsx */
 /**
  * Habits period cursor — first paint ignores storage; restore after mount.
  */

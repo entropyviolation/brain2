@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habits-phone-page.tsx — Phone Habits page
+ * components/Home/Habits/phone/habits-phone-page.tsx — Phone Habits page
  *
  * Its own page. `WeeklyTaskTracker` mounts this when the viewport is at
  * most 767px, and does not mount the desktop console. This file owns the
@@ -16,14 +16,14 @@ import {
   habitsViewedQuarter,
   habitsViewedWeekStart,
   retainHabitsWeekDates,
-} from "@/components/Home/Habits/habits-period-cursor"
-import { HabitControlBar, type HabitControlToggle } from "@/components/Home/Habits/habit-priority-bar"
-import { HabitWandBanner } from "@/components/Home/Habits/habit-wand-banner"
+} from "@/components/Home/Habits/period/habits-period-cursor"
+import { HabitControlBar, type HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
+import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
 import { filterHabitsByFrequency, weekPeriodColumns, monthPeriodColumns, seasonPeriodColumns, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
 import { TaskFormDialog } from "@/components/Home/Habits/daily-task-form-dialog"
-import { GradeBreakdownDialog } from "@/components/Home/Habits/grade-breakdown-dialog"
-import { OutputGradeBreakdownDialog } from "@/components/Home/Habits/output-grade-breakdown-dialog"
-import { GoodDaysDialog } from "@/components/Home/Habits/good-days-dialog"
+import { GradeBreakdownDialog } from "@/components/Home/Habits/dialogs/grade-breakdown-dialog"
+import { OutputGradeBreakdownDialog } from "@/components/Home/Habits/dialogs/output-grade-breakdown-dialog"
+import { GoodDaysDialog } from "@/components/Home/Habits/dialogs/good-days-dialog"
 import { weekWillpowerStones } from "@/lib/willpower-stones"
 import { type WeeklyTask as Task, type TaskCompletion, type HabitFrequency } from "@/lib/types"
 import {
@@ -48,7 +48,7 @@ import {
   formatDateRange,
   isSameLocalWeek,
 } from "@/lib/date-utils"
-import { HabitsPhoneScreen } from "@/components/Home/Habits/habits-phone-screen"
+import { HabitsPhoneScreen } from "@/components/Home/Habits/phone/habits-phone-screen"
 import { SettingsDialog } from "@/components/Home/Habits/settings-dialog"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useReviewsStore, localDayKey } from "@/lib/reviews-store"
@@ -69,9 +69,9 @@ import { clearHabitSettingsReturn, habitSettingsReturnReady, peekHabitSettingsRe
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { quarterKey, quarterLabel, seasonOfDate, seasonSlug, shiftQuarter } from "@/lib/seasons"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
-import "./habit-grid.css"
-import "./habit-chrome.css"
-import "./noble-gas-tube.css"
+import "../habit-grid.css"
+import "../habit-chrome.css"
+import "../noble-gas-tube.css"
 
 const EMPTY_HABIT_PRIORITY_IDS: string[] = []
 

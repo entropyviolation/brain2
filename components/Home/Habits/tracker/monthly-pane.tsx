@@ -8,8 +8,8 @@
 
 import { format } from "date-fns"
 import { PeriodHabitList, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
-import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/habits-tab-controls"
-import { HabitMonthWindowControl } from "@/components/Home/Habits/habit-month-window-control"
+import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
+import { HabitMonthWindowControl } from "@/components/Home/Habits/panel/habit-month-window-control"
 import { calculatePeriodColumnPercentage } from "@/lib/calculations"
 import type { HabitBirthday, HabitMonthWindowMode } from "@/lib/habit-month-window"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"

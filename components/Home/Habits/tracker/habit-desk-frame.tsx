@@ -8,8 +8,8 @@
 
 import type { ReactNode } from "react"
 import { TabsContent } from "@/components/ui/tabs"
-import { HabitsControlPanel } from "@/components/Home/Habits/habits-control-panel"
-import type { HabitsTabControlsProps } from "@/components/Home/Habits/habits-tab-controls"
+import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
+import type { HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
 import { HabitWandMast } from "@/components/Home/Habits/tracker/habit-wand-mast"
 import type { WillpowerStone } from "@/lib/willpower-stones"
 

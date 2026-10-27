@@ -1,3 +1,4 @@
+/** components/Home/Habits/panel/willpower-gems.test.tsx */
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -10,7 +11,7 @@ import {
   WillpowerGemsSettingsField,
   willpowerSrc,
 } from "./willpower-gems"
-import "./habit-chrome.css"
+import "../habit-chrome.css"
 
 vi.mock("@/lib/remove-background", () => ({
   removeBackground: vi.fn(async () => "data:image/png;base64,willpower"),

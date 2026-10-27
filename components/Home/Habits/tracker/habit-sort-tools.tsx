@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { HabitControlBar } from "@/components/Home/Habits/habit-priority-bar"
+import { HabitControlBar } from "@/components/Home/Habits/control-bar/habit-priority-bar"
 import type { HabitSortMode } from "@/lib/habit-sort"
 import type { HabitFrequency, WeeklyTask } from "@/lib/types"
 

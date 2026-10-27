@@ -1,3 +1,4 @@
+/** components/Home/Habits/sheet/habit-led-lamp.test.tsx */
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -9,7 +10,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { usePointsStore } from "@/lib/points-store"
 import { TaskType } from "@/lib/types"
 import { HabitLedLamp } from "./habit-led-lamp"
-import "./habit-led-lamp.css"
+import "../habit-led-lamp.css"
 
 async function flushLampWrite() {
   await act(async () => {

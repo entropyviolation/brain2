@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/priority-math.tsx — Collapsible 50% floor explanation
+ * components/Home/Habits/dialogs/priority-math.tsx — Collapsible 50% floor explanation
  */
 "use client"
 

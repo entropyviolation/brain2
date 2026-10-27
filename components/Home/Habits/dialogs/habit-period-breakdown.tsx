@@ -1,5 +1,5 @@
 /**
- * components/Home/Habits/habit-period-breakdown.tsx — Period percent, titles only
+ * components/Home/Habits/dialogs/habit-period-breakdown.tsx — Period percent, titles only
  *
  * Double-click a footer period percent. The window is that day or span.
  * The body is the habit names in the percent, with Completed / Not yet completed / All.
@@ -16,7 +16,7 @@ import {
   type PeriodBreakdownFilter,
   type PeriodBreakdownInput,
 } from "@/lib/habit-period-breakdown"
-import "./habit-form-dialog.css"
+import "../habit-form-dialog.css"
 
 const FILTERS: { id: PeriodBreakdownFilter; label: string }[] = [
   { id: "completed", label: "Completed" },
