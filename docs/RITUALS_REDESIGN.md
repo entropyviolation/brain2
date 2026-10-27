@@ -21,6 +21,8 @@ one global "why", and stamp Done at the wrong time.
 
 ## Map (so you do not re-read it)
 
+_Last mapped: 2026-10-27_
+
 | Piece | Where | Notes |
 |-------|-------|-------|
 | Home widget | `components/Home/home-review-banner.tsx` | Tile + detail (`HomeWidgetDialog`). **Open** renders `RitualWalkDialog` itself (Phase 0) |
@@ -30,7 +32,7 @@ one global "why", and stamp Done at the wrong time.
 | Night + end dialog | `components/Reviews/reviews.tsx` `ReviewDialog` ~82; sections ~305–510 | One long scroll. Unfinished list ~305: one shared `WhyBlockedControl`, `markDone` ~140 sets `completed: true` (completion popup fires with `completedAt` = now), `pushToNext` ~145 |
 | Assumed times | `AssumedTimesSection.tsx` | Fields: finished time + minutes (`actualDuration`) + **Est.** (`timeRough`). No start field |
 | Stepper | `RitualSteps.tsx` + `ritual-steps.css` | `RitualStepper` / `useRitualStep`. Lamp strip, `03 / 09` plate, optional index, Alt+←/→. Only Morning uses it |
-| Morning | `MorningReview.tsx` (~1500 lines) | Nine steps on the stepper |
+| Morning | `components/Reviews/morning/` | Twelve steps on the stepper: Last night, Affirmations, To do for today, Week and month, Due within a week, Overdue, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Public door stays `components/Reviews/MorningReview.tsx` |
 | Start | `StartRitualDialog.tsx` | Six sections, long scroll |
 | Missed opportunity | `lib/services/completion-service.ts` `markMissedOpportunity(id, repo, missReason?)` | Status `missed`, `missedAt`. Lands on the Missed Opportunities list |
 | Why prompt | `MissReasonDialog.tsx` | Optional preset + note, z-120 |
@@ -113,14 +115,14 @@ Footer: `n done · n pushed · n missed`.
 
 ## Phase 3 — Night: assumed times (done)
 
-_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. Analytics needs no change for `timeNegligible` (checked 2026-10-22): no view flags a missing duration, and Velocity already skips zero-length rows.
+_Last mapped: 2026-10-17_ Built as below. Rows from Phase 2 Done already land here through their unconfirmed `completedDate` estimate. Tests: `review-dialog.test.tsx` (Assumed times), `lib/assumed-time-math.test.ts`. Data needs no change for `timeNegligible` (checked 2026-10-22): no view flags a missing duration, and Velocity already skips zero-length rows.
 
 1. Fields are **Start · Duration · Finish**, in that order. Editing any one
    recomputes the others: start + duration → finish (default); finish edits
    keep start and change duration; a duration edit keeps start.
    Pure helper `lib/assumed-time-math.ts` with tests.
 2. **Negligible** key per row: sets `Task.timeNegligible = true` and duration
-   0. It is not a rough estimate and is not asked again. Analytics treats it
+   0. It is not a rough estimate and is not asked again. Data treats it
    as zero time, not missing.
 3. Rows from Phase 2 Done (`completedTimeUnknown`) appear here first.
 

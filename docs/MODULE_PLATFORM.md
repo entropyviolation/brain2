@@ -19,7 +19,7 @@ not the pattern to copy. The full account is "Debt" below.
 
 A module that keeps its records as Items is a room in the house — searchable
 from Cmd/Ctrl-K, schedulable, analyzable, ingestible by text message — because
-it never invented its own storage. **Analytics is the heart** of that graph:
+it never invented its own storage. **Data is the heart** of that graph:
 collection, presentation, analysis, and the next tool grown from the same mass.
 **Infinite adaptability, one nervous system.** New organs grow on that same
 graph.
@@ -79,7 +79,7 @@ A module whose records are Items belongs to the same house:
 - Its dated things land in **Scheduler / Plan**.
 - Its effort lands in **Tracking** minutes and **Habits** via tags.
 - Its completions award **points** and feed **Objectives / Goals**.
-- Its numbers are chartable in **Analytics**.
+- Its numbers are chartable in **Data**.
 - A text from a phone can create one of its records through **ingest**.
 - Undo, backup, and (eventually) sync cover it, because it never invented its
   own storage.
@@ -293,9 +293,11 @@ the refactor order that makes that step honest.
 6. **Migrate the shadow databases** onto Items, keeping both stylesheets
    untouched. **Partial (Wave 10):** Items are the write path; config dual-write
    shim for one release; drop the shim and finish two-way Lists sync next.
-7. **Then** harvest shared chrome, if it still seems worth it — `usePaintStroke`,
-   `confirm()`, and one `ItemDetail` with a density mode. Doing this before the
-   manifest exists would freeze today's chrome as the platform's API.
+7. **Then** harvest shared chrome, if it still seems worth it — `usePaintStroke`
+   and `confirm()`. One `ItemDetail` with a density mode is refused: the popup
+   is an orchestrator plus private `popup/` modules, and the page stays its own
+   shell. Doing the shared-chrome harvest before the
+   manifest exists would freeze today's chrome as the platform's API. _Last mapped: 2026-10-27._
 
 See [`ARCHITECTURE_MODULARITY.md`](ARCHITECTURE_MODULARITY.md) for the same
 sequence expressed as refactors, and for what deliberately is *not* worth

@@ -237,7 +237,7 @@ Line numbers are approximate (`~`). Fix them in a handoff when they move.
 | Need | Use |
 |------|-----|
 | Orb image for an item | `iconFor(id, task.icon)` from `@/components/Icons/Icon` (`orbFor` hashes a default). `Task.icon` is in the save allowlist. |
-| Orb picker popup (pick existing / upload new, bg removal) | `OrbPickerDialog({ open, current, onClose, onSelect(icon \| undefined) })` from `@/components/Icons/OrbPicker`. Example caller: `components/Lists/enhanced-list-view.tsx` ~1182 `applyIcon`, ~2087. |
+| Orb picker popup (pick existing / upload new, bg removal) | `OrbPickerDialog({ open, current, onClose, onSelect(icon \| undefined) })` from `@/components/Icons/OrbPicker`. Example caller: `applyIcon` in `components/Lists/hooks/useListsIconChrome.ts`, mounted from `components/Lists/board/lists-dialog-host.tsx`. |
 | Address search with parts | `searchAddresses(q, near?)`, `withParts(s)`, `reverseGeocode`, type `AddressSuggestion {id,name,label,lat,lng,parts,source}` in `lib/geo-address.ts`; `AddressParts` in `lib/pen-place.ts` ~20. Photon keyless; Google first when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is set. Fails soft. Debounce pattern: `components/Home/Tracking/pen-place-editor.tsx` ~50–75. Place UI with keyboard nav: `components/Modules/workspace/itinerary/PlaceSuggestInput.tsx`. |
 | Open pen settings from a color | `penColorDoubleClick(scopeId, penId)` + `PEN_COLOR_OPEN_TITLE` from `components/Home/Tracking/open-pen-settings.ts`. Host `PenSettingsHost` is mounted once in `app/page.tsx` ~309. |
 | Gravity physics | `components/Lists/lib/list-icon-gravity.ts`: `makeGravityBodies`, `stepGravity(bodies, edges, dt, bounds, opts)`, `settleGravityField`, `prefersGravityReducedMotion`, `nodeGlowLevel`, `edgeCordOpacity`. Cord paint: `list-icon-force-links.ts` + `ListIconForceLinksOverlay`. |
@@ -986,9 +986,9 @@ nothing in it may import from `components/People/`.
   `relations` on item-type-store, persist v19, `person-notes-fold`,
   `people-self`, `link-graph`). Each changed section gets `_Last mapped:
   YYYY-MM-DD_`. Mark this plan **Shipped** at the top, keep the reasoning.
-- Screenshots of Details and Links for a person and a task in
-  `docs/screenshots/` (`npm run capture-screenshots` if it covers item
-  detail; otherwise Playwright by hand).
+- Screenshots of Details and Links for a person and a task are a gallery
+  sync, not a full recapture. `BRAIN2_ONLY` for the item-detail shots the
+  manifest lists (`.cursor/rules/doc-sync.mdc`).
 - Run DESIGN_STYLE "Checklist before shipping UI".
 
 ---

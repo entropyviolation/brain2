@@ -1,6 +1,6 @@
-# Analytics plan
+# Data plan
 
-Build briefs for a later redesign of the Analytics tab. They read the inventories in [`docs/analytics-vision/`](../analytics-vision/README.md) and the studio that already ships. This pass writes briefs only. It does not change view math, view ids, or the tab.
+Build briefs for a later redesign of the Data tab (formerly Analytics). They read the inventories in [`docs/analytics-vision/`](../analytics-vision/README.md) and the studio that already ships. This pass writes briefs only. It does not change view math, view ids, or the tab.
 
 The charter is the law: keep every working chart, move and compose freely, and leave a blocked metric as an empty frame. Language readings (sentiment, machine learning, language models, embeddings, word clouds) sit beside classical counts and never write a sentence back as if the person had typed it.
 

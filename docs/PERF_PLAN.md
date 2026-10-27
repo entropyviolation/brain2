@@ -153,7 +153,7 @@ _Last mapped: 2026-10-25_ — **Done.**
 
 - Done: `tickWorkSession` and `tickPenColorSession` skip the write when the live Tracking block already ends at the rounded active end (`liveEntryUpToDate` in `lib/operation-work-session.ts`). A moved or missing block still repaints.
 - Done: `hooks/useMessageIngest.ts` browser hub poll is a self-scheduling timeout: 1 s while messages arrive, 5 s when the queue is empty, paused while the tab is hidden, and snapped to an immediate poll when it becomes visible.
-- Done: hidden-tab guards added to the 1 s tick in `components/Home/ToDo/SessionPlanner.tsx`, the 15 s tick in `components/header-reminder-bell.tsx`, and the 2 min poll in `hooks/use-screentime-sync.ts`.
+- Done: hidden-tab guards added to the 1 s tick in `useNow` (`components/Home/ToDo/session-planner/use-now.ts`, loaded through `SessionPlanner.tsx`), the 15 s tick in `components/header-reminder-bell.tsx`, and the 2 min poll in `hooks/use-screentime-sync.ts`.
 - Left alone (cheap or intentional): `components/Home/home-dashboard.tsx` 60 s clock (only with Follow the clock), `TidyView.tsx` 1 s tick (returns early unless a timer runs), `JustStartMode.tsx` 1 s (focus screen), Settings face fields at 200 ms (only on that screen), `dash-faces.tsx`, the 15-60 s clocks in `append-log`, `home-days-until`, `home-solar-tile`, `home-moon-tile`, `home-overview`, `day-view`, `agenda-grid`, `time-grid`, `week-grid`, `trk-time-markers`, `FriendDetailsPanel`. Each re-renders one component, but none pause while hidden. Candidates for a shared `useNow` hook that pauses when hidden.
 
 ### Later — Stop rewriting whole stores (**Do not start** without a design pass)
@@ -166,9 +166,9 @@ The root cost is one localStorage blob per store, rewritten whole on every edit.
 
 ## Render and load audit
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-27_
 
-Static read of the React side. No profile taken. Short version: rendering is mostly healthy (tab panels lazy, Analytics views lazy, selectors used, `todo-panel.tsx` memoizes its period lists). The slow feel is dominated by dev mode and the save path above, not React.
+Static read of the React side. No profile taken. Short version: rendering is mostly healthy (tab panels lazy, Data views lazy, selectors used, `use-todo-desk-board.ts` memoizes its period lists). The slow feel is dominated by dev mode and the save path above, not React.
 
 ### Fixed in this pass
 
