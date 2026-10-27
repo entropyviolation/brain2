@@ -28,7 +28,9 @@ import {
   addNowObjective,
   compactNowObjectives,
   editNowObjectiveText,
+  formatObjectiveWhen,
   objectiveCompletesTarget,
+  objectiveWorkedMs,
   removeNowObjective,
   setNowObjectiveCompletes,
   tieNowObjectiveToStep,
@@ -89,6 +91,54 @@ function subtreeIds(steps: readonly Subtask[] | undefined, id: string): Set<stri
   }
   if (placed) walk(placed.step.subtasks)
   return ids
+}
+
+function NoteField({
+  id,
+  label,
+  notes,
+  readOnly,
+  placeholder,
+  onCommit,
+}: {
+  id: string
+  label: string
+  notes?: string
+  readOnly?: boolean
+  placeholder?: string
+  onCommit: (notes: string) => void
+}) {
+  const multiline = (notes ?? "").includes("\n")
+  const commit = (value: string) => {
+    const next = value.trim()
+    if (next !== (notes ?? "")) onCommit(next)
+  }
+  if (multiline) {
+    return (
+      <textarea
+        className="ipt-text ipt-note"
+        aria-label={label}
+        disabled={readOnly}
+        defaultValue={notes ?? ""}
+        title={notes || undefined}
+        rows={Math.min(10, (notes ?? "").split("\n").length)}
+        key={`${id}:notes:${notes ?? ""}`}
+        onBlur={(e) => commit(e.target.value)}
+      />
+    )
+  }
+  return (
+    <input
+      className="ipt-text"
+      aria-label={label}
+      disabled={readOnly}
+      defaultValue={notes ?? ""}
+      placeholder={placeholder}
+      title={notes || undefined}
+      key={`${id}:notes:${notes ?? ""}`}
+      onBlur={(e) => commit(e.target.value)}
+    />
+  )
 }
 
 function logKind(log: TimeLogEntry): string {
@@ -298,7 +348,8 @@ export function ItemTimeLedger({
     const steps = hostSteps()
     if (!steps) return
     if (row.completedAt) {
-      const mins = Math.round((Date.parse(row.completedAt) - Date.parse(row.addedAt)) / 60_000)
+      const ms = objectiveWorkedMs(row)
+      const mins = ms == null ? 0 : Math.round(ms / 60_000)
       writeHost({
         subtasks: finishStep(steps, row.stepId, mins >= 1 ? mins : undefined, new Date(row.completedAt)),
       })
@@ -466,18 +517,13 @@ export function ItemTimeLedger({
                     }}
                   />
                   <span className="ipt-k">Notes</span>
-                  <input
-                    className="ipt-text"
-                    aria-label={`Notes of the block on ${entry.date} at ${clock(entry.startMin)}`}
-                    disabled={readOnly}
-                    defaultValue={entry.notes ?? ""}
+                  <NoteField
+                    id={entry.id}
+                    label={`Notes of the block on ${entry.date} at ${clock(entry.startMin)}`}
+                    notes={entry.notes}
+                    readOnly={readOnly}
                     placeholder="A longer note"
-                    title={entry.notes || undefined}
-                    key={`${entry.id}:notes:${entry.notes ?? ""}`}
-                    onBlur={(e) => {
-                      const notes = e.target.value.trim()
-                      if (notes !== (entry.notes ?? "")) updateEntry(entry.id, { notes: notes || undefined })
-                    }}
+                    onCommit={(notes) => updateEntry(entry.id, { notes: notes || undefined })}
                   />
                 </div>
                 <ObjectiveList
@@ -600,8 +646,6 @@ function ObjectiveList({
       {rows.length > 0 && (
         <ul aria-label="Objectives on this block">
           {rows.map((row) => {
-            const mins =
-              row.completedAt ? Math.max(0, Math.round((Date.parse(row.completedAt) - Date.parse(row.addedAt)) / 60_000)) : null
             return (
               <li key={row.id} className={row.completedAt ? "is-done" : undefined}>
                 <div className="ipt-obj-main">
@@ -674,7 +718,7 @@ function ObjectiveList({
                       )
                     }}
                   />
-                  {mins != null && <b>{mins}m</b>}
+                  <span className="ipt-obj-when">{formatObjectiveWhen(row)}</span>
                 </div>
                 {names.size > 0 && (
                   <div className="ipt-obj-step">
@@ -839,17 +883,13 @@ function LogRow({
           </select>
         )}
         <span className="ipt-k">Note</span>
-        <input
-          className="ipt-text"
-          aria-label={`Note for log ${log.id}`}
-          disabled={readOnly}
-          defaultValue={log.notes ?? ""}
+        <NoteField
+          id={log.id}
+          label={`Note for log ${log.id}`}
+          notes={log.notes}
+          readOnly={readOnly}
           placeholder="What this time was"
-          key={`${log.id}:notes:${log.notes ?? ""}`}
-          onBlur={(e) => {
-            const notes = e.target.value.trim()
-            if (notes !== (log.notes ?? "")) onChange({ notes: notes || undefined })
-          }}
+          onCommit={(notes) => onChange({ notes: notes || undefined })}
         />
       </div>
     </li>

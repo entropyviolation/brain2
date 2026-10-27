@@ -79,7 +79,7 @@ describe("commitItemEdit", () => {
 
   it("succeeds with no order tag, and an older line with no order still loads", () => {
     taskRepository.add(task())
-    commitItemEdit("a", { title: "Still old", description: "Still old" }, "detail")
+    commitItemEdit("a", { notes: "A real edit" }, "detail")
 
     const [line] = listItemActivity("a")
     expect(line.order).toBeUndefined()
@@ -102,6 +102,12 @@ describe("commitItemEdit", () => {
     expect(older.summary).toBe("Name: A → B")
     expect(older.order).toBeUndefined()
     expect(older.changes[0]).toMatchObject({ from: "A", to: "B" })
+  })
+
+  it("does not record a save that changes nothing", () => {
+    taskRepository.add(task())
+    commitItemEdit("a", { title: "Old name", description: "Old name" }, "detail")
+    expect(listItemActivity("a")).toEqual([])
   })
 
   it("does not run linked effects on a rename, and applyLinkedEffects reaches them only when asked", () => {
@@ -157,8 +163,10 @@ describe("commitItemEdit", () => {
     const saved = commitItemDraft(before, after, "item-detail")
     expect(saved.estimatedDuration).toBe(40)
     expect(taskRepository.getById("a")?.title).toBe("Renamed")
-    const [line] = listItemActivity("a")
-    expect(line.source).toBe("item-detail")
-    expect(line.changes.some((c) => c.field === "estimatedDuration" && c.label === "Estimated duration")).toBe(true)
+    const lines = listItemActivity("a")
+    expect(lines.some((line) => line.source === "item-detail")).toBe(true)
+    expect(
+      lines.some((line) => line.changes.some((c) => c.field === "estimatedDuration" && c.label === "Estimate" && c.to === "40m")),
+    ).toBe(true)
   })
 })
