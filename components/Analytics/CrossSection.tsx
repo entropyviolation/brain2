@@ -24,7 +24,7 @@ import { uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { resolveNights } from "@/lib/sleep-inference"
 import { sleepMinutes } from "@/lib/sleep-log"
 import { buildHeatmap, isOperation } from "@/lib/operations"
-import { contextSwitchSeries } from "@/lib/metrics"
+import { contextSwitchSeries, pearson } from "@/lib/metrics"
 import { entriesForDay } from "@/lib/time-entries"
 import { dateKeyOf, inRange } from "./analytics-range"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
@@ -36,20 +36,38 @@ import {
   readoutFor,
   type DensitySeries,
 } from "./cross-section"
+import { sequentialFill } from "./meta-plots"
+import { NativeSelect } from "@/components/ui/native-select"
 
 function weekdayIndex(key: string): number {
   const d = parseLocalDate(key)
   return d ? d.getDay() : 0
 }
 
+// Light paper: more is darker. A real zero is a faint wash; missing stays clear.
 function cellFill(hue: number, value: number | null, domainMax: number): string {
   const kind = presenceOf(value)
   if (kind === "missing") return "transparent"
-  if (kind === "zero") return `hsl(${hue} 18% 16% / 0.55)`
-  const t = intensity(value, domainMax)
-  const light = 14 + t * 46
-  const sat = 42 + t * 38
-  return `hsl(${hue} ${sat}% ${light}%)`
+  if (kind === "zero") return `hsl(${hue} 12% 90%)`
+  return sequentialFill(hue, 0.15 + intensity(value, domainMax) * 0.85)
+}
+
+type RowSort = "default" | "observed" | "anchor"
+
+/** Shared days before a row shows its r against the anchor. */
+const ANCHOR_R_FLOOR = 7
+
+function rowR(a: DensitySeries, b: DensitySeries): { r: number; n: number } {
+  const xs: number[] = []
+  const ys: number[] = []
+  for (let i = 0; i < a.points.length; i++) {
+    const x = a.points[i]?.value
+    const y = b.points[i]?.value
+    if (x === null || x === undefined || y === null || y === undefined) continue
+    xs.push(x)
+    ys.push(y)
+  }
+  return { r: xs.length >= 2 ? pearson(xs, ys) : 0, n: xs.length }
 }
 
 function tickLabel(key: string, index: number, total: number): string | null {
@@ -218,6 +236,30 @@ export function CrossSection() {
     [allTasks, keySet],
   )
 
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
+  const [sortBy, setSortBy] = useState<RowSort>("default")
+  const [anchorId, setAnchorId] = useState<string>("")
+  const anchor = series.find((s) => s.id === anchorId) ?? null
+  const shown = useMemo(() => {
+    const rows = series
+      .filter((s) => !hidden.has(s.id))
+      .map((s) => ({ s, rel: anchor && anchor.id !== s.id ? rowR(anchor, s) : null }))
+    if (sortBy === "observed") rows.sort((a, b) => b.s.n - a.s.n)
+    else if (sortBy === "anchor" && anchor) {
+      // Rows below the display floor show "·", so they rank after rows that show an r.
+      const score = (rel: { r: number; n: number } | null) => (rel === null ? 2 : rel.n >= ANCHOR_R_FLOOR ? Math.abs(rel.r) : -1)
+      rows.sort((a, b) => score(b.rel) - score(a.rel))
+    }
+    return rows
+  }, [series, hidden, sortBy, anchor])
+  const toggle = (id: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
   const anySeries = series.some((s) => s.n > 0)
   const readout = active ? readoutFor(series, active) : ""
   const activeDate = active ? parseLocalDate(active) : null
@@ -246,8 +288,52 @@ export function CrossSection() {
         <ChartFrame empty emptySentence={`Nothing recorded in the ${label} to align yet.`} />
       ) : (
         <>
+          <div className="an-meta-tools" data-testid="cross-section-tools">
+            <span>Rows</span>
+            {series.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="an-meta-chip is-toggle"
+                aria-pressed={!hidden.has(s.id)}
+                style={{ ["--an-swatch" as string]: sequentialFill(s.hue, 0.8) }}
+                title={`${s.label}: n = ${s.n}. Click to ${hidden.has(s.id) ? "show" : "hide"}.`}
+                onClick={() => toggle(s.id)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="an-meta-tools">
+            <label>
+              Compare to
+              <NativeSelect className="an-chip" value={anchorId} onChange={(e) => setAnchorId(e.target.value)}>
+                <option value="">none</option>
+                {series
+                  .filter((s) => s.n > 0)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+              </NativeSelect>
+            </label>
+            <span>Sort</span>
+            {(["default", "observed", "anchor"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className="an-meta-chip"
+                aria-pressed={sortBy === key}
+                disabled={key === "anchor" && !anchor}
+                onClick={() => setSortBy(key)}
+              >
+                {key === "default" ? "house order" : key === "observed" ? "most observed" : "closest to anchor"}
+              </button>
+            ))}
+          </div>
           <div
-            className="an-density"
+            className={`an-density${anchor ? " has-r" : ""}`}
             style={{ ["--an-cols" as string]: String(Math.max(dateKeys.length, 1)) }}
             onMouseLeave={() => setHovered(null)}
           >
@@ -261,14 +347,16 @@ export function CrossSection() {
                 ))}
               </div>
               <span className="an-density-n">n</span>
+              {anchor ? <span className="an-density-r">r</span> : null}
             </div>
-            {series.map((row) => (
+            {shown.map(({ s: row, rel }) => (
               <DensityRow
                 key={row.id}
                 series={row}
                 active={active}
                 onHover={setHovered}
                 onPin={setPinned}
+                rel={anchor ? (row.id === anchor.id ? "anchor" : rel) : undefined}
               />
             ))}
           </div>
@@ -291,11 +379,14 @@ function DensityRow({
   active,
   onHover,
   onPin,
+  rel,
 }: {
   series: DensitySeries
   active: string | null
   onHover: (date: string) => void
   onPin: (date: string) => void
+  /** r against the anchor row; "anchor" on the anchor itself; undefined hides the column. */
+  rel?: { r: number; n: number } | "anchor" | null
 }) {
   const empty = series.n === 0
   return (
@@ -328,6 +419,14 @@ function DensityRow({
         )}
       </div>
       <span className="an-density-n">n={series.n}</span>
+      {rel !== undefined ? (
+        <span
+          className="an-density-r"
+          title={rel && rel !== "anchor" ? `Pearson r against the anchor over ${rel.n} shared days` : undefined}
+        >
+          {rel === "anchor" ? "◆" : rel && rel.n >= ANCHOR_R_FLOOR ? `${rel.r >= 0 ? "+" : ""}${rel.r.toFixed(2)}` : "·"}
+        </span>
+      ) : null}
     </div>
   )
 }

@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -27,6 +27,10 @@ import { useAnalyticsRange } from "./analytics-range-store"
 import { CrossSection } from "./CrossSection"
 import { FindingBlock, StudioHelp } from "./studio-kit"
 import { dailySeries, observatoryFindings, OBSERVATORY_FLOOR, type ObservatoryPair } from "./observatory-findings"
+import { dailyMeans, fisherInterval, intervalClearsZero } from "./meta-math"
+import { ForestPlot } from "./meta-plots"
+
+type ForestSort = "strength" | "n" | "name"
 
 function weekdayIndex(key: string): number {
   const d = parseLocalDate(key)
@@ -84,10 +88,9 @@ export function Observatory() {
         }
       }
     }
-    for (const dp of datapoints) {
-      const key = dateKeyOf(dp.at)
-      if (!key || joyByDay[key] !== undefined) continue
-      if (dp.values.joy !== undefined) joyByDay[key] = dp.values.joy
+    // Mean of the day's joy readings; the first one alone depended on store order.
+    for (const p of dailyMeans(datapoints.map((dp) => ({ at: dp.at, value: dp.values.joy })), new Set(dateKeys))) {
+      joyByDay[p.date] = p.value
     }
 
     const pairs: ObservatoryPair[] = [
@@ -133,6 +136,20 @@ export function Observatory() {
         a: dailySeries(dateKeys, activityOcc),
         b: dailySeries(dateKeys, screenOcc),
       },
+      {
+        id: "habits-sleep",
+        aLabel: "Habit completion",
+        bLabel: "sleep minutes",
+        a: dailySeries(dateKeys, habitsByDay),
+        b: dailySeries(dateKeys, sleepByDay),
+      },
+      {
+        id: "switches-habits",
+        aLabel: "Context switches",
+        bLabel: "habit completion",
+        a: dailySeries(dateKeys, switchesByDay),
+        b: dailySeries(dateKeys, habitsByDay),
+      },
     ]
     return observatoryFindings(pairs, OBSERVATORY_FLOOR)
   }, [
@@ -155,6 +172,21 @@ export function Observatory() {
 
   const ready = findings.filter((f) => !f.thin)
   const thin = findings.filter((f) => f.thin)
+  const [sortBy, setSortBy] = useState<ForestSort>("strength")
+  const [showThin, setShowThin] = useState(false)
+  const [picked, setPicked] = useState<string | null>(null)
+  const forestRows = useMemo(() => {
+    const rows = findings
+      .filter((f) => showThin || !f.thin)
+      .map((f) => ({ id: f.id, label: PAIR_LABELS[f.id] ?? f.id, r: f.r, n: f.n, thin: f.thin }))
+    if (sortBy === "n") rows.sort((a, b) => b.n - a.n)
+    else if (sortBy === "name") rows.sort((a, b) => a.label.localeCompare(b.label))
+    else rows.sort((a, b) => Math.abs(b.r) - Math.abs(a.r))
+    return rows
+  }, [findings, showThin, sortBy])
+  const clears = ready.filter((f) => intervalClearsZero(f.r, f.n)).length
+  const pickedFinding = findings.find((f) => f.id === picked) ?? null
+  const pickedCi = pickedFinding ? fisherInterval(pickedFinding.r, pickedFinding.n) : null
 
   return (
     <div
@@ -181,6 +213,34 @@ export function Observatory() {
         <ChartFrame empty emptySentence={`Nothing recorded in the ${label} to connect yet.`} />
       ) : (
         <>
+          {forestRows.length > 0 ? (
+            <section className="an-plate" data-testid="observatory-forest">
+              <p className="an-canvas-title">Every link at a glance</p>
+              <p className="an-canvas-hint">
+                Dot = r, size = overlapping days, whisker = 95% interval (Fisher z). Shaded edges are |r| ≥ 0.3. A whisker
+                that crosses 0 could be chance. {clears} of {ready.length} links clear 0.
+              </p>
+              <div className="an-meta-tools">
+                <span>Sort</span>
+                {(["strength", "n", "name"] as const).map((key) => (
+                  <button key={key} type="button" className="an-meta-chip" aria-pressed={sortBy === key} onClick={() => setSortBy(key)}>
+                    {key === "strength" ? "|r|" : key === "n" ? "days" : "name"}
+                  </button>
+                ))}
+                <label>
+                  <input type="checkbox" checked={showThin} onChange={(e) => setShowThin(e.target.checked)} />
+                  Show thin ({thin.length})
+                </label>
+              </div>
+              <ForestPlot rows={forestRows} floor={OBSERVATORY_FLOOR} onPick={setPicked} activeId={picked} />
+              {pickedFinding ? (
+                <p className="an-canvas-readout" aria-live="polite">
+                  {pickedFinding.sentence}
+                  {pickedCi ? ` 95% interval ${pickedCi.lo.toFixed(2)} to ${pickedCi.hi.toFixed(2)}.` : ""}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
           {ready.map((f) => (
             <FindingBlock
               key={f.id}
@@ -196,4 +256,15 @@ export function Observatory() {
       )}
     </div>
   )
+}
+
+const PAIR_LABELS: Record<string, string> = {
+  "habits-tracking": "Habits ↔ tracked min",
+  "switches-sleep": "Switches ↔ sleep",
+  "points-habits": "Points ↔ habits",
+  "joy-habits": "Joy ↔ habits",
+  "joy-sleep": "Joy ↔ sleep",
+  "activity-screentime": "Activity ↔ Screen Time",
+  "habits-sleep": "Habits ↔ sleep",
+  "switches-habits": "Switches ↔ habits",
 }
