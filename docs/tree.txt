@@ -767,13 +767,13 @@
 │   │   ├── ItemDoneBanner.test.tsx
 │   │   ├── ItemDoneBanner.tsx
 │   │   ├── ItemEstimateField.tsx
-│   │   ├── ItemRewardField.tsx
 │   │   ├── ItemNotesLog.test.tsx
 │   │   ├── ItemNotesLog.tsx
 │   │   ├── ItemPenTime.test.tsx
 │   │   ├── ItemPenTime.tsx
 │   │   ├── ItemResourcesPanel.test.tsx
 │   │   ├── ItemResourcesPanel.tsx
+│   │   ├── ItemRewardField.tsx
 │   │   ├── ItemSaveFlag.tsx
 │   │   ├── ItemScheduleFlags.tsx
 │   │   ├── ItemSettingsKey.tsx
@@ -1211,6 +1211,7 @@
 │   │   ├── InstagramImportPanel.test.tsx
 │   │   ├── InstagramImportPanel.tsx
 │   │   ├── KeyboardShortcutsPanel.tsx
+│   │   ├── MessageIngestPanel.nfc.test.tsx
 │   │   ├── MessageIngestPanel.test.tsx
 │   │   ├── MessageIngestPanel.tsx
 │   │   ├── MobileSyncPanel.tsx
@@ -1289,13 +1290,11 @@
 │   │   ├── header-tracking-popup.tsx
 │   │   ├── header-tracking.css
 │   │   ├── now-intake.test.tsx
-│   │   ├── now-intake.test.tsx
 │   │   ├── now-intake.tsx
 │   │   ├── now-log-lists.tsx
 │   │   ├── pen-search-select.tsx
 │   │   ├── plan-pane.tsx
 │   │   ├── tracking-pane.tsx
-│   │   ├── update-state.test.tsx
 │   │   ├── update-state.test.tsx
 │   │   └── update-state.tsx
 │   ├── inbox-links.tsx
@@ -1510,18 +1509,18 @@
 │   │   ├── messages.jsonl
 │   │   └── runs.json
 │   ├── recovery-backups
-│   │   ├── auto-brain2-habits-store-2026-10-25-07.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-07.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-08.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-09.json
-│   │   ├── auto-brain2-task-storage-2026-10-25-10.json
-│   │   ├── auto-brain2-telegram-feed-2026-10-25-10.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-08.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-09.json
-│   │   ├── auto-brain2-timegrid-store-2026-10-25-10.json
-│   │   ├── auto-points-store-2026-10-25-08.json
-│   │   ├── auto-points-store-2026-10-25-09.json
-│   │   ├── auto-points-store-2026-10-25-10.json
+│   │   ├── auto-brain2-task-storage-2026-10-27-05.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-26-15.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-26-16.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-27-00.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-27-01.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-27-03.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-27-04.json
+│   │   ├── auto-brain2-telegram-feed-2026-10-27-06.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-27-01.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-27-05.json
+│   │   ├── auto-brain2-timegrid-store-2026-10-27-06.json
+│   │   ├── auto-points-store-2026-10-27-05.json
 │   │   ├── brain2-backup-2026-10-10T093232Z.json
 │   │   ├── brain2-empty-ls-2026-09-21T07-45-39-912Z.json
 │   │   ├── chrome-ls-2026-09-20T03-12-52-878Z.json
@@ -2788,6 +2787,7 @@
 │   │   ├── Dump iPhone Notes to Brain2.wflow.json
 │   │   ├── Location to Brain2.shortcut
 │   │   ├── Location to Brain2.wflow.json
+│   │   ├── NFC to Brain2.wflow.json
 │   │   ├── Screen Time to Brain2.shortcut
 │   │   ├── Screen Time to Brain2.wflow.json
 │   │   ├── dump-iphone-notes-to-brain2.md
@@ -2797,6 +2797,7 @@
 │   │   ├── iPhone Text to Brain2.wflow.json
 │   │   ├── iphone-calls-and-texts-to-brain2.md
 │   │   ├── iphone-location-to-brain2.md
+│   │   ├── nfc-tags.md
 │   │   └── screen-time-to-brain2.md
 │   ├── time-context-vision.md
 │   ├── tree.md
@@ -4323,6 +4324,8 @@
 │   │   ├── apply-morning-gm.ts
 │   │   ├── apply-morning-gm.walk.test.ts
 │   │   ├── apply-needed.ts
+│   │   ├── apply-nfc.test.ts
+│   │   ├── apply-nfc.ts
 │   │   ├── apply-note.ts
 │   │   ├── apply-now.ts
 │   │   ├── apply-phone-life.test.ts
@@ -4383,6 +4386,7 @@
 │   │   ├── message-time.ts
 │   │   ├── name-resolve.test.ts
 │   │   ├── name-resolve.ts
+│   │   ├── nfc-tag.ts
 │   │   ├── ocr.ts
 │   │   ├── pairing.test.ts
 │   │   ├── pairing.ts
