@@ -1008,7 +1008,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `started …` on the Switch pen plus `switchFrom` / `switchTo`. Another view
   paints that scope: To is the pen, the tick color is the destination.
   `so:` / `switch goal:` still store `objective …` on the Objective pen, in the
-  same Switch list. Note is a Text log instant. Thought process is that same instant
+  same Switch list. Note is a Text log instant with no `eventKind`, on its own Notes shelf. The composer and the shelf add do not append it onto a covering block; BIM `n` still does. The composer opens on Note. Thought process is that same instant
   with `eventKind` `thought-process` (a guiding strand of this moment: why you are doing something, what you expect to do next, and how it lands — not a general note, a one-word mood, or a short activity log such as brushed teeth), shelved under Thought process. Every tracking-log instant (intake, event, note, keyword log, spend, and switch, including one painted on Location, Mood, Company, or Activity) is a vertical tick on the Time grid and a row or one-minute slab where Activity Log and Day Log already draw instants (`discrete-log-instants.ts`). A scoped switch stays on that view. Older rows are recognized from the fields they already have. A painted interval stays a block. The clock is exact unless
   Estimated or Unknown; an unknown clock is a badge, and the bot keeps the
   named minute for placement. Log lines, switch lines, and tracking-note clocks
