@@ -1,5 +1,5 @@
 /**
- * components/Analytics/observatory-findings.ts — Classical findings over aligned series
+ * components/Analytics/meta/observatory-findings.ts — Classical findings over aligned series
  *
  * Pure. Observatory sentences are Pearson-r + n, never a model. Thin overlap
  * is not a finding. Named apart from `Observatory.tsx` so macOS case-folding

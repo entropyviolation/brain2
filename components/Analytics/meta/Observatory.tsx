@@ -1,5 +1,5 @@
 /**
- * components/Analytics/Observatory.tsx — Linked findings over the shared range
+ * components/Analytics/meta/Observatory.tsx — Linked findings over the shared range
  *
  * Classical connections (Pearson r + n) plus the Cross-section density. Thin
  * overlap is watermarked, never a finding.
@@ -15,23 +15,17 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { calculateDayPercentageAV } from "@/lib/calculations"
 import { exemptionTest } from "@/lib/habit-exemption"
-import { parseLocalDate } from "@/lib/date-utils"
 import { uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { resolveNights } from "@/lib/sleep-inference"
 import { sleepMinutes } from "@/lib/sleep-log"
 import { contextSwitchSeries } from "@/lib/metrics"
 import { entriesForDay } from "@/lib/time-entries"
-import { dateKeyOf } from "./analytics-range"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
+import { dateKeyOf, weekdayIndex } from "../chrome/analytics-range"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
 import { CrossSection } from "./CrossSection"
-import { FindingBlock, StudioHelp } from "./studio-kit"
+import { FindingBlock, StudioHelp } from "../studio/studio-kit"
 import { dailySeries, observatoryFindings, OBSERVATORY_FLOOR, type ObservatoryPair } from "./observatory-findings"
-
-function weekdayIndex(key: string): number {
-  const d = parseLocalDate(key)
-  return d ? d.getDay() : 0
-}
 
 export function Observatory() {
   const allTasks = useTaskStore((s) => s.tasks)

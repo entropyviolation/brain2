@@ -1,5 +1,5 @@
 /**
- * components/Analytics/open-in-lists.ts — Chart → Lists jump
+ * components/Analytics/studio/open-in-lists.ts — Chart → Lists jump
  *
  * From a chart, open the underlying items in Lists. A single shared list
  * opens that list; mixed membership opens All Items. Habits jump to the

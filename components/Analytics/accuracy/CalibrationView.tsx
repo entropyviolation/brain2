@@ -1,5 +1,5 @@
 /**
- * components/Analytics/CalibrationView.tsx — Estimate-vs-actual calibration
+ * components/Analytics/accuracy/CalibrationView.tsx — Estimate-vs-actual calibration
  *
  * Sentence + n + caveat. A thin window is not a finding. Scatter and rates
  * only render when the sample clears the floor. Click through to Lists.
@@ -30,11 +30,11 @@ import {
   calibrationTrend,
 } from "@/lib/calibration"
 import { itemTitle } from "@/lib/item-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, inRange, isThinSample, thinWindowSentence } from "./analytics-range"
-import { openItemsInLists } from "./open-in-lists"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, inRange, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { openItemsInLists } from "../studio/open-in-lists"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "../studio/studio-kit"
 
 export function CalibrationView() {
   const tasks = useTaskStore((s) => s.tasks)

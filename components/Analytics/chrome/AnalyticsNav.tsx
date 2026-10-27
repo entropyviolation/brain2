@@ -1,5 +1,5 @@
 /**
- * components/Analytics/AnalyticsNav.tsx — Studio index
+ * components/Analytics/chrome/AnalyticsNav.tsx — Studio index
  *
  * Groups on a rail; views of the selected group beneath. Milled equal keys in
  * brushed bays (active = CRT + power lamp). Same role="tab" contract as before

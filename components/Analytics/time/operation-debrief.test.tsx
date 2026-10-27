@@ -5,7 +5,7 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { useTaskStore } from "@/lib/task-store"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { OperationsAnalytics } from "./OperationsAnalytics"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 import { formatDebriefHours, summarizeOperationDebriefs } from "./operation-debrief"
 
 function review(overrides: Partial<OperationReview> & Pick<OperationReview, "id" | "operationId">): OperationReview {

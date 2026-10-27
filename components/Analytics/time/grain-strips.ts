@@ -1,5 +1,5 @@
 /**
- * components/Analytics/grain-strips.ts — One color per day, one color per week
+ * components/Analytics/time/grain-strips.ts — One color per day, one color per week
  *
  * The period filmstrip is minute paint. These strips answer a coarser question
  * with the same blocks: which pen, at the current display depth, occupied the

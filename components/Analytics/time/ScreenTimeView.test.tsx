@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ScreenTimeView.test.tsx
+ * components/Analytics/time/ScreenTimeView.test.tsx
  */
 import { render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -7,7 +7,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ScreenTimeView } from "./ScreenTimeView"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 
 vi.mock("@/lib/screentime/prefs", () => ({
   loadScreenTimePrefs: () => ({

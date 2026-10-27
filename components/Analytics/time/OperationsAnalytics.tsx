@@ -1,5 +1,5 @@
 /**
- * components/Analytics/OperationsAnalytics.tsx — Stage mosaic + work/neglect heat
+ * components/Analytics/time/OperationsAnalytics.tsx — Stage mosaic + work/neglect heat
  *
  * Reads operation items and the after-action reports already stored on them.
  * Does not restyle the Operations module interior.
@@ -14,16 +14,16 @@ import { useReviewsStore } from "@/lib/reviews-store"
 import { buildHeatmap } from "@/lib/operations"
 import { getOperationCategories, OPERATION_ATTR } from "@/lib/operation-types"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
 import {
   DEBRIEF_RATING_KEYS,
   DEBRIEF_RATING_LABELS,
   formatDebriefHours,
   summarizeOperationDebriefs,
 } from "./operation-debrief"
-import { SliceMosaic, StudioReadout } from "./studio-kit"
+import { SliceMosaic, StudioReadout } from "../studio/studio-kit"
 
 const STAGE_COLOR: Record<string, string> = {
   planning: "#64748b",

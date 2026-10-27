@@ -5,8 +5,8 @@ import { resetLocalStorage } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
 import type { Task } from "@/lib/types"
 import { CalibrationView } from "./CalibrationView"
-import { SAMPLE_FLOORS } from "./analytics-range"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { SAMPLE_FLOORS } from "../chrome/analytics-range"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div data-testid="chart">{children}</div>,

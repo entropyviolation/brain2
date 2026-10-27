@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-range-store.ts — Remembered Data window
+ * components/Analytics/chrome/analytics-range-store.ts — Remembered Data window
  *
  * Tiny client store so every Data tab reads the same rolling or custom
  * range. First paint uses the default (SSR-safe); a layout effect restores the

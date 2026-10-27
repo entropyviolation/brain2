@@ -1,5 +1,5 @@
 /**
- * components/Analytics/cycle-phase-stats.ts — Phase counts and day-aligned joins
+ * components/Analytics/time/cycle-phase-stats.ts — Phase counts and day-aligned joins
  *
  * Pure. The phase a day shows is `assessCycleDay`, batched with `assessCycleRange`.
  * Marked days and estimated days stay apart. Metric comparisons use marked days.

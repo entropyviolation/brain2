@@ -1,5 +1,5 @@
 /**
- * components/Analytics/MoodFieldView.tsx — Painted names and the stretches opened
+ * components/Analytics/time/MoodFieldView.tsx — Painted names and the stretches opened
  *
  * The mosaic is whatever pens exist. Same word, the water, and marks read only
  * the stretches that were opened. A color with no card stays out of the averages.
@@ -20,11 +20,11 @@ import {
   waterOf,
   type RankMean,
 } from "@/lib/mood-reading"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeyOf } from "./analytics-range"
-import { CanvasTitle, HourDayHeatmap, SliceMosaic, StudioReadout } from "./studio-kit"
-import { buildHourDayGrid } from "./hour-day"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeyOf } from "../chrome/analytics-range"
+import { CanvasTitle, HourDayHeatmap, SliceMosaic, StudioReadout } from "../studio/studio-kit"
+import { buildHourDayGrid } from "../hour-day"
 
 function formatMean(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)

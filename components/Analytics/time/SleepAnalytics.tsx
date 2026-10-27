@@ -1,5 +1,5 @@
 /**
- * components/Analytics/SleepAnalytics.tsx — The Sleep tab
+ * components/Analytics/time/SleepAnalytics.tsx — The Sleep tab
  *
  * Reads the nightly log (`lib/sleep-store.ts`) **and the Tracking grid**,
  * reconciled by `lib/sleep-inference.ts`, through the pure rollups in
@@ -62,11 +62,11 @@ import {
   previousDateKey,
   type SleepNightStat,
 } from "@/lib/sleep-log"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { PhosphorTrace, StudioReadout } from "./studio-kit"
-import { RidgelineChart } from "./studio-plots"
-import { valuesByWeekday } from "./studio-plot-stats"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { PhosphorTrace, StudioReadout } from "../studio/studio-kit"
+import { RidgelineChart } from "../studio/studio-plots"
+import { valuesByWeekday } from "../studio/studio-plot-stats"
 import { autocorrelation, coefficientOfVariation } from "@/lib/metrics"
 
 /** The chart's window: 6 PM the evening before through noon. */

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/operation-debrief.ts — After-action means for Data
+ * components/Analytics/time/operation-debrief.ts — After-action means for Data
  *
  * Reads operation reports that are already stored. Execution, planning, and
  * morale are the 1–10 `ratings` keys the after-action dialog writes.

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/AverageDayBoard.tsx — Average-day ribbons (All + Mon–Sun)
+ * components/Analytics/time/AverageDayBoard.tsx — Average-day ribbons (All + Mon–Sun)
  *
  * Replaces the Tracking mosaic. Clock-time ribbons: 96 × 15-minute slots,
  * averaged across the sample days for the selected scope / depth / untracked.
@@ -8,7 +8,7 @@
 
 import { memo } from "react"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
-import { inkOnFill } from "./studio-kit"
+import { inkOnFill } from "../studio/studio-kit"
 import {
   LABEL_MIN_SLOTS,
   SLOT_MINUTES,

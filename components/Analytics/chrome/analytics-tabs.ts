@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-tabs.ts — Data groups + views
+ * components/Analytics/chrome/analytics-tabs.ts — Data groups + views
  *
  * Categories live on a studio index; the views of the selected group sit
  * beneath. Item Types is a first-class Library view (Settings still edits types).

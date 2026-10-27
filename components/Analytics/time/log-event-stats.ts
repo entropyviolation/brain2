@@ -1,5 +1,5 @@
 /**
- * components/Analytics/log-event-stats.ts — Counts and clocks for Tracking log
+ * components/Analytics/time/log-event-stats.ts — Counts and clocks for Tracking log
  *
  * Pure. Unknown clocks are a count, never a point at the stored minute.
  * The phase strip is labeled from bleed days and ovulation marks.

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/period-filmstrip.ts — Chronological pen segments for a range
+ * components/Analytics/time/period-filmstrip.ts — Chronological pen segments for a range
  *
  * One continuous bar from range start through range end. Each minute has one
  * owner (the time-grid minute map); a fully covered block stays out of the bar.

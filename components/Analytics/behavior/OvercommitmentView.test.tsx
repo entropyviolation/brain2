@@ -10,8 +10,8 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { OVERCOMMITMENT_SAMPLE_FLOOR } from "@/lib/overcommitment"
 import type { Task } from "@/lib/types"
 import { OvercommitmentView } from "./OvercommitmentView"
-import { SAMPLE_FLOORS } from "./analytics-range"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { SAMPLE_FLOORS } from "../chrome/analytics-range"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div data-testid="chart">{children}</div>,

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/LibraryCuts.tsx — Tags, stages, weight from Item/Task
+ * components/Analytics/library/LibraryCuts.tsx — Tags, stages, weight from Item/Task
  *
  * Reads fields already on items (tags, stage, importance, cognitiveLoad,
  * entropy). No new capture. Empty frames stay honest.
@@ -8,11 +8,11 @@
 
 import { useMemo } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { CanvasTitle, SliceTreemap, StudioBars, StudioReadout } from "./studio-kit"
-import { UpsetChart } from "./studio-plots"
-import { tagIntersections } from "./studio-plot-stats"
-import { openItemsInLists } from "./open-in-lists"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { CanvasTitle, SliceTreemap, StudioBars, StudioReadout } from "../studio/studio-kit"
+import { UpsetChart } from "../studio/studio-plots"
+import { tagIntersections } from "../studio/studio-plot-stats"
+import { openItemsInLists } from "../studio/open-in-lists"
 
 const STAGE_LABEL: Record<string, string> = {
   inbox: "Inbox",

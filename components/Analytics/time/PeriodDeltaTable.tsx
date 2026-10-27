@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PeriodDeltaTable.tsx — Up / down vs previous equal window
+ * components/Analytics/time/PeriodDeltaTable.tsx — Up / down vs previous equal window
  *
  * Ink ± deltas only — pen color stays on the swatch. Sorted by |Δ| descending.
  */

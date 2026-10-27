@@ -1,5 +1,5 @@
 /**
- * components/Analytics/MetricsTrends.tsx — Trend view for self-tracking metrics
+ * components/Analytics/meta/MetricsTrends.tsx — Trend view for self-tracking metrics
  *
  * Self-contained analytics view (reads `metrics-store` itself). For the selected
  * metric it shows the raw value series, a least-squares trend line, a rolling
@@ -23,11 +23,11 @@ import {
 } from "recharts"
 import { useMetricsStore, METRIC_DEFINITIONS, type MetricKey } from "@/lib/metrics-store"
 import { trend, rollingSlope, detectChangePoints } from "@/lib/metrics"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeyOf } from "./analytics-range"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeyOf } from "../chrome/analytics-range"
 import { MetricLogger } from "@/components/Tracking/MetricLogger"
-import { STUDIO_TOOLTIP } from "./studio-kit"
+import { STUDIO_TOOLTIP } from "../studio/studio-kit"
 import { NativeSelect } from "@/components/ui/native-select"
 
 function formatAt(at: string): string {

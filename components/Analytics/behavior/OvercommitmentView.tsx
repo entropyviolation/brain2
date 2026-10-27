@@ -1,5 +1,5 @@
 /**
- * components/Analytics/OvercommitmentView.tsx — Load early-warning (#238)
+ * components/Analytics/behavior/OvercommitmentView.tsx — Load early-warning (#238)
  *
  * One sentence + n over the shared Data range. A thin window is not a
  * finding. Does not reschedule anything.
@@ -19,10 +19,10 @@ import {
 import { useTaskStore } from "@/lib/task-store"
 import { summarizeOvercommitment } from "@/lib/overcommitment"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, thinWindowSentence } from "./analytics-range"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, thinWindowSentence } from "../chrome/analytics-range"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 
 const CAVEAT =
   "Day-pushes are reconstructed from each item’s daysPushed, ending at its schedule (or today). Logged minutes are timeLogs. This does not move your day."

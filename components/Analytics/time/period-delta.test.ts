@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { dateKeysInclusive, previousAnalyticsWindow } from "./analytics-range"
+import { dateKeysInclusive, previousAnalyticsWindow } from "../chrome/analytics-range"
 import {
   comparePenMinutes,
   formatDeltaPercent,

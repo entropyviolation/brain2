@@ -1,5 +1,5 @@
 /**
- * components/Analytics/RegretView.tsx — Regret accrual ledger
+ * components/Analytics/accuracy/RegretView.tsx — Regret accrual ledger
  *
  * Regret is the accrued cost of important items sitting undone past their due
  * date. Shared Data range; a thin window is not a finding. KPI cards stay
@@ -20,11 +20,11 @@ import {
 import { useTaskStore } from "@/lib/task-store"
 import { useRegretStore, regretCost } from "@/lib/regret-store"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "./analytics-range"
-import { openItemsInLists } from "./open-in-lists"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, thinWindowSentence } from "../chrome/analytics-range"
+import { openItemsInLists } from "../studio/open-in-lists"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {
   "no-energy": "No energy",

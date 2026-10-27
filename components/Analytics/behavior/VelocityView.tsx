@@ -1,5 +1,5 @@
 /**
- * components/Analytics/VelocityView.tsx — Throughput and cycle time
+ * components/Analytics/behavior/VelocityView.tsx — Throughput and cycle time
  */
 "use client"
 
@@ -8,10 +8,10 @@ import { ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis
 import { useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { dateKeyOf } from "./analytics-range"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioReadout } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { dateKeyOf } from "../chrome/analytics-range"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioReadout } from "../studio/studio-kit"
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/studio-plots.tsx — Horizon, ridgeline, violin, alluvial,
+ * components/Analytics/studio/studio-plots.tsx — Horizon, ridgeline, violin, alluvial,
  * beeswarm, slopegraph, UpSet, small multiples, Cleveland cycle, sparkline.
  *
  * Phosphor is for traces only. These canvases sit in Win95 wells on gray face.
@@ -29,7 +29,7 @@ import {
   type SlopeRow,
   type UpsetRow,
 } from "./studio-plot-stats"
-import { hourLabel } from "./hour-day"
+import { hourLabel } from "../hour-day"
 
 function linspace(min: number, max: number, n: number): number[] {
   if (n <= 1) return [min]

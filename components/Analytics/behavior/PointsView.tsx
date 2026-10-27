@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PointsView.tsx — Daily / cumulative points + source split
+ * components/Analytics/behavior/PointsView.tsx — Daily / cumulative points + source split
  *
  * The last plate is the **Points ledger** (`#analytics-points-ledger`): every
  * award in the range, or the whole ledger, newest first, with a search. A row
@@ -13,10 +13,10 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { usePointsStore } from "@/lib/points-store"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { openItemsInLists } from "./open-in-lists"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { openItemsInLists } from "../studio/open-in-lists"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "../studio/studio-kit"
 import { AwardDetail } from "@/components/Home/award-detail"
 import { awardReason, formatAwardPoints } from "@/lib/habit-points"
 import { AWARD_KIND_LABEL, awardKindOf } from "@/lib/points-award-explain"

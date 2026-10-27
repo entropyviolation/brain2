@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ScreenTimeView.tsx — ActivityWatch-painted Screen Time
+ * components/Analytics/time/ScreenTimeView.tsx — ActivityWatch-painted Screen Time
  *
  * Active vs untracked occupancy, top apps / categories from the same pens as
  * Tracking, last-sync from prefs, and a simple alignment strip against human
@@ -12,9 +12,9 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { formatDuration } from "@/lib/time-entries"
 import { entriesInRange, penTotalsAtDepth, totalsFor, uniqueMinutes } from "@/lib/tracking-summary"
 import { loadScreenTimePrefs } from "@/lib/screentime/prefs"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SliceMosaic, StudioReadout } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SliceMosaic, StudioReadout } from "../studio/studio-kit"
 
 function overlapMinutes(a: ReturnType<typeof entriesInRange>, b: ReturnType<typeof entriesInRange>, days: string[]): number {
   const ua = uniqueMinutes(a, days)

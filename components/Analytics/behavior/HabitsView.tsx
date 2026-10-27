@@ -1,5 +1,5 @@
 /**
- * components/Analytics/HabitsView.tsx — Habit density, rates, grades, Good days
+ * components/Analytics/behavior/HabitsView.tsx — Habit density, rates, grades, Good days
  */
 "use client"
 
@@ -15,13 +15,13 @@ import { isHabitGoalMet } from "@/lib/habit-utils"
 import { goodDaySummary } from "@/lib/habit-accomplishment"
 import { incrementalDataForTask, incrementalGoalOn, incrementalLoggedValue } from "@/lib/incremental-habits"
 import { activeTrackingLink } from "@/lib/habit-tracking"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
 import { formatCrtNumber } from "@/lib/crt-number"
-import { DensityCalendar, PhosphorTrace, StudioBars, StudioHelp, StudioReadout } from "./studio-kit"
-import { HorizonChart, Slopegraph } from "./studio-plots"
-import { weekdayWeekendRates } from "./studio-plot-stats"
+import { DensityCalendar, PhosphorTrace, StudioBars, StudioHelp, StudioReadout } from "../studio/studio-kit"
+import { HorizonChart, Slopegraph } from "../studio/studio-plots"
+import { weekdayWeekendRates } from "../studio/studio-plot-stats"
 import { autocorrelation } from "@/lib/metrics"
 
 function addDays(d: Date, n: number) {

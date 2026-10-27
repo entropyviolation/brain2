@@ -1,5 +1,5 @@
 /**
- * components/Analytics/tag-trends.ts — Per-tag minutes by calendar month
+ * components/Analytics/time/tag-trends.ts — Per-tag minutes by calendar month
  *
  * Weekly series already live in `tagWeekTrend` (`lib/tracking-summary.ts`).
  * This is the same union — a minute tagged in two scopes counts once — bucketed

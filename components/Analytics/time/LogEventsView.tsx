@@ -1,5 +1,5 @@
 /**
- * components/Analytics/LogEventsView.tsx — Time → Log
+ * components/Analytics/time/LogEventsView.tsx — Time → Log
  *
  * Day bars, kind counts, and a clock scatter of exact and estimated times.
  * Unknown clocks are a count. The phase strip reads cycle marks over this
@@ -12,9 +12,9 @@ import { ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesToLabel } from "@/lib/time-entries"
 import { parseLocalDate } from "@/lib/date-utils"
-import { ChartFrame } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 import {
   asLogEntry,
   classifyLogInstant,

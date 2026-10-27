@@ -1,5 +1,5 @@
 /**
- * components/Analytics/InstagramView.tsx — Sources → Instagram
+ * components/Analytics/sources/InstagramView.tsx — Sources → Instagram
  *
  * Hosts the generated Instagram report (`report.html` from the person's
  * `build_report.py`) in a frame this view owns. The report keeps its own look

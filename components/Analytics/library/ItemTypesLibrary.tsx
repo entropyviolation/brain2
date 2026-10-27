@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ItemTypesLibrary.tsx — Browse every created item type
+ * components/Analytics/library/ItemTypesLibrary.tsx — Browse every created item type
  *
  * Data Library surface: sort, count, and drill into items. Settings still
  * edits types; this is the catalog. Open in Lists is the loop.
@@ -14,9 +14,9 @@ import { displayTitle } from "@/lib/search"
 import { iconFor } from "@/components/Icons/Icon"
 import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
 import type { ItemTypeDefinition } from "@/lib/types"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { openItemsInLists } from "./open-in-lists"
-import { RelationsLibrary } from "./relations/RelationsLibrary"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { openItemsInLists } from "../studio/open-in-lists"
+import { RelationsLibrary } from "../relations/RelationsLibrary"
 import { NativeSelect } from "@/components/ui/native-select"
 
 type SortKey = "name" | "count" | "kind"

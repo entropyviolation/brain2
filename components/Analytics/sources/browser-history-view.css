@@ -1,5 +1,5 @@
 /*
- * components/Analytics/browser-history-view.css — Sources → Browser
+ * components/Analytics/sources/browser-history-view.css — Sources → Browser
  */
 .fm98.an95 .an-bh { display: flex; flex-direction: column; gap: 12px; color: var(--an-ink); font-size: 12px; }
 .fm98.an95 .an-bh.is-drop { outline: 1px dashed currentColor; outline-offset: 4px; }

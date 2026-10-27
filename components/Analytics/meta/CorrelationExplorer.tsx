@@ -1,5 +1,5 @@
 /**
- * components/Analytics/CorrelationExplorer.tsx — Pairwise correlation matrix
+ * components/Analytics/meta/CorrelationExplorer.tsx — Pairwise correlation matrix
  *
  * Sentence + n + caveat. Ranked links and the scatter stay hidden until the
  * overlap clears the sample floor. Shared Data range. Not a chart builder.
@@ -15,26 +15,20 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { usePointsStore } from "@/lib/points-store"
 import { calculateDayPercentageAV } from "@/lib/calculations"
 import { exemptionTest } from "@/lib/habit-exemption"
-import { parseLocalDate } from "@/lib/date-utils"
 import { uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { resolveNights } from "@/lib/sleep-inference"
 import { sleepMinutes } from "@/lib/sleep-log"
 import { alignSeries, correlate, type SeriesPoint } from "@/lib/metrics"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, dateKeyOf, isThinSample, thinWindowSentence } from "./analytics-range"
-import { FindingBlock, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, dateKeyOf, isThinSample, thinWindowSentence, weekdayIndex } from "../chrome/analytics-range"
+import { FindingBlock, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
 import { NativeSelect } from "@/components/ui/native-select"
 
 interface NamedSeries {
   id: string
   name: string
   points: SeriesPoint[]
-}
-
-function weekdayIndex(key: string): number {
-  const d = parseLocalDate(key)
-  return d ? d.getDay() : 0
 }
 
 function cellFill(r: number, n: number, floor: number): string {

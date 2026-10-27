@@ -5,7 +5,7 @@ import { useSleepStore } from "@/lib/sleep-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { SleepNight } from "@/lib/sleep-log"
 import { SleepAnalytics } from "./SleepAnalytics"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 
 /** Pin "today" so `recentDateKeys` covers the seeded nights. */

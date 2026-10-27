@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-range.ts — Shared Data window + honesty
+ * components/Analytics/chrome/analytics-range.ts — Shared Data window + honesty
  *
  * One window for every Data tab so Sleep, Habits, Tracking, and
  * Plan-vs-Reality can be compared without re-picking. Presets are rolling last
@@ -63,6 +63,12 @@ export function isDateKey(value: unknown): value is string {
   if (typeof value !== "string") return false
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   return parseLocalDate(value) !== null
+}
+
+/** Sunday is 0. An unreadable key is Sunday. */
+export function weekdayIndex(key: string): number {
+  const d = parseLocalDate(key)
+  return d ? d.getDay() : 0
 }
 
 export function rangeLabel(days: number): string {

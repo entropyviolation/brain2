@@ -1,5 +1,5 @@
 /**
- * components/Analytics/PlanVsReality.tsx — Plan-vs-reality dashboard
+ * components/Analytics/accuracy/PlanVsReality.tsx — Plan-vs-reality dashboard
  *
  * Shared Data window. Grain (day/week/month/season) is how a period is scored,
  * not a second date picker. A thin sample is not a variance finding. The
@@ -23,9 +23,9 @@ import {
   taskScheduledInMonth,
 } from "@/lib/date-utils"
 import { quarterLabel, taskTouchesQuarter } from "@/lib/seasons"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { SAMPLE_FLOORS, isThinSample, periodKeysFromDateKeys, thinWindowSentence } from "./analytics-range"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { SAMPLE_FLOORS, isThinSample, periodKeysFromDateKeys, thinWindowSentence } from "../chrome/analytics-range"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const GRAINS: { value: PlanPeriod; label: string }[] = [

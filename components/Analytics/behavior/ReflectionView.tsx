@@ -1,5 +1,5 @@
 /**
- * components/Analytics/ReflectionView.tsx — Completion-review trajectories
+ * components/Analytics/behavior/ReflectionView.tsx — Completion-review trajectories
  */
 "use client"
 
@@ -12,11 +12,11 @@ import { itemTitle } from "@/lib/item-utils"
 import { parseLocalDate } from "@/lib/date-utils"
 import { summarizeCompletionReviews } from "@/lib/completion-review"
 import { PostMortemDialog } from "@/components/Reviews/PostMortemDialog"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "./studio-kit"
-import { CompletionReviewPlates } from "./CompletionReviewPlates"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
+import { CompletionReviewPlates } from "../CompletionReviewPlates"
 
 export function ReflectionView() {
   const allTasks = useTaskStore((s) => s.tasks)

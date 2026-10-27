@@ -7,7 +7,7 @@ import { addCalendarDays, formatLocalDateKey } from "@/lib/date-utils"
 import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useCleanStores } from "@/tests/test-utils"
-import { useAnalyticsRangeStore } from "./analytics-range-store"
+import { useAnalyticsRangeStore } from "../chrome/analytics-range-store"
 import { CyclePhaseView } from "./CyclePhaseView"
 
 describe("cycle phase view", () => {

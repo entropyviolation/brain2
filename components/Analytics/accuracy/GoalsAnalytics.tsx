@@ -1,5 +1,5 @@
 /**
- * components/Analytics/GoalsAnalytics.tsx — Objective contribution + neglected goals
+ * components/Analytics/accuracy/GoalsAnalytics.tsx — Objective contribution + neglected goals
  */
 "use client"
 
@@ -9,11 +9,11 @@ import { useTaskStore } from "@/lib/task-store"
 import { goalProgressPercent, goalsNeedingAttention } from "@/lib/objectives"
 import { itemTitle } from "@/lib/item-utils"
 import { summarizeCompletionReviews } from "@/lib/completion-review"
-import { GoalTexturePlate } from "./CompletionReviewPlates"
-import { ChartFrame, OpenInListsButton } from "./chart-frame"
-import { useAnalyticsRange } from "./analytics-range-store"
-import { inRange } from "./analytics-range"
-import { StudioBars, StudioReadout } from "./studio-kit"
+import { GoalTexturePlate } from "../CompletionReviewPlates"
+import { ChartFrame, OpenInListsButton } from "../studio/chart-frame"
+import { useAnalyticsRange } from "../chrome/analytics-range-store"
+import { inRange } from "../chrome/analytics-range"
+import { StudioBars, StudioReadout } from "../studio/studio-kit"
 
 export function GoalsAnalytics() {
   const goals = useGoalsStore((s) => s.goals)
