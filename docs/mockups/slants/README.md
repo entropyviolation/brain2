@@ -1,6 +1,6 @@
 # Mockup slants
 
-_Last mapped: 2026-10-21_
+_Last mapped: 2026-10-26_
 
 A slant is a mockup pushed hard toward one outside style. Slants are opt-in. Use one only when someone asks for that slant by name.
 
@@ -16,6 +16,7 @@ Scope:
 | `style-lab/` | 15 To do mockups across the rule-break dial, level 0 (keeps every house rule) to level 4 (breaks everything). |
 | `time-grid-lab/` | Time Grid studio: 17 boards for Home → Tracking → Time Grid, dial 0 to 4, plus a parts bin of eight key families. Source in `src/`, built by `build.sh`. See its README. |
 | `../experimental/` | Not a slant. Experimental concepts, for example the chemistry lab that used to sit on the Day Tubes page. |
+| `../ui-lab/` | Not a slant. Nine room pages (habits, plan, todo, goals, tracking, lists, docs, scheduler, operations), served with the app’s real CSS. `npm run ui-lab`. See [`../ui-lab/README.md`](../ui-lab/README.md). |
 | `STYLE_OPTIONS.md` | 18 ways to use Hipgnosis and retrofuturism while keeping `DESIGN_STYLE.md`. This is the only file here meant for house work. |
 
 The `.dc.html` files and `canvas.json` are sources for Claude Design canvases. They need that editor's runtime (`support.js`) and do not open as plain pages. Live copies:
@@ -24,4 +25,4 @@ The `.dc.html` files and `canvas.json` are sources for Claude Design canvases. T
 - Time Grid studio: https://claude.ai/artifact/K2Sri9GSvwZNzTeyBTCZhu
 - Base mockup the slants start from: https://claude.ai/artifact/AhZ7M3tfBx1ahrGzTG4xH6
 
-The To do redesign plan is `docs/TODO_REDESIGN.md`.
+The To do redesign is resolved in `docs/TODO_REDESIGN.md` (2026-10-27). It is not an open plan.
