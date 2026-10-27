@@ -101,6 +101,8 @@ import { TodoLoadPanel, comfortDialT, comfortWord } from "./TodoLoadPanel"
 import { AddTodoDialog, type ExistingTaskHit, type NewTodoDraft } from "./AddTodoDialog"
 import { AddDoneDialog } from "./AddDoneDialog"
 import { TodoPeriodNav } from "./TodoPeriodNav"
+import { useTodoPhone } from "./use-todo-phone"
+import { TodoPhonePage } from "./todo-phone-page"
 import { DoneTodoSection } from "./DoneTodoSection"
 import { MissedTodoSection } from "./MissedTodoSection"
 import { UndoneTodoSection } from "./UndoneTodoSection"
@@ -173,14 +175,28 @@ const BGE_SECTIONS: { tier: StepTier; title: string }[] = [
   { tier: "exceptional", title: "Exceptional" },
 ]
 
+/** Desktop page or phone page. The two trees are never mounted together. */
 export function TodoPanel({
+  currentDate,
+  setCurrentDate,
+}: {
+  currentDate?: Date
+  setCurrentDate?: (date: Date) => void
+} = {}) {
+  const phone = useTodoPhone()
+  if (phone) return <TodoPhonePage currentDate={currentDate} setCurrentDate={setCurrentDate} />
+  return <TodoDeskPanel currentDate={currentDate} setCurrentDate={setCurrentDate} />
+}
+
+/** The milled fascia. Not mounted on a phone. */
+function TodoDeskPanel({
   currentDate: controlledDate,
   setCurrentDate: setControlledDate,
 }: {
   currentDate?: Date
   setCurrentDate?: (date: Date) => void
 } = {}) {
-  usePenActionSync()
+    usePenActionSync()
   const tasks = useTaskStore((s) => s.tasks)
   const reviews = useReviewsStore((s) => s.reviews)
   useLayoutEffect(() => {
@@ -1361,6 +1377,7 @@ export function TodoPanel({
       overCap: inProgressCount > wipLimit,
     }
   })()
+
 
   return (
     <div
