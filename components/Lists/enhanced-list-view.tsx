@@ -2,271 +2,58 @@
  * components/Lists/enhanced-list-view.tsx — Lists board orchestrator
  *
  * Composes hooks, views, dialogs, and navigation for the retro File Manager UI.
- * Spec: §6 (Next Actions / Lists).
+ * Spec: §6 (Next Actions / Lists). Store subscriptions stay here. The window
+ * shell, the Lists Names stamp, and the stylesheet import stay here too.
  */
 "use client"
 
-import type React from "react"
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
-import { KeycapClose } from "@/components/keycap-close"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import { useListsUiStore, type ListDisplay } from "@/lib/lists-ui-store"
-import { inferColumnType } from "@/lib/csv"
-import { parseSpreadsheetFile } from "@/lib/spreadsheet-file"
+import { useListsUiStore } from "@/lib/lists-ui-store"
+import { isScheduledFolderId } from "@/lib/scheduled-lists-sync"
 import {
-  capitalizeLabel,
-  getItemLabel,
-} from "@/lib/item-utils"
-import { isClearedFromWork } from "@/lib/completion-status"
-import { visibleListItems } from "@/lib/list-sent"
-import { isExplicitlyScheduleable } from "@/lib/scheduling"
-import {
-  syncNextActionsSmartLists,
-  syncScheduledFolderHierarchy,
-  isNaArchiveCategoryId,
-  isNaPeriodSmartCategoryId,
-  isPeriodLedgerListId,
-  tasksForPeriodLedgerList,
-  tasksForNaSmartList,
-  isScheduledFolderId,
-  getTasksForScheduledFolder,
-} from "@/lib/scheduled-lists-sync"
-import { joinArchiveListMembership, tasksForArchiveList } from "@/lib/archive-lists"
-import {
-  syncFolderAllItemsCategories,
-  syncGlobalAllItemsList,
-  getTasksForFolderAllView,
-  isTaskUncategorizedInFolder,
-  isTaskUncategorizedGlobally,
-  filterTasksByHiddenFolderLists,
-  filterTasksByHiddenGlobalFolders,
-  foldersInGlobalAllForFilter,
-  listsInFolderForFilter,
   folderAllItemsList,
   buildFolderAllItemsList,
   buildGlobalAllItemsList,
-  isFolderAllItemsCategoryId,
   GLOBAL_ALL_ITEMS_KEY,
 } from "@/lib/folder-all-items"
-import { isRemindersList } from "@/lib/reminders"
-import { isPeopleIKnowList } from "@/lib/people-i-know"
-import { isInstagramPeopleList } from "@/lib/instagram-lists"
-import { buildGridEntries, ROOT_ALL_FOLDER_ID } from "@/lib/lists-grid-entries"
-import { destinationFoldersForSelection, originFolderIdToUnlink, otherFolderIdsHoldingList, wouldCreateFolderCycle, type ListPlacementMode } from "@/lib/folder-selection"
-import {
-  canMoveItemsFromOpenList,
-  excludedListIdsForSelection,
-  placeTaskInList,
-  placeTaskIntoDestinationLists,
-  type ItemPlacementMode,
-} from "@/lib/item-selection"
-import { applyListMerge, type ListMergePlan } from "@/lib/list-merge"
-import { applyItemMerge, itemMergeLabel, type ItemMergePlan } from "@/lib/item-merge"
-import { selectableEntryIds } from "@/lib/lists-folder-search"
-import {
-  buildListsTaskIndex,
-  completionRateForList,
-  smartTasksFor,
-  tasksForList,
-  type ListsTaskIndex,
-} from "@/lib/lists-task-index"
-import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import { NextActionsSettingsDialog } from "@/components/Lists/settings-dialog"
-import { DailyHabitsList, WeeklyHabitsList, MonthlyHabitsList, SeasonHabitsList } from "@/components/Lists/daily-habits-list"
-import { ObjectivesList } from "@/components/Lists/objectives-list"
 import { useGoalsStore } from "@/lib/goals-store"
 import { useModulesStore } from "@/lib/modules-store"
-import {
-  filterTasksHiddenFromGlobalAll,
-  isFolderHiddenFromGlobalAll,
-  syncModuleListFolders,
-  taskStoreModuleListsMutators,
-} from "@/lib/module-lists"
-import { syncModuleListContents } from "@/lib/module-list-import"
-import { ensureFilmTypeOnFilmsLists } from "@/lib/film-types"
-import {
-  filterTasksByHiddenItemTypes,
-  shouldShowTypeFilter,
-  typeFilterItems,
-  typesPresentInTasks,
-} from "@/lib/list-type-filter"
-import { listAllowedTypeIds } from "@/lib/list-item-types"
 import { useListsNavigation } from "@/components/Lists/hooks/useListsNavigation"
 import { useListsSearch } from "@/components/Lists/hooks/useListsSearch"
 import { useListsDragDrop } from "@/components/Lists/hooks/useListsDragDrop"
 import { useListsSelection } from "@/components/Lists/hooks/useListsSelection"
 import { useListsTaskActions } from "@/components/Lists/hooks/useListsTaskActions"
+import { useListsShelfMaintenance } from "@/components/Lists/hooks/useListsShelfMaintenance"
+import { useListsShelf } from "@/components/Lists/hooks/useListsShelf"
+import { useOpenListItems } from "@/components/Lists/hooks/useOpenListItems"
+import { useListsClipboard } from "@/components/Lists/hooks/useListsClipboard"
+import { useListsCreate } from "@/components/Lists/hooks/useListsCreate"
+import { useListsDuplicate } from "@/components/Lists/hooks/useListsDuplicate"
+import { useFolderContextMenu } from "@/components/Lists/hooks/useFolderContextMenu"
+import { useListsCsvImport } from "@/components/Lists/hooks/useListsCsvImport"
+import { useListsSelectionActions } from "@/components/Lists/hooks/useListsSelectionActions"
+import { useListsIconChrome } from "@/components/Lists/hooks/useListsIconChrome"
 import { FolderTree } from "@/components/Lists/navigation/FolderTree"
 import { getBreadcrumb } from "@/components/Lists/navigation/BreadcrumbNav"
 import { ListsToolbar } from "@/components/Lists/toolbar/ListsToolbar"
-import { SelectionToolbar } from "@/components/Lists/toolbar/SelectionToolbar"
-import { ItemSelectionToolbar } from "@/components/Lists/toolbar/ItemSelectionToolbar"
-import { FolderViewIcons } from "@/components/Lists/views/FolderViewIcons"
-import { FolderViewList } from "@/components/Lists/views/FolderViewList"
-import { FolderViewDetails } from "@/components/Lists/views/FolderViewDetails"
-import { FolderViewCards } from "@/components/Lists/views/FolderViewCards"
-import { SearchResultsView } from "@/components/Lists/views/SearchResultsView"
-import { ListContentPanel } from "@/components/Lists/list-content/ListContentPanel"
-import { ListIconsDesktopSwitch } from "@/components/Lists/list-content/ListContentIconsDesktop"
-import { AllViewCheckboxFilter } from "@/components/Lists/list-content/AllViewCheckboxFilter"
-import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
-import { CsvImportDialog } from "@/components/Lists/dialogs/CsvImportDialog"
-import { NewListDialog, type NewListFields } from "@/components/Lists/dialogs/NewListDialog"
-import { NewFolderDialog, type NewFolderFields } from "@/components/Lists/dialogs/NewFolderDialog"
-import { MergeListsConfirmDialog } from "@/components/Lists/dialogs/MergeListsConfirmDialog"
-import { MergeListsDialog } from "@/components/Lists/dialogs/MergeListsDialog"
-import { MergeItemsConfirmDialog } from "@/components/Lists/dialogs/MergeItemsConfirmDialog"
-import { MergeItemsDialog } from "@/components/Lists/dialogs/MergeItemsDialog"
-import { EditListDialog } from "@/components/Lists/dialogs/EditListDialog"
-import { documentAttrsFromFile, photoAttrsFromFile, titleFromFileName } from "@/lib/media-ingest"
-import { listAllowsDocuments } from "@/lib/document-types"
-import { listAllowsPhotos } from "@/lib/photo-types"
-import { EditFolderDialog } from "@/components/Lists/dialogs/EditFolderDialog"
-import { DuplicateSelectionDialog } from "@/components/Lists/dialogs/DuplicateSelectionDialog"
-import { PasteSelectionDialog } from "@/components/Lists/dialogs/PasteSelectionDialog"
-import { GravitySettingsDialog } from "@/components/Lists/dialogs/GravitySettingsDialog"
-import {
-  FolderContextMenu,
-  type FolderContextMenuState,
-} from "@/components/Lists/views/FolderContextMenu"
-import {
-  applyDuplicateFolderPlan,
-  applyDuplicateListPlan,
-  planDuplicateFolder,
-  planDuplicateList,
-  type DuplicateScope,
-} from "@/lib/lists-duplicate"
-import {
-  applyListsClipboardPaste,
-  buildListsClipboardPayload,
-  isListsClipboardKeyboardBlocked,
-  isListsClipboardSurfaceActive,
-  listsClipboardIsEmpty,
-  type ListsClipboardPayload,
-  type PasteMode,
-} from "@/lib/lists-clipboard"
-import { isEditableFolder } from "@/lib/folder-tree"
-import { LIST_TEMPLATES, SMART_LISTS } from "@/components/Lists/constants"
-import { iconFor, orbFor } from "@/components/Lists/lib/icon-utils"
-import {
-  formatInspectorDate,
-  layoutVelvetIconGrid,
-  VELVET_GRID_FALLBACK_WIDTH,
-} from "@/components/Lists/lib/velvet-icon-grid"
+import { resolveOpenListChrome } from "@/components/Lists/lib/open-list-chrome"
 import { chooseListsLocation } from "@/components/Lists/lib/lists-location-choice"
-import { openTargetKey } from "@/components/Lists/open-target"
-import type { CsvImportState, GridEntry, IconPickerTarget, SmartId } from "@/components/Lists/types"
-import { LIST_DISPLAY_MODES, isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue, type AttributeDefinition, type ListItemSort } from "@/lib/types"
-import { listAttributeSchema, mergeListAttributes } from "@/components/Lists/attribute-editor"
-import { getItemType } from "@/lib/item-types"
-import {
-  ITEM_TYPES_LOCATION,
-  compareItemTypeLists,
-  itemTypeListLabel,
-  tasksOfItemType,
-} from "@/lib/item-type-lists"
-import { resolveDefaultViewSort, setDefaultViewSort } from "@/lib/default-view-prefs"
-import { filterListItemsBySearch, listItemSortOptions, sortListItems } from "@/lib/list-item-sort"
-import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
+import { ListsTitleBar } from "@/components/Lists/board/lists-title-bar"
+import { ListsAddressBar } from "@/components/Lists/board/lists-address-bar"
+import { ListsStatusBar } from "@/components/Lists/board/lists-status-bar"
+import { ListsSelectStrip } from "@/components/Lists/board/lists-select-strip"
+import { ListInnerCaption } from "@/components/Lists/board/list-inner-caption"
+import { ListsInspector } from "@/components/Lists/board/lists-inspector"
+import { ListsMainPane } from "@/components/Lists/board/lists-main-pane"
+import { ListsDialogHost } from "@/components/Lists/board/lists-dialog-host"
+import type { GridEntry } from "@/components/Lists/types"
+import type { List, Folder } from "@/lib/types"
 import "./filemanager98.css"
-import { withoutStepItems } from "@/lib/step-item-guard"
 
 interface EnhancedCategoryViewProps {
   onTaskSelect: (taskId: string) => void
-}
-
-function latestTouch(createdAt: Date | undefined, tasks: Task[]): Date | undefined {
-  let latest = createdAt ? new Date(createdAt).getTime() : 0
-  for (const t of tasks) {
-    for (const d of [t.createdAt, t.completedDate, t.startedAt]) {
-      if (!d) continue
-      const n = new Date(d).getTime()
-      if (!Number.isNaN(n) && n > latest) latest = n
-    }
-  }
-  return latest ? new Date(latest) : undefined
-}
-
-function InspectorFacts({
-  countLabel,
-  typeLabel,
-  lastTouched,
-}: {
-  countLabel: string
-  typeLabel: string
-  lastTouched: string
-}) {
-  return (
-    <dl className="fm-inspector-facts">
-      <dt>Count</dt>
-      <dd>
-        <span className="fm-crt-count">{countLabel}</span>
-      </dd>
-      <dt>Type</dt>
-      <dd>{typeLabel}</dd>
-      <dt>Last touched</dt>
-      <dd>{lastTouched}</dd>
-    </dl>
-  )
-}
-
-function sameIds(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
-  return true
-}
-
-/** A sync that moves a folder and moves it back must not publish a new tree. */
-function sameFolderTree(before: Folder[], after: Folder[]): boolean {
-  if (before.length !== after.length) return false
-  for (let i = 0; i < before.length; i++) {
-    const a = before[i]
-    const b = after[i]
-    if (a === b) continue
-    if (a.id !== b.id || a.name !== b.name || a.parentFolderId !== b.parentFolderId) return false
-    if (!sameIds(a.listIds, b.listIds)) return false
-  }
-  return true
-}
-
-function sameListShelf(before: List[], after: List[]): boolean {
-  if (before.length !== after.length) return false
-  for (let i = 0; i < before.length; i++) {
-    const a = before[i]
-    const b = after[i]
-    if (a === b) continue
-    if (a.id !== b.id || a.name !== b.name || a.autoArchive !== b.autoArchive) return false
-  }
-  return true
-}
-
-/** Fields the Lists maintenance pass actually reads. Title edits must not rerun it. */
-function scheduleMaintenanceKey(tasks: Task[]): string {
-  let h = tasks.length || 1
-  const mix = (s: string | undefined) => {
-    if (!s) {
-      h = Math.imul(h ^ 0, 33)
-      return
-    }
-    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 33)
-  }
-  const stamp = (value: unknown) => {
-    if (value instanceof Date) mix(String(value.getTime()))
-    else if (typeof value === "string" || typeof value === "number") mix(String(value))
-  }
-  for (const t of tasks) {
-    mix(t.id)
-    mix(t.completed ? "1" : "0")
-    mix(t.status)
-    for (const id of t.lists ?? []) mix(id)
-    stamp(t.scheduledDate)
-    stamp(t.deadline)
-    mix(t.scheduledYear)
-    mix(t.scheduledMonth)
-    mix(t.scheduledWeek)
-  }
-  return (h >>> 0).toString(36)
 }
 
 export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps) {
@@ -310,7 +97,6 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const listIconsDesktop = useListsUiStore((s) => s.listIconsDesktop)
   const listIconsGravity = useListsUiStore((s) => s.listIconsGravity)
   const setListIconsGravity = useListsUiStore((s) => s.setListIconsGravity)
-  const velvetCanvasWidthRef = useRef(VELVET_GRID_FALLBACK_WIDTH)
   const folderAllUncategorizedOnly = useListsUiStore((s) => s.folderAllUncategorizedOnly)
   const setFolderAllUncategorizedOnly = useListsUiStore((s) => s.setFolderAllUncategorizedOnly)
   const folderAllHideUncategorized = useListsUiStore((s) => s.folderAllHideUncategorized)
@@ -335,47 +121,17 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const selection = useListsSelection()
   const taskActions = useListsTaskActions(categories, folders, addTask, itemTypes)
 
-  const [newCategoryOpen, setNewCategoryOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<List | null>(null)
-  const csvRef = useRef<HTMLInputElement>(null)
   const listsSurfaceRef = useRef<HTMLDivElement>(null)
-  const [csvImport, setCsvImport] = useState<CsvImportState | null>(null)
   const [addingTaskToTarget, setAddingTaskToTarget] = useState<string | null>(null)
   const [showBulkAdd, setShowBulkAdd] = useState(false)
-  const [showSentItems, setShowSentItems] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [showCategorySettings, setShowCategorySettings] = useState(false)
-  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null)
-  const [duplicateOpen, setDuplicateOpen] = useState(false)
-  const [duplicateSubject, setDuplicateSubject] = useState<
-    null | { kind: "selection" } | { kind: "folder"; id: string } | { kind: "list"; id: string }
-  >(null)
-  const [listsClipboard, setListsClipboard] = useState<ListsClipboardPayload | null>(null)
-  const [pasteOpen, setPasteOpen] = useState(false)
-  const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null)
-  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
-  const [iconPickerFor, setIconPickerFor] = useState<IconPickerTarget>(null)
-  const [organizeEpoch, setOrganizeEpoch] = useState(0)
-  const [listDesktopOrganizeEpoch, setListDesktopOrganizeEpoch] = useState(0)
-  const [listPileEpoch, setListPileEpoch] = useState(0)
-  const [listGravityResetEpoch, setListGravityResetEpoch] = useState(0)
-  const [listGravitySettleEpoch, setListGravitySettleEpoch] = useState(0)
-  const [gravitySettingsOpen, setGravitySettingsOpen] = useState(false)
-  const [organizeFromSnapshot, setOrganizeFromSnapshot] = useState<Record<string, { x: number; y: number }> | null>(
-    null,
-  )
+  const [selectBandPx, setSelectBandPx] = useState(0)
 
   const { location, openTarget, setOpenTarget, closeTarget, isHome, isAll, currentFolder, navTo, openEntry, openItemType, activeIconId, setActiveIconId, setLocation } = nav
   const { searchTerm, setSearchTerm, searchResetKey, clearSearch, searchActive, searchResults } = search
-  const newListSeed = useMemo(() => {
-    const typed = searchTerm.trim()
-    if (!typed) return ""
-    const exact = categories.some(
-      (list) => !isFolderAllItemsCategoryId(list.id) && list.name.trim().toLowerCase() === typed.toLowerCase(),
-    )
-    return exact ? "" : typed
-  }, [searchTerm, categories])
   const handleNavTo = useCallback(
     (loc: string) => chooseListsLocation(loc, navTo, clearSearch),
     [navTo, clearSearch],
@@ -387,721 +143,172 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     },
     [openEntry, clearSearch],
   )
-  const { selectMode, selectedCategories, setSelectedCategories, selectedFolderIds, selectedTaskIds, toggleSelectMode, toggleCategorySelection, toggleFolderSelection, toggleTaskSelection, selectAll, selectAllTasks, clearSelection, clearTaskSelection } = selection
-  const [placementMode, setPlacementMode] = useState<ListPlacementMode>("keep")
-  const [itemPlacementMode, setItemPlacementMode] = useState<ItemPlacementMode>("keep")
-  const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false)
-  const [mergeOpen, setMergeOpen] = useState(false)
-  const [itemMergeConfirmOpen, setItemMergeConfirmOpen] = useState(false)
-  const [itemMergeOpen, setItemMergeOpen] = useState(false)
+  const { selectMode, selectedCategories, setSelectedCategories, selectedFolderIds, selectedTaskIds, toggleSelectMode, toggleCategorySelection, toggleFolderSelection, toggleTaskSelection, clearTaskSelection } = selection
 
-  useEffect(() => {
-    dedupeFolders()
-    dedupeLists()
-  }, [dedupeFolders, dedupeLists])
+  useListsShelfMaintenance({ allTasks, modules, dedupeFolders, dedupeLists })
 
-  const [taskStoreHydrated, setTaskStoreHydrated] = useState(() => useTaskStore.persist.hasHydrated())
-  useEffect(() => {
-    if (taskStoreHydrated) return
-    return useTaskStore.persist.onFinishHydration(() => setTaskStoreHydrated(true))
-  }, [taskStoreHydrated])
-
-  const taskScheduleKey = useMemo(() => scheduleMaintenanceKey(allTasks), [allTasks])
-
-  const taskIndexPrevRef = useRef<ListsTaskIndex | null>(null)
-  const taskIndex = useMemo(() => {
-    const next = buildListsTaskIndex(allTasks, taskIndexPrevRef.current)
-    taskIndexPrevRef.current = next
-    return next
-  }, [allTasks])
-
-  const categoryById = useMemo(() => {
-    const map = new Map<string, List>()
-    for (const category of categories) map.set(category.id, category)
-    return map
-  }, [categories])
-
-  useEffect(() => {
-    if (!taskStoreHydrated) return
-    let cancelled = false
-    const run = () => {
-      if (cancelled) return
-      startTransition(() => {
-        const state = useTaskStore.getState()
-        let folders = state.folders
-        let lists = state.lists
-        let tasks = state.tasks
-        let foldersDirty = false
-        let listsDirty = false
-        let tasksDirty = false
-        const mut = {
-          get folders() { return folders },
-          get lists() { return lists },
-          get tasks() { return tasks },
-          addList: (list: List) => {
-            if (lists.some((l) => l.id === list.id)) return
-            lists = [...lists, list]
-            listsDirty = true
-          },
-          updateList: (list: List) => {
-            lists = lists.map((l) => (l.id === list.id ? list : l))
-            listsDirty = true
-          },
-          addFolder: (folder: Folder) => {
-            if (folders.some((f) => f.id === folder.id)) return
-            folders = [...folders, folder]
-            foldersDirty = true
-          },
-          updateFolder: (folder: Folder) => {
-            folders = folders.map((f) => (f.id === folder.id ? folder : f))
-            foldersDirty = true
-          },
-          deleteFolder: (id: string) => {
-            folders = folders.filter((f) => f.id !== id)
-            foldersDirty = true
-          },
-          deleteList: (id: string) => {
-            lists = lists.filter((list) => list.id !== id)
-            listsDirty = true
-          },
-        }
-        syncNextActionsSmartLists(mut)
-        syncScheduledFolderHierarchy(tasks, mut)
-        syncFolderAllItemsCategories(mut)
-        syncGlobalAllItemsList(mut)
-        const joined = joinArchiveListMembership(tasks, lists, folders)
-        if (joined !== tasks) {
-          tasks = joined
-          tasksDirty = true
-        }
-        if (foldersDirty && sameFolderTree(state.folders, folders)) foldersDirty = false
-        if (listsDirty && sameListShelf(state.lists, lists)) listsDirty = false
-        if (foldersDirty || listsDirty || tasksDirty) {
-          useTaskStore.setState({
-            ...(foldersDirty ? { folders } : {}),
-            ...(listsDirty ? { lists } : {}),
-            ...(tasksDirty ? { tasks } : {}),
-          })
-        }
-        const moduleMut = taskStoreModuleListsMutators()
-        syncModuleListFolders(moduleMut, modules)
-        syncModuleListContents(moduleMut, modules)
-        const filmsIds = modules
-          .map((m) => m.config?.filmsCategoryId)
-          .filter((id): id is string => typeof id === "string" && !!id)
-        const afterModules = useTaskStore.getState().lists
-        const withFilm = ensureFilmTypeOnFilmsLists(afterModules, filmsIds)
-        if (withFilm !== afterModules) useTaskStore.setState({ lists: withFilm })
-      })
-    }
-    const idle = typeof requestIdleCallback === "function"
-      ? requestIdleCallback(run, { timeout: 400 })
-      : window.setTimeout(run, 32)
-    return () => {
-      cancelled = true
-      if (typeof cancelIdleCallback === "function" && typeof idle === "number") cancelIdleCallback(idle)
-      else window.clearTimeout(idle)
-    }
-  }, [taskStoreHydrated, taskScheduleKey, modules])
-
-  const getSmartTasks = useCallback(
-    (id: SmartId) => smartTasksFor(taskIndex, id),
-    [taskIndex],
-  )
-
-  const getTasksForCategory = useCallback(
-    (categoryId: string) => {
-      if (isNaArchiveCategoryId(categoryId, categories)) {
-        const kind = categories.find((c) => c.id === categoryId)?.autoArchive
-        return tasksForArchiveList(allTasks, categoryId, kind)
-      }
-      if (isNaPeriodSmartCategoryId(categoryId)) return tasksForNaSmartList(categoryId, allTasks)
-      if (isPeriodLedgerListId(categoryId)) return tasksForPeriodLedgerList(categoryId, allTasks, folders)
-      return tasksForList(taskIndex, categoryId)
-    },
-    [taskIndex, allTasks, categories, folders],
-  )
-
-  const countForFolder = useCallback(
-    (f: Folder) => {
-      if (isScheduledFolderId(f.id)) {
-        const children = folders.filter((x) => x.parentFolderId === f.id)
-        if (children.length > 0) return children.length
-        return getTasksForScheduledFolder(allTasks, f.id).length
-      }
-      return f.listIds.length || folders.filter((x) => x.parentFolderId === f.id).length
-    },
-    [allTasks, folders],
-  )
-
-  const getCategoryCompletionRate = useCallback(
-    (categoryId: string) => completionRateForList(taskIndex, categoryId),
-    [taskIndex],
-  )
-
-  const itemLabelFor = useCallback(
-    (categoryId?: string, category?: List | null) =>
-      capitalizeLabel(getItemLabel(category ?? undefined, folders, categoryId)),
-    [folders],
-  )
-
-  const isItemTypes = location === ITEM_TYPES_LOCATION
-  const entries = useMemo(
-    () =>
-      isItemTypes
-        ? [...itemTypes].sort(compareItemTypeLists).map((type) => ({
-            kind: "item-type" as const,
-            id: String(type.id),
-            name: itemTypeListLabel(type),
-            color: type.color,
-            icon: type.icon,
-            count: tasksOfItemType(String(type.id), allTasks, itemTypes).length,
-          }))
-        : buildGridEntries({
-        isHome,
-        isAll,
-        currentFolder,
-        folders,
-        categories,
-        homePinned,
-        showSmartLists,
-        showPeriodLedgerListsInAll,
-        allTasks,
-        getSmartTasks,
-        getTasksForCategory,
-        countForFolder,
-        objectiveCount,
-      }),
-    [
-      isItemTypes,
-      itemTypes,
-      isHome,
-      isAll,
-      currentFolder,
-      folders,
-      categories,
-      homePinned,
-      showSmartLists,
-      showPeriodLedgerListsInAll,
-      allTasks,
-      getSmartTasks,
-      getTasksForCategory,
-      countForFolder,
-      objectiveCount,
-    ],
-  )
-
-  const openCategory = openTarget?.type === "category" ? categories.find((c) => c.id === openTarget.id) || null : null
-  useEffect(() => {
-    setShowSentItems(false)
-  }, [openCategory?.id])
-  const openSmart = openTarget?.type === "smart" ? SMART_LISTS.find((s) => s.id === openTarget.id) || null : null
-  const openHabits = openTarget?.type === "habits"
-  const openObjectives = openTarget?.type === "objectives"
-  const openTypeList =
-    openTarget?.type === "item-type" ? itemTypes.find((type) => type.id === openTarget.id) ?? null : null
-  const openFolderAll = openTarget?.type === "folder-all"
-  const isRootAll = openFolderAll && openTarget?.folderId === ROOT_ALL_FOLDER_ID
-  const canEditFolderAllSettings =
-    !!openFolderAll &&
-    (isRootAll || (!!currentFolder && !isScheduledFolderId(currentFolder.id)))
-  const folderAllList = !canEditFolderAllSettings
-    ? null
-    : isRootAll
-      ? folderAllItemsList(categories, GLOBAL_ALL_ITEMS_KEY) ?? null
-      : currentFolder
-        ? folderAllItemsList(categories, currentFolder.id) ?? null
-        : null
-  const viewList = openCategory ?? folderAllList
-  const openName = openObjectives
-    ? "Objectives"
-    : openHabits
-    ? openTarget?.id === "weekly-habits"
-      ? "Weekly Habits"
-      : openTarget?.id === "monthly-habits"
-        ? "Monthly Habits"
-        : openTarget?.id === "season-habits"
-          ? "Season Habits"
-          : "Daily Habits"
-    : openTypeList
-      ? itemTypeListLabel(openTypeList)
-      : openFolderAll ? "All Items" : openCategory?.name || openSmart?.name || ""
-  const openIconKey = openTypeList
-    ? iconFor(String(openTypeList.id), openTypeList.icon)
-    : openCategory ? iconFor(openCategory.id, openCategory.icon) : isRootAll ? iconFor("lists-root", undefined) : openFolderAll && currentFolder ? iconFor(currentFolder.id, currentFolder.icon) : openSmart ? orbFor(openSmart.id) : openObjectives ? orbFor("objectives") : openHabits ? orbFor("daily-habits") : orbFor("lists-root")
-
-  const rawDisplay: ListDisplay = (() => {
-    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return "default"
-    const saved = listDisplay[openTargetKey(openTarget)]
-    if (saved && isListDisplayMode(saved)) return saved
-    return openSmart ? "checklist" : listAllowsPhotos(viewList) ? "gallery" : listAllowsDocuments(viewList) ? "documents" : "default"
-  })()
-  // If the list no longer offers the saved active display, fall back to the
-  // first display it does offer (Feature 1: per-list display offerings).
-  const offeredDisplays = (() => {
-    const base = sanitizeEnabledDisplays(viewList?.enabledDisplays)
-    const extra = (listAllowsPhotos(viewList) ? ["gallery"] : []).concat(listAllowsDocuments(viewList) ? ["documents"] : []) as ListDisplay[]
-    if (extra.length === 0) return base
-    const all = base ?? LIST_DISPLAY_MODES.filter((d) => d !== "gallery" && d !== "documents")
-    return [...all, ...extra.filter((d) => !all.includes(d))]
-  })()
-  const currentDisplay: ListDisplay =
-    offeredDisplays && !offeredDisplays.includes(rawDisplay) ? offeredDisplays[0] : rawDisplay
-
-  const openTasks = useMemo(() => {
-    if (!openTarget) return []
-    if (openTarget.type === "category") {
-      return getTasksForCategory(openTarget.id)
-    }
-    if (openTarget.type === "folder-all" && openTarget.folderId === ROOT_ALL_FOLDER_ID) {
-      let items = filterTasksHiddenFromGlobalAll(allTasks.filter((t) => !isClearedFromWork(t)), categories, folders)
-      if (globalAllUncategorizedOnly) {
-        return items.filter((t) => isTaskUncategorizedGlobally(t))
-      }
-      const hiddenFolders = globalAllHiddenFolderIds ?? []
-      const hideUncategorized = !!globalAllHideUncategorized
-      if (hiddenFolders.length || hideUncategorized) {
-        items = filterTasksByHiddenGlobalFolders(items, folders, hiddenFolders, categories, hideUncategorized)
-      }
-      return items
-    }
-    if (openTarget.type === "folder-all" && currentFolder) {
-      if (isScheduledFolderId(currentFolder.id)) return getTasksForScheduledFolder(allTasks, currentFolder.id)
-      let items = getTasksForFolderAllView(allTasks, currentFolder)
-      if (folderAllUncategorizedOnly[currentFolder.id]) {
-        return items.filter((t) => isTaskUncategorizedInFolder(t, currentFolder))
-      }
-      const hidden = folderAllHiddenListIds?.[currentFolder.id] ?? []
-      const hideUncategorized = !!folderAllHideUncategorized?.[currentFolder.id]
-      if (hidden.length || hideUncategorized) {
-        items = filterTasksByHiddenFolderLists(items, currentFolder, hidden, undefined, hideUncategorized)
-      }
-      return items
-    }
-    if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
-    if (openTarget.type === "item-type") return tasksOfItemType(openTarget.id, allTasks, itemTypes)
-    return []
-  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory, itemTypes])
-
-  const listedTasks = useMemo(() => {
-    // A step's item never shows in Lists (Phase 11); its step is in its task.
-    let tasks = withoutStepItems(
-      openTarget?.type === "category" && openCategory?.sentThisWeek && !showSentItems
-        ? visibleListItems(openTasks, openCategory.id, false)
-        : openTasks,
-    )
-    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return tasks
-    const targetKey = openTargetKey(openTarget)
-    const hiddenTypes = hiddenItemTypeIdsByTarget?.[targetKey]
-    if (hiddenTypes?.length) {
-      tasks = filterTasksByHiddenItemTypes(tasks, hiddenTypes, openCategory)
-    }
-    return tasks
-  }, [
-    openTasks,
-    openTarget,
-    openCategory,
-    showSentItems,
-    hiddenItemTypeIdsByTarget,
-  ])
-
-  const typeFilterForOpen = useMemo(() => {
-    if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return null
-    const presentIds = typesPresentInTasks(openTasks, openCategory)
-    const allowedCount = openCategory ? listAllowedTypeIds(openCategory).length : 0
-    if (!shouldShowTypeFilter({ presentTypeCount: presentIds.length, allowedTypeCount: allowedCount })) {
-      return null
-    }
-    // Prefer allowlist union present so empty multi-type lists still offer filters.
-    const ids =
-      openCategory && allowedCount >= 2
-        ? [...new Set([...listAllowedTypeIds(openCategory).map(String), ...presentIds])].sort((a, b) =>
-            a.localeCompare(b),
-          )
-        : presentIds
-    return {
-      targetKey: openTargetKey(openTarget),
-      items: typeFilterItems(ids, itemTypes),
-    }
-  }, [openTarget, openTasks, openCategory, itemTypes])
-
-  // ---- One-list caption search + Default sort (DEFAULT_VIEW.md) ----
-  const openKeyForSearch = openTarget ? openTargetKey(openTarget) : ""
-  const [listSearchOpen, setListSearchOpen] = useState(false)
-  const [listSearchQuery, setListSearchQuery] = useState("")
-  const [listSearchAllFields, setListSearchAllFields] = useState(false)
-  useEffect(() => {
-    setListSearchOpen(false)
-    setListSearchQuery("")
-  }, [openKeyForSearch])
-  const closeListSearch = useCallback(() => {
-    setListSearchOpen(false)
-    setListSearchQuery("")
-  }, [])
-  const listSearchable =
-    !!openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives"
-
-  const listSchemaDefs = useMemo<AttributeDefinition[]>(() => {
-    if (!listSearchable) return []
-    const base = openCategory
-      ? listAttributeSchema(openCategory, itemTypes)
-      : mergeListAttributes(categories, [...new Set(listedTasks.flatMap((t) => t.lists ?? []))], itemTypes)
-    const seen = new Set(base.map((d) => d.id))
-    const out = [...base]
-    for (const t of listedTasks) {
-      for (const d of t.itemAttributeDefinitions ?? []) {
-        if (d?.id && !seen.has(d.id)) {
-          seen.add(d.id)
-          out.push(d)
-        }
-      }
-    }
-    return out
-  }, [listSearchable, openCategory, categories, listedTasks, itemTypes])
-
-  // Lists without a List record (smart lists) keep their sort for this session only.
-  const [sessionSorts, setSessionSorts] = useState<Record<string, ListItemSort | undefined>>({})
-  const currentSort: ListItemSort | undefined = viewList
-    ? resolveDefaultViewSort(viewList.defaultView)
-    : openKeyForSearch
-      ? sessionSorts[openKeyForSearch]
-      : undefined
-  const handleSortChange = useCallback(
-    (sort: ListItemSort | undefined) => {
-      if (viewList) {
-        updateList({ ...viewList, defaultView: setDefaultViewSort(viewList.defaultView, sort) })
-        return
-      }
-      if (openKeyForSearch) setSessionSorts((prev) => ({ ...prev, [openKeyForSearch]: sort }))
-    },
-    [viewList, openKeyForSearch, updateList],
-  )
-  const sortOptions = useMemo(() => listItemSortOptions(listSchemaDefs), [listSchemaDefs])
-
-  const shownTasks = useMemo(() => {
-    let tasks = listSearchQuery.trim()
-      ? filterListItemsBySearch(listedTasks, listSearchQuery, { allFields: listSearchAllFields, defs: listSchemaDefs })
-      : listedTasks
-    if (currentDisplay === "default" && currentSort) {
-      tasks = sortListItems(tasks, currentSort, {
-        listId: openCategory?.id ?? null,
-        defs: listSchemaDefs,
-        typeName: (t) => getItemType(itemTypes, t.type ?? openCategory?.itemTypeId).name,
-      })
-    }
-    return tasks
-  }, [listedTasks, listSearchQuery, listSearchAllFields, listSchemaDefs, currentDisplay, currentSort, openCategory, itemTypes])
-
-  const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, isItemTypes, currentFolderName: currentFolder?.name })
-  const hereCount = openTarget
-    ? `${listedTasks.length} item(s)`
-    : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
-  const treeCount = `${folders.length} folder(s), ${categories.length} list(s)`
-  // The open list's own name (the display mode already lights up in the Display deck).
-  const innerCaption = openName || (openHabits ? "Habits" : openObjectives ? "Objectives" : "List")
-
-  const openNewCategoryDialog = useCallback(() => {
-    setNewCategoryOpen(true)
-  }, [])
-
-  const handleCreateCategory = useCallback((fields: NewListFields) => {
-    if (!fields.name.trim()) return
-    const id = Date.now().toString()
-    const template = LIST_TEMPLATES[fields.template]
-    addList({
-      id,
-      name: fields.name,
-      color: fields.color,
-      description: fields.description,
-      createdAt: new Date(),
-      order: categories.length,
-      scheduleable: fields.scheduleable,
-      itemAttributes: template?.attributes.length ? template.attributes.map((a) => ({ ...a })) : undefined,
-    })
-    if (currentFolder) addListToFolder(currentFolder.id, id)
-    if (isHome) toggleHomePin(id)
-    if (selectedTaskIds.length > 0) {
-      const state = useTaskStore.getState()
-      const originListId = openTarget?.type === "category" ? openTarget.id : null
-      const canMove = canMoveItemsFromOpenList(originListId)
-      const mode: ItemPlacementMode = canMove ? itemPlacementMode : "keep"
-      selectedTaskIds.forEach((taskId) => {
-        const t = state.tasks.find((x) => x.id === taskId)
-        if (!t) return
-        updateTask(
-          placeTaskInList(t, id, {
-            mode,
-            originListId,
-            canMove,
-            lists: state.lists,
-            folders: state.folders,
-            types: itemTypes,
-          }),
-        )
-      })
-      selection.cancelSelectMode()
-    }
-    setNewCategoryOpen(false)
-  }, [addList, categories.length, currentFolder, addListToFolder, isHome, toggleHomePin, selectedTaskIds, openTarget, itemPlacementMode, updateTask, itemTypes, selection])
-
-  const handleCreateFolder = useCallback((fields: NewFolderFields) => {
-    if (!fields.name.trim()) return
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
-    addFolder({
-      id,
-      name: fields.name,
-      createdAt: new Date(),
-      listIds: selectedCategories,
-      color: fields.color,
-      scheduleable: fields.scheduleable,
-      parentFolderId: currentFolder?.id,
-    })
-    const mode: ListPlacementMode = isAll ? "keep" : placementMode
-    const unlink = originFolderIdToUnlink({ mode, originFolderId: currentFolder?.id, isAll })
-    if (unlink) selectedCategories.forEach((catId) => removeListFromFolder(unlink, catId))
-    if (mode === "move") {
-      selectedFolderIds.forEach((fid) => {
-        if (wouldCreateFolderCycle(folders, fid, id)) return
-        const child = folders.find((f) => f.id === fid)
-        if (child) updateFolder({ ...child, parentFolderId: id })
-      })
-    }
-    setShowNewFolderDialog(false)
-    selection.cancelSelectMode()
-  }, [
-    addFolder,
-    selectedCategories,
-    currentFolder,
-    placementMode,
-    isAll,
-    removeListFromFolder,
-    selectedFolderIds,
+  const shelf = useListsShelf({
+    allTasks,
+    categories,
     folders,
-    updateFolder,
+    itemTypes,
+    location,
+    isHome,
+    isAll,
+    currentFolder,
+    homePinned,
+    showSmartLists,
+    showPeriodLedgerListsInAll,
+    objectiveCount,
+  })
+
+  const chrome = resolveOpenListChrome({
+    openTarget,
+    categories,
+    itemTypes,
+    currentFolder,
+    listDisplay,
+  })
+
+  const openItems = useOpenListItems({
+    openTarget,
+    openCategory: chrome.openCategory,
+    viewList: chrome.viewList,
+    currentDisplay: chrome.currentDisplay,
+    allTasks,
+    categories,
+    folders,
+    currentFolder,
+    itemTypes,
+    getSmartTasks: shelf.getSmartTasks,
+    getTasksForCategory: shelf.getTasksForCategory,
+    updateList,
+    hiddenItemTypeIdsByTarget,
+    folderAllUncategorizedOnly,
+    folderAllHideUncategorized,
+    folderAllHiddenListIds,
+    globalAllHiddenFolderIds,
+    globalAllUncategorizedOnly,
+    globalAllHideUncategorized,
+  })
+
+  const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName: chrome.openName, isHome, isAll, isItemTypes: shelf.isItemTypes, currentFolderName: currentFolder?.name })
+  const hereCount = openTarget
+    ? `${openItems.listedTasks.length} item(s)`
+    : `${shelf.entries.filter((e) => e.kind === "folder").length} folder(s), ${shelf.entries.filter((e) => e.kind !== "folder").length} list(s)`
+  const treeCount = `${folders.length} folder(s), ${categories.length} list(s)`
+
+  const selectActions = useListsSelectionActions({
+    searchActive,
+    searchResults,
+    entries: shelf.entries,
+    listedTasks: openItems.listedTasks,
+    folders,
+    categories,
+    allTasks,
+    openTarget,
+    currentFolder,
+    isAll,
+    itemTypes,
+    selectedTaskId,
+    setSelectedTaskId,
     selection,
-  ])
+    addListToFolder,
+    removeListFromFolder,
+    updateFolder,
+    updateTask,
+    deleteTask,
+    deleteList,
+    deleteFolder,
+    setLists,
+    setFolders,
+    setTasks,
+    closeTarget,
+    handleNavTo,
+  })
 
-  const handleBulkCreateFolders = useCallback(
-    (fields: Omit<NewFolderFields, "name"> & { names: string[] }) => {
-      for (const name of fields.names) {
-        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
-        addFolder({
-          id,
-          name,
-          createdAt: new Date(),
-          listIds: [],
-          color: fields.color,
-          scheduleable: fields.scheduleable,
-          parentFolderId: currentFolder?.id,
-        })
-      }
-      setShowNewFolderDialog(false)
-    },
-    [addFolder, currentFolder],
-  )
+  const create = useListsCreate({
+    categories,
+    folders,
+    itemTypes,
+    searchTerm,
+    currentFolder,
+    isHome,
+    isAll,
+    openTarget,
+    selectedTaskIds,
+    selectedCategories,
+    selectedFolderIds,
+    itemPlacementMode: selectActions.itemPlacementMode,
+    placementMode: selectActions.placementMode,
+    addList,
+    addFolder,
+    addListToFolder,
+    removeListFromFolder,
+    updateFolder,
+    updateTask,
+    toggleHomePin,
+    cancelSelectMode: selection.cancelSelectMode,
+  })
 
-  const handleBulkCreateLists = useCallback(
-    (fields: Omit<NewListFields, "name"> & { names: string[] }) => {
-      let order = categories.length
-      for (const name of fields.names) {
-        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
-        addList({
-          id,
-          name,
-          color: fields.color,
-          description: fields.description,
-          createdAt: new Date(),
-          order: order++,
-          scheduleable: fields.scheduleable,
-        })
-        if (currentFolder) addListToFolder(currentFolder.id, id)
-        if (isHome) toggleHomePin(id)
-      }
-      setNewCategoryOpen(false)
-    },
-    [addList, addListToFolder, categories.length, currentFolder, isHome, toggleHomePin],
-  )
+  const duplicate = useListsDuplicate({
+    selectedCategories,
+    selectedFolderIds,
+    currentFolder,
+    addFolder,
+    addList,
+    addListToFolder,
+    addTask,
+    cancelSelectMode: selection.cancelSelectMode,
+    setEditingFolder,
+    setEditingCategory,
+  })
 
-  const openDuplicateSelection = useCallback(() => {
-    setDuplicateSubject({ kind: "selection" })
-    setDuplicateOpen(true)
-  }, [])
+  const folderMenu = useFolderContextMenu({ folders, updateFolder })
 
-  const openDuplicateFolder = useCallback((folder: Folder) => {
-    setDuplicateSubject({ kind: "folder", id: folder.id })
-    setDuplicateOpen(true)
-  }, [])
+  const clipboard = useListsClipboard({
+    listsSurfaceRef,
+    selectMode,
+    selectedCategories,
+    selectedFolderIds,
+    currentFolder,
+    addFolder,
+    addList,
+    addListToFolder,
+    addTask,
+  })
 
-  const openDuplicateList = useCallback((list: List) => {
-    setDuplicateSubject({ kind: "list", id: list.id })
-    setDuplicateOpen(true)
-  }, [])
+  const csv = useListsCsvImport({
+    categories,
+    currentFolder,
+    isHome,
+    addList,
+    addTask,
+    updateList,
+    addListToFolder,
+    toggleHomePin,
+    taskActions,
+    setListDisplay,
+    setOpenTarget,
+  })
 
-  const handleFolderContextMenu = useCallback((folderId: string, clientX: number, clientY: number) => {
-    setFolderContextMenu({ folderId, x: clientX, y: clientY })
-  }, [])
-
-  const handleCommitFolderRename = useCallback(
-    (folderId: string, name: string) => {
-      const folder = folders.find((f) => f.id === folderId)
-      if (!folder || !isEditableFolder(folderId)) {
-        setRenamingFolderId(null)
-        return
-      }
-      const next = name.trim()
-      if (next && next !== folder.name) updateFolder({ ...folder, name: next })
-      setRenamingFolderId(null)
-    },
-    [folders, updateFolder],
-  )
-
-  const handleConfirmPaste = useCallback(
-    (mode: PasteMode) => {
-      if (listsClipboardIsEmpty(listsClipboard)) return
-      applyListsClipboardPaste(
-        listsClipboard!,
-        mode,
-        {
-          destinationFolderId: currentFolder?.id ?? null,
-          getSnapshot: () => {
-            const s = useTaskStore.getState()
-            return { folders: s.folders, lists: s.lists, tasks: s.tasks }
-          },
-        },
-        { addFolder, addList, addListToFolder, addTask },
-      )
-    },
-    [listsClipboard, currentFolder?.id, addFolder, addList, addListToFolder, addTask],
-  )
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return
-      const key = e.key.toLowerCase()
-      if (key !== "c" && key !== "v") return
-      // Warm-mounted Lists tab must not steal copy/paste from Home / other desks.
-      if (!isListsClipboardSurfaceActive(listsSurfaceRef.current)) return
-      if (isListsClipboardKeyboardBlocked(e.target)) return
-      if (key === "c") {
-        if (!selectMode) return
-        const payload = buildListsClipboardPayload({
-          listIds: selectedCategories,
-          folderIds: selectedFolderIds,
-        })
-        if (listsClipboardIsEmpty(payload)) return
-        e.preventDefault()
-        setListsClipboard(payload)
-        return
-      }
-      if (listsClipboardIsEmpty(listsClipboard)) return
-      e.preventDefault()
-      setPasteOpen(true)
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [selectMode, selectedCategories, selectedFolderIds, listsClipboard])
-
-  const handleConfirmDuplicate = useCallback(
-    (scope: DuplicateScope) => {
-      const state = useTaskStore.getState()
-      const mut = {
-        addFolder,
-        addList,
-        addListToFolder,
-        addTask,
-      }
-      if (duplicateSubject?.kind === "folder") {
-        const source = state.folders.find((f) => f.id === duplicateSubject.id)
-        if (!source || isScheduledFolderId(source.id)) return
-        const plan = planDuplicateFolder(source, {
-          scope,
-          folders: state.folders,
-          lists: state.lists,
-          tasks: state.tasks,
-        })
-        applyDuplicateFolderPlan(plan, mut)
-        setEditingFolder(null)
-        return
-      }
-      if (duplicateSubject?.kind === "list") {
-        const source = state.lists.find((l) => l.id === duplicateSubject.id)
-        if (!source || isFolderAllItemsCategoryId(source.id)) return
-        const plan = planDuplicateList(source, {
-          scope,
-          lists: state.lists,
-          folders: state.folders,
-          tasks: state.tasks,
-        })
-        applyDuplicateListPlan(plan, mut)
-        setEditingCategory(null)
-        return
-      }
-      // Selection: folders first (so nested picks aren't double-copied as loose lists), then lists.
-      const selectedFolderSet = new Set(selectedFolderIds)
-      const folderIdsToCopy = selectedFolderIds.filter((id) => {
-        const f = state.folders.find((x) => x.id === id)
-        if (!f || isScheduledFolderId(f.id)) return false
-        // Skip if an ancestor folder is also selected (contents mode would nest it).
-        let walk = f.parentFolderId
-        while (walk) {
-          if (selectedFolderSet.has(walk)) return false
-          walk = state.folders.find((x) => x.id === walk)?.parentFolderId
-        }
-        return true
-      })
-      const listIdsToCopy = selectedCategories.filter((id) => {
-        if (isFolderAllItemsCategoryId(id)) return false
-        // Skip lists that live only inside a selected folder tree when copying contents —
-        // they'll be included by the folder plan. Settings-only still copies them as siblings.
-        if (scope === "settings_and_contents") {
-          for (const fid of folderIdsToCopy) {
-            const f = state.folders.find((x) => x.id === fid)
-            if (f?.listIds.includes(id)) return false
-          }
-        }
-        return true
-      })
-      for (const fid of folderIdsToCopy) {
-        const source = state.folders.find((f) => f.id === fid)
-        if (!source) continue
-        applyDuplicateFolderPlan(
-          planDuplicateFolder(source, {
-            scope,
-            folders: useTaskStore.getState().folders,
-            lists: useTaskStore.getState().lists,
-            tasks: useTaskStore.getState().tasks,
-          }),
-          mut,
-        )
-      }
-      for (const lid of listIdsToCopy) {
-        const source = useTaskStore.getState().lists.find((l) => l.id === lid)
-        if (!source) continue
-        applyDuplicateListPlan(
-          planDuplicateList(source, {
-            scope,
-            lists: useTaskStore.getState().lists,
-            folders: useTaskStore.getState().folders,
-            tasks: useTaskStore.getState().tasks,
-            folderIds: currentFolder ? [currentFolder.id] : undefined,
-          }),
-          mut,
-        )
-      }
-      selection.cancelSelectMode()
-    },
-    [
-      addFolder,
-      addList,
-      addListToFolder,
-      addTask,
-      currentFolder,
-      duplicateSubject,
-      selectedCategories,
-      selectedFolderIds,
-      selection,
-    ],
-  )
+  const icon = useListsIconChrome({
+    openTarget,
+    currentDisplay: chrome.currentDisplay,
+    location,
+    entries: shelf.entries,
+    categories,
+    folders,
+    allTasks,
+    iconPositions,
+    listIconsDesktop,
+    listIconsGravity,
+    setListIconsGravity,
+    commitIconLayout,
+    updateList,
+    updateFolder,
+    updateTask,
+  })
 
   const handleEditCategory = useCallback((category: List) => {
     updateList(category)
@@ -1109,7 +316,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   }, [updateList])
 
   const openFolderAllSettings = useCallback(() => {
-    if (isRootAll) {
+    if (chrome.isRootAll) {
       const existing = folderAllItemsList(useTaskStore.getState().lists, GLOBAL_ALL_ITEMS_KEY)
       if (existing) {
         setEditingCategory(existing)
@@ -1132,589 +339,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       updateFolder({ ...currentFolder, listIds: [created.id, ...currentFolder.listIds.filter((id) => id !== created.id)] })
     }
     setEditingCategory(created)
-  }, [isRootAll, currentFolder, addList, updateFolder])
+  }, [chrome.isRootAll, currentFolder, addList, updateFolder])
 
-  const handleCsvFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    void (async () => {
-      try {
-        const { headers, rows } = await parseSpreadsheetFile(file)
-        if (headers.length === 0) return
-        const lower = headers.map((h) => h.toLowerCase())
-        const nameCandidates = ["name", "title", "item", "task", "description", "book", "product"]
-        let nameCol = lower.findIndex((h) => nameCandidates.some((c) => h.includes(c)))
-        if (nameCol === -1) nameCol = 0
-        const listName = file.name.replace(/\.(csv|tsv|txt|xlsx|xls)$/i, "")
-        setCsvImport({ fileName: file.name, headers, rows, listName, nameCol, targetCategoryId: "" })
-      } catch (err) {
-        console.error("Failed to parse spreadsheet", err)
-        window.alert("Could not read that spreadsheet. Try exporting as CSV or XLSX and upload again.")
-      }
-    })()
-    if (csvRef.current) csvRef.current.value = ""
-  }, [])
-
-  const performCsvImport = useCallback(() => {
-    if (!csvImport) return
-    const { headers, rows, nameCol, listName, targetCategoryId } = csvImport
-    const slug = (s: string) => "attr_" + s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")
-    const attrDefs = headers
-      .map((h, i) => ({ h, i }))
-      .filter(({ i }) => i !== nameCol)
-      .map(({ h, i }) => ({ id: slug(h) || `attr_${i}`, name: h || `Column ${i + 1}`, type: inferColumnType(h, rows.map((r) => r[i] ?? "")) }))
-    let categoryId = targetCategoryId
-    if (!categoryId) {
-      categoryId = Date.now().toString()
-      addList({
-        id: categoryId,
-        name: listName || "Imported list",
-        color: "#3B82F6",
-        description: `Imported from ${csvImport.fileName}`,
-        createdAt: new Date(),
-        order: categories.length,
-        scheduleable: isExplicitlyScheduleable(currentFolder),
-        itemAttributes: attrDefs,
-      })
-      if (currentFolder) addListToFolder(currentFolder.id, categoryId)
-      if (isHome) toggleHomePin(categoryId)
-    } else {
-      const existing = categories.find((c) => c.id === categoryId)
-      if (existing) {
-        const merged = [...(existing.itemAttributes || [])]
-        attrDefs.forEach((d) => { if (!merged.some((m) => m.id === d.id)) merged.push(d) })
-        const displays = existing.enabledDisplays
-        updateList({
-          ...existing,
-          itemAttributes: merged,
-          // Ensure spreadsheet view is available after a sheet import.
-          enabledDisplays:
-            displays && displays.length > 0 && !displays.includes("spreadsheet")
-              ? [...displays, "spreadsheet"]
-              : displays,
-        })
-      }
-    }
-    rows.forEach((row, idx) => {
-      const description = (row[nameCol] || "").trim() || `Row ${idx + 1}`
-      const base = taskActions.buildBaseTask(description)
-      base.lists = [categoryId]
-      const attributes: Record<string, AttributeValue> = {}
-      headers.forEach((h, i) => {
-        if (i === nameCol) return
-        const def = attrDefs.find((d) => d.id === (slug(h) || `attr_${i}`))
-        if (!def) return
-        const raw = (row[i] ?? "").trim()
-        if (raw === "") return
-        attributes[def.id] = def.type === "number" ? Number(raw.replace(/[$,]/g, "")) || 0 : raw
-      })
-      base.attributes = attributes
-      addTask(base)
-    })
-    // Open the imported list in spreadsheet view so the grid matches the file.
-    setListDisplay(categoryId, "spreadsheet")
-    setOpenTarget({ type: "category", id: categoryId })
-    setCsvImport(null)
-  }, [csvImport, addList, addTask, updateList, categories, currentFolder, addListToFolder, isHome, toggleHomePin, taskActions, setListDisplay, setOpenTarget])
-
-  const applyIcon = (icon: string | undefined) => {
-    if (!iconPickerFor) return
-    if (iconPickerFor.kind === "category") {
-      const c = categories.find((x) => x.id === iconPickerFor.id)
-      if (c) updateList({ ...c, icon })
-    } else if (iconPickerFor.kind === "folder") {
-      const f = folders.find((x) => x.id === iconPickerFor.id)
-      if (f) updateFolder({ ...f, icon })
-    } else {
-      const t = allTasks.find((x) => x.id === iconPickerFor.id)
-      if (t) updateTask({ ...t, icon })
-    }
-    setIconPickerFor(null)
-  }
-
-  const handleCanvasWidth = useCallback((width: number) => {
-    velvetCanvasWidthRef.current = width
-  }, [])
-
-  const handleAutoOrganize = useCallback(() => {
-    const keys = entries.map((e) => `${e.kind}-${e.id}`)
-    const laid = layoutVelvetIconGrid(keys, velvetCanvasWidthRef.current)
-    const snap: Record<string, { x: number; y: number }> = {}
-    for (const e of entries) {
-      const key = `${e.kind}-${e.id}`
-      snap[key] = iconPositions[`${location}:${key}`] ?? laid[key] ?? { x: 16, y: 16 }
-    }
-    setOrganizeFromSnapshot(snap)
-    commitIconLayout(location, laid, "auto")
-    setOrganizeEpoch((n) => n + 1)
-  }, [location, entries, iconPositions, commitIconLayout])
-
-  const iconPickerCurrent = useMemo(() => {
-    if (!iconPickerFor) return undefined
-    if (iconPickerFor.kind === "category") return categories.find((x) => x.id === iconPickerFor.id)?.icon
-    if (iconPickerFor.kind === "folder") return folders.find((x) => x.id === iconPickerFor.id)?.icon
-    return allTasks.find((x) => x.id === iconPickerFor.id)?.icon
-  }, [iconPickerFor, categories, folders, allTasks])
-
-  const handleAddTaskToCategoryCard = useCallback(
-    (categoryId: string, description: string) => {
-      taskActions.handleAddTaskToCategory(categoryId, description, () => setAddingTaskToTarget(null))
-    },
-    [taskActions.handleAddTaskToCategory],
-  )
-
-  const effectivePlacement: ListPlacementMode =
-    searchActive || !isAll ? placementMode : "keep"
-
-  const placeListsIntoFolder = useCallback(
-    (destFolderId: string) => {
-      selectedCategories.forEach((catId) => {
-        addListToFolder(destFolderId, catId)
-        if (effectivePlacement === "move") {
-          if (searchActive) {
-            otherFolderIdsHoldingList(folders, catId, destFolderId).forEach((fid) =>
-              removeListFromFolder(fid, catId),
-            )
-          } else {
-            const unlink = originFolderIdToUnlink({
-              mode: effectivePlacement,
-              originFolderId: currentFolder?.id,
-              isAll,
-            })
-            if (unlink && unlink !== destFolderId) removeListFromFolder(unlink, catId)
-          }
-        }
-      })
-      if (effectivePlacement === "move") {
-        selectedFolderIds.forEach((fid) => {
-          if (wouldCreateFolderCycle(folders, fid, destFolderId)) return
-          const child = folders.find((f) => f.id === fid)
-          if (child) updateFolder({ ...child, parentFolderId: destFolderId })
-        })
-      }
-      selection.cancelSelectMode()
-    },
-    [
-      selectedCategories,
-      selectedFolderIds,
-      addListToFolder,
-      removeListFromFolder,
-      effectivePlacement,
-      searchActive,
-      currentFolder?.id,
-      isAll,
-      folders,
-      updateFolder,
-      selection,
-    ],
-  )
-
-  const originListId = searchActive ? null : openTarget?.type === "category" ? openTarget.id : null
-  /** Search has no single origin list; Move still relocates off other real lists. */
-  const itemCanMove = searchActive || canMoveItemsFromOpenList(originListId)
-  const effectiveItemPlacement: ItemPlacementMode = itemCanMove ? itemPlacementMode : "keep"
-  const selectingOpenListItems = !!(
-    selectMode &&
-    !searchActive &&
-    openTarget &&
-    openTarget.type !== "habits" &&
-    openTarget.type !== "objectives"
-  )
-  const selectingSearchResults = !!(selectMode && searchActive)
-  const searchHasListsOrFolders =
-    searchResults.lists.length + searchResults.folders.length > 0 ||
-    selectedCategories.length + selectedFolderIds.length > 0
-  const searchHasItems = searchResults.tasks.length > 0 || selectedTaskIds.length > 0
-  const itemSelectActive = selectingOpenListItems || (selectingSearchResults && searchHasItems)
-  const listSelectActive = !!(selectMode && !selectingOpenListItems && (!searchActive || searchHasListsOrFolders))
-  const selectStripOpen = itemSelectActive || listSelectActive
-  const selectBandRef = useRef<HTMLDivElement>(null)
-  const [selectBandPx, setSelectBandPx] = useState(0)
-  useEffect(() => {
-    if (!selectStripOpen) {
-      setSelectBandPx(0)
-      return
-    }
-    const el = selectBandRef.current
-    if (!el) return
-    const measure = () => {
-      // margin-top on the strip sits outside the border box; the window must grow by both
-      const next = Math.ceil(el.getBoundingClientRect().height) + 3
-      setSelectBandPx((prev) => (prev === next ? prev : next))
-    }
-    measure()
-    if (typeof ResizeObserver !== "function") return
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [selectStripOpen])
-  const openListKey = openTarget && openTarget.type !== "habits" && openTarget.type !== "objectives" ? openTargetKey(openTarget) : ""
-  const listIconsDesktopOn = currentDisplay === "icons" && !!openListKey && !!listIconsDesktop?.[openListKey]
   useEffect(() => {
     clearTaskSelection()
-  }, [openListKey, clearTaskSelection])
-
-  const placeItemsIntoLists = useCallback(
-    (destListIds: string[]) => {
-      const unique = [...new Set(destListIds.filter(Boolean))]
-      if (unique.length === 0) return
-      const state = useTaskStore.getState()
-      selectedTaskIds.forEach((taskId) => {
-        const t = state.tasks.find((x) => x.id === taskId)
-        if (!t) return
-        const next = placeTaskIntoDestinationLists(t, unique, {
-          mode: effectiveItemPlacement,
-          originListId,
-          canMove: itemCanMove,
-          lists: state.lists,
-          folders: state.folders,
-          types: itemTypes,
-        })
-        updateTask(next)
-      })
-      selection.cancelSelectMode()
-    },
-    [selectedTaskIds, effectiveItemPlacement, originListId, itemCanMove, updateTask, itemTypes, selection],
-  )
-
-  const handleSelectAllVisible = useCallback(() => {
-    if (searchActive) {
-      selectAll(
-        searchResults.lists.map((l) => l.id),
-        searchResults.folders.map((f) => f.id),
-      )
-      return
-    }
-    const ids = selectableEntryIds(entries)
-    selectAll(ids.listIds, ids.folderIds)
-  }, [searchActive, searchResults.lists, searchResults.folders, entries, selectAll])
-
-  const handleSelectAllItems = useCallback(() => {
-    if (searchActive) {
-      selectAllTasks(searchResults.tasks.map((t) => t.id))
-      return
-    }
-    selectAllTasks(listedTasks.map((t) => t.id))
-  }, [searchActive, searchResults.tasks, listedTasks, selectAllTasks])
-
-  const handleSelectAllSearchResults = useCallback(() => {
-    selectAll(
-      searchResults.lists.map((l) => l.id),
-      searchResults.folders.map((f) => f.id),
-    )
-    selectAllTasks(searchResults.tasks.map((t) => t.id))
-  }, [searchResults, selectAll, selectAllTasks])
-
-  const handleDeleteSelectedItems = useCallback(() => {
-    const n = selectedTaskIds.length
-    if (n === 0) return
-    if (!confirm(`Delete ${n} item${n === 1 ? "" : "s"}? This cannot be undone.`)) return
-    selectedTaskIds.forEach((id) => deleteTask(id))
-    selection.cancelSelectMode()
-  }, [selectedTaskIds, deleteTask, selection])
-
-  const handleDeleteSelected = useCallback(() => {
-    const listCount = selectedCategories.length
-    const folderCount = selectedFolderIds.length
-    if (listCount + folderCount === 0) return
-    const parts = [
-      listCount ? `${listCount} list${listCount === 1 ? "" : "s"}` : "",
-      folderCount ? `${folderCount} folder${folderCount === 1 ? "" : "s"}` : "",
-    ].filter(Boolean)
-    if (
-      !confirm(
-        `Delete ${parts.join(" and ")}? Items are kept. Folders are removed without deleting lists that are not also selected.`,
-      )
-    ) {
-      return
-    }
-    selectedCategories.forEach((id) => {
-      const live = useTaskStore.getState().lists.find((list) => list.id === id)
-      if (live && (isRemindersList(live) || isPeopleIKnowList(live) || isInstagramPeopleList(live))) return
-      folders.forEach((f) => {
-        if (f.listIds.includes(id)) removeListFromFolder(f.id, id)
-      })
-      deleteList(id)
-    })
-    selectedFolderIds.forEach((id) => {
-      if (!isScheduledFolderId(id)) deleteFolder(id)
-    })
-    if (openTarget?.type === "category" && selectedCategories.includes(openTarget.id)) closeTarget()
-    if (currentFolder && selectedFolderIds.includes(currentFolder.id)) handleNavTo("all")
-    selection.cancelSelectMode()
-  }, [
-    selectedCategories,
-    selectedFolderIds,
-    deleteList,
-    deleteFolder,
-    folders,
-    removeListFromFolder,
-    openTarget,
-    closeTarget,
-    currentFolder,
-    handleNavTo,
-    selection,
-  ])
-
-  const selectedMergeLists = useMemo(
-    () => selectedCategories.map((id) => categories.find((c) => c.id === id)).filter((c): c is List => !!c),
-    [selectedCategories, categories],
-  )
-
-  const selectedMergeItems = useMemo(
-    () => selectedTaskIds.map((id) => allTasks.find((t) => t.id === id)).filter((t): t is Task => !!t),
-    [selectedTaskIds, allTasks],
-  )
-
-  const handleApplyMerge = useCallback(
-    (plan: ListMergePlan) => {
-      // Search-result and folder select both land here — one replace path.
-      const state = useTaskStore.getState()
-      const next = applyListMerge({ lists: state.lists, folders: state.folders, tasks: state.tasks }, plan)
-      setLists(next.lists, { tombstoneIds: plan.discardedIds })
-      setFolders(next.folders)
-      setTasks(next.tasks)
-      setMergeOpen(false)
-      selection.cancelSelectMode()
-    },
-    [setLists, setFolders, setTasks, selection],
-  )
-
-  const handleApplyItemMerge = useCallback(
-    (plan: ItemMergePlan) => {
-      // Search-result Select and open-list Select both call this — one replace
-      // path. Read the live vault so we never merge a stale snapshot, then stamp
-      // discarded ids so hub/persist union cannot resurrect originals.
-      const live = useTaskStore.getState().tasks
-      setTasks(applyItemMerge(live, plan), { tombstoneIds: plan.discardedIds })
-      if (selectedTaskId && plan.discardedIds.includes(selectedTaskId)) setSelectedTaskId(null)
-      setItemMergeOpen(false)
-      selection.cancelSelectMode()
-    },
-    [setTasks, selectedTaskId, selection],
-  )
-
-  const folderRenameProps = {
-    onFolderContextMenu: handleFolderContextMenu,
-    renamingFolderId,
-    onCommitFolderRename: handleCommitFolderRename,
-    onCancelFolderRename: () => setRenamingFolderId(null),
-  }
-
-  const folderViewCommon = {
-    entries,
-    activeIconId,
-    setActiveIconId,
-    openEntry: handleOpenEntry,
-    handleCategoryDragStart: drag.handleCategoryDragStart,
-    handleDragOver: drag.handleDragOver,
-    handleDropOnEntry: drag.handleDropOnEntry,
-    clearDrag: drag.clearDrag,
-  }
-
-  const pasteSameEnabled =
-    !!currentFolder &&
-    !isScheduledFolderId(currentFolder.id) &&
-    (listsClipboard?.listIds.length ?? 0) > 0
-  const pasteSameDisabledReason = !currentFolder
-    ? "Open a folder to add the same lists into it. Folders keep one parent and cannot be multi-filed."
-    : isScheduledFolderId(currentFolder.id)
-      ? "Scheduled folders cannot receive Same-identity paste."
-      : "Same identity applies to lists (multi-folder membership). Folders keep one parent."
-
-  const renderMainContent = () => {
-    if (searchActive) {
-      return (
-        <SearchResultsView
-          searchTerm={searchTerm}
-          folders={searchResults.folders}
-          lists={searchResults.lists}
-          tasks={searchResults.tasks}
-          getTasksForCategory={getTasksForCategory}
-          onSelectFolder={handleNavTo}
-          onSelectList={(listId, parentId) => {
-            const parent = parentId || folders.find((f) => f.listIds.includes(listId))?.id || null
-            setLocation(parent || "all")
-            setOpenTarget({ type: "category", id: listId })
-            clearSearch()
-          }}
-          onSelectTask={setSelectedTaskId}
-          selectMode={selectMode}
-          selectedFolderIds={selectedFolderIds}
-          selectedListIds={selectedCategories}
-          selectedTaskIds={selectedTaskIds}
-          onToggleFolderSelect={toggleFolderSelection}
-          onToggleListSelect={toggleCategorySelection}
-          onToggleTaskSelect={toggleTaskSelection}
-        />
-      )
-    }
-    if (openTarget?.type === "habits") {
-      if (openTarget.id === "weekly-habits") return <WeeklyHabitsList />
-      if (openTarget.id === "monthly-habits") return <MonthlyHabitsList />
-      if (openTarget.id === "season-habits") return <SeasonHabitsList />
-      return <DailyHabitsList />
-    }
-    if (openTarget?.type === "objectives") return <ObjectivesList />
-    if (openTarget) {
-      return (
-        <ListContentPanel
-          tasks={shownTasks}
-          sort={currentSort}
-          sortOptions={sortOptions}
-          onSortChange={handleSortChange}
-          searchQuery={listSearchQuery}
-          sentThisWeek={openTarget?.type === "category" && openCategory?.sentThisWeek === true}
-          showSent={showSentItems}
-          onShowSentChange={setShowSentItems}
-          currentDisplay={currentDisplay}
-          categories={categories}
-          folders={folders}
-          openCategory={viewList}
-          openFolderAll={!!openFolderAll}
-          openSmart={!!openSmart}
-          currentFolder={currentFolder}
-          isRootAll={isRootAll}
-          itemLabel={
-            openTypeList
-              ? openTypeList.itemLabel || openTypeList.name
-              : openFolderAll
-                ? "Item"
-                : itemLabelFor(openCategory?.id, openCategory)
-          }
-          openIconKey={openIconKey}
-          folderAllUncategorizedOnly={folderAllUncategorizedOnly}
-          onFolderAllUncategorizedOnlyChange={setFolderAllUncategorizedOnly}
-          folderAllHiddenListIds={folderAllHiddenListIds ?? {}}
-          folderAllHideUncategorized={folderAllHideUncategorized ?? {}}
-          globalAllHiddenFolderIds={globalAllHiddenFolderIds ?? []}
-          globalAllUncategorizedOnly={!!globalAllUncategorizedOnly}
-          onGlobalAllUncategorizedOnlyChange={setGlobalAllUncategorizedOnly}
-          globalAllHideUncategorized={!!globalAllHideUncategorized}
-          addingTaskToTarget={addingTaskToTarget}
-          openTargetKeyValue={openTargetKey(openTarget)}
-          onAddMedia={
-            openTarget?.type === "category" && (listAllowsPhotos(openCategory) || listAllowsDocuments(openCategory))
-              ? async (drafts) => {
-                  const listId = openTarget.id
-                  const photo = listAllowsPhotos(openCategory)
-                  for (const d of drafts) {
-                    const title = d.title?.trim() || (d.file ? titleFromFileName(d.file.name) : "")
-                    if (!title) continue
-                    const base = taskActions.buildBaseTask(title, listId)
-                    base.lists = [listId]
-                    const attrs = d.file ? await (photo ? photoAttrsFromFile(d.file) : documentAttrsFromFile(d.file)) : {}
-                    addTask({ ...base, attributes: { ...base.attributes, ...attrs } })
-                  }
-                }
-              : undefined
-          }
-          onAddTask={(text) => taskActions.handleAddTaskToOpen(text, openTarget, currentFolder, () => { setAddingTaskToTarget(null) })}
-          onCancelAddTask={() => setAddingTaskToTarget(null)}
-          onShowAddTask={() => { setShowBulkAdd(false); setAddingTaskToTarget(openTargetKey(openTarget)) }}
-          showBulkAdd={showBulkAdd}
-          onBulkAdd={(text) => taskActions.handleBulkAddToOpen(text, openTarget, currentFolder, () => { setShowBulkAdd(false) })}
-          onShowBulkAdd={setShowBulkAdd}
-          onBulkAddCancel={() => { setShowBulkAdd(false) }}
-          onTaskSelect={setSelectedTaskId}
-          onCompleteTask={taskActions.handleCompleteTask}
-          onMissedOpportunity={taskActions.handleMissedOpportunity}
-          allowAdd={!(openTarget?.type === "category" && isNaPeriodSmartCategoryId(openTarget.id))}
-          onTaskDragStart={drag.handleTaskDragStart}
-          onDragEnd={drag.clearDrag}
-          onIconPickerOpen={(taskId) => setIconPickerFor({ kind: "task", id: taskId })}
-          selectMode={selectMode}
-          selectedTaskIds={selectedTaskIds}
-          onToggleTaskSelect={toggleTaskSelection}
-          iconsDesktop={listIconsDesktopOn}
-          listOrganizeEpoch={listDesktopOrganizeEpoch}
-          listPileEpoch={listPileEpoch}
-          listGravityResetEpoch={listGravityResetEpoch}
-          listGravitySettleEpoch={listGravitySettleEpoch}
-        />
-      )
-    }
-    if (folderView === "icons") {
-      return (
-        <FolderViewIcons
-          location={location}
-          entries={entries}
-          activeIconId={activeIconId}
-          setActiveIconId={setActiveIconId}
-          openEntry={handleOpenEntry}
-          isHome={isHome}
-          selectMode={selectMode}
-          selectedCategories={selectedCategories}
-          dropTargetId={drag.dropTargetId}
-          homePinned={homePinned}
-          iconPositions={iconPositions}
-          iconLayoutMode={iconLayoutMode[location]}
-          organizeEpoch={organizeEpoch}
-          organizeFromSnapshot={organizeFromSnapshot}
-          onOrganizeAnimationEnd={() => setOrganizeFromSnapshot(null)}
-          setIconPosition={setIconPosition}
-          commitIconLayout={commitIconLayout}
-          onFileCategoryOnEntry={(categoryId, target) => {
-            if (target.kind === "folder") drag.fileCategoryIntoFolder(categoryId, target.id)
-            else if (target.kind === "folder-all") drag.fileCategoryIntoFolder(categoryId, null)
-          }}
-          setSelectedCategories={setSelectedCategories}
-          setDropTargetId={drag.setDropTargetId}
-          toggleHomePin={toggleHomePin}
-          setIconPickerFor={setIconPickerFor}
-          openNewCategoryDialog={openNewCategoryDialog}
-          onCanvasWidth={handleCanvasWidth}
-          {...folderRenameProps}
-        />
-      )
-    }
-    if (folderView === "list") {
-      return (
-        <FolderViewList
-          {...folderViewCommon}
-          selectMode={selectMode}
-          selectedCategories={selectedCategories}
-          selectedFolderIds={selectedFolderIds}
-          onToggleListSelect={toggleCategorySelection}
-          onToggleFolderSelect={toggleFolderSelection}
-          inFolder={!!currentFolder}
-          {...folderRenameProps}
-        />
-      )
-    }
-    if (folderView === "details") {
-      return (
-        <FolderViewDetails
-          {...folderViewCommon}
-          folders={folders}
-          getCategoryCompletionRate={getCategoryCompletionRate}
-        />
-      )
-    }
-    return (
-      <FolderViewCards
-        {...folderViewCommon}
-        categoryById={categoryById}
-        selectMode={selectMode}
-        selectedCategories={selectedCategories}
-        addingTaskToTarget={addingTaskToTarget}
-        scopeKey={location}
-        getSmartTasks={getSmartTasks}
-        getTasksForCategory={getTasksForCategory}
-        getCategoryCompletionRate={getCategoryCompletionRate}
-        itemLabelFor={itemLabelFor}
-        setSelectedCategories={setSelectedCategories}
-        setSelectedTaskId={setSelectedTaskId}
-        setAddingTaskToTarget={setAddingTaskToTarget}
-        setEditingCategory={setEditingCategory}
-        deleteList={deleteList}
-        handleAddTaskToCategory={handleAddTaskToCategoryCard}
-        handleCompleteTask={taskActions.handleCompleteTask}
-        handleMissedOpportunity={taskActions.handleMissedOpportunity}
-        handleTaskDragStart={drag.handleTaskDragStart}
-      />
-    )
-  }
+  }, [icon.openListKey, clearTaskSelection])
 
   return (
     <div
@@ -1734,17 +363,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         data-ui-help="Folders, lists, and items in a file-manager window."
         data-ui-docs="components/Lists/README.md"
       >
-        <div className="fm-title-bar">
-          <div className="fm-title-bar-text">
-            <img src={openIconKey} alt="" loading="lazy" decoding="async" />
-            {openTarget ? `${openName} — Lists` : "Lists — File Manager"}
-          </div>
-          <div className="fm-title-bar-controls">
-            <button className="fm-title-btn" aria-label="Minimize">_</button>
-            <button className="fm-title-btn" aria-label="Maximize">□</button>
-            <KeycapClose label="Close" onClick={closeTarget} />
-          </div>
-        </div>
+        <ListsTitleBar
+          openIconKey={chrome.openIconKey}
+          openTarget={openTarget}
+          openName={chrome.openName}
+          closeTarget={closeTarget}
+        />
 
         <div className="fm-window-body">
           <ListsToolbar
@@ -1755,115 +379,75 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             searchActive={searchActive}
             selectMode={selectMode}
             folderView={folderView}
-            currentDisplay={currentDisplay}
+            currentDisplay={chrome.currentDisplay}
             location={location}
-            entryKeys={entries.map((e) => `${e.kind}-${e.id}`)}
-            enabledDisplays={offeredDisplays}
+            entryKeys={shelf.entries.map((e) => `${e.kind}-${e.id}`)}
+            enabledDisplays={chrome.offeredDisplays}
             onUp={() => { clearSearch(); if (openTarget) closeTarget(); else navTo("all"); setActiveIconId(null) }}
-            onNewList={openNewCategoryDialog}
-            onNewFolder={() => setShowNewFolderDialog(true)}
-            onImportCsv={() => csvRef.current?.click()}
+            onNewList={create.openNewCategoryDialog}
+            onNewFolder={() => create.setShowNewFolderDialog(true)}
+            onImportCsv={() => csv.csvRef.current?.click()}
             onSettings={() => setShowCategorySettings(true)}
             onToggleSelect={toggleSelectMode}
             onSearchChange={setSearchTerm}
             onClearSearch={clearSearch}
             onFolderViewChange={setFolderView}
             onListDisplayChange={setListDisplay}
-            onAutoOrganize={handleAutoOrganize}
-            listIconsDesktop={listIconsDesktopOn}
-            onListDesktopOrganize={() => {
-              if (openListKey) setListIconsGravity(openListKey, false)
-              setListDesktopOrganizeEpoch((n) => n + 1)
-            }}
-            listIconsGravity={!!openListKey && !!listIconsGravity?.[openListKey]}
-            onListIconsGravityChange={(on) => {
-              if (!openListKey) return
-              setListIconsGravity(openListKey, on)
-            }}
-            onGravityReset={() => {
-              if (!openListKey) return
-              setListGravityResetEpoch((n) => n + 1)
-            }}
-            onGravitySettle={() => {
-              if (!openListKey) return
-              setListGravitySettleEpoch((n) => n + 1)
-            }}
-            onGravitySettings={() => setGravitySettingsOpen(true)}
-            onPileUp={() => {
-              if (openListKey) setListIconsGravity(openListKey, false)
-              setListPileEpoch((n) => n + 1)
-            }}
+            onAutoOrganize={icon.handleAutoOrganize}
+            listIconsDesktop={icon.listIconsDesktopOn}
+            onListDesktopOrganize={icon.onListDesktopOrganize}
+            listIconsGravity={icon.listIconsGravityOn}
+            onListIconsGravityChange={icon.onListIconsGravityChange}
+            onGravityReset={icon.onGravityReset}
+            onGravitySettle={icon.onGravitySettle}
+            onGravitySettings={icon.onGravitySettings}
+            onPileUp={icon.onPileUp}
           />
           <input
-            ref={csvRef}
+            ref={csv.csvRef}
             type="file"
             accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             hidden
-            onChange={handleCsvFile}
+            onChange={csv.handleCsvFile}
           />
 
-          <div className="fm-status-bar">
-            <div className="fm-status-field shrink">
-              <span className="fm-status-label">Address</span>
-            </div>
-            <div className="fm-status-field">{breadcrumb}</div>
-          </div>
+          <ListsAddressBar breadcrumb={breadcrumb} />
 
-          {selectStripOpen && (
-            <div ref={selectBandRef}>
-              {itemSelectActive && (
-                <ItemSelectionToolbar
-                  selectedCount={selectedTaskIds.length}
-                  placementMode={effectiveItemPlacement}
-                  canMove={itemCanMove}
-                  fromSearch={selectingSearchResults}
-                  excludeListIds={excludedListIdsForSelection(categories, originListId)}
-                  onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllItems}
-                  onDeselectAll={
-                    selectingSearchResults
-                      ? () => {
-                          clearTaskSelection()
-                          clearSelection()
-                        }
-                      : clearTaskSelection
-                  }
-                  onPlacementModeChange={setItemPlacementMode}
-                  onAddToNewList={openNewCategoryDialog}
-                  onAddToLists={placeItemsIntoLists}
-                  onMerge={() => setItemMergeConfirmOpen(true)}
-                  onDelete={handleDeleteSelectedItems}
-                />
-              )}
-              {listSelectActive && (
-                <SelectionToolbar
-                  selectedListCount={selectedCategories.length}
-                  selectedFolderCount={selectedFolderIds.length}
-                  placementMode={effectivePlacement}
-                  originIsAll={isAll && !searchActive}
-                  fromSearch={selectingSearchResults}
-                  destinationFolders={destinationFoldersForSelection(folders, {
-                    currentFolderId: searchActive ? null : currentFolder?.id,
-                    selectedFolderIds,
-                  })}
-                  onSelectAll={selectingSearchResults ? handleSelectAllSearchResults : handleSelectAllVisible}
-                  onDeselectAll={
-                    selectingSearchResults
-                      ? () => {
-                          clearSelection()
-                          clearTaskSelection()
-                        }
-                      : clearSelection
-                  }
-                  onPlacementModeChange={setPlacementMode}
-                  onAddToNewFolder={() => setShowNewFolderDialog(true)}
-                  onAddToFolder={placeListsIntoFolder}
-                  onMerge={() => setMergeConfirmOpen(true)}
-                  onDelete={handleDeleteSelected}
-                  onDuplicate={openDuplicateSelection}
-                />
-              )}
-            </div>
-          )}
+          <ListsSelectStrip
+            selectStripOpen={selectActions.selectStripOpen}
+            setSelectBandPx={setSelectBandPx}
+            itemSelectActive={selectActions.itemSelectActive}
+            listSelectActive={selectActions.listSelectActive}
+            selectedTaskIds={selectedTaskIds}
+            effectiveItemPlacement={selectActions.effectiveItemPlacement}
+            itemCanMove={selectActions.itemCanMove}
+            selectingSearchResults={selectActions.selectingSearchResults}
+            categories={categories}
+            originListId={selectActions.originListId}
+            handleSelectAllSearchResults={selectActions.handleSelectAllSearchResults}
+            handleSelectAllItems={selectActions.handleSelectAllItems}
+            clearTaskSelection={selectActions.clearTaskSelection}
+            clearSelection={selectActions.clearSelection}
+            setItemPlacementMode={selectActions.setItemPlacementMode}
+            openNewCategoryDialog={create.openNewCategoryDialog}
+            placeItemsIntoLists={selectActions.placeItemsIntoLists}
+            setItemMergeConfirmOpen={selectActions.setItemMergeConfirmOpen}
+            handleDeleteSelectedItems={selectActions.handleDeleteSelectedItems}
+            selectedCategories={selectedCategories}
+            selectedFolderIds={selectedFolderIds}
+            effectivePlacement={selectActions.effectivePlacement}
+            isAll={isAll}
+            searchActive={searchActive}
+            folders={folders}
+            currentFolder={currentFolder}
+            handleSelectAllVisible={selectActions.handleSelectAllVisible}
+            setPlacementMode={selectActions.setPlacementMode}
+            setShowNewFolderDialog={create.setShowNewFolderDialog}
+            placeListsIntoFolder={selectActions.placeListsIntoFolder}
+            setMergeConfirmOpen={selectActions.setMergeConfirmOpen}
+            handleDeleteSelected={selectActions.handleDeleteSelected}
+            openDuplicateSelection={duplicate.openDuplicateSelection}
+          />
 
           <div className="fm-split">
             <FolderTree
@@ -1875,278 +459,252 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onNavTo={handleNavTo}
               onDragOver={drag.handleDragOver}
               onDrop={drag.handleFolderTreeDrop}
-              onCreateFolder={() => setShowNewFolderDialog(true)}
+              onCreateFolder={() => create.setShowNewFolderDialog(true)}
               onEditFolder={setEditingFolder}
               itemTypes={itemTypes}
               onOpenItemType={openItemType}
             />
 
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
-              {openTarget && (
-                <div className={`fm-title-bar inactive fm-list-caption${listSearchOpen ? " searching" : ""}`}>
-                  <div className="fm-title-bar-text" data-testid="fm-inner-caption" title={innerCaption}>
-                    <span className="fm-list-caption-name">{innerCaption}</span>
-                  </div>
-                  {listSearchOpen && listSearchable ? (
-                    <ListCaptionSearch
-                      listName={innerCaption}
-                      query={listSearchQuery}
-                      onQueryChange={setListSearchQuery}
-                      allFields={listSearchAllFields}
-                      onAllFieldsChange={setListSearchAllFields}
-                      matchCount={listSearchQuery.trim() ? shownTasks.length : null}
-                      onClose={closeListSearch}
-                    />
-                  ) : null}
-                  <div className="fm-title-bar-controls fm-cap-keys">
-                    {listSearchable && (
-                      <button
-                        type="button"
-                        data-no95
-                        className="fm-cap-key"
-                        title={listSearchOpen ? "Close search" : "Search this list"}
-                        aria-label={listSearchOpen ? "Close list search" : "Search this list"}
-                        aria-pressed={listSearchOpen}
-                        onClick={() => (listSearchOpen ? closeListSearch() : setListSearchOpen(true))}
-                      >
-                        <CaptionKeyGlyph kind="search" />
-                      </button>
-                    )}
-                    {listSearchable && (
-                      <button
-                        type="button"
-                        data-no95
-                        className="fm-cap-key"
-                        title="Add item"
-                        aria-label="Add item"
-                        onClick={() => setAddingTaskToTarget(openTargetKey(openTarget))}
-                      >
-                        <CaptionKeyGlyph kind="add" />
-                      </button>
-                    )}
-                    {(openCategory || canEditFolderAllSettings) && (
-                      <button
-                        type="button"
-                        data-no95
-                        className="fm-cap-key"
-                        title="List settings"
-                        aria-label="List settings"
-                        onClick={() => (openCategory ? setEditingCategory(openCategory) : openFolderAllSettings())}
-                      >
-                        <CaptionKeyGlyph kind="settings" />
-                      </button>
-                    )}
-                    <button type="button" data-no95 className="fm-cap-key fm-cap-key-close" title="Close list" aria-label="Close" onClick={closeTarget}>
-                      <CaptionKeyGlyph kind="close" />
-                    </button>
-                  </div>
-                </div>
-              )}
-              {renderMainContent()}
+              <ListInnerCaption
+                openTarget={openTarget}
+                innerCaption={chrome.innerCaption}
+                listSearchOpen={openItems.listSearchOpen}
+                listSearchable={openItems.listSearchable}
+                listSearchQuery={openItems.listSearchQuery}
+                setListSearchQuery={openItems.setListSearchQuery}
+                listSearchAllFields={openItems.listSearchAllFields}
+                setListSearchAllFields={openItems.setListSearchAllFields}
+                shownCount={openItems.shownTasks.length}
+                closeListSearch={openItems.closeListSearch}
+                setListSearchOpen={openItems.setListSearchOpen}
+                setAddingTaskToTarget={setAddingTaskToTarget}
+                openCategory={chrome.openCategory}
+                canEditFolderAllSettings={chrome.canEditFolderAllSettings}
+                setEditingCategory={setEditingCategory}
+                openFolderAllSettings={openFolderAllSettings}
+                closeTarget={closeTarget}
+              />
+              <ListsMainPane
+                searchActive={searchActive}
+                searchTerm={searchTerm}
+                searchResults={searchResults}
+                getTasksForCategory={shelf.getTasksForCategory}
+                handleNavTo={handleNavTo}
+                folders={folders}
+                setLocation={setLocation}
+                setOpenTarget={setOpenTarget}
+                clearSearch={clearSearch}
+                setSelectedTaskId={setSelectedTaskId}
+                selectMode={selectMode}
+                selectedFolderIds={selectedFolderIds}
+                selectedCategories={selectedCategories}
+                selectedTaskIds={selectedTaskIds}
+                toggleFolderSelection={toggleFolderSelection}
+                toggleCategorySelection={toggleCategorySelection}
+                toggleTaskSelection={toggleTaskSelection}
+                openTarget={openTarget}
+                shownTasks={openItems.shownTasks}
+                currentSort={openItems.currentSort}
+                sortOptions={openItems.sortOptions}
+                handleSortChange={openItems.handleSortChange}
+                listSearchQuery={openItems.listSearchQuery}
+                openCategory={chrome.openCategory}
+                showSentItems={openItems.showSentItems}
+                setShowSentItems={openItems.setShowSentItems}
+                currentDisplay={chrome.currentDisplay}
+                categories={categories}
+                viewList={chrome.viewList}
+                openFolderAll={chrome.openFolderAll}
+                openSmart={chrome.openSmart}
+                currentFolder={currentFolder}
+                isRootAll={chrome.isRootAll}
+                openTypeList={chrome.openTypeList}
+                itemLabelFor={shelf.itemLabelFor}
+                openIconKey={chrome.openIconKey}
+                folderAllUncategorizedOnly={folderAllUncategorizedOnly}
+                setFolderAllUncategorizedOnly={setFolderAllUncategorizedOnly}
+                folderAllHiddenListIds={folderAllHiddenListIds}
+                folderAllHideUncategorized={folderAllHideUncategorized}
+                globalAllHiddenFolderIds={globalAllHiddenFolderIds}
+                globalAllUncategorizedOnly={globalAllUncategorizedOnly}
+                setGlobalAllUncategorizedOnly={setGlobalAllUncategorizedOnly}
+                globalAllHideUncategorized={globalAllHideUncategorized}
+                addingTaskToTarget={addingTaskToTarget}
+                setAddingTaskToTarget={setAddingTaskToTarget}
+                taskActions={taskActions}
+                addTask={addTask}
+                showBulkAdd={showBulkAdd}
+                setShowBulkAdd={setShowBulkAdd}
+                drag={drag}
+                setIconPickerFor={icon.setIconPickerFor}
+                listIconsDesktopOn={icon.listIconsDesktopOn}
+                listDesktopOrganizeEpoch={icon.listDesktopOrganizeEpoch}
+                listPileEpoch={icon.listPileEpoch}
+                listGravityResetEpoch={icon.listGravityResetEpoch}
+                listGravitySettleEpoch={icon.listGravitySettleEpoch}
+                folderView={folderView}
+                location={location}
+                entries={shelf.entries}
+                activeIconId={activeIconId}
+                setActiveIconId={setActiveIconId}
+                handleOpenEntry={handleOpenEntry}
+                isHome={isHome}
+                homePinned={homePinned}
+                iconPositions={iconPositions}
+                iconLayoutMode={iconLayoutMode}
+                organizeEpoch={icon.organizeEpoch}
+                organizeFromSnapshot={icon.organizeFromSnapshot}
+                setOrganizeFromSnapshot={icon.setOrganizeFromSnapshot}
+                setIconPosition={setIconPosition}
+                commitIconLayout={commitIconLayout}
+                setSelectedCategories={setSelectedCategories}
+                toggleHomePin={toggleHomePin}
+                openNewCategoryDialog={create.openNewCategoryDialog}
+                handleCanvasWidth={icon.handleCanvasWidth}
+                folderRenameProps={folderMenu.folderRenameProps}
+                getCategoryCompletionRate={shelf.getCategoryCompletionRate}
+                categoryById={shelf.categoryById}
+                getSmartTasks={shelf.getSmartTasks}
+                deleteList={deleteList}
+                setEditingCategory={setEditingCategory}
+              />
             </div>
 
-            {openCategory && (
-              <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
-                <InspectorFacts
-                  countLabel={`${listedTasks.length} item(s)`}
-                  typeLabel={itemLabelFor(openCategory.id, openCategory)}
-                  lastTouched={formatInspectorDate(latestTouch(openCategory.createdAt, openTasks))}
-                />
-                <div className="fm-inspector-sep" />
-                <div className="fm-inspector-actions">
-                  <ListIconsDesktopSwitch targetKey={openCategory.id} show={currentDisplay === "icons"} />
-                  <button className="fm-btn fm-btn-sm" onClick={() => setEditingCategory(openCategory)}>List Settings</button>
-                  <button className="fm-btn fm-btn-sm" onClick={() => setIconPickerFor({ kind: "category", id: openCategory.id })}>Change Icon</button>
-                  <button className="fm-btn fm-btn-sm" onClick={() => toggleHomePin(openCategory.id)}>{homePinned.includes(openCategory.id) ? "Unpin Home" : "Pin to Home"}</button>
-                </div>
-                {typeFilterForOpen && (
-                  <>
-                    <div className="fm-inspector-sep" />
-                    <AllViewCheckboxFilter
-                      items={typeFilterForOpen.items}
-                      hiddenIds={hiddenItemTypeIdsByTarget?.[typeFilterForOpen.targetKey] ?? []}
-                      onHiddenChange={(typeId, hidden) => setItemTypeHidden(typeFilterForOpen.targetKey, typeId, hidden)}
-                      onSetHiddenIds={(ids) => setHiddenItemTypeIds(typeFilterForOpen.targetKey, ids)}
-                      ariaLabel="Filter types"
-                    />
-                  </>
-                )}
-              </div>
-            )}
-            {openFolderAll && (isRootAll || currentFolder) && (
-              <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
-                <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <ListIconsDesktopSwitch targetKey={openTargetKey(openTarget!)} show={currentDisplay === "icons"} />
-                  {canEditFolderAllSettings && (
-                    <button className="fm-btn fm-btn-sm" onClick={openFolderAllSettings}>List Settings</button>
-                  )}
-                  {isRootAll ? (
-                    <AllViewCheckboxFilter
-                      items={foldersInGlobalAllForFilter(folders).filter((f) => !isFolderHiddenFromGlobalAll(f, folders))}
-                      hiddenIds={globalAllHiddenFolderIds ?? []}
-                      onHiddenChange={(folderId, hidden) => setGlobalAllFolderHidden(folderId, hidden)}
-                      onSetHiddenIds={setGlobalAllHiddenFolderIds}
-                      ariaLabel="Filter folders"
-                      uncategorizedChecked={!globalAllHideUncategorized}
-                      onUncategorizedChange={(checked) => setGlobalAllHideUncategorized(!checked)}
-                    />
-                  ) : currentFolder && !isScheduledFolderId(currentFolder.id) ? (
-                    <AllViewCheckboxFilter
-                      items={listsInFolderForFilter(currentFolder, categories)}
-                      hiddenIds={folderAllHiddenListIds?.[currentFolder.id] ?? []}
-                      onHiddenChange={(listId, hidden) => setFolderAllListHidden(currentFolder.id, listId, hidden)}
-                      onSetHiddenIds={(ids) => setFolderAllHiddenListIds(currentFolder.id, ids)}
-                      ariaLabel="Filter lists"
-                      uncategorizedChecked={!folderAllHideUncategorized?.[currentFolder.id]}
-                      onUncategorizedChange={(checked) => setFolderAllHideUncategorized(currentFolder.id, !checked)}
-                    />
-                  ) : null}
-                  {typeFilterForOpen && (
-                    <AllViewCheckboxFilter
-                      items={typeFilterForOpen.items}
-                      hiddenIds={hiddenItemTypeIdsByTarget?.[typeFilterForOpen.targetKey] ?? []}
-                      onHiddenChange={(typeId, hidden) => setItemTypeHidden(typeFilterForOpen.targetKey, typeId, hidden)}
-                      onSetHiddenIds={(ids) => setHiddenItemTypeIds(typeFilterForOpen.targetKey, ids)}
-                      ariaLabel="Filter types"
-                    />
-                  )}
-                  <p style={{ fontSize: 11, color: "var(--fm-button-shadow)" }}>Items added here stay uncategorized until filed into a list.</p>
-                </div>
-              </div>
-            )}
-            {openSmart && (
-              <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
-                <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <ListIconsDesktopSwitch targetKey={openSmart.id} show={currentDisplay === "icons"} />
-                  <button className="fm-btn fm-btn-sm" onClick={() => setAddingTaskToTarget(openSmart.id)}>Add Task</button>
-                  <p style={{ fontSize: 11, color: "var(--fm-button-shadow)" }}>Synced with the dashboard To-Do panel.</p>
-                </div>
-              </div>
-            )}
-            {!openCategory && !openFolderAll && !openSmart && currentFolder && (
-              <div className="fm-sidebar fm-inspector" data-ui-name="List inspector" data-ui-docs="components/Lists/README.md" style={{ width: 168 }}>
-                <InspectorFacts
-                  countLabel={`${currentFolder.listIds?.length ?? 0} list(s)`}
-                  typeLabel="Folder"
-                  lastTouched={formatInspectorDate(currentFolder.createdAt)}
-                />
-                <div className="fm-inspector-sep" />
-                <div className="fm-inspector-actions">
-                  {!isScheduledFolderId(currentFolder.id) || currentFolder.id === "na-scheduled" ? (
-                    <button className="fm-btn fm-btn-sm" onClick={() => setEditingFolder(currentFolder)}>Folder Settings</button>
-                  ) : null}
-                  <button className="fm-btn fm-btn-sm" onClick={() => setIconPickerFor({ kind: "folder", id: currentFolder.id })}>Change Icon</button>
-                  <button className="fm-btn fm-btn-sm" onClick={openNewCategoryDialog}>New List Here</button>
-                  <button className="fm-btn fm-btn-sm" onClick={() => toggleHomePin(currentFolder.id)}>{homePinned.includes(currentFolder.id) ? "Unpin Home" : "Pin to Home"}</button>
-                </div>
-              </div>
-            )}
+            <ListsInspector
+              openCategory={chrome.openCategory}
+              openFolderAll={chrome.openFolderAll}
+              isRootAll={chrome.isRootAll}
+              currentFolder={currentFolder}
+              openSmart={chrome.openSmart}
+              openTarget={openTarget}
+              listedTasks={openItems.listedTasks}
+              openTasks={openItems.openTasks}
+              itemLabelFor={shelf.itemLabelFor}
+              currentDisplay={chrome.currentDisplay}
+              setEditingCategory={setEditingCategory}
+              setIconPickerFor={icon.setIconPickerFor}
+              homePinned={homePinned}
+              toggleHomePin={toggleHomePin}
+              typeFilterForOpen={openItems.typeFilterForOpen}
+              hiddenItemTypeIdsByTarget={hiddenItemTypeIdsByTarget}
+              setItemTypeHidden={setItemTypeHidden}
+              setHiddenItemTypeIds={setHiddenItemTypeIds}
+              canEditFolderAllSettings={chrome.canEditFolderAllSettings}
+              openFolderAllSettings={openFolderAllSettings}
+              folders={folders}
+              categories={categories}
+              globalAllHiddenFolderIds={globalAllHiddenFolderIds}
+              setGlobalAllFolderHidden={setGlobalAllFolderHidden}
+              setGlobalAllHiddenFolderIds={setGlobalAllHiddenFolderIds}
+              globalAllHideUncategorized={globalAllHideUncategorized}
+              setGlobalAllHideUncategorized={setGlobalAllHideUncategorized}
+              folderAllHiddenListIds={folderAllHiddenListIds}
+              setFolderAllListHidden={setFolderAllListHidden}
+              setFolderAllHiddenListIds={setFolderAllHiddenListIds}
+              folderAllHideUncategorized={folderAllHideUncategorized}
+              setFolderAllHideUncategorized={setFolderAllHideUncategorized}
+              setAddingTaskToTarget={setAddingTaskToTarget}
+              setEditingFolder={setEditingFolder}
+              openNewCategoryDialog={create.openNewCategoryDialog}
+            />
           </div>
 
-          <div className="fm-status-bar">
-            <div className="fm-status-field" data-testid="fm-status-here">
-              <span className="fm-status-label">This folder:</span>
-              <span className="fm-crt-count">{hereCount}</span>
-            </div>
-            <div className="fm-status-field shrink" style={{ minWidth: 180 }} data-testid="fm-status-tree">
-              <span className="fm-status-label">Tree:</span>
-              <span className="fm-crt-count">{treeCount}</span>
-            </div>
-            <div className="fm-status-field shrink" style={{ minWidth: 90 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                <input type="checkbox" checked={showSmartLists} onChange={(e) => setShowSmartLists(e.target.checked)} />
-                Smart lists
-              </label>
-            </div>
-            {isAll ? (
-              <div className="fm-status-field shrink" style={{ minWidth: 160 }} data-testid="fm-status-period-ledgers">
-                <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={showPeriodLedgerListsInAll}
-                    onChange={(e) => setShowPeriodLedgerListsInAll(e.target.checked)}
-                  />
-                  Show to do / done / undone
-                </label>
-              </div>
-            ) : null}
-          </div>
+          <ListsStatusBar
+            hereCount={hereCount}
+            treeCount={treeCount}
+            showSmartLists={showSmartLists}
+            setShowSmartLists={setShowSmartLists}
+            isAll={isAll}
+            showPeriodLedgerListsInAll={showPeriodLedgerListsInAll}
+            setShowPeriodLedgerListsInAll={setShowPeriodLedgerListsInAll}
+          />
         </div>
       </div>
 
-      <NewListDialog open={newCategoryOpen} currentFolder={currentFolder} isHome={isHome} selectedCount={selectedTaskIds.length} placementMode={effectiveItemPlacement} canMove={itemCanMove} onPlacementModeChange={setItemPlacementMode} initialName={newListSeed} onOpenChange={setNewCategoryOpen} onCreate={handleCreateCategory} onBulkCreate={handleBulkCreateLists} />
-      {csvImport && <CsvImportDialog csvImport={csvImport} onClose={() => setCsvImport(null)} onImport={performCsvImport} onUpdate={setCsvImport} />}
-      <EditListDialog editingCategory={editingCategory} onEditingCategoryChange={setEditingCategory} folders={folders} homePinned={homePinned} listDisplay={listDisplay} setListDisplay={setListDisplay} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingCategory && setIconPickerFor({ kind: "category", id: editingCategory.id })} onSave={handleEditCategory} onDelete={() => { if (!editingCategory || isFolderAllItemsCategoryId(editingCategory.id) || isRemindersList(editingCategory) || isPeopleIKnowList(editingCategory) || isInstagramPeopleList(editingCategory)) return; if (confirm(`Delete list "${editingCategory.name}"?`)) { deleteList(editingCategory.id); if (openTarget?.type === "category" && openTarget.id === editingCategory.id) closeTarget(); setEditingCategory(null) } }} onDuplicate={() => editingCategory && openDuplicateList(editingCategory)} />
-      <EditFolderDialog editingFolder={editingFolder} onEditingFolderChange={setEditingFolder} homePinned={homePinned} toggleHomePin={toggleHomePin} onOpenIconPicker={() => editingFolder && setIconPickerFor({ kind: "folder", id: editingFolder.id })} onSave={(folder) => { updateFolder(folder); setEditingFolder(null) }} onDelete={() => { if (editingFolder && confirm("Delete this folder? The lists inside it will not be deleted.")) { deleteFolder(editingFolder.id); if (location === editingFolder.id) handleNavTo("all"); setEditingFolder(null) } }} onDuplicate={() => editingFolder && openDuplicateFolder(editingFolder)} />
-      <NewFolderDialog open={showNewFolderDialog} selectedCount={selectedCategories.length + selectedFolderIds.length} placementMode={effectivePlacement} originIsAll={isAll} onPlacementModeChange={setPlacementMode} onOpenChange={setShowNewFolderDialog} onCreate={handleCreateFolder} onBulkCreate={handleBulkCreateFolders} />
-      <DuplicateSelectionDialog
-        open={duplicateOpen}
-        folderCount={
-          duplicateSubject?.kind === "folder"
-            ? 1
-            : duplicateSubject?.kind === "list"
-              ? 0
-              : selectedFolderIds.length
-        }
-        listCount={
-          duplicateSubject?.kind === "list"
-            ? 1
-            : duplicateSubject?.kind === "folder"
-              ? 0
-              : selectedCategories.length
-        }
-        subjectLabel={
-          duplicateSubject?.kind === "folder"
-            ? folders.find((f) => f.id === duplicateSubject.id)?.name
-            : duplicateSubject?.kind === "list"
-              ? categories.find((l) => l.id === duplicateSubject.id)?.name
-              : undefined
-        }
-        onOpenChange={(open) => {
-          setDuplicateOpen(open)
-          if (!open) setDuplicateSubject(null)
-        }}
-        onConfirm={handleConfirmDuplicate}
+      <ListsDialogHost
+        newCategoryOpen={create.newCategoryOpen}
+        setNewCategoryOpen={create.setNewCategoryOpen}
+        currentFolder={currentFolder}
+        isHome={isHome}
+        isAll={isAll}
+        selectedTaskIds={selectedTaskIds}
+        effectiveItemPlacement={selectActions.effectiveItemPlacement}
+        itemCanMove={selectActions.itemCanMove}
+        setItemPlacementMode={selectActions.setItemPlacementMode}
+        newListSeed={create.newListSeed}
+        handleCreateCategory={create.handleCreateCategory}
+        handleBulkCreateLists={create.handleBulkCreateLists}
+        csvImport={csv.csvImport}
+        setCsvImport={csv.setCsvImport}
+        performCsvImport={csv.performCsvImport}
+        editingCategory={editingCategory}
+        setEditingCategory={setEditingCategory}
+        folders={folders}
+        homePinned={homePinned}
+        listDisplay={listDisplay}
+        setListDisplay={setListDisplay}
+        toggleHomePin={toggleHomePin}
+        setIconPickerFor={icon.setIconPickerFor}
+        handleEditCategory={handleEditCategory}
+        deleteList={deleteList}
+        openTarget={openTarget}
+        closeTarget={closeTarget}
+        openDuplicateList={duplicate.openDuplicateList}
+        editingFolder={editingFolder}
+        setEditingFolder={setEditingFolder}
+        updateFolder={updateFolder}
+        deleteFolder={deleteFolder}
+        location={location}
+        handleNavTo={handleNavTo}
+        openDuplicateFolder={duplicate.openDuplicateFolder}
+        showNewFolderDialog={create.showNewFolderDialog}
+        setShowNewFolderDialog={create.setShowNewFolderDialog}
+        selectedCategories={selectedCategories}
+        selectedFolderIds={selectedFolderIds}
+        effectivePlacement={selectActions.effectivePlacement}
+        setPlacementMode={selectActions.setPlacementMode}
+        handleCreateFolder={create.handleCreateFolder}
+        handleBulkCreateFolders={create.handleBulkCreateFolders}
+        duplicateOpen={duplicate.duplicateOpen}
+        setDuplicateOpen={duplicate.setDuplicateOpen}
+        duplicateSubject={duplicate.duplicateSubject}
+        setDuplicateSubject={duplicate.setDuplicateSubject}
+        categories={categories}
+        handleConfirmDuplicate={duplicate.handleConfirmDuplicate}
+        pasteOpen={clipboard.pasteOpen}
+        setPasteOpen={clipboard.setPasteOpen}
+        listsClipboard={clipboard.listsClipboard}
+        pasteSameEnabled={clipboard.pasteSameEnabled}
+        pasteSameDisabledReason={clipboard.pasteSameDisabledReason}
+        handleConfirmPaste={clipboard.handleConfirmPaste}
+        folderContextMenu={folderMenu.folderContextMenu}
+        setFolderContextMenu={folderMenu.setFolderContextMenu}
+        setRenamingFolderId={folderMenu.setRenamingFolderId}
+        handleOpenEntry={handleOpenEntry}
+        mergeConfirmOpen={selectActions.mergeConfirmOpen}
+        setMergeConfirmOpen={selectActions.setMergeConfirmOpen}
+        selectedMergeLists={selectActions.selectedMergeLists}
+        setMergeOpen={selectActions.setMergeOpen}
+        mergeOpen={selectActions.mergeOpen}
+        allTasks={allTasks}
+        handleApplyMerge={selectActions.handleApplyMerge}
+        itemMergeConfirmOpen={selectActions.itemMergeConfirmOpen}
+        setItemMergeConfirmOpen={selectActions.setItemMergeConfirmOpen}
+        selectedMergeItems={selectActions.selectedMergeItems}
+        itemMergeOpen={selectActions.itemMergeOpen}
+        setItemMergeOpen={selectActions.setItemMergeOpen}
+        handleApplyItemMerge={selectActions.handleApplyItemMerge}
+        showCategorySettings={showCategorySettings}
+        setShowCategorySettings={setShowCategorySettings}
+        gravitySettingsOpen={icon.gravitySettingsOpen}
+        setGravitySettingsOpen={icon.setGravitySettingsOpen}
+        selectedTaskId={selectedTaskId}
+        setSelectedTaskId={setSelectedTaskId}
+        iconPickerFor={icon.iconPickerFor}
+        iconPickerCurrent={icon.iconPickerCurrent}
+        applyIcon={icon.applyIcon}
       />
-      <PasteSelectionDialog
-        open={pasteOpen}
-        folderCount={listsClipboard?.folderIds.length ?? 0}
-        listCount={listsClipboard?.listIds.length ?? 0}
-        sameEnabled={pasteSameEnabled}
-        sameDisabledReason={pasteSameDisabledReason}
-        onOpenChange={setPasteOpen}
-        onConfirm={handleConfirmPaste}
-      />
-      {folderContextMenu ? (
-        <FolderContextMenu
-          menu={folderContextMenu}
-          canRename={isEditableFolder(folderContextMenu.folderId)}
-          onClose={() => setFolderContextMenu(null)}
-          onOpen={() => {
-            const folder = folders.find((f) => f.id === folderContextMenu.folderId)
-            setFolderContextMenu(null)
-            if (folder) handleOpenEntry({ kind: "folder", id: folder.id, name: folder.name, count: 0 })
-          }}
-          onRename={() => {
-            const id = folderContextMenu.folderId
-            setFolderContextMenu(null)
-            if (isEditableFolder(id)) setRenamingFolderId(id)
-          }}
-          onFolderSettings={() => {
-            const folder = folders.find((f) => f.id === folderContextMenu.folderId)
-            setFolderContextMenu(null)
-            if (folder && isEditableFolder(folder.id)) setEditingFolder(folder)
-          }}
-        />
-      ) : null}
-      <MergeListsConfirmDialog open={mergeConfirmOpen} listNames={selectedMergeLists.map((l) => l.name)} onCancel={() => setMergeConfirmOpen(false)} onContinue={() => { setMergeConfirmOpen(false); setMergeOpen(true) }} />
-      <MergeListsDialog open={mergeOpen} lists={selectedMergeLists} folders={folders} tasks={allTasks} onClose={() => setMergeOpen(false)} onMerge={handleApplyMerge} />
-      <MergeItemsConfirmDialog open={itemMergeConfirmOpen} itemNames={selectedMergeItems.map(itemMergeLabel)} onCancel={() => setItemMergeConfirmOpen(false)} onContinue={() => { setItemMergeConfirmOpen(false); setItemMergeOpen(true) }} />
-      <MergeItemsDialog open={itemMergeOpen} items={selectedMergeItems} lists={categories} onClose={() => setItemMergeOpen(false)} onMerge={handleApplyItemMerge} />
-      <NextActionsSettingsDialog open={showCategorySettings} onClose={() => setShowCategorySettings(false)} />
-      <GravitySettingsDialog open={gravitySettingsOpen} onOpenChange={setGravitySettingsOpen} />
-      <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
-      <OrbPickerDialog open={!!iconPickerFor} current={iconPickerCurrent} onClose={() => setIconPickerFor(null)} onSelect={applyIcon} />
     </div>
   )
 }
