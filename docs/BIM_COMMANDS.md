@@ -486,7 +486,7 @@ In chat: `info` · `{prefix} info` · `{prefix} commands` · `all commands`.
 
 - **Format:** `n stuck in aisle 4` · `note: left room at 8:15` · `note: left room at 8:15 est` · `jot: …` · `memo: …`
 - **Forms / aliases:** `n`, `note`, `jot`, `memo`, `day note`, `daynote`, `dnote`
-- **Does:** The Note row of the Tracking log: a Text log instant. No clock uses send time. `at 8:15` is that minute on the send date. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps that minute for placement. The first line is the title; lines under it are the note. Also appended onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:` (those `loc:` words pick a scope, not a place on an event). `day:` stays the day jot and does not read a clock.
+- **Does:** The Note row of the Tracking log: a Text log instant with no `eventKind`. No clock uses send time. `at 8:15` is that minute on the send date. A clock with no certainty word is exact. `est` / `estimated` / `~` is estimated (`clockCertainty` and `precision: estimated`). `unknown` keeps that minute for placement. The first line is the title; lines under it are the note. This BIM path still appends the phrase onto the block covering that minute, including `n loc:` / `n mood:` / `n activity:` (those `loc:` words pick a scope, not a place on an event). The Tracking log composer and the shelf’s bottom note add do not append. `day:` stays the day jot and does not read a clock. `logSource` is `bim`.
 
 ### `day:`
 

@@ -375,6 +375,13 @@ export function buildWorkflow() {
     }),
     action("is.workflow.actions.sendmessage", ID.send, {
       IntentAppIdentifier: TELEGRAM_BUNDLE,
+      IntentAppDefinition: {
+        BundleIdentifier: TELEGRAM_BUNDLE,
+        Name: "Telegram",
+        TeamIdentifier: "C67CF9S4VU",
+        IntentClassName: "INSendMessageIntent",
+      },
+      ShowWhenRun: false,
       WFSendMessageContent: variable("Outgoing"),
     }),
     action("is.workflow.actions.delay", ID.wait, { WFDelayTime: 1 }),
@@ -506,6 +513,12 @@ export function assertWorkflowShape(workflow = buildWorkflow()) {
     if (id === "is.workflow.actions.sendmessage") {
       if (a.WFWorkflowActionParameters.IntentAppIdentifier !== TELEGRAM_BUNDLE) {
         throw new Error("Send Message must target Telegram")
+      }
+      if (a.WFWorkflowActionParameters.IntentAppDefinition?.BundleIdentifier !== TELEGRAM_BUNDLE) {
+        throw new Error("Send Message must define the Telegram app, or iOS opens Messages")
+      }
+      if (a.WFWorkflowActionParameters.ShowWhenRun !== false) {
+        throw new Error("Send Message must not show the Messages compose sheet")
       }
       const content = a.WFWorkflowActionParameters.WFSendMessageContent?.Value
       // Must be the Outgoing text variable — never Notes / Repeat Item / Find Notes.
