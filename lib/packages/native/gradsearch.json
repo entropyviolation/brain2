@@ -1,0 +1,7 @@
+{
+  "id": "gradsearch",
+  "name": "GradSearch",
+  "version": "1.0.0",
+  "description": "Graduate program explorer: search, filter, re-score, compare, favorite, hide, and verify every tracked program — the same explorer as the standalone GradSearch app, with its full catalog.",
+  "nativeTemplate": "gradsearch"
+}

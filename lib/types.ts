@@ -1756,6 +1756,11 @@ export interface List {
   /** Workspace module that created this list (auto-filed under Module Lists). */
   createdByModuleId?: string
   /**
+   * Slot role from a module package (`lib/module-package.ts`). Set only on a
+   * list `installModulePackage` just minted. Lists that already exist omit it.
+   */
+  moduleSlotId?: string
+  /**
    * Default item *type* for new rows in this list (e.g. "book"). Applied by
    * `withListMembership` when the item has no meaningful type yet. Must be on
    * `itemTypeIds` when that allowlist is set (List Settings keeps them in sync).

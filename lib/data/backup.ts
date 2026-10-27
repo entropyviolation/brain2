@@ -62,6 +62,7 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 import { useModuleHtmlStore } from "@/lib/module-html-store"
+import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
@@ -182,6 +183,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("workflows-store"), rehydrate: persistRehydrate(useWorkflowsStore) },
   { key: persistKey("module-definitions"), rehydrate: persistRehydrate(useModuleDefinitionsStore) },
   { key: persistKey("module-html"), rehydrate: persistRehydrate(useModuleHtmlStore) },
+  { key: persistKey("module-package-app"), rehydrate: persistRehydrate(useModulePackageAppStore) },
   { key: persistKey("metrics-store"), rehydrate: persistRehydrate(useMetricsStore) },
   { key: "regret-store", rehydrate: persistRehydrate(useRegretStore) },
   { key: persistKey("ingest-store"), rehydrate: persistRehydrate(useIngestStore) },
@@ -249,6 +251,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-module-definitions": "Module definitions",
   [persistKey("module-html")]: "Module HTML pages",
   "cogs-module-html": "Module HTML pages",
+  [persistKey("module-package-app")]: "Module package folders",
+  "cogs-module-package-app": "Module package folders",
   [persistKey("metrics-store")]: "Metrics",
   "cogs-metrics-store": "Metrics",
   "regret-store": "Regret",
@@ -521,6 +525,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("workflows-store")]: asLiveStore(useWorkflowsStore),
   [persistKey("module-definitions")]: asLiveStore(useModuleDefinitionsStore),
   [persistKey("module-html")]: asLiveStore(useModuleHtmlStore),
+  [persistKey("module-package-app")]: asLiveStore(useModulePackageAppStore),
   [persistKey("metrics-store")]: asLiveStore(useMetricsStore),
   "regret-store": asLiveStore(useRegretStore),
   [persistKey("ingest-store")]: asLiveStore(useIngestStore),

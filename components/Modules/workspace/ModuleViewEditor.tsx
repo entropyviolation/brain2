@@ -130,7 +130,7 @@ export function ModuleViewEditor({
       id: initial?.id || `view-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       kind,
       title: title.trim() || meta.label,
-      config: {
+      config: kind === "package-app" ? { ...(initial?.config ?? {}) } : {
         categoryId: meta.needsList ? categoryId : undefined,
         groupAttrId: kind === "summary" ? groupAttrId : undefined,
         valueAttrId: kind === "summary" ? valueAttrId : undefined,

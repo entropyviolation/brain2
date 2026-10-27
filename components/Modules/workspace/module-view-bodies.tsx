@@ -58,6 +58,7 @@ import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView
 import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
 import { GradSearchView } from "@/components/Modules/workspace/gradsearch/GradSearchView"
 import { HtmlModuleView } from "@/components/Modules/workspace/html/HtmlModuleView"
+import { PackageAppView } from "@/components/Modules/workspace/package-app/PackageAppView"
 import type { ModuleInstance } from "@/lib/modules-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import {
@@ -147,6 +148,8 @@ export function ModuleViewBody({
       return <QuizView view={view} onOpenItem={onOpenItem} />
     case "dashboard":
       return <DashboardView view={view} onOpenItem={onOpenItem} />
+    case "package-app":
+      return <PackageAppView view={view} onOpenItem={onOpenItem} />
     default:
       return null
   }

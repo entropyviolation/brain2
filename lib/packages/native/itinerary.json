@@ -1,0 +1,7 @@
+{
+  "id": "itinerary",
+  "name": "Itinerary Creator",
+  "version": "1.0.0",
+  "description": "Write a trip plan in a doc, build a printable day-by-day itinerary (auto days, weather API, flight lookup), map activities by city, plus packing and before-trip checklists.",
+  "nativeTemplate": "itinerary"
+}
