@@ -406,6 +406,23 @@ describe("TrackingLogView", () => {
     expect(screen.getByRole("region", { name: "Events" })).toHaveTextContent("left room")
   })
 
+  it("folds the backlog composer and still opens it for spent", () => {
+    renderLog()
+    expect(screen.getByRole("toolbar", { name: "What to log" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Backlog" }))
+    expect(screen.queryByRole("toolbar", { name: "What to log" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Backlog" }))
+    expect(screen.getByRole("toolbar", { name: "What to log" })).toBeInTheDocument()
+  })
+
+  it("jumps to a date from the period plate", () => {
+    const setCurrentDate = vi.fn()
+    renderLog(setCurrentDate)
+    fireEvent.doubleClick(screen.getByRole("heading", { name: /June 20, 2026/ }))
+    fireEvent.change(screen.getByLabelText("Choose a date"), { target: { value: "2026-07-04" } })
+    expect(formatLocalDateKey(setCurrentDate.mock.calls.at(-1)?.[0] as Date)).toBe("2026-07-04")
+  })
+
   it("defaults to Day span with shelves and no week board", () => {
     renderLog()
     expect(screen.getByRole("button", { name: "Day" })).toHaveAttribute("aria-pressed", "true")
@@ -420,7 +437,7 @@ describe("TrackingLogView", () => {
 
     expect(screen.getByTestId("tracking-log-week")).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Food" })).not.toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Add a line" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Backlog" })).toBeInTheDocument()
 
     const weekDates = getWeekDates(getWeekStartDate(DAY))
     for (const date of weekDates) {

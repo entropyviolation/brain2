@@ -967,6 +967,8 @@ export function TimeGrid({
                   onPrevious={() => setDate(subDays(date, 1))}
                   onNext={() => setDate(addDays(date, 1))}
                   onToday={() => setDate(new Date())}
+                  date={date}
+                  onPickDate={setDate}
                   locked={lockDate}
                   meta={`${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
                   readouts={
@@ -1290,6 +1292,8 @@ export function TimeGrid({
         onPrevious={() => setDate(subDays(date, 1))}
         onNext={() => setDate(addDays(date, 1))}
         onToday={() => setDate(new Date())}
+        date={date}
+        onPickDate={setDate}
         locked={lockDate}
         trailing={
           <button type="button" className="trk-micro-danger trk-period-aux" onClick={() => clearDay(dk, scope.id)}>

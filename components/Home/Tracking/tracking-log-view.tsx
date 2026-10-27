@@ -22,8 +22,10 @@
  * tracking is on.
  *
  * Desk look (docs/TRACKING_REDESIGN.md): the date sits in a CRT with the
- * day's readouts (Spent, Intake, Events, Notes, Thoughts) beside it. The composer is
- * one console: mode keys, then the fields. Intake shows a **Recent** row of
+ * day's readouts (Spent, Intake, Events, Notes, Thoughts) beside it. Double-click
+ * the date to open the picker. Prev, next, and Today are short keycaps, as are
+ * Day and Week. The composer is a collapsible Backlog well (open until folded):
+ * mode keys, then the fields. Intake shows a **Recent** row of
  * your most-used foods / drinks / drugs for the chosen class — one click fills
  * the name field (it does not log); Add writes it. Every successful Add raises
  * the floating bottom-right flag ("COFFEE · INTAKE LOGGED · 14:43"), X to close,
@@ -409,7 +411,7 @@ function LogListWell({
     <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"} data-face={face}>
       <h3 className="trk-logbook-heading">
         {onTitleOpen ? (
-          <button type="button" className="trk-logbook-heading-open" onClick={onTitleOpen} title={`Open ${title.toLowerCase()}`}>
+          <button type="button" className="trk-logbook-heading-open" data-no95="" onClick={onTitleOpen} title={`Open ${title.toLowerCase()}`}>
             {title}
             <span aria-hidden="true"> ›</span>
           </button>
@@ -555,6 +557,7 @@ export function TrackingLogView({
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [spendingOpen, setSpendingOpen] = useState(false)
   const [shelf, setShelf] = useState<string | null>(null)
+  const [backlogOpen, setBacklogOpen] = useState(true)
   const feedRows = useTelegramFeedStore((s) => s.rows)
   const ingestEvents = useIngestStore((s) => s.events)
   useEffect(() => {
@@ -709,6 +712,7 @@ export function TrackingLogView({
   }
 
   const focusSpentComposer = () => {
+    setBacklogOpen(true)
     setMode("spend")
     composeRef.current?.scrollIntoView({ block: "nearest" })
     window.setTimeout(() => amountRef.current?.focus(), 0)
@@ -737,6 +741,8 @@ export function TrackingLogView({
         onPrevious={() => setCurrentDate(isWeek ? subWeeks(currentDate, 1) : subDays(currentDate, 1))}
         onNext={() => setCurrentDate(isWeek ? addWeeks(currentDate, 1) : addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        date={currentDate}
+        onPickDate={setCurrentDate}
         locked={lockDate}
         variant="crt"
         readouts={
@@ -754,18 +760,40 @@ export function TrackingLogView({
 
       {!lockDate ? (
         <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Tracking log span">
-          <button type="button" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
+          <button type="button" className="trk-keycap" data-no95="" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
             Day
           </button>
-          <button type="button" aria-pressed={isWeek} onClick={() => setSpan("week")}>
+          <button type="button" className="trk-keycap" data-no95="" aria-pressed={isWeek} onClick={() => setSpan("week")}>
             Week
           </button>
         </div>
       ) : null}
 
       <div className="trk-logbook-inputs">
-      <section ref={composeRef} className="trk-aside-well trk-logbook-compose" aria-label="Add to the tracking log">
-        <h3 className="trk-logbook-heading">Add a line</h3>
+      <section
+        ref={composeRef}
+        className="trk-aside-well trk-logbook-compose"
+        aria-label="Backlog"
+        data-open={backlogOpen ? "true" : "false"}
+      >
+        <h3 className="trk-logbook-heading">
+          <button
+            type="button"
+            className="trk-logbook-heading-open"
+            data-no95=""
+            aria-expanded={backlogOpen}
+            title={backlogOpen ? "Hide backlog" : "Show backlog"}
+            onClick={() => setBacklogOpen((open) => !open)}
+          >
+            Backlog
+            <span aria-hidden="true" data-open={backlogOpen ? "true" : "false"}>
+              {" "}
+              ›
+            </span>
+          </button>
+        </h3>
+        {backlogOpen ? (
+        <>
         <div className="trk-span-switch trk-logbook-modes" role="toolbar" aria-label="What to log">
           {MODES.map((row) => (
             <button key={row.id} type="button" data-no95="" aria-pressed={mode === row.id} onClick={() => setMode(row.id)}>
@@ -1020,6 +1048,8 @@ export function TrackingLogView({
             Add
           </button>
         </div>
+        </>
+        ) : null}
       </section>
 
       <CountStatusesSection />

@@ -893,6 +893,8 @@ export function WeekGrid({ date, onDateChange, onOpenDay, compact = false, desk 
         onPrevious={() => shift(-1)}
         onNext={() => shift(1)}
         onToday={() => onDateChange(new Date())}
+        date={date}
+        onPickDate={onDateChange}
         meta={`${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the week · ${totals.daysWithData} of 7 days logged`}
       />
 

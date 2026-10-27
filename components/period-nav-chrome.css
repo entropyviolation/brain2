@@ -2,7 +2,8 @@
  * components/period-nav-chrome.css — Shared period-nav chrome tokens
  *
  * Brushed fascia strip, inset nameplate, and metal prev/next/today keys for
- * Plan (`.plan-period*`) and Tracking (`.trk-period*`). Hosts keep their own
+ * Plan (`.plan-period*`). Tracking (`.trk-period*`) keeps the plate here and
+ * restyles those three keys as short keycaps in `tracking-chrome.css`. Hosts keep their own
  * surface tokens (`--p-*` / `--t-*`) via `--period-face` / `--period-surface` /
  * `--period-nameplate` so themes stay distinct. Layout (flex vs grid) and
  * Tracking-only meta/trailing stay in each chrome file. To Do reuses only the

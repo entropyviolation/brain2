@@ -1,9 +1,9 @@
 /**
  * components/Home/Tracking/use-tracking-phone.ts — Phone gate for Home Tracking
  *
- * The house has no single phone width: To do uses 720, this desk's stack
- * query is 760, Home chrome uses 640. Tracking's phone tree starts at 767,
- * so 768 and wider keeps the desk. The first paint is the desk; the effect
+ * The house has no single phone width: Goals uses 720, this desk's stack
+ * query is 760, Home chrome uses 640. Habits, Plan, To Do, and Tracking
+ * start at 767, so 768 and wider keeps this desk. The first paint is the desk; the effect
  * switches once `matchMedia` answers, which avoids a server/client mismatch.
  */
 "use client"

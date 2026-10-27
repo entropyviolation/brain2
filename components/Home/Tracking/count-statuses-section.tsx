@@ -174,7 +174,7 @@ export function CountStatusesSection() {
   return (
     <section className="trk-aside-well trk-count-statuses" aria-label="Counts" data-testid="tracking-counts">
       <h3 className="trk-logbook-heading">
-        <button type="button" className="trk-logbook-heading-open" onClick={() => setOpen(true)} title="Open counts">
+        <button type="button" className="trk-logbook-heading-open" data-no95="" onClick={() => setOpen(true)} title="Open counts">
           Counts
           <span aria-hidden="true"> ›</span>
         </button>

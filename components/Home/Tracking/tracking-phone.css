@@ -531,6 +531,7 @@ body.win95-app .trk-phone .trk-deck-caption.is-ghost {
 .trk-phone-sheet textarea,
 .trk-phone .trk-period-chev,
 .trk-phone .trk-period-today,
+body.win95-app .trk-phone button.trk-keycap[data-no95],
 .trk-phone .trk-latch,
 .trk-phone .trk-notes-fold,
 .trk-phone .trk-gap-add,
