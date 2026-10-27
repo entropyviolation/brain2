@@ -10,13 +10,15 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine } from "recharts"
 import { usePointsStore } from "@/lib/points-store"
 import { parseLocalDate } from "@/lib/date-utils"
 import { ChartFrame, OpenInListsButton } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { openItemsInLists } from "./open-in-lists"
-import { STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars } from "./studio-kit"
+import { STUDIO_AXIS, STUDIO_EMPTY, STUDIO_GRID, STUDIO_TOOLTIP, StudioBars, StudioHelp, StudioReadout } from "./studio-kit"
+import { quantile } from "./behavior-stats"
+import "./behavior-views.css"
 import { AwardDetail } from "@/components/Home/award-detail"
 import { awardReason, formatAwardPoints } from "@/lib/habit-points"
 import { AWARD_KIND_LABEL, awardKindOf } from "@/lib/points-award-explain"
@@ -26,6 +28,11 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { useGoalsStore } from "@/lib/goals-store"
 
 const LEDGER_PAGE = 100
+const SOURCE_FILL = { habit: "#34d399", bonus: "#fbbf24", task: "#60a5fa" } as const
+const SOURCE_NAME = { habit: "Habits", bonus: "Bonuses", task: "Tasks" } as const
+/** Waking hours a day for the per-hour rate. An estimate, labelled so. */
+const WAKING_HOURS = 16
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 function PointsLedger() {
   const pointsHistory = usePointsStore((s) => s.pointsHistory)
@@ -229,6 +236,37 @@ export function PointsView() {
   }, [pointsHistory, range.keySet])
   const splitMax = Math.max(...split.map((s) => s.value), 1)
 
+  const dayTotals = pointsByDay.map((d) => d.points)
+  const activeDays = dayTotals.filter((v) => v > 0)
+  const windowTotal = dayTotals.reduce((a, b) => a + b, 0)
+  const perDay = dayTotals.length ? windowTotal / dayTotals.length : 0
+  const typicalDay = quantile(activeDays, 0.5) ?? 0
+  const [dayTarget, setDayTarget] = useState<number | null>(null)
+  const targetMax = Math.max(10, Math.ceil(Math.max(0, ...dayTotals)))
+  const target = Math.min(dayTarget ?? Math.round(typicalDay), targetMax)
+  const daysAtTarget = dayTotals.filter((v) => v >= target && v > 0).length
+
+  // Sized squares: positive awards by item, grouped by source, plus a typical-day anchor.
+  const squares = useMemo(() => {
+    const byItem: Record<string, { id: string; name: string; src: "habit" | "bonus" | "task"; points: number }> = {}
+    for (const e of pointsHistory) {
+      if (!range.keySet.has(e.date) || e.points <= 0) continue
+      const src = sourceOf(e.taskId)
+      const id = src === "task" ? e.taskId : `${src}:${e.taskDescription}`
+      byItem[id] = byItem[id] || { id, name: e.taskDescription, src, points: 0 }
+      byItem[id].points += e.points
+    }
+    const order = { habit: 0, bonus: 1, task: 2 }
+    return Object.values(byItem)
+      .sort((a, b) => order[a.src] - order[b.src] || b.points - a.points)
+      .slice(0, 40)
+  }, [pointsHistory, range.keySet])
+  const squaresTotal = squares.reduce((t, q) => t + q.points, 0) || 1
+  const negatives = useMemo(
+    () => pointsHistory.filter((e) => range.keySet.has(e.date) && e.points < 0).reduce((s, e) => s + e.points, 0),
+    [pointsHistory, range.keySet],
+  )
+
   return (
     <div className="an-canvas an-stack">
       <div>
@@ -242,13 +280,35 @@ export function PointsView() {
               <XAxis dataKey="label" fontSize={11} stroke={STUDIO_AXIS} />
               <YAxis fontSize={11} stroke={STUDIO_AXIS} />
               <Tooltip contentStyle={STUDIO_TOOLTIP} />
-              <Bar dataKey="habit" stackId="p" fill="#34d399" />
-              <Bar dataKey="bonus" stackId="p" fill="#fbbf24" />
-              <Bar dataKey="task" stackId="p" fill="#60a5fa" />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="habit" name="Habits" stackId="p" fill={SOURCE_FILL.habit} />
+              <Bar dataKey="bonus" name="Bonuses" stackId="p" fill={SOURCE_FILL.bonus} />
+              <Bar dataKey="task" name="Tasks" stackId="p" fill={SOURCE_FILL.task} />
+              {target > 0 ? <ReferenceLine y={target} stroke={STUDIO_AXIS} strokeDasharray="4 3" /> : null}
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
+      {pointsInWindow && (
+        <div data-testid="points-rate">
+          <div className="an-bv-tools">
+            <label className="an-bv-slider" title="Draws a dashed line on the daily chart">
+              Day target
+              <input type="range" min={0} max={targetMax} value={target} onChange={(e) => setDayTarget(Number(e.target.value))} />
+              <output>{target} pts</output>
+            </label>
+            <span className="an-n">
+              {daysAtTarget} of {dayTotals.length} days reach it ({dayTotals.length ? Math.round((daysAtTarget / dayTotals.length) * 100) : 0}%)
+            </span>
+          </div>
+          <div className="an-readouts">
+            <StudioReadout label="Per day" value={round2(perDay)} note={`${range.label} mean`} />
+            <StudioReadout label="Per scoring day" value={round2(activeDays.length ? windowTotal / activeDays.length : 0)} note={`${activeDays.length} days with points`} />
+            <StudioReadout label="Per week" value={round2(perDay * 7)} note="mean × 7" />
+            <StudioReadout label="Per waking hour" value={`~${round2(perDay / WAKING_HOURS)}`} note={`est. ${WAKING_HOURS} h awake`} />
+          </div>
+        </div>
+      )}
       <div>
         <p className="an-canvas-title">Cumulative points</p>
         {!pointsInWindow ? (
@@ -271,6 +331,60 @@ export function PointsView() {
           <StudioBars rows={split} max={splitMax} unit=" pts" />
         </div>
       )}
+      {squares.length > 0 && (
+        <div data-testid="points-squares">
+          <p className="an-canvas-title an-canvas-title-row">
+            Sized squares
+            <StudioHelp text="Area is points (slice-and-dice treemap). Column width is a source, tile height is an item, top 40 items. The dashed square is a typical day (median of days with points) at the same scale. Task tiles open the item. Negative awards are left out and totalled below." />
+          </p>
+          <div className="an-sq" role="img" aria-label="Points by source and item, area is points">
+            {(["habit", "bonus", "task"] as const).map((src) => {
+              const items = squares.filter((q) => q.src === src)
+              const sum = items.reduce((t, q) => t + q.points, 0)
+              if (sum <= 0) return null
+              return (
+                <div key={src} className="an-sq-group" style={{ width: `${(sum / squaresTotal) * 100}%` }} title={`${SOURCE_NAME[src]}: ${round2(sum)} pts`}>
+                  {items.map((q) => (
+                    <button
+                      key={q.id}
+                      type="button"
+                      className="an-sq-cell"
+                      style={{ height: `${(q.points / sum) * 100}%`, background: SOURCE_FILL[src] }}
+                      title={`${q.name}: ${round2(q.points)} pts · ${Math.round((q.points / squaresTotal) * 100)}% of shown`}
+                      disabled={src !== "task"}
+                      onClick={() => openItemsInLists({ taskIds: [q.id] })}
+                    >
+                      <span>{q.name}</span> <b>{round2(q.points)}</b>
+                    </button>
+                  ))}
+                </div>
+              )
+            })}
+            {typicalDay > 0 && typicalDay < squaresTotal ? (
+              <span
+                className="an-sq-anchor"
+                style={{ width: `${Math.sqrt(typicalDay / squaresTotal / 3) * 100}%` }}
+                title={`A typical day: ${round2(typicalDay)} pts (median of days with points), drawn to the same scale`}
+              >
+                typical day
+              </span>
+            ) : null}
+          </div>
+          <div className="an-bv-key">
+            {(["habit", "bonus", "task"] as const).map((k) => (
+              <span key={k}>
+                <i style={{ background: SOURCE_FILL[k] }} />
+                {SOURCE_NAME[k]}
+              </span>
+            ))}
+            <span>
+              <i style={{ background: STUDIO_EMPTY }} />
+              typical day
+            </span>
+            {negatives < 0 ? <span>deductions {round2(negatives)} pts</span> : null}
+          </div>
+        </div>
+      )}
       <div>
         <p className="an-canvas-title">Top point earners</p>
         {topTasks.length === 0 ? (
@@ -282,7 +396,7 @@ export function PointsView() {
                 <li key={t.id}>
                   <button type="button" onClick={() => openItemsInLists({ taskIds: [t.id] })}>
                     <span className="truncate">{t.name}</span>
-                    <span className="an-n">{t.points} pts</span>
+                    <span className="an-n">{round2(t.points)} pts</span>
                   </button>
                 </li>
               ))}
