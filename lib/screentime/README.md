@@ -23,7 +23,7 @@ second run does not double minutes.
 
 - **Intersection:** window events ∩ `data.status === "not-afk"` only. Missing AFK status is unknown, not counted.
 - **Drop** clipped pieces shorter than `minDurationSec` (default 15).
-- **Pens:** category roots are seeded (`st-cat-work` … `st-cat-other`). App pens are `st-app-{slug}`. Browser + overlapping web URL → domain child `st-app-{browser}-{domain}` under the browser app.
+- **Pens:** category roots are seeded (`st-cat-work` … `st-cat-other`). App pens are `st-app-{slug}`. A new pen's color is `hashPenColor` in `lib/ingest/clock-pen.ts`. Browser + overlapping web URL → domain child `st-app-{browser}-{domain}` under the browser app.
 - **Midnight:** split on the local calendar; `startMin` / `endMin` are minutes past midnight, end exclusive.
 - **Merge** adjacent same-pen slices, then `mergeAdjacent` on the stamped day.
 - **Precision:** `"estimated"`. Entry ids `st-te-{date}-{start}-{end}-{penId}`.

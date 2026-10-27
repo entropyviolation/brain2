@@ -11,6 +11,8 @@ import { OPERATION_ATTR, OPERATION_TYPE_ID } from "@/lib/operation-types"
 import { countsInDone } from "@/lib/item-utils"
 import { buildDoneTodoItems } from "@/components/Home/ToDo/todo-utils"
 import {
+  addWorkNowObjective,
+  attachWorkNowObjective,
   formatElapsedClock,
   pauseWorkingOnOperation,
   resumeWorkingOnOperation,
@@ -277,5 +279,31 @@ describe("operation work session (stores)", () => {
     stopWorkingOnOperation()
     const id = workDoneLogId("op_1", startedAt, "2026-06-20")
     expect(useTaskStore.getState().tasks.filter((t) => t.id === id)).toHaveLength(1)
+  })
+
+  it("files an attached objective onto the task's Objectives list", () => {
+    useTaskStore.getState().addTask({
+      id: "nest",
+      description: "Build the nest",
+      type: "task",
+      stage: "clarified",
+      createdAt: new Date("2026-01-01"),
+      completed: false,
+      lists: [],
+      links: [],
+    })
+    startWorkingOnOperation("op_1")
+    addWorkNowObjective("cut the tray")
+    const id = useWorkSessionStore.getState().session!.nowObjectives![0].id
+    attachWorkNowObjective(id, { taskId: "nest" })
+
+    const nest = useTaskStore.getState().tasks.find((t) => t.id === "nest")
+    const def = nest?.itemAttributeDefinitions?.find((item) => item.name === "Objectives")
+    expect(def?.type).toBe("list")
+    const listId = nest?.attributes?.[def!.id]
+    expect(typeof listId).toBe("string")
+    const filed = useTaskStore.getState().tasks.find((t) => t.id === `objective-item-${id}`)
+    expect(filed).toMatchObject({ title: "cut the tray", rewardValue: 1 })
+    expect(filed?.lists).toContain(listId)
   })
 })

@@ -9,33 +9,16 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { categoryForApp, slugApp } from "@/lib/screentime/app-categories"
 import {
   IPHONE_SCREENTIME_CATEGORY_PENS,
-  PEN_PALETTE,
   defaultIphoneScreenTimeScope,
   findIphoneScreenTimeScope,
   useTimeTrackingStore,
   type TrackPen,
   type TrackScope,
 } from "@/lib/time-tracking-store"
-import { resolveName, splitNameAndRest, type Named } from "./name-resolve"
+import { formatClock, hashPenColor, namedPens } from "./clock-pen"
+import { resolveName, splitNameAndRest } from "./name-resolve"
 import { MINUTES_PER_DAY, addLocalDays, minutesPastMidnight, parseTrackWindow } from "./times"
 import type { ApplyResult } from "./types"
-
-function formatClock(min: number): string {
-  const wrapped = ((Math.floor(min) % 1440) + 1440) % 1440
-  const h = Math.floor(wrapped / 60)
-  const m = wrapped % 60
-  const am = h < 12
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`
-}
-
-function hashPenColor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  }
-  return PEN_PALETTE[hash % PEN_PALETTE.length]
-}
 
 function ensureIphoneScreenTimeScope(): TrackScope {
   const tracking = useTimeTrackingStore.getState()
@@ -73,11 +56,6 @@ export function ensureIphoneAppPen(name: string): string {
     scopes: state.scopes.map((row) => (row.id === scope.id ? { ...row, pens: [...row.pens, pen] } : row)),
   }))
   return id
-}
-
-function namedPens(scopeId: string): Named[] {
-  const scope = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)
-  return (scope?.pens ?? []).map((p) => ({ id: p.id, name: p.name }))
 }
 
 function paintIphoneWindow(scopeId: string, date: string, startMin: number, endMin: number, penId: string): void {

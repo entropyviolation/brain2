@@ -45,6 +45,8 @@
  * Pure: no stores, no `Date.now()` outside explicit arguments.
  */
 
+import { formatDuration } from "@/lib/time-entries"
+
 /** Mirrors `HabitTimeEstimate.precision` — the app's existing word for this. */
 export type SleepPrecision = "estimated" | "definite"
 
@@ -141,12 +143,7 @@ export function offsetToLabel(offset: number): string {
 }
 
 export function formatSleepDuration(minutes: number): string {
-  const whole = Math.max(0, Math.round(minutes))
-  const hours = Math.floor(whole / 60)
-  const mins = whole % 60
-  if (hours === 0) return `${mins}m`
-  if (mins === 0) return `${hours}h`
-  return `${hours}h ${mins}m`
+  return formatDuration(minutes)
 }
 
 export function hasBothEnds(night: SleepNight | undefined): boolean {

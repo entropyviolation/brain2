@@ -12,9 +12,9 @@
  * on its own: no lookups, no polling. Plan: docs/INSTAGRAM_DATA_SOURCES.md.
  */
 const fs = require("fs")
-const path = require("path")
 const crypto = require("crypto")
 const { openExternalWeb } = require("./external-url")
+const { hostAllowed: hostOnList, sealedAccountFile } = require("./account-seal")
 
 const CHANNELS = {
   status: "cogs:instagram-accounts:status",
@@ -45,12 +45,7 @@ function normalizeUsername(raw) {
 }
 
 function hostAllowed(url) {
-  try {
-    const host = new URL(url).hostname.toLowerCase()
-    return LOGIN_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
-  } catch {
-    return false
-  }
+  return hostOnList(url, LOGIN_HOSTS)
 }
 
 /**
@@ -84,7 +79,7 @@ function cookieHeaderFrom(jar) {
  * When it is not available the store reads and lists, but refuses to save a secret.
  */
 function createAccountStore({ dir, cipher, now = () => new Date() }) {
-  const file = path.join(dir, FILE_NAME)
+  const { file, write, seal, open } = sealedAccountFile({ dir, fileName: FILE_NAME, cipher })
 
   function read() {
     try {
@@ -92,27 +87,6 @@ function createAccountStore({ dir, cipher, now = () => new Date() }) {
       return { version: 1, accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [] }
     } catch {
       return { version: 1, accounts: [] }
-    }
-  }
-
-  function write(data) {
-    fs.mkdirSync(dir, { recursive: true })
-    const tmp = `${file}.tmp`
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), { encoding: "utf8", mode: 0o600 })
-    fs.renameSync(tmp, file)
-  }
-
-  function seal(text) {
-    if (!cipher.available()) throw new Error("No OS keychain encryption on this computer, so Brain2 will not store a login.")
-    return cipher.encrypt(String(text)).toString("base64")
-  }
-
-  function open(sealed) {
-    if (!sealed || !cipher.available()) return null
-    try {
-      return cipher.decrypt(Buffer.from(sealed, "base64"))
-    } catch {
-      return null
     }
   }
 

@@ -7,6 +7,8 @@
  * pens under a browser app, not for painting Activity / Location / Mood.
  */
 
+import { escapeRegExp } from "@/lib/string-utils"
+
 export const SCREENTIME_CATEGORY_IDS = {
   work: "st-cat-work",
   communication: "st-cat-communication",
@@ -109,10 +111,6 @@ const CATEGORY_NEEDLES: CategoryNeedle[] = (
 ).sort((a, b) => b.needle.length - a.needle.length)
 
 const BROWSER_NEEDLES = CATEGORY_NEEDLES.filter((n) => n.id === SCREENTIME_CATEGORY_IDS.browsing)
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
 
 function matchesNeedle(app: string, needle: string): boolean {
   const haystack = app.trim().toLowerCase()

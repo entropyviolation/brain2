@@ -32,13 +32,33 @@ import type { Task, TimeLogEntry } from "@/lib/types"
 const NOW = new Date("2026-06-23T12:00:00.000Z")
 
 function makeTask(overrides: Partial<Task> = {}): Task {
+  const description = overrides.description ?? "Task"
+  const type = overrides.type ?? "item"
   return {
     id: overrides.id ?? "t1",
-    description: overrides.description ?? "Task",
-    stage: "clarified",
+    title: overrides.title ?? description,
+    description,
+    type,
+    stage: overrides.stage ?? "clarified",
     createdAt: overrides.createdAt ?? NOW,
     completed: overrides.completed ?? false,
-    lists: [],
+    lists: overrides.lists ?? [],
+    tags: overrides.tags ?? [],
+    links: overrides.links ?? [],
+    subtasks: overrides.subtasks ?? [],
+    rewardValue: overrides.rewardValue ?? 0,
+    ...(type === "task"
+      ? {
+          estimatedDuration: overrides.estimatedDuration ?? 30,
+          cognitiveLoad: overrides.cognitiveLoad ?? 2,
+          urgency: overrides.urgency ?? 3,
+          importance: overrides.importance ?? 3,
+          context: overrides.context ?? "",
+          entropy: overrides.entropy ?? 0,
+          allowPartialCompletion: overrides.allowPartialCompletion ?? false,
+          minimumChunkSize: overrides.minimumChunkSize ?? 15,
+        }
+      : {}),
     ...overrides,
   }
 }
@@ -408,6 +428,42 @@ describe("operation categories on the home board", () => {
     })
     const untouched = makeOp("untouched", "Untouched", ["x"], { createdAt: daysAgo(1) })
     expect(sortOperations([untouched, touched], "modified").map((o) => o.id)).toEqual(["touched", "untouched"])
+  })
+
+  it("keeps every operation when the category filter is omitted, and only uncategorized ones when every category is off", () => {
+    const ops = selectOperations(all)
+    expect(filterOperationsByCategory(ops).map((o) => o.id)).toEqual(["foxtide", "iceland", "inbox"])
+    expect(groupOperationsByCategory(ops).map((group) => group.name)).toEqual([
+      "foxtide job",
+      "paid",
+      "trip",
+      "Uncategorized",
+    ])
+
+    expect(filterOperationsByCategory(ops, { visibleCategoryKeys: [] }).map((o) => o.id)).toEqual(["inbox"])
+    expect(groupOperationsByCategory(ops, { visibleCategoryKeys: [] }).map((group) => group.name)).toEqual([
+      "Uncategorized",
+    ])
+    expect(filterOperationsByCategory(ops, { visibleCategoryKeys: [], hideUncategorized: true })).toEqual([])
+    expect(groupOperationsByCategory(ops, { visibleCategoryKeys: [], hideUncategorized: true })).toEqual([])
+  })
+
+  it("ranks recently modified by the newest of the edit stamp, the finish, a note edit, and created", () => {
+    const finished = makeOp("finished", "Finished", ["x"], {
+      createdAt: daysAgo(20),
+      modifiedAt: daysAgo(10).toISOString(),
+      completedDate: NOW,
+    })
+    const noted = makeOp("noted", "Noted", ["x"], {
+      createdAt: daysAgo(5),
+      noteLog: [{ id: "n", date: "2026-06-01", text: "Glaze cracked", editedAt: daysAgo(1).toISOString() }],
+    })
+    const born = makeOp("born", "Born", ["x"], { createdAt: daysAgo(2) })
+    expect(sortOperations([born, noted, finished], "modified").map((o) => o.id)).toEqual([
+      "finished",
+      "noted",
+      "born",
+    ])
   })
 
   it("folds a legacy home notes blob into the item note log once", () => {

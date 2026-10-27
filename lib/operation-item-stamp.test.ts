@@ -5,11 +5,33 @@ import { COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 import type { Task } from "@/lib/types"
 
 function task(partial: Partial<Task> & Pick<Task, "id">): Task {
+  const description = partial.description ?? partial.id
+  const type = Object.prototype.hasOwnProperty.call(partial, "type") ? partial.type : "item"
   return {
-    description: partial.id,
-    stage: "clarified",
-    createdAt: new Date("2026-01-01"),
-    completed: false,
+    id: partial.id,
+    title: partial.title ?? description,
+    description,
+    type,
+    stage: partial.stage ?? "clarified",
+    createdAt: partial.createdAt ?? new Date("2026-01-01"),
+    completed: partial.completed ?? false,
+    lists: partial.lists ?? [],
+    tags: partial.tags ?? [],
+    links: partial.links ?? [],
+    subtasks: partial.subtasks ?? [],
+    rewardValue: partial.rewardValue ?? 0,
+    ...(type === "task"
+      ? {
+          estimatedDuration: partial.estimatedDuration ?? 30,
+          cognitiveLoad: partial.cognitiveLoad ?? 2,
+          urgency: partial.urgency ?? 3,
+          importance: partial.importance ?? 3,
+          context: partial.context ?? "",
+          entropy: partial.entropy ?? 0,
+          allowPartialCompletion: partial.allowPartialCompletion ?? false,
+          minimumChunkSize: partial.minimumChunkSize ?? 15,
+        }
+      : {}),
     ...partial,
   }
 }
@@ -33,5 +55,24 @@ describe("stampUntypedOperations", () => {
   it("leaves an ordinary item alone", () => {
     const rows = [task({ id: "plain", type: "item" })]
     expect(stampUntypedOperations(rows)).toBe(rows)
+  })
+
+  it("stamps a generic item that carries a task list, parts, or a tracking pen, and skips empty marks", () => {
+    const rows = [
+      task({ id: "list", type: "item", attributes: { [OPERATION_ATTR.taskListId]: "op-list-list" } }),
+      task({ id: "parts", type: "item", attributes: { [OPERATION_ATTR.partFormulas]: [{ id: "room", name: "Room" }] } }),
+      task({ id: "pen", type: undefined, attributes: { [OPERATION_ATTR.trackingPenId]: "pen-1" } }),
+      task({ id: "empty", type: "item", attributes: { [OPERATION_ATTR.panels]: [] } }),
+      task({ id: "blank-pen", type: "item", attributes: { [OPERATION_ATTR.trackingPenId]: "" } }),
+      task({ id: "book", type: "book", attributes: { [OPERATION_ATTR.taskListId]: "op-list-book" } }),
+    ]
+    const once = stampUntypedOperations(rows)
+    expect(once.find((row) => row.id === "list")?.type).toBe(OPERATION_TYPE_ID)
+    expect(once.find((row) => row.id === "parts")?.type).toBe(OPERATION_TYPE_ID)
+    expect(once.find((row) => row.id === "pen")?.type).toBe(OPERATION_TYPE_ID)
+    expect(once.find((row) => row.id === "empty")?.type).toBe("item")
+    expect(once.find((row) => row.id === "blank-pen")?.type).toBe("item")
+    expect(once.find((row) => row.id === "book")?.type).toBe("book")
+    expect(stampUntypedOperations(once)).toBe(once)
   })
 })

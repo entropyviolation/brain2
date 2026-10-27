@@ -6,6 +6,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { readBody, sendJson } from "./local-api-json.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
@@ -53,27 +54,6 @@ export function writeIngestStore(next) {
   fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), "utf8")
   fs.renameSync(tmp, DATA_FILE)
   return payload
-}
-
-function sendJson(res, status, body) {
-  const json = JSON.stringify(body)
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(json),
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  })
-  res.end(json)
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
 }
 
 export async function handleIngestApi(req, res, pathname) {

@@ -187,6 +187,12 @@ export function earthMoonRadii(separationPx: number): { earth: number; moon: num
 /** Saturn's rings, in units of Saturn's mean radius. Inner is the C ring, outer the A ring. */
 export const SATURN_RING = { inner: 74658 / 58232, outer: 136775 / 58232 }
 
+/** Hermite fade from 0 to 1 between two edges. Shared by the globe and moon disks. */
+export function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
+  return t * t * (3 - 2 * t)
+}
+
 export function formatAu(au: number): string {
   if (au >= 10) return `${au.toFixed(2)} AU`
   return `${au.toFixed(3)} AU`

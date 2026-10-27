@@ -9,33 +9,13 @@
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { readBody, sendJson } from "./local-api-json.mjs"
 
 const require = createRequire(fileURLToPath(import.meta.url))
 
 export function isLoopbackRemoteAddress(addr) {
   if (typeof addr !== "string" || !addr) return false
   return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1"
-}
-
-function sendJson(res, status, body) {
-  const json = JSON.stringify(body)
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(json),
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  })
-  res.end(json)
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
 }
 
 function defaultFetchAppleNotes(range) {

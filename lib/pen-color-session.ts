@@ -53,10 +53,12 @@ import {
 } from "@/lib/now-objective"
 import {
   createTaskForObjective,
+  fileObjectivesOnTask,
   homeForObjective,
   homesForPen,
   homesForTask,
   mergeResumed,
+  objectivesAttachedToTask,
   toParked,
 } from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
@@ -497,6 +499,7 @@ export function attachPenNowObjective(
     const next = patchPenColorObjectives((list) => attachNowObjective(list, id, { taskId: taskId!, stepId }))
     const row = next?.nowObjectives?.find((item) => item.id === id)
     if (row?.completedAt) applyObjectiveToStep({ taskId: row.taskId ?? next?.taskId, stepId: row.stepId }, row)
+    fileObjectivesOnTask(taskId, objectivesAttachedToTask(next?.nowObjectives, taskId))
     return next
   })
 }

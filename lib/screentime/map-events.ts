@@ -8,7 +8,7 @@
  */
 
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { MINUTES_PER_DAY } from "@/lib/time-entries"
+import { MINUTES_PER_DAY, clampMinute } from "@/lib/time-entries"
 import {
   appPenId,
   categoryForApp,
@@ -82,11 +82,6 @@ function intersectRange(a: MsRange, b: MsRange): MsRange | null {
   const startMs = Math.max(a.startMs, b.startMs)
   const endMs = Math.min(a.endMs, b.endMs)
   return endMs > startMs ? { startMs, endMs } : null
-}
-
-function clampMinute(value: number): number {
-  if (!Number.isFinite(value)) return 0
-  return Math.min(MINUTES_PER_DAY, Math.max(0, Math.round(value)))
 }
 
 /** Local calendar day + minutes past midnight for an instant. */

@@ -32,6 +32,7 @@ import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import { calculateTaskPercentage, type HabitExemptFn } from "@/lib/calculations"
 import { currentExemptionContext, isHabitPeriodExempt } from "@/lib/habit-exemption"
 import { periodWindowsForFrequency, type HabitPeriodWindow } from "@/lib/habit-period-windows"
+import { bucketForWeekBook, writeWeekBook } from "@/lib/habit-period-write"
 import { habitWriteIsQuiet, useHabitsStore } from "@/lib/habits-store"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import type { TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
@@ -127,19 +128,6 @@ export function datesForCompletionAverage(
   return dates
 }
 
-function bucketFor(task: WeeklyTask, state: ReturnType<typeof useHabitsStore.getState>): WeeklyData {
-  if (task.frequency === "monthly") return state.monthlyHabitData
-  if (task.frequency === "quarterly") return state.quarterlyHabitData
-  return state.weeklyHabitData
-}
-
-function writePeriod(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
-  const habits = useHabitsStore.getState()
-  if (task.frequency === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (task.frequency === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else habits.updateWeeklyHabitCompletion(task.id, anchor, next)
-}
-
 export function syncDailyCompletionAverages(): void {
   withoutUndo(() => {
     const habits = useHabitsStore.getState()
@@ -160,10 +148,10 @@ export function syncDailyCompletionAverages(): void {
         if (!dates.length) continue
         const average = rawDailyCompletionAverage(daily, habits.weeklyData, dates, isExempt)
         if (average === null) continue
-        const previous = bucketFor(parent, useHabitsStore.getState())[window.periodKey]?.[parent.id]
+        const previous = bucketForWeekBook(parent, useHabitsStore.getState())[window.periodKey]?.[parent.id]
         const next = applyDailyCompletionAverage(parent, previous, average)
         if (!next) continue
-        writePeriod(parent, window.anchor, next)
+        writeWeekBook(parent, window.anchor, next)
       }
     }
   })

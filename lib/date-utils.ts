@@ -3,7 +3,8 @@
  *
  * Pure date utilities used throughout the app: safe parsing/formatting
  * (`safe*`, `keptCreatedAt`), YYYY-MM-DD keys (`formatDateKey` / `formatLocalDateKey` /
- * `dateKeyOf` / `dateInputValue`), local midnight (`startOfLocalDay` /
+ * `dateKeyOf` / `dateInputValue`), UTC day shift (`shiftUtcDateKey`; local shifts
+ * stay `addCalendarDays`), local `HH:MM` (`formatLocalHhmm`), local midnight (`startOfLocalDay` /
  * `toLocalCalendarDate` / `localMidnightFromUtcDateOnly` /
  * `startOfLocalToday` / `endOfLocalDay`), week math
  * (`getWeekStartDate`/`getWeekDates`/`getPrecedingWeekStarts`/`addCalendarDays`),
@@ -201,6 +202,26 @@ export function formatDateKey(date: Date): string {
 /** Local calendar date key (YYYY-MM-DD) — avoids UTC drift for habit completions. */
 export function formatLocalDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
+
+/** Local `HH:MM` (24-hour, zero-padded). */
+export function formatLocalHhmm(date: Date): string {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+}
+
+/**
+ * Move a `YYYY-MM-DD` key by calendar days in UTC, so the result does not
+ * depend on the machine's timezone. Not a local shift (`addCalendarDays`).
+ * A string that is not `YYYY-MM-DD` is returned unchanged.
+ */
+export function shiftUtcDateKey(date: string, days: number): string {
+  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return date
+  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days))
+  const y = dt.getUTCFullYear()
+  const mo = String(dt.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(dt.getUTCDate()).padStart(2, "0")
+  return `${y}-${mo}-${d}`
 }
 
 /** Local calendar month key (YYYY-MM). */

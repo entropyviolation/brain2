@@ -16,7 +16,7 @@
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 import { objectiveCompletesTarget, objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
 import { useTaskStore } from "@/lib/task-store"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
 import { addNestedStep, updateNestedStep } from "@/lib/todo-steps"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
@@ -101,10 +101,6 @@ function getTask(taskId: string | undefined): Task | undefined {
   return useTaskStore.getState().tasks.find((t) => t.id === taskId)
 }
 
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-}
-
 /** `Finish CDs › insert › find photos`, or the task name alone. */
 export function clockPathLabel(task: Task | undefined, stepId?: string): string {
   if (!task) return ""
@@ -152,8 +148,8 @@ export function logTaskClockSpan(ref: ClockTaskRef, start: Date, end: Date, acti
   const entry: TimeLogEntry = {
     id: `tl-${end.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     date: formatLocalDateKey(start),
-    startTime: hhmm(start),
-    endTime: hhmm(end),
+    startTime: formatLocalHhmm(start),
+    endTime: formatLocalHhmm(end),
     durationMinutes: minutes,
     notes,
     taskId: task.id,

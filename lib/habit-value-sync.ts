@@ -18,6 +18,7 @@ import { useEffect } from "react"
 import { isRestoring, withoutUndo } from "@/lib/action-history"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { periodWindowsForFrequency } from "@/lib/habit-period-windows"
+import { bucketForWeekBook, writeWeekBook } from "@/lib/habit-period-write"
 import { habitWriteIsQuiet, useHabitsStore } from "@/lib/habits-store"
 import { startHydratedStoreSync, type HydratedStoreSyncSlot } from "@/lib/start-hydrated-store-sync"
 import type { TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
@@ -56,19 +57,6 @@ export function applyHabitSum(
   return { ...(completion ?? {}), habitSumValue: sum, value: sum, goal }
 }
 
-function bucketFor(task: WeeklyTask, state: ReturnType<typeof useHabitsStore.getState>): WeeklyData {
-  if (task.frequency === "monthly") return state.monthlyHabitData
-  if (task.frequency === "quarterly") return state.quarterlyHabitData
-  return state.weeklyHabitData
-}
-
-function writePeriod(task: WeeklyTask, anchor: Date, next: TaskCompletion): void {
-  const habits = useHabitsStore.getState()
-  if (task.frequency === "monthly") habits.updateMonthlyHabitCompletion(task.id, anchor, next)
-  else if (task.frequency === "quarterly") habits.updateQuarterlyHabitCompletion(task.id, anchor, next)
-  else habits.updateWeeklyHabitCompletion(task.id, anchor, next)
-}
-
 export function syncHabitValueLinks(): void {
   withoutUndo(() => {
     const habits = useHabitsStore.getState()
@@ -89,10 +77,10 @@ export function syncHabitValueLinks(): void {
         const keys = window.keys.filter((key) => key <= todayKey)
         if (!keys.length) continue
         const sum = sumHabitValuesOverDays(habits.weeklyData, link.habitId, keys)
-        const previous = bucketFor(parent, habits)[window.periodKey]?.[parent.id]
+        const previous = bucketForWeekBook(parent, habits)[window.periodKey]?.[parent.id]
         const next = applyHabitSum(parent, previous, sum)
         if (!next) continue
-        writePeriod(parent, window.anchor, next)
+        writeWeekBook(parent, window.anchor, next)
       }
     }
   })

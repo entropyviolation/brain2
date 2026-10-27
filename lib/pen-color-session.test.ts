@@ -12,6 +12,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { sessionElapsedMs, startWorkingOnOperation } from "@/lib/operation-work-session"
 import {
   addPenColorNowObjective,
+  attachPenNowObjective,
   pausePenColorSession,
   PEN_CLOCK_UNSHOWN_GRACE_MS,
   penClockShouldStop,
@@ -250,5 +251,31 @@ describe("pen color session", () => {
     const hydrated = vi.spyOn(useTimeTrackingStore.persist, "hasHydrated").mockReturnValue(false)
     expect(tickPenColorSession(new Date(AT.getTime() + 60_000))?.penId).toBe("custom-activity")
     hydrated.mockRestore()
+  })
+
+  it("files an attached objective onto the task's Objectives list", () => {
+    useTaskStore.getState().addTask({
+      id: "nest",
+      description: "Build the nest",
+      type: "task",
+      stage: "clarified",
+      createdAt: AT,
+      completed: false,
+      lists: [],
+      links: [],
+    })
+    startPenColorSession("act-exercise", AT)
+    addPenColorNowObjective("cut the tray", AT)
+    const id = usePenColorSessionStore.getState().session!.nowObjectives![0].id
+    attachPenNowObjective(id, { taskId: "nest" })
+
+    const nest = useTaskStore.getState().tasks.find((t) => t.id === "nest")
+    const def = nest?.itemAttributeDefinitions?.find((item) => item.name === "Objectives")
+    expect(def?.type).toBe("list")
+    const listId = nest?.attributes?.[def!.id]
+    expect(typeof listId).toBe("string")
+    const filed = useTaskStore.getState().tasks.find((t) => t.id === `objective-item-${id}`)
+    expect(filed).toMatchObject({ title: "cut the tray", rewardValue: 1 })
+    expect(filed?.lists).toContain(listId)
   })
 })

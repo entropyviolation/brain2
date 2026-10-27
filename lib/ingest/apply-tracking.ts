@@ -9,6 +9,7 @@ import { useWorkSessionStore } from "@/lib/work-session-store"
 import { useSleepStore } from "@/lib/sleep-store"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
 import { useTaskStore } from "@/lib/task-store"
+import { formatClock } from "./clock-pen"
 import { resolveName, splitNameAndRest, type Named } from "./name-resolve"
 import { paintActivityWindow, switchScopePen } from "./switch-scope"
 import {
@@ -20,15 +21,6 @@ import {
 } from "./times"
 import type { ApplyResult, PendingClarifyKind } from "./types"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
-
-function formatClock(min: number): string {
-  const wrapped = ((Math.floor(min) % 1440) + 1440) % 1440
-  const h = Math.floor(wrapped / 60)
-  const m = wrapped % 60
-  const am = h < 12
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`
-}
 
 function pensInScope(scopeId: string): TrackPen[] {
   const scope = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)

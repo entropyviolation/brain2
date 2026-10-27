@@ -51,7 +51,7 @@ function put(logical: string, value: string): void {
 
 function task(partial: Partial<Task> & Pick<Task, "id" | "description">): Task {
   const created = partial.createdAt instanceof Date ? partial.createdAt : new Date(partial.createdAt ?? Date.now())
-  return {
+  const row: Task = {
     stage: "clarified",
     estimatedDuration: 45,
     cognitiveLoad: 2,
@@ -69,6 +69,8 @@ function task(partial: Partial<Task> & Pick<Task, "id" | "description">): Task {
     ...partial,
     createdAt: created,
   }
+  row.title = row.title ?? row.description
+  return row
 }
 
 function buildLists(now: Date): List[] {

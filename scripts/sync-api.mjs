@@ -7,6 +7,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 import { brain2Env } from "../lib/brain2-env.mjs"
+import { readBody } from "./local-api-json.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
@@ -98,15 +99,6 @@ function checkAuth(req) {
   } catch {
     return false
   }
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
 }
 
 /** @returns {Promise<boolean>} true if the request was handled */
