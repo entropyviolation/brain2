@@ -247,9 +247,9 @@ is 18px) and still not a toolbar icon.
 
 ### Phone layout
 
-_Last mapped: 2026-10-21_
+_Last mapped: 2026-10-27_
 
-Guidance for new and redesigned rooms. No existing room changes because of it. The model is the To do tab (`components/Home/ToDo/todo-chrome.css`, "Redesign 2026-10-21" blocks).
+Guidance from 2026-10-21 for a phone layout inside one room. No existing room changes because of that list. The model is the To do tab (`components/Home/ToDo/todo-chrome.css`, "Redesign 2026-10-21" blocks).
 
 Under 720px a room gets its own layout, not a shrunk desktop.
 
@@ -259,7 +259,9 @@ Under 720px a room gets its own layout, not a shrunk desktop.
 - **Verbs in the drawer, in an even grid** (3 × 2), with the rest under More….
 - **Wells stack one per row.** Empty ones are hidden.
 - **Trays open as a bottom sheet.**
-- Same materials as desktop: phosphor glass, silver keycaps for word keys, milled keys, small lamps.
+- Same materials as desktop when the phone page stays on the mill: phosphor glass, silver keycaps for word keys, milled keys, small lamps. A Home phone page may leave that skeuomorph.
+
+**Home, decided 2026-10-27.** On Home, a phone screen and a desktop screen are two pages. They share the data and the writes. They do not share the layout. The desktop mill stays the desktop page. Do not restyle that mill with media queries so it becomes the phone. The phone page may leave the skeuomorph. Habits, Plan, To Do, and Tracking switch at `max-width: 767px`. Goals keeps `(max-width: 720px)`, the width its fascia already used. How the five sections switch is in [`components/Home/README.md`](../components/Home/README.md#phone-and-desktop). A slant (Hipgnosis, retrofuturism, and the others) still applies only when someone asks for that slant by name.
 
 ### Laying out a room
 
@@ -356,7 +358,7 @@ One chip language for Tags (not mood, context, op categories, or keywords):
   stays a string, not an id).
 - **Double-click** opens tag settings (`openTagSettings` /
   `openTagSettingsFromName`), the same gesture as double-clicking a pen color
-  for pen settings. Single-click on a toggle chip still selects. Analytics
+  for pen settings. Single-click on a toggle chip still selects. Data
   chart rectangles drill; they do not open tag settings.
 - Mood tone / mood-pen chips use `.trk-mood-chip`, not `.trk-tag`.
 
@@ -567,11 +569,15 @@ A milled fascia key (a bay’s raised metal, the title-bar close key) is a diffe
 
 Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × stays the gunmetal caption key.
 
+Tracking’s period ‹ › and Today, and the Day | Week span keys, are this same short cap (`.trk-keycap` in `tracking-chrome.css`, about 26px). The selected Day or Week stays the CRT. They do not stretch up to the date plate.
+
 Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. Working on Now word keys reuse it too. Those strips and popups are not inside `.todo95`, so the same cap is also at the end of `components/shell-chrome.css`, on `.b2-now`. The pinned header paints the same skirt on its own press keys (Nav, Go, Friend chat and gallery, Rituals, System, Capture) without requiring the class, because the mill button skin would flatten it. The Friend fold is a hairline on the Friend nameplate, the same 12px height as Nav, Go, and Rituals, with a centered bar. Nav Back/Forward and the Go keys stay that cap at rest. Focus, and Go’s current tab, turn black with a green legend (the CRT). Those words have no white shadow and no synthetic bold stroke. The Rituals count is centered on its key. A press is the old 1px milled sink. Quick Add is the primary cap. The completion popup's word keys (Undo, Skip, Save, Done at, Add) reuse it in `components/Completion/completion-dialog.css` (`.completion-dialog`); that caption is its own full-width CRT bar. Play, pause, and stop on the clock stay the transport disc. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
 
 The task card header draws this skirt in `task-card.css` (`.task-card-keycap`), not `.todo-cap`, because the card's own key skin flattens a shared cap. Those keys are ↗ Item, Just Start, Just 25, Session with this, Required, and Prioritized. Just Start's face is deep indigo (`#1B143D`, skirt `#070E31`; hover and active a slightly lighter indigo, white legend). Required lights warm when on. Prioritized keeps a soft green glow. The CD transport stays the disc. The push flag is the card's one violet: dusty `#7d6bb8` at one push, deeper by twenty, wash `#b39cff`.
 
 ### Transport keys
+
+_Last mapped: 2026-10-27_
 
 This is the Pause, Play, and Stop the house likes. Reuse it whenever a clock
 or a player needs those three. `DvdTransportKey` in
@@ -584,7 +590,9 @@ separate housing. The disc is lightly smoked glass so the metal shows
 through, with a thin specular lip and about a 1px press (the disc sinks, the
 highlight flips, the mark nudges down). The marks are filled and stamped: two
 pause bars, a play triangle whose weight sits just right of center, and a
-solid stop square. Near-black ink with a one-pixel lower highlight.
+solid stop square. Near-black ink with a one-pixel lower highlight. The mill
+skin in `app/win95.css` excludes `.dvd-key`. An extra `:not()` on that skin
+was painting these square; leaving the discs off it keeps this glass face.
 
 Call it with `mark` (`pause` | `play` | `stop`), `label` (the accessible
 name), and `onClick`. `pressed` and `disabled` are optional. The header now
@@ -605,6 +613,22 @@ A button bar or a submit row inside a bordered panel needs that inset on all
 four sides
 ([no clipped chrome](#the-screen-stays-pleasing)). Gaps between sibling bays
 stay near the header (about 8–14px).
+
+### Left inset
+
+_Last mapped: 2026-10-27_
+
+Left-aligned type needs its own left padding. About 12px inside the control,
+and a heading in a well wants closer to 16px before the word. The first glyph
+must not sit on the edge of the button, the field, or the well.
+
+This keeps coming back. A heading button whose padding is reset to 0 paints
+the word on the well’s edge. An input or textarea that inherits the preflight
+`padding: 0` does the same inside a sunken field — the placeholder starts
+flush with the left border. A parent’s padding is not a substitute: the
+control is what you read. Set `padding-left` on that control. Tracking log
+shelf headings (`.trk-logbook-heading-open`) and shelf add fields
+(`.trk-logbook-well-add`) are the reference.
 
 `app/win95.css` `:root` exposes `--fascia-*` plus the CRT greens. Unskinned
 dialogs, menus, buttons, and nested tabs already inherit that face. Module
@@ -671,7 +695,7 @@ Settings dialog, and only while a timed preview is running
 
 One green for CRT values: `--hab-crt-green: #7dffc4`, glow
 `--hab-crt-glow`. Readable. Overlay off by default (`.hab-crt`). Phosphor on
-a trace is allowed to be the other green, `#3dff8a`, on Analytics line traces
+a trace is allowed to be the other green, `#3dff8a`, on Data line traces
 only — not a dark CRT canvas, and not on metal readout values. Do not use CRT
 grain as a chart that pretends the sample is larger than it is. A clock or a
 popover uses this instrument for its selection: beveled chrome, phosphor on
@@ -860,7 +884,7 @@ match, and does not sand them into one shared kit.
   chips (mint / lilac / teal, user `CalendarEvent.color`, default `#8cd4a5`).
   The chips are the room’s objects. Cells breathe. Period nav is a nameplate
   with metal previous / next / today keys.
-- **Analytics.** An esoteric data plate (`analytics-atlas.css` over
+- **Data.** An esoteric data plate (`analytics-atlas.css` over
   `analytics-chrome.css`): cobalt range bay with field rings and a degree
   ruler, typewriter keys and ball-bearing lamps, steel catalog drawers and
   index-card tabs for the index, cool white paper over a cobalt graph rule,
@@ -906,7 +930,7 @@ A surface that is still flat may take the mill or invent furniture.
 | Lists Explorer frame | `components/Lists/filemanager98.css` (velvet and orbs stay) |
 | Docs outer chrome | `components/Docs/docs.css` (white paper stays) |
 | Week grade / Perfect output sheets | `.hab-grade-sheet` in `habit-chrome.css` |
-| Analytics range and left index | `components/Analytics/analytics-chrome.css`, skinned by `analytics-atlas.css` |
+| Data range and left index | `components/Analytics/analytics-chrome.css`, skinned by `analytics-atlas.css` |
 | Scheduler frame | `components/Scheduler/scheduler-chrome.css` (`.sch95`) |
 | Search palette | `components/Search/search-chrome.css` (`.b2-search`) |
 
@@ -992,7 +1016,7 @@ orb. It may also be an object that room invented.
 - [ ] A list or item catalog is `ListPicker` / `ItemPicker`: search, truncated
       rows, single or multi as that field requires. Not a `<select>` of the vault.
       See [Choosing a list or an item](#choosing-a-list-or-an-item).
-- [ ] Habits, Lists, Plan chips, and the Analytics studio were left as their
+- [ ] Habits, Lists, Plan chips, and the Data studio were left as their
       own rooms. New furniture was invented here, or a palette material was
       used, without cloning `.hab95`.
 

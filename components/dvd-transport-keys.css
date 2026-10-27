@@ -2,8 +2,9 @@
  * components/dvd-transport-keys.css — the house Pause / Play / Stop disc
  *
  * Imported by dvd-transport-keys.tsx, so any caller gets this face.
- * Beats the square fascia button skin (same :not() chain, plus .dvd-key).
  * A lightly smoked glass disc, a thin specular lip, and a 1px foot.
+ * The mill skin in app/win95.css excludes .dvd-key. An extra :not() on that
+ * skin was outranking this face and painting the disc square.
  * The rail hides Lucide marks; the second svg rule keeps this glyph.
  */
 
