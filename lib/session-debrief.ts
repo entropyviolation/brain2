@@ -17,6 +17,7 @@
 import type { NowObjective } from "@/lib/now-objective"
 import { objectiveWorkedMs } from "@/lib/now-objective"
 import type { PenColorSession } from "@/lib/pen-color-session-store"
+import type { DebriefObjective } from "@/lib/session-debrief-store"
 import type { WorkSession } from "@/lib/work-session-store"
 import type { Subtask, Task, TimeLogEntry, TimeLogSessionReview } from "@/lib/types"
 import { formatLocalDateKey } from "@/lib/date-utils"

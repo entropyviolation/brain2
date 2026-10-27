@@ -130,12 +130,15 @@ import "./item-detail-chrome.css"
 function layerSafeDismiss(handlers: {
   onOutside: (event: Event) => void
   onEscape: (event: KeyboardEvent) => void
+  /** This popup's own content. A step layer is itself `[data-item-layer]`, and its own Esc must still close it. */
+  self?: { current: Element | null }
 }) {
   const inLayer = (event: Event) => {
     const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as
       | Element
       | null
-    return !!target?.closest?.("[data-item-layer]")
+    const layer = target?.closest?.("[data-item-layer]")
+    return !!layer && layer !== handlers.self?.current
   }
   return {
     onPointerDownOutside: (event: Event) => (inLayer(event) ? event.preventDefault() : handlers.onOutside(event)),
@@ -273,7 +276,7 @@ export function TaskDetailPopup({
     writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
   }, [effectiveId, detailTab])
 
-  const activeDetailTab = popupTabs.includes(detailTab) ? detailTab : "details"
+  const activeDetailTab = popupTabs.includes(detailTab as (typeof popupTabs)[number]) ? detailTab : "details"
 
   const commitReminder = useCallback(
     (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
@@ -569,6 +572,7 @@ export function TaskDetailPopup({
               if (outsideHold.current) return
               guard.requestClose()
             },
+            self: detailRef,
           })}
           data-item-layer={layerHeader !== undefined ? "" : undefined}
           hideClose

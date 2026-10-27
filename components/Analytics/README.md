@@ -155,12 +155,13 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 | `MetricsTrends.tsx` | Small-multiples of all five wellbeing metrics + phosphor detail chart + **Log {name}**. |
 | `CorrelationExplorer.tsx` | Pairwise Pearson matrix (metrics + habit % / tracking / sleep / points). Click a cell → scatter. |
 | `SpectrumView.tsx` | Habit-% autocorr + periodogram, sleep CV and lag-1. |
-| `ItemTypesLibrary.tsx` | Types / Relations tabs. Type mosaic, sort, drill, Open in Lists. |
+| `ItemTypesLibrary.tsx` | _Last mapped: 2026-10-23._ Types / Relations tabs. Type mosaic, sort, search, evenness readouts, schema coverage, drill, Open in Lists. See [`library-item-types.md`](../../docs/analytics/library-item-types.md). |
 | `InstagramView.tsx` / `instagram-view.css` | Sources → **Instagram**. Hosts the generated `report.html` in a frame. See **Instagram (Sources)** below. `data-testid="instagram-view"`. |
 | `relations/RelationsLibrary.tsx` | _Last mapped: 2026-10-16._ Relations tab ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L2.1): by family or tree, scope, usage, origin. A row opens `RelationSheet.tsx` (L2.2: parent, reciprocity, traits, phrases, description, usage; built-ins write `relationOverrides`; merge as alias with undo, L2.3). Views: `RelationSchematic.tsx` (L2.4), `RuleEditor.tsx` (L3.5, dry run), `GraphInbox.tsx` (L8.1–8.2: snapshot export, proposal import, accept through `commitItemDraft`). |
-| `ListsAreasView.tsx` | Size-by-items treemap (area ∝ count) + HHI + completion-rate toggle. |
-| `AttributesView.tsx` | Typed attribute histograms from schemas that exist. Not a chart builder. |
-| `LibraryCuts.tsx` | Tags (treemap + UpSet combinations), Stages, Weight — fields already on items. |
+| `ListsAreasView.tsx` | _Last mapped: 2026-10-23._ Size / rate / Areas modes, HHI + Gini, sortable list ledger. See [`library-lists-areas.md`](../../docs/analytics/library-lists-areas.md). |
+| `AttributesView.tsx` | _Last mapped: 2026-10-23._ Typed attribute histograms, tile table with fill rate, numeric summary, bins. Not a chart builder. See [`library-attributes.md`](../../docs/analytics/library-attributes.md). |
+| `LibraryCuts.tsx` | _Last mapped: 2026-10-23._ Tags (treemap, UpSet, tag pairs), Stages (step heights, median age), Weight (importance × load quadrant). Docs: [`library-tags.md`](../../docs/analytics/library-tags.md), [`library-stages.md`](../../docs/analytics/library-stages.md), [`library-weight.md`](../../docs/analytics/library-weight.md). |
+| `library-kit.tsx` / `library-stats.ts` / `library-views.css` | Shared Library plates (search, slider, ledger table, quadrant grid, step heights), pure math (summary, Shannon, Spearman, tag pairs, cross-tab, stage steps, area rollup, bins), and their skin. |
 
 ### Shell loading
 
