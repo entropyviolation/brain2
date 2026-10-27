@@ -30,7 +30,8 @@ describe("unfinished objectives", () => {
     const later = new Date(AT.getTime() + 7 * 24 * 60 * 60_000)
     const resumed = resumeParked(parked!, later)
     expect(resumed.addedAt).toBe(row.addedAt)
-    expect(resumed.stintStartedAt).toBe(later.toISOString())
+    expect(resumed.lane).toBe("next")
+    expect(resumed.stintStartedAt).toBeUndefined()
     expect(resumed.workedMs).toBe(0)
     expect(resumed.completedAt).toBeUndefined()
   })
@@ -44,7 +45,10 @@ describe("unfinished objectives", () => {
       home: { kind: "pen", scopeId: "activity", penId: "act-work" },
     }
     expect(mergeResumed([row], [parked], AT)).toEqual([row])
-    expect(mergeResumed(undefined, [parked], AT)).toHaveLength(1)
+    const resumed = mergeResumed(undefined, [parked], AT)
+    expect(resumed).toHaveLength(1)
+    expect(resumed?.[0]).toMatchObject({ lane: "next", workedMs: 3_600_000 })
+    expect(resumed?.[0].stintStartedAt).toBeUndefined()
   })
 
   it("treats an attached task as its own home", () => {

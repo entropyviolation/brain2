@@ -13,6 +13,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import type { WorkPauseSpan } from "@/lib/work-pause"
 
 export type SittingEnergy = "low" | "steady" | "high"
 
@@ -79,6 +80,8 @@ export interface SessionDebriefDraft {
   trackingEntryIds: string[]
   timeLogIds: string[]
   note: string
+  /** Reasons for pausing this sitting, copied onto a log the sheet has to create. */
+  pauseSpans?: WorkPauseSpan[]
   taskCompleted: boolean
   taskEstimate: number | null
   steps: DebriefStep[]

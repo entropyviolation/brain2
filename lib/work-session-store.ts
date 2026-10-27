@@ -12,6 +12,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { NowObjective } from "@/lib/now-objective"
+import type { WorkPauseSpan } from "@/lib/work-pause"
 
 export interface WorkSession {
   operationId: string
@@ -34,6 +35,11 @@ export interface WorkSession {
   pausedAt?: string
   /** Completed pause milliseconds from earlier pause/resume cycles. */
   pausedAccumMs?: number
+  /**
+   * Reasons for pausing this sitting. Copied onto the operation time log and
+   * the painted block when the sitting ends, and refreshed while it is open.
+   */
+  pauseSpans?: WorkPauseSpan[]
 }
 
 interface WorkSessionState {

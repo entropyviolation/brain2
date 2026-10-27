@@ -23,6 +23,7 @@
  */
 
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
+import type { WorkPauseSpan } from "./work-pause"
 import { compactSpend } from "./spend"
 import { compactNowObjectives, sameNowObjectives, type NowObjective } from "./now-objective"
 import { sameFieldValues, type FieldValues } from "./pen-fields"
@@ -236,7 +237,7 @@ export interface TimeEntry {
   /**
    * Optional display name for this block ("walk to the beach"). Empty/omitted
    * falls back to the primary pen's name. Surfaces that show a block title use
-   * this; Analytics counting still uses pens and tags.
+   * this; Data counting still uses pens and tags.
    */
   title?: string
   notes?: string
@@ -338,6 +339,12 @@ export interface TimeEntry {
   taskId?: string
   /** The task step on the clock when the block last grew. Step changes are stamped as objectives. */
   stepId?: string
+  /**
+   * Reasons for pausing the Working-on-now sitting that painted this block.
+   * Same spans as the task or operation time log. Omitted when that sitting
+   * was not paused. No persist bump.
+   */
+  pauseSpans?: WorkPauseSpan[]
 }
 
 /** The detail fields that make two otherwise identical blocks worth keeping apart. */
@@ -357,6 +364,7 @@ const DETAIL_KEYS = [
   "transitManual",
   "moodReading",
   "taskId",
+  "pauseSpans",
   "stepId",
 ] as const
 
@@ -500,6 +508,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     DETAIL_KEYS.every((key) => {
       if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
       if (key === "nowObjectives") return sameNowObjectives(a.nowObjectives, b.nowObjectives)
+      if (key === "pauseSpans") return JSON.stringify(a.pauseSpans ?? []) === JSON.stringify(b.pauseSpans ?? [])
       if (key === "fieldValues") return sameFieldValues(a.fieldValues, b.fieldValues)
       return (a[key] ?? undefined) === (b[key] ?? undefined)
     }) &&
@@ -521,6 +530,7 @@ export function hasDetails(entry: Partial<TimeEntry>): boolean {
   return DETAIL_KEYS.some((key) => {
     if (key === "moodReading") return compactMoodReading(entry.moodReading) !== undefined
     if (key === "nowObjectives") return (entry.nowObjectives?.length ?? 0) > 0
+    if (key === "pauseSpans") return (entry.pauseSpans?.length ?? 0) > 0
     if (key === "fieldValues") return Object.keys(entry.fieldValues ?? {}).length > 0
     const value = entry[key]
     return value !== undefined && value !== "" && value !== null

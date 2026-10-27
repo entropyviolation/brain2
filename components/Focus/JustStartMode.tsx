@@ -263,7 +263,7 @@ export default function JustStartMode({
     setElapsed(0)
     if (onClock) {
       // The pen clock logs at Stop; pausing it is the clock stopping.
-      pausePenColorSession()
+      pausePenColorSession(new Date(), { hold: true })
       return
     }
     const now = new Date()

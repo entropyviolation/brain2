@@ -88,7 +88,7 @@ describe("pen color session", () => {
       19 * 60 + 42,
     )
 
-    pausePenColorSession(afterWork)
+    pausePenColorSession(afterWork, { hold: true })
     expect(usePenColorSessionStore.getState().session?.pausedAt).toBeTruthy()
 
     const duringPause = new Date(2026, 8, 21, 19, 50, 47)

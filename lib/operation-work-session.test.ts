@@ -199,7 +199,7 @@ describe("operation work session (stores)", () => {
     tickWorkSession()
     expect(useTimeTrackingStore.getState().entries[0]?.endMin).toBe(14 * 60 + 40)
 
-    pauseWorkingOnOperation()
+    pauseWorkingOnOperation(new Date(), { hold: true })
     expect(useWorkSessionStore.getState().session?.pausedAt).toBeTruthy()
 
     vi.setSystemTime(new Date(2026, 5, 20, 14, 55, 0))

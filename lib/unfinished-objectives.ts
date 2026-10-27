@@ -112,14 +112,18 @@ export function toParked(row: NowObjective, home: UnfinishedHome): ParkedObjecti
   return parked
 }
 
-/** Put a parked objective back on a live list. The new stint starts at `at`. */
-export function resumeParked(row: ParkedObjective, at: Date): NowObjective {
+/**
+ * Put a parked objective back on a live list, in Next. Banked `workedMs`
+ * comes with it. `at` is the sitting that picked it up; it does not start a
+ * stint, so a refresh of a sitting already in Now is not this path.
+ */
+export function resumeParked(row: ParkedObjective, _at: Date): NowObjective {
   const next: NowObjective = {
     id: row.id,
     text: row.text,
     addedAt: row.addedAt,
     workedMs: row.workedMs,
-    stintStartedAt: at.toISOString(),
+    lane: "next",
   }
   if (row.stepId) next.stepId = row.stepId
   if (row.completes !== undefined) next.completes = row.completes

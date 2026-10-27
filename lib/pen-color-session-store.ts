@@ -15,6 +15,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { NowObjective } from "@/lib/now-objective"
+import type { WorkPauseSpan } from "@/lib/work-pause"
 
 export interface PenColorSession {
   penId: string
@@ -36,6 +37,11 @@ export interface PenColorSession {
   pausedAt?: string
   /** Completed pause milliseconds from earlier pause/resume cycles. */
   pausedAccumMs?: number
+  /**
+   * Reasons for pausing this sitting. The open gap has no `resumedAt` yet.
+   * Copied onto the painted block and, when a task is on the clock, its time log.
+   */
+  pauseSpans?: WorkPauseSpan[]
   /** The task on this clock (`lib/task-clock.ts`). Omitted for a plain pen clock. */
   taskId?: string
   /** The step of that task being worked right now. */

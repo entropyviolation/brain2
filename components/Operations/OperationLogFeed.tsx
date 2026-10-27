@@ -500,7 +500,12 @@ export function OperationLogFeed({ operation }: { operation: Task }) {
                 />
                 <span className="w-24 shrink-0 tabular-nums">{line.date}</span>
                 <span className="w-16 shrink-0 font-medium tabular-nums">{line.durationMinutes}m</span>
-                <span className="min-w-0 flex-1 truncate">{line.label}</span>
+                <span
+                  className={line.label.includes("\n") ? "min-w-0 flex-1 whitespace-pre-line" : "min-w-0 flex-1 truncate"}
+                  title={line.label}
+                >
+                  {line.label}
+                </span>
                 <span className="hidden max-w-[8rem] truncate sm:block">{line.taskTitle}</span>
               </li>
             )

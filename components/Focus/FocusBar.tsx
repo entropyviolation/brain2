@@ -25,6 +25,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { usePauseReason } from "@/components/Home/Tracking/pause-reason-dialog"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
@@ -37,6 +38,8 @@ import {
   attachPenNowObjective,
   editPenColorNowObjectiveText,
   pausePenColorSession,
+  movePenColorNowObjectiveToNext,
+  movePenColorNowObjectiveToNow,
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
@@ -70,6 +73,7 @@ export default function FocusBar() {
   const [satMinutes, setSatMinutes] = useState<number | null>(null)
   const [parkNote, setParkNote] = useState<string | null>(null)
   const sessionRuns = useSessionPlanStore((s) => s.open.some((p) => p.phase === "run"))
+  const pauseAsk = usePauseReason()
 
   useEffect(() => {
     if (asking !== "save") return
@@ -96,7 +100,7 @@ export default function FocusBar() {
     setAsking(false)
     const live = usePenColorSessionStore.getState().session
     setSatMinutes(live ? sessionElapsedMs(live) / 60_000 : 0)
-    pausePenColorSession()
+    pausePenColorSession(new Date(), { hold: true })
   }
 
   const stop = () => {
@@ -229,7 +233,9 @@ export default function FocusBar() {
           <NowObjectivesList
             objectives={session.nowObjectives}
             contextName={clock.path}
-            onAdd={(text) => addPenColorNowObjective(text)}
+            onAdd={(text, lane) => addPenColorNowObjective(text, new Date(), undefined, lane)}
+            onMoveToNow={(id) => movePenColorNowObjectiveToNow(id)}
+            onMoveToNext={(id) => movePenColorNowObjectiveToNext(id)}
             onAddCompleted={(text) => addPenColorCompletedObjective(text)}
             onEditText={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleComplete={(id) => togglePenColorNowObjectiveComplete(id)}
@@ -286,7 +292,12 @@ export default function FocusBar() {
             className="focus-bar-icon"
             mark={paused ? "play" : "pause"}
             label={paused ? "Resume the clock" : "Pause the clock"}
-            onClick={() => (paused ? resumePenColorSession() : pausePenColorSession())}
+            onClick={() => {
+              if (paused) resumePenColorSession()
+              else void pauseAsk.ask().then((reason) => {
+                if (reason) pausePenColorSession(new Date(), reason)
+              })
+            }}
           />
           <DvdTransportKey className="focus-bar-icon" mark="stop" label={`Stop the clock on ${clock.path}`} onClick={stop} />
         </>
@@ -295,6 +306,7 @@ export default function FocusBar() {
       {justStart ? (
         <JustStartMode taskId={session.taskId} stepId={session.stepId} onClose={() => setJustStart(false)} />
       ) : null}
+      {pauseAsk.dialog}
     </>
   )
 }
