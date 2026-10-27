@@ -18,7 +18,7 @@
  * Spec: §2.2 — the application shell that hosts all modules.
  */
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Bricolage_Grotesque, DM_Mono, DotGothic16, Fraunces, Instrument_Sans, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
@@ -129,6 +129,13 @@ export const metadata: Metadata = {
   description:
     "A living application — cognitive offloading and getting stuff done. Adaptable, alive, beautiful: a new type of software.",
   generator: "v0.dev",
+}
+
+/** Lets a phone report the status-bar inset. Desktop inset is 0. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
