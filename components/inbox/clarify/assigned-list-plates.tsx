@@ -1,4 +1,5 @@
 /**
+ * components/inbox/clarify/assigned-list-plates.tsx
  * Assigned lists plated by folder, with × to remove and double-click to preview.
  * Unfiled lists have no folder plate.
  */

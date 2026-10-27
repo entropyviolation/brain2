@@ -8,7 +8,7 @@ import { PART_TASK_ATTR, readPartInstances } from "@/lib/operation-parts"
 import type { Task } from "@/lib/types"
 import { PartsPanel } from "./PartsPanel"
 import { OperationTasksPanel } from "./OperationTasksPanel"
-import { addPhase, addPhaseStep } from "./operation-actions"
+import { addPhase, addPhaseStep } from "../operation-actions"
 import { pickOption } from "@/tests/native-select"
 
 function seedOperation(): Task {

@@ -1,4 +1,5 @@
 /**
+ * components/inbox/dialogs/deadline-dialog.tsx
  * Set deadline dialog. One due day on the current selection.
  */
 "use client"

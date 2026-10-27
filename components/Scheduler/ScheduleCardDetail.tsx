@@ -14,7 +14,7 @@ import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import type { Task } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
-import type { SchedulerTaskItemOpts } from "./PeriodFunnelTab"
+import type { SchedulerTaskItemOpts } from "./funnel/PeriodFunnelTab"
 import { SchedulerKeycapX } from "./SchedulerTaskItem"
 import type { CardDetailRows } from "./schedule-card-detail"
 

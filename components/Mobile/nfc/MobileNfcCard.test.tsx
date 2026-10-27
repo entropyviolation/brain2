@@ -1,5 +1,5 @@
 /**
- * components/Mobile/MobileNfcCard.test.tsx — Dose prompt, then the hub line
+ * components/Mobile/nfc/MobileNfcCard.test.tsx — Dose prompt, then the hub line
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"

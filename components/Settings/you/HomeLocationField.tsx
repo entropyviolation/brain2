@@ -1,5 +1,5 @@
 /**
- * components/Settings/HomeLocationField.tsx — Home city for Plan sun times
+ * components/Settings/you/HomeLocationField.tsx — Home city for Plan sun times
  *
  * City autocomplete (Open-Meteo) writing `useUserSettingsStore.homeCity`.
  * Empty/cleared values snap back to San Diego.

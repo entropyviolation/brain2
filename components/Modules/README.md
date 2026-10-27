@@ -50,7 +50,7 @@ Workspace interiors are private. Other rooms must not import Tidy
 screens).
 
 Current practice: Operations already imports three Trip interiors from
-`components/Operations/OperationFieldPlanPanels.tsx` — `ItineraryDocumentView`,
+`components/Operations/panels/OperationFieldPlanPanels.tsx` — `ItineraryDocumentView`,
 `TripActivitiesView`, and `DocPlanView`.
 
 ## Where this is going
@@ -289,7 +289,9 @@ is `"bind"` (full attribute cover and Jaccard at least 0.75, one list).
 The scorer does not write. A matched list stays as it is: no `createdByModuleId`,
 no `moduleSlotId`, no attribute edits. Create slots in that same file still mint
 new lists. `parseModulePackage` itself still accepts only `policy: "create"`;
-the dialog does not hand a bind file to that parser.
+the dialog does not hand a bind file to that parser. A committed bind file
+does use `reqString`, `resolveRole`, `resolveViewConfig`, and `makeIds` from
+`lib/module-package.ts`.
 
 ## Building modules from scratch (definitions)
 

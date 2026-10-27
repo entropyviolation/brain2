@@ -33,9 +33,9 @@ import { IsolatedInput } from "@/components/ui/isolated-text-field"
 import { AddressSuggestInput } from "@/components/ui/address-suggest-input"
 import { iconFor } from "@/components/Icons/Icon"
 import { OrbPickerDialog } from "@/components/Icons/OrbPicker"
-import { GiftIdeasKey } from "@/components/People/person-gift-ideas"
-import { Log } from "@/components/People/person-log"
-import { NicknameField } from "@/components/People/person-nicknames"
+import { GiftIdeasKey } from "@/components/People/detail/person-gift-ideas"
+import { Log } from "@/components/People/detail/person-log"
+import { NicknameField } from "@/components/People/detail/person-nicknames"
 import { splitHandles, unlinkedPhoneHandles } from "@/lib/phone-sync/person-links"
 import { phonePeople } from "@/lib/phone-sync/write"
 import { syncPhonePersonLinks, takeHandlesFromOthers } from "@/lib/phone-person-links"
@@ -46,7 +46,7 @@ import { COMPANY_SCOPE_ID, personPhoneNumbers, personTimePenIds } from "@/lib/pe
 import { formatHandle } from "@/lib/phone-sync/handles"
 import { personMinuteMasks } from "@/lib/person-time"
 import { contactSentence, personContact } from "@/lib/person-contact"
-import { PersonTimeTogether } from "@/components/People/person-time-together"
+import { PersonTimeTogether } from "@/components/People/detail/person-time-together"
 import {
   addressPlaceholder,
   addressPrecisionLabel,

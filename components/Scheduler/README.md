@@ -10,17 +10,27 @@ Other rooms import:
 |--------|------|---------|
 | `EnhancedScheduler` | `enhanced-scheduler.tsx` | `app/page.tsx` (Scheduler tab) |
 | `getScheduleableCategoryIds` | `scheduler-utils.ts` | Item detail page and popup |
-| `isTaskScheduleable`, `nextTaskScheduleableFlag`, `taskInheritsScheduleableFromLists` | `scheduler-utils.ts` | `components/ItemDetail/ItemScheduleFlags.tsx` |
-| `navigateDate` | `scheduler-utils.ts` | `components/Home/ToDo/TodoPeriodNav.tsx` |
+| `isTaskScheduleable`, `nextTaskScheduleableFlag`, `taskInheritsScheduleableFromLists` | `scheduler-utils.ts` | `components/ItemDetail/tabs/scheduling/ItemScheduleFlags.tsx` |
+| `navigateDate` | `scheduler-utils.ts` | `components/Home/ToDo/fascia/TodoPeriodNav.tsx` |
 | `pushCardWorkingQueue` | `schedule-card-detail.ts` | `lib/ritual-push.ts` |
 
 Writes **task-store** (`updateTask`, `deleteTask`, and the scheduling, completion, and eventually-list services that persist on that store).
 
-**Interiors** stay in this folder: the funnel (`AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell`), `SchedulerTaskItem`, `SchedulerFilters`, `ScheduleCardDetail`, `GanttView`, `DependencyGraph`, and `project-network.ts`. The other helpers in `scheduler-utils.ts` and `schedule-card-detail.ts` stay here too.
+**Interiors** stay in this room: the funnel boards in `funnel/` (`AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell`), `SchedulerTaskItem`, `SchedulerFilters`, `ScheduleCardDetail`, `GanttView`, `DependencyGraph`, and `project-network.ts`. The other helpers in `scheduler-utils.ts` and `schedule-card-detail.ts` stay at the room root too. _Last mapped: 2026-10-27._
 
 The surface is a **milled fascia** window (`.sch95` in `scheduler-chrome.css`, kin to Plan): CRT title (`#070c0a` glass, phosphor `#7dffc4`), Funnel / Gantt / Dependencies as silver keycaps (the pressed one is CRT + green on-light), Always → Day as latching keycaps (`.b2-keycap-tab`) in the same face as those toolbar keys. _Last mapped: 2026-10-27._ Address / View / Period nameplates stay engraved, and their letters have no white halo. Period chevrons, Today, Open list, and the card actions (Push, Mark done, Dismiss, Missed, Unschedule) are the same silver keycap. The title-bar minimize and maximize marks are keycaps too. Funnel buckets, Gantt, and Dependencies documents keep their content chrome and meaning colors — looks only on the frame.
 
+## Folders
+
+_Last mapped: 2026-10-27_
+
+| Folder | Holds |
+|--------|--------|
+| `funnel/` | Always, Year/Month/Week, and Day boards: `AlwaysTab`, `PeriodFunnelTab`, `DayTab`, `DayAgenda`, `PeriodCell` |
+
 ## Files
+
+_Last mapped: 2026-10-27._
 
 The funnel was split (orchestrator pattern) so the orchestrator stays small and
 the period/filter logic is independently testable.
@@ -34,13 +44,13 @@ the period/filter logic is independently testable.
 | `GanttView.tsx` | **Gantt document** (plain SVG): one row per task (orb + label), bars positioned by CPM earliest-start and sized by duration, dependency arrows, slack tracks, critical path. Click a row to open the task. Not editable |
 | `DependencyGraph.tsx` | **Dependency document** (plain SVG): tasks as nodes with orbs, `dependencies` precedence as directed edges, layered left→right layout (`lib/graph-layout`), critical path. Click a node to select/open |
 | `SchedulerTaskItem.tsx` | Draggable task row: photographed orb, title, duration/urgency/importance. Checkbox is outside other controls (white face, ink border, no navy ring). × is a sibling keycap that shows only while the pointer or keyboard is on that row; hovering the × turns it brick. × unschedules — it takes the task off that list and does not delete it. A period cell opens item detail on click. A left-hand period list opens it on double-click. Used across funnel tabs |
-| `PeriodCell.tsx` | Droppable bucket. Funnel grids: empty = reserved one-line furniture. Always: `variant="card"` drop cards. The title opens Schedule Card Detail; the body still schedules a selection |
+| `funnel/PeriodCell.tsx` | Droppable bucket. Funnel grids: empty = reserved one-line furniture. Always: `variant="card"` drop cards. The title opens Schedule Card Detail; the body still schedules a selection |
 | `schedule-card-detail.ts` | Pure rows for one card: at this grain, finer period, open Undone, and the hidden archive (`moved`, `pushed`, `dismissed`, `missed`). A past card uses the same open queue as the funnel cell. `pushCardWorkingQueue` / `dismissCardWorkingQueue` / `missCardWorkingQueue` / `unscheduleCardWorkingQueue` / `finishCardInPeriod` keep the placement. Push may stamp optional `missReason` on the card placement. Dismiss and Missed do not. Unit-tested in `schedule-card-detail.test.ts` |
 | `ScheduleCardDetail.tsx` | That card, full width. **Open list** and the triage keys are silver keycaps. × is the brick-on-hover keycap and closes the card. Each task has a minutes field: type a length, Enter saves it as that task's estimate and focuses the next field. `updateTask` appends `{ at, minutes }` on `estimateLog` (the user estimate at this moment). The same number again adds no row. **Open list** jumps to Lists on `To do 8/31-9/6` (the period's full list). A past card offers Push to this period, Mark done, Dismiss, Missed, and Unschedule. Four toggles, off each time the card opens, show moved-forward, pushed, dismissed, and missed rows |
-| `PeriodFunnelTab.tsx` | Generic Year/Month/Week tab (sidebar list + reserved child-period rows; Deselect / Delete / Mark complete when the shared selection is non-empty). Title opens the card; drop on the sidebar returns the task to the parent period |
-| `AlwaysTab.tsx` | Always tab: available list + two columns of drop cards (This Year … Tomorrow, Eventually / Later). Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete. Drop on Available Tasks clears the period |
-| `DayTab.tsx` | Day tab: day task sidebar + `DayAgenda`. The agenda title opens that day |
-| `DayAgenda.tsx` | 24-hour agenda; empty hours stay reserved; occupied hours hold orb rows |
+| `funnel/PeriodFunnelTab.tsx` | Generic Year/Month/Week tab (sidebar list + reserved child-period rows; Deselect / Delete / Mark complete when the shared selection is non-empty). Title opens the card; drop on the sidebar returns the task to the parent period |
+| `funnel/AlwaysTab.tsx` | Always tab: available list + two columns of drop cards (This Year … Tomorrow, Eventually / Later). Selection tools: Deselect all, Remove from Scheduler, Delete, Mark complete. Drop on Available Tasks clears the period |
+| `funnel/DayTab.tsx` | Day tab: day task sidebar + `DayAgenda`. The agenda title opens that day |
+| `funnel/DayAgenda.tsx` | 24-hour agenda; empty hours stay reserved; occupied hours hold orb rows |
 | `SchedulerFilters.tsx` | Collapsible "Filters & Sort" for the Always inbox |
 
 ### Scheduler views

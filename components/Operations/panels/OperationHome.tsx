@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationHome.tsx — Operation home (note log + heatmap)
+ * components/Operations/panels/OperationHome.tsx — Operation home (note log + heatmap)
  *
  * The home tab of an Operation workspace: mission (one line, growing with the
  * text), stage, progress (phases and the to-do list), the item note log
@@ -33,11 +33,11 @@ import {
   type OperationStage,
 } from "@/lib/operation-types"
 import type { Task } from "@/lib/types"
-import { setMission, setStage } from "./operation-actions"
+import { setMission, setStage } from "../operation-actions"
 import { NativeSelect } from "@/components/ui/native-select"
-import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
+import { ItemNotesLog } from "@/components/ItemDetail/tabs/notes/ItemNotesLog"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import "@/components/ItemDetail/item-detail-chrome.css"
+import "@/components/ItemDetail/chrome/item-detail-chrome.css"
 
 /**
  * The bar is the mean of the phase rollup and the to-do list, skipping a side

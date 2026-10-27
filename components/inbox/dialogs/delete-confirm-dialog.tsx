@@ -1,4 +1,5 @@
 /**
+ * components/inbox/dialogs/delete-confirm-dialog.tsx
  * Are you sure? dialog for one row’s trash and for Delete.
  */
 "use client"

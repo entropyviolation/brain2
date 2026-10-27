@@ -10,6 +10,7 @@
  */
 "use client"
 
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { makeNoteEntry } from "@/lib/item-notes"
 import { trackedTimeForItems } from "@/lib/tracked-time"
 import { isOperation } from "@/lib/operations"
@@ -382,7 +383,7 @@ export function logTime(
   if (!task) return
   const log: TimeLogEntry = {
     id: genId("log"),
-    date: entry.date ?? localDayKey(new Date()),
+    date: entry.date ?? formatLocalDateKey(new Date()),
     durationMinutes: entry.durationMinutes,
     notes: entry.notes,
     activityLabel: entry.activityLabel,
@@ -752,11 +753,4 @@ export function deleteOperation(operationId: string): void {
 
   const latest = useTaskStore.getState()
   for (const id of ids) latest.deleteTask(id)
-}
-
-function localDayKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
 }

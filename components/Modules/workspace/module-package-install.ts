@@ -19,20 +19,14 @@ import { addModuleCreatedLists, taskStoreModuleListsMutators } from "@/lib/modul
 import {
   installModulePackage,
   isRenderedModuleViewKind,
+  makeIds,
   ModulePackageError,
+  reqString,
+  resolveRole,
+  resolveViewConfig,
   type ModulePackageSlot,
 } from "@/lib/module-package"
 import { scoreSlot, type SlotScoreDecision } from "@/lib/module-slot-score"
-
-const LIST_ROLE_FIELDS = [
-  "categoryId",
-  "matchTargetCategoryId",
-  "quizSourceCategoryId",
-  "daysCategoryId",
-  "flightsCategoryId",
-  "entriesCategoryId",
-  "placesCategoryId",
-] as const satisfies readonly (keyof ModuleViewConfig)[]
 
 const PACKAGE_KEYS = new Set(["id", "name", "version", "description", "slots", "views", "workflows", "nativeTemplate"])
 
@@ -159,21 +153,10 @@ export function reviewPackageBind(text: string, lists: readonly List[]): Package
   return { action: "bound", raw, bindings }
 }
 
-function reqString(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.trim() === "") fail(`${path} must be a non-empty string`)
-  return value.trim()
-}
-
 function assertKnownKeys(raw: JsonRecord, allowed: Set<string>, path: string): void {
   for (const key of Object.keys(raw)) {
     if (!allowed.has(key)) fail(`${path} has unknown field "${key}"`)
   }
-}
-
-function resolveRole(role: string, slots: Map<string, string>, path: string): string {
-  const id = slots.get(role)
-  if (!id) fail(`${path} names unknown slot "${role}"`)
-  return id
 }
 
 function resolveAttributes(
@@ -194,43 +177,6 @@ function resolveAttributes(
     }
     return next
   })
-}
-
-function resolveViewConfig(config: ModuleViewConfig, slots: Map<string, string>, path: string): ModuleViewConfig {
-  const next: ModuleViewConfig = { ...config }
-  for (const key of LIST_ROLE_FIELDS) {
-    const value = next[key]
-    if (value == null || value === "") continue
-    if (typeof value !== "string") fail(`${path}.${key} must be a slot role`)
-    next[key] = resolveRole(value, slots, `${path}.${key}`)
-  }
-  if (next.htmlListIds) {
-    if (!Array.isArray(next.htmlListIds)) fail(`${path}.htmlListIds must be slot roles`)
-    next.htmlListIds = next.htmlListIds.map((role, i) => {
-      if (typeof role !== "string") fail(`${path}.htmlListIds[${i}] must be a slot role`)
-      return resolveRole(role, slots, `${path}.htmlListIds[${i}]`)
-    })
-  }
-  if (next.cards) {
-    next.cards = next.cards.map((card, i) => {
-      if (typeof card.categoryId !== "string") fail(`${path}.cards[${i}].categoryId must be a slot role`)
-      const subtract = card.subtract
-        ? {
-            ...card.subtract,
-            categoryId:
-              typeof card.subtract.categoryId === "string"
-                ? resolveRole(card.subtract.categoryId, slots, `${path}.cards[${i}].subtract.categoryId`)
-                : fail(`${path}.cards[${i}].subtract.categoryId must be a slot role`),
-          }
-        : undefined
-      return {
-        ...card,
-        categoryId: resolveRole(card.categoryId, slots, `${path}.cards[${i}].categoryId`),
-        subtract,
-      }
-    })
-  }
-  return next
 }
 
 function resolveWorkflow(
@@ -279,12 +225,6 @@ function resolveWorkflow(
     scope: scope as unknown as WorkflowDefinition["scope"],
     actions: actions as unknown as WorkflowDefinition["actions"],
   }
-}
-
-function makeIds(): (suffix: string) => string {
-  const seed = Date.now().toString(36)
-  let n = 0
-  return (suffix: string) => `pkg-${seed}-${(n++).toString(36)}-${suffix}`
 }
 
 /**

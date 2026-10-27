@@ -13,7 +13,7 @@ vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
   TaskDetailPopup: () => null,
 }))
 
-vi.mock("@/components/Lists/settings-dialog", () => ({
+vi.mock("@/components/Lists/lists-settings/settings-dialog", () => ({
   NextActionsSettingsDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="lists-settings">Settings</div> : null,
 }))

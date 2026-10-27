@@ -1,5 +1,5 @@
 /**
- * components/Operations/ResourcesPanel.tsx — Operation resources
+ * components/Operations/panels/ResourcesPanel.tsx — Operation resources
  *
  * The same `Task.resources` list as Item Detail → Resources: web links, copied
  * files, and desktop file references (`lib/item-resources.ts`,

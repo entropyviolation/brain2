@@ -8,27 +8,35 @@ Links stay in `components/inbox-links.tsx`. Behavior stays on the `inbox.tsx` / 
 
 `inbox-view.tsx` owns the state, the handlers, the selection effect, and the order of the dialogs. The other files are the leaves it composes.
 
+## Folders
+
+_Last mapped: 2026-10-27_
+
+- `dialogs/` — Apply list, Set deadline, Select N, Are you sure?
+- `clarify/` — Clarify / walk sheet, the stored door, assigned list plates
+- `hooks/` — scroll pin, window chord listener
+
 | File | What it paints or holds |
 | --- | --- |
 | `inbox-view.tsx` | `Inbox`. Session, credit, walk, batch, transfer, and the dialog order |
 | `time.ts` | Clocks, age marks, sticky day plates |
 | `caret.ts` | `inboxCaretAfterRemoval` |
 | `capture-chips.tsx` | Smart-parse chips on the walk sheet and on each row |
-| `walk-origin.tsx` | Stored door under the walk subtitle |
-| `assigned-list-plates.tsx` | Assigned lists by folder, × remove, double-click preview |
-| `clarify-dialog.tsx` | Clarify / walk sheet (`data-ui-name="Clarify idea"`) |
+| `clarify/walk-origin.tsx` | Stored door under the walk subtitle |
+| `clarify/assigned-list-plates.tsx` | Assigned lists by folder, × remove, double-click preview |
+| `clarify/clarify-dialog.tsx` | Clarify / walk sheet (`data-ui-name="Clarify idea"`) |
 | `trigger.tsx` | Header key when the pin bar does not own `open` |
 | `chrome.tsx` | Mast, partition keycaps, chord legend. Links sits between the keycaps and the legend |
 | `undo-banner.tsx` | Undo sentences |
 | `rows.tsx` | Search, scroller, day plates, rows. The well stays mounted on Links (`hidden`) |
 | `foot.tsx` | Sitting line and foot keys |
-| `apply-list-dialog.tsx` | Apply list |
-| `deadline-dialog.tsx` | Set deadline |
-| `select-n-dialog.tsx` | Select N |
-| `delete-confirm-dialog.tsx` | Are you sure? |
+| `dialogs/apply-list-dialog.tsx` | Apply list |
+| `dialogs/deadline-dialog.tsx` | Set deadline |
+| `dialogs/select-n-dialog.tsx` | Select N |
+| `dialogs/delete-confirm-dialog.tsx` | Are you sure? |
 | `bulk-edit-host.tsx` | Bulk edit. `afterAdd` keeps arrival, door, and monkey |
-| `use-inbox-rows-scroll.ts` | Scroll refs, restore, release, and the layout restore |
-| `use-inbox-chords.ts` | Window chord listener |
+| `hooks/use-inbox-rows-scroll.ts` | Scroll refs, restore, release, and the layout restore |
+| `hooks/use-inbox-chords.ts` | Window chord listener |
 
 ## Leftover
 

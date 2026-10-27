@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react"
 import { formatLoggedMoment, recentScopeSequence, applyScopeNowUpdate, paintScopeSequence, type ScopeSequenceStep, type ScopeStatusLane } from "@/lib/tracking-presence"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ExactClock, EstMark } from "@/components/header-tracking/est-mark"
-import { PenSearchSelect } from "@/components/header-tracking/pen-search-select"
+import { PenSearchSelect } from "@/components/header-tracking/current-moment/pen-search-select"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { PEN_COLOR_OPEN_TITLE, openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 

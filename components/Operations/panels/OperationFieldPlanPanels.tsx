@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationFieldPlanPanels.tsx — Timeline / Locations / Plan
+ * components/Operations/panels/OperationFieldPlanPanels.tsx — Timeline / Locations / Plan
  *
  * The three optional "field plan" panels an operation can switch on. They mount
  * the shared itinerary stack against a per-operation backing module, created on

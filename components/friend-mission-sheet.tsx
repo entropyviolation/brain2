@@ -2,15 +2,16 @@
  * components/friend-mission-sheet.tsx — Mission from today's friend
  *
  * The task row opens item detail over this sheet (the sheet drops its modal
- * lock so the item popup can cover the page). That popup loads when an item
- * id is opened, so a refresh does not parse the item-detail module with this
- * sheet. Accept starts a same-day point window. Decline asks to break the
+ * lock so the item popup can cover the page). That popup loads through
+ * `components/friend-details/use-item-detail-popup.ts` when an item id is
+ * opened, so a refresh does not parse the item-detail module with this sheet. Accept starts a same-day point window. Decline asks to break the
  * task down, then to do only the first step, then for a written reason.
  * Each answer is logged on the mission.
  */
 "use client"
 
-import { useEffect, useState, type ComponentType } from "react"
+import { useEffect, useState } from "react"
+import { useItemDetailPopup } from "@/components/friend-details/use-item-detail-popup"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { FriendNudge } from "@/lib/baby-animal-nudge"
@@ -21,30 +22,6 @@ import { ensureFriendFirstStep, splitFriendTask } from "@/lib/friend-mission-ste
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 
 type Phase = "offer" | "breakdown" | "first" | "why" | "accepted"
-
-type ItemPopup = ComponentType<{
-  taskId: string | null
-  open: boolean
-  onClose: () => void
-  stackAbove?: boolean
-}>
-
-function useItemDetailPopup(itemId: string | null) {
-  const [Popup, setPopup] = useState<ItemPopup | null>(null)
-
-  useEffect(() => {
-    if (!itemId) return
-    let live = true
-    void import("@/components/ItemDetail/ItemDetailPopup").then((mod) => {
-      if (live) setPopup(() => mod.TaskDetailPopup)
-    })
-    return () => {
-      live = false
-    }
-  }, [itemId])
-
-  return Popup
-}
 
 export function FriendMissionSheet({
   open,

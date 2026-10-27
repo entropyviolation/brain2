@@ -1,5 +1,5 @@
 /**
- * components/Reviews/GraphReviewSection.tsx — Weekly graph review
+ * components/Reviews/graph/GraphReviewSection.tsx — Weekly graph review
  * (LINKS_REDESIGN L9.1, L9.2). Describe first: link edits per week,
  * linkability per type, mean clustering. Infer second: five vault-wide
  * suggestions, the newest checks, and the open inbox count. Read-only:
@@ -17,7 +17,7 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { relationLabel } from "@/lib/links"
 import { useTaskStore } from "@/lib/task-store"
-import { DaySpineReadout } from "@/components/Reviews/DaySpineReadout"
+import { DaySpineReadout } from "@/components/Reviews/graph/DaySpineReadout"
 
 export function GraphReviewSection() {
   const tasks = useTaskStore((s) => s.tasks)

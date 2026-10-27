@@ -10,7 +10,7 @@ import { OperationWorkspace } from "./OperationWorkspace"
 
 // The field-plan panels pull in the whole Modules itinerary stack; the workspace
 // contract under test is only whether their tabs appear.
-vi.mock("./OperationFieldPlanPanels", () => ({
+vi.mock("./panels/OperationFieldPlanPanels", () => ({
   OperationTimelinePanel: () => <p>Timeline panel</p>,
   OperationLocationsPanel: () => <p>Locations panel</p>,
   OperationPlanDocPanel: () => <p>Plan panel</p>,

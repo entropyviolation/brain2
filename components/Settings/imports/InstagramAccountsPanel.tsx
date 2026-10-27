@@ -1,5 +1,5 @@
 /**
- * components/Settings/InstagramAccountsPanel.tsx — Log into Instagram
+ * components/Settings/imports/InstagramAccountsPanel.tsx — Log into Instagram
  *
  * Settings → Imports → Instagram accounts. Each login opens Instagram's own
  * page in a desktop window, so two-factor and "confirm it's you" work as they

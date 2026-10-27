@@ -1,5 +1,5 @@
 /**
- * components/Settings/DataProfileField.tsx — Live vs Demo vault toggle
+ * components/Settings/data/DataProfileField.tsx — Live vs Demo vault toggle
  *
  * Settings → Data. Demo is stock fiction (River Hale). Switching
  * reloads; Live keys are never rewritten by Demo.

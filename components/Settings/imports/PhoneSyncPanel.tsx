@@ -1,5 +1,5 @@
 /**
- * components/Settings/PhoneSyncPanel.tsx — Settings → Phone sync
+ * components/Settings/imports/PhoneSyncPanel.tsx — Settings → Phone sync
  *
  * One row per source: on/off for the readers that exist, the permission each
  * one needs, and the last run from `data/phone-sync/runs.json`. The log stays

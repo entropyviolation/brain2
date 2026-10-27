@@ -1,5 +1,5 @@
 /**
- * NextActionsSettingsDialog — list settings and import/export.
+ * components/Lists/lists-settings/settings-dialog.test.tsx — NextActionsSettingsDialog — list settings and import/export.
  */
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

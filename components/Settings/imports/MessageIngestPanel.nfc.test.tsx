@@ -1,5 +1,5 @@
 /**
- * components/Settings/MessageIngestPanel.nfc.test.tsx — NFC tags bay
+ * components/Settings/imports/MessageIngestPanel.nfc.test.tsx — NFC tags bay
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"

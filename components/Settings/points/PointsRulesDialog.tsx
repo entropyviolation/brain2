@@ -1,5 +1,5 @@
 /**
- * components/Settings/PointsRulesDialog.tsx — Every global points rule
+ * components/Settings/points/PointsRulesDialog.tsx — Every global points rule
  *
  * Nested inside Settings, same shell as Manage Item Types. Each row saves
  * through the catalog (`commitPointsRule` / `resetPointsRule`). Habit rows

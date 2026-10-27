@@ -28,18 +28,53 @@ vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({
 }))
 
 function operation(partial: Partial<Task> = {}): Task {
+  const description = partial.description ?? "Kiln"
+  const type = partial.type ?? OPERATION_TYPE_ID
   return {
-    id: "op-1",
-    description: "Kiln",
-    stage: "clarified",
-    type: OPERATION_TYPE_ID,
-    createdAt: new Date("2026-06-01T15:00:00"),
-    completed: false,
-    lists: [],
+    id: partial.id ?? "op-1",
+    title: partial.title ?? description,
+    description,
+    type,
+    stage: partial.stage ?? "clarified",
+    createdAt: partial.createdAt ?? new Date("2026-06-01T15:00:00"),
+    completed: partial.completed ?? false,
+    lists: partial.lists ?? [],
+    tags: partial.tags ?? [],
+    links: partial.links ?? [],
+    subtasks: partial.subtasks ?? [],
+    rewardValue: partial.rewardValue ?? 0,
+    ...(type === "task"
+      ? {
+          estimatedDuration: partial.estimatedDuration ?? 30,
+          cognitiveLoad: partial.cognitiveLoad ?? 2,
+          urgency: partial.urgency ?? 3,
+          importance: partial.importance ?? 3,
+          context: partial.context ?? "",
+          entropy: partial.entropy ?? 0,
+          allowPartialCompletion: partial.allowPartialCompletion ?? false,
+          minimumChunkSize: partial.minimumChunkSize ?? 15,
+        }
+      : {}),
     attributes: {
       [OPERATION_ATTR.stage]: "active",
       [OPERATION_ATTR.homeNotes]: "Controller board is on order.",
     },
+    ...partial,
+  }
+}
+
+function item(partial: Partial<Task> & Pick<Task, "id" | "description">): Task {
+  return {
+    title: partial.title ?? partial.description,
+    type: "item",
+    stage: "clarified",
+    createdAt: new Date("2026-06-01T15:00:00"),
+    completed: false,
+    lists: [],
+    tags: [],
+    links: [],
+    subtasks: [],
+    rewardValue: 0,
     ...partial,
   }
 }
@@ -162,6 +197,33 @@ describe("OperationHome notes", () => {
     // Phases: 1/2 complete. To-dos: step-done, step-open, linked part, listed item → 2/4.
     // Mean of 1/2 and 2/4 is 50%.
     expect(screen.getByText("1/2 phases · 2/4 to-dos · 50%")).toBeInTheDocument()
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50")
+  })
+
+  it("leaves a zero total out of the percent and does not show parts as phases", () => {
+    const partOnly = operation({
+      attributes: { [OPERATION_ATTR.stage]: "active" },
+      links: [{ id: "part-link", relation: "has-part", targetId: "part-1" }],
+    })
+    const part = item({ id: "part-1", description: "Order kiln", completed: true })
+    useTaskStore.setState({ tasks: [partOnly, part], lists: [], folders: [] })
+    const { unmount } = render(<OperationHome operation={partOnly} />)
+    expect(screen.getByText("0/0 phases · 1/1 to-dos · 100%")).toBeInTheDocument()
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100")
+    unmount()
+
+    const phased = operation({
+      attributes: { [OPERATION_ATTR.stage]: "active" },
+      links: [
+        { id: "phase-a", relation: "has-phase", targetId: "ph-done" },
+        { id: "phase-b", relation: "has-phase", targetId: "ph-open" },
+      ],
+    })
+    const donePhase = item({ id: "ph-done", description: "Glaze", completed: true })
+    const openPhase = item({ id: "ph-open", description: "Fire", completed: false })
+    useTaskStore.setState({ tasks: [phased, donePhase, openPhase], lists: [], folders: [] })
+    render(<OperationHome operation={phased} />)
+    expect(screen.getByText("1/2 phases · 0/0 to-dos · 50%")).toBeInTheDocument()
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50")
   })
 

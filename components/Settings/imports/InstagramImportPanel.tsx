@@ -1,5 +1,5 @@
 /**
- * components/Settings/InstagramImportPanel.tsx — Import from Instagram data
+ * components/Settings/imports/InstagramImportPanel.tsx — Import from Instagram data
  *
  * Global settings holds the full download steps. The file control calls
  * `importInstagramExportTexts`, the same writer as list settings on the two

@@ -1,5 +1,5 @@
 /**
- * components/Scheduler/DayTab.tsx — Scheduler Day period
+ * components/Scheduler/funnel/DayTab.tsx — Scheduler Day period
  *
  * Sidebar of the day's tasks plus the 24-hour agenda. The agenda title
  * opens that day as Schedule Card Detail. Drop-to-hour and clear-time

@@ -1,5 +1,5 @@
 /**
- * components/Settings/BabyAnimalFriendField.tsx — Settings section for the friend
+ * components/Settings/you/BabyAnimalFriendField.tsx — Settings section for the friend
  */
 "use client"
 

@@ -1,5 +1,5 @@
 /**
- * components/Settings/MessageIngestPanel.tsx — Telegram pairing + command cheat-sheet
+ * components/Settings/imports/MessageIngestPanel.tsx — Telegram pairing + command cheat-sheet
  *
  * Token is stored in Electron safeStorage (never in localStorage). Pairing
  * allowlists a Telegram user. Simulate applies a phrase without Telegram.

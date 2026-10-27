@@ -41,16 +41,20 @@ Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Pl
 
 ## Files
 
+_Last mapped: 2026-10-27._
+
+`current-moment/` is the Current moment stack: the deck, Update state, Intake, Events / Notes / Thought process, and the pen search field. `panes/` is the Tracking pane and the Plan pane. The popup door, its stylesheet, and the shared est. mark stay at the room root.
+
 | File | Purpose |
 |------|---------|
 | `header-tracking-popup.tsx` | Current moment, then the Tracking / Plan switch. Panes load when the dialog opens. |
-| `current-moment.tsx` | Shared Current moment + `CurrentMomentDeck`: operation clock and activity-pen clock; four lanes + Metrics, always up; Update state under a picked lane; Intake, Events, Notes, Thought process. |
-| `update-state.tsx` | Update state. Now stamp, optional detail keys, color dot, notes, recent sequence (collapsible; double-click opens `EntryDialog`), exact or estimated clocks. |
-| `tracking-pane.tsx` | The Home desk’s three bays (pen rack, Time Grid screen, time recorder) and the day summary in the lace frame. |
-| `plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
-| `now-log-lists.tsx` | _Last mapped: 2026-10-27._ Events, Notes, and Thought process. Written through `submitTrackingLog` with `logSource: "now-popup"`. A Text log instant with no `eventKind` is a Note (`classifyLogBookRow` list `note`). The Tracking log shelves it the same way. |
-| `now-intake.tsx` | Intake row: class keys, quick chips, name field, and today's uncategorized intake with Food / Drink / Drug / med sort (`setIntakeClass`). Same writer as the Tracking log. |
-| `pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |
+| `current-moment/current-moment.tsx` | Shared Current moment + `CurrentMomentDeck`: operation clock and activity-pen clock; four lanes + Metrics, always up; Update state under a picked lane; Intake, Events, Notes, Thought process. |
+| `current-moment/update-state.tsx` | Update state. Now stamp, optional detail keys, color dot, notes, recent sequence (collapsible; double-click opens `EntryDialog`), exact or estimated clocks. |
+| `panes/tracking-pane.tsx` | The Home desk’s three bays (pen rack, Time Grid screen, time recorder) and the day summary in the lace frame. |
+| `panes/plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
+| `current-moment/now-log-lists.tsx` | _Last mapped: 2026-10-27._ Events, Notes, and Thought process. Written through `submitTrackingLog` with `logSource: "now-popup"`. A Text log instant with no `eventKind` is a Note (`classifyLogBookRow` list `note`). The Tracking log shelves it the same way. |
+| `current-moment/now-intake.tsx` | Intake row: class keys, quick chips, name field, and today's uncategorized intake with Food / Drink / Drug / med sort (`setIntakeClass`). Same writer as the Tracking log. |
+| `current-moment/pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |
 | `est-mark.tsx` | `~` and the dashed `.trk-est` treatment, plus the compact Exact key. |
 | `header-tracking.css` | Popup layout. The lane color swatch corner is `--r-1`. Does not restyle the Home desk. |
 

@@ -9,9 +9,9 @@ One step tree for every host, so item detail never imports from Home. Built in P
 | Host | Columns it passes |
 |------|-------------------|
 | To Do lid (`components/Home/ToDo/TodoBreakdown.tsx`) | Tier tag and spark (`tierTags`), Needs…, ▶, minutes, spent, counts, progress (a branch's level gauge on hover), delete. Tier filter from `todo-prefs` `tierView`. Hide locked and Show next only from `todo-prefs`. A move is one undo step (`rememberWorld`). |
-| Item detail → Subtasks (`components/ItemDetail/SubtaskTree.tsx`) | Tier tag and spark (`tierTags`), parts (`n/m`), minutes, `=Nm`, delete, ↗ (stored tasks only). No view switches. |
+| Item detail → Subtasks (`components/ItemDetail/tabs/subtasks/SubtaskTree.tsx`) | Tier tag and spark (`tierTags`), parts (`n/m`), minutes, `=Nm`, delete, ↗ (stored tasks only). No view switches. |
 
-| Task card (`components/Home/ToDo/TaskCard.tsx`) | _Last mapped: 2026-10-25_ (Phase 12). Tier tags, ↗, and its column picker. Passes controlled `selected` / `onSelectedChange` (mass edit) and `onVisibleIds` (Chain order). Card-local level filter, Hide locked, Hide completed, Show next only. |
+| Task card (`components/Home/ToDo/task-card/TaskCard.tsx`) | _Last mapped: 2026-10-25_ (Phase 12). Tier tags, ↗, and its column picker. Passes controlled `selected` / `onSelectedChange` (mass edit) and `onVisibleIds` (Chain order). Card-local level filter, Hide locked, Hide completed, Show next only. |
 
 The session pick list does not host this tree. Phase 13 (a pick list that was `StepTree`) was declined with the redesign.
 

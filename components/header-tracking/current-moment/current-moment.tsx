@@ -27,9 +27,9 @@ import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { MetricLoggerButton } from "@/components/Tracking/MetricLogger"
 import { EstMark } from "@/components/header-tracking/est-mark"
-import { NowIntake } from "@/components/header-tracking/now-intake"
-import { NowLogLists } from "@/components/header-tracking/now-log-lists"
-import { UpdateState } from "@/components/header-tracking/update-state"
+import { NowIntake } from "@/components/header-tracking/current-moment/now-intake"
+import { NowLogLists } from "@/components/header-tracking/current-moment/now-log-lists"
+import { UpdateState } from "@/components/header-tracking/current-moment/update-state"
 
 function emptyLane(scopeId: PresenceScopeId): ScopeStatusLane {
   return {

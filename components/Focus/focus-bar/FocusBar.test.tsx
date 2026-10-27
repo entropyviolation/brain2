@@ -1,3 +1,4 @@
+/** components/Focus/focus-bar/FocusBar.test.tsx */
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -9,7 +10,7 @@ import { startTaskClock } from "@/lib/task-clock"
 import type { Task } from "@/lib/types"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import FocusBar from "./FocusBar"
-import { useTaskClockStarter } from "./TaskClockStarter"
+import { useTaskClockStarter } from "../TaskClockStarter"
 
 function seed(extra: Partial<Task> = {}) {
   useTaskStore.getState().setTasks([

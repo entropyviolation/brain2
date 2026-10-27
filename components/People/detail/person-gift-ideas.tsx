@@ -1,5 +1,5 @@
 /**
- * components/People/person-gift-ideas.tsx — Gift ideas on a person.
+ * components/People/detail/person-gift-ideas.tsx — Gift ideas on a person.
  *
  * `GiftIdeasKey` (3.4): one wide metal key at the end of Details,
  * "🎁 {list name} · {n}". With no list it reads "Start gift ideas" and makes

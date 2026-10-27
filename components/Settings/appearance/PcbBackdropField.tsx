@@ -1,5 +1,5 @@
 /**
- * components/Settings/PcbBackdropField.tsx — App-desktop field picker
+ * components/Settings/appearance/PcbBackdropField.tsx — App-desktop field picker
  *
  * Default is plain Win95 teal. Photographed PCB plates remain opt-in.
  * Choice lives on `theme-store.pcbMode` (persist v4) and paints via

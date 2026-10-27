@@ -1,5 +1,5 @@
 /**
- * components/Settings/panel-preview.ts — Timed-shift preview on the settings dialog
+ * components/Settings/appearance/panel-preview.ts — Timed-shift preview on the settings dialog
  *
  * A timed shift lerps only inside the settings `.set95-dialog` that contains
  * the field (`closest`, so a list-settings dialog does not receive it). Root
@@ -14,6 +14,10 @@
 import { useEffect, useRef } from "react"
 import { applyChromePatina, chromePatinaTokens } from "@/lib/chrome-patina"
 import { applyCornerMix, cornerTokens } from "@/lib/corner-mix"
+
+export function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
 
 const WARMTH_PROPS = Object.keys(chromePatinaTokens(50))
 const CORNER_PROPS = [...Object.keys(cornerTokens(50)), "--corner-mix"]

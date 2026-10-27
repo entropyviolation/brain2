@@ -1,5 +1,5 @@
 /**
- * components/Settings/MobileSyncPanel.tsx — Manual mobile hub controls.
+ * components/Settings/data/MobileSyncPanel.tsx — Manual mobile hub controls.
  *
  * Continuous live sync is parked while the core app is finished. A dedicated
  * semi-mobile live sync component will land after that. This panel only

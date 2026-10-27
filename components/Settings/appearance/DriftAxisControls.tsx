@@ -1,5 +1,5 @@
 /**
- * components/Settings/DriftAxisControls.tsx — Shared drift speed, pause, and manual shift
+ * components/Settings/appearance/DriftAxisControls.tsx — Shared drift speed, pause, and manual shift
  *
  * Window gray and Bouba/Kiki use this same family. Drift speed is how long one
  * full cycle takes (pole to opposite pole and back). A manual shift is a
