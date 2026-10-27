@@ -1,5 +1,5 @@
 /**
- * AppHeader — pinned mill title bar (Nav + friend jewel + milled silver key-wells).
+ * AppHeader — pinned mill title bar (Nav + friend jewel + pale silver keycaps).
  * Clusters share one flex line. Free width widens Rituals, System, and
  * Capture up to a cap; the clusters stay packed. Narrower than the caps,
  * clusters wrap. A cluster wider than the shell scrolls inside its bay.

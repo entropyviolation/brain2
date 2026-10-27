@@ -554,12 +554,19 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"] {
    script has already set data-boot-tab, so the saved key wears the CRT and
    the fallback key steps back. data-nav-ready removes the override. */
 html[data-boot-tab]:not([data-nav-ready]) body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"] {
-  background: var(--fascia-key-face);
-  color: #1c1e20;
-  font-weight: normal;
-  letter-spacing: 0.08em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow: var(--fascia-key-ring);
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  color: #1f2226;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  outline: 0;
+  transform: none;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
 }
 html[data-boot-tab]:not([data-nav-ready]) body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::before {
   content: none;
@@ -918,5 +925,69 @@ body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
   text-transform: uppercase;
 }
 body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]::before {
+  display: none;
+}
+
+/* Go keys rest as the pale silver cap. Focus and the current tab are the
+   black CRT with a green legend. A press is the old 1px milled sink. */
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: #1f2226;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:focus,
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:focus-visible,
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"],
+html[data-boot-tab="home"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="home"],
+html[data-boot-tab="categories"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="categories"],
+html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="docs"],
+html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="scheduler"],
+html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="operations"],
+html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="modules"],
+html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="analytics"] {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    var(--fascia-scope);
+  color: var(--hab-crt-green);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: var(--hab-crt-glow);
+  outline: 1px solid var(--hab-crt-green);
+  outline-offset: 1px;
+  border-color: #070c0a;
+  box-shadow: var(--fascia-crt-ring);
+  transform: translateY(1px);
+}
+
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:active {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--chrome-brush) 40%, var(--chrome-inset) 100%);
+  color: #1c1e20;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  outline: 0;
+  border-color: transparent;
+  box-shadow: var(--fascia-key-pressed);
+  transform: translateY(1px);
+}
+
+html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]::before {
+  content: none;
   display: none;
 }
