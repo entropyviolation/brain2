@@ -1,10 +1,11 @@
 /**
  * scripts/build-iphone-phone-shortcuts.mjs — Write + sign Screen Time / Call /
- * Text / Location
+ * Text / Location / NFC
  *
  * Same pipeline as scripts/build-iphone-notes-shortcut.mjs: JSON workflow →
  * binary plist → `shortcuts sign --mode anyone`. AirDrop the signed files
  * onto the iPhone. Re-run: node scripts/build-iphone-phone-shortcuts.mjs
+ * Pass a shortcut name to sign just that one.
  *
  * No `is.workflow.actions.conditional`: a hand-written If imports with an empty
  * condition ("Please choose a value for each parameter in this action") and the
@@ -416,11 +417,58 @@ export function buildLocationWorkflow() {
   return workflow
 }
 
+const NFC = {
+  comment: "BB111111-1111-4111-A111-111111111111",
+  ask: "BB222222-2222-4222-A222-222222222222",
+  message: "BB333333-3333-4333-A333-333333333333",
+  setOutgoing: "BB3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "BB444444-4444-4444-A444-444444444444",
+  notify: "BB555555-5555-4555-A555-555555555555",
+}
+
+export function buildNfcWorkflow() {
+  const actions = [
+    action("is.workflow.actions.comment", NFC.comment, {
+      WFCommentActionText:
+        `Sends nfc:tag-id to ${BOT}.\n` +
+        `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+        `Type the tag id from Settings → Message ingest (vitamin-d), not the whole line.\n` +
+        `For a sticker that should run with no question, duplicate this Shortcut and replace the Ask with the text nfc:your-id.`,
+    }),
+    action("is.workflow.actions.ask", NFC.ask, {
+      WFAskActionPrompt: "Tag id? (vitamin-d, door, shower — the id from Brain2, not nfc:)",
+      WFInputType: "Text",
+      CustomOutputName: "Tag Id",
+    }),
+    action("is.workflow.actions.gettext", NFC.message, {
+      WFTextActionText: textWithTokens(["nfc:", { uuid: NFC.ask, name: "Tag Id" }]),
+    }),
+    setOutgoing(NFC.setOutgoing, NFC.message),
+    sendMessage(NFC.send),
+    action("is.workflow.actions.notification", NFC.notify, {
+      WFNotificationActionBody: "Sent NFC tag to Brain2.",
+      WFNotificationActionTitle: "Brain2",
+    }),
+  ]
+
+  return wrapWorkflow({
+    name: "NFC to Brain2",
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: NFC.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+  })
+}
+
 export const PHONE_SHORTCUTS = [
   { name: "Screen Time to Brain2", build: buildScreenTimeWorkflow },
   { name: "iPhone Call to Brain2", build: buildCallWorkflow },
   { name: "iPhone Text to Brain2", build: buildTextWorkflow },
   { name: "Location to Brain2", build: buildLocationWorkflow },
+  { name: "NFC to Brain2", build: buildNfcWorkflow },
 ]
 
 function writePlistJson(workflow, jsonPath) {
@@ -466,8 +514,10 @@ function emitOne({ name, build }) {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
 if (isMain) {
+  const only = process.argv.slice(2)
   let ok = true
   for (const spec of PHONE_SHORTCUTS) {
+    if (only.length && !only.includes(spec.name)) continue
     if (!emitOne(spec)) ok = false
   }
   if (!ok) process.exitCode = 1

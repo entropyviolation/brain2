@@ -4,7 +4,7 @@
  * Pairing and allowlist live here so adapters only deliver payloads.
  * Simulate skips pairing. Unknown senders get no reply. Photos and PDFs
  * go through `ingestIncomingAsync`. Matching precedence: dedupe → help/pair
- * → explicit commands → habit/discrete triggers → everything else.
+ * → explicit commands → `nfc:` / habit/discrete triggers → everything else.
  * A message whose first token is a link goes to Inbox → Links
  * (`apply-link.ts`) before anything else reads it.
  * Text with no verb, no list path, and no capture flag is a `log:` line,
@@ -97,6 +97,7 @@ import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
 import { applyJournalText, applyMedia } from "./apply-media"
 import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
+import { applyNfcScan } from "./apply-nfc"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import type { ApplyResult, IncomingMessage, IngestEvent, IngestIntent, PendingClarify } from "./types"
@@ -115,6 +116,7 @@ const PRIORITY_EXPLICIT = new Set<IngestIntent["kind"]>([
   "thought-process",
   "log-categories",
   "habit-trigger",
+  "nfc",
   "intake",
   "cycle",
   "switch",
@@ -567,6 +569,8 @@ function dispatch(intent: IngestIntent, now: Date): ApplyResult {
       return applyBulk(intent.payload, { sendToInbox: false, now })
     case "habit":
       return applyHabit(intent.payload, now)
+    case "nfc":
+      return applyNfcScan(intent.payload, now)
     case "habit-trigger":
       return (
         tryApplyHabitTrigger(intent.payload, now) ?? {

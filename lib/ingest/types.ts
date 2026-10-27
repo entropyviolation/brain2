@@ -71,6 +71,7 @@ export type IngestIntentKind =
   | "switch-objective"
   | "transit"
   | "habit-trigger"
+  | "nfc"
   | "currently"
   | "stopped-activity"
   | "switched-to"

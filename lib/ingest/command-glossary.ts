@@ -364,6 +364,7 @@ How to use it
   Why you are doing something, what you expect next, and how it lands. Not a general note, a one-word mood, or a short activity log such as brushed teeth.
   Colon required, so bare tp and bare thought process are not this. Pen Text log. eventKind thought-process. Also a Thought Process item on Lists → Tracking → Thought Process. Quick Add thought process: / tp: uses this write.
   First line is the title; a line under it is the note. Same clocks as a log line.
+• nfc:vitamin-d  — NFC tag saved in Settings → Message ingest. Writes the tag’s tracking instant and, when bound, today’s daily habit. A door tag alternates left and back. The same tag within 20 seconds is ignored.
 • Presets (Settings → Discrete event triggers):
   smoked weed · drank water · ate {item} · took {item}
 
