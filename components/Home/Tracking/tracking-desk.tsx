@@ -16,6 +16,8 @@
 "use client"
 
 import { useState } from "react"
+import { TrackingPhone } from "@/components/Home/Tracking/tracking-phone"
+import { useTrackingPhone } from "@/components/Home/Tracking/use-tracking-phone"
 import { TrackingDeskSlotsContext } from "@/components/Home/Tracking/tracking-desk-slots"
 import { ScopePanel } from "@/components/Home/Tracking/trk-scope"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -61,6 +63,18 @@ export function TrackingDesk({
   const showPenDesk = trackingTab !== "log"
   const [summarySlot, setSummarySlot] = useState<HTMLDivElement | null>(null)
   const dateKey = formatLocalDateKey(currentDate)
+  const phone = useTrackingPhone()
+
+  if (phone) {
+    return (
+      <TrackingPhone
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        trackingTab={trackingTab}
+        setTrackingTab={setTrackingTab}
+      />
+    )
+  }
 
   return (
     <div
