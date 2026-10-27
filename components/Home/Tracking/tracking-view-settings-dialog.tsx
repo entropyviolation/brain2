@@ -418,7 +418,7 @@ export function TrackingSettingsDialog({
                         onChange={(logSpan) => setTrackingViewPrefs({ logSpan })}
                       />
                     </Row>
-                    <Row title="First key" help="The Add a line key that is pressed when the view opens.">
+                    <Row title="First key" help="The Add a line key that is pressed when the view opens. Note, unless you pick another.">
                       <Keys
                         label="Composer opens on"
                         options={COMPOSER_KEYS}

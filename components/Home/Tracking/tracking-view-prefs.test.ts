@@ -23,6 +23,11 @@ beforeEach(() => {
 })
 
 describe("tracking view prefs", () => {
+  it("opens the tracking log composer on Note", () => {
+    expect(getTrackingViewPrefs().logDefaultMode).toBe("note")
+    expect(DEFAULT_TRACKING_VIEW_PREFS.logDefaultMode).toBe("note")
+  })
+
   it("defaults the pen tray to Cat traces, not velvet", () => {
     const prefs = getTrackingViewPrefs()
     expect(prefs.penTray).toBe(DEFAULT_PEN_TRAY)

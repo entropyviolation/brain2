@@ -233,7 +233,7 @@ export function LogActivityDialog({
     <>
     <Dialog open onOpenChange={guard.handleOpenChange}>
       <DialogContent
-        className={["trk95 trk-dialog sm:max-w-md max-h-[85vh] overflow-y-auto", contentClassName]
+        className={["trk95 trk-dialog trk-log-sheet sm:max-w-md max-h-[85vh] overflow-y-auto", contentClassName]
           .filter(Boolean)
           .join(" ")}
         data-ui-name="Log activity"

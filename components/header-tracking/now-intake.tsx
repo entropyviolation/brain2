@@ -79,7 +79,15 @@ export function NowIntake({ dayKey }: { dayKey: string }) {
     if (!title) return
     const now = new Date()
     const minute = now.getHours() * 60 + now.getMinutes()
-    const id = submitTrackingLog({ date: dayKey, title, mode: "intake", intakeClass: cls, clock: "exact", minute })
+    const id = submitTrackingLog({
+      date: dayKey,
+      title,
+      mode: "intake",
+      intakeClass: cls,
+      clock: "exact",
+      minute,
+      logSource: "now-popup",
+    })
     if (!id) return
     if (prefs.logFlagOnAdd) raiseQuickAddWrote(loggedFlag("intake", cls, title, "exact", minutesToTimeString(minute)))
     setSaved(`${title} · ${preset.label.toLowerCase()}`)

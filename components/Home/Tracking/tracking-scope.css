@@ -2339,7 +2339,7 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
 }
 
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-heading {
-  padding: 0 0 2px;
+  padding: 7px 10px 6px;
   color: #111;
   background: none;
   box-shadow: none;
@@ -2400,6 +2400,38 @@ body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .t
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-scope,
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-logbook-badge {
   color: #44484c !important;
+}
+
+/* Bottom-of-shelf add. Scoped here so it does not borrow the Now popup's `.htk-log-add`. */
+.trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-well-add {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px 10px;
+}
+
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] > .trk-logbook-well-add {
+  padding: 8px 0 0;
+}
+
+.trk95 .trk-logbook-well-add input,
+.trk95 .trk-logbook-well-add textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.trk95 .trk-logbook-well-add textarea {
+  display: block;
+  max-height: 9rem;
+  overflow: hidden;
+  line-height: 1.35;
+  resize: none;
+}
+
+.trk95 .trk-logbook-well-add > button {
+  flex: 0 0 auto;
 }
 
 /* spend ledger bars */

@@ -164,7 +164,7 @@ These are still `TimeEntry` rows. The Tracking log classifies **Activity instant
 | Thought process | `eventKind === "thought-process"` | `thought-process` | 0 |
 | Spent | `eventKind === "spend"`, or a positive `spendAmount` | `spend` | 0. `spendAmount` is integer cents. `spendOn` is what (also `title`). `spendSource` is where the money came from. |
 | Switch | Switch pen, Objective pen, or any instant with `switchTo` | `switch`, `switch-task`, `switch-objective`, or stored kind | 0 |
-| Note | Text log via `note:` / `n` | slug of the title if grouped as an event | 0 |
+| Note | Text log instant, no `eventKind` (`note:` / `n`, or the Note composer) | none. Not an event. Time → Log skips it | 0 |
 
 A `log:` line may also be a **range** (a real interval on Text log) or a start/end pair that becomes one span. A trailing `loc: home` does not change `eventKind`; it paints a **second** instant on Location at the same minute, reusing or creating that Location pen.
 

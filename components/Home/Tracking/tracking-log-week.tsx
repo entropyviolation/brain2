@@ -33,6 +33,7 @@ const SHELF_TAG: Record<LogBookList, string> = {
   drug: "Drug",
   intake: "Intake",
   event: "Event",
+  note: "Note",
   switch: "Switch",
   thought: "Thought",
   spend: "Spent",
