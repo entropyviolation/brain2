@@ -30,13 +30,32 @@ Other rooms may import:
 
 This room writes **`lib/goals-store.ts`** (`useGoalsStore`: objectives, goals, priorities, reviews, progress). **Log** on a goal also writes a completed task (`lib/task-store.ts` `addTask`) and points (`lib/points-store.ts` `addPoints`).
 
-Stay in this room: `ObjectivesPanel`, `GoalsContainer`, `DirectionReport`, `goals-ornaments.tsx`, and `goals-chrome.css`. Room buttons carry `data-no95` so the global win95 key skin does not paint over them. `GoalsTracker` is the only composer of those three panels.
+Stay in this room: `ObjectivesPanel`, `GoalsContainer`, `DirectionReport`, `goals-ornaments.tsx`, and `goals-chrome.css`. Room buttons carry `data-no95` so the global win95 key skin does not paint over them. `GoalsTracker` composes those three panels on the desktop. At the phone query it mounts `GoalsPhone` instead.
+
+## Phone
+
+_Last mapped: 2026-10-27._
+
+The phone tree is a separate mount. `useGoalsPhone` (`use-goals-phone.ts`) reads `(max-width: 720px)`, the same query already used in `goals-chrome.css`. Above that, `GoalsTracker` returns the fascia exactly as before, including the desk photograph. The phone DOM is not in that tree, so wide layout rules are not retargeted.
+
+The mill stays on the desktop. The phone leaves it: a grouped list, system type, progress rings, and bottom sheets. No slant. The desk jewel is omitted so the list can use the width. Vertical flick stays with the page (`touch-action: pan-y` on the period track). A horizontal drag past 56px moves the objective period; the ends rubber-band. Goal filters are their own horizontal scroller, still pinned with `homeGoalsFilter`, because Custom range and Aspirational are not objective periods. Objective period stays on `homeGoalsPeriod`.
+
+The global dialog skin paints every `role="dialog"` and turns its transition off. The phone sheet opts out in `goals-phone.css` so the grabber, the grouped fill, and the spring stay on the sheet. The grabber is the only drag-to-dismiss surface, and it moves the sheet on the node so a drag does not re-render the form. The sheet body scrolls on its own. Unsaved changes still use the house guard. Motion is the iOS sheet curve (`cubic-bezier(0.32, 0.72, 0, 1)`) on the track, the ring, and the sheet. `prefers-reduced-motion` drops those transitions. Targets are at least 44px. The bar sticks to the top of the viewport and picks up safe-area insets; the large title yields to the compact title once it scrolls under that bar.
 
 ## Files
 
+_Last mapped: 2026-10-27._
+
 | File | Purpose |
 |------|---------|
-| `goals-tracker.tsx` | `GoalsTracker` (`data-ui-name="Goals"`): milled fascia (CRT **Objectives & Goals**) composing objectives → goals → direction report, with an engraved status line. Under the window, on the desktop, the same title jewel (`orbFor("home-goals")`, the cat in the bed) sits at photograph size (`.gol-desk-plate`). |
+| `goals-tracker.tsx` | `GoalsTracker` (`data-ui-name="Goals"`). Desktop: milled fascia (CRT **Objectives & Goals**) composing objectives → goals → direction report, with an engraved status line. Under the window, the title jewel (`orbFor("home-goals")`, the cat in the bed) sits at photograph size (`.gol-desk-plate`). Phone (`max-width: 720px`): mounts `GoalsPhone` and skips that tree. |
+| `use-goals-phone.ts` | `useGoalsPhone` / `useGoalsReducedMotion`. Phone query is `(max-width: 720px)`. |
+| `goals-phone.tsx` | Phone list: sticky bar, large title, objective period track, goal rows, direction block. |
+| `goals-phone-sheets.tsx` | Bottom sheets for a new objective, a goal, and objective detail. |
+| `goals-phone-ring.tsx` | `ProgressRing` for goal rows and the coverage dial. |
+| `goals-phone-shared.ts` | Period labels shared by the phone list and the sheets. |
+| `goals-phone.css` | Phone materials only (`.gol-phone`, `.gol-phone-sheet`). |
+| `goals-phone.test.tsx` | Phone tree, +1, period control, swipe, sheets, reduced motion. |
 | `goals-ornaments.tsx` | Inline SVG furniture: `GolStar` (eight-point star), `GolRose` (fascia compass rose), `GolDial` (coverage astrolabe). |
 | `goals-chrome.css` | `.gol95` milled fascia + recessed wells + metal keys + typewriter tablist + `.gol-index` file tabs + ball-bearing `.gol-pip` + phosphor dial + pearl tape + `.gol95-dialog`. `.gol-desk-plate` is the title jewel at photograph height, centered on the desktop under the window (no frame). |
 | `ObjectivesPanel.tsx` | Period keys (**Day/Week/Month/Season/Year/All**, persisted): **Prioritized** packed well, collapsible **All objectives** list with mill stars, **Add Objective** dialog (unsaved-changes guard). Rows open detail. |
