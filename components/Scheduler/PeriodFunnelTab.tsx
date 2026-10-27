@@ -24,6 +24,8 @@ export type SchedulerTaskItemOpts = {
   showUnschedule?: boolean
   fromPeriod?: SchedulePlacementPeriod
   fromValue?: string
+  /** Left lists open item detail on double-click. Cells stay on click. */
+  openOn?: "click" | "double"
 }
 
 export function PeriodFunnelTab({
@@ -103,7 +105,9 @@ export function PeriodFunnelTab({
           {sidebarTasks.length === 0 ? (
             <p className="sch-vacant">0 at this period</p>
           ) : (
-            sidebarTasks.map((task) => renderTaskItem(task, { showCheckbox: true, showUnschedule: true }))
+            sidebarTasks.map((task) =>
+              renderTaskItem(task, { showCheckbox: true, showUnschedule: true, openOn: "double" }),
+            )
           )}
         </div>
       </aside>

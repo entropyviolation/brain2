@@ -8,6 +8,7 @@
 
 import type React from "react"
 import { iconFor } from "@/components/Icons"
+import { SchedulerKeycapX } from "./SchedulerTaskItem"
 import type { Task } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
 
@@ -60,17 +61,7 @@ export function DayAgenda({
                   <img src={iconFor(task.id, task.icon)} alt="" className="sch-gantt-orb" draggable={false} />
                   <span className="sch-task-title">{itemTitle(task)}</span>
                   <span className="sch-task-meta">{task.estimatedDuration ?? 0}m</span>
-                  <button
-                    type="button"
-                    className="sch-btn sch-task-x"
-                    title="Clear time"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onClearTime(task.id)
-                    }}
-                  >
-                    ×
-                  </button>
+                  <SchedulerKeycapX title="Clear time" onClick={() => onClearTime(task.id)} />
                 </div>
               ))}
             </div>

@@ -4,7 +4,9 @@
  * Title, Funnel/Gantt/Dependencies keys, Address nameplate, and toolbar
  * metal keys share the house milled fascia
  * (docs/DESIGN_STYLE.md#milled-fascia). Always→Day period keys are latching
- * keycaps (`.b2-keycap-tab`). _Last mapped: 2026-10-27._ Kin: Plan `plan-chrome.css`.
+ * keycaps (`.b2-keycap-tab`). Period legends use the same face as the toolbar keys.
+ * Toolbar, card, and title keys are the silver keycap, with no white
+ * text halo. _Last mapped: 2026-10-27._ Kin: Plan `plan-chrome.css`.
  * Funnel buckets, Gantt/graph documents, and meaning colors stay untouched.
  * Scoped under `.sch95`.
  */
@@ -119,25 +121,25 @@
   width: 22px;
   height: 22px;
   min-width: 22px;
-  padding: 0;
-  display: flex;
+  padding: 0 0 3px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
-  border: 0;
-  border-radius: var(--r-2, 2px);
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--s-surface) 70%, var(--chrome-key-shade) 100%);
+  border: 1px solid var(--cap-edge, #6e7378);
+  border-radius: 4px;
+  color: #1f2226;
+  text-shadow: none;
+  background-color: var(--cap-top2, #dfe2e6);
+  background-image: linear-gradient(180deg, var(--cap-top, #f1f3f5), var(--cap-top2, #dfe2e6));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px var(--chrome-ring-deep),
-    0 1px 0 var(--chrome-lip);
+    inset 2px 0 0 var(--cap-skirt, #b3b8be),
+    inset -2px 0 0 var(--cap-skirt, #b3b8be),
+    inset 0 -3px 0 var(--cap-skirt, #b3b8be),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
   cursor: default;
 }
 
@@ -182,7 +184,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--s-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
     var(--chrome-pewter);
@@ -215,7 +217,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--s-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
     linear-gradient(180deg, var(--chrome-mist) 0%, var(--s-surface) 48%, var(--chrome-foot) 100%);
@@ -224,49 +226,58 @@
     0 0 0 1px var(--chrome-lip);
 }
 
-.sch95 .sch-btn {
+/* Word keys are the silver keycap. No white text-shadow — that halo sat on the letters. */
+.sch95 .sch-btn,
+body.win95-app .sch95 button.sch-btn[type="button"]:not([hidden]):not([role="tab"]):not([role="switch"]):not([data-no95]) {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: 28px;
-  padding: 4px 12px 5px;
-  border: none;
-  border-radius: var(--r-2, 2px);
+  padding: 3px 10px 7px;
+  border: 1px solid var(--cap-edge, #6e7378);
+  border-radius: 4px;
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
   text-transform: uppercase;
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
-    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--s-surface) 70%, var(--chrome-key-shade) 100%);
+  color: #1f2226;
+  text-shadow: none;
+  background-color: var(--cap-top2, #dfe2e6);
+  background-image: linear-gradient(180deg, var(--cap-top, #f1f3f5), var(--cap-top2, #dfe2e6));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px var(--chrome-ring-deep),
-    0 1px 0 var(--chrome-lip);
+    inset 2px 0 0 var(--cap-skirt, #b3b8be),
+    inset -2px 0 0 var(--cap-skirt, #b3b8be),
+    inset 0 -4px 0 var(--cap-skirt, #b3b8be),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
   cursor: pointer;
   white-space: nowrap;
+  filter: none;
 }
 
-.sch95 .sch-btn:hover:not(:disabled) {
-  filter: brightness(1.04);
+.sch95 .sch-btn:hover:not(:disabled),
+body.win95-app .sch95 button.sch-btn[type="button"]:not([hidden]):not([role="tab"]):hover:not(:disabled) {
+  filter: none;
 }
 
-.sch95 .sch-btn:not(:disabled):active {
+.sch95 .sch-btn:not(:disabled):active,
+body.win95-app .sch95 button.sch-btn[type="button"]:not([hidden]):not([role="tab"]):not(:disabled):active {
+  transform: translateY(1px);
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    0 0 0 1px var(--chrome-pressed);
+    inset 2px 0 0 var(--cap-skirt, #b3b8be),
+    inset -2px 0 0 var(--cap-skirt, #b3b8be),
+    inset 0 -2px 0 var(--cap-skirt, #b3b8be),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
   filter: none;
 }
 
 .sch95 .sch-btn:disabled {
-  color: var(--chrome-lo);
-  text-shadow: 1px 1px 0 #fff;
+  color: #7d8185;
+  text-shadow: none;
   cursor: default;
   filter: none;
 }
@@ -280,11 +291,15 @@
   color: #7a2020;
 }
 
-.sch95 .sch-btn-icon {
+.sch95 .sch-btn-icon,
+body.win95-app .sch95 button.sch-btn.sch-btn-icon[type="button"]:not([hidden]):not([role="tab"]):not([role="switch"]) {
+  width: 28px;
   min-width: 28px;
-  padding: 2px 8px;
+  padding: 0 0 4px;
   letter-spacing: 0;
   text-transform: none;
+  font-size: 12px;
+  line-height: 1;
 }
 
 /* Sibling view keys share one bay; active = CRT + round power lamp */
@@ -305,32 +320,31 @@
     inset 0 2px 3px rgba(0, 0, 0, 0.18);
 }
 
-.sch95 .sch-view-keys .sch-btn {
+.sch95 .sch-view-keys .sch-btn,
+body.win95-app .sch95 .sch-view-keys button.sch-btn[type="button"]:not([hidden]):not([role="tab"]):not([role="switch"]) {
   position: relative;
   flex: 1 1 0;
   min-width: 0;
   min-height: 28px;
-  padding: 4px 10px 5px;
+  padding: 3px 8px 7px;
   gap: 6px;
-  letter-spacing: 0.12em;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
+  letter-spacing: 0.04em;
 }
 
+body.win95-app .sch95 .sch-view-keys button.sch-btn[type="button"][aria-pressed="true"]:not([hidden]):not([role="tab"]),
 .sch95 .sch-view-keys .sch-btn[aria-pressed="true"] {
   color: var(--s-crt);
   text-shadow: var(--s-crt-glow);
-  background:
+  border-color: #141816;
+  background-color: #070c0a;
+  background-image:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
-    #070c0a;
+    linear-gradient(#070c0a, #070c0a);
   box-shadow:
     0 0 0 1px var(--chrome-pressed),
     inset 0 8px 10px rgba(0, 0, 0, 0.4);
   filter: none;
+  transform: none;
 }
 
 .sch95 .sch-view-keys .sch-btn[aria-pressed="true"]::before {
@@ -388,6 +402,7 @@ body.win95-app .sch95 .sch-period-tabs[role="tablist"],
   justify-content: stretch;
   gap: 4px;
   width: 100%;
+  height: auto;
   flex-shrink: 0;
   margin: 0;
   padding: 4px;
@@ -410,20 +425,23 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"],
   justify-content: center;
   gap: 6px;
   min-width: 0;
-  min-height: 28px;
+  min-height: 34px;
   margin: 0;
-  padding: 3px 10px 8px;
+  padding: 4px 8px 8px;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
   text-transform: uppercase;
+  text-shadow: none;
   z-index: auto;
 }
 
 body.win95-app .sch95 .sch-period-tabs [role="tab"][data-state="active"],
 .sch95 .sch-period-tabs [role="tab"][data-state="active"] {
   top: 0;
-  padding-bottom: 5px;
+  padding-bottom: 6px;
   color: var(--s-crt);
   font-weight: 700;
   text-shadow: var(--s-crt-glow);
@@ -505,7 +523,7 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"]:active,
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--s-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 2px),
     var(--s-surface);
@@ -692,20 +710,29 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"]:active,
   white-space: nowrap;
 }
 
-.sch95 button.sch-bucket-name {
+.sch95 button.sch-bucket-name,
+body.win95-app .sch95 button.sch-bucket-name[type="button"] {
   margin: 0;
   padding: 0;
   border: 0;
+  outline: none;
   background: transparent;
+  background-image: none;
+  box-shadow: none;
   color: inherit;
   font: inherit;
   font-weight: inherit;
   text-align: left;
+  text-shadow: none;
   cursor: pointer;
 }
 
-.sch95 button.sch-bucket-name:hover {
+.sch95 button.sch-bucket-name:hover,
+.sch95 button.sch-bucket-name:focus,
+.sch95 button.sch-bucket-name:focus-visible {
   text-decoration: underline;
+  outline: none;
+  box-shadow: none;
 }
 
 .sch95 .sch-card-detail {
@@ -771,6 +798,30 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"]:active,
 .sch95 .sch-card-detail-row .sch-task {
   flex: 1;
   min-width: 0;
+}
+
+.sch95 .sch-est {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--chrome-ink-soft);
+}
+
+.sch95 .sch-est input {
+  width: 3.25rem;
+  height: 22px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: var(--s-field);
+  font: inherit;
+  font-size: 11px;
+  text-align: right;
+  color: #111;
 }
 
 .sch95 .sch-undone-toggles {
@@ -854,6 +905,18 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"]:active,
   cursor: grab;
 }
 
+/* Unschedule × stays in the row, and shows only while the pointer or keyboard is on that task. */
+.sch95 .sch-task > .sch-task-x {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sch95 .sch-task:hover > .sch-task-x,
+.sch95 .sch-task:focus-within > .sch-task-x {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .sch95 .sch-task.is-selected {
   outline: 1px dotted #000;
   outline-offset: -3px;
@@ -889,13 +952,96 @@ body.win95-app .sch95 .sch-period-tabs [role="tab"]:active,
   color: var(--chrome-ink-soft);
 }
 
-.sch95 .sch-task-x {
-  min-width: 16px;
-  min-height: 14px;
-  padding: 0 3px;
-  font-size: 11px;
-  font-weight: bold;
-  line-height: 1;
+/* Task and card × — small keycap. The path is centered; hover is the brick close. */
+.sch95 button.sch-task-x {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  max-width: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  margin: 0;
+  padding: 0 0 3px;
+  border: 1px solid #55595d;
+  border-radius: 4px;
+  background-color: #b9bdc1;
+  background-image: linear-gradient(180deg, #c9ccd0, #b9bdc1);
+  box-shadow:
+    inset 2px 0 0 #969a9f,
+    inset -2px 0 0 #969a9f,
+    inset 0 -3px 0 #969a9f,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  color: #25282b;
+  line-height: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+.sch95 button.sch-task-x svg {
+  display: block;
+}
+
+.sch95 button.sch-task-x path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: butt;
+}
+
+.sch95 button.sch-task-x:hover,
+.sch95 button.sch-task-x:focus-visible {
+  background-color: #78292e;
+  background-image: linear-gradient(180deg, #7a3c31, #78292e);
+  border-color: #351316;
+  color: #f6ebe4;
+  box-shadow:
+    inset 2px 0 0 #4e1a1e,
+    inset -2px 0 0 #4e1a1e,
+    inset 0 -3px 0 #4e1a1e,
+    inset 0 1px 0 rgba(255, 214, 200, 0.55),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  filter: none;
+}
+
+.sch95 button.sch-task-x:focus-visible {
+  outline: 1px dotted #1c1e20;
+  outline-offset: 2px;
+}
+
+.sch95 button.sch-task-x:active {
+  transform: translateY(1px);
+}
+
+/* Selection box: white face, ink border. No navy ring. */
+.sch95 button.sch-task-check {
+  width: 16px;
+  height: 16px;
+  background-color: #fff !important;
+  background-image: none !important;
+  border: 1px solid #1a1a1a !important;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px #808080 !important;
+  outline: none !important;
+  color: #111 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+.sch95 button.sch-task-check:focus,
+.sch95 button.sch-task-check:focus-visible {
+  outline: none !important;
+  box-shadow: inset 1px 1px #808080 !important;
+}
+
+.sch95 button.sch-task-check[data-state="checked"] {
+  background-color: #fff !important;
+  color: #111 !important;
 }
 
 .sch95 .sch-filters {

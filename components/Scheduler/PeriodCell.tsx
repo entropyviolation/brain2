@@ -60,6 +60,7 @@ export function PeriodCell({
           {onOpenDetail ? (
             <button
               type="button"
+              data-no95=""
               className="sch-bucket-name"
               aria-label={`Open ${title}`}
               onClick={(e) => {
