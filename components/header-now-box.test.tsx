@@ -14,7 +14,7 @@ import {
 import { addPenColorNowObjective, startPenColorSession } from "@/lib/pen-color-session"
 import { startTaskClock } from "@/lib/task-clock"
 import { useTaskCardStore } from "@/lib/task-card"
-import { HeaderNowBox } from "./header-now-box"
+import { headerPenClockOnScreen, HeaderNowBox } from "./header-now-box"
 
 function seedOperation(id = "op_1", name = "Foxtide rebuild"): void {
   useTaskStore.getState().addTask({
@@ -40,6 +40,10 @@ describe("HeaderNowBox", () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it("treats a now well that has not mounted yet as still on the clock", () => {
+    expect(headerPenClockOnScreen()).toBe(true)
   })
 
   it("is absent when no timer is running", () => {

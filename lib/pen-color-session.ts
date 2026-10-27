@@ -15,9 +15,12 @@
  * rewrote by hand is left as you wrote it.
  *
  * Only the header clock grows the block (`watchPenClockShown`). The Tracking
- * strip and the focus bar show the same sitting; they do not paint. If that
- * header clock is missing, or the page is going away, the sitting ends: the
- * block gets an end, and the task and step stay open.
+ * strip and the focus bar show the same sitting; they do not paint. The
+ * sitting is persisted, so a refresh keeps the clock, the objectives, and the
+ * task. A tick before the time grid has rehydrated does not drop a pen that
+ * is not in the seed set yet. If the header clock is on screen and then off
+ * screen, the sitting ends: the block gets an end, and the task and step stay
+ * open.
  */
 import type { TrackPen } from "@/lib/time-tracking-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -296,9 +299,9 @@ export function penClockShouldStop(headerShown: boolean, unshownMs: number): boo
 
 /**
  * Grow the block only while `isShown` says the header clock is on screen.
- * After {@link PEN_CLOCK_UNSHOWN_GRACE_MS} off screen, or on `pagehide`, end
- * the sitting. Returns a dispose function. The label clocks elsewhere do not
- * call this.
+ * After {@link PEN_CLOCK_UNSHOWN_GRACE_MS} off screen, end the sitting.
+ * A refresh is not an end: the persisted session is what the next page reads.
+ * Returns a dispose function. The label clocks elsewhere do not call this.
  */
 export function watchPenClockShown(isShown: () => boolean, now = () => new Date()): () => void {
   let unshownSince: number | null = null
@@ -314,15 +317,10 @@ export function watchPenClockShown(isShown: () => boolean, now = () => new Date(
     if (unshownSince == null) unshownSince = at.getTime()
     if (penClockShouldStop(false, at.getTime() - unshownSince)) stopPenColorSession(at)
   }
-  const onPageHide = () => {
-    if (usePenColorSessionStore.getState().session) stopPenColorSession(now())
-  }
   check()
   const id = window.setInterval(check, 1_000)
-  window.addEventListener("pagehide", onPageHide)
   return () => {
     window.clearInterval(id)
-    window.removeEventListener("pagehide", onPageHide)
   }
 }
 
@@ -332,6 +330,9 @@ export function tickPenColorSession(now = new Date()): PenColorSession | null {
     const session = usePenColorSessionStore.getState().session
     if (!session || isRestoring()) return session ?? null
     if (!locatePen(session.penId)) {
+      // Seed scopes load before the vault. A refresh must not forget a pen
+      // that is only in the saved time grid.
+      if (useTimeTrackingStore.persist?.hasHydrated?.() === false) return session
       usePenColorSessionStore.getState().clearSession()
       return null
     }

@@ -2,9 +2,11 @@
  * lib/pen-color-session-store.ts — Persisted pen-color "working on right now"
  *
  * Holds at most one live pen-color session so a refresh does not forget that
- * you started. Start/stop/tick live in `lib/pen-color-session.ts`; this store
- * is only the blob those functions read and write. Independent of the
- * Operations session in `work-session-store.ts`.
+ * you started. Unload must not clear this blob: the next page reads it and
+ * the clock is still "working on right now". Start/stop/tick live in
+ * `lib/pen-color-session.ts`; this store is only the blob those functions
+ * read and write. Independent of the Operations session in
+ * `work-session-store.ts`.
  */
 "use client"
 

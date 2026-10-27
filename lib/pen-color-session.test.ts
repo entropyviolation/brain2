@@ -231,4 +231,24 @@ describe("pen color session", () => {
     expect(entry!.endMin).toBeGreaterThan(entry!.startMin)
     vi.useRealTimers()
   })
+
+  it("keeps the sitting when the page unloads for a refresh", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(AT)
+    startPenColorSession("act-exercise", AT)
+    const dispose = watchPenClockShown(() => true, () => AT)
+    window.dispatchEvent(new Event("pagehide"))
+    expect(usePenColorSessionStore.getState().session?.penId).toBe("act-exercise")
+    dispose()
+    vi.useRealTimers()
+  })
+
+  it("keeps a sitting whose pen is not in the seed set until the time grid rehydrates", () => {
+    startPenColorSession("act-exercise", AT)
+    const live = usePenColorSessionStore.getState().session!
+    usePenColorSessionStore.getState().setSession({ ...live, penId: "custom-activity" })
+    const hydrated = vi.spyOn(useTimeTrackingStore.persist, "hasHydrated").mockReturnValue(false)
+    expect(tickPenColorSession(new Date(AT.getTime() + 60_000))?.penId).toBe("custom-activity")
+    hydrated.mockRestore()
+  })
 })
