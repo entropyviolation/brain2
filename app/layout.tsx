@@ -9,7 +9,7 @@
  * desktop field (Snowflake PCB plate by default; teal and other plates optional); `baby-animal-nest.css` skins the header CRT companion;
  * `machine-loading.css` skins the wait instrument (phosphor sine + screen pet);
  * `win95.css` also sets navy `#000080` text-field and checkbox/radio focus (never WebKit orange);
- * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `UiNamesHost` stamps
+ * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `code-docs.css` skins the code-documentation reader; `UiNamesHost` stamps
  * `data-ui-mode` on `<html>` (Names is the first overlay); `ChromePatina` writes the live gunmetal; `PcbBackdrop`
  * stamps `data-pcb-mode` on `<html>` (`suppressHydrationWarning` so a saved
  * plate cannot mismatch SSR). Server component (no "use client") since it only
@@ -54,6 +54,7 @@ import "@/components/machine-loading.css"
 import "@/components/shell-chrome.css"
 import "@/components/Search/search-chrome.css"
 import "@/components/UiNames/ui-names.css"
+import "@/components/CodeDocs/code-docs.css"
 import "@/components/Home/home-widget-face.css"
 import "@/components/Home/visual-dashboard.css"
 import "@/components/Home/dash/dash.css"
@@ -74,7 +75,7 @@ const karla = Karla({
   display: "swap",
 })
 
-// Analytics type (analytics-atlas.css): a characterful grotesque for titles
+// Data type (analytics-atlas.css): a characterful grotesque for titles
 // and values, a calm sans for prose, keys, labels and chart ticks.
 const anDisplay = Bricolage_Grotesque({
   subsets: ["latin"],

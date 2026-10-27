@@ -63,7 +63,7 @@ const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 // ActivityWatch screen time. MUST match `fetchScreenTime` in electron/ipc/channels.js +
 // `window.desktop.fetchScreenTime` in electron/preload.js.
 const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
-// Analytics → Texts. MUST match the preload and electron/ipc/channels.js.
+// Data → Texts. MUST match the preload and electron/ipc/channels.js.
 const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
 const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
 const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
@@ -72,6 +72,11 @@ const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
 function registerNfcShortcutIpcHandlers() {
   const { registerNfcShortcutIpc } = require("./nfc-shortcut")
   registerNfcShortcutIpc()
+}
+
+function registerCodeDocsIpcHandlers() {
+  const { registerCodeDocsIpcHandlers: register } = require("./code-docs")
+  register()
 }
 
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
@@ -100,7 +105,7 @@ protocol.registerSchemesAsPrivileged([
   },
   // Linked resources stream from disk into the preview well (`file-links.js`).
   LINK_SCHEME_PRIVILEGES,
-  // Analytics → Sources → Instagram report, built from the export (`instagram-ipc.js`).
+  // Data → Sources → Instagram report, built from the export (`instagram-ipc.js`).
   INSTAGRAM_SCHEME_PRIVILEGES,
 ])
 
@@ -210,7 +215,7 @@ function resolvePopoutLoadURL(target) {
       const moduleId = parsed.searchParams.get("module")
       const sheetId = parsed.searchParams.get("sheet")
       const view = parsed.searchParams.get("view")
-      // Whole views that open on their own (Analytics → Texts). Named here, never free text.
+      // Whole views that open on their own (Data → Texts). Named here, never free text.
       if (view && !moduleId && !sheetId) {
         if (view !== "texts") return null
         pathAndQuery = "/popout/?view=texts"
@@ -401,7 +406,7 @@ function registerScreenTimeIpcHandlers() {
   })
 }
 
-/** Analytics → Texts: start the loopback report server, read status, refresh. Weekly run. */
+/** Data → Texts: start the loopback report server, read status, refresh. Weekly run. */
 function registerTextsIpcHandlers() {
   // eslint-disable-next-line global-require
   const texts = require("./texts-report")
@@ -501,6 +506,7 @@ app.whenReady().then(async () => {
     registerTextsIpcHandlers,
     registerInstagramIpcHandlers,
     registerNfcShortcutIpcHandlers,
+    registerCodeDocsIpcHandlers,
   ]) {
     try {
       register()

@@ -7,7 +7,7 @@
  * search glass, and reminder bell. Capture is Now, Inbox, and Quick Add. The live now well is a peer
  * of those keys, inside Capture, and absent when idle. Metrics is on Current moment.
  */
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -212,6 +212,41 @@ describe("AppHeader", () => {
     expect(names).toHaveAttribute("aria-pressed", "false")
     expect(names.querySelector(".b2-shell-glyph-strike")).toBeNull()
     expect(useUiNamesStore.getState().mode).toBe("off")
+  })
+
+  it("shows CODE DOCUMENTATION only while names mode is on and opens the docs reader", async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const href = String(url)
+      if (href === "/api/code-docs") {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            missing: false,
+            files: [{ path: "README.md", name: "README.md", dir: "", kind: "markdown", bytes: 24 }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+      if (href.includes("README.md")) return new Response("# Docs home\n\nHello from the vault.", { status: 200 })
+      return new Response("missing", { status: 404 })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    render(<AppHeader onTaskSelect={() => {}} />)
+    expect(screen.queryByRole("button", { name: "CODE DOCUMENTATION" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Names help mode" }))
+    await user.click(screen.getByRole("button", { name: "CODE DOCUMENTATION" }))
+    expect(await screen.findByText("Hello from the vault.")).toBeTruthy()
+    expect(screen.getByTestId("code-docs-viewer")).toBeTruthy()
+    expect(useUiNamesStore.getState().mode).toBe("off")
+    const names = screen.getByRole("button", { name: "Names help mode", hidden: true })
+    expect(names).toHaveAttribute("aria-pressed", "false")
+    expect(screen.queryByRole("button", { name: "CODE DOCUMENTATION" })).toBeNull()
+    await act(async () => {
+      names.click()
+    })
+    expect(useUiNamesStore.getState().mode).toBe("off")
+    vi.unstubAllGlobals()
   })
 
   it("opens search from the magnifying-glass key", async () => {

@@ -1,13 +1,16 @@
 # `app/` — Next.js App Router entry
 
 The Next.js App Router root for Brain2 — a **living perfect second brain**
-(item used everywhere; **Analytics** is the heart — see the vision in the root
+(item used everywhere; **Data** is the heart — see the vision in the root
 [`README.md`](../README.md)). The UI is client-side and
 exported statically (`output: "export"`), so these files mostly set up the
 shell and mount the single page. Trip maps / weather / places hit public APIs
 from the browser (`lib/city-search.ts`, `lib/weather-client.ts`,
 `lib/places-search.ts`, cached in `lib/api-cache.ts`) — no App Router API
-routes are required for the static Electron build.
+routes are required for the static Electron build. The dev server and the
+production window server still serve `/api/code-docs`, which reads the repo
+`docs/` folder for the header code-documentation reader. That is not a Next
+route.
 
 ## Public door
 
@@ -56,13 +59,13 @@ timegrid store when that dialog opens.
 
 `SessionDebriefHost` (`components/Home/Tracking/session-debrief-dialog.tsx`) is
 mounted with them. It stays empty until Working on now stops, then opens the
-optional end-of-session reflection. Skip leaves the task open.
+optional reflection for that open work session (Working on now), not the review of a planned work session. Skip leaves the task open.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `layout.tsx` | Root HTML layout. Loads the Karla Google font, imports `globals.css`, **`win95.css`**, then module chrome CSS (Lists/Home/Tracking/Plan/Habits grid+console/Operations/Scheduler/Analytics/**Modules catalog**/Docs/Editor/Mobile) plus **`baby-animal-nest.css`** (friend nest), **`shell-chrome.css`** (pinned mill title bar), **`search-chrome.css`** (Cmd/Ctrl-K palette), **`ui-names.css`** (Names overlay), **`chrome-patina.css`**, and **`pcb-backdrop.css`**. Mounts `ChromePatina` (live gunmetal), `PcbBackdrop` (`data-pcb-mode` on `<html>`, `suppressHydrationWarning`), `CompletionPopupHost`, and `UiNamesHost` (`data-ui-mode` on `<html>` when Names is on; nameplate portals to `document.body` at z-index 310 so it sits above dialogs). A blocking boot script reads **`brain2-pcb-mode`** (then **`cogs-pcb-mode`**) then the theme blob so the first paint is the saved plate, not seed teal. A second script stamps **`data-boot-tab`** from the saved app tab so that key is lit before hydration (`data-nav-ready` hands the look back to React). Electron restamps the pin from a saved theme blob so a stale hub pin cannot win. Sets metadata (title **BRAIN2**, description of a living application) and `win95-app` on `<body>`. Server component (no `"use client"`). |
+| `layout.tsx` | Root HTML layout. Loads the Karla Google font, imports `globals.css`, **`win95.css`**, then module chrome CSS (Lists/Home/Tracking/Plan/Habits grid+console/Operations/Scheduler/Analytics/**Modules catalog**/Docs/Editor/Mobile) plus **`baby-animal-nest.css`** (friend nest), **`shell-chrome.css`** (pinned mill title bar), **`search-chrome.css`** (Cmd/Ctrl-K palette), **`ui-names.css`** (Names overlay), **`code-docs.css`** (code-documentation reader), **`chrome-patina.css`**, and **`pcb-backdrop.css`**. Mounts `ChromePatina` (live gunmetal), `PcbBackdrop` (`data-pcb-mode` on `<html>`, `suppressHydrationWarning`), `CompletionPopupHost`, and `UiNamesHost` (`data-ui-mode` on `<html>` when Names is on; nameplate portals to `document.body` at z-index 310 so it sits above dialogs). A blocking boot script reads **`brain2-pcb-mode`** (then **`cogs-pcb-mode`**) then the theme blob so the first paint is the saved plate, not seed teal. A second script stamps **`data-boot-tab`** from the saved app tab so that key is lit before hydration (`data-nav-ready` hands the look back to React). Electron restamps the pin from a saved theme blob so a stale hub pin cannot win. Sets metadata (title **BRAIN2**, description of a living application) and `win95-app` on `<body>`. Server component (no `"use client"`). |
 | `chrome-patina.css` | Remaps `--h-surface` / `--hab-metal` / `--fm-surface` / `--mod-surface` / `--s-surface` / … onto `--chrome-*` with `body.win95-app` specificity so a local hex (Habits `#c5c3bc`) cannot win after Fast Refresh. Slider chrome for Settings. |
 | `chrome-patina.tsx` | Client applicator: writes the committed `--chrome-*` and Bouba/Kiki radius tokens on `:root`. A timed shift holds the previous chrome here until the interval ends (the settings panel previews the in-between). A short cycle, and that shift, tick faster. |
 | `pcb-backdrop.css` | Desktop field behind the shell. Default `teal` is solid `#008080`. Other `html[data-pcb-mode]` values paint photographed plates from `/pcb/` plus a soft veil/grain. Light plates (`ceramic` / `mint` / `ice`) switch gutter ink dark; dark plates (`xray` / `fr4`) keep white title type. Settings chip grid. |
@@ -142,7 +145,7 @@ Cmd/Ctrl-Shift-Z (Ctrl+Y on Windows). Text fields keep the browser's own undo.
 | Scheduler | `EnhancedScheduler` | `components/Scheduler/` |
 | Operations | `OperationsView` | `components/Operations/` (category-grouped board → per-operation workspace) |
 | Modules | `ModulesPanel` | `components/Modules/` |
-| Analytics | `EnhancedAnalytics` | `components/Analytics/` |
+| Data | `EnhancedAnalytics` | `components/Analytics/` |
 
 Task detail: selecting a task (from Lists, Modules, Inbox, or global Search) sets
 `selectedTaskId` and shows `EnhancedTaskDetail` over the desk — the pin bar stays,
@@ -155,8 +158,8 @@ Lists tab and clears the open item — it does not remount `EnhancedCategoryView
 Last place in the app persists via `lib/app-navigation.ts`:
 top-level tab, open item + its detail tab, Docs folder/doc **and scroll**,
 Operations workspace + panel, Modules workspace + view, Scheduler view/date,
-Home date / Habits period / Goals filters, Analytics view + group memory + canvas scroll.
-Hiding a tab does not wipe stored scroll (Docs, Analytics, Operations panels).
+Home date / Habits period / Goals filters, Data view + group memory + canvas scroll.
+Hiding a tab does not wipe stored scroll (Docs, Data, Operations panels).
 
 ### Client mount & assets
 

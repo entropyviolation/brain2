@@ -22,7 +22,11 @@
  * counts stay on them. Nav and Go go black with a green legend on focus; Go’s current tab stays that CRT. A press is the old 1px milled sink. System is a gear (Settings), a question mark (Names
  * help mode), a magnifying glass (Search), and a bell (current reminders).
  * The question mark latches (`aria-pressed`) and gains a diagonal strike while
- * Names is on. Icon keys show engraved glyphs; word keys stay words.
+ * Names is on. While Names is on, a **CODE DOCUMENTATION** key appears beside
+ * it. Opening that reader turns Names off, so the page uses a normal cursor
+ * and ordinary clicks, with no nameplates. The key hides with Names. The
+ * reader stays open until it is closed. Icon keys show engraved glyphs; word
+ * keys stay words.
  * The Friend nameplate matches Nav, Go, and Rituals. Its fold is a hairline
  * with a centered bar. Header letters have no white shadow. The Rituals
  * count sits in the middle of its key.
@@ -41,6 +45,7 @@ import { HeaderNowBox } from "@/components/header-now-box"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
+import { CodeDocsViewer } from "@/components/CodeDocs/CodeDocsViewer"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { Search } from "lucide-react"
 import "./shell-chrome.css"
@@ -48,8 +53,14 @@ import "./shell-chrome.css"
 function NamesModeButton() {
   const mode = useUiNamesStore((s) => s.mode)
   const toggle = useUiNamesStore((s) => s.toggle)
+  const setMode = useUiNamesStore((s) => s.setMode)
   const on = mode === "names"
+  const [docsOpen, setDocsOpen] = useState(false)
+  useEffect(() => {
+    if (docsOpen && mode === "names") setMode("off")
+  }, [docsOpen, mode, setMode])
   return (
+    <>
     <Button
       variant="outline"
       size="sm"
@@ -81,6 +92,25 @@ function NamesModeButton() {
         ) : null}
       </svg>
     </Button>
+    {on ? (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="b2-code-docs-key"
+        data-ui-name="Code documentation"
+        data-ui-help="Opens the docs folder: markdown, screenshots, and the other files."
+        data-ui-docs="components/CodeDocs/README.md"
+        onClick={() => {
+          setDocsOpen(true)
+          setMode("off")
+        }}
+      >
+        CODE DOCUMENTATION
+      </Button>
+    ) : null}
+    {docsOpen ? <CodeDocsViewer open={docsOpen} onOpenChange={setDocsOpen} /> : null}
+    </>
   )
 }
 
