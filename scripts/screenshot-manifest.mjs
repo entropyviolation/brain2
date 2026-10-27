@@ -4,7 +4,7 @@
  */
 export const GLOBAL_HEADER = `
 Pinned full-width mill title bar (\`AppHeader\`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Rituals / System / Capture as Win95 groupboxes of pale silver keycaps. Names is the question mark in System and latches (sunk keycap, aria-pressed); tooltip Names help mode while on. Phosphor counts on Rituals and Inbox. Capture is Now, Inbox, and Quick Add (Quick Add is the primary cap); Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
-Tabs: Go well, pale silver keycaps at rest. The current tab and a focused key are the black CRT with a green legend, sunk 1px. A press is the old milled sink. Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+Tabs: Go well, pale silver keycaps at rest. The current tab and a focused key are the black CRT with a green legend, sunk 1px. A press is the old milled sink. Home · Lists · Docs · Scheduler · Operations · Modules · Data.
 Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 `.trim()
 
@@ -13,7 +13,7 @@ Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); R
 `.trim()
 
 export const ANALYTICS_CHROME = `
-Analytics window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (\`role="tab"\`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.
+Data window: navy **title bar** and **status bar** stay Lists furniture. Interior is a light instrument studio (Karla only, ink on beige nested wells, phosphor traces — not cream-on-cream, not dark CRT), range chips (7 / 14 / 30 / 90 or Custom inclusive from–to, labeled as the dates) labeled once, left studio index Behavior / Time / Accuracy / Meta / Library with views of the selected group (\`role="tab"\`). Views include Observatory, Circadian, **Screen Time**, Places, Mood field, Diversity, Transitions, Spectrum, Velocity, Cycle, Goals, Operations, Lists & areas (size by items + HHI), Tags, Stages, Weight, Attributes, Item Types, Cross-section, Overcommit. Tracking shows a **pie** plus mosaic; the drill lists blocks and opens the Tracking editor. Empty charts keep the frame and one sentence; interpretive views show n and watermark a thin sample. Hover **?** and native titles for instructions. Status: last N days or custom dates · current view.
 `.trim()
 
 /** @typedef {{ file: string, view: string, sources: string[], description: string, area: string }} ShotMeta */
@@ -29,6 +29,7 @@ export const SHOTS = [
       "app/page.tsx",
       "components/Home/home-dashboard.tsx",
       "components/Home/Habits/habit-tracker.tsx",
+      "components/Home/Habits/tracker/habits-desktop-page.tsx",
       "components/Home/Habits/task-grid.tsx",
       "components/Home/Habits/habit-chrome.css",
       "components/Home/Habits/cockpit-switch.tsx",
@@ -50,6 +51,7 @@ Habits Daily sits in a contained gunmetal console (\`.hab95\`) — teal desktop 
     view: "Home tab → Habits → Weekly frequency",
     sources: [
       "components/Home/Habits/habit-tracker.tsx",
+      "components/Home/Habits/tracker/habits-desktop-page.tsx",
       "components/Home/Habits/period-habit-list.tsx",
       "components/Home/Habits/habits-control-panel.tsx",
       "components/Home/Habits/willpower-gems.tsx",
@@ -63,12 +65,13 @@ Habits: week navigation in the console header (Today + 7-week window); Daily / W
     view: "Home tab → Habits → Monthly frequency",
     sources: [
       "components/Home/Habits/habit-tracker.tsx",
+      "components/Home/Habits/tracker/habits-desktop-page.tsx",
       "components/Home/Habits/period-habit-list.tsx",
       "components/Home/Habits/habits-control-panel.tsx",
       "components/Home/Habits/willpower-gems.tsx",
     ],
     description: `Home window: milled date plate (weekday CRT, calendar nameplate, Widgets key); shared overview squares (Review due, All Time / Today / Week / Month, Today's Progress; Widgets) in one equal-height CRT row. Needs Attention (Overdue / Blocked / Unclarified — click opens detail). Sub-tabs: Habits · Plan · To Do · Goals · Tracking.
-Habits: month navigation in the console header (This month + 7-month window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Month, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: monthly habits × 7 months + row % + monthly-completion footer (same chrome as Weekly, gem Edit/Delete). Fresh seed includes Pay recurring bills, Finish 1 book this month, Chore hours (Tracking Cleaning tag), and This month's theme (text). Completions feed Analytics heatmap/points. Goal / Yes-No can Auto-fill from Tracking (month sum).`,
+Habits: month navigation in the console header (This month + 7-month window); Daily / Weekly / Monthly inset keys above the sheet; Habits Tab Control Panel with Span grade + Perfect output tubes, Sort plate, Hide Completed This Month, Loading Bar, Small LEDs, New habit, Willpower gems. Compact grid: monthly habits × 7 months + row % + monthly-completion footer (same chrome as Weekly, gem Edit/Delete). Fresh seed includes Pay recurring bills, Finish 1 book this month, Chore hours (Tracking Cleaning tag), and This month's theme (text). Completions feed Data heatmap/points. Goal / Yes-No can Auto-fill from Tracking (month sum).`,
   },
   {
     file: "02-home-plan.png",
@@ -499,11 +502,11 @@ Tracking → Day Log inside the Tracking window (no nested Agenda / Activity Log
     description: `Open document: title, folder, font, editor body. Coast weekend plan — drive, headlands walk, home before dark.`,
   },
 
-  // ── Analytics ─────────────────────────────────────────────────────────────
+  // ── Data ─────────────────────────────────────────────────────────────
   {
     file: "07-analytics.png",
-    area: "Analytics → Habits",
-    view: "Analytics tab → Habits",
+    area: "Data → Habits",
+    view: "Data tab → Habits",
     sources: [
       "components/Analytics/enhanced-analytics.tsx",
       "components/Analytics/AnalyticsNav.tsx",
@@ -515,16 +518,16 @@ Habits: Daily habit completion heatmap for the shared window (Less→More scale)
   },
   {
     file: "07-analytics-points.png",
-    area: "Analytics → Points",
-    view: "Analytics tab → Points",
+    area: "Data → Points",
+    view: "Data tab → Points",
     sources: ["components/Analytics/enhanced-analytics.tsx", "lib/points-store.ts"],
     description: `${ANALYTICS_CHROME}
 Points daily stacked by source (habit / bonus / task) + cumulative for the shared window; Top point earners jump to Lists. Empty: one sentence in the frame.`,
   },
   {
     file: "07-analytics-tracking.png",
-    area: "Analytics → Tracking",
-    view: "Analytics tab → Tracking",
+    area: "Data → Tracking",
+    view: "Data tab → Tracking",
     sources: [
       "components/Analytics/enhanced-analytics.tsx",
       "components/Analytics/TrackingAnalytics.tsx",
@@ -532,28 +535,28 @@ Points daily stacked by source (habit / bonus / task) + cumulative for the share
       "lib/tracking-summary.ts",
     ],
     description: `${ANALYTICS_CHROME}
-Time distribution for the shared Analytics range: scope picker; % of tracked / % of day; Show untracked; **Include assumed**; **Show as** depth. **Pie** (same slices as mosaic) + mosaic + hour × day heatmap; instants listed separately. Stats Tracked / Coverage / Average per day / Longest block. Click a pie slice, mosaic tile, or row to drill. Open in Lists when items have timeLogs in the window.`,
+Time distribution for the shared Data range: scope picker; % of tracked / % of day; Show untracked; **Include assumed**; **Show as** depth. **Pie** (same slices as mosaic) + mosaic + hour × day heatmap; instants listed separately. Stats Tracked / Coverage / Average per day / Longest block. Click a pie slice, mosaic tile, or row to drill. Open in Lists when items have timeLogs in the window.`,
   },
   {
     file: "07-analytics-tracking-breakdown.png",
-    area: "Analytics → Tracking → pen breakdown",
-    view: "Analytics tab → Tracking → click a pen row",
+    area: "Data → Tracking → pen breakdown",
+    view: "Data tab → Tracking → click a pen row",
     sources: ["components/Analytics/TrackingAnalytics.tsx", "lib/tracking-summary.ts"],
     description: `${ANALYTICS_CHROME}
 Pen drill-down dialog (\`sm:max-w-3xl\`): pen name, total over the range, % of tracked. Nested pens show an **Inside {parent}** child list first. Split / Reach for variants on the exact pen. Pie + split bar with name · duration (not jammed). Click a slice to list its blocks; click a block to open Home Tracking \`entry-dialog.tsx\`.`,
   },
   {
     file: "07-analytics-tracking-tag.png",
-    area: "Analytics → Tracking → tag breakdown",
-    view: "Analytics tab → Tracking → click a tag in By tag",
+    area: "Data → Tracking → tag breakdown",
+    view: "Data tab → Tracking → click a tag in By tag",
     sources: ["components/Analytics/TrackingAnalytics.tsx", "lib/tracked-time.ts", "lib/tracking-summary.ts"],
     description: `${ANALYTICS_CHROME}
 Tag drill-down dialog: the tag, its total over the range, and every pen that fed it — pen name, its scope, minutes and share. Because tags belong to time rather than to pens, a tag can be fed by a pen that does not carry it: the zoo afternoon was painted in Location and tagged Exercise on that block alone, so Exercise shows Location minutes next to the Activity ones. This is the number a habit linked to the tag receives, with minutes unioned across scopes so a doubly-tagged minute counts once.`,
   },
   {
     file: "07-analytics-sleep.png",
-    area: "Analytics → Sleep",
-    view: "Analytics tab → Sleep",
+    area: "Data → Sleep",
+    view: "Data tab → Sleep",
     sources: [
       "components/Analytics/enhanced-analytics.tsx",
       "components/Analytics/SleepAnalytics.tsx",
@@ -562,7 +565,7 @@ Tag drill-down dialog: the tag, its total over the range, and every pen that fed
       "lib/sleep-store.ts",
     ],
     description: `${ANALYTICS_CHROME}
-Shared Analytics range (not a second 7d/30d/90d picker), then coverage — nights tracked, nights blank, how many were read off the Tracking grid rather than typed, and the % of ends marked estimated. Copy: same nights as Home → Tracking (no live night jump). Blank nights are excluded from every average rather than counted as zero. The tab reads the sleep log and Sleep-tagged blocks on the grid alike (lib/sleep-inference.ts), per end, so a stated time always wins and a painted one fills a gap.
+Shared Data range (not a second 7d/30d/90d picker), then coverage — nights tracked, nights blank, how many were read off the Tracking grid rather than typed, and the % of ends marked estimated. Copy: same nights as Home → Tracking (no live night jump). Blank nights are excluded from every average rather than counted as zero. The tab reads the sleep log and Sleep-tagged blocks on the grid alike (lib/sleep-inference.ts), per end, so a stated time always wins and a painted one fills a gap.
 Four cards: Average night (with median — the honest one when a single all-nighter skews the mean — and how many nights it rests on) · Usually asleep by (with spread, the standard deviation of bedtime) · Usually up at (with spread) · Debt against the target, plus how many nights hit it.
 How far the ends swing: the earliest and latest bedtime and the earliest and latest wake time, each with its date, and the gap between them. Bedtimes are signed offsets from their own morning, so 10 PM sorts before 1 AM without a wrap-around case.
 Night by night: one bar per night on a fixed 6 PM → noon axis, so irregular bedtimes are visible as ragged left edges rather than hidden by per-row scaling. Amber means under target; a trailing ~ means at least one end was estimated and **est.** means the night was reconstructed from painted time. Duration is printed at the right.
@@ -570,8 +573,8 @@ What changed: compares the two halves of the range — change in sleep length, i
   },
   {
     file: "07-analytics-screentime.png",
-    area: "Analytics → Screen Time",
-    view: "Analytics tab → Time → Screen Time",
+    area: "Data → Screen Time",
+    view: "Data tab → Time → Screen Time",
     sources: [
       "components/Analytics/enhanced-analytics.tsx",
       "components/Analytics/ScreenTimeView.tsx",
@@ -583,88 +586,88 @@ ActivityWatch-painted Screen Time for the shared range: active vs untracked (AFK
   },
   {
     file: "07-analytics-plan-vs-reality.png",
-    area: "Analytics → Plan vs Reality",
-    view: "Analytics tab → Plan vs Reality",
+    area: "Data → Plan vs Reality",
+    view: "Data tab → Plan vs Reality",
     sources: ["components/Analytics/PlanVsReality.tsx"],
     description: `${ANALYTICS_CHROME}
-Grain Day / Week / Month inside the shared Analytics window (not a second date range). Window ribbon of every period in the range (alignment height; hollow when nothing was planned). Planned vs actual as paired bars (not two lists). Thin sample watermarked. Intentions as one line of plan prose.`,
+Grain Day / Week / Month inside the shared Data window (not a second date range). Window ribbon of every period in the range (alignment height; hollow when nothing was planned). Planned vs actual as paired bars (not two lists). Thin sample watermarked. Intentions as one line of plan prose.`,
   },
   {
     file: "07-analytics-calibration.png",
-    area: "Analytics → Calibration",
-    view: "Analytics tab → Calibration",
+    area: "Data → Calibration",
+    view: "Data tab → Calibration",
     sources: ["components/Analytics/CalibrationView.tsx"],
     description: `${ANALYTICS_CHROME}
 Sentence + n + caveat. Scatter / histogram / trend only when n clears the sample floor; otherwise a watermark. Open in Lists.`,
   },
   {
     file: "07-analytics-streaks.png",
-    area: "Analytics → Streaks",
-    view: "Analytics tab → Streaks",
+    area: "Data → Streaks",
+    view: "Data tab → Streaks",
     sources: ["components/Analytics/StreaksWidget.tsx"],
     description: `${ANALYTICS_CHROME}
-Current + longest habit and daily-review streaks — not clipped to the Analytics window (Home glance vs Analytics analysis stay split on purpose).`,
+Current + longest habit and daily-review streaks — not clipped to the Data window (Home glance vs Data analysis stay split on purpose).`,
   },
   {
     file: "07-analytics-reflection.png",
-    area: "Analytics → Reflection",
-    view: "Analytics tab → Reflection",
+    area: "Data → Reflection",
+    view: "Data tab → Reflection",
     sources: ["components/Analytics/enhanced-analytics.tsx", "components/Reviews/PostMortemDialog.tsx"],
     description: `${ANALYTICS_CHROME}
 Window averages as one sentence (not 0.0 KPI cards). Reflect on completed tasks. Prompt history (notes + 1–10 scores).`,
   },
   {
     file: "07-analytics-reviews.png",
-    area: "Analytics → Reviews",
-    view: "Analytics tab → Reviews",
+    area: "Data → Reviews",
+    view: "Data tab → Reviews",
     sources: ["components/Analytics/enhanced-analytics.tsx", "lib/reviews-store.ts"],
     description: `${ANALYTICS_CHROME}
 Expandable saved reviews (period · key): Summary / Gratitude / Plans; resolved vs pushed counts. Empty: use header Review.`,
   },
   {
     file: "07-analytics-metrics.png",
-    area: "Analytics → Metrics",
-    view: "Analytics tab → Metrics",
+    area: "Data → Metrics",
+    view: "Data tab → Metrics",
     sources: ["components/Analytics/MetricsTrends.tsx", "lib/metrics-store.ts"],
     description: `${ANALYTICS_CHROME}
 Metric trend + picker for the shared window. **Log {name}** opens MetricLogger. n + direction + R² when there is a series; otherwise one sentence in the frame.`,
   },
   {
     file: "07-analytics-correlation.png",
-    area: "Analytics → Correlation",
-    view: "Analytics tab → Correlation",
+    area: "Data → Correlation",
+    view: "Data tab → Correlation",
     sources: ["components/Analytics/CorrelationExplorer.tsx"],
     description: `${ANALYTICS_CHROME}
 Pairwise Pearson matrix of metrics plus habit % / tracking / sleep / points. Click a cell for scatter + sentence. Thin overlap watermarked. Not a chart builder.`,
   },
   {
     file: "07-analytics-spectrum.png",
-    area: "Analytics → Spectrum",
-    view: "Analytics tab → Meta → Spectrum",
+    area: "Data → Spectrum",
+    view: "Data tab → Meta → Spectrum",
     sources: ["components/Analytics/SpectrumView.tsx", "lib/metrics.ts"],
     description: `${ANALYTICS_CHROME}
 Lag-1 / lag-7 autocorrelation of daily habit % and sleep duration, naive DFT periodogram of habit %, coefficient of variation of sleep. Phosphor traces. Not a forecast.`,
   },
   {
     file: "07-analytics-context-switch.png",
-    area: "Analytics → Context Switch",
-    view: "Analytics tab → Context Switch",
+    area: "Data → Context Switch",
+    view: "Data tab → Context Switch",
     sources: ["components/Analytics/ContextSwitchHeatmap.tsx"],
     description: `${ANALYTICS_CHROME}
 Context switching (by day) for the shared window: n / avg / busiest / trend when the sample is thick enough. Legend: a switch is a pen change — one block ending and another beginning.`,
   },
   {
     file: "07-analytics-regret.png",
-    area: "Analytics → Regret",
-    view: "Analytics tab → Regret",
+    area: "Data → Regret",
+    view: "Data tab → Regret",
     sources: ["components/Analytics/RegretView.tsx", "lib/regret-store.ts"],
     description: `${ANALYTICS_CHROME}
 One line: regret is the accrued cost of important items sitting undone past their due date. n days with accrued regret in the shared window; bars + heaviest + by reason when the sample is thick enough. Open heaviest in Lists.`,
   },
   {
     file: "07-analytics-overcommit.png",
-    area: "Analytics → Overcommit",
-    view: "Analytics tab → Behavior → Overcommit",
+    area: "Data → Overcommit",
+    view: "Data tab → Behavior → Overcommit",
     sources: [
       "components/Analytics/OvercommitmentView.tsx",
       "lib/overcommitment.ts",
@@ -674,8 +677,8 @@ One sentence + n on reconstructed day-pushes and logged minutes over the shared 
   },
   {
     file: "07-analytics-cross-section.png",
-    area: "Analytics → Cross-section",
-    view: "Analytics tab → Meta → Cross-section",
+    area: "Data → Cross-section",
+    view: "Data tab → Meta → Cross-section",
     sources: [
       "components/Analytics/CrossSection.tsx",
       "components/Analytics/cross-section.ts",
@@ -685,104 +688,104 @@ Linked density small-multiples over the shared range: Habits, Tracking, Sleep, C
   },
   {
     file: "07-analytics-observatory.png",
-    area: "Analytics → Observatory",
-    view: "Analytics tab → Meta → Observatory",
+    area: "Data → Observatory",
+    view: "Data tab → Meta → Observatory",
     sources: ["components/Analytics/Observatory.tsx", "components/Analytics/observatory-findings.ts"],
     description: `${ANALYTICS_CHROME}
 Classical Pearson findings over aligned series (habit %, tracking, sleep, points, joy, switches). Thin overlap is watermarked. Linked Cross-section beneath.`,
   },
   {
     file: "07-analytics-velocity.png",
-    area: "Analytics → Velocity",
-    view: "Analytics tab → Behavior → Velocity",
+    area: "Data → Velocity",
+    view: "Data tab → Behavior → Velocity",
     sources: ["components/Analytics/VelocityView.tsx"],
     description: `${ANALYTICS_CHROME}
 Completions and points per day, median cycle time, optional reward vs actual minutes. Display only.`,
   },
   {
     file: "07-analytics-circadian.png",
-    area: "Analytics → Circadian",
-    view: "Analytics tab → Time → Circadian",
+    area: "Data → Circadian",
+    view: "Data tab → Time → Circadian",
     sources: ["components/Analytics/CircadianView.tsx", "components/Analytics/hour-day.ts"],
     description: `${ANALYTICS_CHROME}
 Hour × day occupancy atlas. Instants stay off the heat. Missing hours are empty, not occupancy.`,
   },
   {
     file: "07-analytics-places.png",
-    area: "Analytics → Places",
-    view: "Analytics tab → Time → Places",
+    area: "Data → Places",
+    view: "Data tab → Time → Places",
     sources: ["components/Analytics/PlacesView.tsx"],
     description: `${ANALYTICS_CHROME}
 Location scope as a time-at-pen mosaic (country → park via displayDepth). Repeated coordinates (a place seen more than once, within 80 m) can be named on this view; the next pin there is that Location pen. Not a geo map.`,
   },
   {
     file: "07-analytics-mood-field.png",
-    area: "Analytics → Mood field",
-    view: "Analytics tab → Time → Mood field",
+    area: "Data → Mood field",
+    view: "Data tab → Time → Mood field",
     sources: ["components/Analytics/MoodFieldView.tsx"],
     description: `${ANALYTICS_CHROME}
 Mood field: any painted name in the mosaic (Great, Good, Meh, and Low are starter pens, not the scale). Under the title, **How to read this**. Plates: **Same word** (one label, many dates), **The water** (vibe phrases and leanings, with n), **Marks** (means and tone counts, missing marks left out). A color with no card stays out of the averages. Logged wellbeing metrics remain a separate plate. Open a block from Tracking for the three-part reading.`,
   },
   {
     file: "07-analytics-diversity.png",
-    area: "Analytics → Diversity",
-    view: "Analytics tab → Time → Diversity",
+    area: "Data → Diversity",
+    view: "Data tab → Time → Diversity",
     sources: ["components/Analytics/DiversityView.tsx", "components/Analytics/signal-stats.ts", "lib/metrics.ts"],
     description: `${ANALYTICS_CHROME}
 Shannon entropy of Tracking pens per day (H = −Σ p log₂ p), Gini of the window's pen totals, weekday vs weekend occupancy. Phosphor trace. Thin windows watermarked.`,
   },
   {
     file: "07-analytics-transitions.png",
-    area: "Analytics → Transitions",
-    view: "Analytics tab → Time → Transitions",
+    area: "Data → Transitions",
+    view: "Data tab → Time → Transitions",
     sources: ["components/Analytics/TransitionsView.tsx", "components/Analytics/signal-stats.ts"],
     description: `${ANALYTICS_CHROME}
 Markov matrix of Tracking pen changes. P(to | from) among switches only; same-pen continuation omitted. Rows sum to 1.`,
   },
   {
     file: "07-analytics-operations.png",
-    area: "Analytics → Operations",
-    view: "Analytics tab → Time → Operations",
+    area: "Data → Operations",
+    view: "Data tab → Time → Operations",
     sources: ["components/Analytics/OperationsAnalytics.tsx", "lib/operations.ts"],
     description: `${ANALYTICS_CHROME}
 Operation stage/category mosaic and work vs neglect heatmap from timeLogs. Does not restyle the Operations module.`,
   },
   {
     file: "07-analytics-cycle.png",
-    area: "Analytics → Cycle",
-    view: "Analytics tab → Accuracy → Cycle",
+    area: "Data → Cycle",
+    view: "Data tab → Accuracy → Cycle",
     sources: ["components/Analytics/CycleView.tsx"],
     description: `${ANALYTICS_CHROME}
 daysPushed distribution, open important items, estimate confirmation rate.`,
   },
   {
     file: "07-analytics-goals.png",
-    area: "Analytics → Goals",
-    view: "Analytics tab → Accuracy → Goals",
+    area: "Data → Goals",
+    view: "Data tab → Accuracy → Goals",
     sources: ["components/Analytics/GoalsAnalytics.tsx"],
     description: `${ANALYTICS_CHROME}
 Goal progress, neglected goals, contributing completions in the window. Open those items in Lists.`,
   },
   {
     file: "07-analytics-lists-areas.png",
-    area: "Analytics → Lists & areas",
-    view: "Analytics tab → Library → Lists & areas",
+    area: "Data → Lists & areas",
+    view: "Data tab → Library → Lists & areas",
     sources: ["components/Analytics/ListsAreasView.tsx"],
     description: `${ANALYTICS_CHROME}
 Category performance. Default **Size by items** (area ∝ count). Completion rate is a toggle. Click a tile to open the list.`,
   },
   {
     file: "07-analytics-attributes.png",
-    area: "Analytics → Attributes",
-    view: "Analytics tab → Library → Attributes",
+    area: "Data → Attributes",
+    view: "Data tab → Library → Attributes",
     sources: ["components/Analytics/AttributesView.tsx"],
     description: `${ANALYTICS_CHROME}
 Fixed histograms of typed attributes (including catalog fields). Not a custom chart builder.`,
   },
   {
     file: "07-analytics-item-types.png",
-    area: "Analytics → Item Types",
-    view: "Analytics tab → Library → Item Types",
+    area: "Data → Item Types",
+    view: "Data tab → Library → Item Types",
     sources: [
       "components/Analytics/ItemTypesLibrary.tsx",
       "components/ItemTypes/ItemTypeEditor.tsx",
@@ -792,24 +795,24 @@ Item Types library: mosaic of types by item count, sortable list (name / count /
   },
   {
     file: "07-analytics-tags.png",
-    area: "Analytics → Tags",
-    view: "Analytics tab → Library → Tags",
+    area: "Data → Tags",
+    view: "Data tab → Library → Tags",
     sources: ["components/Analytics/LibraryCuts.tsx"],
     description: `${ANALYTICS_CHROME}
 Free-form item tags as a treemap (area ∝ count). Click a tile to open those items.`,
   },
   {
     file: "07-analytics-stages.png",
-    area: "Analytics → Stages",
-    view: "Analytics tab → Library → Stages",
+    area: "Data → Stages",
+    view: "Data tab → Library → Stages",
     sources: ["components/Analytics/LibraryCuts.tsx"],
     description: `${ANALYTICS_CHROME}
 Task.stage buckets (inbox / clarified / scheduled / completed / list). Area ∝ count.`,
   },
   {
     file: "07-analytics-weight.png",
-    area: "Analytics → Weight",
-    view: "Analytics tab → Library → Weight",
+    area: "Data → Weight",
+    view: "Data tab → Library → Weight",
     sources: ["components/Analytics/LibraryCuts.tsx"],
     description: `${ANALYTICS_CHROME}
 Importance, cognitive load, and entropy already on items. Missing stays missing.`,
@@ -858,7 +861,15 @@ Importance, cognitive load, and entropy already on items. Missing stays missing.
     file: "20-dialog-inbox.png",
     area: "Inbox dialog",
     view: "Header → Inbox",
-    sources: ["components/inbox.tsx"],
+    sources: [
+      "components/inbox.tsx",
+      "components/inbox/inbox-view.tsx",
+      "components/inbox/chrome.tsx",
+      "components/inbox/rows.tsx",
+      "components/inbox/foot.tsx",
+      "components/inbox/undo-banner.tsx",
+      "components/inbox/time.ts",
+    ],
     description: `Inbox — Clarify Your Ideas. Inbox and Monkey brain partitions. Search ideas is pinned at the top of the list; the list scrolls and the foot stays in view. Each row: check, title, time, age chip. Pencil and trash appear on hover and on the caret row. Foot: Select all, Select N, Select unsorted, Deselect, All/Dated/Bare, Apply list, Due, File, Monkey brain, Bulk edit, Delete, Merge, Walk or Walk selected. Day plates. Undo banner.`,
   },
   {
@@ -989,7 +1000,7 @@ export const COVERAGE_AREAS = [
   { area: "Operations", shots: ["10-operations.png", "10-operations-workspace.png", "10-operations-todo.png", "10-operations-phases.png", "10-operations-parts.png", "10-operations-timeline.png", "10-operations-locations.png", "10-operations-plan.png", "10-operations-resources.png", "10-operations-log.png", "10-operations-settings.png", "10-operations-postmortem.png"] },
   { area: "Modules", shots: ["09-modules.png", "09-modules-workspace.png"] },
   { area: "Docs", shots: ["12-docs.png", "12-docs-reading.png"] },
-  { area: "Analytics (all tabs)", shots: ["07-analytics*.png"] },
+  { area: "Data (all tabs)", shots: ["07-analytics*.png"] },
   { area: "Item detail popup", shots: ["21-item-detail-popup.png", "21-item-detail-scheduling.png", "21-item-detail-dependencies.png", "21-item-detail-subtasks.png", "21-item-detail-analysis.png", "21-item-detail-time.png", "21-item-detail-body.png"] },
   { area: "Completion dialog", shots: ["20-dialog-completion.png"] },
 ]
