@@ -1,0 +1,920 @@
+/**
+ * components/Home/Goals/goals-phone.css — phone Goals
+ *
+ * Grouped list, sticky bar, period track, rings, and bottom sheets.
+ * Selectors sit under `.gol-phone` / `.gol-phone-sheet` and only mount with
+ * the phone tree (`max-width: 720px`). The milled fascia is untouched.
+ *
+ * Motion follows the iOS sheet curve (cubic-bezier 0.32, 0.72, 0, 1):
+ * a quick start and a soft settle. Reduced motion removes it.
+ */
+
+body.win95-app .gol-phone,
+.gol-phone {
+  --gol-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --gol-bg: #f2f2f7;
+  --gol-card: #ffffff;
+  --gol-ink: #1c1c1e;
+  --gol-secondary: #6c6c70;
+  --gol-separator: rgba(60, 60, 67, 0.29);
+  --gol-fill: rgba(118, 118, 128, 0.12);
+  --gol-blue: #007aff;
+  --gol-green: #34c759;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 max(28px, env(safe-area-inset-bottom));
+  color: var(--gol-ink);
+  background: var(--gol-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.win95-app .gol-phone button,
+body.win95-app .gol-phone input,
+body.win95-app .gol-phone textarea,
+body.win95-app .gol-phone select,
+body.win95-app .gol-phone-sheet button,
+body.win95-app .gol-phone-sheet input,
+body.win95-app .gol-phone-sheet textarea,
+body.win95-app .gol-phone-sheet select,
+.gol-phone button,
+.gol-phone input,
+.gol-phone textarea,
+.gol-phone select,
+.gol-phone-sheet button,
+.gol-phone-sheet input,
+.gol-phone-sheet textarea,
+.gol-phone-sheet select {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+.gol-phone-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  min-height: calc(44px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  background: rgba(242, 242, 247, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: inset 0 -0.5px 0 var(--gol-separator);
+}
+
+.gol-phone-bar-title,
+.gol-phone-bar-count {
+  grid-area: 1 / 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 220ms var(--gol-spring);
+}
+
+.gol-phone-bar-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.gol-phone-bar-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-bar-title.is-on,
+.gol-phone-bar-count.is-on {
+  opacity: 1;
+}
+
+.gol-phone-body {
+  padding: 4px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+}
+
+.gol-phone-large {
+  margin: 8px 0 4px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--gol-ink);
+}
+
+.gol-phone h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--gol-ink);
+}
+
+.gol-phone h3,
+.gol-phone-kicker {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-note,
+.gol-phone-meta,
+.gol-phone-cap {
+  margin: 4px 0 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-cap {
+  margin: 8px 2px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gol-phone-block {
+  margin: 8px 0 28px;
+}
+
+.gol-phone-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.gol-phone-text-btn,
+.gol-phone-primary,
+.gol-phone-step,
+.gol-phone-star,
+.gol-phone-filter,
+.gol-phone-seg button,
+.gol-phone-disclose,
+.gol-phone-pick,
+.gol-phone-chip-btn,
+.gol-phone-danger button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gol-phone-text-btn {
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--gol-blue);
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.gol-phone-seg {
+  display: flex;
+  gap: 0;
+  min-height: 44px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--gol-fill);
+}
+
+.gol-phone-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gol-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.gol-phone-seg button[aria-pressed="true"] {
+  background: var(--gol-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+
+.gol-phone-pager {
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.gol-phone-pager.is-drag {
+  user-select: none;
+}
+
+.gol-phone-track {
+  display: flex;
+  align-items: flex-start;
+  transition: transform 480ms var(--gol-spring);
+}
+
+.gol-phone-pager.is-drag .gol-phone-track,
+.gol-phone.is-reduced .gol-phone-track {
+  transition: none;
+}
+
+.gol-phone-page {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.gol-phone-card {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  background: var(--gol-card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.gol-phone-obj,
+.gol-phone-linked,
+.gol-phone-neglected,
+.gol-phone-prio,
+.gol-phone-actions-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px 8px 16px;
+}
+
+.gol-phone-obj + .gol-phone-obj,
+.gol-phone-linked + .gol-phone-linked,
+.gol-phone-neglected + .gol-phone-neglected,
+.gol-phone-prio + .gol-phone-prio,
+.gol-phone-actions-list li + li {
+  box-shadow: inset 0 0.5px 0 var(--gol-separator);
+}
+
+.gol-phone-obj-name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: 17px;
+  font-weight: 400;
+}
+
+.gol-phone-obj-name span:first-child,
+.gol-phone-goal h3,
+.gol-phone-linked > span:nth-child(2),
+.gol-phone-neglected > span:first-child {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--gol-ink);
+}
+
+.gol-phone-star {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--gol-secondary);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.gol-phone-star.is-on {
+  color: #c9881a;
+}
+
+.gol-phone-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 0;
+}
+
+.gol-phone-mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  background: var(--gol-fill);
+  color: var(--gol-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.gol-phone-obj.is-prio .gol-phone-mark {
+  color: #8a5a00;
+  background: rgba(201, 136, 26, 0.16);
+}
+
+.gol-phone-disclose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 4px 0 8px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--gol-blue);
+  font-size: 17px;
+  text-align: left;
+}
+
+.gol-phone-empty {
+  margin: 0 0 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--gol-card);
+  color: var(--gol-secondary);
+  font-size: 15px;
+}
+
+.gol-phone-filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.gol-phone-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.gol-phone-filter,
+.gol-phone-chip-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--gol-card);
+  color: var(--gol-ink);
+  font-size: 15px;
+  font-weight: 600;
+  scroll-snap-align: start;
+}
+
+.gol-phone-filter[aria-pressed="true"],
+.gol-phone-chip-btn[aria-pressed="true"] {
+  background: var(--gol-blue);
+  color: #fff;
+}
+
+.gol-phone-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gol-phone-goal {
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  background: var(--gol-card);
+}
+
+.gol-phone-goal-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.gol-phone-goal h3 {
+  margin: 2px 0 0;
+}
+
+.gol-phone-goal .gol-phone-meta {
+  margin: 2px 0 0;
+}
+
+.gol-phone-goal.is-done h3 {
+  color: var(--gol-secondary);
+}
+
+.gol-phone-goal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.gol-phone-step,
+.gol-phone-primary,
+.gol-phone-danger button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.gol-phone-step {
+  flex: 1 1 72px;
+  background: var(--gol-fill);
+  color: var(--gol-blue);
+}
+
+.gol-phone-step.is-plus,
+.gol-phone-primary {
+  background: var(--gol-blue);
+  color: #fff;
+}
+
+.gol-phone-primary {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.gol-phone-goal-actions .gol-phone-primary {
+  flex: 1 1 160px;
+  width: auto;
+  margin-top: 0;
+}
+
+.gol-phone-step:disabled,
+.gol-phone-primary:disabled,
+.gol-phone-text-btn:disabled {
+  opacity: 0.4;
+}
+
+.gol-phone-done {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--gol-green);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.gol-phone-ring {
+  flex: none;
+  display: block;
+}
+
+.gol-phone-ring-track,
+.gol-phone-ring-value {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.gol-phone-ring-track {
+  stroke: rgba(60, 60, 67, 0.16);
+}
+
+.gol-phone-ring-value {
+  stroke: var(--gol-blue);
+  transition: stroke-dashoffset 560ms var(--gol-spring);
+}
+
+.gol-phone-ring.is-done .gol-phone-ring-value {
+  stroke: var(--gol-green);
+}
+
+.gol-phone-coverage {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--gol-card);
+}
+
+.gol-phone-dial {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex: none;
+}
+
+.gol-phone-dial span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.gol-phone-coverage-line {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.gol-phone-tape {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  margin: 0 0 8px;
+}
+
+.gol-phone-tape i,
+.gol-phone-key i {
+  display: block;
+  flex: 1 1 0;
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e5ea;
+}
+
+.gol-phone-tape i.is-served,
+.gol-phone-key i.is-served {
+  background: var(--gol-blue);
+}
+
+.gol-phone-tape i.is-drift,
+.gol-phone-key i.is-drift {
+  background: #8e8e93;
+}
+
+.gol-phone-key {
+  display: flex;
+  gap: 14px;
+  margin: 0 0 16px;
+  color: var(--gol-secondary);
+  font-size: 13px;
+}
+
+.gol-phone-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gol-phone-key i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+}
+
+.gol-phone-split {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gol-phone-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gol-phone-dates li {
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--gol-card);
+  font-size: 15px;
+}
+
+.gol-phone-neglected {
+  justify-content: space-between;
+}
+
+.gol-phone button:focus-visible,
+.gol-phone-sheet button:focus-visible,
+.gol-phone-sheet input:focus-visible,
+.gol-phone-sheet textarea:focus-visible,
+.gol-phone-sheet select:focus-visible {
+  outline: 2px solid var(--gol-blue);
+  outline-offset: 2px;
+}
+
+/* Sheets are portaled, so they are not inside `.gol-phone`. */
+.gol-phone-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 320ms var(--gol-spring);
+}
+
+.gol-phone-overlay.is-in {
+  opacity: 1;
+}
+
+.gol-phone-sheet {
+  --gol-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --gol-bg: #f2f2f7;
+  --gol-card: #ffffff;
+  --gol-ink: #1c1c1e;
+  --gol-secondary: #6c6c70;
+  --gol-separator: rgba(60, 60, 67, 0.29);
+  --gol-fill: rgba(118, 118, 128, 0.12);
+  --gol-blue: #007aff;
+  --gol-green: #34c759;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  max-height: min(92dvh, 100%);
+  border-radius: 14px 14px 0 0;
+  background: var(--gol-bg);
+  color: var(--gol-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+  transform: translateY(100%);
+  transition: transform 480ms var(--gol-spring);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.gol-phone-sheet.is-in {
+  transform: translateY(0);
+}
+
+.gol-phone-sheet.is-drag {
+  transition: none;
+}
+
+/* The global dialog rule paints every role=dialog and sets transition-property: none.
+   Goals does not edit that file. These declarations opt the phone sheet out. */
+body.win95-app .gol-phone-sheet {
+  border-radius: 14px 14px 0 0 !important;
+  background-color: #f2f2f7 !important;
+  background-image: none !important;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18) !important;
+  transition-property: transform !important;
+  transition-duration: 480ms !important;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+body.win95-app .gol-phone-sheet.is-drag {
+  transition: none !important;
+}
+
+.gol-phone-grab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  flex: none;
+  touch-action: none;
+}
+
+.gol-phone-grab span {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(60, 60, 67, 0.3);
+}
+
+.gol-phone-sheet-bar {
+  display: grid;
+  grid-template-columns: 72px 1fr 72px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+}
+
+.gol-phone-sheet-bar h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gol-ink);
+}
+
+.gol-phone-sheet-bar .gol-phone-text-btn {
+  justify-self: start;
+}
+
+.gol-phone-sheet-body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 8px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left));
+}
+
+.gol-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gol-phone-form label,
+.gol-phone-form legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-form p,
+.gol-phone-past p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-sheet input,
+.gol-phone-sheet textarea,
+.gol-phone-sheet select,
+.gol-phone-form input,
+.gol-phone-form textarea,
+.gol-phone-form select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--gol-card);
+  box-shadow: none;
+  color: var(--gol-ink);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.gol-phone-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.gol-phone-picks {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gol-phone-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gol-phone-pick {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gol-card);
+  color: var(--gol-ink);
+  font-size: 17px;
+  text-align: left;
+}
+
+.gol-phone-pick[aria-pressed="true"] {
+  background: var(--gol-blue);
+  color: #fff;
+}
+
+.gol-phone-sheet h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gol-secondary);
+}
+
+.gol-phone-prio {
+  justify-content: space-between;
+}
+
+.gol-phone-prio strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--gol-ink);
+}
+
+.gol-phone-prio-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gol-phone-mult {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--gol-ink);
+  font-size: 17px;
+}
+
+.gol-phone-mult input {
+  width: 72px;
+  min-height: 44px;
+}
+
+.gol-phone-linked {
+  gap: 10px;
+}
+
+.gol-phone-linked > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.gol-phone-actions-list {
+  max-height: 240px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gol-phone-actions-list li {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gol-phone-danger {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gol-phone-danger button {
+  width: 100%;
+  background: var(--gol-card);
+  color: #ff3b30;
+}
+
+.gol-phone-past {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gol-phone-bar-title,
+  .gol-phone-bar-count,
+  .gol-phone-track,
+  .gol-phone-ring-value,
+  .gol-phone-overlay,
+  .gol-phone-sheet {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Beat the global pixel face and the white app title. Phone only. */
+body.win95-app .gol-phone h1,
+body.win95-app .gol-phone h2,
+body.win95-app .gol-phone h3,
+body.win95-app .gol-phone button,
+body.win95-app .gol-phone input,
+body.win95-app .gol-phone-sheet,
+body.win95-app .gol-phone-sheet h2,
+body.win95-app .gol-phone-sheet h3,
+body.win95-app .gol-phone-sheet button,
+body.win95-app .gol-phone-sheet input,
+body.win95-app .gol-phone-sheet textarea,
+body.win95-app .gol-phone-sheet select {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  text-shadow: none;
+}
+
+body.win95-app .gol-phone h1.gol-phone-large {
+  color: #1c1c1e;
+  letter-spacing: -0.04em;
+  text-shadow: none !important;
+}
+
+body.win95-app .gol-phone-sheet input,
+body.win95-app .gol-phone-sheet textarea,
+body.win95-app .gol-phone-sheet select {
+  box-shadow: none !important;
+  background: #fff;
+  color: #1c1c1e;
+  border-radius: 10px;
+}
