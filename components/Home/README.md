@@ -104,6 +104,26 @@ _Last mapped: 2026-10-20_
 
 The dashboard is a dense grid, not one equal-height row. In the Milled style a tile keeps its own footprint from `home-widget-face.css`, and `grid-auto-flow: dense` lets a small tile sit ahead of its place in the order.
 
+## Phone and desktop
+
+_Last mapped: 2026-10-27_
+
+A phone screen and a desktop screen are two pages. They share the data and the writes. They do not share the layout. Controls may differ wherever a thumb wants a different gesture. Every desktop capability still needs a phone equivalent that reaches the same data. The control can be a sheet, a swipe, or another phone action.
+
+The phone page is its own module, its own component and CSS, inside that section's folder. The desktop component stays the desktop page. Its only phone-related change is a thin switch. Under the phone width, mount the phone page and do not mount the desktop tree. At desktop width, mount the desktop tree and do not mount the phone page. Do not restyle the desktop tree with media queries. Do not put phone class names or phone behavior in the desktop JSX or CSS. Phone-only actions live only on the phone page.
+
+Decided 2026-10-27. The phone interaction — sheets, a period swipe, thumb targets, a different primary control — is a different page from the milled desktop fascia. It is not a narrower version of that fascia.
+
+The five sections are Habits, Plan, To Do, Goals, and Tracking.
+
+Habits, Plan, To Do, and Tracking switch at `max-width: 767px`. Goals keeps `(max-width: 720px)`, the width its fascia already used. All five phone pages are in.
+
+- **Tracking.** `Tracking/tracking-phone.tsx`, switched from `Tracking/tracking-desk.tsx`. Gate `max-width: 767px` (`useTrackingPhone`).
+- **Goals.** `GoalsPhone` via `useGoalsPhone`. Gate `(max-width: 720px)`.
+- **Plan.** The phone page via `usePlanPhone`. Gate `max-width: 767px`.
+- **Habits.** `Habits/habits-phone-page.tsx` is the page. `Habits/habits-phone.tsx`, `Habits/habits-phone-screen.tsx`, and `Habits/habits-phone.css` are the view. `WeeklyTaskTracker` in `Habits/habit-tracker.tsx` is the switch. Gate `(max-width: 767px)` in `Habits/use-habits-phone.ts`.
+- **To Do.** `ToDo/todo-phone-page.tsx` is the page and renders `ToDo/todo-mobile.tsx`. `TodoPanel` in `ToDo/todo-panel.tsx` is the switch. Gate `max-width: 767px` in `ToDo/use-todo-phone.ts`.
+
 ## Visual dashboard
 
 _Last mapped: 2026-10-20_
