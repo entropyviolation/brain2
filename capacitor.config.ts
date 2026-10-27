@@ -4,9 +4,9 @@ import type { CapacitorConfig } from "@capacitor/cli"
  * Capacitor config for packaging the /mobile Home shell as a native iOS app.
  *
  * Build flow:
- *   1. npm run build
- *   2. npm run mobile:cap:sync
- *   3. npm run mobile:ios  (opens Xcode — Run on your device to sideload)
+ *   npm run mobile:ios
+ *   builds the static site beside `npm run dev`, syncs ios/, and launches
+ *   an iPhone Simulator. A physical iPhone is Xcode → Signing → Run.
  */
 const config: CapacitorConfig = {
   appId: "com.cogs.mobile",

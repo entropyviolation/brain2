@@ -25,7 +25,7 @@ if ! command -v tree >/dev/null 2>&1; then
 fi
 
 # Dirs excluded entirely (deps / build output / VCS / heavy asset dumps).
-IGNORE='node_modules|.git|.next|out|dist|build|coverage|test-results|playwright-report|.turbo|.vercel|orbs-removebackground'
+IGNORE='node_modules|.git|.next|.mobile-build|out|dist|build|coverage|test-results|playwright-report|.turbo|.vercel|orbs-removebackground'
 OUT="docs/tree.txt"
 
 tree -I "$IGNORE" --charset=UTF-8 --noreport -n . > "$OUT"

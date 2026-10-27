@@ -43,10 +43,10 @@ Requires macOS + Xcode + a free Apple ID + CocoaPods (`brew install cocoapods`).
 ```bash
 npm install
 npm run mobile:ios:init   # first time only — adds ios/ project
-npm run mobile:ios        # build static site, sync, open Xcode
+npm run mobile:ios        # static site, sync, launch an iPhone Simulator
 ```
 
-In Xcode: select your iPhone → **Signing & Capabilities** → your Team → Run. That installs/sideloads the app.
+`npm run mobile:ios` can run while `npm run dev` is up. Next's static export always compiles into `.next`, which the dev server already owns, so the iOS script builds in `.mobile-build` and copies `out/` back (`scripts/mobile-static-build.mjs`). It then syncs `ios/` and launches an iPhone Simulator (`scripts/mobile-ios-sim.mjs`). A booted iPhone is used when one is already running; otherwise the first available iPhone. To install on a physical iPhone, open `ios/App/App.xcworkspace` in Xcode → **Signing & Capabilities** → your Team → Run.
 
 If `pod install` complains about UTF-8, the npm scripts already export `LANG=en_US.UTF-8`.
 
