@@ -225,7 +225,7 @@ export function TrackingSettingsDialog({
                   <Group title="Level categories">
                     <p className="trk-set-row-help">
                       Name the rungs of each view’s counts-as ladder — Ocean Beach is a Neighborhood, San Diego a City.
-                      Broadest first. Put a pen on a level in its settings under Counts as; Analytics → Tracking reads a
+                      Broadest first. Put a pen on a level in its settings under Counts as; Data → Tracking reads a
                       view by level.
                     </p>
                     <LevelCategoriesSettings />

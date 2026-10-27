@@ -1,4 +1,6 @@
-# `components/Analytics/` — Analytics studio
+# `components/Analytics/` — Data studio
+
+The desk tab is **Data**, formerly Analytics. The folder and the stored tab id stay `analytics`, so a saved place still opens this room.
 
 The **heart of Brain2**. Capture, Lists, Tracking, Habits, Reviews, and Modules
 write the vault. This tab is mass personal data and information-resource
@@ -13,13 +15,13 @@ lazy-loads that export from `app/page.tsx`. Views are interior
 (`analytics-views.tsx`). The shell also loads `analytics-chrome.css` from
 `app/layout.tsx`.
 
-Analytics reads the task, habit, and tracking stores. It is not the writer of
+Data reads the task, habit, and tracking stores. It is not the writer of
 tasks, habits, or tracking.
 
 The remembered window is `useAnalyticsRangeStore` in `analytics-range-store.ts`.
 Other rooms do not write it.
 
-The **Analytics** top-level tab is a light instrument studio over the vault
+The **Data** top-level tab is a light instrument studio over the vault
 already captured: tasks, points, habits, tracking scopes, sleep, metrics,
 cycle marks, reviews, operations, goals, and the item library. Charts use **recharts**
 (themed, including **pies**) plus shared studio primitives (treemap, density,
@@ -28,7 +30,7 @@ mosaic, hour×day, ribbon, **phosphor traces**). Non-trivial math lives in pure
 and `signal-stats.ts` here. No LLM in this studio today. Tasks, habits, and tracking stay in their own stores. Sources → Browser keeps Chrome exports in IndexedDB (`brain2-browser-history`, `lib/browser-history.ts`) and paints Screen Time through `lib/chrome-sessions.ts`. The Brain2 Chrome extension (`extensions/chrome-history`) posts each finished local day to `/api/chrome-history` when this app is on localhost:3000; `hooks/use-chrome-history-inbox.ts` files it. The intention to read task why, why an action was not taken, gratitude, day / week / month plan text, and the other stored prose with sentiment, machine learning, language models, and embeddings — beside the classical counts, and with a word cloud among the pictures — is [`docs/analytics-vision/06-language.md`](../../docs/analytics-vision/06-language.md). That reading is unbuilt. It does not add a store, and it does not write a model sentence back as if the person had typed it. The build that adds it, and that regroups this studio without dropping a view id or its math, is [`docs/analytics-plan/`](../../docs/analytics-plan/README.md). Those briefs are not a change to this tab.
 
 **Product law (this tab only):** keep the `.fm98` **title bar** and **status bar**
-so Analytics still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
+so Data still lives in Brain2 next to Lists. Inside them the room is an **esoteric data plate**
 (`analytics-atlas.css`, drawn from designrefs 0001–0124; see
 [`docs/DESIGN_REFS.md`](../../docs/DESIGN_REFS.md#analytics-atlas-0001-0124)):
 _Last mapped: 2026-10-23_ the range bay is a plain paper header with one ink
@@ -83,8 +85,8 @@ hidden from Settings. Causal groups stay as they are. A series shows an
 observed count and an expected-by-chance count. The app never marks a run
 meaningful on its own.
 
-**Item Types** is a first-class Analytics **Library** view. Settings still
-**edits** types. Do not move the library out of Analytics.
+**Item Types** is a first-class Data **Library** view. Settings still
+**edits** types. Do not move the library out of Data.
 
 _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per view, are in [`docs/analytics/viz-inspiration.md`](../../docs/analytics/viz-inspiration.md). It is a menu, not a spec.
 
@@ -92,9 +94,9 @@ _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per
 
 | File | Purpose |
 |------|---------|
-| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Analytics"` (docs path this file). Mounts `useScreenTimeSync` while Analytics is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
-| `analytics-views.tsx` | One `React.lazy` chunk per Analytics view. |
-| `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Analytics index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
+| `enhanced-analytics.tsx` | Window: title + studio range/nav/canvas + status. Persists the active view and canvas scroll. `data-ui-name="Data"` (docs path this file). Mounts `useScreenTimeSync` while Data is open. The open view is a lazy chunk (`analytics-views.tsx`); the shell does not import every chart. Time → Cycle phase stays that chunk when cycle tracking is off. When it is on and `cycleDetailsOpen` is false, the shell shows **Show cycle** and a concealed line (`cycle-phase-concealed.tsx`) and does not mount the phase canvas. |
+| `analytics-views.tsx` | One `React.lazy` chunk per Data view. |
+| `AnalyticsNav.tsx` | Left studio index (`data-ui-name="Data index"`, one-line `data-ui-help`, `#studio-views`). Groups then views; `role="tab"`; last view per group (persisted). Names attrs are the help — do not add a second `?` button. |
 | `analytics-tabs.ts` | Seven groups (behavior, time, accuracy, meta, texts, library, sources), views, `groupForTab` / `tabLabel` / `ANALYTICS_TAB_HELP`. A Meaning group is specified in [`docs/JungBrain2.md`](../../docs/JungBrain2.md) and is not in this file yet. |
 | `analytics-range.ts` | Presets, custom inclusive from–to, named week/month/season, prev/next (`stepAnalyticsWindow` / `previousAnalyticsWindow` / `nextAnalyticsWindow`), labels, `SAMPLE_FLOORS`, thin-window copy, date-key helpers. |
 | `analytics-range-store.ts` | Remembered rolling or custom window (`cogs-analytics-range` / `brain2-analytics-range`); `stepPeriod` for Prev/Next. |
@@ -202,7 +204,7 @@ the selected group sit beneath (`role="tab"`). Default view remains **Habits**.
 | **Accuracy** | **Plan vs Reality** | plan, events, capacity, sleep | Ribbon + events as planned minutes + waking capacity. Grain includes Season (`YYYY-Qn`). |
 | | **Calibration** | tasks | Sentence + n; type/list when floor clears; PERT when present. |
 | | **Cycle** | pushes, estimates | Stall distribution + confirmation rate + survival + age beeswarm of open important items. |
-| | **Regret** | `regret-store` | Accrued / outstanding. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day. |
+| | **Regret** | `regret-store` | Accrued / outstanding. Rows are local `YYYY-MM-DD`, same as the Data window. An old evening UTC key can still sit on the next civil day. |
 | | **Goals** | `goals-store` | Progress, neglected, contributing completions, and the hard / joyful texture of linked work. |
 | **Meta** | **Observatory** | aligned series | Pearson findings + Cross-section (includes Activity vs Screen Time occupancy). Thin overlap withheld. |
 | | **Cross-section** | many stores | Linked density; extra series: mood, joy, switches, places, goals, Screen Time. |
@@ -244,7 +246,7 @@ Group **Texts**, view **Report** (`TextsReportView.tsx`). It frames the texts re
 - `components/Analytics/studio-plot-stats.ts` — KDE, histogram, horizon bands,
   beeswarm, alluvial layout, UpSet intersections, weekday ridges.
 - `lib/overcommitment.ts` — day-push reconstruction + logged minutes.
-- `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening UTC key can still sit on the next civil day.
+- `lib/regret-store.ts` — accrued cost of important overdue items. Rows are local `YYYY-MM-DD`, same as the Data window. An old evening UTC key can still sit on the next civil day.
 - `lib/operations.ts` — `buildHeatmap` for operations minutes.
 - `lib/habit-accomplishment.ts` — Good days.
 - `lib/incremental-habits.ts` — climb targets (not re-derived here).
@@ -388,7 +390,7 @@ _Last mapped: 2026-10-23_
 
 `InstagramView.tsx` hosts the report frame. A Person's **View Instagram data ↗** stores the handle (`openInstagramFor`, `lib/instagram-report.ts`), switches to this tab, and on the frame's `load` the view posts `{ brain2Instagram: "open-account", handle }` into it. The bridge script that `injectBridge` (`electron/instagram-report.js`) puts in the report calls the report's own `openAcct(handle)`. An account not in the export opens an empty card.
 
-_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Analytics (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
+_Last mapped: 2026-10-23_ **Account card ↔ Person.** The report's per-account card (`openAcct`: follow state, DM threads sent vs got, likes, saves, comments, rankings, timeline) is the Instagram relationship card. The bridge adds an **Attach to Person** bar to its header (`ACCOUNT_BAR` in `electron/instagram-report.js`): pick a Person, **New person**, or when linked, **Open** and **Unlink**. The frame posts `{ brain2Instagram: "account", action }`; `InstagramView` answers with `person-state` and writes `personProfile.instagram` through `lib/instagram-person-links.ts` (one account, one person). **Open** and the texts report's open-person now open the Person as a popup over Data (`openItemDetailPopup`, `lib/points-ledger-nav.ts`; the shell listens in `app/page.tsx`). The Points ledger still opens the item page. The pop-out has no shell, so the texts report there still alerts.
 
 ## Browser history (`browser`)
 

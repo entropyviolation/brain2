@@ -740,7 +740,7 @@ body.win95-app .person-detail .person-nickfield .person-chipfield input.person-c
 }
 
 
-/* View text analytics: a readout that jumps to Analytics → Texts. */
+/* View text analytics: a readout that jumps to Data → Texts. */
 .person-readout-link {
   background: none;
   border: 0;

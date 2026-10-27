@@ -1,5 +1,5 @@
 /**
- * components/Analytics/BlockSearch.tsx — Find blocks without leaving Analytics
+ * components/Analytics/BlockSearch.tsx — Find blocks without leaving Data
  *
  * Calls `findBlocks` (`block-search.ts` → `lib/tracking-search.ts`). A row jumps
  * to that block on this surface. "Show matches in this view" keeps the Tracking

@@ -1,7 +1,7 @@
 /**
  * components/Analytics/PlanVsReality.tsx — Plan-vs-reality dashboard
  *
- * Shared Analytics window. Grain (day/week/month/season) is how a period is scored,
+ * Shared Data window. Grain (day/week/month/season) is how a period is scored,
  * not a second date picker. A thin sample is not a variance finding. The
  * comparison is a visual, not two lists.
  */

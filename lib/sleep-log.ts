@@ -39,7 +39,7 @@
  *
  * Each end carries its own `precision`, reusing the vocabulary already on
  * `HabitTimeEstimate.precision` in `lib/types.ts`: a remembered bedtime is
- * `"estimated"`, a glanced-at clock is `"definite"`. Analytics reports how much
+ * `"estimated"`, a glanced-at clock is `"definite"`. Data reports how much
  * of a stretch was guessed so a trend is never read as firmer than its evidence.
  *
  * Pure: no stores, no `Date.now()` outside explicit arguments.

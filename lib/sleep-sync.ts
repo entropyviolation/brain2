@@ -10,7 +10,7 @@
  * The correction can also arrive from the other end. A derived block is an
  * ordinary block: the user can drag it, split it or delete it, and doing so is a
  * perfectly clear way of saying "actually I got up at 8". `reconcileNightFromGrid`
- * carries that back into the log, so the tracker and Analytics can never end up
+ * carries that back into the log, so the tracker and Data can never end up
  * describing the same night differently. See `useSleepSync` for the latch that
  * keeps the two directions from chasing each other. Do not mount it inside the
  * block editor — re-deriving every night on click lagged the dialog and minted
@@ -26,7 +26,7 @@
  *   linked to that tag picks the minutes up through the normal tag path
  *   (`lib/habit-tracking-sync.ts`). Nothing sleep-specific is needed there.
  * - **A Done row** for the morning, with a deterministic id, so the night shows
- *   up in To-Do Done and Analytics counts like any other completed thing. A
+ *   up in To-Do Done and Data counts like any other completed thing. A
  *   remembered time is flagged `estimated` via `lib/estimated-values.ts`, the
  *   same machinery the review uses to ask "was this right?".
  *
@@ -263,7 +263,7 @@ export function syncSleepNight(date: string, now = new Date()): void {
  *
  * `useSleepSync` also paints already-hydrated nights when a sleep-aware view
  * mounts. Persist hydrates the log and the grid independently; if the listener
- * attaches after both have landed, Analytics still sees the hours and the Time
+ * attaches after both have landed, Data still sees the hours and the Time
  * Grid does not — unless we re-derive once both vaults are ready.
  */
 let deriving = false
@@ -291,7 +291,7 @@ export function replaceEntriesForTests(entries: TimeEntry[]): void {
  * A derived block is not a read-only artifact: dragging one to 8 AM is the
  * plainest way to say "I got up at 8", and before this the edit was reverted the
  * next time anything touched the log — the tracker showed one thing and
- * Analytics reported another. Now the correction travels back, so the log, the
+ * Data reported another. Now the correction travels back, so the log, the
  * grid, the Done row and the Sleep tab cannot disagree about a night.
  *
  * Only nights the log *generated* are reconciled, and only when their blocks
@@ -458,7 +458,7 @@ type PersistGate = {
  * Logged nights live in `cogs-sleep-store`. Derived Sleep blocks live in
  * `cogs-timegrid-store`. Those two hydrate independently. If the listener below
  * is attached *after* both have already landed, it never sees a change, and the
- * Time Grid stays blank while Analytics → Sleep (which reads the log) still
+ * Time Grid stays blank while Data → Sleep (which reads the log) still
  * shows the hours. Waiting for both, then calling `syncAllSleepNights`, is what
  * closes that gap. Applying sleep onto the grid *before* tracking hydrates
  * would be overwritten by the vault and look the same.
@@ -479,7 +479,7 @@ function afterPersistHydrated(persist: PersistGate | undefined, fn: () => void):
  * - Log changed → re-derive that night's blocks, Done row and habit minutes.
  * - Blocks changed → take the grid's word for the nights it just redescribed.
  * - View mounted after both vaults hydrated → paint nights that were already
- *   in the log, so Tracking cannot lag Analytics.
+ *   in the log, so Tracking cannot lag Data.
  *
  * The `deriving` latch keeps one from triggering the other; both directions are
  * idempotent, so a write that changes nothing stops there.

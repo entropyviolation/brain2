@@ -239,7 +239,7 @@ export function InstagramView() {
     return () => window.removeEventListener("message", onMessage)
   }, [source, sendPersonState])
 
-  // The frame is as tall as the Analytics pane, so the report scrolls inside
+  // The frame is as tall as the Data pane, so the report scrolls inside
   // it and its sticky nav sticks, as it does in its own window.
   useEffect(() => {
     const pane = rootRef.current?.closest(".an-content") as HTMLElement | null

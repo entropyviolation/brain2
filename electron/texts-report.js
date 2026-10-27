@@ -1,5 +1,5 @@
 /**
- * electron/texts-report.js — Analytics → Texts: the local texts report server
+ * electron/texts-report.js — Data → Texts: the local texts report server
  *
  * The texts analysis is a Python pipeline in `scripts/texts-analysis/`. It
  * reads a copy of `~/Library/Messages/chat.db`, writes aggregates and the

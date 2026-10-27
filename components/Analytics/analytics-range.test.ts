@@ -61,7 +61,7 @@ describe("analytics range", () => {
     expect(readStoredAnalyticsRange()).toEqual({ mode: "preset", days: 30 })
   })
 
-  it("the store writes the same key the rest of Analytics reads", () => {
+  it("the store writes the same key the rest of Data reads", () => {
     useAnalyticsRangeStore.getState().setDays(90)
     expect(readStoredAnalyticsRange()).toEqual({ mode: "preset", days: 90 })
     expect(useAnalyticsRangeStore.getState().days).toBe(90)

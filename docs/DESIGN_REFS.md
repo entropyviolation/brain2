@@ -88,7 +88,7 @@ Pixel-game UI and photoreal surrealism are both wanted. A window may pass
 from one into the other. A DSi-like screen is pixel type plus a few glowing
 lamps, not a second copy of the TENO screenshot.
 
-**Leave in place** Plan chip opalescence, the Analytics light-instrument
+**Leave in place** Plan chip opalescence, the Data light-instrument
 canvases, hairline texture, and the willpower plate (`willpower-gems.tsx`):
 small photographed crystal, Settings changes the photograph, plate click is
 physics stir, the crystal PNG occludes gems that pass behind it. Those are
@@ -201,7 +201,7 @@ Steal the thought. Do not paste these compositions onto every window — that is
 | Packed pixel cockpit: patch cables, nixie digits, CRT stills, analog throws | **TENO console** | The 8-bit register. Habits wells (shipped packing). Header keys and tab lamps may speak this pixel. Not a single skin pasted on every window |
 | Y2K instrument collage: clocks, analog meters, LCDs, chrome pipes, cassette | **Gadget wall** | Home leftover squares as **weather instruments**. The Tracking pen well is plain steel (not this collage, and not a photographed plate) |
 | Living picture inside a CRT, nested instrument wells around it | **IRIX cattle** | Today's friend nest (shipped, tiny). Home TOP as stacked **equal-height modules** |
-| Real oscilloscope: green sine in a bezel, POWER LED, BNC, knobs | **Tek 465B** | Habits / Home CRT wells (shipped phosphor). Analytics optional bezel. Never fake-precision axes |
+| Real oscilloscope: green sine in a bezel, POWER LED, BNC, knobs | **Tek 465B** | Habits / Home CRT wells (shipped phosphor). Data optional bezel. Never fake-precision axes |
 | Animal drawn in copper on a board | **Cat traces** | Engraved hairlines (shipped on Habits grid). Tracking pen well is plain steel; this plate is a retired reference |
 | Body + board + radial heatsink jewel | **Viscera collage** | Density for Needs Attention (lace won). Radial jewel as a gem crop |
 | Wireframe glove meeting flesh at a circuit star; operator at a mushroom desk | **Mesh hands**, **Mushroom desk** | Feral module energy. Ribbon cable as mycelium on table *edges* (deferred) |
@@ -567,7 +567,7 @@ it does not paste one still onto the window. The four failures live in
 | **To Do** | Instrument window (caption orb, mill toolbar, packed list well, period keys). Same verbs as before. Pixel lamps and a close-dissolve are in bounds. Layout still open: the push-count legend ([`UI_NEXT.md`](UI_NEXT.md)) | One TENO screenshot pasted on the table; a PCB as the table; hiding the rows behind a menu |
 | **Goals** | Packed objective list, 10-pip goal progress, gold priority chips, Direction CRT + pewter drift tape. Layout still open: chunky steppers ([`UI_NEXT.md`](UI_NEXT.md)) | A full cockpit costume of another room |
 | **Scheduler** | Instrument frame. Contents may gem. A bucket drag may leave a cursor-flock | Hiding the buckets |
-| **Analytics** | Tek bezel / phosphor optional on chart chrome; canvases stay the light-instrument studio | CRT axes that fake precision; restyling Lists to match the studio |
+| **Data** | Tek bezel / phosphor optional on chart chrome; canvases stay the light-instrument studio | CRT axes that fake precision; restyling Lists to match the studio |
 | **Tracking** | Milled frame, power lamps, plain steel pen well, white paper in a bezel, pens as the chroma. Phosphor only on the live occupancy figure | Replacing paint with the gadget-wall collage; removing the now line or sun lines; pasting retired pen-tray photos back behind the chips |
 | **Home top strip** | Equal-height modules; gadget-wall weather instruments in leftover squares | Floating white cards; one well stretched across the leftover width |
 | **Operations** | Milled frame, metal keys, phosphor. Flower CRTs / Tek are kin for wells. Layout still open: empty-state objects ([`UI_NEXT.md`](UI_NEXT.md)) | Scanlines that make the type unreadable |
@@ -629,16 +629,16 @@ implementer; see [`DESIGN_STYLE.md`](DESIGN_STYLE.md#depth--spacing).
 
 <a id="analytics-atlas-0001-0124"></a>
 
-## Analytics atlas (0001–0124)
+## Data atlas (0001–0124)
 
 A second batch, `designrefs/0001-…jpg` through `0124-…jpg`, added 2026-10-13.
-The batch is not yet catalogued still by still. The Analytics skin
+The batch is not yet catalogued still by still. The Data skin
 (`components/Analytics/analytics-atlas.css`) is the first room built from it.
 It reads the batch as technical diagrams, not costume: an esoteric data plate
 kept in a card catalog. The star and celestial stills were tried and set aside,
 along with yellow paper (too much costume).
 
-| Stills | Lane | Where it went in Analytics |
+| Stills | Lane | Where it went in Data |
 |--------|------|----------------------------|
 | 0047, 0058, 0061, 0049, 0086 (periodic-law rings, degree wheels, overlapping circles, moiré) | Idea | Range bay field rings and spokes. `public/analytics-atlas/field-lines.svg` is drawn, not a copy. |
 | 0016 (lissajous), 0007, 0034 (instrument scales, scala table) | Apply | A damped trace in the band and a CSS degree ruler along its bottom edge. |
@@ -683,7 +683,7 @@ Do:
 | `designrefs/` | Raw moodboard (not shipped assets, except the five desktop PCB stills copied to `public/pcb/`) |
 | This file | Catalog, plus how to read the stills under the redesign (gaps and conflicts at the top) |
 | [`public/pcb/`](../public/pcb/) | Served desktop plates |
-| [`public/analytics-atlas/`](../public/analytics-atlas/) | Analytics field-ring band (drawn SVG) |
+| [`public/analytics-atlas/`](../public/analytics-atlas/) | Data field-ring band (drawn SVG) |
 | [`DESIGN_STYLE.md`](DESIGN_STYLE.md) | Failures, layout, palette. Magical interaction, DSi pixel and lights, esoteric technology. Habits and Lists are examples, not templates |
 | [`UI_NEXT.md`](UI_NEXT.md) | Open layout tasks |
 | [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) | Combined work order (not edited from this pass) |

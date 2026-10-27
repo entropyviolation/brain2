@@ -3,7 +3,7 @@
  *
  * A dedicated static route (not the root app shell) so "Pop out" opens *only*
  * the current module workspace or spreadsheet. Query: `?module=<id>` or
- * `?sheet=<categoryId>`, or `?view=texts` for Analytics → Texts. Legacy hashes `#popout/module/…` and `#popout/sheet/…`
+ * `?sheet=<categoryId>`, or `?view=texts` for Data → Texts. Legacy hashes `#popout/module/…` and `#popout/sheet/…`
  * still work if they land on this page.
  */
 "use client"

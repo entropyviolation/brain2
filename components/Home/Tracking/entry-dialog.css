@@ -57,7 +57,7 @@
     0 0 0 1px #808080;
 }
 
-/* Crisp phosphor. Specificity beats the unskinned CRT caption. Analytics
+/* Crisp phosphor. Specificity beats the unskinned CRT caption. Data
  * `.an-popup` keeps its own ink title. */
 .trk95.trk-dialog.trk-entry:not(.an-popup) .trk-entry-head {
   width: 100%;

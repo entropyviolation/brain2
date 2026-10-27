@@ -1,5 +1,5 @@
 /**
- * Analytics tab groups + views.
+ * Data tab groups + views.
  */
 import { describe, expect, it } from "vitest"
 import {

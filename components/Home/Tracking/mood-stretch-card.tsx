@@ -30,7 +30,7 @@ const GUIDE = [
   "Mark only what you can feel. A blank is not a zero, and the marks are not a grade.",
   "Write the vibe — the climate the next hours swim in — and the shorthand the mind is offering. If a lighter map appears, take it only when it is more accurate. Do not invent a pleasanter body.",
   "Set the tone, the enjoyment that is actually there, the leaning (grasping), and how clearly the heaps are seen. In About that, a kindness counts only if you feel it.",
-  "Save. Later, Analytics → Time → Mood field keeps the same word on different hours apart, lists the water, and averages only the marks you set.",
+  "Save. Later, Data → Time → Mood field keeps the same word on different hours apart, lists the water, and averages only the marks you set.",
 ] as const
 
 const EVENT_RANKS: { key: MoodRankKey; prompt: string }[] = [

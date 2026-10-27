@@ -1,7 +1,7 @@
 /**
- * components/Analytics/analytics-range.ts — Shared Analytics window + honesty
+ * components/Analytics/analytics-range.ts — Shared Data window + honesty
  *
- * One window for every Analytics tab so Sleep, Habits, Tracking, and
+ * One window for every Data tab so Sleep, Habits, Tracking, and
  * Plan-vs-Reality can be compared without re-picking. Presets are rolling last
  * 7 / 14 / 30 / 90 days. A custom window is inclusive local from–to dates
  * (or a named week/month, which still labels as those dates). Prev/next shifts

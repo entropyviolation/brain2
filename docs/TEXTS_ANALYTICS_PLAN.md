@@ -1,8 +1,8 @@
-# Texts in Analytics
+# Texts in Data
 
 _Last mapped: 2026-10-22_
 
-Analytics gains a **Texts** group. Its one view, **Report**, shows the texts analysis that was built as a side project in `~/texts-analysis`. It covers every iMessage and SMS on the Mac since July 2018 (about 305,000 messages).
+Data gains a **Texts** group. Its one view, **Report**, shows the texts analysis that was built as a side project in `~/texts-analysis`. It covers every iMessage and SMS on the Mac since July 2018 (about 305,000 messages).
 
 ## Rules from allie (2026-10-22)
 

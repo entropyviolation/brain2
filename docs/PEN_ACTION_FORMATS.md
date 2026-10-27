@@ -122,7 +122,7 @@ Anywhere completed work is read, because they are ordinary completed tasks:
 
 - Home → **To Do** → *Done today*
 - Home → **Tracking** → Activity Log → *Done this day*
-- Analytics' completion counts and points
+- Data' completion counts and points
 - Reviews, which read the day's done items
 
 ## When it runs

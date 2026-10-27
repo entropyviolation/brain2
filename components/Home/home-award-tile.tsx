@@ -6,8 +6,8 @@
  * weekly-habit grade that beat last week. Click lists recent awards; each
  * row opens its breakdown (`award-detail.tsx`: kind, item, multipliers,
  * rules, the day's other rows); its item opens on top of the dialog, like
- * Today's Progress. **Every award in Analytics** at the foot jumps
- * to the Analytics Points ledger (`lib/points-ledger-nav.ts`), with the open
+ * Today's Progress. **Every award in Data** at the foot jumps
+ * to the Data Points ledger (`lib/points-ledger-nav.ts`), with the open
  * row expanded there. Bonus amounts are edited in Habits → Settings.
  */
 "use client"
@@ -102,7 +102,7 @@ export function AwardTile({ onHide }: { onHide: () => void }) {
             openPointsLedger(openEntry ? { date: openEntry.date, taskId: openEntry.taskId } : undefined)
           }}
         >
-          Every award in Analytics ›
+          Every award in Data ›
         </button>
         <p className="home-widget-note">
           High completion, beating yesterday’s habit grades, and beating last week’s weekly habit grades are edited in

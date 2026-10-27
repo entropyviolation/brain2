@@ -1,5 +1,5 @@
 /**
- * lib/texts-report-nav.ts — the texts report's sections, shown in the Analytics sidebar
+ * lib/texts-report-nav.ts — the texts report's sections, shown in the Data sidebar
  *
  * The report frame sends its headings and the one on screen (`TextsReportView`).
  * `AnalyticsNav` lists them under Views and asks the frame to scroll with `goto`.

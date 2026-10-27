@@ -1,4 +1,4 @@
-# Analytics vision — Language
+# Data vision — Language
 
 This is an **intention**. It is not a surface that ships, and it is not a claim that a model has already read the vault.
 

@@ -78,7 +78,7 @@ user exists. The open-source repo publishes those values.
 
 - Accounts required to use the app.
 - Telemetry, ad identity, or a social graph built from the vault.
-- Analytics across people's vaults.
+- Data across people's vaults.
 - An `agent` that writes without an accept.
 - A companion who can see what the owner did not grant, or a share with no
   end date by default.

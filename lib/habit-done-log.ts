@@ -3,7 +3,7 @@
  *
  * When a habit first meets its goal for a day (or weekly/monthly period), write
  * a `loggedAction` row into the task store so it appears in Done today / this
- * week / this month and in Analytics task counts. Un-meeting the goal removes
+ * week / this month and in Data task counts. Un-meeting the goal removes
  * that row. Points stay on `habits-store` (rewardValue 0 here; no completion popup).
  *
  * The row is not a bare date. It carries **how long the habit took** and **where

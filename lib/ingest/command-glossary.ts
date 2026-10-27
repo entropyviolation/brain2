@@ -509,7 +509,7 @@ Send "note commands".`,
   sleep: `${BIM_SHORT} · Sleep
 • sleep: 11:30-7:00  ·  slept:
 • Inside gm: bed / wake / dream, or all nighter
-• Analytics → Sleep shows nights and all-nighter days (text pipeline labeled)
+• Data → Sleep shows nights and all-nighter days (text pipeline labeled)
 
 Send "sleep commands".`,
 

@@ -2,7 +2,7 @@
  * components/Analytics/StreaksWidget.tsx — Streaks (Brain2 §8b / §9.5)
  *
  * Current + longest streaks for habits and the daily review ritual. Not
- * clipped to the Analytics window. Home glance stays on Home.
+ * clipped to the Data window. Home glance stays on Home.
  */
 "use client"
 
@@ -65,7 +65,7 @@ export function StreaksWidget() {
 
   return (
     <div className="an-canvas an-stack">
-      <p className="an-canvas-kicker">Current and longest runs — not clipped to the Analytics date range.</p>
+      <p className="an-canvas-kicker">Current and longest runs — not clipped to the Data date range.</p>
       <div className="an-readouts">
         <StudioReadout label="Best active habit streak" value={topHabitStreak} />
         <StudioReadout label="Daily review streak" value={reviewStreak.current} note={`best ${reviewStreak.longest}`} />
@@ -73,7 +73,7 @@ export function StreaksWidget() {
 
       <p className="an-canvas-title">Habit streaks</p>
       {habitStreaks.length === 0 ? (
-        <ChartFrame empty emptySentence="No habits yet. Streaks are current runs, not limited to the Analytics window." />
+        <ChartFrame empty emptySentence="No habits yet. Streaks are current runs, not limited to the Data window." />
       ) : (
         <>
           <ul className="an-list">

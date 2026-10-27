@@ -3,7 +3,7 @@
  *
  * `live` (default) reads storage during the first render. Panels behind a
  * lazy boundary are not in the static HTML, so that read cannot mismatch
- * hydration: Habits, Plan, To Do, and Analytics open on the saved view.
+ * hydration: Habits, Plan, To Do, and Data open on the saved view.
  *
  * `hydrate` is only for the app shell, which *is* in the static HTML. The
  * first render stays on the fallback so Radix hydrates the server trigger,

@@ -74,15 +74,15 @@ describe("EnhancedAnalytics", () => {
   it("renders the window, group bar, view changer, and shared range once", async () => {
     render(<EnhancedAnalytics />)
 
-    expect(screen.getByText("Analytics")).toBeInTheDocument()
-    expect(screen.getByLabelText("Analytics date range")).toHaveTextContent("last 30 days")
-    const groups = screen.getByRole("tablist", { name: "Analytics groups" })
+    expect(screen.getByText("Data")).toBeInTheDocument()
+    expect(screen.getByLabelText("Data date range")).toHaveTextContent("last 30 days")
+    const groups = screen.getByRole("tablist", { name: "Data groups" })
     expect(within(groups).getByRole("tab", { name: "Behavior" })).toHaveAttribute("aria-selected", "true")
     expect(within(groups).getByRole("tab", { name: "Time" })).toBeInTheDocument()
     expect(within(groups).getByRole("tab", { name: "Accuracy" })).toBeInTheDocument()
     expect(within(groups).getByRole("tab", { name: "Meta" })).toBeInTheDocument()
     expect(within(groups).getByRole("tab", { name: "Library" })).toBeInTheDocument()
-    const views = screen.getByRole("tablist", { name: "Analytics views" })
+    const views = screen.getByRole("tablist", { name: "Data views" })
     expect(within(views).getByRole("tab", { name: "Habits" })).toHaveAttribute("aria-selected", "true")
     expect(within(views).getByRole("tab", { name: "Streaks" })).toBeInTheDocument()
     expect(screen.queryByText("Item Types live in Settings")).not.toBeInTheDocument()
@@ -139,12 +139,12 @@ describe("EnhancedAnalytics", () => {
     render(<EnhancedAnalytics />)
 
     await user.click(screen.getByRole("button", { name: "7 days" }))
-    expect(screen.getByLabelText("Analytics date range")).toHaveTextContent("last 7 days")
+    expect(screen.getByLabelText("Data date range")).toHaveTextContent("last 7 days")
     expect(localStorage.getItem(ANALYTICS_RANGE_STORAGE_KEY)).toBe("7")
 
     await user.click(screen.getByRole("tab", { name: "Time" }))
     await user.click(screen.getByRole("tab", { name: "Sleep" }))
-    expect(screen.getByLabelText("Analytics date range")).toHaveTextContent("last 7 days")
+    expect(screen.getByLabelText("Data date range")).toHaveTextContent("last 7 days")
     expect(await screen.findByText(/1 of 7 nights tracked|0 of 7 nights tracked/)).toBeInTheDocument()
   })
 
@@ -156,7 +156,7 @@ describe("EnhancedAnalytics", () => {
     const to = screen.getByLabelText("To date")
     fireEvent.change(from, { target: { value: "2026-08-01" } })
     fireEvent.change(to, { target: { value: "2026-09-21" } })
-    expect(screen.getByLabelText("Analytics date range")).toHaveTextContent("2026-08-01 – 2026-09-21")
+    expect(screen.getByLabelText("Data date range")).toHaveTextContent("2026-08-01 – 2026-09-21")
   })
 
   it("switches to the Points tab and keeps empty charts honest", async () => {

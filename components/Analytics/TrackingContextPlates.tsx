@@ -1,7 +1,7 @@
 /**
  * components/Analytics/TrackingContextPlates.tsx — Level ladder and company headcount
  *
- * Two plates for Analytics → Tracking, both read-only over the tracking store.
+ * Two plates for Data → Tracking, both read-only over the tracking store.
  *
  * - **Level ladder** (`LevelLadderPlate`): when the chosen view names level
  *   categories (`lib/pen-levels.ts`) and pens sit on them, one row per level,

@@ -1,5 +1,5 @@
 /**
- * lib/miss-reason-corpus.ts — Dated why-it-didn't notes for Analytics → Reviews
+ * lib/miss-reason-corpus.ts — Dated why-it-didn't notes for Data → Reviews
  *
  * One list: push placements, missed tasks, habit cells, missed operations,
  * and ritual blocked reasons already on period reviews. Counts are by preset

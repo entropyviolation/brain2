@@ -16,7 +16,7 @@
  * - **Social week**: minutes with anyone per day of the window.
  * - The **Who you were with** headcount plate (alone / 1 / 2 / 3 / 4+).
  *
- * Read-only over the tracking store, like every Analytics view.
+ * Read-only over the tracking store, like every Data view.
  */
 "use client"
 

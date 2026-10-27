@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-atlas.css — Analytics as an esoteric data plate
+ * components/Analytics/analytics-atlas.css — Data as an esoteric data plate
  *
  * Skin over `analytics-chrome.css`: same selectors, same DOM, loaded after it.
  * Nothing here changes what a control does. Drawn from designrefs 0001–0124,
@@ -164,7 +164,7 @@
 /* Typewriter keys: range presets, custom periods, Prev / Next.
    `:not(#at)` adds id weight so these faces beat the house button lip
    (`body.win95-app button:not(...)` in win95.css, 0-7-2 on :active).
-   The same guard sits on every Analytics key below. */
+   The same guard sits on every Data key below. */
 .fm98.an95 .an-range-chip:not(#at) {
   min-height: 26px;
   padding: 3px 12px 3px 24px;

@@ -1,6 +1,6 @@
 # Build brief — how a new plate looks
 
-This brief is the visual law for every later implementation agent. A plate that follows it is the same light instrument studio the Analytics tab already is. Beauty is composition of the kit that already exists. Do not invent a color system.
+This brief is the visual law for every later implementation agent. A plate that follows it is the same light instrument studio the Data tab already is. Beauty is composition of the kit that already exists. Do not invent a color system.
 
 Source of the look: the product law in `components/Analytics/README.md`, the exports and header of `components/Analytics/studio-kit.tsx`, the exports and header of `components/Analytics/studio-plots.tsx`, and the empty / thin furniture in `components/Analytics/chart-frame.tsx`. Range and the left index stay the house milled fascia. Canvases stay Win95 face (`#c0c0c0` / `--an-paper`), ink `#000000`, Karla only, nested milled wells, and **white plot wells** (`--an-hi`) inside milled rims.
 
@@ -56,7 +56,7 @@ A join card caption states the join key and the partial side in one line under t
 
 ## What stays put
 
-Do not restyle Lists, Home, Habits, Plan, Tracking, Scheduler, or Operations. Do not restyle the Analytics `.fm98` title bar or status bar. Do not introduce a dark CRT theme, cream paper, or a new accent. Phosphor `#3dff8a` is for line traces only.
+Do not restyle Lists, Home, Habits, Plan, Tracking, Scheduler, or Operations. Do not restyle the Data `.fm98` title bar or status bar. Do not introduce a dark CRT theme, cream paper, or a new accent. Phosphor `#3dff8a` is for line traces only.
 
 Drill and popup titles stay `.an-drill` / `.an-popup`: crisp Karla, opted out of CRT glow.
 

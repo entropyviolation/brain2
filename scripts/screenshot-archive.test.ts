@@ -140,7 +140,7 @@ describe("writeReelIndex", () => {
     expect(crop?.view).toBe("Habits control-panel crop; no sidecar")
     expect(crop?.area).toBe("Other")
 
-    expect(reel.groups.map((group) => group.area)).toEqual(["Home → Habits", "Analytics", "Other"])
+    expect(reel.groups.map((group) => group.area)).toEqual(["Home → Habits", "Data", "Other"])
     expect(reel.groups[0].files).toEqual(["01-home-daily-habits.png"])
   })
 })

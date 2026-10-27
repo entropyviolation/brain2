@@ -15,7 +15,7 @@ NOTE: PNG not recaptured in this pass. This sidecar matches the Tracking log UI.
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar. Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Pinned full-width mill title bar. Tabs: Home · Lists · Docs · Scheduler · Operations · Modules · Data.
   Home sub-tabs: Habits · Plan · To Do · Goals · Tracking.
 
 VIEW-SPECIFIC

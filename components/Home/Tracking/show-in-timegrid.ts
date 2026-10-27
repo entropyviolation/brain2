@@ -1,7 +1,7 @@
 /**
  * components/Home/Tracking/show-in-timegrid.ts — Jump from a block to the Time Grid
  *
- * The block editor can sit on the Activity Log, the Day Log, Analytics, the
+ * The block editor can sit on the Activity Log, the Day Log, Data, the
  * task card, or the header Now popup. This leaves that layer, opens Home →
  * Tracking → Time Grid on the block's day and view, and asks the day grid to
  * scroll that block's hour up under the ruler. The block is named by id, so

@@ -1,8 +1,8 @@
-# Information is Beautiful → Brain2 Analytics
+# Information is Beautiful → Brain2 Data
 
 _Last mapped: 2026-10-23_
 
-What this is: every data type that flows into Analytics, matched to a piece on
+What this is: every data type that flows into Data, matched to a piece on
 [Information is Beautiful](https://informationisbeautiful.net/) (IIB) and how to
 adapt it as an interactive plate. Section agents read **only their own section**
 below plus **Moves** and **Rules**. Nothing here is built. It is a menu, not a spec.

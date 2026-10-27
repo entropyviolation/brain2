@@ -4,7 +4,7 @@
  * Self-contained analytics view (reads `metrics-store` itself). For the selected
  * metric it shows the raw value series, a least-squares trend line, a rolling
  * slope (momentum), detected change-points, and headline stats — all computed by
- * the pure `lib/metrics.ts` helpers (no LLM). Mounted as an Analytics tab by the
+ * the pure `lib/metrics.ts` helpers (no LLM). Mounted as an Data tab by the
  * integration pass.
  */
 "use client"

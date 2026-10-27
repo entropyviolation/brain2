@@ -39,7 +39,7 @@ const PREFIX_AREAS = {
   "04": "Home → Goals",
   "05": "Lists",
   "06": "Scheduler",
-  "07": "Analytics",
+  "07": "Data",
   "08": "Home → Tracking",
   "09": "Modules",
   "10": "Operations",

@@ -995,8 +995,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-attributes.png",
-      "view": "Analytics tab → Library → Attributes",
-      "area": "Analytics → Attributes",
+      "view": "Data tab → Library → Attributes",
+      "area": "Data → Attributes",
       "frames": [
         {
           "src": "history/07-analytics-attributes/2026-10-06T00-35-02.png",
@@ -1037,8 +1037,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-calibration.png",
-      "view": "Analytics tab → Calibration",
-      "area": "Analytics → Calibration",
+      "view": "Data tab → Calibration",
+      "area": "Data → Calibration",
       "frames": [
         {
           "src": "history/07-analytics-calibration/2026-10-06T00-34-50.png",
@@ -1079,8 +1079,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-circadian.png",
-      "view": "Analytics tab → Time → Circadian",
-      "area": "Analytics → Circadian",
+      "view": "Data tab → Time → Circadian",
+      "area": "Data → Circadian",
       "frames": [
         {
           "src": "history/07-analytics-circadian/2026-10-06T00-34-44.png",
@@ -1121,8 +1121,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-context-switch.png",
-      "view": "Analytics tab → Context Switch",
-      "area": "Analytics → Context Switch",
+      "view": "Data tab → Context Switch",
+      "area": "Data → Context Switch",
       "frames": [
         {
           "src": "history/07-analytics-context-switch/2026-10-06T00-34-48.png",
@@ -1163,8 +1163,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-correlation.png",
-      "view": "Analytics tab → Correlation",
-      "area": "Analytics → Correlation",
+      "view": "Data tab → Correlation",
+      "area": "Data → Correlation",
       "frames": [
         {
           "src": "history/07-analytics-correlation/2026-10-06T00-34-58.png",
@@ -1205,8 +1205,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-cross-section.png",
-      "view": "Analytics tab → Meta → Cross-section",
-      "area": "Analytics → Cross-section",
+      "view": "Data tab → Meta → Cross-section",
+      "area": "Data → Cross-section",
       "frames": [
         {
           "src": "history/07-analytics-cross-section/2026-10-06T00-34-59.png",
@@ -1247,8 +1247,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-cycle.png",
-      "view": "Analytics tab → Accuracy → Cycle",
-      "area": "Analytics → Cycle",
+      "view": "Data tab → Accuracy → Cycle",
+      "area": "Data → Cycle",
       "frames": [
         {
           "src": "history/07-analytics-cycle/2026-10-06T00-34-51.png",
@@ -1289,8 +1289,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-diversity.png",
-      "view": "Analytics tab → Time → Diversity",
-      "area": "Analytics → Diversity",
+      "view": "Data tab → Time → Diversity",
+      "area": "Data → Diversity",
       "frames": [
         {
           "src": "history/07-analytics-diversity/2026-10-06T00-43-21.png",
@@ -1326,8 +1326,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-goals.png",
-      "view": "Analytics tab → Accuracy → Goals",
-      "area": "Analytics → Goals",
+      "view": "Data tab → Accuracy → Goals",
+      "area": "Data → Goals",
       "frames": [
         {
           "src": "history/07-analytics-goals/2026-10-06T00-34-52.png",
@@ -1368,8 +1368,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-item-types.png",
-      "view": "Analytics tab → Library → Item Types",
-      "area": "Analytics → Item Types",
+      "view": "Data tab → Library → Item Types",
+      "area": "Data → Item Types",
       "frames": [
         {
           "src": "history/07-analytics-item-types/2026-10-06T00-35-00.png",
@@ -1410,8 +1410,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-lists-areas.png",
-      "view": "Analytics tab → Library → Lists & areas",
-      "area": "Analytics → Lists & areas",
+      "view": "Data tab → Library → Lists & areas",
+      "area": "Data → Lists & areas",
       "frames": [
         {
           "src": "history/07-analytics-lists-areas/2026-10-06T00-35-01.png",
@@ -1452,8 +1452,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-metrics.png",
-      "view": "Analytics tab → Metrics",
-      "area": "Analytics → Metrics",
+      "view": "Data tab → Metrics",
+      "area": "Data → Metrics",
       "frames": [
         {
           "src": "history/07-analytics-metrics/2026-10-06T00-34-57.png",
@@ -1494,8 +1494,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-mood-field.png",
-      "view": "Analytics tab → Time → Mood field",
-      "area": "Analytics → Mood field",
+      "view": "Data tab → Time → Mood field",
+      "area": "Data → Mood field",
       "frames": [
         {
           "src": "history/07-analytics-mood-field/2026-10-06T00-34-45.png",
@@ -1541,8 +1541,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-observatory.png",
-      "view": "Analytics tab → Meta → Observatory",
-      "area": "Analytics → Observatory",
+      "view": "Data tab → Meta → Observatory",
+      "area": "Data → Observatory",
       "frames": [
         {
           "src": "history/07-analytics-observatory/2026-10-06T00-34-56.png",
@@ -1583,8 +1583,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-operations.png",
-      "view": "Analytics tab → Time → Operations",
-      "area": "Analytics → Operations",
+      "view": "Data tab → Time → Operations",
+      "area": "Data → Operations",
       "frames": [
         {
           "src": "history/07-analytics-operations/2026-10-06T00-34-48.png",
@@ -1625,8 +1625,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-overcommit.png",
-      "view": "Analytics tab → Behavior → Overcommit",
-      "area": "Analytics → Overcommit",
+      "view": "Data tab → Behavior → Overcommit",
+      "area": "Data → Overcommit",
       "frames": [
         {
           "src": "history/07-analytics-overcommit/2026-10-06T00-34-55.png",
@@ -1667,8 +1667,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-places.png",
-      "view": "Analytics tab → Time → Places",
-      "area": "Analytics → Places",
+      "view": "Data tab → Time → Places",
+      "area": "Data → Places",
       "frames": [
         {
           "src": "history/07-analytics-places/2026-10-06T00-34-45.png",
@@ -1714,8 +1714,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-plan-vs-reality.png",
-      "view": "Analytics tab → Plan vs Reality",
-      "area": "Analytics → Plan vs Reality",
+      "view": "Data tab → Plan vs Reality",
+      "area": "Data → Plan vs Reality",
       "frames": [
         {
           "src": "history/07-analytics-plan-vs-reality/2026-10-06T00-34-49.png",
@@ -1756,8 +1756,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-points.png",
-      "view": "Analytics tab → Points",
-      "area": "Analytics → Points",
+      "view": "Data tab → Points",
+      "area": "Data → Points",
       "frames": [
         {
           "src": "history/07-analytics-points/2026-10-06T00-34-40.png",
@@ -1803,8 +1803,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-reflection.png",
-      "view": "Analytics tab → Reflection",
-      "area": "Analytics → Reflection",
+      "view": "Data tab → Reflection",
+      "area": "Data → Reflection",
       "frames": [
         {
           "src": "history/07-analytics-reflection/2026-10-06T00-34-54.png",
@@ -1845,8 +1845,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-regret.png",
-      "view": "Analytics tab → Regret",
-      "area": "Analytics → Regret",
+      "view": "Data tab → Regret",
+      "area": "Data → Regret",
       "frames": [
         {
           "src": "history/07-analytics-regret/2026-10-06T00-34-52.png",
@@ -1887,8 +1887,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-reviews.png",
-      "view": "Analytics tab → Reviews",
-      "area": "Analytics → Reviews",
+      "view": "Data tab → Reviews",
+      "area": "Data → Reviews",
       "frames": [
         {
           "src": "history/07-analytics-reviews/2026-10-06T00-34-55.png",
@@ -1929,8 +1929,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-screentime.png",
-      "view": "Analytics tab → Time → Screen Time",
-      "area": "Analytics → Screen Time",
+      "view": "Data tab → Time → Screen Time",
+      "area": "Data → Screen Time",
       "frames": [
         {
           "src": "history/07-analytics-screentime/2026-10-06T00-43-18.png",
@@ -1966,8 +1966,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-sleep.png",
-      "view": "Analytics tab → Sleep",
-      "area": "Analytics → Sleep",
+      "view": "Data tab → Sleep",
+      "area": "Data → Sleep",
       "frames": [
         {
           "src": "history/07-analytics-sleep/2026-10-06T00-34-42.png",
@@ -2008,8 +2008,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-spectrum.png",
-      "view": "Analytics tab → Meta → Spectrum",
-      "area": "Analytics → Spectrum",
+      "view": "Data tab → Meta → Spectrum",
+      "area": "Data → Spectrum",
       "frames": [
         {
           "src": "history/07-analytics-spectrum/2026-10-06T00-43-34.png",
@@ -2045,8 +2045,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-stages.png",
-      "view": "Analytics tab → Library → Stages",
-      "area": "Analytics → Stages",
+      "view": "Data tab → Library → Stages",
+      "area": "Data → Stages",
       "frames": [
         {
           "src": "history/07-analytics-stages/2026-10-06T00-43-38.png",
@@ -2082,8 +2082,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-streaks.png",
-      "view": "Analytics tab → Streaks",
-      "area": "Analytics → Streaks",
+      "view": "Data tab → Streaks",
+      "area": "Data → Streaks",
       "frames": [
         {
           "src": "history/07-analytics-streaks/2026-10-06T00-34-53.png",
@@ -2124,8 +2124,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-tags.png",
-      "view": "Analytics tab → Library → Tags",
-      "area": "Analytics → Tags",
+      "view": "Data tab → Library → Tags",
+      "area": "Data → Tags",
       "frames": [
         {
           "src": "history/07-analytics-tags/2026-10-06T00-43-38.png",
@@ -2161,8 +2161,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-tracking-breakdown.png",
-      "view": "Analytics tab → Tracking → click a pen row",
-      "area": "Analytics → Tracking → pen breakdown",
+      "view": "Data tab → Tracking → click a pen row",
+      "area": "Data → Tracking → pen breakdown",
       "frames": [
         {
           "src": "history/07-analytics-tracking-breakdown/2026-10-06T00-35-06.png",
@@ -2208,8 +2208,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-tracking-tag.png",
-      "view": "Analytics tab → Tracking → click a tag in By tag",
-      "area": "Analytics → Tracking → tag breakdown",
+      "view": "Data tab → Tracking → click a tag in By tag",
+      "area": "Data → Tracking → tag breakdown",
       "frames": [
         {
           "src": "history/07-analytics-tracking-tag/2026-10-06T00-35-07.png",
@@ -2255,8 +2255,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-tracking.png",
-      "view": "Analytics tab → Tracking",
-      "area": "Analytics → Tracking",
+      "view": "Data tab → Tracking",
+      "area": "Data → Tracking",
       "frames": [
         {
           "src": "history/07-analytics-tracking/2026-10-06T00-34-42.png",
@@ -2297,8 +2297,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-transitions.png",
-      "view": "Analytics tab → Time → Transitions",
-      "area": "Analytics → Transitions",
+      "view": "Data tab → Time → Transitions",
+      "area": "Data → Transitions",
       "frames": [
         {
           "src": "history/07-analytics-transitions/2026-10-06T00-43-22.png",
@@ -2334,8 +2334,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-velocity.png",
-      "view": "Analytics tab → Behavior → Velocity",
-      "area": "Analytics → Velocity",
+      "view": "Data tab → Behavior → Velocity",
+      "area": "Data → Velocity",
       "frames": [
         {
           "src": "history/07-analytics-velocity/2026-10-06T00-34-41.png",
@@ -2376,8 +2376,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics-weight.png",
-      "view": "Analytics tab → Library → Weight",
-      "area": "Analytics → Weight",
+      "view": "Data tab → Library → Weight",
+      "area": "Data → Weight",
       "frames": [
         {
           "src": "history/07-analytics-weight/2026-10-06T00-43-39.png",
@@ -2413,8 +2413,8 @@ window.SCREENSHOT_REEL = {
     },
     {
       "file": "07-analytics.png",
-      "view": "Analytics tab → Habits",
-      "area": "Analytics → Habits",
+      "view": "Data tab → Habits",
+      "area": "Data → Habits",
       "frames": [
         {
           "src": "history/07-analytics/2026-10-06T00-34-39.png",
@@ -4092,7 +4092,7 @@ window.SCREENSHOT_REEL = {
       ]
     },
     {
-      "area": "Analytics",
+      "area": "Data",
       "files": [
         "07-analytics-attributes.png",
         "07-analytics-calibration.png",

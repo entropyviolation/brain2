@@ -14,7 +14,7 @@ Brain2 already runs two engines that Jung spent his late work putting side by si
 
 ## Parallels from Synchronicity
 
-Brain2 matches 19 of the book's structural ideas. The strongest overlap is how it treats statistics: Jung wants a rule-finder that still respects the exception, and Analytics already works that way.
+Brain2 matches 19 of the book's structural ideas. The strongest overlap is how it treats statistics: Jung wants a rule-finder that still respects the exception, and Data already works that way.
 
 1. **Two kinds of connection run through every event.**
    - Text: Following Schopenhauer, each event in a life sits in two chains at once. One is the objective causal chain. The other is a subjective connection that exists only for the person living it (pp. 20–21). Schopenhauer drew these as meridians crossed by parallels.
@@ -58,7 +58,7 @@ Brain2 matches 19 of the book's structural ideas. The strongest overlap is how i
 
 11. **An omen is built from earlier coincidences.**
     - Text: The wife read the birds as a death omen only because two similar coincidences came before. At the grandmother's death there was no omen yet, just the coincidence (p. 35).
-    - Brain2: A pattern needs a dated history before it counts, which is the rule behind Analytics' sample floors and the "usually ~N" glance. Brain2 applies it to durations. Jung applies it to meanings.
+    - Brain2: A pattern needs a dated history before it counts, which is the rule behind Data' sample floors and the "usually ~N" glance. Brain2 applies it to durations. Jung applies it to meanings.
 
 12. **The unconscious often knows more than consciousness.**
     - Text: Jung suggests the wife's unconscious had already sensed the danger (p. 35). He later speaks of an a priori knowledge, an immediacy of events with no causal basis (p. 40).
@@ -86,7 +86,7 @@ Brain2 matches 19 of the book's structural ideas. The strongest overlap is how i
 
 18. **The quaternio adds a fourth principle beside cause.**
     - Text: Space, time and causality become a quaternio with synchronicity added. Jung and Pauli's version sets causality against synchronicity (pp. 107–109). New viewpoints tend to come from out-of-the-way, disreputable places (p. 108).
-    - Brain2: The Analytics studio has groups for causal and temporal views. It has no group for acausal views: coincidence, recurrence, symbol. Brain2's own out-of-the-way places, such as dreams in the morning review, phone notes and parked captures, are where that group would draw from.
+    - Brain2: The Data studio has groups for causal and temporal views. It has no group for acausal views: coincidence, recurrence, symbol. Brain2's own out-of-the-way places, such as dreams in the morning review, phone notes and parked captures, are where that group would draw from.
 
 19. **Acts of creation in time.**
     - Text: Psychic orderedness differs from the timeless order of numbers because it happens as acts of creation in time. That is why Jung stressed time and chose the word synchronicity (pp. 110–112).
@@ -145,7 +145,7 @@ Several of Brain2's own processes and plans already follow the book's shape, inc
 | Rename from Cogs to Brain2, with cogs kept in persist keys | A symbol of rebirth arrives at a stuck point (the scarab and Khepri, p. 32). The old name still works underneath, like the old film under the new exposure (p. 24). | `lib/app-brand.ts`; README naming note |
 | Vault pinned so a rename cannot wipe lists and habits | Continuous memory makes a self. A break in memory takes identity with it (Stages). | Electron vault pin, commit `f43f3ec` |
 | One Item noun in every room | The microcosm: each part mirrors the whole (pp. 84, 93). | README law 1; `lib/types.ts` |
-| Analytics as the heart | The statistical method, useful and one-sided at once (pp. 56, 71). | `components/Analytics/` |
+| Data as the heart | The statistical method, useful and one-sided at once (pp. 56, 71). | `components/Analytics/` |
 | Labeled estimates, never asserted | Knowledge that comes before confirmation, shown as knowledge the conscious mind has not confirmed yet (p. 40). | `lib/estimated-values.ts`, est. chip |
 | Module install wizard; an LLM maps once, then the module runs deterministically | A tertium comparationis: a shared form lets two unrelated systems line up (the I Ching's even and odd numbers, p. 45). The manifest is that shared form. | `MODULE_PLATFORM.md` |
 | Today's friend: chance picks, a personality, missions | Mantic procedure: chance plus expectation calls up the unconscious (pp. 74–75). The animal is a guide figure. | `lib/friend-*.ts`, `FRIEND_COMPANION.md` |

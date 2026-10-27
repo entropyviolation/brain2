@@ -30,7 +30,7 @@ function AppTabStrip() {
         <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
         <TabsTrigger value="operations">Operations</TabsTrigger>
         <TabsTrigger value="modules">Modules</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsTrigger value="analytics">Data</TabsTrigger>
       </TabsList>
       {tab === "home" && <TabsContent value="home">Home view</TabsContent>}
       {tab === "categories" && <TabsContent value="categories">Lists view</TabsContent>}
@@ -38,7 +38,7 @@ function AppTabStrip() {
       {tab === "scheduler" && <TabsContent value="scheduler">Scheduler view</TabsContent>}
       {tab === "operations" && <TabsContent value="operations">Operations view</TabsContent>}
       {tab === "modules" && <TabsContent value="modules">Modules view</TabsContent>}
-      {tab === "analytics" && <TabsContent value="analytics">Analytics view</TabsContent>}
+      {tab === "analytics" && <TabsContent value="analytics">Data view</TabsContent>}
     </Tabs>
   )
 }

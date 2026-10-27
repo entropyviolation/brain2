@@ -6,7 +6,7 @@ A Chrome extension that, at **12:05am local time**, exports the calendar day tha
 
 It does two things with that day:
 
-1. Posts it to Brain2 at `http://127.0.0.1:3000/api/chrome-history` (loopback only). When Brain2 is open there — `npm run dev`, `electron:dev`, or `electron:local` — the app files the visits into Analytics → Sources → Browser and paints new stretches on Screen Time. Visits already kept are not added again.
+1. Posts it to Brain2 at `http://127.0.0.1:3000/api/chrome-history` (loopback only). When Brain2 is open there — `npm run dev`, `electron:dev`, or `electron:local` — the app files the visits into Data → Sources → Browser and paints new stretches on Screen Time. Visits already kept are not added again.
 2. Saves `Downloads/Brain2 Chrome/{profile} {day}.json`. The same page can take that file by hand. The box in the popup turns the file off.
 
 If Chrome was asleep or quit at midnight, the missed alarm runs the next time Chrome starts, and each missing day is exported in turn. The first install exports yesterday. **Send the history Chrome still has** walks the roughly 90 days Chrome still stores.

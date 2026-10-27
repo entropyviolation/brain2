@@ -3,7 +3,7 @@
  *
  * The Time Grid answers "what shape was my day"; this answers "what actually
  * happened, in order". Same data, same occupancy totals (`lib/tracking-summary.ts`),
- * no second source of truth — a block edited here changes the grid and the Analytics
+ * no second source of truth — a block edited here changes the grid and the Data
  * numbers in the same breath. Overlapping blocks count once, so "% of the day"
  * matches the grid rather than the sum of every block's length.
  *

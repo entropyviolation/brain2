@@ -4,7 +4,7 @@
  * The single page of the app. Renders the pinned full-width mill title bar
  * (`AppHeader`: BRAIN2 caption + Nav Back/Forward + today's-friend jewel +
  * grouped press keys) and the top-level tab bar (`data-ui-name="App tabs"`:
- * Home, Lists, Docs, Scheduler, Operations, Modules, Analytics) as one stuck
+ * Home, Lists, Docs, Scheduler, Operations, Modules, Data) as one stuck
  * stack (`.b2-app-pin`): the bay sits flush under the fascia and keeps the
  * desk container's width, so the keys do not grow. Each module panel
  * lazy-loads below that stack. Item detail fills the desk *below* the pin —
@@ -36,7 +36,7 @@
 "use client"
 
 import { useState, useCallback, lazy, Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from "react"
-import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, APP_TABS, DATA_TAB_LABEL, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
 import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
@@ -292,7 +292,7 @@ export default function Home() {
     return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
   }, [])
 
-  // Analytics (texts report, Instagram report) opens a Person as a popup over itself.
+  // Data (texts report, Instagram report) opens a Person as a popup over itself.
   useEffect(() => {
     const handler = (event: Event) => {
       const id = (event as CustomEvent<{ id?: unknown }>).detail?.id
@@ -419,9 +419,9 @@ export default function Home() {
                   <Blocks aria-hidden="true" />
                   <span className="b2-tab-label">Modules</span>
                 </TabsTrigger>
-                <TabsTrigger value="analytics" data-tab="analytics" aria-label="Analytics" title="Analytics">
+                <TabsTrigger value="analytics" data-tab="analytics" aria-label={DATA_TAB_LABEL} title={DATA_TAB_LABEL}>
                   <ChartLine aria-hidden="true" />
-                  <span className="b2-tab-label">Analytics</span>
+                  <span className="b2-tab-label">{DATA_TAB_LABEL}</span>
                 </TabsTrigger>
               </TabsList>
             }

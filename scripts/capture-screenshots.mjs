@@ -438,7 +438,7 @@ async function captureModules(page) {
 }
 
 async function captureAnalytics(page) {
-  await clickTopTab(page, "Analytics")
+  await clickTopTab(page, "Data")
   await wait(600)
 
   const tabs = [
@@ -478,15 +478,15 @@ async function captureAnalytics(page) {
   ]
 
   for (const [group, tab, file] of tabs) {
-    await page.getByRole("tablist", { name: "Analytics groups" }).getByRole("tab", { name: group, exact: true }).click()
-    await page.getByRole("tablist", { name: "Analytics views" }).getByRole("tab", { name: tab, exact: true }).click()
+    await page.getByRole("tablist", { name: "Data groups" }).getByRole("tab", { name: group, exact: true }).click()
+    await page.getByRole("tablist", { name: "Data views" }).getByRole("tab", { name: tab, exact: true }).click()
     await wait(600)
     await screenshot(page, file)
   }
 
   // The variant drill-down is the point of the Tracking tab, so document it open.
-  await page.getByRole("tablist", { name: "Analytics groups" }).getByRole("tab", { name: "Time", exact: true }).click()
-  await page.getByRole("tablist", { name: "Analytics views" }).getByRole("tab", { name: "Tracking", exact: true }).click()
+  await page.getByRole("tablist", { name: "Data groups" }).getByRole("tab", { name: "Time", exact: true }).click()
+  await page.getByRole("tablist", { name: "Data views" }).getByRole("tab", { name: "Tracking", exact: true }).click()
   await wait(600)
   // A pen and a tag can share a name. The pen card renders before the tag card,
   // so first/last picks the right one without guessing at the card markup.
@@ -658,7 +658,7 @@ async function writeDescriptions() {
 /**
  * Runs in the page before the app boots. An empty tracker makes every Tracking
  * screenshot an empty-state, so paint a plausible fortnight — including a pen
- * broken down by variants, which is what the Analytics drill-down documents.
+ * broken down by variants, which is what the Data drill-down documents.
  */
 function seedTracking() {
   const pad = (n) => String(n).padStart(2, "0")
@@ -784,7 +784,7 @@ function seedTracking() {
   }
 
   // Location scope, including the zoo trip that also counted as exercise. The
-  // Exercise tag sits on the block, not on the pen, so Analytics → By tag shows
+  // Exercise tag sits on the block, not on the pen, so Data → By tag shows
   // Location minutes feeding a tag no Location pen carries.
   const zooDay = dateKey(3)
   entries.push(
@@ -1544,7 +1544,7 @@ async function main() {
     ["Scheduler", captureScheduler],
     ["Operations", captureOperations],
     ["Modules", captureModules],
-    ["Analytics", captureAnalytics],
+    ["Data", captureAnalytics],
     ["Dialogs", captureDialogs],
   ]
   const skipped = []
@@ -1555,7 +1555,7 @@ async function main() {
     Scheduler: ["06-"],
     Operations: ["10-"],
     Modules: ["09-"],
-    Analytics: ["07-"],
+    Data: ["07-"],
     Dialogs: ["20-"],
   }
   for (const [name, capture] of sections) {

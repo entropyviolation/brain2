@@ -1,9 +1,9 @@
 /**
- * components/Analytics/block-search.ts — Find blocks on the Analytics surface
+ * components/Analytics/block-search.ts — Find blocks on the Data surface
  *
  * The matcher is `searchTracking` in `lib/tracking-search.ts` (display name,
  * notes, primary pen, secondary pens, counts-as chains, action-format
- * templates). This file only decides what Analytics does with those hits:
+ * templates). This file only decides what Data does with those hits:
  * list them, jump to one, or keep the Tracking measures on the matching set.
  *
  * A filter is a set of entry ids. Minutes that did not match are omitted.

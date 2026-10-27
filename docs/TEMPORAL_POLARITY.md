@@ -88,7 +88,7 @@ Read both sides. Do not invent a third polarity name for these.
 | **estimated** on a clock | Certainty (`~`, hatch, `precision`) | Prospective belief about the future (may sit on either side) |
 | `AgendaGridMode "plan"\|"log"` | Opposite ghost polarity on one grid | Keep the API; document the flip |
 | Rail “Planned tasks” | Often *unplaced* prospective intentions | `PlannedAction` rows |
-| “Actual” | Filename `actual-day-view`, Analytics `actualMinutes` (task layer), UI “Actual Duration” | Three different grains |
+| “Actual” | Filename `actual-day-view`, Data `actualMinutes` (task layer), UI “Actual Duration” | Three different grains |
 
 ---
 
@@ -96,7 +96,7 @@ Read both sides. Do not invent a third polarity name for these.
 
 1. Ghosts stay beside paint. Never merge Plan chips into Tracking blocks.
 2. Do not rewrite a prospective field from retrospective data without an explicit confirm path.
-3. Analytics joins name which side each number is on (native vs outside join).
+3. Data joins name which side each number is on (native vs outside join).
 4. Do not call plan text “retrospective.”
 5. Period-ledger “prospective” means open scheduled To do — not every intention in the house.
 6. Do not add a Task `polarity` column. Overlay only (`data-temporal`, docs, help).
@@ -107,5 +107,5 @@ Read both sides. Do not invent a third polarity name for these.
 
 - Plan: [`components/Home/Plan/README.md`](../components/Home/Plan/README.md)
 - Tracking: [`components/Home/Tracking/README.md`](../components/Home/Tracking/README.md)
-- Analytics vision: [`analytics-vision/03-plan.md`](analytics-vision/03-plan.md), [`01-tracking.md`](analytics-vision/01-tracking.md)
+- Data vision: [`analytics-vision/03-plan.md`](analytics-vision/03-plan.md), [`01-tracking.md`](analytics-vision/01-tracking.md)
 - Counts-as (different axis): [`COUNTS_AS.md`](COUNTS_AS.md)

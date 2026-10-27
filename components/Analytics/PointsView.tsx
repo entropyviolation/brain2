@@ -38,7 +38,7 @@ function PointsLedger() {
   const [expanded, setExpanded] = useState<number | null>(null)
   const focusRef = useRef<{ date: string; taskId: string } | null>(null)
 
-  // Read the focus on mount, and again on each nav restore: Analytics stays
+  // Read the focus on mount, and again on each nav restore: Data stays
   // mounted (hidden) once opened, so a later jump from Home lands here.
   // The focus is read once (`takeLedgerFocus` clears it), so re-running on new
   // history or range does nothing until Home writes another.
@@ -97,7 +97,7 @@ function PointsLedger() {
             type="button"
             className="an-range-chip"
             aria-pressed={scope === "range"}
-            title="Only awards inside the shared Analytics range"
+            title="Only awards inside the shared Data range"
             onClick={() => setScope("range")}
           >
             {range.label}

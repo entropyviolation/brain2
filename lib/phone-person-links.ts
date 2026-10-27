@@ -5,7 +5,7 @@
  * email) saved on the Person item (`personProfile.phones` / `emails`); the
  * iPhone Texts and iPhone Calls pens then follow it. One number belongs to one
  * person, so linking it takes it off anyone else. Used by the pen settings
- * dialog, person detail, and Analytics → Texts.
+ * dialog, person detail, and Data → Texts.
  */
 import { commitItemEdit } from "@/lib/commit-item-edit"
 import { isEmailHandle, normalizeHandle } from "@/lib/phone-sync/handles"

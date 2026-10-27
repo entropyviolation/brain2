@@ -5,7 +5,7 @@
  * manages the things layered on top of it:
  *
  * - **Counts as** — nest this pen under another in the same view. Painting still
- *   writes this pen; the grid and Analytics can roll it up to the parent.
+ *   writes this pen; the grid and Data can roll it up to the parent.
  *   Searchable control + Create new pen. Several parents can be ticked; the
  *   first is the display parent. Color chain for navigation.
  * - **Detail** — the same relationship, seen from the parent. Adding Walk under
@@ -376,7 +376,7 @@ export function PenSettingsDialog({ scopeId, pen: openedPen, onClose, onDeleted,
             <p className="trk-help">
               A detail of {name || pen.name} is a pen that counts as it. Add Walk here and Walk appears in the well,
               counting as {name || pen.name}. Nest Gym under {name || pen.name} and Gym shows up in this list.
-              Several can apply to the same minutes. Double-click a color to open that pen. Analytics shows the
+              Several can apply to the same minutes. Double-click a color to open that pen. Data shows the
               total first, then these — including time painted on the detail pen itself.
             </p>
             <Input
