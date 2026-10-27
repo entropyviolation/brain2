@@ -1,10 +1,11 @@
 /**
  * components/shell-chrome.css — Pinned mill title bar
  *
- * Full-width fascia: navy BRAIN2 caption, Friend / Rituals / System / Capture
- * as milled silver key-wells (Y2K handheld / TENO chunky keys). The optional
- * now well lives in Capture. Quoted Win95 bevels may sit underneath; the
- * fascia reads as brushed metal rings + raised keys, not a flat dialog strip.
+ * Full-width fascia: navy BRAIN2 caption. Nav, Go, Friend’s chat and gallery,
+ * Rituals, System, and Capture are the pale silver keycap (same skirt as
+ * `.todo-cap`). The optional now well lives in Capture. Pause, Play, and Stop
+ * on a live clock stay the transport disc. The fascia is still brushed mill;
+ * the press keys are plastic caps, not raised metal.
  *
  * Reflow: Nav is the left anchor. Friend, Rituals, System, and Capture sit
  * in `.b2-shell-stage`, one group centered in the space to the right of Nav
@@ -88,6 +89,17 @@
     inset 1px 0 0 rgba(0, 0, 0, 0.18),
     inset -1px 0 0 rgba(255, 255, 255, 0.12),
     0 0 0 1px var(--chrome-pressed);
+  /* Header press keys. Same locals as `.todo-cap` in todo-chrome.css. */
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-navy: #22306c;
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
   --b2-shell-mill: repeating-linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.22) 0 1px,
@@ -374,32 +386,44 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   overflow: hidden;
 }
 
-.b2-shell-brand .baby-nest-chat-hit,
-.b2-shell-brand .baby-nest-gallery-hit {
-  padding: 2px 8px;
-  min-height: 22px;
-  border: 0;
-  border-radius: var(--r-3, 3px);
-  background: var(--b2-shell-key-face);
-  color: #1a1c1e;
+body.win95-app .b2-shell-brand button.baby-nest-chat-hit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+  padding: 2px 8px 5px;
+  min-height: 26px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: var(--todo-cap-leg);
+  font-family: var(--font-pixel, inherit);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: none;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-  box-shadow: var(--b2-shell-key-raised) !important;
+  text-shadow: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 60ms ease, box-shadow 60ms ease;
 }
 
-.b2-shell-brand .baby-nest-chat-hit:active,
-.b2-shell-brand .baby-nest-gallery-hit:active {
-  box-shadow: var(--b2-shell-key-pressed) !important;
-  transform: translate(0, 1px);
+body.win95-app .b2-shell-brand button.baby-nest-chat-hit:not([role="tab"]):not(:disabled):active,
+body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:not([role="tab"]):not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
-.b2-shell-brand .baby-nest-chat-hit:focus-visible,
-.b2-shell-brand .baby-nest-gallery-hit:focus-visible {
-  outline: 1px dotted #000;
-  outline-offset: -3px;
+body.win95-app .b2-shell-brand button.baby-nest-chat-hit:focus-visible,
+body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
 }
 
 .b2-shell-rail {
@@ -594,28 +618,43 @@ html[data-pcb-ink="light"] .b2-shell-brand .baby-nest-name {
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.28);
 }
 
-body.win95-app .b2-shell-rail button,
-body.win95-app .b2-shell-nav button {
+/* Pale silver keycaps. The :not() chain beats the global Win95 button lip.
+   Discs, clock names, handoff ×, fold, and keys that already wear `.todo-cap`
+   keep their own faces. */
+body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold),
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key) {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
   position: relative;
   flex: 1 0 auto;
   justify-content: center;
-  height: 30px;
-  min-height: 30px;
+  height: auto;
+  min-height: 32px;
   max-width: 7.5rem;
-  padding: 4px clamp(8px, 0.85cqi, 14px) 5px;
-  border: none;
-  border-radius: var(--r-3, 3px);
-  background: var(--b2-shell-key-face);
-  color: #1a1c1e;
-  font-family: inherit;
-  font-size: 11px;
+  padding: 3px clamp(8px, 0.85cqi, 12px) 7px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: var(--todo-cap-leg);
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   line-height: 1.1;
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-  box-shadow: var(--b2-shell-key-raised);
+  text-shadow: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
   gap: 5px;
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease;
 }
 
 /* Capture word keys stay label-wide. The rule above grows a key up to
@@ -628,17 +667,17 @@ body.win95-app .b2-shell-capture .b2-shell-keys > button,
   max-width: max-content;
 }
 
-/* Word keys hide their Lucide marks. Icon keys (gear, question, search) show
-   an engraved glyph on the same milled face. Nav chevrons stay visible too. */
+/* Word keys hide their Lucide marks. Icon keys (gear, question, search) print
+   the glyph on the same silver cap. Nav chevrons stay visible too. */
 body.win95-app .b2-shell-rail button svg {
   display: none;
 }
 
 body.win95-app .b2-shell-rail button.b2-shell-icon {
   flex: 0 0 auto;
-  width: 2.65rem;
-  min-width: 2.65rem;
-  max-width: 2.65rem;
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
   padding-inline: 0;
 }
 
@@ -647,21 +686,23 @@ body.win95-app .b2-shell-rail button.b2-shell-icon svg {
   width: 16px;
   height: 16px;
   stroke-width: 2.25;
-  color: #1a1c1e;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
+  color: var(--todo-cap-leg);
+  filter: none;
 }
 
 .b2-shell-rail .b2-shell-keys > button.b2-shell-icon,
 .b2-shell-rail .b2-shell-keys > *:has(button.b2-shell-icon) {
   flex: 0 0 auto;
-  min-width: 2.65rem;
-  max-width: 2.65rem;
+  min-width: 34px;
+  max-width: 34px;
 }
 
 body.win95-app .b2-shell-nav button {
-  max-width: 2.65rem;
-  min-width: 2rem;
-  padding-inline: 0.35rem;
+  flex: 0 0 auto;
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  padding-inline: 0;
 }
 
 body.win95-app .b2-shell-now-row > button.b2-shell-now-icon {
@@ -677,106 +718,135 @@ body.win95-app .b2-shell-now-row > button.b2-shell-now-icon {
 
 body.win95-app .b2-shell-nav button svg {
   display: block;
-  width: 14px;
-  height: 14px;
-  stroke-width: 2.5;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.25;
+  color: var(--todo-cap-leg);
 }
 
-body.win95-app .b2-shell-rail button:hover:not(:disabled),
-body.win95-app .b2-shell-nav button:hover:not(:disabled) {
+body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):hover:not(:disabled) {
+  background: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
+  background-image: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
+  color: var(--todo-cap-leg);
+}
+
+body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
+body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-fold)[aria-pressed="true"] {
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  transform: translateY(2px);
+  text-shadow: none;
+}
+
+body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+/* Nav (Back / Forward). Rest is the silver cap. Focus is the black CRT with a
+   green chevron. Press is the old 1px milled sink, not the keycap drop.
+   The :not() chain matches the resting cap so these states actually win. */
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):hover:not(:disabled):not(:focus) {
+  background: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
+  background-image: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
+  color: var(--todo-cap-leg);
+}
+
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):focus:not(:disabled),
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):focus-visible:not(:disabled) {
   background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.88) 0,
-      rgba(255, 255, 255, 0.28) 10%,
-      transparent 22%,
-      transparent 78%,
-      rgba(0, 0, 0, 0.1) 100%
-    ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.22) 0 1px,
-      transparent 1px 2px
-    ),
-    linear-gradient(
-      165deg,
-      #f2f4f6 0%,
-      #e0e2e4 28%,
-      var(--b2-shell-silver) 58%,
-      var(--b2-shell-face) 86%,
-      var(--chrome-stone) 100%
-    );
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.22), transparent 55%),
+    #070c0a;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.22), transparent 55%),
+    #070c0a;
+  color: #7dffc4;
+  border-color: #070c0a;
+  text-shadow: 0 0 3px #7dffc4;
+  outline: 1px solid #7dffc4;
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45);
+  transform: none;
+}
+
+body.win95-app .b2-shell-nav button:focus:not(:disabled) svg,
+body.win95-app .b2-shell-nav button:focus-visible:not(:disabled) svg {
+  color: #7dffc4;
+  filter: drop-shadow(0 0 3px #7dffc4);
+}
+
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(:disabled):active {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--b2-shell-brush) 40%, var(--chrome-inset) 100%);
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--b2-shell-brush) 40%, var(--chrome-inset) 100%);
   color: #111;
-}
-
-body.win95-app .b2-shell-rail button:not(:disabled):active,
-body.win95-app .b2-shell-rail button[aria-pressed="true"],
-body.win95-app .b2-shell-nav button:not(:disabled):active {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.12) 0,
-      transparent 28%,
-      transparent 72%,
-      rgba(255, 255, 255, 0.08) 100%
-    ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.1) 0 1px,
-      transparent 1px 2px
-    ),
-    linear-gradient(
-      165deg,
-      var(--chrome-key-shade) 0%,
-      var(--b2-shell-brush) 40%,
-      var(--chrome-inset) 100%
-    );
+  border-color: transparent;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  outline: 0;
   box-shadow: var(--b2-shell-key-pressed);
   transform: translate(0, 1px);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-body.win95-app .b2-shell-rail button:focus-visible,
-body.win95-app .b2-shell-nav button:focus-visible {
-  outline: 1px dotted #000;
-  outline-offset: -4px;
-  box-shadow: var(--b2-shell-key-raised);
+body.win95-app .b2-shell-nav button:not(:disabled):active svg {
+  color: #111;
+  filter: none;
 }
 
-body.win95-app .b2-shell-rail button[aria-pressed="true"]:focus-visible {
-  box-shadow: var(--b2-shell-key-pressed);
-}
-
-body.win95-app .b2-shell-rail button:disabled,
+body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):disabled,
 body.win95-app .b2-shell-nav button:disabled,
 body.win95-app .b2-shell-nav button.is-dead {
-  color: var(--b2-shell-lo);
-  text-shadow: 1px 1px 0 var(--b2-shell-hi);
-  opacity: 0.38;
-  filter: saturate(0.55);
+  color: #7d8185;
+  text-shadow: none;
+  opacity: 1;
+  filter: none;
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  cursor: default;
 }
 
-body.win95-app .b2-shell-rail button.b2-shell-go {
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  outline: 1px solid var(--b2-shell-frame);
-  outline-offset: -5px;
+/* Quick Add is the primary cap: silver face, navy legend, navy lamp, navy ring. */
+body.win95-app .b2-shell-rail button.b2-shell-go:not(.todo-cap) {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--todo-cap-navy);
+  outline-offset: 1px;
+}
+
+body.win95-app .b2-shell-rail button.b2-shell-go:not(.todo-cap)::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--todo-cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
 }
 
 body.win95-app .b2-shell-rail button.b2-shell-go:hover:not(:disabled),
 body.win95-app .b2-shell-rail button.b2-shell-go:not(:disabled):active {
-  color: #111;
-}
-
-body.win95-app .b2-shell-rail button.b2-shell-go svg {
-  color: #111;
+  color: #1a2556;
 }
 
 /* Reminder bell: tiny CRT digit plate under the icon (same phosphor as
    Inbox / Rituals). Hidden at zero. Not a floating red sticker. */
 body.win95-app .b2-shell-rail button.b2-reminder-bell {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 body.win95-app .b2-shell-rail button.b2-reminder-bell[data-has-count="true"] svg {
@@ -786,7 +856,7 @@ body.win95-app .b2-shell-rail button.b2-reminder-bell[data-has-count="true"] svg
 body.win95-app .b2-shell-rail button.b2-reminder-bell .b2-reminder-count {
   position: absolute;
   left: 50%;
-  bottom: 3px;
+  bottom: 6px;
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -1045,7 +1115,12 @@ body.win95-app .b2-shell .b2-shell-count {
 @media (prefers-reduced-motion: reduce) {
   body.win95-app .b2-shell-rail button:not(:disabled):active,
   body.win95-app .b2-shell-rail button[aria-pressed="true"],
-  body.win95-app .b2-shell-nav button:not(:disabled):active {
+  body.win95-app .b2-shell-nav button:not(:disabled):active,
+  body.win95-app .b2-shell-brand button.baby-nest-chat-hit:active,
+  body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:active,
+  body.win95-app .b2-shell button.b2-shell-fold:active,
+  body.win95-app .b2-shell-tabs [role="tab"]:active,
+  body.win95-app .b2-shell-tabs [role="tab"][data-state="active"] {
     transform: none;
   }
 
@@ -1119,25 +1194,38 @@ body.win95-app .b2-shell-rail button.b2-shell-fold {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 16px !important;
+  width: 18px !important;
   min-width: 0 !important;
-  height: 14px !important;
+  height: 18px !important;
   min-height: 0 !important;
   margin: 0 0 0 5px !important;
-  padding: 0 !important;
+  padding: 0 0 2px !important;
   vertical-align: middle;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 2px;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid var(--cap-edge, #6e7378);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--todo-cap-top, #f1f3f5), var(--todo-cap-top2, #dfe2e6));
+  box-shadow:
+    inset 1px 0 0 var(--todo-cap-skirt, #b3b8be),
+    inset -1px 0 0 var(--todo-cap-skirt, #b3b8be),
+    inset 0 -2px 0 var(--todo-cap-skirt, #b3b8be),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
   font: 700 11px/1 inherit;
-  color: #222;
+  color: var(--todo-cap-leg, #1f2226);
   cursor: pointer;
 }
 
 .b2-shell-fold:hover,
 body.win95-app .b2-shell-rail button.b2-shell-fold:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.6);
+  background: linear-gradient(180deg, #f7f8f9, var(--todo-cap-top2, #dfe2e6));
+}
+
+.b2-shell-fold:active,
+body.win95-app .b2-shell button.b2-shell-fold:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 1px 0 0 var(--todo-cap-skirt, #b3b8be),
+    inset -1px 0 0 var(--todo-cap-skirt, #b3b8be),
+    inset 0 -1px 0 var(--todo-cap-skirt, #b3b8be);
 }
 
 /* Folded Friend: just the picture. */

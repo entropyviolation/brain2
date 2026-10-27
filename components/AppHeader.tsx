@@ -2,10 +2,10 @@
  * components/AppHeader.tsx — Pinned mill title bar
  *
  * Full-width fascia at the top of the viewport: navy **BRAIN2** caption with a
- * Tek POWER lamp, leading **Nav** Back/Forward mill keys (in-app screen
+ * Tek POWER lamp, leading **Nav** Back/Forward keycaps (in-app screen
  * history), today's-friend jewel in a Friend key-well (click for a Stardew
- * Next Action bubble), and Rituals / System / Capture as milled silver
- * key-wells of chunky press keys (Y2K handheld / TENO). Clusters share one
+ * Next Action bubble), and Rituals / System / Capture as pale silver
+ * keycaps (same skirt as `.todo-cap`). Clusters share one
  * flex line. **Nav** stays the left anchor. Friend, Rituals, System, and
  * Capture are one group centered in the space to the right of Nav — the
  * column gap between those clusters stays tight, and leftover mill is equal
@@ -17,7 +17,7 @@
  * The Now popup loads when that key opens. Narrower than the group, whole
  * clusters wrap onto the full shell; a cluster wider than
  * the shell scrolls inside its bay. Keys do not flex-shrink, and phosphor
- * counts stay on them. System is a gear (Settings), a question mark (Names
+ * counts stay on them. Nav and Go go black with a green legend on focus; Go’s current tab stays that CRT. A press is the old 1px milled sink. System is a gear (Settings), a question mark (Names
  * help mode), a magnifying glass (Search), and a bell (current reminders).
  * The question mark latches (`aria-pressed`) and gains a diagonal strike while
  * Names is on. Icon keys show engraved glyphs; word keys stay words.

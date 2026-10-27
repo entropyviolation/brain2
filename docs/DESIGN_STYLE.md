@@ -546,7 +546,7 @@ Shipped example: `PointsDial` in `components/Home/ToDo/TaskCardSide.tsx`, styled
 
 ### Keycaps
 
-_Last mapped: 2026-10-25_
+_Last mapped: 2026-10-26_
 
 Allie likes this button and wants more of it. A word key is this cap. Reach for the pale silver one. Seafoam and cornflower are the only other plastics, for a word key that needs a color. Do not invent a new word-button shape.
 
@@ -567,7 +567,7 @@ A milled fascia key (a bay’s raised metal, the title-bar close key) is a diffe
 
 Title-bar × keys are this cap. `KeycapClose` in `components/keycap-close.tsx` is the grey modifier at 26px with a round ×. Hover and keyboard focus turn that plastic brick: face `#7A3C31`, lower face `#78292E`, a darker skirt, a warm legend. The brick is only that hover. It is not a word-key color. The open-list caption × stays the gunmetal caption key.
 
-Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. Working on Now word keys reuse it too. Those strips and popups are not inside `.todo95`, so the same cap is also at the end of `components/shell-chrome.css`, on `.b2-now`. The completion popup's word keys (Undo, Skip, Save, Done at, Add) reuse it in `components/Completion/completion-dialog.css` (`.completion-dialog`); that caption is its own full-width CRT bar. Play, pause, and stop on the clock stay the transport disc. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
+Code: `.todo-cap` in `components/Home/ToDo/todo-chrome.css`. Other rooms may reuse the class. Working on Now word keys reuse it too. Those strips and popups are not inside `.todo95`, so the same cap is also at the end of `components/shell-chrome.css`, on `.b2-now`. The pinned header paints the same skirt on its own press keys (Nav, Go, Friend chat and gallery, the Friend fold, Rituals, System, Capture) without requiring the class, because the mill button skin would flatten it. Nav Back/Forward and the Go keys stay that cap at rest. Focus, and Go’s current tab, turn black with a green legend (the CRT). A press is the old 1px milled sink. Quick Add is the primary cap. The completion popup's word keys (Undo, Skip, Save, Done at, Add) reuse it in `components/Completion/completion-dialog.css` (`.completion-dialog`); that caption is its own full-width CRT bar. Play, pause, and stop on the clock stay the transport disc. The close cap is `components/keycap-close.tsx`. Item detail's Add attribute key reuses this pale silver cap (`.id-keycap` in `item-detail-chrome.css`).
 
 The task card header draws this skirt in `task-card.css` (`.task-card-keycap`), not `.todo-cap`, because the card's own key skin flattens a shared cap. Those keys are ↗ Item, Just Start, Just 25, Session with this, Required, and Prioritized. Just Start's face is deep indigo (`#1B143D`, skirt `#070E31`; hover and active a slightly lighter indigo, white legend). Required lights warm when on. Prioritized keeps a soft green glow. The CD transport stays the disc. The push flag is the card's one violet: dusty `#7d6bb8` at one push, deeper by twenty, wash `#b39cff`.
 
