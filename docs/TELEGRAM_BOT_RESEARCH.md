@@ -185,7 +185,7 @@ inbox. Do not change the bare words.
 - **Process timezone.** A hub in UTC files `gm` and habit days on the wrong
   local date. Run the hub in the life zone, or store that zone and use it for
   every phone day. Do not infer a zone from the GPS trail.
-- **Reply failed after a successful write.** Analytics vision already names
+- **Reply failed after a successful write.** Data vision already names
   this. The human retry is a new message. Logging `sendOk` / `pinOk` (proposed
   in `05-telegram.md` and not present on the event) would make the split
   visible. It does not by itself stop the double write.

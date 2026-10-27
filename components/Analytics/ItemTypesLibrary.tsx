@@ -1,7 +1,7 @@
 /**
  * components/Analytics/ItemTypesLibrary.tsx — Browse every created item type
  *
- * Analytics Library surface: sort, count, and drill into items. Settings still
+ * Data Library surface: sort, count, and drill into items. Settings still
  * edits types; this is the catalog. Open in Lists is the loop.
  */
 "use client"

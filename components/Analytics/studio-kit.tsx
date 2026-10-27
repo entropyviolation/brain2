@@ -1,8 +1,8 @@
 /**
- * components/Analytics/studio-kit.tsx — Shared Analytics studio primitives
+ * components/Analytics/studio-kit.tsx — Shared Data studio primitives
  *
  * Light instrument studio, honest findings, density calendars, hour×day heat,
- * pies, treemaps, and mosaics. Used by every Analytics view so the tab is one language.
+ * pies, treemaps, and mosaics. Used by every Data view so the tab is one language.
  * Phosphor is for line traces only; canvases stay face gray with white plot wells.
  */
 "use client"

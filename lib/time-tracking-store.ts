@@ -42,7 +42,7 @@
  *   `lib/habit-tracking-sync.ts` writes the result).
  *
  * A stroke is **certain** unless the block is marked `precision: "estimated"`.
- * Analytics can drop assumed time. Done items and imports that are already
+ * Data can drop assumed time. Done items and imports that are already
  * estimated confirm into a normal block; the hatch is the assumption.
  *
  * Persisted to localStorage under `brain2-timegrid-store`. Persist **v15**

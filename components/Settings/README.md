@@ -86,7 +86,7 @@ Past ledger rows stay as written, except daily habit marks and habit grade, acco
 ## Window gray
 
 One metal for every beveled face (Lists, Plan, Scheduler, Operations, Habits
-chrome — not Lists orbs/velvet, not Analytics charts). Warmth walks the
+chrome — not Lists orbs/velvet, not Data charts). Warmth walks the
 design-ref computer grays, piecewise, so every frame is on the way from one
 of those hexes to the next. It is not a red/blue filter on an arbitrary gray.
 

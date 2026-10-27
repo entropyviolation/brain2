@@ -113,7 +113,7 @@ These are locked elsewhere. A proposal below that fights one loses.
 7. **Extensional sentences.** A sentence that states a pattern carries a date
    range, the subset, and `n`, and names what it does not cover (GS-2). Sample
    floors stay (`OBSERVATORY_FLOOR = 7`).
-8. **Out of Analytics: predictive or ML analytics** ([`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md)
+8. **Out of Data: predictive or ML analytics** ([`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md)
    "Do not"). Counting support and confidence is description, not prediction.
    A count may say "co-occurs". It never says "will" or "causes".
 9. **Second-order changes only after an accept**, in the weekly review. The
@@ -391,7 +391,7 @@ Feeds KG-R1–R12, KG-O4–O8.
 - **Path finding.** Simple, shortest, or label-constrained paths.
 - **Frameworks.** Message passing: each node reads messages, computes, sends.
   PageRank as an iteration with damping 0.85.
-- **Analytics on labelled graphs.** Four ways in: *projection* (pick a
+- **Data on labelled graphs.** Four ways in: *projection* (pick a
   subgraph, drop labels), *weighting* (labels to numbers), *transformation*
   (lossy or lossless to a simpler graph), *customisation* (an algorithm that
   reads labels). Results change a lot with the choice.
@@ -691,7 +691,7 @@ graph, so a domain answer can come with its provenance.
 *Brain2 reading.* This is the missing map of Brain2's own machinery. Stores
 are datasets. Sync files (`habit-*-sync.ts`, `list-links.ts`,
 `list-membership-rules.ts`, `entry-links.ts`, `people-sync.ts`,
-`implied-actions.ts`, `points-*`, workflows) are tasks. Home squares, Analytics
+`implied-actions.ts`, `points-*`, workflows) are tasks. Home squares, Data
 views, and the Telegram replies are sinks. A lineage graph answers "why is
 this habit cell 4?" and "what will change if I delete this pen?". Feeds
 KG-M1–M8.
@@ -1006,7 +1006,7 @@ member of list L), cardinality (at least n links). Grow
 **complete for a range** ("My flights 2026 are all here", "Sleep is logged for
 every night of September"). Inside that claim, an absent edge reads as *no*;
 outside it, as *unknown*. The habit grid already acts closed-world; this makes
-it a stated, visible choice. Paper: §3.1.1 LCWA. Analytics uses it to choose
+it a stated, visible choice. Paper: §3.1.1 LCWA. Data uses it to choose
 between "0" and "no reading" (`cross-section.ts` already refuses to draw
 missing as zero).
 
@@ -1149,7 +1149,7 @@ shown, drop it if the reasoner already entails it, and drop it if it would
 create a contradiction. Paper: §5.2.5 uses rules to filter predictions; here
 it filters counted suggestions.
 
-**KG-R11 · Semantic invariance for Analytics.** Graph analytics (KG-A) run on
+**KG-R11 · Semantic invariance for Data.** Graph analytics (KG-A) run on
 a graph where inverse pairs are normalised to one direction first, so `blocks`
 written on one side and `blocked-by` on the other give the same centrality.
 Paper: §5.1.5.
@@ -1254,7 +1254,7 @@ combination rule per query: along a path, multiply (or take the minimum); across
 alternative paths, take the maximum. A fuzzy semiring (§3.3.4). Shown with
 order **derived**.
 
-**KG-C7 · Context slices in Analytics.** Slice, dice, and roll up the vault
+**KG-C7 · Context slices in Data.** Slice, dice, and roll up the vault
 graph along time (day ⪯ … ⪯ year), place (pin ⪯ neighbourhood ⪯ city, via
 counts-as on Location pens), company (person ⪯ group), and type (type ⪯ parent
 type). Paper: §3.3.5 contextual OLAP. The shared range in
@@ -1344,7 +1344,7 @@ predicates), weighting (minutes, weight, trust), and transformation. The choice
 shows on the chart footer, since the paper notes results can change a lot with
 it (§5.1.3).
 
-**KG-A12 · Analytics before and after rules.** A toggle on each graph metric:
+**KG-A12 · Data before and after rules.** A toggle on each graph metric:
 **as written** / **with house rules** (KG-R1). The difference is itself
 information (§5.1.5).
 
@@ -1646,12 +1646,12 @@ the person's data.
 **KG-M1 · The machinery graph.** A hand-written manifest,
 `lib/graph/machinery.ts`, with three node kinds: *stores* (persist keys),
 *tasks* (sync files, rules, workflows, ingest apply files), and *sinks* (Home
-squares, Analytics views, Telegram replies, exports). Edges: `reads`,
+squares, Data views, Telegram replies, exports). Edges: `reads`,
 `writes`, `feeds`. A unit test fails when a store key in
 `lib/storage-keys.ts` or a sync file has no manifest row.
 
 **KG-M2 · Lineage for any number.** **Landed in part, 2026-10-27** — `whereFrom` for the seven named derivations. "Why is this 4?" on a habit cell, a points
-row, a grade, a list count, or an Analytics figure walks the machinery graph
+row, a grade, a list count, or an Data figure walks the machinery graph
 back to the records that produced it. The answer is the GS-7 Structural
 Differential stack with real rows in it.
 
@@ -1676,7 +1676,7 @@ overlay can say which graph predicate a control writes.
 author (house or person) and its last change, so a surprising write can be
 traced to who set it up. Wave 9's run log is the event half of this.
 
-**KG-M8 · Freshness of each sink.** Each Home square and Analytics view shows
+**KG-M8 · Freshness of each sink.** Each Home square and Data view shows
 the time its inputs last changed (from the default graph), as a small dated
 line. Paired with KG-QA4.
 
@@ -1988,7 +1988,7 @@ row: accept, dismiss, or later.
 time, with three likely homes (list, goal, person) from KG-A7. Like the Inbox
 walk (Wave 11 item 7).
 
-**KG-X6 · Vault quality page.** Analytics gets a "Vault" view: KG-QA1–QA12
+**KG-X6 · Vault quality page.** Data gets a "Vault" view: KG-QA1–QA12
 on KG-V16. Every line dated, every count with `n`.
 
 **KG-X7 · Shortest path between two things.** Pick two nodes; get the route
@@ -2102,11 +2102,11 @@ month ⪯ season ⪯ year. Each `PeriodReview` and GS-6 handoff is the named gra
 for its period (KG-C8). This gives:
 
 - one query for questions that today span five rooms (CQ2, CQ7, CQ19);
-- contextual slices and roll-ups for Analytics (KG-C7);
+- contextual slices and roll-ups for Data (KG-C7);
 - the substrate for rule mining (KG-L1) and root cause (KG-DEP11);
 - "as of" for everything (KG-C9).
 
-Build order: read-only projection, then the pattern language, then Analytics
+Build order: read-only projection, then the pattern language, then Data
 reading from it, then addressable link targets (KG-D3). It is the [BW] ch.14
 knowledge lake at personal scale: the stores stay the raw lake; the Day Graph
 is the curated lens.
@@ -2329,7 +2329,7 @@ Grouped by room. Each names its tier.
     from nearby captures and receipts on the same days. Never from a map
     service without the person's yes.
 
-**Analytics (kept narrow)**
+**Data (kept narrow)**
 
 30. *Chart captions from numbers* (C). Phrase a caption from a computed result
     *and its range and n*, in the GS-2 shape, without adding any claim the
@@ -2379,7 +2379,7 @@ A suggestion for when a wave claims this work. Each phase is useful alone.
 | 7 | Identity: tag ids, aliases, `same-as`, the matcher, identity review | KG-I1–I6, KG-ER1–ER8 | People and places become one each |
 | 8 | Dependencies: additive/redundant, impact, SPOF, validations | KG-DEP1–DEP10 | Plan honesty |
 | 9 | Quality page + shapes + shape induction | KG-QA1–QA12, KG-O10–O14, KG-X6 | The graph measures itself |
-| 10 | Analytics: centrality, orphans, communities, rule mining in Observatory | KG-A1–A17, KG-L1–L10 | Inductive knowledge, counted |
+| 10 | Data: centrality, orphans, communities, rule mining in Observatory | KG-A1–A17, KG-L1–L10 | Inductive knowledge, counted |
 | 11 | Ingest: mention linking, import mapping screen, evidence spans | KG-N1–N14, KG-X17, KG-NL8 | Capture writes edges |
 | 12 | Visual plates: neighbourhood, edge inspector, schematics | KG-V1–V16 | Furniture for all of the above |
 | 13 | Rule-based language: sentences and questions | KG-NL2–NL6 | Talks without a model |
@@ -2388,7 +2388,7 @@ A suggestion for when a wave claims this work. Each phase is useful alone.
 
 Lanes from [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md): phases 1–2, 5–7 are the
 Item lane; 3 is Shell (Cmd-K); 4 is History/Backup/Workflows; 9–10 are
-Analytics; 11 is Capture-adjacent ingest; 12 splits by room.
+Data; 11 is Capture-adjacent ingest; 12 splits by room.
 
 ---
 

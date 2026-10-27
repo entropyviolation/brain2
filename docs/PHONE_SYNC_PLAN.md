@@ -33,7 +33,7 @@ The honest route for each data type. iOS does not let any third-party app read t
 
 ## Where it lands
 
-Every source writes through the same vault paths BIM uses, so Analytics, People I Know and Tracking see it with no new storage.
+Every source writes through the same vault paths BIM uses, so Data, People I Know and Tracking see it with no new storage.
 
 - Texts and calls become **iPhone Texts** instants and **iPhone Calls** intervals, matched to People I Know by phone number or handle. Calls count as company time for that person.
 - Location becomes Location instants, same as `gps:`. Known places become Location pens.
@@ -53,7 +53,7 @@ Wave 1 (texts, calls, location) runs in parallel. Wave 2 follows.
 | Location | 1 | iOS location plugin under `ios/App/App/`, `lib/phone-sync/location.ts`, hub endpoint |
 | Health | 2 | iOS HealthKit plugin, `lib/phone-sync/health.ts` |
 | Screen Time + DMs + email | 2 | Shortcuts automation in `scripts/build-iphone-phone-shortcuts.mjs` (edit), `lib/phone-sync/email.ts`, DM import |
-| Phone plates | 2 | Analytics plates per [`analytics-plan/07-phone.md`](analytics-plan/07-phone.md) |
+| Phone plates | 2 | Data plates per [`analytics-plan/07-phone.md`](analytics-plan/07-phone.md) |
 
 The sync core agent alone edits shared files (`lib/vault-guard.js`, Settings, the hub entry). Others ask it for hooks.
 

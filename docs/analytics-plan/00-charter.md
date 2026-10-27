@@ -1,6 +1,6 @@
-# Charter — perfecting the Analytics tab
+# Charter — perfecting the Data tab
 
-This folder holds **build briefs** for a later pass that perfects the Analytics tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
+This folder holds **build briefs** for a later pass that perfects the Data tab. The source of what the vault can honestly show is the inventories already written under `docs/analytics-vision/`. This pass does not audit those inventories by rewriting them. A brief may point at them, quote a law they already state, and say where a shipped view must move. It does not replace them, and it does not invent a column they say is missing.
 
 The inventories:
 
@@ -21,7 +21,7 @@ A **shell / charter agent** owns this file on the later build. That agent checks
 
 ## Binding laws
 
-These laws bind every later brief and every later edit of Analytics.
+These laws bind every later brief and every later edit of Data.
 
 ### Keep every existing view id
 
@@ -47,7 +47,7 @@ Each view’s numbers and its pure helpers stay. A redesign **moves and composes
 
 Helpers already named on the studio — including the pure modules beside the views (`cross-section.ts`, `hour-day.ts`, `observatory-findings.ts`, `signal-stats.ts`, and the board stats that Tracking, Log, Cycle phase, and Operations already test) — remain the owners of those numbers. New composition calls them. It does not fork a second occupancy, a second habit grade, or a second Pearson.
 
-Analytics reads the vault. It does not become the writer of tasks, habits, or tracking. Clicking a series still opens the underlying items in Lists where that jump already exists. Derived numbers stay marked `~` / **est.** Interpretive sentences name the subset, the dates, and the share left out. They describe events. The `regret` id stays; the prose does not call the person regretful.
+Data reads the vault. It does not become the writer of tasks, habits, or tracking. Clicking a series still opens the underlying items in Lists where that jump already exists. Derived numbers stay marked `~` / **est.** Interpretive sentences name the subset, the dates, and the share left out. They describe events. The `regret` id stays; the prose does not call the person regretful.
 
 ### Honesty of the measures
 
@@ -63,7 +63,7 @@ These rules come from the shared spine in `ANALYTICS_VISION.md` and from the pro
 
 Shell, groups, plate order, and new rooms may be rebuilt. The Day landing below is the new first paint. Existing views remain reachable by the ids above. Default remembered view may change only if persistence and tests are updated in the same wave; the ids themselves do not.
 
-Do not restyle Lists, Habits, Plan, or Tracking outside Analytics. Do not restyle the Operations module to match this studio. Analytics still sits in Brain2 beside Lists: keep the `.fm98` title bar and status bar. Range and the left index use the house milled fascia. The canvases are the light instrument studio, not a theme pushed onto the rest of the app.
+Do not restyle Lists, Habits, Plan, or Tracking outside Data. Do not restyle the Operations module to match this studio. Data still sits in Brain2 beside Lists: keep the `.fm98` title bar and status bar. Range and the left index use the house milled fascia. The canvases are the light instrument studio, not a theme pushed onto the rest of the app.
 
 ### Studio kit
 

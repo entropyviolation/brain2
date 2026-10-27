@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-22_
 
-Python pipeline behind Analytics → Texts. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
+Python pipeline behind Data → Texts. Plan: [`docs/TEXTS_ANALYTICS_PLAN.md`](../../docs/TEXTS_ANALYTICS_PLAN.md).
 
 Code only. Data, output and the venv live in the home folder, `~/texts-analysis` by default (`BRAIN2_TEXTS_HOME`). The `.gitignore` refuses `data/`, `out/`, `.venv/`, `.env` and database files here too.
 
@@ -57,7 +57,7 @@ Topic chips on a relationship page open the conversations behind them. Confirm, 
 
 _Last mapped: 2026-10-23_
 
-`report_app.js` reads the section list from the header nav. Each section folds from the arrow by its heading, remembered in `localStorage`. A section taller than about 3.5 screens is cut with **Show all**. Inside Brain2's main window the nav moves to the Analytics sidebar (`nav`, `sections`, `section`, `goto` messages).
+`report_app.js` reads the section list from the header nav. Each section folds from the arrow by its heading, remembered in `localStorage`. A section taller than about 3.5 screens is cut with **Show all**. Inside Brain2's main window the nav moves to the Data sidebar (`nav`, `sections`, `section`, `goto` messages).
 
 ## Trends, drifting, timeline, search, mood
 

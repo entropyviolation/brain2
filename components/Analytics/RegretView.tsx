@@ -2,7 +2,7 @@
  * components/Analytics/RegretView.tsx — Regret accrual ledger
  *
  * Regret is the accrued cost of important items sitting undone past their due
- * date. Shared Analytics range; a thin window is not a finding. KPI cards stay
+ * date. Shared Data range; a thin window is not a finding. KPI cards stay
  * dark when there is nothing to total.
  */
 "use client"

@@ -102,10 +102,10 @@ export function PenLevelPicker({ scopeId, penId, penName }: { scopeId: string; p
             {ladder.length
               ? `, in ${ladder.map((row) => `${row.name} (${row.level})`).join(", in ")}`
               : ""}
-            . Analytics can roll {scope.name} up to any level.
+            . Data can roll {scope.name} up to any level.
           </>
         ) : levels.length ? (
-          <>Name this rung so {scope.name} can be read by level in Analytics instead of “level 2”.</>
+          <>Name this rung so {scope.name} can be read by level in Data instead of “level 2”.</>
         ) : (
           <>No level categories in {scope.name} yet. Add one, such as Neighborhood or City.</>
         )}

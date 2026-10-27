@@ -118,7 +118,7 @@ export function LogActivityDialog({
   defaultStartMin: number
   defaultEndMin: number
   onClose: () => void
-  /** Extra DialogContent classes (e.g. Analytics `an-popup` for crisp titles). */
+  /** Extra DialogContent classes (e.g. Data `an-popup` for crisp titles). */
   contentClassName?: string
 }) {
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -380,7 +380,7 @@ export function LogActivityDialog({
             <Switch id="log-assumed" checked={assumed} onCheckedChange={setAssumed} />
           </div>
           <p className="trk-help">
-            New blocks are certain unless you say otherwise. Assumed time can be hidden in Analytics.
+            New blocks are certain unless you say otherwise. Assumed time can be hidden in Data.
           </p>
 
           <Button className="w-full" onClick={save} disabled={!penId}>

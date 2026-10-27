@@ -3,7 +3,7 @@
  *
  * A daily habit records an *amount* ("4 pages"), not a length of time. But it
  * always consumed time, and that time is what makes a Done row worth anything to
- * the review, Analytics, or a plan-vs-reality comparison. So each habit may carry
+ * the review, Data, or a plan-vs-reality comparison. So each habit may carry
  * a `timeEstimate`: minutes per unit of its goal (10 min per page) and/or a flat
  * length per completion (a 20-minute stretch).
  *

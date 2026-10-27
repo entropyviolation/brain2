@@ -286,7 +286,7 @@ export function PersonDetail({
             type="button"
             className="person-readout person-readout-link"
             data-testid="person-view-instagram"
-            title={`Open @${profile.instagram} in Analytics → Sources → Instagram`}
+            title={`Open @${profile.instagram} in Data → Sources → Instagram`}
             onClick={() => openInstagramFor(profile.instagram!)}
           >
             View Instagram analytics ↗
@@ -297,7 +297,7 @@ export function PersonDetail({
             type="button"
             className="person-readout person-readout-link"
             data-testid="person-view-texts"
-            title={`Open ${textsCard.name} in Analytics → Texts`}
+            title={`Open ${textsCard.name} in Data → Texts`}
             onClick={() => openTextsFor(handles)}
           >
             View text analytics ↗

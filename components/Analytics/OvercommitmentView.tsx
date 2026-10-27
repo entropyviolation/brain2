@@ -1,7 +1,7 @@
 /**
  * components/Analytics/OvercommitmentView.tsx — Load early-warning (#238)
  *
- * One sentence + n over the shared Analytics range. A thin window is not a
+ * One sentence + n over the shared Data range. A thin window is not a
  * finding. Does not reschedule anything.
  */
 "use client"

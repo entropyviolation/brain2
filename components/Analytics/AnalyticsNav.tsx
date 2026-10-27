@@ -66,13 +66,13 @@ export function AnalyticsNav({
   return (
     <div
       className="an-nav"
-      data-ui-name="Analytics index"
+      data-ui-name="Data index"
       data-ui-help="Studio groups and views over recorded life."
       data-ui-docs="components/Analytics/README.md"
       data-ui-docs-anchor="studio-views"
     >
       <span className="an-nameplate">Groups</span>
-      <nav className="an-group-bar" aria-label="Analytics groups" role="tablist">
+      <nav className="an-group-bar" aria-label="Data groups" role="tablist">
         {ANALYTICS_TAB_GROUPS.map((g) => (
           <button
             key={g.id}
@@ -88,7 +88,7 @@ export function AnalyticsNav({
         ))}
       </nav>
       <span className="an-nameplate">Views</span>
-      <nav className="an-view-bar" aria-label="Analytics views" role="tablist">
+      <nav className="an-view-bar" aria-label="Data views" role="tablist">
         {views.map((view) => (
           <button
             key={view.id}

@@ -29,6 +29,6 @@ queue. They are not instructions.
 - List picker not dwarfing the body
 - Sleep paragraphs into a tooltip
 - One save-vs-live rule
-- Analytics points source when zero
+- Data points source when zero
 - Reflection search
 - Reviews period filter

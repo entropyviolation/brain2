@@ -1,4 +1,4 @@
-# Analytics section map
+# Data section map
 
 _Last mapped: 2026-10-23_
 
@@ -91,7 +91,7 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `texts-report` | Texts | `TextsReportView.tsx` |
 | `instagram` | Sources | `InstagramView.tsx`, `instagram-view.css` |
 
-## Every data type that flows into Analytics
+## Every data type that flows into Data
 
 Tasks and items: status, stage, list, area, item type, tags, importance, cognitive load, entropy, tier, due and scheduled dates, day-pushes, estimates (single and three-point), actual duration, time logs, start and completion stamps, cycle time, completion reviews (satisfaction, resistance, focus, distraction, expected vs actual difficulty, feelings, reflect notes, review points, time certainty), morning walkthrough fields (expected duration, day importance, resistance readings, day excitement), why-not and blocked reasons, operations (stage, category, neglect), goal and objective links.
 

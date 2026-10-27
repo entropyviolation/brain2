@@ -891,7 +891,7 @@ icons are fine. Avoid celestial costume.
 ### Phase L10: docs
 
 - **L10.1**: `components/ItemDetail/README.md` (rich links, derived,
-  shelf), `lib/README.md` (`lib/graph/*`), Analytics README (Relations
+  shelf), `lib/README.md` (`lib/graph/*`), Data README (Relations
   library), `docs/README.md` row for this file. Screenshots of the tab
   (radial, matrix, shelf) and the library. DESIGN_STYLE checklist.
 

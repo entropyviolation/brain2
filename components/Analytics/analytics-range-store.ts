@@ -1,7 +1,7 @@
 /**
- * components/Analytics/analytics-range-store.ts — Remembered Analytics window
+ * components/Analytics/analytics-range-store.ts — Remembered Data window
  *
- * Tiny client store so every Analytics tab reads the same rolling or custom
+ * Tiny client store so every Data tab reads the same rolling or custom
  * range. First paint uses the default (SSR-safe); a layout effect restores the
  * last picked window from localStorage. Custom from–to is inclusive local dates.
  * Prev/next steps that window by length or by named week/month/season unit.

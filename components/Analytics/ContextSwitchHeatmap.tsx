@@ -2,7 +2,7 @@
  * components/Analytics/ContextSwitchHeatmap.tsx — Context-switching heatmap
  *
  * A switch is a pen change: one block ending and another beginning. Shared
- * Analytics range; a sparse window is not a trend.
+ * Data range; a sparse window is not a trend.
  */
 "use client"
 

@@ -2,7 +2,7 @@
  * components/Analytics/CorrelationExplorer.tsx — Pairwise correlation matrix
  *
  * Sentence + n + caveat. Ranked links and the scatter stay hidden until the
- * overlap clears the sample floor. Shared Analytics range. Not a chart builder.
+ * overlap clears the sample floor. Shared Data range. Not a chart builder.
  */
 "use client"
 

@@ -1,7 +1,7 @@
 /**
  * components/ItemTypes/ItemTypesPanel.tsx — Browse and manage item types
  *
- * Shared surface for Settings and Analytics: list types (with subtype nesting),
+ * Shared surface for Settings and Data: list types (with subtype nesting),
  * open the detail editor on click, create new types, and delete user types.
  */
 "use client"

@@ -2,9 +2,9 @@
 
 BIM (Brain2 Ingestion Messenger) is the phone door into the vault. The bot is [@brain2_phone_bot](https://t.me/brain2_phone_bot). A person texts a short phrase, forwards a photo or PDF, shares a location, or walks a ritual. The same executor that Settings can simulate writes Lists, Habits, Tracking, Plan, sleep, cycle marks, reviews, Docs, and pantry counts.
 
-This note is a product design for an Analytics tab that would be built only from that door. It is grounded in the live command surface (`lib/ingest/command-catalog.ts`, `lib/ingest/parse-message.ts`, `lib/ingest/executor.ts`) and in the records those writers actually leave. It does not describe any Analytics screen that already exists.
+This note is a product design for an Data tab that would be built only from that door. It is grounded in the live command surface (`lib/ingest/command-catalog.ts`, `lib/ingest/parse-message.ts`, `lib/ingest/executor.ts`) and in the records those writers actually leave. It does not describe any Data screen that already exists.
 
-The interesting fact about this data is a split. The conversation is a thin, rolling audit. The life record is thick, and only some of it remembers that a phone wrote it. Analytics that treats the ingest log as the dataset will see the last 200 turns and miss the year. Analytics that treats domain stores as the dataset will see the year and lose the conversation: which prompt was asked, which reply failed, which album never parsed, which command was a read. A Telegram tab has to hold both grains and say, on every chart, which one it is using.
+The interesting fact about this data is a split. The conversation is a thin, rolling audit. The life record is thick, and only some of it remembers that a phone wrote it. Data that treats the ingest log as the dataset will see the last 200 turns and miss the year. Data that treats domain stores as the dataset will see the year and lose the conversation: which prompt was asked, which reply failed, which album never parsed, which command was a read. A Telegram tab has to hold both grains and say, on every chart, which one it is using.
 
 ---
 
@@ -99,7 +99,7 @@ Reply text, chunk counts, Telegram’s `message_id` for the bot’s own `sendMes
 
 ### 1.4 What the conversation log cannot see
 
-These updates die in `extractTelegramMessage` and never reach the executor. Analytics of “messages received” from the ingest log undercounts them by the whole class:
+These updates die in `extractTelegramMessage` and never reach the executor. Data of “messages received” from the ingest log undercounts them by the whole class:
 
 - stickers, video, video notes, animations, contacts, polls, dice, venues that are not locations
 - documents that are neither PDF nor image
@@ -334,7 +334,7 @@ Only compute \(C_d\) for domains in the high-confidence half of §1.7. For Inbox
 | Store-trip hour | Hour of `bought` and `receipt` turns. |
 | Live-location coverage | Minutes of Location entries whose notes are the GPS note, by hour. This uses the time grid, not the ingest log, so it survives log rotation. It still cannot separate Telegram Live Location from `gps:` text or the Shortcut. |
 
-Do not convert `message.date` into another zone. Telegram’s unix time is absolute; the calendar day Analytics shows must be the same local day `formatLocalDateKey` used when it filed the habit and the plan.
+Do not convert `message.date` into another zone. Telegram’s unix time is absolute; the calendar day Data shows must be the same local day `formatLocalDateKey` used when it filed the habit and the plan.
 
 ### 2.6 Remote versus in-app, by life domain
 
@@ -566,7 +566,7 @@ Combinations to refuse until a stamp exists: “Telegram location × later mood,
 
 ---
 
-## 6. Analytics information architecture (the bot only)
+## 6. Data information architecture (the bot only)
 
 One tab, **Phone**, with BIM named in the header so it is obvious this is the conversation and the records it leaves. Five sections. The first number on the page is always the coverage line: “Conversation log: last 200 turns. Stamped history: as far back as the vault. GPS successes: this sitting only.”
 
@@ -623,7 +623,7 @@ No sixth section that re-charts habit grades, sleep architecture, or plan qualit
 
 Dedupe key is `upd:{update_id}` when present, else `msg:{channel}:{chatId}:{message_id}`. The first claim wins. The second claim returns `ignored` with summary `Duplicate Telegram update` and **does not log**. Webhook retries and a double poller are the reason.
 
-The ring keeps 500 keys in memory and on the store. After eviction, the same update can apply again and create a second Inbox item, plan line, habit write, or text instant. Analytics should treat two domain rows with equal send timestamps and equal titles as a possible re-apply, not as two intentions.
+The ring keeps 500 keys in memory and on the store. After eviction, the same update can apply again and create a second Inbox item, plan line, habit write, or text instant. Data should treat two domain rows with equal send timestamps and equal titles as a possible re-apply, not as two intentions.
 
 Simulate has no dedupe key. A chart that forgets to filter `channel === "telegram"` will mix practice messages into the life record. `generatedBy.text` is set for Simulate too.
 
@@ -644,7 +644,7 @@ A venue pin (a place card with a title and no `live_period`) becomes `gps:` line
 3. Optional extra message for the pin, then `pinChatMessage` (best effort).
 4. Hub persist flush.
 
-So a failed send is a confirmation failure, not a capture failure. Analytics must not infer “not captured” from the absence of a story the phone remembers. The inverse also matters: the person may retry, and the retry is a new message that dedupe will not collapse. Two grocery lines and one memory of failure is the expected scar.
+So a failed send is a confirmation failure, not a capture failure. Data must not infer “not captured” from the absence of a story the phone remembers. The inverse also matters: the person may retry, and the retry is a new message that dedupe will not collapse. Two grocery lines and one memory of failure is the expected scar.
 
 Pin failure leaves the previous `livePins.grocery` in place. The dump the store trip sees can be older than the list.
 
@@ -683,7 +683,7 @@ Consequences for analytics:
 
 ### 7.6 Groups, pairing, and who the row belongs to
 
-Groups are ignored unless Settings turns them on. A group turn that is ignored is logged (`Ignored group`) and not applied. If groups are enabled, the `chatId` is the group and `userId` is the sender. The allowlist matches chat id **or** user id. Analytics should group by `chatId` for “which conversation,” and by `userId` for “which person,” and expect them to be equal in the normal one-human DM.
+Groups are ignored unless Settings turns them on. A group turn that is ignored is logged (`Ignored group`) and not applied. If groups are enabled, the `chatId` is the group and `userId` is the sender. The allowlist matches chat id **or** user id. Data should group by `chatId` for “which conversation,” and by `userId` for “which person,” and expect them to be equal in the normal one-human DM.
 
 Unpaired senders get no reply. Their `raw` is stored. That text can be intimate. A Phone tab that shows raw refusals is showing untrusted input on purpose so the owner can recognize themselves. It should not leave that list sitting in a shared or exported view without the same care as the ingest log already has.
 

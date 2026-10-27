@@ -44,7 +44,7 @@ Only the primitives actively imported by the app are kept. As of the current cod
 
 Many default shadcn components were deleted as unused, including: `accordion`, `alert-dialog`, `avatar`, `breadcrumb`, `calendar`, `carousel`, `chart`, `command`, `context-menu`, `drawer`, `form`, `hover-card`, `input-otp`, `menubar`, `navigation-menu`, `pagination`, `popover`, `radio-group`, `resizable`, `scroll-area`, `sheet`, `sidebar`, `skeleton`, `slider`, `sonner`, `toast`, `toaster`, `toggle`, `toggle-group`, and associated hooks.
 
-Charts in Analytics import **recharts** directly, not `ui/chart.tsx`.
+Charts in Data import **recharts** directly, not `ui/chart.tsx`.
 
 ## Styling
 
@@ -64,4 +64,4 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 ```
 
-All modules (Home, Lists, Scheduler, Analytics, etc.) import from this folder.
+All modules (Home, Lists, Scheduler, Data, etc.) import from this folder.

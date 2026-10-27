@@ -9,7 +9,7 @@
  * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
  * the Objective pen (`so:`), plus an instant on whatever other scope the
  * person picked. A note is a Text log instant with no `eventKind`. The Tracking
- * log shelves it under Notes. Analytics still reads `classifyLogInstant`, which
+ * log shelves it under Notes. Data still reads `classifyLogInstant`, which
  * leaves that row on the event list; Time → Log drops it. A thought process is
  * that same Text log instant with `eventKind` `thought-process`, and the
  * Tracking log shelves it under Thought process.

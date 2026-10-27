@@ -6,7 +6,7 @@ Measure against Lists Icons and [`docs/DESIGN_STYLE.md`](../../../docs/DESIGN_ST
 
 ## Public door
 
-Other rooms may import `PlanPanel` (`plan-panel.tsx`, Home), `AgendaGrid` (`agenda-grid.tsx`, Tracking day log), `EventDialog` (`event-dialog.tsx`, Tracking day log), `PLAN_DEFAULT_EVENT_COLOR` (`plan-chip.tsx`, Tracking day log), `PlanTextLog` (`plan-text-log.tsx`, Reviews and Habits), and `formatCapacityLine`, `plannedMinutesForDay`, `wakingWindowMinutes` (`plan-capacity.ts`, Analytics). The app shell imports `plan-chrome.css`.
+Other rooms may import `PlanPanel` (`plan-panel.tsx`, Home), `AgendaGrid` (`agenda-grid.tsx`, Tracking day log), `EventDialog` (`event-dialog.tsx`, Tracking day log), `PLAN_DEFAULT_EVENT_COLOR` (`plan-chip.tsx`, Tracking day log), `PlanTextLog` (`plan-text-log.tsx`, Reviews and Habits), and `formatCapacityLine`, `plannedMinutesForDay`, `wakingWindowMinutes` (`plan-capacity.ts`, Data). The app shell imports `plan-chrome.css`.
 
 This room writes through `lib/task-store.ts`, `lib/event-store.ts`, and `lib/planned-action-store.ts`. Written logs go through `lib/plan-text.ts`. Dark and gem latches write their own keys in `plan-theme.ts` and `plan-gem-mode.ts`.
 
@@ -127,7 +127,7 @@ The rail always shows planned minutes for the **selected day** versus that dayâ€
 
 ## Gaps
 
-- _Last mapped 2026-10-16:_ dropping a task on the day grid goes through `handleScheduleTask` (`day-view.tsx` ~120), which sets `scheduledDate` / `scheduledTime` and writes a placement with `placementFromDrop` (`lib/planned-actions.ts`) at `countingMinutes(task, defaultEstimateMin)` (`lib/todo-steps.ts`): the typed estimate against the steps' sum, else To Do's **Default est** (30 when that is 0). Capacity (`plannedMinutesForDay`) uses the same rule; its callers (the sidebar and the Home reading tile) pass the To Do default, so a timed task with no estimate now counts as `~30`. A free drag across empty time offers **Session in this time** (`planned-action-dialog.tsx`). The session writes its own block with `source: "session"` (`SessionPlanner.tsx`). That was Phase 4 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), resolved 2026-10-27.
+- _Last mapped 2026-10-16:_ dropping a task on the day grid goes through `handleScheduleTask` (`day-view.tsx` ~120), which sets `scheduledDate` / `scheduledTime` and writes a placement with `placementFromDrop` (`lib/planned-actions.ts`) at `countingMinutes(task, defaultEstimateMin)` (`lib/todo-steps.ts`): the typed estimate against the steps' sum, else To Do's **Default est** (30 when that is 0). Capacity (`plannedMinutesForDay`) uses the same rule; its callers (the sidebar and the Home reading tile) pass the To Do default, so a timed task with no estimate now counts as `~30`. A free drag across empty time offers **Session in this time** (`planned-action-dialog.tsx`). The session writes its own block with `source: "session"` (`session-planner/review-view.tsx`). That was Phase 4 of [`docs/TODO_REDESIGN.md`](../../../docs/TODO_REDESIGN.md), resolved 2026-10-27.
 
 - Carry-over of incomplete tasks to the next period is handled in Reviews, not automatically in Plan.
 - Plan text is an append log today (`v: 1` JSON entries via `lib/append-log.ts`). A Mongo `plans` collection is speculation, not the storage plan.

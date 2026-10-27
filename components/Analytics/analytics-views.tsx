@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-views.tsx — One chunk per Analytics view
+ * components/Analytics/analytics-views.tsx — One chunk per Data view
  *
  * The studio shell stays small. Opening Habits does not parse the chart
  * library behind Tracking, Sleep, or the Observatory.

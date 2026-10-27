@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-chrome.css — Analytics window
+ * components/Analytics/analytics-chrome.css — Data window
  *
  * Title bar + status bar stay Lists furniture. Chrome (range bay, left index)
  * is house milled fascia — brushed bays, engraved nameplates. Group and view
@@ -1576,7 +1576,7 @@
   gap: 12px;
 }
 
-/* Crisp Analytics popup titles — no CRT glow / blur (see win95 unskinned CRT opt-out). */
+/* Crisp Data popup titles — no CRT glow / blur (see win95 unskinned CRT opt-out). */
 .an-drill h2.font-semibold.tracking-tight,
 .an-popup h2.font-semibold.tracking-tight {
   display: inline-block;

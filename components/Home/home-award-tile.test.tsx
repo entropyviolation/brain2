@@ -33,7 +33,7 @@ describe("AwardTile", () => {
     expect(screen.getByTestId("award-detail")).toBeInTheDocument()
   })
 
-  it("jumps to the Analytics Points ledger", async () => {
+  it("jumps to the Data Points ledger", async () => {
     const user = userEvent.setup()
     render(<AwardTile onHide={() => {}} />)
     await user.click(screen.getByRole("button", { name: "Open Latest award" }))

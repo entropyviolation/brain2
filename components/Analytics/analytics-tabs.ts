@@ -1,5 +1,5 @@
 /**
- * components/Analytics/analytics-tabs.ts — Analytics groups + views
+ * components/Analytics/analytics-tabs.ts — Data groups + views
  *
  * Categories live on a studio index; the views of the selected group sit
  * beneath. Item Types is a first-class Library view (Settings still edits types).
@@ -155,7 +155,7 @@ export const ANALYTICS_TAB_HELP: Record<AnalyticsTab, string> = {
   "context-switch":
     "A switch is a pen change: one block ending and another beginning. Hour-of-day shows when fragmentation clusters.",
   "text-events":
-    "Activity instants from the phone text pipeline (log:, discrete triggers, switch markers). Always labeled from text pipeline. Counts by day in the shared Analytics range.",
+    "Activity instants from the phone text pipeline (log:, discrete triggers, switch markers). Always labeled from text pipeline. Counts by day in the shared Data range.",
   "text-spans":
     "currently / stopped / switched Activity intervals stamped by the text pipeline. Shows painted durations and switch-instant counts. Always labeled from text pipeline.",
   log:

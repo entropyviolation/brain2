@@ -65,7 +65,7 @@ or a dead field.
 | 129 / 264 | Focus timer logging | partial | #129 Module timer writes `timeLogs` on complete; #264 52:17 from load stays out |
 | 130 | Time-blindness hints | not shipped | History exists; not shown while doing |
 | 136 | Definition of done | not shipped | `Task.definitionOfDone` field only |
-| 138 | Trend / change-point | shipped | `lib/metrics.ts` + Analytics Metrics |
+| 138 | Trend / change-point | shipped | `lib/metrics.ts` + Data Metrics |
 | 148 / 232 | Nested lists | shipped | `List.parentListId` + FolderTree |
 | 149 | Formula attributes | shipped | `lib/formula.ts` + SheetGrid |
 | 150 / 199 | JSON backup/restore | shipped | Settings `BackupRestore` (preview + per-store merge/replace) |
@@ -86,7 +86,7 @@ or a dead field.
 | 228 | All-day / multi-day banners | shipped | Plan agenda / week / day |
 | 233 | Per-list JSON export | shipped | Lists settings → `exportCategory` |
 | 234 | Per-list default values | shipped | `createListItem` + Edit List defaults |
-| 238 | Burnout early-warning | shipped | `lib/overcommitment.ts` + Analytics → Overcommit |
+| 238 | Burnout early-warning | shipped | `lib/overcommitment.ts` + Data → Overcommit |
 | 239 | Neglect in Needs Attention | not shipped | Stale tasks yes; neglected *goals/ops* live on Direction / Operation heatmaps only |
 | 241 | Global hotkey capture | shipped | `Cmd/Ctrl+Shift+A` (was Shift+K) + Electron `CommandOrControl+Alt+Space` |
 | 242 | Smart-parse dates | shipped | `lib/smart-parse.ts` + Quick Add |
@@ -239,7 +239,7 @@ everything below, so they are named here once:
 17. **Monte Carlo completion forecast.** Simulate project finish-date
     distributions from task estimate ranges; show "70% chance done by X." **From
     the doc:** "Monte Carlo simulations… estimate the best, worst, and most likely
-    completion times." **In Brain2:** a pure helper in `lib/` + an Analytics view.
+    completion times." **In Brain2:** a pure helper in `lib/` + an Data view.
 
 18. **Dependency graph view (graph theory).** **Status:** shipped — Scheduler Dependencies graph (in-house). Tasks as nodes, dependencies as
     edges, to reason over complex relationships. **From the doc:** "graph theory…
@@ -260,7 +260,7 @@ everything below, so they are named here once:
 21. **Velocity metric.** **Status:** not shipped. Track how much work (points or count) is actually
     completed per day/week to predict capacity. **From the doc:** "velocity in
     Scrum… predicts how much work an agile team can complete in a sprint." **In
-    Brain2:** derive from `points-store` completions; show in Analytics.
+    Brain2:** derive from `points-store` completions; show in Data.
 
 22. **Sprint planning module.** Time-boxed batches of tasks with a commitment and
     a retro. **From the doc:** Scrum/agile. **In Brain2:** a Module/workspace
@@ -303,7 +303,7 @@ everything below, so they are named here once:
 
 29. **Estimate-vs-actual calibration analytics.** Chart your estimation accuracy
     over time to fight time-blindness. **From the doc:** Taylor measurement +
-    ADHD "time-blindness." **In Brain2:** new Analytics view over
+    ADHD "time-blindness." **In Brain2:** new Data view over
     `estimatedDuration` vs `actualDuration`.
 
 30. **First-class "standard / benchmark" per item type.** A type can define
@@ -328,7 +328,7 @@ everything below, so they are named here once:
 33. **Plan-vs-reality dashboard.** Side-by-side of what was planned for a period
     vs. what actually happened. **From the doc:** Fayol's *Control* ("verify
     whether things are going according to plan"); systems-approach feedback loops.
-    **In Brain2:** the long-noted missing Analytics view; data already in plan-text
+    **In Brain2:** the long-noted missing Data view; data already in plan-text
     + `timeLogs` + completions. (SPEC §15 gap.)
 
 34. **Intention→outcome variance score.** A single number per period for how
@@ -933,10 +933,10 @@ left out, let the person delay the label. The entries below stay a menu.
      the TimeGrid scopes + habit types are a start; generalize to a `metric` item
      type with a value series.
 
-138. **Trend detection over your data.** **Status:** shipped — Analytics Metrics trends + change-points. Surface emerging upward/downward trends
+138. **Trend detection over your data.** **Status:** shipped — Data Metrics trends + change-points. Surface emerging upward/downward trends
      and change-points in any tracked series. **From the doc:** "OKAY ABSOLUTELY
      THE ML SCHEDULER WILL USE TREND DETECTION (REALLY EXCITING!!)"; "change-point
-     detection." **In Brain2:** a trend-analysis helper feeding Analytics.
+     detection." **In Brain2:** a trend-analysis helper feeding Data.
 
 139. **Predictive scheduling from patterns.** Suggest when to do a task based on
      when you historically do similar things well. **From the doc:** "ML
@@ -946,7 +946,7 @@ left out, let the person delay the label. The entries below stay a menu.
 140. **Correlation explorer.** "Does my mood correlate with sleep / exercise /
      task completion?" cross-metric analysis. **From the doc:** self-analysis +
      "analyze that data to understand patterns and trends." **In Brain2:** a new
-     Analytics view correlating any two tracked series.
+     Data view correlating any two tracked series.
 
 141. **Where-I've-been map.** Map view of logged locations over time. **From the
      doc:** the doc's geo/location interest + the README's own "Where I've been on
@@ -1547,7 +1547,7 @@ left out, let the person delay the label. The entries below stay a menu.
      recent linked actions, and days whose tasks served no goal. **From the doc:**
      "ensure I'm on path with all my expressed goals and that I know what they
      are… it's DIRECTION IN LIFE essentially" (`Brain2 REVIEW_RUNDOWN.pdf`). **In
-     Brain2:** an Analytics view joining goal/objective links to completions
+     Brain2:** an Data view joining goal/objective links to completions
      (cross-ref ideas #81 "gaps report" and #143 category performance).
 
 ### AA. Scheduling refinement, carry-over & calendar planning
@@ -1671,8 +1671,8 @@ left out, let the person delay the label. The entries below stay a menu.
      overcommitment, and warn before it happens — using classical change-point
      detection, not an LLM. **From the doc:** "Burnout Prevention: Early warning
      signs of overcommitment" (`Brain2 REVIEW_RUNDOWN.pdf`). **In Brain2:**
-     `lib/overcommitment.ts` over `Task.daysPushed` + `timeLogs` (shared Analytics
-     range), feeding Analytics → Behavior → **Overcommit** (cross-ref idea #138
+     `lib/overcommitment.ts` over `Task.daysPushed` + `timeLogs` (shared Data
+     range), feeding Data → Behavior → **Overcommit** (cross-ref idea #138
      trend detection; honors the self-hosted/classical-first constraint). Does
      not reschedule (#273).
 
@@ -1689,7 +1689,7 @@ left out, let the person delay the label. The entries below stay a menu.
      local/self-hosted vector search (Haystack-style) across every operation's
      notes, work logs, and linked resources, usable from a global box and inside
      user-built widgets. **From the doc:** "Resources… Notes… Log while working"
-     accumulate per operation (`cogs_operations.pdf`), and Analytics should
+     accumulate per operation (`cogs_operations.pdf`), and Data should
      "eventually analyze patterns" (`Brain2 REVIEW_RUNDOWN.pdf`). **In Brain2:** index
      operation text in the planned local vector layer behind `lib/search.ts` and
      expose it via `components/Search/GlobalSearch.tsx` and a Module search view
@@ -1936,7 +1936,7 @@ left out, let the person delay the label. The entries below stay a menu.
      actually feels good. **From the doc:** "Reward Value (anticipated
      satisfaction, 1–10)"; "Updated entropy/confusion, reward satisfaction." **In
      Brain2:** `TaskCompletionReview.satisfaction` already exists in `lib/types.ts` —
-     wire its capture (SPEC §13.7) and an Analytics scatter.
+     wire its capture (SPEC §13.7) and an Data scatter.
 
 271. **Self-graphed review history (draw-your-own-conclusions).** **Status:** not shipped. Plot the results
      of every past review and analysis so the user can spot their own patterns,
@@ -1974,7 +1974,7 @@ left out, let the person delay the label. The entries below stay a menu.
 275. **Context-switch heatmap.** Count and visualize how often you jump categories/
      contexts through the day to expose fragmentation. **From the doc:** "context
      switch heatmap"; "Logs and graphs:… context switches." **In Brain2:** derive
-     from ordered `timeLogs` + `Task.categories`/`context` in a new Analytics view;
+     from ordered `timeLogs` + `Task.categories`/`context` in a new Data view;
      a companion to the doc's "week view shows 'effort heatmap'" idea.
 
 ### AJ. Operations, onboarding & data portability
@@ -2046,7 +2046,7 @@ left out, let the person delay the label. The entries below stay a menu.
      when the needle returns. **From the text:** life holds only inside narrow
      bands; the governors are slower than voluntary action (pp. 114–115); a
      sharp thermostat hunts (pp. 96–97). **In Brain2:** `lib/homeostat.ts`,
-     bands on metric definitions, a Home widget, one Analytics view.
+     bands on metric definitions, a Home widget, one Data view.
      **Slice:** CY-2.
 
 282. **Telltales on every planned block.** A lamp goes green, amber, or red
@@ -2070,7 +2070,7 @@ left out, let the person delay the label. The entries below stay a menu.
      earn the entropy they removed. Each capture channel shows its signal
      share against its noise. **From the text:** information is negative
      entropy; the demon sorts only by acting on information (pp. 57–58, 61).
-     **In Brain2:** `lib/negentropy.ts` on the mutation service; Analytics →
+     **In Brain2:** `lib/negentropy.ts` on the mutation service; Data →
      Channels. **Slice:** CY-7.
 
 285. **The rhythm lab.** Autocorrelation and a spectrum over sleep midpoint,
@@ -2130,7 +2130,7 @@ left out, let the person delay the label. The entries below stay a menu.
      sleep, screen, and load together name tomorrow’s likely completion,
      with the sample floor and a band. **From the text:** useful prediction
      reads several series at once, like a daily weather map (p. 88). **In
-     Brain2:** a pure function beside `lib/metrics.ts`; one Analytics card;
+     Brain2:** a pure function beside `lib/metrics.ts`; one Data card;
      never a cause sentence.
 
 292. **The chain’s chance, not only its path.** Scheduler and Operations show
@@ -2156,7 +2156,7 @@ left out, let the person delay the label. The entries below stay a menu.
      lighter tracking, and stamp the day a new metric started, so a later
      trend can be read against the era it belongs to. **From the text:**
      observation disturbs the thing observed (pp. 163–164). **In Brain2:** an
-     epoch record on metric definitions; Analytics charts draw a vertical
+     epoch record on metric definitions; Data charts draw a vertical
      line at the epoch and can hide the baseline from the fit.
 
 295. **How far a module’s decisions travel.** A room is part of the house only
@@ -2234,7 +2234,7 @@ left out, let the person delay the label. The entries below stay a menu.
 305. **Two oscillators on one card.** Sleep midpoint and the work gate (#285)
      drawn as two cycles that lock or drift apart. Entrainment you can see.
      **From the text:** parallel generators govern each other (pp. 183–200).
-     **In Brain2:** one Analytics figure reusing the spectrum’s series; no
+     **In Brain2:** one Data figure reusing the spectrum’s series; no
      new store.
 
 306. **Diameter of the house.** Besides the guest score (#295), show the
@@ -2353,7 +2353,7 @@ left out, let the person delay the label. The entries below stay a menu.
      change points.
 
 322. **A symbol that is not a type.** The person may hang an image, glyph, or
-     color on any item — the friend animal, a gem, a scarab — and Analytics
+     color on any item — the friend animal, a gem, a scarab — and Data
      can trace where that symbol recurs, as a lens, not a category. **From
      the text:** recurring images carry the pattern (pp. 29, 110). **In
      Brain2:** optional symbol on the item, indexed for search. **Slice:**
@@ -2520,7 +2520,7 @@ left out, let the person delay the label. The entries below stay a menu.
      by X%” carries the tasks, the dates, and an etc.: *n*, and how many had
      no estimate. **From the text:** extensional devices — indexes, dates,
      etc. — keep a statement from pretending to be all. **In Brain2:**
-     Analytics sentence helper. **Slice:** GS-2.
+     Data sentence helper. **Slice:** GS-2.
 
 345. **One mark on every derived value.** Time estimates already show est.
      Belief strength, habit grades, points, rollups, tone, and compensated
@@ -2790,7 +2790,7 @@ loop must not flatten.
      recurring miss stays pencil until the third occurrence, then ink. A
      pattern earns its body by repeating. **From the text:** a single bird
      is not an omen; a series can be (Wiener p. 35; the fish series, p. 19).
-     **In Brain2:** the sample floor drawn as pencil versus ink on Analytics
+     **In Brain2:** the sample floor drawn as pencil versus ink on Data
      and on the coincidence log.
 
 388. **Attention is a receptor, not a portrait.** Dwell (#297) writes an
@@ -2855,7 +2855,7 @@ loop must not flatten.
      in one dated sentence with an *n*. **From the text:** three energies
      drain through desire, mood, and a busy mind; health is read from how
      bright a guardian looks (ch. 4, 10). **In Brain2:** a pure
-     `lib/reserves.ts`, a tube on the Habits rail, a breakdown in Analytics →
+     `lib/reserves.ts`, a tube on the Habits rail, a breakdown in Data →
      Time. Derived, sample floors, a thin window stays dark, and nothing
      writes back.
 
@@ -2876,7 +2876,7 @@ loop must not flatten.
      a gate and the stuck items are dated cards: pushes, age, last touch,
      blockers. **From the text:** three gates; a shut gate stops the
      gathering; what shuts it looks harmless until seen as it is (ch. 4, 10).
-     **In Brain2:** Analytics → Accuracy beside Overcommit, and a panel on
+     **In Brain2:** Data → Accuracy beside Overcommit, and a panel on
      Operations. Events only. Sample floors. The remedies live in #401 and
      #450.
 
@@ -2887,7 +2887,7 @@ loop must not flatten.
      deeds per person, promises kept, and repairs still open, counted and
      dated. **From the text:** every action gets a response; a thought weighs
      as a deed; the household is reported twice a year and at year’s end
-     (ch. 9, 11). **In Brain2:** an Analytics view and one step in the yearly
+     (ch. 9, 11). **In Brain2:** an Data view and one step in the yearly
      review. Counts, never a character grade. Points for deeds stay off
      unless the person turns them on (#457).
 
@@ -3005,7 +3005,7 @@ loop must not flatten.
      no objective, shown as dated cards: duration, last touch, and the
      objective it did not meet. **From the text:** what feeds on attention
      looks attractive until it is seen as it is (ch. 4). **In Brain2:**
-     Analytics beside Gates (#397). The sentence names the hours and the
+     Data beside Gates (#397). The sentence names the hours and the
      dates.
 
 414. **The day’s circuit, and its outer reach.** The Day Log can draw one
@@ -3114,13 +3114,13 @@ loop must not flatten.
      total on a habit — can be set to hide once a stage holds (#399). The
      light (#400) remains. The number is still in the data. **From the
      text:** drop the breath count once it has become a crutch (ch. 13).
-     **In Brain2:** a display flag on the habit. Analytics can still read
+     **In Brain2:** a display flag on the habit. Data can still read
      the count.
 
 431. **A mark before the usual switch.** When the hour of a repeated context
      switch is approaching, one quiet mark appears, early enough to pause.
      **From the text:** internal observation learns the pattern of thoughts,
-     then meets them before they start (ch. 12). **In Brain2:** Analytics
+     then meets them before they start (ch. 12). **In Brain2:** Data
      heatmaps already see the hour; this is one lamp on the Plan rail.
      Sample floor applies.
 
@@ -3330,7 +3330,7 @@ loop must not flatten.
      counts and point totals can be hidden across Habits while tubes, gems,
      and dimming (#400) stay. **From the text:** once the count has focused
      the mind, keeping it up front turns it into the practice (ch. 13). **In
-     Brain2:** a Habits display setting. Data and Analytics keep the numbers.
+     Brain2:** a Habits display setting. Data and Data keep the numbers.
 
 463. **The last stage retires the scaffolding.** When the final stage of a
      foundation holds, reminders, nudges, timers, and estimate prompts for
@@ -3341,7 +3341,7 @@ loop must not flatten.
      the scaffolding.
 
 464. **Five walks.** A plain map of the house in five walks: scripts (BIM,
-     workflows, door rules), seeing (almanac, Analytics, gates), devotion
+     workflows, door rules), seeing (almanac, Data, gates), devotion
      (the friend, the hearth, letters), transformation (reserves, foundations,
      the circuit), and right action (the ledger, repairs). Each walk is a
      list of rooms. **From the text:** five ways — power, seeing, devotion,
@@ -3360,7 +3360,7 @@ loop must not flatten.
 - **Home / To-Do:** 1–13, 24, 42, 46, 99, 100, 128–136
 - **Modules / Workspaces:** 9, 22, 31, 49, 86, 95–98, 101, 105, 124–127, 155
 - **Reviews:** 33–41, 102, 156, 159
-- **Analytics / Tracking:** 26, 29, 33, 137–145
+- **Data / Tracking:** 26, 29, 33, 137–145
 - **Second brain (new types):** 55–94, 109–115, 146, 155–158, 160
 - **Platform / storage:** 105, 106, 150, 151, 153, 154, 185, 198, 199, 233, 280
 
@@ -3374,7 +3374,7 @@ loop must not flatten.
 - **Goals / Objectives / direction:** 176, 179, 181, 214–224
 - **Lists / attributes / types:** 177, 178, 180, 182, 232, 234–236
 - **Reviews:** 208, 219, 265, 267–271, 277
-- **Analytics / Tracking:** 203, 224, 231, 237, 238, 270, 271, 274, 275
+- **Data / Tracking:** 203, 224, 231, 237, 238, 270, 271, 274, 275
 - **Cognitive state / capacity:** 231, 272–274
 - **Semantic search / classical ML (fast-track):** 186, 238, 240, 268
 - **Platform / storage / shell:** 185, 189, 190, 194, 198, 199, 233, 278, 280

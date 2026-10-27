@@ -5,7 +5,7 @@
  * is a kind of Cleaning, "Balboa Park" is a kind of "at the park" which is a
  * kind of Out which is a kind of Mexico. Painting always writes the specific
  * pen. Display depth decides which ancestor's color and name you see — the
- * Time Grid, Activity Log, Day Log and Analytics Tracking tab all ask the
+ * Time Grid, Activity Log, Day Log and Data Tracking tab all ask the
  * same question so they cannot disagree.
  *
  * Depth 0 is the root (country / category). Higher depths walk toward the

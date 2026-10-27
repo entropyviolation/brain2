@@ -1,7 +1,7 @@
 /**
  * components/Analytics/cross-section.ts — Shared-range density series
  *
- * Pure. Each series is a day-aligned strip over the Analytics window. Missing
+ * Pure. Each series is a day-aligned strip over the Data window. Missing
  * observations stay missing (never interpolated as zero). n is days with a
  * real reading. Domain is the observed max, with a sensible floor so a 12-minute
  * day is not stretched to look like a full day.

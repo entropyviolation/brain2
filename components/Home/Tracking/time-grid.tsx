@@ -11,14 +11,14 @@
  * Three labels stack on a block, each doing a different job:
  *   - **Pen** — the activity. One per minute per scope.
  *   - **Variant** — a finer cut inside the pen, several allowed at once
- *     (`variant-chips.tsx`). Analytics breaks the pen down by these.
+ *     (`variant-chips.tsx`). Data breaks the pen down by these.
  *   - **Tag** — cross-scope, and the join to Habits: tagged time flows into any
  *     linked daily habit via `lib/habit-tracking-sync.ts`, which
  *     `useHabitTrackingSync` keeps running while this view is mounted.
  *
  * Totals come from `lib/tracking-summary.ts` as occupancy — overlapping blocks
  * on the same minute count once — the same module the Activity Log and the
- * Analytics Tracking tab use, so the three can never disagree. TIME/DIV, Cell
+ * Data Tracking tab use, so the three can never disagree. TIME/DIV, Cell
  * size (1 / 5 / 10 / 15 / 30), and Fill sit on one equal-height silkscreen
  * strip on the plot bezel (`TrkPlotBezel`); leftover width and height go to
  * the white plot, not a gray slab beside `width: fit-content` modules. The live

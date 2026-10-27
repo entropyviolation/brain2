@@ -1,7 +1,7 @@
 /**
  * lib/chrome-sessions.ts — Chrome history as Screen Time blocks
  *
- * Analytics → Sources → Browser turns the merged history into runs (`runsOf`
+ * Data → Sources → Browser turns the merged history into runs (`runsOf`
  * in `lib/browser-history.ts`) and paints each on the Screen Time scope: pen =
  * site name, notes = `logged from chrome browser data` plus pages, full URLs,
  * searches and, for YouTube, minutes per video. Local servers use the page

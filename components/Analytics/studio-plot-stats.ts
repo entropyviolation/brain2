@@ -1,5 +1,5 @@
 /**
- * components/Analytics/studio-plot-stats.ts — Classical plot math for Analytics canvases
+ * components/Analytics/studio-plot-stats.ts — Classical plot math for Data canvases
  *
  * KDE / histogram / horizon / beeswarm / alluvial layout / UpSet intersections /
  * weekday ridges. Primitives only — no store. Display lives in studio-plots.tsx.

@@ -1,7 +1,7 @@
 /**
  * lib/instagram-sessions.ts — Instagram "Time active" sessions as iPhone Screen Time blocks
  *
- * Analytics → Sources → Instagram → Time active splits every logged action into
+ * Data → Sources → Instagram → Time active splits every logged action into
  * sessions (`time_active` in `analyze.py`). `summary.time_active.sessions_recent`
  * lists the ones inside the view-log window as `[startEpoch, endEpoch, actions]`.
  * Each becomes an interval on iPhone Screen Time, on the `Instagram` app pen,

@@ -1,5 +1,5 @@
 /**
- * components/Analytics/enhanced-analytics.tsx — Analytics screen
+ * components/Analytics/enhanced-analytics.tsx — Data screen
  *
  * Title bar + status stay Lists furniture. Inside: shared range (presets or
  * custom from–to, Prev/Next period step), studio index, charts. Spec: §15.
@@ -9,7 +9,7 @@
 "use client"
 
 import { Suspense, useRef } from "react"
-import { APP_NAV_KEYS, analyticsScrollSlot } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, DATA_TAB_LABEL, analyticsScrollSlot } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { orbFor } from "@/components/Icons/Icon"
@@ -40,12 +40,12 @@ export function EnhancedAnalytics() {
 
   return (
     <TooltipProvider delayDuration={250}>
-    <div className="fm98 an95" data-ui-name="Analytics" data-ui-docs="components/Analytics/README.md">
+    <div className="fm98 an95" data-ui-name="Data" data-ui-docs="components/Analytics/README.md">
       <div className="fm-window">
         <div className="fm-title-bar">
           <div className="fm-title-bar-text">
             <img src={orbFor("analytics")} alt="" width={16} height={16} />
-            Analytics
+            {DATA_TAB_LABEL}
           </div>
           <div className="fm-title-bar-controls">
             <button type="button" className="fm-title-btn" aria-label="Minimize">
@@ -60,14 +60,14 @@ export function EnhancedAnalytics() {
 
         <div className="fm-toolbar an-range-bar">
           <span className="an-nameplate">Range</span>
-          <div className="an-range-keys" role="group" aria-label="Analytics range presets">
+          <div className="an-range-keys" role="group" aria-label="Data range presets">
             {range.presets.map((d) => (
               <button
                 key={d}
                 type="button"
                 className="an-range-chip"
                 aria-pressed={range.mode === "preset" && range.days === d}
-                title={`Rolling last ${d} days. One shared window for every Analytics view.`}
+                title={`Rolling last ${d} days. One shared window for every Data view.`}
                 onClick={() => range.setDays(d)}
               >
                 {d} days
@@ -139,7 +139,7 @@ export function EnhancedAnalytics() {
             >
               Prev
             </button>
-            <span className="an-range-label" aria-label="Analytics date range">
+            <span className="an-range-label" aria-label="Data date range">
               {range.label}
             </span>
             <button

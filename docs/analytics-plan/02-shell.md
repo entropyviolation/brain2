@@ -1,8 +1,8 @@
-# Build brief — Analytics group rail
+# Build brief — Data group rail
 
 This brief describes a later shell change. It does not edit `components/`, `analytics-tabs.ts`, or any other file in `docs/analytics-plan/`.
 
-The studio stays one Analytics tab. Groups sit on the left rail; the views of the selected group sit beneath. That contract is `AnalyticsNav.tsx` today. The five group ids (`behavior`, `time`, `accuracy`, `meta`, `library`) are replaced by the rooms below. Every existing view id moves into exactly one room. None are renamed or deleted.
+The studio stays one Data tab. Groups sit on the left rail; the views of the selected group sit beneath. That contract is `AnalyticsNav.tsx` today. The five group ids (`behavior`, `time`, `accuracy`, `meta`, `library`) are replaced by the rooms below. Every existing view id moves into exactly one room. None are renamed or deleted.
 
 Source of the rooms: the Information architecture and “Rooms that stay blocked” sections of `docs/analytics-vision/ANALYTICS_VISION.md`, plus the appendix (history that is not stored — empty frames stay empty; this shell does not add those columns). Meaning stays a later group, still unbuilt, specified in Wave 14 of `docs/JungBrain2.md` and noted in `components/Analytics/README.md`. It is not on this rail and it is not dropped.
 
@@ -251,7 +251,7 @@ First view when a group has no stored last-view:
 
 **Last view per group.** `AnalyticsNav` reads `APP_NAV_KEYS.analyticsGroupViews` and keeps a pair only when the group id exists and the tab id is in that group (`readGroupViews`). Unknown stored group keys are ignored. After this change, stored keys `behavior`, `time`, `accuracy`, and `meta` are ignored. `library` still matches. A new group starts on its first tab until the person picks a view, then that pick is written under the new group id. Do not copy an old group’s last view onto a new group.
 
-**Capture.** Keep `data-ui-name="Analytics index"` on the nav. Keep `role="tab"` and `aria-selected` on both group buttons and view buttons, so screenshot capture can click the group, then the view. Group button `title` stays the group label plus the view labels, as it is now.
+**Capture.** Keep `data-ui-name="Data index"` on the nav. Keep `role="tab"` and `aria-selected` on both group buttons and view buttons, so screenshot capture can click the group, then the view. Group button `title` stays the group label plus the view labels, as it is now.
 
 **Fascia.** Do not restyle the milled keys, the bay, the nameplates, or the 168px rail. Thirteen groups will not fit the bay at once. Give `.an-group-bar` the same `min-height: 0` and `overflow: auto` the view bar already has, so the group list scrolls inside the existing bay. The view bar keeps scrolling on its own. No wrap onto a second visual language, no icons, no horizontal group strip.
 

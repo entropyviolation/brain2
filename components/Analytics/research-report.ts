@@ -1,7 +1,7 @@
 /**
  * components/Analytics/research-report.ts — Which vault shapes earn a report line
  *
- * Pure. The view hands in rows already clipped to the shared Analytics window.
+ * Pure. The view hands in rows already clipped to the shared Data window.
  * A section appears only when a stated rule clears its floor. Empty series are
  * named in "left out", not drawn as charts. No sentiment, no model.
  */

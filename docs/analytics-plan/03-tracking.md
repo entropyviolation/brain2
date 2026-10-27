@@ -2,7 +2,7 @@
 
 One owner: the tracking-plates agent.
 
-Source of the ideas: `docs/analytics-vision/01-tracking.md` and the Tracking section of `docs/analytics-vision/ANALYTICS_VISION.md`. This brief does not replace those documents. It says which existing Analytics plate already draws the closest picture, and what to add beside it.
+Source of the ideas: `docs/analytics-vision/01-tracking.md` and the Tracking section of `docs/analytics-vision/ANALYTICS_VISION.md`. This brief does not replace those documents. It says which existing Data plate already draws the closest picture, and what to add beside it.
 
 Every addition is a new plate. Leave the plate that is already there.
 

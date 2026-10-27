@@ -22,7 +22,7 @@ The shared plumbing every source uses: record types, ids, stamps, people matchin
 
 ## Message storage
 
-Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Analytics see it. Full bodies live on disk in `data/phone-sync/messages.jsonl`, not in a persist key (see the status note above), so they do not bloat the tracking store or the ~5 MB localStorage.
+Message bodies are kept (decided 2026-10-22). A message is a vault record with body, thread id, direction, and attachment paths. It also paints an `iphone-texts` instant so Tracking and Data see it. Full bodies live on disk in `data/phone-sync/messages.jsonl`, not in a persist key (see the status note above), so they do not bloat the tracking store or the ~5 MB localStorage.
 
 ## Done
 

@@ -1,7 +1,7 @@
 /**
  * components/Analytics/ResearchReportView.tsx — Produce research report
  *
- * Reads the same stores as the rest of Analytics and previews only the
+ * Reads the same stores as the rest of Data and previews only the
  * shapes `buildResearchReport` keeps. Copy is plain text. No model call.
  */
 "use client"
