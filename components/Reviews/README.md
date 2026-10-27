@@ -35,7 +35,7 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | `RitualWalkDialog.tsx` | Opens the same morning, start, end, or Star Lord dialog from a Home → To Do row |
 | `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
 | `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
-| `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
+| `MorningReview.tsx` | _Last mapped: 2026-10-27._ Public door for the day morning ritual (HM2). Re-exports `MorningReview` and `MorningReviewDialog`. Import `@/components/Reviews/MorningReview`. The twelve step bodies, the session draft, and `commitMorning` live in `morning/` |
 | `RitualSteps.tsx` | `RitualStepper` + `useRitualStep`: one question at a time. Lamp strip, `03 / 09` plate, optional step index (remembered per viewer), Back / Next, Alt+←/→. Styles in `ritual-steps.css`. Its own buttons carry `.rst-own` so the house key chrome skips them. _Last mapped: 2026-10-16_ Every rite uses it: Morning, Night / end, Start, Star Lord. The side index opens by default at 720px and wider; a toggle is remembered (`brain2-ritual-nav-open`). Under 640px the index is a strip above the card. Each rite hands in `{ id, label, answered, body }` steps and owns saving: moving to another step writes a draft. Step keys: `brain2-morning-step:{day}`, `brain2-ritual-step:end:{period}:{key}`, `brain2-ritual-step:start:{period}:{key}`, `brain2-ritual-step:star-lord:{kind}:{date}`. The last step's key is **Finish** (same as the primary save). A step's `answered` may be `"partial"`: a half-lit lamp, `(started)` in its label, not counted in the tally (night: Unfinished items, Reflection). `tone` colors the rite (`data-tone` in `ritual-steps.css`): `dawn` amber for Morning and Start, `dusk` ink blue for Night and End, `north` silver for Star Lord |
 | `CommitmentMarkList.tsx` | Shared required / prioritized task checkboxes (`marks`: `required` \| `prioritized` \| `both`) for morning sections and start-ritual rows |
 | `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
@@ -50,6 +50,33 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 | `LookAheadSection.tsx` | _Last mapped: 2026-10-17_ Look-ahead steps for morning and start rituals. Modes: `lists` (bigger to-do lists by importance, each task once, **Do today** / **Do this week** moves it onto the rite's period via `scheduleFieldsForPeriod`), `due` (open tasks due within N days, soonest first, CRT countdown `1d 4h`), `overdue` (past deadline, **Do …** and **Missed**). Rows stay in place after an action. Helpers `lib/ritual-due.ts`. Morning steps **Week and month · Due within a week · Overdue** sit after To do for today. Start rituals add **This month** (week start only) · **Due this {period}** (7 / 31 / 92 / 366 days) · **Overdue** after Undone; a season start puts work on the season's first month. Visiting the step lights its lamp |
 | `LookBackSection.tsx` | _Last mapped: 2026-10-17_ End ritual **Look back** step (after Assumed times). Read-only plan beside the period: night shows that morning's day plan, must-do, intentions, best day, and Required / Priority tasks with ✓ when done; week to year show that Start ritual's priorities, must-do, intentions, and plan. A CRT tally counts done / pushed / missed / still open from this ritual. One note, `PeriodReview.lookBack`. Not scored |
 | `AssumedTimesSection.tsx` | _Last mapped: 2026-10-17_ Confirm assumed completion times in the end ritual. Fields are **Start · Took (min) · Finished**, linked by `lib/assumed-time-math.ts` (`linkTimes`): start or duration moves the finish; a finish edit keeps the start and changes the duration; past midnight wraps. **Save correction** confirms all three. **Negligible** confirms duration 0 and sets `Task.timeNegligible` (no time on purpose, not missing). Optional **Est.** marks duration or start as a rough estimate (`Task.timeRough`) |
+
+_Last mapped: 2026-10-27._ `morning/` is the desktop ritual. `MorningReview.tsx` stays the import path.
+
+```text
+morning/
+  MorningReviewDialog.tsx   shell, stepper, day arrows, Speak them dialog
+  MorningReviewButton.tsx   entry button and its error boundary
+  use-morning-form.ts       field state, reseed, session draft
+  commit-morning.ts         store write (to-dos, walk, plan, sleep, slice, marks)
+  steps.ts                  twelve step ids and resumeStep map
+  types.ts                  MorningDraft / MorningSlice
+  draft.ts                  sessionStorage key brain2-morning-draft:{day}
+  painted-night.ts          sleep painted on the time grid
+  affirmation-pool.ts       Affirmations list, create if missing, open in Lists
+  StringListEditor.tsx      numbered lines (new to-dos, gratitude)
+  WalkSlot.tsx              one walk field, stored vs today vs new
+  NightStep.tsx             Last night
+  AffirmationsStep.tsx      Affirmations
+  TodosStep.tsx             To do for today
+  LookAheadStep.tsx         Week and month, Due within a week, Overdue
+  HabitsStep.tsx            Daily habit priorities
+  WalkStep.tsx              Go through to do list
+  PlanStep.tsx              Day plan
+  CircumstancesStep.tsx     Circumstances
+  BestDayStep.tsx           Best day ever
+  GratitudeStep.tsx         Gratitude
+```
 
 ## Entry point
 
@@ -190,11 +217,11 @@ Backward compatible: `reviews` / `review` still work; preferred user language is
 
 ## Morning review ritual (HM2) — detail
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-The desktop dialog walks one question at a time (`RitualStepper`): Last night, Affirmations, To do for today, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Moving to another step writes progress the same way **Save progress** does, so new to-do lines join the list before the walk. The step is kept per day in `localStorage` (`brain2-morning-step:{day}`). With nothing kept, a partial review opens at its `resumeStep`. **Finish** on the last step is **Save Morning Review**.
+The desktop dialog walks one question at a time (`RitualStepper`). The step bodies live in `components/Reviews/morning/`: Last night, Affirmations, To do for today, Week and month, Due within a week, Overdue, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Moving to another step writes progress the same way **Save progress** does, so new to-do lines join the list before the walk. The step is kept per day in `localStorage` (`brain2-morning-step:{day}`). With nothing kept, a partial review opens at its `resumeStep`. **Finish** on the last step is **Save Morning Review**. Callers still import `@/components/Reviews/MorningReview`.
 
-- **Affirmations:** **Shuffle** draws five new lines from the list (not the five on screen when the list is big enough). **Edit the list** saves the draft, closes, and opens Lists on the Affirmations list. **Speak them** speaks the lines on screen (`AffirmationsDialog` `lines`). _Last mapped: 2026-10-16_ Each plaque has a **✓** key that logs a recitation for the ritual's day (`lib/affirmation-log-store.ts`, source `ritual`); it shows the count once said, and Alt-click undoes one. **Speak them** (`AffirmationsDialog`, `dayKey` prop) logs each line as `speak` when you move past it. The Home **Affirmation** widget reads the same log.
+- **Affirmations:** **Shuffle** draws five new lines from the list (not the five on screen when the list is big enough). **Edit the list** saves the draft, closes, and opens Lists on the Affirmations list. **Speak them** is built in `morning/AffirmationsStep.tsx` and opens `AffirmationsDialog` from `morning/MorningReviewDialog.tsx` (the dialog stays outside the step). _Last mapped: 2026-10-16_ Each plaque has a **✓** key that logs a recitation for the ritual's day (`lib/affirmation-log-store.ts`, source `ritual`); it shows the count once said, and Alt-click undoes one. **Speak them** (`AffirmationsDialog`, `dayKey` prop) logs each line as `speak` when you move past it. The Home **Affirmation** widget reads the same log.
 - **Go through to do list:** a blank field shows the stored value greyed as its placeholder; typing replaces it. Grey italic is stored earlier, blue is logged today (that day's `dayRatings`, or a resistance reading from today), green is changing now, with **keep {value}** to drop the change. Importance and excitement fall back to the latest earlier day. A save clears the applied walk fields so a second save cannot log the same resistance reading twice; Skip stays.
 - **Gratitude** and new to-do lines: Enter moves to the next line (adding one, up to 10 for gratitude) and leaves the text where it was.
 
