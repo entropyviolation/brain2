@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/show-in-timegrid.ts — Jump from a block to the Time Grid
+ * components/Home/Tracking/block-editor/show-in-timegrid.ts — Jump from a block to the Time Grid
  *
  * The block editor can sit on the Activity Log, the Day Log, Data, the
  * task card, or the header Now popup. This leaves that layer, opens Home →

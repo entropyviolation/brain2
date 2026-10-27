@@ -9,7 +9,8 @@
  * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
  * the Objective pen (`so:`), plus an instant on whatever other scope the
  * person picked. A note is a Text log instant with no `eventKind`. The Tracking
- * log shelves it under Notes. Data still reads `classifyLogInstant`, which
+ * log shelves it under Notes. `visibleNoteBody` hides the pipeline stamp lines
+ * under those words. Data still reads `classifyLogInstant`, which
  * leaves that row on the event list; Time → Log drops it. A thought process is
  * that same Text log instant with `eventKind` `thought-process`, and the
  * Tracking log shelves it under Thought process.
@@ -48,6 +49,16 @@ export { eventKindSlug }
 export { ensureLocationPen }
 export { THOUGHT_PROCESS_KIND }
 export { SPEND_EVENT_KIND }
+
+/** The note path stamps a pipeline line under the words the person wrote. */
+export function visibleNoteBody(notes: string | undefined): string {
+  if (!notes) return ""
+  return notes
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && line !== "from text pipeline" && !/^from text message at\b/i.test(line))
+    .join("\n")
+}
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const LOCATION_SCOPE_ID = "location"

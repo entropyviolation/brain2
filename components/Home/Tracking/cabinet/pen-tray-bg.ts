@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-tray-bg.ts — Photographed pen-well plates
+ * components/Home/Tracking/cabinet/pen-tray-bg.ts — Photographed pen-well plates
  *
  * Curated stills from designrefs/ copied to public/pen-tray/. The velvet
  * well is gone; default is Cat traces (navy gold board). View settings

@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/cycle/cycle-detail-dialog.test.tsx
+ */
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { chineseEncyclopedia } from "@/lib/cycle-lens-chinese"
@@ -7,7 +10,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
 import { CycleDetailDialog } from "./cycle-detail-dialog"
-import { resetLogCycleMarks } from "./tracking-log-model"
+import { resetLogCycleMarks } from "../tracking-log-model"
 
 function otherDayInMonth(today: Date): string {
   const day = today.getDate() === 1 ? 2 : 1

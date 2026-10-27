@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/pen-settings/pen-parent-picker.test.tsx
+ */
 import { describe, expect, it, vi } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import { PenParentPicker } from "./pen-parent-picker"

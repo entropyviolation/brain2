@@ -1,4 +1,7 @@
 "use client"
+/**
+ * components/Home/Tracking/day-summary/day-photos.tsx
+ */
 
 import { useMemo } from "react"
 import { useAttachmentSrc } from "@/components/use-attachment-src"

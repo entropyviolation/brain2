@@ -10,7 +10,7 @@
 "use client"
 
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import { TagSettingsDialog } from "@/components/Home/Tracking/tag-settings-dialog"
+import { TagSettingsDialog } from "@/components/Home/Tracking/tags/tag-settings-dialog"
 import type { TagSettingsTarget } from "@/components/Home/Tracking/open-tag-settings"
 
 export function TagSettingsGate({

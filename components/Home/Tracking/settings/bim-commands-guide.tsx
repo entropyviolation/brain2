@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/bim-commands-guide.tsx — BIM COMMANDS (TELEGRAM BOT)
+ * components/Home/Tracking/settings/bim-commands-guide.tsx — BIM COMMANDS (TELEGRAM BOT)
  *
  * The Tracking settings bay for texting BIM, the Brain2 Telegram bot. Three
  * pages behind one key row:
@@ -24,7 +24,7 @@ import { DEFAULT_DISCRETE_EVENT_TRIGGERS } from "@/lib/ingest/text-triggers"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import type { HabitTextTrigger } from "@/lib/types"
-import { LogKeywordsSettings } from "@/components/Home/Tracking/log-keywords-settings"
+import { LogKeywordsSettings } from "@/components/Home/Tracking/settings/log-keywords-settings"
 
 export const BIM_BOT_URL = "https://t.me/brain2_phone_bot"
 

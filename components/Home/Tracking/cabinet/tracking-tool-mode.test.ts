@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/cabinet/tracking-tool-mode.test.ts
+ */
 import { afterEach, describe, expect, it } from "vitest"
 import {
   ERASE,

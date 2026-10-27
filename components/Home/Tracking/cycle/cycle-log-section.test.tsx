@@ -1,10 +1,13 @@
+/**
+ * components/Home/Tracking/cycle/cycle-log-section.test.tsx
+ */
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 import { setCycleFlag } from "@/lib/cycle-marks"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { resetAllStores } from "@/tests/test-utils"
 import { CycleLogSection } from "./cycle-log-section"
-import { resetLogCycleMarks } from "./tracking-log-model"
+import { resetLogCycleMarks } from "../tracking-log-model"
 
 const DAY = "2026-06-20"
 

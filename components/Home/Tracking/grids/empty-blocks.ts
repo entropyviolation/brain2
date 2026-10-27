@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/empty-blocks.ts — Untracked gaps for Time Grid Fill
+ * components/Home/Tracking/grids/empty-blocks.ts — Untracked gaps for Time Grid Fill
  *
  * Fill wants the day's empty (untracked) stretches, not a static 9:00–10:00.
  * Occupancy is a union of interval entries for that scope-day. Discrete events

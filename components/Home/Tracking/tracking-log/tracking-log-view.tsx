@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-log-view.tsx — Intake, events, cycle; Day | Week
+ * components/Home/Tracking/tracking-log/tracking-log-view.tsx — Intake, events, cycle; Day | Week
  *
  * Follows the Tracking day cursor. Local Day | Week (default Day; not persisted)
  * mirrors Day Log. Week replaces the day shelves with a seven-column board;
@@ -39,13 +39,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { addDays, addWeeks, format, subDays, subWeeks } from "date-fns"
-import { CountStatusesSection } from "@/components/Home/Tracking/count-statuses-section"
-import { CycleLogSection } from "@/components/Home/Tracking/cycle-log-section"
+import { CountStatusesSection } from "@/components/Home/Tracking/tracking-log/count-statuses-section"
+import { CycleLogSection } from "@/components/Home/Tracking/cycle/cycle-log-section"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
-import { LogShelfDialog } from "@/components/Home/Tracking/log-shelf-dialog"
-import { SpendingDialog } from "@/components/Home/Tracking/spending-dialog"
-import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log-week"
-import { TelegramFeedWell } from "@/components/Home/Tracking/telegram-feed-well"
+import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
+import { SpendingDialog } from "@/components/Home/Tracking/tracking-log/spending-dialog"
+import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log/tracking-log-week"
+import { TelegramFeedWell } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
 import {
   LOCATION_SCOPE_ID,
@@ -64,6 +64,7 @@ import {
   type LogComposerMode,
   loggedFlag,
   recentIntakeByClass,
+  visibleNoteBody,
 } from "@/components/Home/Tracking/tracking-log-model"
 
 export { loggedFlag }
@@ -77,8 +78,8 @@ import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import { raiseQuickAddWrote } from "@/components/quick-add-wrote"
 import { getTrackingViewPrefs, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
-import "./tracking-chrome.css"
-import "./daylog-week.css"
+import "../tracking-chrome.css"
+import "../daylog-week.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const MODES: { id: LogComposerMode; label: string }[] = [
@@ -121,16 +122,6 @@ function fieldPlaceholder(mode: LogComposerMode, intake: IntakeClass): string {
   if (mode === "thought") return "A strand from what you are doing, to what it leads to, to how it feels."
   if (mode === "event" || mode === "note") return "left room"
   return INTAKE_PRESETS.find((row) => row.id === intake)?.placeholder ?? "coffee"
-}
-
-/** The note path stamps a pipeline line under the words the person wrote. */
-function visibleNoteBody(notes: string | undefined): string {
-  if (!notes) return ""
-  return notes
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line && line !== "from text pipeline" && !/^from text message at\b/i.test(line))
-    .join("\n")
 }
 
 function LogCopy({ entry }: { entry: LogBookEntry }) {

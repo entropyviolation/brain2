@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/infinite-window.ts — Stable window math for the strip
+ * components/Home/Tracking/grids/infinite-window.ts — Stable window math for the strip
  *
  * The paged grid remounts around "today". This strip must not: origin is frozen
  * at mount, selected date is only a highlight, and the DOM is a virtual window

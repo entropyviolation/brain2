@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/companion-section.tsx — "Also happening" in the block editor
+ * components/Home/Tracking/block-editor/companion-section.tsx — "Also happening" in the block editor
  *
  * One block of time is usually several true statements at once: 1–5pm was *Ian's
  * House* in Location, *Social* in Activity, and *Great* in Mood. Painting each
@@ -47,8 +47,8 @@ import { companionsFor, suggestedCompanions } from "@/lib/entry-links"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { discreteLogInstants, penNameById } from "@/components/Home/Tracking/discrete-log-instants"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
-import { CompanyPicker } from "@/components/Home/Tracking/company-picker"
-import { CompanyRoster } from "@/components/Home/Tracking/company-roster"
+import { CompanyPicker } from "@/components/Home/Tracking/block-editor/company-picker"
+import { CompanyRoster } from "@/components/Home/Tracking/block-editor/company-roster"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 
 interface CompanionSectionProps {

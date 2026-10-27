@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cycle-encyclopedia.tsx — cycle reference page
+ * components/Home/Tracking/cycle/cycle-encyclopedia.tsx — cycle reference page
  *
  * Presentational library under the short sections. Chapters, entries, herbs,
  * and citations arrive as props. Empty chapters are omitted. `tone="tcm"`
@@ -10,7 +10,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type ReactElement } from "react"
-import fivePhases from "./cycle-figures/five-phases.png"
+import fivePhases from "../cycle-figures/five-phases.png"
 import { FindText, useCycleFindRestamp } from "./cycle-reading-find"
 import "./cycle-encyclopedia.css"
 

@@ -40,12 +40,12 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { addDays, subDays } from "date-fns"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { overlayTicksBeside, penNameById, scopeTicksWithDiscreteLogs, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
-import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
+import { strokeCellStyle, strokeOverlapUnchanged } from "@/components/Home/Tracking/grids/grid-stroke"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
-import { useTransitSuggestions } from "@/components/Home/Tracking/use-transit-suggestions"
+import { useTransitSuggestions } from "@/components/Home/Tracking/grids/use-transit-suggestions"
 import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
-import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/grids/ghost-layers"
 import {
   GRID_SPANS,
   GRID_STEPS,
@@ -61,21 +61,20 @@ import {
   instantsForDay,
   minuteMap,
   minutesToLabel,
-  minutesToTimeString,
   entryDisplayName,
 } from "@/lib/time-entries"
 import { penTotals, tagTotals as tagTotalsOf, totalsFor } from "@/lib/tracking-summary"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
-import { DayTubesDialog } from "@/components/Home/Tracking/day-tubes-dialog"
-import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
+import { DayTubesDialog } from "@/components/Home/Tracking/grids/day-tubes-dialog"
+import { noPaint } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { ERASE, SCISSORS, PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeBar } from "@/components/Home/Tracking/pen-mode-bar"
-import { SuperimposeBar } from "@/components/Home/Tracking/superimpose-bar"
+import { SuperimposeBar } from "@/components/Home/Tracking/grids/superimpose-bar"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
-import { WeekGrid } from "@/components/Home/Tracking/week-grid"
-import { InfiniteStrip } from "@/components/Home/Tracking/infinite-strip"
+import { WeekGrid } from "@/components/Home/Tracking/grids/week-grid"
+import { InfiniteStrip } from "@/components/Home/Tracking/grids/infinite-strip"
 import {
   DEFAULT_SUPERIMPOSE_OPACITY,
   setRibbonPercent,
@@ -87,9 +86,9 @@ import {
 } from "@/components/Home/Tracking/tracking-view-prefs"
 import { TrackingDeskSlotsContext, useTrackingDeskSlots } from "@/components/Home/Tracking/tracking-desk-slots"
 import { PushKey, ScopeKnob, ScopePanel, ScopeReadout, ScopeSection, SlideSwitch } from "@/components/Home/Tracking/trk-scope"
-import { ToolDetail } from "@/components/Home/Tracking/tool-detail"
+import { ToolDetail } from "@/components/Home/Tracking/cabinet/tool-detail"
 import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
-import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/tracking-tool-mode"
+import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { depthOptions, maxTreeDepth } from "@/lib/pen-tree"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
 import {
@@ -99,42 +98,16 @@ import {
   timegridBlockHour,
   timegridHourScrollTop,
 } from "@/components/Home/Tracking/timegrid-reveal"
-import { parseLocalDate } from "@/lib/date-utils"
-import { CellSizeKeys } from "@/components/Home/Tracking/cell-size-keys"
-import { FillRangeControl } from "@/components/Home/Tracking/fill-range-control"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
+import { CellSizeKeys } from "@/components/Home/Tracking/grids/cell-size-keys"
+import { FillRangeControl } from "@/components/Home/Tracking/grids/fill-range-control"
 import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkChromeStack, TrkPlotBezel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
-import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/trk-time-markers"
+import { TrkPlotMarkers, useTrackingDayMarkers } from "@/components/Home/Tracking/grids/trk-time-markers"
 import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import { awakeWindowFor, useSleepSync } from "@/lib/sleep-sync"
 import { useScreenTimeSync } from "@/hooks/use-screentime-sync"
 import { usePenActionSync } from "@/lib/pen-action-sync"
 import "./tracking-chrome.css"
-
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
-
-/** True when [lo, hi) still meets this row in the same clipped span. */
-function strokeOverlapUnchanged(
-  prevLo: number,
-  prevHi: number,
-  nextLo: number,
-  nextHi: number,
-  rowLo: number,
-  rowHi: number,
-): boolean {
-  const clip = (lo: number, hi: number): [number, number] | null => {
-    if (!(hi > rowLo && lo < rowHi)) return null
-    const a = Math.max(lo, rowLo)
-    const b = Math.min(hi, rowHi)
-    return b > a ? [a, b] : null
-  }
-  const prev = clip(prevLo, prevHi)
-  const next = clip(nextLo, nextHi)
-  if (prev === next) return true
-  if (!prev || !next) return false
-  return prev[0] === next[0] && prev[1] === next[1]
-}
 
 interface HourOccupancy {
   map: (TimeEntry | null)[]
@@ -432,7 +405,7 @@ export function TimeGrid({
   const [tubesOpen, setTubesOpen] = useState(false)
   const span = lockDate ? "day" : gridSpan
   const scrolling = lockDate ? false : infiniteScroll
-  const dk = dateKey(date)
+  const dk = formatLocalDateKey(date)
   const scope = scopes.find((s) => s.id === activeScopeId) || scopes[0]
 
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
@@ -520,7 +493,7 @@ export function TimeGrid({
     return bands
   }, [shownMap, overlayMaps, dayInstants, overlayInstants])
 
-  const isToday = dk === dateKey(now)
+  const isToday = dk === formatLocalDateKey(now)
   const { nowMinute, sun } = useTrackingDayMarkers(date)
   useEffect(() => {
     if (!isToday) return
@@ -1315,5 +1288,3 @@ export function TimeGrid({
     </div>
   )
 }
-
-export { dateKey as trackingDateKey, minutesToTimeString }

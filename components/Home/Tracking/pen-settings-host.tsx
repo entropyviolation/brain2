@@ -51,7 +51,7 @@ export function PenSettingsHost() {
   useEffect(() => {
     if (!target || Gate) return
     let cancelled = false
-    void import("./pen-settings-gate").then((mod) => {
+    void import("./pen-settings/pen-settings-gate").then((mod) => {
       if (!cancelled) setGate(() => mod.PenSettingsGate)
     })
     return () => {

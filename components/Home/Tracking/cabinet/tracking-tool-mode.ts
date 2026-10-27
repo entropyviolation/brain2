@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-tool-mode.ts — Draw / Erase / Scissors / Point
+ * components/Home/Tracking/cabinet/tracking-tool-mode.ts — Draw / Erase / Scissors / Point
  *
  * Four mutually exclusive paint tools. Hide / View / Tags are independent
  * and do not live here. The pen tray (search, beads, new pen, selected strip)

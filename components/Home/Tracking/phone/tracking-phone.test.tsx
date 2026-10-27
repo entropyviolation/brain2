@@ -1,7 +1,10 @@
+/**
+ * components/Home/Tracking/phone/tracking-phone.test.tsx
+ */
 import { fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
-import { TrackingDesk } from "./tracking-desk"
+import { TrackingDesk } from "../tracking-desk"
 import { TRACKING_PHONE_QUERY } from "./use-tracking-phone"
 
 const day = new Date(2026, 5, 20, 12, 0, 0)

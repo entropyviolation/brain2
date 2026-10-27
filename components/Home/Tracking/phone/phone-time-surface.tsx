@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/phone-time-surface.tsx — Time Grid on a phone
+ * components/Home/Tracking/phone/phone-time-surface.tsx — Time Grid on a phone
  *
  * Day is the vertical timeline. Week and Infinite scroll keep the desk
  * plots, inside this page, because those edits (paint, fill, open a block)
@@ -19,7 +19,7 @@ import { useHabitTrackingSync } from "@/lib/habit-tracking-sync"
 import { useSleepSync } from "@/lib/sleep-sync"
 import { useScreenTimeSync } from "@/hooks/use-screentime-sync"
 import { usePenActionSync } from "@/lib/pen-action-sync"
-import { ERASE, noPaint, trackingPaintTool } from "@/components/Home/Tracking/tracking-tool-mode"
+import { ERASE, noPaint, trackingPaintTool } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import {
   DEFAULT_SUPERIMPOSE_OPACITY,
   setScreenFace,
@@ -28,17 +28,17 @@ import {
   setTrackingViewPrefs,
   useTrackingViewPrefs,
 } from "@/components/Home/Tracking/tracking-view-prefs"
-import { useGhostScopes } from "@/components/Home/Tracking/ghost-layers"
-import { PhoneDayTimeline } from "@/components/Home/Tracking/phone-day-timeline"
-import { PhoneSheet } from "@/components/Home/Tracking/phone-sheet"
-import { WeekGrid } from "@/components/Home/Tracking/week-grid"
-import { InfiniteStrip } from "@/components/Home/Tracking/infinite-strip"
-import { FillRangeControl } from "@/components/Home/Tracking/fill-range-control"
-import { CellSizeKeys } from "@/components/Home/Tracking/cell-size-keys"
+import { useGhostScopes } from "@/components/Home/Tracking/grids/ghost-layers"
+import { PhoneDayTimeline } from "@/components/Home/Tracking/phone/phone-day-timeline"
+import { PhoneSheet } from "@/components/Home/Tracking/phone/phone-sheet"
+import { WeekGrid } from "@/components/Home/Tracking/grids/week-grid"
+import { InfiniteStrip } from "@/components/Home/Tracking/grids/infinite-strip"
+import { FillRangeControl } from "@/components/Home/Tracking/grids/fill-range-control"
+import { CellSizeKeys } from "@/components/Home/Tracking/grids/cell-size-keys"
 import { DepthControl } from "@/components/Home/Tracking/depth-control"
-import { DayTubesDialog } from "@/components/Home/Tracking/day-tubes-dialog"
+import { DayTubesDialog } from "@/components/Home/Tracking/grids/day-tubes-dialog"
 import { PushKey, SlideSwitch } from "@/components/Home/Tracking/trk-scope"
-import { ToolDetail } from "@/components/Home/Tracking/tool-detail"
+import { ToolDetail } from "@/components/Home/Tracking/cabinet/tool-detail"
 
 export function PhoneTimeSurface({
   date,

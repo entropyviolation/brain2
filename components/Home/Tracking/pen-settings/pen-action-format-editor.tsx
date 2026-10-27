@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-action-format-editor.tsx — Default Done-today titles
+ * components/Home/Tracking/pen-settings/pen-action-format-editor.tsx — Default Done-today titles
  *
  * Separate from habit links. A Walking pen can log "Went for a walk" into To-Do
  * Done whenever a block is painted; a more specific template with {location} or

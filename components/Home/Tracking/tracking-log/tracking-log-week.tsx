@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-log-week.tsx — Tracking log week of log lines
+ * components/Home/Tracking/tracking-log/tracking-log-week.tsx — Tracking log week of log lines
  *
  * Seven columns for the week containing `currentDate`. The today column follows
  * the wall clock, not the selected day. Same classify/sort rules as the day
@@ -24,7 +24,7 @@ import { formatSpendAmount, summarizeSpend } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useLiveToday } from "@/lib/use-current-date"
 import { feedRowDayKey, feedRowMinute, type TelegramFeedRow } from "@/lib/ingest/telegram-feed"
-import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/telegram-feed-well"
+import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
 import "./tracking-log-week.css"
 
 const SHELF_TAG: Record<LogBookList, string> = {

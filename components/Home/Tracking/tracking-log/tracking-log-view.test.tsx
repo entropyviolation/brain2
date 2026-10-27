@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/tracking-log/tracking-log-view.test.tsx
+ */
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { format } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -8,7 +11,7 @@ import { minutesToTimeString } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { QuickAddWroteHost } from "@/components/quick-add-wrote"
 import { TrackingLogView } from "./tracking-log-view"
-import { resetLogCycleMarks, submitTrackingLog, writeCycleDayMark, type LogTimeEntry } from "./tracking-log-model"
+import { resetLogCycleMarks, submitTrackingLog, writeCycleDayMark, type LogTimeEntry } from "../tracking-log-model"
 import { pickOption } from "@/tests/native-select"
 
 const DAY = new Date(2026, 5, 20, 12, 0, 0)

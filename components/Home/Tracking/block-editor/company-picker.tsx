@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/company-picker.tsx — Search, multi-select, add people
+ * components/Home/Tracking/block-editor/company-picker.tsx — Search, multi-select, add people
  *
  * One box for Company blocks. Type to filter the people pens, click or press
  * Enter to toggle, and a name that matches nobody offers "+ Add". Alone,

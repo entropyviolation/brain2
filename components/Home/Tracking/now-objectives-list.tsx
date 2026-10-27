@@ -35,8 +35,8 @@ export interface NowObjectivesHandlers {
   /** Park it for the task or subtask and take it off this sitting. The open stint does not count. */
   onSaveForLater?: (id: string) => void
   /**
-   * Attach to a task or subtask of the current activity, or create a task
-   * (`createName`) from the search text.
+   * Attach to a task in the vault, or create a task (`createName`) from the
+   * search text. The search lists every task. Steps stay on the tie control.
    */
   onAttach?: (id: string, target: { taskId: string; stepId?: string } | { createName: string }) => void
   attachChoices?: { taskId: string; stepId?: string; label: string }[]
@@ -96,12 +96,12 @@ export function StepSearchPicker({
     return (
       <button
         type="button"
-        className="trk-now-obj-link"
+        className="todo-cap trk-now-obj-mode"
         aria-label={`Task step for ${label}`}
         title="Tie this objective to a step"
         onClick={() => setOpen(true)}
       >
-        {value ? `↳ ${current?.label ?? "step (done)"}` : "↳ tie to step"}
+        {value ? (current?.label ?? "step (done)") : "tie to step"}
       </button>
     )
   }
@@ -432,8 +432,17 @@ function ObjectivesEditor({
                           aria-expanded={attachId === row.id}
                           onClick={() => (attachId === row.id ? setAttachId(null) : openAttach(row))}
                         >
-                          Attach to task/subtask
+                          Attach to task
                         </button>
+                      ) : null}
+                      {onTieStep ? (
+                        <StepSearchPicker
+                          value={row.stepId}
+                          choices={stepChoices ?? []}
+                          allowNew
+                          label={row.text}
+                          onPick={(id) => onTieStep(row.id, id)}
+                        />
                       ) : null}
                       {onAttach && attachId === row.id ? (
                         <div className="trk-now-obj-picker">
@@ -444,7 +453,7 @@ function ObjectivesEditor({
                             placeholder="Search tasks"
                             onChange={(event) => setAttachQuery(event.target.value)}
                           />
-                          <ul className="trk-now-obj-picker-list" role="listbox" aria-label="Tasks and subtasks">
+                          <ul className="trk-now-obj-picker-list" role="listbox" aria-label="Tasks">
                             {attachShown.map((choice) => (
                               <li key={`${choice.taskId}:${choice.stepId ?? ""}`}>
                                 <button
@@ -476,16 +485,9 @@ function ObjectivesEditor({
                       ) : null}
                     </div>
                   ) : null}
-                  {onTieStep ? (
+                  {onTieStep && onSetCompletes ? (
                     <div className="trk-now-obj-tie">
-                      <StepSearchPicker
-                        value={row.stepId}
-                        choices={stepChoices ?? []}
-                        allowNew
-                        label={row.text}
-                        onPick={(id) => onTieStep(row.id, id)}
-                      />
-                      {onSetCompletes ? <ModePair row={row} onSetCompletes={onSetCompletes} /> : null}
+                      <ModePair row={row} onSetCompletes={onSetCompletes} />
                     </div>
                   ) : null}
                 </div>

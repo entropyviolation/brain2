@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/ghost-layers.ts — Ghost (superimpose) layers for the plots
+ * components/Home/Tracking/grids/ghost-layers.ts — Ghost (superimpose) layers for the plots
  *
  * Day, Week, and Infinite each draw zero or more faint other views under the
  * active one. Single mode is at most one; Multi mode is this view's list.

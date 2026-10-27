@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * components/Home/Tracking/spending-dialog.tsx — Spending detail, opened from the Spent shelf.
+ * components/Home/Tracking/tracking-log/spending-dialog.tsx — Spending detail, opened from the Spent shelf.
  *
  * Three tabs: This day, Budget (`budget-panel.tsx`, the month across sources), and
  * Import. A statement (PDF, CSV, or text) is read in the browser and previewed:
@@ -14,11 +14,11 @@
  */
 import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { BudgetPanel } from "@/components/Home/Tracking/budget-panel"
+import { BudgetPanel } from "@/components/Home/Tracking/tracking-log/budget-panel"
 import { useBudgetStore } from "@/lib/budget-store"
 import { readStatementFile, type StatementLine } from "@/lib/bank-statement"
 import { formatSpendAmount, spendSourceOptions } from "@/lib/spend"
-import { LogShelfRangeBar, useLogShelfRange } from "@/components/Home/Tracking/log-shelf-dialog"
+import { LogShelfRangeBar, useLogShelfRange } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
 import { entriesForLogShelf, logRowWhenLabel, submitTrackingLog, type LogBookEntry } from "@/components/Home/Tracking/tracking-log-model"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 

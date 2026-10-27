@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cycle-detail-dialog.tsx — Cycle detail
+ * components/Home/Tracking/cycle/cycle-detail-dialog.tsx — Cycle detail
  *
  * Four equal months, Monday weeks. A marked day is a solid wash of
  * `phaseForDate`. An estimated day is hatched in the phase the guess shows,
@@ -56,7 +56,7 @@ import {
   isCycleFindChord,
   stampCycleFindMarks,
 } from "./cycle-reading-find"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 /** Deep clinical library. Stable across the selected day. No herbs. */
 const clinicalEncyclopediaChapters: readonly EncyclopediaChapter[] = clinicalReference.map((chapter) => ({

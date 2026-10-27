@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/grids/fill-range-control.test.tsx
+ */
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"

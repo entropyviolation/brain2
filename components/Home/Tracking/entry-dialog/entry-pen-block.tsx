@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { BlockPenSection } from "@/components/Home/Tracking/block-pen-section"
+import { BlockPenSection } from "@/components/Home/Tracking/block-editor/block-pen-section"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
 import { COMPANY_SCOPE_ID } from "@/lib/people-i-know"
 import { useTimeTrackingStore, type TimeEntry, type TrackScope, type TrackTag } from "@/lib/time-tracking-store"

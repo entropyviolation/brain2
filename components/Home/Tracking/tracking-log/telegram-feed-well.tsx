@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/telegram-feed-well.tsx — Telegram feed in the Tracking log
+ * components/Home/Tracking/tracking-log/telegram-feed-well.tsx — Telegram feed in the Tracking log
  *
  * Every text a paired chat sent BIM, on the day it was sent, whatever BIM did
  * with it. The shelf is the short list. The heading opens the detail page,
@@ -10,7 +10,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { LogShelfDialog } from "@/components/Home/Tracking/log-shelf-dialog"
+import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
 import { logClockLabel } from "@/components/Home/Tracking/tracking-log-model"
 import { NativeSelect } from "@/components/ui/native-select"
 import { classifyTelegramRow } from "@/lib/ingest/file-feed-row"

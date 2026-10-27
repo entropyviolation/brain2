@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cycle-log-section.tsx — Cycle on the Tracking log
+ * components/Home/Tracking/cycle/cycle-log-section.tsx — Cycle on the Tracking log
  *
  * Hidden entirely when Enable cycle tracking is off. While that feature is on,
  * `cycleDetailsOpen` (default closed) still conceals the phase line, mark
@@ -10,11 +10,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CycleDetailDialog } from "@/components/Home/Tracking/cycle-detail-dialog"
+import { CycleDetailDialog } from "@/components/Home/Tracking/cycle/cycle-detail-dialog"
 import { toggleCycleFlag, useCycleMarksStore, type CycleFlag } from "@/lib/cycle-marks"
 import { phaseForDate } from "@/lib/cycle-phase"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 const TOGGLES: { flag: CycleFlag; label: string }[] = [
   { flag: "bleeding", label: "Bleeding" },

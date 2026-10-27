@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/grids/empty-blocks.test.ts
+ */
 import { describe, expect, it } from "vitest"
 import { MINUTES_PER_DAY, type TimeEntry } from "@/lib/time-entries"
 import {

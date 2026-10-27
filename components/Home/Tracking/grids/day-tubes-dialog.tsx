@@ -1,4 +1,7 @@
 "use client"
+/**
+ * components/Home/Tracking/grids/day-tubes-dialog.tsx
+ */
 
 /**
  * Day tubes — the optional liquid / sand / hourglass view of a tracked week.

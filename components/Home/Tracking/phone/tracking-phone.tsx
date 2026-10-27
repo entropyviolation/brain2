@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-phone.tsx — Home Tracking on a phone
+ * components/Home/Tracking/phone/tracking-phone.tsx — Home Tracking on a phone
  *
  * Mounted only when the viewport is at most 767px. The desk stays mounted
  * above that. One sticky header holds the day, the four views, and the pen
@@ -16,19 +16,19 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
 import { TrackingActivityLog } from "@/components/Home/Tracking/tracking-activity-log"
-import { TrackingLogView } from "@/components/Home/Tracking/tracking-log-view"
+import { TrackingLogView } from "@/components/Home/Tracking/tracking-log/tracking-log-view"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
 import { PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeDeck } from "@/components/Home/Tracking/pen-mode-bar"
-import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/tracking-view-settings-dialog"
+import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/settings/tracking-view-settings-dialog"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
 import { TrackingDeskSlotsContext } from "@/components/Home/Tracking/tracking-desk-slots"
-import { PhoneSheet } from "@/components/Home/Tracking/phone-sheet"
-import { PhoneTimeSurface } from "@/components/Home/Tracking/phone-time-surface"
-import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/tracking-tool-mode"
+import { PhoneSheet } from "@/components/Home/Tracking/phone/phone-sheet"
+import { PhoneTimeSurface } from "@/components/Home/Tracking/phone/phone-time-surface"
+import { nextPaintPenId, trackingPaintTool, type TrackingPaintTool } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { setTimegridReveal } from "@/components/Home/Tracking/timegrid-reveal"
 import "./tracking-phone.css"
 

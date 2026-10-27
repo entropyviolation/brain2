@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-place-editor.tsx — Address, zip, and coordinates on a Location pen
+ * components/Home/Tracking/pen-settings/pen-place-editor.tsx — Address, zip, and coordinates on a Location pen
  *
  * Pen settings → Place, on Location pens only. Three ways to say where a pen
  * is, none of them "counts as" (`lib/pen-place.ts`):

@@ -1,6 +1,9 @@
+/**
+ * components/Home/Tracking/pen-settings/pen-person-link.test.tsx
+ */
 import { beforeEach, describe, expect, it } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
-import { PenPersonLink } from "@/components/Home/Tracking/pen-person-link"
+import { PenPersonLink } from "@/components/Home/Tracking/pen-settings/pen-person-link"
 import { createListItem } from "@/lib/item-utils"
 import { PERSON_TYPE_ID } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"

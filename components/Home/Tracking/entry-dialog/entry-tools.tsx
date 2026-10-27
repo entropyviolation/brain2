@@ -7,7 +7,7 @@
 
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { Label } from "@/components/ui/label"
-import { showBlockInTimegrid } from "@/components/Home/Tracking/show-in-timegrid"
+import { showBlockInTimegrid } from "@/components/Home/Tracking/block-editor/show-in-timegrid"
 import { isInstant, type TimeEntry } from "@/lib/time-entries"
 import { Scissors, Trash2 } from "lucide-react"
 

@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/cabinet/pen-tray-bg.test.ts
+ */
 import { describe, expect, it } from "vitest"
 import {
   DEFAULT_PEN_TRAY,

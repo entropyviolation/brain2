@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/cell-size-keys.tsx — Cell-step amp dial
+ * components/Home/Tracking/grids/cell-size-keys.tsx — Cell-step amp dial
  *
  * One milled knob for 1 / 5 / 10 / 15 / 30. The indicator sweeps a 270° arc,
  * finest at the lower left (−135°) and coarsest at the lower right (+135°).
@@ -14,7 +14,7 @@
 "use client"
 
 import { useRef } from "react"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 /** Travel of the indicator, finest to coarsest. Classic volume-knob sweep. */
 const SWEEP_DEG = 270

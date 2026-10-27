@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/week-grid.tsx — Seven days at once
+ * components/Home/Tracking/grids/week-grid.tsx — Seven days at once
  *
  * The day grid answers "where did today go". This one answers the questions a
  * single column cannot: is there a routine, which days never got logged, and can
@@ -35,13 +35,13 @@
 "use client"
 
 import { deferSyncs } from "@/lib/defer-sync"
-import { useTransitSuggestionsFor } from "@/components/Home/Tracking/use-transit-suggestions"
+import { useTransitSuggestionsFor } from "@/components/Home/Tracking/grids/use-transit-suggestions"
 import { acceptSuggestion, isSuggestion, overlaySuggestions } from "@/lib/transit-suggest"
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { displayedPen, penCellStyle, useTimeTrackingStore, type TimeEntry, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { penNameById, scopeTicksWithDiscreteLogs, tickPen, withoutDiscreteLogs } from "@/components/Home/Tracking/discrete-log-instants"
-import { strokeCellStyle } from "@/components/Home/Tracking/grid-stroke"
+import { strokeCellStyle, strokeOverlapUnchanged } from "@/components/Home/Tracking/grids/grid-stroke"
 import {
   MINUTES_PER_DAY,
   dominantEntry,
@@ -54,7 +54,7 @@ import {
 import { entriesInRange, penTotals, tagTotals as tagTotalsOf, totalsFor, uniqueMinutesByDate } from "@/lib/tracking-summary"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
-import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
+import { noPaint } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { ScreenTimeEmptyHint } from "@/components/Home/Tracking/screentime-empty-hint"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
@@ -62,16 +62,16 @@ import { setRibbonPercent, useTrackingViewPrefs, type ScreenFace } from "@/compo
 import { useTrackingDeskSlots } from "@/components/Home/Tracking/tracking-desk-slots"
 import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
 import { createPortal } from "react-dom"
-import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/grids/ghost-layers"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { firstUnpaintedWakingHour } from "@/components/Home/Tracking/waking-scroll"
 import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, TrkRibbon, TrkTagStrip, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
-import { TrkPlotMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
+import { TrkPlotMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/grids/trk-time-markers"
 import { awakeWindowFor } from "@/lib/sleep-sync"
-import { WeekSummaryNest } from "@/components/Home/Tracking/tracking-summaries"
+import { WeekSummaryNest } from "@/components/Home/Tracking/day-summary/tracking-summaries"
 import { runAsAction } from "@/lib/action-history"
 import { playTrkMotion } from "@/components/Home/Tracking/trk-motion"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 /**
  * Week rows are only a few pixels tall, so a click often slips into the next
@@ -94,27 +94,6 @@ export function weekRowBand(
   const start = Math.max(0, Math.floor(scrollTop / rowHeight) - 1)
   const end = Math.min(rowCount, Math.ceil((scrollTop + clientHeight) / rowHeight) + 2)
   return { start, end }
-}
-
-function strokeOverlapUnchanged(
-  prevLo: number,
-  prevHi: number,
-  nextLo: number,
-  nextHi: number,
-  rowLo: number,
-  rowHi: number,
-): boolean {
-  const clip = (lo: number, hi: number): [number, number] | null => {
-    if (!(hi > rowLo && lo < rowHi)) return null
-    const a = Math.max(lo, rowLo)
-    const b = Math.min(hi, rowHi)
-    return b > a ? [a, b] : null
-  }
-  const prev = clip(prevLo, prevHi)
-  const next = clip(nextLo, nextHi)
-  if (prev === next) return true
-  if (!prev || !next) return false
-  return prev[0] === next[0] && prev[1] === next[1]
 }
 
 interface WeekSlot {

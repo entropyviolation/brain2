@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * components/Home/Tracking/log-shelf-dialog.tsx — One Tracking log shelf, opened out.
+ * components/Home/Tracking/tracking-log/log-shelf-dialog.tsx — One Tracking log shelf, opened out.
  *
  * Spent keeps its own dialog (budget and import). Every other shelf uses this
  * page: the same rows, at a size you can read, still opened and removed the

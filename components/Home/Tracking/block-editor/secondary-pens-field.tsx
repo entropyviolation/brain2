@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/secondary-pens-field.tsx — Extra pens on one block
+ * components/Home/Tracking/block-editor/secondary-pens-field.tsx — Extra pens on one block
  *
  * The grid still shows the primary color. Secondaries are not cosmetic: their
  * tags feed habits, operations, and goals through the same pipeline as the
@@ -11,7 +11,7 @@ import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { TrackPen } from "@/lib/time-tracking-store"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 export function SecondaryPensField({
   pens,

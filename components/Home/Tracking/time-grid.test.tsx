@@ -8,7 +8,7 @@ import { fetchDayClimate } from "@/lib/weather-client"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { TimeGrid } from "./time-grid"
-import { showBlockInTimegrid } from "./show-in-timegrid"
+import { showBlockInTimegrid } from "./block-editor/show-in-timegrid"
 import { resetTimegridReveal } from "./timegrid-reveal"
 import { useTrackingUndoHotkey } from "./tracking-undo"
 import {

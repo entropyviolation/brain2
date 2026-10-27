@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/pen-parent-picker.tsx — Searchable Counts-as control
+ * components/Home/Tracking/pen-settings/pen-parent-picker.tsx — Searchable Counts-as control
  *
  * Native `<select>` was an ugly system menu that hid "Ocean Beach counts as
  * San Diego" behind a flat list. This is a sunken Win95 field: type to filter,
@@ -16,7 +16,7 @@ import { ColorSwatch } from "@/components/ui/color-swatch"
 import { Input } from "@/components/ui/input"
 import { ancestorChain } from "@/lib/pen-tree"
 import { PEN_PALETTE, type TrackPen } from "@/lib/time-tracking-store"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 
 function pathOf(tree: TrackPen[], penId: string): string {
   return ancestorChain(tree, penId)

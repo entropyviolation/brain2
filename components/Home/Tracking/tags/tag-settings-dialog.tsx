@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tag-settings-dialog.tsx — Per-tag settings
+ * components/Home/Tracking/tags/tag-settings-dialog.tsx — Per-tag settings
  *
  * Opened from the habit tag catalog or the Tracking tag library. Renames and
  * recolors through `commitCatalogTagEdit` (same write as either habit row).
@@ -31,8 +31,8 @@ import { snapshotsEqual } from "@/lib/unsaved-changes"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { PenFieldsEditor } from "@/components/Home/Tracking/pen-fields-editor"
 import { tagFields } from "@/lib/pen-fields"
-import "./tracking-chrome.css"
-import "./tracking-settings.css"
+import "../tracking-chrome.css"
+import "../tracking-settings.css"
 
 type TagSettingsDialogProps =
   | {

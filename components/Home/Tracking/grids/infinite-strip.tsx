@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/infinite-strip.tsx — Continuous days, time across
+ * components/Home/Tracking/grids/infinite-strip.tsx — Continuous days, time across
  *
  * The paged grid stands hours as rows. This view rotates that 90° counterclockwise:
  * clock time runs left to right, days stack and touch, so you can scroll back as
@@ -34,13 +34,14 @@ import {
   minutesToLabel,
 } from "@/lib/time-entries"
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { noPaint } from "@/components/Home/Tracking/tracking-tool-mode"
+import { strokeOverlapUnchanged } from "@/components/Home/Tracking/grids/grid-stroke"
+import { noPaint } from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { ERASE, SCISSORS } from "@/components/Home/Tracking/pen-palette"
 import { cellPaintClass, ghostProbeText, SuperimposeWash, trackingProbeText, TrkBlockLabel, TrkProbePlate, writeTrkProbe } from "@/components/Home/Tracking/trk-instrument"
 import { focusTrackingPlot } from "@/components/Home/Tracking/tracking-undo"
 import { useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
-import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/ghost-layers"
-import { TrkPlotMarkers, useTrackingDayMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/trk-time-markers"
+import { ghostAttr, probeLayerFor, useGhostScopes, type GhostScope } from "@/components/Home/Tracking/grids/ghost-layers"
+import { TrkPlotMarkers, useTrackingDayMarkers, useTrackingSunMap, type TrackingSunTimes } from "@/components/Home/Tracking/grids/trk-time-markers"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import {
   INFINITE_DAY_AFTER,
@@ -59,8 +60,8 @@ import {
   stripItems,
   visibleSlice,
   type StripMode,
-} from "@/components/Home/Tracking/infinite-window"
-import "./tracking-chrome.css"
+} from "@/components/Home/Tracking/grids/infinite-window"
+import "../tracking-chrome.css"
 
 const NO_ENTRIES: TimeEntry[] = []
 
@@ -71,27 +72,6 @@ type GhostDay = {
   painted: (TimeEntry | null)[]
 }
 const NO_GHOST_DAYS: GhostDay[] = []
-
-function strokeOverlapUnchanged(
-  prevLo: number,
-  prevHi: number,
-  nextLo: number,
-  nextHi: number,
-  rowLo: number,
-  rowHi: number,
-): boolean {
-  const clip = (lo: number, hi: number): [number, number] | null => {
-    if (!(hi > rowLo && lo < rowHi)) return null
-    const a = Math.max(lo, rowLo)
-    const b = Math.min(hi, rowHi)
-    return b > a ? [a, b] : null
-  }
-  const prev = clip(prevLo, prevHi)
-  const next = clip(nextLo, nextHi)
-  if (prev === next) return true
-  if (!prev || !next) return false
-  return prev[0] === next[0] && prev[1] === next[1]
-}
 
 function minuteFromPointer(target: EventTarget | null): { date: string; minute: number } | null {
   const el = target as HTMLElement | null

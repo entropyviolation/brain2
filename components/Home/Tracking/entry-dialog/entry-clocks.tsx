@@ -8,7 +8,7 @@
 
 import { Input } from "@/components/ui/input"
 import { OptionalClock } from "@/components/Home/Tracking/log-activity-dialog"
-import { CertaintyToggle } from "@/components/Home/Tracking/entry-edges"
+import { CertaintyToggle } from "@/components/Home/Tracking/block-editor/entry-edges"
 import { sleepClockEstimateBasis } from "@/lib/estimated-values"
 import { isInstant, type SpanLock, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import { SpanLockButton } from "./span-lock-button"

@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tool-detail.tsx — Selected-tool silkscreen
+ * components/Home/Tracking/cabinet/tool-detail.tsx — Selected-tool silkscreen
  *
  * Quick display for the paint tool: jewel lamp (icon) + name + how-to copy.
  * Lives on `.trk-tools-rail` under the Draw / Erase / Scissors throws (inside

@@ -21,7 +21,13 @@ import {
   type NowObjective,
 } from "@/lib/now-objective"
 import { openStepChoices } from "@/lib/task-clock-log"
-import { createTaskForObjective, homeForObjective, toParked } from "@/lib/unfinished-objectives"
+import {
+  createTaskForObjective,
+  fileObjectivesOnTask,
+  homeForObjective,
+  objectivesAttachedToTask,
+  toParked,
+} from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
 import type { TimeEntry } from "@/lib/time-tracking-store"
 import { blockFloor } from "./labels"
@@ -74,7 +80,11 @@ export function EntryObjectives({
             : target.taskId
         if (!taskId) return
         const stepId = "createName" in target ? undefined : target.stepId
-        setNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+        setNowObjectives((list) => {
+          const next = attachNowObjective(list, id, { taskId, stepId })
+          fileObjectivesOnTask(taskId, objectivesAttachedToTask(next, taskId))
+          return next
+        })
       }}
       attachChoices={attachChoices}
       stepChoices={entry.taskId ? openStepChoices(entry.taskId) : undefined}

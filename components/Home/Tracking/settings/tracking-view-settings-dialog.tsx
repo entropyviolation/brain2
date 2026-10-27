@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-view-settings-dialog.tsx — Tracking settings
+ * components/Home/Tracking/settings/tracking-view-settings-dialog.tsx — Tracking settings
  *
  * One settings sheet for the whole Tracking tab. The fascia gear opens it on
  * the bay for the view you are standing on; the pen well's Look → View latch
@@ -38,11 +38,11 @@ import {
   type ScreenFace,
   type TrackingSpan,
 } from "@/components/Home/Tracking/tracking-view-prefs"
-import { BimCommandsGuide } from "@/components/Home/Tracking/bim-commands-guide"
+import { BimCommandsGuide } from "@/components/Home/Tracking/settings/bim-commands-guide"
 import { PenGalleryDialog } from "@/components/Home/Tracking/pen-gallery-dialog"
-import { LevelCategoriesSettings } from "@/components/Home/Tracking/level-categories-settings"
-import "./tracking-chrome.css"
-import "./tracking-settings.css"
+import { LevelCategoriesSettings } from "@/components/Home/Tracking/settings/level-categories-settings"
+import "../tracking-chrome.css"
+import "../tracking-settings.css"
 
 export type TrackingSettingsSection = "general" | "grid" | "activity" | "daylog" | "log" | "bim"
 

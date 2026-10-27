@@ -1,5 +1,5 @@
 /**
- * components/Home/Tracking/tracking-tags-panel.tsx — Tag library
+ * components/Home/Tracking/tags/tracking-tags-panel.tsx — Tag library
  *
  * Shown under the pen tray when **Tags** is latched. Tags live above scopes:
  * one tag can sit on an Activity pen and a Location pen at once, and daily
@@ -19,7 +19,7 @@ import { useHabitsStore } from "@/lib/habits-store"
 import { activeTrackingLink } from "@/lib/habit-tracking"
 import { penIdsForTags } from "@/lib/tracked-time"
 import { openTagSettings, TAG_OPEN_TITLE, tagColorDoubleClick } from "@/components/Home/Tracking/open-tag-settings"
-import "./tracking-chrome.css"
+import "../tracking-chrome.css"
 import "./tracking-tags-well.css"
 
 export function TrackingTagsPanel() {

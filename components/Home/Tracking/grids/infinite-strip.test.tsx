@@ -1,3 +1,6 @@
+/**
+ * components/Home/Tracking/grids/infinite-strip.test.tsx
+ */
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
