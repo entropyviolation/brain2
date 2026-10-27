@@ -1,5 +1,5 @@
 /**
- * components/Settings/ScreenTimePanel.tsx — ActivityWatch connection for Screen Time
+ * components/Settings/imports/ScreenTimePanel.tsx — ActivityWatch connection for Screen Time
  *
  * Brain2 reads a running ActivityWatch server. It is not a window watcher.
  * Prefs auto-save; Sync now calls `syncScreenTime()` directly.

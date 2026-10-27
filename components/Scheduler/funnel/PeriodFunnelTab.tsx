@@ -1,5 +1,5 @@
 /**
- * components/Scheduler/PeriodFunnelTab.tsx — Generic funnel period (year/month/week)
+ * components/Scheduler/funnel/PeriodFunnelTab.tsx — Generic funnel period (year/month/week)
  *
  * Sidebar of tasks at the parent period plus reserved child-period rows.
  * Empty cells stay one-line furniture; occupied rows open to show work.

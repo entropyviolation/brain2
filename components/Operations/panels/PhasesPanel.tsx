@@ -1,5 +1,5 @@
 /**
- * components/Operations/PhasesPanel.tsx — Operation phases + their parts
+ * components/Operations/panels/PhasesPanel.tsx — Operation phases + their parts
  *
  * Lists an operation's phase tasks (linked via `has-phase`/`phase-of`), each
  * with a completion bar derived from its step tasks (`lib/operations.evaluatePhase`).
@@ -14,7 +14,7 @@ import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { getParts, getPhases, evaluatePhase, OP_REL } from "@/lib/operations"
 import type { Task } from "@/lib/types"
-import { addPhase, addPhaseStep, setTaskCompleted, unlinkChild } from "./operation-actions"
+import { addPhase, addPhaseStep, setTaskCompleted, unlinkChild } from "../operation-actions"
 
 function PhaseRow({
   operationId,

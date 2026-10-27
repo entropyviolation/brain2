@@ -1,5 +1,5 @@
 /**
- * components/Scheduler/DayAgenda.tsx — 24-hour day agenda
+ * components/Scheduler/funnel/DayAgenda.tsx — 24-hour day agenda
  *
  * Hour rows stay reserved furniture. Occupied hours hold orb-bearing tasks
  * that can be dropped, opened, or cleared.
@@ -8,7 +8,7 @@
 
 import type React from "react"
 import { iconFor } from "@/components/Icons"
-import { SchedulerKeycapX } from "./SchedulerTaskItem"
+import { SchedulerKeycapX } from "../SchedulerTaskItem"
 import type { Task } from "@/lib/types"
 import { itemTitle } from "@/lib/item-utils"
 

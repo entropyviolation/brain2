@@ -235,6 +235,8 @@ _Last mapped: 2026-10-27._ The Resources tab (`ResourcesPanel`) edits the operat
 
 ## Files
 
+_Last mapped: 2026-10-27._ `panels/` is the tab panels. `dialogs/` is Settings, the after-action report, and the why-missed prompt.
+
 | File | Role |
 |------|------|
 | `lib/operation-types.ts` *(lib)* | `operation` `ItemTypeDefinition`, panel registry (including Parts; To do keeps the `tasks` id), presets, category/panel/tracking-tag normalizers, `withOperationType()` |
@@ -248,17 +250,17 @@ _Last mapped: 2026-10-27._ The Resources tab (`ResourcesPanel`) edits the operat
 | `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Empty board offers pickable preset objects (`.ops-empty-presets`). Last open operation survives refresh / tab switch. |
 | `OperationWorkspace.tsx` | full-screen mini-app; tab strip clusters **Plan/Do** vs **Reference** (`.ops-view-clusters`). The ← keycap returns to the board. A gear keycap on the title row (`.ops-fascia-row`) opens settings. Last panel per operation is restored, plus that panel's scroll. Item clicks open `TaskDetailPopup` over this window; the shell's page navigator is not called. _Last mapped: 2026-10-27_ |
 | `WorkingNowControl.tsx` | _Last mapped: 2026-10-27._ menubar **Working on this now** / **Pause {name}** / **Stop working on {name}**. Pause asks what the gap is for. Cancel or a blank answer leaves the clock running. Resume does not ask again. Stop with open objectives asks **Yes** / **No** / **Cancel**. After the clock stops, the optional end-of-session reflection opens. The task stays open. **Stop {task}** asks the same for the pen clock. |
-| `OperationSettingsDialog.tsx` | per-operation settings: identity, categories, tracking tags, panels, presets, **Delete operation**. **Add category**, preset cards, **Done**, and **Delete operation** are `.ops-keycap`. _Last mapped: 2026-10-27_ |
-| `OperationHome.tsx` | Home: mission (`#op-mission`, one line that grows with the text) / progress (phases and to-dos) / item note log as a vertical instrument; **Open item detail** keycap hosts `TaskDetailPopup` over the page; stage chevron (`#op-stage`) sits at the field's right edge; work/neglect heatmap — cold (neglected) days read hotter (`.ops-heat-cell.is-cold`). _Last mapped: 2026-10-27_ |
-| `OperationTasksPanel.tsx` | To do: embeds the Lists content panel inside `.fm98`, including phase steps and part tasks. A row opens the item-detail popup. _Last mapped: 2026-10-27_ |
-| `PhasesPanel.tsx` | phases + their steps, inline add/complete/detach. The name and the Open arrow open the item-detail popup. _Last mapped: 2026-10-27_ |
-| `PartsPanel.tsx` | kinds, part pages, glance metrics. A part page is name, status (current stage and latest status report), to-do, notes. **Add kind**, **Save kind**, **Add task**, and **Add note** are primary keycaps. Choosing a part stays on its page. A to-do on that page opens the item-detail popup. _Last mapped: 2026-10-27_ |
-| `OperationFieldPlanPanels.tsx` | Timeline / Locations / Plan panels over the backing module. Timeline and Locations item clicks open the item-detail popup. _Last mapped: 2026-10-27_ |
+| `dialogs/OperationSettingsDialog.tsx` | per-operation settings: identity, categories, tracking tags, panels, presets, **Delete operation**. **Add category**, preset cards, **Done**, and **Delete operation** are `.ops-keycap`. _Last mapped: 2026-10-27_ |
+| `panels/OperationHome.tsx` | Home: mission (`#op-mission`, one line that grows with the text) / progress (phases and to-dos) / item note log as a vertical instrument; **Open item detail** keycap hosts `TaskDetailPopup` over the page; stage chevron (`#op-stage`) sits at the field's right edge; work/neglect heatmap — cold (neglected) days read hotter (`.ops-heat-cell.is-cold`). _Last mapped: 2026-10-27_ |
+| `panels/OperationTasksPanel.tsx` | To do: embeds the Lists content panel inside `.fm98`, including phase steps and part tasks. A row opens the item-detail popup. _Last mapped: 2026-10-27_ |
+| `panels/PhasesPanel.tsx` | phases + their steps, inline add/complete/detach. The name and the Open arrow open the item-detail popup. _Last mapped: 2026-10-27_ |
+| `panels/PartsPanel.tsx` | kinds, part pages, glance metrics. A part page is name, status (current stage and latest status report), to-do, notes. **Add kind**, **Save kind**, **Add task**, and **Add note** are primary keycaps. Choosing a part stays on its page. A to-do on that page opens the item-detail popup. _Last mapped: 2026-10-27_ |
+| `panels/OperationFieldPlanPanels.tsx` | Timeline / Locations / Plan panels over the backing module. Timeline and Locations item clicks open the item-detail popup. _Last mapped: 2026-10-27_ |
 | `ToDoNextRail.tsx` | Queue rail — ranked next-actionable tasks across the tree. The row and the Open arrow open the item-detail popup. _Last mapped: 2026-10-27_ |
-| `ResourcesPanel.tsx` | `Task.resources`: web links, copied files, desktop file references, and `useNote`. **Add link** is a primary keycap. _Last mapped: 2026-10-27_ |
-| `OperationLogFeed.tsx` | chronological log: **created** from `createdAt`, time punches, quick **Log time** primary keycap, searchable `penLinks` multiselect (**Choose pens** / **Done** keycaps), double-click opens the matching Tracking block. A pause timeline in the note wraps instead of truncating. _Last mapped: 2026-10-27_ |
-| `OperationPostMortemDialog.tsx` | Win95 after-action report → `addOperationReview`. Does not write `blockedReasons` |
-| `OperationMissReasonDialog.tsx` | Slim why-missed prompt. It is `MissReasonDialog` (reason menu above the window, multiline note). Optional preset and note on `OperationReview.blockedReasons`. There is no menubar button. It opens when the stage becomes `abandoned`. Skip writes nothing. The after-action form is unchanged. _Last mapped: 2026-10-27_ |
+| `panels/ResourcesPanel.tsx` | `Task.resources`: web links, copied files, desktop file references, and `useNote`. **Add link** is a primary keycap. _Last mapped: 2026-10-27_ |
+| `panels/OperationLogFeed.tsx` | chronological log: **created** from `createdAt`, time punches, quick **Log time** primary keycap, searchable `penLinks` multiselect (**Choose pens** / **Done** keycaps), double-click opens the matching Tracking block. A pause timeline in the note wraps instead of truncating. _Last mapped: 2026-10-27_ |
+| `dialogs/OperationPostMortemDialog.tsx` | Win95 after-action report → `addOperationReview`. Does not write `blockedReasons` |
+| `dialogs/OperationMissReasonDialog.tsx` | Slim why-missed prompt. It is `MissReasonDialog` (reason menu above the window, multiline note). Optional preset and note on `OperationReview.blockedReasons`. There is no menubar button. It opens when the stage becomes `abandoned`. Skip writes nothing. The after-action form is unchanged. _Last mapped: 2026-10-27_ |
 | `operation-actions.ts` | imperative store mutations (categories, panels, presets, phases, part kinds/instances/stage/status/notes, list items, delete, time) |
 | `index.ts` | integration barrel |
 
@@ -271,7 +273,7 @@ The Operations tab uses the house **milled fascia**
 brushed silver bays, CRT black-glass titles (`#070c0a` + house phosphor
 `#7dffc4`), engraved nameplates, raised metal keys, and latching keycap view
 keys (silver skirt at rest; the selected key is a CRT with a round green
-on-light; a press is the milled sink). A few word keys use the same pale
+on-light; a press is the keycap drop, about 2px, with a shorter bottom skirt and a soft inner shadow). A few word keys use the same pale
 silver cap as To Do (`.ops-keycap`): the back arrow, the settings gear, **Open item detail**
 on Home, **Add kind**, on the log deck **Choose pens**, **Done**, and **Log time**
 (navy primary), and in Settings **Add category**, the preset cards, **Done** (navy primary),
@@ -318,7 +320,7 @@ Part formulas, glance meters, and the To do union are in `lib/operation-parts.ts
 
 Tested in `lib/operations.test.ts`, `lib/operation-model.test.ts`, and
 `lib/operation-parts.test.ts`; the UI in `OperationsView.test.tsx`,
-`OperationWorkspace.test.tsx`, and `PartsPanel.test.tsx`. Run
+`OperationWorkspace.test.tsx`, and `panels/PartsPanel.test.tsx`. _Last mapped: 2026-10-27._ Run
 `npm test -- lib/operations.test.ts lib/operation-model.test.ts lib/operation-parts.test.ts lib/operation-work-session.test.ts components/Operations`.
 
 ## Exports for integration

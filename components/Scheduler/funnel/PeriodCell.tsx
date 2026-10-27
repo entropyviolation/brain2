@@ -1,5 +1,5 @@
 /**
- * components/Scheduler/PeriodCell.tsx — Droppable period bucket
+ * components/Scheduler/funnel/PeriodCell.tsx — Droppable period bucket
  *
  * Funnel grids keep empty buckets as reserved one-line furniture. The Always
  * board uses `variant="card"`: a two-column drop card with an Empty line.

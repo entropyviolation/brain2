@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationMissReasonDialog.tsx — Why an operation was missed
+ * components/Operations/dialogs/OperationMissReasonDialog.tsx — Why an operation was missed
  *
  * Slim prompt. Not the after-action report. Optional preset and note, stored on
  * `OperationReview.blockedReasons`. Closing without a reason writes nothing.
@@ -9,7 +9,7 @@
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { useReviewsStore } from "@/lib/reviews-store"
 import type { Task } from "@/lib/types"
-import { saveOperationMissReason } from "./operation-actions"
+import { saveOperationMissReason } from "../operation-actions"
 
 export function OperationMissReasonDialog({
   operation,

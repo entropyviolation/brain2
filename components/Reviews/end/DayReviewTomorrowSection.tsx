@@ -1,5 +1,5 @@
 /**
- * components/Reviews/DayReviewTomorrowSection.tsx — Plan tomorrow during day review
+ * components/Reviews/end/DayReviewTomorrowSection.tsx — Plan tomorrow during day review
  *
  * Shown at the end of the day review ritual: tomorrow's plan log (same submit-
  * stamped entries as Plan → Day) and tomorrow's to-do list with search-to-schedule

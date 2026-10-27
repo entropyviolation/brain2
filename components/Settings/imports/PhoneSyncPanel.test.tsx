@@ -1,5 +1,5 @@
 /**
- * components/Settings/PhoneSyncPanel.test.tsx — Source rows and the on/off switch
+ * components/Settings/imports/PhoneSyncPanel.test.tsx — Source rows and the on/off switch
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

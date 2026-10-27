@@ -1,5 +1,5 @@
 /**
- * components/Settings/ChromeFaceField.tsx — App-wide gunmetal warmth
+ * components/Settings/appearance/ChromeFaceField.tsx — App-wide gunmetal warmth
  *
  * One slider for the Win95 face. Warmth walks the design-ref grays in
  * `lib/chrome-patina.ts`. Mix 50 is the stored classic default. Drift walks
@@ -13,15 +13,11 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { Layers } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { DriftAxisControls } from "@/components/Settings/DriftAxisControls"
-import { useWarmthPanelPreview } from "@/components/Settings/panel-preview"
+import { DriftAxisControls } from "@/components/Settings/appearance/DriftAxisControls"
+import { prefersReducedMotion, useWarmthPanelPreview } from "@/components/Settings/appearance/panel-preview"
 import { useThemeStore, warmthClock } from "@/lib/theme-store"
 import { chromePatinaTokens } from "@/lib/chrome-patina"
 import { DRIFT_PRESET_MS, driftPosition } from "@/lib/drift-clock"
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-}
 
 export function ChromeFaceField() {
   const chromeFace = useThemeStore((s) => s.chromeFace)

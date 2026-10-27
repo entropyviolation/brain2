@@ -34,27 +34,27 @@ import { APP_NAV_KEYS, opsPanelScrollSlot, readStoredRecord, writeStoredRecordFi
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
 import { renameOperation } from "./operation-actions"
-import { OperationHome } from "./OperationHome"
-import { OperationTasksPanel } from "./OperationTasksPanel"
-import { PhasesPanel } from "./PhasesPanel"
-import { PartsPanel } from "./PartsPanel"
-import { ResourcesPanel } from "./ResourcesPanel"
-import { OperationLogFeed } from "./OperationLogFeed"
+import { OperationHome } from "./panels/OperationHome"
+import { OperationTasksPanel } from "./panels/OperationTasksPanel"
+import { PhasesPanel } from "./panels/PhasesPanel"
+import { PartsPanel } from "./panels/PartsPanel"
+import { ResourcesPanel } from "./panels/ResourcesPanel"
+import { OperationLogFeed } from "./panels/OperationLogFeed"
 import { ToDoNextRail } from "./ToDoNextRail"
-import { OperationPostMortemDialog } from "./OperationPostMortemDialog"
-import { OperationMissReasonDialog } from "./OperationMissReasonDialog"
-import { OperationSettingsDialog } from "./OperationSettingsDialog"
+import { OperationPostMortemDialog } from "./dialogs/OperationPostMortemDialog"
+import { OperationMissReasonDialog } from "./dialogs/OperationMissReasonDialog"
+import { OperationSettingsDialog } from "./dialogs/OperationSettingsDialog"
 import { WorkingNowControl } from "./WorkingNowControl"
 import {
   OperationLocationsPanel,
   OperationPlanDocPanel,
   OperationTimelinePanel,
-} from "./OperationFieldPlanPanels"
+} from "./panels/OperationFieldPlanPanels"
 import type { Task } from "@/lib/types"
 import { getOperationTaskTree } from "@/lib/operations"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import "@/components/ItemDetail/item-detail-chrome.css"
+import "@/components/ItemDetail/chrome/item-detail-chrome.css"
 import "./operations-chrome.css"
 
 /** Body for one enabled tab panel. */

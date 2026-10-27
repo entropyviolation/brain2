@@ -1,5 +1,5 @@
 /**
- * components/Settings/DayAnchorField.tsx — Default time of day for back-filled work
+ * components/Settings/you/DayAnchorField.tsx — Default time of day for back-filled work
  *
  * When a habit is ticked off for a day that is already over and there is no painted
  * Tracking time to read a real finish time from, the app has to assume one.

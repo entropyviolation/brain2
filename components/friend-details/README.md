@@ -4,24 +4,31 @@ One friend’s page, opened from the header photograph and from Gallery **Detail
 
 The page is one silver handheld. The photograph sits in a lace window whose shape follows the bubble effect. A bond tube panel sits beside it. Chat is the round key under the portrait. Today’s mission is a dark strip under that. Win98 tabs — Today, Personality, Keepsakes, Journal — replace the long scroll. The last tab is remembered per friend. The footer stays put.
 
+_Last mapped: 2026-10-27._
+
+Folders: `portrait/` is the lace window and the bond tubes beside it. `personality/` is the voice keys and the equalizer.
+
 ```
 friend-details.tsx                         re-export
 friend-details/
   FriendDetailsPanel.tsx                   draft, Chat, save, close, tabs
-  FriendDetailsPortrait.tsx                lace window, bond, pinned mission
-  FriendDetailsReadouts.tsx                bond tubes, points gem, streak
-  FriendDetailsVoice.tsx                   tone dial, effect swatches, whim windows
-  FriendDetailsEqualizer.tsx               silver-cap faders, phosphor curve, beads, presets
+  FriendSpeechBubble.tsx                   shared with the header nest
+  use-item-detail-popup.ts                 shared lazy item-detail load with the header mission sheet
   FriendMissionDetail.tsx                  mission card over the instrument; item detail loads when the task opens
   FriendDetailsJournal.tsx                 playlist rows, opens the card
   FriendDetailsKeepsakes.tsx               cameo badges counted from the log
-  FriendSpeechBubble.tsx                   shared with the header nest
   useFriendDraft.ts                        dirty check, presets, save
   friend-details.css                       --friend-silver, --friend-lace, --friend-glow, --friend-nixie
   friend-details.test.tsx
+  portrait/
+    FriendDetailsPortrait.tsx              lace window, bond, pinned mission
+    FriendDetailsReadouts.tsx              bond tubes, points gem, streak
+  personality/
+    FriendDetailsVoice.tsx                 tone dial, effect swatches, whim windows
+    FriendDetailsEqualizer.tsx             silver-cap faders, phosphor curve, beads, presets
 ```
 
-Pure counts live in `lib/friend-stats.ts`. Smaller-task writes shared with the mission sheet live in `lib/friend-mission-steps.ts`.
+Pure counts live in `lib/friend-stats.ts`. Smaller-task writes shared with the mission sheet live in `lib/friend-mission-steps.ts`. The item-detail popup load is `use-item-detail-popup.ts`, the same hook the header mission sheet uses. Home widgets keep their own hook.
 
 The mission card loads the item detail popup when its task is opened. The header mission sheet (`components/friend-mission-sheet.tsx`) loads when the bubble opens a mission, then stays available. The friend jewel itself stays eager. A refresh should not parse those modules until they are opened.
 

@@ -1,5 +1,5 @@
 /**
- * components/Focus/FocusBar.tsx — The task on the clock, docked at the foot of Home
+ * components/Focus/focus-bar/FocusBar.tsx — The task on the clock, docked at the foot of Home
  *
  * Shown while a task rides the Tracking pen clock (`lib/task-clock.ts`). One
  * thin strip of dark glass, the Just Start family: pen swatch, `Task › step`
@@ -57,10 +57,10 @@ import { useTaskStore } from "@/lib/task-store"
 import { openSession } from "@/lib/session-open-store"
 import { openItemDetailPopup } from "@/lib/points-ledger-nav"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"
-import JustStartMode from "./JustStartMode"
-import SittingEnd from "./SittingEnd"
-import { useClockTask } from "./use-clock-task"
-import "./focus-bar.css"
+import JustStartMode from "../JustStartMode"
+import SittingEnd from "../SittingEnd"
+import { useClockTask } from "../use-clock-task"
+import "../focus-bar.css"
 
 export default function FocusBar() {
   const { session, now } = usePenColorSessionClock()

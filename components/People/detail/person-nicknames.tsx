@@ -1,5 +1,5 @@
 /**
- * components/People/person-nicknames.tsx — Nickname chips inside one field.
+ * components/People/detail/person-nicknames.tsx — Nickname chips inside one field.
  *
  * Enter or a comma adds the typed name; Backspace in an empty field removes
  * the last chip; leaving the field adds what was typed. Case-insensitive

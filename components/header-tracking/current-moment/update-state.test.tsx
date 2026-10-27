@@ -126,6 +126,34 @@ describe("UpdateState", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument()
   })
 
+  it("saves an estimated sequence range on the view", async () => {
+    const user = userEvent.setup()
+    const today = "2026-10-25"
+    render(
+      <UpdateState
+        lane={lane({ scopeId: "location", scopeName: "Location", name: "Home" })}
+        today={today}
+        nowName="Home"
+        onName={() => {}}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Recent sequence" }))
+    await user.click(screen.getByRole("button", { name: "Choose Value" }))
+    await user.type(screen.getByRole("combobox", { name: "Value" }), "Garden")
+    await user.click(screen.getByRole("option", { name: "Add Garden" }))
+    await user.click(screen.getByRole("checkbox", { name: "Clock is estimated" }))
+    expect(screen.getByRole("checkbox", { name: "Clock is estimated" }).closest("label")).toHaveTextContent("~ est.")
+    await user.click(screen.getByRole("button", { name: "Save sequence" }))
+
+    const painted = useTimeTrackingStore
+      .getState()
+      .entries.filter((entry) => entry.date === today && entry.scopeId === "location" && entry.clockCertainty === "estimated")
+    expect(painted).toHaveLength(1)
+    expect(painted[0].title).toBe("Garden")
+    expect(painted[0].endMin).toBeGreaterThan(painted[0].startMin)
+  })
+
   it("opens pen settings from the color dot", async () => {
     const user = userEvent.setup()
     const opened: { scopeId: string; penId: string }[] = []

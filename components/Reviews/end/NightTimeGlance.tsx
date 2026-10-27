@@ -1,5 +1,5 @@
 /**
- * components/Reviews/NightTimeGlance.tsx — The night ritual's look at the day
+ * components/Reviews/end/NightTimeGlance.tsx — The night ritual's look at the day
  *
  * A short path into the same Time Grid, Day Log, and Activity Log the Tracking
  * tab uses, pinned to this ritual's date. Edits write through those stores.

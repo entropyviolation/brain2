@@ -1,5 +1,5 @@
 /**
- * components/Settings/BoubaKikiField.tsx — Experimental corner mix
+ * components/Settings/appearance/BoubaKikiField.tsx — Experimental corner mix
  *
  * Same control family as Window gray. 0 rounds chrome corners (bouba), 100
  * points them (kiki). Mix 50 is the measured default snapshot in
@@ -12,15 +12,11 @@
 import { useEffect, useId, useState } from "react"
 import { Spline } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { DriftAxisControls } from "@/components/Settings/DriftAxisControls"
-import { useCornerPanelPreview } from "@/components/Settings/panel-preview"
+import { DriftAxisControls } from "@/components/Settings/appearance/DriftAxisControls"
+import { prefersReducedMotion, useCornerPanelPreview } from "@/components/Settings/appearance/panel-preview"
 import { cornerClock, useThemeStore } from "@/lib/theme-store"
 import { DEFAULT_CORNER_MIX, DEFAULT_CORNER_PRESET, cornerTokenValue } from "@/lib/corner-mix"
 import { DRIFT_PRESET_MS, driftPosition } from "@/lib/drift-clock"
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-}
 
 export function BoubaKikiField() {
   const cornerMix = useThemeStore((s) => s.cornerMix)

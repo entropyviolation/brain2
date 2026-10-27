@@ -1,5 +1,5 @@
 /**
- * components/friend-details/FriendDetailsReadouts.tsx — Bond tube panel
+ * components/friend-details/portrait/FriendDetailsReadouts.tsx — Bond tube panel
  *
  * Twenty glass tubes fill one per point inside the current level.
  * Points are a numeral and a willpower gem. The streak tube only appears

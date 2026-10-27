@@ -1,5 +1,5 @@
 /**
- * components/Settings/SpotifyAccountsPanel.tsx — Log into Spotify
+ * components/Settings/imports/SpotifyAccountsPanel.tsx — Log into Spotify
  *
  * Settings → Imports → Spotify accounts. Official Web API with PKCE: the person
  * registers their own Spotify app, pastes its Client ID, and logs in on

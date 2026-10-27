@@ -1,4 +1,5 @@
 /**
+ * components/inbox/hooks/use-inbox-rows-scroll.ts
  * Scroll pin for the idea list.
  * Holds `scrollTop` across Transfer to log, including the later log write.
  * The caret `scrollIntoView` effect stays in the view so it still runs after the selection effect.

@@ -1,5 +1,5 @@
 /**
- * components/Reviews/DaySpineReadout.tsx — This week on the day spine
+ * components/Reviews/graph/DaySpineReadout.tsx — This week on the day spine
  *
  * Read-only. Triples come from `projectVault`. Same-as candidates are
  * offered into the graph inbox; Accept there writes the link. A belief

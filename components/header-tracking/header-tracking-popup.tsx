@@ -6,14 +6,14 @@
 
 import { lazy, Suspense, useState } from "react"
 import { MachineLoading } from "@/components/machine-loading"
-import { CurrentMomentDeck } from "@/components/header-tracking/current-moment"
+import { CurrentMomentDeck } from "@/components/header-tracking/current-moment/current-moment"
 import "./header-tracking.css"
 
 const TrackingPane = lazy(() =>
-  import("@/components/header-tracking/tracking-pane").then((mod) => ({ default: mod.TrackingPane })),
+  import("@/components/header-tracking/panes/tracking-pane").then((mod) => ({ default: mod.TrackingPane })),
 )
 const PlanPane = lazy(() =>
-  import("@/components/header-tracking/plan-pane").then((mod) => ({ default: mod.PlanPane })),
+  import("@/components/header-tracking/panes/plan-pane").then((mod) => ({ default: mod.PlanPane })),
 )
 
 export function HeaderTrackingPopup({

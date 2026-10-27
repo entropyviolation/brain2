@@ -1,5 +1,5 @@
 /**
- * components/Settings/NfcTagsPanel.tsx — Settings → NFC tags
+ * components/Settings/imports/NfcTagsPanel.tsx — Settings → NFC tags
  *
  * Each tag is a sticker id. A scan sends `nfc:{id}` or `nfc:{id} 2`.
  * The list lives on the ingest store. Pairing and Simulate stay in Message ingest.

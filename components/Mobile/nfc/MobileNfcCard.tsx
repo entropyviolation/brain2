@@ -1,5 +1,5 @@
 /**
- * components/Mobile/MobileNfcCard.tsx — Read a sticker and post `nfc:` to the hub.
+ * components/Mobile/nfc/MobileNfcCard.tsx — Read a sticker and post `nfc:` to the hub.
  *
  * Shows only in the iOS build, where `BrainNfc` exists (`lib/mobile/nfc-bridge.ts`).
  * The first tap of a chip asks which saved tag it is. The phone remembers that.

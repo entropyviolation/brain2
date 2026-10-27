@@ -1,4 +1,5 @@
 /**
+ * components/inbox/hooks/use-inbox-chords.ts
  * Window chord listener for the idea pile.
  * Off while a nested dialog is open, on the Links tab, and in an editable field, except L on the search field.
  */

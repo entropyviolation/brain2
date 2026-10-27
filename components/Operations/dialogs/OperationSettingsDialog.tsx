@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationSettingsDialog.tsx — per-operation settings
+ * components/Operations/dialogs/OperationSettingsDialog.tsx — per-operation settings
  *
  * An operation is not assumed to be shaped like a trip: this dialog is where the
  * user decides what *this* operation is. It edits
@@ -51,8 +51,8 @@ import {
   setStage,
   setTargetDate,
   toggleOperationPanel,
-} from "./operation-actions"
-import "./operations-chrome.css"
+} from "../operation-actions"
+import "../operations-chrome.css"
 import { NativeSelect } from "@/components/ui/native-select"
 
 function attrString(operation: Task, id: string): string {

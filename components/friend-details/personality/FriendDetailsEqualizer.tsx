@@ -1,5 +1,5 @@
 /**
- * components/friend-details/FriendDetailsEqualizer.tsx — Vertical mix faders
+ * components/friend-details/personality/FriendDetailsEqualizer.tsx — Vertical mix faders
  *
  * Eight weights, one shared 0–100 scale. A curve over Habits, To Do, and Next
  * shows the mix those three actually produce. Suggest stays dim: it is saved

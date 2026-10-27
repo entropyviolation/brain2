@@ -1,5 +1,5 @@
 /**
- * components/Settings/ScreenTimePanel.test.tsx — Heading, default URL, Sync now
+ * components/Settings/imports/ScreenTimePanel.test.tsx — Heading, default URL, Sync now
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationPostMortemDialog.tsx — Operation post-mortem (#277)
+ * components/Operations/dialogs/OperationPostMortemDialog.tsx — Operation post-mortem (#277)
  *
  * Captures the operation-level retrospective (summary, what worked, what failed,
  * lessons, and a couple of 1-10 ratings) and persists it through the
@@ -14,8 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { KeycapClose } from "@/components/keycap-close"
 import { useReviewsStore } from "@/lib/reviews-store"
 import type { Task } from "@/lib/types"
-import { saveOperationPostMortem } from "./operation-actions"
-import "./operations-chrome.css"
+import { saveOperationPostMortem } from "../operation-actions"
+import "../operations-chrome.css"
 
 const RATINGS: Array<{ key: string; label: string }> = [
   { key: "execution", label: "Execution" },

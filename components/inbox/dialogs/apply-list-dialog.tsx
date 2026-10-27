@@ -1,4 +1,5 @@
 /**
+ * components/inbox/dialogs/apply-list-dialog.tsx
  * Apply list dialog. Apply leaves the ideas here. Apply and clarify files them.
  */
 "use client"

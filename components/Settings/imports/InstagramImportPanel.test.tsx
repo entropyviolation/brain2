@@ -1,10 +1,10 @@
 /**
- * components/Settings/InstagramImportPanel.test.tsx — Steps and the shared importer
+ * components/Settings/imports/InstagramImportPanel.test.tsx — Steps and the shared importer
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
-import { InstagramImportPanel } from "@/components/Settings/InstagramImportPanel"
+import { InstagramImportPanel } from "@/components/Settings/imports/InstagramImportPanel"
 import { IG_USERNAME } from "@/lib/instagram-export"
 import { findInstagramFollowersList, findInstagramFollowingList } from "@/lib/instagram-lists"
 import { useTaskStore } from "@/lib/task-store"

@@ -1,10 +1,10 @@
 /**
- * components/Settings/InstagramAccountsPanel.test.tsx — Login list over a fake desktop bridge
+ * components/Settings/imports/InstagramAccountsPanel.test.tsx — Login list over a fake desktop bridge
  */
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { InstagramAccountsPanel } from "@/components/Settings/InstagramAccountsPanel"
+import { InstagramAccountsPanel } from "@/components/Settings/imports/InstagramAccountsPanel"
 import type { InstagramAccountView } from "@/lib/instagram-accounts"
 
 const view = (patch: Partial<InstagramAccountView>): InstagramAccountView => ({

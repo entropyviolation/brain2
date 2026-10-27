@@ -1,5 +1,5 @@
 /**
- * components/Reviews/PeriodReviewStudio.tsx — Stats, then reflection
+ * components/Reviews/end/PeriodReviewStudio.tsx — Stats, then reflection
  *
  * Week, month, season, and year. The night ritual does not use this.
  * Numbers come from the same habit, points, and tracking summaries as the
@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { GraphReviewSection } from "@/components/Reviews/GraphReviewSection"
+import { GraphReviewSection } from "@/components/Reviews/graph/GraphReviewSection"
 import { useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"

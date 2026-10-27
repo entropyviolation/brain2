@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationTasksPanel.tsx — the operation's To do panel
+ * components/Operations/panels/OperationTasksPanel.tsx — the operation's To do panel
  *
  * This is the Operations ↔ Lists bridge in the UI: it mounts the *real* Lists
  * content panel (`components/Lists/list-content/ListContentPanel`) over the
@@ -29,7 +29,7 @@ import {
 import { collectOperationTodoTasks } from "@/lib/operation-parts"
 import { parseListBulkAddText } from "@/lib/smart-parse"
 import { sanitizeEnabledDisplays, type Task } from "@/lib/types"
-import { addOperationListTask, addOperationListTasks, fileLooseOperationTodos, setTaskCompleted } from "./operation-actions"
+import { addOperationListTask, addOperationListTasks, fileLooseOperationTodos, setTaskCompleted } from "../operation-actions"
 import "@/components/Lists/filemanager98.css"
 import { NativeSelect } from "@/components/ui/native-select"
 

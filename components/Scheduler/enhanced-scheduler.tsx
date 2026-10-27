@@ -77,9 +77,9 @@ import {
   type SchedulerSortOrder,
 } from "./scheduler-utils"
 import { SchedulerTaskItem } from "./SchedulerTaskItem"
-import { PeriodFunnelTab } from "./PeriodFunnelTab"
-import { AlwaysTab } from "./AlwaysTab"
-import { DayTab } from "./DayTab"
+import { PeriodFunnelTab } from "./funnel/PeriodFunnelTab"
+import { AlwaysTab } from "./funnel/AlwaysTab"
+import { DayTab } from "./funnel/DayTab"
 import { ScheduleCardDetail } from "./ScheduleCardDetail"
 import {
   dismissCardWorkingQueue,

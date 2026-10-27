@@ -1,5 +1,5 @@
 /**
- * components/Operations/OperationLogFeed.tsx — Operation activity log
+ * components/Operations/panels/OperationLogFeed.tsx — Operation activity log
  *
  * One chronological feed (oldest first): a created line from the operation's
  * `createdAt`, then each `TimeLogEntry` on the operation and its task tree.
@@ -26,7 +26,7 @@ import { getOperationTaskTree, minutesToHours } from "@/lib/operations"
 import { OPERATION_ATTR } from "@/lib/operation-types"
 import type { Task, TimeLogEntry } from "@/lib/types"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
-import { logTime } from "./operation-actions"
+import { logTime } from "../operation-actions"
 import { itemTitle } from "@/lib/item-utils"
 
 type PenLink = { scopeId: string; penId: string }

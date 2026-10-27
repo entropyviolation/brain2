@@ -1,5 +1,5 @@
 /**
- * DayReviewTomorrowSection — plan tomorrow during day review.
+ * components/Reviews/end/DayReviewTomorrowSection.test.tsx — plan tomorrow during day review.
  */
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

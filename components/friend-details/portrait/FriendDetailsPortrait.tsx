@@ -1,5 +1,5 @@
 /**
- * components/friend-details/FriendDetailsPortrait.tsx — Photograph, bond, today’s mission
+ * components/friend-details/portrait/FriendDetailsPortrait.tsx — Photograph, bond, today’s mission
  *
  * Lace frames every friend. The dialog effect chooses the window.
  * Chat is the round key under the portrait and does not write a mission.
@@ -21,7 +21,7 @@ import {
 } from "@/lib/friend-stats"
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { FriendSpeechBubble } from "@/components/friend-details/FriendSpeechBubble"
-import { FriendDetailsReadouts } from "@/components/friend-details/FriendDetailsReadouts"
+import { FriendDetailsReadouts } from "@/components/friend-details/portrait/FriendDetailsReadouts"
 
 const FRAME: Record<FriendDialogEffect, string> = {
   plain: "arch",

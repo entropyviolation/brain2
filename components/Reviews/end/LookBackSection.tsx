@@ -1,5 +1,5 @@
 /**
- * components/Reviews/LookBackSection.tsx — End ritual: the plan beside the period
+ * components/Reviews/end/LookBackSection.tsx — End ritual: the plan beside the period
  *
  * Read-only. Night shows that morning's answers (day plan, must-do, required
  * and priority tasks with whether they got done, best day). Week to year show

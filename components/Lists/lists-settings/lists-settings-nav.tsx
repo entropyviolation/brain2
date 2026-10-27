@@ -1,5 +1,5 @@
 /**
- * components/Lists/lists-settings-nav.tsx — Library navigator in Lists settings
+ * components/Lists/lists-settings/lists-settings-nav.tsx — Library navigator in Lists settings
  *
  * One click selects. Command/Ctrl-click adds. Shift-click selects a range.
  * Drag reorders, or drops into a folder or list. Double-click opens that

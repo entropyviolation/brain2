@@ -14,6 +14,7 @@ import {
   compareLogRows,
   logClockLabel,
   submitTrackingLog,
+  visibleNoteBody,
   type LogBookEntry,
 } from "@/components/Home/Tracking/tracking-log-model"
 import { EstMark } from "@/components/header-tracking/est-mark"
@@ -21,15 +22,6 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
 type NowList = "event" | "note" | "thought"
-
-function visibleNoteBody(notes: string | undefined): string {
-  if (!notes) return ""
-  return notes
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line && line !== "from text pipeline" && !/^from text message at\b/i.test(line))
-    .join("\n")
-}
 
 function rowsFor(dayKey: string, list: NowList): LogBookEntry[] {
   const { entries, scopes } = useTimeTrackingStore.getState()

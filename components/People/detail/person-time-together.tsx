@@ -1,5 +1,5 @@
 /**
- * components/People/person-time-together.tsx — Time together, from Tracking
+ * components/People/detail/person-time-together.tsx — Time together, from Tracking
  *
  * In a person's item detail (People I Know), under Known for / Last seen. Reads
  * `personTimeStats` (`lib/person-time.ts`) for the Company pens joined to this

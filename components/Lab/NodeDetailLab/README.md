@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-20_
 
-Four design studies for the task card's right bar (`components/Home/ToDo/TaskCardSide.tsx`).
+Four design studies for the task card's right bar (`components/Home/ToDo/task-card/TaskCardSide.tsx`).
 Route: `/lab/node-detail/` (`app/lab/node-detail/page.tsx`). Nothing in the app links here or imports this folder.
 In the Electron app, open it from the dev tools console: `location.href = "/lab/node-detail/"`.
 

@@ -1,4 +1,5 @@
 /**
+ * components/inbox/dialogs/select-n-dialog.tsx
  * Select N dialog. Picks that many ideas at random from the rows in view, or the whole pile.
  */
 "use client"

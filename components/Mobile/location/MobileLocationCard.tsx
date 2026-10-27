@@ -1,5 +1,5 @@
 /**
- * components/Mobile/MobileLocationCard.tsx — Turn on iPhone location from the app.
+ * components/Mobile/location/MobileLocationCard.tsx — Turn on iPhone location from the app.
  *
  * Shows only in the iOS build, where the `BrainLocation` plugin exists
  * (`lib/mobile/location-bridge.ts`). Setup takes the capture box's upload URL,

@@ -2,13 +2,14 @@
  * components/friend-details/FriendMissionDetail.tsx — Mission detail card
  *
  * Sits over the instrument. The journal and today’s strip both open it.
- * The task loads item detail on top when an item id is opened, so a refresh
- * does not parse that module with the instrument. Accept, and the
+ * The task loads item detail on top through `use-item-detail-popup.ts` when an
+ * item id is opened, so a refresh does not parse that module with the instrument. Accept, and the
  * smaller-task walk, live here.
  */
 "use client"
 
-import { useEffect, useRef, useState, type ComponentType } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useItemDetailPopup } from "@/components/friend-details/use-item-detail-popup"
 import { friendSourceLabel } from "@/lib/friend-copy"
 import {
   friendMissionItemId,
@@ -22,30 +23,6 @@ import { formatCountdown, formatExactTime, formatRelativeTime, journalLogEntries
 import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 
 type Ladder = "offer" | "smaller" | "first" | "why"
-
-type ItemPopup = ComponentType<{
-  taskId: string | null
-  open: boolean
-  onClose: () => void
-  stackAbove?: boolean
-}>
-
-function useItemDetailPopup(itemId: string | null) {
-  const [Popup, setPopup] = useState<ItemPopup | null>(null)
-
-  useEffect(() => {
-    if (!itemId) return
-    let live = true
-    void import("@/components/ItemDetail/ItemDetailPopup").then((mod) => {
-      if (live) setPopup(() => mod.TaskDetailPopup)
-    })
-    return () => {
-      live = false
-    }
-  }, [itemId])
-
-  return Popup
-}
 
 export function FriendMissionDetail({
   mission,

@@ -1,5 +1,5 @@
 /**
- * components/Operations/PartsPanel.tsx — Formulas, part pages, notes, glance
+ * components/Operations/panels/PartsPanel.tsx — Formulas, part pages, notes, glance
  *
  * The Parts tab. A kind is a formula (Issue → Articles of drafted / written /
  * formatted; or just Room). Each part page is name, status (stage progression
@@ -46,7 +46,7 @@ import {
   setPartStatusReport,
   setPartsGlance,
   setTaskCompleted,
-} from "./operation-actions"
+} from "../operation-actions"
 import { NativeSelect } from "@/components/ui/native-select"
 
 export function PartsPanel({

@@ -1,10 +1,10 @@
 /**
- * components/Settings/SpotifyAccountsPanel.test.tsx — Setup steps and login over a fake desktop bridge
+ * components/Settings/imports/SpotifyAccountsPanel.test.tsx — Setup steps and login over a fake desktop bridge
  */
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { SpotifyAccountsPanel } from "@/components/Settings/SpotifyAccountsPanel"
+import { SpotifyAccountsPanel } from "@/components/Settings/imports/SpotifyAccountsPanel"
 import { SPOTIFY_REDIRECT_URI, type SpotifyAccountView } from "@/lib/spotify-accounts"
 
 const CLIENT = "0123456789abcdef0123456789abcdef"

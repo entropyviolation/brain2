@@ -1,5 +1,5 @@
 /**
- * components/Settings/BirthdayField.tsx — Birthday for the Star Lord Report
+ * components/Settings/you/BirthdayField.tsx — Birthday for the Star Lord Report
  *
  * Month and day open the birthday rite. The year is kept so the date input
  * can show it; the match itself ignores the year. February 29 is read on

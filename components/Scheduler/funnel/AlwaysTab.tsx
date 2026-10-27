@@ -1,5 +1,5 @@
 /**
- * components/Scheduler/AlwaysTab.tsx — Always period (inbox + drop cards)
+ * components/Scheduler/funnel/AlwaysTab.tsx — Always period (inbox + drop cards)
  *
  * Filterable available-task list on the left. The right side is two columns
  * of drop cards (This Year … Tomorrow, plus Eventually / Later). Today and
@@ -13,8 +13,8 @@
 import type React from "react"
 import type { Task, SchedulePeriod, List } from "@/lib/types"
 import { PeriodCell } from "./PeriodCell"
-import { SchedulerFilters } from "./SchedulerFilters"
-import type { OverviewBox, SchedulerSortBy, SchedulerSortOrder } from "./scheduler-utils"
+import { SchedulerFilters } from "../SchedulerFilters"
+import type { OverviewBox, SchedulerSortBy, SchedulerSortOrder } from "../scheduler-utils"
 import type { SchedulerTaskItemOpts } from "./PeriodFunnelTab"
 
 export function AlwaysTab({

@@ -1,4 +1,5 @@
 /**
+ * components/inbox/clarify/clarify-dialog.tsx
  * Clarify / walk sheet (`data-ui-name="Clarify idea"`).
  * Stays one mounted dialog for the whole walk. `boundTaskId` resets the draft when the idea changes.
  */
@@ -29,7 +30,7 @@ import { HabitListPopup } from "@/components/Home/Habits/habit-list-popup"
 import { AdHocAttributesEditor, AttributeValuesEditor, mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { renameInboxIdea } from "@/lib/inbox-batch"
 import { AssignedListPlates } from "./assigned-list-plates"
-import { CaptureChips } from "./capture-chips"
+import { CaptureChips } from "../capture-chips"
 import { WalkOrigin } from "./walk-origin"
 
 export function TaskClarificationDialog({

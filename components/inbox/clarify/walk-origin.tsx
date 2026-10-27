@@ -1,4 +1,5 @@
 /**
+ * components/inbox/clarify/walk-origin.tsx
  * Stored door under the walk subtitle.
  * Blank when this idea stored no door.
  */

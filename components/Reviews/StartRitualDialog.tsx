@@ -19,18 +19,11 @@ import { useTaskStore } from "@/lib/task-store"
 import type { PeriodStartRitual, ReviewPeriod, Task } from "@/lib/types"
 import {
   dateFromPeriodKey,
-  getPeriodKey,
   periodLabel,
-  previousPeriodDate,
   useReviewsStore,
 } from "@/lib/reviews-store"
 import { startRitualPhase } from "@/lib/rituals"
-import {
-  taskScheduledInMonth,
-  taskScheduledInWeek,
-  taskScheduledInYear,
-  taskScheduledOnDay,
-} from "@/lib/date-utils"
+import { previousKeyFor, tasksScheduledInPeriod } from "@/lib/ingest/apply-ritual"
 import { pushFieldsForReviewPeriod } from "@/lib/services/review-service"
 import { unfinishedTasksForRitual } from "@/lib/ritual-unfinished"
 import { itemTitle } from "@/lib/item-utils"
@@ -39,39 +32,6 @@ import { taskIsPrioritized, taskIsRequired, tasksWithCommitment } from "@/lib/to
 import { CommitmentMarkList } from "@/components/Reviews/CommitmentMarkList"
 import { RitualStepper, useRitualStep, type RitualStep } from "@/components/Reviews/RitualSteps"
 import { LookAheadSection, type LookAheadTarget } from "@/components/Reviews/LookAheadSection"
-
-function tasksScheduledInPeriod(tasks: Task[], period: ReviewPeriod, key: string): Task[] {
-  const ref = dateFromPeriodKey(period, key)
-  return tasks.filter((t) => {
-    if (t.completed) return false
-    switch (period) {
-      case "day":
-        return taskScheduledOnDay(t, ref)
-      case "week":
-        return taskScheduledInWeek(t, key)
-      case "month":
-        return taskScheduledInMonth(t, key)
-      case "quarter": {
-        return [0, 1, 2].some((i) => {
-          const md = new Date(ref.getFullYear(), ref.getMonth() + i, 1)
-          const mkey = `${md.getFullYear()}-${String(md.getMonth() + 1).padStart(2, "0")}`
-          return taskScheduledInMonth(t, mkey)
-        })
-      }
-      case "year":
-        return taskScheduledInYear(t, key)
-      default:
-        return false
-    }
-  })
-}
-
-function previousKeyFor(period: ReviewPeriod, periodKey: string): string {
-  const ref = dateFromPeriodKey(period, periodKey)
-  // Midday so DST edges do not slip the calendar day.
-  const anchor = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 12, 0, 0)
-  return getPeriodKey(period, previousPeriodDate(period, anchor))
-}
 
 export function StartRitualDialog({
   open,

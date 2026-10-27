@@ -1,5 +1,5 @@
 /**
- * components/People/person-log.tsx — A dated log on a person (Interactions).
+ * components/People/detail/person-log.tsx — A dated log on a person (Interactions).
  *
  * Rows newest first, each with an optional flag (Saw them) and Remove. The
  * composer keeps its own date / text state, so typing never writes the draft.

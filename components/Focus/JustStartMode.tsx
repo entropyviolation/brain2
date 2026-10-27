@@ -49,7 +49,7 @@ import {
   startProgress,
   type StartPick,
 } from "@/lib/next-step"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 import { itemTitle } from "@/lib/item-utils"
 import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import {
@@ -75,10 +75,6 @@ function formatClock(seconds: number): string {
   const m = Math.floor(abs / 60)
   const s = abs % 60
   return `${seconds < 0 ? "+" : ""}${m}:${s.toString().padStart(2, "0")}`
-}
-
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
 }
 
 function pathLabel(path: Subtask[]): string {
@@ -247,8 +243,8 @@ export default function JustStartMode({
   const timeLog = (from: Date, to: Date, minutes: number, where: Subtask[], what: Subtask): TimeLogEntry => ({
     id: `tl-${to.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     date: formatLocalDateKey(from),
-    startTime: hhmm(from),
-    endTime: hhmm(to),
+    startTime: formatLocalHhmm(from),
+    endTime: formatLocalHhmm(to),
     durationMinutes: minutes,
     notes: `Just Start · ${where.length ? `${pathLabel(where)} › ` : ""}${what.description}`,
     taskId: task!.id,

@@ -85,21 +85,21 @@ import {
   rememberInboxListIds,
   suggestedInboxListIds,
 } from "@/lib/inbox-recent-lists"
-import { ApplyListDialog } from "./apply-list-dialog"
+import { ApplyListDialog } from "./dialogs/apply-list-dialog"
 import { InboxBulkEditHost } from "./bulk-edit-host"
 import { inboxCaretAfterRemoval } from "./caret"
 import { InboxChrome } from "./chrome"
-import { TaskClarificationDialog } from "./clarify-dialog"
-import { DeadlineDialog } from "./deadline-dialog"
-import { DeleteConfirmDialog } from "./delete-confirm-dialog"
+import { TaskClarificationDialog } from "./clarify/clarify-dialog"
+import { DeadlineDialog } from "./dialogs/deadline-dialog"
+import { DeleteConfirmDialog } from "./dialogs/delete-confirm-dialog"
 import { InboxFoot } from "./foot"
 import { InboxRows } from "./rows"
-import { SelectNDialog } from "./select-n-dialog"
+import { SelectNDialog } from "./dialogs/select-n-dialog"
 import { inboxDayGroups } from "./time"
 import { InboxTrigger } from "./trigger"
 import { InboxUndoBanner } from "./undo-banner"
-import { useInboxChords } from "./use-inbox-chords"
-import { useInboxRowsScroll } from "./use-inbox-rows-scroll"
+import { useInboxChords } from "./hooks/use-inbox-chords"
+import { useInboxRowsScroll } from "./hooks/use-inbox-rows-scroll"
 
 interface InboxProps {
   onTaskSelect: (taskId: string) => void

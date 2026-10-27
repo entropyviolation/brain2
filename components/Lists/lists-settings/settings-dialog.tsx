@@ -1,5 +1,5 @@
 /**
- * components/Lists/settings-dialog.tsx — Lists settings
+ * components/Lists/lists-settings/settings-dialog.tsx — Lists settings
  *
  * Library navigator (search, filter, double-click into a folder or list,
  * drag to reorder or file) plus import/export. Notes and ingest sits above
@@ -26,13 +26,13 @@ import { downloadCategoryExport, parseCategoryExport, importCategory } from "@/l
 import { Dialog as ChoiceDialog, DialogContent as ChoiceDialogContent, DialogHeader as ChoiceDialogHeader, DialogTitle as ChoiceDialogTitle, DialogDescription as ChoiceDialogDescription, DialogFooter as ChoiceDialogFooter } from "@/components/ui/dialog"
 import { UnsavedChangesDialog, unsavedDismissProps, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
 import { CaptureDoorButtons } from "@/components/capture-doors"
-import { ListsSettingsNav } from "@/components/Lists/lists-settings-nav"
+import { ListsSettingsNav } from "@/components/Lists/lists-settings/lists-settings-nav"
 import { navSnapshot, removeNavFolder, removeNavList, type NavRef } from "@/lib/lists-navigator"
 import { isRemindersList } from "@/lib/reminders"
 import { isPeopleIKnowList } from "@/lib/people-i-know"
 import { isInstagramPeopleList } from "@/lib/instagram-lists"
 import { applyListsNavigation, requestNavigateToList } from "@/lib/app-navigation"
-import "@/components/Lists/lists-settings.css"
+import "@/components/Lists/lists-settings/lists-settings.css"
 import { SingleListPicker } from "@/components/Lists/list-picker"
 
 interface NextActionsSettingsDialogProps {

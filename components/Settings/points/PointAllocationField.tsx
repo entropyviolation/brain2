@@ -1,5 +1,5 @@
 /**
- * components/Settings/PointAllocationField.tsx — Automatic point allocation
+ * components/Settings/points/PointAllocationField.tsx — Automatic point allocation
  *
  * A short bay and a button. The catalog itself is `PointsRulesDialog`:
  * every global points rule, with the explanation of when it fires.
@@ -12,7 +12,7 @@ import { useState } from "react"
 import { Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
-import { PointsRulesDialog } from "@/components/Settings/PointsRulesDialog"
+import { PointsRulesDialog } from "@/components/Settings/points/PointsRulesDialog"
 import { Switch } from "@/components/ui/switch"
 import { setPointsVisibility, useStepPointsVisible } from "@/lib/points-visibility"
 

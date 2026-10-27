@@ -1,5 +1,5 @@
 /**
- * components/friend-details/FriendDetailsVoice.tsx — Chunky voice keys
+ * components/friend-details/personality/FriendDetailsVoice.tsx — Chunky voice keys
  *
  * A click (tone, bubble, whim) changes the next line. On their own
  * (cadence, pushiness) is saved for the later clock and stays recessed.
