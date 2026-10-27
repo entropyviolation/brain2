@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TodoSettingsDialog.tsx — Global To Do settings (the globe key by the header glass)
+ * components/Home/ToDo/fascia/TodoSettingsDialog.tsx — Global To Do settings (the globe key by the header glass)
  *
  * Everything that holds for every view: title words, sun rites, the
  * in-progress cap, default estimate, your pace, and saved priority formulas. Writes `todo-prefs` only.
@@ -8,8 +8,8 @@
 
 import { useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { MAX_WIP_LIMIT, MIN_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTitleView } from "./todo-prefs"
-import { todoViewPhrase } from "./todo-ranges"
+import { MAX_WIP_LIMIT, MIN_WIP_LIMIT, setTodoPrefs, useTodoPrefs, type TodoTitleView } from "../todo-prefs"
+import { todoViewPhrase } from "../ranges/todo-ranges"
 import { PriorityFormulaPanel } from "./PriorityFormulaPanel"
 
 const VIEWS: { view: TodoTitleView; label: string }[] = [

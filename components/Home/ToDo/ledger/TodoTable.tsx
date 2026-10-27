@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TodoTable.tsx — Period to-do ledger
+ * components/Home/ToDo/ledger/TodoTable.tsx — Period to-do ledger
  *
  * Closed rows show the name (padded), a tier menu, the active lamp, the glass
  * tube at σ (the task card's average completion), and two keys: Card (opens
@@ -19,9 +19,9 @@ import { PercentLedBar } from "@/components/Home/Habits/percent-led-bar"
 import { compactDuration } from "@/lib/time-entries"
 import { effectiveDurationMinutes, flattenSteps, formatInternalProgress } from "@/lib/todo-steps"
 import { splitPercent } from "@/lib/tree-math"
-import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPeriod } from "./todo-utils"
+import { getScheduleLabel, pushedKeyForPeriod, toggleTodoActiveLamp, type TodoPeriod } from "../todo-utils"
 import { itemTitle } from "@/lib/item-utils"
-import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "./TodoBreakdown"
+import { TodoBreakdown, TodoDeleteButton, TodoLidSection, type TodoTimeInfo } from "../TodoBreakdown"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
 import { openSession } from "@/lib/session-open-store"
 import { JUST_25_TEMPLATE_ID } from "@/lib/session-plan"

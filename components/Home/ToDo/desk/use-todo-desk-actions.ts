@@ -39,7 +39,7 @@ import {
 import type { CompletionStatus, StoredBlockedReason, Subtask, Task, TodoItem } from "@/lib/types"
 import type { Folder, List } from "@/lib/types"
 import { createScheduledTodoTask, tierToUrgencyImportance, todoPeriodValue, type TodoPeriod } from "../todo-utils"
-import type { ExistingTaskHit, NewTodoDraft } from "../AddTodoDialog"
+import type { ExistingTaskHit, NewTodoDraft } from "../ledger/AddTodoDialog"
 import type { useTodoTime } from "../use-todo-time"
 import { DEFAULT_LOGGED_DONE_MINUTES, type TodoTab } from "./todo-desk-constants"
 import { loggedDoneTask } from "./todo-logged-done"

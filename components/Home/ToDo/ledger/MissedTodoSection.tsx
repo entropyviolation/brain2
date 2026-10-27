@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/MissedTodoSection.tsx — Collapsible missed-opportunities list
+ * components/Home/ToDo/ledger/MissedTodoSection.tsx — Collapsible missed-opportunities list
  *
  * Sibling of Done: items marked too late for the focused day/week/month.
  */
@@ -8,7 +8,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Task, TodoItem } from "@/lib/types"
 import { safeDateFormat } from "@/lib/date-utils"
-import { getTaskMissedDate, type TodoPeriod } from "./todo-utils"
+import { getTaskMissedDate, type TodoPeriod } from "../todo-utils"
 import { itemTitle } from "@/lib/item-utils"
 
 export function MissedTodoSection({

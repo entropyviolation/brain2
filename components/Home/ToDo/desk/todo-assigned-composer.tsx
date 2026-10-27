@@ -8,7 +8,7 @@ import type { Dispatch, SetStateAction } from "react"
 import { NativeSelect } from "@/components/ui/native-select"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import type { Task, TodoItem } from "@/lib/types"
-import { AddDoneDialog } from "../AddDoneDialog"
+import { AddDoneDialog } from "../ledger/AddDoneDialog"
 import { createScheduledTodoTask, type TodoPeriod } from "../todo-utils"
 
 export function TodoAssignedComposer({

@@ -6,8 +6,8 @@ import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { RitualWalkDialog } from "@/components/Reviews/RitualWalkDialog"
 import { SessionPlanner } from "../SessionPlanner"
-import { TaskCard } from "../TaskCard"
-import { TaskPrereqDialog } from "../TaskPrereqDialog"
+import { TaskCard } from "../task-card/TaskCard"
+import { TaskPrereqDialog } from "../ledger/TaskPrereqDialog"
 import type { PhonePageModel } from "./use-phone-page"
 
 /** A fragment, so `TodoMobile` gains no wrapper node around these dialogs. */

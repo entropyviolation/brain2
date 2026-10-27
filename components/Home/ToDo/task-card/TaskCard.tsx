@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/TaskCard.tsx — The To Do task card (Phase 12, R7 R8 R15)
+ * components/Home/ToDo/task-card/TaskCard.tsx — The To Do task card (Phase 12, R7 R8 R15)
  *
  * Planning this period's work on one task. Item detail edits the whole item,
  * the lid makes one-line changes; the card holds the full step tree with a
@@ -77,11 +77,11 @@ import { CardSection } from "./CardSection"
 import { PriorityStar } from "./PriorityStar"
 import { CircleAlert } from "lucide-react"
 import { paceSamples } from "@/lib/estimate-pace"
-import { CardMinutes, TaskCardStats, TaskCardTimeUnit } from "./TaskCardStats"
-import { useTodoPrefs } from "./todo-prefs"
-import { attentionGiven, attentionGivenLabel } from "./attention-given"
-import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "./todo-utils"
-import type { TodoTimeInfo } from "./TodoBreakdown"
+import { CardMinutes, TaskCardStats, TaskCardTimeUnit } from "../TaskCardStats"
+import { useTodoPrefs } from "../todo-prefs"
+import { attentionGiven, attentionGivenLabel } from "../attention-given"
+import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "../todo-utils"
+import type { TodoTimeInfo } from "../TodoBreakdown"
 import "./task-card.css"
 import { NativeSelect } from "@/components/ui/native-select"
 

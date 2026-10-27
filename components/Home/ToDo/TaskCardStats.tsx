@@ -10,9 +10,9 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
-import { formatStatMinutes, useTaskCardTimeControls, useTaskCardTimeUnit } from "./task-card-unit"
+import { formatStatMinutes, useTaskCardTimeControls, useTaskCardTimeUnit } from "./task-card/task-card-unit"
 
-export { CardMinutes, formatStatMinutes, TaskCardTimeUnit, useTaskCardTimeUnit } from "./task-card-unit"
+export { CardMinutes, formatStatMinutes, TaskCardTimeUnit, useTaskCardTimeUnit } from "./task-card/task-card-unit"
 import { DashReading } from "../dash/dash-primitives"
 import { TreeMath } from "@/components/steps/TreeMath"
 import { splitStats, type TierSplit } from "@/lib/tree-math"
@@ -22,7 +22,7 @@ import { STEP_TIERS, STEP_TIER_LABEL, STEP_TIER_SHORT } from "@/lib/step-tiers"
 import { tierEstimates } from "@/lib/task-card"
 import { useTaskStore } from "@/lib/task-store"
 import type { StepTier, Subtask } from "@/lib/types"
-import { SpentBlocks, type SpentBlocksScope } from "./SpentBlocks"
+import { SpentBlocks, type SpentBlocksScope } from "./task-card/SpentBlocks"
 import type { ActualAccount } from "@/lib/tracked-time"
 
 const TIER_PICKER_LABEL: Record<StepTier, string> = {

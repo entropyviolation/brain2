@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/SpentBlocks.tsx — The minutes counted as spent
+ * components/Home/ToDo/task-card/SpentBlocks.tsx — The minutes counted as spent
  *
  * One row per stretch in `taskActualSegments`, so the rows add up to the
  * total. A block's clocks and step can be edited, and the block can be

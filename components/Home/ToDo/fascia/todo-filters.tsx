@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/todo-filters.tsx — The Show tray and the sort key
+ * components/Home/ToDo/fascia/todo-filters.tsx — The Show tray and the sort key
  *
  * `TodoFilters` is the Show tray under the key field, in two rows: the show
  * chips, then tier, status, formula, and Open list. `TodoSortKeys` (sort and its direction)
@@ -8,13 +8,13 @@
  */
 "use client"
 
-import type { TodoPeriod, TodoSortMode, TodoSortOrder, TodoStatusFilter } from "./todo-utils"
+import type { TodoPeriod, TodoSortMode, TodoSortOrder, TodoStatusFilter } from "../todo-utils"
 import {
   TODO_SORT_OPTIONS,
   TODO_STATUS_FILTERS,
   getTodoSortOptionLabel,
-} from "./todo-utils"
-import { setTodoPrefs, useTodoPrefs, type TodoTierView } from "./todo-prefs"
+} from "../todo-utils"
+import { setTodoPrefs, useTodoPrefs, type TodoTierView } from "../todo-prefs"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const TIER_CHOICES: { value: TodoTierView; short: string; title: string }[] = [

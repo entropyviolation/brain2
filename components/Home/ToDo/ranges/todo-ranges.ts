@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/todo-ranges.ts — Other view: custom "done before" ranges, and the live title
+ * components/Home/ToDo/ranges/todo-ranges.ts — Other view: custom "done before" ranges, and the live title
  *
  * A range is a real List in Lists (folder "To do ranges" under Next Actions),
  * so membership edits either side show on both. The end date lives in To Do
@@ -15,7 +15,7 @@ import { useListsUiStore } from "@/lib/lists-ui-store"
 import { findNextActionsFolder } from "@/lib/scheduled-lists-sync"
 import { formatLocalDateKey, formatLocalMonthKey, getWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
-import { getTodoPrefs, setTodoPrefs, type TodoRange, type TodoTitleView } from "./todo-prefs"
+import { getTodoPrefs, setTodoPrefs, type TodoRange, type TodoTitleView } from "../todo-prefs"
 
 export const TODO_RANGES_FOLDER = "todo-ranges"
 const RANGE_COLOR = "#5b6f8a"

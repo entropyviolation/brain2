@@ -10,8 +10,8 @@ import JustStartMode from "@/components/Focus/JustStartMode"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
 import { RitualWalkDialog } from "@/components/Reviews/RitualWalkDialog"
 import { SessionPlanner } from "../SessionPlanner"
-import { TaskCard } from "../TaskCard"
-import { TaskPrereqDialog } from "../TaskPrereqDialog"
+import { TaskCard } from "../task-card/TaskCard"
+import { TaskPrereqDialog } from "../ledger/TaskPrereqDialog"
 import type { TodoDesk } from "./use-todo-desk"
 
 export function TodoDeskOverlays({ desk }: { desk: TodoDesk }) {

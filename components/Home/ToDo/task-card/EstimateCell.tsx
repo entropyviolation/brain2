@@ -1,5 +1,5 @@
 /**
- * components/Home/ToDo/EstimateCell.tsx — Click a time, type a duration, Enter
+ * components/Home/ToDo/task-card/EstimateCell.tsx — Click a time, type a duration, Enter
  *
  * One tap makes the figure an input. Enter saves and opens the next estimate
  * below it, so a whole branch can be estimated from the keyboard. Esc backs out.
