@@ -339,8 +339,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   A click on the page behind the popup saves and minimizes. Refresh while
   detail is open saves and the next load opens that minimized dock.
   Tabs and chrome follow `resolveDetailView` (item type +
-  list `detailPanels` / `hiddenDetailPanels` + capabilities). Book shows a cover
+  list `detailPanels` / `hiddenDetailPanels` + capabilities). _Last mapped:
+  2026-10-27._ Several assigned types show fascia cards; a click sets
+  `viewAsTypeId` and the panels, capabilities, and layout follow that type.
+  The stored type stays. Book shows a cover
   and featured page fields; non-task types do not inherit Scheduling by default.
+  Computer Project (a subtype of Operation) has its own desk on Details.
   History tab is always on (`lib/item-activity.ts` append-only ledger). Adding a
   dependency that would loop is refused (`wouldCreateCycle` + Win95 confirm).
 - §5.6 Recurrence — 🟡 `Task.repeatSettings` exists in types (count / frequency
@@ -1170,8 +1174,10 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   fills in what they are missing in one click: *Ian's House* 1–5pm becomes *Social*
   too, with the party's guest list ticked off through the companion's variants
   without leaving the dialog. Attachments are one-offs by default and can be
-  promoted to a standing `PenLink` on the pen, which then fires on each future
-  stroke (`paintMinutes` → `applyPenLinks`). Suggestions come from the user's own
+  promoted to a standing `PenLink` on the source pen only, which then fires on each future
+  stroke of that pen (`paintMinutes` → `applyPenLinks`). The reverse is not implied.
+  Screen Time, iPhone Screen Time, iPhone Calls, and iPhone Texts appear in Also happening
+  only when a block already covers the window, and then as a readout. Suggestions come from the user's own
   history of co-painting two pens, not from heuristics. **An attachment only ever
   fills minutes the other scope left blank**, so a rule can never overwrite a
   statement. Deleting a scope, pen or variant prunes the links pointing at it.
@@ -1536,7 +1542,9 @@ that mass of personal data. See "What this is trying to be" in
   Library → **Item Types**, List Settings → **Item types** allowlist + default
   + **New type…**, `components/ItemTypes/`). New list items default to generic
   `item` (or `List.itemTypeId`). Catalog types include **Film** (`lib/film-types.ts`);
-  Film DNA Films lists get `itemTypeId` / `itemTypeIds: ["film"]`. Lists inspector
+  Film DNA Films lists get `itemTypeId` / `itemTypeIds: ["film"]`. Lists →
+  Quick Access → **Item Types** is one virtual list per type (including
+  Operations and Computer Projects), filled from `Task.type`. Lists inspector
   **Filter types** show/hides by exact type id (All Items + multi-type lists;
   `lists-ui-store.hiddenItemTypeIdsByTarget`). Task remains the hardcoded work
   surface. Implied actions (`logAction`, `incrementHabit`) wire attribute deltas

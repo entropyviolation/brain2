@@ -37,7 +37,7 @@ import {
 } from "@/lib/operation-work-session"
 import { stopPenColorSession } from "@/lib/pen-color-session"
 import { useSessionDebriefStore } from "@/lib/session-debrief-store"
-import type { DebriefStep, SessionDebriefDraft, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
+import type { DebriefObjective, DebriefStep, SessionDebriefDraft, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
 
 export type { DebriefObjective, DebriefStep, SessionDebriefDraft, SessionHandoff, SittingEnergy, SittingReview } from "@/lib/session-debrief-store"
 

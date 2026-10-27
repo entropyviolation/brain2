@@ -89,7 +89,8 @@ describe("TaskCard", () => {
     act(() => openTaskCard("t1"))
     const side = document.querySelector("aside.task-card-side") as HTMLElement
     expect(within(side).getByRole("region", { name: "Time" })).toBeTruthy()
-    const minutes = within(side).getByLabelText("Minutes of log log1") as HTMLInputElement
+    fireEvent.click(within(side).getByRole("button", { name: /Show the blocks/ }))
+    const minutes = within(side).getByLabelText("Logged minutes") as HTMLInputElement
     fireEvent.change(minutes, { target: { value: "40" } })
     fireEvent.blur(minutes)
     expect(useTaskStore.getState().tasks[0].timeLogs?.[0].durationMinutes).toBe(40)
@@ -109,8 +110,8 @@ describe("TaskCard", () => {
     render(<TaskCard host={host()} />)
     act(() => openTaskCard("t1"))
     fireEvent.click(document.querySelector('[data-stat="spent"]')!)
-    expect(screen.getByRole("list", { name: "Blocks of time spent" })).toBeTruthy()
-    const end = screen.getByLabelText("End of the block on 2026-10-20") as HTMLInputElement
+    expect(screen.getByRole("list", { name: "Minutes counted as spent" })).toBeTruthy()
+    const end = screen.getByLabelText("End on 2026-10-20") as HTMLInputElement
     expect(end.value).toBe("9:30")
     fireEvent.change(end, { target: { value: "10:00" } })
     fireEvent.keyDown(end, { key: "Enter" })
@@ -403,7 +404,6 @@ describe("TaskCard", () => {
     expect(diary).toBeTruthy()
     expect(diary.textContent).toMatch(/Tue, Oct 20/)
     expect(diary.querySelector(".tcs-spent-clock")).toBeNull()
-    expect(screen.queryByRole("list", { name: "Blocks of time spent" })).toBeNull()
     expect(screen.queryByRole("list", { name: "Minutes counted as spent" })).toBeNull()
   })
 

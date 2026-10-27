@@ -33,6 +33,7 @@ beforeEach(() => {
 
 const task = {
   id: "t1",
+  completed: false,
   penLinks: [{ scopeId: "activity", penId: "cd" }],
   estimatedDuration: 120,
   timeLogs: [
@@ -86,7 +87,7 @@ describe("ItemTimeLedger", () => {
     } as never)
     render(
       <ItemTimeLedger
-        task={{ id: "step-1", description: "Cut the tray", stepOf: { taskId: "t1", stepId: "cut" }, penLinks: task.penLinks }}
+        task={{ id: "step-1", completed: false, stepOf: { taskId: "t1", stepId: "cut" }, penLinks: task.penLinks }}
         onPatch={() => {}}
       />,
     )

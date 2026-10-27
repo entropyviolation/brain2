@@ -21,7 +21,15 @@ describe("reorderStrings", () => {
 
 describe("withTextListId", () => {
   it("joins an attribute to a list id without renaming either side", () => {
-    const task = { id: "t", description: "Idea", textListIds: { other: "list-a" } } as Task
+    const task = {
+      id: "t",
+      description: "Idea",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
+      textListIds: { other: "list-a" },
+    } as Task
     const next = withTextListId(task, "todo", "list-b")
     expect(next.textListIds).toEqual({ other: "list-a", todo: "list-b" })
     expect(task.textListIds).toEqual({ other: "list-a" })
@@ -45,6 +53,10 @@ describe("asListReference", () => {
     const task = {
       id: "t",
       description: "Shoot",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
       attributes: { todo: ["write script"] },
       itemAttributeDefinitions: [{ id: "todo", name: "To do", type: "multistring" }],
       textListIds: { todo: "old", other: "keep" },
@@ -60,6 +72,10 @@ describe("asListReference", () => {
     const task = {
       id: "t",
       description: "Shoot",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
       attributes: { todo: ["write script"] },
     } as Task
     const next = asListReference(task, "todo", "list-b")
