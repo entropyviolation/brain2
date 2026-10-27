@@ -5,10 +5,13 @@
  * A bleed or ovulation mark stays marked. A guess is labeled estimated
  * and is not painted as a logged phase. Means and medians use marked days.
  * Unknown stays visible. Spotting is not a phase. Not a diagnosis.
+ *
+ * Added (docs/analytics/time-cycle-phase.md): cycle wheel and lengths, a
+ * phase lens dot plot for one chosen series, metric search, folded estimates.
  */
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useTaskStore } from "@/lib/task-store"
 import { usePointsStore } from "@/lib/points-store"
 import { useHabitsStore } from "@/lib/habits-store"
@@ -32,7 +35,7 @@ import {
 import { ChartFrame } from "./chart-frame"
 import { useAnalyticsRange } from "./analytics-range-store"
 import { dateKeyOf } from "./analytics-range"
-import { CanvasTitle, StudioBars, StudioReadout } from "./studio-kit"
+import { CanvasTitle, StudioBars, StudioReadout, StudioSelect } from "./studio-kit"
 import {
   cyclePhaseEmptySentence,
   cyclePhaseReport,
@@ -40,10 +43,117 @@ import {
   formatPhaseNumber,
   zeroFill,
   PHASE_LABEL,
+  PHASE_ORDER,
+  type DatedPhase,
   type CyclePhaseMetricFormat,
   type CyclePhaseMetricInput,
   type PhaseComparison,
 } from "./cycle-phase-stats"
+import { cycleLengths, splitCycles, type CycleRun } from "./cycle-wheel"
+import type { CyclePhase } from "@/lib/cycle-phase"
+import "./time-rhythms.css"
+
+const PHASE_FILL: Record<CyclePhase, string> = {
+  menstrual: "#b42318",
+  follicular: "#2f7d6d",
+  ovulatory: "#c98a0b",
+  luteal: "#6b4fa0",
+  unknown: "#c7ccd3",
+}
+
+const WHEEL_RINGS = 8
+
+/**
+ * One ring per cycle, oldest inside, one wedge per cycle day from the top,
+ * clockwise. Estimated days are hatched. The leading days before the first
+ * bleed in the window are left out.
+ */
+function CycleWheel({ runs }: { runs: readonly CycleRun[] }) {
+  const shown = runs.filter((r) => r.hasOnset).slice(-WHEEL_RINGS)
+  const slots = Math.max(28, ...shown.map((r) => r.days.length))
+  const C = 160
+  const R0 = 30
+  const RW = Math.min(30, 110 / Math.max(1, shown.length))
+  const step = (2 * Math.PI) / slots
+  const p = (r: number, a: number) => `${(C + r * Math.cos(a)).toFixed(2)} ${(C + r * Math.sin(a)).toFixed(2)}`
+  return (
+    <div className="an-tr-wheel">
+    <svg className="an-tr-svg" viewBox="0 0 320 320" role="img" aria-label="Cycle wheel">
+      <defs>
+        <pattern id="an-tr-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="4" stroke="#ffffff" strokeWidth="1.6" />
+        </pattern>
+      </defs>
+      {shown.map((run, ring) =>
+        run.days.slice(0, slots).map((day, i) => {
+          const a0 = i * step - Math.PI / 2
+          const a1 = a0 + step
+          const r0 = R0 + ring * RW
+          const r1 = r0 + RW - 1
+          const d = `M ${p(r0, a0)} L ${p(r1, a0)} A ${r1} ${r1} 0 0 1 ${p(r1, a1)} L ${p(r0, a1)} A ${r0} ${r0} 0 0 0 ${p(r0, a0)} Z`
+          return (
+            <g key={day.date}>
+              <path d={d} fill={PHASE_FILL[day.phase]} stroke="var(--at-paper-hi)" strokeWidth={0.6}>
+                <title>{`${day.date} · day ${i + 1} · ${PHASE_LABEL[day.phase]}${day.basis === "estimated" ? " (estimated)" : ""}`}</title>
+              </path>
+              {day.basis === "estimated" ? <path d={d} fill="url(#an-tr-hatch)" pointerEvents="none" /> : null}
+            </g>
+          )
+        }),
+      )}
+      {[1, 7, 14, 21, 28].filter((n) => n <= slots).map((n) => {
+        const a = (n - 0.5) * step - Math.PI / 2
+        const r = R0 + shown.length * RW + 10
+        return (
+          <text key={n} x={C + r * Math.cos(a)} y={C + r * Math.sin(a) + 3} textAnchor="middle">
+            {n}
+          </text>
+        )
+      })}
+    </svg>
+    </div>
+  )
+}
+
+/** Each marked day's value as a dot in its phase row, with the phase mean as a tick. */
+function PhaseLens({ dated, values, format }: { dated: readonly DatedPhase[]; values: Readonly<Record<string, number | null | undefined>>; format: CyclePhaseMetricFormat }) {
+  const W = 600
+  const ROW = 26
+  const PAD_L = 84
+  const phases = PHASE_ORDER
+  const points = dated
+    .filter((d) => d.basis === "marked")
+    .map((d) => ({ phase: d.phase, date: d.date, v: values[d.date] }))
+    .filter((d): d is { phase: CyclePhase; date: string; v: number } => typeof d.v === "number" && Number.isFinite(d.v))
+  if (points.length === 0) return <p className="an-canvas-hint">No marked day has this reading yet.</p>
+  const lo = Math.min(...points.map((d) => d.v))
+  const hi = Math.max(...points.map((d) => d.v))
+  const x = (v: number) => PAD_L + (hi === lo ? 0.5 : (v - lo) / (hi - lo)) * (W - PAD_L - 12)
+  const H = phases.length * ROW + 18
+  return (
+    <svg className="an-tr-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Phase lens">
+      {phases.map((phase, row) => {
+        const mine = points.filter((d) => d.phase === phase)
+        const y = row * ROW + ROW / 2
+        const mean = mine.length ? mine.reduce((s, d) => s + d.v, 0) / mine.length : null
+        return (
+          <g key={phase}>
+            <text x={0} y={y + 3}>{`${PHASE_LABEL[phase]} · ${mine.length}`}</text>
+            <line x1={PAD_L} x2={W - 12} y1={y} y2={y} stroke="var(--at-rule-soft)" strokeWidth={0.5} />
+            {mine.map((d, i) => (
+              <circle key={d.date} cx={x(d.v)} cy={y + ((i % 5) - 2) * 2} r={3.2} fill={PHASE_FILL[phase]} opacity={0.75}>
+                <title>{`${d.date} · ${formatCell(format, d.v)}`}</title>
+              </circle>
+            ))}
+            {mean !== null ? <line x1={x(mean)} x2={x(mean)} y1={y - 9} y2={y + 9} stroke="var(--at-ink)" strokeWidth={2} /> : null}
+          </g>
+        )
+      })}
+      <text x={PAD_L} y={H - 2}>{formatCell(format, lo)}</text>
+      <text x={W - 12} y={H - 2} textAnchor="end">{formatCell(format, hi)}</text>
+    </svg>
+  )
+}
 
 function weekdayIndex(key: string): number {
   const d = parseLocalDate(key)
@@ -341,6 +451,13 @@ export function CyclePhaseView() {
     weeklyData,
   ])
 
+  const runs = useMemo(() => splitCycles(report.dated), [report.dated])
+  const lengths = useMemo(() => cycleLengths(runs), [runs])
+  const [lensId, setLensId] = useState("")
+  const [metricQuery, setMetricQuery] = useState("")
+  const lens = report.metrics.find((m) => m.id === lensId) ?? report.metrics[0]
+  const q = metricQuery.trim().toLowerCase()
+  const shownMetrics = report.metrics.filter((m) => !q || m.title.toLowerCase().includes(q))
   const unknown = report.counts.find((row) => row.phase === "unknown")?.days ?? 0
   const markedBars = report.counts.map((row) => ({ name: PHASE_LABEL[row.phase], value: row.marked }))
   const estimatedBars = report.counts
@@ -420,10 +537,79 @@ export function CyclePhaseView() {
             {report.mixNote ? <p className="an-caveat">{report.mixNote}</p> : null}
           </section>
 
+          <section className="an-plate" data-testid="cycle-phase-wheel">
+            <p className="an-canvas-title">Cycle wheel</p>
+            <p className="an-canvas-kicker">
+              One ring per cycle, up to the latest {WHEEL_RINGS}, oldest shown inside. Day 1 is the first marked bleed day, at the top,
+              running clockwise. Hatched days are estimated, not logged.
+            </p>
+            <div className="an-readouts">
+              <StudioReadout label="Cycles started" value={runs.filter((r) => r.hasOnset).length} note="marked bleed onsets in window" />
+              <StudioReadout
+                label="Median length"
+                value={lengths ? `${lengths.median} d` : "—"}
+                note={lengths ? `${lengths.n} complete cycle${lengths.n === 1 ? "" : "s"}` : "needs two onsets in the window"}
+              />
+              <StudioReadout
+                label="Length range"
+                value={lengths ? `${lengths.min}–${lengths.max} d` : "—"}
+                note="shortest to longest complete cycle"
+              />
+            </div>
+            {runs.some((r) => r.hasOnset) ? (
+              <CycleWheel runs={runs} />
+            ) : (
+              <p className="an-canvas-hint">No marked bleed starts inside this window. Widen the range to see a ring.</p>
+            )}
+            <div className="an-tr-legend">
+              {PHASE_ORDER.map((phase) => (
+                <span key={phase}>
+                  <i style={{ background: PHASE_FILL[phase] }} />
+                  {PHASE_LABEL[phase]}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          {lens ? (
+            <section className="an-plate" data-testid="cycle-phase-lens">
+              <p className="an-canvas-title">Phase lens</p>
+              <p className="an-canvas-kicker">
+                Pick one series. Each dot is one marked day. The black tick is that phase&apos;s mean. Estimated days are
+                left out.
+              </p>
+              <div className="an-tr-controls">
+                <StudioSelect label="Series" value={lens.id} onChange={setLensId}>
+                  {report.metrics.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </StudioSelect>
+              </div>
+              <PhaseLens dated={report.dated} values={lens.values} format={lens.format} />
+              {lens.thinNote ? <p className="an-caveat">{lens.thinNote}</p> : null}
+            </section>
+          ) : null}
+
+          {report.metrics.length > 3 ? (
+            <div className="an-tr-controls">
+              <input
+                className="an-tr-search"
+                type="search"
+                placeholder="Filter series"
+                aria-label="Filter series"
+                value={metricQuery}
+                onChange={(e) => setMetricQuery(e.target.value)}
+              />
+              <span>{`${shownMetrics.length} of ${report.metrics.length} series`}</span>
+            </div>
+          ) : null}
+
           {report.metrics.length === 0 ? (
             <p className="an-canvas-hint">No dated readings in the {label} to set beside these phases.</p>
           ) : (
-            report.metrics.map((metric) => (
+            shownMetrics.map((metric) => (
               <section key={metric.id} className="an-plate" data-testid={`cycle-phase-${metric.id}`}>
                 <p className="an-canvas-title">{metric.title}</p>
                 <p className="an-canvas-kicker">{metric.note}</p>
@@ -431,8 +617,8 @@ export function CyclePhaseView() {
                 <PhaseTable title={metric.title} format={metric.format} rows={metric.rows} basis="marked" />
                 {metric.thinNote ? <p className="an-caveat">{metric.thinNote}</p> : null}
                 {metric.estimatedRows ? (
-                  <>
-                    <p className="an-canvas-kicker">Estimated days. A guess, not a logged phase.</p>
+                  <details className="an-tr-fold">
+                    <summary>Estimated days. A guess, not a logged phase.</summary>
                     <PhaseTable
                       title={metric.title}
                       format={metric.format}
@@ -440,7 +626,7 @@ export function CyclePhaseView() {
                       basis="estimated"
                     />
                     {metric.estimatedNote ? <p className="an-caveat">{metric.estimatedNote}</p> : null}
-                  </>
+                  </details>
                 ) : null}
               </section>
             ))
