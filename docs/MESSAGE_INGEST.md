@@ -582,7 +582,7 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/apply-media.ts` / `apply-receipt.ts` / `apply-scan-doc.ts` / `ocr.ts` / `scan-page.ts` / `jpeg-pdf.ts` | Local OCR, deskew, JPEG→PDF, Docs parking, receipt checkout |
 | `hooks/useMessageIngest.ts` | Renderer drain (Electron IPC or `/api/ingest`); album buffer; yields to phone hub; vault push |
 | `lib/ingest/pairing.ts` | Codes + `unpairedSenders` (one-click pairing of a logged refusal) |
-| `components/Settings/MessageIngestPanel.tsx` | Token, pairing (code **or** Texted but not paired), hub URL, shortcuts, iPhone Notes / Screen Time / Call / Text / Location Shortcut AirDrop steps, cheat-sheet, simulate message + scan |
+| `components/Settings/imports/MessageIngestPanel.tsx` | Token, pairing (code **or** Texted but not paired), hub URL, shortcuts, iPhone Notes / Screen Time / Call / Text / Location Shortcut AirDrop steps, cheat-sheet, simulate message + scan |
 | `components/iphone-notes-store.tsx` | **Phone Notes** queue over the Parked list (Settings and Lists settings) |
 | `components/ingest-log-dialog.tsx` | **Ingest** log (Settings and Lists settings). GPS tracking points hidden unless **Show GPS**. |
 | `docs/shortcuts/dump-iphone-notes-to-brain2.md` | Recipe. `npm run shortcut:iphone-notes` writes the signed shortcut. The `.shortcut` is not in the repo. `Dump iPhone Notes to Brain2.wflow.json` will not import. |

@@ -4,7 +4,7 @@ New studio group. It reads sentences the vault already stores. It does not write
 
 Source of the contract: `docs/analytics-vision/06-language.md`. This brief says how to build that intention. It does not rewrite the inventory.
 
-**Later owner:** one language agent. New files only, plus a lazy entry in `components/Analytics/analytics-views.tsx` once the shell agent has added the view ids below. Do not edit `ReviewsView` or `RegretView` math. A link to those rooms is allowed. Do not edit `analytics-tabs.ts` from this wave; the shell agent owns ids.
+**Later owner:** one language agent. New files only, plus a lazy entry in `components/Analytics/chrome/analytics-views.tsx` once the shell agent has added the view ids below. Do not edit `ReviewsView` or `RegretView` math. A link to those rooms is allowed. Do not edit `analytics-tabs.ts` from this wave; the shell agent owns ids.
 
 ## What already stands, and stays
 

@@ -34,9 +34,9 @@ What the file does today, and where that job goes. Logic stays logic. JSX leaves
 | Clocks, age marks, sticky day plates | `asDate`, `inboxClock`, `inboxAgeMark`, `inboxDayGroups` (~130–182) | `components/inbox/time.ts` |
 | Caret after a row leaves the pile | `inboxCaretAfterRemoval` (~640–658) | `components/inbox/caret.ts` |
 | Smart-parse chips on the walk sheet and on each row | `CaptureChips` (~188–221) | `components/inbox/capture-chips.tsx` |
-| Stored door under the walk subtitle | `WalkOrigin` (~224–234) | `components/inbox/walk-origin.tsx` |
-| Assigned lists plated by folder, × remove, double-click preview | `AssignedListPlates` (~236–287) | `components/inbox/assigned-list-plates.tsx` |
-| Clarify / walk sheet (`data-ui-name="Clarify idea"`) | `TaskClarificationDialog` (~289–633) | `components/inbox/clarify-dialog.tsx` |
+| Stored door under the walk subtitle | `WalkOrigin` (~224–234) | `components/inbox/clarify/walk-origin.tsx` |
+| Assigned lists plated by folder, × remove, double-click preview | `AssignedListPlates` (~236–287) | `components/inbox/clarify/assigned-list-plates.tsx` |
+| Clarify / walk sheet (`data-ui-name="Clarify idea"`) | `TaskClarificationDialog` (~289–633) | `components/inbox/clarify/clarify-dialog.tsx` |
 | Header trigger when the pin bar does not own `open` | trigger button (~1239–1263) | `components/inbox/trigger.tsx` |
 | Title, partition keycaps, chord legend | mast, tabs, chord line (~1265–1317) | `components/inbox/chrome.tsx` |
 | Undo sentences | banner (~1319–1344) | `components/inbox/undo-banner.tsx` |
@@ -45,8 +45,8 @@ What the file does today, and where that job goes. Logic stays logic. JSX leaves
 | Apply list, deadline, Select N, delete confirm | four dialogs (~1598–1721) | one file each, below |
 | Bulk edit host (`EnhancedBulkAdd` `afterAdd`) | (~1729–1779) | `components/inbox/bulk-edit-host.tsx` |
 | Merge confirm + merge plan wiring | (~1723–1787) | stays in `inbox-view.tsx` (already two imported dialogs; ~20 lines of props) |
-| Scroll pin | refs, restore, release, layout effect, caret `scrollIntoView` (~691–711, ~1121–1133), and the pin reads inside the selection effect and Transfer to log | `components/inbox/use-inbox-rows-scroll.ts` |
-| Chord `keydown` listener | (~1135–1221) | `components/inbox/use-inbox-chords.ts` |
+| Scroll pin | refs, restore, release, layout effect, caret `scrollIntoView` (~691–711, ~1121–1133), and the pin reads inside the selection effect and Transfer to log | `components/inbox/hooks/use-inbox-rows-scroll.ts` |
+| Chord `keydown` listener | (~1135–1221) | `components/inbox/hooks/use-inbox-chords.ts` |
 | Links tab | `InboxLinks` from `components/inbox-links.tsx` | unchanged file |
 
 `Inbox` keeps the handler cluster (session reset, credit, walk, batch, transfer, partition, select, slice) inside `inbox-view.tsx`. Those functions close over the same state and call each other. A second hook around them would be a new abstraction, not a move.
@@ -91,21 +91,21 @@ Line numbers are the current `components/inbox.tsx`. Copy the bodies. Keep names
 | `components/inbox/time.ts` | `asDate`, `inboxClock`, `inboxAgeMark`, `inboxDayGroups`, and the plate result type |
 | `components/inbox/caret.ts` | `inboxCaretAfterRemoval` |
 | `components/inbox/capture-chips.tsx` | `CaptureChips` |
-| `components/inbox/walk-origin.tsx` | `WalkOrigin` |
-| `components/inbox/assigned-list-plates.tsx` | `AssignedListPlates` |
-| `components/inbox/clarify-dialog.tsx` | `TaskClarificationDialog`, including the `boundTaskId` reset during render, the Cmd/Ctrl+Enter effect, and `HabitListPopup` |
+| `components/inbox/clarify/walk-origin.tsx` | `WalkOrigin` |
+| `components/inbox/clarify/assigned-list-plates.tsx` | `AssignedListPlates` |
+| `components/inbox/clarify/clarify-dialog.tsx` | `TaskClarificationDialog`, including the `boundTaskId` reset during render, the Cmd/Ctrl+Enter effect, and `HabitListPopup` |
 | `components/inbox/trigger.tsx` | The `DialogTrigger` button, including `data-inbox-entry=""` and the three title strings |
 | `components/inbox/chrome.tsx` | `DialogHeader` mast, the three `role="tab"` keys, the chord `<p className="inbox-chord-manual">` |
 | `components/inbox/undo-banner.tsx` | The `inbox-undo` block and its label sentences |
 | `components/inbox/rows.tsx` | `.inbox-list-well`, `.inbox-search`, `.inbox-rows-scroll`, empty states, day plates, rows |
 | `components/inbox/foot.tsx` | `.inbox-foot` / `.inbox-foot-empty` and every foot key |
-| `components/inbox/apply-list-dialog.tsx` | Apply list dialog |
-| `components/inbox/deadline-dialog.tsx` | Set deadline dialog |
-| `components/inbox/select-n-dialog.tsx` | Select N dialog |
-| `components/inbox/delete-confirm-dialog.tsx` | Are you sure? dialog |
+| `components/inbox/dialogs/apply-list-dialog.tsx` | Apply list dialog |
+| `components/inbox/dialogs/deadline-dialog.tsx` | Set deadline dialog |
+| `components/inbox/dialogs/select-n-dialog.tsx` | Select N dialog |
+| `components/inbox/dialogs/delete-confirm-dialog.tsx` | Are you sure? dialog |
 | `components/inbox/bulk-edit-host.tsx` | `EnhancedBulkAdd` element and the `afterAdd` body |
-| `components/inbox/use-inbox-rows-scroll.ts` | Scroll refs and the two scroll effects, plus `restorePinnedRowsScroll` / `releaseRowsScrollPin` |
-| `components/inbox/use-inbox-chords.ts` | The window `keydown` effect |
+| `components/inbox/hooks/use-inbox-rows-scroll.ts` | Scroll refs and the two scroll effects, plus `restorePinnedRowsScroll` / `releaseRowsScrollPin` |
+| `components/inbox/hooks/use-inbox-chords.ts` | The window `keydown` effect |
 | `components/inbox/inbox-view.tsx` | `Inbox`, `InboxProps`, remaining state, memos, handlers, and the composition |
 | `components/inbox/README.md` | Map of the folder. Behavior stays in `components/README.md`. See Doc updates. |
 
@@ -122,7 +122,7 @@ Leave these files alone:
 - `components/inbox.test.tsx` (import stays `./inbox`)
 - `components/Modules/**`
 - `lib/inbox-*`
-- `components/ItemDetail/InboxClarifyKey.tsx` (a different control)
+- `components/ItemDetail/chrome/InboxClarifyKey.tsx` (a different control)
 
 ## Extraction order
 
@@ -213,7 +213,7 @@ Do these in the same step as the barrel, not as a later batch.
 - `components/README.md` — the `inbox.tsx` / `inbox.css` row keeps its behavior paragraph. Add that the dialog is assembled from `components/inbox/` and that the import path is still `components/inbox.tsx`. The `inbox-links.tsx` row stays.
 - `components/Lists/README.md` — the sentence that Inbox imports the merge dialogs. Point it at `components/inbox/inbox-view.tsx` if that is where the imports land.
 - `docs/tree.md` and `docs/tree.txt` — doc sync only (`.cursor/rules/doc-sync.mdc`). The room map does not list `inbox.tsx`. The new files belong in `components/inbox/README.md` and the `components/README.md` row.
-- `docs/SPEC_MAPPING.md` §4.4 — keep the status. Say the public component is `components/inbox.tsx` and the clarify sheet is `components/inbox/clarify-dialog.tsx`.
+- `docs/SPEC_MAPPING.md` §4.4 — keep the status. Say the public component is `components/inbox.tsx` and the clarify sheet is `components/inbox/clarify/clarify-dialog.tsx`.
 - `docs/README.md` — one index row for `modular-splits/` (this plan). The folder is not indexed today.
 - `scripts/screenshot-manifest.mjs` — add the part files that paint `20-dialog-inbox.png` to that shot’s `sources`, and add the same paths under `SOURCE FILES` in `docs/screenshots/20-dialog-inbox.txt`. Leave the PNG and the view-specific paragraph. UI and copy did not change.
 - `docs/screenshots/README.md` — the Inbox row can keep `components/inbox.tsx` as the entry.

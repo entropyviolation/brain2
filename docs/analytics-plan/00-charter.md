@@ -25,7 +25,7 @@ These laws bind every later brief and every later edit of Data.
 
 ### Keep every existing view id
 
-`components/Analytics/analytics-tabs.ts` is the list of ids. Tests, the persisted last-view, and screenshot capture click those ids. A rebuild may change labels, group membership, plate order, and which room paints first. It may not rename, drop, or alias away an id.
+`components/Analytics/chrome/analytics-tabs.ts` is the list of ids. Tests, the persisted last-view, and screenshot capture click those ids. A rebuild may change labels, group membership, plate order, and which room paints first. It may not rename, drop, or alias away an id.
 
 Groups that exist today: `behavior`, `time`, `accuracy`, `meta`, `library`.
 

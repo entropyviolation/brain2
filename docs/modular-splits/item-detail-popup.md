@@ -64,7 +64,7 @@ path: `components/Home/use-item-detail-popup.ts`, `components/friend-mission-she
 `components/friend-details/FriendMissionDetail.tsx`.
 
 `vi.mock("@/components/ItemDetail/ItemDetailPopup")` expects a named
-`TaskDetailPopup` in: `app/page.test.tsx`, `components/Operations/OperationHome.test.tsx`,
+`TaskDetailPopup` in: `app/page.test.tsx`, `components/Operations/panels/OperationHome.test.tsx`,
 `components/Operations/OperationWorkspace.test.tsx`,
 `components/Scheduler/enhanced-scheduler.test.tsx`,
 `components/Home/ToDo/todo-panel.test.tsx`,
@@ -516,8 +516,8 @@ import. Do not edit them to match a new structure.
   and `pointsOverride`.
 - `components/ItemDetail/ItemDetailPage.test.tsx` — the page was not part
   of the split. It should be untouched and still pass.
-- `components/ItemDetail/useItemDetailDraft.test.tsx` — draft hook stays.
-- `components/Operations/OperationHome.test.tsx` and
+- `components/ItemDetail/draft/useItemDetailDraft.test.tsx` — draft hook stays.
+- `components/Operations/panels/OperationHome.test.tsx` and
   `components/Operations/OperationWorkspace.test.tsx` — mocks of the public
   module still resolve.
 

@@ -292,7 +292,7 @@ No product code was changed to obtain these results.
 | Command | Result |
 | --- | --- |
 | `npx vitest run lib/ingest` | 28 files, 218 tests, all passed (about 5.3s) |
-| `npx vitest run components/Settings/MessageIngestPanel.test.tsx components/ingest-log-dialog.test.tsx lib/rituals.test.ts` | 3 files, 12 tests, all passed |
+| `npx vitest run components/Settings/imports/MessageIngestPanel.test.tsx components/ingest-log-dialog.test.tsx lib/rituals.test.ts` | 3 files, 12 tests, all passed |
 
 ## Sources
 

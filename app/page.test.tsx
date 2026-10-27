@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
 import { APP_NAV_KEYS, applyListsNavigation, writeStoredTab } from "@/lib/app-navigation"
-import { writeItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { writeItemDetailDock } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 import { useTaskStore } from "@/lib/task-store"
 
 const listsMounts = vi.fn()

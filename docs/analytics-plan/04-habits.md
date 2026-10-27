@@ -1,6 +1,6 @@
 # Habits plates — build brief
 
-One later owner: a habits-plates agent. Touch only `components/Analytics/HabitsView.tsx`, `StreaksWidget.tsx`, `PointsView.tsx`, and new habit plate files beside them. Leave Tracking and Plan alone. Do not rewrite `docs/analytics-vision/02-habits.md`.
+One later owner: a habits-plates agent. Touch only `components/Analytics/behavior/HabitsView.tsx`, `StreaksWidget.tsx`, `PointsView.tsx`, and new habit plate files beside them. Leave Tracking and Plan alone. Do not rewrite `docs/analytics-vision/02-habits.md`.
 
 Home-matching grade math stays the source of the numbers. Data draws those numbers; it does not invent a second grade. Reader A is the grade (`calculateDayPercentageAV` and the week, output, and period grades). Reader B is met (`isHabitGoalMet`). Label which reader a plate used. Round to a whole percent only for a lift or a points-still-needed gap.
 

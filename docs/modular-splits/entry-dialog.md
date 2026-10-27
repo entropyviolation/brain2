@@ -39,7 +39,7 @@ Keep this import working, unchanged, for every current caller:
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 ```
 
-Call sites (do not edit them): `time-grid.tsx`, `week-grid.tsx`, `infinite-strip.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `actual-day-view.tsx`, `phone-day-timeline.tsx`, `pen-recent-blocks.tsx`, `components/Analytics/TrackingAnalytics.tsx`, `components/header-tracking/update-state.tsx`, `components/Operations/OperationLogFeed.tsx`, `components/Home/ToDo/SpentBlocks.tsx`. Tests: `entry-dialog.test.tsx`, `companion-section.test.tsx`.
+Call sites (do not edit them): `time-grid.tsx`, `week-grid.tsx`, `infinite-strip.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `actual-day-view.tsx`, `phone-day-timeline.tsx`, `pen-recent-blocks.tsx`, `components/Analytics/time/TrackingAnalytics.tsx`, `components/header-tracking/current-moment/update-state.tsx`, `components/Operations/panels/OperationLogFeed.tsx`, `components/Home/ToDo/task-card/SpentBlocks.tsx`. Tests: `entry-dialog.test.tsx`, `companion-section.test.tsx`.
 
 Rules:
 
@@ -190,7 +190,7 @@ State behavior:
 No new tests. The existing dialog tests are the contract. Run them after step 4 and again after step 6.
 
 - `components/Home/Tracking/entry-dialog.test.tsx` — both describes. Covers the door label, retimes, span lock, midnight end, pen search, Company group, cross-view detail, variants, secondary pens, notes, split in half and at a minute, sleep labels, Date key, delete confirm, live objectives, mood stretch, centered popup, entry swap remount, dirty and clean dismiss, **show in timegrid** clean and dirty, block tags vs pen tags, assumed.
-- `components/Home/Tracking/companion-section.test.tsx` — imports `EntryDialog`.
+- `components/Home/Tracking/block-editor/companion-section.test.tsx` — imports `EntryDialog`.
 - `components/UiNames/ui-names-stamps.test.ts` — after the stamp path change, the new file must contain both attribute strings.
 - Do not run or edit the unrelated dirty-session tests unless a failure is clearly caused by this split.
 

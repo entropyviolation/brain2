@@ -213,7 +213,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   grocery and bumps Inventory/Pantry (asks when a name is new). Local Tesseract
   — no hosted vision API. See [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md). Other
   messengers and Atlas-backed ingest are 🕓 later.
-- §4.4 Clarification — 🟡 Public component `components/inbox.tsx`. The clarify sheet is `components/inbox/clarify-dialog.tsx`.
+- §4.4 Clarification — 🟡 Public component `components/inbox.tsx`. The clarify sheet is `components/inbox/clarify/clarify-dialog.tsx`.
   Open ideas are listed **newest first** (`sortInboxNewestFirst`).
   Keyboard **Walk** starts at the caret when nothing is checked, and **Walk selected**
   steps the checks (Select all / **Select N** / **Select unsorted** / Deselect).
@@ -271,7 +271,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Still task-only (no type switching among task/note/event/log).
 - §4.5 Inbox vs. review queue — ✅ Inbox exists, the Review header surfaces pending
   period reviews, and a separate **Needs Attention** queue ships on Home
-  (`components/Home/NeedsAttention.tsx` over the pure selector in
+  (`components/Home/needs-attention/NeedsAttention.tsx` over the pure selector in
   `lib/needs-attention.ts`): overdue / blocked / unclarified / stale plus
   neglected (goals / operations / list items) and zombie (pushed or
   long-resident), grouped by reason. Title click opens the detail popup; kill /
@@ -394,7 +394,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `activities`→`locations` and `itinerary`→`timeline`. Live work sessions
   (`lib/operation-work-session.ts`) stamp To Do Done, `timeLogs`, and the
   Tracking minute grid from one clock. The Log tab
-  (`components/Operations/OperationLogFeed.tsx`) lists those punches oldest
+  (`components/Operations/panels/OperationLogFeed.tsx`) lists those punches oldest
   first and always includes a **created** row from the operation's `createdAt`,
   including when no time has been logged. Pen colors on the log are `Task.penLinks`.
   Double-clicking a punch opens the matching Tracking block (`EntryDialog`) when
@@ -717,7 +717,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   date string). **Gap:** not a DB record; habits are `WeeklyTask`, not a unified
   `Habit` item.
 - §9.5 Streaks — ✅ `lib/streaks.ts` + Data **Streaks** tab
-  (`components/Analytics/StreaksWidget.tsx`); climb days use the derived target.
+  (`components/Analytics/behavior/StreaksWidget.tsx`); climb days use the derived target.
 - **Habit time estimates** — ✅ `WeeklyTask.timeEstimate` (Add/Edit Habit →
   *Time estimate*): minutes per unit of the goal (10 min per page) or a flat length
   per completion, with an `estimated` / `definite` precision flag. `lib/habit-time-estimate.ts`
@@ -954,7 +954,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   rewritten into the huge timegrid blob per keystroke. Plain text: this profile
   wins. An envelope on either side keeps every paragraph. A failed write is
   reported in the well.
-- **Day / week spans** — ✅ `components/Home/Tracking/week-grid.tsx` behind a
+- **Day / week spans** — ✅ `components/Home/Tracking/grids/week-grid.tsx` behind a
   two-button switch on the grid, with the pen palette
   (`components/Home/Tracking/pen-palette.tsx`) shared between them so a selection
   survives the change. Optional **Infinite scroll** toggle next to Day/Week
@@ -1003,7 +1003,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   in day mode is one continuous slab (title once, still clickable in every hour).
   Amber blocks are task `timeLogs`. Paint strip follows the selected day. Date
   keys are local calendar days. Agenda cards sit to the right of the time labels.
-- **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
+- **Tracking log** — ✅ `components/Home/Tracking/tracking-log/tracking-log-view.tsx` on the
   Home Tracking fascia (persisted with the other view keys). Local **Day \| Week**
   (default Day; not persisted; `lockDate` forces Day). **Day** is the selected
   local day’s shelves. **Week** (`tracking-log-week.tsx`) is a seven-column board
@@ -1127,7 +1127,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   that *any* of its pens feeds, through the existing
   `tracked-time` → `habit-tracking` → `habit-tracking-sync` pipeline. No
   migration is needed: an older block simply has no `secondaryPenIds`, which
-  means "primary only". UI: `components/Home/Tracking/secondary-pens-field.tsx`
+  means "primary only". UI: `components/Home/Tracking/block-editor/secondary-pens-field.tsx`
   behind **add pen color** in the block editor (`block-pen-section.tsx` shows
   only pens already on the block until then).
 - **Counts as — explained, searchable, and drawn** — ✅ pen nesting. `parentId`
@@ -1137,7 +1137,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
      pen; the grid and Data may roll it up to the parent — instead of
      implying that "Ocean Beach counts as San Diego" relabels the time.
   2. The native `<select>` is replaced by
-     `components/Home/Tracking/pen-parent-picker.tsx`: a sunken Win95 field that
+     `components/Home/Tracking/pen-settings/pen-parent-picker.tsx`: a sunken Win95 field that
      filters as you type and offers **Create new pen…**, so a pen can be nested
      under a parent that does not exist yet.
   3. `components/Home/Tracking/pen-chain-visual.tsx` draws the chain in the
@@ -1158,7 +1158,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   block and the Done row follows; a title the user edited by hand is left
   alone. `lib/pen-action-format.ts` (pure) + `lib/pen-action-sync.ts` (store →
   `taskRepository` bridge, deterministic `pen-action-<id>` ids) +
-  `components/Home/Tracking/pen-action-format-editor.tsx`. Separate from habit
+  `components/Home/Tracking/pen-settings/pen-action-format-editor.tsx`. Separate from habit
   tag links: this names an action, tags feed a goal.
   Reference: [`docs/PEN_ACTION_FORMATS.md`](./PEN_ACTION_FORMATS.md).
 - **Parallel counts-as** — ✅ `parentIds` on the pen, multiselect in
@@ -1172,7 +1172,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   period bar (`tracking-find.tsx`) search display name, notes, project, pen,
   secondary pens, counts-as names, and action-format templates, then jump to
   the block. Data → Time → Tracking uses the same matcher
-  (`components/Analytics/block-search.ts`).
+  (`components/Analytics/time/block-search.ts`).
 - **Tags belong to time, not to pens** — ✅ `effectiveTagIds` (`lib/tracked-time.ts`)
   makes a block's tags the union of **every assigned pen's** standing tags (primary
   plus secondaries) and any pinned to that
@@ -1183,7 +1183,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   which scopes, fed it. A block tag can be promoted to the pen ("always tag X as
   Y") from the same dialog.
 - **Scopes attachable to each other** — ✅ `lib/entry-links.ts` + the **Also
-  happening** section of the block editor (`components/Home/Tracking/companion-section.tsx`).
+  happening** section of the block editor (`components/Home/Tracking/block-editor/companion-section.tsx`).
   Clicking a block shows what every other scope says about those exact minutes and
   fills in what they are missing in one click: *Ian's House* 1–5pm becomes *Social*
   too, with the party's guest list ticked off through the companion's variants
@@ -1293,7 +1293,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   window into hours the user was asleep. Settings → **Default time of day** reports
   what is actually in force. The Tracking strip offers the same derivation as a
   one-click **Fill**, rather than applying it silently.
-- **Sleep analytics** — ✅ `components/Analytics/SleepAnalytics.tsx` (Data →
+- **Sleep analytics** — ✅ `components/Analytics/time/SleepAnalytics.tsx` (Data →
   **Sleep**), reading logged and painted nights alike: average/median duration per
   night tracked, average bedtime and wake time, the standard deviation of each end
   as a regularity measure, the **earliest and latest** bedtime and wake time with
@@ -1398,7 +1398,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   after-action form stay silent. Data → Reviews lists the dated notes
   with counts by preset token and by source (push, missed task, habit, missed
   op, ritual). Clustering is later.
-- **Assumed-time confirmation** — ✅ `components/Reviews/AssumedTimesSection.tsx`.
+- **Assumed-time confirmation** — ✅ `components/Reviews/end/AssumedTimesSection.tsx`.
   Autogenerated time data is never presented as observed: each derived value carries
   a `FieldEstimate` (`Task.estimates`, `lib/estimated-values.ts`) naming the field,
   how it was produced, and its basis. The day/week/month review lists the period's
@@ -1576,7 +1576,7 @@ that mass of personal data. See "What this is trying to be" in
   `body`/type. ✅ `Item.body` + built-in `note` type (`lib/note-types.ts` — Docs
   folder/font/status attrs), dependency-light markdown editor
   `components/Editor/RichTextEditor.tsx`, ItemDetail `"body"` panel
-  `components/ItemDetail/BodyPanel.tsx`, and top-level **Docs** tab
+  `components/ItemDetail/tabs/body/BodyPanel.tsx`, and top-level **Docs** tab
   (`components/Docs/` — WYSIWYG HTML, Google Fonts, images, PDF ingest;
   helpers in `lib/doc-html.ts` / `doc-links.ts` / `pdf-to-html.ts`).
 - **Spreadsheet-style grid displays.** Google Sheets–style editable grids over

@@ -15,9 +15,9 @@ parents stay the unanswered design below. This file is the reference behind the
 copy now shown in the dialog.
 
 Implementation: `lib/pen-tree.ts` (pure graph),
-`components/Home/Tracking/pen-parent-picker.tsx` (the control),
+`components/Home/Tracking/pen-settings/pen-parent-picker.tsx` (the control),
 `components/Home/Tracking/pen-chain-visual.tsx` (the diagram),
-`components/Home/Tracking/pen-settings-dialog.tsx` (the section).
+`components/Home/Tracking/pen-settings/pen-settings-dialog.tsx` (the section).
 
 ---
 

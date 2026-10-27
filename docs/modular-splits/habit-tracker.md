@@ -306,9 +306,9 @@ Run, and leave the assertions alone:
 
 - `components/Home/Habits/habit-tracker.test.tsx`
 - `components/Home/Habits/habit-priority-sheet.test.tsx`
-- `components/Home/Habits/habits-phone.test.tsx`
-- `components/Home/Habits/habits-period-cursor.test.ts`
-- `components/Home/Habits/habits-period-cursor.hydrate.test.tsx`
+- `components/Home/Habits/phone/habits-phone.test.tsx`
+- `components/Home/Habits/period/habits-period-cursor.test.ts`
+- `components/Home/Habits/period/habits-period-cursor.hydrate.test.tsx`
 - `components/Home/home-dashboard.test.tsx` (the mock path must still be `habit-tracker`)
 - `components/UiNames/ui-names-stamps.test.ts` after the path edit below
 
@@ -325,8 +325,8 @@ Manual check, desktop width and a width under 767px, because this is a move of t
 Do these in the same implementation step as the move. Retarget file paths. Do not rewrite product behavior, and do not revive the abandoned sheet-level rocker bar.
 
 - `components/Home/Habits/README.md` — Public door stays: other rooms import `WeeklyTaskTracker` from `habit-tracker.tsx`. File table: `habit-tracker.tsx` is the switch; the desktop tree is `tracker/habits-desktop-page.tsx` and the pane files. Point `viewToggles` and the wand mount at `tracker/`. Heading **Tabs in `habit-tracker.tsx`** becomes **Tabs on the desktop page** and names the pane files. `_Last mapped: 2026-10-27_` on each section touched. Interior-files rule still holds: `tracker/` is inside this folder, and outside rooms do not import it.
-- `components/Home/Habits/habits-tab-controls.tsx` — the file comment that says writes stay at the habit-tracker call site. Point it at `tracker/`.
-- `components/Home/Habits/habits-phone.tsx` and `habits-phone-page.tsx` — comments that say the desktop tree lives in `habit-tracker.tsx`. One line each. No phone logic.
+- `components/Home/Habits/panel/habits-tab-controls.tsx` — the file comment that says writes stay at the habit-tracker call site. Point it at `tracker/`.
+- `components/Home/Habits/phone/habits-phone.tsx` and `habits-phone-page.tsx` — comments that say the desktop tree lives in `habit-tracker.tsx`. One line each. No phone logic.
 - `components/Home/README.md` — the Habits bullet can keep citing `WeeklyTaskTracker` in `habit-tracker.tsx`. Add that the desktop console is `Habits/tracker/habits-desktop-page.tsx`.
 - `docs/tree.md` and `docs/tree.txt` — doc sync only (`.cursor/rules/doc-sync.mdc`), not this step. The desktop tree belongs in the Habits README.
 - `docs/README.md` — add a row for `modular-splits/` (this plan and any sibling split plans). This plan file is the first entry.

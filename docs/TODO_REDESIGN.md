@@ -58,7 +58,7 @@ Built. `Subtask.tier` is `min` / `goal` / `exceptional`; a top-level step with n
 
 ## Phase 12: The To Do task card
 
-Built. `components/Home/ToDo/TaskCard.tsx`. Item detail is the item. The drawer is this period's quick edits. The card is this period's plan for one task. **More…** on a session **Add new** line, **Move to task…**, and unlock-value node size were declined with the slices they belonged to.
+Built. `components/Home/ToDo/task-card/TaskCard.tsx`. Item detail is the item. The drawer is this period's quick edits. The card is this period's plan for one task. **More…** on a session **Add new** line, **Move to task…**, and unlock-value node size were declined with the slices they belonged to.
 
 ## Declined
 

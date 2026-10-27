@@ -29,7 +29,7 @@ The test run on 2026-10-16 also showed 5 extra files failing to load: `lib/data/
 
 ### Next
 
-5. **Test files (85 errors).** Most are stale fixtures: missing new required fields, or mocks typed against old signatures. Biggest: `components/Home/Habits/habit-source-detail.test.tsx` (11), `components/Home/Habits/daily-task-form.test.tsx` (11), `lib/pen-tree.test.ts` (5), `lib/ingest/telegram-ui.test.ts` (5), `components/Home/Habits/task-grid.test.tsx` (5).
+5. **Test files (85 errors).** Most are stale fixtures: missing new required fields, or mocks typed against old signatures. Biggest: `components/Home/Habits/habit-source-detail.test.tsx` (11), `components/Home/Habits/daily-task-form.test.tsx` (11), `lib/pen-tree.test.ts` (5), `lib/ingest/telegram-ui.test.ts` (5), `components/Home/Habits/sheet/task-grid.test.tsx` (5).
 6. **App code (78 errors, long tail).** Biggest: `lib/weather-client.ts` (11), `lib/ingest/apply-ritual.ts` (4), `lib/habit-completion-summary.ts` (4), `components/Home/Goals/ObjectiveDetailDialog.tsx` (4), `lib/vocab-lists.ts` (4, new and in progress). Most other files have 1–3 errors.
 7. **Failing tests (40 in 23 files).** Several are in files with uncommitted edits right now (`lib/session-plan*`, `lib/next-step`, `components/Home/ToDo/SessionPlanner*`, `components/Home/home-overview`). Fix those after that work is committed, so the fix targets the final code. Already failing before any of this: `lib/ingest/apply-iphone-notes.test.ts` (2), `components/notes-ingest.test.tsx`.
 8. **`next build`.** Run it once `tsc` is clean, and fix anything build-only (route types, server/client boundaries).
@@ -114,7 +114,7 @@ _Last mapped: 2026-10-16_
 
 **Fix the code (a guard caught it):**
 
-- `lib/item-title-reads.test.ts`: `components/Home/Tracking/daylog-week.tsx` and `lib/ingest/apply-media.ts` read the name off `description`. Switch them to `itemTitle()`.
+- `lib/item-title-reads.test.ts`: `components/Home/Tracking/day-log/daylog-week.tsx` and `lib/ingest/apply-media.ts` read the name off `description`. Switch them to `itemTitle()`.
 - `components/UiNames/ui-names-stamps.test.ts`: put `data-ui-name` back on `home-dashboard.tsx` and `tracking-view-settings-dialog.tsx`.
 - `lib/habit-tagged-count.test.ts`: Phase 0.
 

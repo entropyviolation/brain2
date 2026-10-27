@@ -4,7 +4,7 @@ _Last mapped: 2026-10-25_
 
 **Wave 0.** Lands before every other agent starts.
 
-**Status: built 2026-10-22.** The Settings panel landed 2026-10-25 (`components/Settings/PhoneSyncPanel.tsx`). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record. On/off is `data/phone-sync/enabled.json` (a missing key stays on), read by the hub each tick. The panel is loopback only and does not show message bodies.
+**Status: built 2026-10-22.** The Settings panel landed 2026-10-25 (`components/Settings/imports/PhoneSyncPanel.tsx`). As built: [`lib/phone-sync/README.md`](../../lib/phone-sync/README.md). Two changes from the brief below: message bodies live in `data/phone-sync/messages.jsonl`, not a persist key (localStorage is ~5 MB for every key together); and `lib/vault-guard.js` needed no edit, because tracking entries already union by id and the stamp id is per record. On/off is `data/phone-sync/enabled.json` (a missing key stays on), read by the hub each tick. The panel is loopback only and does not show message bodies.
 
 ## Job
 

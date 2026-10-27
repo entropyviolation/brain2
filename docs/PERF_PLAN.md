@@ -60,7 +60,7 @@ _Last mapped: 2026-10-27_
 
 In Electron, `getItem` races a hub GET against an 800 ms cap (`PERSIST_HUB_WAIT_MS`) for every missing or seed-sized key, and always for plan-text keys. The GET returns the whole double-stored file.
 
-What is fine: store subscriptions use selectors (two whole-store hooks, both in `components/Home/Plan/settings-dialog.tsx`). Tabs are `lazy()` in `app/page.tsx`.
+What is fine: store subscriptions use selectors (two whole-store hooks, both in `components/Home/Plan/dialogs/settings-dialog.tsx`). Tabs are `lazy()` in `app/page.tsx`.
 
 ---
 
@@ -172,14 +172,14 @@ Static read of the React side. No profile taken. Short version: rendering is mos
 
 ### Fixed in this pass
 
-- `components/Home/Plan/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
+- `components/Home/Plan/dialogs/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
 - `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
 
 ### Not fixed, ranked by payoff
 
 1. **Dev mode** (section 1 above) remains the largest cost. Estimated payoff: large.
 2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts:~11`): 17 PNGs, about 13 MB, all statically imported. Next emits URLs, not inlined data, so they load only when painted, but the dev compiler still processes them and the picker may preload. Resize or convert to WebP, and import only the chosen dial. Payoff: medium (dev compile, memory).
-3. **`katex`** is statically imported in `components/Home/Habits/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
+3. **`katex`** is statically imported in `components/Home/Habits/panel/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
 4. **129 files subscribe to `s.tasks`** (`useTaskStore((s) => s.tasks)`). Each task edit re-renders all mounted ones. Fine while only one tab is mounted. Item detail keeps the tab desk mounted (hidden) (`app/page.tsx` header), so hidden tabs still re-render. Consider unmounting or `Activity`/deferring hidden tabs. Payoff: medium, needs care (scroll and state restore).
 5. **`app/page.tsx` eager imports**: `PenSettingsHost`, `TagSettingsHost`, `StepItemStack`, `CaptureDoorHost` load on first paint. Convert the settings hosts to `lazy` mounted on first open. Payoff: small to medium on first load.
 6. **Startup idle hooks** (`useSystemHomeListPins`, `usePeopleIKnowList`, instagram lists) run after `brain2-nav-ready`, each scanning task and list arrays. Merge into one idle pass. Payoff: small.

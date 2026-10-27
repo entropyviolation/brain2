@@ -2014,7 +2014,7 @@ formulation; nothing else happens.
 **KG-X13 · Before-delete impact list.** KG-M3 in every delete confirm.
 
 **KG-X14 · Identity groups in People and Places.** People and Places views
-(`components/Analytics/PeopleView.tsx`, `PlacesView.tsx`) group by identity
+(`components/Analytics/time/PeopleView.tsx`, `PlacesView.tsx`) group by identity
 group (KG-ER5), with a fan control (KG-V14).
 
 **KG-X15 · Practice ledger.** KG-PT7 on Goals and on each pen's detail:

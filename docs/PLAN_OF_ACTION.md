@@ -12,7 +12,7 @@ Home → Habits and Lists are examples of rooms that turned out well. Their CSS 
 
 Frame, contents, and cabinet law live in [`DESIGN_STYLE.md`](DESIGN_STYLE.md). House motifs — brain, light bulb, graph-node connections — stay in use. The frame stays a vintage machine. Contents stay specific. The cabinet stays photographed objects and orbs. The frame is not frozen as a Windows dialog.
 
-- **`~` + dashed amber est.** Basis in the tooltip, click to correct (`lib/estimated-values.ts`, `components/Home/ToDo/CompletionTimeLine.tsx`). The same chip covers every derived number that still presents itself as observed. Wave 4 names the surfaces that already have it and the ones that do not.
+- **`~` + dashed amber est.** Basis in the tooltip, click to correct (`lib/estimated-values.ts`, `components/Home/ToDo/ledger/CompletionTimeLine.tsx`). The same chip covers every derived number that still presents itself as observed. Wave 4 names the surfaces that already have it and the ones that do not.
 - **Feral module interiors** — Tidy, Film DNA, Trip map. Unique look, shared Items. They stay out of `components/ui/`.
 - **Lists and Habits** — examples of rooms that turned out well (Lists orbs, velvet, Explorer furniture; Habits console, analog furniture, Willpower gems, CRT phosphor). Refine packing on those rooms. Leave the Habits console a console. Leave the Lists title bar an Explorer title bar. Do not clone `.hab95` or Lists chrome onto other rooms.
 - **Tracking** — paint, scissors, occupancy at most 24h, ghosts to confirm, sleep that agrees with the grid. The pen well stays plain steel. Paint math, the counts-as model, and pen nesting stay ([`COUNTS_AS.md`](COUNTS_AS.md), [`PEN_ACTION_FORMATS.md`](PEN_ACTION_FORMATS.md)).

@@ -15,7 +15,7 @@ themselves. Open the link before you copy a geometry.
 ## Rules
 
 - Purely additive. A new plate sits beside the old one. No view id, store or math is dropped.
-- Use the house skin and kit first (`docs/analytics-plan/11-viz.md`, `components/Analytics/studio-kit.tsx`, `studio-plots.tsx`). IIB gives the **idea**: scale, anchors, annotation, sort, filter. It does not give a new color system. Data fills stay data.
+- Use the house skin and kit first (`docs/analytics-plan/11-viz.md`, `components/Analytics/studio/studio-kit.tsx`, `studio-plots.tsx`). IIB gives the **idea**: scale, anchors, annotation, sort, filter. It does not give a new color system. Data fills stay data.
 - Every plate keeps **n**, the window, `~` / **est.**, and Open in Lists.
 - **Instagram** and **Texts** are frames with their own look. Their rows are for reference only. Do not change them yet.
 

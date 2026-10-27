@@ -6,7 +6,7 @@ Current or last Activity, Location, Mood, and Company. The tile is `components/H
 
 Chrome is the shared instrument: `TileOpen` / `TileHide` / `HomeWidgetDialog` / `WidgetWell` in `components/Home/home-widget-dialog.tsx`, mounted from `components/Home/home-overview.tsx`. Order and visibility live in `brain2-home-widgets` (`lib/home-widgets.ts`, persist v9). The grid is `brain2-timegrid-store` (persist v15).
 
-The header Now dialog already renders the richer form of this same helper: `trackingScopeStatuses` carries `loggedAt` and `estimated`, and `components/header-tracking/current-moment.tsx` prints the clock. The Home square calls `trackingPresenceSnapshot`, which keeps kind and name and drops the stamp.
+The header Now dialog already renders the richer form of this same helper: `trackingScopeStatuses` carries `loggedAt` and `estimated`, and `components/header-tracking/current-moment/current-moment.tsx` prints the clock. The Home square calls `trackingPresenceSnapshot`, which keeps kind and name and drops the stamp.
 
 ## Data source + snapshot
 

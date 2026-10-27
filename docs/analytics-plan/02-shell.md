@@ -8,11 +8,11 @@ Source of the rooms: the Information architecture and “Rooms that stay blocked
 
 **Later owner:** one shell agent. Files:
 
-- `components/Analytics/analytics-tabs.ts`
-- `components/Analytics/analytics-views.tsx`
-- `components/Analytics/AnalyticsNav.tsx`
+- `components/Analytics/chrome/analytics-tabs.ts`
+- `components/Analytics/chrome/analytics-views.tsx`
+- `components/Analytics/chrome/AnalyticsNav.tsx`
 - `components/Analytics/enhanced-analytics.tsx` — only the default tab and help wiring
-- `components/Analytics/analytics-tabs.test.ts`
+- `components/Analytics/chrome/analytics-tabs.test.ts`
 
 No chart math. No new plates inside existing views. New rooms that have no component yet mount a lazy stub that states what the room is for and links to the seed views named below. The stub is a sentence and a frame, the same empty-frame law as a blocked room.
 

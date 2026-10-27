@@ -298,7 +298,7 @@ Labels on screen:
 
 Already in the house. Do not rebuild these, and do not add a second copy:
 
-- Spectrum already computes lag autocorrelation, a naive periodogram, and sleep CV (`lib/metrics.ts`, `components/Analytics/SpectrumView.tsx`). CY-8 extends that view.
+- Spectrum already computes lag autocorrelation, a naive periodogram, and sleep CV (`lib/metrics.ts`, `components/Analytics/meta/SpectrumView.tsx`). CY-8 extends that view.
 - Overcommit already rebuilds pushes and writes a sentence with n (`lib/overcommitment.ts`). CY-4 adds the damper. It does not add a second warning tab.
 - Calibration already trends the actual-to-estimated ratio (`lib/calibration.ts`). CY-5 shows it on the plan. It does not fork the math.
 - Just Start is the small probe (`components/Focus/JustStartMode.tsx`). CY-4 offers it. It does not grow a new timer.
@@ -334,7 +334,7 @@ The person sets a band, not a point, on a few vital variables: sleep 7–9 h, sc
 
 `lib/homeostat.ts` reads the metrics store, `lib/sleep-inference.ts`, `lib/screentime/`, `lib/tracked-time.ts`, and the inbox count. The reading is a 7-day rolling mean. Inside the band, gain is 0 and the gap produces no message. Outside, gain rises with days out of band and stays capped. At most one message per variable per day. A test shows that a variable which returns to its band stops.
 
-The Home widget id is `bands`. First migrate tucks it, the way later tiles were tucked in `lib/home-widgets.ts`. The open instrument is a needle between two edges, in the language of the Habits tubes. The Data view is **Bands**, added under Behavior beside Overcommit in `components/Analytics/analytics-tabs.ts`. It shows the same readings, the edges, and the days out. It does not send the message. The widget's effector does.
+The Home widget id is `bands`. First migrate tucks it, the way later tiles were tucked in `lib/home-widgets.ts`. The open instrument is a needle between two edges, in the language of the Habits tubes. The Data view is **Bands**, added under Behavior beside Overcommit in `components/Analytics/chrome/analytics-tabs.ts`. It shows the same readings, the edges, and the days out. It does not send the message. The widget's effector does.
 
 Done when each band shows its reading, its edges, and its days out; a return to band stops messages; the widget can be hidden; a day inside every band sends nothing.
 
@@ -409,7 +409,7 @@ Do not add the bits to points, regret, or tone. Do not make a streak of it. Do n
 
 ### CY-8 — Gates
 
-Part 2a feature 5. Lane: `lib/metrics.ts` and `components/Analytics/SpectrumView.tsx` only. The view keeps its name and its place under Meta.
+Part 2a feature 5. Lane: `lib/metrics.ts` and `components/Analytics/meta/SpectrumView.tsx` only. The view keeps its name and its place under Meta.
 
 Add a series choice: sleep midpoint, first tracked minute, mood, habit completion, screen time. Name the periods that clear the floor. On a daily series those are 7 days, and about 28 days when n is long enough to support it. A 24-hour peak is stated only for a minute-grained series, and the caption says which. For sleep, estimate free-running drift: how many minutes bedtime slides per day on weekends against weekdays, with n. List gating windows, the hours where completions actually cluster.
 
