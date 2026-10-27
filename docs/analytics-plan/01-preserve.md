@@ -2,7 +2,7 @@
 
 Preservation inventory for a later redesign. Groups may move. Rooms may be added. A view id must not be deleted, and a working chart must not be thinned.
 
-Source of the contract: `ANALYTICS_TAB_HELP` in `components/Analytics/analytics-tabs.ts`, the lazy map in `components/Analytics/analytics-views.tsx`, the file table and studio views table in `components/Analytics/README.md`, colocated `components/Analytics/*.test.ts` / `*.test.tsx`, and `07-analytics*` rows in `docs/screenshots/README.md`.
+Source of the contract: `ANALYTICS_TAB_HELP` in `components/Analytics/chrome/analytics-tabs.ts`, the lazy map in `components/Analytics/chrome/analytics-views.tsx`, the file table and studio views table in `components/Analytics/README.md`, colocated `components/Analytics/*.test.ts` / `*.test.tsx`, and `07-analytics*` rows in `docs/screenshots/README.md`.
 
 **Later owner:** a preserve agent. After any shell move, run the existing Data tests. Do not redesign charts.
 

@@ -1,12 +1,12 @@
 # Build brief — Phone
 
-One Phone room. BIM is the phone door. The seed is already on screen: **Text events** and **Text spans** in `components/Analytics/TextPipelineView.tsx`. Both filter `generatedBy.kind === "text"`. Both keep the kicker **from text pipeline**. Add plates beside them. Do not rename those two views, and do not call hand-painted tracking “phone.”
+One Phone room. BIM is the phone door. The seed is already on screen: **Text events** and **Text spans** in `components/Analytics/time/TextPipelineView.tsx`. Both filter `generatedBy.kind === "text"`. Both keep the kicker **from text pipeline**. Add plates beside them. Do not rename those two views, and do not call hand-painted tracking “phone.”
 
 The conversation is a rolling audit. The life record is thick, and only the allow-list below remembers a channel. Every plate names its grain in the corner: last 200 `IngestEvent` turns, or stamped history that survives rotation.
 
 **Later owner:** one phone agent.
 
-**Files:** `components/Analytics/TextPipelineView.tsx` and new phone plate files next to it. Do not edit habit grade math. Do not edit the plan ribbon.
+**Files:** `components/Analytics/time/TextPipelineView.tsx` and new phone plate files next to it. Do not edit habit grade math. Do not edit the plan ribbon.
 
 **Coverage line, first on the page:** Conversation log: last 200 turns. Stamped history: as far back as the vault. GPS successes: this sitting only (memory ring, not the persist hub).
 

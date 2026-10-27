@@ -39,7 +39,7 @@ import { useState, useCallback, lazy, Suspense, useEffect, useLayoutEffect, useR
 import { APP_NAV_KEYS, APP_TABS, DATA_TAB_LABEL, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
-import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, ChartLine } from "lucide-react"

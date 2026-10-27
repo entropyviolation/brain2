@@ -8,9 +8,9 @@ Source of truth for the formulas is `docs/analytics-vision/03-plan.md` and the P
 
 Touch only:
 
-- `components/Analytics/PlanVsReality.tsx`
-- `components/Analytics/OvercommitmentView.tsx`
-- `components/Analytics/CycleView.tsx` — one caption, below
+- `components/Analytics/accuracy/PlanVsReality.tsx`
+- `components/Analytics/behavior/OvercommitmentView.tsx`
+- `components/Analytics/accuracy/CycleView.tsx` — one caption, below
 - new plate files under `components/Analytics/` named `plan-*.tsx` (pure helpers beside them if a formula should be tested)
 - `components/Analytics/README.md` for those files
 

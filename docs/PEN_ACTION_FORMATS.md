@@ -13,7 +13,7 @@ call it*. A pen can have both, neither, or either.
 
 Implementation: `lib/pen-action-format.ts` (pure template math),
 `lib/pen-action-sync.ts` (store → task repository bridge),
-`components/Home/Tracking/pen-action-format-editor.tsx` (pen settings section).
+`components/Home/Tracking/pen-settings/pen-action-format-editor.tsx` (pen settings section).
 
 ---
 

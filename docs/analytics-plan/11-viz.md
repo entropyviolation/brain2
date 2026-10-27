@@ -2,7 +2,7 @@
 
 This brief is the visual law for every later implementation agent. A plate that follows it is the same light instrument studio the Data tab already is. Beauty is composition of the kit that already exists. Do not invent a color system.
 
-Source of the look: the product law in `components/Analytics/README.md`, the exports and header of `components/Analytics/studio-kit.tsx`, the exports and header of `components/Analytics/studio-plots.tsx`, and the empty / thin furniture in `components/Analytics/chart-frame.tsx`. Range and the left index stay the house milled fascia. Canvases stay Win95 face (`#c0c0c0` / `--an-paper`), ink `#000000`, Karla only, nested milled wells, and **white plot wells** (`--an-hi`) inside milled rims.
+Source of the look: the product law in `components/Analytics/README.md`, the exports and header of `components/Analytics/studio/studio-kit.tsx`, the exports and header of `components/Analytics/studio/studio-plots.tsx`, and the empty / thin furniture in `components/Analytics/studio/chart-frame.tsx`. Range and the left index stay the house milled fascia. Canvases stay Win95 face (`#c0c0c0` / `--an-paper`), ink `#000000`, Karla only, nested milled wells, and **white plot wells** (`--an-hi`) inside milled rims.
 
 **Later owner:** every implementation agent follows this brief while building their own plates. There is no separate viz agent that restyles files. A viz agent may only add a shared word-cloud component and a join-caption component if they do not already exist, under `components/Analytics/`, without changing existing chart math.
 

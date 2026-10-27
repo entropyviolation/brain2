@@ -265,7 +265,7 @@ Do these in the same step as the file move they describe. House voice: short sen
 |-----|----------------|
 | `components/Home/ToDo/README.md` | Files table: `todo-panel.tsx` is only the switch. Add a row per new file. Point `seasonMonthDate`, `spanSubLabel`, `openRitualBoard`, and `peekHidden` at the new paths. Phone section: desk is `TodoDeskPanel` in `todo-desk-panel.tsx`. Task-card “Files” note: mounted from `todo-desk-overlays.tsx` (or wherever the `<TaskCard host>` line lands). Do not weaken the three-editors section. |
 | `components/Home/README.md` | The phone note can keep citing `TodoPanel` in `todo-panel.tsx` as the switch. Add the desk filename only if that sentence still says the fascia lives in `todo-panel.tsx`. |
-| `components/Home/ToDo/TaskCard.tsx` | File comment that says the card is mounted in `todo-panel.tsx`. Point it at the overlays module. Comment only. |
+| `components/Home/ToDo/task-card/TaskCard.tsx` | File comment that says the card is mounted in `todo-panel.tsx`. Point it at the overlays module. Comment only. |
 | `components/Home/ToDo/todo-phone-page.tsx` | Comment that names the fascia file. |
 | `lib/task-card.ts` and `lib/README.md` | “while `todo-panel` is mounted” means while the desk is mounted. The phone switch does not register a host. One sentence each. |
 | `lib/step-points.ts` | Comment that names `todo-panel` `handleSteps`. Point at `use-todo-desk-actions.ts`. |

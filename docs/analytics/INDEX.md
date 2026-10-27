@@ -6,8 +6,8 @@ One line per view so a section can be worked on alone. Read this, then the
 view's file and its row in [`components/Analytics/README.md`](../../components/Analytics/README.md).
 Do not re-map the whole room.
 
-- Groups and view ids: `components/Analytics/analytics-tabs.ts`. Help copy per view is `ANALYTICS_TAB_HELP` in the same file.
-- View id → component: `components/Analytics/analytics-views.tsx` (one lazy chunk each).
+- Groups and view ids: `components/Analytics/chrome/analytics-tabs.ts`. Help copy per view is `ANALYTICS_TAB_HELP` in the same file.
+- View id → component: `components/Analytics/chrome/analytics-views.tsx` (one lazy chunk each).
 - Shell: `enhanced-analytics.tsx`, `AnalyticsNav.tsx`, range in `analytics-range.ts` / `analytics-range-store.ts`.
 - Shared chart kit: `studio-kit.tsx`, `studio-plots.tsx`, `chart-frame.tsx`, `open-in-lists.ts`.
 - Skin: `analytics-chrome.css` (base), `analytics-atlas.css` (look), `analytics-boards.css` (Tracking boards).

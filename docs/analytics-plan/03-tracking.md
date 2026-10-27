@@ -10,18 +10,18 @@ Every addition is a new plate. Leave the plate that is already there.
 
 | File | Already on screen |
 | --- | --- |
-| `components/Analytics/TrackingAnalytics.tsx` | One scope at a time. Header bay: scope, percent basis, untracked, **Include assumed**, depth, Find blocks. Plates: How much, Composition (donut + ranked rows + period filmstrip + day/week color strips above average-day All/Mon–Sun ribbons + tag bars), Up/down, Hour × day, Rhythm, Duration (violin). Pen drill: Split/Reach. Occupancy inside a scope already unions overlapping minutes (`hour-day.ts`: an hour stays ≤ 60). |
+| `components/Analytics/time/TrackingAnalytics.tsx` | One scope at a time. Header bay: scope, percent basis, untracked, **Include assumed**, depth, Find blocks. Plates: How much, Composition (donut + ranked rows + period filmstrip + day/week color strips above average-day All/Mon–Sun ribbons + tag bars), Up/down, Hour × day, Rhythm, Duration (violin). Pen drill: Split/Reach. Occupancy inside a scope already unions overlapping minutes (`hour-day.ts`: an hour stays ≤ 60). |
 | `components/Analytics/hour-day.ts` | Hour × day occupancy. Instants off the heat. Missing hours stay 0. Overlaps on one minute count once. |
-| `components/Analytics/CircadianView.tsx` | Hour × day atlas for one chosen scope (Activity default, Mood) plus a Cleveland weekday cycle plot. |
-| `components/Analytics/DiversityView.tsx` | Shannon entropy of pen shares per day, Gini of the window’s pen totals, weekday vs weekend occupancy. |
-| `components/Analytics/TransitionsView.tsx` | Markov matrix of paint changes (`P(to \| from)`, same-pen continuation skipped) and an alluvial of switch counts. |
-| `components/Analytics/ContextSwitchHeatmap.tsx` | When switches happen: density calendar and hour bars of pen changes. A sparse window is not a trend. |
-| `components/Analytics/SleepAnalytics.tsx` | Nightly strip on 6pm→noon, estimated ends, duration CV, lag-1, weekday ridgelines, **against the sun** (`sleepSunSummary` + `DaySunTimes` for the home-city pin), all-nighters. |
-| `components/Analytics/ScreenTimeView.tsx` | Mac ActivityWatch Screen Time: active vs untracked, top apps and categories, last sync, alignment vs Activity occupancy. |
-| `components/Analytics/PlacesView.tsx` | Location time-at-pen mosaic at the Location depth rungs. The kicker already says there are no coordinates and this is not a map. |
-| `components/Analytics/MoodFieldView.tsx` | Painted mood mosaic, hour × day, Same word, The water, Marks (with n, grasping with and without `about`). Logged 0–100 wellbeing stays a separate plate. |
-| `components/Analytics/LogEventsView.tsx` | Day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count (not a plotted minute), phase strip from `phaseForDate`. |
-| `components/Analytics/CyclePhaseView.tsx` | Phase mix from `assessCycleDay`. Marked and estimated counted apart. Means and medians on marked days, with n. Estimated split stays labeled and is not a finding. `basisNote`. Unknown is its own bucket. Spotting is not a phase. The shell already hides this canvas when cycle tracking is on and `cycleDetailsOpen` is false (`cycle-phase-concealed.tsx`). |
+| `components/Analytics/time/CircadianView.tsx` | Hour × day atlas for one chosen scope (Activity default, Mood) plus a Cleveland weekday cycle plot. |
+| `components/Analytics/time/DiversityView.tsx` | Shannon entropy of pen shares per day, Gini of the window’s pen totals, weekday vs weekend occupancy. |
+| `components/Analytics/time/TransitionsView.tsx` | Markov matrix of paint changes (`P(to \| from)`, same-pen continuation skipped) and an alluvial of switch counts. |
+| `components/Analytics/time/ContextSwitchHeatmap.tsx` | When switches happen: density calendar and hour bars of pen changes. A sparse window is not a trend. |
+| `components/Analytics/time/SleepAnalytics.tsx` | Nightly strip on 6pm→noon, estimated ends, duration CV, lag-1, weekday ridgelines, **against the sun** (`sleepSunSummary` + `DaySunTimes` for the home-city pin), all-nighters. |
+| `components/Analytics/time/ScreenTimeView.tsx` | Mac ActivityWatch Screen Time: active vs untracked, top apps and categories, last sync, alignment vs Activity occupancy. |
+| `components/Analytics/time/PlacesView.tsx` | Location time-at-pen mosaic at the Location depth rungs. The kicker already says there are no coordinates and this is not a map. |
+| `components/Analytics/time/MoodFieldView.tsx` | Painted mood mosaic, hour × day, Same word, The water, Marks (with n, grasping with and without `about`). Logged 0–100 wellbeing stays a separate plate. |
+| `components/Analytics/time/LogEventsView.tsx` | Day bars, kind counts, clock scatter of exact and estimated times, unknown clocks as a count (not a plotted minute), phase strip from `phaseForDate`. |
+| `components/Analytics/time/CyclePhaseView.tsx` | Phase mix from `assessCycleDay`. Marked and estimated counted apart. Means and medians on marked days, with n. Estimated split stays labeled and is not a finding. `basisNote`. Unknown is its own bucket. Spotting is not a phase. The shell already hides this canvas when cycle tracking is on and `cycleDetailsOpen` is false (`cycle-phase-concealed.tsx`). |
 
 ## Counting rules the new plates must obey
 

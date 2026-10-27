@@ -111,7 +111,7 @@ curl -sS -X POST http://127.0.0.1:8787/api/scan \
 quantity. A repeat of the same `id` does not log twice. The 20-second
 double-read pause still applies. The hub does not text Telegram back.
 
-The iPhone app (`components/Mobile/MobileNfcCard.tsx`) reads the sticker’s
+The iPhone app (`components/Mobile/nfc/MobileNfcCard.tsx`) reads the sticker’s
 hardware id (`ios/App/App/NfcPlugin.swift`). The first tap asks which saved
 tag that chip is. The phone remembers it (`brain2-nfc-chips` in the app).
 A dose asks how many. Blank posts `nfc:{id}` so the Mac uses the saved

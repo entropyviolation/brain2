@@ -10,7 +10,7 @@ Show the synced data in the Phone room: texts and calls per person per day, a lo
 
 ## Owns
 
-New plate files beside `components/Analytics/TextPipelineView.tsx`. Adds `generatedBy.kind === "phone-sync"` to the Phone room's stamp allow-list. The shell agent registers view ids.
+New plate files beside `components/Analytics/time/TextPipelineView.tsx`. Adds `generatedBy.kind === "phone-sync"` to the Phone room's stamp allow-list. The shell agent registers view ids.
 
 ## Done
 

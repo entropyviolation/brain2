@@ -12,7 +12,7 @@ groups, the Home top strip, the Tracking pen well) is not reopened here.
 
 ## Needs Attention open when count > 0 — shipped
 
-`components/Home/NeedsAttention.tsx`. When nothing is stored yet and the
+`components/Home/needs-attention/NeedsAttention.tsx`. When nothing is stored yet and the
 visible count is above zero, the queue starts expanded. Empty counters stay
 collapsed. A stored collapse still wins.
 
@@ -23,12 +23,12 @@ key group. Not now writes `rituals-snooze-until` (ask tomorrow).
 
 ## Habit rows by input kind — shipped
 
-`components/Home/Habits/task-grid.tsx` groups rows by input kind (Lamps /
+`components/Home/Habits/sheet/task-grid.tsx` groups rows by input kind (Lamps /
 Goals / Climb / Text) so cheap ticks sit together. Same completion math.
 
 ## Push-count legend — shipped
 
-`components/Home/ToDo/TodoTable.tsx` shows a table-head legend for pushes
+`components/Home/ToDo/ledger/TodoTable.tsx` shows a table-head legend for pushes
 (what a push is and which period the tube counts).
 
 ## Goal steppers — shipped

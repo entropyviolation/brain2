@@ -134,7 +134,7 @@ Do not add an Data tab in this slice. Do not export search's tokenizer. Do not p
 
 Essay change 1 and feature 1, the view. Depends on JG-1. Lane: Data, plus the settings field.
 
-- `components/Analytics/analytics-tabs.ts`: sixth group `id: "meaning"`, label `Meaning`, tabs `coincidence`, `symbols`, `exceptions`. Help strings say what the view lists and that a mark is the person's. `symbols` and `exceptions` render an empty studio frame until JG-4 and JG-6 ("Nothing recorded in this window yet.").
+- `components/Analytics/chrome/analytics-tabs.ts`: sixth group `id: "meaning"`, label `Meaning`, tabs `coincidence`, `symbols`, `exceptions`. Help strings say what the view lists and that a mark is the person's. `symbols` and `exceptions` render an empty studio frame until JG-4 and JG-6 ("Nothing recorded in this window yet.").
 - `analytics-tabs.test.ts`: the six ids, and `groupForTab("coincidence")` is `meaning`. Existing five groups keep their ids and order.
 - `enhanced-analytics.tsx`: render `CoincidenceView` for `coincidence`.
 - `CoincidenceView.tsx`: series list for the shared range, members open through `open-in-lists.ts`, Meaningful / Chance buttons write `lib/coincidence-marks.ts`.

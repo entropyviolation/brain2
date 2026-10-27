@@ -688,7 +688,7 @@ Do:
 | [`UI_NEXT.md`](UI_NEXT.md) | Open layout tasks |
 | [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md) | Combined work order (not edited from this pass) |
 | `components/Home/Habits/habit-chrome.css` | Current Daily console |
-| `components/Home/Habits/habits-control-panel.tsx` | Home Dashboard Habits Tab Control Panel (compact 196px) |
-| `components/Home/Habits/willpower-gems.tsx` | Willpower gems chrome button + Settings field (week satellites, invert, press-stir, grab/lift/throw, overflow, PNG occlusion, Physics popup with live twin plate) |
+| `components/Home/Habits/panel/habits-control-panel.tsx` | Home Dashboard Habits Tab Control Panel (compact 196px) |
+| `components/Home/Habits/panel/willpower-gems.tsx` | Willpower gems chrome button + Settings field (week satellites, invert, press-stir, grab/lift/throw, overflow, PNG occlusion, Physics popup with live twin plate) |
 | `lib/willpower-physics.ts` | Shallow-dish gravity + bounce + whirl; crystal is a solid in XY (gems do not tunnel) and a PNG occluder (Y-sort) |
 | `lib/chrome-patina.ts` | Gunmetal slider target |

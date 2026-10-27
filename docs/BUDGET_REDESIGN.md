@@ -6,7 +6,7 @@ _Last mapped: 2026-10-20_ Status: **Partly built** (2026-10-20). Built: Phase 0,
 and a one-tap confirm (✓) to received. Also built: `category`, a six-month strip, spend/earn breakdowns (`lib/budget-math.ts`), and the **Budget widget** (`components/Home/home-budget-tile.tsx`, kind `budget` in `lib/widgets/kinds.ts`, off by default, install from the gallery). Still **Planned**: accounts as a pick-list
 and account filter, account on log-spend rows, `importId` dedupe, `pays` link
 relation, schedules, shared editing. Today: `lib/budget-store.ts` (earnings and hand-added lines),
-spending on the Tracking log, `components/Home/Tracking/budget-panel.tsx`
+spending on the Tracking log, `components/Home/Tracking/tracking-log/budget-panel.tsx`
 (month view), statement import in `spending-dialog.tsx` + `lib/bank-statement.ts`.
 
 Ideas borrowed from [Actual Budget](https://github.com/actualbudget/actual)

@@ -53,7 +53,7 @@ never overwrites it
 **UI reuse is uneven, and only some of that is a problem.** Lists' Win95 chrome
 and Tidy's overlays *should* differ — that is the gold standard. Habits speaks
 the same milled fascia: `WeekNavigation` is `habit-chrome-btn` keys
-(`components/Home/Habits/week-navigation.tsx` — previous, Today with `is-on`
+(`components/Home/Habits/period/week-navigation.tsx` — previous, Today with `is-on`
 on the current period, the engraved range, next). Raised metal lives in
 `habit-chrome.css` under `.hab95`. [`DESIGN_STYLE.md`](DESIGN_STYLE.md) says
 to protect that chrome. Do not restyle it.
