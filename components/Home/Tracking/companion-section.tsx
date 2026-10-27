@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Link2, Pin, PinOff, Plus } from "lucide-react"
-import { useTimeTrackingStore, type TimeEntry, type TrackPen } from "@/lib/time-tracking-store"
+import { isImportedCompanionScope, useTimeTrackingStore, type TimeEntry, type TrackPen } from "@/lib/time-tracking-store"
 import { companionsFor, suggestedCompanions } from "@/lib/entry-links"
 import { formatDuration, minutesToLabel } from "@/lib/time-entries"
 import { discreteLogInstants, penNameById } from "@/components/Home/Tracking/discrete-log-instants"
@@ -154,11 +154,14 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
     setNewPenName("")
   }
 
-  if (companions.length === 0 && logs.length === 0) return null
+  const shownCompanions = companions.filter(
+    (row) => !isImportedCompanionScope(row.scope) || row.covering.length > 0,
+  )
+  if (shownCompanions.length === 0 && logs.length === 0) return null
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-1.5">
+      <Label className="trk-section-title flex items-center gap-1.5">
         <Link2 className="h-3.5 w-3.5" aria-hidden />
         Also happening
       </Label>
@@ -172,7 +175,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
       )}
 
       <div className="space-y-2">
-        {companions.map(({ scope, covering, freeMinutes, windowMinutes }) => {
+        {shownCompanions.map(({ scope, covering, freeMinutes, windowMinutes }) => {
           const scopeSuggestions = suggestions.filter(
             (s) => s.scopeId === scope.id && !covering.some((c) => c.entry.penId === s.penId),
           )
@@ -181,7 +184,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
           return (
             <div key={scope.id} className="rounded border p-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium">{scope.name}</span>
+                <span className="trk-section-title">{scope.name}</span>
                 <span className="text-[11px] text-muted-foreground">
                   {covering.length === 0
                     ? "nothing here yet"
@@ -197,6 +200,9 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                   entry={other}
                   pen={pen}
                   minutes={minutes}
+                  sourceName={sourcePen?.name ?? "This pen"}
+                  readOnly={isImportedCompanionScope(scope)}
+                  incoming={(pen?.links ?? []).some((l) => l.scopeId === entry.scopeId && l.penId === entry.penId)}
                   always={isLinked(scope.id, other.penId)}
                   onToggleAlways={() => toggleAlways(scope.id, other.penId, other.variantIds)}
                   onToggleVariant={(variantId) => {
@@ -237,7 +243,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                 />
               ))}
 
-              {freeMinutes > 0 && !pendingTimes && (
+              {freeMinutes > 0 && !pendingTimes && !isImportedCompanionScope(scope) && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {scopeSuggestions.map((suggestion) => (
                     <button
@@ -298,7 +304,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 px-1.5"
+                          className="trk-entry-key is-compact trk-entry-icon" data-no95=""
                           disabled={!newPenName.trim()}
                           onClick={() => createAndAttach(scope.id)}
                         >
@@ -312,7 +318,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                         <Button
                           type="button"
                           size="sm"
-                          className="h-6 px-2 text-[11px]"
+                          className="trk-entry-key is-compact" data-no95=""
                           disabled={picked.length === 0}
                           onClick={() => attach(scope.id, picked[0]!, picked.slice(1))}
                         >
@@ -325,7 +331,7 @@ export function CompanionSection({ entry, pendingTimes = false }: CompanionSecti
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+                      className="trk-entry-key is-compact" data-no95=""
                       onClick={() => setOpenPicker(scope.id)}
                     >
                       <Plus className="h-3 w-3" />
@@ -378,6 +384,9 @@ function CompanionRow({
   entry,
   pen,
   minutes,
+  sourceName,
+  readOnly,
+  incoming,
   always,
   onToggleAlways,
   onToggleVariant,
@@ -387,6 +396,11 @@ function CompanionRow({
   entry: TimeEntry
   pen: TrackPen | undefined
   minutes: number
+  sourceName: string
+  /** Screen Time, calls, and texts are a readout. No attach, no rule, no new detail. */
+  readOnly: boolean
+  /** The companion pen already points at this block's pen. That rule is its own. */
+  incoming: boolean
   always: boolean
   onToggleAlways: () => void
   onToggleVariant: (variantId: string) => void
@@ -404,24 +418,34 @@ function CompanionRow({
     onRemove: (penId: string) => void
   }
 }) {
-  const always_ = (
+  const targetName = pen?.name ?? "this pen"
+  const always_ = readOnly ? null : (
     <Button
       type="button"
       variant="ghost"
       size="sm"
-      className={`ml-auto h-6 gap-1 px-1.5 text-[11px] ${always ? "text-primary" : "text-muted-foreground"}`}
+      className={`trk-entry-key is-compact ml-auto${always ? " is-primary" : ""}`}
+      data-no95=""
       aria-pressed={always}
       onClick={onToggleAlways}
       title={
         always
-          ? "This pairing is a standing rule — click to stop applying it to new blocks"
-          : "Apply this pairing automatically whenever this pen is painted"
+          ? `One way, from ${sourceName}. It always means ${targetName}. Click to stop. ${targetName} stays as it is.`
+          : `One way. Whenever you paint ${sourceName}, also paint ${targetName}. Painting ${targetName} will not paint ${sourceName}.`
       }
     >
       {always ? <Pin className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
       {always ? "Always" : "Make it always"}
     </Button>
   )
+  const direction =
+    readOnly || (!always && !incoming)
+      ? null
+      : always && incoming
+        ? `Both ways, as two rules. ${sourceName} always means ${targetName}, and ${targetName} always means ${sourceName}.`
+        : always
+          ? `${sourceName} always means ${targetName}. ${targetName} does not always mean ${sourceName}.`
+          : `${targetName} always means ${sourceName}. ${sourceName} does not always mean ${targetName}.`
 
   return (
     <div className="mt-1.5 rounded bg-muted/40 p-1.5">
@@ -439,6 +463,7 @@ function CompanionRow({
         <span className="text-[11px] text-muted-foreground">{formatDuration(minutes)} of this block</span>
         {always_}
       </div>
+      {direction ? <p className="trk-help mt-1">{direction}</p> : null}
 
       {people ? (
         <CompanyRoster
@@ -461,7 +486,7 @@ function CompanionRow({
         </CompanyRoster>
       ) : null}
 
-      {pen && (
+      {pen && !readOnly && (
         <div className="trk-company-details">
           {people ? <span className="trk-company-details-label">Details</span> : null}
           <VariantChips

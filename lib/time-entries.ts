@@ -134,6 +134,9 @@ export function dominantEntry(map: (TimeEntry | null)[], start: number, step: nu
  */
 export type TimeEntryKind = "interval" | "instant"
 
+/** Which of the three the block editor holds still. The other two follow each other. */
+export type SpanLock = "start" | "end" | "duration"
+
 /**
  * One tracked block. A pen may carry several **variants** at once ("hanging out"
  * with both Elijah and Rebecca), which is why they are a list rather than a
@@ -252,6 +255,18 @@ export interface TimeEntry {
   /** How sure each end is. Omitted = exact. `clockCertainty` / `precision` follow the worse of the two. */
   startCertainty?: TrackingClockCertainty
   endCertainty?: TrackingClockCertainty
+  /**
+   * Which of start, end, or duration stays put in the block editor.
+   * Omitted means start (a typed length moves the end), unless only the end
+   * is linked — that case keeps the end. No persist bump.
+   */
+  spanLock?: SpanLock
+  /**
+   * The length is a guess. Clocks can still be exact. Omitted = the length
+   * is as sure as the clocks. Also stores `precision: "estimated"` so the
+   * hatch still draws. No persist bump.
+   */
+  durationEstimated?: boolean
   /** A transit block that refits itself: the blocks it sits between, and its priced length. */
   transitFrom?: string
   transitTo?: string
@@ -477,7 +492,9 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     (a.switchTo ?? undefined) === (b.switchTo ?? undefined) &&
     (a.spendAmount ?? undefined) === (b.spendAmount ?? undefined) &&
     (a.spendOn ?? undefined) === (b.spendOn ?? undefined) &&
-    (a.spendSource ?? undefined) === (b.spendSource ?? undefined)
+    (a.spendSource ?? undefined) === (b.spendSource ?? undefined) &&
+    (a.spanLock ?? "start") === (b.spanLock ?? "start") &&
+    (a.durationEstimated ?? false) === (b.durationEstimated ?? false)
   )
 }
 
@@ -931,6 +948,89 @@ export function parseDurationInput(text: string): number | null {
   if (minutes === null || !Number.isFinite(minutes)) return null
   const rounded = Math.round(minutes)
   return rounded > 0 ? rounded : null
+}
+
+/** Whole local days from `fromDate` to `toDate`. Same day is 0. */
+export function calendarDaysBetween(fromDate: string, toDate: string): number {
+  const [ay, am, ad] = fromDate.split("-").map(Number)
+  const [by, bm, bd] = toDate.split("-").map(Number)
+  const ua = Date.UTC(ay, (am || 1) - 1, ad || 1)
+  const ub = Date.UTC(by, (bm || 1) - 1, bd || 1)
+  return Math.round((ub - ua) / 86_400_000)
+}
+
+/**
+ * Start and end as minutes after `fromDate` midnight.
+ * A same-day end of 00:00 is the end of that day (1440), not the start of it.
+ * Null when the end is not after the start.
+ */
+export function readSpanClock(
+  fromDate: string,
+  fromClock: number,
+  toDate: string,
+  toClock: number,
+): { start: number; end: number } | null {
+  const days = calendarDaysBetween(fromDate, toDate)
+  const end = days === 0 && toClock === 0 ? MINUTES_PER_DAY : toClock + days * MINUTES_PER_DAY
+  if (!(end > fromClock)) return null
+  return { start: fromClock, end }
+}
+
+/**
+ * Write absolute minutes (after the current start date's midnight) back to
+ * clock strings. An end that lands on midnight stays 00:00 on the day it
+ * closes, which save reads as the end of that day.
+ */
+export function writeSpanClock(
+  fromDate: string,
+  startAbs: number,
+  endAbs: number,
+): { from: string; fromDate: string; to: string; toDate: string } | null {
+  if (!(endAbs > startAbs)) return null
+  const startShift = Math.floor(startAbs / MINUTES_PER_DAY)
+  const startClock = ((startAbs % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  const origin = shiftDateKey(fromDate, startShift)
+  const endRel = endAbs - startShift * MINUTES_PER_DAY
+  const endShift = Math.floor((endRel === MINUTES_PER_DAY ? 0 : endRel) / MINUTES_PER_DAY)
+  const endClock = ((endRel % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  return {
+    from: minutesToTimeString(startClock),
+    fromDate: origin,
+    to: minutesToTimeString(endClock),
+    toDate: shiftDateKey(origin, endShift),
+  }
+}
+
+/**
+ * One of start, end, or duration is held. Editing either of the other two
+ * rewrites the remaining one. Editing the held value itself keeps the other
+ * clock and lets the length follow — except a held length, which keeps start
+ * and moves the end.
+ * Minutes are absolute, after one midnight. Null when the edit would not
+ * leave a positive length.
+ */
+export function applySpanEdit(args: {
+  lock: SpanLock
+  start: number
+  end: number
+  edit: SpanLock
+  value: number
+}): { start: number; end: number } | null {
+  const dur = args.end - args.start
+  if (dur <= 0) return null
+  if (args.edit === "duration") {
+    if (args.value <= 0) return null
+    if (args.lock === "end") return { start: args.end - args.value, end: args.end }
+    return { start: args.start, end: args.start + args.value }
+  }
+  if (args.edit === "start") {
+    if (args.lock === "duration") return { start: args.value, end: args.value + dur }
+    if (args.value >= args.end) return null
+    return { start: args.value, end: args.end }
+  }
+  if (args.lock === "duration") return { start: args.value - dur, end: args.value }
+  if (args.value <= args.start) return null
+  return { start: args.start, end: args.value }
 }
 
 let counter = 0

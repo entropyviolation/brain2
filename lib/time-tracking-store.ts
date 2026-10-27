@@ -644,6 +644,20 @@ export function isIphoneTextsScope(scope: Pick<TrackScope, "id" | "name">): bool
   return scope.id === IPHONE_TEXTS_SCOPE_ID || normalizeName(scope.name) === "iphone texts"
 }
 
+/**
+ * Screen Time, iPhone Screen Time, iPhone Calls, and iPhone Texts arrive from
+ * a sync. The block editor shows a row only when one of those blocks already
+ * covers the window. It does not offer Attach.
+ */
+export function isImportedCompanionScope(scope: Pick<TrackScope, "id" | "name">): boolean {
+  return (
+    isScreenTimeScope(scope) ||
+    isIphoneScreenTimeScope(scope) ||
+    isIphoneCallsScope(scope) ||
+    isIphoneTextsScope(scope)
+  )
+}
+
 export function findIphoneTextsScope(scopes: TrackScope[]): TrackScope | undefined {
   return scopes.find(isIphoneTextsScope)
 }
@@ -1029,8 +1043,17 @@ function mergeTrackedEntries(
 ): { entries: TimeEntry[]; removedEntryIds: string[] } {
   const live = new Set(currentEntries.map((entry) => entry.id))
   const tombstones = new Set((currentRemoved ?? []).filter((id) => !live.has(id)))
-  const base = persisted ?? currentEntries
-  const entries = tombstones.size === 0 ? base : base.filter((entry) => !tombstones.has(entry.id))
+  const persistedGone = new Set(persistedRemoved ?? [])
+  // The blob is the base, so a tombstoned undo stays gone even when the blob
+  // still holds that block. A live row the blob has not heard of yet stays
+  // too: a late rehydrate used to replace the grid with the older snapshot
+  // and drop a text that had just been logged.
+  const fromBlob = (persisted ?? currentEntries).filter((entry) => !tombstones.has(entry.id))
+  const have = new Set(fromBlob.map((entry) => entry.id))
+  const extras = currentEntries.filter(
+    (entry) => !have.has(entry.id) && !tombstones.has(entry.id) && !persistedGone.has(entry.id),
+  )
+  const entries = extras.length === 0 ? fromBlob : [...fromBlob, ...extras]
   const kept = new Set(entries.map((entry) => entry.id))
   const removed = new Set<string>([...(persistedRemoved ?? []), ...(currentRemoved ?? [])])
   for (const id of tombstones) removed.add(id)
@@ -1651,6 +1674,15 @@ export const useTimeTrackingStore = create<TimeTrackingState>()(
             if (patch.intakeClass === "food" || patch.intakeClass === "drink" || patch.intakeClass === "drug") {
               next.intakeClass = patch.intakeClass
             } else delete next.intakeClass
+          }
+          if ("spanLock" in patch) {
+            if (patch.spanLock === "start" || patch.spanLock === "end" || patch.spanLock === "duration") {
+              next.spanLock = patch.spanLock
+            } else delete next.spanLock
+          }
+          if ("durationEstimated" in patch) {
+            if (patch.durationEstimated) next.durationEstimated = true
+            else delete next.durationEstimated
           }
           if ("clockCertainty" in patch) {
             if (patch.clockCertainty === "estimated") {

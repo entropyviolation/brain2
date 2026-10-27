@@ -116,9 +116,12 @@ export function applyDiscreteLog(
     ACTIVITY,
     logMeta(parsed.title, parsed.clockCertainty),
   )
+  if (!id) {
+    return { status: "error", kind: "event-log", reply: "Could not save that log note." }
+  }
   const placeId = pairLocation(parsed, parsed.at)
   tallySavedKeyword(parsed.title, parsed.at, phrases, parsed.clockCertainty)
-  if (id) mirrorTrackingEntry(id, "log")
+  mirrorTrackingEntry(id, "log")
   return {
     status: "ok",
     kind: "event-log",
@@ -657,6 +660,54 @@ function logMeta(phrase: string, clockCertainty?: NoteClockCertainty): EntryMeta
   }
 }
 
+export type FeedLogShelf = "event" | "food" | "drink" | "drug" | "thought"
+
+function shelfFields(shelf: FeedLogShelf, title: string): { eventKind: string; intakeClass?: IntakeClass } {
+  if (shelf === "food" || shelf === "drink" || shelf === "drug") {
+    return { eventKind: `intake.${shelf}`, intakeClass: shelf }
+  }
+  if (shelf === "thought") return { eventKind: THOUGHT_PROCESS_KIND }
+  return { eventKind: eventKindSlug(title) || "event" }
+}
+
+/**
+ * File one text onto a Tracking log shelf at `at`.
+ * An existing entry is reclassified in place. A missing id paints a new instant.
+ * Returns the entry id, or undefined when the write did not land.
+ */
+export function fileTextAsShelf(input: {
+  title: string
+  at: Date
+  shelf: FeedLogShelf
+  entryId?: string
+}): string | undefined {
+  const title = input.title.trim()
+  if (!title || Number.isNaN(input.at.getTime())) return undefined
+  const fields = shelfFields(input.shelf, title)
+  const existing = input.entryId
+    ? useTimeTrackingStore.getState().entries.find((entry) => entry.id === input.entryId)
+    : undefined
+  if (existing) {
+    useTimeTrackingStore.getState().updateEntry(existing.id, {
+      title,
+      eventKind: fields.eventKind,
+      intakeClass: fields.intakeClass,
+    })
+    if (input.shelf === "thought") mirrorTrackingEntry(existing.id, "thought-process")
+    else if (input.shelf === "event") mirrorTrackingEntry(existing.id, "log")
+    return existing.id
+  }
+  const pen = input.shelf === "food" || input.shelf === "drink" || input.shelf === "drug" ? "Intake" : DEFAULT_PEN
+  const id = paintInstant(title, input.at, input.shelf === "thought" ? "thought-process" : "event-log", pen, undefined, ACTIVITY, {
+    eventKind: fields.eventKind,
+    ...(fields.intakeClass ? { intakeClass: fields.intakeClass } : {}),
+  })
+  if (!id) return undefined
+  if (input.shelf === "thought") mirrorTrackingEntry(id, "thought-process")
+  else if (input.shelf === "event") mirrorTrackingEntry(id, "log")
+  return id
+}
+
 function intakeMeta(intakeClass: IntakeClass | undefined, clockCertainty?: NoteClockCertainty): EntryMeta {
   return {
     eventKind: intakeClass ? `intake.${intakeClass}` : "intake",
@@ -749,7 +800,30 @@ function paintEntry(
         (wantInstant ? e.kind === "instant" : e.kind !== "instant"),
     )
     .sort((a, b) => b.id.localeCompare(a.id))[0]
-  if (!just) return undefined
+  if (!just) {
+    // paintMinutes can no-op while a restore is settling, and a late rehydrate
+    // can drop the row before this read. Put the same instant back once.
+    const fallback: TimeEntry = {
+      id: `te-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      date,
+      scopeId,
+      penId,
+      startMin,
+      endMin,
+      ...(kind ? { kind } : {}),
+      title,
+      notes,
+      ...(endDate ? { endDate } : {}),
+      generatedBy: { kind: "text", id: date },
+      ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
+      ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
+      ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),
+      ...(precision ? { precision } : {}),
+    }
+    appendTrackingInstants([fallback])
+    if (!useTimeTrackingStore.getState().entries.some((entry) => entry.id === fallback.id)) return undefined
+    return fallback.id
+  }
   useTimeTrackingStore.getState().updateEntry(just.id, {
     notes,
     generatedBy: { kind: "text", id: date },

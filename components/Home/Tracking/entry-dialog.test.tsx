@@ -57,6 +57,40 @@ describe("EntryDialog", () => {
     expect(reload(entry.id)).toMatchObject({ startMin: 570, endMin: 675 })
   })
 
+  it("locks one of start, end, or duration and follows with the free value", () => {
+    const entry = paint()
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    expect(screen.getByTestId("entry-duration-readout")).toHaveTextContent("1h")
+    expect(screen.getAllByRole("button", { name: "Date" })).toHaveLength(1)
+    expect(screen.getByRole("button", { name: "Start locked" })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "2h" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    expect(screen.getByLabelText("Start")).toHaveValue("09:00")
+    expect(screen.getByLabelText("End")).toHaveValue("11:00")
+
+    fireEvent.click(screen.getByRole("button", { name: "Lock End" }))
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "30m" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    expect(screen.getByLabelText("End")).toHaveValue("11:00")
+    expect(screen.getByLabelText("Start")).toHaveValue("10:30")
+
+    fireEvent.click(screen.getByRole("button", { name: "Lock Duration" }))
+    fireEvent.change(screen.getByLabelText("End"), { target: { value: "12:00" } })
+    expect(screen.getByLabelText("Start")).toHaveValue("11:30")
+    expect(screen.getByLabelText("Duration")).toHaveValue("30m")
+
+    fireEvent.click(screen.getByRole("button", { name: "Duration estimated" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+    expect(reload(entry.id)).toMatchObject({
+      startMin: 11 * 60 + 30,
+      endMin: 12 * 60,
+      spanLock: "duration",
+      durationEstimated: true,
+      precision: "estimated",
+    })
+  })
+
   it("treats an end of midnight as the end of the day", () => {
     const entry = paint(1380, 1410)
     render(<EntryDialog entry={entry} onClose={() => {}} />)
@@ -228,7 +262,8 @@ describe("EntryDialog", () => {
   it("keeps date pickers optional and defaults them to the block's calendar day", () => {
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     expect(screen.queryByLabelText("Start date")).not.toBeInTheDocument()
-    fireEvent.click(screen.getAllByRole("button", { name: "Date" })[0])
+    expect(screen.getAllByRole("button", { name: "Date" })).toHaveLength(1)
+    fireEvent.click(screen.getByRole("button", { name: "Date" }))
     expect(screen.getByLabelText("Start date")).toHaveValue(KEY)
   })
 

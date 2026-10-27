@@ -158,7 +158,10 @@ export function bankOpenStint(row: NowObjective, now = new Date()): NowObjective
  * Active work so far. Undefined when the start is unknown. Older completed
  * rows with no banked time use the wall span from `addedAt`.
  */
-export function objectiveWorkedMs(row: NowObjective, now = new Date()): number | undefined {
+export function objectiveWorkedMs(
+  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt">,
+  now = new Date(),
+): number | undefined {
   if (row.startUnknown) return undefined
   const open =
     row.stintStartedAt && !row.completedAt ? Math.max(0, now.getTime() - Date.parse(row.stintStartedAt)) : 0

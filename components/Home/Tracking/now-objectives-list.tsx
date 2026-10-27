@@ -3,7 +3,8 @@
  *
  * Popup checklist for free-form objectives on a live timer or a painted block.
  * Opens as a floating panel so the header / strip layout does not grow. Not
- * Home Goals, not the Tracking Objective pen.
+ * Home Goals, not the Tracking Objective pen. The text field stays local;
+ * `onEditText` runs after a short pause, on blur, and when the field unmounts.
  */
 "use client"
 
@@ -17,6 +18,12 @@ export interface NowObjectivesHandlers {
   onAdd: (text: string) => void
   /** Log an objective already finished during this sitting. Start is unknown. */
   onAddCompleted?: (text: string) => void
+  /**
+   * Edit an objective's text. Debounced in this list (400 ms): the field
+   * updates immediately, and this callback runs after a pause in typing,
+   * immediately on blur, and on unmount so the last characters are kept.
+   * Pen, Operations, and the block editor all share that schedule.
+   */
   onEditText: (id: string, text: string) => void
   onToggleComplete: (id: string) => void
   onRemove?: (id: string) => void
@@ -145,24 +152,89 @@ export function StepSearchPicker({
   )
 }
 
-/** A textarea that grows with its text, so a long objective is readable. */
+/** Pause before an objective edit mirrors onto the painted block and the time grid. */
+const OBJECTIVE_TEXT_COMMIT_MS = 400
+
+/**
+ * A textarea that grows with its text. Letters stay in local state so the
+ * field feels instant. `onChange` is the store mirror: it waits out a pause,
+ * then also runs on blur and on unmount.
+ */
 function GrowText({ value, onChange, onBlur }: { value: string; onChange: (v: string) => void; onBlur: (v: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const [draft, setDraft] = useState<string | null>(null)
+  const shown = draft ?? value
+  const timer = useRef<number | null>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const pendingRef = useRef<string | null>(null)
+
+  const clearTimer = () => {
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+  }
+
+  const flush = (text: string) => {
+    clearTimer()
+    pendingRef.current = null
+    if (text !== valueRef.current) onChangeRef.current(text)
+  }
+
+  const schedule = (text: string) => {
+    clearTimer()
+    if (text === valueRef.current) {
+      pendingRef.current = null
+      return
+    }
+    pendingRef.current = text
+    timer.current = window.setTimeout(() => {
+      timer.current = null
+      pendingRef.current = null
+      if (text !== valueRef.current) onChangeRef.current(text)
+    }, OBJECTIVE_TEXT_COMMIT_MS)
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTimer()
+      const pending = pendingRef.current
+      pendingRef.current = null
+      if (pending !== null && pending !== valueRef.current) onChangeRef.current(pending)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (draft !== null && value === draft) setDraft(null)
+  }, [value, draft])
+
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     el.style.height = "auto"
     el.style.height = `${el.scrollHeight}px`
-  }, [value])
+  }, [shown])
+
   return (
     <textarea
       ref={ref}
       rows={1}
       className="trk-now-obj-text"
-      value={value}
+      value={shown}
       aria-label="Objective text"
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => onBlur(e.target.value)}
+      onChange={(e) => {
+        const next = e.target.value
+        setDraft(next)
+        schedule(next)
+      }}
+      onBlur={(e) => {
+        const next = e.target.value
+        flush(next)
+        onBlur(next)
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault()
@@ -483,7 +555,7 @@ export function NowObjectivesList({
   if (mode === "inline") {
     return (
       <div className="trk-now-obj-inline" data-testid="now-objectives-inline">
-        <div className="trk-now-obj-legend">Live tracked from Brain 2, objectives:</div>
+        <div className="trk-now-obj-legend trk-section-title">Live tracked from Brain 2, objectives:</div>
         <ObjectivesEditor
           objectives={objectives}
           onAdd={onAdd}

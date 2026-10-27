@@ -50,7 +50,9 @@ So a task edit blocks the UI for about 200 ms before any network. The 48 ms coal
 
 ### 4. Timers keep the save path busy
 
-- A running work session or pen session checks the grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts`). Since Step 4, `liveEntryUpToDate` skips the write when the painted block already ends at the active minute. The block still grows about once a minute, and that growth takes the full timegrid save. Typing an objective takes that same save on every character (see the 2026-10-24 note). Hub posts are one per edit after Step 1, not two.
+_Last mapped: 2026-10-27_
+
+- A running work session or pen session checks the grid every 15 s (`WORK_SESSION_TICK_MS`, `lib/operation-work-session.ts`). Since Step 4, `liveEntryUpToDate` skips the write when the painted block already ends at the active minute. The block still grows about once a minute, and that growth takes the full timegrid save. Typing an objective used to take that same save on every character (2026-10-24 note). `GrowText` now waits 400 ms, and flushes on blur and unmount, so a burst of typing is one save. Hub posts are one per edit after Step 1, not two.
 - In a browser tab (not the Electron desktop ingest), `hooks/useMessageIngest.ts:~179` polls the hub every 1 s with 2–3 fetches to the same dev server.
 - With the phone hub up, `pushVault` PUTs the whole vault every 60 s.
 
@@ -64,7 +66,7 @@ What is fine: store subscriptions use selectors (two whole-store hooks, both in 
 
 ## Observed on the live vault (2026-10-24)
 
-_Last mapped: 2026-10-24_
+_Last mapped: 2026-10-27_
 
 While a pen-color **Working on right now** session was open, the whole window lagged: closing a popup, typing, and clicking a button. The same lag may also be attributable to the computer being overloaded at the time. The seams below are in the code either way.
 
@@ -77,7 +79,9 @@ The vault beside that small session is large. Read from the Electron localStorag
 | Tasks | 6.4 MB | 12.8 MB | 11,853 tasks |
 | Time grid | 3.6 MB | 7.1 MB | 9,566 entries, 691 pens |
 
-Typing in an objective is the expensive app path. `GrowText` in `now-objectives-list.tsx` calls `onEditText` on every change. For the pen clock that is `editPenColorNowObjectiveText`, which mirrors the list onto the painted block through `updateEntry`. `updateEntry` maps the whole `entries` array. About 48 ms later `createCogsJSONStorage` stringifies `brain2-timegrid-store` and writes it. The Operations clock uses the same editor and the same mirror (`editWorkNowObjectiveText`). Dozens of views select `s.entries` (the time grid, the dash faces, the home tiles, and others) and re-render when that array changes. A task-store edit stringifies the 6.4 MB task blob the same way.
+Typing in an objective was the expensive app path that day. `GrowText` in `now-objectives-list.tsx` called `onEditText` on every change. For the pen clock that is `editPenColorNowObjectiveText`, which mirrors the list onto the painted block through `updateEntry`. `updateEntry` maps the whole `entries` array. About 48 ms later `createCogsJSONStorage` stringifies `brain2-timegrid-store` and writes it. The Operations clock uses the same editor and the same mirror (`editWorkNowObjectiveText`). Dozens of views select `s.entries` (the time grid, the dash faces, the home tiles, and others) and re-render when that array changes. A task-store edit stringifies the 6.4 MB task blob the same way.
+
+That typing path is now debounced in `GrowText` (`components/Home/Tracking/now-objectives-list.tsx`). The field keeps the letters locally. `onEditText` — pen `editPenColorNowObjectiveText`, Operations `editWorkNowObjectiveText`, and the block editor, since they share this list — runs after a 400 ms pause, immediately on blur, and on unmount so the last characters are kept. One pause still takes the full timegrid save.
 
 The dev window in that session was `npm run electron:dev`, compiling on the order of 9,000 modules, with full reloads. That matches section 1.
 
@@ -154,7 +158,9 @@ _Last mapped: 2026-10-25_ — **Done.**
 
 ### Later — Stop rewriting whole stores (**Do not start** without a design pass)
 
-The root cost is one localStorage blob per store, rewritten whole on every edit. Typing an objective is one case: each character rewrites `brain2-timegrid-store` (see the 2026-10-24 note). Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
+_Last mapped: 2026-10-27_
+
+The root cost is one localStorage blob per store, rewritten whole on every edit. Typing an objective is one case: after the 400 ms pause in `GrowText` (or on blur or unmount), that edit still rewrites `brain2-timegrid-store` whole (see the 2026-10-24 note). Moving `task-storage` and `timegrid-store` to IndexedDB with per-record writes would make an edit cost one record, not the vault. That changes backup (`lib/data/backup.ts`), the hub sync, and every vault guard. It needs its own redesign doc.
 
 ---
 

@@ -4,8 +4,9 @@
  * What actually happened, written after the fact. Not the Plan text, and not
  * the painted tracking blocks. A day is one editor. A week shows a truncated
  * day summary under each day (open it for the full day) and a week summary
- * beneath them. Month, season, and year follow the same step: truncated
- * children, then that period’s own summary.
+ * beneath them. **All day summaries** opens every day’s full text at once,
+ * beside the week summary. Month, season, and year follow the same step:
+ * truncated children, then that period’s own summary.
  */
 "use client"
 
@@ -109,6 +110,7 @@ export function WeekSummaryNest({
 }) {
   const days = daysOfWeek(anchor)
   const [openDay, setOpenDay] = useState<string | null>(null)
+  const [allDays, setAllDays] = useState(false)
   const open = openDay ? days.find((day) => formatLocalDateKey(day) === openDay) : undefined
   const range = `${format(days[0], "MMM d")} – ${format(days[6], "MMM d")}`
 
@@ -129,8 +131,23 @@ export function WeekSummaryNest({
           )
         })}
       </div>
-      {open ? (
+      {open && !allDays ? (
         <SummaryEditor storageKey={formatLocalDateKey(open)} label={dayLabel(open)} period="day" rows={5} />
+      ) : null}
+      <button
+        type="button"
+        className="trk-summary-all"
+        aria-pressed={allDays}
+        onClick={() => setAllDays((on) => !on)}
+      >
+        {allDays ? "Hide day summaries" : "All day summaries"}
+      </button>
+      {allDays ? (
+        <div className="trk-summary-all-days">
+          {days.map((day) => (
+            <SummaryEditor key={formatLocalDateKey(day)} storageKey={formatLocalDateKey(day)} label={dayLabel(day)} period="day" rows={4} />
+          ))}
+        </div>
       ) : null}
       <SummaryEditor
         storageKey={weekSummaryKey(anchor)}

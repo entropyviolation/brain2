@@ -8,7 +8,6 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 import { Link2, Unlink } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { arrivalWindow, edgeOf, nearbyInstants, neighborBlock, nextBlock, resolveEdge, type Edge, type EdgeState } from "@/lib/entry-edges"
 import { isInstant, minutesToLabel, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
@@ -30,6 +29,7 @@ export function CertaintyToggle({ edge, value, onChange }: { edge: "start" | "en
         <button
           key={l.id}
           type="button"
+          data-no95=""
           role="radio"
           aria-checked={value === l.id}
           title={l.hint}
@@ -106,12 +106,12 @@ export function EdgeAnchor({
           <p className="trk-help">Tie this {edge} to an event you logged or to the neighbouring block. They stay one moment; the surer time wins.</p>
           <div className="trk-edge-options">
             {block && (
-              <button type="button" className="trk-edge-option" onClick={() => onLink("join", block)}>
+              <button type="button" className="trk-entry-key is-compact trk-edge-option" data-no95="" onClick={() => onLink("join", block)}>
                 {edge === "start" ? "After" : "Before"} {name(block)} · {edgeText(edgeOf(block, edge === "start" ? "end" : "start"))}
               </button>
             )}
             {events.map((e) => (
-              <button key={e.id} type="button" className="trk-edge-option" onClick={() => onLink("event", e)}>
+              <button key={e.id} type="button" className="trk-entry-key is-compact trk-edge-option" data-no95="" onClick={() => onLink("event", e)}>
                 {name(e)} · {edgeText(edgeOf(e, "start"))}
               </button>
             ))}
@@ -121,7 +121,7 @@ export function EdgeAnchor({
       {partner && theirs && res?.kind === "snap" && (
         <p className="trk-help trk-edge-conflict">
           The other side is surer.{" "}
-          <button type="button" className="trk-edge-option" onClick={() => onTake(res.to)}>
+          <button type="button" className="trk-entry-key is-compact trk-edge-option" data-no95="" onClick={() => onTake(res.to)}>
             Take {edgeText(res.to)}
           </button>
         </p>
@@ -129,10 +129,10 @@ export function EdgeAnchor({
       {partner && theirs && res?.kind === "conflict" && !kept && (
         <p className="trk-help trk-edge-conflict" role="alert">
           Both sure, different times.{" "}
-          <button type="button" className="trk-edge-option" onClick={() => onTake(theirs)}>
+          <button type="button" className="trk-entry-key is-compact trk-edge-option" data-no95="" onClick={() => onTake(theirs)}>
             Use {edgeText(theirs)}
           </button>{" "}
-          <button type="button" className="trk-edge-option" onClick={() => setKept(true)}>
+          <button type="button" className="trk-entry-key is-compact trk-edge-option" data-no95="" onClick={() => setKept(true)}>
             Keep {edgeText(own)}
           </button>
         </p>
@@ -174,9 +174,9 @@ export function DriveCommuteSection({ ready, busy, message, onCalculate }: { rea
     <div className="trk-section trk-edge-transit" data-testid="entry-drive-commute">
       <Label className="trk-section-title">Driving commute</Label>
       <p className="trk-help">{message || (ready ? "Work out the drive between the blocks on either side, then set this block's length and mark Activity as driving." : "Anchor this block to a block with an address on each side first.")}</p>
-      <Button type="button" size="sm" disabled={!ready || busy} onClick={onCalculate}>
+      <button type="button" className="trk-entry-key is-compact" data-no95="" disabled={!ready || busy} onClick={onCalculate}>
         {busy ? "Calculating…" : "Calculate driving commute"}
-      </Button>
+      </button>
     </div>
   )
 }
@@ -251,9 +251,9 @@ export function TransitSection({
             {win && endCertainty !== "exact" ? ` — arrive ${minutesToLabel(win[0])}–${minutesToLabel(win[1])}` : ` — arrive ${minutesToLabel(endMin + minutes)}`}. {gap > 0 ? `Gap is ${gap} min.` : "No gap yet."}
             {minutes > gap ? " The trip is longer than the gap, so the block is clipped." : ""}
           </p>
-          <Button type="button" size="sm" disabled={gap < 1} onClick={() => onAdd({ from: entry, to: next.entry, minutes, label })}>
+          <button type="button" className="trk-entry-key is-compact" data-no95="" disabled={gap < 1} onClick={() => onAdd({ from: entry, to: next.entry, minutes, label })}>
             Add transit block
-          </Button>
+          </button>
         </>
       )}
     </div>

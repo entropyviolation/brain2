@@ -18,6 +18,11 @@ function renderLog(setCurrentDate: (date: Date) => void = () => {}) {
   return render(<TrackingLogView currentDate={DAY} setCurrentDate={setCurrentDate} />)
 }
 
+/** Composer keys. Shelf headings share some of these names. */
+function logMode(name: string) {
+  return within(screen.getByRole("toolbar", { name: "What to log" })).getByRole("button", { name })
+}
+
 describe("TrackingLogView", () => {
   beforeEach(() => {
     resetAllStores()
@@ -90,17 +95,17 @@ describe("TrackingLogView", () => {
     ])
     expect(modes).toHaveClass("trk-logbook-modes")
     expect(screen.queryByRole("button", { name: "Clock" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Food" })).not.toBeInTheDocument()
+    expect(within(screen.getByRole("toolbar", { name: "What to log" })).queryByRole("button", { name: "Food" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Time of day")).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Location" })).toBeInTheDocument()
     expect(screen.getByLabelText("Title").tagName).toBe("INPUT")
     expect(screen.queryByRole("toolbar", { name: "Intake" })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Intake" }))
+    fireEvent.click(logMode("Intake"))
     expect(screen.getByRole("toolbar", { name: "Intake" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(screen.getByRole("toolbar", { name: "Intake" })).getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Name").tagName).toBe("INPUT")
-    fireEvent.click(screen.getByRole("button", { name: "Switch" }))
+    fireEvent.click(logMode("Switch"))
     expect(screen.getByLabelText("From")).toBeInTheDocument()
     expect(screen.getByLabelText("To")).toBeInTheDocument()
     expect(screen.getByLabelText("View")).toHaveTextContent("Activity")
@@ -108,7 +113,7 @@ describe("TrackingLogView", () => {
     expect(screen.queryByLabelText("Note")).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Note" }))
     expect(screen.getByLabelText("Note").tagName).toBe("TEXTAREA")
-    fireEvent.click(screen.getByRole("button", { name: "Thought process" }))
+    fireEvent.click(logMode("Thought process"))
     expect(screen.getByRole("textbox", { name: "Thought process" }).tagName).toBe("TEXTAREA")
     expect(screen.getByRole("textbox", { name: "Thought process" })).toHaveAttribute(
       "placeholder",
@@ -174,8 +179,8 @@ describe("TrackingLogView", () => {
 
   it("stores intake on the Intake pen and shows it under Food", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Intake" }))
-    fireEvent.click(screen.getByRole("button", { name: "Food" }))
+    fireEvent.click(logMode("Intake"))
+    fireEvent.click(within(screen.getByRole("toolbar", { name: "Intake" })).getByRole("button", { name: "Food" }))
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "coffee" } })
     fireEvent.click(screen.getByRole("checkbox", { name: "Estimated" }))
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
@@ -197,7 +202,7 @@ describe("TrackingLogView", () => {
 
   it("switches on the chosen view, and a location switch stays off Activity", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Switch" }))
+    fireEvent.click(logMode("Switch"))
     fireEvent.change(screen.getByLabelText("To"), { target: { value: "cleaning" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
     const list = screen.getByRole("region", { name: "Switch" })
@@ -256,7 +261,7 @@ describe("TrackingLogView", () => {
 
   it("shows a textarea in Thought process mode and files the row under Thought process", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Thought process" }))
+    fireEvent.click(logMode("Thought process"))
     const field = screen.getByRole("textbox", { name: "Thought process" })
     expect(field.tagName).toBe("TEXTAREA")
     fireEvent.change(field, { target: { value: "opening the editor to fix the clock\nso the military clock stays" } })
@@ -331,7 +336,7 @@ describe("TrackingLogView", () => {
   it("logs money spent with an amount, what, and source, and edits it", () => {
     renderLog()
     expect(screen.getByRole("region", { name: "Spent" })).toHaveTextContent("Nothing spent this day.")
-    fireEvent.click(screen.getByRole("button", { name: "Spent" }))
+    fireEvent.click(logMode("Spent"))
     expect(screen.getByLabelText("Amount")).toBeInTheDocument()
     expect(screen.getByLabelText("On")).toBeInTheDocument()
     expect(screen.getByLabelText("Source")).toBeInTheDocument()
@@ -473,7 +478,7 @@ describe("tracking log quick keys", () => {
         <QuickAddWroteHost />
       </>,
     )
-    fireEvent.click(screen.getByRole("button", { name: "Intake" }))
+    fireEvent.click(logMode("Intake"))
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "coffee" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
     const food = () => screen.getByRole("region", { name: "Food" })
@@ -489,9 +494,19 @@ describe("tracking log quick keys", () => {
     expect(within(food()).getAllByRole("button", { name: /coffee/ })).toHaveLength(2)
   })
 
+  it("opens a shelf the way Spent does", () => {
+    renderLog()
+    fireEvent.click(within(screen.getByRole("region", { name: "Food" })).getByRole("button", { name: "Food" }))
+    const food = screen.getByRole("dialog", { name: "Food" })
+    expect(food).toHaveTextContent("Nothing eaten this day.")
+    fireEvent.keyDown(food, { key: "Escape" })
+    fireEvent.click(within(screen.getByRole("region", { name: "Events" })).getByRole("button", { name: "Events" }))
+    expect(screen.getByRole("dialog", { name: "Events" })).toHaveTextContent("left room")
+  })
+
   it("refills the spend form from a recent purchase and picks a source key", () => {
     renderLog()
-    fireEvent.click(screen.getByRole("button", { name: "Spent" }))
+    fireEvent.click(logMode("Spent"))
     fireEvent.change(screen.getByLabelText("Amount"), { target: { value: "3.25" } })
     fireEvent.change(screen.getByLabelText("On"), { target: { value: "tea" } })
     fireEvent.click(within(screen.getByRole("group", { name: "Sources" })).getByRole("button", { name: "Card" }))
