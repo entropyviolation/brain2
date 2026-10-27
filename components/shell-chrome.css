@@ -5,7 +5,8 @@
  * Rituals, System, and Capture are the pale silver keycap (same skirt as
  * `.todo-cap`). The optional now well lives in Capture. Pause, Play, and Stop
  * on a live clock stay the transport disc. The fascia is still brushed mill;
- * the press keys are plastic caps, not raised metal.
+ * the press keys are plastic caps, not raised metal. While Names is on, System
+ * grows to fit the **CODE DOCUMENTATION** key (`components/CodeDocs/`).
  *
  * Reflow: Nav is the left anchor. Friend, Rituals, System, and Capture sit
  * in `.b2-shell-stage`, one group centered in the space to the right of Nav
@@ -465,6 +466,21 @@ body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:focus-visible {
   max-width: min(100%, 18rem);
 }
 
+/* Names on: the code-documentation key sits with the System icons and needs
+   the full words. Off, the well stays the icon row. */
+.b2-shell-system:has(.b2-code-docs-key) {
+  max-width: min(100%, 36rem);
+}
+
+body.win95-app .b2-shell-system button.b2-code-docs-key {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
+  padding-inline: 10px;
+  letter-spacing: 0.04em;
+}
+
 .b2-shell-keys {
   display: flex;
   flex-wrap: nowrap;
@@ -632,11 +648,16 @@ body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:focus-visible {
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.28);
 }
 
-/* Pale silver keycaps. The :not() chain beats the global Win95 button lip.
-   Discs, clock names, handoff ×, fold, and keys that already wear `.todo-cap`
-   keep their own faces. */
+/* Pale silver keycaps. The :not() chain beats the global Win95 button lip
+   (`app/win95.css`), including its :active twin (`--fascia-key-pressed`).
+   Each extra :not() there raises that lip, so Nav keeps the same exclusions
+   or the mill paints over the skirt. The resting rule is itself heavier than
+   that :active lip, so a press that changes box-shadow or background-image
+   has to outrank THIS rule too — otherwise the key translates and the 4px
+   skirt never shortens. Discs, clock names, handoff ×, fold, and keys that
+   already wear `.todo-cap` keep their own faces. */
 body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold),
-body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key) {
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
   --cap-top: var(--todo-cap-top);
   --cap-top2: var(--todo-cap-top2);
   --cap-skirt: var(--todo-cap-skirt);
@@ -669,6 +690,19 @@ body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([
   gap: 5px;
   cursor: pointer;
   transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+/* Nav only: a step darker than the rail caps. The face stays the pale silver
+   gradient. The skirt and the foot under it are heavier so a dead grey cap
+   still reads as thick plastic. */
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-skirt: #9aa0a6;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* Capture word keys stay label-wide. The rule above grows a key up to
@@ -738,14 +772,18 @@ body.win95-app .b2-shell-nav button svg {
   color: var(--todo-cap-leg);
 }
 
-body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):hover:not(:disabled) {
+body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):hover:not(:disabled) {
   background: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
   background-image: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
   color: var(--todo-cap-leg);
 }
 
-body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
-body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):not(.b2-shell-fold)[aria-pressed="true"] {
+/* Same exclusions as the resting cap, plus :not(:disabled):active, so this
+   ties the hover rule above and beats both the Win95 lip and the 4px skirt.
+   It follows hover, so a click keeps the silver face instead of the brighter
+   hover. */
+body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
+body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled)[aria-pressed="true"] {
   background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
   background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
   box-shadow:
@@ -762,17 +800,19 @@ body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):focus-visible 
   outline-offset: 1px;
 }
 
-/* Nav (Back / Forward). Rest is the silver cap. Focus is the black CRT with a
-   green chevron. Press is the old 1px milled sink, not the keycap drop.
-   The :not() chain matches the resting cap so these states actually win. */
-body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):hover:not(:disabled):not(:focus) {
+/* Nav (Back / Forward). Rest is the silver cap (darker skirt than the rail).
+   Focus is the black CRT with a green chevron. Press is the keycap drop:
+   translateY(2px), skirt 4px → 2px, soft inner shadow, face stays the
+   gradient. `.b2-shell-nav-btn` puts :active level with :hover so a click
+   does not flash the brighter face. The :not() chain matches the resting cap. */
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):hover:not(:disabled):not(:focus) {
   background: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
   background-image: linear-gradient(180deg, #f7f8f9, var(--cap-top2));
   color: var(--todo-cap-leg);
 }
 
-body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):focus:not(:disabled),
-body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):focus-visible:not(:disabled) {
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus:not(:disabled),
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible:not(:disabled) {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.22), transparent 55%),
     #070c0a;
@@ -797,31 +837,29 @@ body.win95-app .b2-shell-nav button:focus-visible:not(:disabled) svg {
   filter: drop-shadow(0 0 3px #7dffc4);
 }
 
-body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(:disabled):active {
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--b2-shell-brush) 40%, var(--chrome-inset) 100%);
-  background-image:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--b2-shell-brush) 40%, var(--chrome-inset) 100%);
-  color: #111;
-  border-color: transparent;
+body.win95-app .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: var(--todo-cap-leg);
+  border-color: var(--cap-edge);
   text-shadow: none;
   outline: 0;
-  box-shadow: var(--b2-shell-key-pressed);
-  transform: translate(0, 1px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  transform: translateY(2px);
 }
 
 body.win95-app .b2-shell-nav button:not(:disabled):active svg {
-  color: #111;
+  color: var(--todo-cap-leg);
   filter: none;
 }
 
 body.win95-app .b2-shell-rail button:not(.dvd-key):not(.todo-cap):disabled,
-body.win95-app .b2-shell-nav button:disabled,
-body.win95-app .b2-shell-nav button.is-dead {
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):disabled,
+body.win95-app .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key).is-dead {
   color: #7d8185;
   text-shadow: none;
   opacity: 1;
@@ -1127,9 +1165,9 @@ body.win95-app .b2-shell .b2-shell-count {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.win95-app .b2-shell-rail button:not(:disabled):active,
-  body.win95-app .b2-shell-rail button[aria-pressed="true"],
-  body.win95-app .b2-shell-nav button:not(:disabled):active,
+  body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
+  body.win95-app .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled)[aria-pressed="true"],
+  body.win95-app .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active,
   body.win95-app .b2-shell-brand button.baby-nest-chat-hit:active,
   body.win95-app .b2-shell-brand button.baby-nest-gallery-hit:active,
   body.win95-app .b2-shell button.b2-shell-fold:active,
