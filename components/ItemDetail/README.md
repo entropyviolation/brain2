@@ -85,8 +85,8 @@ Tag, link, list, and dependency helpers patch the draft until `commitDraft`.
 Chrome is the house [milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia)
 (`.id95` / `.id95-dialog` in `item-detail-chrome.css`): brushed silver bays,
 engraved nameplates, CRT title readout (`#7dffc4`), raised metal action keys,
-and sibling detail tabs as equal keys in one bay (active = CRT + round power
-lamp). **Body** and **Scheduling** lead the bay; **Analysis** / **Time** /
+and sibling detail tabs as latching keycaps in one bay (silver skirt at rest;
+active = CRT + round power lamp, dim when off). _Last mapped: 2026-10-27._ **Body** and **Scheduling** lead the bay; **Analysis** / **Time** /
 **History** use quieter `.id-tab-secondary` keys (still real tabs — not a
 separate “More” route that would break `resolveDetailView`). Action keys:
 **Save** and **Complete** are primary (`.id-btn-primary`); **Missed** is
@@ -114,9 +114,24 @@ A habit’s standing item is a generic item (`sourceHabitId` on `attributes`). I
 `resolveDetailView` (`lib/item-types.ts`) starts from the type's `detailPanels`
 (or infers them from capabilities), unions list `detailPanels`, then filters by
 capabilities and list `hiddenDetailPanels`. Next Actions membership still treats
-an item as a Task (full hardcoded Task surface). A generic `item` or catalog
+an item as a Task (full hardcoded Task surface) until you switch the view.
+_Last mapped: 2026-10-27._ When an item is assigned more than one type — its
+own type, a parent type such as Operation on a Computer Project, or a type
+pinned by a list — the fascia shows type cards (`ItemTypeViewCards`). Clicking
+a card passes `viewAsTypeId` and the panels, capabilities, and layout become
+that type's. The item's stored type does not change. The primary type is the
+default. A pick that is not assigned is ignored (`activeDetailTypeId`).
+Double-click still opens the type editor. A generic `item` or catalog
 type such as Book / Furniture shows Details (and a cover / featured fields when
-`detailLayout` is set) without Scheduling unless you opt in.
+`detailLayout` is set) without Scheduling unless you opt in. **Computer Project**
+(`lib/computer-project-types.ts`, parent Operation) opens on a desk
+(`ComputerProjectDetail`): status, mission, repository, branch, local path,
+stack, next milestone, linked next actions (`has-part`), phases as milestones
+(`has-phase`), project notes (`homeNotes`), tracked time, and **Open in Operations**.
+A phase is not listed again under next actions. Those fields
+are real attributes, links, and tracked minutes.
+The Subtasks tab stays the existing item-detail tree. Switching the card to
+Operation shows the operation profile instead of that desk.
 
 Complete / duration / status chrome is gated on
 `capabilities.completable`, `capabilities.duration`, and
@@ -229,6 +244,8 @@ _Last mapped: 2026-10-24._
 | `ItemNotesLog.tsx` | Notes tab: composer (day, time stamp, Cmd/Ctrl+Enter), pinned standing note (`Task.notes`), dated entries grouped by day. `NotesPeek` is the rail face. |
 | `ItemResourcesPanel.tsx` | Resources tab: drop tray with Auto / Copy / Link (desktop), cards, viewer (image / PDF / audio / video / text / folder), caption, Open / Download / Remove; linked files add Show in Finder and Locate…. |
 | `ItemResourcesPanel.test.tsx` | Linking on drop and from the folder picker, following a move, Missing and Locate, and the web fallback, with a mocked `fileLinks` bridge. |
+| `ItemTypeViewCards.tsx` | _Last mapped: 2026-10-27._ Fascia type cards. One type is a nameplate. Two or more switch the detail view (`viewAsTypeId`). Double-click opens the type editor. |
+| `ComputerProjectDetail.tsx` | _Last mapped: 2026-10-27._ Computer Project desk on Details: status, repo, next actions (`has-part`), milestones (`has-phase`, not repeated in next actions), notes, tracked time. Writes operation and computer-project attributes through the draft. Add action / Add milestone create linked tasks immediately. |
 | `ItemAttributesSection.tsx` | Shared attributes surface. When the type has `detailLayout`, renders a large hero image and featured fields above the rest of the schema, then list-defined attributes, item-only leftovers, and `AttributeCreator`. `omitAttributeIds` hides fields edited on another panel of the same view. On a person, birthday and standing notes are omitted so the biography is their only editor. _Last mapped: 2026-10-24:_ `onLiveValue(id, value)` gets text, number and link keys before blur; both shells write it with `touchDraft`, so Cmd+S keeps unblurred text. Text lists and list references pass `textListIds`, `attributeLabels`, `onBindTextList`, and `onOpenTextList`. The cell name uses `attributeLabels` when this item set one. **Add attribute** is `.id-keycap`. |
 | `item-attributes.test.tsx` | Hero/featured layout + attribute creator for catalog-style types. |
 | `BodyPanel.tsx` | The `"body"` detail panel for document-type items. Default face is **rendered prose** (HTML stripped to plain when the body looks like markup); an explicit **Source** / **Rendered** toggle reveals the raw editor — never a raw-HTML face by default. Markdown still uses `RichTextEditor`. Persists through `useTaskStore.updateTask`, debounced (default 500ms) with a flush on blur/unmount. Props: `taskId`, `readOnly?`, `debounceMs?`. |
@@ -288,10 +305,10 @@ _Last mapped: 2026-10-25._ The **Time** tab (`ItemDetailPopup.tsx`, and the page
 
 ## Steps as items, stacked popups, one step tree
 
-_Last mapped: 2026-10-25._ A step is still a `Subtask` in `task.subtasks`. Opening it makes an item for notes, files, and links (Phase 11). Plan: [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md).
+_Last mapped: 2026-10-27._ A step is still a `Subtask` in `task.subtasks`. Opening it makes an item for notes, files, and links (Phase 11). The redesign is resolved: [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md).
 - **Phase 9.** _Last mapped: 2026-10-25._ **Built (slice K):** `SubtaskTree.tsx` and the To Do lid's `TodoBreakdown.tsx` host one shared `components/steps/StepTree.tsx`, with drag and multi-select. Spent on a row is Phase 6. The ↗ is Phase 11.
 - **Phase 10.** Steps carry a Bare minimum / Goal / Exceptional tag. The Subtasks tab and Time tab show the task's B / G / E percent (weighted by the tree, each child an equal share of its parent) and the level it is completed to. The step readout's percent changes from a flat leaf count to the weighted one.
-- **Phase 11.** _Last mapped: 2026-10-25._ **Built (slice M).** A step becomes an item the first time it opens (`Subtask.itemId`; the item has `parentTaskId` and `stepOf`; `lib/step-items.ts`). The tree stays the source of truth for order, done, estimate, needs, tier and points; the item keeps a read mirror of name and estimate, and edits to them go back to the step (`updateStepField`, via `components/steps/StepItemStack.tsx`). `TaskDetailPopup` takes `layerHeader` and `onStepComplete`, and marks a layered popup `data-item-layer`; a popup underneath ignores clicks inside it (`layerSafeDismiss`). On a step item: Complete ticks the step and closes the layer; Missed and the Status picker are hidden; Subtasks shows the steps inside that step, written to the parent's tree (`StepItemSubtasks`). `SubtaskTree` rows get the dot click and **↗** (`onOpenStep`) on a stored task, and the tier tags (`tierTags`). Step item ids are `step-item-…`, never a step id, so the page's legacy delete of a Task-backed subtask with the step's id (above) never hits one. **Card** on a step item is built (Phase 12). **Planned:** the gauge on its bar (slice N).
+- **Phase 11.** _Last mapped: 2026-10-25._ **Built (slice M).** A step becomes an item the first time it opens (`Subtask.itemId`; the item has `parentTaskId` and `stepOf`; `lib/step-items.ts`). The tree stays the source of truth for order, done, estimate, needs, tier and points; the item keeps a read mirror of name and estimate, and edits to them go back to the step (`updateStepField`, via `components/steps/StepItemStack.tsx`). `TaskDetailPopup` takes `layerHeader` and `onStepComplete`, and marks a layered popup `data-item-layer`; a popup underneath ignores clicks inside it (`layerSafeDismiss`). Escape closes only the top layer. _Last mapped: 2026-10-27._ On a step item: Complete ticks the step and closes the layer; Missed and the Status picker are hidden; Subtasks shows the steps inside that step, written to the parent's tree (`StepItemSubtasks`). `SubtaskTree` rows get the dot click and **↗** (`onOpenStep`) on a stored task, and the tier tags (`tierTags`). Step item ids are `step-item-…`, never a step id, so the page's legacy delete of a Task-backed subtask with the step's id (above) never hits one. **Card** on a step item is built (Phase 12). The step-item bar does not draw its own level gauge. The level stays on Subtasks and the task card. The resolved redesign did not add one.
 - **Phase 12.** _Last mapped: 2026-10-25._ **Built (slice O).** A **Card** key (key row, after Missed) opens the To Do task card while a To Do panel is mounted (`useTaskCardStore` `hosts`) and the task is open and on today / this week / this month (`onCurrentPeriod`). A step item's **Card** opens the parent's card at the step. It closes item detail first (or clears the step layers). The card's **↗ Item** opens item detail back on top. Every task also has **Open task card** in the Details rail and on the page's right column (`ItemTaskCardKey`), including when the key-row **Card** is hidden. That key opens the same card; if To Do is not mounted, Home switches to To Do.
 - **Phase 10 / 15.** Steps can carry a spark mark (`Subtask.sparkedAt`). A notice note from the To Do row lands in `noteLog`, tagged `notice`.
 - **Phase 14.** The Dependencies tab gains an **Unlocks** list (what waits on this item) beside what it needs. Parts stay on Subtasks: an open step makes the item incomplete, never locked. A task cannot list its own part or parent as a prerequisite.

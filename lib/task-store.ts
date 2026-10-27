@@ -66,6 +66,7 @@ import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-
 import { persistKey } from "@/lib/storage-keys"
 import { migrateTaskFileValues, migrateTaskImageAttributes } from "@/lib/attachments"
 import { migratePersonNoteLogs } from "@/lib/person-notes-fold"
+import { stampUntypedOperations } from "@/lib/operation-item-stamp"
 import {
   addListLinkToLists,
   applyListLinksToTask,
@@ -937,6 +938,8 @@ export const useTaskStore = create<TaskState>()(
       onRehydrateStorage: () => (state) => {
         taskPersistHydrated = true
         if (!state?.tasks?.length) return
+        const stamped = stampUntypedOperations(state.tasks)
+        if (stamped !== state.tasks) useTaskStore.setState({ tasks: stamped })
         // Attachment bytes leave the blob: `FileValue` data URLs first, then
         // pictures pasted into `image` / `multiimage` attributes. One 592KB PNG
         // in a custom attribute was filling the origin for every other vault.

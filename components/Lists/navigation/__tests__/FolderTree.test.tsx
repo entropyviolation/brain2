@@ -165,6 +165,38 @@ describe("FolderTree", () => {
     expect(screen.getByText("Work").closest(".fm-tree-folder")?.querySelector(".fm-tree-icon")).toBeTruthy()
   })
 
+  it("lists each item type under Quick Access → Item Types", () => {
+    const onNavTo = vi.fn()
+    const onOpenItemType = vi.fn()
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={onNavTo}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+        itemTypes={[
+          { id: "book", name: "Book", pluralName: "Books" },
+          { id: "task", name: "Task", pluralName: "Tasks" },
+        ]}
+        onOpenItemType={onOpenItemType}
+      />,
+    )
+    expect(screen.getByText("Item Types")).toBeInTheDocument()
+    expect(screen.queryByText("Books")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText("Expand Item Types"))
+    expect(screen.getByText("Books")).toBeInTheDocument()
+    expect(screen.getByText("Tasks")).toBeInTheDocument()
+    fireEvent.click(screen.getByText("Books"))
+    expect(onOpenItemType).toHaveBeenCalledWith("book")
+    fireEvent.click(screen.getByText("Item Types"))
+    expect(onNavTo).toHaveBeenCalledWith("item-types")
+  })
+
   it("adds Module Lists to Quick Access when the folder exists", () => {
     render(
       <FolderTree

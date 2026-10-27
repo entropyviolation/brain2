@@ -11,6 +11,7 @@
 "use client"
 
 import { trackedTimeForItems } from "@/lib/tracked-time"
+import { isOperation } from "@/lib/operations"
 import { useTaskStore } from "@/lib/task-store"
 import { useReviewsStore, type OperationReviewInput, type OperationReview } from "@/lib/reviews-store"
 import { addLink, removeLinkByTarget } from "@/lib/links"
@@ -80,7 +81,7 @@ export function upgradeTaskToOperation(taskId: string): Task | null {
   const store = useTaskStore.getState()
   const task = store.tasks.find((t) => t.id === taskId)
   if (!task) return null
-  if (task.type === OPERATION_TYPE_ID) return task
+  if (isOperation(task)) return task
   const updated: Task = {
     ...task,
     type: OPERATION_TYPE_ID,
@@ -662,7 +663,7 @@ export function deleteOperation(operationId: string): void {
   const store = useTaskStore.getState()
   const tasks = store.tasks
   const op = tasks.find((t) => t.id === operationId)
-  if (!op || op.type !== OPERATION_TYPE_ID) return
+  if (!op || !isOperation(op)) return
 
   const ids = new Set<string>([operationId])
   for (const phase of getPhases(operationId, tasks)) {

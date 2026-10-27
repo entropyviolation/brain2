@@ -14,6 +14,15 @@ configuration stored on the item itself:
 
 Structurally an Operation is still just a `Task` carrying `type: "operation"`, so
 it inherits the entire item model (attributes, links, lists, tags, time logs).
+_Last mapped: 2026-10-27._ **Computer Project** (`computer-project`,
+`lib/computer-project-types.ts`) is a subtype: `parentTypeId` is `operation`,
+and `isOperation` is true for both ids, so a computer project stays on this
+board and in the workspace. Item Types → Operations lists both (a subtype is
+in the parent list). Item Types → Computer Projects lists only that type.
+Existing operations are already items; a record that is still typed `item`
+but carries operation panels, a task list, parts, or a tracking pen is stamped
+`operation` once on vault load (`lib/operation-item-stamp.ts`). That pass does
+not insert a second item.
 Its phases, parts, and resources are *other* tasks linked through the typed
 relations in `lib/links.ts`:
 
@@ -169,7 +178,7 @@ _Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and 
 | `lib/operation-itinerary.ts` *(lib)* | backing module for the Timeline / Locations / Plan panels, created only when one is enabled |
 | `lib/operation-work-session.ts` *(lib)* | live "working on this now" clock: day slices, Tracking paint, Done row, timeLogs, habit sync |
 | `lib/work-session-store.ts` *(lib)* | persisted pointer to the open session (`cogs-work-session`) |
-| `operations-chrome.css` | Milled fascia (CRT title, engraved nameplates, raised metal keys, equal-fill view keys, stage power lamps, CRT heatmap well, working-now lamp) |
+| `operations-chrome.css` | Milled fascia (CRT title, engraved nameplates, raised metal keys, latching keycap view keys, stage power lamps, CRT heatmap well, working-now lamp). _Last mapped: 2026-10-27_ |
 | `OperationsView.tsx` | home board: category groups, category filter, sort, **Show archived**, preset-aware inline create. Empty board offers pickable preset objects (`.ops-empty-presets`). Last open operation survives refresh / tab switch. |
 | `OperationWorkspace.tsx` | full-screen mini-app; tab strip clusters **Plan/Do** vs **Reference** (`.ops-view-clusters`). Last panel per operation is restored, plus that panel's scroll. |
 | `WorkingNowControl.tsx` | menubar **Working on this now** / **Stop working on {name}** toggle. Stop with open objectives asks **Yes** / **No** / **Cancel**. After the clock stops, the optional end-of-session reflection opens. The task stays open. **Stop {task}** asks the same for the pen clock. |
@@ -189,12 +198,15 @@ _Last mapped 2026-10-16:_ hour totals (`OperationHome`, `OperationLogFeed`, and 
 
 ## Chrome
 
+Type sits two pixels above the old 10–15px scale (root 14px), with tracking pulled in and the bays packed a little tighter so the larger type still fits the fascia.
+
 The Operations tab uses the house **milled fascia**
 ([`docs/DESIGN_STYLE.md` — Milled fascia](../../docs/DESIGN_STYLE.md#milled-fascia)):
 brushed silver bays, CRT black-glass titles (`#070c0a` + house phosphor
-`#7dffc4`), engraved nameplates, raised metal keys, and equal-fill view keys
-(active key is a CRT with a round power lamp). Same verbs as before — only the
-furniture changed.
+`#7dffc4`), engraved nameplates, raised metal keys, and latching keycap view
+keys (silver skirt at rest; the selected key is a CRT with a round green
+on-light; a press is the milled sink). _Last mapped: 2026-10-27._ Same verbs
+as before — only the furniture changed.
 
 The landing board groups operations under engraved category nameplates, each
 card showing a round stage lamp, the mission snippet, category chips, and how
@@ -205,7 +217,7 @@ categories (the same affordance as the Lists All view). Opening an operation
 keeps the fascia: CRT title (click the name to rename), **Board** / **Settings**
 / **After-action report** / **Why missed** metal keys with the operation's category chips, a
 **Working on this now** toggle (phosphor lamp + CRT elapsed clock while live),
-equal-fill panel keys clustered Plan/Do vs Reference (Home, To do, Phases,
+latching keycap panel keys clustered Plan/Do vs Reference (Home, To do, Phases,
 Parts, Log, and whatever else Settings switched on), the Queue rail, and a CRT
 phosphor heatmap on Home (neglect hotter on cold days). An empty board shows
 pickable preset shapes instead of only a blank create field.

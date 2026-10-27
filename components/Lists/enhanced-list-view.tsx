@@ -160,6 +160,12 @@ import type { CsvImportState, GridEntry, IconPickerTarget, SmartId } from "@/com
 import { LIST_DISPLAY_MODES, isListDisplayMode, sanitizeEnabledDisplays, type List, type Folder, type Task, type AttributeValue, type AttributeDefinition, type ListItemSort } from "@/lib/types"
 import { listAttributeSchema, mergeListAttributes } from "@/components/Lists/attribute-editor"
 import { getItemType } from "@/lib/item-types"
+import {
+  ITEM_TYPES_LOCATION,
+  compareItemTypeLists,
+  itemTypeListLabel,
+  tasksOfItemType,
+} from "@/lib/item-type-lists"
 import { resolveDefaultViewSort, setDefaultViewSort } from "@/lib/default-view-prefs"
 import { filterListItemsBySearch, listItemSortOptions, sortListItems } from "@/lib/list-item-sort"
 import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
@@ -360,7 +366,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     null,
   )
 
-  const { location, openTarget, setOpenTarget, closeTarget, isHome, isAll, currentFolder, navTo, openEntry, activeIconId, setActiveIconId, setLocation } = nav
+  const { location, openTarget, setOpenTarget, closeTarget, isHome, isAll, currentFolder, navTo, openEntry, openItemType, activeIconId, setActiveIconId, setLocation } = nav
   const { searchTerm, setSearchTerm, searchResetKey, clearSearch, searchActive, searchResults } = search
   const newListSeed = useMemo(() => {
     const typed = searchTerm.trim()
@@ -539,9 +545,19 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     [folders],
   )
 
+  const isItemTypes = location === ITEM_TYPES_LOCATION
   const entries = useMemo(
     () =>
-      buildGridEntries({
+      isItemTypes
+        ? [...itemTypes].sort(compareItemTypeLists).map((type) => ({
+            kind: "item-type" as const,
+            id: String(type.id),
+            name: itemTypeListLabel(type),
+            color: type.color,
+            icon: type.icon,
+            count: tasksOfItemType(String(type.id), allTasks, itemTypes).length,
+          }))
+        : buildGridEntries({
         isHome,
         isAll,
         currentFolder,
@@ -557,6 +573,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         objectiveCount,
       }),
     [
+      isItemTypes,
+      itemTypes,
       isHome,
       isAll,
       currentFolder,
@@ -580,6 +598,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const openSmart = openTarget?.type === "smart" ? SMART_LISTS.find((s) => s.id === openTarget.id) || null : null
   const openHabits = openTarget?.type === "habits"
   const openObjectives = openTarget?.type === "objectives"
+  const openTypeList =
+    openTarget?.type === "item-type" ? itemTypes.find((type) => type.id === openTarget.id) ?? null : null
   const openFolderAll = openTarget?.type === "folder-all"
   const isRootAll = openFolderAll && openTarget?.folderId === ROOT_ALL_FOLDER_ID
   const canEditFolderAllSettings =
@@ -603,8 +623,12 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
         : openTarget?.id === "season-habits"
           ? "Season Habits"
           : "Daily Habits"
-    : openFolderAll ? "All Items" : openCategory?.name || openSmart?.name || ""
-  const openIconKey = openCategory ? iconFor(openCategory.id, openCategory.icon) : isRootAll ? iconFor("lists-root", undefined) : openFolderAll && currentFolder ? iconFor(currentFolder.id, currentFolder.icon) : openSmart ? orbFor(openSmart.id) : openObjectives ? orbFor("objectives") : openHabits ? orbFor("daily-habits") : orbFor("lists-root")
+    : openTypeList
+      ? itemTypeListLabel(openTypeList)
+      : openFolderAll ? "All Items" : openCategory?.name || openSmart?.name || ""
+  const openIconKey = openTypeList
+    ? iconFor(String(openTypeList.id), openTypeList.icon)
+    : openCategory ? iconFor(openCategory.id, openCategory.icon) : isRootAll ? iconFor("lists-root", undefined) : openFolderAll && currentFolder ? iconFor(currentFolder.id, currentFolder.icon) : openSmart ? orbFor(openSmart.id) : openObjectives ? orbFor("objectives") : openHabits ? orbFor("daily-habits") : orbFor("lists-root")
 
   const rawDisplay: ListDisplay = (() => {
     if (!openTarget || openTarget.type === "habits" || openTarget.type === "objectives") return "default"
@@ -655,8 +679,9 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
       return items
     }
     if (openTarget.type === "smart") return getSmartTasks(openTarget.id)
+    if (openTarget.type === "item-type") return tasksOfItemType(openTarget.id, allTasks, itemTypes)
     return []
-  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory])
+  }, [openTarget, allTasks, categories, folders, currentFolder, folderAllUncategorizedOnly, folderAllHideUncategorized, folderAllHiddenListIds, globalAllHiddenFolderIds, globalAllUncategorizedOnly, globalAllHideUncategorized, getSmartTasks, getTasksForCategory, itemTypes])
 
   const listedTasks = useMemo(() => {
     // A step's item never shows in Lists (Phase 11); its step is in its task.
@@ -767,7 +792,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     return tasks
   }, [listedTasks, listSearchQuery, listSearchAllFields, listSchemaDefs, currentDisplay, currentSort, openCategory, itemTypes])
 
-  const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, currentFolderName: currentFolder?.name })
+  const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName, isHome, isAll, isItemTypes, currentFolderName: currentFolder?.name })
   const hereCount = openTarget
     ? `${listedTasks.length} item(s)`
     : `${entries.filter((e) => e.kind === "folder").length} folder(s), ${entries.filter((e) => e.kind !== "folder").length} list(s)`
@@ -1550,7 +1575,13 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
           openSmart={!!openSmart}
           currentFolder={currentFolder}
           isRootAll={isRootAll}
-          itemLabel={openFolderAll ? "Item" : itemLabelFor(openCategory?.id, openCategory)}
+          itemLabel={
+            openTypeList
+              ? openTypeList.itemLabel || openTypeList.name
+              : openFolderAll
+                ? "Item"
+                : itemLabelFor(openCategory?.id, openCategory)
+          }
           openIconKey={openIconKey}
           folderAllUncategorizedOnly={folderAllUncategorizedOnly}
           onFolderAllUncategorizedOnlyChange={setFolderAllUncategorizedOnly}
@@ -1846,6 +1877,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onDrop={drag.handleFolderTreeDrop}
               onCreateFolder={() => setShowNewFolderDialog(true)}
               onEditFolder={setEditingFolder}
+              itemTypes={itemTypes}
+              onOpenItemType={openItemType}
             />
 
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>

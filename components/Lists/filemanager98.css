@@ -1738,6 +1738,18 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   padding-left: 8px;
 }
 
+.fm98 .fm-qa-type {
+  padding-left: 6px;
+}
+
+.fm98 .fm-qa-type-lamp {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
 .fm98 .fm-qa-glyph {
   width: 18px;
   height: 18px;
