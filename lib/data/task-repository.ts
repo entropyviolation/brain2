@@ -17,6 +17,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { parseOrThrow, taskSchema } from "@/lib/data/schemas"
 import { repairStoredTaskStatus } from "@/lib/completion-status"
 import { addLink as addLinkTo, removeLink as removeLinkFrom } from "@/lib/links"
+import type { ItemActivityMeta } from "@/lib/item-activity"
 
 export interface TaskRepository {
   getAll(): ItemRecord[]
@@ -27,8 +28,9 @@ export interface TaskRepository {
   /**
    * Update an item record (delegates to `updateTask`).
    * `patch`, when passed, rides on the store's existing mutation event.
+   * `activity` is the History line's source and order. The store writes the lines.
    */
-  update(item: ItemRecord, patch?: Record<string, unknown>): ItemRecord
+  update(item: ItemRecord, patch?: Record<string, unknown>, activity?: ItemActivityMeta): ItemRecord
   remove(id: string): void
   getLists(): List[]
   getFolders(): Folder[]
@@ -65,10 +67,10 @@ export const taskRepository: TaskRepository = {
     return repaired
   },
 
-  update(item, patch) {
+  update(item, patch, activity) {
     const repaired = repairStoredTaskStatus(item)
     parseOrThrow(taskSchema, repaired, "task")
-    useTaskStore.getState().updateTask(repaired, patch)
+    useTaskStore.getState().updateTask(repaired, patch, activity)
     return repaired
   },
 

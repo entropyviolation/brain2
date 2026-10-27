@@ -20,6 +20,7 @@
  * `updateTask` appends `Task.estimateLog` when `estimatedDuration` changes
  * (`noteTaskEstimate`). The same minutes again adds no row. A content change
  * stamps `Task.modifiedAt` (ISO string, `lib/task-modified.ts`). A no-op save leaves that clock.
+ * The same write appends one History line per changed field (`recordItemWrite`).
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -48,6 +49,7 @@ import {
   migrateParkedNoteBodyToField,
 } from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
+import { recordItemWrite, type ItemActivityMeta } from "@/lib/item-activity"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { reviewPointsTaskId } from "@/lib/completion-review"
 import { usePointsStore } from "@/lib/points-store"
@@ -140,7 +142,7 @@ interface TaskState {
   /** Tunable weights for the transparent To-Do priority formula (lib/priority.ts). */
   priorityWeights: PriorityWeights
   addTask: (task: Task) => void
-  updateTask: (task: Task, patch?: Record<string, unknown>) => void
+  updateTask: (task: Task, patch?: Record<string, unknown>, activity?: ItemActivityMeta) => void
   deleteTask: (id: string) => void
   /** Same write as `addTask` — prefer when the caller means an item record. */
   addItem: (item: ItemRecord) => void
@@ -401,7 +403,7 @@ export const useTaskStore = create<TaskState>()(
         }
       },
 
-      updateTask: (updatedTask, patch) => {
+      updateTask: (updatedTask, patch, activity) => {
         // Captured for the workflow-hooks dispatch after the state commit.
         let before: Task | undefined
         let after: Task | undefined
@@ -513,6 +515,9 @@ export const useTaskStore = create<TaskState>()(
           }
           return state
         })
+        if (after && before) {
+          recordItemWrite(before, after, { tasks: get().tasks, lists: get().lists }, new Date(), activity)
+        }
         if (after) {
           dispatchItemMutation({
             trigger: didComplete ? "complete" : "update",

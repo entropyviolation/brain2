@@ -55,7 +55,7 @@ describe("ItemTimeLedger", () => {
     expect(screen.getByLabelText("Objective ship it")).toBeInTheDocument()
     expect(screen.getByLabelText("Added time for ship it")).toHaveValue("10:05")
     expect(screen.getByLabelText("Done time for ship it")).toHaveValue("10:40")
-    expect(screen.getByText("35m")).toBeInTheDocument()
+    expect(screen.getByText(/· 35m/)).toBeInTheDocument()
     expect(screen.getByText(/on Cut the tray/)).toHaveTextContent("35m")
     expect(screen.getByText(/on this task only/)).toHaveTextContent("1h 20m")
     expect(screen.getByText("Session")).toBeInTheDocument()
