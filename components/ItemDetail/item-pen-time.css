@@ -295,6 +295,15 @@
   font-variant-numeric: normal;
 }
 
+textarea.ipt-text.ipt-note {
+  height: auto;
+  min-height: 26px;
+  padding: 4px 6px;
+  resize: vertical;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
 .ipt-step {
   max-width: 16rem;
 }

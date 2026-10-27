@@ -115,9 +115,9 @@ describe("EnhancedTaskDetail", () => {
     expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
     const rows = listItemActivity("task-detail-1")
     expect(rows).toHaveLength(1)
-    expect(rows[0].changes.some((c) => c.field === "estimatedDuration" && c.to === "90")).toBe(true)
+    expect(rows[0].changes.some((c) => c.field === "estimatedDuration" && c.to === "90m")).toBe(true)
     await user.click(screen.getByRole("tab", { name: "History" }))
-    expect(screen.getByText(/Estimated duration/)).toBeInTheDocument()
+    expect(screen.getByText(/Estimate — 45m → 90m/)).toBeInTheDocument()
   })
 
   it("saves unsaved edits with Ctrl+S", async () => {

@@ -1290,9 +1290,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
 }
 
 .item-activity-row {
-  display: grid;
-  grid-template-columns: 7.5rem 1fr;
-  gap: 8px;
+  display: block;
   padding: 5px 8px;
   border-bottom: 1px dotted var(--chrome-lo);
 }
@@ -1305,6 +1303,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
 .item-activity-summary {
   margin: 0;
   font-weight: 700;
+  white-space: pre-wrap;
 }
 
 .item-activity-changes {
