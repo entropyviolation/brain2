@@ -293,6 +293,8 @@ export function ActualDayView({
         onPrevious={() => setCurrentDate(isWeek ? subWeeks(currentDate, 1) : subDays(currentDate, 1))}
         onNext={() => setCurrentDate(isWeek ? addWeeks(currentDate, 1) : addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        date={currentDate}
+        onPickDate={setCurrentDate}
         locked={lockDate}
         meta={`Planned ${totalEstimated}m · task logs ${totalLogged}m`}
       />
@@ -326,10 +328,10 @@ export function ActualDayView({
 
       <div className="trk-daylog-sheet">
         {!lockDate && <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Day Log span">
-          <button type="button" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
+          <button type="button" className="trk-keycap" data-no95="" aria-pressed={!isWeek} onClick={() => setSpan("day")}>
             Day
           </button>
-          <button type="button" aria-pressed={isWeek} onClick={() => setSpan("week")}>
+          <button type="button" className="trk-keycap" data-no95="" aria-pressed={isWeek} onClick={() => setSpan("week")}>
             Week
           </button>
         </div>}

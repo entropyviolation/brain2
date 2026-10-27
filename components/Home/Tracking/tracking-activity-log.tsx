@@ -205,6 +205,8 @@ export function TrackingActivityLog({ currentDate, setCurrentDate, lockDate = fa
         onPrevious={() => setCurrentDate(subDays(currentDate, 1))}
         onNext={() => setCurrentDate(addDays(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
+        date={currentDate}
+        onPickDate={setCurrentDate}
         locked={lockDate}
         meta={`${listedEntries.length} block${listedEntries.length === 1 ? "" : "s"} · ${formatDuration(totals.tracked)} tracked · ${Math.round(totals.coverage)}% of the day`}
         trailing={

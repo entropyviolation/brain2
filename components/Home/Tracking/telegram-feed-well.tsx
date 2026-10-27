@@ -121,7 +121,7 @@ export function TelegramFeedWell({ dayKey }: { dayKey: string }) {
       data-testid="telegram-feed-well"
     >
       <h3 className="trk-logbook-heading">
-        <button type="button" className="trk-logbook-heading-open" onClick={() => setOpen(true)} title="Open telegram">
+        <button type="button" className="trk-logbook-heading-open" data-no95="" onClick={() => setOpen(true)} title="Open telegram">
           Telegram
           <span aria-hidden="true"> ›</span>
         </button>
