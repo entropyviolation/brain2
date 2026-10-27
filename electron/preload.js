@@ -2,7 +2,7 @@
  * electron/preload.js — Electron preload (context-isolated)
  *
  * Runs in the renderer before the web app loads and exposes a minimal, read-only
- * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, …) via `contextBridge`.
+ * `window.desktop` API (`isElectron`, `platform`, `versions`, `fetchAppleNotes`, `fetchScreenTime`, `fileLinks`, `instagramAccounts`, `spotify`, `saveNfcShortcut`, …) via `contextBridge`.
  * This is the only privileged surface available to the renderer; all app data
  * stays in localStorage/Zustand in the renderer today; future MongoDB access
  * will go through IPC handlers exposed here (see docs/SPEC_MAPPING.md §3).
@@ -91,6 +91,9 @@ const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
 const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
 const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
 const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
+
+// NFC tag shortcut. MUST match electron/nfc-shortcut.js.
+const NFC_SIGN_SHORTCUT_IPC_CHANNEL = "cogs:nfc:signShortcut"
 
 const TELEGRAM_SET_TOKEN = "cogs:telegram:setToken"
 const TELEGRAM_CLEAR_TOKEN = "cogs:telegram:clearToken"
@@ -357,6 +360,8 @@ contextBridge.exposeInMainWorld("desktop", {
     status: () => ipcRenderer.invoke(TEXTS_STATUS_IPC_CHANNEL),
     refresh: () => ipcRenderer.invoke(TEXTS_REFRESH_IPC_CHANNEL),
   },
+  // Settings → NFC tags. Signs that tag's shortcut and writes it to Downloads.
+  saveNfcShortcut: (spec) => ipcRenderer.invoke(NFC_SIGN_SHORTCUT_IPC_CHANNEL, spec),
   // Linked resources: keep a file or folder where it is (docs/RESOURCE_LINKS.md).
   fileLinks: {
     // Electron 32 dropped File.path; webUtils reads it for a dropped or picked File.

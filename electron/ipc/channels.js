@@ -70,6 +70,8 @@ const COGS_IPC_CHANNELS = {
   textsEnsureServer: "cogs:texts:ensureServer",
   textsStatus: "cogs:texts:status",
   textsRefresh: "cogs:texts:refresh",
+  // Settings → NFC tags. Sign one saved tag and write the .shortcut into Downloads.
+  nfcSignShortcut: "cogs:nfc:signShortcut",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */
