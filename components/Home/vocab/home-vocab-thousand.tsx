@@ -1,5 +1,5 @@
 /**
- * components/Home/home-vocab-thousand.tsx — Work through the 1000 most common words
+ * components/Home/vocab/home-vocab-thousand.tsx — Work through the 1000 most common words
  *
  * The Vocab detail's **1000 words** mode for a target language. Words are the
  * items on that language's list in Lists (Languages → <language>,
@@ -15,7 +15,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import { VocabDictionaryFold } from "@/components/Home/home-vocab-dictionary"
+import { VocabDictionaryFold } from "@/components/Home/vocab/home-vocab-dictionary"
 import { requestNavigateToList } from "@/lib/app-navigation"
 import { useTaskStore } from "@/lib/task-store"
 import {

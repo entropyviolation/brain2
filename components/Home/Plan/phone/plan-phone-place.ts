@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-phone-place.ts — Touch stand-in for Plan drag
+ * components/Home/Plan/phone/plan-phone-place.ts — Touch stand-in for Plan drag
  *
  * Same store writes as the desktop drops. Month with no hour sets the date
  * only. Week uses the week grid’s duration. Day uses `countingMinutes` and

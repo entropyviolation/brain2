@@ -1,4 +1,5 @@
 /**
+ * components/Home/Plan/gem/plan-gem-mode.css
  * Past-day gem-mode layout only. Does not change month cell size, grid
  * density, or Plan dark chrome. Toggle reuses `.plan-mode-toggle`.
  */

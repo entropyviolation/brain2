@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/settings-dialog.tsx — Plan settings
+ * components/Home/Plan/dialogs/settings-dialog.tsx — Plan settings
  *
  * Settings dialog for the Plan/calendar (data management and view preferences).
  *

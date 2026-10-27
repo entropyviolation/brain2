@@ -1,5 +1,5 @@
 /**
- * components/Home/home-moon-sprite.tsx — 8-bit moon for the Home tile
+ * components/Home/moon/home-moon-sprite.tsx — 8-bit moon for the Home tile
  *
  * A 16×16 disk. Waxing lights the right. Craters stay put; a tiny face
  * shows only when the disk is near full. Stars blink in steps, like the pet.

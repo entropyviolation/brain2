@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-phone-cal.tsx — Phone month, week strip, season
+ * components/Home/Plan/phone/plan-phone-cal.tsx — Phone month, week strip, season
  *
  * Month keeps the desktop Sunday columns. Week keeps Monday (`getWeekDates`).
  * A tap selects the day. A second tap on a month cell opens Day, and so does
@@ -39,8 +39,8 @@ import {
 } from "@/lib/seasons"
 import { useTaskStore } from "@/lib/task-store"
 import type { CalendarEvent } from "@/lib/types"
-import { PLAN_TASK_COLOR, resolvePlanColor } from "./plan-chip"
-import { planGemTokensForDay } from "./plan-gem-day"
+import { PLAN_TASK_COLOR, resolvePlanColor } from "../plan-chip"
+import { planGemTokensForDay } from "../gem/plan-gem-day"
 
 const WEEKDAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 

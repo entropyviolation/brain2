@@ -1,5 +1,5 @@
 /**
- * components/Home/Goals/goals-phone-shared.ts — period labels for the phone tree
+ * components/Home/Goals/phone/goals-phone-shared.ts — period labels for the phone tree
  *
  * Same periods and words as the desktop wells. Kept here so the phone files
  * can share them without editing `ObjectivesPanel` or `GoalsContainer`.

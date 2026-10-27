@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-gem-mode-toggle.tsx — Gem and trinket mode latch
+ * components/Home/Plan/gem/plan-gem-mode-toggle.tsx — Gem and trinket mode latch
  *
  * Compact Plan toolbar control. Sits in `#plan-chrome-toggles` beside Dark.
  * Does not own dark-mode CSS. Default off. Visible label flips with the latch:

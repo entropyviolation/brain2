@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/paste-events-dialog.tsx — Paste unstructured events
+ * components/Home/Plan/dialogs/paste-events-dialog.tsx — Paste unstructured events
  *
  * Lets the user paste itinerary / tour-schedule text, preview parsed drafts,
  * optionally exclude rows, then bulk-create editable calendar events.

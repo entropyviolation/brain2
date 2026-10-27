@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-gem-day.ts — Completed-work tokens for gem mode
+ * components/Home/Plan/gem/plan-gem-day.ts — Completed-work tokens for gem mode
  *
  * Past-day Month cells (when gem-and-trinket mode is on) show photographed
  * habit gems and Lists orbs/trinkets for work finished that local calendar

@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { MoonOrrery } from "@/components/Home/home-moon-orrery"
-import { StarIdentifyLabels, StarIdentifyPanel, starFieldVisible } from "@/components/Home/star-identify"
-import { nearestNamedStars } from "@/components/Home/naked-eye-stars"
+import { MoonOrrery } from "@/components/Home/moon/home-moon-orrery"
+import { StarIdentifyLabels, StarIdentifyPanel, starFieldVisible } from "@/components/Home/moon/star-identify"
+import { nearestNamedStars } from "@/components/Home/moon/naked-eye-stars"
 import { planetPlaces } from "@/lib/solar-system"
 import { zoomFactor } from "@/lib/sky-zoom"
 

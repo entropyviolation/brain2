@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-phone-agenda.tsx — Thumbable day agenda
+ * components/Home/Plan/phone/plan-phone-agenda.tsx — Thumbable day agenda
  *
  * The same day the desktop hour grid shows: all-day events, timed events,
  * tasks, planned actions, past Day Log outlines, sunrise and sunset, and a
@@ -37,9 +37,9 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { CalendarEvent, Task } from "@/lib/types"
 import { DEFAULT_HOME_CITY, useUserSettingsStore } from "@/lib/user-settings-store"
 import { fetchDayClimate, minutesFromHhmm } from "@/lib/weather-client"
-import { PLAN_TASK_COLOR, planEventTimeLabel, resolvePlanColor } from "./plan-chip"
-import { planGemChipTaskIds, planGemTokensForDay, type PlanGemToken } from "./plan-gem-day"
-import { planDayTrackedGhosts } from "./plan-tracked-ghosts"
+import { PLAN_TASK_COLOR, planEventTimeLabel, resolvePlanColor } from "../plan-chip"
+import { planGemChipTaskIds, planGemTokensForDay, type PlanGemToken } from "../gem/plan-gem-day"
+import { planDayTrackedGhosts } from "../plan-tracked-ghosts"
 import { usePrefersReducedMotion } from "./use-plan-phone"
 
 export type AgendaMenu =

@@ -1,5 +1,5 @@
 /**
- * components/Home/NeedsAttention.tsx — "Needs Attention" queue card (Phase 6b)
+ * components/Home/needs-attention/NeedsAttention.tsx — "Needs Attention" queue card (Phase 6b)
  *
  * Home furniture (not a new dashboard): surfaces slipped / stuck / neglected /
  * zombie items. Stale stays on the selector and is omitted here. DirectionReport

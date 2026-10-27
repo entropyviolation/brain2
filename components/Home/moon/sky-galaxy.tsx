@@ -1,5 +1,5 @@
 /**
- * components/Home/sky-galaxy.tsx — Milky Way on the Moon chart
+ * components/Home/moon/sky-galaxy.tsx — Milky Way on the Moon chart
  *
  * Wide star field: `GalaxyBand`, a faint band on the galactic plane, drawn
  * behind the Hipparcos stars. Galaxy zoom, and the powers-of-ten tour's

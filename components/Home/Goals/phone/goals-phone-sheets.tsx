@@ -1,5 +1,5 @@
 /**
- * components/Home/Goals/goals-phone-sheets.tsx — phone sheets for Goals
+ * components/Home/Goals/phone/goals-phone-sheets.tsx — phone sheets for Goals
  *
  * Bottom sheets stand in for the desktop dialogs. Same fields, same store
  * writes, same unsaved-changes guard. The grabber is the only drag surface

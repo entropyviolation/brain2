@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/use-plan-swipe.ts — Horizontal period swipe
+ * components/Home/Plan/phone/use-plan-swipe.ts — Horizontal period swipe
  *
  * A sideways flick changes day, week, month, or season. A vertical move is
  * left to the scroller (`touch-action: pan-y` on the phone body). The click

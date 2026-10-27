@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/plan-phone.tsx — Phone Plan
+ * components/Home/Plan/phone/plan-phone.tsx — Phone Plan
  *
  * iOS-style calendar for a narrow viewport. The desktop fascia is not mounted.
  * Season, Month, Week, and Day stay. Swipe sideways for the period you are on.
@@ -16,9 +16,9 @@ import type { PlannedAction } from "@/lib/planned-actions"
 import { usePlannedActionStore } from "@/lib/planned-action-store"
 import { formatLocalDateKey, formatLocalMonthKey, getWeekDates, getWeekStartDate, getWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel, quarterStartDate, seasonOfDate, shiftQuarter } from "@/lib/seasons"
-import { PlanGemModeToggle } from "./plan-gem-mode-toggle"
-import { PlanTextLog } from "./plan-text-log"
-import { PlannedTasksSidebar } from "./planned-tasks-sidebar"
+import { PlanGemModeToggle } from "../gem/plan-gem-mode-toggle"
+import { PlanTextLog } from "../plan-text-log"
+import { PlannedTasksSidebar } from "../rail/planned-tasks-sidebar"
 import { PhoneAgenda, type AgendaMenu } from "./plan-phone-agenda"
 import { PhoneMonth, PhoneSeason, PhoneWeekStrip, monthDays, weekDays } from "./plan-phone-cal"
 import {

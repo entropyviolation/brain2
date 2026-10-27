@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { ScaleField } from "@/components/Home/home-sky-scale"
+import { ScaleField } from "@/components/Home/moon/home-sky-scale"
 import { SCALE_PHOTO_SRC, scaleFlightZoom } from "@/lib/sky-scale"
 
 describe("scale card", () => {

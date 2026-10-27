@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
-import { SkyMotionBar } from "@/components/Home/home-sky-motion"
+import { SkyMotionBar } from "@/components/Home/moon/home-sky-motion"
 import { DEFAULT_SKY_MOTION, useSkyMotionStore } from "@/lib/sky-motion-store"
 
 describe("sky motion bar", () => {

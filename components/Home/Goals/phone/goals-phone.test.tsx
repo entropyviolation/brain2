@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useGoalsStore } from "@/lib/goals-store"
-import { GoalsTracker } from "./goals-tracker"
+import { GoalsTracker } from "../goals-tracker"
 
 function mockPhone(reduced = false) {
   vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({

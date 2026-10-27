@@ -1,5 +1,5 @@
 /**
- * components/Home/star-identify.tsx — Session “Stars near” for the Moon chart
+ * components/Home/moon/star-identify.tsx — Session “Stars near” for the Moon chart
  *
  * Off until the readout is switched on. The choice lives in this module
  * while the detail is mounted. It is not written to `brain2-sky-motion`.
@@ -9,7 +9,7 @@
 "use client"
 
 import { useEffect, useSyncExternalStore } from "react"
-import { nearestNamedStars } from "@/components/Home/naked-eye-stars"
+import { nearestNamedStars } from "@/components/Home/moon/naked-eye-stars"
 import { zoomFactor } from "@/lib/sky-zoom"
 
 let starsNear = false

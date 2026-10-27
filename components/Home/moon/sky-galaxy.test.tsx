@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { GalaxySchematic } from "@/components/Home/sky-galaxy"
+import { GalaxySchematic } from "@/components/Home/moon/sky-galaxy"
 import { GALAXY_SCHEMATIC_CAPTION, galaxySchematicLayout } from "@/lib/sky-galaxy"
 
 describe("GalaxySchematic", () => {

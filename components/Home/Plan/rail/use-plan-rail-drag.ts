@@ -1,5 +1,5 @@
 /**
- * components/Home/Plan/use-plan-rail-drag.ts — Rail press + HTML5 drag
+ * components/Home/Plan/rail/use-plan-rail-drag.ts — Rail press + HTML5 drag
  *
  * HTML5 `dragstart` still writes `lib/plan-drag.ts`. If the host never starts
  * a native drag, pointer move + up drops onto `[data-plan-drop]` instead of

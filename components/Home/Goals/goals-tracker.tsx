@@ -16,8 +16,8 @@ import { ObjectivesPanel } from "./ObjectivesPanel"
 import { GoalsContainer } from "./GoalsContainer"
 import { DirectionReport } from "./DirectionReport"
 import { GolRose, GolStar } from "./goals-ornaments"
-import { GoalsPhone } from "./goals-phone"
-import { useGoalsPhone } from "./use-goals-phone"
+import { GoalsPhone } from "./phone/goals-phone"
+import { useGoalsPhone } from "./phone/use-goals-phone"
 import "./goals-chrome.css"
 
 export function GoalsTracker() {
