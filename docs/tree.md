@@ -90,7 +90,7 @@ Most components have a co-located `*.test.tsx`.
 | `header-now-box.tsx`       | Optional **now** well inside Capture — session flags only while idle; absent when idle |
 | `header-now-rows.tsx`      | Live now rows (clocks, pen color, Pause / Stop). Loaded when a session is on |
 | `dvd-transport-keys.tsx`   | House Pause / Play / Stop — `DvdTransportKey` (`mark`, `label`, `onClick`; optional `pressed`, `disabled`). Face in `dvd-transport-keys.css` |
-| `dvd-transport-keys.css`   | The 28px glassy disc for that key. Imported by the component, so any caller gets it |
+| `dvd-transport-keys.css`   | The 28px round silver CD disc for that key. Imported by the component, so any caller gets it |
 | `keycap-close.tsx`         | Keycap × — `KeycapClose` (`label`, `corner`). Grey modifier cap; brick on hover and focus. Shared dialog close and the other title-bar × |
 | `keycap-close.css`         | The 26px cap for that key. Imported by the component, so any caller gets it |
 | `header-reminder-bell.tsx` | System reminders bell. Orange count of undismissed persistent due reminders; dialog has name, when, source, Details, Dismiss |
@@ -417,16 +417,20 @@ Today / Tomorrow store the local calendar date (`lib/day-clock.ts`). An unfinish
 
 ### Operations
 
+_Last mapped: 2026-10-27._
+
 A little graphic tool for any project — its work, ideas, data, and progress
 (trip, paid job, magazine, house…). Nothing is assumed to be trip-shaped.
 Milled **command-center** chrome (`operations-chrome.css`: CRT title, engraved
 nameplates, raised metal keys, equal-fill panel keys): a landing board that
 groups operations under their free-form **categories** (an op can hold several),
-with a category checkbox filter, sort, and **Show archived** (completed
+with a category checkbox filter, sort (including recently modified), and **Show archived** (completed
 `done` and inactive `paused` / `abandoned` stay hidden until then), then
 `OperationWorkspace`, whose tab strip is built from the **panels that operation
-has switched on** in its **Settings** dialog — Home (locked), To do, Phases,
-Parts, Timeline, Locations, Plan, Resources, Log, plus the Queue rail. Settings
+has switched on** in its **Settings** dialog — Home (locked; item note log and **Open item detail**), To do (Lists panel inside `.fm98`), Phases,
+Parts, Timeline, Locations, Plan, Resources, Log, plus the Queue rail. Clicking an item (queue row, To do row, phase, part to-do, Timeline, Locations) opens the item-detail popup over the operation. Choosing a part stays on that part's page. The operation stays mounted. Log is
+oldest first: a **created** line from the operation's `createdAt`, then time
+punches, and **No time logged yet** when there are no punches. Settings
 can delete the operation after **Are you sure?**. Presets (Standard / Blank /
 Trip / Project / Paid job) shape a new operation in one click. **To do** embeds
 the Lists content panel over a real per-operation list (`lib/operation-lists.ts`)
@@ -435,9 +439,12 @@ and also lists phase steps and part tasks. **Parts** (`lib/operation-parts.ts`,
 each instance its own page, ideas that are not tasks, and glance metrics.
 **Working on this now** (workspace menubar) logs a live session into To Do Done,
 Tracking minutes, and tagged daily habits (`lib/operation-work-session.ts`).
-Menubar **Why missed** stores an optional preset and note on
-`OperationReview.blockedReasons`. Marking the stage abandoned opens the same
-dialog. The after-action report does not write that field.
+_Last mapped: 2026-10-27._ Marking the stage abandoned opens a why-missed
+prompt and stores an optional preset and note on
+`OperationReview.blockedReasons`. There is no menubar **Why missed** button.
+The after-action report does not write that field. The Parts decks sit in
+`.ops-scroll`, which pads the scrollport so their rings are not clipped.
+Home mission (`#op-mission`) is one line tall and grows with the text.
 
 → [`components/Operations/README.md`](../components/Operations/README.md)
 
@@ -557,7 +564,7 @@ one-sentence instruction per view.
 | `ItemTypesLibrary.tsx` / `ListsAreasView.tsx` / `AttributesView.tsx` / `LibraryCuts.tsx` | Library (types, lists sized by count + HHI, tags, stages, weight) |
 | `analytics-range.ts` + store / `chart-frame.tsx` / `open-in-lists.ts` | Shared window, honesty frames, Lists jump |
 | `analytics-chrome.css` | Milled range/index chrome + studio interior (title/status stay Lists) |
-| `BrowserHistoryView.tsx` | Sources → Browser. Chrome history JSON kept in IndexedDB `brain2-browser-history`; analysis in `lib/browser-history.ts`; Screen Time paint in `lib/chrome-sessions.ts` |
+| `BrowserHistoryView.tsx` | Sources → Browser. Chrome history files and the nightly Brain2 extension export, merged in IndexedDB `brain2-browser-history` (a later file only adds new visits); analysis in `lib/browser-history.ts`; Screen Time paint in `lib/chrome-sessions.ts` |
 
 | Group | Views |
 |-------|-------|
@@ -635,7 +642,7 @@ helpers in `lib/affirmations.ts`).
   Text Shortcut AirDrop, cheat-sheet, simulate message + scan; see
   [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)), **NFC tags** (`NfcTagsPanel` —
   sticker id, dose quantity, daily habit; `nfc:adderall 2`; see
-  [`shortcuts/nfc-tags.md`](shortcuts/nfc-tags.md); the download button signs that tag’s `.shortcut` into Downloads), **Phone sync** (`PhoneSyncPanel`
+  [`shortcuts/nfc-tags.md`](shortcuts/nfc-tags.md); the download button signs that tag’s `.shortcut` into Downloads; the iPhone app can also post the same line to `POST /api/scan`, and the shortcut stays until that scan is proven), **Phone sync** (`PhoneSyncPanel`
   — texts, calls, and location on/off, last run; Health, email, and DMs listed
   as not built), **Screen Time** (`ScreenTimePanel`
   — ActivityWatch URL, lookback, Sync now), **Import from Instagram data**
@@ -752,7 +759,9 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 
 | File | Purpose |
 | ---- | ------- |
-| `browser-history.ts` | Chrome history export → sites, sessions, searches, YouTube. Pure |
+| `browser-history.ts` | Chrome history export (JSON, CSV, Excel, Takeout, Brain2 extension envelope) → sites, sessions, searches, YouTube. Pure. Merges profiles; a re-import only adds new visits |
+| `browser-history-store.ts` | IndexedDB `brain2-browser-history` for those merged visits |
+| `chrome-history-inbox.ts` | Files the extension’s nightly post into that store and paints new Screen Time blocks |
 | `chrome-sessions.ts` | Those runs painted on Screen Time; a re-run merges and keeps deletions |
 | `photo-types.ts` | Built-in photo item type; gates the Gallery display |
 | `document-types.ts` | Built-in document item type; gates the Document gallery |
@@ -989,6 +998,7 @@ Live keys are `brain2-*`. `cogs-*` is the historical alias. Keys and persist ver
 | `vocal-confidence.ts` | Pure vocal-confidence DSP + scoring (McLeod-Pitch-Method `detectPitch`, jitter/shimmer, uptalk/trailing-off, `ConfidenceTracker`) for the affirmations ritual |
 | `unsaved-changes.ts` | Dirty snapshot compare for the house unsaved-changes confirm (`useUnsavedGuard`) |
 | `app-brand.ts` | Product name: chrome **BRAIN2**, prose **Brain2**; persist keys are **`brain2-*`** (`cogs-*` alias) |
+| `brain2-env.cjs` / `.mjs` | _Last mapped: 2026-10-27_ CLI env: `BRAIN2_<name>`, with a leftover `COGS_<name>` when that value is empty |
 | `storage-keys.ts` | Canonical `brain2-*` persist keys; small Live dual-write `cogs-*`; large vaults `brain2-*` only; Demo `brain2-demo-*` |
 | `data-profile.ts` | Switch Live ↔ Demo (reload); Reset Demo wipes only demo keys |
 | `demo-vault.ts` | Stock fiction vault (River Hale) for the Demo profile. Richer rows: `demo-corpus/` |
@@ -1064,6 +1074,7 @@ App-wide shared React hooks. Module-specific hooks live next to their UI (e.g.
 | `use-inbox-process-todo.ts` | Add today's process-inbox To Do when the revisit Inbox is over 100. Mounted from `app/page.tsx` after rollover |
 | `useVocalConfidence.ts` | Mic → `AnalyserNode` → `ConfidenceTracker` live `ConfidenceScore` for the Morning affirmations ritual |
 | `use-screentime-sync.ts` | Poll ActivityWatch → Screen Time while Tracking/Analytics are mounted (not the block editor) |
+| `use-chrome-history-inbox.ts` | File the Brain2 Chrome extension’s daily export into Sources → Browser. Mounted from `app/page.tsx` |
 
 → [`hooks/README.md`](../hooks/README.md)
 
@@ -1141,6 +1152,22 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 
 ---
 
+## extensions/chrome-history/
+
+_Last mapped: 2026-10-27_
+
+Unpacked Chrome extension. At 12:05am local it exports the day that just ended, posts it to `/api/chrome-history`, and saves `Downloads/Brain2 Chrome/`. Install notes: [`extensions/chrome-history/README.md`](../extensions/chrome-history/README.md).
+
+| File | Purpose |
+| --- | --- |
+| `manifest.json` | MV3. History, alarms, storage, downloads. Host permission is port 3000 on this machine. |
+| `background.js` | Alarm, history read, post, download, retry. |
+| `export-day.mjs` | Local day bounds. |
+| `content.js` | Pushes a waiting day into a Brain2 tab on localhost. |
+| `popup.html` | Profile name, file toggle, export yesterday, 90-day backfill. |
+
+---
+
 ## scripts/
 
 | File                      | Purpose                       |
@@ -1154,7 +1181,8 @@ Re-capture screenshots: `npm run capture-screenshots` (with `npm run dev` runnin
 | `screenshot-archive.mjs`  | Copy a live PNG into `docs/screenshots/history/` before overwrite (`archiveShot`); write `reel.js` (`writeReelIndex`) |
 | `screenshot-reel-server.mjs` | Serve the evolution reel and `feature-notes.json` (`npm run screenshot-reel`) |
 | `write-screenshot-reel.mjs` | Same server entry, kept next to the archive helper |
-| `cogs-dev-server.mjs`     | Next + `/api/health` + `/api/sync` + `/api/persist` + `/api/ingest` + `/api/notes` + `/api/screentime` on one port; Electron strict-port reclaim of leftover Node |
+| `cogs-dev-server.mjs`     | Next + `/api/health` + `/api/sync` + `/api/persist` + `/api/ingest` + `/api/notes` + `/api/screentime` + `/api/chrome-history` on one port; Electron strict-port reclaim of leftover Node |
+| `chrome-history-api.mjs`  | Loopback inbox for the Brain2 Chrome extension (`extensions/chrome-history`). Phones and public sites refused |
 | `cogs-prod-server.mjs`    | _Last mapped: 2026-10-27._ Production `out/` plus the same `/api` handlers, on port 3000. Used by `electron:local`. |
 | `electron-local.mjs`      | _Last mapped: 2026-10-27._ `npm run electron:local`. First run calls `backup-data.mjs`, then the prod server and Electron. Does not replace `electron:dev`. |
 | `dev-port.mjs`            | `lsof` parse + Node-only PIDs safe to SIGTERM when 3000 is stuck after OOM; `/api/health` probe so a second dev stack reuses the running one |

@@ -49,7 +49,7 @@ Close, when on, keeps a Gift ideas list for them, and turning it off leaves that
 **People I follow on Instagram** and **People who follow me on Instagram** are built-in lists too: one username is one item and can sit on both, filled from the person’s own Instagram download of followers and following. Follow-back stays blank until that side of the download is included. The detailed steps are in Settings → Import from Instagram data. Instagram’s login does not hand over those lists. Those built-in lists, and the other singleton lists the app creates for itself, stay pinned on Lists → Home. Those structures are
 the skeleton. The point is that the skeleton **grows**.
 
-The name is one word. **BRAIN2** is the all-caps mark in the header (beside today’s friend — click the photograph for their details; the chat button asks for a mission; click the bubble to accept or decline; Esc / × / outside closes the bubble), the window title, and the tab title. **Brain2** is the name in sentences. Zustand persist keys, IPC channel prefixes, CSS classes such as `.cogs-color-swatch`, and CLI env vars (`COGS_STRICT_PORT`, `COGS_TELEGRAM_BOT_TOKEN`, `COGS_FRESH`, …) still use a historical `cogs` prefix so existing local data and scripts keep working. New backups write `app: "brain2"` and still restore files that say `app: "cogs"`. The single source is [`lib/app-brand.ts`](lib/app-brand.ts).
+The name is one word. **BRAIN2** is the all-caps mark in the header (beside today’s friend — click the photograph for their details; the chat button asks for a mission; click the bubble to accept or decline; Esc / × / outside closes the bubble), the window title, and the tab title. **Brain2** is the name in sentences. CLI env vars use that name (`BRAIN2_STRICT_PORT`, `BRAIN2_TELEGRAM_BOT_TOKEN`, `BRAIN2_FRESH`, …). A `COGS_` name for the same setting still works. Zustand persist keys, IPC channel prefixes, and CSS classes such as `.cogs-color-swatch` still use a historical `cogs` prefix so existing local data keeps working. New backups write `app: "brain2"` and still restore files that say `app: "cogs"`. The single source is [`lib/app-brand.ts`](lib/app-brand.ts).
 
 ## What this is trying to be
 
@@ -207,7 +207,7 @@ top of the in-grid **formula** columns and cross-item rollups that already exist
 Document items / Docs are built (see above). Other messengers are not built.
 Atlas is speculation, not a reason they are waiting.
 A **hosted webhook** for Telegram is built on the always-on phone hub
-(`COGS_TELEGRAM_WEBHOOK`). Telegram **media ingest** (journal photos stored as
+(`BRAIN2_TELEGRAM_WEBHOOK`). Telegram **media ingest** (journal photos stored as
 PDF, forwarded PDFs, receipt OCR into inventory / grocery list) is built — see
 [`docs/MESSAGE_INGEST.md`](docs/MESSAGE_INGEST.md). Still open: House Cleaning
 and Trip Itinerary write a private tree on `module.config.houseCleaning` and
@@ -376,7 +376,7 @@ Together, In conversation — not an Activity called hanging out. **Screen Time*
 Brain2 is the meaning layer, not a window watcher. AFK stays untracked. ActivityWatch only records
 from when its watchers run — it cannot import Apple Screen Time or anything from before install.
 A successful sync with 0 blocks means AW had nothing usable yet, not a broken pipe. Settings → Screen Time
-connects and syncs; Analytics → Time → Screen Time reports active vs untracked. Pens can **nest**
+connects and syncs; Analytics → Time → Screen Time reports active vs untracked. Chrome history is separate: the Brain2 extension (`extensions/chrome-history`) exports each finished local day at 12:05am, saves `Downloads/Brain2 Chrome/`, and, when this app is open at localhost:3000, files it under Analytics → Sources → Browser. Older months stay after Chrome drops them. Pens can **nest**
 (trash under Cleaning, a park under Out under Mexico); **Show as** picks how coarse
 the grid and Analytics read. **Counts as** is a searchable picker: a pen may
 count as several others (`parentIds`). `parentId` stays the display parent,
@@ -479,7 +479,7 @@ npm run build                    # static export to out/
 npm run electron:build           # package desktop installers into dist/
 npm test                         # vitest unit + integration tests
 npm run ingest                   # optional Telegram queue poller (prefer npm run phone:hub)
-npm run phone:hub                # always-on Telegram executor (gitignored .env.local / COGS_TELEGRAM_BOT_TOKEN)
+npm run phone:hub                # always-on Telegram executor (gitignored .env.local / BRAIN2_TELEGRAM_BOT_TOKEN)
 npm run shortcut:iphone-notes    # write + sign Dump iPhone Notes to Brain2.shortcut
 npm run shortcut:iphone-phone    # write + sign Screen Time / Call / Text / Location .shortcut files
 npm run shortcut:iphone-location # alias of shortcut:iphone-phone (includes Location to Brain2)
@@ -490,10 +490,10 @@ _Last mapped: 2026-10-27._ `electron:local` is the production window. `npm run b
 
 `electron:dev` runs the dev server directly (not through a nested `npm run dev`)
 so Ctrl-C kills it instead of orphaning a listener on port 3000. It also sets
-`COGS_STRICT_PORT=1`: the server stays on `http://localhost:3000` (Electron never
+`BRAIN2_STRICT_PORT=1`: the server stays on `http://localhost:3000` (Electron never
 follows a fallback port). If a leftover **Node** process is still listening after
 a crash (heap OOM / SIGABRT), the next `electron:dev` SIGTERMs that listener and
-binds 3000 itself. _Last mapped: 2026-10-25_ One dev stack at a time: if a healthy cogs server already answers `/api/health` (on 3000, or 3000–3014 without strict port), a second `dev` / `electron:dev` prints "reusing it" and starts no second Next. It stays alive as a light watcher so `concurrently -k` keeps Electron up, and it exits when the first server stops. A hung server fails the probe, so the OOM reclaim above still applies. Set `COGS_ALLOW_SECOND_SERVER=1` to opt out. A non-Node occupant still errors — then
+binds 3000 itself. _Last mapped: 2026-10-25_ One dev stack at a time: if a healthy cogs server already answers `/api/health` (on 3000, or 3000–3014 without strict port), a second `dev` / `electron:dev` prints "reusing it" and starts no second Next. It stays alive as a light watcher so `concurrently -k` keeps Electron up, and it exits when the first server stops. A hung server fails the probe, so the OOM reclaim above still applies. Set `BRAIN2_ALLOW_SECOND_SERVER=1` to opt out. A non-Node occupant still errors — then
 `kill $(lsof -t -nP -iTCP:3000 -sTCP:LISTEN)`. Both `dev` and `electron:dev`
 raise the Node heap to 8 GB (`--max-old-space-size=8192`); webpack’s compiler
 cache is on disk in dev so a long Fast Refresh session is less likely to abort. The desktop vault is **pinned** to
@@ -512,7 +512,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/Lists/` | Lists file manager — orchestrator, hooks, views, dialogs (`components/Lists/README.md`) | [`components/Lists/README.md`](components/Lists/README.md) |
 | `components/Docs/` | Top-level Docs tab — WYSIWYG notes over `note` items | [`components/Docs/README.md`](components/Docs/README.md) |
 | `components/Scheduler/` | Period scheduling funnel + dependency/gantt views | [`components/Scheduler/README.md`](components/Scheduler/README.md) |
-| `components/Operations/` | Operations — a graphic tool for any project: category board (completed/inactive hidden until Show archived), per-operation panels, Parts formulas, Lists-backed To do, delete from Settings (Win95 command-center chrome) | [`components/Operations/README.md`](components/Operations/README.md) |
+| `components/Operations/` | Operations — a graphic tool for any project: category board (completed/inactive hidden until Show archived), per-operation panels, Parts formulas, Lists-backed To do, item clicks open the item-detail popup over the operation, delete from Settings (Win95 command-center chrome) | [`components/Operations/README.md`](components/Operations/README.md) |
 | `components/Modules/` | Composable dashboard modules + workspaces | [`components/Modules/README.md`](components/Modules/README.md) |
 | `components/Analytics/` | Heart of the app: collection, presentation, analysis, next tools | [`components/Analytics/README.md`](components/Analytics/README.md) |
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup; type-owned tabs + History; cycle refuse) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
@@ -600,8 +600,8 @@ does, and **Other** on Why blocked? keeps the typed words). Scheduler and To Do
 **Push** can take that same optional why; **Dismiss** does not ask. Marking a
 task missed, skipping a still-open task from the header plan, or turning on a
 habit’s missed-opportunity wand can take it too (the habit cell stores a
-string, and grades ignore it). An operation marked abandoned, or menubar
-**Why missed**, stores it on the operation review without changing the
+string, and grades ignore it). An operation marked abandoned stores that why on the operation review
+(there is no menubar **Why missed** button) without changing the
 after-action report. Analytics → Reviews lists those notes with counts by
 token and by source. Assumed times and an
 optional **Est.** mark, a night glance at the time grid / day log / activity log
@@ -633,7 +633,7 @@ data, and progress: many free-form **categories** per operation grouped on the
 home board, completed and inactive operations hidden until **Show archived**,
 per-operation **panel settings** chosen from prebuilt panels — To do / Phases /
 Parts / Timeline / Locations / Plan / Resources / Log / Queue rail — presets,
-a **Parts** tab of formulas and part pages, a To do panel that is a real Lists
+a **Parts** tab of formulas and part pages, item clicks that open the item-detail popup over the operation, a To do panel that is a real Lists
 panel over a per-operation list and also shows phase and part tasks, delete
 from Settings after **Are you sure?**, and **Working on this now** which logs
 the session into Home To Do Done, Tracking minutes, and tagged daily habits); **spreadsheet** display (v3: range select, fill

@@ -16,8 +16,8 @@ navy **BRAIN2** caption, today’s-friend jewel (click for a Stardew Next Action
 npm run capture-screenshots
 ```
 
-Set `COGS_ONLY=…` / `COGS_FRESH=0` / `COGS_URL=…` (historical env names) to limit files, keep localStorage, or point at another origin.
-Set `COGS_URL=http://localhost:3000` if the dev server uses a different port.
+Set `BRAIN2_ONLY=…` / `BRAIN2_FRESH=0` / `BRAIN2_URL=…` to limit files, keep localStorage, or point at another origin. A `COGS_` name for the same setting still works.
+Set `BRAIN2_URL=http://localhost:3000` if the dev server uses a different port.
 
 The capture browser is a fresh headless Chrome context. It does not read the
 Electron vault. Before the app boots, init scripts write throwaway Zustand
@@ -309,7 +309,7 @@ folder Icons / velvet capture.
 ### Capture mechanics
 
 Sidecars are rewritten from `scripts/screenshot-manifest.mjs` on every run
-(`COGS_ONLY` limits that to listed files). A rewritten sidecar is not a new
+(`BRAIN2_ONLY` limits that to listed files). A rewritten sidecar is not a new
 PNG — file dates and freshness stay in the status table. Plan capture clicks
 `.plan95` **Month / Week / Day** tabs (not the old “Month View” labels).
 
@@ -409,7 +409,7 @@ table above.
 
 | Area | Why / how to reach |
 |------|-------------------|
-| Full-screen item detail (`ItemDetailPage`) | Same editor as the popup tabs (`21-item-detail-*`); opened via Operations `onOpenItem` or the legacy full-screen route |
+| Full-screen item detail (`ItemDetailPage`) | Same editor as the popup tabs (`21-item-detail-*`); opened from Lists and the other desks that call the shell's `onTaskSelect`. Operations opens `TaskDetailPopup` over the operation instead. |
 | List/folder dialogs (New List, Settings, CSV import, Orb picker) | Open from Lists toolbar — same chrome as `05-lists.png`. Completed / Missed Opportunities are lists under Next Actions, not toolbar dialogs. |
 | Module builder chooser | Momentary step before `09-modules-workspace.png` |
 | Module/widget config dialogs | Open from Modules dashboard |
