@@ -204,7 +204,7 @@ export function BlockPenSection({
   const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault()
 
   return (
-    <div className="trk-section space-y-1.5">
+    <div className="trk-section space-y-1.5 trk-pen-card">
       <Label className="trk-section-title" htmlFor="block-pen-search">
         Pen
       </Label>

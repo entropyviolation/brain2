@@ -26,6 +26,7 @@
  * A block derived from the sleep log is edited here like any other, and the edit
  * travels back: `lib/sleep-sync.ts` rereads the night from its blocks, so moving
  * this morning's block to 8 AM is simply how you say you got up at 8.
+ * A discrete log instant names its door under the help line (`Added from …`).
  */
 "use client"
 
@@ -59,6 +60,7 @@ import {
   timeStringToMinutes,
   type SpanLock,
 } from "@/lib/time-entries"
+import { resolveLogSourceLabel } from "@/lib/log-entry-source"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
 import { CompanionSection } from "@/components/Home/Tracking/companion-section"
 import {
@@ -95,6 +97,8 @@ import {
   toParked,
 } from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
+import { useWorkSessionStore } from "@/lib/work-session-store"
 import { useTaskStore } from "@/lib/task-store"
 import { openStepChoices } from "@/lib/task-clock-log"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
@@ -184,6 +188,10 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
   const updateEntry = useTimeTrackingStore((s) => s.updateEntry)
   const mirrorDetails = useTimeTrackingStore((s) => s.mirrorDetails)
   const removeEntry = useTimeTrackingStore((s) => s.removeEntry)
+  const penLiveIds = usePenColorSessionStore((s) => s.session?.trackingEntryIds)
+  const workLiveIds = useWorkSessionStore((s) => s.session?.trackingEntryIds)
+  const objectivesLive =
+    (penLiveIds ?? []).includes(entry.id) || (workLiveIds ?? []).includes(entry.id)
   const splitEntryAt = useTimeTrackingStore((s) => s.splitEntryAt)
   const addVariant = useTimeTrackingStore((s) => s.addVariant)
   const addPen = useTimeTrackingStore((s) => s.addPen)
@@ -772,6 +780,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             {crossesMidnight ? " · continues past midnight" : ""}
             {pen && title.trim() && title.trim() !== pen.name ? ` · pen ${pen.name}` : ""}
           </p>
+          {isInstant(entry) ? <p className="trk-entry-source">Added from {resolveLogSourceLabel(entry)}</p> : null}
 
           {entry.generatedBy?.kind === "sleep" && (
             <p className="trk-section text-xs">
@@ -1228,8 +1237,10 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
 
           {entry.scopeId === COMPANY_SCOPE_ID ? <PersonPipelinesEditor mode="entry" entryId={entry.id} /> : null}
 
+          {objectivesLive || (nowObjectives?.length ?? 0) > 0 ? (
           <NowObjectivesList
             mode="inline"
+            allowAdd={objectivesLive}
             objectives={nowObjectives}
             onAdd={(text) => setNowObjectives((list) => addNowObjective(list, text))}
             onAddCompleted={(text) =>
@@ -1275,6 +1286,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             }
             onSetCompletes={(id, completes) => setNowObjectives((list) => setNowObjectiveCompletes(list, id, completes))}
           />
+          ) : null}
 
           <div>
             <Label htmlFor="entry-notes" className="trk-section-title">Notes</Label>
@@ -1310,9 +1322,11 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
             )}
             <button
               type="button"
-              className="trk-entry-key is-mod trk-entry-icon"
+              className="trk-entry-key is-mod is-danger trk-entry-icon"
               data-no95=""
               onClick={() => {
+                const noun = isInstant(entry) ? "event" : "timeblock"
+                if (!window.confirm(`Are you sure you want to delete this ${noun}? This cannot be undone.`)) return
                 removeEntry(entry.id)
                 onClose()
               }}

@@ -8,9 +8,11 @@
  * and/or a phrase `eventKind`, and no intake class — are the event list.
  * Switch rows are Activity instants on the Switch pen (`st:` / `switch:`) or
  * the Objective pen (`so:`), plus an instant on whatever other scope the
- * person picked. A note is a Text log instant (`note:`), so it stays on the
- * event list. The Now popup lists that note on its own shelf. A thought process is that same Text log instant with
- * `eventKind` `thought-process`, and the Tracking log shelves it under Thought process.
+ * person picked. A note is a Text log instant with no `eventKind`. The Tracking
+ * log shelves it under Notes. Analytics still reads `classifyLogInstant`, which
+ * leaves that row on the event list; Time → Log drops it. A thought process is
+ * that same Text log instant with `eventKind` `thought-process`, and the
+ * Tracking log shelves it under Thought process.
  * Thought process rows and Event rows are also items on Lists → Tracking (`lib/tracking-lists.ts`).
  * A spend is an Activity instant on the Spent pen: integer cents, what it was
  * spent on, and the source. The Tracking log shelves it under Spent.
@@ -20,11 +22,13 @@
  * `writeCycleDayMark` calls `setCycleFlag`. Spotting is stored and does not
  * change the phase.
  */
+import { format } from "date-fns"
 import { runAsAction } from "@/lib/action-history"
 import { setCycleFlag, useCycleMarksStore, type CycleDayMark, type CycleFlag } from "@/lib/cycle-marks"
 import type { CyclePhase } from "@/lib/cycle-phase"
-import { applyNote } from "@/lib/ingest/apply-note"
+import { formatLocalDateKey, getWeekDates, getWeekStartDate, parseLocalDate } from "@/lib/date-utils"
 import { applyScopeSwitch, applyThoughtProcess, ensureLocationPen, THOUGHT_PROCESS_KIND } from "@/lib/ingest/apply-discrete-event"
+import { splitEventLine } from "@/lib/ingest/parse-tracking-note"
 import { stablePenColor, useTimeTrackingStore, type TimeEntry } from "@/lib/time-tracking-store"
 import { mirrorTrackingEntry } from "@/lib/tracking-lists"
 import { SPEND_EVENT_KIND, compactSpend, formatSpendAmount, isSpendEntry } from "@/lib/spend"
@@ -34,6 +38,7 @@ import {
   minutesToLabel,
   timeStringToMinutes,
   type IntakeClass,
+  type LogSource,
   type TrackingClockCertainty,
 } from "@/lib/time-entries"
 
@@ -62,11 +67,11 @@ export type ClockCertainty = TrackingClockCertainty
 export type LogList = IntakeClass | "intake" | "event"
 /** Composer modes. Intake still stores food / drink / drug. Spent is its own shelf. */
 export type LogComposerMode = "event" | "switch" | "intake" | "note" | "thought" | "spend"
-export type LogAddTarget = IntakeClass | "event"
+export type LogAddTarget = IntakeClass | "event" | "intake"
 export type LogClockChoice = ClockCertainty
 export type LogTimeEntry = TimeEntry
-/** Event list plus Switch, Thought process, and Spent. Notes stay on `event` because they use Text log. */
-export type LogBookList = LogList | "switch" | "thought" | "spend"
+/** Event list plus Notes, Switch, Thought process, and Spent. */
+export type LogBookList = LogList | "note" | "switch" | "thought" | "spend"
 
 export type ClassifiedLogEntry = LogTimeEntry & {
   list: LogList
@@ -146,10 +151,22 @@ export function setIntakeClass(entryId: string, intakeClass: IntakeClass): void 
 }
 
 /**
+ * Text log instant with no `eventKind`. Not a spend, a thought, or a switch.
+ * `classifyLogInstant` still calls this an event so analytics callers stay put.
+ * Time → Log drops these. The book shelves them under Notes.
+ */
+export function isBareTextLogNote(entry: LogTimeEntry, penName?: string): boolean {
+  if (entry.kind !== "instant" || entry.scopeId !== ACTIVITY_SCOPE_ID) return false
+  if (isSpendEntry(entry)) return false
+  if (entry.eventKind?.trim()) return false
+  return (penName ?? "").trim().toLowerCase() === TEXT_LOG_PEN_NAME.toLowerCase()
+}
+
+/**
  * Tracking-log shelves. Food, drink, drug, bare intake, and events stay on
- * `classifyLogInstant` (analytics uses that). Switch is one extra shelf:
- * the Switch pen, the Objective pen, and a `switchTo` instant on another scope.
- * A Text log note is already an event there, so it is not listed twice.
+ * `classifyLogInstant` (analytics uses that). A Text log instant with no
+ * `eventKind` is Notes, not Events. Switch is one extra shelf: the Switch pen,
+ * the Objective pen, and a `switchTo` instant on another scope.
  * A thought process (`eventKind` `thought-process`) is its own shelf.
  * A spend (`eventKind` `spend`, or a positive `spendAmount`) is its own shelf.
  */
@@ -163,6 +180,9 @@ export function classifyLogBookRow(entry: LogTimeEntry, penName?: string): LogBo
     entry.eventKind?.trim() === THOUGHT_PROCESS_KIND
   ) {
     return { ...entry, list: "thought", kindKey: THOUGHT_PROCESS_KIND }
+  }
+  if (isBareTextLogNote(entry, penName)) {
+    return { ...entry, list: "note", kindKey: "note" }
   }
   const listed = classifyLogInstant(entry, penName)
   if (listed) return listed
@@ -225,6 +245,58 @@ export function logClockLabel(entry: Pick<LogTimeEntry, "startMin" | "clockCerta
   return { time }
 }
 
+export type LogShelfRange = "today" | "week" | "month" | "all" | "custom"
+
+/** Inclusive date keys for a shelf dialog. `null` is every day. */
+export function logShelfDateBounds(
+  range: LogShelfRange,
+  anchor: Date,
+  custom?: { from?: string; to?: string },
+): { fromKey: string; toKey: string } | null {
+  if (range === "all") return null
+  if (range === "today") {
+    const key = formatLocalDateKey(anchor)
+    return { fromKey: key, toKey: key }
+  }
+  if (range === "week") {
+    const dates = getWeekDates(getWeekStartDate(anchor))
+    return { fromKey: formatLocalDateKey(dates[0]!), toKey: formatLocalDateKey(dates[6]!) }
+  }
+  if (range === "month") {
+    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
+    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)
+    return { fromKey: formatLocalDateKey(start), toKey: formatLocalDateKey(end) }
+  }
+  const anchorKey = formatLocalDateKey(anchor)
+  const from = (custom?.from || anchorKey).trim() || anchorKey
+  const to = (custom?.to || from).trim() || from
+  return from <= to ? { fromKey: from, toKey: to } : { fromKey: to, toKey: from }
+}
+
+export function entriesForLogShelf<T extends { date: string }>(
+  entries: readonly T[],
+  bounds: { fromKey: string; toKey: string } | null,
+): T[] {
+  if (!bounds) return [...entries]
+  return entries.filter((entry) => entry.date >= bounds.fromKey && entry.date <= bounds.toKey)
+}
+
+/** Clock line. `showDate` adds `EEE MMM d` in front. The day board stays time-only. */
+export function logRowWhenLabel(
+  entry: Pick<LogTimeEntry, "startMin" | "clockCertainty" | "date">,
+  opts?: { showDate?: boolean },
+): { when: string; badge?: "Estimated" | "Unknown" } {
+  const clock = logClockLabel(entry)
+  const dateLabel = opts?.showDate ? shelfDateLabel(entry.date) : ""
+  return { when: [dateLabel, clock.time].filter(Boolean).join(" "), badge: clock.badge }
+}
+
+function shelfDateLabel(key: string): string {
+  const date = parseLocalDate(key)
+  if (!date) return key
+  return format(date, "EEE MMM d")
+}
+
 function ensureActivityPen(name: string): string {
   const store = useTimeTrackingStore.getState()
   const scope = store.scopes.find((s) => s.id === ACTIVITY_SCOPE_ID)
@@ -247,7 +319,8 @@ export function paintLogInstant(input: {
   const penId = ensureActivityPen(input.target === "event" ? TEXT_LOG_PEN_NAME : INTAKE_PEN_NAME)
   if (!penId) return null
   const minute = input.clock === "unknown" ? UNKNOWN_CLOCK_MINUTE : input.minute
-  const eventKind = input.target === "event" ? eventKindSlug(title) : `intake.${input.target}`
+  const eventKind =
+    input.target === "event" ? eventKindSlug(title) : input.target === "intake" ? "intake" : `intake.${input.target}`
   const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
   useTimeTrackingStore.getState().paintMinutes(
     input.date,
@@ -262,7 +335,7 @@ export function paintLogInstant(input: {
       kind: "instant",
       title,
       ...(eventKind ? { eventKind } : {}),
-      ...(input.target === "event" ? {} : { intakeClass: input.target }),
+      ...(input.target === "event" || input.target === "intake" ? {} : { intakeClass: input.target }),
       ...(input.clock === "exact" ? {} : { clockCertainty: input.clock }),
     },
   )
@@ -270,6 +343,50 @@ export function paintLogInstant(input: {
     .getState()
     .entries.find((entry) => !before.has(entry.id) && entry.kind === "instant" && entry.date === input.date)
   if (created?.id && input.target === "event") mirrorTrackingEntry(created.id, "log")
+  return created?.id ?? null
+}
+
+/**
+ * One Notes-shelf instant. Text log pen, first line as the title, later lines
+ * in `notes`. No `eventKind`. Does not call `applyNote`, so a covering block
+ * is left alone. BIM `n` / `note:` still appends through `applyNote`.
+ */
+export function paintLogNoteInstant(input: {
+  date: string
+  title: string
+  clock: LogClockChoice
+  minute: number
+  logSource?: LogSource
+}): string | null {
+  const split = splitEventLine(input.title)
+  const title = split.line.trim()
+  if (!title) return null
+  const penId = ensureActivityPen(TEXT_LOG_PEN_NAME)
+  if (!penId) return null
+  const minute = input.clock === "unknown" ? UNKNOWN_CLOCK_MINUTE : input.minute
+  const before = new Set(useTimeTrackingStore.getState().entries.map((entry) => entry.id))
+  useTimeTrackingStore.getState().paintMinutes(
+    input.date,
+    ACTIVITY_SCOPE_ID,
+    minute,
+    minute,
+    penId,
+    undefined,
+    undefined,
+    input.clock === "estimated" ? "estimated" : undefined,
+    {
+      kind: "instant",
+      title,
+      ...(split.note ? { notes: split.note } : {}),
+      ...(input.clock === "exact" ? {} : { clockCertainty: input.clock }),
+    },
+  )
+  const created = useTimeTrackingStore
+    .getState()
+    .entries.find((entry) => !before.has(entry.id) && entry.kind === "instant" && entry.date === input.date)
+  if (created?.id && input.logSource) {
+    useTimeTrackingStore.getState().updateEntry(created.id, { logSource: input.logSource })
+  }
   return created?.id ?? null
 }
 
@@ -368,14 +485,20 @@ function paintPairedLocation(date: string, minute: number, penId: string, clock:
   )
 }
 
+function stampLogSource(id: string | null, source: LogSource | undefined): void {
+  if (!id || !source) return
+  useTimeTrackingStore.getState().updateEntry(id, { logSource: source })
+}
+
 /**
  * One composer submit. Event and intake stay on `paintLogInstant`.
  * Switch calls `applyScopeSwitch`: Activity is the `st:` instant; any other
- * view is an instant on that scope’s pens. Note calls `applyNote` (Text log
- * instant, not the day jot, unless the phrase is already a `day:` note).
- * Thought process calls `applyThoughtProcess` on that same paint path, with
- * `eventKind` `thought-process`. Spent paints the Spent pen with cents,
- * what, and source.
+ * view is an instant on that scope’s pens. Note calls `paintLogNoteInstant`
+ * (Text log instant, no covering-block append). BIM `n` / `note:` still uses
+ * `applyNote`. Thought process calls `applyThoughtProcess` on that same paint
+ * path, with `eventKind` `thought-process`. Spent paints the Spent pen with
+ * cents, what, and source. `logSource` defaults to the composer; a shelf add
+ * passes `tracking-shelf-now`, and the Now popup passes `now-popup`.
  */
 export function submitTrackingLog(input: {
   date: string
@@ -392,6 +515,7 @@ export function submitTrackingLog(input: {
   spendAmount?: number
   spendOn?: string
   spendSource?: string
+  logSource?: LogSource
 }): string | null {
   const title = input.title.trim()
   const switchTo = (input.switchTo ?? "").trim()
@@ -406,9 +530,10 @@ export function submitTrackingLog(input: {
     if (!spend) return null
   } else if (!title) return null
   if (input.clock !== "unknown" && !Number.isFinite(input.minute)) return null
+  const source = input.logSource ?? "tracking-composer"
   return runAsAction("tracking log", () => {
     if (input.mode === "spend" && spend) {
-      return paintSpendInstant({
+      const id = paintSpendInstant({
         date: input.date,
         clock: input.clock,
         minute: input.minute,
@@ -416,18 +541,31 @@ export function submitTrackingLog(input: {
         spendOn: spend.spendOn,
         spendSource: spend.spendSource,
       })
+      stampLogSource(id, source)
+      return id
     }
     if (input.mode === "event" || input.mode === "intake") {
       const id = paintLogInstant({
         date: input.date,
         title,
-        target: input.mode === "event" ? "event" : (input.intakeClass ?? "food"),
+        target: input.mode === "event" ? "event" : (input.intakeClass ?? "intake"),
         clock: input.clock,
         minute: input.minute,
       })
       if (id && input.mode === "event" && input.locationPenId) {
         paintPairedLocation(input.date, input.minute, input.locationPenId, input.clock)
       }
+      stampLogSource(id, source)
+      return id
+    }
+    if (input.mode === "note") {
+      const id = paintLogNoteInstant({
+        date: input.date,
+        title,
+        clock: input.clock,
+        minute: input.minute,
+        logSource: source,
+      })
       return id
     }
     const at = dateAtMinute(input.date, input.clock === "unknown" ? UNKNOWN_CLOCK_MINUTE : input.minute)
@@ -438,16 +576,14 @@ export function submitTrackingLog(input: {
       const payload = from ? `from: ${from} to: ${to}` : to
       const result = applyScopeSwitch(payload, input.scopeId || ACTIVITY_SCOPE_ID, at)
       if (result.status !== "ok") return null
-    } else if (input.mode === "thought") {
-      const result = applyThoughtProcess(title, at)
-      if (result.status !== "ok") return null
     } else {
-      const result = applyNote(title, at)
+      const result = applyThoughtProcess(title, at)
       if (result.status !== "ok") return null
     }
     const id = newestInstant(before, input.date)
     if (!id) return null
     stampComposerClock(id, input.clock, input.minute)
+    stampLogSource(id, source)
     return id
   })
 }

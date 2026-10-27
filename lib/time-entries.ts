@@ -134,6 +134,19 @@ export function dominantEntry(map: (TimeEntry | null)[], start: number, step: nu
  */
 export type TimeEntryKind = "interval" | "instant"
 
+/** Door that wrote a log row. Omitted on older rows. No persist bump. */
+export type LogSource =
+  | "tracking-composer"
+  | "tracking-shelf-now"
+  | "now-popup"
+  | "bim"
+  | "quick-add"
+  | "inbox-transfer"
+  | "telegram-feed"
+  | "nfc"
+  | "phone-sync"
+  | "statement-import"
+
 /** Which of the three the block editor holds still. The other two follow each other. */
 export type SpanLock = "start" | "end" | "duration"
 
@@ -208,6 +221,11 @@ export interface TimeEntry {
    * time the user painted by hand.
    */
   generatedBy?: { kind: "sleep" | "screentime" | "text" | "phone-sync"; id: string }
+  /**
+   * Which door wrote this row. Omitted on older rows — the detail line infers
+   * from `generatedBy` when it can. No persist bump.
+   */
+  logSource?: LogSource
   /**
    * Links calendar-day slices of one continuous block. Painting 11 PM–2 AM
    * stores Thursday 23:00–24:00 and Friday 00:00–02:00 with the same id, so the
@@ -493,6 +511,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     (a.spendAmount ?? undefined) === (b.spendAmount ?? undefined) &&
     (a.spendOn ?? undefined) === (b.spendOn ?? undefined) &&
     (a.spendSource ?? undefined) === (b.spendSource ?? undefined) &&
+    (a.logSource ?? undefined) === (b.logSource ?? undefined) &&
     (a.spanLock ?? "start") === (b.spanLock ?? "start") &&
     (a.durationEstimated ?? false) === (b.durationEstimated ?? false)
   )

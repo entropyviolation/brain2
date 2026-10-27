@@ -1,7 +1,8 @@
 /**
  * components/Home/Tracking/entry-dialog.css — Block editor popup
  *
- * Centered on the screen. This sheet is a flatter paper face than the other
+ * Centered on the screen at 768px and wider. On a phone the same dialog
+ * anchors to the bottom edge. This sheet is a flatter paper face than the other
  * milled dialogs: the phosphor title runs up to the close key, clocks are
  * white, and word keys are keycaps. Click outside or Close dismisses; the unsaved-changes guard
  * still owns a dirty draft.
@@ -173,7 +174,14 @@
 
 /* Clocks, duration, and the house keycap on this dialog only. */
 
+.trk95.trk-dialog.trk-entry .trk-entry-source {
+  margin: 4px 0 0;
+  line-height: 1.35;
+  color: #222;
+}
+
 .trk95.trk-dialog.trk-entry .trk-help,
+.trk95.trk-dialog.trk-entry .trk-entry-source,
 .trk95.trk-dialog.trk-entry .trk-blockpen-path,
 .trk95.trk-dialog.trk-entry .trk-blockpen-state,
 .trk95.trk-dialog.trk-entry .trk-now-obj-meta,
@@ -184,14 +192,17 @@
   font-size: 13px;
 }
 
-.trk95.trk-dialog.trk-entry .trk-section-title {
+.trk95.trk-dialog.trk-entry .trk-section-title,
+.trk95.trk-dialog.trk-entry .trk-clock-head label,
+.trk95.trk-dialog.trk-entry .trk-company-details-label {
   font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.06em !important;
-  line-height: 1.25 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  line-height: 1.3 !important;
   text-transform: uppercase !important;
-  color: #1a1c1e !important;
+  color: var(--t-nameplate, #222) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .trk95.trk-dialog.trk-entry .trk-entry-field-from {
@@ -241,15 +252,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-.trk95.trk-dialog.trk-entry .trk-clock-head label,
-.trk95.trk-dialog.trk-entry .trk-company-details-label {
-  font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.06em !important;
-  line-height: 1.25 !important;
-  text-transform: uppercase !important;
-  color: #1a1c1e !important;
+.trk95.trk-dialog.trk-entry .trk-pen-card,
+.trk95.trk-dialog.trk-entry .trk-blockpen-chip {
+  border-radius: 8px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-blockpen-chip {
+  overflow: hidden;
 }
 
 .trk95.trk-dialog.trk-entry .trk-entry-clocks {
@@ -448,6 +457,15 @@
   padding-right: 8px;
 }
 
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-danger:hover,
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-danger:focus-visible {
+  --cap-top: #c45648;
+  --cap-top2: #9a3228;
+  --cap-skirt: #6e221c;
+  --cap-edge: #4a1612;
+  color: #fff;
+}
+
 .trk95.trk-dialog.trk-entry button.trk-entry-key[aria-pressed="true"] {
   transform: translateY(1px);
   box-shadow:
@@ -463,4 +481,35 @@
 
 .trk95.trk-dialog.trk-entry .trk-entry-actions .is-primary {
   flex: 1 1 auto;
+}
+
+/* Phone: the block editor is a bottom sheet. 768px and wider stays centered. */
+@media (max-width: 767px) {
+  .trk95.trk-dialog.trk-entry {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(88vh, 760px) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .trk95.trk-dialog.trk-entry {
+    animation: trk-entry-sheet 420ms cubic-bezier(0.22, 1.15, 0.36, 1) !important;
+  }
+}
+
+@keyframes trk-entry-sheet {
+  from {
+    transform: translateY(18%);
+  }
+  to {
+    transform: none;
+  }
 }

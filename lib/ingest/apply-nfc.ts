@@ -83,7 +83,7 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
 function stampGenerated(ids: string[] | undefined, stamp: string): void {
   const store = useTimeTrackingStore.getState()
   for (const id of ids ?? []) {
-    store.updateEntry(id, { generatedBy: { kind: "text", id: stamp } })
+    store.updateEntry(id, { generatedBy: { kind: "text", id: stamp }, logSource: "nfc" })
   }
 }
 
@@ -147,6 +147,7 @@ function paintDuration(title: string, minutes: number, end: Date, tagId: string)
   if (!created) return undefined
   useTimeTrackingStore.getState().updateEntry(created.id, {
     generatedBy: { kind: "text", id: stamp },
+    logSource: "nfc",
     title,
     notes: `NFC tag · ${title}`,
     precision: "estimated",

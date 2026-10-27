@@ -8,7 +8,10 @@ import {
   classifyLogInstant,
   ensureLocationPen,
   eventKindSlug,
+  entriesForLogShelf,
   logClockLabel,
+  logRowWhenLabel,
+  logShelfDateBounds,
   paintLogInstant,
   switchLogCopy,
   phaseForDate,
@@ -216,8 +219,50 @@ describe("tracking log model", () => {
       startMin: 0,
     })
     expect(pen(note ?? undefined)).toBe("Text log")
+    expect(saved(note)?.eventKind).toBeUndefined()
+    expect(saved(note)?.logSource).toBe("tracking-composer")
     expect(classifyLogInstant(saved(note)!, "Text log")?.list).toBe("event")
+    expect(classifyLogBookRow(saved(note)!, "Text log")).toMatchObject({ list: "note", kindKey: "note" })
     expect(logClockLabel(saved(note)!).time).toBeUndefined()
+  })
+
+  it("does not append a composer note onto a covering block", () => {
+    resetAllStores()
+    useTimeTrackingStore.getState().paintMinutes("2026-06-20", ACTIVITY_SCOPE_ID, 8 * 60, 10 * 60, "act-work", undefined, undefined, undefined, {
+      title: "work",
+      notes: "already",
+    })
+    const note = submitTrackingLog({
+      date: "2026-06-20",
+      title: "landlord called\nabout the sink",
+      mode: "note",
+      clock: "exact",
+      minute: 8 * 60 + 30,
+    })
+    const entries = useTimeTrackingStore.getState().entries
+    const block = entries.find((entry) => entry.penId === "act-work" && entry.kind !== "instant")
+    const saved = entries.find((entry) => entry.id === note)
+    expect(block?.notes).toBe("already")
+    expect(saved?.title).toBe("landlord called")
+    expect(saved?.notes).toBe("about the sink")
+    expect(saved?.eventKind).toBeUndefined()
+    expect(saved?.notes).not.toContain("from text pipeline")
+    expect(classifyLogBookRow(saved!, "Text log")?.list).toBe("note")
+  })
+
+  it("keeps a week shelf on that week and dates the row", () => {
+    const anchor = new Date(2026, 5, 20)
+    const bounds = logShelfDateBounds("week", anchor)
+    const rows = [
+      instant({ id: "in", date: "2026-06-18", title: "toast", startMin: 8 * 60 }),
+      instant({ id: "out", date: "2026-06-10", title: "old" }),
+    ]
+    expect(entriesForLogShelf(rows, bounds).map((row) => row.id)).toEqual(["in"])
+    expect(logShelfDateBounds("today", anchor)).toEqual({ fromKey: "2026-06-20", toKey: "2026-06-20" })
+    expect(logShelfDateBounds("all", anchor)).toBeNull()
+    expect(entriesForLogShelf(rows, null)).toHaveLength(2)
+    expect(logRowWhenLabel(rows[0]!, { showDate: true }).when).toBe("Thu Jun 18 8:00 AM")
+    expect(logRowWhenLabel(rows[0]!).when).toBe("8:00 AM")
   })
 
   it("keeps a multiline note body in notes and the first line as the title", () => {

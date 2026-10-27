@@ -5,9 +5,12 @@
  *
  * Three tabs: This day, Budget (`budget-panel.tsx`, the month across sources), and
  * Import. A statement (PDF, CSV, or text) is read in the browser and previewed:
- * rename, flip earning/spending, untick. Spending is logged on the Tracking log;
+ * rename, flip earning/spending, untick. Spending is logged on the Tracking log
+ * with `logSource` `statement-import`;
  * earnings go to the budget store. Lines already logged start unticked. Imported
- * lines carry the statement date and no clock time.
+ * lines carry the statement date and no clock time. The day list can widen to
+ * the week, the month, every day, or two dates. That choice resets when the
+ * dialog closes. Budget and Import stay as they are.
  */
 import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -15,7 +18,8 @@ import { BudgetPanel } from "@/components/Home/Tracking/budget-panel"
 import { useBudgetStore } from "@/lib/budget-store"
 import { readStatementFile, type StatementLine } from "@/lib/bank-statement"
 import { formatSpendAmount, spendSourceOptions } from "@/lib/spend"
-import { submitTrackingLog } from "@/components/Home/Tracking/tracking-log-model"
+import { LogShelfRangeBar, useLogShelfRange } from "@/components/Home/Tracking/log-shelf-dialog"
+import { entriesForLogShelf, logRowWhenLabel, submitTrackingLog, type LogBookEntry } from "@/components/Home/Tracking/tracking-log-model"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
 interface Draft extends StatementLine {
@@ -29,15 +33,17 @@ export function SpendingDialog({
   onOpenChange,
   dayLabel,
   ledger,
-  list,
+  anchor = new Date(),
+  rows = [],
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   dayLabel: string
-  /** The day's spend summary bars. */
+  /** The selected day's spend summary bars. Stays that day while the list widens. */
   ledger: ReactNode
-  /** The day's spend rows. */
-  list: ReactNode
+  anchor?: Date
+  /** Spend rows across days. The day tab filters them. */
+  rows?: readonly LogBookEntry[]
 }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const sources = useMemo(() => spendSourceOptions(entries), [entries])
@@ -48,6 +54,8 @@ export function SpendingDialog({
   const [tab, setTab] = useState<"day" | "budget" | "import">("day")
   const budgetLines = useBudgetStore((s) => s.lines)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const shelf = useLogShelfRange(open, anchor)
+  const shown = entriesForLogShelf(rows, shelf.bounds)
 
   const known = useMemo(() => {
     const set = new Set<string>()
@@ -100,6 +108,7 @@ export function SpendingDialog({
         spendAmount: d.cents,
         spendOn: d.name,
         spendSource: source,
+        logSource: "statement-import",
       })
       if (id) added += 1
     }
@@ -130,8 +139,37 @@ export function SpendingDialog({
 
         {tab === "day" ? (
           <section className="trk-spending-day" aria-label="This day">
+            <LogShelfRangeBar
+              range={shelf.range}
+              onRange={shelf.setRange}
+              from={shelf.from}
+              to={shelf.to}
+              onFrom={shelf.setFrom}
+              onTo={shelf.setTo}
+              anchor={anchor}
+            />
             {ledger}
-            {list}
+            {shown.length === 0 ? (
+              <p className="trk-spending-note">
+                {shelf.range === "today" ? "Nothing spent this day." : "Nothing spent in this range."}
+              </p>
+            ) : (
+              <ul className="trk-spending-rows">
+                {shown.map((row) => {
+                  const when = logRowWhenLabel(row, { showDate: shelf.showDate })
+                  return (
+                    <li key={row.id} data-keep="true">
+                      {shelf.showDate ? <span className="trk-spending-date">{when.when || when.badge}</span> : null}
+                      <span className="trk-spending-name">{row.spendOn?.trim() || row.title?.trim() || "Untitled"}</span>
+                      <span className="trk-spending-date">{row.spendSource?.trim() || ""}</span>
+                      <span className="trk-spending-amount">
+                        {typeof row.spendAmount === "number" ? formatSpendAmount(row.spendAmount) : ""}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </section>
         ) : null}
 

@@ -3,9 +3,8 @@
  * as the Home Tracking log. This file does not change that desk.
  *
  * A Text log instant with a phrase `eventKind` is an Event. One with no
- * `eventKind` is a Note (`note:` / the log's Note composer). Thought process
- * stays `eventKind` `thought-process`. The Tracking log still shelves notes
- * with events; only this popup splits them.
+ * `eventKind` is a Note (`classifyLogBookRow` list `note`). Thought process
+ * stays `eventKind` `thought-process`. The Tracking log shelves notes the same way.
  */
 "use client"
 
@@ -43,14 +42,7 @@ function rowsFor(dayKey: string, list: NowList): LogBookEntry[] {
     if (entry.date !== dayKey) continue
     const row = classifyLogBookRow(entry, penName.get(entry.penId))
     if (!row) continue
-    const kind = row.eventKind?.trim()
-    if (list === "thought") {
-      if (row.list === "thought") rows.push(row)
-    } else if (list === "note") {
-      if (row.list === "event" && !kind) rows.push(row)
-    } else if (row.list === "event" && kind) {
-      rows.push(row)
-    }
+    if (row.list === list) rows.push(row)
   }
   rows.sort(compareLogRows)
   return rows
@@ -95,6 +87,7 @@ function NowLogList({
       mode: list === "thought" ? "thought" : list === "note" ? "note" : "event",
       clock: "exact",
       minute: minuteFor(dayKey),
+      logSource: "now-popup",
     })
     if (!id) return
     setText("")

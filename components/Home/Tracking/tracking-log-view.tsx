@@ -10,6 +10,10 @@
  * modes stay one line. A thought process is a guiding strand of this moment,
  * stored as `eventKind` `thought-process`, and listed under Thought process.
  * Food, drink, and drugs are Intake presets on an Intake-pen instant.
+ * Note is the opening key. It paints a Text log instant and does not append
+ * onto a covering block. Notes is its own steel shelf. Each day shelf except
+ * Spent and Switch has a bottom add for this minute; Spent focuses the composer.
+ * Week columns stay browse-only. A shelf dialog can widen the day.
  * The clock stays visible. Custom phrases are added in Tracking settings
  * (the gear), not on this composer. Counts sits under the composer.
  * Estimated and Unknown are checkboxes. Cycle marks
@@ -18,7 +22,7 @@
  * tracking is on.
  *
  * Desk look (docs/TRACKING_REDESIGN.md): the date sits in a CRT with the
- * day's readouts (Spent, Intake, Events, Thoughts) beside it. The composer is
+ * day's readouts (Spent, Intake, Events, Notes, Thoughts) beside it. The composer is
  * one console: mode keys, then the fields. Intake shows a **Recent** row of
  * your most-used foods / drinks / drugs for the chosen class — one click fills
  * the name field (it does not log); Add writes it. Every successful Add raises
@@ -48,6 +52,7 @@ import {
   compareLogRows,
   ensureLocationPen,
   logClockLabel,
+  logRowWhenLabel,
   submitTrackingLog,
   switchLogCopy,
   type IntakeClass,
@@ -55,7 +60,6 @@ import {
   type LogBookList,
   type LogClockChoice,
   type LogComposerMode,
-  type LogList,
   loggedFlag,
   recentIntakeByClass,
 } from "@/components/Home/Tracking/tracking-log-model"
@@ -90,7 +94,7 @@ const INTAKE_PRESETS: { id: IntakeClass; label: string; placeholder: string }[] 
   { id: "drug", label: "Drug", placeholder: "name" },
 ]
 
-const INTAKE_LISTS: { id: LogList; title: string }[] = [
+const INTAKE_LISTS: { id: IntakeClass; title: string }[] = [
   { id: "food", title: "Food" },
   { id: "drink", title: "Drink" },
   { id: "drug", title: "Drugs" },
@@ -313,6 +317,7 @@ function LogRow({
   copy,
   meta,
   lead,
+  showDate,
   onOpen,
   onRemove,
 }: {
@@ -320,15 +325,20 @@ function LogRow({
   copy?: string
   meta?: string
   lead?: ReactNode
+  showDate?: boolean
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
   const clock = logClockLabel(entry)
+  const dated = showDate ? logRowWhenLabel(entry, { showDate: true }) : null
+  const timeText = dated ? dated.when : clock.time
+  const badge = dated?.badge ?? clock.badge
   const shown = copy ? { ...entry, title: copy } : entry
   const scope = meta ? <span className="trk-log-scope">{meta}</span> : null
-  if (clock.badge === "Unknown") {
+  if (badge === "Unknown") {
     return (
       <div className="trk-log-row is-unknown">
+        {timeText ? <span className="trk-log-when">{timeText}</span> : null}
         <span className="trk-logbook-badge">Unknown</span>
         {lead}
         <LogCopy entry={shown} />
@@ -344,11 +354,11 @@ function LogRow({
   }
   return (
     <button type="button" className="trk-log-row" onClick={() => onOpen(entry.id)}>
-      {clock.time ? <span className="trk-log-when">{clock.time}</span> : null}
+      {timeText ? <span className="trk-log-when">{timeText}</span> : null}
       {lead}
       <LogCopy entry={shown} />
       {scope}
-      {clock.badge ? <span className="trk-logbook-badge">{clock.badge}</span> : null}
+      {badge ? <span className="trk-logbook-badge">{badge}</span> : null}
     </button>
   )
 }
@@ -359,6 +369,7 @@ const EMPTY_SHELF: Record<string, string> = {
   Drugs: "Nothing taken this day.",
   Intake: "No other intake this day.",
   Events: "No events this day.",
+  Notes: "No notes this day.",
   "Thought process": "No thought process this day.",
   Switch: "No switches this day.",
   Spent: "Nothing spent this day.",
@@ -374,6 +385,7 @@ function LogListWell({
   leadFor,
   face,
   onTitleOpen,
+  quickAdd,
   onOpen,
   onRemove,
 }: {
@@ -388,6 +400,8 @@ function LogListWell({
   face?: "steel"
   /** Makes the heading a button, such as Spent opening the Spending dialog. */
   onTitleOpen?: () => void
+  /** Bottom of the well. Week columns do not mount this shelf. */
+  quickAdd?: ReactNode
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
@@ -427,7 +441,54 @@ function LogListWell({
           ))}
         </div>
       )}
+      {quickAdd}
     </section>
+  )
+}
+
+function LogShelfQuickAdd({
+  label,
+  placeholder,
+  onAdd,
+}: {
+  label: string
+  placeholder: string
+  onAdd: (text: string) => boolean
+}) {
+  const fieldRef = useRef<HTMLTextAreaElement>(null)
+  const [text, setText] = useState("")
+
+  function add() {
+    if (!onAdd(text)) return
+    setText("")
+    if (fieldRef.current) fieldRef.current.style.height = ""
+  }
+
+  return (
+    <div className="trk-logbook-well-add">
+      <textarea
+        ref={fieldRef}
+        aria-label={label}
+        rows={1}
+        value={text}
+        placeholder={placeholder}
+        title="Enter adds this line. Shift+Enter starts another line."
+        onChange={(event) => {
+          setText(event.target.value)
+          const el = event.currentTarget
+          el.style.height = "0px"
+          el.style.height = `${el.scrollHeight}px`
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || event.shiftKey) return
+          event.preventDefault()
+          add()
+        }}
+      />
+      <button type="button" aria-label={label} onClick={add} disabled={!text.trim()}>
+        Add
+      </button>
+    </div>
   )
 }
 
@@ -501,6 +562,8 @@ export function TrackingLogView({
     materializeMissingFeedLogs(ingestEvents)
   }, [feedRows, ingestEvents])
   const nameFieldRef = useRef<HTMLInputElement | null>(null)
+  const composeRef = useRef<HTMLElement | null>(null)
+  const amountRef = useRef<HTMLInputElement | null>(null)
   const [span, setSpan] = useState<"day" | "week">(() => getTrackingViewPrefs().logSpan)
   const isWeek = lockDate ? false : span === "week"
   const weekStart = getWeekStartDate(currentDate)
@@ -523,26 +586,34 @@ export function TrackingLogView({
     return scopes.find((scope) => scope.id === switchScopeId)?.pens ?? []
   }, [scopes, switchScopeId])
 
-  const grouped = useMemo(() => {
+  const allGrouped = useMemo(() => {
     const groups: Record<LogBookList, LogBookEntry[]> = {
       food: [],
       drink: [],
       drug: [],
       intake: [],
       event: [],
+      note: [],
       switch: [],
       thought: [],
       spend: [],
     }
     for (const entry of entries) {
-      if (entry.date !== dateKey) continue
       const row = classifyLogBookRow(asLogEntry(entry), penName.get(entry.penId))
       if (!row) continue
       groups[row.list].push(row)
     }
     for (const list of Object.keys(groups) as LogBookList[]) groups[list].sort(compareLogRows)
     return groups
-  }, [entries, dateKey, penName])
+  }, [entries, penName])
+
+  const grouped = useMemo(() => {
+    const groups = {} as Record<LogBookList, LogBookEntry[]>
+    for (const list of Object.keys(allGrouped) as LogBookList[]) {
+      groups[list] = allGrouped[list].filter((row) => row.date === dateKey)
+    }
+    return groups
+  }, [allGrouped, dateKey])
 
   // Recent intake by class (most used first) and recent purchases, across every day.
   const recents = useMemo(() => {
@@ -622,6 +693,27 @@ export function TrackingLogView({
 
   const canAdd = mode === "switch" ? Boolean(switchTo.trim()) : mode === "spend" ? spendReady : Boolean(title.trim())
 
+  const addShelfLine = (shelfMode: LogComposerMode, text: string, intakeClass?: IntakeClass) => {
+    const minute = timeStringToMinutes(defaultClock(currentDate))
+    if (minute == null) return false
+    const id = submitTrackingLog({
+      date: dateKey,
+      title: text,
+      mode: shelfMode,
+      intakeClass,
+      clock: "exact",
+      minute,
+      logSource: "tracking-shelf-now",
+    })
+    return Boolean(id)
+  }
+
+  const focusSpentComposer = () => {
+    setMode("spend")
+    composeRef.current?.scrollIntoView({ block: "nearest" })
+    window.setTimeout(() => amountRef.current?.focus(), 0)
+  }
+
   const openDayFromWeek = (date: Date) => {
     setCurrentDate(date)
     setSpan("day")
@@ -653,6 +745,7 @@ export function TrackingLogView({
               <ScopeReadout label="Spent" value={formatSpendAmount(spentToday)} />
               <ScopeReadout label="Intake" value={intakeCount} />
               <ScopeReadout label="Events" value={grouped.event.length} />
+              <ScopeReadout label="Notes" value={grouped.note.length} />
               <ScopeReadout label="Thoughts" value={grouped.thought.length} />
             </>
           )
@@ -671,7 +764,7 @@ export function TrackingLogView({
       ) : null}
 
       <div className="trk-logbook-inputs">
-      <section className="trk-aside-well trk-logbook-compose" aria-label="Add to the tracking log">
+      <section ref={composeRef} className="trk-aside-well trk-logbook-compose" aria-label="Add to the tracking log">
         <h3 className="trk-logbook-heading">Add a line</h3>
         <div className="trk-span-switch trk-logbook-modes" role="toolbar" aria-label="What to log">
           {MODES.map((row) => (
@@ -784,6 +877,7 @@ export function TrackingLogView({
                 <span className="trk-logbook-amount">
                   <span aria-hidden="true">$</span>
                   <input
+                    ref={amountRef}
                     aria-label="Amount"
                     inputMode="decimal"
                     placeholder="4.50"
@@ -946,6 +1040,13 @@ export function TrackingLogView({
             rows={grouped.spend}
             extra={<SpendLedger rows={grouped.spend} />}
             onTitleOpen={() => setSpendingOpen(true)}
+            quickAdd={
+              <div className="trk-logbook-well-add">
+                <button type="button" onClick={focusSpentComposer}>
+                  Add spent now
+                </button>
+              </div>
+            }
             copyFor={(entry) => entry.spendOn?.trim() || entry.title?.trim() || "Untitled"}
             metaFor={(entry) => entry.spendSource?.trim() || ""}
             leadFor={(entry) =>
@@ -963,6 +1064,13 @@ export function TrackingLogView({
               title={list.title}
               rows={grouped[list.id]}
               onTitleOpen={() => setShelf(list.id)}
+              quickAdd={
+                <LogShelfQuickAdd
+                  label={`Add to ${list.title}`}
+                  placeholder={INTAKE_PRESETS.find((row) => row.id === list.id)?.placeholder ?? "coffee"}
+                  onAdd={(text) => addShelfLine("intake", text, list.id)}
+                />
+              }
               onOpen={setOpenEntryId}
               onRemove={removeEntry}
             />
@@ -974,6 +1082,13 @@ export function TrackingLogView({
               note="Intake with no food, drink, or drug class."
               rows={grouped.intake}
               onTitleOpen={() => setShelf("intake")}
+              quickAdd={
+                <LogShelfQuickAdd
+                  label="Add to Intake"
+                  placeholder="name"
+                  onAdd={(text) => addShelfLine("intake", text)}
+                />
+              }
               onOpen={setOpenEntryId}
               onRemove={removeEntry}
             />
@@ -985,6 +1100,26 @@ export function TrackingLogView({
             rows={grouped.event}
             face="steel"
             onTitleOpen={() => setShelf("event")}
+            quickAdd={
+              <LogShelfQuickAdd label="Add to Events" placeholder="left room" onAdd={(text) => addShelfLine("event", text)} />
+            }
+            onOpen={setOpenEntryId}
+            onRemove={removeEntry}
+          />
+
+          <LogListWell
+            title="Notes"
+            note="A general note for this minute. Example: landlord called back."
+            rows={grouped.note}
+            face="steel"
+            onTitleOpen={() => setShelf("note")}
+            quickAdd={
+              <LogShelfQuickAdd
+                label="Add to Notes"
+                placeholder="landlord called back"
+                onAdd={(text) => addShelfLine("note", text)}
+              />
+            }
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
@@ -995,6 +1130,13 @@ export function TrackingLogView({
             rows={grouped.thought}
             face="steel"
             onTitleOpen={() => setShelf("thought")}
+            quickAdd={
+              <LogShelfQuickAdd
+                label="Add to Thought process"
+                placeholder="A strand from what you are doing…"
+                onAdd={(text) => addShelfLine("thought", text)}
+              />
+            }
             onOpen={setOpenEntryId}
             onRemove={removeEntry}
           />
@@ -1019,13 +1161,14 @@ export function TrackingLogView({
 
       {(
         [
-          ["food", "Food", grouped.food, "What was eaten this day."],
-          ["drink", "Drink", grouped.drink, "What was drunk this day."],
-          ["drug", "Drugs", grouped.drug, "What was taken this day."],
-          ["intake", "Intake", grouped.intake, "Intake with no food, drink, or drug class."],
-          ["event", "Events", grouped.event, "Any repeated phrase can be counted later. Example: left room."],
-          ["thought", "Thought process", grouped.thought, "A strand from what you are doing, to what it leads to, to how it feels."],
-          ["switch", "Switch", grouped.switch, "From one thing to the next."],
+          ["food", "Food", allGrouped.food, "What was eaten this day."],
+          ["drink", "Drink", allGrouped.drink, "What was drunk this day."],
+          ["drug", "Drugs", allGrouped.drug, "What was taken this day."],
+          ["intake", "Intake", allGrouped.intake, "Intake with no food, drink, or drug class."],
+          ["event", "Events", allGrouped.event, "Any repeated phrase can be counted later. Example: left room."],
+          ["note", "Notes", allGrouped.note, "A general note for this minute. Example: landlord called back."],
+          ["thought", "Thought process", allGrouped.thought, "A strand from what you are doing, to what it leads to, to how it feels."],
+          ["switch", "Switch", allGrouped.switch, "From one thing to the next."],
         ] as const
       ).map(([id, title, rows, note]) => (
         <LogShelfDialog
@@ -1034,23 +1177,21 @@ export function TrackingLogView({
           onOpenChange={(next) => setShelf(next ? id : null)}
           title={title}
           description={note}
-        >
-          {rows.length === 0 ? (
-            <p className="trk-shelf-empty">{EMPTY_SHELF[title] ?? "Nothing logged this day."}</p>
-          ) : (
-            <div className="trk-log">
-              {rows.map((entry) => (
-                <LogRow
-                  key={entry.id}
-                  entry={entry}
-                  copy={id === "switch" ? switchLogCopy(entry, penName.get(entry.penId)) : undefined}
-                  meta={id === "switch" ? scopeName(entry.scopeId) : undefined}
-                  onOpen={setOpenEntryId}
-                  onRemove={removeEntry}
-                />
-              ))}
-            </div>
+          anchor={currentDate}
+          entries={rows}
+          renderEntry={(entry, showDate) => (
+            <LogRow
+              key={entry.id}
+              entry={entry}
+              showDate={showDate}
+              copy={id === "switch" ? switchLogCopy(entry, penName.get(entry.penId)) : undefined}
+              meta={id === "switch" ? scopeName(entry.scopeId) : undefined}
+              onOpen={setOpenEntryId}
+              onRemove={removeEntry}
+            />
           )}
+        >
+          <p className="trk-shelf-empty">{EMPTY_SHELF[title] ?? "Nothing logged this day."}</p>
         </LogShelfDialog>
       ))}
 
@@ -1059,23 +1200,8 @@ export function TrackingLogView({
         onOpenChange={setSpendingOpen}
         dayLabel={currentDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
         ledger={<SpendLedger rows={grouped.spend} />}
-        list={
-          grouped.spend.length === 0 ? (
-            <p className="trk-spending-note">Nothing spent this day.</p>
-          ) : (
-            <ul className="trk-spending-rows">
-              {grouped.spend.map((row) => (
-                <li key={row.id} data-keep="true">
-                  <span className="trk-spending-name">{row.spendOn?.trim() || row.title?.trim() || "Untitled"}</span>
-                  <span className="trk-spending-date">{row.spendSource?.trim() || ""}</span>
-                  <span className="trk-spending-amount">
-                    {typeof row.spendAmount === "number" ? formatSpendAmount(row.spendAmount) : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )
-        }
+        anchor={currentDate}
+        rows={allGrouped.spend}
       />
       {openEntry ? <EntryDialog entry={openEntry} onClose={() => setOpenEntryId(null)} /> : null}
     </div>

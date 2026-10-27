@@ -114,7 +114,7 @@ Until a reading is actually stored, mood analytics is **categorical** (pen / wor
 | List | `mode` | `clock` | `minute` | Stored shape |
 | --- | --- | --- | --- | --- |
 | Events | `event` | `"exact"` | now, if the day key is today; else 08:00 | Activity **instant**: `kind: "instant"`, `startMin === endMin`, pen Text log, `title` = the phrase, `eventKind` = slug of the phrase |
-| Notes | `note` | `"exact"` | same | Activity instant, pen Text log, no `eventKind`. First line is `title`; later lines are `notes`. The Tracking log still shelves this row with Events. Now splits it because a general note is not a countable phrase |
+| Notes | `note` | `"exact"` | same | Activity instant, pen Text log, no `eventKind`. First line is `title`; later lines are `notes`. The Tracking log shelves this under Notes. Time → Log does not count it. `logSource` is `now-popup` |
 | Thought process | `thought` | `"exact"` | same | Activity instant, pen Text log, `eventKind: "thought-process"`. First line is `title`; later lines are `notes` |
 
 Grain: one instant, duration 0. Instants are **invisible to presence**. A thought at 14:07 does not make Activity “current.”

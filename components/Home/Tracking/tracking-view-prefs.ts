@@ -24,7 +24,7 @@
  * untracked gap the Activity Log lists; 0 lists none), `activityShowLogLines`
  * (Text log / Intake / Switch instants between blocks), `dayLogSpan` and
  * `logSpan` (Day or Week when the view opens), `logDefaultMode` (the composer
- * key the Tracking log opens on), `logShowRecents` (Recent intake / Again
+ * key the Tracking log opens on; Note), `logShowRecents` (Recent intake / Again
  * chips), and `logFlagOnAdd` (the bottom-right "LOGGED" flag after Add).
  */
 "use client"
@@ -167,7 +167,7 @@ export const DEFAULT_TRACKING_VIEW_PREFS: TrackingViewPrefs = {
   activityShowLogLines: true,
   dayLogSpan: "day",
   logSpan: "day",
-  logDefaultMode: "event",
+  logDefaultMode: "note",
   logShowRecents: true,
   logFlagOnAdd: true,
 }

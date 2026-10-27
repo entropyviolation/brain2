@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { format } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
@@ -8,7 +8,7 @@ import { minutesToTimeString } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { QuickAddWroteHost } from "@/components/quick-add-wrote"
 import { TrackingLogView } from "./tracking-log-view"
-import { resetLogCycleMarks, writeCycleDayMark, type LogTimeEntry } from "./tracking-log-model"
+import { resetLogCycleMarks, submitTrackingLog, writeCycleDayMark, type LogTimeEntry } from "./tracking-log-model"
 import { pickOption } from "@/tests/native-select"
 
 const DAY = new Date(2026, 5, 20, 12, 0, 0)
@@ -36,6 +36,7 @@ describe("TrackingLogView", () => {
     expect(screen.getByRole("heading", { name: "Drink" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Drugs" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Events" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Notes" })).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Intake" })).not.toBeInTheDocument()
     expect(screen.queryByRole("region", { name: "Cycle" })).not.toBeInTheDocument()
     expect(screen.queryByTestId("tracking-log-phase")).not.toBeInTheDocument()
@@ -97,9 +98,12 @@ describe("TrackingLogView", () => {
     expect(screen.queryByRole("button", { name: "Clock" })).not.toBeInTheDocument()
     expect(within(screen.getByRole("toolbar", { name: "What to log" })).queryByRole("button", { name: "Food" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Time of day")).toBeInTheDocument()
+    expect(screen.getByLabelText("Note").tagName).toBe("TEXTAREA")
+    expect(screen.queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("toolbar", { name: "Intake" })).not.toBeInTheDocument()
+    fireEvent.click(logMode("Event"))
     expect(screen.getByRole("combobox", { name: "Location" })).toBeInTheDocument()
     expect(screen.getByLabelText("Title").tagName).toBe("INPUT")
-    expect(screen.queryByRole("toolbar", { name: "Intake" })).not.toBeInTheDocument()
     fireEvent.click(logMode("Intake"))
     expect(screen.getByRole("toolbar", { name: "Intake" })).toBeInTheDocument()
     expect(within(screen.getByRole("toolbar", { name: "Intake" })).getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true")
@@ -228,9 +232,10 @@ describe("TrackingLogView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Note" }))
     fireEvent.change(screen.getByLabelText("Note"), { target: { value: "left room" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
-    const events = screen.getByRole("region", { name: "Events" })
-    expect(events).toHaveTextContent("left room")
-    expect(events).toHaveTextContent("8:00 AM")
+    const notes = screen.getByRole("region", { name: "Notes" })
+    expect(notes).toHaveTextContent("left room")
+    expect(notes).toHaveTextContent("8:00 AM")
+    expect(within(screen.getByRole("region", { name: "Events" })).queryByRole("button", { name: /left room/ })).not.toBeInTheDocument()
     expect(getDayNote(KEY)).toBe("")
     const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "left room")
     const pen = useTimeTrackingStore
@@ -248,10 +253,10 @@ describe("TrackingLogView", () => {
     expect(note.tagName).toBe("TEXTAREA")
     fireEvent.change(note, { target: { value: "left room\nforgot the list" } })
     fireEvent.click(screen.getByRole("button", { name: /^Add$/ }))
-    const events = screen.getByRole("region", { name: "Events" })
-    expect(events).toHaveTextContent("left room")
-    expect(events).toHaveTextContent("forgot the list")
-    expect(events).not.toHaveTextContent("from text pipeline")
+    const notes = screen.getByRole("region", { name: "Notes" })
+    expect(notes).toHaveTextContent("left room")
+    expect(notes).toHaveTextContent("forgot the list")
+    expect(notes).not.toHaveTextContent("from text pipeline")
     expect(getDayNote(KEY)).toBe("")
     const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "left room")
     expect(saved?.kind).toBe("instant")
@@ -277,6 +282,7 @@ describe("TrackingLogView", () => {
 
   it("filters location pens, creates one, and still pairs the event", () => {
     renderLog()
+    fireEvent.click(logMode("Event"))
     const field = screen.getByRole("combobox", { name: "Location" })
     expect(field).toHaveValue("")
     expect(field).toHaveAttribute("placeholder", "Location")
@@ -462,6 +468,48 @@ describe("TrackingLogView", () => {
     expect(screen.getByRole("button", { name: "Day" })).toHaveAttribute("aria-pressed", "true")
   })
 
+  it("adds a note from the shelf and shows another day inside the week dialog", () => {
+    submitTrackingLog({
+      date: "2026-06-18",
+      title: "earlier errand",
+      mode: "event",
+      clock: "exact",
+      minute: 9 * 60,
+      logSource: "tracking-composer",
+    })
+    renderLog()
+    const notes = screen.getByRole("region", { name: "Notes" })
+    fireEvent.change(within(notes).getByRole("textbox", { name: "Add to Notes" }), {
+      target: { value: "landlord called" },
+    })
+    fireEvent.click(within(notes).getByRole("button", { name: "Add to Notes" }))
+    expect(notes).toHaveTextContent("landlord called")
+    expect(notes).toHaveTextContent("8:00 AM")
+    const saved = useTimeTrackingStore.getState().entries.find((entry) => entry.title === "landlord called")
+    expect(saved).toMatchObject({ logSource: "tracking-shelf-now", startMin: 8 * 60, kind: "instant" })
+    expect(saved?.eventKind).toBeUndefined()
+    expect(saved?.clockCertainty).toBeUndefined()
+
+    fireEvent.click(within(screen.getByRole("region", { name: "Events" })).getByRole("button", { name: "Events" }))
+    const dialog = screen.getByRole("dialog", { name: "Events" })
+    expect(dialog).not.toHaveTextContent("earlier errand")
+    fireEvent.click(within(dialog).getByRole("button", { name: "This week" }))
+    expect(dialog).toHaveTextContent("earlier errand")
+    expect(dialog).toHaveTextContent("Thu Jun 18")
+    expect(dialog).toHaveTextContent("9:00 AM")
+    fireEvent.keyDown(dialog, { key: "Escape" })
+
+    fireEvent.click(screen.getByRole("button", { name: "Week" }))
+    expect(screen.queryByRole("button", { name: "Add to Notes" })).not.toBeInTheDocument()
+  })
+
+  it("focuses the composer in Spent mode from the shelf", async () => {
+    renderLog()
+    fireEvent.click(screen.getByRole("button", { name: "Add spent now" }))
+    expect(logMode("Spent")).toHaveAttribute("aria-pressed", "true")
+    await waitFor(() => expect(screen.getByLabelText("Amount")).toHaveFocus())
+  })
+
   it("hides the Day Week switch when the date is locked", () => {
     render(<TrackingLogView currentDate={DAY} setCurrentDate={() => {}} lockDate />)
     expect(screen.queryByRole("toolbar", { name: "Tracking log span" })).not.toBeInTheDocument()
@@ -471,6 +519,11 @@ describe("TrackingLogView", () => {
 })
 
 describe("tracking log quick keys", () => {
+  beforeEach(() => {
+    resetAllStores()
+    resetLogCycleMarks()
+  })
+
   it("fills the name from a recent intake chip and only logs on Add", () => {
     render(
       <>
@@ -495,6 +548,13 @@ describe("tracking log quick keys", () => {
   })
 
   it("opens a shelf the way Spent does", () => {
+    submitTrackingLog({
+      date: KEY,
+      title: "left room",
+      mode: "event",
+      clock: "exact",
+      minute: 8 * 60,
+    })
     renderLog()
     fireEvent.click(within(screen.getByRole("region", { name: "Food" })).getByRole("button", { name: "Food" }))
     const food = screen.getByRole("dialog", { name: "Food" })

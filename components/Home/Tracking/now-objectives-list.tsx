@@ -52,6 +52,11 @@ interface NowObjectivesListProps extends NowObjectivesHandlers {
   mode?: "popup" | "inline"
   /** Optional name fragment for aria (pen or operation title). */
   contextName?: string
+  /**
+   * The add field. The block editor turns this off unless the block is the
+   * one Working on right now is painting.
+   */
+  allowAdd?: boolean
 }
 
 const clockLabel = (iso: string) =>
@@ -259,7 +264,8 @@ function ObjectivesEditor({
   onTieStep,
   onSetCompletes,
   autoFocusAdd,
-}: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean }) {
+  allowAdd = true,
+}: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean; allowAdd?: boolean }) {
   const [draft, setDraft] = useState("")
   const [hideCompleted, setHideCompleted] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -443,6 +449,7 @@ function ObjectivesEditor({
           })
         )}
       </ul>
+      {allowAdd ? (
       <div className="trk-now-obj-add">
         <input
           ref={addRef}
@@ -474,6 +481,7 @@ function ObjectivesEditor({
           ) : null}
         </div>
       </div>
+      ) : null}
     </div>
   )
 }
@@ -493,6 +501,7 @@ export function NowObjectivesList({
   onSetCompletes,
   mode = "popup",
   contextName,
+  allowAdd = true,
 }: NowObjectivesListProps) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -569,6 +578,7 @@ export function NowObjectivesList({
           stepChoices={stepChoices}
           onTieStep={onTieStep}
           onSetCompletes={onSetCompletes}
+          allowAdd={allowAdd}
         />
       </div>
     )

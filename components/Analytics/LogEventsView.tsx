@@ -18,6 +18,7 @@ import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } 
 import {
   asLogEntry,
   classifyLogInstant,
+  isBareTextLogNote,
   useLogCycleMarks,
 } from "@/components/Home/Tracking/tracking-log-model"
 import { countLogEventsByDay, countLogEventsByKind, logClockScatter, logPhaseStrip, type LogEventPoint } from "./log-event-stats"
@@ -47,7 +48,10 @@ export function LogEventsView() {
     const rows = []
     for (const entry of entries) {
       if (!keySet.has(entry.date)) continue
-      const row = classifyLogInstant(asLogEntry(entry), penName.get(entry.penId))
+      const logged = asLogEntry(entry)
+      const name = penName.get(entry.penId)
+      if (isBareTextLogNote(logged, name)) continue
+      const row = classifyLogInstant(logged, name)
       if (row) rows.push(row)
     }
     return rows
@@ -78,7 +82,7 @@ export function LogEventsView() {
         <div>
           <CanvasTitle
             title="Log"
-            help="Food, drink, drug, bare intake, and any event phrase. Counts by day and by kind. Exact and estimated clocks are plotted; unknown clocks are a count, not a point. The phase strip is labeled from bleed days and ovulation marks — not a medical prediction. Spotting does not change the phase."
+            help="Food, drink, drug, bare intake, and any event phrase. A Text log note with no event kind is not counted. Counts by day and by kind. Exact and estimated clocks are plotted; unknown clocks are a count, not a point. The phase strip is labeled from bleed days and ovulation marks — not a medical prediction. Spotting does not change the phase."
           />
           <p className="an-canvas-kicker">{label}</p>
         </div>

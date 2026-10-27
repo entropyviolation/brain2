@@ -17,7 +17,7 @@ import { formatLocalDateKey } from "@/lib/date-utils"
 import { recordCountForKeyword } from "@/lib/count-statuses"
 import { formatLogKeywordList, isLogKeywordListQuery } from "@/lib/log-keywords"
 import { savedLogKeywordPhrases } from "@/lib/log-keywords-store"
-import { eventKindSlug, type IntakeClass, type TimeEntry } from "@/lib/time-entries"
+import { eventKindSlug, type IntakeClass, type LogSource, type TimeEntry } from "@/lib/time-entries"
 import { appendTrackingInstants, PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesPastMidnight } from "./times"
 import {
@@ -192,6 +192,7 @@ export function applyTransferredLogLines(
       title: item.title,
       notes: eventNotes(undefined, item.at),
       generatedBy: { kind: "text", id: date },
+      logSource: "inbox-transfer",
       ...(eventKind ? { eventKind } : {}),
     }
   })
@@ -622,6 +623,7 @@ function paintPairedLocationInstant(
   if (!created) return undefined
   useTimeTrackingStore.getState().updateEntry(created.id, {
     generatedBy: { kind: "text", id: date },
+    logSource: "bim",
     ...(clockCertainty ? { clockCertainty } : {}),
   })
   return created.id
@@ -650,6 +652,7 @@ interface EntryMeta {
   eventKind?: string
   intakeClass?: IntakeClass
   clockCertainty?: NoteClockCertainty
+  logSource?: LogSource
 }
 
 function logMeta(phrase: string, clockCertainty?: NoteClockCertainty): EntryMeta {
@@ -701,6 +704,7 @@ export function fileTextAsShelf(input: {
   const id = paintInstant(title, input.at, input.shelf === "thought" ? "thought-process" : "event-log", pen, undefined, ACTIVITY, {
     eventKind: fields.eventKind,
     ...(fields.intakeClass ? { intakeClass: fields.intakeClass } : {}),
+    logSource: "telegram-feed",
   })
   if (!id) return undefined
   if (input.shelf === "thought") mirrorTrackingEntry(id, "thought-process")
@@ -815,6 +819,7 @@ function paintEntry(
       notes,
       ...(endDate ? { endDate } : {}),
       generatedBy: { kind: "text", id: date },
+      logSource: meta?.logSource ?? "bim",
       ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
       ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
       ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),
@@ -827,6 +832,7 @@ function paintEntry(
   useTimeTrackingStore.getState().updateEntry(just.id, {
     notes,
     generatedBy: { kind: "text", id: date },
+    logSource: meta?.logSource ?? "bim",
     ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
     ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
     ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),
