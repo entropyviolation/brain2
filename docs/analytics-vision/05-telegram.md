@@ -30,7 +30,7 @@ Phone
   → deliverIngestReply: sendMessage chunks, optional pinChatMessage
 ```
 
-Webhook mode (`COGS_TELEGRAM_WEBHOOK` on the hub) posts the same update shape to `POST /telegram/webhook`. A wrong `X-Telegram-Bot-Api-Secret-Token` is HTTP 403 and never becomes an ingest event.
+Webhook mode (`BRAIN2_TELEGRAM_WEBHOOK` on the hub) posts the same update shape to `POST /telegram/webhook`. A wrong `X-Telegram-Bot-Api-Secret-Token` is HTTP 403 and never becomes an ingest event.
 
 Telegram holds unclaimed updates for about 24 hours. A laptop that slept longer than that has a hole that no store can fill. There is no outbound morning cron. `gm` runs when a live consumer receives it.
 

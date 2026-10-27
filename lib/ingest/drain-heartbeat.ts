@@ -1,7 +1,7 @@
 /**
  * lib/ingest/drain-heartbeat.ts — Healthchecks-style ping for the capture-box drain
  *
- * `COGS_DRAIN_HEALTHCHECK_URL` gets a ping after each good queue fetch (at most
+ * `BRAIN2_DRAIN_HEALTHCHECK_URL` gets a ping after each good queue fetch (at most
  * once a minute) and `/fail` when the fetch or decrypt fails. A failed ping never throws.
  */
 

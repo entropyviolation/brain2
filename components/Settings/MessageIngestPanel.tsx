@@ -100,7 +100,7 @@ export function MessageIngestPanel() {
   const handleSaveToken = async () => {
     const desktop = getTelegramDesktop()
     if (!desktop) {
-      setTokenStatus("Use the desktop app to store a token, or COGS_TELEGRAM_BOT_TOKEN with npm run phone:hub.")
+      setTokenStatus("Use the desktop app to store a token, or BRAIN2_TELEGRAM_BOT_TOKEN with npm run phone:hub.")
       return
     }
     const result = await desktop.setToken(token)
@@ -379,7 +379,7 @@ export function MessageIngestPanel() {
           onChange={(e) => setPhoneHubToken(e.target.value)}
         />
         <p className="text-xs text-muted-foreground">
-          Must match <code className="text-foreground">COGS_PHONE_HUB_TOKEN</code> on the host.
+          Must match <code className="text-foreground">BRAIN2_PHONE_HUB_TOKEN</code> on the host.
         </p>
         {hubStatus && <p className="text-xs text-muted-foreground">{hubStatus}</p>}
       </div>

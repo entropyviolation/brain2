@@ -2,12 +2,13 @@
  * electron/telegram-ingest.js — Telegram long-poll in the Electron main process
  *
  * Token: userData via safeStorage, or gitignored `.env.local` /
- * `COGS_TELEGRAM_BOT_TOKEN`. The poller never touches Zustand; it forwards
+ * `BRAIN2_TELEGRAM_BOT_TOKEN`. The poller never touches Zustand; it forwards
  * private messages to the renderer over IPC. The poll offset advances when the
  * renderer acks, after apply and flush — not when the IPC send returns.
  * Replies go back through sendMessage. See docs/MESSAGE_INGEST.md.
  */
 const { app, ipcMain, safeStorage } = require("electron")
+const { brain2Env, brain2EnvLine } = require("../lib/brain2-env.cjs")
 const { pathToFileURL } = require("url")
 const { extractTelegramMessage, hydrateTelegramUpdate } = require("./telegram-file")
 const fs = require("fs")
@@ -73,9 +74,9 @@ function tokenPath() {
   return path.join(app.getPath("userData"), "telegram-bot-token.enc")
 }
 
-/** Gitignored `.env.local` / `COGS_TELEGRAM_BOT_TOKEN` — never committed. */
+/** Gitignored `.env.local` / `BRAIN2_TELEGRAM_BOT_TOKEN` — never committed. */
 function tokenFromEnvFiles() {
-  const fromEnv = String(process.env.COGS_TELEGRAM_BOT_TOKEN || "").trim()
+  const fromEnv = String(brain2Env("TELEGRAM_BOT_TOKEN") || "").trim()
   if (fromEnv) return fromEnv
   const roots = [process.cwd()]
   try {
@@ -89,10 +90,7 @@ function tokenFromEnvFiles() {
       const file = path.join(root, name)
       if (!fs.existsSync(file)) continue
       try {
-        const text = fs.readFileSync(file, "utf8")
-        const line = text.split(/\r?\n/).find((row) => row.startsWith("COGS_TELEGRAM_BOT_TOKEN="))
-        if (!line) continue
-        const value = line.slice("COGS_TELEGRAM_BOT_TOKEN=".length).trim().replace(/^["']|["']$/g, "")
+        const value = brain2EnvLine(fs.readFileSync(file, "utf8"), "TELEGRAM_BOT_TOKEN")
         if (value) return value
       } catch {
         /* ignore unreadable env files */

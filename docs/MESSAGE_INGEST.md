@@ -78,7 +78,7 @@ nothing is polling land the next time a poller runs. Older than that are dropped
 There is **no scheduled `gm` autotext**. Morning starts when you send `gm`, or
 when a process that is actually running receives it. A sleeping laptop cannot
 answer. Always-on means `npm run phone:hub` (long-poll, or
-`COGS_TELEGRAM_WEBHOOK`) on a host that stays awake.
+`BRAIN2_TELEGRAM_WEBHOOK`) on a host that stays awake.
 
 Inbox `createdAt`, tracking minutes, and other “when you sent this” fields use
 Telegram `message.date` (`receivedAt`), never the clock when the poller woke.
@@ -154,19 +154,19 @@ not the cause. Store, guarantees, and hub behavior:
 npm run phone:hub
 ```
 
-Token from gitignored `.env.local` / `COGS_TELEGRAM_BOT_TOKEN` (never committed).
+Token from gitignored `.env.local` / `BRAIN2_TELEGRAM_BOT_TOKEN` (never committed).
 
 | Env | Role |
 |-----|------|
-| `COGS_PHONE_HUB_PORT` | HTTP port for persist + status + webhook (default **8787**) |
-| `COGS_TELEGRAM_WEBHOOK` | Public URL, e.g. `https://host/telegram/webhook` — skip long-poll |
-| `COGS_TELEGRAM_WEBHOOK_SECRET` | `X-Telegram-Bot-Api-Secret-Token` |
-| `COGS_PHONE_HUB_TOKEN` | Bearer token required on `/api/persist` and `/api/recovery-backups`. Unset = no bearer check. The listener is still `0.0.0.0`. A browser `Origin` from a public website is refused (`lib/ingest/request-origin.mjs`). Shortcuts and the app (loopback, LAN, `.local`) stay allowed. Set the token on any host other people can reach. |
+| `BRAIN2_PHONE_HUB_PORT` | HTTP port for persist + status + webhook + the scan door (default **8787**) |
+| `BRAIN2_TELEGRAM_WEBHOOK` | Public URL, e.g. `https://host/telegram/webhook` — skip long-poll |
+| `BRAIN2_TELEGRAM_WEBHOOK_SECRET` | `X-Telegram-Bot-Api-Secret-Token` |
+| `BRAIN2_PHONE_HUB_TOKEN` | Bearer token required on `/api/persist` and `/api/recovery-backups` when set. Unset = no bearer check on those vault routes. `POST /api/scan` and `GET /api/nfc/tags` always require it; unset keeps that door shut. The listener is still `0.0.0.0`. A browser `Origin` from a public website is refused (`lib/ingest/request-origin.mjs`). Shortcuts and the app (loopback, LAN, `.local`, Capacitor) stay allowed. Set the token on any host other people can reach. A `COGS_PHONE_HUB_TOKEN` line still counts when this name is empty. |
 
 A VPS / NAS / always-on Mac is enough. Where to host it, the alternatives, and
 the plan: [`BIM_HOSTING_OPTIONS.md`](BIM_HOSTING_OPTIONS.md). Set
-`COGS_PHONE_HUB_TOKEN` on any public host. For a cloud host that must not read your data, use the
-sealed capture box instead ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md); `COGS_CAPTURE_BOX_URL` + `COGS_CAPTURE_TOKEN` switch `phone:hub` to drain it) (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
+`BRAIN2_PHONE_HUB_TOKEN` on any public host. For a cloud host that must not read your data, use the
+sealed capture box instead ([`ORACLE_CAPTURE_BOX.md`](ORACLE_CAPTURE_BOX.md); `BRAIN2_CAPTURE_BOX_URL` + `BRAIN2_CAPTURE_TOKEN` switch `phone:hub` to drain it) (Settings → **Hub token**). Settings → **Always-on hub URL** + **Sync
 vault** copies today’s lists onto that host. Pairing still happens in Settings;
 the hub hydrates the allowlist from the vault.
 
@@ -311,7 +311,7 @@ Text-pipeline tracker rows (`generatedBy.kind === "text"`) feed Analytics → **
 | `habit: exercise 30` / `h stretch` / `did: stretch` | Habit for **today** (optional `yesterday`). Fuzzy-matches the habit name. Bare `h` → help. Bare `did` is a log line; `did:` still logs the habit. |
 | `dh: hemisync` / `dh: read 12 pages` / `dh: exercise 30 min` / `dh: chess score 1200` / `drank water` / `cleaned for 9 minutes` / `cleaned for 9 minutes 1:11` | Habit keywords. `dh:` still runs the phrase after the colon. A BIM keyword source also counts an exact whole message the bot already stored: “drank water” counts, a longer line does not. True if one arrives, true after N, or a logged phrase `read {n} pages of {bookname}` writes 3 and Dune. `cleaned for {x} minutes` writes 9 and paints the prior 9 minutes on the habit’s tracking activity. No clock ends at the message time and is estimated. `1:11` is the end (1:02–1:11); a bare clock is military. The same words without `dh:` are still stored (Inbox, or a discrete trigger) and that stored line is the count. |
 | `smoked weed` / `drank water` / `ate egg salad` / `took 2 adderall` | Whole-message **discrete events** (editable in Settings). `generatedBy.kind === "text"`. `ate` → food, `drank` → drink, `took` → drug (`intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`). Pen stays **Text log**. Other triggers, including `smoked weed`, do not set a class. |
-| `nfc:vitamin-d` / `nfc:adderall 2` / `nfc:door` / `nfc:shower` | NFC tag from Settings → **NFC tags**. Colon required. A trailing number is that scan’s quantity; without one, the tag’s saved quantity is used (1 when unset). An intake title is written with the count in front. Writes that tag’s tracking instant at the send time and, when bound, today’s daily habit (done, or plus that quantity). Optional minutes paint an estimated Activity block ending at the scan. A door tag alternates `left` and `back` and ignores the number. The same tag within 20 seconds is ignored. Unknown ids write nothing. The line is not a keyword phrase. Settings → NFC tags downloads a signed shortcut for that id ([NFC tags](shortcuts/nfc-tags.md)). |
+| `nfc:vitamin-d` / `nfc:adderall 2` / `nfc:door` / `nfc:shower` | NFC tag from Settings → **NFC tags**. Colon required. A trailing number is that scan’s quantity; without one, the tag’s saved quantity is used (1 when unset). An intake title is written with the count in front. Writes that tag’s tracking instant at the send time and, when bound, today’s daily habit (done, or plus that quantity). Optional minutes paint an estimated Activity block ending at the scan. A door tag alternates `left` and `back` and ignores the number. The same tag within 20 seconds is ignored. Unknown ids write nothing. The line is not a keyword phrase. Settings → NFC tags downloads a signed shortcut for that id ([NFC tags](shortcuts/nfc-tags.md)). The same line can be posted to the hub while it is awake: `POST /api/scan` with `Authorization: Bearer` the hub token and `{"text":"nfc:adderall 2","id":"<client id>"}`. A repeat of that `id` does not log twice. The shortcut stays. |
 | `log: left room` / `log left room` / `log: left room at 3:30` / `log: left room at 3:30 loc: home` / `log: shower 7:30 - 7:45` / `log: shower 10m` / `log: START walk` / `log: END walk 5:00` / `log: went outside` / `log went outside 12:04` / `log: went outside 7/4/26 1:00` / `log keywords` | Tracking note on Activity, the Event row. The word `log` works with or without the colon. No time → a point at send time. `at 3:30` is a point that day. A clock range is a block. `10m` / `10 min` just finished (end = send time). `START` stays open until `END` of the same name, which becomes the range. A line under the event is the note; the clock stays on the first line. A later block over that minute leaves the point. Pens: **Text log**. The same row is also a Log item on Lists → Tracking → Log. The phrase is the title and `eventKind` (lowercase, spaces collapsed, punctuation removed) so `left room` groups with the next `left room`. Trailing `loc: home` reuses or creates that Location pen and paints a Location instant at the same minute. The place is the last suffix. Saved keywords (added in Tracking settings, the gear; `brain2-log-keywords`, empty until you add them) match the longest phrase. The remainder is the optional date and time, not part of the title. `log keywords` and `log: keywords` list the phrases and do not create a row. Text with no verb is a log line too, so a bare saved phrase logs as that phrase. On a log line, a clock with no am/pm is military time: `12:04` is noon, `18:37` is 6:37pm, and `1:00` is 1:00am, not 1pm. `1pm`, `1:00pm`, `1 PM`, `1:00 PM`, and `1:00 p.m.` are 1:00pm. `7/4/26` and `7/4/2026` are July 4, 2026 (month/day/year). Those forms apply when a log or switch line expects a time (`parseExpectedWhen`). A bare clock is military. A date alone does not invent a clock. `inbox:` text is not scanned. Desktop Quick Add uses this same write: a leading `log:` shows a dark blue **LOG** mark and does not go to Inbox. |
 | `log: left room at 3:30 est` / `log: left room ~8:15` / `log: left room unknown` / `log: left room at 3:30 est loc: home` | Clock certainty on log, intake, switch, and note lines. No token, and a plain clock, are exact (`clockCertainty` omitted). `est`, `estimated`, or `~` is estimated and also sets `precision: "estimated"`. `unknown` stores the named minute for placement and does not treat that minute as observed. On a log, the word may sit before or after `loc:`. |
 | `intake: coffee` / `intake food: egg salad` / `intake drink: coffee at 8:15 est` / `intake drug: tablet` | Food, drink, medicine, or any intake. Food is a subset of intake. Always a point. No time → send time. A trailing clock uses that time on the send date. Duration words stay in the title. A line under the event is the note. Pen: **Intake**. Bare `intake:` leaves `intakeClass` unset and sets `eventKind` to `intake`. `intake food:` / `drink:` / `drug:` set `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`. Same clock words as `log:`. A later block leaves the point. |
@@ -450,7 +450,7 @@ The first line is the title; lines under it are the note. Clocks use
 ## Security
 
 - Bot token is **never** committed. Electron stores it with `safeStorage` under
-  userData, and also reads gitignored `.env.local` (`COGS_TELEGRAM_BOT_TOKEN`).
+  userData, and also reads gitignored `.env.local` (`BRAIN2_TELEGRAM_BOT_TOKEN`).
   The phone hub and ingest script use the same env file. Browser Settings does
   not keep a production token in localStorage.
 - **Pairing, not open DMs.** Settings shows a 6-digit code (10 minutes). Only
@@ -468,7 +468,7 @@ The first line is the title; lines under it are the note. Clocks use
   user id is on the list.
 - Groups are ignored unless Settings enables them.
 - The ingest log (local) keeps source chat id + raw text for audit / undo. GPS tracking points are not stored in that 200-line log (a live stream was burying everything else). Location still collects them. **Show GPS** on the header log reveals points this window collected. A failed `gps:` and an unpaired refusal stay on the log.
-- Webhook mode checks `COGS_TELEGRAM_WEBHOOK_SECRET` when set.
+- Webhook mode checks `BRAIN2_TELEGRAM_WEBHOOK_SECRET` when set.
 
 ## Telegram setup
 
@@ -478,7 +478,7 @@ token lives in gitignored `.env.local` on this machine (never the git tree).
 1. Talk to [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token
    (already done for `@brain2_phone_bot`).
 2. Open Brain2 **desktop** → Settings → **Message ingest** → **Enable ingest**.
-   If `.env.local` has `COGS_TELEGRAM_BOT_TOKEN`, you do not need to paste the
+   If `.env.local` has `BRAIN2_TELEGRAM_BOT_TOKEN`, you do not need to paste the
    token again (restart the desktop app once so main process picks it up). You
    can still paste in Settings to store it in `safeStorage` instead.
 3. Click **Generate pairing code**, then in Telegram open
@@ -563,7 +563,7 @@ pass. Settings → **Simulate a scan** uses the same path without Telegram.
 | `lib/ingest/telegram-ui.mjs` | Private slash menu (`start`, `help`, `now`, `quicklists`, `info`) and inline buttons on clarify, duplicate, and receipt questions |
 | `lib/ingest/dedupe.ts` | Telegram `update_id` / `message_id` dedupe at the executor gate. A null key is logged and not applied. |
 | `lib/ingest/text-triggers.ts` | Whole-message habit + discrete trigger patterns (Settings + habit form) |
-| `lib/ingest/nfc-tag.ts` / `apply-nfc.ts` | NFC tags. `nfc:{id}` or `nfc:{id} {n}` looks up Settings → **NFC tags** and writes the tracking instant plus an optional daily habit. See [shortcuts/nfc-tags.md](shortcuts/nfc-tags.md). A phone app that reads the sticker itself is planned there; iOS will not do that from a web page. |
+| `lib/ingest/nfc-tag.ts` / `apply-nfc.ts` / `scan-door.ts` | NFC tags. `nfc:{id}` or `nfc:{id} {n}` looks up Settings → **NFC tags** and writes the tracking instant plus an optional daily habit. See [shortcuts/nfc-tags.md](shortcuts/nfc-tags.md). `POST /api/scan` on the phone hub applies that one line without Telegram. The iPhone app can read the sticker and post it. A web page still cannot. The signed shortcut stays until that phone scan is the one you trust. |
 | `lib/ingest/apply-needed.ts` | `needed:` / `get:` → list **needed**, notes **sent from text** |
 | `lib/ingest/apply-discrete-event.ts` | `log:` / `intake:` / `switch:` / `log categories` / `st:` / `so:` / `switch goal:` / `transit:` + discrete trigger instants (`generatedBy.kind === "text"`). A line under the event is the note. Log ranges are blocks. Points stay when a later block covers that minute. `log:` sets `eventKind`. Trailing `loc:` paints a Location instant on that pen. Classed intake and `ate` / `drank` / `took` set `intakeClass`. Estimated clocks also set `precision`. `switch:` is the labeled form (view, then `from:` / `to:`, or a bare destination). Activity stays the Switch pen (`started …`). Other views paint on that scope. `so:` / `switch goal:` still store `objective …`. `log categories` replies with the store’s views and writes no event. `tp:` / `thought process:` / `log: tp:` paint a Text log instant with `eventKind` `thought-process` (Thought process: a guiding strand of this moment — why you are doing something, what you expect next, and how it lands; not a general note, a one-word mood, or a short activity log such as brushed teeth). |
 | `lib/ingest/apply-cycle.ts` | `cycle:` bleeding / spotting / ovulation (and `off`) on the send date. |

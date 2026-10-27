@@ -78,7 +78,7 @@ interface IngestState {
   seenIngestKeys: string[]
   /** Optional always-on hub origin, e.g. http://127.0.0.1:8787 */
   phoneHubUrl: string
-  /** Bearer token for the hub vault API (COGS_PHONE_HUB_TOKEN on the host). */
+  /** Bearer token for the hub vault API (BRAIN2_PHONE_HUB_TOKEN on the host). */
   phoneHubToken: string
   livePins: Record<string, LivePin>
 

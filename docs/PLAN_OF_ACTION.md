@@ -52,8 +52,8 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 
 - Judge the open screen. A README or [`DESIGN_STYLE.md`](DESIGN_STYLE.md) alone is not a UI fix.
 - Habits and Lists are examples of rooms that turned out well. A new room follows [`DESIGN_STYLE.md`](DESIGN_STYLE.md). It does not wear another room’s stylesheet.
-- Recapture the `docs/screenshots/*.png` + `.txt` pair you changed, in the same step. The house set is a seeded-store capture (Wave 0). A personal-vault `COGS_FRESH=0` pass is still open.
-- Empty and populated both matter. A chart that looks finished at zero is a bug. Default `npm run capture-screenshots` clears localStorage (`COGS_FRESH`) and then writes a throwaway vault (tracking, sleep, tasks, operations, modules, goals, habit completions, plan logs). That harness is not the product, and it never posts to `/api/persist`.
+- Recapture the `docs/screenshots/*.png` + `.txt` pair you changed, in the same step. The house set is a seeded-store capture (Wave 0). A personal-vault `BRAIN2_FRESH=0` pass is still open.
+- Empty and populated both matter. A chart that looks finished at zero is a bug. Default `npm run capture-screenshots` clears localStorage (`BRAIN2_FRESH`) and then writes a throwaway vault (tracking, sleep, tasks, operations, modules, goals, habit completions, plan logs). That harness is not the product, and it never posts to `/api/persist`.
 - Count what you name. View kinds equal the real `MODULE_VIEW_KINDS` length.
 - Two controls that can disagree are two sources of truth. Two surfaces glancing at one fact are fine.
 - A new room has Win95 furniture and photographed objects, unless the interior is a document (a spreadsheet) or an allowed feral module.
@@ -87,7 +87,7 @@ Files: `scripts/screenshot-manifest.mjs`, `scripts/capture-screenshots.mjs`, `do
 
 **Landed.** The capture browser seeds a throwaway vault before boot (two operations, phases, parts, a linked to-do, a time log, timeline days, a place, a plan note, a resource, lists with several items, one objective, one goal, habit completions, plan logs, tracking, sleep). Docs is `12-docs.png` and `12-docs-reading.png`. Operations has one shot per panel that is not only Home, plus Settings and the after-action report. Item detail tabs, the completion dialog, Just Start, and Plan → Season are in the set. Older frames are copied to `docs/screenshots/history/` before overwrite.
 
-**Open.** One Modules workspace that is not a trip (`09-modules-workspace.png` is still Itinerary Creator). A personal-vault pass (`COGS_FRESH=0`) when local data should be the picture. Surfaces that still have no file stay listed in [`screenshots/README.md`](screenshots/README.md).
+**Open.** One Modules workspace that is not a trip (`09-modules-workspace.png` is still Itinerary Creator). A personal-vault pass (`BRAIN2_FRESH=0`) when local data should be the picture. Surfaces that still have no file stay listed in [`screenshots/README.md`](screenshots/README.md).
 
 ### Wave 1 — Analytics correctness — **done**
 

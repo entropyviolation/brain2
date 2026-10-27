@@ -12,11 +12,11 @@ can live. The first pick is at the top. The rest are kept in case it falls throu
 - Node 20+ and this repo checked out (`npm ci`).
 - A **persistent** `data/` folder (`shared-persist.json`, ~13 MB, plus
   `recovery-backups/` and `telegram-update-offset.json`).
-- `COGS_TELEGRAM_BOT_TOKEN`, and on any public host `COGS_PHONE_HUB_TOKEN`
+- `BRAIN2_TELEGRAM_BOT_TOKEN`, and on any public host `BRAIN2_PHONE_HUB_TOKEN`
   (bearer token for the vault API, see below).
 - The process restarted on crash and on boot.
 - Outbound HTTPS to `api.telegram.org`. Long-poll needs no inbound port at all.
-  Webhook mode (`COGS_TELEGRAM_WEBHOOK`) needs a public HTTPS URL.
+  Webhook mode (`BRAIN2_TELEGRAM_WEBHOOK`) needs a public HTTPS URL.
 - The machine's timezone set to yours. Send-time clocks use the process zone.
 
 ## Options, cheapest first
@@ -43,7 +43,7 @@ the existing process.
 ## Security: the vault API
 
 The hub's `/api/persist` and `/api/recovery-backups` serve the **whole vault**.
-They are unauthenticated unless `COGS_PHONE_HUB_TOKEN` is set. When set, those
+They are unauthenticated unless `BRAIN2_PHONE_HUB_TOKEN` is set. When set, those
 routes need `Authorization: Bearer <token>` (`lib/ingest/hub-auth.ts`).
 _Last mapped: 2026-10-27_ A browser page on a public origin cannot read them:
 `lib/ingest/request-origin.mjs` refuses that `Origin` and does not send
@@ -67,7 +67,7 @@ alerts: Healthchecks.io messaging Telegram. Move to an owned device as soon as p
 See [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md) for how the hub works. Steps:
 
 1. **Pick the host.** Done: Oracle Free VM, sealed capture box.
-2. **Auth on the vault API.** Done in code, 2026-10-20 (`COGS_PHONE_HUB_TOKEN`).
+2. **Auth on the vault API.** Done in code, 2026-10-20. The host name is `BRAIN2_PHONE_HUB_TOKEN`.
 3. **Package it.** Done for Oracle: `deploy/oracle/` systemd unit and env example. Dockerfile for Fly.io stays **Planned**.
 4. **Stand it up.** You: Oracle account, VM, Healthchecks. Steps in `ORACLE_CAPTURE_BOX.md`. No vault is copied to the VM.
 5. **Verify.** Close the laptop, text `groc`, expect a reply. Text something, reopen the laptop, Sync vault, expect it in the Inbox.

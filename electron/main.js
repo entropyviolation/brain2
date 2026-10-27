@@ -14,6 +14,7 @@
  * (spec §3; local `mongod` or Atlas) would be initialized here.
  */
 const { app, BrowserWindow, shell, protocol, net, globalShortcut, ipcMain } = require("electron")
+const { brain2Env } = require("../lib/brain2-env.cjs")
 const path = require("path")
 const fs = require("fs")
 const { pathToFileURL } = require("url")
@@ -128,8 +129,8 @@ function createWindow() {
   if (isDev) {
     win.loadURL(DEV_SERVER_URL)
     // Detached DevTools on this vault doubles the renderer cost. Opt in with
-    // COGS_DEVTOOLS=1; otherwise Cmd-Opt-I still opens them.
-    if (process.env.COGS_DEVTOOLS === "1") {
+    // BRAIN2_DEVTOOLS=1; otherwise Cmd-Opt-I still opens them.
+    if (brain2Env("DEVTOOLS") === "1") {
       win.webContents.openDevTools({ mode: "detach" })
     }
   } else {

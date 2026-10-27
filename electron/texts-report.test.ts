@@ -19,10 +19,10 @@ describe("texts report home and port", () => {
     expect(texts.textsPort({})).toBe(8765)
   })
 
-  it("reads COGS_TEXTS_HOME and COGS_TEXTS_PORT", () => {
-    expect(texts.textsHome({ COGS_TEXTS_HOME: "~/elsewhere" })).toBe(path.join(os.homedir(), "elsewhere"))
-    expect(texts.textsPort({ COGS_TEXTS_PORT: "9001" })).toBe(9001)
-    expect(texts.textsPort({ COGS_TEXTS_PORT: "80" })).toBe(8765)
+  it("reads BRAIN2_TEXTS_HOME and BRAIN2_TEXTS_PORT", () => {
+    expect(texts.textsHome({ BRAIN2_TEXTS_HOME: "~/elsewhere" })).toBe(path.join(os.homedir(), "elsewhere"))
+    expect(texts.textsPort({ BRAIN2_TEXTS_PORT: "9001" })).toBe(9001)
+    expect(texts.textsPort({ BRAIN2_TEXTS_PORT: "80" })).toBe(8765)
   })
 })
 

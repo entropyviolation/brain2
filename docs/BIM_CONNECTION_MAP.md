@@ -13,7 +13,7 @@ Every machine, every link, every secret, and where each one lives. Setup steps:
                                       ▲   │ every minute: "still here" ping (outbound)
                       Tailscale tunnel│   └──────────────► Healthchecks.io ──► Telegram alert
                                       │
-                          [Your Mac]  npm run phone:hub  (COGS_CAPTURE_BOX_URL)
+                          [Your Mac]  npm run phone:hub  (BRAIN2_CAPTURE_BOX_URL)
                                  opens with the PRIVATE key → Brain2 vault → replies via Telegram
                                  pings the second Healthchecks check
 ```
@@ -32,19 +32,19 @@ Every machine, every link, every secret, and where each one lives. Setup steps:
 
 | Name | Example / where | Lives on | Secret? |
 | --- | --- | --- | --- |
-| Telegram bot token | `COGS_TELEGRAM_BOT_TOKEN` | Mac `.env.local`, VM `/etc/brain2-capture.env` | **Yes.** Revoke in @BotFather if the VM is suspect |
-| Capture public key | `COGS_CAPTURE_PUBLIC_KEY` | VM env | No (only locks) |
+| Telegram bot token | `BRAIN2_TELEGRAM_BOT_TOKEN` | Mac `.env.local`, VM `/etc/brain2-capture.env` | **Yes.** Revoke in @BotFather if the VM is suspect |
+| Capture public key | `BRAIN2_CAPTURE_PUBLIC_KEY` | VM env | No (only locks) |
 | Capture private key | `~/.brain2/capture-private.key` | Mac only, plus an offline backup | **Yes. Never on the VM** |
-| Pickup token | `COGS_CAPTURE_TOKEN` | Mac `.env.local`, VM env (same value) | Yes |
-| Allowed chat id | `COGS_CAPTURE_CHAT_IDS=8902429750` | VM env | No |
-| Box bind address | `COGS_CAPTURE_BIND=100.x.y.z` | VM env | No |
-| Box URL | `COGS_CAPTURE_BOX_URL=http://brain2-capture:8788` | Mac `.env.local` | No |
-| Box ping URL | `COGS_HEALTHCHECK_URL` | VM env | Treat as secret (anyone with it can fake a wave) |
-| Drain ping URL | `COGS_DRAIN_HEALTHCHECK_URL` | Mac `.env.local` | Same |
+| Pickup token | `BRAIN2_CAPTURE_TOKEN` | Mac `.env.local`, VM env (same value) | Yes |
+| Allowed chat id | `BRAIN2_CAPTURE_CHAT_IDS=8902429750` | VM env | No |
+| Box bind address | `BRAIN2_CAPTURE_BIND=100.x.y.z` | VM env | No |
+| Box URL | `BRAIN2_CAPTURE_BOX_URL=http://brain2-capture:8788` | Mac `.env.local` | No |
+| Box ping URL | `BRAIN2_HEALTHCHECK_URL` | VM env | Treat as secret (anyone with it can fake a wave) |
+| Drain ping URL | `BRAIN2_DRAIN_HEALTHCHECK_URL` | Mac `.env.local` | Same |
 | VM SSH key | `~/.ssh/id_ed25519` | Mac | **Yes** |
 
-`phone:hub` reads `COGS_*` lines from `.env.local` itself, so nothing needs
-exporting in the shell.
+`phone:hub` reads `BRAIN2_*` lines from `.env.local` itself (a leftover `COGS_*`
+line for the same setting still counts), so nothing needs exporting in the shell.
 
 ## Files on the VM
 

@@ -13,6 +13,7 @@
  * CommonJS (matches electron/main.js).
  */
 const path = require("path")
+const { brain2Env } = require("../lib/brain2-env.cjs")
 const os = require("os")
 const fs = require("fs")
 const { spawn } = require("child_process")
@@ -24,15 +25,15 @@ const START_WAIT_MS = 15000
 const DAY_CLOSE_HOUR = 4
 const SCHEDULE_TICK_MS = 60 * 60 * 1000
 
-/** Home folder for data, venv and output. `COGS_TEXTS_HOME` overrides. */
+/** Home folder for data, venv and output. `BRAIN2_TEXTS_HOME` overrides. */
 function textsHome(env = process.env) {
-  const raw = env.COGS_TEXTS_HOME
+  const raw = brain2Env("TEXTS_HOME", env)
   if (raw && raw.trim()) return raw.trim().replace(/^~(?=$|\/)/, os.homedir())
   return path.join(os.homedir(), "texts-analysis")
 }
 
 function textsPort(env = process.env) {
-  const n = Number(env.COGS_TEXTS_PORT)
+  const n = Number(brain2Env("TEXTS_PORT", env))
   return Number.isInteger(n) && n > 1024 && n < 65536 ? n : DEFAULT_PORT
 }
 

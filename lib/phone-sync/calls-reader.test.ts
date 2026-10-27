@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("callsReader", () => {
   it("reads every call on the first run, oldest first", async () => {
-    vi.stubEnv("COGS_CALLS_DB", fakeCallHistory([
+    vi.stubEnv("BRAIN2_CALLS_DB", fakeCallHistory([
       ["C", T + 60, 0, 0, 0, "+15550000002"],
       ["A", T, 300.7, 1, 0, "+15550000001"],
     ]))
@@ -80,12 +80,12 @@ describe("callsReader", () => {
   })
 
   it("keeps the cursor when nothing is new", async () => {
-    vi.stubEnv("COGS_CALLS_DB", fakeCallHistory([["A", T, 10, 0, 1, "1"]]))
+    vi.stubEnv("BRAIN2_CALLS_DB", fakeCallHistory([["A", T, 10, 0, 1, "1"]]))
     expect(await callsReader.read(`${T}|A`)).toEqual({ records: [], cursor: `${T}|A` })
   })
 
   it("says what to fix when the file cannot be opened", async () => {
-    vi.stubEnv("COGS_CALLS_DB", path.join(os.tmpdir(), "b2-no-such-dir", "CallHistory.storedata"))
+    vi.stubEnv("BRAIN2_CALLS_DB", path.join(os.tmpdir(), "b2-no-such-dir", "CallHistory.storedata"))
     await expect(callsReader.read(undefined)).rejects.toThrow(/Full Disk Access/)
   })
 
