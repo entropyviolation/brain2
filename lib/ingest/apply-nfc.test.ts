@@ -2,6 +2,7 @@
  * lib/ingest/apply-nfc.test.ts — NFC tag scans
  */
 import { beforeEach, describe, expect, it } from "vitest"
+import { useCountStatusesStore } from "@/lib/count-statuses"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { getDefaultHabits, useHabitsStore } from "@/lib/habits-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -166,6 +167,9 @@ describe("nfc scans", () => {
       endMin: 17 * 60 + 42,
     })
     expect(block?.generatedBy?.id).toMatch(/^nfc:shower:span:/)
+    const ticks = useCountStatusesStore.getState().counts.find((row) => row.id === "count-shower")?.ticks ?? []
+    expect(ticks).toHaveLength(1)
+    expect(ticks[0]).toMatchObject({ date: formatLocalDateKey(NOW), startMin: 17 * 60 + 42 })
   })
 
   it("leaves a weekly habit cell alone", () => {

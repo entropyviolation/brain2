@@ -138,6 +138,19 @@ const SPOTIFY_CHANNELS = {
   check: "cogs:spotify:check",
 }
 
+// Sweep (electron/sweep.js). MUST match SWEEP_CHANNELS there. Sandboxed preload
+// cannot require that file. Consumed by lib/sweep-bridge.ts.
+const SWEEP_CHANNELS = {
+  defaults: "cogs:sweep:defaults",
+  scan: "cogs:sweep:scan",
+  cancel: "cogs:sweep:cancel",
+  clean: "cogs:sweep:clean",
+  duplicates: "cogs:sweep:duplicates",
+  cleanDuplicates: "cogs:sweep:cleanDuplicates",
+  textHead: "cogs:sweep:textHead",
+  progress: "cogs:sweep:progress",
+}
+
 // Chrome localhost persist snapshot. MUST match electron/main.js.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
 
@@ -444,6 +457,21 @@ contextBridge.exposeInMainWorld("desktop", {
     update: (id, patch) => ipcRenderer.invoke(SPOTIFY_CHANNELS.update, id, patch),
     remove: (id) => ipcRenderer.invoke(SPOTIFY_CHANNELS.remove, id),
     check: (id) => ipcRenderer.invoke(SPOTIFY_CHANNELS.check, id),
+  },
+  // Sweep: scan and duplicate search on this Mac. Absent in the web build.
+  sweep: {
+    defaults: () => ipcRenderer.invoke(SWEEP_CHANNELS.defaults),
+    scan: () => ipcRenderer.invoke(SWEEP_CHANNELS.scan),
+    cancel: () => ipcRenderer.send(SWEEP_CHANNELS.cancel),
+    clean: (req) => ipcRenderer.invoke(SWEEP_CHANNELS.clean, req),
+    duplicates: (roots) => ipcRenderer.invoke(SWEEP_CHANNELS.duplicates, roots),
+    cleanDuplicates: (req) => ipcRenderer.invoke(SWEEP_CHANNELS.cleanDuplicates, req),
+    textHead: (p) => ipcRenderer.invoke(SWEEP_CHANNELS.textHead, p),
+    onProgress: (cb) => {
+      const listener = (_event, payload) => cb(payload)
+      ipcRenderer.on(SWEEP_CHANNELS.progress, listener)
+      return () => ipcRenderer.removeListener(SWEEP_CHANNELS.progress, listener)
+    },
   },
 })
 

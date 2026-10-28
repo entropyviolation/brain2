@@ -1563,7 +1563,7 @@
 
 .an-drill,
 .an-popup {
-  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif);
+  font-family: var(--font-karla), Karla, "Segoe UI", sans-serif;
   /* 26px keycap centered on the title chip in the dialog's 24px pad. */
   --b2-close-top: 25px;
   --b2-close-right: 18px;
@@ -2228,4 +2228,61 @@
 .an95 .an-ledger .an-n {
   margin-left: auto;
   flex: none;
+}
+
+/* Phone. The studio fascia above stays on a wide window. */
+@media (max-width: 767px) {
+  .fm98.an95 {
+    height: auto;
+    min-height: 0;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .fm98.an95 .an-ledger-search {
+    min-width: 0;
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .fm98.an95 .an-phase-table,
+  .fm98.an95 table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .fm98.an95 .an-range-chip,
+  .fm98.an95 .an-group-btn,
+  .fm98.an95 .an-view-btn {
+    min-height: 44px;
+  }
+
+  body.win95-app .fm98.an95 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .an-drill :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .an-popup :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .an-drill,
+  body.win95-app .an-popup {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+  }
 }

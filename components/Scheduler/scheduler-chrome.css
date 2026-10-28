@@ -1221,3 +1221,45 @@ body.win95-app .sch95 button.sch-bucket-name[type="button"] {
   font-size: 11px;
   color: var(--chrome-ink-soft);
 }
+
+/* Phone. The milled calendar above stays on a wide window. */
+@media (max-width: 767px) {
+  .sch95 {
+    height: auto;
+    min-height: 0;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .sch95 .sch-window,
+  .sch95 .sch-split,
+  .sch95 .sch-pane {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .sch95 .sch-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sch95 .sch-bucket-grid.cols-2,
+  .sch95 .sch-bucket-grid.cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sch95 .sch-title-bar,
+  .sch95 .sch-pane-head {
+    flex-wrap: wrap;
+  }
+
+  .sch95 button,
+  .sch95 [role="tab"] {
+    min-height: 44px;
+  }
+
+  body.win95-app .sch95 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+}

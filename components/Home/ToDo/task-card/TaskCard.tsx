@@ -27,6 +27,9 @@ import { TaskCardPeriod } from "./TaskCardPeriod"
 import { ActualVsEstimate, LogNotes, NeedsEditor, NodeDetail, OpenItemKey, RemainingEstTag, SelectionSummary, SubstepPreview, TaskPens, TaskPoints, TaskUnlocks, knownPace, openEstimateMinutes } from "./TaskCardSide"
 import { TaskCardTimeAside } from "./TaskCardTimeAside"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { StepClockElapsed } from "../step-clock-elapsed"
+import { stopTaskSubclock } from "@/lib/task-clock"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
@@ -78,6 +81,10 @@ import { PriorityStar } from "./PriorityStar"
 import { CircleAlert } from "lucide-react"
 import { paceSamples } from "@/lib/estimate-pace"
 import { CardMinutes, TaskCardStats, TaskCardTimeUnit } from "../TaskCardStats"
+import { dashSegmentFaces } from "@/lib/fonts/dash-segment-faces"
+import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { frauncesFace } from "@/lib/fonts/fraunces"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 import { useTodoPrefs } from "../todo-prefs"
 import { attentionGiven, attentionGivenLabel } from "../attention-given"
 import { pushedKeyForPeriod, todoPeriodValue, type TodoPeriod } from "../todo-utils"
@@ -126,7 +133,7 @@ const DEFAULT_COLS: CardColumn[] = ["tier", "est", "lock", "clock"]
 
 const inOtherLayer = (event: Event) => {
   const target = ((event as CustomEvent<{ originalEvent?: Event }>).detail?.originalEvent?.target ?? event.target) as Element | null
-  return !!target?.closest?.("[data-item-layer], [data-task-card-pop], [role='dialog']:not(.task-card)")
+  return !!target?.closest?.("[data-item-layer], [data-task-card-pop], .trk-now-obj-stop-back, [role='dialog']:not(.task-card)")
 }
 
 /**
@@ -134,14 +141,17 @@ const inOtherLayer = (event: Event) => {
  * another layer sits on top, and not over typed text (`[data-draft]`) without a yes.
  */
 function guardEscape(event: KeyboardEvent): void {
-  if (document.querySelector("[data-item-layer], .tcs-stat-pop, [data-task-card-pop]")) return event.preventDefault()
+  if (document.querySelector("[data-item-layer], .tcs-stat-pop, [data-task-card-pop], .trk-now-obj-stop-back")) return event.preventDefault()
   const dirty = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(".task-card [data-draft]")].some(
     (el) => el.value.trim() !== (el.dataset.draft ?? "").trim(),
   )
   if (dirty && !window.confirm("Discard what you typed and close the card?")) event.preventDefault()
 }
 
+const taskCardFaces = `${frauncesFace} ${dmMonoFace} ${dashSegmentFaces}`
+
 export function TaskCard({ host }: { host: TaskCardHost }) {
+  useStampFontVariables(taskCardFaces)
   const taskId = useTaskCardStore((s) => s.taskId)
   const focusStepId = useTaskCardStore((s) => s.stepId)
   const rootStepId = useTaskCardStore((s) => s.rootStepId)
@@ -151,7 +161,7 @@ export function TaskCard({ host }: { host: TaskCardHost }) {
     <Dialog open={!!task} onOpenChange={(open) => (open ? null : closeTaskCard())}>
       {task ? (
         <DialogContent
-          className="task-card"
+          className={`task-card ${taskCardFaces}`}
           hideClose
           aria-describedby={undefined}
           data-ui-name="Task card"
@@ -166,6 +176,38 @@ export function TaskCard({ host }: { host: TaskCardHost }) {
         </DialogContent>
       ) : null}
     </Dialog>
+  )
+}
+
+function StepClockKey({
+  stepId,
+  name,
+  sub,
+  lone,
+  startedAt,
+  onPlay,
+  onStopParent,
+}: {
+  stepId: string
+  name: string
+  sub?: { startedAt: string }
+  lone: boolean
+  startedAt?: string
+  onPlay: () => void
+  onStopParent: () => void
+}) {
+  const live = !!sub || lone
+  const elapsedAt = sub?.startedAt ?? (lone ? startedAt : undefined)
+  return (
+    <>
+      <DvdTransportKey
+        mark={live ? "stop" : "play"}
+        pressed={live}
+        label={live ? `Stop the clock on ${name}` : `Working on ${name} now`}
+        onClick={() => (sub ? stopTaskSubclock(stepId) : live ? onStopParent() : onPlay())}
+      />
+      {elapsedAt ? <StepClockElapsed startedAt={elapsedAt} /> : null}
+    </>
   )
 }
 
@@ -317,7 +359,11 @@ function TaskCardBody({
   const sessions = history.filter((plan) => allLines(plan).some(({ line }) => line.taskId === task.id))
   const answers = noticeAnswers(task)
   const oneStep = sel.size === 1 ? flat.find((s) => sel.has(s.id)) : undefined
-  const onClock = !!host.clockTaskId && host.clockTaskId === task.id
+  const penSession = usePenColorSessionStore((s) => s.session)
+  const clockStepId = penSession ? penSession.stepId : host.clockStepId
+  const onClock = penSession ? penSession.taskId === task.id : !!host.clockTaskId && host.clockTaskId === task.id
+  const subclocks = onClock && penSession?.taskId === task.id ? (penSession.subclocks ?? []) : []
+  const clockStartedAt = onClock && penSession?.taskId === task.id ? penSession.startedAt : undefined
 
   const stepColumns = (step: Subtask, info: StepRowInfo): ReactNode => {
     const needNames = (step.dependsOn ?? []).map((id) => flat.find((s) => s.id === id)?.description).filter(Boolean)
@@ -353,13 +399,14 @@ function TaskCardBody({
         {has("lock") && info.locked ? <span className="task-card-lock" title="Waits on an open step, task or event">locked</span> : null}
         {unlockCount > 0 ? <span className="task-card-num">unlocks {unlockCount}</span> : null}
         {has("clock") && host.onClockStart && !step.completed ? (
-          <DvdTransportKey
-            mark={onClock && host.clockStepId === step.id ? "stop" : "play"}
-            pressed={onClock && host.clockStepId === step.id}
-            label={`Working on ${step.description} now`}
-            onClick={() =>
-              onClock && host.clockStepId === step.id ? host.onClockStop?.() : host.onClockStart?.(task.id, step.id)
-            }
+          <StepClockKey
+            stepId={step.id}
+            name={step.description}
+            sub={subclocks.find((row) => row.stepId === step.id)}
+            lone={subclocks.length === 0 && onClock && clockStepId === step.id}
+            startedAt={clockStartedAt}
+            onPlay={() => host.onClockStart?.(task.id, step.id)}
+            onStopParent={() => host.onClockStop?.()}
           />
         ) : null}
       </span>

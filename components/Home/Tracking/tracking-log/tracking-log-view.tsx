@@ -10,6 +10,7 @@
  * modes stay one line. A thought process is a guiding strand of this moment,
  * stored as `eventKind` `thought-process`, and listed under Thought process.
  * Food, drink, and drugs are Intake presets on an Intake-pen instant.
+ * Food opens its own detail: meals, snacks, nutrients, and the kitchen.
  * Note is the opening key. It paints a Text log instant and does not append
  * onto a covering block. Notes is its own steel shelf. Each day shelf except
  * Spent and Switch has a bottom add for this minute; Spent focuses the composer.
@@ -40,9 +41,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { addDays, addWeeks, format, subDays, subWeeks } from "date-fns"
 import { CountStatusesSection } from "@/components/Home/Tracking/tracking-log/count-statuses-section"
+import { OutfitsShelf } from "@/components/Home/Tracking/tracking-log/outfits-shelf"
 import { CycleLogSection } from "@/components/Home/Tracking/cycle/cycle-log-section"
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
+import { FoodDetailDialog } from "@/components/Home/Tracking/tracking-log/food/food-detail-dialog"
 import { SpendingDialog } from "@/components/Home/Tracking/tracking-log/spending-dialog"
 import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log/tracking-log-week"
 import { TelegramFeedWell } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
@@ -73,6 +76,8 @@ import { formatSpendAmount, parseSpendAmount, spendSourceOptions, summarizeSpend
 import { materializeMissingFeedLogs } from "@/lib/ingest/file-feed-row"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+import { plateNutrients } from "@/lib/kitchen-plate"
+import { resolveKitchenFood, useKitchenStore } from "@/lib/kitchen-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
@@ -547,7 +552,11 @@ export function TrackingLogView({
   const [locationPenId, setLocationPenId] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const [spendingOpen, setSpendingOpen] = useState(false)
+  const [foodOpen, setFoodOpen] = useState(false)
   const [shelf, setShelf] = useState<string | null>(null)
+  const kitchenPlates = useKitchenStore((s) => s.plates)
+  const kitchenFoods = useKitchenStore((s) => s.foods)
+  const kitchenRecipes = useKitchenStore((s) => s.recipes)
   const [backlogOpen, setBacklogOpen] = useState(true)
   const feedRows = useTelegramFeedStore((s) => s.rows)
   const ingestEvents = useIngestStore((s) => s.events)
@@ -1084,7 +1093,20 @@ export function TrackingLogView({
               key={list.id}
               title={list.title}
               rows={grouped[list.id]}
-              onTitleOpen={() => setShelf(list.id)}
+              onTitleOpen={() => (list.id === "food" ? setFoodOpen(true) : setShelf(list.id))}
+              leadFor={
+                list.id === "food"
+                  ? (entry) => {
+                      const plate = kitchenPlates.find((row) => row.entryId === entry.id && row.accepted)
+                      if (!plate) return null
+                      const recipe = kitchenRecipes.find((row) => row.id === plate.recipeId) ?? null
+                      const kcal = Math.round(
+                        plateNutrients(plate, (id) => resolveKitchenFood(id, kitchenFoods), recipe).kcal,
+                      )
+                      return <span className="trk-log-amount">{kcal} kcal</span>
+                    }
+                  : undefined
+              }
               quickAdd={
                 <LogShelfQuickAdd
                   label={`Add to ${list.title}`}
@@ -1145,6 +1167,8 @@ export function TrackingLogView({
             onRemove={removeEntry}
           />
 
+          <OutfitsShelf dayKey={dateKey} day={currentDate} onOpenDay={openDayFromWeek} />
+
           <LogListWell
             title="Thought process"
             note="A strand from what you are doing, to what it leads to, to how it feels."
@@ -1191,7 +1215,9 @@ export function TrackingLogView({
           ["thought", "Thought process", allGrouped.thought, "A strand from what you are doing, to what it leads to, to how it feels."],
           ["switch", "Switch", allGrouped.switch, "From one thing to the next."],
         ] as const
-      ).map(([id, title, rows, note]) => (
+      )
+        .filter(([id]) => id !== "food")
+        .map(([id, title, rows, note]) => (
         <LogShelfDialog
           key={id}
           open={shelf === id}
@@ -1216,6 +1242,13 @@ export function TrackingLogView({
         </LogShelfDialog>
       ))}
 
+      <FoodDetailDialog
+        open={foodOpen}
+        onOpenChange={setFoodOpen}
+        anchor={currentDate}
+        entries={allGrouped.food}
+        onOpenEntry={setOpenEntryId}
+      />
       <SpendingDialog
         open={spendingOpen}
         onOpenChange={setSpendingOpen}

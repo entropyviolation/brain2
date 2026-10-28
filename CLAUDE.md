@@ -1,18 +1,17 @@
-# Agent notes for Brain2
+# Claude Code notes for Brain2
 
-## Keep the room docs current
+This file loads on every Claude Code session. While it exists, Claude Code does not load `AGENTS.md`. Do not `@import` `AGENTS.md`, a README, or a doc from here. An import is copied into every session.
 
-Every room folder has a `README.md`, and `lib/README.md` covers `lib/`. Read those before mapping code yourself.
+Room folders and `lib/` each have a `README.md`. Read that before mapping the code yourself.
 
-When you change code, follow `.cursor/rules/update-docs-after-each-step.mdc`: once, at the end of the task, the colocated README (and a spec, style, or overview sentence only when that claim is now false). The tree, the gallery, and a repo-wide sync are `.cursor/rules/doc-sync.mdc`, and only when asked.
+After a code change, update that folder's README once: current behavior, and why it left a plan if it did. Fix its file list when files were added, renamed, or removed. Edit `docs/SPEC_MAPPING.md` or `docs/DESIGN_STYLE.md` only when that claim changed. Edit a parent README only when an overview sentence is now false. Leave `docs/tree.md`, `docs/tree.txt`, screenshots, and unrelated docs alone unless asked.
 
-When you map a module in depth (by reading it or through a subagent), write back anything future agents would otherwise have to re-derive:
+When you map a module in depth, write the findings back. Label unbuilt intent **Planned**. Date a section you change with `_Last mapped: YYYY-MM-DD_`. Short plain sentences. Paths in backticks.
 
-- Add findings that are missing from that folder's README, or that disagree with it. Fix the README where the code wins. Where the doc describes intent the code has not reached yet, label it **Planned**.
-- Put `_Last mapped: YYYY-MM-DD_` at the top of each section you add or change.
-- If changes are planned for the module, say so in its README and link the plan doc (for example `docs/TODO_REDESIGN.md`).
-- Keep the house voice: short, plain sentences, file paths in backticks, and approximate line numbers (`~123`) only where they save a search.
+AMAP means do as much as possible, in parallel. Extend what already works: the smallest true shape, one named idea, a seam the next person can grow.
 
-Design language is in `docs/DESIGN_STYLE.md`. Redesign plans live in `docs/*_REDESIGN.md`.
+Design language is `docs/DESIGN_STYLE.md`. Redesign plans are `docs/*_REDESIGN.md`. A slant in `docs/mockups/slants/` applies only when asked by name.
 
-Style slants (Hipgnosis, retrofuturism) live in `docs/mockups/slants/`. Use one only when asked for it by name. A slant never changes the house style.
+The iOS / mobile app follows `docs/MOBILE_STYLE.md` and does not follow the desktop style.
+
+Open a file in `.cursor/rules/` when the task matches it. Those notes stay out of this file: doc sync, verify-without-rewriting, design style while styling, the three task editors, and long files under `components/Modules`.

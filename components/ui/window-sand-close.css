@@ -59,3 +59,12 @@
     display: none !important;
   }
 }
+
+@media (max-width: 767px) {
+  .window-sand-skip {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    width: 44px;
+    height: 44px;
+  }
+}

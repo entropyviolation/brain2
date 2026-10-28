@@ -249,6 +249,28 @@ describe("AppHeader", () => {
     vi.unstubAllGlobals()
   })
 
+  it("opens a menu for the destinations that are not the section switcher", () => {
+    render(<AppHeader onTaskSelect={() => {}} />)
+    const menu = screen.getByRole("button", { name: "Menu", hidden: true })
+    expect(menu).toHaveAttribute("aria-expanded", "false")
+    expect(menu).toHaveAttribute("aria-controls", "b2-shell-tools")
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "closed")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+
+    act(() => {
+      menu.click()
+    })
+    expect(menu).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "open")
+    expect(screen.getByRole("dialog", { name: "Menu" })).toBe(document.getElementById("b2-shell-tools"))
+
+    act(() => {
+      menu.click()
+    })
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "closed")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
   it("opens search from the magnifying-glass key", async () => {
     const user = userEvent.setup()
     const onOpenSearch = vi.fn()

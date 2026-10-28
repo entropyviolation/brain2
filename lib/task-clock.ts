@@ -10,6 +10,10 @@
  *   answer on the task.
  * - Starting on the pen already live does not split the block. Only the task
  *   and step change, and the new step is stamped as an objective tied to it.
+ * - A step played while the task sitting is already up (no step of its own,
+ *   or step timers already beside it) starts a subclock for that step. The
+ *   parent clock and the pen block stay as they are. Stopping that step logs
+ *   only its timer. Stopping the task logs every subclock, then the sitting.
  * - An active task turns "in progress".
  *
  * Stop is the pen clock's Stop: the span is logged on the task there.
@@ -30,6 +34,7 @@ import {
   setPenColorSessionTask,
   startPenColorSession,
   stopPenColorSession,
+  stopPenSubclock,
   togglePenColorNowObjectiveComplete,
 } from "@/lib/pen-color-session"
 import { activeNowObjectives } from "@/lib/now-objective"
@@ -98,11 +103,23 @@ export function rememberTaskPen(taskId: string, penId: string): void {
   store.updateTask({ ...task, penLinks: [{ scopeId: found.scopeId, penId }, ...rest] })
 }
 
-/** The live clock, when it is on this task (and step, when given). */
+/** The live clock, when it is on this task (and step, when given). A subclock counts. */
 export function isTaskOnClock(taskId: string, stepId?: string): boolean {
   const session = usePenColorSessionStore.getState().session
   if (!session || session.taskId !== taskId) return false
-  return stepId ? session.stepId === stepId : true
+  if (!stepId) return true
+  if (session.stepId === stepId) return true
+  return session.subclocks?.some((row) => row.stepId === stepId) ?? false
+}
+
+/**
+ * The task sitting is already the parent clock: it has no step of its own,
+ * or step timers are already running beside it. A further step play nests.
+ */
+function parentSittingUp(taskId: string): boolean {
+  const live = usePenColorSessionStore.getState().session
+  if (!live || live.taskId !== taskId) return false
+  return !live.stepId || (live.subclocks?.length ?? 0) > 0
 }
 
 export function startTaskClock(
@@ -115,6 +132,22 @@ export function startTaskClock(
   const step = options.stepId ? findPlacedStep(task.subtasks, options.stepId)?.step : undefined
 
   const live = usePenColorSessionStore.getState().session
+  if (step && parentSittingUp(taskId)) {
+    return runAsAction("step on the clock", () => {
+      const current = usePenColorSessionStore.getState().session
+      if (!current) return { kind: "missing" as const }
+      const subclocks = current.subclocks ?? []
+      if (!subclocks.some((row) => row.stepId === step.id)) {
+        usePenColorSessionStore.getState().setSession({
+          ...current,
+          subclocks: [...subclocks, { stepId: step.id, startedAt: now.toISOString() }],
+        })
+      }
+      markTaskInProgress(taskId)
+      return { kind: "switched" as const, session: usePenColorSessionStore.getState().session! }
+    })
+  }
+
   const penId = options.penId ?? clockPenFor(task, options.stepId)?.penId ?? live?.penId
   if (!penId) return { kind: "needs-pen" }
   if (options.penId && options.rememberPen) rememberTaskPen(taskId, options.penId)
@@ -143,7 +176,12 @@ export function startTaskClock(
   return { kind, session: usePenColorSessionStore.getState().session! }
 }
 
-/** Stop the clock if it is on this task. Returns the sitting that just closed. */
+/** Stop one step timer. The task sitting keeps going. False when that step has no timer of its own. */
+export function stopTaskSubclock(stepId: string, now = new Date()): boolean {
+  return stopPenSubclock(stepId, now)
+}
+
+/** Stop the clock if it is on this task. Returns the sitting that just closed. Step timers are logged first. */
 export function stopTaskClock(taskId?: string, now = new Date(), opts?: { parkUnfinished?: boolean }): PenColorSession | null {
   const session = usePenColorSessionStore.getState().session
   if (!session) return null

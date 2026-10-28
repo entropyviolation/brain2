@@ -19,11 +19,11 @@ describe("CountStatusesSection", () => {
     expect(screen.getByLabelText("joints total")).toHaveTextContent("0")
     fireEvent.click(screen.getByRole("button", { name: "Increment joints" }))
     expect(screen.getByLabelText("joints total")).toHaveTextContent("1")
-    const tick = useCountStatusesStore.getState().counts[0]?.ticks[0]
+    const tick = useCountStatusesStore.getState().counts.find((row) => row.name === "joints")?.ticks[0]
     expect(tick?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(tick?.startMin).toEqual(expect.any(Number))
     fireEvent.click(screen.getByRole("button", { name: "Delete joints" }))
     expect(screen.queryByLabelText("Rename joints")).not.toBeInTheDocument()
-    expect(useCountStatusesStore.getState().counts).toEqual([])
+    expect(useCountStatusesStore.getState().counts.map((row) => row.name)).toEqual(["Shower"])
   })
 })

@@ -1,8 +1,8 @@
 ## Agent card
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-10-28_
 
-This room shows one item with its tags, typed links, lists, schedule, body, and history. Item detail → Subtasks is one of the three task editors, and it is the whole record. The drawer and the task card stay in To do. See `components/Home/ToDo/README.md`, section "Three ways to edit a task stay separate".
+This room shows one item with its tags, typed links, lists, schedule, body, and history. On a phone (`max-width: 767px`) the tabs wrap, fields are 16px, and the popup is a bottom sheet so the page can zoom out. Desktop chrome is unchanged. Item detail → Subtasks is one of the three task editors, and it is the whole record. The drawer and the task card stay in To do. See `components/Home/ToDo/README.md`, section "Three ways to edit a task stay separate".
 
 Write door: `task-store.ts` persists items (`useTaskStore`). Saves of an existing item go through `commitItemEdit` (`lib/commit-item-edit.ts`), from `useItemDetailDraft.commitDraft`, and land in `updateTask`. When a finish spans stores, `action-history.rememberWorld` takes one undo snapshot first. Public door: `TaskDetailPopup` from `ItemDetailPopup.tsx`, and `EnhancedTaskDetail` from `ItemDetailPage.tsx`.
 
@@ -18,7 +18,7 @@ Do not touch: the three task editors stay separate. Do not rebuild the To do dra
 
 _Last mapped: 2026-10-27_
 
-Purpose. This room shows one item with its tags, typed links, lists, schedule, body, and history, so Lists, Scheduler, Tracking, Modules, Reviews, and Data can use the same record.
+Purpose. This room shows one item with its tags, typed links, lists, schedule, body, and history, so Lists, Scheduler, Tracking, Modules, Reviews, and Data can use the same record. _Last mapped: 2026-10-27._ DM Mono (`--font-dmmono`) loads with the page and the popup (`lib/fonts/dm-mono.ts`), on `.id95` and on `<html>`.
 
 Invariants. Item detail → Subtasks is one of three task editors. It stays separate from the To do drawer and the To do task card (`components/Home/ToDo/README.md`). The popup (`ItemDetailPopup.tsx`) and the page (`ItemDetailPage.tsx`) stay two shells. `popup/` and `page/` stay private to each. Shared tab bodies live in `tabs/`. Type desks live in `type-views/`.
 

@@ -16,8 +16,10 @@
  * below); bare dialog tablists stay milled. Header Go keys are already caps.
  * Nothing here changes
  * behaviour — only appearance — except text-field focus, which is Win95 navy
- * `#000080` on every input/textarea/select (never WebKit orange), and the
- * app-tab pin (`.b2-app-pin`), which sticks the bay under the title bar.
+ * `#000080` on every input/textarea/select (never WebKit orange), a 16px
+ * floor on those fields at phone width so iOS does not zoom the page on
+ * focus, and the app-tab pin (`.b2-app-pin`), which sticks the bay under
+ * the title bar.
  * Transitions/animations are preserved. Scope is `body.win95-app`
  * (added in app/layout.tsx).
  */
@@ -896,6 +898,24 @@ body.win95-app input[type="radio"]:focus-visible {
   outline-color: #000080 !important;
   outline-offset: 1px;
   box-shadow: none;
+}
+
+/*
+ * iOS Safari and WKWebView zoom the layout when a focused text field, select,
+ * or textarea computes under 16px, and that scale often stays after blur.
+ * Room skins pin fields at 11–14px with !important (the search query is 14px).
+ * This floor wins on a phone, including landscape, so focus stays at scale 1.
+ * Pinch zoom is left on — a maximum-scale lock is what traps a zoomed page.
+ * The :not() list matches the navy focus rule below; on textarea/select those
+ * types never match, so every text field is included and specificity beats
+ * a two-class skin.
+ */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  body.win95-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app textarea:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app select:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px !important;
+  }
 }
 
 body.win95-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,

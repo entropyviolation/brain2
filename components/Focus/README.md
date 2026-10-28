@@ -1,6 +1,8 @@
 # Focus
 
-Anti-paralysis focus surfaces for the daily execution loop (Brain2 #59/#128).
+_Last mapped: 2026-10-28_
+
+Anti-paralysis focus surfaces for the daily execution loop (Brain2 #59/#128). On a phone (`max-width: 767px`) the sitting-end field and Just Start fields are 16px, the focus bar stays inside the width, and the task pen picker is a bottom sheet. Desktop chrome is unchanged.
 Owner: **Worker A**.
 
 ## `JustStartMode`

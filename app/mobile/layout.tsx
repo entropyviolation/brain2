@@ -15,10 +15,13 @@ export const metadata: Metadata = {
   manifest: "/mobile-manifest.webmanifest",
 }
 
+/**
+ * Same fit as the root layout. Zoom stays unlocked: maximum-scale 1
+ * kept a focus zoom from returning to the full page.
+ */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
   themeColor: "#c0c0c0",
 }

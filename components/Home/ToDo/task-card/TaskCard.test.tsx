@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTaskStore } from "@/lib/task-store"
-import { closeTaskCard, openTaskCard } from "@/lib/task-card"
+import { closeTaskCard, openTaskCard, useTaskCardStore } from "@/lib/task-card"
 import { resetPointsVisibilityForTests, setPointsVisibility } from "@/lib/points-visibility"
 import { undoLastAction } from "@/lib/action-history"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
@@ -11,6 +11,7 @@ import { startTaskClock } from "@/lib/task-clock"
 import { useSessionOpenStore } from "@/lib/session-open-store"
 import { itemLayers, clearItemLayers } from "@/lib/step-item-stack"
 import type { Subtask, Task } from "@/lib/types"
+import { SaveUnfinishedDialog } from "@/components/Home/Tracking/save-unfinished-dialog"
 import { TaskCard, type TaskCardHost } from "./TaskCard"
 
 const s = (id: string, extra: Partial<Subtask> = {}): Subtask => ({ id, description: id, completed: false, ...extra })
@@ -281,6 +282,39 @@ describe("TaskCard", () => {
     expect(useTaskStore.getState().tasks[0].penLinks?.map((link) => link.penId)).toEqual(["act-rest", "act-work"])
     act(() => startTaskClock("t1"))
     expect(usePenColorSessionStore.getState().session?.penId).toBe("act-rest")
+  })
+
+  it("stops a subtask timer without stopping the task clock", () => {
+    seed({ penLinks: [{ scopeId: "activity", penId: "act-exercise" }], subtasks: [s("insert"), s("label")] })
+    const onClockStop = vi.fn()
+    render(<TaskCard host={host({ onClockStart: (id, stepId) => startTaskClock(id, { stepId }), onClockStop })} />)
+    act(() => openTaskCard("t1"))
+    fireEvent.click(screen.getByRole("button", { name: "Working on Finish CDs now" }))
+    fireEvent.click(screen.getByRole("button", { name: "Working on insert now" }))
+    expect(usePenColorSessionStore.getState().session?.subclocks?.[0]?.stepId).toBe("insert")
+    fireEvent.click(screen.getByRole("button", { name: "Stop the clock on insert" }))
+    expect(onClockStop).not.toHaveBeenCalled()
+    expect(usePenColorSessionStore.getState().session?.taskId).toBe("t1")
+    expect(usePenColorSessionStore.getState().session?.subclocks).toBeUndefined()
+  })
+
+  it("lets Yes on the unfinished-objectives dialog run while the card is open", () => {
+    seed()
+    const onYes = vi.fn()
+    const { rerender } = render(<TaskCard host={host()} />)
+    act(() => openTaskCard("t1"))
+    rerender(
+      <>
+        <TaskCard host={host()} />
+        <SaveUnfinishedDialog count={2} onYes={onYes} onNo={vi.fn()} onCancel={vi.fn()} />
+      </>,
+    )
+    const yes = screen.getByRole("button", { name: "Yes" })
+    expect(yes.closest("[data-ui-name='Task card']")).toBeTruthy()
+    fireEvent.pointerDown(yes, { button: 0, bubbles: true })
+    fireEvent.click(yes)
+    expect(onYes).toHaveBeenCalled()
+    expect(useTaskCardStore.getState().taskId).toBe("t1")
   })
 
   it("opens a large multiselect for tasks that wait, above the card", () => {

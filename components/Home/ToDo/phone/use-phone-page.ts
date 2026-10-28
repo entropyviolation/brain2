@@ -308,6 +308,7 @@ export function usePhonePageModel({
     handleComplete: actions.handleComplete,
     handleMissed: actions.handleMissed,
     handlePush: actions.handlePush,
+    resolveUndone: actions.resolveUndone,
     handleDelete: actions.handleDelete,
     handleEstimate: actions.handleEstimate,
     handleSteps: actions.handleSteps,
@@ -457,5 +458,3 @@ export function usePhonePageModel({
 }
 
 export type PhonePageModel = ReturnType<typeof usePhonePageModel>
-
-void 0 as unknown as StepTier

@@ -11,6 +11,8 @@
 
 import { cn } from "@/lib/utils"
 
+import "./touch.css"
+
 const SIZES = {
   sm: "h-[22px] w-8",
   md: "h-7 w-10",
@@ -36,7 +38,7 @@ export function ColorSwatch({
 }) {
   const hex = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#2563eb"
   return (
-    <span className={cn("cogs-color-swatch", SIZES[size], className)} data-disabled={disabled ? "true" : undefined}>
+    <span className={cn("cogs-color-swatch ui-touch-swatch", SIZES[size], className)} data-disabled={disabled ? "true" : undefined}>
       <input
         id={id}
         type="color"

@@ -19,6 +19,10 @@
  * the pinned app header. The view bar and the date are not sticky.
  *
  * Spec: §8 (Home Dashboard).
+ *
+ * `dash/dash-faces` is imported here, the lazy Home chunk, so its registry
+ * side effect runs before this dashboard paints. Pixelify, Silkscreen, and
+ * DotGothic16 load with this chunk (`lib/fonts/home-pixel-faces.ts`).
  */
 "use client"
 
@@ -41,6 +45,9 @@ import { useTrackingUndoHotkey } from "@/components/Home/Tracking/tracking-undo"
 import "./home-chrome.css"
 import "@/components/Home/Tracking/tracking-chrome.css"
 import "@/components/Home/Habits/habit-chrome.css"
+import "@/components/Home/dash/dash-faces"
+import { homePixelFaces } from "@/lib/fonts/home-pixel-faces"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 type HomeTab = "habits" | "plan" | "todo" | "goals" | "tracking"
 
@@ -153,9 +160,10 @@ export function HomeDashboard() {
   }, [])
 
   const habitsConsole = activeTab === "habits"
+  useStampFontVariables(homePixelFaces)
 
   return (
-    <div className={habitsConsole ? "hab95" : undefined}>
+    <div className={habitsConsole ? `hab95 ${homePixelFaces}` : homePixelFaces}>
       <div className={habitsConsole ? "hab-console" : undefined}>
       <div className="home95">
         <div className="home-window">

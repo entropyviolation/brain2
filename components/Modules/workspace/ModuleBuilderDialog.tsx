@@ -21,7 +21,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode, Package } from "lucide-react"
+import { Home, LayoutGrid, Plane, Wallet, FilePlus2, BarChart3, Wrench, Rocket, Clapperboard, GraduationCap, FileCode, Package, Brush } from "lucide-react"
 import { MODULE_TEMPLATES, instantiateModuleTemplate, type ModuleTemplateId } from "@/lib/module-templates"
 import type { ModuleDefinition } from "@/lib/types"
 import {
@@ -42,6 +42,7 @@ const TEMPLATE_ICONS: Partial<Record<ModuleTemplateId, React.ComponentType<{ cla
   "book-tasting": FilePlus2,
   filmrecs: Clapperboard,
   gradsearch: GraduationCap,
+  sweep: Brush,
   blank: FilePlus2,
 }
 
@@ -95,7 +96,7 @@ export function ModuleBuilderDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="mod95-dialog sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Build a module</DialogTitle>
           </DialogHeader>

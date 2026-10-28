@@ -171,7 +171,7 @@ export function ModuleViewEditor({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="mod95-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{initial ? "Edit view" : "Add view"}</DialogTitle>
         </DialogHeader>

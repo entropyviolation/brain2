@@ -1358,3 +1358,21 @@ body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-faces.dash-samp
     transition: none !important;
   }
 }
+
+/* Phone: four fluid columns. A span-3 face stays inside the screen. Desktop keeps the 88px cells. */
+@media (max-width: 767px) {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: auto;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

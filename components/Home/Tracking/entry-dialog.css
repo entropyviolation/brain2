@@ -492,7 +492,7 @@
     bottom: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    max-height: min(88vh, 760px) !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
     transform: none !important;
     border-radius: 16px 16px 0 0 !important;
     padding-bottom: env(safe-area-inset-bottom, 0px);

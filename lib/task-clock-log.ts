@@ -246,6 +246,26 @@ export function addStepForObjective(ref: ClockTaskRef, objective: NowObjective):
   return made.step.id
 }
 
+/**
+ * Stopping the sitting paints the block again and can replace its id.
+ * Logs that named the old id should name the block that is still there.
+ */
+export function retargetClockLogs(taskId: string, fromIds: readonly string[], toIds: readonly string[]): void {
+  if (!fromIds.length || !toIds.length) return
+  const task = getTask(taskId)
+  if (!task?.timeLogs?.length) return
+  const from = new Set(fromIds)
+  const to = new Set(toIds)
+  let changed = false
+  const timeLogs = task.timeLogs.map((log) => {
+    const named = log.entryIds ?? []
+    if (!named.some((id) => from.has(id)) || named.every((id) => to.has(id))) return log
+    changed = true
+    return { ...log, entryIds: [...toIds] }
+  })
+  if (changed) useTaskStore.getState().updateTask({ ...task, timeLogs })
+}
+
 /** An active task starts reading "in progress" once it is on the clock. */
 export function markTaskInProgress(taskId: string | undefined): void {
   const task = getTask(taskId)

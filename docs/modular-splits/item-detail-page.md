@@ -334,7 +334,7 @@ Leave `docs/SPEC_MAPPING.md` (the feature stays implemented). Leave screenshot s
 
 ### Do not merge
 
-Decision 15 in `docs/TODO_REDESIGN.md`: item detail → Subtasks, the To do drawer, and the task card stay different UI. `CLAUDE.md` and `components/Home/ToDo/README.md` (“Three ways to edit a task stay separate”) say a merge needs allie’s yes.
+Decision 15 in `docs/TODO_REDESIGN.md`: item detail → Subtasks, the To do drawer, and the task card stay different UI. `.cursor/rules/three-task-editors.mdc` and `components/Home/ToDo/README.md` (“Three ways to edit a task stay separate”) say a merge needs allie’s yes.
 
 This split must not:
 

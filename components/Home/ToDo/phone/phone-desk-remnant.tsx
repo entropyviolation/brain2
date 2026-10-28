@@ -50,6 +50,7 @@ import { TodoTable } from "../ledger/TodoTable"
 import { UndoneTodoSection } from "../ledger/UndoneTodoSection"
 import { useTodoTime } from "../use-todo-time"
 import {
+  countInProgress,
   createScheduledTodoTask,
   getPeriodNavLabel,
   pinPrioritizedFirst,
@@ -101,6 +102,7 @@ export type PhoneDeskRemnantBag = {
   handleComplete: (todoId: string, level?: StepTier) => void
   handleMissed: (todoId: string) => void
   handlePush: (todoId: string, period: TodoPeriod) => void
+  resolveUndone: (taskId: string, period: TodoPeriod, action: "assimilate" | "push" | "discard") => void
   handleDelete: (todoId: string) => void
   handleEstimate: (todoId: string, minutes: number | undefined) => void
   handleSteps: (todoId: string, subtasks: import("@/lib/types").Subtask[]) => void
@@ -183,6 +185,7 @@ export function bindPhoneDeskRemnant(bag: PhoneDeskRemnantBag) {
     handleComplete,
     handleMissed,
     handlePush,
+    resolveUndone,
     handleDelete,
     handleEstimate,
     handleSteps,

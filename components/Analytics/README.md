@@ -1,6 +1,8 @@
 # `components/Analytics/` — Data studio
 
-The desk tab is **Data**, formerly Analytics. The folder and the stored tab id stay `analytics`, so a saved place still opens this room.
+_Last mapped: 2026-10-28_
+
+The desk tab is **Data**, formerly Analytics. On a phone (`max-width: 767px`) the studio height follows the content, tables scroll inside the pane, fields are 16px, and drill dialogs are bottom sheets. Desktop chrome is unchanged. The folder and the stored tab id stay `analytics`, so a saved place still opens this room.
 
 The **heart of Brain2**. Capture, Lists, Tracking, Habits, Reviews, and Modules
 write the vault. This tab is mass personal data and information-resource
@@ -42,10 +44,12 @@ guide tab with its number. Canvases and plot wells are plain cool white paper,
 no graph rule. Each `.an-plate` has a double rule and crop marks, and each
 `.an-canvas-title` is numbered `FIG. 01`, `FIG. 02`… by a CSS counter. Readouts
 are one ruled card. `.an-scope` is a dark graphite well with a cobalt grid and a
-white trace. Type (loaded in `app/layout.tsx` via `next/font`, 2026-10-23):
+white trace. _Last mapped: 2026-10-27._ Type loads with this screen
+(`lib/fonts/analytics-type.ts`), not the root layout:
 **Bricolage Grotesque** (`--font-an-display`) for titles and values,
 **Instrument Sans** (`--font-an-text`) for keys, labels, ticks, prose and
-portaled drills, with tabular numbers. This replaces the pixel faces in this
+portaled drills, with tabular numbers. The variable classes sit on `.an95`
+and are stamped on `<html>` so a portaled drill still sees them. This replaces the pixel faces in this
 room only; Home and Lab keep theirs. Section map: [`docs/analytics/INDEX.md`](../../docs/analytics/INDEX.md). No italics. One accent,
 cobalt. No yellow, no celestial or astrology motifs (star icons are fine). Data fills (heat hues, pens, item-type colors)
 are data and are not re-tinted. The skin is CSS only: same DOM, same `role="tab"`

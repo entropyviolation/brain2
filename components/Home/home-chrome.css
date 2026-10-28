@@ -1806,11 +1806,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   color: #fff;
 }
 
-.home95.home-weather-dialog ::highlight(search-text),
-.home95.home-weather-dialog ::highlight(target-text) {
-  background-color: color-mix(in srgb, var(--hab-crt-green, #7dffc4) 50%, #040a08);
-  color: #fff;
-}
+/* Find-in-page ::highlight() lives in weather-instrument.tsx. Lightning CSS rejects that pseudo-element and fails the page. */
 
 .home95.home-weather-dialog > button {
   top: 5px;
@@ -2505,7 +2501,8 @@ body .home-widget-dialog.home-widget-instrument.is-sky {
   max-height: min(92vh, 920px);
 }
 
-body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
+body .home-widget-dialog.home-widget-instrument.home-widget-catalog,
+body .home-widget-dialog.home-widget-instrument.is-money {
   width: min(52rem, calc(100vw - 1.5rem));
   max-width: 52rem;
 }
@@ -5576,4 +5573,107 @@ body.win95-app .home-tabs[role="tablist"] {
   position: sticky;
   top: var(--home-tabs-top, 0px);
   z-index: 30;
+}
+
+/*
+ * Compact width only. The desktop fascia above is unchanged.
+ * The phone keeps the date, the widget bank, and the five tabs on screen:
+ * nothing sticks past the width, opened handhelds are bottom sheets, and a
+ * text field is 16px so iOS does not zoom in and stay there.
+ */
+@media (max-width: 767px) {
+  .home95,
+  .home95 .home-window,
+  .home95 .home-window-body,
+  body.win95-app .home-body,
+  body.win95-app .home-pane {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .home95,
+  body.win95-app .home-body,
+  body.win95-app .home-pane {
+    overflow-x: clip;
+  }
+
+  .home95 .home-date-plate {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home95 .home-date-weekday {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .hab95 .home95 .home-overview > .vd-cell,
+  .hab95 .home95 .home-overview > .home-tile,
+  .home95 .home-overview,
+  .home95 .home-tile,
+  .home95 .hab-score-well.home-tile {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home95 .home-overview {
+    overflow-x: clip;
+  }
+
+  body.win95-app .home-tabs[role="tablist"] {
+    max-width: 100%;
+    min-width: 0;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  body.win95-app .home-tabs [role="tab"] {
+    min-height: 44px;
+    gap: 4px;
+    padding: 6px 2px 8px;
+    font-size: 11px;
+    letter-spacing: 0;
+    overflow: hidden;
+  }
+
+  body .home-widget-dialog.home-widget-instrument,
+  .home95.home-weather-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    display: flex !important;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: min(100dvh, 100%) !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden;
+  }
+
+  .home-widget-dialog .home-widget-detail,
+  .home95.home-weather-dialog .home-widget-detail {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow: auto;
+  }
+
+  .home-widget-dialog :is(input, select, textarea),
+  .home95.home-weather-dialog :is(input, select, textarea),
+  .home-widget-dialog .home-widget-field input,
+  .home-widget-dialog .home-widget-field select,
+  .home-widget-dialog .home-widget-field textarea,
+  .home-widget-dialog .home-widget-field .native-select,
+  .home95.home-weather-dialog .home-weather-search input {
+    font-size: 16px;
+  }
 }

@@ -17,26 +17,9 @@ function uriOf(task: Task): string | undefined {
   return first && typeof first === "object" ? (first as FileValue).uri : undefined
 }
 
-function Thumb({ task, onRemove, canRemove }: { task: Task; onRemove: () => void; canRemove: boolean }) {
-  const src = useAttachmentSrc(uriOf(task))
-  return (
-    <span className="trk-day-photo" title={itemTitle(task)}>
-      {src ? <img src={src} alt={itemTitle(task)} width={64} height={64} style={{ objectFit: "cover" }} /> : itemTitle(task)}
-      {canRemove ? (
-        <button type="button" aria-label={`Detach ${itemTitle(task)}`} onClick={onRemove}>
-          ×
-        </button>
-      ) : null}
-    </span>
-  )
-}
-
-/** Photos on one day: attached by hand, plus any whose Taken date is that day. */
-export function DayPhotos({ dayKey }: { dayKey: string }) {
+function usePhotosOnDay(dayKey: string) {
   const tasks = useTaskStore((s) => s.tasks)
   const byDay = useDayPhotosStore((s) => s.byDay)
-  const attach = useDayPhotosStore((s) => s.attach)
-  const detach = useDayPhotosStore((s) => s.detach)
   const photos = useMemo(() => tasks.filter((t) => t.type === PHOTO_TYPE_ID), [tasks])
   const ids = useMemo(
     () =>
@@ -47,6 +30,42 @@ export function DayPhotos({ dayKey }: { dayKey: string }) {
       ),
     [dayKey, byDay, photos],
   )
+  return { photos, byDay, ids }
+}
+
+function Thumb({ task, onRemove, canRemove }: { task: Task; onRemove?: () => void; canRemove: boolean }) {
+  const src = useAttachmentSrc(uriOf(task))
+  return (
+    <span className="trk-day-photo" title={itemTitle(task)}>
+      {src ? <img src={src} alt={itemTitle(task)} width={64} height={64} style={{ objectFit: "cover" }} /> : itemTitle(task)}
+      {canRemove && onRemove ? (
+        <button type="button" aria-label={`Detach ${itemTitle(task)}`} onClick={onRemove}>
+          ×
+        </button>
+      ) : null}
+    </span>
+  )
+}
+
+/** Read-only thumbs for one day. Same ids as the day summary: hand-attached plus `takenAt`. */
+export function DayPhotoStrip({ dayKey }: { dayKey: string }) {
+  const { photos, ids } = usePhotosOnDay(dayKey)
+  const onDay = photos.filter((photo) => ids.includes(photo.id))
+  if (!onDay.length) return null
+  return (
+    <div className="trk-day-photos trk-week-photos" aria-label={`Photos ${dayKey}`}>
+      {onDay.map((photo) => (
+        <Thumb key={photo.id} task={photo} canRemove={false} />
+      ))}
+    </div>
+  )
+}
+
+/** Photos on one day: attached by hand, plus any whose Taken date is that day. */
+export function DayPhotos({ dayKey }: { dayKey: string }) {
+  const { photos, byDay, ids } = usePhotosOnDay(dayKey)
+  const attach = useDayPhotosStore((s) => s.attach)
+  const detach = useDayPhotosStore((s) => s.detach)
   if (photos.length === 0) return null
   const onDay = new Set(ids)
   const manual = new Set(byDay[dayKey] ?? [])

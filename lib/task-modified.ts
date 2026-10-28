@@ -5,6 +5,8 @@
  * differs from the previous one (the clock itself is ignored). Operations
  * "Recently modified" reads `taskModifiedMs`. Rows that never received a stamp
  * fall back to `createdAt`, then a completion stamp, then a note's `editedAt`.
+ * A Date that is not a real time is ignored by the clock and does not throw
+ * while the row is fingerprinted.
  */
 import type { Task } from "@/lib/types"
 
@@ -22,7 +24,12 @@ function dateMs(value: unknown): number | null {
 }
 
 function stable(value: unknown): string {
-  if (value instanceof Date) return JSON.stringify(value.toISOString())
+  if (value instanceof Date) {
+    const t = value.getTime()
+    // `toISOString` throws RangeError on an Invalid Date (`new Date(undefined)`).
+    if (Number.isNaN(t)) return "null"
+    return JSON.stringify(value.toISOString())
+  }
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`
   if (value && typeof value === "object") {
     const obj = value as Record<string, unknown>

@@ -25,6 +25,8 @@ import { KeycapClose } from "@/components/keycap-close"
 import { CyclePhaseConcealed, cycleDetailsConcealed } from "./time/cycle-phase-concealed"
 import "./analytics-chrome.css"
 import "./analytics-atlas.css"
+import { analyticsTypeFaces } from "@/lib/fonts/analytics-type"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 export function EnhancedAnalytics() {
   const [analyticsTab, setAnalyticsTab] = usePersistedTab(APP_NAV_KEYS.analyticsTab, ANALYTICS_TABS, "habits")
@@ -37,10 +39,11 @@ export function EnhancedAnalytics() {
   const concealCycle =
     analyticsTab === "cycle-phase" && cycleDetailsConcealed(enableCycleTracking, cycleDetailsOpen)
   const View = ANALYTICS_VIEWS[analyticsTab]
+  useStampFontVariables(analyticsTypeFaces)
 
   return (
     <TooltipProvider delayDuration={250}>
-    <div className="fm98 an95" data-ui-name="Data" data-ui-docs="components/Analytics/README.md">
+    <div className={`fm98 an95 ${analyticsTypeFaces}`} data-ui-name="Data" data-ui-docs="components/Analytics/README.md">
       <div className="fm-window">
         <div className="fm-title-bar">
           <div className="fm-title-bar-text">

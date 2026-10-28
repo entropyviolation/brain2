@@ -577,6 +577,7 @@
 .mod95-ws .mod-ws-viewbody:has(.itinerary-doc-root),
 .mod95-ws .mod-ws-viewbody:has(.film-dna),
 .mod95-ws .mod-ws-viewbody:has(.tidy),
+.mod95-ws .mod-ws-viewbody:has(.sweep),
 .mod95-ws .mod-ws-viewbody:has(.gradsearch-host) {
   padding: 0;
   background: transparent;
@@ -639,5 +640,75 @@
     padding: 0;
     background: #fff;
     box-shadow: none;
+  }
+}
+
+/* Phone. Desktop catalog and workspace chrome stay as written above. */
+@media (max-width: 767px) {
+  .mod95,
+  .mod95-ws,
+  .mod95-ws .mod-ws-window,
+  .mod95-ws .mod-ws-client,
+  .mod95-ws .mod-ws-viewbody,
+  .gradsearch-host {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .mod95-ws,
+  .mod95-ws .mod-ws-window {
+    min-height: 0;
+  }
+
+  .mod95-ws .mod-ws-client,
+  .mod95-ws .mod-ws-viewbody,
+  .gradsearch-host {
+    overflow-x: auto;
+  }
+
+  .mod95 .mod-desk-head {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .mod95 .mod-build,
+  .mod95-ws .mod-ws-tool,
+  .mod95-ws .mod-caption-btn {
+    min-height: 44px;
+  }
+
+  body.win95-app .mod95 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .mod95-ws :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px !important;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .mod95-dialog {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.win95-app .mod95-dialog :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) {
+    font-size: 16px !important;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .mod95-dialog button {
+    min-height: 44px;
   }
 }

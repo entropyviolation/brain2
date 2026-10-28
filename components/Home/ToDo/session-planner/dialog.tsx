@@ -34,6 +34,8 @@
 
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { dashSegmentFaces } from "@/lib/fonts/dash-segment-faces"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 import { KeycapClose } from "@/components/keycap-close"
 import type { Task } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
@@ -76,6 +78,7 @@ export function SessionPlanner({
   const [doneId, setDoneId] = useState<string | null>(null)
   const [asking, setAsking] = useState(false)
   const [parkNote, setParkNote] = useState("")
+  useStampFontVariables(dashSegmentFaces)
 
   // Opening shows the live session, else the focused one, else a new draft
   // seeded with lines kept from last time. Only on open: a session saved while
@@ -142,7 +145,7 @@ export function SessionPlanner({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && requestClose()}>
       <DialogContent
-        className="todo95-dialog todo-session"
+        className={`todo95-dialog todo-session ${dashSegmentFaces}`}
         hideClose
         // The focus bar (pen clock) stays usable over the popup; a click on it is not a click outside.
         onInteractOutside={(e) => {

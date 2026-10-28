@@ -95,7 +95,7 @@ import { advanceMenu, menuClaims, menuPeriodFromText, openMenu } from "./apply-m
 import { applyPin } from "./apply-pin"
 import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
-import { applyJournalText, applyMedia } from "./apply-media"
+import { applyJournalText, applyMedia, MEDIA_QUESTION, releaseMediaHold, resolveMediaChoice } from "./apply-media"
 import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
 import { applyNfcScan } from "./apply-nfc"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
@@ -242,6 +242,10 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
     return finishIngest(message, advanceRitual(pending, raw, when))
   }
 
+  if (pending?.kind === "media" && !message.attachments?.length) {
+    return finishIngest(message, await resolveMediaChoice(pending, String(message.text ?? ""), when))
+  }
+
   if (message.attachments?.length) {
     const onlyVoice = message.attachments.every((a) => a.kind === "voice" || a.kind === "audio")
     if (onlyVoice) {
@@ -253,6 +257,7 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
         summary: "Voice note (no ritual)",
       })
     }
+    if (pending?.kind === "media") await releaseMediaHold(pending)
     const result = await applyMedia(message, when)
     return finishIngest(message, result)
   }
@@ -446,12 +451,15 @@ function alsoFileInInbox(message: IncomingMessage, text: string, primary: ApplyR
 function applyNamedText(message: IncomingMessage, now: Date, text: string): ApplyResult {
   const store = useIngestStore.getState()
   const { source } = message
+  const pending = store.getPending(source.channel, source.chatId)
+  if (pending?.kind === "media" && !message.attachments?.length) {
+    return { status: "needs_clarify", kind: "unknown", reply: MEDIA_QUESTION, pending }
+  }
   // A message that starts with a link is a saved link, ahead of clarify answers and pin replies.
   if (!message.attachments?.length) {
     const link = applyLink(text, { now, origin: telegramCaptureOrigin(message, text) })
     if (link) return link
   }
-  const pending = store.getPending(source.channel, source.chatId)
   if (pending && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
@@ -770,7 +778,7 @@ function resolveClarify(pending: PendingClarify, text: string, now: Date): Apply
 
   if (lower === "new" || lower === "create") {
     if (!pending.createName || !pending.scopeId) {
-      return { status: "error", kind: pending.kind, reply: "Nothing to create." }
+      return { status: "error", kind: pending.kind === "media" ? "unknown" : pending.kind, reply: "Nothing to create." }
     }
     return createAndApplyPen(pending.kind, pending.scopeId, pending.createName, pending.remainder ?? "", now)
   }

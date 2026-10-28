@@ -10,11 +10,13 @@ is the Visual dashboard redesign doc (`docs/WIDGETS_REDESIGN.md` once committed)
 
 ## Files
 
+_Last mapped: 2026-10-27_
+
 | File | Purpose |
 |------|---------|
 | `dash-primitives.tsx` | The parts, with no data: `SegDigits` (seven-segment digits with unlit ghost segments, `:`, `.`, `/`), `DashReading` (digits as segments, units as small printed legends), `ArcGauge` (arc of separate blocks, `marker` lights one block for a position), `BarMeter`, `StairMeter` (Prius fuel stair), `DashSelector` (P R N D column, live choice boxed), `DashLamp`, `DashWord` (DotGothic16 LCD words), `DashPicto` (16px line pictograms), `DashPet`, `DashMoon`, `DashTrace`. |
-| `dash-faces.tsx` | One face per kind, exported as `DASH_FACES` and registered with `registerDashFaces` (`components/Home/widgets/dash-face-registry.ts`) when the module loads; `app/layout.tsx` imports it for that side effect. Sizes come from `lib/widgets/kinds.ts`. A face reads the same stores and lib helpers as the Milled tile, so both styles show the same number. A face has no keys and opens nothing; the cell around it is the button and the detail is the tile's own dialog. |
-| `dash.css` | Every rule is scoped to `[data-style="dash"]` (the dashboard root and the detail dialog) or `.dash-sample` (gallery samples). Panel, pods, faces, edit mode, detail popup, gear, settings view, first-run guide. Imported in `app/layout.tsx` after `../visual-dashboard.css`. Scoped rules use `:is(body, body.win95-app .home95)` so they out-rank the Milled skin without `!important`. The face button (`.vd-face`) is also left out of the global key lip in `app/win95.css`: that lip's `:not()` list had grown specific enough to beat `all: unset` and lay a glass wash on the cluster. The detail hood is set through `--fascia-dialog-face` and `--fascia-dialog-ring`, the tokens the house dialog rule in `app/win95.css` paints from. |
+| `dash-faces.tsx` | One face per kind, exported as `DASH_FACES` and registered with `registerDashFaces` (`components/Home/widgets/dash-face-registry.ts`) when the module loads. `home-dashboard.tsx` imports it for that side effect, so the registry is filled before the dashboard paints. Sizes come from `lib/widgets/kinds.ts`. A face reads the same stores and lib helpers as the Milled tile, so both styles show the same number. A face has no keys and opens nothing; the cell around it is the button and the detail is the tile's own dialog. |
+| `dash.css` | Every rule is scoped to `[data-style="dash"]` (the dashboard root and the detail dialog) or `.dash-sample` (gallery samples). Panel, pods, faces, edit mode, detail popup, gear, settings view, first-run guide. Imported in `app/layout.tsx` after `../visual-dashboard.css`. Scoped rules use `:is(body, body.win95-app .home95)` so they out-rank the Milled skin without `!important`. The face button (`.vd-face`) is also left out of the global key lip in `app/win95.css`: that lip's `:not()` list had grown specific enough to beat `all: unset` and lay a glass wash on the cluster. The detail hood is set through `--fascia-dialog-face` and `--fascia-dialog-ring`, the tokens the house dialog rule in `app/win95.css` paints from. _Last mapped: 2026-10-28._ Under `max-width: 767px` the panel is four fluid columns so a wide face stays inside the screen. From 768px up the cells stay 88px. |
 | `../visual-dashboard.css` | The new chrome in Milled: `.vd-cell.is-auto` is `display: contents` (today's footprint), a picked size makes the tile fill its cell (one-row sizes drop the foot), the edit banner, grip, resize corner, drop marks, the gear as a close-key twin, the settings panel, lamp chips, and the guide. |
 | `dash-faces.test.tsx` | Every kind renders every size `kinds.ts` lists, with no keys and no foot at `1x1`. Each setting changes the rendered face. |
 
@@ -59,7 +61,7 @@ line. Saved `amber` reads as violet.
 | `paint` (Plan and lived) | `readout` word, plan, lived | The boxed Short Close Over, or minutes. |
 | `tracking` (Tracking now) | `lane` activity, location, mood, company | The lane on the glass; the others on the foot. `update` has no Dash effect. |
 | `solar` (Solar remainder) | `place`, `target` auto, sunset, sunrise | Time to the chosen event; `2x1` adds a sunrise-to-sunset arc with the sun's block lit. |
-| `budget` | — | _Last mapped: 2026-10-21._ The viewed month's net as a signed short amount (`short` from `home-budget-tile.tsx`); foot shows the maybes, or earned and spent. |
+| `budget` | — | _Last mapped: 2026-10-28._ The **Money** face. The viewed month's net as a signed short amount (`short` from `home-budget-tile.tsx`); foot shows the maybes, or earned and spent. Kind id stays `budget`. The detail is the money book. |
 
 ## Widget gallery and date plate
 

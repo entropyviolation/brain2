@@ -41,7 +41,7 @@ rewrite are already in the tree and unwired: `components/ui/address-suggest-inpu
    few lines. Future steps read handoffs, not your diff.
 4. Run the step's checks before marking it Done. Never mark a step Done with
    a red test.
-5. Update the room README the step names (CLAUDE.md rule: `_Last mapped_`
+5. Update the room README the step names (`AGENTS.md` rule: `_Last mapped_`
    line, house voice). Phase 9 is the final sweep, not the only one.
 
 Checks used everywhere:

@@ -250,7 +250,8 @@ because correcting it is cheap and nothing pretends to be observed.
 > header explaining its purpose and the spec section(s) it implements, and every
 > major folder has a `README.md`. Start with this file, then `docs/SPEC_MAPPING.md`,
 > then the folder README nearest the code you're reading. For look and feel,
-> [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md) — Lists is the gold standard.
+> [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md) — Lists is the desktop gold standard.
+> The iOS / mobile app follows [`docs/MOBILE_STYLE.md`](docs/MOBILE_STYLE.md) and does not follow the desktop style.
 > [The screen stays pleasing](docs/DESIGN_STYLE.md#the-screen-stays-pleasing) wins when a local note would make the screen ugly.
 > Next work (screens first, mechanics kept): [`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md).
 > How map, loop, and meaning join: [`docs/MAP_LOOP_MEANING.md`](docs/MAP_LOOP_MEANING.md).
@@ -272,8 +273,9 @@ because correcting it is cheap and nothing pretends to be observed.
   loaded from `app/layout.tsx` together with module skins so Next Fast Refresh
   cannot drop them. Lists adds its own Win98 file-manager layer
   (`components/Lists/filemanager98.css`). That pairing (honest beveled furniture
-  + photographed orbs on velvet) is the UI gold standard — see
-  [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md).
+  + photographed orbs on velvet) is the desktop UI gold standard — see
+  [`docs/DESIGN_STYLE.md`](docs/DESIGN_STYLE.md). The phone follows
+  [`docs/MOBILE_STYLE.md`](docs/MOBILE_STYLE.md).
 - **Zustand** stores with `persist` middleware for state, backed by the browser's
   **localStorage**. That local store is the offline-first source of truth.
   The sync that exists is the manual phone hub
@@ -532,6 +534,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `lib/services/` | Domain services (completion, review, scheduling, item-mutation / implied actions) | — |
 | `electron/` | Desktop shell: main process + preload | [`electron/README.md`](electron/README.md) |
 | `docs/` | Spec mapping, **plan of action**, analytics vision (including the language-analysis intention), the map-loop-meaning join, map-and-territory philosophy, meaning-layer plan, steersman plan, module-platform north star, design style, design refs, modularity assessment, screen write-ups | [`docs/README.md`](docs/README.md) · [`docs/PLAN_OF_ACTION.md`](docs/PLAN_OF_ACTION.md) · [`docs/analytics-vision/06-language.md`](docs/analytics-vision/06-language.md) · [`docs/MAP_LOOP_MEANING.md`](docs/MAP_LOOP_MEANING.md) · [`docs/ScienceandSanityBrain2.md`](docs/ScienceandSanityBrain2.md) · [`docs/JungBrain2.md`](docs/JungBrain2.md) · [`docs/cyberneticsbrain2.md`](docs/cyberneticsbrain2.md) · [`docs/DESIGN_REFS.md`](docs/DESIGN_REFS.md) |
+| `AGENTS.md`, `CLAUDE.md` | Coding-agent notes. `AGENTS.md` is the full note for agents other than Claude Code. `CLAUDE.md` is the short note Claude Code loads every session. It does not import the other file. | — |
 | `cosmeticsandperfume/` | Personal pantry and perfume kit: priced shopping list, sortable cart page, hair mist, rice shampoo bar, glitter mist, serum, dish brick, solid perfume, shimmer oil, perfume trials, perfume experiments, laundry scents, laundry detergent, fabric softener, and a safety note. Not part of the app. | [`cosmeticsandperfume/README.md`](cosmeticsandperfume/README.md) · [`cosmeticsandperfume/plan.md`](cosmeticsandperfume/plan.md) · [`cosmeticsandperfume/cart.html`](cosmeticsandperfume/cart.html) |
 | `docs/screenshots/` | PNG captures + per-screen `.txt` write-ups (status table, not a fixed count) | [`docs/screenshots/README.md`](docs/screenshots/README.md) |
 | `public/` | Static assets: orb PNGs (`orbs-removebackground/`), folder photos (`folders-removebackground/`), fonts, icons, link connectors | — |

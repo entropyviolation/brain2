@@ -57,7 +57,7 @@ edges with reasons, not because anything writes itself.
   6.2–6.5 and 8.1 first. Phase L1 here can start before them. Every later
   phase draws on their furniture.
 - Tick the board, add a handoff line, and update
-  `components/ItemDetail/README.md` and `lib/README.md` as you go (CLAUDE.md).
+  `components/ItemDetail/README.md` and `lib/README.md` as you go (`AGENTS.md`).
 
 ---
 

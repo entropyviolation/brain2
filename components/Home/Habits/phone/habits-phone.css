@@ -571,3 +571,37 @@
     transition: none;
   }
 }
+
+/* The week sheet and the heatmap scroll in this page. The document stays the screen width. */
+.hab-phone {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.hab-phone-stage,
+.hab-phone-columns,
+.hab-phone-heatmap,
+.hab-phone-swipe,
+.hab-phone-sheet-scroll {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hab-phone-columns,
+.hab-phone-heatmap {
+  overflow-x: auto;
+}
+
+.hab-phone-sheet {
+  max-height: min(92dvh, 100%);
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.hab-phone :is(input, select, textarea),
+.hab-phone-sheet :is(input, select, textarea, .habit95-input, .habit95-select, .native-select) {
+  font-size: 16px;
+}

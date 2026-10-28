@@ -22,4 +22,4 @@ One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). 
 - Reads are read-only. Never write to `chat.db`, `CallHistory.storedata`, HealthKit, or Notes.
 - Nothing readable leaves your devices. Anything sent through Oracle is sealed to the public key first (`scripts/sealed-box.mjs`), the same as BIM texts ([`../ORACLE_CAPTURE_BOX.md`](../ORACLE_CAPTURE_BOX.md)).
 - Tests land with the code (vitest, fixtures under `tests/fixtures/phone-sync/`). Fixtures are made up; never commit real messages.
-- Update the folder README you changed, per `CLAUDE.md`.
+- Update the folder README you changed, per `AGENTS.md` (Claude Code: the short form in `CLAUDE.md`).

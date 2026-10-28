@@ -594,7 +594,7 @@ This split does not move a feature between missing and implemented.
 ### Do not merge the three editors
 
 `components/Home/ToDo/README.md` section “Three ways to edit a task stay
-separate”, and `CLAUDE.md`, are hard constraints.
+separate”, and `.cursor/rules/three-task-editors.mdc`, are hard constraints.
 
 - Item detail → Subtasks is the whole record.
 - The To do drawer (`TodoTable` / the lid) is quick edits for this period.

@@ -44,8 +44,20 @@ export interface PenColorSession {
   pauseSpans?: WorkPauseSpan[]
   /** The task on this clock (`lib/task-clock.ts`). Omitted for a plain pen clock. */
   taskId?: string
-  /** The step of that task being worked right now. */
+  /** The step of that task being worked right now. Omitted when the sitting is the task itself. */
   stepId?: string
+  /**
+   * Step timers beside this sitting. Each one starts when that step's play is
+   * pressed and ends on its own stop. The parent `startedAt` keeps running.
+   * Omitted when no step has its own timer.
+   */
+  subclocks?: PenSubclock[]
+}
+
+/** A step timer inside a task sitting. `startedAt` is the second play was pressed. */
+export interface PenSubclock {
+  stepId: string
+  startedAt: string
 }
 
 interface PenColorSessionState {

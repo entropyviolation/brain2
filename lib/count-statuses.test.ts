@@ -6,6 +6,7 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   COUNT_STATUSES_STORAGE_KEY,
   recordCountForKeyword,
+  migrateCountStatuses,
   useCountStatusesStore,
 } from "./count-statuses"
 
@@ -48,7 +49,7 @@ describe("count statuses", () => {
   it("leaves a phrase with no bound count untouched", () => {
     useLogKeywordsStore.getState().addKeyword("went outside")
     applyDiscreteLog("went outside", SENT)
-    expect(useCountStatusesStore.getState().counts).toEqual([])
+    expect(useCountStatusesStore.getState().counts.map((row) => row.name)).toEqual(["Shower"])
     expect(recordCountForKeyword("went outside", { date: "2026-10-06", startMin: 12 * 60 + 4 })).toBe(false)
   })
 
@@ -68,7 +69,96 @@ describe("count statuses", () => {
     })
 
     useCountStatusesStore.getState().removeCount(id!)
-    expect(useCountStatusesStore.getState().counts).toEqual([])
+    expect(useCountStatusesStore.getState().counts.map((row) => row.name)).toEqual(["Shower"])
     expect(useTimeTrackingStore.getState().entries.some((entry) => entry.id === painted?.id)).toBe(true)
+  })
+
+  it("seeds Shower once and does not recreate it after delete", () => {
+    const shower = useCountStatusesStore.getState().counts.find((row) => row.id === "count-shower")
+    expect(shower).toMatchObject({ name: "Shower", keyword: "shower" })
+    expect(shower?.intakeClass).toBeUndefined()
+    useCountStatusesStore.getState().removeCount("count-shower")
+    expect(useCountStatusesStore.getState().builtins.shower).toBe("removed")
+    const migrated = migrateCountStatuses(
+      { counts: [], builtins: { shower: "removed", showerBackfill: "done" } },
+      2,
+    )
+    expect(migrated.counts.some((row) => row.id === "count-shower")).toBe(false)
+    expect(migrated.builtins.shower).toBe("removed")
+  })
+
+  it("backfills a shower instant once per date and minute", () => {
+    useTimeTrackingStore.setState({
+      entries: [
+        {
+          id: "a",
+          date: "2026-10-01",
+          scopeId: "activity",
+          penId: "p",
+          startMin: 480,
+          endMin: 480,
+          kind: "instant",
+          title: "Shower",
+          eventKind: "shower",
+        },
+        {
+          id: "b",
+          date: "2026-10-01",
+          scopeId: "activity",
+          penId: "p",
+          startMin: 480,
+          endMin: 490,
+          kind: "interval",
+          title: "shower",
+        },
+        {
+          id: "c",
+          date: "2026-10-02",
+          scopeId: "activity",
+          penId: "p",
+          startMin: 500,
+          endMin: 500,
+          kind: "instant",
+          title: "shower time",
+          eventKind: "shower",
+        },
+        {
+          id: "d",
+          date: "2026-10-03",
+          scopeId: "location",
+          penId: "p",
+          startMin: 600,
+          endMin: 600,
+          kind: "instant",
+          title: "shower",
+          logSource: "nfc",
+          generatedBy: { kind: "text", id: "nfc:shower:x" },
+        },
+      ],
+    })
+    const first = migrateCountStatuses({ counts: [] }, 1)
+    const ticks = first.counts.find((row) => row.id === "count-shower")?.ticks ?? []
+    expect(ticks.map((tick) => `${tick.date}|${tick.startMin}`).sort()).toEqual([
+      "2026-10-01|480",
+      "2026-10-02|500",
+      "2026-10-03|600",
+    ])
+    const again = migrateCountStatuses(first, 2)
+    expect(again.counts.find((row) => row.id === "count-shower")?.ticks).toHaveLength(3)
+  })
+
+  it("ticks once for log: shower and once for a 10m shower", () => {
+    const point = applyDiscreteLog("shower", SENT)
+    expect(point.status).toBe("ok")
+    const ranged = applyDiscreteLog("shower 10m", SENT)
+    expect(ranged.status).toBe("ok")
+    const ticks = useCountStatusesStore.getState().counts.find((row) => row.id === "count-shower")?.ticks ?? []
+    expect(ticks).toHaveLength(2)
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "shower" && entry.kind === "instant")).toBe(
+      true,
+    )
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "shower" && entry.kind !== "instant")).toBe(
+      true,
+    )
   })
 })

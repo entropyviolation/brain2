@@ -158,7 +158,7 @@ if (strictPort) {
   }
 }
 const dev = process.env.NODE_ENV !== "production"
-const app = next({ dev, hostname, port })
+const app = next({ dev, hostname, port, ...(dev ? { turbopack: true } : {}) })
 const handle = app.getRequestHandler()
 
 await app.prepare()

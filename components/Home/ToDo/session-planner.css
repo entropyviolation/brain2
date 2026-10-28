@@ -2561,3 +2561,58 @@ body.win95-app .todo-session .ses-tube.is-typing input.ses-tube-input:not([type=
 .ses-step .ses-key.is-small {
   margin-top: -1px;
 }
+
+/* Phone sheet. The desktop session window above is unchanged. */
+@media (max-width: 767px) {
+  .todo95-dialog.todo-session {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    display: flex !important;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .todo95-dialog.todo-session .todo-dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow: auto;
+  }
+
+  .todo-session-panes,
+  .todo-session-head,
+  .todo-session-pick-bar {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .todo-session-title input,
+  .todo-session-futurenote-input,
+  .todo-session-pick-bar input[type="search"] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .todo95-dialog.todo-session :is(input, select, textarea) {
+    font-size: 16px;
+  }
+
+  .todo95-dialog.todo-session input[type="checkbox"],
+  .todo95-dialog.todo-session input[type="radio"] {
+    width: 16px;
+    min-height: 16px;
+  }
+}

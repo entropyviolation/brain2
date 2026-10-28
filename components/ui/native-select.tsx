@@ -94,7 +94,7 @@ export function NativeSelect({ value, defaultValue, onChange, children, classNam
     >
       {/* The bare trigger, not `SelectTrigger`: no shadcn field classes, so the
           house rules that style `select` (twinned as `.native-select`) apply. */}
-      <SelectPrimitive.Trigger className={cn("native-select", className)} style={style} {...rest}>
+      <SelectPrimitive.Trigger className={cn("native-select ui-touch-field", className)} style={style} {...rest}>
         <span className="native-select-value">
           <SelectValue />
         </span>

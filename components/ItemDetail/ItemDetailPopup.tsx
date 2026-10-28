@@ -52,6 +52,8 @@ import { PopupSubtasksTab } from "@/components/ItemDetail/popup/PopupSubtasksTab
 import { PopupTabKeys } from "@/components/ItemDetail/popup/PopupTabKeys"
 import { PopupTimeTab } from "@/components/ItemDetail/popup/PopupTimeTab"
 import "@/components/ItemDetail/chrome/item-detail-chrome.css"
+import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 interface TaskDetailPopupProps {
   taskId: string | null
@@ -431,6 +433,7 @@ export function TaskDetailPopup({
     [touchDraft, setTask],
   )
   const cardHosts = useTaskCardStore((s) => s.hosts)
+  useStampFontVariables(dmMonoFace)
 
   if (!task) {
     return null
@@ -473,7 +476,7 @@ export function TaskDetailPopup({
       >
         <DialogContent
           ref={detailRef}
-          className={`id95-dialog id95 sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col${stackAbove ? " z-[80]" : ""}`}
+          className={`id95-dialog id95 sm:max-w-5xl max-h-[90vh] overflow-hidden !flex flex-col${stackAbove ? " z-[80]" : ""} ${dmMonoFace}`}
           overlayClassName={stackAbove ? "z-[80]" : undefined}
           container={container}
           data-ui-name="Item detail"

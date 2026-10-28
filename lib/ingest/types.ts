@@ -144,6 +144,7 @@ export type PendingClarifyKind =
   | "ritual"
   | "duplicate"
   | "menu"
+  | "media"
 
 /** `today menu` / `week menu` / `month menu` / `season menu` (season is the quarter). */
 export type MenuPeriod = "day" | "week" | "month" | "quarter"
@@ -205,6 +206,15 @@ export interface PendingClarify {
   ritualCardMessageId?: number
   /** Open `today menu` (and week / month / season). Present when `kind` is `menu`. */
   menu?: MenuState
+  /**
+   * Held photo for "Journal, outfit, or log?". Attachment ids only.
+   * The JPEG stays in IndexedDB. Never a data URL.
+   */
+  mediaHold?: {
+    attachmentIds: string[]
+    sentAt: string
+    caption: string
+  }
   /**
    * Open lines the phone just skipped because an identical item is already
    * on the list. `see` peeks, `again` adds another, `dismiss` leaves them.
