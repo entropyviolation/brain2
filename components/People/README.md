@@ -1,6 +1,8 @@
 # `components/People/`
 
-People I Know, shown in more than one room.
+_Last mapped: 2026-10-28_
+
+People I Know, shown in more than one room. On a phone (`max-width: 767px`) person fields and pipeline selects are 16px so iOS does not zoom the page. Desktop type is unchanged.
 
 > **Planned.** Person detail redesign and rich Links:
 > [`docs/PERSON_DETAIL_REDESIGN.md`](../../docs/PERSON_DETAIL_REDESIGN.md).

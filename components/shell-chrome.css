@@ -18,13 +18,15 @@
  * row. Narrower than the group, whole clusters wrap onto the full shell;
  * a cluster wider than the shell scrolls inside its bay. Keys do not
  * flex-shrink. Counts stay on the keys. A viewport 520px or narrower
- * (the block at the bottom of this file) uses a title bar, a scrolling
- * Go strip, and two short tool rows. A wider window keeps this mill.
+ * (the block at the bottom of this file) leaves this mill: a phone bar,
+ * the Go switcher, and a sheet for Friend, Rituals, System, and Capture.
+ * A wider window keeps this mill.
  *
  * The now well (`header-now-box.tsx`) lives in Capture, as a peer of the
  * Capture keys; absent when idle. Sticky pin + shelf so the desk scrolls
  * under it. Do not restyle module interiors from here. The phone block
- * at the bottom of this file does restyle the Go strip, and only there.
+ * at the bottom of this file restyles the bar and the Go strip. It does
+ * not change this mill above 520px.
  */
 
 .b2-shell {
@@ -1488,11 +1490,22 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   font-size: 11px;
 }
 
+/* Phone chrome. Hidden on the mill. `display: contents` keeps Nav in the
+   desktop flex line; the menu and the sheet close key paint nothing there. */
+.b2-shell-phone-tools {
+  display: contents;
+}
+
+.b2-shell-menu,
+.b2-shell-scrim,
+.b2-shell-sheet-close {
+  display: none;
+}
+
 /* Phone shell. Keyed off the viewport so this can restyle `.b2-shell`
    itself (a container query cannot). A wider window keeps the mill above.
-   Same keys, three bands: a title bar clear of the status bar, a sideways
-   Go strip with the whole word on each key, then Capture + Rituals and
-   Friend + System on short rows. */
+   One bar clear of the status bar, the Go switcher, and a sheet for the
+   rest. A live now well stays on the bar. Phone rules: docs/MOBILE_STYLE.md. */
 @media (max-width: 520px) {
   .b2-shell {
     display: grid;
@@ -1503,54 +1516,104 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
       "stage stage"
       "shelf shelf";
     gap: 0;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
     padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
-    background-color: var(--b2-shell-face);
+    background-color: #0e1116;
     background-image: none;
-    box-shadow: 0 1px 0 var(--b2-shell-frame);
+    box-shadow: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .b2-shell[data-tools="open"] {
+    overflow: visible;
   }
 
   .b2-shell-caption {
     grid-area: caption;
     box-sizing: border-box;
-    min-height: calc(48px + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 4px 0 12px;
+    min-width: 0;
+    min-height: calc(2.75rem + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 0.25rem 0 0.75rem;
+    background: transparent;
+    background-image: none;
+  }
+
+  .b2-shell-power,
+  .b2-shell-caption-mill,
+  .b2-shell-shelf {
+    display: none;
   }
 
   .b2-shell-caption .brain2-mark,
   html[data-pcb-ink="dark"] .b2-shell-caption .brain2-mark,
   html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
-    font-size: 16px;
-    letter-spacing: 0.18em;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #f4f6f8;
+    text-shadow: none;
   }
 
   .b2-shell-body {
     display: contents;
   }
 
-  .b2-shell-nav {
+  .b2-shell-phone-tools {
     grid-area: nav;
-    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) 0.25rem 0 0;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-caption,
+  .b2-shell[data-tools="open"] .b2-shell-phone-tools,
+  .b2-shell[data-tools="open"] .b2-shell-tabs {
+    position: relative;
+    z-index: 46;
+  }
+
+  .b2-shell-nav {
+    grid-area: auto;
+    align-self: center;
     display: flex;
     align-items: center;
     box-sizing: border-box;
     width: auto;
-    max-width: none;
+    min-width: 0;
+    max-width: 100%;
     margin: 0;
-    padding: env(safe-area-inset-top, 0px) 10px 0 0;
+    padding: 0;
     border-radius: 0;
-    background: var(--b2-shell-blue-light);
+    background: transparent;
     box-shadow: none;
   }
 
   .b2-shell-nav .b2-shell-keys {
-    gap: 6px;
+    gap: 0;
+    min-height: 0;
+    width: auto;
+    max-width: 100%;
+    padding: 0;
+    overflow: visible;
   }
 
   .b2-shell-nav > legend,
   .b2-shell-tabs > legend,
-  .b2-shell-rituals > legend,
-  .b2-shell-system > legend,
-  .b2-shell-capture > legend {
+  .b2-shell-now > legend,
+  .b2-shell:not([data-tools="open"]) .b2-shell-capture > legend {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -1587,7 +1650,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     gap: 6px;
     padding: 8px 10px;
     overflow-x: auto;
-    mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+    mask-image: none;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -1601,10 +1664,11 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] {
     flex: 0 0 auto;
     width: auto;
-    min-width: max-content;
-    max-width: none;
-    height: 48px;
-    padding: 6px 12px 5px;
+    min-width: 2.75rem;
+    max-width: 100%;
+    height: auto;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.75rem;
   }
 
   body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
@@ -1612,9 +1676,9 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     overflow: visible;
     text-overflow: unset;
     white-space: nowrap;
-    font-size: 12px;
-    line-height: 1.1;
-    letter-spacing: 0.04em;
+    font-size: 1rem;
+    line-height: 1.2;
+    letter-spacing: 0;
   }
 
   body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] > svg {
@@ -1623,8 +1687,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   /* Stage is a real box again (desktop makes it display:contents).
-     Keys stay content-wide: capture and Rituals share the first row,
-     friend sits beside the system icons on the second. */
+     Closed, only a live clock shows. Open, this box is the sheet. */
   .b2-shell-stage {
     grid-area: stage;
     display: flex;
@@ -1659,10 +1722,10 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     flex-wrap: nowrap;
     align-items: center;
     gap: 6px;
-    width: auto;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .b2-shell-rituals {
@@ -1730,8 +1793,8 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   .b2-shell-brand .baby-nest-crt {
-    width: 40px;
-    height: 40px;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 3px;
   }
 
@@ -1771,32 +1834,32 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   body.win95-app .b2-shell-rail button.b2-shell-icon,
   .b2-shell-rail .b2-shell-keys > button.b2-shell-icon,
   .b2-shell-rail .b2-shell-keys > *:has(button.b2-shell-icon) {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+    height: auto;
+    min-height: 2.75rem;
   }
 
   body.win95-app .b2-shell-nav button {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    max-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
   }
 
   body.win95-app .b2-shell-capture .b2-shell-keys > button,
   body.win95-app .b2-shell-rituals .b2-shell-keys > button {
-    flex: 0 0 auto;
-    width: max-content;
-    min-width: max-content;
-    max-width: none;
-    min-height: 40px;
-    height: 40px;
-    padding-inline: 8px;
-    font-size: 12px;
-    white-space: nowrap;
+    flex: 1 1 6rem;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+    min-height: 2.75rem;
+    height: auto;
+    padding-inline: 0.75rem;
+    font-size: 1rem;
+    white-space: normal;
   }
 
   /* The Rituals legend is hidden up here, so the word stays on the key. */
@@ -1815,5 +1878,484 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell-shelf {
     grid-area: shelf;
     margin: 0;
+  }
+
+  /* Closed: the tool rows leave. A live clock stays, and it cannot widen the page. */
+  .b2-shell:not([data-tools="open"]) .b2-shell-stage:not(:has(.b2-shell-now)):not(:has(.b2-now-session-chip)) {
+    display: none;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-stage {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    overflow: hidden;
+    background: #f4f6f8;
+    box-sizing: border-box;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-stage:not(:has(.b2-shell-now)):not(:has(.b2-now-session-chip)) {
+    display: none;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-brand,
+  .b2-shell:not([data-tools="open"]) .b2-shell-rituals,
+  .b2-shell:not([data-tools="open"]) .b2-shell-system,
+  .b2-shell:not([data-tools="open"]) .b2-shell-capture .b2-shell-keys,
+  .b2-shell:not([data-tools="open"]) .b2-shell-sheet-close {
+    display: none;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-capture,
+  .b2-shell:not([data-tools="open"]) .b2-shell-now,
+  .b2-shell:not([data-tools="open"]) .b2-shell-now-body,
+  .b2-shell:not([data-tools="open"]) .b2-shell-now-row {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-now-body {
+    min-height: 0;
+  }
+
+  .b2-shell:not([data-tools="open"]) .b2-shell-now-row {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .b2-shell .b2-shell-now-name,
+  .b2-shell .b2-shell-now-row > button.b2-shell-now-name {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  body.win95-app .b2-shell .b2-shell-now button.dvd-key:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+  body.win95-app .b2-shell .b2-shell-now-row > button.b2-shell-now-icon {
+    flex: 0 0 2.75rem;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    max-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .b2-shell .b2-now-session-chip {
+    min-height: 2.75rem;
+    max-width: 100%;
+    padding-inline: 0.75rem;
+  }
+
+  /* Menu and history. 44px, on the dark bar, not the mill cap. */
+  body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key),
+  body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 2.75rem;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    max-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    color: #f4f6f8;
+    transform: none;
+  }
+
+  body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible,
+  body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus:not(:disabled),
+  body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible:not(:disabled) {
+    background: transparent;
+    background-image: none;
+    color: #f4f6f8;
+    border-color: transparent;
+    text-shadow: none;
+    box-shadow: none;
+    transform: none;
+    outline: 2px solid #9ad7ff;
+    outline-offset: 2px;
+  }
+
+  body.win95-app .b2-shell .b2-shell-nav button:focus:not(:disabled) svg,
+  body.win95-app .b2-shell .b2-shell-nav button:focus-visible:not(:disabled) svg {
+    color: currentColor;
+    filter: none;
+  }
+
+  body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active,
+  body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+    transform: none;
+    background: rgba(255, 255, 255, 0.12);
+    background-image: none;
+    box-shadow: none;
+  }
+
+  body.win95-app .b2-shell .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):disabled,
+  body.win95-app .b2-shell .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key).is-dead {
+    color: rgba(244, 246, 248, 0.35);
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  body.win95-app .b2-shell .b2-shell-nav button svg {
+    display: block;
+    width: 1.35rem;
+    height: 1.35rem;
+    color: currentColor;
+  }
+
+  .b2-shell-menu-bars,
+  .b2-shell-menu-bars::before,
+  .b2-shell-menu-bars::after {
+    display: block;
+    width: 1.05rem;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+  }
+
+  .b2-shell-menu-bars {
+    position: relative;
+  }
+
+  .b2-shell-menu-bars::before,
+  .b2-shell-menu-bars::after {
+    content: "";
+    position: absolute;
+    left: 0;
+  }
+
+  .b2-shell-menu-bars::before {
+    top: -0.35rem;
+  }
+
+  .b2-shell-menu-bars::after {
+    top: 0.35rem;
+  }
+
+  .b2-shell-menu[aria-expanded="true"] .b2-shell-menu-bars {
+    background: transparent;
+  }
+
+  .b2-shell-menu[aria-expanded="true"] .b2-shell-menu-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+  }
+
+  .b2-shell-menu[aria-expanded="true"] .b2-shell-menu-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+  }
+
+  /* Section switcher. Scrolls inside the bar. The page does not grow. */
+  .b2-shell-group.b2-shell-tabs {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"][role="tablist"] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    gap: 0.25rem;
+    padding: 0 0.75rem 0.65rem;
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    border-radius: 0;
+    mask-image: none;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"],
+  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"],
+  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell [data-ui-name="App tabs"] [data-tab] {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: none;
+    height: auto;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.85rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    background-image: none;
+    color: #c8d0d8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.1;
+    text-shadow: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"],
+  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"],
+  html[data-boot-tab="home"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="home"],
+  html[data-boot-tab="categories"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="categories"],
+  html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="docs"],
+  html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="scheduler"],
+  html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="operations"],
+  html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="modules"],
+  html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="analytics"] {
+    background: #f4f6f8;
+    background-image: none;
+    color: #121417;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-shadow: none;
+    box-shadow: none;
+    transform: none;
+    outline: 0;
+  }
+
+  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab]::before,
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"]::before {
+    content: none;
+  }
+
+  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+
+  /* Sheet. Secondary destinations. Fluid, above the home indicator. */
+  body.win95-app .b2-shell[data-tools="open"] button.b2-shell-scrim:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(8, 10, 14, 0.48);
+    background-image: none;
+    box-shadow: none;
+    cursor: pointer;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-stage {
+    position: fixed;
+    z-index: 45;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(85dvh, 100%);
+    margin: 0;
+    padding: 0.85rem;
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(0.85rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(0.85rem + env(safe-area-inset-right, 0px));
+    overflow: auto;
+    box-sizing: border-box;
+    background: #f6f7f8;
+    color: #14171a;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] button.b2-shell-sheet-close:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    flex: 0 0 auto;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0 0.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    color: #3a4450;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-brand,
+  .b2-shell[data-tools="open"] .b2-shell-rituals,
+  .b2-shell[data-tools="open"] .b2-shell-system,
+  .b2-shell[data-tools="open"] .b2-shell-capture {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-brand > legend,
+  .b2-shell[data-tools="open"] .b2-shell-rituals > legend,
+  .b2-shell[data-tools="open"] .b2-shell-system > legend,
+  .b2-shell[data-tools="open"] .b2-shell-capture > legend {
+    position: static !important;
+    display: block;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 0 0.35rem !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.75rem !important;
+    font-weight: 650;
+    line-height: 1.2 !important;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #5e6770;
+    background: none;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-fold {
+    display: none !important;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-brand.is-folded .baby-nest-wordmark {
+    display: flex;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-brand .baby-nest,
+  .b2-shell[data-tools="open"] .b2-shell-brand .baby-nest-name,
+  .b2-shell[data-tools="open"] .b2-shell-brand .baby-nest-wordmark {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-keys {
+    flex-wrap: wrap;
+    overflow: visible;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    gap: 0.5rem;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold),
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-brand button.baby-nest-chat-hit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key),
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-brand button.baby-nest-gallery-hit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+    flex: 1 1 6rem;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+    height: auto;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid #d5d9de;
+    border-radius: 0.75rem;
+    background: #fff;
+    background-image: none;
+    box-shadow: none;
+    color: #14171a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.2;
+    white-space: normal;
+    text-shadow: none;
+    transform: none;
+    outline: none;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold)[aria-pressed="true"] {
+    transform: none;
+    background: #eef1f4;
+    background-image: none;
+    box-shadow: none;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-icon,
+  .b2-shell[data-tools="open"] .b2-shell-rail .b2-shell-keys > button.b2-shell-icon,
+  .b2-shell[data-tools="open"] .b2-shell-rail .b2-shell-keys > *:has(button.b2-shell-icon) {
+    flex: 1 1 2.75rem;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-capture .b2-shell-keys > button,
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rituals .b2-shell-keys > button,
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-system button.b2-code-docs-key {
+    flex: 1 1 6rem;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+    height: auto;
+    min-height: 2.75rem;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap) {
+    outline: none;
+    color: #14171a;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap)::before {
+    content: none;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) .b2-key-word {
+    display: inline;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-rituals .b2-shell-keys > button:has(.b2-shell-count) {
+    position: relative;
+    flex: 1 1 6rem;
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 100%;
+  }
+
+  .b2-shell[data-tools="open"] .b2-shell-capture .b2-shell-now {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 }

@@ -3,11 +3,14 @@
  *
  * Ordinary Items on Inventory / Pantry / Fridge — not a shadow module.
  * `inv oats` bumps a count; a receipt line that checks off grocery also bumps.
+ * The same bump writes a pantry lot on `brain2-kitchen`.
  */
 import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { isFolderAllItemsCategoryId } from "@/lib/folder-all-items"
 import { useTaskStore } from "@/lib/task-store"
 import type { List, Task } from "@/lib/types"
+import { matchCatalog } from "@/lib/kitchen-catalog"
+import { notePantryBuy, resolveKitchenFood, useKitchenStore } from "@/lib/kitchen-store"
 import { dumpReadCandidate } from "./apply-read"
 import { resolveName } from "./name-resolve"
 import type { ApplyResult } from "./types"
@@ -100,11 +103,37 @@ export function bumpInventory(
   const hit = resolveName(name, named)
   if (hit.status === "match") {
     const item = items.find((row) => row.id === hit.candidate.id)
-    if (item) return incrementQty(item, amount, now)
+    if (item) {
+      const row = incrementQty(item, amount, now)
+      notePantryBuy(name, amount, now)
+      return row
+    }
   }
   const task = buildInventoryItem(list.id, name, amount, now)
   useTaskStore.getState().addTask(task)
+  notePantryBuy(name, amount, now)
   return { id: task.id, name: itemTitleOrUntitled(task), count: amount, created: true }
+}
+
+/** Inventory list names that are not already a kitchen lot. */
+export function inventoryOffers(): { name: string; qty: number }[] {
+  const list = findInventoryList()
+  if (!list) return []
+  const kitchen = useKitchenStore.getState()
+  const stockIds = new Set(kitchen.stock.map((lot) => lot.foodId))
+  const have = new Set(
+    kitchen.stock.map((lot) => (resolveKitchenFood(lot.foodId, kitchen.foods)?.name || "").trim().toLowerCase()).filter(Boolean),
+  )
+  const out: { name: string; qty: number }[] = []
+  for (const item of useTaskStore.getState().tasks) {
+    if (!item.lists?.includes(list.id) || item.completed) continue
+    const name = itemTitleOrUntitled(item)
+    const catalog = matchCatalog(name)
+    if (!name.trim() || have.has(name.trim().toLowerCase()) || (catalog && stockIds.has(catalog.id))) continue
+    const qty = Number(item.attributes?.[INVENTORY_QTY_ATTR])
+    out.push({ name, qty: Number.isFinite(qty) && qty > 0 ? qty : 1 })
+  }
+  return out
 }
 
 function incrementQty(item: Task, amount: number, now: Date) {

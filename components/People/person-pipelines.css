@@ -72,6 +72,16 @@
   font-size: 13px;
 }
 
+@media (max-width: 767px) {
+  .person-pipelines select,
+  .person-pipelines input[type="text"],
+  .person-pipelines .native-select {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+  }
+}
+
 /* Swatch and label of a row with a pen open pen settings on double-click (3.5). */
 .person-pipelines-swatch[data-opens-pen],
 .person-pipelines-label[data-opens-pen] {

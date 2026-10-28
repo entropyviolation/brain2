@@ -39,6 +39,7 @@ export const RENDERED_MODULE_VIEW_KINDS = [
   "trip-map",
   "film-dna",
   "house-cleaning",
+  "sweep",
   "grad-search",
   "html",
   "package-app",

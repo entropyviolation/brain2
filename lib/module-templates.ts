@@ -14,7 +14,7 @@
  * Budget and Book Tasting read lists, attributes, views, and workflows from
  * `lib/packages/golden/budget.json` and `book-tasting.json`. Sample rows
  * (including Book Tasting PDF text) and `templateId` stay in the builders.
- * Itinerary, Tidy, Film DNA, GradSearch, and Blank stay written here.
+ * Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written here.
  */
 import type { AttributeDefinition, AttributeValue, FileValue, Task, List, WorkflowDefinition } from "@/lib/types"
 import type { DashboardCard, ModuleInstance, ModuleView, ModuleViewConfig, ModuleViewKind } from "@/lib/modules-store"
@@ -39,6 +39,7 @@ export type ModuleTemplateId =
   | "book-tasting"
   | "filmrecs"
   | "gradsearch"
+  | "sweep"
   | "blank"
 
 export interface ModuleTemplateMeta {
@@ -83,6 +84,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "GradSearch",
     description:
       "Graduate program explorer: search, filter, re-score, compare, favorite, hide, and verify every tracked program — the same explorer as the standalone GradSearch app, with its full catalog.",
+  },
+  {
+    id: "sweep",
+    name: "Sweep",
+    description:
+      "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac. The scan runs in the desktop app.",
   },
   {
     id: "blank",
@@ -707,6 +714,21 @@ function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
   return { lists: [films], seedTasks, module }
 }
 
+function buildSweep(uid: Uid): BuiltModuleTemplate {
+  const module: ModuleInstance = {
+    id: uid("module"),
+    type: "workspace",
+    kind: "workspace",
+    title: "Sweep",
+    description: "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac.",
+    templateId: "sweep",
+    icon: "brush",
+    config: {},
+    views: [view("sweep", "Sweep", {}, uid)],
+  }
+  return { lists: [], seedTasks: [], module }
+}
+
 function buildGradSearch(uid: Uid): BuiltModuleTemplate {
   const module: ModuleInstance = {
     id: uid("module"),
@@ -758,6 +780,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildFilmRecs(uid)
     case "gradsearch":
       return buildGradSearch(uid)
+    case "sweep":
+      return buildSweep(uid)
     case "blank":
     default:
       return buildBlank(uid)

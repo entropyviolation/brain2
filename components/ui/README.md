@@ -38,7 +38,9 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `table.tsx` | Table layout (Lists details view) |
 | `tabs.tsx` | Tab navigation |
 | `textarea.tsx` | Multi-line text |
-| `tooltip.tsx` | Hover tooltips |
+| `tooltip.tsx` | Hover tooltips. On a phone the bubble stays inside the screen |
+| `touch.css` | _Last mapped: 2026-10-28._ Phone-only overrides (max-width 767px). Desktop rules in this folder are unchanged at 768px and up |
+| `safe-insets.ts` | Reads `env(safe-area-inset-*)` and, on a phone, keeps menus inside that inset |
 
 ## Removed (not present)
 
@@ -65,3 +67,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 ```
 
 All modules (Home, Lists, Scheduler, Data, etc.) import from this folder.
+
+## Phone
+
+_Last mapped: 2026-10-28._ Under 768px these controls follow [`docs/MOBILE_STYLE.md`](../../docs/MOBILE_STYLE.md). The same components at 768px and wider keep their desktop size, type, and placement.
+
+- Buttons, tabs, menu rows, and select rows are at least 44×44. A checkbox or switch keeps its face; the hit area grows to 44px.
+- Inputs, textareas, and selects are 16px so iOS does not zoom on focus, and the row grows when the text is long.
+- Dialogs sit in the safe area (`env(safe-area-inset-*)`), scroll inside `100dvh`, and still dismiss from the scrim, Escape, or the close key. Menus and select lists do the same. A fixed width passed by a caller cannot run off the screen.
+- The clock field, its open key, and the panel follow the same rules. Address suggestions pin to the bottom of the screen. The sand-close skip key is 44px and clears the status inset.

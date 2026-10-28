@@ -1,6 +1,8 @@
 # `components/CodeDocs/` — Reader for the repo `docs/` folder
 
-_Last mapped: 2026-10-27._
+_Last mapped: 2026-10-28._
+
+On a phone (`max-width: 767px`) the reader fits the width and the find field is 16px. Desktop chrome is unchanged.
 
 The header question mark still only toggles Names. While Names is on, a
 **CODE DOCUMENTATION** key appears in the System group. Opening this reader

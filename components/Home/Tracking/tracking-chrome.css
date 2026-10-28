@@ -6272,6 +6272,49 @@ body.win95-app .trk95 button.trk-logbook-heading-open[data-no95] {
 }
 
 /* Spending dialog tabs and the Budget view: mint for money in, rose for money out. */
+.trk-money-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+body.win95-app .trk95 .trk-money-tabs > button.trk-keycap[data-no95][aria-selected="true"] {
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
+  background: #070c0a;
+  background-image: none;
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 0 0 #0b4a32,
+    inset -2px 0 0 #0b4a32,
+    inset 0 -2px 0 #0b4a32,
+    0 0 0 1px #141816;
+}
+.trk-money-line,
+.trk-money-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.trk-money-line label,
+.trk-money-form {
+  font-size: 12px;
+}
+.trk-money-line input,
+.trk-money-form input,
+.trk-money-form select {
+  min-width: 7rem;
+  flex: 1;
+  padding: 3px 6px;
+}
+.trk-money .trk-spending-rows li {
+  display: flex;
+  flex-wrap: wrap;
+}
 .trk-spending-tabs,
 .trk-budget-sorts,
 .trk-budget-chips,

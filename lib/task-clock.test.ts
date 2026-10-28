@@ -17,7 +17,8 @@ import {
   togglePenColorNowObjectiveComplete,
 } from "./pen-color-session"
 import { usePenColorSessionStore } from "./pen-color-session-store"
-import { clockPenFor, isTaskOnClock, startTaskClock, stepPenLinks, assignTaskOnClock, completeClockStep, finishClockTask } from "./task-clock"
+import { taskActualAccount, stepSpentMinutes } from "./tracked-time"
+import { clockPenFor, isTaskOnClock, startTaskClock, stopTaskClock, stopTaskSubclock, stepPenLinks, assignTaskOnClock, completeClockStep, finishClockTask } from "./task-clock"
 import { WORKING_ON_NOW_NOTE_PREFIX } from "./task-clock-log"
 
 const AT = new Date(2026, 9, 15, 20, 24, 0)
@@ -94,6 +95,36 @@ describe("startTaskClock", () => {
     expect(log?.notes).toBe(
       "added from Working On Now, task: Finish CDs subtasks completed: none objectives completed: none",
     )
+  })
+
+  it("a step played while the task clock is running starts its own timer", () => {
+    seed({ penLinks: [{ scopeId: "activity", penId: "act-exercise" }] })
+    startTaskClock("cds", { now: AT })
+    const started = session()!.startedAt
+    startTaskClock("cds", { stepId: "confirm wood", now: later(10) })
+    startTaskClock("cds", { stepId: "inside holder", now: later(8) })
+    expect(session()!.startedAt).toBe(started)
+    expect(session()!.stepId).toBeUndefined()
+    expect(session()!.subclocks?.map((row) => row.stepId)).toEqual(["confirm wood", "inside holder"])
+    expect(session()!.nowObjectives ?? []).toEqual([])
+    expect(useTimeTrackingStore.getState().entries.filter((e) => e.penId === "act-exercise")).toHaveLength(1)
+
+    stopTaskSubclock("confirm wood", later(15))
+    expect(session()?.taskId).toBe("cds")
+    expect(session()?.startedAt).toBe(started)
+    expect(session()?.subclocks?.map((row) => row.stepId)).toEqual(["inside holder"])
+    expect(task().timeLogs).toMatchObject([{ stepId: "confirm wood", durationMinutes: 5 }])
+
+    stopTaskClock(undefined, later(20))
+    expect(session()).toBeNull()
+    const logs = task().timeLogs ?? []
+    expect(logs.map((row) => row.stepId)).toEqual(["confirm wood", "inside holder", undefined])
+    expect(logs[1]).toMatchObject({ durationMinutes: 12 })
+    expect(logs[2]).toMatchObject({ durationMinutes: 20 })
+    const entries = useTimeTrackingStore.getState().entries.filter((e) => e.taskId === "cds")
+    expect(taskActualAccount(task(), entries).total).toBe(20)
+    expect(stepSpentMinutes(task(), "confirm wood", entries)).toBe(5)
+    expect(stepSpentMinutes(task(), "inside holder", entries)).toBe(12)
   })
 
   it("a plain pen clock still writes nothing on any task", () => {

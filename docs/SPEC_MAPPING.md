@@ -1013,6 +1013,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
   Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
+  The Food heading opens `components/Home/Tracking/tracking-log/food/food-detail-dialog.tsx`: meals and snacks, recipes, and a kitchen (fridge, pantry, spice cabinet, freezer) in `brain2-kitchen`. Calories and the macro and micro set add up for accepted plates. A food is searched on this device, then USDA FoodData Central, then Open Food Facts, or filled from a nutrition-label photo. A keep guess uses the bought date and a typical keep time. It is a house guess, not a safety test.
   Bare intake (Intake pen, no class) sits in a short **Intake** group under
   those three. Events are other log-like instants (Text log pen and/or
   `eventKind`, no intake class); a new phrase such as left room is an Activity

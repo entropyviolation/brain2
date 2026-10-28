@@ -40,6 +40,8 @@ import { useHomeWeatherStore } from "@/lib/home-weather-store"
 import { useUiNamesStore } from "@/lib/ui-names-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
+import { useDayPhotosStore } from "@/lib/day-photos-store"
+import { useWardrobeStore } from "@/lib/wardrobe"
 import { resetPersistStatus } from "@/lib/persist-storage"
 import { resetDayNotesPersist } from "@/lib/day-notes-persist"
 import { resetActionHistory } from "@/lib/action-history"
@@ -187,7 +189,12 @@ export function resetAllStores() {
   useHomeWeatherStore.getState().resetPlace()
   useUiNamesStore.setState({ mode: "off" })
   useLogKeywordsStore.setState({ keywords: [] })
-  useCountStatusesStore.setState({ counts: [] })
+  useCountStatusesStore.setState({
+    counts: [{ id: "count-shower", name: "Shower", keyword: "shower", ticks: [] }],
+    builtins: { shower: "on", showerBackfill: "done" },
+  })
+  useWardrobeStore.setState({ pieces: [], outfits: [] })
+  useDayPhotosStore.setState({ byDay: {} })
 }
 
 export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {

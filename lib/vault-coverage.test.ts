@@ -37,6 +37,8 @@ import { useBabyAnimalsStore } from "@/lib/baby-animals-store"
 import { useSessionPlanStore } from "@/lib/session-plan-store"
 import { useAffirmationLogStore } from "@/lib/affirmation-log-store"
 import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
+import { useKitchenStore } from "@/lib/kitchen-store"
 
 const { SHRINK_PROTECTED, VAULT_RECORD_FIELDS, vaultRecordCount } = require("./vault-guard.js") as {
   SHRINK_PROTECTED: Set<string>
@@ -74,6 +76,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-ui-names": "overlay mode string",
   "cogs-log-keywords": "saved log phrases the person can empty; not tracker rows",
   "cogs-count-statuses": "named tallies the person can delete; ticks ride on the definition, not tracker rows",
+  "cogs-wardrobe": "outfits and pieces the person can delete; the photo bytes stay in the attachment store",
 }
 
 /** Live default state, shaped like the persisted blob the guard reads. */
@@ -101,6 +104,8 @@ const GUARDED_STORE_STATE: Record<string, () => unknown> = {
   "cogs-session-plans": () => useSessionPlanStore.getState(),
   "cogs-affirmation-log": () => useAffirmationLogStore.getState(),
   "cogs-telegram-feed": () => useTelegramFeedStore.getState(),
+  "cogs-kitchen": () => useKitchenStore.getState(),
+  "cogs-kitchen-day-note": () => useKitchenDayNotes.getState(),
 }
 
 describe("vault coverage", () => {

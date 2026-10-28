@@ -1106,3 +1106,41 @@ body.win95-app .inbox-partitions [role="tab"][aria-selected="true"] .inbox-parti
     opacity: 1;
   }
 }
+
+@media (max-width: 767px) {
+  .inbox-dialog,
+  body.win95-app .inbox-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .inbox-dialog input:not([type="checkbox"]):not([type="radio"]),
+  .inbox-dialog textarea,
+  .inbox-dialog select,
+  .inbox-dialog .native-select {
+    font-size: 16px !important;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  .inbox-dialog textarea {
+    min-height: 5.5rem;
+  }
+
+  .inbox-dialog button {
+    min-height: 44px;
+  }
+
+  .inbox-link-tools {
+    opacity: 1;
+  }
+}

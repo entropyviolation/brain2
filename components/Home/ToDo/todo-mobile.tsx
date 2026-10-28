@@ -945,7 +945,7 @@ function TaskSheet({ todo, period, props, onClose }: { todo: TodoItem; period: T
         </button>
         {showLevel ? (
           <button type="button" className="todo-ios-action" data-no95 aria-label={`Done at ${levelWord}`} onClick={() => props.onComplete(todo.id, reached === "min" ? "min" : "goal")}>
-            Done at {lvl === "min" ? "B" : "G"}
+            Done at {reached === "min" ? "B" : "G"}
           </button>
         ) : null}
         <button type="button" className="todo-ios-action" data-no95 onClick={() => { props.onJustStart(id); onClose() }}>

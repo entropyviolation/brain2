@@ -82,6 +82,9 @@ import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
+import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
+import { useKitchenStore } from "@/lib/kitchen-store"
+import { useWardrobeStore } from "@/lib/wardrobe"
 import {
   exportAllAttachments,
   importAttachments,
@@ -202,6 +205,9 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("ui-names"), rehydrate: persistRehydrate(useUiNamesStore) },
   { key: persistKey("log-keywords"), rehydrate: persistRehydrate(useLogKeywordsStore) },
   { key: persistKey("count-statuses"), rehydrate: persistRehydrate(useCountStatusesStore) },
+  { key: persistKey("wardrobe"), rehydrate: persistRehydrate(useWardrobeStore) },
+  { key: persistKey("kitchen"), rehydrate: persistRehydrate(useKitchenStore) },
+  { key: persistKey("kitchen-day-note"), rehydrate: persistRehydrate(useKitchenDayNotes) },
 ]
 
 /** Human labels for Settings restore preview (same keys as BACKUP_STORES, plus cogs-* aliases). */
@@ -286,6 +292,12 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-log-keywords": "Log keywords",
   [persistKey("count-statuses")]: "Counts",
   "cogs-count-statuses": "Counts",
+  [persistKey("wardrobe")]: "Wardrobe",
+  "cogs-wardrobe": "Wardrobe",
+  [persistKey("kitchen")]: "Kitchen",
+  "cogs-kitchen": "Kitchen",
+  [persistKey("kitchen-day-note")]: "Kitchen day notes",
+  "cogs-kitchen-day-note": "Kitchen day notes",
 }
 
 export function backupStoreLabel(key: string): string {
@@ -543,6 +555,9 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("ui-names")]: asLiveStore(useUiNamesStore),
   [persistKey("log-keywords")]: asLiveStore(useLogKeywordsStore),
   [persistKey("count-statuses")]: asLiveStore(useCountStatusesStore),
+  [persistKey("wardrobe")]: asLiveStore(useWardrobeStore),
+  [persistKey("kitchen")]: asLiveStore(useKitchenStore),
+  [persistKey("kitchen-day-note")]: asLiveStore(useKitchenDayNotes),
 }
 
 /**

@@ -16,9 +16,9 @@ Do not touch: velvet and photographed orbs. The Module Lists import block and th
 
 # `components/Lists/` — Lists (File Manager)
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-10-28_
 
-**Purpose.** The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open.
+**Purpose.** The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open. On a phone (`max-width: 767px`) the sidebar stacks under the list, pin and rename stay visible, fields are 16px, and list dialogs are bottom sheets. Desktop chrome is unchanged.
 
 **Invariant.** Lists is the visual standard for the app. See `docs/DESIGN_STYLE.md`.
 

@@ -827,3 +827,31 @@ body.win95-app .todo-ios-sheet h2 {
     transition: opacity 0.32s ease;
   }
 }
+
+/* The list scrolls in this pane. A wide row does not widen the document. */
+.todo-ios {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.todo-ios-seg,
+.todo-ios-sheet,
+.todo-ios-sheet-body {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.todo-ios-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  max-height: min(92dvh, 100%);
+  overflow-x: clip;
+}
+
+.todo-ios :is(input, select, textarea),
+.todo-ios-sheet :is(input, select, textarea) {
+  font-size: 16px;
+}

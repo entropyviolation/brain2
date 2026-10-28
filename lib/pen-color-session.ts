@@ -10,6 +10,9 @@
  * A task may ride the clock (`taskId` / `stepId`, set by `lib/task-clock.ts`).
  * Then the painted blocks carry the task and step, Stop logs the span on the
  * task (`lib/task-clock-log.ts`), and objectives tied to steps tick them.
+ * A step played while that task sitting is already up gets its own timer
+ * (`subclocks`). Stopping the step logs only that timer. Stopping the task
+ * logs every step timer, then the sitting.
  * Each painted block's notes say it was added from Working On Now, with the
  * task and the subtasks and objectives finished on this sitting. A note you
  * rewrote by hand is left as you wrote it.
@@ -33,7 +36,7 @@ import {
   liveEntryUpToDate,
   type WorkDaySlice,
 } from "@/lib/operation-work-session"
-import { usePenColorSessionStore, type PenColorSession } from "@/lib/pen-color-session-store"
+import { usePenColorSessionStore, type PenColorSession, type PenSubclock } from "@/lib/pen-color-session-store"
 import {
   addCompletedNowObjective,
   addNowObjective,
@@ -68,6 +71,7 @@ import {
   clockNoteField,
   logTaskClockSpan,
   matchStepForObjective,
+  retargetClockLogs,
   WORKING_ON_NOW_NOTE_PREFIX,
   workingOnNowBlockNote,
 } from "@/lib/task-clock-log"
@@ -266,9 +270,78 @@ export function startPenColorSession(penId: string, now = new Date()): PenColorS
 }
 
 /**
+ * Active milliseconds of one step timer.
+ * A timer that started with the sitting uses the sitting's pause total.
+ * A later timer subtracts only the gaps that overlap it.
+ */
+export function subclockActiveMs(
+  session: Pick<PenColorSession, "startedAt" | "pausedAt" | "pausedAccumMs" | "pauseSpans">,
+  startedAt: string,
+  nowMs = Date.now(),
+): number {
+  if (startedAt === session.startedAt) return elapsedMsOf(session, nowMs)
+  const start = new Date(startedAt).getTime()
+  if (Number.isNaN(start)) return 0
+  let paused = 0
+  for (const span of session.pauseSpans ?? []) {
+    const from = new Date(span.pausedAt).getTime()
+    const to = span.resumedAt
+      ? new Date(span.resumedAt).getTime()
+      : span.stoppedAt
+        ? new Date(span.stoppedAt).getTime()
+        : nowMs
+    const overlap = Math.min(nowMs, to) - Math.max(start, from)
+    if (overlap > 0) paused += overlap
+  }
+  if (session.pausedAt && !(session.pauseSpans ?? []).some((span) => span.pausedAt === session.pausedAt)) {
+    const overlap = nowMs - Math.max(start, new Date(session.pausedAt).getTime())
+    if (overlap > 0) paused += overlap
+  }
+  return Math.max(0, nowMs - start - paused)
+}
+
+function logSubclockSpan(session: PenColorSession, sub: PenSubclock, now: Date, entryIds: string[]): void {
+  if (!session.taskId) return
+  logTaskClockSpan(
+    {
+      taskId: session.taskId,
+      stepId: sub.stepId,
+      trackingEntryIds: entryIds,
+      nowObjectives: session.nowObjectives,
+      pauseSpans: session.pauseSpans,
+    },
+    new Date(sub.startedAt),
+    now,
+    subclockActiveMs(session, sub.startedAt, now.getTime()),
+  )
+}
+
+/**
+ * End one step timer. The task sitting keeps running.
+ * Returns false when that step has no timer of its own.
+ */
+export function stopPenSubclock(stepId: string, now = new Date()): boolean {
+  const live = usePenColorSessionStore.getState().session
+  if (!live?.taskId || !live.subclocks?.some((row) => row.stepId === stepId)) return false
+  return runAsAction("stop the step clock", () => {
+    const session = usePenColorSessionStore.getState().session
+    const sub = session?.subclocks?.find((row) => row.stepId === stepId)
+    if (!session?.taskId || !sub) return false
+    logSubclockSpan(session, sub, now, session.trackingEntryIds ?? [])
+    const rest = session.subclocks?.filter((row) => row.stepId !== stepId) ?? []
+    const next: PenColorSession = { ...session }
+    if (rest.length) next.subclocks = rest
+    else delete next.subclocks
+    usePenColorSessionStore.getState().setSession(next)
+    return true
+  })
+}
+
+/**
  * Close the live pen block at active end and leave the painted minutes editable.
  * `parkUnfinished` banks the open stints and copies still-open objectives onto
  * the unfinished list for this pen, task, or subtask. They stay on this block.
+ * Every step timer still running is logged first, then the sitting.
  */
 export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: boolean }): PenColorSession | null {
   return runAsAction("stop pen color", () => {
@@ -289,7 +362,8 @@ export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: 
 
     const spans = closeOpenPause(session.pauseSpans, now)
     session = spans ? { ...session, pauseSpans: spans } : session
-    let ids = session.trackingEntryIds ?? []
+    const previousIds = session.trackingEntryIds ?? []
+    let ids = previousIds
     if (locatePen(session.penId)) {
       const slices = splitIntoDaySlices(new Date(session.startedAt), end)
       ids = paintSlices(slices, session)
@@ -298,6 +372,11 @@ export function stopPenColorSession(now = new Date(), opts?: { parkUnfinished?: 
     }
 
     usePenColorSessionStore.getState().clearSession()
+    if (session.taskId && session.subclocks?.length) {
+      for (const sub of session.subclocks) logSubclockSpan(session, sub, now, ids)
+      session = { ...session, subclocks: undefined }
+    }
+    if (session.taskId) retargetClockLogs(session.taskId, previousIds, ids)
     if (session.taskId) {
       logTaskClockSpan(
         {

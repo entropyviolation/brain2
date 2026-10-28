@@ -285,3 +285,48 @@
 .lab-slot {
   position: relative;
 }
+
+@media (max-width: 767px) {
+  .lab {
+    overflow: auto;
+  }
+
+  .lab-bar {
+    gap: 8px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 10px max(12px, env(safe-area-inset-left, 0px));
+  }
+
+  .lab-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .lab-tree {
+    max-height: 32dvh;
+    border-right: 0;
+    border-bottom: 1px solid rgba(35, 38, 46, 0.1);
+  }
+
+  .lab-stage {
+    padding: 12px;
+    min-width: 0;
+    justify-content: stretch;
+  }
+
+  .lab-frame {
+    width: min(440px, 100%);
+    max-width: 100%;
+  }
+
+  .lab :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]) {
+    font-size: 16px !important;
+    max-width: 100%;
+  }
+
+  .lab-bar button,
+  .lab-task-pick select,
+  .lab-row button {
+    min-height: 44px;
+  }
+}

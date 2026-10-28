@@ -3264,3 +3264,60 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   font-size: 12px;
   color: var(--chrome-lo);
 }
+
+/* Phone. The milled desktop fascia above stays. Compact width is a sheet. */
+@media (max-width: 767px) {
+  .id95,
+  .id95-dialog {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  body.win95-app .id95 .id-view-keys[role="tablist"],
+  .id95 .id-view-keys[role="tablist"],
+  .id95-dialog .id-view-keys[role="tablist"] {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)) !important;
+  }
+
+  body.win95-app .id95 .id-view-keys [role="tab"],
+  .id95 .id-view-keys [role="tab"],
+  .id95-dialog .id-view-keys [role="tab"] {
+    min-height: 44px;
+    white-space: normal;
+    font-size: 13px;
+  }
+
+  .id95 .id-save-cluster,
+  .id95-dialog .id-save-cluster {
+    flex-wrap: wrap;
+  }
+
+  body.win95-app :is(.id95, .id95-dialog) :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app :is(.id95, .id95-dialog) textarea {
+    min-height: 5.5rem;
+    height: auto;
+  }
+
+  body.win95-app .id95-dialog {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

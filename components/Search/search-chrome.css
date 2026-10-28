@@ -1,10 +1,14 @@
 /**
  * components/Search/search-chrome.css — Cmd/Ctrl-K palette
  *
- * Same machine as the pinned header: milled fascia, a sunken query well,
- * and a phosphor lamp on the row that Enter will open. Scoped to `.b2-search`
- * so module skins and the header doors stay as they are.
+ * Desktop (the rules above the phone media query) is the milled fascia:
+ * a sunken query well and a phosphor lamp on the row Enter will open.
+ * Scoped to `.b2-search` so module skins and the header doors stay as they are.
  * docs/DESIGN_STYLE.md#milled-fascia
+ *
+ * Phone (`max-width: 767px`) is a different sheet. It is content first:
+ * fluid width inside the visual viewport, safe-area inset, 16px field,
+ * 44px targets, and wrapping rows. It does not wear the desktop mill.
  */
 
 .b2-search {
@@ -285,5 +289,255 @@
 @media (prefers-reduced-motion: reduce) {
   .b2-search-row {
     transition: none;
+  }
+}
+
+/*
+ * Phone sheet. Desktop rules above stay on wide screens.
+ * Anchored with left/right so the card cannot grow with 100vw or with a row.
+ */
+@media (max-width: 767px) {
+  .b2-search {
+    box-sizing: border-box !important;
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    width: auto !important;
+    max-width: min(100%, 100vw) !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    max-height: calc(
+      100dvh - max(12px, env(safe-area-inset-top, 0px)) - max(12px, env(safe-area-inset-bottom, 0px))
+    ) !important;
+    padding:
+      16px
+      max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px))
+      max(16px, env(safe-area-inset-left, 0px)) !important;
+    overflow: hidden !important;
+    gap: 12px !important;
+    border-radius: 18px !important;
+    background-color: #f7f7f8 !important;
+    background-image: none !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24) !important;
+    color: #16181d !important;
+    font-family: ui-sans-serif, system-ui, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body.win95-app .b2-search h2.font-semibold.tracking-tight,
+  .b2-search h2 {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    color: #16181d !important;
+    font-size: 20px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.2 !important;
+    text-transform: none !important;
+    text-shadow: none !important;
+  }
+
+  .b2-search-caption {
+    min-height: 44px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 48px 0 0;
+  }
+
+  .b2-search-power {
+    display: none;
+  }
+
+  body.win95-app .b2-search > button.keycap-close.keycap-close {
+    top: 10px !important;
+    right: 10px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    flex: 0 0 44px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    background-color: #eceef2 !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  body.win95-app .b2-search > button.keycap-close.keycap-close svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .b2-search-query {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .b2-search .b2-search-field {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto !important;
+    min-height: 44px;
+    padding: 10px 12px !important;
+    border: 1px solid #d5d8de !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+    line-height: 1.4;
+  }
+
+  .b2-search-advanced-trigger {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 12px;
+    color: #16181d;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .b2-search-advanced-trigger:active {
+    box-shadow: none;
+    background: #eceef2;
+  }
+
+  .b2-search-advanced-label,
+  .b2-search-check {
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .b2-search-check {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .b2-search-well {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    max-height: none;
+    overflow: auto;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .b2-search-list,
+  .b2-search-row,
+  .b2-search-kind,
+  .b2-search-title,
+  .b2-search-meta,
+  .b2-search-status,
+  .b2-search-status > span {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .b2-search-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 2px;
+    min-height: 44px;
+    padding: 10px 4px;
+  }
+
+  .b2-search-lamp {
+    display: none;
+  }
+
+  .b2-search-kind,
+  .b2-search-title,
+  .b2-search-meta {
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    letter-spacing: 0;
+    text-transform: none;
+    text-shadow: none;
+  }
+
+  .b2-search-kind {
+    max-width: 100%;
+    font-size: 12px;
+    font-weight: 650;
+    color: #5c6570;
+  }
+
+  .b2-search-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .b2-search-meta {
+    max-width: 100%;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #5c6570;
+  }
+
+  .b2-search-row.is-active {
+    background: #e7eef8;
+    box-shadow: none;
+    color: #16181d;
+  }
+
+  .b2-search-row.is-active .b2-search-kind,
+  .b2-search-row.is-active .b2-search-title,
+  .b2-search-row.is-active .b2-search-meta {
+    color: #16181d;
+    text-shadow: none;
+  }
+
+  .b2-search-empty {
+    padding: 20px 4px;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .b2-search-caption,
+  .b2-search-query,
+  .b2-search-status {
+    flex: 0 0 auto;
+  }
+
+  .b2-search-status {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    text-shadow: none;
+    overflow-wrap: anywhere;
+  }
+
+  .b2-search-status > span:last-child {
+    flex: none;
+    margin-left: auto;
   }
 }

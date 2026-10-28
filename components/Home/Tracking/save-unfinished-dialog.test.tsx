@@ -25,6 +25,7 @@ describe("save unfinished objectives", () => {
     render(<Harness onStop={onStop} />)
     await user.click(screen.getByRole("button", { name: "Stop" }))
     expect(screen.getByTestId("save-unfinished-dialog")).toBeTruthy()
+    expect(document.querySelector(".trk-now-obj-stop-back")).toHaveAttribute("data-task-card-pop", "")
     await user.click(screen.getByRole("button", { name: "Cancel" }))
     expect(onStop).not.toHaveBeenCalled()
     expect(screen.queryByTestId("save-unfinished-dialog")).toBeNull()

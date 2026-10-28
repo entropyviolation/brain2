@@ -757,3 +757,22 @@ body.win95-app .person-detail .person-nickfield .person-chipfield input.person-c
   color: #7dffc4;
   font-weight: 600;
 }
+
+@media (max-width: 767px) {
+  .person-date-met,
+  .person-detail .person-est {
+    flex-wrap: wrap;
+  }
+
+  .person-detail input[type="text"],
+  .person-detail input[type="date"],
+  .person-detail select,
+  .person-detail textarea,
+  .person-log-add input[type="text"],
+  .person-log-add input[type="date"],
+  .person-detail .native-select {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+  }
+}

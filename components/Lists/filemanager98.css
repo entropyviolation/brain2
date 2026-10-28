@@ -2717,3 +2717,89 @@ body.win95-app .fm-sort-menu[role="listbox"] {
 .fm-vol-meta strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fm-vol-meta span { color: #404040; }
 .fm-vol-meta p { margin: 2px 0 0; color: #666; font-size: 10px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Phone. The Explorer frame above stays on a wide window. */
+@media (max-width: 767px) {
+  .fm98,
+  .fm98 .fm-window,
+  .fm98 .fm-window-body {
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .fm98 .fm-split {
+    flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .fm98 .fm-split > .fm-sidebar {
+    width: 100% !important;
+    max-width: 100%;
+    max-height: 36dvh;
+  }
+
+  .fm98 .fm-split > .fm-sidebar.fm-inspector {
+    max-height: none;
+  }
+
+  .fm98 .fm-select-strip {
+    flex-wrap: wrap;
+  }
+
+  .fm98 .fm-item-list-picker,
+  .fm98 .fm-folder-dest-bay,
+  .fm98 .fm-folder-dest,
+  .fm98 .fm-select-strip-controls {
+    min-width: 0;
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .fm98 .fm-icon .fm-icon-pin,
+  .fm98 .fm-icon .fm-icon-edit {
+    display: flex;
+    width: 44px;
+    height: 44px;
+  }
+
+  .fm98 .fm-tree-folder .fm-tree-edit {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+  }
+
+  .fm98 .fm-btn,
+  .fm98 .fm-view-keys .fm-view-key {
+    min-height: 44px;
+  }
+
+  body.win95-app .fm98 :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .fm98-dialog :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .lp-dialog :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .fm98-dialog,
+  body.win95-app .lp-dialog {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

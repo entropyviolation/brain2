@@ -16,6 +16,7 @@ import { summaryProse, useDayNote } from "@/lib/day-notes-persist"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { seasonOfDate } from "@/lib/seasons"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { DayPhotoStrip } from "@/components/Home/Tracking/day-summary/day-photos"
 import {
   daysOfWeek,
   monthSummaryKeyFromDate,
@@ -121,13 +122,15 @@ export function WeekSummaryNest({
         {days.map((day) => {
           const key = formatLocalDateKey(day)
           return (
-            <SummaryPreview
-              key={key}
-              storageKey={key}
-              label={dayLabel(day)}
-              pressed={openDay === key}
-              onOpen={() => setOpenDay((current) => (current === key ? null : key))}
-            />
+            <div key={key} className="trk-summary-day">
+              <SummaryPreview
+                storageKey={key}
+                label={dayLabel(day)}
+                pressed={openDay === key}
+                onOpen={() => setOpenDay((current) => (current === key ? null : key))}
+              />
+              <DayPhotoStrip dayKey={key} />
+            </div>
           )
         })}
       </div>

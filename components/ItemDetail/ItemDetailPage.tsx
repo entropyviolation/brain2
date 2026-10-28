@@ -35,6 +35,8 @@ import { requestNavigateToListAfterPaint } from "@/lib/app-navigation"
 import { useTaskStore } from "@/lib/task-store"
 import type { ItemTypeDefinition, Task } from "@/lib/types"
 import "@/components/ItemDetail/chrome/item-detail-chrome.css"
+import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 interface EnhancedTaskDetailProps {
   taskId: string
@@ -133,6 +135,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
   useItemDetailUndoHotkey(detailRef, undo, redo, Boolean(task))
+  useStampFontVariables(dmMonoFace)
 
   // Every way out of the page asks about unsaved edits first.
   const guard = useUnsavedGuard({
@@ -185,7 +188,7 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
 
   return (
     <>
-    <div ref={detailRef} className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
+    <div ref={detailRef} className={`id95 ${dmMonoFace}`} data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
       <div className="id-window">
       <ItemDetailPageFascia
         task={task}

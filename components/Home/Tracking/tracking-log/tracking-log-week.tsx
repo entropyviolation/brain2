@@ -23,6 +23,8 @@ import { formatLocalDateKey, getWeekDates, getWeekStartDate, sameCalendarDay } f
 import { formatSpendAmount, summarizeSpend } from "@/lib/spend"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useLiveToday } from "@/lib/use-current-date"
+import { latestOutfit, useWardrobeStore } from "@/lib/wardrobe"
+import { useAttachmentSrc } from "@/components/use-attachment-src"
 import { feedRowDayKey, feedRowMinute, type TelegramFeedRow } from "@/lib/ingest/telegram-feed"
 import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
 import "./tracking-log-week.css"
@@ -37,6 +39,14 @@ const SHELF_TAG: Record<LogBookList, string> = {
   switch: "Switch",
   thought: "Thought",
   spend: "Spent",
+}
+
+function WeekLook({ dayKey }: { dayKey: string }) {
+  const outfits = useWardrobeStore((state) => state.outfits)
+  const look = latestOutfit(outfits.filter((row) => row.dayKey === dayKey))
+  const src = useAttachmentSrc(look?.photoUri)
+  if (!look || !src) return null
+  return <img className="trk-log-week-look" src={src} alt="" width={28} height={28} />
 }
 
 function rowTitle(entry: LogBookEntry, penName: Map<string, string>): string {
@@ -214,6 +224,7 @@ export function TrackingLogWeek({
               <span className="trk-log-week-head-dow">{format(col.date, "EEE")}</span>
               <span className="trk-log-week-head-dom">{format(col.date, "d")}</span>
             </button>
+            <WeekLook dayKey={col.dayKey} />
             <div className="trk-log-week-rows" aria-label={`Log for ${format(col.date, "EEEE, MMM d")}`}>
               {col.rows.length === 0 ? (
                 <p className="trk-log-week-empty" aria-hidden>

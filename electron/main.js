@@ -79,6 +79,11 @@ function registerCodeDocsIpcHandlers() {
   register()
 }
 
+function registerSweepIpcHandlers() {
+  const { registerSweepIpc } = require("./sweep")
+  registerSweepIpc({ ipcMain, shell, app })
+}
+
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
 
@@ -507,6 +512,7 @@ app.whenReady().then(async () => {
     registerInstagramIpcHandlers,
     registerNfcShortcutIpcHandlers,
     registerCodeDocsIpcHandlers,
+    registerSweepIpcHandlers,
   ]) {
     try {
       register()

@@ -1,6 +1,8 @@
 # `components/Settings/`
 
-Cross-cutting settings UI that isn't tied to a single feature screen.
+_Last mapped: 2026-10-28_
+
+Cross-cutting settings UI that isn't tied to a single feature screen. On a phone (`max-width: 767px`) the settings dialog is a bottom sheet and fields are 16px. Desktop chrome is unchanged.
 
 **Chrome:** milled fascia (`.set95` / `.set95-dialog` in `settings-chrome.css`) —
 brushed silver section bays, engraved uppercase nameplates (`#2a2c2e`, 11px / 700 /

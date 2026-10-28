@@ -1,6 +1,8 @@
 # `components/Reviews/` — Rituals
 
-Global **BRAIN2** header **Rituals** control (not a top-level tab). Day rituals use
+_Last mapped: 2026-10-28_
+
+Global **BRAIN2** header **Rituals** control (not a top-level tab). On a phone (`max-width: 767px`) ritual dialogs that contain a ritual step are bottom sheets, and ritual fields are 16px. Other header dialogs are unchanged. Desktop chrome is unchanged. Day rituals use
 sun (morning) and moon (night). Week / month / quarter / year offer **Start
 ritual** (plan the coming period) and **Review ritual** (end: clarify, push,
 document, evaluate). Dialog shells use the shared pin-bar milled fascia

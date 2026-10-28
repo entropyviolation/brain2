@@ -6,7 +6,7 @@
  */
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 export function PauseReasonDialog({
@@ -34,7 +34,12 @@ export function PauseReasonDialog({
     return () => window.removeEventListener("keydown", onKey, true)
   }, [onCancel])
 
-  if (typeof document === "undefined") return null
+  const [layer, setLayer] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    const found = document.querySelector("[data-ui-name='Task card']")
+    setLayer(found instanceof HTMLElement ? found : document.body)
+  }, [])
+  if (!layer) return null
 
   const submit = () => {
     const text = reason.trim()
@@ -43,7 +48,7 @@ export function PauseReasonDialog({
   }
 
   return createPortal(
-    <div className="trk-now-obj-stop-back" role="presentation">
+    <div className="trk-now-obj-stop-back" data-task-card-pop="" role="presentation">
       <form
         className="trk-now-obj-stop b2-now"
         role="alertdialog"
@@ -73,7 +78,7 @@ export function PauseReasonDialog({
         </div>
       </form>
     </div>,
-    document.body,
+    layer,
   )
 }
 

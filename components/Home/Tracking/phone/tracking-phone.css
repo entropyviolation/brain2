@@ -602,11 +602,80 @@ body.win95-app .trk-phone button.trk-keycap[data-no95],
     bottom: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    max-height: min(88vh, 760px) !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
     margin: 0 !important;
     transform: none !important;
     border-radius: 16px 16px 0 0 !important;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Phone fields and portaled Tracking dialogs. Desktop widths never enter this block. */
+@media (max-width: 767px) {
+  .trk95.trk-phone {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  /* The desk bleed uses 100vw. On the phone tree that width plus a negative margin clips the page. */
+  .trk95.trk-phone[data-ui-name="Tracking"] {
+    --trk-bleed: 100%;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+
+  .trk95.trk-phone .trk-logbook,
+  .trk95.trk-phone .trk-canvas,
+  .trk95.trk-phone [role="tabpanel"],
+  .trk95.trk-phone .trk-log-week {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .trk95.trk-phone .trk-logbook-add input:not([type="checkbox"]),
+  .trk95.trk-phone .trk-logbook-add textarea,
+  .trk95.trk-phone .trk-logbook-fields > input:not([type="checkbox"]),
+  .trk95.trk-phone .trk-logbook-fields > textarea,
+  .trk95.trk-phone .trk-logbook-fields > .trk-logbook-location,
+  .trk95.trk-phone .trk-logbook-location-menu {
+    min-width: 0;
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .trk95.trk-phone .trk-logbook-add > button {
+    min-height: 44px;
+  }
+
+  body.win95-app .trk95.trk-phone :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .trk95.trk-phone-sheet :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app .trk95.trk-dialog :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  body.win95-app .trk95.trk-dialog textarea,
+  body.win95-app .trk95.trk-phone textarea {
+    min-height: 5.5rem;
+  }
+
+  .trk95.trk-dialog {
+    box-sizing: border-box !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-x: auto !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
   }
 }
 

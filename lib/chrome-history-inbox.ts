@@ -5,7 +5,7 @@
  * through `brain2-chrome-history` when Brain2 is already open in that Chrome.
  * Visits land in IndexedDB. New ones are painted on Screen Time.
  */
-import { historyFileFromPayload, mergeHistory, type HistoryFile } from "@/lib/browser-history"
+import { historyFileFromPayload, mergeHistory, type HistoryFile, type Visit } from "@/lib/browser-history"
 import { addHistoryFiles } from "@/lib/browser-history-store"
 import { applyChromeHistory } from "@/lib/chrome-sessions"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"

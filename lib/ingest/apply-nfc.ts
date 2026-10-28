@@ -6,6 +6,7 @@
  * A bound daily habit is marked done or gains the scan’s quantity. The BIM line
  * stays `nfc:…`, so a keyword source does not count the same tap again.
  */
+import { recordCountForKeyword } from "@/lib/count-statuses"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { TaskType } from "@/lib/types"
@@ -56,6 +57,11 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
   if (painted.status !== "ok") {
     return { ...painted, kind: "nfc" }
   }
+
+  recordCountForKeyword(title, {
+    date: formatLocalDateKey(now),
+    startMin: minutesPastMidnight(now),
+  })
 
   const stamp = `nfc:${tag.id}:${now.toISOString()}`
   stampGenerated(painted.itemIds, stamp)

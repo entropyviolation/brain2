@@ -1,6 +1,8 @@
 # Operations — a little graphic tool for a project
 
-A **Brain2** top-level tab. An **Operation** is a small graphic tool for any kind of
+_Last mapped: 2026-10-28_
+
+A **Brain2** top-level tab. On a phone (`max-width: 767px`) the window follows the content, fields are 16px, and operation dialogs are bottom sheets. Desktop chrome is unchanged. An **Operation** is a small graphic tool for any kind of
 project: the work, the ideas, the data, and the progress. A trip, a paid job, a
 magazine, cleaning the house. It is deliberately **not** trip-shaped, and nothing
 about a new operation is assumed. What an individual operation *is* comes from

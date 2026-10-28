@@ -380,3 +380,36 @@ body.win95-app .code-docs-list button {
     border-bottom: 1px solid #6e7378;
   }
 }
+
+@media (max-width: 767px) {
+  body.win95-app .code-docs-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .code-docs,
+  .code-docs-body,
+  .code-docs-frame {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .code-docs-find input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .code-docs-row,
+  .code-docs-twist {
+    min-height: 44px;
+  }
+}

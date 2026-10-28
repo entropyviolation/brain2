@@ -1577,3 +1577,64 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
     flex-wrap: wrap;
   }
 }
+
+/* Phone sheet. Desktop habit windows above stay on the pixel face. */
+@media (max-width: 767px) {
+  .habit95-dialog,
+  .hab-willpower-lab-dialog.habit95-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .habit95-dialog .habit95-body,
+  .habit95-form {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .habit95-form input[type="text"],
+  .habit95-form input[type="number"],
+  .habit95-form input[type="search"],
+  .habit95-form input[type="date"],
+  .habit95-form input[type="time"],
+  .habit95-form input[type="email"],
+  .habit95-form select,
+  .habit95-form textarea,
+  .habit95-form .habit95-input,
+  .habit95-form .habit95-select,
+  .habit95-form .native-select,
+  .habit95-field > input,
+  .habit95-field > select,
+  .habit95-field > textarea,
+  label.habit95-field > input,
+  label.habit95-field > select,
+  label.habit95-field > textarea {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+  }
+
+  .habit95-form input[type="checkbox"],
+  .habit95-form input[type="radio"],
+  .habit95-form input[type="range"] {
+    min-height: 0;
+    width: auto;
+    font-size: 16px;
+  }
+}

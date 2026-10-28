@@ -2569,6 +2569,13 @@ body.win95-app .todo95 .todo-segment[role="group"] button.todo-chiclet[type="but
   height: 20px;
 }
 
+.todo95 .subclock-elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: #2a4036;
+}
+
 /* On the clock: a phosphor rule down the left edge, same green as the active lamp. */
 .todo95 .todo-row.is-on-clock {
   box-shadow:
@@ -4238,7 +4245,7 @@ body.win95-app .todo95 .todo-composer button.todo-log-done[type="button"] {
 
 /* ==== Polish 2026-10-22: screen type, period row, sort arrow, Show tray, formula bay, Done keys ==== */
 
-/* Screen title, open count, and load readout share Silkscreen (loaded in `app/layout.tsx`). */
+/* Screen title, open count, and load readout share Silkscreen (loaded with Home, `lib/fonts/home-pixel-faces.ts`). */
 .todo95 .todo-screen .todo-mark-count,
 .todo95 .todo-load-readout {
   font-family: var(--font-silkscreen), Silkscreen, monospace;

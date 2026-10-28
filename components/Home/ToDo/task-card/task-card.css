@@ -93,6 +93,12 @@
   padding: 6px 8px; background: #f6f7f8; border: 1px solid #8a9096; border-radius: 4px; white-space: nowrap;
 }
 .task-card-cols { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.task-card .subclock-elapsed {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: #2a4036;
+}
 .task-card-pts { width: 4.5em; font: inherit; font-size: 12px; }
 .task-card-needs { max-width: 9em; font-size: 12px; }
 .task-card-lock { font-size: 11px; color: rgba(40, 48, 60, 0.6); }
@@ -1182,3 +1188,71 @@ body.win95-app .tcs-wait-pop input.tcs-wait-search:not([type="checkbox"]):not([t
 .task-card .tcs-time .ipt-where { margin-left: 0; }
 .task-card .tcs-time .ipt-text { min-width: 0; }
 .task-card .tcs-time-hint { margin: 0; font-size: 12px; color: #6b7482; }
+
+/* Phone sheet. Desktop card above is unchanged. The card scrolls inside itself. */
+@media (max-width: 767px) {
+  .task-card {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    display: flex !important;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: hidden;
+  }
+
+  .task-card-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
+  }
+
+  .task-card-main,
+  .task-card-tree,
+  .task-card-side {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .task-card :is(input, select, textarea),
+  .task-card .tcs-picker input,
+  .task-card .tcs-compose textarea,
+  .task-card .tc-est,
+  .task-card .tc-est-input {
+    font-size: 16px;
+  }
+
+  body.win95-app .task-card .tcs-dial-body button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .task-card .tcs-stat-pop,
+  .task-card .tc-star-pop {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: none;
+  }
+
+  .task-card .tcs-spent-obj-text {
+    flex-basis: auto;
+    min-width: 0;
+  }
+}

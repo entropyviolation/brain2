@@ -69,6 +69,8 @@ export type ModuleViewKind =
   | "film-dna"
   /** Tidy house-cleaning app (areas, stuck mode, plans) — self-contained. */
   | "house-cleaning"
+  /** Sweep: caches, logs, Xcode leftovers, Trash, and duplicate files. Desktop only. */
+  | "sweep"
   /** GradSearch program explorer (bundled catalog; personal marks in localStorage). */
   | "grad-search"
   /** An uploaded .html file run in a sandboxed frame with the `window.brain2` bridge. */

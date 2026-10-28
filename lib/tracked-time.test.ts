@@ -370,6 +370,37 @@ describe("stepSpentMinutes", () => {
     expect(storedActualMinutes({ id: "disc", actualDuration: 20, subtasks: [{ id: "color", actualDuration: 26 }] })).toBe(46)
   })
 
+  it("gives overlapping step timers to the deeper step and keeps the block's total", () => {
+    const sitting: TimeEntry = {
+      id: "sit",
+      date: "2026-10-15",
+      scopeId: "activity",
+      penId: "act",
+      startMin: 20 * 60 + 24,
+      endMin: 20 * 60 + 44,
+      taskId: "t",
+    }
+    const task = {
+      id: "t",
+      subtasks: [
+        {
+          id: "holder",
+          description: "holder",
+          completed: false,
+          subtasks: [{ id: "wood", description: "wood", completed: false }],
+        },
+      ],
+      timeLogs: [
+        { date: "2026-10-15", startTime: "20:32", endTime: "20:44", durationMinutes: 12, stepId: "holder", entryIds: ["sit"] },
+        { date: "2026-10-15", startTime: "20:34", endTime: "20:39", durationMinutes: 5, stepId: "wood", entryIds: ["sit"] },
+        { date: "2026-10-15", startTime: "20:24", endTime: "20:44", durationMinutes: 20, entryIds: ["sit"] },
+      ],
+    }
+    expect(taskActualAccount(task, [sitting]).total).toBe(20)
+    expect(stepSpentMinutes(task, "wood", [sitting])).toBe(5)
+    expect(stepSpentMinutes(task, "holder", [sitting])).toBe(12)
+  })
+
   it("ignores blocks for another task and plain pen blocks", () => {
     const task = { id: "t", subtasks: steps, penLinks: [{ penId: "cd" }] }
     const elsewhere = { ...onStep("2026-10-01", "a", 0, 30), taskId: "u" }

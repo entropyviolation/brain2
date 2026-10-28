@@ -16,6 +16,7 @@ import type { ReactNode } from "react"
 import type { Subtask } from "@/lib/types"
 import { stepBlockers, stepPrereqChoices, toggleStepPrereq } from "@/lib/prereqs"
 import { DvdTransportKey } from "@/components/dvd-transport-keys"
+import { StepClockElapsed } from "./step-clock-elapsed"
 import { StepTree } from "@/components/steps/StepTree"
 import { rememberWorld } from "@/lib/action-history"
 import { formatDuration } from "@/lib/time-entries"
@@ -271,9 +272,16 @@ function MinutesBox({
 
 /** The pen clock on this task's steps: which step is live, and how to start or stop one. */
 export interface StepClock {
+  /** The step the sitting itself is on, when the sitting is that step. */
   liveStepId?: string
+  /** Step timers running beside the task sitting. */
+  subclocks?: { stepId: string; startedAt: string }[]
+  /** Start of the task sitting, for a step that is the whole clock. */
+  startedAt?: string
   onStart: (stepId: string) => void
   onStop: () => void
+  /** Stop one step timer. The task sitting keeps going. */
+  onStopStep?: (stepId: string) => void
 }
 
 /** The lid's columns on one step row: Needs…, ▶, minutes, spent, counts, progress, delete. */
@@ -288,7 +296,10 @@ function LidStepColumns({
   clock?: StepClock
   onChange: (steps: Subtask[]) => void
 }) {
-  const live = clock?.liveStepId === step.id
+  const sub = clock?.subclocks?.find((row) => row.stepId === step.id)
+  const lone = !sub && clock?.liveStepId === step.id && !(clock.subclocks?.length)
+  const live = !!sub || !!lone
+  const elapsedAt = sub?.startedAt ?? (lone ? clock?.startedAt : undefined)
   const effective = effectiveDurationMinutes(step.estimatedDuration, step.subtasks)
   const own = step.estimatedDuration && step.estimatedDuration > 0 ? step.estimatedDuration : 0
   const spent = useContext(TimeInfoContext)?.stepSpent?.get(step.id) ?? 0
@@ -307,9 +318,10 @@ function LidStepColumns({
           mark={live ? "stop" : "play"}
           pressed={live}
           label={live ? `Stop the clock on ${step.description}` : `Working on ${step.description} now`}
-          onClick={() => (live ? clock.onStop() : clock.onStart(step.id))}
+          onClick={() => (sub && clock.onStopStep ? clock.onStopStep(step.id) : live ? clock.onStop() : clock.onStart(step.id))}
         />
       ) : null}
+      {elapsedAt ? <StepClockElapsed startedAt={elapsedAt} /> : null}
       <MinutesBox
         minutes={step.estimatedDuration}
         label={`Estimated minutes for ${step.description}`}
@@ -560,7 +572,9 @@ export function TodoBreakdown({
           onBeforeMove={rememberWorld}
           rowClassName={(step) => {
             const bits = ["todo-tree-row"]
-            if (clock?.liveStepId === step.id) bits.push("is-live")
+            const nested = clock?.subclocks?.some((row) => row.stepId === step.id)
+            const lone = clock?.liveStepId === step.id && !(clock.subclocks?.length)
+            if (nested || lone) bits.push("is-live")
             if (link.from === step.id) bits.push("is-linking")
             return bits.join(" ")
           }}

@@ -1,5 +1,8 @@
 # Brain2 design style
 
+This file is the desktop style only. The iOS / mobile app is
+`docs/MOBILE_STYLE.md`. Desktop rules here do not apply there.
+
 This file is how a screen is judged. Product features live in the spec mapping.
 Major redesigns are planned. The three layers below are the order a change is
 read in. Motif pictures are a material in the palette. They are not the first

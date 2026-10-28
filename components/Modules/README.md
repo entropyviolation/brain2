@@ -26,9 +26,9 @@ module live here:
 
 ## File length
 
-_Last mapped: 2026-10-27._
+_Last mapped: 2026-10-28._
 
-Files under `components/Modules` are allowed to be long. They are ported workspace apps (Tidy, itinerary, grad search, and the other module bodies). Length there is expected. Do not split them for line count alone.
+Files under `components/Modules` are allowed to be long. On a phone (`max-width: 767px`) the workspace and its dialogs fit the viewport: fields are 16px, targets are 44px, and hover-only row actions stay visible. Desktop layouts are unchanged. They are ported workspace apps (Tidy, itinerary, grad search, and the other module bodies). Length there is expected. Do not split them for line count alone.
 
 ## Public door
 
@@ -122,6 +122,8 @@ _Last mapped: 2026-10-27._
 | `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
 | `workspace/housecleaning/TidyView.tsx` | **Tidy** house-cleaning mini-app (areas, stuck mode, plans) |
 | `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet. Card, field, and button corners follow Bouba/Kiki (`--r-10` where the local `--r` was `10px`) |
+| `workspace/sweep/SweepView.tsx` | **Sweep** scan and duplicate finder. One rail, one panel. The browser build says the scan lives in the desktop app |
+| `workspace/sweep/sweep.css` | Sweep's own skin: silver `.todo-cap` keys on one instrument |
 | `workspace/gradsearch/GradSearchView.tsx` | **GradSearch** program explorer (shadow-DOM port of the standalone app) |
 | `workspace/gradsearch/engine.ts` | Search, filter, sort, score, compare, verify, favorites, hide |
 | `workspace/gradsearch/data.json` | Bundled catalog (the gradsearch `data.js` store) |
@@ -172,6 +174,7 @@ _Last mapped: 2026-10-27._
 | `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
 | `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Goal / Exceptional plans |
+| `sweep` | Desktop scan of user caches, user logs, Xcode DerivedData (Archives and iOS DeviceSupport stay listed and unchecked), Trash, and orphan preferences, plus a duplicate finder for Desktop, Documents, Downloads, Pictures, Movies, and Music. Checked scan rows move to the Trash; Trash itself is deleted only after a permanent confirm. One copy of each duplicate stays. The browser build says the scan lives in the desktop app. No lists. |
 | `grad-search` | GradSearch program explorer. Search, filters, live scoring, compare, verify, hide/restore, and card or table views. A **Save** control on every card (and **Saved** in the toolbar) keeps favorites on this device. Programs that have a deadline show it on the card, in the table, and at the top of the detail drawer; an application note shows the same way when the record has one. The header scrolls inside the module pane so it stays under the Brain2 window bar. Catalog is the bundled research dataset. Personal marks use the same `gs-*` localStorage keys as the standalone explorer. |
 | `html` | An **uploaded HTML page** (data tool, lesson, game, anything). See "Uploaded HTML modules" below |
 | `package-app` | A **downloaded package folder** (html, css, js, assets) in a sandboxed frame with the same `window.brain2` bridge as an uploaded page. The folder lives in `lib/module-package-app-store.ts` (`brain2-module-package-app`), not in the one-file HTML store. House cleaning, the trip document, the trip map, Film DNA, and GradSearch stay on their compiled views. An uploaded `.html` file stays the `html` view. |
@@ -253,10 +256,11 @@ All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleanin
 | **Book Tasting** | Reading List, PDF Shelf | A **matcher** that links each PDF (`file` attribute, extracted text) to its book with confidence + unmatched flags, plus a **quiz** that shows a random snippet and asks you to guess the title; "PDF added with no match → throw" workflow |
 | **Film DNA Lab** | Films (watchlist + likes) | **Film DNA** view (`film-dna`): vibe shelves, likes wall, Watch scatter + ranking, Blend with a friend's CSV, Letterboxd import; plus Films spreadsheet, poster gallery, randomizer, shelf summary. Seeded from Filmrecs catalog; import your own exports to replace |
 | **House Cleaning App** | **Whole house** + nested area lists (Kitchen, Living Room, …) + **Needed** — projected from `houseCleaning` on instantiate / Lists hydrate | **Tidy** (`house-cleaning`): areas, hierarchical tasks, importance + time, per-task timer, Needed, Stuck mode, three-tier plans. State still writes `module.config.houseCleaning`; Module Lists import maps every useful field onto items ([`MODULE_LISTS.md`](../Lists/MODULE_LISTS.md)). Two-way Item storage is still the platform target. |
+| **Sweep** | None | **Sweep** (`sweep`): Scan and Duplicates on one rail. Caches, logs, DerivedData, Trash, orphan preferences, and duplicate files. The scan runs in the Electron app. |
 | **GradSearch** | None — the catalog is the bundled research dataset, not Brain2 items | **Explorer** (`grad-search`): the standalone GradSearch app, shadow-DOM mounted so it looks and behaves the same (search, filters, scoring model, compare, verify, favorites, hide). |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
 
-_Last mapped: 2026-10-27._ Budget and Book Tasting read their lists, attributes, views, and workflows from `lib/packages/golden/budget.json` and `lib/packages/golden/book-tasting.json`. `buildBudget` and `buildBookTasting` still create the sample rows (Book Tasting PDFs include extracted text) and set `templateId` to `budget` or `book-tasting`. `buildModuleTemplate` and `instantiateModuleTemplate` stay the door for those cards. Itinerary, Tidy, Film DNA, GradSearch, and Blank stay written in `lib/module-templates.ts`. A new build reads the JSON. Modules already stored are left as they are.
+_Last mapped: 2026-10-27._ Budget and Book Tasting read their lists, attributes, views, and workflows from `lib/packages/golden/budget.json` and `lib/packages/golden/book-tasting.json`. `buildBudget` and `buildBookTasting` still create the sample rows (Book Tasting PDFs include extracted text) and set `templateId` to `budget` or `book-tasting`. `buildModuleTemplate` and `instantiateModuleTemplate` stay the door for those cards. Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written in `lib/module-templates.ts`. A new build reads the JSON. Modules already stored are left as they are.
 
 ## Module packages (`lib/module-package.ts`)
 

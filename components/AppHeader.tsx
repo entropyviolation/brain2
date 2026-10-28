@@ -17,8 +17,11 @@
  * The Now popup loads when that key opens. Narrower than the group, whole
  * clusters wrap onto the full shell; a cluster wider than
  * the shell scrolls inside its bay. On a viewport 520px or narrower the
- * same keys sit in a title bar, a scrolling Go strip, and two short tool
- * rows (`shell-chrome.css`). A wider window keeps the one-row mill. Keys do not flex-shrink, and phosphor
+ * mill gives way to a phone bar: BRAIN2, Back/Forward, and Menu share one
+ * row clear of the status bar, Go is the section switcher, and Friend,
+ * Rituals, System, and Capture open in a sheet. A live now well stays on
+ * the bar so a running clock is still on screen. A wider window keeps the
+ * one-row mill. Keys do not flex-shrink, and phosphor
  * counts stay on them. Nav and Go go black with a green legend on focus; Go’s current tab stays that CRT. A press is the old 1px milled sink. System is a gear (Settings), a question mark (Names
  * help mode), a magnifying glass (Search), and a bell (current reminders).
  * The question mark latches (`aria-pressed`) and gains a diagonal strike while
@@ -36,7 +39,7 @@
  */
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { APP_NAME } from "@/lib/app-brand"
 import { CognitiveState } from "@/components/cognitive-state"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
@@ -182,9 +185,31 @@ export function AppHeader({
   tabs?: ReactNode
 }) {
   const [friendFolded, toggleFriend] = useFold("brain2-shell-friend-folded")
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const sheetRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     performance.mark("brain2-shell-ready")
   }, [])
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return
+    const mq = window.matchMedia("(max-width: 520px)")
+    const onChange = () => {
+      if (!mq.matches) setToolsOpen(false)
+    }
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
+  }, [])
+
+  useEffect(() => {
+    if (!toolsOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setToolsOpen(false)
+    }
+    window.addEventListener("keydown", onKey)
+    sheetRef.current?.focus()
+    return () => window.removeEventListener("keydown", onKey)
+  }, [toolsOpen])
 
   /* Phone Go strip scrolls. Keep the current tab in view. A wide shell
      does not overflow, and a test render has no width, so both return. */
@@ -210,24 +235,67 @@ export function AppHeader({
       className="b2-shell"
       data-testid="app-header"
       data-pin="viewport"
+      data-tools={toolsOpen ? "open" : "closed"}
       data-ui-name="App header"
       data-ui-docs="components/README.md"
       data-ui-docs-anchor="top-level-files"
     >
+      <button
+        type="button"
+        className="b2-shell-scrim"
+        aria-label="Close menu"
+        tabIndex={toolsOpen ? 0 : -1}
+        onClick={() => setToolsOpen(false)}
+      />
       <div className="b2-shell-caption">
         <span className="b2-shell-power" title="Power" aria-hidden="true" />
         <h1 className="brain2-mark">{APP_NAME}</h1>
         <span className="b2-shell-caption-mill" aria-hidden="true" />
       </div>
       <div className="b2-shell-body">
-        <HeaderNavButtons />
+        <div className="b2-shell-phone-tools">
+          <HeaderNavButtons />
+          <button
+            type="button"
+            className="b2-shell-menu"
+            aria-expanded={toolsOpen}
+            aria-controls="b2-shell-tools"
+            aria-label={toolsOpen ? "Close menu" : "Menu"}
+            onClick={() => setToolsOpen((open) => !open)}
+          >
+            <span className="b2-shell-menu-bars" aria-hidden="true" />
+          </button>
+        </div>
         {tabs ? (
-          <fieldset className="b2-shell-group b2-shell-tabs">
+          <fieldset
+            className="b2-shell-group b2-shell-tabs"
+            onClick={(event) => {
+              const target = event.target
+              if (target instanceof Element && target.closest('[role="tab"]')) setToolsOpen(false)
+            }}
+          >
             <legend>Go</legend>
             {tabs}
           </fieldset>
         ) : null}
-        <div className="b2-shell-stage">
+        <div
+          id="b2-shell-tools"
+          className="b2-shell-stage"
+          ref={sheetRef}
+          role={toolsOpen ? "dialog" : undefined}
+          aria-modal={toolsOpen ? true : undefined}
+          aria-label={toolsOpen ? "Menu" : undefined}
+          tabIndex={toolsOpen ? -1 : undefined}
+          onClick={(event) => {
+            const target = event.target
+            if (!(target instanceof Element)) return
+            if (target.closest(".b2-shell-sheet-close")) return
+            if (target.closest("button, a")) setToolsOpen(false)
+          }}
+        >
+          <button type="button" className="b2-shell-sheet-close" onClick={() => setToolsOpen(false)}>
+            Close
+          </button>
         <fieldset className={`b2-shell-brand${friendFolded ? " is-folded" : ""}`}>
           <legend>
             Friend

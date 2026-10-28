@@ -4,9 +4,13 @@
  * Each count keeps its own ticks (date + minute). An optional intake class
  * also paints an Intake instant. An optional keyword is saved in
  * `brain2-log-keywords` so `log:` of that phrase increments the count.
- * Storage: `brain2-count-statuses` (persist v1). Hub-safe Zustand persist.
+ * Storage: `brain2-count-statuses` (persist v2). Hub-safe Zustand persist.
  * Not cycle marks, and not the time-grid blob. Deleting a count drops its
  * ticks and leaves intake instants already painted.
+ *
+ * Shower is the builtin `count-shower`. Deleting it sets `builtins.shower`
+ * to `removed` and does not recreate it. v2 backfills Activity shower
+ * instants once.
  */
 "use client"
 
@@ -21,6 +25,16 @@ import { stablePenColor, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { IntakeClass, TrackingClockCertainty } from "@/lib/time-entries"
 
 export const COUNT_STATUSES_STORAGE_KEY = persistKey("count-statuses")
+
+/** Builtin tally. Stable id so days-since and the Data plate find one row. */
+export const SHOWER_COUNT_ID = "count-shower"
+
+export interface CountBuiltins {
+  /** `removed` means the person deleted Shower. Do not seed it again. */
+  shower?: "on" | "removed"
+  /** Set once the v2 instant backfill has run. */
+  showerBackfill?: "done"
+}
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 const ACTIVITY_SCOPE_ID = "activity"
@@ -51,6 +65,64 @@ export interface CountDraft {
   name: string
   intakeClass?: IntakeClass | ""
   keyword?: string
+}
+
+export function showerCount(ticks: CountTick[] = []): CountStatus {
+  return { id: SHOWER_COUNT_ID, name: "Shower", keyword: "shower", ticks }
+}
+
+export function isShowerInstant(entry: {
+  kind?: string
+  scopeId?: string
+  title?: string
+  eventKind?: string
+  logSource?: string
+  generatedBy?: { id?: string }
+}): boolean {
+  if (entry.kind !== "instant") return false
+  const title = (entry.title ?? "").trim().toLowerCase()
+  const kind = (entry.eventKind ?? "").trim().toLowerCase()
+  const titleHit = title === "shower"
+  const nfc = entry.logSource === "nfc" || (entry.generatedBy?.id ?? "").startsWith("nfc:")
+  if (nfc && titleHit) return true
+  return entry.scopeId === "activity" && (titleHit || kind === "shower")
+}
+
+/** One tick per date+minute. Instants that are not showers are ignored. */
+export function showerTicksFromEntries(
+  entries: readonly {
+    id?: string
+    kind?: string
+    scopeId?: string
+    title?: string
+    eventKind?: string
+    logSource?: string
+    generatedBy?: { id?: string }
+    date: string
+    startMin: number
+    clockCertainty?: TrackingClockCertainty
+  }[],
+): CountTick[] {
+  const seen = new Set<string>()
+  const ticks: CountTick[] = []
+  for (const entry of entries) {
+    if (!isShowerInstant(entry)) continue
+    if (!DATE_KEY.test(entry.date)) continue
+    const startMin = Math.floor(entry.startMin)
+    if (startMin < 0 || startMin > 1439) continue
+    const key = `${entry.date}|${startMin}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    const clock = entry.clockCertainty
+    const certainty = clock === "estimated" || clock === "unknown" ? clock : undefined
+    ticks.push({
+      id: `tick_shower_${entry.date}_${startMin}`,
+      date: entry.date,
+      startMin,
+      ...(certainty ? { clockCertainty: certainty } : {}),
+    })
+  }
+  return ticks
 }
 
 function newId(prefix: string): string {
@@ -207,6 +279,7 @@ function countsBoundToPhrase(phrase: string): string[] {
 
 interface CountStatusesState {
   counts: CountStatus[]
+  builtins: CountBuiltins
   addCount: (draft: CountDraft) => string | null
   renameCount: (id: string, name: string) => boolean
   removeCount: (id: string) => void
@@ -220,7 +293,8 @@ interface CountStatusesState {
 export const useCountStatusesStore = create<CountStatusesState>()(
   persist(
     (set, get) => ({
-      counts: [],
+      counts: [showerCount()],
+      builtins: { shower: "on" },
       addCount: (draft) => {
         const name = normalizeName(draft.name)
         if (!name) return null
@@ -253,7 +327,8 @@ export const useCountStatusesStore = create<CountStatusesState>()(
       removeCount: (id) => {
         const count = get().counts.find((row) => row.id === id)
         if (!count) return
-        set({ counts: get().counts.filter((row) => row.id !== id) })
+        const builtins = id === SHOWER_COUNT_ID ? { ...get().builtins, shower: "removed" as const } : get().builtins
+        set({ counts: get().counts.filter((row) => row.id !== id), builtins })
         if (!count.keyword) return
         const row = useLogKeywordsStore
           .getState()
@@ -304,16 +379,106 @@ export const useCountStatusesStore = create<CountStatusesState>()(
     }),
     {
       name: COUNT_STATUSES_STORAGE_KEY,
-      version: 1,
+      version: 2,
       storage: createCogsJSONStorage(),
-      partialize: (state) => ({ counts: state.counts }),
-      merge: (persisted, current) => ({
-        ...current,
-        counts: sanitizeCountStatuses(persisted),
-      }),
+      partialize: (state) => ({ counts: state.counts, builtins: state.builtins }),
+      migrate: (persisted, version) => migrateCountStatuses(persisted, version),
+      merge: (persisted, current) => {
+        const next = applyShowerBuiltin(persisted, false)
+        if (next.builtins.shower === "on") {
+          useLogKeywordsStore.getState().linkKeywordCount("shower", SHOWER_COUNT_ID)
+        }
+        return { ...current, counts: next.counts, builtins: next.builtins }
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state?.builtins.shower === "on") {
+          useLogKeywordsStore.getState().linkKeywordCount("shower", SHOWER_COUNT_ID)
+        }
+      },
     },
   ),
 )
+
+function readBuiltins(value: unknown): CountBuiltins {
+  if (!value || typeof value !== "object") return {}
+  const row = value as { builtins?: unknown; shower?: unknown; showerBackfill?: unknown }
+  const raw = row.builtins && typeof row.builtins === "object" ? (row.builtins as CountBuiltins) : row
+  const shower = raw.shower === "removed" || raw.shower === "on" ? raw.shower : undefined
+  const showerBackfill = raw.showerBackfill === "done" ? "done" : undefined
+  return {
+    ...(shower ? { shower } : {}),
+    ...(showerBackfill ? { showerBackfill } : {}),
+  }
+}
+
+function entriesForShowerBackfill(): Parameters<typeof showerTicksFromEntries>[0] {
+  const disk = readTimegridEntries()
+  let live: Parameters<typeof showerTicksFromEntries>[0] = []
+  try {
+    if (useTimeTrackingStore.persist.hasHydrated()) {
+      live = useTimeTrackingStore.getState().entries
+    }
+  } catch {
+    live = []
+  }
+  if (live.length === 0) return disk
+  const byId = new Map<string, (typeof live)[number]>()
+  for (const entry of disk) if (entry.id) byId.set(entry.id, entry)
+  for (const entry of live) if (entry.id) byId.set(entry.id, entry)
+  return [...byId.values()]
+}
+
+function readTimegridEntries(): Parameters<typeof showerTicksFromEntries>[0] {
+  if (typeof localStorage === "undefined") return []
+  try {
+    const raw = localStorage.getItem(persistKey("timegrid-store"))
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as { state?: { entries?: unknown }; entries?: unknown }
+    const entries = parsed.state?.entries ?? parsed.entries
+    return Array.isArray(entries) ? (entries as Parameters<typeof showerTicksFromEntries>[0]) : []
+  } catch {
+    return []
+  }
+}
+
+function withBackfill(counts: CountStatus[], builtins: CountBuiltins, run: boolean): { counts: CountStatus[]; builtins: CountBuiltins } {
+  if (!run || builtins.showerBackfill === "done") return { counts, builtins }
+  if (builtins.shower === "removed") return { counts, builtins: { ...builtins, showerBackfill: "done" } }
+  const incoming = showerTicksFromEntries(entriesForShowerBackfill())
+  const existing = counts.find((row) => row.id === SHOWER_COUNT_ID)
+  const have = new Set((existing?.ticks ?? []).map((tick) => `${tick.date}|${tick.startMin}`))
+  const extra = incoming.filter((tick) => !have.has(`${tick.date}|${tick.startMin}`))
+  const ticks = [...(existing?.ticks ?? []), ...extra]
+  const shower = showerCount(ticks)
+  const rest = counts.filter((row) => row.id !== SHOWER_COUNT_ID)
+  return {
+    counts: [...rest, shower],
+    builtins: { ...builtins, shower: "on", showerBackfill: "done" },
+  }
+}
+
+function applyShowerBuiltin(persisted: unknown, backfill: boolean): { counts: CountStatus[]; builtins: CountBuiltins } {
+  const counts = sanitizeCountStatuses(persisted)
+  const builtins = readBuiltins(persisted)
+  const filled = withBackfill(counts, builtins, backfill || builtins.showerBackfill !== "done")
+  if (filled.builtins.shower === "removed") {
+    return { counts: filled.counts.filter((row) => row.id !== SHOWER_COUNT_ID), builtins: filled.builtins }
+  }
+  if (!filled.counts.some((row) => row.id === SHOWER_COUNT_ID)) {
+    return { counts: [...filled.counts, showerCount()], builtins: { ...filled.builtins, shower: "on" } }
+  }
+  return { counts: filled.counts, builtins: { ...filled.builtins, shower: "on" } }
+}
+
+/** Persist migrate. Version 2 backfills shower instants once. Older blobs stay valid. */
+export function migrateCountStatuses(persisted: unknown, version: number): { counts: CountStatus[]; builtins: CountBuiltins } {
+  if (version >= 2) {
+    const counts = sanitizeCountStatuses(persisted)
+    const builtins = readBuiltins(persisted)
+    return { counts, builtins }
+  }
+  return applyShowerBuiltin(persisted, true)
+}
 
 /**
  * Increment every count bound to this phrase. No binding is a no-op.

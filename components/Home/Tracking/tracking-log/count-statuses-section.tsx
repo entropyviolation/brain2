@@ -8,9 +8,9 @@
 
 import { useEffect, useState } from "react"
 import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
-import { ensureCountForKeyword, useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
+import { SHOWER_COUNT_ID, ensureCountForKeyword, useCountStatusesStore, type CountStatus, type CountTick } from "@/lib/count-statuses"
 import { logKeywordPhrase, useLogKeywordsStore } from "@/lib/log-keywords-store"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
 import { minutesToLabel, type IntakeClass } from "@/lib/time-entries"
 import { NativeSelect } from "@/components/ui/native-select"
 
@@ -78,6 +78,18 @@ function TickEditor({ count }: { count: CountStatus }) {
   )
 }
 
+function daysSinceLatest(ticks: CountTick[], today: string): number | null {
+  if (!ticks.length) return null
+  let latest = ticks[0]!
+  for (const tick of ticks) {
+    if (tick.date > latest.date || (tick.date === latest.date && tick.startMin > latest.startMin)) latest = tick
+  }
+  const from = parseLocalDate(latest.date)
+  const to = parseLocalDate(today)
+  if (!from || !to) return null
+  return Math.round((to.getTime() - from.getTime()) / 86_400_000)
+}
+
 function CountRow({ count, today, expanded = false }: { count: CountStatus; today: string; expanded?: boolean }) {
   const renameCount = useCountStatusesStore((state) => state.renameCount)
   const removeCount = useCountStatusesStore((state) => state.removeCount)
@@ -94,6 +106,7 @@ function CountRow({ count, today, expanded = false }: { count: CountStatus; toda
   }
 
   const recent = count.ticks.slice(-RECENT)
+  const since = count.id === SHOWER_COUNT_ID ? daysSinceLatest(count.ticks, today) : null
 
   return (
     <li className="trk-count-row">
@@ -113,6 +126,11 @@ function CountRow({ count, today, expanded = false }: { count: CountStatus; toda
       <span className="trk-count-total" aria-label={`${count.name} total`}>
         {count.ticks.length}
       </span>
+      {count.id === SHOWER_COUNT_ID ? (
+        <span className="trk-count-since" aria-label="Days since last shower">
+          {since == null ? "No shower logged" : `${since} days`}
+        </span>
+      ) : null}
       <button type="button" aria-label={`Increment ${count.name}`} onClick={() => incrementCount(count.id)}>
         +
       </button>

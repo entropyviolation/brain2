@@ -10,8 +10,10 @@
 import { useMemo, useState } from "react"
 import { ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { SHOWER_COUNT_ID, useCountStatusesStore } from "@/lib/count-statuses"
 import { minutesToLabel } from "@/lib/time-entries"
-import { parseLocalDate } from "@/lib/date-utils"
+import { formatLocalDateKey, parseLocalDate } from "@/lib/date-utils"
+import { showerGapStats } from "./shower-stats"
 import { ChartFrame } from "../studio/chart-frame"
 import { useAnalyticsRange } from "../chrome/analytics-range-store"
 import { CanvasTitle, StudioReadout, STUDIO_AXIS, STUDIO_GRID, STUDIO_TOOLTIP } from "../studio/studio-kit"
@@ -27,6 +29,41 @@ function dayLabel(key: string): string {
   const d = parseLocalDate(key)
   if (!d) return key
   return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric" })
+}
+
+function ShowerPlate({ dateKeys }: { dateKeys: readonly string[] }) {
+  const ticks = useCountStatusesStore((state) => state.counts.find((count) => count.id === SHOWER_COUNT_ID)?.ticks ?? [])
+  const today = formatLocalDateKey(new Date())
+  const stats = showerGapStats(ticks, dateKeys, today)
+  return (
+    <section aria-label="Shower" data-testid="shower-plate">
+      <h3 className="an-canvas-kicker">Shower</h3>
+      {stats.daysSince == null ? (
+        <ChartFrame empty emptySentence="No shower logged." />
+      ) : (
+        <>
+          <div className="an-readouts">
+            <StudioReadout label="Days since last shower" value={stats.daysSince} note="as of today" />
+            <StudioReadout label="Showers in this window" value={stats.showersInWindow} />
+            <StudioReadout label="Still open" value={stats.daysSince} note="not inside the mean" />
+          </div>
+          {stats.gapCount < 2 ? (
+            <ChartFrame thin thinSentence={`n = ${stats.gapCount}. Not a finding.`} />
+          ) : (
+            <div className="an-readouts">
+              <StudioReadout label="Average gap" value={stats.averageGapDays ?? 0} note={`days · n = ${stats.gapCount}`} />
+              <StudioReadout label="Longest gap" value={stats.longestGapDays ?? 0} note="days" />
+              <StudioReadout
+                label="Mean hours"
+                value={stats.averageGapHours ?? 0}
+                note={stats.hourGapCount ? `n = ${stats.hourGapCount} · apart from the day mean` : "no clocks"}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  )
 }
 
 export function LogEventsView() {
@@ -87,6 +124,8 @@ export function LogEventsView() {
           <p className="an-canvas-kicker">{label}</p>
         </div>
       </header>
+
+      <ShowerPlate dateKeys={dateKeys} />
 
       <label className="an-studio-field">
         <span>Kind</span>

@@ -88,7 +88,7 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `apply-phone-screen.ts` | `screen:` / `screentime:` / `iphone:` / `ios:` / `phone-screen:` → **iPhone Screen Time** only (estimated; no Mac AW stamp). Signed file: `docs/shortcuts/Screen Time to Brain2.shortcut`. |
 | `apply-phone-life.ts` | `call:` / `called:` / `phone-call:` → **iPhone Calls** interval; `text:` / `sms:` / `imessage:` / `sent:` → **iPhone Texts** instant. Not a Phone/Messages watcher. Signed files: `docs/shortcuts/iPhone Call to Brain2.shortcut`, `iPhone Text to Brain2.shortcut`. |
 | `apply-grocery.ts` | `groc` / `store` dump/add on the Settings live list (else the grocery-ish name), `got:` / `bought:` checkout, open-line match for colon-less `got`. The pin card is the dump; other shopping-list counts are on that card once, and a dump reply is the same string. A reply to that pin checks a line off |
-| `apply-inventory.ts` | Pantry / fridge list dump + qty bump |
+| `apply-inventory.ts` | Pantry / fridge list dump + qty bump. The same bump writes a pantry lot on `brain2-kitchen`. |
 | `apply-receipt.ts` | OCR lines → grocery checkout + pantry; ask when new |
 | `apply-scan-doc.ts` | Park a scan as a Docs `note` (folder From phone) + PDF attachment |
 | `apply-media.ts` | Photo/PDF routing: receipt vs journal vs forwarded PDF |

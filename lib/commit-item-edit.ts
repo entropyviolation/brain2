@@ -36,6 +36,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   type: true,
   title: true,
   createdAt: true,
+  modifiedAt: true,
   attachedDate: true,
   tags: true,
   links: true,

@@ -30,6 +30,8 @@ import { hasStepTiers } from "@/lib/step-tiers"
 import { levelReached } from "@/lib/step-progress"
 import { openStepItem } from "@/lib/step-item-stack"
 import { openTaskCard } from "@/lib/task-card"
+import { stopTaskSubclock } from "@/lib/task-clock"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { NativeSelect } from "@/components/ui/native-select"
 
 const COLLAPSE_THRESHOLD = 8
@@ -187,6 +189,9 @@ export function TodoTable({
   const pushPeriodNoun = period === "day" ? "days" : period === "week" ? "weeks" : "months"
   const pushLegend = `Pushes — times moved to the next open ${period}. Counts ${pushPeriodNoun}.`
   const listRef = useRef<HTMLDivElement>(null)
+  const penSession = usePenColorSessionStore((s) => s.session)
+  const clockSubclocks = penSession?.taskId && penSession.taskId === clockTaskId ? penSession.subclocks : undefined
+  const clockStartedAt = penSession?.taskId && penSession.taskId === clockTaskId ? penSession.startedAt : undefined
 
   const visibleTodos = isExpanded ? todos : todos.slice(0, COLLAPSE_THRESHOLD)
   const hiddenCount = todos.length - visibleTodos.length
@@ -724,8 +729,11 @@ export function TodoTable({
                     onClockStart
                       ? {
                           liveStepId: onClock ? clockStepId : undefined,
+                          subclocks: onClock ? clockSubclocks : undefined,
+                          startedAt: onClock ? clockStartedAt : undefined,
                           onStart: (stepId) => onClockStart(clockId, stepId),
                           onStop: () => onClockStop?.(),
+                          onStopStep: (stepId) => stopTaskSubclock(stepId),
                         }
                       : undefined
                   }

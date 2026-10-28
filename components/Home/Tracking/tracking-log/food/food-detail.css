@@ -1,0 +1,255 @@
+/* Food detail. The dialog is the Tracking log fascia; these rules only fill it. */
+
+.trk-food-dialog .trk-food-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.trk-food-dialog .trk-food-kpis p {
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trk-food-dialog .trk-food-kpis span {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-dialog .trk-food-nuts {
+  margin: 8px 0 12px;
+}
+
+.trk-food-dialog .trk-food-nuts h4,
+.trk-food-dialog .trk-food-eaten h4,
+.trk-food-dialog .trk-food-put h4,
+.trk-food-dialog .trk-food-recipes h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+
+.trk-food-dialog .trk-food-nuts section > p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-dialog .trk-food-nuts dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+  margin: 0 0 8px;
+}
+
+.trk-food-dialog .trk-food-nuts dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trk-food-dialog .trk-food-nuts dt,
+.trk-food-dialog .trk-food-nuts dd {
+  margin: 0;
+}
+
+.trk-food-dialog .trk-food-eaten {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.trk-food-dialog .trk-food-days {
+  max-width: 100%;
+  margin: 8px 0 4px;
+  overflow-x: auto;
+}
+
+.trk-food-dialog .trk-food-days .trk-span-switch {
+  width: max-content;
+}
+
+.trk-food-dialog .trk-food-days .trk-span-switch > button {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 4.5rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.trk-food-dialog .trk-food-subtotal {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+.trk-food-dialog .trk-food-line,
+.trk-food-dialog .trk-food-file,
+.trk-food-dialog .trk-food-log li,
+.trk-food-dialog .trk-food-log form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+}
+
+.trk-food-dialog .trk-food-line label,
+.trk-food-dialog .trk-food-file label,
+.trk-food-dialog .trk-food-log label {
+  margin: 0;
+}
+
+.trk-food-dialog .trk-food-unit {
+  padding-bottom: 6px;
+  font-size: 13px;
+}
+
+.trk-food-dialog .trk-food-log {
+  margin-top: 12px;
+}
+
+.trk-food-dialog .trk-food-log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trk-food-dialog .trk-food-log li {
+  margin: 0 0 8px;
+}
+
+.trk-food-dialog .trk-food-log-time {
+  width: 8rem;
+}
+
+.trk-food-dialog .trk-food-log-title-label {
+  flex: 1 1 12rem;
+}
+
+.trk-food-dialog .trk-food-log textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  font: inherit;
+  padding: 4px 6px;
+}
+
+.trk-food-dialog .trk-food-add,
+.trk-food-dialog .trk-food-plate-actions,
+.trk-food-dialog .trk-food-lot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.trk-food-dialog .trk-food-rows,
+.trk-food-dialog .trk-food-lots,
+.trk-food-dialog .trk-food-recipe-list,
+.trk-food-dialog .trk-food-search ul,
+.trk-food-dialog .trk-food-plate ul,
+.trk-food-dialog .trk-food-recipes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trk-food-dialog .trk-food-rows button,
+.trk-food-dialog .trk-food-search button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.trk-food-dialog .trk-food-search small {
+  opacity: 0.7;
+}
+
+.trk-food-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.trk-food-dialog input,
+.trk-food-dialog select {
+  font: inherit;
+  padding: 4px 6px;
+}
+
+.trk-food-dialog .trk-food-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.trk-food-dialog .trk-food-plate,
+.trk-food-dialog .trk-food-put,
+.trk-food-dialog .trk-food-lot,
+.trk-food-dialog .trk-food-recipes li {
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.trk-food-dialog .trk-food-diorama {
+  position: relative;
+  height: 240px;
+  margin: 8px 0 12px;
+  overflow: hidden;
+  background: #241c2e;
+}
+
+.trk-food-dialog .trk-food-status {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.trk-food-dialog .trk-food-lot header,
+.trk-food-dialog .trk-food-recipe-list header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .trk-food-dialog .trk-food-split,
+  .trk-food-dialog .trk-food-kpis,
+  .trk-food-dialog .trk-food-nuts dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trk-food-dialog .trk-food-line,
+  .trk-food-dialog .trk-food-log li,
+  .trk-food-dialog .trk-food-log form {
+    align-items: stretch;
+  }
+
+  .trk-food-dialog .trk-food-log-title-label,
+  .trk-food-dialog .trk-food-log form label {
+    flex: 1 1 100%;
+  }
+
+  .trk-food-dialog .trk-food-diorama {
+    height: min(240px, 42dvh);
+    max-width: 100%;
+  }
+
+  .trk-food-dialog input,
+  .trk-food-dialog select,
+  .trk-food-dialog textarea {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+}

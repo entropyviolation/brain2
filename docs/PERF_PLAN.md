@@ -10,11 +10,11 @@ The table in section 2 is a jsdom benchmark of `cogsStateStorage().setItem` on s
 
 ## Where the time goes
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
 ### 1. The app always runs in dev mode
 
-- `npm run electron:dev` starts `scripts/cogs-dev-server.mjs` with `next({ dev: true })`. Electron loads `http://localhost:3000` (`electron/main.js:~115`).
+- `npm run electron:dev` starts `scripts/cogs-dev-server.mjs` with `next({ dev, hostname, port, turbopack: true })` when `NODE_ENV` is not `production`. Dev now requests Turbopack. `experimental.optimizePackageImports` still applies. Turbopack ignores the webpack watch-ignore hook, so hub writes under `data/` refreshing the skin is the regression to watch. Electron loads `http://localhost:3000` (`electron/main.js:~115`).
 - Dev React is several times slower than production. Next compiles chunks on demand on each reload. The script sets `--max-old-space-size=8192`, and `next.config.mjs` comments describe heap OOMs and `ChunkLoadError` stalls.
 - The vault lives in the `localhost:3000` origin's localStorage. The packaged build loads `app://local/`, a different origin, so the user stays on dev to keep their data.
 - `next build` fails today on the 368 type errors (`ignoreBuildErrors: false`). There is no production build to switch to.
@@ -173,12 +173,12 @@ Static read of the React side. No profile taken. Short version: rendering is mos
 ### Fixed in this pass
 
 - `components/Home/Plan/dialogs/settings-dialog.tsx`: it destructured the whole `useTaskStore()` and `useEventStore()` and scanned every `localStorage` key on each render. It is mounted always (`plan-panel.tsx:~310`), so every task edit re-rendered it. Now it subscribes to counts only, reads full arrays via `getState()` on export, and counts plan keys in a `useMemo` only while open.
-- `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
+- `next.config.mjs`: added `experimental.optimizePackageImports` for `lucide-react` (127 importing files), `date-fns`, `recharts`, and three Radix packages. It still applies with Turbopack. Cuts dev compile time and chunk size. Payoff: medium in dev, small in prod.
 
 ### Not fixed, ranked by payoff
 
 1. **Dev mode** (section 1 above) remains the largest cost. Estimated payoff: large.
-2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts:~11`): 17 PNGs, about 13 MB, all statically imported. Next emits URLs, not inlined data, so they load only when painted, but the dev compiler still processes them and the picker may preload. Resize or convert to WebP, and import only the chosen dial. Payoff: medium (dev compile, memory).
+2. **Clock dial PNGs** (`components/ui/clock-picker/clock-dials.ts`): the 17 PNGs, about 13 MB, are no longer statically imported. `loadDial` dynamic-imports the selected dial, so the dev compiler does not walk every painting with this module. Resize or convert to WebP is still open. Payoff of that resize: memory. The compile cost of importing every dial here is done.
 3. **`katex`** is statically imported in `components/Home/Habits/panel/willpower-gems.tsx:39` with its CSS. Habits is already lazy, so it only costs on opening Habits. Switch to `import("katex")` inside the render helper if Habits open feels slow. Payoff: small.
 4. **129 files subscribe to `s.tasks`** (`useTaskStore((s) => s.tasks)`). Each task edit re-renders all mounted ones. Fine while only one tab is mounted. Item detail keeps the tab desk mounted (hidden) (`app/page.tsx` header), so hidden tabs still re-render. Consider unmounting or `Activity`/deferring hidden tabs. Payoff: medium, needs care (scroll and state restore).
 5. **`app/page.tsx` eager imports**: `PenSettingsHost`, `TagSettingsHost`, `StepItemStack`, `CaptureDoorHost` load on first paint. Convert the settings hosts to `lazy` mounted on first open. Payoff: small to medium on first load.

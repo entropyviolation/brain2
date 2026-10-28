@@ -116,3 +116,15 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 767px) {
+  .fm98.an95 .an-ig-frame {
+    height: min(70dvh, 640px);
+    max-width: 100%;
+  }
+
+  .fm98.an95 .an-ig-paste {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}

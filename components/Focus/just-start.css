@@ -578,3 +578,17 @@ body.win95-app .just-start input.just-start-field {
     transition: none;
   }
 }
+
+@media (max-width: 767px) {
+  .just-start-sitting {
+    width: min(100%, calc(100% - 16px));
+    max-width: calc(100% - 16px);
+    bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .just-start-field,
+  body.win95-app .just-start input.just-start-field {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}

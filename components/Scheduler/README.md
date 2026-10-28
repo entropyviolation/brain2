@@ -1,6 +1,8 @@
 # `components/Scheduler/` — Scheduler (Period Funnel)
 
-The **Scheduler** top-level tab in **Brain2**. It sorts to-do lists into Always → Year → Month → Week → Day. A list that already has dates — a trip itinerary — is scheduled on its own and is not this tool unless **Send to Scheduler** is on.
+_Last mapped: 2026-10-28_
+
+The **Scheduler** top-level tab in **Brain2**. On a phone (`max-width: 767px`) the rail stacks above the days, bucket grids become one column, and fields are 16px. Desktop chrome is unchanged. It sorts to-do lists into Always → Year → Month → Week → Day. A list that already has dates — a trip itinerary — is scheduled on its own and is not this tool unless **Send to Scheduler** is on.
 
 ## Public door
 

@@ -14,7 +14,7 @@
  * at the time the caller passes, with the line kept whole.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { recordCountForKeyword } from "@/lib/count-statuses"
+import { recordCountForKeyword, useCountStatusesStore } from "@/lib/count-statuses"
 import { formatLogKeywordList, isLogKeywordListQuery } from "@/lib/log-keywords"
 import { savedLogKeywordPhrases } from "@/lib/log-keywords-store"
 import { eventKindSlug, type IntakeClass, type LogSource, type TimeEntry } from "@/lib/time-entries"
@@ -99,6 +99,7 @@ export function applyDiscreteLog(
   )
     const placeId = pairLocation(parsed, parsed.start)
     if (id) mirrorTrackingEntry(id, "log")
+    tallySavedKeyword(parsed.title, parsed.end, phrases, parsed.clockCertainty)
     return {
       status: "ok",
       kind: "event-log",
@@ -216,7 +217,12 @@ function tallySavedKeyword(
   clockCertainty?: NoteClockCertainty,
 ): void {
   const key = title.trim().toLowerCase()
-  if (!key || !phrases.some((phrase) => phrase.trim().toLowerCase() === key)) return
+  if (!key) return
+  const listed = phrases.some((phrase) => phrase.trim().toLowerCase() === key)
+  const bound = useCountStatusesStore
+    .getState()
+    .counts.some((count) => count.keyword && count.keyword.trim().toLowerCase() === key)
+  if (!listed && !bound) return
   recordCountForKeyword(title, {
     date: formatLocalDateKey(at),
     startMin: minutesPastMidnight(at),
