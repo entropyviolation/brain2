@@ -57,17 +57,19 @@ export function MobileApp() {
   const [session, setSession] = useState(() => readMobileSession())
   const [tab, setTab] = useState<MobileTab>("home")
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [windowStatus, setWindowStatus] = useState(() => getPhoneWindowSnapshot().status)
+  const [windowSnap, setWindowSnap] = useState(getPhoneWindowSnapshot)
   const rootRef = useRef<HTMLDivElement>(null)
-  const windowLine = phoneWindowNote(windowStatus)
+  // Always says something, so a missing line can never mean two things.
+  const windowLine =
+    phoneWindowNote(windowSnap.status) ?? (windowSnap.status === "live" ? "Mac loaded." : "Mac not asked yet.")
 
-  useEffect(() => subscribePhoneWindow(() => setWindowStatus(getPhoneWindowSnapshot().status)), [])
+  useEffect(() => subscribePhoneWindow(() => setWindowSnap(getPhoneWindowSnapshot())), [])
 
   useEffect(() => {
     if (!session) return
     let cancelled = false
     loadPhoneWindow().then(() => {
-      if (!cancelled) setWindowStatus(getPhoneWindowSnapshot().status)
+      if (!cancelled) setWindowSnap(getPhoneWindowSnapshot())
     })
     return () => {
       cancelled = true
@@ -124,6 +126,10 @@ export function MobileApp() {
           </div>
         </div>
 
+        <p className="cogs-mobile-window-line" role="status" data-status={windowSnap.status}>
+          {windowLine}
+        </p>
+
         <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
           <button type="button" className={tab === "home" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("home")}>
             Home
@@ -142,11 +148,6 @@ export function MobileApp() {
       </header>
 
       <main className="cogs-mobile-body">
-        {windowLine ? (
-          <p className="cogs-mobile-loading" role="status">
-            {windowLine}
-          </p>
-        ) : null}
         <PersistStatusBanner />
         {tab === "bim" ? null : (
           <>

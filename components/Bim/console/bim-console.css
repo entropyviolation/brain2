@@ -14,20 +14,29 @@
   padding: 10px 12px;
   border: 2px solid var(--crt-line);
   border-radius: 10px;
+  /* The Win95 dialog face paints grey; this screen is its own glass. */
   background:
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%);
-  color: var(--crt-fg);
+    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%) !important;
+  color: var(--crt-fg) !important;
   font: 13px/1.45 "VT323", ui-monospace, "SF Mono", Menlo, monospace;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   box-shadow: 0 0 0 4px #0b1f12, 0 0 40px rgba(60, 255, 120, 0.15);
 }
 
+/* Buttons carry `data-no95` so the Win95 keycap skin stays off them. */
+.ui-dialog-content.bim-crt button,
+.ui-dialog-content.bim-crt textarea {
+  font-family: "VT323", ui-monospace, "SF Mono", Menlo, monospace !important;
+}
+
 .bim-crt button {
   font: inherit;
   color: var(--crt-fg);
   background: transparent;
+  background-image: none;
+  box-shadow: none;
   border: 1px solid var(--crt-line);
   border-radius: 3px;
   cursor: pointer;
@@ -150,6 +159,10 @@
   text-transform: none;
   caret-color: var(--crt-fg);
   outline: none;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
 }
 
 .bim-crt-input textarea::placeholder {
@@ -240,4 +253,64 @@
 
 .bim-crt-wide {
   text-transform: none;
+}
+
+/* Phone width: one column of glass. Chat, then compose, then quick keys.
+   The dossier and keypad step aside; the system keyboard has digits. */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  .ui-dialog-content.bim-crt {
+    width: auto !important;
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--phone-sheet-top, 0px)) !important;
+    margin-top: var(--phone-sheet-top, auto) !important;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 15px;
+    overflow: hidden !important;
+  }
+
+  .bim-crt-top > span:nth-child(2),
+  .bim-crt-foot > span:first-child,
+  .bim-crt-side,
+  .bim-crt-keys {
+    display: none;
+  }
+
+  .bim-crt-x {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .bim-crt-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .bim-crt-tabs button {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  .bim-crt-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bim-crt-compose {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .bim-crt-input textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .bim-crt-chips button {
+    min-height: 36px;
+  }
+
+  .bim-crt-send {
+    min-height: 44px;
+  }
 }

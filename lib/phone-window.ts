@@ -111,6 +111,8 @@ let engaged = false
 let macAnswered = false
 let acceptPatches = true
 let status: PhoneWindowStatus = "idle"
+/** The step in flight, or why the last load missed. Shown on the phone so a failure names itself. */
+let detail: string | null = null
 let hubUrl = ""
 let loadGen = 0
 let outboxTail: Promise<void> = Promise.resolve()
@@ -129,13 +131,16 @@ export function phoneWindowEngaged(): boolean {
   return engaged && isPhoneWebStorage() && !isDemoProfile()
 }
 
-export function getPhoneWindowSnapshot(): { status: PhoneWindowStatus } {
-  return { status }
+export function getPhoneWindowSnapshot(): { status: PhoneWindowStatus; detail: string | null } {
+  return { status, detail }
 }
 
 export function phoneWindowNote(next: PhoneWindowStatus = status): string | null {
-  if (next === "offline") return "Can't reach the Mac."
-  if (next === "stale") return "Saved copy. The Mac has not answered."
+  const why = detail ? ` ${detail}` : ""
+  if (next === "offline") return `Can't reach the Mac.${why}`
+  if (next === "stale") return `Saved copy. The Mac has not answered.${why}`
+  if (next === "loading") return `Loading from the Mac…${why}`
+  if (next === "idle" && detail) return detail
   return null
 }
 
@@ -151,6 +156,24 @@ function emit() {
 function setStatus(next: PhoneWindowStatus) {
   status = next
   emit()
+}
+
+function setDetail(next: string | null) {
+  detail = next
+  emit()
+}
+
+function errorText(err: unknown): string {
+  if (err instanceof Error) return err.message ? `${err.name}: ${err.message}` : err.name
+  return String(err)
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
 }
 
 function canonicalWindowKey(name: string): string {
@@ -454,16 +477,31 @@ function installMap(next: Map<string, string>) {
   for (const [key, value] of next) memory.set(key, value)
 }
 
-async function fetchCanon(url: string): Promise<{ ok: true; items: Record<string, unknown> } | { ok: false }> {
+/** Long enough for the whole vault over Wi-Fi; short enough that a dead socket names itself. */
+const CANON_TIMEOUT_MS = 90_000
+
+type CanonResult = { ok: true; items: Record<string, unknown> } | { ok: false; reason: string }
+
+async function fetchCanon(url: string): Promise<CanonResult> {
+  const controller = typeof AbortController === "function" ? new AbortController() : null
+  const timer = controller ? setTimeout(() => controller.abort(), CANON_TIMEOUT_MS) : null
   try {
     const headers: Record<string, string> = { Accept: "application/json", ...(await authHeaders()) }
-    const response = await fetch(`${url}/api/persist?canon=1`, { cache: "no-store", headers })
-    if (!response.ok) return { ok: false }
+    const response = await fetch(`${url}/api/persist?canon=1`, { cache: "no-store", headers, signal: controller?.signal })
+    if (!response.ok) {
+      const hint = response.status === 401 ? " (hub token)" : ""
+      return { ok: false, reason: `${hostOf(url)} answered ${response.status}${hint}.` }
+    }
     const body = (await response.json()) as { items?: unknown }
-    if (!body.items || typeof body.items !== "object" || Array.isArray(body.items)) return { ok: false }
+    if (!body.items || typeof body.items !== "object" || Array.isArray(body.items)) {
+      return { ok: false, reason: `${hostOf(url)} sent no vault.` }
+    }
     return { ok: true, items: body.items as Record<string, unknown> }
-  } catch {
-    return { ok: false }
+  } catch (err) {
+    if (controller?.signal.aborted) return { ok: false, reason: `${hostOf(url)} timed out.` }
+    return { ok: false, reason: `${hostOf(url)}: ${errorText(err)}` }
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }
 
@@ -657,25 +695,48 @@ async function paintCache(gen: number): Promise<PhoneWindowStatus> {
 export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
   engagePhoneWindow()
   if (!phoneWindowEngaged()) {
+    detail = isDemoProfile() ? "Demo profile: the Mac is not loaded." : null
     setStatus("idle")
     return "idle"
   }
   const gen = ++loadGen
+  try {
+    return await loadPhoneWindowSteps(gen)
+  } catch (err) {
+    // A throw would leave "loading" up forever with nothing to say.
+    if (gen !== loadGen) return status
+    macAnswered = false
+    setDetail(`Stopped while ${detail?.replace(/^\(|\)$/g, "") ?? "loading"}: ${errorText(err)}`)
+    setStatus(memory.size > 0 ? "stale" : "offline")
+    return status
+  }
+}
+
+async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
+  detail = "(finding the Mac)"
   if (memory.size === 0) setStatus("loading")
+  else emit()
   let candidates: string[] = []
+  let candidateError = ""
   try {
     candidates = await resolveHubCandidates()
-  } catch {
+  } catch (err) {
     candidates = []
+    candidateError = errorText(err)
   }
   if (gen !== loadGen) return status
   let url = ""
   let first: { ok: true; items: Record<string, unknown> } | null = null
+  const misses: string[] = []
   for (const candidate of candidates) {
     if (gen !== loadGen) return status
+    setDetail(`(asking ${hostOf(candidate)})`)
     const attempt = await fetchCanon(candidate)
     if (gen !== loadGen) return status
-    if (!attempt.ok) continue
+    if (!attempt.ok) {
+      misses.push(attempt.reason)
+      continue
+    }
     url = candidate
     first = attempt
     break
@@ -683,8 +744,14 @@ export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
   hubUrl = url
   if (!first) {
     macAnswered = false
-    return paintCache(gen)
+    detail = misses.length > 0 ? misses.join(" ") : `No Mac address saved${candidateError ? ` (${candidateError})` : ""}.`
+    setDetail(`(opening the saved copy) ${detail}`)
+    const why = detail
+    const painted = await paintCache(gen)
+    if (gen === loadGen) setDetail(why)
+    return painted
   }
+  setDetail("(sending phone edits)")
   await phoneOutboxSettled()
   const flushed = await flushPhoneOutbox({ force: true })
   if (gen !== loadGen) return status
@@ -695,8 +762,10 @@ export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
   }
   if (gen !== loadGen) return status
   installMap(collapseItems(items))
+  setDetail("(saving the launch copy)")
   await writeLaunchCache(memory)
   await replayOutbox()
+  setDetail("(drawing the vault)")
   acceptPatches = false
   try {
     await rehydrateMemory()
@@ -705,6 +774,7 @@ export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
   }
   if (gen !== loadGen) return status
   macAnswered = true
+  detail = null
   setStatus("live")
   if ((await listOutbox()).length > 0) await flushPhoneOutbox()
   return status
@@ -753,6 +823,7 @@ export function resetPhoneWindowForTests(): void {
   macAnswered = false
   acceptPatches = true
   status = "idle"
+  detail = null
   hubUrl = ""
   loadGen += 1
   inflight.clear()

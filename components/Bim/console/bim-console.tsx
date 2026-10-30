@@ -64,7 +64,7 @@ function ChatPane() {
           {choices.length ? (
             <div className="bim-crt-chips" aria-label="Answers">
               {choices.map((choice) => (
-                <button key={choice.text + choice.label} type="button" onClick={() => submit(choice.text)}>
+                <button data-no95 key={choice.text + choice.label} type="button" onClick={() => submit(choice.text)}>
                   {choice.label}
                 </button>
               ))}
@@ -80,11 +80,11 @@ function ChatPane() {
           />
           <div className="bim-crt-chips bim-crt-quick" aria-label="Quick commands">
             {BIM_QUICK.map((word) => (
-              <button key={word} type="button" disabled={busy} onClick={() => submit(word)}>
+              <button data-no95 key={word} type="button" disabled={busy} onClick={() => submit(word)}>
                 {word}
               </button>
             ))}
-            <button type="button" onClick={clear} disabled={!lines.length}>
+            <button data-no95 type="button" onClick={clear} disabled={!lines.length}>
               clear
             </button>
           </div>
@@ -92,12 +92,12 @@ function ChatPane() {
         <div className="bim-crt-pad">
           <div className="bim-crt-keys">
             {KEYPAD.map((key) => (
-              <button key={key} type="button" onClick={() => press(key)}>
+              <button data-no95 key={key} type="button" onClick={() => press(key)}>
                 {key}
               </button>
             ))}
           </div>
-          <button type="button" className="bim-crt-send" disabled={busy || !draft.trim()} onClick={() => submit()}>
+          <button data-no95 type="button" className="bim-crt-send" disabled={busy || !draft.trim()} onClick={() => submit()}>
             SEND
           </button>
         </div>
@@ -162,13 +162,13 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
         <div className="bim-crt-top">
           <span>BRAIN2 BIM TERM 1.0</span>
           <span>{BIM_FULL.toUpperCase()}</span>
-          <button type="button" className="bim-crt-x" onClick={() => onOpenChange(false)} aria-label="Close BIM Chat">
+          <button data-no95 type="button" className="bim-crt-x" onClick={() => onOpenChange(false)} aria-label="Close BIM Chat">
             [X]
           </button>
         </div>
         <nav className="bim-crt-tabs" aria-label="BIM console tabs">
           {TABS.map((t) => (
-            <button
+            <button data-no95
               key={t}
               type="button"
               className={t === tab ? "is-on" : undefined}

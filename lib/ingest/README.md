@@ -70,6 +70,7 @@ Docs folder **From phone**, grocery checkout + pantry bump. See
 | `pairing.ts` | 6-digit pairing codes (10 min TTL) **and** pair-by-sight: `unpairedSenders` reads `UNPAIRED_SUMMARY` refusals back out of the log so Settings can allowlist a real sender in one click. Pairing itself never expires. A pre-hydration seed cannot wipe `allowedChats` (`allowlistRev` + revoke tombstones in `vault-guard.js`). |
 | `help.ts` | Short cheat-sheet (`help`). Pair OK aliases BIM. Live `info` is `command-glossary.ts` |
 | `bim.ts` | BIM identity — Brain2 Ingestion Messenger intro / pair / ping lines |
+| `bim-chat.ts` | _Last mapped: 2026-10-30_ **BIM Chat** in the app (`components/Bim/`). Runs a line through `ingestIncomingAsync` on channel `simulate`, chat `bim-chat`: no pairing, no dedupe, no Telegram feed row. Clarify buttons reuse `telegram-ui.mjs`. Transcript in `localStorage` `bimchat-transcript` |
 | `command-catalog.ts` | **Complete command catalog** — every verb/alias/expansion/preset/GM reply/retired `g`; feeds `all commands` and `docs/BIM_COMMANDS.md` |
 | `command-glossary.ts` | `info`, `{prefix} info`, `{prefix} commands`, `all commands` manuals (commands bodies from catalog) |
 | `apply-glossary.ts` | Glossary matcher + apply helpers |

@@ -19,9 +19,10 @@ import {
 function PhoneWindowCard() {
   const [busy, setBusy] = useState(false)
   const [url, setUrl] = useState(readMobileSyncUrl)
-  const [status, setStatus] = useState(getPhoneWindowSnapshot().status)
+  const [snap, setSnap] = useState(getPhoneWindowSnapshot)
+  const status = snap.status
 
-  useEffect(() => subscribePhoneWindow(() => setStatus(getPhoneWindowSnapshot().status)), [])
+  useEffect(() => subscribePhoneWindow(() => setSnap(getPhoneWindowSnapshot())), [])
 
   useEffect(() => {
     let cancelled = false
@@ -40,7 +41,7 @@ function PhoneWindowCard() {
       await loadPhoneWindow()
     } finally {
       setBusy(false)
-      setStatus(getPhoneWindowSnapshot().status)
+      setSnap(getPhoneWindowSnapshot())
     }
   }
 
@@ -50,7 +51,7 @@ function PhoneWindowCard() {
     <div className="cogs-mobile-pullcard">
       <div className="cogs-mobile-pullcard-row">
         <strong>Desktop data</strong>
-        <span className={status === "live" ? "ok" : "warn"}>{busy ? "Working…" : note}</span>
+        <span className={status === "live" ? "ok" : "warn"}>{busy && status !== "loading" ? "Working…" : note}</span>
       </div>
       <label className="cogs-mobile-pullcard-row">
         Hub
