@@ -999,10 +999,6 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
   const weekSheetPeriods = habitWeekView ? singlePeriodColumns(weekPeriods) : weekPeriods
   const monthSheetPeriods = habitMonthView ? singlePeriodColumns(monthPeriods) : monthPeriods
   const seasonSheetPeriods = habitSeasonView ? singlePeriodColumns(seasonPeriods) : seasonPeriods
-  const weekPlanColumn = habitWeekView ? weekSheetPeriods[0] : undefined
-  const monthPlanColumn = habitMonthView ? monthSheetPeriods[0] : undefined
-  const seasonPlanColumn = habitSeasonView ? seasonSheetPeriods[0] : undefined
-  const dayPlanKey = formatLocalDateKey(currentDate)
   const habitDialogs = (
     <>
       <TaskFormDialog
@@ -1092,9 +1088,6 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
         weekSheetPeriods={weekSheetPeriods}
         monthSheetPeriods={monthSheetPeriods}
         seasonSheetPeriods={seasonSheetPeriods}
-        weekPlanColumn={weekPlanColumn}
-        monthPlanColumn={monthPlanColumn}
-        seasonPlanColumn={seasonPlanColumn}
         dailyRows={dailyRows}
         weeklyRows={weeklyRows}
         monthlyRows={monthlyRows}
@@ -1180,7 +1173,6 @@ export function HabitsPhonePage({ currentDate = new Date() }: { currentDate?: Da
         setPercentLoadingBar={setPercentLoadingBar}
         habitSmallLeds={habitSmallLeds}
         setHabitSmallLeds={setHabitSmallLeds}
-        dayPlanKey={dayPlanKey}
       />
     )
 }

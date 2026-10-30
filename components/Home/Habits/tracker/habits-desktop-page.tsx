@@ -58,7 +58,7 @@ import { DailyPane } from "@/components/Home/Habits/tracker/daily-pane"
 import { WeeklyPane } from "@/components/Home/Habits/tracker/weekly-pane"
 import { MonthlyPane } from "@/components/Home/Habits/tracker/monthly-pane"
 import { SeasonPane } from "@/components/Home/Habits/tracker/season-pane"
-import { HabitsScratchPad } from "@/components/Home/Habits/tracker/habits-scratch-pad"
+import { HabitsScratchPad, habitsScratchTarget } from "@/components/Home/Habits/tracker/habits-scratch-pad"
 import type { HabitMeterProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
 
 export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: Date }) {
@@ -391,9 +391,6 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
   const weekSheetPeriods = store.habitWeekView ? singlePeriodColumns(weekPeriods) : weekPeriods
   const monthSheetPeriods = store.habitMonthView ? singlePeriodColumns(monthPeriods) : monthPeriods
   const seasonSheetPeriods = store.habitSeasonView ? singlePeriodColumns(seasonPeriods) : seasonPeriods
-  const weekPlanColumn = store.habitWeekView ? weekSheetPeriods[0] : undefined
-  const monthPlanColumn = store.habitMonthView ? monthSheetPeriods[0] : undefined
-  const seasonPlanColumn = store.habitSeasonView ? seasonSheetPeriods[0] : undefined
 
   const meter: HabitMeterProps = {
     gradeLabel: grade.gradeLabel,
@@ -526,7 +523,6 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           weeklyPeriodPercent={weeklyPeriodPercent}
           currentDate={currentDate}
           habitWeekView={store.habitWeekView}
-          weekPlanColumn={weekPlanColumn}
           priorityProps={priorityProps}
           editingFrequency={editingFrequency}
           reorderVisible={reorderVisible}
@@ -560,7 +556,6 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           monthlyPeriodPercent={monthlyPeriodPercent}
           currentDate={currentDate}
           habitMonthView={store.habitMonthView}
-          monthPlanColumn={monthPlanColumn}
           priorityProps={priorityProps}
           editingFrequency={editingFrequency}
           reorderVisible={reorderVisible}
@@ -597,7 +592,6 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           currentDate={currentDate}
           currentQuarter={currentQuarter}
           habitSeasonView={store.habitSeasonView}
-          seasonPlanColumn={seasonPlanColumn}
           priorityProps={priorityProps}
           editingFrequency={editingFrequency}
           reorderVisible={reorderVisible}
@@ -611,7 +605,18 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           setShowTaskForm={form.setShowTaskForm}
         />
       </Tabs>
-      {hydrated ? <HabitsScratchPad /> : null}
+      {hydrated ? (
+        <HabitsScratchPad
+          target={habitsScratchTarget({
+            habitTab,
+            dayView: store.habitDayView,
+            currentDate,
+            currentWeekStart,
+            currentMonth,
+            currentQuarter,
+          })}
+        />
+      ) : null}
       <HabitDeskDialogs
         showTaskForm={form.showTaskForm}
         setShowTaskForm={form.setShowTaskForm}
