@@ -18,7 +18,7 @@ import { PERSON_ATTR } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
-const SOURCE = "phone link"
+const PHONE_LINK: { surface: "unknown" } = { surface: "unknown" }
 
 /**
  * Rename and link the phone pens to match the people. `draft` stands in for a
@@ -59,7 +59,7 @@ function writeHandles(personId: string, add: readonly string[], remove: readonly
       personProfile: presentPersonProfile({ ...profile, phones, emails }),
       attributes: { ...(person.attributes ?? {}), [PERSON_ATTR.phone]: phones.length ? phones : undefined },
     },
-    SOURCE,
+    PHONE_LINK,
   )
 }
 

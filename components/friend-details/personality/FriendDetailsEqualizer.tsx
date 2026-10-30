@@ -54,32 +54,32 @@ function Fader({
   group?: "apart" | "saved"
   onChange: (value: number) => void
 }) {
-  const setFromY = (el: HTMLElement, clientY: number) => {
+  const setFromX = (el: HTMLElement, clientX: number) => {
     const rect = el.getBoundingClientRect()
-    const ratio = 1 - (clientY - rect.top) / rect.height
+    const ratio = (clientX - rect.left) / rect.width
     onChange(Math.round(Math.max(0, Math.min(1, ratio)) * 100))
   }
 
   return (
     <div className={`friend-fader${group === "apart" ? " is-apart" : ""}${group === "saved" ? " is-saved" : ""}`}>
-      <span className="friend-fader-lcd" aria-hidden="true">{value}</span>
+      <span className="friend-fader-name">{label}</span>
       <div
         className="friend-fader-well"
         role="slider"
         tabIndex={0}
-        aria-orientation="vertical"
+        aria-orientation="horizontal"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value}
         aria-label={label}
-        title={hint}
+        title={`${job}. ${hint}`}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
-          setFromY(event.currentTarget, event.clientY)
+          setFromX(event.currentTarget, event.clientX)
         }}
         onPointerMove={(event) => {
           if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
-          setFromY(event.currentTarget, event.clientY)
+          setFromX(event.currentTarget, event.clientX)
         }}
         onKeyDown={(event) => {
           const step = event.shiftKey ? 10 : 1
@@ -90,8 +90,7 @@ function Fader({
         <span className="friend-fader-fill" style={{ ["--fader" as string]: String(value) }} />
         <span className="friend-fader-cap" style={{ ["--fader" as string]: String(value) }} />
       </div>
-      <span className="friend-fader-name">{label}</span>
-      <span className="friend-fader-job">{job}</span>
+      <span className="friend-fader-lcd">{value}</span>
     </div>
   )
 }
@@ -110,11 +109,10 @@ export function FriendDetailsEqualizer({
   onPreset: (partial: Partial<FriendPersonality>) => void
 }) {
   const [loveDraft, setLoveDraft] = useState("")
+  const [presetsOpen, setPresetsOpen] = useState(false)
   const mix = sourceMixPercents(draft)
   const pay = friendRewardPoints(draft.rewardScale)
   const matched = titleLoveMatchCount(titles, draft.titleLoves)
-  const sources = FADERS.slice(0, 3)
-  const rest = FADERS.slice(3)
 
   const addLove = (raw: string) => {
     const next = sanitizeFriendPersonality({ ...draft, titleLoves: [...draft.titleLoves, raw] })
@@ -126,44 +124,26 @@ export function FriendDetailsEqualizer({
   return (
     <fieldset className="friend-eq">
       <legend className="friend-bay-title">Equalizer</legend>
-      <details className="friend-presets-fold">
-        <summary>Presets</summary>
+      <button
+        type="button"
+        className="friend-key"
+        data-no95=""
+        aria-expanded={presetsOpen}
+        onClick={() => setPresetsOpen((open) => !open)}
+      >
+        Presets
+      </button>
+      {presetsOpen ? (
         <div className="friend-presets" role="group" aria-label="Presets">
           {FRIEND_PRESETS.map((preset) => (
-            <button key={preset.id} type="button" className="friend-key" onClick={() => onPreset(preset.patch)}>
+            <button key={preset.id} type="button" className="friend-key" data-no95="" onClick={() => onPreset(preset.patch)}>
               {preset.label}
             </button>
           ))}
         </div>
-      </details>
-      <div className="friend-eq-deck">
-      <div className="friend-eq-db" aria-hidden="true">
-        <span>+12</span>
-        <span>0</span>
-        <span>−12</span>
-      </div>
-      <div className="friend-eq-main">
-      <div className="friend-eq-scale" aria-hidden="true">
-        <span>0</span>
-        <span>100</span>
-      </div>
-      <div className="friend-eq-row">
-        <div className="friend-eq-sources">
-          <MixCurve habit={draft.habitWeight} todo={draft.todoWeight} next={draft.nextActionsWeight} />
-          <div className="friend-eq-source-faders">
-            {sources.map((fader) => (
-              <Fader
-                key={fader.key}
-                label={fader.label}
-                job={fader.job}
-                hint={fader.hint}
-                value={draft[fader.key]}
-                onChange={(value) => onChange({ [fader.key]: value })}
-              />
-            ))}
-          </div>
-        </div>
-        {rest.map((fader) => (
+      ) : null}
+      <div className="friend-fader-list">
+        {FADERS.map((fader) => (
           <Fader
             key={fader.key}
             label={fader.label}
@@ -175,8 +155,7 @@ export function FriendDetailsEqualizer({
           />
         ))}
       </div>
-      </div>
-      </div>
+      <MixCurve habit={draft.habitWeight} todo={draft.todoWeight} next={draft.nextActionsWeight} />
       <p className="friend-eq-mix">
         Habits {mix.habit}% · To Do {mix.todo}% · Next {mix.next}%
         <span className="friend-eq-pay">
@@ -200,8 +179,8 @@ export function FriendDetailsEqualizer({
           {draft.titleLoves.map((word) => (
             <li key={word}>
               <span className="friend-bead">{word}</span>
-              <button type="button" className="friend-bead-x" aria-label={`Remove ${word}`} onClick={() => onChange({ titleLoves: draft.titleLoves.filter((row) => row !== word) })}>
-                ×
+              <button type="button" className="friend-bead-x" data-no95="" aria-label={`Remove ${word}`} onClick={() => onChange({ titleLoves: draft.titleLoves.filter((row) => row !== word) })}>
+                Remove
               </button>
             </li>
           ))}
@@ -213,7 +192,7 @@ export function FriendDetailsEqualizer({
           placeholder="Add a word"
           onChange={(event) => setLoveDraft(event.target.value)}
         />
-        <button type="submit" className="friend-key">
+        <button type="submit" className="friend-key" data-no95="">
           Add
         </button>
         <p className="friend-tray-note">
@@ -242,6 +221,7 @@ export function FriendDetailsEqualizer({
                 <button
                   type="button"
                   className="friend-bead-x"
+                  data-no95=""
                   aria-label={`Remove ${name}`}
                   onClick={() => {
                     const next = { ...draft.listBias }
@@ -249,7 +229,7 @@ export function FriendDetailsEqualizer({
                     onChange({ listBias: next })
                   }}
                 >
-                  ×
+                  Remove
                 </button>
               </li>
             )

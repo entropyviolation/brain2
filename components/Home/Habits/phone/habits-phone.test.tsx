@@ -120,6 +120,26 @@ describe("Habits phone", () => {
     expect(screen.queryByTestId("habits-phone-day-tube")).not.toBeInTheDocument()
   })
 
+  it("keeps the yes/no glass smaller than the 44px hit target", () => {
+    setPhoneMedia(true)
+    resetAllStores()
+    useHabitsStore.getState().setTasks([
+      { id: "d1", name: "Daily habit", type: TaskType.BOOLEAN, rewardValue: 10, frequency: "daily" },
+    ])
+    render(<WeeklyTaskTracker currentDate={new Date(2026, 5, 20, 12)} />)
+    const lamp = screen.getByRole("checkbox", { name: /Daily habit/ })
+    const lampStyle = window.getComputedStyle(lamp)
+    expect(lampStyle.width).toBe("44px")
+    expect(lampStyle.height).toBe("44px")
+    expect(lampStyle.getPropertyValue("--hab-lamp-size").trim()).toBe("24px")
+    const socket = lamp.querySelector(".hab-lamp-socket") as HTMLElement
+    const socketStyle = window.getComputedStyle(socket)
+    expect(socketStyle.width).toBe("24px")
+    expect(socketStyle.height).toBe("24px")
+    const tube = screen.getByTestId("habits-phone-day-tube")
+    expect(tube.querySelector(".hab-pled-bar-glass, .hab-pled")).toBeTruthy()
+  })
+
   it("opens a note sheet for a text habit and writes the same cell", async () => {
     setPhoneMedia(true)
     resetAllStores()

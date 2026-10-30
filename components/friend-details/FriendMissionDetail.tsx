@@ -78,7 +78,7 @@ export function FriendMissionDetail({
       </p>
       <h3 id="friend-mission-pop-title">Mission from {friendName}</h3>
       {itemId ? (
-        <button type="button" className="friend-mission-pop-task" aria-label={`Open ${mission.title}`} onClick={() => setOpenItemId(itemId)}>
+        <button type="button" className="friend-mission-pop-task" data-no95="" aria-label={`Open ${mission.title}`} onClick={() => setOpenItemId(itemId)}>
           {title}
         </button>
       ) : (
@@ -93,10 +93,10 @@ export function FriendMissionDetail({
 
       {mission.status === "offered" && actionable && phase === "offer" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" onClick={() => accept()}>
-            Accept
+          <button type="button" className="friend-key is-on" data-no95="" onClick={() => accept()}>
+            Accept mission
           </button>
-          <button type="button" className="friend-key" onClick={() => setPhase("smaller")}>
+          <button type="button" className="friend-key" data-no95="" onClick={() => setPhase("smaller")}>
             Something smaller
           </button>
         </div>
@@ -108,6 +108,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key is-on"
+            data-no95=""
             onClick={() => {
               const lines = splitFriendTask(mission.taskId, mission.title)
               const detail = lines.length ? lines.join(" · ") : "Already one small step."
@@ -121,6 +122,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key"
+            data-no95=""
             onClick={() => {
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "breakdown-no")
               setPhase("first")
@@ -137,6 +139,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key is-on"
+            data-no95=""
             onClick={() => {
               const step = ensureFriendFirstStep(mission.taskId, mission.title)
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "first-step-yes", step?.stepTitle ?? mission.title)
@@ -148,6 +151,7 @@ export function FriendMissionDetail({
           <button
             type="button"
             className="friend-key"
+            data-no95=""
             onClick={() => {
               useBabyAnimalsStore.getState().noteMission(mission.taskId, "first-step-no")
               setPhase("why")
@@ -170,14 +174,15 @@ export function FriendMissionDetail({
           }}
         >
           <label htmlFor="friend-mission-pop-why">Why decline?</label>
-          <input
+          <textarea
             id="friend-mission-pop-why"
-            className="friend-bead-input"
+            className="baby-friend-decline-why"
             value={why}
+            rows={3}
             onChange={(event) => setWhy(event.target.value)}
             required
           />
-          <button type="submit" className="friend-key" disabled={!why.trim()}>
+          <button type="submit" className="friend-key" data-no95="" disabled={!why.trim()}>
             Decline
           </button>
         </form>
@@ -185,7 +190,7 @@ export function FriendMissionDetail({
 
       {mission.status === "accepted" && mission.kind === "whim" ? (
         <div className="friend-mission-actions">
-          <button type="button" className="friend-key is-on" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
+          <button type="button" className="friend-key is-on" data-no95="" onClick={() => useBabyAnimalsStore.getState().completeMission(mission.taskId)}>
             I did it
           </button>
         </div>
@@ -203,7 +208,7 @@ export function FriendMissionDetail({
           ))}
         </ol>
       ) : null}
-      <button ref={closeRef} type="button" className="friend-key" onClick={onClose}>
+      <button ref={closeRef} type="button" className="friend-key" data-no95="" onClick={onClose}>
         Close mission
       </button>
       {ItemPopup ? (

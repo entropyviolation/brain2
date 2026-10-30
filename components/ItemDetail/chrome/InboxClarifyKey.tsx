@@ -1,5 +1,6 @@
 "use client"
 import { clarifyInboxItems } from "@/lib/inbox-batch"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 import type { Task } from "@/lib/types"
 
 export function InboxClarifyKey({
@@ -9,7 +10,7 @@ export function InboxClarifyKey({
 }: {
   task: Task
   getDraft: () => Task | null
-  commitDraft: (next: Task, source?: string) => Task
+  commitDraft: (next: Task, attribution?: ItemWriteAttribution) => Task
 }) {
   if (task.completed || task.stage !== "inbox") return null
   return (

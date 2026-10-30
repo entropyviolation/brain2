@@ -46,6 +46,7 @@ import { CognitiveState } from "@/components/cognitive-state"
 import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { InboxKey, QuickAddKey, RitualsKey, SettingsKey } from "@/components/header-doors"
 import { HeaderNowBox } from "@/components/header-now-box"
+import { BimKey } from "@/components/Bim/bim-key"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
@@ -351,6 +352,7 @@ export function AppHeader({
             <div className="b2-shell-keys">
               <CognitiveState />
               <InboxKey onTaskSelect={onTaskSelect} />
+              <BimKey />
               <QuickAddKey open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
             </div>
           </fieldset>

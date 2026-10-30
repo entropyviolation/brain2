@@ -1,10 +1,10 @@
 /**
  * components/Home/ToDo/todo-mobile.tsx — Phone To Do
  *
- * A grouped list in the manner of Reminders and Things: large rows, swipe
- * actions, a bottom composer, period swipe, a compact bar, and sheets.
- * The drawer stays the drawer (this sheet). Item detail and the task card
- * stay their own doors. Desktop never mounts this tree.
+ * The phone list: a CRT title, pale silver keycaps, swipe rows, a bottom
+ * composer, period swipe, and sheets. A latched key is the CRT. The drawer
+ * stays this sheet. Item detail and the task card stay their own doors.
+ * Desktop never mounts this tree.
  */
 "use client"
 
@@ -26,6 +26,7 @@ import { quarterKey } from "@/lib/seasons"
 import { openStepItem } from "@/lib/step-item-stack"
 import { splitByCommitment, splitByTier } from "@/lib/todo-commitment"
 import { bgeScore, type BgeEntry } from "@/lib/bge-score"
+import { orbFor } from "@/components/Icons/Icon"
 import { NativeSelect } from "@/components/ui/native-select"
 import { WaitingLine } from "@/components/steps/WaitingLine"
 import { AddTodoDialog, type ExistingTaskHit, type NewTodoDraft } from "./ledger/AddTodoDialog"
@@ -321,11 +322,11 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="todo-ios-sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="todo-ios-grab" aria-hidden />
         <div className="todo-ios-sheet-head">
-          <button type="button" className="todo-ios-textbtn" data-no95 onClick={onClose}>
+          <button type="button" className="todo-ios-key" data-no95 onClick={onClose}>
             Close
           </button>
           <h2>{title}</h2>
-          <span style={{ width: 64 }} aria-hidden />
+          <span aria-hidden />
         </div>
         <div className="todo-ios-sheet-body">{children}</div>
       </div>
@@ -482,15 +483,41 @@ export function TodoMobile(props: TodoMobileProps) {
       <header className={`todo-ios-bar${compact ? " is-compact" : ""}`}>
         <div className="todo-ios-title-row">
           {compact && activeTab !== "other" ? (
-            <button type="button" className="todo-ios-navbtn" data-no95 aria-label={prevLabel} onClick={() => shift(-1)}>
+            <button type="button" className="todo-ios-key todo-ios-navbtn" data-no95 aria-label={prevLabel} onClick={() => shift(-1)}>
               ‹
             </button>
           ) : null}
-          <h2 className="todo-ios-title">
-            {compact ? navLabel : heading}
-            <span className="todo-ios-count">{openCount}</span>
-          </h2>
-          <button type="button" className="todo-ios-textbtn" data-no95 aria-haspopup="dialog" aria-expanded={menu === "more"} onClick={() => setMenu(menu === "more" ? null : "more")}>
+          <div className="todo-ios-screen">
+            <div className="todo-ios-screen-mark">
+              <img src={orbFor("home-todo")} alt="" className="todo-ios-orb" />
+              <h2 className="todo-ios-title">
+                <span className="todo-ios-title-word">{compact ? navLabel : heading}</span>
+                <span className="todo-ios-count" title="Open">{openCount}</span>
+              </h2>
+            </div>
+            {headerLoad ? (
+              <button
+                type="button"
+                className="todo-ios-screen-load"
+                data-no95
+                aria-expanded={menu === "load"}
+                aria-label={`Load: ${headerLoad.text}. ${menu === "load" ? "Hide" : "Show"} the load instrument`}
+                onClick={() => setMenu(menu === "load" ? null : "load")}
+              >
+                {headerLoad.text}
+                {headerLoad.overCap ? ` · ${props.inProgressCount} in progress` : ""}
+              </button>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="todo-ios-key"
+            data-no95
+            aria-haspopup="dialog"
+            aria-pressed={menu === "more"}
+            aria-expanded={menu === "more"}
+            onClick={() => setMenu(menu === "more" ? null : "more")}
+          >
             More
           </button>
         </div>
@@ -501,14 +528,14 @@ export function TodoMobile(props: TodoMobileProps) {
             aria-label={`${navLabel}. Swipe sideways for the next period.`}
             {...periodSwipe}
           >
-            <button type="button" className="todo-ios-navbtn" data-no95 aria-label={prevLabel} onClick={() => shift(-1)}>
+            <button type="button" className="todo-ios-key todo-ios-navbtn" data-no95 aria-label={prevLabel} onClick={() => shift(-1)}>
               ‹
             </button>
             <div className="todo-ios-date-label">{navLabel}</div>
-            <button type="button" className="todo-ios-navbtn" data-no95 aria-label={nextLabel} onClick={() => shift(1)}>
+            <button type="button" className="todo-ios-key todo-ios-navbtn" data-no95 aria-label={nextLabel} onClick={() => shift(1)}>
               ›
             </button>
-            <button type="button" className="todo-ios-navbtn is-word" data-no95 disabled={atCurrent} onClick={() => { onFocusedDate(new Date()); props.onOpenRow(null) }}>
+            <button type="button" className="todo-ios-key todo-ios-navbtn is-word" data-no95 disabled={atCurrent} onClick={() => { onFocusedDate(new Date()); props.onOpenRow(null) }}>
               Today
             </button>
           </div>
@@ -519,6 +546,7 @@ export function TodoMobile(props: TodoMobileProps) {
               key={value}
               type="button"
               role="tab"
+              className="todo-ios-key"
               data-no95
               aria-selected={activeTab === value}
               onClick={() => {
@@ -541,19 +569,6 @@ export function TodoMobile(props: TodoMobileProps) {
             <strong>{openCount} open</strong>
           </span>
         </p>
-        {headerLoad ? (
-          <button
-            type="button"
-            className="todo-ios-load"
-            data-no95
-            aria-expanded={menu === "load"}
-            aria-label={`Load: ${headerLoad.text}. ${menu === "load" ? "Hide" : "Show"} the load instrument`}
-            onClick={() => setMenu(menu === "load" ? null : "load")}
-          >
-            {headerLoad.text}
-            {headerLoad.overCap ? ` · ${props.inProgressCount} in progress` : ""}
-          </button>
-        ) : null}
       </header>
 
       <div
@@ -728,7 +743,7 @@ export function TodoMobile(props: TodoMobileProps) {
           {composerMatch ? (
             <button
               type="button"
-              className="todo-ios-textbtn"
+              className="todo-ios-key"
               data-no95
               onClick={() => {
                 props.onOpenRow(composerMatch.id)
@@ -738,7 +753,7 @@ export function TodoMobile(props: TodoMobileProps) {
               Open existing
             </button>
           ) : (
-            <button type="submit" className="todo-ios-textbtn" data-no95>
+            <button type="submit" className="todo-ios-key is-go" data-no95>
               Add
             </button>
           )}
@@ -755,12 +770,12 @@ export function TodoMobile(props: TodoMobileProps) {
         <Sheet title="More" onClose={() => setMenu(null)}>
           <div className="todo-ios-group todo-ios-menu">
             {stripShown ? (
-              <button type="button" className="todo-ios-menu-row" data-no95 onClick={() => setMenu("show")}>
+              <button type="button" className="todo-ios-key todo-ios-menu-row" data-no95 onClick={() => setMenu("show")}>
                 Show and sort{props.filterCount > 0 ? ` ${props.filterCount}` : ""}
               </button>
             ) : null}
             {props.listName && props.onOpenList ? (
-              <button type="button" className="todo-ios-menu-row" data-no95 onClick={() => { props.onOpenList?.(); setMenu(null) }}>
+              <button type="button" className="todo-ios-key todo-ios-menu-row" data-no95 onClick={() => { props.onOpenList?.(); setMenu(null) }}>
                 Open list
               </button>
             ) : null}
@@ -771,7 +786,7 @@ export function TodoMobile(props: TodoMobileProps) {
             <SessionsKey onOpen={() => { props.onOpenSessions(); setMenu(null) }} />
             <TodoSettingsDialog paceSlot={props.paceSlot} />
             {stripShown ? (
-              <button type="button" className="todo-ios-menu-row" data-no95 onClick={() => { props.onShowFormula(true); setMenu("formula") }}>
+              <button type="button" className="todo-ios-key todo-ios-menu-row" data-no95 onClick={() => { props.onShowFormula(true); setMenu("formula") }}>
                 Formula
               </button>
             ) : null}
@@ -940,36 +955,36 @@ function TaskSheet({ todo, period, props, onClose }: { todo: TodoItem; period: T
         {blockers.length ? ` · needs ${blockers.join(", ")}` : ""}
       </p>
       <div className="todo-ios-actions" role="toolbar" aria-label="Drawer actions">
-        <button type="button" className="todo-ios-action is-done" data-no95 onClick={() => props.onComplete(todo.id)}>
+        <button type="button" className="todo-ios-action todo-ios-key is-go" data-no95 onClick={() => props.onComplete(todo.id)}>
           Done
         </button>
         {showLevel ? (
-          <button type="button" className="todo-ios-action" data-no95 aria-label={`Done at ${levelWord}`} onClick={() => props.onComplete(todo.id, reached === "min" ? "min" : "goal")}>
+          <button type="button" className="todo-ios-action todo-ios-key" data-no95 aria-label={`Done at ${levelWord}`} onClick={() => props.onComplete(todo.id, reached === "min" ? "min" : "goal")}>
             Done at {reached === "min" ? "B" : "G"}
           </button>
         ) : null}
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => { props.onJustStart(id); onClose() }}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => { props.onJustStart(id); onClose() }}>
           Start
         </button>
-        <button type="button" className="todo-ios-action" data-no95 aria-label={`Just 25 on ${name}`} onClick={() => { openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: id }] }); onClose() }}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 aria-label={`Just 25 on ${name}`} onClick={() => { openSession({ startOn: "session", templateId: JUST_25_TEMPLATE_ID, seed: [{ taskId: id }] }); onClose() }}>
           Just 25
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => props.onPush(todo.id)}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => props.onPush(todo.id)}>
           Push
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => props.onMissed(todo.id)}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => props.onMissed(todo.id)}>
           Missed
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => props.onNeeds(id)}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => props.onNeeds(id)}>
           Needs…
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => props.onTaskClick(id)}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => props.onTaskClick(id)}>
           View
         </button>
-        <button type="button" className="todo-ios-action" data-no95 aria-label={`Open task card for ${name}`} onClick={() => { openTaskCard(id); onClose() }}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 aria-label={`Open task card for ${name}`} onClick={() => { openTaskCard(id); onClose() }}>
           Card
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => (onClock ? props.onClockStop() : props.onClockStart(id))}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => (onClock ? props.onClockStop() : props.onClockStart(id))}>
           {onClock ? "Stop clock" : "Working now"}
         </button>
         <TodoDeleteButton
@@ -978,17 +993,17 @@ function TaskSheet({ todo, period, props, onClose }: { todo: TodoItem; period: T
         />
       </div>
       <div className="todo-ios-flags">
-        <button type="button" className="todo-ios-flag" data-no95 aria-pressed={props.isRequired(id)} aria-label="Required" onClick={() => props.onToggleRequired(id)}>
+        <button type="button" className="todo-ios-flag todo-ios-key" data-no95 aria-pressed={props.isRequired(id)} aria-label="Required" onClick={() => props.onToggleRequired(id)}>
           <img src={GEM_REQUIRED} alt="" />
           Required
         </button>
-        <button type="button" className="todo-ios-flag" data-no95 aria-pressed={props.isPrioritized(id)} aria-label="Prioritized" onClick={() => props.onTogglePrioritized(id)}>
+        <button type="button" className="todo-ios-flag todo-ios-key" data-no95 aria-pressed={props.isPrioritized(id)} aria-label="Prioritized" onClick={() => props.onTogglePrioritized(id)}>
           <img src={GEM_PRIORITIZED} alt="" />
           Prioritized
         </button>
         <button
           type="button"
-          className="todo-ios-flag"
+          className="todo-ios-flag todo-ios-key"
           data-no95
           aria-pressed={status === "partial"}
           aria-label="Active"
@@ -999,7 +1014,7 @@ function TaskSheet({ todo, period, props, onClose }: { todo: TodoItem; period: T
         {props.bgeTiers ? (
           <div className="todo-ios-bge" role="radiogroup" aria-label="Tier on this list">
             {BGE_KEYS.map(({ tier, short, title }) => (
-              <button key={tier} type="button" role="radio" data-no95 aria-checked={props.bgeTierOf(id) === tier} title={title} onClick={() => props.onBgeTier(id, tier)}>
+              <button key={tier} type="button" role="radio" className="todo-ios-key" data-no95 aria-checked={props.bgeTierOf(id) === tier} title={title} onClick={() => props.onBgeTier(id, tier)}>
                 {short}
               </button>
             ))}
@@ -1107,15 +1122,15 @@ function SeasonSheet({ task, props, onClose }: { task: Task; props: TodoMobilePr
   return (
     <Sheet title={name} onClose={onClose}>
       <div className="todo-ios-flags">
-        <button type="button" className="todo-ios-flag" data-no95 aria-pressed={props.isRequired(task.id)} aria-label="Required" onClick={() => props.onToggleRequired(task.id)}>
+        <button type="button" className="todo-ios-flag todo-ios-key" data-no95 aria-pressed={props.isRequired(task.id)} aria-label="Required" onClick={() => props.onToggleRequired(task.id)}>
           <img src={GEM_REQUIRED} alt="" />
           Required
         </button>
-        <button type="button" className="todo-ios-flag" data-no95 aria-pressed={props.isPrioritized(task.id)} aria-label="Prioritized" onClick={() => props.onTogglePrioritized(task.id)}>
+        <button type="button" className="todo-ios-flag todo-ios-key" data-no95 aria-pressed={props.isPrioritized(task.id)} aria-label="Prioritized" onClick={() => props.onTogglePrioritized(task.id)}>
           <img src={GEM_PRIORITIZED} alt="" />
           Prioritized
         </button>
-        <button type="button" className="todo-ios-action" data-no95 onClick={() => props.onTaskClick(task.id)}>
+        <button type="button" className="todo-ios-action todo-ios-key" data-no95 onClick={() => props.onTaskClick(task.id)}>
           View
         </button>
         <TodoDeleteButton prompt={steps.length ? `Delete "${name}" and its ${steps.length} steps?` : `Delete "${name}"?`} onDelete={() => props.onDelete(task.id)} />

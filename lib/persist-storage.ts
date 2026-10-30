@@ -61,10 +61,11 @@
  * bot; a lower `allowlistRev` or an empty ingest seed is refused.
  * Identical `cogs-*` twins of a large `brain2-*` vault are dropped on boot and
  * on QuotaExceeded so Inbox clarifications and desktop hues can save again.
- * On a phone the task vault and the time grid are stored as the small copy
- * (names, list ids, about a week of blocks). A full box drops side vaults and
- * retries, so a desktop-sized snapshot cannot stick the save banner up. The
- * phone does not POST that small copy back to the desktop hub.
+ * On a phone that has opened the vault window (`lib/phone-window.ts`), a vault
+ * key lives in memory. It is not written to localStorage and it is not posted
+ * with `postHub`. A save of a store the hub can patch is queued in the phone
+ * outbox instead. Until that window is open, a phone still stores the small
+ * task and time-grid copy and does not POST it.
  * A successful habits/theme write stamps LED / tube / PCB pins from the new
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
@@ -73,6 +74,7 @@ import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
 import { isPhoneWebStorage } from "@/lib/phone-device"
+import { applyPhoneWindowWrite, isPhonePinKey, phoneWindowEngaged, readPhoneWindowItem, removePhoneWindowItem } from "@/lib/phone-window"
 import { freePhoneWebStorage, slimPhonePersistValue } from "@/lib/phone-storage"
 import {
   ensureLegacyPersistCopied,
@@ -562,6 +564,7 @@ function vaultKind(name: string): string {
 export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) return readPhoneWindowItem(name)
       if (!hasLocalStorage()) return null
       installHubFollow()
       ensureLegacyPersistCopied()
@@ -582,6 +585,19 @@ export function cogsStateStorage(): StateStorage {
       return local
     },
     setItem: (name, value) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) {
+        try {
+          if (applyPhoneWindowWrite(name, value) === "same") return
+          const lastOkAt = new Date().toISOString()
+          failedKeys.delete(persistKey(name))
+          if (failedKeys.size > 0) status = { ...status, lastOkAt }
+          else status = { ok: true, lastOkAt, error: null, quotaExceeded: false }
+          emit()
+        } catch (error) {
+          recordPersistFailure(error, name)
+        }
+        return
+      }
       if (!hasLocalStorage()) {
         recordPersistFailure(new Error("localStorage is not available"), name)
         return
@@ -695,6 +711,10 @@ export function cogsStateStorage(): StateStorage {
       }
     },
     removeItem: (name) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) {
+        removePhoneWindowItem(name)
+        return
+      }
       if (!hasLocalStorage()) return
       for (const key of persistKeyAliases(name)) {
         try {

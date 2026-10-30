@@ -89,7 +89,7 @@ function linkRelated(childId: string, parentId: string) {
   if (!child) return
   const links = addLink(child.links, ATTACH_RELATION, parentId, child.id)
   if (links === child.links) return
-  commitItemEdit(child.id, { links }, "log-item-detail")
+  commitItemEdit(child.id, { links }, { surface: "log-item-detail" })
 }
 
 function attachLog(parentId: string, other: Task, mode: "copy" | "move") {

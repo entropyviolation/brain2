@@ -7,6 +7,7 @@
 "use client"
 
 import type { Dispatch, SetStateAction } from "react"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 import type { ItemType, ItemTypeCapabilities, ItemTypeDefinition, Task } from "@/lib/types"
 import { CheckCircle, Save, Timer, TimerOff, Trash2, Undo2 } from "lucide-react"
 import { FasciaOrb } from "@/components/ItemDetail/chrome/FasciaOrb"
@@ -65,7 +66,7 @@ export function PopupFascia({
   setTypePick: Dispatch<SetStateAction<{ itemId: string | undefined; typeId: string | null }>>
   setEditingItemType: Dispatch<SetStateAction<ItemTypeDefinition | null>>
   getDraft: () => Task | null
-  commitDraft: (next: Task, source?: string) => Task
+  commitDraft: (next: Task, attribution?: ItemWriteAttribution) => Task
   originalTask: Task | null
   subscribeDraft: (listener: () => void) => () => void
   handleSave: () => void

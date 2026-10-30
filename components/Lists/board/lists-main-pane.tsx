@@ -163,7 +163,7 @@ export function ListsMainPane({
   addingTaskToTarget: string | null
   setAddingTaskToTarget: Dispatch<SetStateAction<string | null>>
   taskActions: TaskActionsApi
-  addTask: (task: Task) => void
+  addTask: (task: Task, attribution?: { surface: "list"; name?: string }) => void
   showBulkAdd: boolean
   setShowBulkAdd: Dispatch<SetStateAction<boolean>>
   drag: DragApi
@@ -303,7 +303,10 @@ export function ListsMainPane({
                   const base = taskActions.buildBaseTask(title, listId)
                   base.lists = [listId]
                   const attrs = d.file ? await (photo ? photoAttrsFromFile(d.file) : documentAttrsFromFile(d.file)) : {}
-                  addTask({ ...base, attributes: { ...base.attributes, ...attrs } })
+                  addTask(
+                    { ...base, attributes: { ...base.attributes, ...attrs } },
+                    openCategory?.name?.trim() ? { surface: "list", name: openCategory.name.trim() } : { surface: "list" },
+                  )
                 }
               }
             : undefined

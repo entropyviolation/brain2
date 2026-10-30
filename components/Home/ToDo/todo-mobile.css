@@ -1,14 +1,14 @@
 /**
  * components/Home/ToDo/todo-mobile.css — Phone To Do
  *
- * iOS grouped list. Applies only under `.todo-ios`, which mounts when
- * `useTodoPhone` is true (max-width 720px). Desktop rules live in
- * `todo-chrome.css` and are not restated here.
+ * Phone list under `.todo-ios` only. The header is a CRT glass and pale
+ * silver keycaps, the same skirt as the Electron fascia. A latched key is
+ * the CRT. Desktop rules live in `todo-chrome.css` and are not restated here.
  */
 
 .todo-ios {
-  --ios-bg: #f2f2f7;
-  --ios-card: #ffffff;
+  --ios-bg: #e6e8eb;
+  --ios-card: #f7f8f9;
   --ios-ink: #1c1c1e;
   --ios-secondary: #8e8e93;
   --ios-sep: rgba(60, 60, 67, 0.18);
@@ -34,11 +34,10 @@
 
 .todo-ios-bar {
   flex: none;
-  padding: calc(6px + env(safe-area-inset-top, 0px)) 16px 8px;
-  background: rgba(242, 242, 247, 0.86);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid transparent;
+  padding: 8px 10px 6px;
+  background: linear-gradient(180deg, #f3f4f6, #e2e5e8);
+  border-bottom: 1px solid #c5c9ce;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
   z-index: 2;
 }
 
@@ -48,32 +47,129 @@
 
 .todo-ios-title-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   min-height: 44px;
+}
+
+.todo-ios-screen {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 6px 10px;
+  overflow: hidden;
+  border: 2px solid #1d2022;
+  border-radius: 5px;
+  color: #7dffc4;
+  background:
+    radial-gradient(circle, rgba(125, 255, 196, 0.1) 0 0.9px, transparent 1.3px) 0 0 / 5px 5px,
+    radial-gradient(ellipse at 30% 30%, #0c1a14, #050b09 70%);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 2px 10px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(61, 255, 138, 0.55),
+    0 1px 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.todo-ios-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+}
+
+.todo-ios-screen-mark {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.todo-ios-orb {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  object-fit: contain;
 }
 
 .todo-ios-title {
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.4px;
-  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "w95fa", Tahoma, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4, 0 0 9px rgba(125, 255, 196, 0.35);
 }
 
-.todo-ios-bar.is-compact .todo-ios-title {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+.todo-ios-title-word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-ios-screen .todo-ios-count {
+  flex: none;
+  margin: 0;
+  min-width: 1.4em;
+  padding: 1px 5px;
+  border: 1px solid #3f9c74;
+  color: #7dffc4;
+  font-family: "w95fa", Tahoma, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.1;
+  letter-spacing: 0;
   text-align: center;
+  text-shadow: 0 0 3px #7dffc4;
+}
+
+.todo-ios-screen-load {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+  color: #7dffc4;
+  font-family: "w95fa", Tahoma, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  text-align: left;
+  text-shadow: 0 0 3px #7dffc4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .todo-ios-count {
   color: var(--ios-secondary);
   font-weight: 600;
-  font-size: 0.55em;
+  font-size: 0.85em;
   margin-left: 6px;
 }
 
@@ -138,10 +234,15 @@
 
 .todo-ios-date-label {
   flex: 1;
+  min-width: 0;
   text-align: center;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #2a2e32;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-ios-navbtn {
@@ -163,45 +264,36 @@
 
 .todo-ios-seg {
   display: flex;
-  gap: 2px;
-  padding: 2px;
-  margin: 4px 0;
-  background: var(--ios-fill);
-  border-radius: 10px;
+  gap: 4px;
+  padding: 0;
+  margin: 8px 0 4px;
+  background: transparent;
+  border-radius: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .todo-ios-seg button {
-  flex: 1 0 auto;
-  border: 0;
-  background: transparent;
-  border-radius: 8px;
-  padding: 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ios-ink);
-  min-width: 58px;
-}
-
-.todo-ios-seg button[aria-selected="true"] {
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 2px 8px;
+  font-size: 12px;
 }
 
 .todo-ios-load {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 44px;
+  min-height: 0;
   margin: 0;
-  padding: 6px 2px 2px;
+  padding: 2px 2px 4px;
   border: 0;
   background: transparent;
   text-align: left;
-  color: var(--ios-secondary);
-  font-size: 13px;
-  font-weight: 500;
+  color: #5c6166;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
 }
 
 .todo-ios-load strong {
@@ -257,11 +349,13 @@
 .todo-ios-search {
   width: 100%;
   box-sizing: border-box;
+  min-height: 44px;
   margin: 0 0 12px;
   padding: 0 12px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--ios-fill);
+  border: 1px solid #b7bcc2;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #e7e9ec, #fbfbfc);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.12);
   color: var(--ios-ink);
   font-size: 16px;
 }
@@ -271,18 +365,20 @@
 }
 
 .todo-ios-section h3 {
-  margin: 0 8px 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ios-secondary);
+  margin: 0 4px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c6166;
   text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
 }
 
 .todo-ios-group {
   background: var(--ios-card);
-  border-radius: 12px;
+  border: 1px solid rgba(90, 96, 102, 0.28);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75), 0 8px 16px rgba(20, 24, 28, 0.05);
 }
 
 .todo-ios-empty {
@@ -367,21 +463,32 @@
 }
 
 .todo-ios-circle i {
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  border: 1.5px solid #c7c7cc;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  border: 1px solid #6e7378;
   box-sizing: border-box;
   display: block;
+  background: linear-gradient(180deg, #f4f5f6, #d5d8dc);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 0 #b3b8be,
+    0 1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .todo-ios-circle.is-partial i {
-  border-color: var(--ios-blue);
-  background: rgba(0, 122, 255, 0.18);
+  border-color: #0c1a14;
+  background: radial-gradient(circle at 40% 32%, #d8ffe9, #1f8a58 55%, #0c3d28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 6px rgba(125, 255, 196, 0.75);
 }
 
 .todo-ios-circle.is-clock i {
-  box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px #7dffc4,
+    0 0 8px rgba(125, 255, 196, 0.85);
 }
 
 .todo-ios-row-copy {
@@ -447,16 +554,23 @@
   align-items: baseline;
   margin: 0 0 14px;
   padding: 12px 14px;
-  background: var(--ios-card);
-  border-radius: 12px;
+  border: 2px solid #1d2022;
+  border-radius: 5px;
+  color: #9aa89f;
   font-size: 13px;
-  color: var(--ios-secondary);
+  background:
+    radial-gradient(circle, rgba(125, 255, 196, 0.08) 0 0.9px, transparent 1.3px) 0 0 / 5px 5px,
+    radial-gradient(ellipse at 30% 30%, #0c1a14, #050b09 70%);
+  box-shadow: inset 0 0 0 1px #000, 0 0 0 1px rgba(61, 255, 138, 0.4);
 }
 
 .todo-ios-score b {
+  font-family: "w95fa", Tahoma, sans-serif;
   font-size: 22px;
-  color: var(--ios-ink);
-  font-weight: 650;
+  font-weight: 400;
+  font-synthesis: none;
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
 }
 
 .todo-ios-morning button {
@@ -484,21 +598,22 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: rgba(242, 242, 247, 0.92);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 0.5px solid var(--ios-sep);
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #eceef1, #e2e5e8);
+  border-top: 1px solid #c5c9ce;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .todo-ios-composer input[type="text"] {
-  flex: 1;
+  flex: 1 1 140px;
   min-width: 0;
   height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid #b7bcc2;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #e7e9ec, #fbfbfc);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.12);
   padding: 0 12px;
   font: inherit;
   font-size: 16px;
@@ -546,10 +661,10 @@
   max-height: min(88%, 720px);
   display: flex;
   flex-direction: column;
-  background: var(--ios-bg);
+  background: linear-gradient(180deg, #f3f4f6, #e6e8eb);
   border-radius: 14px 14px 0 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.28);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -580,11 +695,18 @@
 }
 
 .todo-ios-sheet-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(72px, max-content) minmax(0, 1fr) minmax(72px, max-content);
   align-items: center;
-  min-height: 44px;
-  padding: 0 8px 4px;
+  min-height: 52px;
+  padding: 0 8px 6px;
   gap: 8px;
+}
+
+.todo-ios-sheet-head h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-ios-sheet-head h2 {
@@ -608,11 +730,12 @@
   min-height: 44px;
   margin: 0 0 12px;
   padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid #b7bcc2;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #e7e9ec, #fbfbfc);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.12);
   font: inherit;
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .todo-ios-actions {
@@ -683,12 +806,14 @@
   color: var(--ios-blue);
 }
 
-.todo-ios-menu .todo-ios-menu-row + .todo-ios-menu-row,
-.todo-ios-menu .todo-gear,
-.todo-ios-menu .todo-session-key,
-.todo-ios-menu .todo-sessions-key,
-.todo-ios-menu .todo-add-key {
-  box-shadow: inset 0 0.5px 0 var(--ios-sep);
+.todo-ios-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .todo-ios-menu .todo-gear,
@@ -775,8 +900,10 @@
   min-height: 44px;
   margin: 0 0 12px;
   padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
+  border: 1px solid #b7bcc2;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #e7e9ec, #fbfbfc);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.12);
   font: inherit;
   font-size: 16px;
 }
@@ -800,7 +927,7 @@
   font-size: 15px;
 }
 
-/* The app paints a pixel face on every heading. The phone list leaves that. */
+/* Rows and sheets stay a system face. The CRT title keeps w95fa at its one real weight. */
 body.win95-app .todo-ios,
 body.win95-app .todo-ios h2,
 body.win95-app .todo-ios h3,
@@ -817,9 +944,20 @@ body.win95-app .todo-ios-sheet select {
   letter-spacing: -0.2px;
 }
 
-body.win95-app .todo-ios h2.todo-ios-title,
 body.win95-app .todo-ios-sheet h2 {
   color: #1c1c1e;
+}
+
+body.win95-app .todo-ios .todo-ios-screen h2.todo-ios-title,
+body.win95-app .todo-ios .todo-ios-screen .todo-ios-count,
+body.win95-app .todo-ios .todo-ios-screen-load,
+body.win95-app .todo-ios .todo-ios-score b {
+  font-family: "w95fa", Tahoma, sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.06em;
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4, 0 0 9px rgba(125, 255, 196, 0.35);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -854,4 +992,163 @@ body.win95-app .todo-ios-sheet h2 {
 .todo-ios :is(input, select, textarea),
 .todo-ios-sheet :is(input, select, textarea) {
   font-size: 16px;
+}
+
+/* Pale silver keycap, same skirt as `.todo-cap`. `data-no95` keeps the mill
+   lip off. A latched key is the CRT. Add and Done are the navy cap. */
+.todo-ios :is(
+  button.todo-ios-key,
+  .todo-ios-menu button,
+  .todo-ios-composer button,
+  .todo-ios-actions button,
+  .todo-ios-flags button
+),
+body.win95-app .todo-ios :is(
+  button.todo-ios-key,
+  .todo-ios-menu button,
+  .todo-ios-composer button,
+  .todo-ios-actions button,
+  .todo-ios-flags button
+) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px !important;
+  height: auto;
+  padding: 6px 8px 10px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  color: #1f2226 !important;
+  font-weight: 700;
+  line-height: 1.15;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.todo-ios button.todo-ios-navbtn.todo-ios-key {
+  flex: 0 0 44px;
+  width: 44px;
+  padding: 4px 0 8px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.todo-ios button.todo-ios-navbtn.is-word {
+  flex: 0 0 auto;
+  width: auto;
+  font-size: 13px;
+  padding: 6px 10px 10px;
+}
+
+.todo-ios :is(.todo-ios-menu, .todo-ios-menu-row) button,
+.todo-ios button.todo-ios-menu-row {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.todo-ios-composer button,
+.todo-ios-composer .native-select {
+  flex: 0 0 auto;
+}
+
+.todo-ios :is(
+  button.todo-ios-key,
+  .todo-ios-menu button,
+  .todo-ios-composer button,
+  .todo-ios-actions button,
+  .todo-ios-flags button
+):active:not(:disabled),
+body.win95-app .todo-ios :is(
+  button.todo-ios-key,
+  .todo-ios-menu button,
+  .todo-ios-composer button,
+  .todo-ios-actions button,
+  .todo-ios-flags button
+):active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.todo-ios :is(button.todo-ios-key.is-go, .todo-cap.is-primary),
+body.win95-app .todo-ios :is(button.todo-ios-key.is-go, .todo-cap.is-primary) {
+  background: #1b143d !important;
+  background-image: linear-gradient(180deg, #2a2258, #1b143d) !important;
+  border-color: #070e31 !important;
+  color: #f4f1ff !important;
+  box-shadow:
+    inset 2px 0 0 #3a3268,
+    inset -2px 0 0 #120c28,
+    inset 0 -4px 0 #070e31,
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+.todo-ios :is(
+  button.todo-ios-key[aria-selected="true"],
+  button.todo-ios-key[aria-pressed="true"],
+  button.todo-ios-key[aria-checked="true"]
+),
+body.win95-app .todo-ios :is(
+  button.todo-ios-key[aria-selected="true"],
+  button.todo-ios-key[aria-pressed="true"],
+  button.todo-ios-key[aria-checked="true"]
+) {
+  background: #070c0a !important;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%), #070c0a !important;
+  border-color: #070c0a !important;
+  color: #7dffc4 !important;
+  text-shadow: 0 0 3px #7dffc4 !important;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45) !important;
+}
+
+.todo-ios button.todo-ios-key:disabled {
+  color: #8b9096 !important;
+  opacity: 1;
+}
+
+.todo-ios button.todo-ios-key::before,
+body.win95-app .todo-ios [role="tab"].todo-ios-key::before,
+body.win95-app .todo-ios [role="radio"].todo-ios-key::before {
+  content: none !important;
+  display: none !important;
+}
+
+body.win95-app .todo-ios .todo-ios-seg {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+.todo-ios button.todo-ios-key:focus-visible {
+  outline: 2px solid #143226;
+  outline-offset: 1px;
+}
+
+.todo-ios-flag img,
+.todo-ios-menu .todo-gear-globe {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: none;
 }

@@ -1373,11 +1373,12 @@ export function importCategory(
       store.addList(category)
     }
   }
+  const backupWrite = { surface: "import" as const, name: "backup" }
   for (const task of tasks) {
     if (existingTaskIds.has(task.id)) {
-      if (mode === "replace") store.updateTask(task)
+      if (mode === "replace") store.updateTask(task, undefined, { attribution: backupWrite })
     } else {
-      store.addTask(task)
+      store.addTask(task, backupWrite)
     }
   }
 

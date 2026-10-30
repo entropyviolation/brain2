@@ -13,6 +13,7 @@ import { stopWorkingOnOperation } from "@/lib/operation-work-session"
 import * as actionHistory from "@/lib/action-history"
 import { usePointsStore } from "@/lib/points-store"
 import { applyLinkedEffects, commitItemDraft, commitItemEdit, itemEditPatchBetween } from "@/lib/commit-item-edit"
+import { setItemWriteClientForTests } from "@/lib/item-write-source"
 import type { Task } from "@/lib/types"
 
 vi.mock("@/lib/habit-tracking-sync", () => ({
@@ -44,6 +45,7 @@ describe("commitItemEdit", () => {
   beforeEach(() => {
     resetAllStores()
     resetItemActivity()
+    setItemWriteClientForTests(() => undefined)
     registerItemMutationDispatcher(null)
     vi.mocked(syncTrackedHabits).mockClear()
     vi.mocked(syncSleepNight).mockClear()
@@ -56,7 +58,7 @@ describe("commitItemEdit", () => {
     const unsubscribe = addItemMutationListener((event) => events.push(event))
 
     try {
-      commitItemEdit("a", { palmarosa: "cedar" }, "ingest")
+      commitItemEdit("a", { palmarosa: "cedar" }, { surface: "item-detail" })
 
       const stored = taskRepository.getById("a")
       expect(stored?.attributes).toEqual({ palmarosa: "cedar", kept: "yes" })
@@ -67,7 +69,8 @@ describe("commitItemEdit", () => {
       expect(events[0].changedAttrs).toContain("palmarosa")
 
       const [line] = listItemActivity("a")
-      expect(line.source).toBe("ingest")
+      expect(line.attribution).toEqual({ surface: "item-detail" })
+      expect(line.source).toBeUndefined()
       expect(line.at).toEqual(expect.any(String))
       expect(line.changes).toEqual([
         expect.objectContaining({ field: "palmarosa", from: "rose", to: "cedar" }),
@@ -79,12 +82,12 @@ describe("commitItemEdit", () => {
 
   it("succeeds with no order tag, and an older line with no order still loads", () => {
     taskRepository.add(task())
-    commitItemEdit("a", { notes: "A real edit" }, "detail")
+    commitItemEdit("a", { notes: "A real edit" }, { surface: "item-detail" })
 
     const [line] = listItemActivity("a")
     expect(line.order).toBeUndefined()
     expect(Object.prototype.hasOwnProperty.call(line, "order")).toBe(false)
-    expect(line.source).toBe("detail")
+    expect(line.attribution).toEqual({ surface: "item-detail" })
 
     const legacy = {
       old: [
@@ -106,7 +109,8 @@ describe("commitItemEdit", () => {
 
   it("does not record a save that changes nothing", () => {
     taskRepository.add(task())
-    commitItemEdit("a", { title: "Old name", description: "Old name" }, "detail")
+    resetItemActivity()
+    commitItemEdit("a", { title: "Old name", description: "Old name" }, { surface: "item-detail" })
     expect(listItemActivity("a")).toEqual([])
   })
 
@@ -115,7 +119,7 @@ describe("commitItemEdit", () => {
     const undo = vi.spyOn(actionHistory, "rememberWorld")
     const points = vi.spyOn(usePointsStore.getState(), "addPoints")
 
-    commitItemEdit("a", { title: "New name", description: "New name" }, "detail")
+    commitItemEdit("a", { title: "New name", description: "New name" }, { surface: "item-detail" })
 
     expect(taskRepository.getById("a")?.title).toBe("New name")
     expect(syncTrackedHabits).not.toHaveBeenCalled()
@@ -145,7 +149,7 @@ describe("commitItemEdit", () => {
 
   it("stores an order tag when one is given", () => {
     taskRepository.add(task())
-    commitItemEdit("a", { notes: "from the grid" }, "tracking", "observed")
+    commitItemEdit("a", { notes: "from the grid" }, { surface: "item-detail" }, "observed")
     const [line] = listItemActivity("a")
     expect(line.order).toBe("observed")
     expect(line.changes[0]).toMatchObject({ field: "notes", to: "from the grid" })
@@ -160,11 +164,11 @@ describe("commitItemEdit", () => {
       description: "Renamed",
       estimatedDuration: 40,
     })
-    const saved = commitItemDraft(before, after, "item-detail")
+    const saved = commitItemDraft(before, after, { surface: "item-detail" })
     expect(saved.estimatedDuration).toBe(40)
     expect(taskRepository.getById("a")?.title).toBe("Renamed")
     const lines = listItemActivity("a")
-    expect(lines.some((line) => line.source === "item-detail")).toBe(true)
+    expect(lines.some((line) => line.attribution?.surface === "item-detail")).toBe(true)
     expect(
       lines.some((line) => line.changes.some((c) => c.field === "estimatedDuration" && c.label === "Estimate" && c.to === "40m")),
     ).toBe(true)

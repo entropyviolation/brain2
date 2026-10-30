@@ -19,7 +19,7 @@ import {
   type FriendTone,
 } from "@/lib/baby-animal-personality"
 import { friendSuggestionLine } from "@/lib/friend-copy"
-import { FRIEND_WHIMS, friendWhim } from "@/lib/friend-whims"
+import { FRIEND_WHIMS } from "@/lib/friend-whims"
 
 const TONE_LABEL: Record<FriendTone, string> = {
   gentle: "Gentle",
@@ -74,6 +74,7 @@ function Key({
     <button
       type="button"
       role={radio ? "radio" : undefined}
+      data-no95=""
       className={`friend-key${pressed ? " is-on" : ""}${live ? " is-live" : ""}${swatch ? ` is-swatch is-${swatch}` : ""}`}
       aria-pressed={radio ? undefined : pressed}
       aria-checked={radio ? pressed : undefined}
@@ -96,14 +97,14 @@ export function FriendDetailsVoice({
   onChange: (partial: Partial<FriendPersonality>) => void
   onPreview?: (line: string) => void
 }) {
-  const whim = friendWhim(draft.whimId)
   const preview = (line: string) => onPreview?.(line)
 
   return (
     <div className="friend-voice">
       <fieldset className="friend-voice-bay" title="Tone, bubble, and favorite whim change the next chat line.">
         <legend className="friend-bay-title">Voice</legend>
-        <div className="friend-dial" role="radiogroup" aria-label="Tone">
+        <p className="friend-field-label" id="friend-tone-label">Tone</p>
+        <div className="friend-dial" role="radiogroup" aria-labelledby="friend-tone-label">
           {FRIEND_TONE.map((tone) => (
             <Key
               key={tone}
@@ -117,7 +118,8 @@ export function FriendDetailsVoice({
             </Key>
           ))}
         </div>
-        <div className="friend-swatches" role="radiogroup" aria-label="Bubble">
+        <p className="friend-field-label" id="friend-bubble-label">Bubble</p>
+        <div className="friend-swatches" role="radiogroup" aria-labelledby="friend-bubble-label">
           {FRIEND_DIALOG_EFFECTS.map((effect) => (
             <Key
               key={effect}
@@ -132,7 +134,8 @@ export function FriendDetailsVoice({
             </Key>
           ))}
         </div>
-        <div className="friend-key-row is-whims" role="radiogroup" aria-label="Favorite whim">
+        <p className="friend-field-label" id="friend-whim-label">Whim</p>
+        <div className="friend-key-row is-whims" role="radiogroup" aria-labelledby="friend-whim-label">
           {Object.values(FRIEND_WHIMS).map((row) => (
             <Key
               key={row.id}
@@ -146,7 +149,6 @@ export function FriendDetailsVoice({
             </Key>
           ))}
         </div>
-        <p className="friend-whim-line">{whim.blurb}</p>
       </fieldset>
       <fieldset
         className="friend-voice-bay is-saved"
@@ -157,14 +159,16 @@ export function FriendDetailsVoice({
           <span className="friend-saved-lamp" aria-hidden="true" />
           <span className="friend-saved-word">saved</span>
         </legend>
-        <div className="friend-key-row" role="group" aria-label="Cadence">
+        <p className="friend-field-label" id="friend-cadence-label">Cadence</p>
+        <div className="friend-key-row" role="group" aria-labelledby="friend-cadence-label">
           {FRIEND_CADENCE.map((cadence) => (
             <Key key={cadence} pressed={draft.cadence === cadence} onClick={() => onChange({ cadence })}>
               {CADENCE_LABEL[cadence]}
             </Key>
           ))}
         </div>
-        <div className="friend-key-row" role="group" aria-label="Pushiness">
+        <p className="friend-field-label" id="friend-push-label">Push</p>
+        <div className="friend-key-row" role="group" aria-labelledby="friend-push-label">
           {FRIEND_PUSHINESS.map((pushiness) => (
             <Key
               key={pushiness}

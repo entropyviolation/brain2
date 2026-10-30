@@ -1,0 +1,563 @@
+/**
+ * components/Inventory/phone/inventory-phone.css — Phone Inventory only
+ *
+ * Every rule hangs off `.inv-phone`. A viewport of 768px and wider never
+ * mounts that tree. Desktop chrome and keycaps stay in `inventory-chrome.css`.
+ * Kitchen room rules stay in `kitchen/kitchen.css` under `.inv-kitchen-phone`.
+ */
+
+.inv-phone {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding:
+    16px
+    max(16px, env(safe-area-inset-right, 0px))
+    calc(24px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  color: #1c1c1e;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inv-phone-scenes {
+  display: flex;
+  gap: 0;
+  padding: 2px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.16);
+}
+
+.inv-phone-scenes button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.inv-phone-scenes button[aria-selected="true"] {
+  background: #fff;
+}
+
+.inv-phone-scenes button:focus-visible,
+.inv-phone-cover:focus-visible,
+.inv-phone-chip:focus-visible,
+.inv-phone-dock button:focus-visible,
+.inv-phone-new:focus-visible,
+.inv-phone-save:focus-visible,
+.inv-phone-toggle:focus-visible,
+.inv-phone-fetch:focus-visible,
+.inv-phone-pack-row:focus-visible,
+.inv-phone input:focus-visible,
+.inv-phone select:focus-visible {
+  outline: 2px solid #1c1c1e;
+  outline-offset: 2px;
+}
+
+.inv-phone .inv-shelf-pick {
+  margin-top: 0;
+}
+
+.inv-phone .inv-shelf-label,
+.inv-phone-search span,
+.inv-phone-field {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #3a3a3c;
+}
+
+.inv-phone input,
+.inv-phone select {
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 16px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+}
+
+.inv-phone .list-picker-row {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.inv-phone .list-picker-body {
+  max-height: 220px;
+}
+
+.inv-phone-shelf,
+.inv-phone-closet {
+  margin-top: 16px;
+}
+
+.inv-phone-closet {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 140px);
+}
+
+.inv-phone-closet-main {
+  flex: 1 1 auto;
+}
+
+.inv-phone-empty p,
+.inv-phone-quiet,
+.inv-phone-count,
+.inv-phone-notice {
+  margin: 12px 0 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.inv-phone-quiet {
+  color: #3a3a3c;
+}
+
+.inv-phone-count {
+  font-weight: 600;
+}
+
+.inv-phone-search {
+  display: block;
+  margin-top: 12px;
+}
+
+.inv-phone-fetch {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.inv-phone-fetch:disabled {
+  opacity: 0.5;
+}
+
+.inv-phone-covers,
+.inv-phone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 12px 0 0;
+  list-style: none;
+}
+
+.inv-phone-cover,
+.inv-phone-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.inv-phone-cover {
+  transition: transform 280ms ease, opacity 280ms ease;
+}
+
+.inv-phone-covers[data-searching="true"] .inv-phone-cover[data-match="true"] {
+  position: relative;
+  z-index: 1;
+  transform: translateY(-8px) scale(1.04);
+}
+
+.inv-phone-covers[data-searching="true"] .inv-phone-cover[data-match="false"] {
+  transform: scale(0.96);
+  opacity: 0.42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-phone-cover {
+    transition: none;
+  }
+}
+
+.inv-phone-cover img,
+.inv-phone-cover-blank,
+.inv-phone-cutout {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f2f2f7;
+}
+
+.inv-phone-cover-face {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 1px 5px 5px 1px;
+  background: #e8eaec;
+  box-shadow: 0 8px 14px rgba(28, 22, 16, 0.16);
+}
+
+.inv-phone-cover .inv-phone-cover-face img,
+.inv-phone-cover .inv-phone-cover-face .inv-phone-cover-blank {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  border-radius: 0;
+  background: transparent;
+}
+
+.inv-phone-cover-face::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8px;
+  background: linear-gradient(90deg, rgba(20, 12, 8, 0.38), rgba(20, 12, 8, 0));
+  pointer-events: none;
+}
+
+.inv-phone-cover-blank {
+  display: block;
+}
+
+.inv-phone-cover-title,
+.inv-phone-card-name {
+  font-size: 13px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.inv-phone-chips {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inv-phone-chip,
+.inv-phone-toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.inv-phone-chip[aria-pressed="true"],
+.inv-phone-toggle[aria-pressed="true"] {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.inv-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.inv-phone-form-preview {
+  width: 120px;
+  height: 160px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.inv-phone-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.inv-phone-check input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+
+.inv-phone-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inv-phone-save,
+.inv-phone-quiet-btn,
+.inv-phone-new {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.inv-phone-save,
+.inv-phone-new {
+  background: #1c1c1e;
+  color: #fff;
+}
+
+.inv-phone-quiet-btn {
+  background: #fff;
+  color: inherit;
+}
+
+.inv-phone-save:disabled,
+.inv-phone-quiet-btn:disabled {
+  opacity: 0.45;
+}
+
+.inv-phone-new-wrap {
+  position: sticky;
+  bottom: 64px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  pointer-events: none;
+}
+
+.inv-phone-new {
+  pointer-events: auto;
+}
+
+.inv-phone-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.inv-phone-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #f2f2f7;
+}
+
+.inv-phone-dock button {
+  min-height: 44px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #8e8e93;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.inv-phone-dock button[aria-selected="true"] {
+  background: #fff;
+  color: #1c1c1e;
+}
+
+.inv-phone-stack,
+.inv-phone-look-name {
+  margin: 20px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.inv-phone-wears,
+.inv-phone-legend,
+.inv-phone-packing,
+.inv-phone-toggles {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inv-phone-wear {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.inv-phone-wear-photo,
+.inv-phone-look-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f2f2f7;
+}
+
+.inv-phone-wear-when {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.inv-phone-wear p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.inv-phone-look {
+  position: relative;
+  height: 240px;
+  margin-top: 8px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.inv-phone-look-piece {
+  position: absolute;
+  width: 28%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.inv-phone-look-img {
+  width: 100%;
+  height: auto;
+  max-height: 88px;
+}
+
+.inv-phone-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-phone-legend li,
+.inv-phone-pack-row {
+  min-height: 44px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(60, 60, 67, 0.18);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.inv-phone-pack-row {
+  display: block;
+  width: 100%;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  text-align: left;
+}
+
+/*
+ * The desk fascia paints every button and every tab. Inside this room those
+ * rules lose, including on the kitchen list, which this file does not own.
+ */
+body.win95-app .inv-phone button {
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  letter-spacing: 0;
+  border-radius: 12px !important;
+}
+
+body.win95-app .inv-phone [role="tablist"] {
+  box-shadow: none !important;
+}
+
+body.win95-app .inv-phone .inv-phone-scenes {
+  gap: 0;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.16);
+}
+
+body.win95-app .inv-phone .inv-phone-scenes button {
+  border-radius: 8px !important;
+  background: transparent;
+  color: #1c1c1e;
+  font-weight: 600;
+}
+
+body.win95-app .inv-phone .inv-phone-scenes button[aria-selected="true"] {
+  background: #fff;
+  color: #1c1c1e;
+}
+
+body.win95-app .inv-phone .inv-phone-chip,
+body.win95-app .inv-phone .inv-phone-toggle {
+  border-radius: 999px !important;
+}
+
+body.win95-app .inv-phone .inv-phone-dock {
+  gap: 4px;
+  background: #f2f2f7;
+}
+
+body.win95-app .inv-phone .inv-phone-dock button {
+  border-radius: 10px !important;
+  background: transparent;
+  color: #8e8e93;
+}
+
+body.win95-app .inv-phone .inv-phone-dock button[aria-selected="true"] {
+  background: #fff;
+  color: #1c1c1e;
+}
+
+body.win95-app .inv-phone .inv-kitchen-room-name {
+  border-radius: 0 !important;
+  background: transparent;
+}
+
+body.win95-app .inv-phone .inv-kitchen-row {
+  border-radius: 14px !important;
+}

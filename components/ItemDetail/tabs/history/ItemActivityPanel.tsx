@@ -29,10 +29,10 @@ export function ItemActivityPanel({ itemId }: { itemId: string }) {
   return (
     <section className="item-activity" aria-label="Item history">
       <h3 className="item-activity-caption">History</h3>
-      <p className="item-activity-hint">One line each time this item changes. Append-only — not undo.</p>
+      <p className="item-activity-hint">One line when this item is created, and one line each time it changes. Append-only — not undo.</p>
       <div className="item-activity-well" role="list">
         {entries.length === 0 ? (
-          <p className="item-activity-empty">No changes recorded yet. Save this item to start the ledger.</p>
+          <p className="item-activity-empty">No changes recorded yet.</p>
         ) : (
           entries.map((entry) => (
             <article key={entry.id} className="item-activity-row" role="listitem">

@@ -8,6 +8,7 @@
 "use client"
 
 import { useEffect, useState, type MutableRefObject } from "react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { BabyAnimalPhoto } from "@/lib/baby-animal-photos"
 import { pickFriendTodoNudge } from "@/lib/baby-animal-nudge"
 import type { FriendSuggestion } from "@/lib/friend-suggestion"
@@ -55,6 +56,9 @@ export function FriendDetailsPanel({
   onClose,
   closeBridge,
   onCoverChange,
+  onReplacePicture,
+  onRemove,
+  pictureBusy,
 }: {
   photo: BabyAnimalPhoto | null
   onClose: () => void
@@ -62,6 +66,9 @@ export function FriendDetailsPanel({
   closeBridge?: MutableRefObject<() => void>
   /** True while item detail covers this page, so the parent dialog can drop its lock. */
   onCoverChange?: (open: boolean) => void
+  onReplacePicture?: (file: File) => void
+  onRemove?: () => void
+  pictureBusy?: boolean
 }) {
   const friendHistory = useBabyAnimalsStore((s) => s.friendHistory)
   const friendMissions = useBabyAnimalsStore((s) => s.friendMissions)
@@ -78,6 +85,7 @@ export function FriendDetailsPanel({
   const [tab, setTab] = useState<FriendTab>("today")
   const [missionId, setMissionId] = useState<string | null>(null)
   const [seenLevel, setSeenLevel] = useState<number | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000)
@@ -183,9 +191,6 @@ export function FriendDetailsPanel({
       data-ui-name="Friend details"
       data-ui-docs="docs/FRIEND_COMPANION.md"
     >
-      <button type="button" className="friend-dismiss" aria-label="Dismiss friend details" onClick={dismissPage}>
-        ×
-      </button>
       <FriendDetailsPortrait
         name={who}
         src={src}
@@ -199,12 +204,17 @@ export function FriendDetailsPanel({
         hoverLine={hoverLine}
         onSay={sayIt}
         onOpenMission={setMissionId}
+        onDismiss={dismissPage}
+        onReplacePicture={onReplacePicture}
+        onRemove={onRemove ? () => setConfirmRemove(true) : undefined}
+        pictureBusy={pictureBusy}
         firstSeenAt={history?.firstSeenAt}
         lastAssignedAt={history?.lastAssignedAt}
         finished={finishedMissionCount(missions)}
         lamp={todayLamp(missions, now)}
         levelPulse={levelPulse}
       />
+      <div className="friend-body">
       <div className="friend-tabs" role="tablist" aria-label="Friend pages">
         {(
           [
@@ -229,39 +239,43 @@ export function FriendDetailsPanel({
         ))}
       </div>
       <div className="friend-scroll" role="tabpanel" id={`friend-panel-${tab}`} aria-labelledby={`friend-tab-${tab}`}>
-        {tab === "today" ? (
-          <FriendDetailsJournal rows={missions.slice(-2).reverse()} now={now} onOpen={setMissionId} compact />
-        ) : null}
-        {tab === "personality" ? (
-          <div id="friend-personality-body">
-            <FriendDetailsVoice
-              draft={draft}
-              onChange={patchTone}
-              onPreview={setHoverLine}
-            />
-            <FriendDetailsEqualizer draft={draft} titles={titles} lists={lists} onChange={patch} onPreset={applyPreset} />
-          </div>
-        ) : null}
-        {tab === "keepsakes" ? (
-          <FriendDetailsKeepsakes
-            missions={missions}
-            wearCount={history?.wearCount ?? 0}
-            points={friendPointsTotal(missions)}
-            tonesTried={tonesTried(animalId)}
+        {openMission ? (
+          <FriendMissionDetail
+            mission={openMission}
+            friendName={who}
             now={now}
+            onClose={() => setMissionId(null)}
+            onCoverChange={onCoverChange}
           />
-        ) : null}
-        {tab === "journal" ? <FriendDetailsJournal rows={missions} now={now} onOpen={setMissionId} /> : null}
+        ) : (
+          <>
+            {tab === "today" ? (
+              <FriendDetailsJournal rows={missions.slice(-2).reverse()} now={now} onOpen={setMissionId} compact />
+            ) : null}
+            {tab === "personality" ? (
+              <div id="friend-personality-body">
+                <FriendDetailsVoice
+                  draft={draft}
+                  onChange={patchTone}
+                  onPreview={setHoverLine}
+                />
+                <FriendDetailsEqualizer draft={draft} titles={titles} lists={lists} onChange={patch} onPreset={applyPreset} />
+              </div>
+            ) : null}
+            {tab === "keepsakes" ? (
+              <FriendDetailsKeepsakes
+                missions={missions}
+                wearCount={history?.wearCount ?? 0}
+                points={friendPointsTotal(missions)}
+                tonesTried={tonesTried(animalId)}
+                now={now}
+              />
+            ) : null}
+            {tab === "journal" ? <FriendDetailsJournal rows={missions} now={now} onOpen={setMissionId} /> : null}
+          </>
+        )}
       </div>
-      {openMission ? (
-        <FriendMissionDetail
-          mission={openMission}
-          friendName={who}
-          now={now}
-          onClose={() => setMissionId(null)}
-          onCoverChange={onCoverChange}
-        />
-      ) : null}
+      </div>
       <footer className="friend-footer">
         {dirty ? (
           <span className="friend-commit-lamp is-unsaved">Unsaved changes</span>
@@ -270,16 +284,46 @@ export function FriendDetailsPanel({
         ) : (
           <span className="friend-commit-lamp" />
         )}
-        <button type="button" className="friend-key" onClick={revert} disabled={!dirty}>
-          Revert
-        </button>
-        <button type="button" className="friend-key" onClick={dismissPage}>
+        {dirty ? (
+          <button type="button" className="friend-key" data-no95="" onClick={revert}>
+            Revert
+          </button>
+        ) : null}
+        <button type="button" className="friend-key" data-no95="" onClick={dismissPage}>
           Close
         </button>
-        <button type="button" className="friend-key is-on" onClick={save} disabled={!dirty}>
-          Save personality
-        </button>
+        {dirty ? (
+          <button type="button" className="friend-key is-on" data-no95="" onClick={save}>
+            Save personality
+          </button>
+        ) : null}
       </footer>
+      <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <DialogContent className="fm98-dialog sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete friend?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {who}? They will not come back on shuffle or refresh.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="friend-confirm-actions">
+            <button type="button" className="friend-key" data-no95="" onClick={() => setConfirmRemove(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="friend-key"
+              data-no95=""
+              onClick={() => {
+                setConfirmRemove(false)
+                onRemove?.()
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

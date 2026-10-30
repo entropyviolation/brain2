@@ -40,7 +40,7 @@ export function PhoneSheet({
         <div className="trk-phone-sheet-grab" aria-hidden />
         <header className="trk-phone-sheet-bar">
           <h3>{title}</h3>
-          <button type="button" className="trk-phone-sheet-done" onClick={onClose}>
+          <button type="button" data-no95="" className="trk-phone-key trk-phone-sheet-done" onClick={onClose}>
             Done
           </button>
         </header>

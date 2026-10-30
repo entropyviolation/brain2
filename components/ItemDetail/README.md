@@ -107,7 +107,8 @@ Page panels are private modules in `page/`, imported only by `ItemDetailPage.tsx
 Interiors (imported from this folder): `useItemDetailDraft`, `ItemSaveFlag`, `useItemDetailSaveHotkey`, `BodyPanel`, `HabitLinkedDetail`, `TodoCommitmentFields`, `ItemEstimateField`, `ItemRewardField`, `ItemScheduleFlags`, `ReminderScheduleFields`, `ItemAttributesSection`, `AttributeCreator`, `TagInput`, `tabs/links/RichLinksPanel` (and its parts), `ItemActivityPanel`, `ItemSettingsKey`, `ItemSettingsPanel`, `ItemTaskCardKey`, `WorkingNowBanner`, `ItemTimeLedger`, `AttributeSettingsDialog`, `ItemDetailDock`, `useItemDetailUnloadGuard`, `CycleConfirmDialog`, `SubtaskTree`, `InboxClarifyKey`, `chrome/item-detail-chrome.css`.
 
 Item writes: save / complete / status / reminder / notes / Sent go through
-`useItemDetailDraft.commitDraft` → `commitItemEdit`. That save lands in
+`useItemDetailDraft.commitDraft` → `commitItemEdit`. The optional second
+argument is an `ItemWriteAttribution`; omitted means item detail. That save lands in
 `updateTask`, which appends one History line per field that changed.
 `useItemDetailDraft` still forwards `updateTask`, `addTask`, and `deleteTask`
 for create, delete, and a few interiors. The page calls `addTask` and
@@ -280,7 +281,7 @@ The two doors stay in this folder: `ItemDetailPopup.tsx` and `ItemDetailPage.tsx
 | `draft/useItemDetailDraft.test.tsx` | Cycle guard: refuse a reverse edge; accept an acyclic add. |
 | `attributes/AttributeSettingsDialog.tsx` | Popup over item detail for one attribute: the shared name, a copyable id, the type, when it was created, where it is defined, and the values items currently hold. Delete removes that definition from every list, type, and item. The display name on one item stays in Item settings. A new definition stores `createdAt`. Older ones say not recorded. |
 | `chrome/ItemDetailDock.tsx` | Where a minimized popup waits. A short bar (title and close) or the item's icon. The popup stays mounted, so the draft stays. Click the title or the icon to open it again. Close still asks about unsaved changes. A click on the page behind the open popup saves, then lands here. A reload that left detail open comes back here with that save already written. |
-| `tabs/history/ItemActivityPanel.tsx` | _Last mapped: 2026-10-27._ Explorer sunken History well. One console line per change, newest first: `{date time} — {event} — {detail}`. A Working-on-now sitting is `Worked on — {duration} — {date}`, plus a substep line when a step was on the clock. Empty until the first recorded save. |
+| `tabs/history/ItemActivityPanel.tsx` | _Last mapped: 2026-10-29._ Explorer sunken History well. One console line per change, newest first: `{date time} — {event} — {detail} — source …`. A create is its own row: `created {time} — source …`. A Working-on-now sitting is `Worked on — {duration} — {date}`, plus the source clause, and a substep line when a step was on the clock. Empty only when the ledger has no rows. |
 | `chrome/item-detail-chrome.css` | Milled fascia for page + popup (`.id95` / `.id95-dialog`): brushed bays, CRT title, metal keys, equal-fill tab bay with power lamps, History well + cycle path. |
 | `dialogs/CycleConfirmDialog.tsx` | Win95 `fm98-dialog`: “This would loop”, the cycle path, OK only (dependency already refused). |
 | `dialogs/CycleConfirmDialog.test.tsx` | Dialog copy; no add-anyway. |
@@ -368,19 +369,22 @@ Plan and limits: [`docs/RESOURCE_LINKS.md`](../../docs/RESOURCE_LINKS.md).
 
 ## History
 
-_Last mapped: 2026-10-27._ Both surfaces always offer a **History** tab
+_Last mapped: 2026-10-29._ Both surfaces always offer a **History** tab
 (`ItemActivityPanel`). The ledger is `lib/item-activity.ts`
-(`brain2-item-activity`, legacy `cogs-item-activity`). `updateTask` is the one
-writer: every changed field is its own line, `{date time} — {event} — {detail}`
-(`Estimate — 25m → 40m`, `Substep added — “Rinse”`). A save that changes
+(`brain2-item-activity`, legacy `cogs-item-activity`). `addTask` writes one
+created line. `updateTask` writes every changed field as its own line,
+`{date time} — {event} — {detail} — source …`
+(`Estimate — 25m → 40m — source item detail, electron`). A save that changes
 nothing writes nothing. Newest first. `commitItemEdit` does not append a
-second copy; it passes source and an optional order through that same write.
-Lines written before `source` or `order` still load.
+second copy; it passes an attribution object and an optional order through
+that same write. A row with neither that object nor a legacy `source` string
+reads `source recorded before sources`. Lines written before `source` or
+`order` still load.
 
 A Working-on-now sitting is recorded when it stops, on the item that was on
-the clock. The pen clock (`taskId` / `stepId`) writes `Worked on — {duration} — {date}`
-on that task, and `Worked on substep — {name} — {duration} — {date}` when a
-step was active. Duration is the active sitting (paused time left out), the
+the clock. The pen clock (`taskId` / `stepId`) writes `Worked on — {duration} — {date} — source working on now`
+on that task, and `Worked on substep — {name} — {duration} — {date}` with the
+same source clause when a step was active. The shell is appended when this window has one. Duration is the active sitting (paused time left out), the
 same minutes as the time log. Under a minute there is no time log, and the
 line still records (`10s`). The operations clock writes the same Worked-on
 line on the operation, one per day slice, and only when that item exists.

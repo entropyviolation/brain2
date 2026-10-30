@@ -247,7 +247,7 @@ export function PlanPhone({
     <div className="plan-phone" data-testid="plan-phone" data-plan-dark={planDark ? "true" : "false"}>
       <h1 className="plan-phone-sr">Plan</h1>
       <header className="plan-phone-nav">
-        <button type="button" aria-label={`Previous ${periodNoun(planTab)}`} onClick={() => go(-1)}>
+        <button type="button" className="plan-phone-key" data-no95="" aria-label={`Previous ${periodNoun(planTab)}`} onClick={() => go(-1)}>
           <span aria-hidden>‹</span>
         </button>
         <div className="plan-phone-nav-copy">
@@ -256,10 +256,10 @@ export function PlanPhone({
             {TAB_LABEL[planTab]} · {eventLabel}
           </p>
         </div>
-        <button type="button" aria-label={`Next ${periodNoun(planTab)}`} onClick={() => go(1)}>
+        <button type="button" className="plan-phone-key" data-no95="" aria-label={`Next ${periodNoun(planTab)}`} onClick={() => go(1)}>
           <span aria-hidden>›</span>
         </button>
-        <button type="button" className="plan-phone-add" aria-label="Add" onClick={() => setSheet("add")}>
+        <button type="button" className="plan-phone-key plan-phone-add" data-no95="" aria-label="Add" onClick={() => setSheet("add")}>
           +
         </button>
       </header>
@@ -270,6 +270,8 @@ export function PlanPhone({
             key={tab}
             type="button"
             role="tab"
+            className="plan-phone-key"
+            data-no95=""
             aria-selected={planTab === tab}
             onClick={() => setPlanTab(tab)}
           >
@@ -324,6 +326,8 @@ export function PlanPhone({
       <nav className="plan-phone-dock" aria-label="Plan tools">
         <button
           type="button"
+          className="plan-phone-key"
+          data-no95=""
           onClick={() => {
             setMotionDir(0)
             setCurrentDate(new Date())
@@ -332,55 +336,55 @@ export function PlanPhone({
           Today
         </button>
         {planTab !== "quarter" ? (
-          <button type="button" onClick={() => setSheet("explorer")}>
+          <button type="button" className="plan-phone-key" data-no95="" onClick={() => setSheet("explorer")}>
             Explorer
           </button>
         ) : null}
-        <button type="button" onClick={() => setSheet("log")}>
+        <button type="button" className="plan-phone-key" data-no95="" onClick={() => setSheet("log")}>
           Plan log
         </button>
-        <button type="button" onClick={() => setSheet("more")}>
+        <button type="button" className="plan-phone-key" data-no95="" onClick={() => setSheet("more")}>
           More
         </button>
       </nav>
 
       <PhoneSheet open={sheet === "add"} title="Add" onClose={() => setSheet(null)}>
-        <button type="button" className="plan-phone-choice" onClick={() => { setSheet(null); onAddEvent() }}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => { setSheet(null); onAddEvent() }}>
           Add Event
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => { setSheet(null); onAddPlan() }}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => { setSheet(null); onAddPlan() }}>
           Add Plan
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => { setSheet(null); onPaste() }}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => { setSheet(null); onPaste() }}>
           Paste Events
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => openHours({ purpose: "event" })}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => openHours({ purpose: "event" })}>
           Add event at a time
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => openHours({ purpose: "free" })}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => openHours({ purpose: "free" })}>
           Free block at a time
         </button>
       </PhoneSheet>
 
       <PhoneSheet open={sheet === "more"} title="More" onClose={() => setSheet(null)}>
-        <button type="button" className="plan-phone-choice" onClick={() => { setSheet(null); onSettings() }}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => { setSheet(null); onSettings() }}>
           Settings
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => { setSheet(null); onPaste() }}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => { setSheet(null); onPaste() }}>
           Paste Events
         </button>
         <div className="plan-phone-latches" id="plan-chrome-toggles">
           <button
             type="button"
             id="plan-dark-mode"
-            className="plan-phone-choice"
+            className="plan-phone-choice plan-phone-key" data-no95=""
             aria-pressed={planDark}
             aria-label={planDark ? "light mode" : "Dark"}
             onClick={() => setPlanDark(!planDark)}
           >
             {planDark ? "light mode" : "Dark"}
           </button>
-          <PlanGemModeToggle on={gemMode} onChange={setGemMode} />
+          <PlanGemModeToggle on={gemMode} onChange={setGemMode} keycap />
         </div>
       </PhoneSheet>
 
@@ -416,12 +420,12 @@ export function PlanPhone({
         onClose={() => setSheet(null)}
       >
         {hourJob?.purpose === "place" && hourJob.kind === "task" ? (
-          <button type="button" className="plan-phone-choice" onClick={() => pickHour(null)}>
+          <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => pickHour(null)}>
             Anytime this day
           </button>
         ) : null}
         {Array.from({ length: 24 }, (_, hour) => (
-          <button key={hour} type="button" className="plan-phone-choice" onClick={() => pickHour(hour)}>
+          <button key={hour} type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => pickHour(hour)}>
             {hourLabel(hour)}
           </button>
         ))}
@@ -429,7 +433,7 @@ export function PlanPhone({
 
       <PhoneSheet open={sheet === "days"} title="Move to" onClose={() => setSheet(null)}>
         {dayChoices.map((date) => (
-          <button key={formatLocalDateKey(date)} type="button" className="plan-phone-choice" onClick={() => pickDay(date)}>
+          <button key={formatLocalDateKey(date)} type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => pickDay(date)}>
             {format(date, "EEEE, MMM d")}
           </button>
         ))}
@@ -438,7 +442,7 @@ export function PlanPhone({
       <PhoneSheet open={sheet === "actions"} title={menu?.title ?? "Actions"} onClose={() => setSheet(null)}>
         <button
           type="button"
-          className="plan-phone-choice"
+          className="plan-phone-choice plan-phone-key" data-no95=""
           onClick={() => {
             if (!menu) return
             setSheet(null)
@@ -454,13 +458,13 @@ export function PlanPhone({
         >
           Open
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => openHours({ purpose: "move" })}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => openHours({ purpose: "move" })}>
           Move to a time
         </button>
-        <button type="button" className="plan-phone-choice" onClick={() => setSheet("days")}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={() => setSheet("days")}>
           Another day
         </button>
-        <button type="button" className="plan-phone-choice" onClick={clearMenu}>
+        <button type="button" className="plan-phone-choice plan-phone-key" data-no95="" onClick={clearMenu}>
           {menu?.kind === "event" ? "Make all-day" : "Unschedule"}
         </button>
       </PhoneSheet>
@@ -495,7 +499,7 @@ function PhoneSheet({
         <div className="plan-phone-grabber" aria-hidden />
         <div className="plan-phone-sheet-head">
           <h2>{title}</h2>
-          <button type="button" onClick={onClose}>
+          <button type="button" className="plan-phone-key" data-no95="" onClick={onClose}>
             Done
           </button>
         </div>

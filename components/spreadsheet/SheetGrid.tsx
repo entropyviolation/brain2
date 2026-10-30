@@ -541,7 +541,8 @@ export function SheetGrid({
     const desc = newDesc.trim()
     if (!desc || !categoryId) return
     const base = withListMembership(createListItem(desc, [categoryId]), category, types)
-    addTask(base)
+    const listName = category?.name?.trim()
+    addTask(base, listName ? { surface: "list", name: listName } : { surface: "list" })
     setNewDesc("")
   }
 
@@ -646,7 +647,8 @@ export function SheetGrid({
         for (let row = displayTasks.length; row <= maxRow; row++) {
           const base = withListMembership(createListItem("", [categoryId]), category, types)
           created.push(base)
-          addTask(base)
+          const listName = category?.name?.trim()
+          addTask(base, listName ? { surface: "list", name: listName } : { surface: "list" })
         }
       }
       const rowTask = (row: number): Task | undefined => {

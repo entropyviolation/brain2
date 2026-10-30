@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-27._
 
-These files are the habit form body. `TaskForm` still lives in `daily-task-form.tsx`. The screen did not change. Visual order is still the flex `order` in `habit-form-dialog.css`. Each section stays a direct child of `.habit95-fields`. Other files do not import this folder.
+These files are the habit form body. `TaskForm` still lives in `daily-task-form.tsx`. The split did not change the sections. On a phone the parent shows one section at a time; these files still mount the same sections. Visual order is still the flex `order` in `habit-form-dialog.css`. Each section stays a direct child of `.habit95-fields`. Other files do not import this folder.
 
 | File | What moved |
 |------|------------|

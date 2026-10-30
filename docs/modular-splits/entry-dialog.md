@@ -39,7 +39,7 @@ Keep this import working, unchanged, for every current caller:
 import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 ```
 
-Call sites (do not edit them): `time-grid.tsx`, `week-grid.tsx`, `infinite-strip.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `actual-day-view.tsx`, `phone-day-timeline.tsx`, `pen-recent-blocks.tsx`, `components/Analytics/time/TrackingAnalytics.tsx`, `components/header-tracking/current-moment/update-state.tsx`, `components/Operations/panels/OperationLogFeed.tsx`, `components/Home/ToDo/task-card/SpentBlocks.tsx`. Tests: `entry-dialog.test.tsx`, `companion-section.test.tsx`.
+Call sites (do not edit them): `time-grid.tsx`, `week-grid.tsx`, `infinite-strip.tsx`, `tracking-activity-log.tsx`, `tracking-log-view.tsx`, `actual-day-view.tsx`, `pen-recent-blocks.tsx`, `components/Analytics/time/TrackingAnalytics.tsx`, `components/header-tracking/current-moment/update-state.tsx`, `components/Operations/panels/OperationLogFeed.tsx`, `components/Home/ToDo/task-card/SpentBlocks.tsx`. Tests: `entry-dialog.test.tsx`, `companion-section.test.tsx`.
 
 Rules:
 

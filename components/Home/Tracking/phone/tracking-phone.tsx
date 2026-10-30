@@ -2,10 +2,12 @@
  * components/Home/Tracking/phone/tracking-phone.tsx — Home Tracking on a phone
  *
  * Mounted only when the viewport is at most 767px. The desk stays mounted
- * above that. One sticky header holds the day, the four views, and the pen
- * deck. Time Grid's day is a vertical timeline. Paint tools sit in a tray
- * that does not cover the day. Pens, Now, Find, Fill, and the recorder open
- * as bottom sheets.
+ * above that. The day, the four views, and the pen deck sit in one header.
+ * Time Grid's day is the desk cell grid, the full width of the screen. Paint
+ * tools sit in a tray that does not cover the day. Header keys and tray keys
+ * are pale silver keycaps. The view switcher is a darker gray. Draw selects
+ * the paint pen, and a second press opens the pen sheet to search, pick, or
+ * make a new pen. Now, Find, Fill, and the recorder open as bottom sheets.
  */
 "use client"
 
@@ -20,8 +22,8 @@ import { TrackingLogView } from "@/components/Home/Tracking/tracking-log/trackin
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
-import { PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeDeck } from "@/components/Home/Tracking/pen-mode-bar"
+import { PenSwatches } from "@/components/Home/Tracking/cabinet/pen-swatches"
 import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/settings/tracking-view-settings-dialog"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
 import { TrackingFind } from "@/components/Home/Tracking/tracking-find"
@@ -90,7 +92,7 @@ export function TrackingPhone({
             </h2>
           </div>
           <div className="trk-phone-date-keys">
-            <button type="button" className="trk-phone-chev" aria-label="Previous day" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
+            <button type="button" data-no95="" className="trk-phone-key trk-phone-chev" aria-label="Previous day" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
               ‹
             </button>
             <div className="trk-phone-days" role="group" aria-label="Days">
@@ -101,6 +103,8 @@ export function TrackingPhone({
                   <button
                     key={key}
                     type="button"
+                    data-no95=""
+                    className="trk-phone-key"
                     aria-pressed={selected}
                     aria-current={selected ? "date" : undefined}
                     aria-label={day.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
@@ -112,21 +116,21 @@ export function TrackingPhone({
                 )
               })}
             </div>
-            <button type="button" className="trk-phone-chev" aria-label="Next day" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
+            <button type="button" data-no95="" className="trk-phone-key trk-phone-chev" aria-label="Next day" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
               ›
             </button>
           </div>
           <div className="trk-phone-utilities">
-            <button type="button" aria-pressed={dateKey === todayKey} onClick={() => setCurrentDate(new Date())}>
+            <button type="button" data-no95="" className="trk-phone-key" aria-pressed={dateKey === todayKey} onClick={() => setCurrentDate(new Date())}>
               Today
             </button>
-            <button type="button" aria-expanded={sheet === "now"} onClick={() => toggleSheet("now")}>
+            <button type="button" data-no95="" className="trk-phone-key" aria-pressed={sheet === "now"} aria-expanded={sheet === "now"} onClick={() => toggleSheet("now")}>
               Now
             </button>
-            <button type="button" aria-expanded={sheet === "find"} onClick={() => toggleSheet("find")}>
+            <button type="button" data-no95="" className="trk-phone-key" aria-pressed={sheet === "find"} aria-expanded={sheet === "find"} onClick={() => toggleSheet("find")}>
               Find
             </button>
-            <button type="button" aria-label="Tracking settings" onClick={() => setSettingsOpen(true)}>
+            <button type="button" data-no95="" className="trk-phone-key" aria-label="Tracking settings" onClick={() => setSettingsOpen(true)}>
               Settings
             </button>
           </div>
@@ -194,7 +198,7 @@ export function TrackingPhone({
       ) : null}
       {sheet === "pens" && showPenDesk ? (
         <PhoneSheet title="Pens" onClose={closeSheet}>
-          <PenPalette variant="panel" />
+          <PhonePenPicker onPicked={closeSheet} />
         </PhoneSheet>
       ) : null}
       {sheet === "find" ? (
@@ -258,7 +262,18 @@ function PhoneToolTray({
   return (
     <div className="trk-phone-tray" role="toolbar" aria-label="Paint tools">
       <div className="trk-phone-tray-keys">
-        <TrayKey label="Draw" pressed={paintTool === "draw"} onClick={() => choose("draw")} swatch={pen?.color} />
+        <TrayKey
+          label="Draw"
+          pressed={paintTool === "draw"}
+          onClick={() => {
+            if (paintTool === "draw") {
+              onPens()
+              return
+            }
+            choose("draw")
+          }}
+          swatch={pen?.color}
+        />
         <TrayKey label="Erase" pressed={paintTool === "erase"} onClick={() => choose("erase")} />
         <TrayKey label="Scissors" pressed={paintTool === "scissors"} onClick={() => choose("scissors")} />
         <TrayKey label="Point" pressed={paintTool === "point"} onClick={() => choose("point")} />
@@ -283,10 +298,43 @@ function TrayKey({
   swatch?: string
 }) {
   return (
-    <button type="button" className="trk-phone-tray-key" aria-pressed={pressed} onClick={onClick}>
+    <button type="button" data-no95="" className="trk-phone-key trk-phone-tray-key" aria-pressed={pressed} onClick={onClick}>
       {swatch ? <span className="trk-phone-swatch" style={{ background: swatch }} aria-hidden /> : null}
       {label}
     </button>
+  )
+}
+
+function PhonePenPicker({ onPicked }: { onPicked: () => void }) {
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  const tags = useTimeTrackingStore((s) => s.tags)
+  const activeScopeId = useTimeTrackingStore((s) => s.activeScopeId)
+  const selectedPenId = useTimeTrackingStore((s) => s.selectedPenId)
+  const hiddenPenIds = useTimeTrackingStore((s) => s.hiddenPenIds)
+  const setSelectedPen = useTimeTrackingStore((s) => s.setSelectedPen)
+  const addPen = useTimeTrackingStore((s) => s.addPen)
+  const scope = scopes.find((item) => item.id === activeScopeId) || scopes[0]
+  if (!scope) return <p className="trk-phone-empty">No tracking scope yet.</p>
+  const hidden = new Set(hiddenPenIds[scope.id] ?? [])
+  const pens = scope.pens.filter((pen) => !hidden.has(pen.id))
+  return (
+    <PenSwatches
+      pens={pens.length ? pens : scope.pens}
+      tags={tags}
+      selectedId={selectedPenId}
+      onSelect={(id) => {
+        setSelectedPen(id)
+        onPicked()
+      }}
+      onCreate={(name, color) => {
+        const id = addPen(scope.id, { name, color })
+        if (id) setSelectedPen(id)
+      }}
+      creator="always"
+      expanded
+      layout="list"
+      searchPlaceholder="Find a pen…"
+    />
   )
 }
 

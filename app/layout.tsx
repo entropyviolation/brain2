@@ -61,6 +61,7 @@ import "@/components/Home/visual-dashboard.css"
 import "@/components/Home/dash/dash.css"
 import "./chrome-patina.css"
 import "./pcb-backdrop.css"
+import { AlwaysMic } from "./always-mic"
 import { ChromePatina } from "./chrome-patina"
 import { PcbBackdrop } from "./pcb-backdrop"
 import { CompletionPopupHost } from "@/components/Completion/CompletionPopupHost"
@@ -111,6 +112,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
       </head>
       <body className={`${karla.className} win95-app`}>
+        <AlwaysMic />
         <ChromePatina />
         <PcbBackdrop />
         {children}

@@ -81,6 +81,15 @@ export function bulkReadyCount(tasksText: string, plain = false): number {
   }).length
 }
 
+function captureAttribution(
+  originKind: "quick-add" | "bulk-add" | undefined,
+  listName: string | undefined,
+): { surface: "quick-add" | "bulk-add"; name?: string } | undefined {
+  if (!originKind) return undefined
+  const name = listName?.trim()
+  return name ? { surface: originKind, name } : { surface: originKind }
+}
+
 /**
  * Write a bulk-add draft through the same capture target as Quick Add.
  * One undo step when `actionLabel` is set. Returns the tasks just added.
@@ -115,7 +124,7 @@ export function writeBulkCapture(
           origin: options?.originKind ? lineCaptureOrigin(options.originKind, line) : undefined,
         })
         created.push(task)
-        addTask(task)
+        addTask(task, captureAttribution(options?.originKind, target.list?.name))
       }
       options?.afterAdd?.({ sendToInbox, tasks: created })
       return
@@ -144,7 +153,7 @@ export function writeBulkCapture(
           bucket.dueBefore,
         )
         created.push(task)
-        addTask(task)
+        addTask(task, captureAttribution(options?.originKind, target.list?.name))
       }
     }
     options?.afterAdd?.({ sendToInbox, tasks: created })

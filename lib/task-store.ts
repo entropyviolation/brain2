@@ -20,7 +20,8 @@
  * `updateTask` appends `Task.estimateLog` when `estimatedDuration` changes
  * (`noteTaskEstimate`). The same minutes again adds no row. A content change
  * stamps `Task.modifiedAt` (ISO string, `lib/task-modified.ts`). A no-op save leaves that clock.
- * The same write appends one History line per changed field (`recordItemWrite`).
+ * The same write appends History (`recordRuledHistory`): one created line, then one
+ * line per changed field. A rule's fields are attributed to that rule.
  *
  * Spec: §4 (Inbox), §5 (Item model), §6 (Next Actions), §7 (Scheduler). Storage
  * is localStorage today; spec §3 calls for migrating this to **MongoDB**
@@ -49,7 +50,8 @@ import {
   migrateParkedNoteBodyToField,
 } from "@/lib/migrations"
 import { dispatchItemMutation } from "@/lib/workflow-hooks"
-import { recordItemWrite, type ItemActivityMeta } from "@/lib/item-activity"
+import { recordListMembershipHistory, recordRuledHistory, type ItemActivityMeta, type RuledHistoryInput } from "@/lib/item-activity"
+import { resolveItemWriteAttribution, type ItemWriteAttribution } from "@/lib/item-write-source"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { reviewPointsTaskId } from "@/lib/completion-review"
 import { usePointsStore } from "@/lib/points-store"
@@ -57,7 +59,7 @@ import { hasStepTiers } from "@/lib/step-tiers"
 import { levelReached } from "@/lib/step-progress"
 import {
   resolveCompletionPoints,
-  applyItemRules,
+  applyItemRulesTrace,
   itemTitleOrUntitled,
   syncTitleFromDescription,
 } from "@/lib/item-utils"
@@ -141,7 +143,7 @@ interface TaskState {
   }
   /** Tunable weights for the transparent To-Do priority formula (lib/priority.ts). */
   priorityWeights: PriorityWeights
-  addTask: (task: Task) => void
+  addTask: (task: Task, attribution?: ItemWriteAttribution) => void
   updateTask: (task: Task, patch?: Record<string, unknown>, activity?: ItemActivityMeta) => void
   deleteTask: (id: string) => void
   /** Same write as `addTask` — prefer when the caller means an item record. */
@@ -311,13 +313,19 @@ export function resetClearedTaskTombstones(): void {
 }
 
 /**
- * Rule lists (`List.membershipRules`) pick the item up after the link step has
- * recorded any manual removal, so a rule never undoes "take this off". Lists a
- * rule adds are then expanded through connected lists like any other join.
+ * Link expansion, then membership rules, then a second link expansion.
+ * Rule lists pick the item up after the link step has recorded any manual
+ * removal, so a rule never undoes "take this off".
  */
-function withMembershipRules(task: Task, lists: List[]): Task {
-  const joined = applyMembershipRulesToTask(task, lists, new Date())
-  return joined === task ? task : applyListLinksToTask(joined, joined, lists)
+function stageMembership(task: Task, previous: Task | undefined, lists: List[]): {
+  afterLinks: Task
+  afterJoin: Task
+  afterMembership: Task
+} {
+  const afterLinks = applyListLinksToTask(task, previous, lists)
+  const afterJoin = applyMembershipRulesToTask(afterLinks, lists, new Date())
+  const afterMembership = afterJoin === afterLinks ? afterJoin : applyListLinksToTask(afterJoin, afterJoin, lists)
+  return { afterLinks, afterJoin, afterMembership }
 }
 
 function withRestoredTaskTombstones<T>(value: T): T {
@@ -347,10 +355,12 @@ export const useTaskStore = create<TaskState>()(
       },
       priorityWeights: { ...DEFAULT_PRIORITY_WEIGHTS },
 
-      addTask: (task) => {
+      addTask: (task, attribution) => {
         // Captured for the workflow-hooks dispatch after the state commit (only
         // set when the task was actually added — no-op when it already exists).
+        const caller = resolveItemWriteAttribution(attribution)
         let added: Task | undefined
+        let history: Omit<RuledHistoryInput, "lookup"> | undefined
         set((state) => {
           // Only add if the task doesn't already exist
           if (!state.tasks.some((t) => t.id === task.id)) {
@@ -382,15 +392,28 @@ export const useTaskStore = create<TaskState>()(
                 : undefined,
             }
             // Apply item-type + list rules (e.g. "when purchased, set owned").
-            const ruled = applyItemRules(
-              syncTitleFromDescription(taskWithDates),
+            const userSnapshot = syncTitleFromDescription(taskWithDates)
+            const traced = applyItemRulesTrace(
+              userSnapshot,
               state.lists,
               useItemTypeStore.getState().types,
               "create",
             )
-            const linked = withMembershipRules(applyListLinksToTask(ruled, undefined, state.lists), state.lists)
-            const archived = withArchiveListMembership(linked, linked, state.lists, state.folders)
+            const staged = stageMembership(traced.item, undefined, state.lists)
+            const archived = withArchiveListMembership(staged.afterMembership, staged.afterMembership, state.lists, state.folders)
             added = archived
+            history = {
+              create: true,
+              item: archived,
+              caller,
+              userSnapshot,
+              rules: traced.mutations,
+              afterRules: traced.item,
+              afterLinks: staged.afterLinks,
+              afterJoin: staged.afterJoin,
+              afterMembership: staged.afterMembership,
+              lists: state.lists,
+            }
             return {
               tasks: [...state.tasks, archived],
               removedTaskIds: (state.removedTaskIds ?? []).filter((id) => id !== archived.id),
@@ -398,15 +421,20 @@ export const useTaskStore = create<TaskState>()(
           }
           return state
         })
+        if (history) {
+          recordRuledHistory({ ...history, lookup: { tasks: get().tasks, lists: get().lists } })
+        }
         if (added) {
           dispatchItemMutation({ trigger: "create", itemId: added.id, after: added })
         }
       },
 
       updateTask: (updatedTask, patch, activity) => {
+        const caller = resolveItemWriteAttribution(activity?.attribution)
         // Captured for the workflow-hooks dispatch after the state commit.
         let before: Task | undefined
         let after: Task | undefined
+        let history: Omit<RuledHistoryInput, "lookup"> | undefined
         let didComplete = false
         let basePoints = 0
         set((state) => {
@@ -492,31 +520,46 @@ export const useTaskStore = create<TaskState>()(
             didComplete = justCompleted
             // Apply item-type + list rules; rules that change attributes (e.g.
             // "when purchased, set owned") follow the item across all its lists.
-            const ruled = applyItemRules(
-              syncTitleFromDescription(taskWithDates, prev),
+            const userSnapshot = syncTitleFromDescription(taskWithDates, prev)
+            const traced = applyItemRulesTrace(
+              userSnapshot,
               state.lists,
               useItemTypeStore.getState().types,
               didComplete ? "complete" : "update",
               prev,
             )
-            const linked = withMembershipRules(applyListLinksToTask(ruled, prev, state.lists), state.lists)
+            const staged = stageMembership(traced.item, prev, state.lists)
             // Lists gained after creation carry a join instant (Default sort "Date added to list").
             const archived = stampListAddedAt(
               prev,
-              withArchiveListMembership(linked, prev, state.lists, state.folders),
+              withArchiveListMembership(staged.afterMembership, prev, state.lists, state.folders),
               new Date(),
             )
             const stamped = withModifiedStamp(prev, archived)
             before = prev
             after = stamped
+            history = {
+              create: false,
+              item: stamped,
+              caller,
+              ...(activity?.order ? { order: activity.order } : {}),
+              previous: prev,
+              userSnapshot,
+              rules: traced.mutations,
+              afterRules: traced.item,
+              afterLinks: staged.afterLinks,
+              afterJoin: staged.afterJoin,
+              afterMembership: staged.afterMembership,
+              lists: state.lists,
+            }
             const newTasks = [...state.tasks]
             newTasks[index] = stamped
             return { tasks: newTasks }
           }
           return state
         })
-        if (after && before) {
-          recordItemWrite(before, after, { tasks: get().tasks, lists: get().lists }, new Date(), activity)
+        if (history) {
+          recordRuledHistory({ ...history, lookup: { tasks: get().tasks, lists: get().lists } })
         }
         if (after) {
           dispatchItemMutation({
@@ -559,7 +602,8 @@ export const useTaskStore = create<TaskState>()(
           return { lists: [...state.lists, category] }
         }),
 
-      updateList: (updatedCategory) =>
+      updateList: (updatedCategory) => {
+        const audit = { before: [] as Task[], after: [] as Task[], lists: [] as List[], hit: false }
         set((state) => {
           const index = state.lists.findIndex((c) => c.id === updatedCategory.id)
           if (index !== -1) {
@@ -570,13 +614,19 @@ export const useTaskStore = create<TaskState>()(
               const ruled = applyMembershipRulesToTasks(state.tasks, newCategories, new Date())
               if (ruled !== state.tasks) {
                 const tasks = stampListAddedAtAll(state.tasks, applyListLinksToTasks(ruled, newCategories), new Date())
+                audit.before = state.tasks
+                audit.after = tasks
+                audit.lists = newCategories
+                audit.hit = true
                 return { lists: newCategories, tasks }
               }
             }
             return { lists: newCategories }
           }
           return state
-        }),
+        })
+        if (audit.hit) recordListMembershipHistory(audit.before, audit.after, audit.lists, "membership-rule")
+      },
 
       deleteList: (id) =>
         set((state) => {
@@ -614,20 +664,37 @@ export const useTaskStore = create<TaskState>()(
           }
         }),
 
-      applyListMembershipRules: (now) =>
+      applyListMembershipRules: (now) => {
+        const audit = { before: [] as Task[], after: [] as Task[], lists: [] as List[], hit: false }
         set((state) => {
           const ruled = applyMembershipRulesToTasks(state.tasks, state.lists, now ?? new Date())
           if (ruled === state.tasks) return state
-          return { tasks: stampListAddedAtAll(state.tasks, applyListLinksToTasks(ruled, state.lists), new Date()) }
-        }),
+          const tasks = stampListAddedAtAll(state.tasks, applyListLinksToTasks(ruled, state.lists), new Date())
+          audit.before = state.tasks
+          audit.after = tasks
+          audit.lists = state.lists
+          audit.hit = true
+          return { tasks }
+        })
+        if (audit.hit) recordListMembershipHistory(audit.before, audit.after, audit.lists, "membership-rule")
+      },
 
-      addListLink: (sourceListId, targetListId) =>
+      addListLink: (sourceListId, targetListId) => {
+        const audit = { before: [] as Task[], after: [] as Task[], lists: [] as List[], hit: false }
         set((state) => {
           const lists = addListLinkToLists(state.lists, sourceListId, targetListId)
           if (lists === state.lists) return state
           const tasks = stampListAddedAtAll(state.tasks, applyListLinksToTasks(state.tasks, lists), new Date())
+          if (tasks !== state.tasks) {
+            audit.before = state.tasks
+            audit.after = tasks
+            audit.lists = lists
+            audit.hit = true
+          }
           return tasks === state.tasks ? { lists } : { lists, tasks }
-        }),
+        })
+        if (audit.hit) recordListMembershipHistory(audit.before, audit.after, audit.lists, "list-link")
+      },
 
       removeListLink: (sourceListId, targetListId) =>
         set((state) => {
