@@ -51,6 +51,8 @@
 	<string>BRAIN2 records the places you visit so Location fills itself in.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>BRAIN2 records significant moves and visits in the background, so Location fills in while the phone is in your pocket. Batches are encrypted before they leave the phone.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>BRAIN2 reads steps, distance, flights, active energy, heart rate, sleep, and workouts so the full history can be imported. It does not write to Apple Health.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

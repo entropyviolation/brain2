@@ -14,4 +14,6 @@ Design language is `docs/DESIGN_STYLE.md`. Redesign plans are `docs/*_REDESIGN.m
 
 The iOS / mobile app follows `docs/MOBILE_STYLE.md` and does not follow the desktop style.
 
+To update the iPhone app, from the repo root, unsandboxed, and without reading anything else first: `BRAIN2_IOS_TEAM_ID=25YWDVDMKT npm run ios:reinstall -- --force`. The phone must be unlocked, on the same Wi-Fi or plugged in. Wait for `[ios-reinstall] … installed`.
+
 Open a file in `.cursor/rules/` when the task matches it. Those notes stay out of this file: doc sync, verify-without-rewriting, design style while styling, the three task editors, and long files under `components/Modules`.

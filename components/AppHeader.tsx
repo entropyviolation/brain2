@@ -17,9 +17,10 @@
  * The Now popup loads when that key opens. Narrower than the group, whole
  * clusters wrap onto the full shell; a cluster wider than
  * the shell scrolls inside its bay. On a viewport 520px or narrower the
- * mill gives way to a phone bar: BRAIN2, Back/Forward, and Menu share one
- * row clear of the status bar, Go is the section switcher, and Friend,
- * Rituals, System, and Capture open in a sheet. A live now well stays on
+ * mill gives way to a phone bar: Back/Forward sit on the far left, then
+ * BRAIN2, then a Quick Add keycap (+) and Menu. Go is the section switcher.
+ * Friend, Rituals, System, and Capture open in a sheet. Refresh is the left key of
+ * that sheet and reloads the page; Close stays on the right. A live now well stays on
  * the bar so a running clock is still on screen. A wider window keeps the
  * one-row mill. Keys do not flex-shrink, and phosphor
  * counts stay on them. Nav and Go go black with a green legend on focus; Go’s current tab stays that CRT. A press is the old 1px milled sink. System is a gear (Settings), a question mark (Names
@@ -253,8 +254,21 @@ export function AppHeader({
         <span className="b2-shell-caption-mill" aria-hidden="true" />
       </div>
       <div className="b2-shell-body">
+        <HeaderNavButtons />
         <div className="b2-shell-phone-tools">
-          <HeaderNavButtons />
+          <button
+            type="button"
+            className="b2-shell-plus"
+            aria-label="Quick Add"
+            onClick={() => {
+              setToolsOpen(false)
+              onCaptureOpenChange?.(true)
+            }}
+          >
+            <span className="b2-shell-plus-mark" aria-hidden="true">
+              +
+            </span>
+          </button>
           <button
             type="button"
             className="b2-shell-menu"
@@ -289,13 +303,18 @@ export function AppHeader({
           onClick={(event) => {
             const target = event.target
             if (!(target instanceof Element)) return
-            if (target.closest(".b2-shell-sheet-close")) return
+            if (target.closest(".b2-shell-sheet-close, .b2-shell-sheet-refresh")) return
             if (target.closest("button, a")) setToolsOpen(false)
           }}
         >
-          <button type="button" className="b2-shell-sheet-close" onClick={() => setToolsOpen(false)}>
-            Close
-          </button>
+          <div className="b2-shell-sheet-bar">
+            <button type="button" className="b2-shell-sheet-refresh" onClick={() => window.location.reload()}>
+              Refresh
+            </button>
+            <button type="button" className="b2-shell-sheet-close" onClick={() => setToolsOpen(false)}>
+              Close
+            </button>
+          </div>
         <fieldset className={`b2-shell-brand${friendFolded ? " is-folded" : ""}`}>
           <legend>
             Friend

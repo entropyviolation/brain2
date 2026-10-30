@@ -7,25 +7,40 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Smartphone } from "lucide-react"
 import {
+  deviceNeedsPhoneHubPull,
   fetchMobileSyncStatus,
   pullAndRestoreMobileSync,
   pushCurrentMobileSync,
   readMobileSyncUrl,
+  loadBundledHubUrl,
+  writeMobileSyncUrl,
 } from "@/lib/mobile-sync"
 
 export function MobileSyncPanel() {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
-  const url = typeof window !== "undefined" ? readMobileSyncUrl() : ""
+  const [url, setUrl] = useState(() => (typeof window !== "undefined" ? readMobileSyncUrl() : ""))
+  const hub = url.trim().replace(/\/+$/, "")
+
+  useEffect(() => {
+    let cancelled = false
+    loadBundledHubUrl().then((next) => {
+      if (!cancelled && next) setUrl(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handlePush = async () => {
     setBusy(true)
     try {
-      const result = await pushCurrentMobileSync(url)
+      const result = await pushCurrentMobileSync(hub)
+      writeMobileSyncUrl(hub)
       setStatus(`Forced push at ${result.updatedAt}.`)
     } catch (err) {
       setStatus(`Push failed: ${err instanceof Error ? err.message : "Unknown error"}`)
@@ -37,7 +52,7 @@ export function MobileSyncPanel() {
   const handleStatus = async () => {
     setBusy(true)
     try {
-      const result = await fetchMobileSyncStatus(url)
+      const result = await fetchMobileSyncStatus(hub)
       setStatus(
         result.hasData
           ? `Hub OK — last snapshot ${result.exportedAt ?? result.updatedAt}`
@@ -51,18 +66,26 @@ export function MobileSyncPanel() {
   }
 
   const handlePull = async () => {
+    const phone = deviceNeedsPhoneHubPull()
     const confirmed = window.confirm(
-      "Manual pull replaces THIS device's data with the shared hub snapshot. Continue?",
+      phone
+        ? "Replace data on THIS phone with the hub's phone copy? Photos and long notes stay on the Mac. Desktop is not changed."
+        : "Manual pull replaces THIS device's data with the shared hub snapshot. Continue?",
     )
     if (!confirmed) return
     setBusy(true)
     try {
-      const result = await pullAndRestoreMobileSync(url)
-      setStatus(
-        result.restored
-          ? `Pulled ${result.stores} stores + ${result.planText} plan entries.`
-          : "No snapshot on the hub yet.",
-      )
+      const result = await pullAndRestoreMobileSync(hub, "admin", "admin", !phone)
+      if (!result.restored) {
+        setStatus("No snapshot on the hub yet.")
+        return
+      }
+      if (phone) {
+        setStatus(`Pulled ${result.stores} stores — reloading…`)
+        window.location.reload()
+        return
+      }
+      setStatus(`Pulled ${result.stores} stores + ${result.planText} plan entries.`)
     } catch (err) {
       setStatus(`Pull failed: ${err instanceof Error ? err.message : "Unknown error"}`)
     } finally {
@@ -83,7 +106,18 @@ export function MobileSyncPanel() {
         <code className="text-xs">/mobile/</code>, and the buttons below are only for
         rare hub overrides.
       </p>
-      <p className="text-xs text-muted-foreground break-all">Hub: {url || "(loading…)"}</p>
+      <label className="block text-xs text-muted-foreground">
+        Hub
+        <input
+          className="mt-1 w-full border bg-background px-2 py-1 text-sm text-foreground"
+          inputMode="url"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+        />
+      </label>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" disabled={busy} onClick={handleStatus}>
           Check hub

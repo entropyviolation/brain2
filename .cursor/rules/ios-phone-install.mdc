@@ -1,0 +1,18 @@
+---
+description: Install the Brain2 iPhone app when the user asks to update it on their phone
+alwaysApply: true
+---
+
+# Update the iOS app on the phone
+
+When the user says "update the ios app on my phone" — or asks to install, reinstall, or sideload the iPhone app — run this from the repo root. Do not read the script, the deploy notes, or the Xcode project first.
+
+```bash
+BRAIN2_IOS_TEAM_ID=25YWDVDMKT npm run ios:reinstall -- --force
+```
+
+Run it unsandboxed (`all`). Wait for the full build (on the order of 10 minutes). Success is the line `[ios-reinstall] … installed`.
+
+The phone must be unlocked and on the same Wi-Fi as this Mac, or plugged in. The command builds the web app, syncs Capacitor, signs a Debug build for team `25YWDVDMKT`, and installs it with `devicectl`. `--force` installs now; the scheduled job would otherwise wait until the last install is 4 days old.
+
+If it fails because no iPhone is reachable, say so and stop.

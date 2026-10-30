@@ -182,7 +182,7 @@
   font-weight: 600;
   line-height: 1.4;
   color: var(--hpp-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
     var(--chrome-pewter);
@@ -235,7 +235,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hpp-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* Engraved nameplates */
@@ -251,7 +251,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hpp-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hpp95 .hpp-body label,
@@ -263,7 +263,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--hpp-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
 }
 
 .hpp95 .hpp-body .text-sm.text-muted-foreground,
@@ -273,7 +273,7 @@
 .hpp95-dialog .hpp-body .text-xs.text-muted-foreground,
 .hpp95-dialog .hpp-body p[class*="text-muted"] {
   color: #3a3c3e !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
 }
 
 /* Section / card wells → brushed bays */
@@ -317,7 +317,7 @@
   border: none !important;
   border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--hpp-key-face) !important;
   box-shadow: var(--hpp-key-ring) !important;
   font-weight: 700;
@@ -424,7 +424,7 @@
   border: none !important;
   border-radius: var(--r-2, 2px);
   color: var(--hpp-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
     var(--chrome-pewter) !important;
@@ -491,7 +491,7 @@
   border: none !important;
   border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--hpp-key-face) !important;
   box-shadow: var(--hpp-key-ring) !important;
   font-weight: 700;
@@ -687,4 +687,84 @@ body.win95-app .qa-dialog .hpp-body button.qa-key:disabled {
 .qa-dialog .qa-chip .qa-chip-x:hover {
   background: #fff;
   color: #b0283f;
+}
+
+/* Quick Add modes. Bulk and Plain stay checkboxes on the phone and on Electron. */
+.qa-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+
+.qa-mode-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  cursor: pointer;
+}
+
+.qa-idea-line {
+  min-height: 44px;
+}
+
+/* Phone and a coarse landscape window. Other header dialogs drop the
+   transform so a focused field cannot lock the visual viewport. Quick Add
+   keeps the Electron fascia below. Fields stay 16px so iOS does not zoom. */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  .hpp95-dialog.ui-dialog-content:not(.qa-dialog) {
+    transform: none !important;
+    animation: none !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))) !important;
+  }
+
+  .qa-dialog textarea.qa-idea,
+  .hpp95-dialog .hpp-body textarea.hpp-bulk-box {
+    font-size: 16px !important;
+  }
+
+  .hpp95-dialog .hpp-body textarea.hpp-bulk-box {
+    max-height: min(40dvh, 16rem);
+  }
+}
+
+/* Quick Add on a phone is the same centered mill as Electron. touch.css and
+   the mobile shell pin other dialogs into a sheet. No transform: a translated
+   layer paints typed letters late, and iOS can lock the viewport on focus. */
+@media (max-width: 980px) {
+  .qa-dialog.ui-dialog-content,
+  html:has(.cogs-mobile-app) body [role="dialog"].qa-dialog.ui-dialog-content {
+    inset: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: min(32rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))) !important;
+    max-width: min(32rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))) !important;
+    height: fit-content !important;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.5rem) !important;
+    margin: auto !important;
+    transform: none !important;
+    translate: none !important;
+    animation: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  html:has(.cogs-mobile-app) body [role="dialog"].qa-dialog.ui-dialog-content > button.keycap-close.is-corner {
+    position: absolute !important;
+    top: var(--b2-close-top, 20px) !important;
+    right: var(--b2-close-right, 18px) !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    flex: 0 0 26px !important;
+    justify-self: auto;
+    align-self: auto;
+    grid-column: auto;
+  }
 }

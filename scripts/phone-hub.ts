@@ -664,6 +664,16 @@ async function main() {
     console.error("[phone-hub] commands", err instanceof Error ? err.message : err)
   }
 
+  try {
+    const { openPhoneArchive } = await import("../lib/phone-sync/archive")
+    const { setIosLocationShareUnavailable } = await import("../lib/phone-sync/location-share-order")
+    const locationShareArchive = openPhoneArchive(join(ROOT, "data"))
+    // iOS app shares location first. Location off in Settings means that share is unavailable.
+    setIosLocationShareUnavailable(() => !locationShareArchive.getEnabled("location"))
+  } catch (err) {
+    console.error(`[phone-hub] location share order: ${err instanceof Error ? err.message : err}`)
+  }
+
   if (CAPTURE_URL) {
     if (!CAPTURE_TOKEN) {
       console.error("[phone-hub] BRAIN2_CAPTURE_BOX_URL needs BRAIN2_CAPTURE_TOKEN")

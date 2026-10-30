@@ -4,7 +4,7 @@ _Last mapped: 2026-10-22_
 
 Goal: Brain2 fills itself from the phone. Texts, calls and location come first. Health, Screen Time, DMs and email follow. Today every phone record is typed or shared by hand through BIM ([`MESSAGE_INGEST.md`](MESSAGE_INGEST.md)). This plan makes it automatic.
 
-Status: Wave 0 (core) and Wave 1 (texts, calls, location) are built. Texts and calls run live on allie's MacBook. Location is built and installed on the iPhone but does not record yet: it waits on the Oracle box update. Wave 2 is **Planned**. Full state and next steps: **Status and handoff** below.
+Status: Wave 0 (core) and Wave 1 (texts, calls, location) are built. Texts and calls run live on allie's MacBook. Location is built and installed on the iPhone but does not record yet: it waits on the Oracle box update. Health import on the iPhone is built (2026-10-28): the whole history, one month at a time. The Mac hub does not read Health. The rest of Wave 2 is **Planned**. Full state and next steps: **Status and handoff** below.
 
 Build style: parallel agents, one per source, with fixed file owners. Same rules as [`analytics-plan/12-waves.md`](analytics-plan/12-waves.md): agents in one wave do not edit each other's files.
 
@@ -26,7 +26,7 @@ The honest route for each data type. iOS does not let any third-party app read t
 | **Calls** | Mac reads `~/Library/Application Support/CallHistoryDB/CallHistory.storedata` (SQLite) | Same Apple ID, iPhone calls synced to Mac (FaceTime → "Calls from iPhone"). Full Disk Access. | Every call: number, name, start, duration, incoming/outgoing/missed | Covers phone, FaceTime and many VoIP apps that use CallKit. |
 | **Call recordings** | iOS 18.1+ built-in call recording. The recording and transcript land in Apple Notes. The existing Apple Notes reader picks them up. | iOS 18.1+. | Audio + transcript per recorded call | iOS plays a notice to everyone on the call. Some US states (for example California, Florida, Washington) require every party to agree. No automatic silent recording is possible on iPhone. |
 | **Location** | Native background location in the iOS app (significant-change + visits), posting to the hub | A small Capacitor plugin. Location "Always" permission. | A point on every significant move and every arrival/departure, offline queue | Fallback with no app work: Telegram Live Location (already supported) or an OwnTracks/Overland app pointing at the hub. |
-| **Health** (steps, walking/running distance, workouts, sleep) | HealthKit in the iOS app, daily and on-open | Capacitor HealthKit plugin. HealthKit permissions. | Daily totals plus samples | Fallback: the Health Auto Export app posting JSON to the hub. |
+| **Health** (steps, walking/running distance, flights, active energy, heart rate, workouts, sleep) | HealthKit in the iOS app, on demand from the phone | HealthKit read permission for those types. | All history, 30-day pages: daily totals, sleep mornings, workout intervals | The Mac hub does not read Health. A sealed upload is still planned. |
 | **Screen Time** | No API returns raw usage to an app. Keep the `screen:` Shortcut and add a Shortcuts automation that sends app-open events. Mac side: ActivityWatch (already wired). | Shortcuts automations. | Per app open, estimated | Apple's DeviceActivity API only lets an app react to thresholds, not read totals. |
 | **DMs** (Instagram, etc.) | Platform data downloads, imported on a schedule. Telegram via the existing bot only. | The person requests the download. | Per message, delayed | No live API exists for personal Instagram DMs. Instagram followers import already works this way. |
 | **Email** | IMAP (Gmail with an app password) read by the hub, or the Mac's Mail.app store | IMAP credentials kept on the Mac only. | Per message: from, to, subject, time, optional body | Store headers by default; bodies only when asked. |
@@ -103,7 +103,7 @@ Notes for the next agent. Read this before touching phone sync.
 4. **Reinstall the app** from the Mac (it now has the card and on-by-default). Fill in the card, allow location, pick Always.
 5. **Check:** walk somewhere, open the app, tap Send now, and see a Location row in Tracking.
 6. **Turn on the weekly reinstall.** Tick Connect via network for the iPhone in Xcode once, then install the launchd job. Steps: [`deploy/mac/README.md`](../deploy/mac/README.md) → iPhone app reinstall.
-7. **Wave 2:** Health, Screen Time, DMs, email, and phone plates (briefs `04`–`06`). Settings → Phone sync is built (2026-10-25): it lists those sources as not built, and it can turn texts, calls, and location off.
+7. **Wave 2:** Screen Time, DMs, email, and phone plates (briefs `05`–`06`). Health import on the iPhone is built (2026-10-28): **Import all history** on `/mobile/`, the whole Health history in 30-day pages. Settings → Phone sync marks Health as on the iPhone. The Mac hub does not read it. Screen Time, email, and DMs still say not built.
 
 ### Known issues and watch items
 

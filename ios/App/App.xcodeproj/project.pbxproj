@@ -17,6 +17,7 @@
 		A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 		B2A0C0DE0000000000000002 /* LocationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2A0C0DE0000000000000001 /* LocationPlugin.swift */; };
 		B2NFC0000000000000000002 /* NfcPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2NFC0000000000000000001 /* NfcPlugin.swift */; };
+		B2HLT0000000000000000002 /* HealthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2HLT0000000000000000001 /* HealthPlugin.swift */; };
 		B2A0C0DE0000000000000004 /* AppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2A0C0DE0000000000000003 /* AppViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -35,6 +36,7 @@
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 		B2A0C0DE0000000000000001 /* LocationPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPlugin.swift; sourceTree = "<group>"; };
 		B2NFC0000000000000000001 /* NfcPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NfcPlugin.swift; sourceTree = "<group>"; };
+		B2HLT0000000000000000001 /* HealthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPlugin.swift; sourceTree = "<group>"; };
 		B2NFC0000000000000000003 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		B2A0C0DE0000000000000003 /* AppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -85,6 +87,7 @@
 				B2A0C0DE0000000000000003 /* AppViewController.swift */,
 				B2A0C0DE0000000000000001 /* LocationPlugin.swift */,
 				B2NFC0000000000000000001 /* NfcPlugin.swift */,
+				B2HLT0000000000000000001 /* HealthPlugin.swift */,
 				B2NFC0000000000000000003 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -224,6 +227,7 @@
 				B2A0C0DE0000000000000004 /* AppViewController.swift in Sources */,
 				B2A0C0DE0000000000000002 /* LocationPlugin.swift in Sources */,
 				B2NFC0000000000000000002 /* NfcPlugin.swift in Sources */,
+				B2HLT0000000000000000002 /* HealthPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

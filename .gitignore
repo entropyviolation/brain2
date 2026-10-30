@@ -55,6 +55,7 @@ docs/shortcuts/*.plist
 # local user-data snapshots (never commit)
 /data/recovery-backups/
 /data/chrome-idb-snapshot/
+/public/mobile-hub.json
 
 # The whole data/ directory is this machine's vault (persist hub, sync,
 # ingest, recovery). Only the placeholder is allowed in git.

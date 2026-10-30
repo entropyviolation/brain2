@@ -58,7 +58,7 @@ export function MobileLogin({ onLoggedIn }: Props) {
 
         {error ? <p className="cogs-mobile-login-error">{error}</p> : null}
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="m-keycap w-full">
           Sign in
         </Button>
       </form>

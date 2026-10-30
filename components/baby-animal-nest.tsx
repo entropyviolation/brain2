@@ -281,6 +281,7 @@ export function BabyAnimalNest() {
           <span className={`baby-nest-screen${busy ? " is-busy" : ""}`}>
             {src ? <img src={src} alt="" /> : <span className="baby-nest-placeholder" />}
           </span>
+          <span className="baby-nest-ring" aria-hidden="true" />
         </span>
       </button>
       {nudge ? (

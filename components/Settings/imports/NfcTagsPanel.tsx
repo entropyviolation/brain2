@@ -7,7 +7,7 @@
  */
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Download, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { useHabitsStore } from "@/lib/habits-store"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { nfcLine, nfcQuantity, nfcSlug, type NfcHabitCredit, type NfcTagKind } from "@/lib/ingest/nfc-tag"
+import { deviceNeedsPhoneHubPull } from "@/lib/mobile-sync"
 
 const fieldClass = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
 
@@ -77,6 +78,11 @@ export function NfcTagsPanel() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [copyNote, setCopyNote] = useState<string | null>(null)
   const [signingId, setSigningId] = useState<string | null>(null)
+  const [onPhone, setOnPhone] = useState(false)
+
+  useEffect(() => {
+    setOnPhone(deviceNeedsPhoneHubPull())
+  }, [])
 
   const line = nfcLine(draft.id || draft.name)
 
@@ -178,6 +184,11 @@ export function NfcTagsPanel() {
         Shortcuts → Automation → NFC → scan the blank sticker → run this shortcut immediately. Turn Ask Before
         Running off.
       </p>
+      {onPhone ? (
+        <p className="text-xs text-muted-foreground">
+          <a href="/mobile/nfc/">NFC hub</a> writes the hub URL, token, and sync URL onto a sticker and reads them back.
+        </p>
+      ) : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <Field id="nfc-tag-id" label="Tag id">
           <Input

@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-22_
 
-One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). Status (_Last mapped: 2026-10-25_): Wave 0 (core) and Wave 1 (texts, calls, location) are built. Settings → Phone sync lists every source. Wave 2 is **Planned**. Each brief has its own status section.
+One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). Status (_Last mapped: 2026-10-28_): Wave 0 (core) and Wave 1 (texts, calls, location) are built. Settings → Phone sync lists every source. Health import on the iPhone is built (all history, paged). The Mac hub does not read Health. The rest of Wave 2 is **Planned**. Each brief has its own status section.
 
 | Brief | Agent | Wave |
 | --- | --- | --- |

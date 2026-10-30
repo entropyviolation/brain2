@@ -24,6 +24,7 @@ describe("PhoneSyncPanel", () => {
     expect(screen.getByText("Texts")).toBeInTheDocument()
     expect(screen.getByText(/read 4, wrote 1, skipped 3/)).toBeInTheDocument()
     expect(screen.getByText("Health")).toBeInTheDocument()
+    expect(screen.getByText("On the iPhone")).toBeInTheDocument()
     expect(screen.getAllByText("Not built yet").length).toBeGreaterThan(0)
     const ons = screen.getAllByRole("button", { name: "On" })
     expect(ons).toHaveLength(3)
