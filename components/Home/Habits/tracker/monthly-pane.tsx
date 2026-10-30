@@ -6,7 +6,6 @@
  */
 "use client"
 
-import { format } from "date-fns"
 import { PeriodHabitList, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
 import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
 import { HabitMonthWindowControl } from "@/components/Home/Habits/panel/habit-month-window-control"
@@ -16,7 +15,6 @@ import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/l
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { HabitFreqTab } from "@/lib/app-navigation"
 import { HabitDeskFrame, type HabitMeterProps, type HabitPriorityProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
-import { HabitPlanLog } from "@/components/Home/Habits/tracker/habit-plan-log"
 import { HabitSheetLoading } from "@/components/Home/Habits/tracker/habit-sheet-loading"
 import { habitSortTools, type HabitSortBag } from "@/components/Home/Habits/tracker/habit-sort-tools"
 import { habitViewToggles, type HabitViewToggleFlags } from "@/components/Home/Habits/tracker/view-toggles"
@@ -41,7 +39,6 @@ export function MonthlyPane({
   monthlyPeriodPercent,
   currentDate,
   habitMonthView,
-  monthPlanColumn,
   priorityProps,
   editingFrequency,
   reorderVisible,
@@ -76,7 +73,6 @@ export function MonthlyPane({
   monthlyPeriodPercent: Map<string, number>
   currentDate: Date
   habitMonthView: boolean
-  monthPlanColumn: PeriodColumn | undefined
   priorityProps: HabitPriorityProps
   editingFrequency: HabitFrequency | undefined
   reorderVisible: (frequency: HabitFrequency, visibleIds: string[]) => void
@@ -162,16 +158,6 @@ export function MonthlyPane({
             setShowTaskForm(true)
           }}
         />
-      }
-      plan={
-        hydrated && monthPlanColumn ? (
-          <HabitPlanLog
-            period="month"
-            periodKey={monthPlanColumn.key}
-            legend={`Month Plan — ${format(monthPlanColumn.date, "MMMM yyyy")}`}
-            placeholder="Write your month plan, goals, and objectives..."
-          />
-        ) : null
       }
     />
   )

@@ -9,12 +9,11 @@
 import { PeriodHabitList, type PeriodColumn } from "@/components/Home/Habits/period-habit-list"
 import { HabitsTabControls, type HabitsTabControlsProps } from "@/components/Home/Habits/panel/habits-tab-controls"
 import { calculatePeriodColumnPercentage } from "@/lib/calculations"
-import { quarterLabel, seasonOfDate, seasonSlug } from "@/lib/seasons"
+import { seasonOfDate, seasonSlug } from "@/lib/seasons"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { HabitFreqTab } from "@/lib/app-navigation"
 import { HabitDeskFrame, type HabitMeterProps, type HabitPriorityProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
-import { HabitPlanLog } from "@/components/Home/Habits/tracker/habit-plan-log"
 import { HabitSheetLoading } from "@/components/Home/Habits/tracker/habit-sheet-loading"
 import { habitSortTools, type HabitSortBag } from "@/components/Home/Habits/tracker/habit-sort-tools"
 import { habitViewToggles, type HabitViewToggleFlags } from "@/components/Home/Habits/tracker/view-toggles"
@@ -40,7 +39,6 @@ export function SeasonPane({
   currentDate,
   currentQuarter,
   habitSeasonView,
-  seasonPlanColumn,
   priorityProps,
   editingFrequency,
   reorderVisible,
@@ -72,7 +70,6 @@ export function SeasonPane({
   currentDate: Date
   currentQuarter: Date
   habitSeasonView: boolean
-  seasonPlanColumn: PeriodColumn | undefined
   priorityProps: HabitPriorityProps
   editingFrequency: HabitFrequency | undefined
   reorderVisible: (frequency: HabitFrequency, visibleIds: string[]) => void
@@ -151,16 +148,6 @@ export function SeasonPane({
             setShowTaskForm(true)
           }}
         />
-      }
-      plan={
-        hydrated && seasonPlanColumn ? (
-          <HabitPlanLog
-            period="quarter"
-            periodKey={seasonPlanColumn.key}
-            legend={`Season plan — ${quarterLabel(seasonPlanColumn.key)}`}
-            placeholder="Write this season's plan — what the quarter is for..."
-          />
-        ) : null
       }
     />
   )
