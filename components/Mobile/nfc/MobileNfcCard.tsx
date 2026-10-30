@@ -219,6 +219,7 @@ export function MobileNfcCard() {
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => setSetupOpen((open) => !open)}>
           {setupOpen ? "Hide hub" : "Hub"}
         </Button>
+        <a href="/mobile/nfc/">NFC hub</a>
       </div>
     </div>
   )

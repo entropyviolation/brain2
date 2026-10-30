@@ -50,6 +50,8 @@ vi.mock("@/components/Home/home-dashboard", () => ({ HomeDashboard: () => <div>H
 vi.mock("@/components/Reviews/reviews", () => ({ Reviews: () => null }))
 vi.mock("@/components/inbox", () => ({ Inbox: () => null }))
 vi.mock("@/components/enhanced-bulk-add", () => ({ EnhancedBulkAdd: () => null }))
+vi.mock("@/components/quick-add", () => ({ QuickAdd: () => null }))
+vi.mock("@/components/quick-add-wrote", () => ({ QuickAddWroteHost: () => null }))
 vi.mock("@/components/notes-ingest", () => ({ NotesIngest: () => null }))
 vi.mock("@/components/iphone-notes-store", () => ({ IphoneNotesStore: () => null }))
 vi.mock("@/components/ItemDetail/ItemDetailPopup", () => ({ TaskDetailPopup: () => null }))

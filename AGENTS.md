@@ -19,6 +19,8 @@ Design language is in `docs/DESIGN_STYLE.md`. Redesign plans live in `docs/*_RED
 
 The iOS / mobile app follows `docs/MOBILE_STYLE.md` and does not follow the desktop style.
 
+To update the iPhone app, from the repo root, unsandboxed, and without reading anything else first: `BRAIN2_IOS_TEAM_ID=25YWDVDMKT npm run ios:reinstall -- --force`. The phone must be unlocked, on the same Wi-Fi or plugged in. Wait for `[ios-reinstall] … installed`.
+
 Style slants (Hipgnosis, retrofuturism) live in `docs/mockups/slants/`. Use one only when asked for it by name. A slant never changes the house style.
 
 ## Rules that are not pasted here
@@ -33,3 +35,4 @@ Cursor already loads `.cursor/rules/`. Other agents should open the matching fil
 - `design-style.mdc` — while styling.
 - `three-task-editors.mdc` — do not merge the three task editors.
 - `modules-files-stay-long.mdc` — files under `components/Modules` stay long.
+- `ios-phone-install.mdc` — the iPhone install command. It is already in this file, above.

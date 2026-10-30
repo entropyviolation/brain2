@@ -249,6 +249,29 @@ describe("AppHeader", () => {
     vi.unstubAllGlobals()
   })
 
+  it("puts history beside the brand and Quick Add to the left of Menu", () => {
+    const onCaptureOpenChange = vi.fn()
+    render(<AppHeader onTaskSelect={() => {}} onCaptureOpenChange={onCaptureOpenChange} />)
+    const header = screen.getByTestId("app-header")
+    const nav = screen.getByTestId("header-nav")
+    const tools = header.querySelector(".b2-shell-phone-tools")
+    const plus = header.querySelector(".b2-shell-plus")
+    const menu = header.querySelector(".b2-shell-menu")
+
+    expect(tools).toBeTruthy()
+    expect(nav.closest(".b2-shell-phone-tools")).toBeNull()
+    expect(plus).toHaveAttribute("aria-label", "Quick Add")
+    expect(tools).toContainElement(plus)
+    expect(tools).toContainElement(menu)
+    expect(plus?.compareDocumentPosition(menu as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    act(() => {
+      ;(plus as HTMLButtonElement).click()
+    })
+    expect(onCaptureOpenChange).toHaveBeenCalledWith(true)
+    expect(header).toHaveAttribute("data-tools", "closed")
+  })
+
   it("opens a menu for the destinations that are not the section switcher", () => {
     render(<AppHeader onTaskSelect={() => {}} />)
     const menu = screen.getByRole("button", { name: "Menu", hidden: true })
@@ -269,6 +292,25 @@ describe("AppHeader", () => {
     })
     expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "closed")
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("reloads the page from Refresh, opposite Close in the menu", () => {
+    const reload = vi.fn()
+    vi.stubGlobal("location", { reload })
+    render(<AppHeader onTaskSelect={() => {}} />)
+    const refresh = screen.getByText("Refresh").closest("button")
+    const close = screen.getByText("Close").closest("button")
+    expect(refresh).toBeTruthy()
+    expect(close).toBeTruthy()
+    expect(refresh?.parentElement).toBe(close?.parentElement)
+    expect(refresh?.parentElement?.className).toContain("b2-shell-sheet-bar")
+    expect(refresh?.parentElement?.firstElementChild).toBe(refresh)
+    expect(refresh?.parentElement?.lastElementChild).toBe(close)
+    act(() => {
+      refresh?.click()
+    })
+    expect(reload).toHaveBeenCalledOnce()
+    vi.unstubAllGlobals()
   })
 
   it("opens search from the magnifying-glass key", async () => {

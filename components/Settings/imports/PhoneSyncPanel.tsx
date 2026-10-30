@@ -4,8 +4,8 @@
  * One row per source: on/off for the readers that exist, the permission each
  * one needs, and the last run from `data/phone-sync/runs.json`. The log stays
  * on this Mac (`/api/phone-sync`, loopback). Turning a source off is read on
- * the hub's next tick. Planned sources (Health, phone Screen Time, email, DMs)
- * are listed and have no switch.
+ * the hub's next tick. Health is imported on the iPhone. Phone Screen Time,
+ * email, and DMs are listed and have no switch.
  */
 "use client"
 
@@ -111,6 +111,8 @@ export function PhoneSyncPanel() {
                   >
                     {on ? "On" : "Off"}
                   </button>
+                ) : row.id === "health" ? (
+                  <span className="text-xs text-muted-foreground">On the iPhone</span>
                 ) : (
                   <span className="text-xs text-muted-foreground">Not built yet</span>
                 )}

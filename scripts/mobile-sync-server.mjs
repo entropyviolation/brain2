@@ -37,12 +37,12 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`[cogs-mobile-sync] listening on http://0.0.0.0:${PORT}`)
-  console.log(`[cogs-mobile-sync] local:  http://127.0.0.1:${PORT}`)
+  console.log(`[brain2-mobile-sync] listening on http://0.0.0.0:${PORT}`)
+  console.log(`[brain2-mobile-sync] local:  http://127.0.0.1:${PORT}`)
   for (const ip of lanAddresses()) {
-    console.log(`[cogs-mobile-sync] lan:    http://${ip}:${PORT}`)
+    console.log(`[brain2-mobile-sync] lan:    http://${ip}:${PORT}`)
   }
-  console.log(`[cogs-mobile-sync] auth:   ${USER} / ${PASS}`)
-  console.log(`[cogs-mobile-sync] data:   ${syncDataPath()}`)
-  console.log(`[cogs-mobile-sync] Tip: prefer npm run dev (sync on the app port).`)
+  console.log(`[brain2-mobile-sync] auth:   ${USER} / ${PASS}`)
+  console.log(`[brain2-mobile-sync] data:   ${syncDataPath()}`)
+  console.log(`[brain2-mobile-sync] Tip: prefer npm run dev (sync on the app port).`)
 })

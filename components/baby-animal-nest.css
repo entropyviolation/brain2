@@ -1,7 +1,8 @@
 /**
  * components/baby-animal-nest.css — Header friend + Stardew chat bubble
  *
- * Borderless photograph cutout. Request lives in Gallery. Click the photograph
+ * Photograph in `public/metalframe.png` (worn silver ring, clear center).
+ * Request lives in Gallery. Click the photograph
  * for this friend's instrument (`components/friend-details/`). The photograph is cropped to the frame. Chat and Gallery are a pair of keys beside the name. Chat asks them to speak.
  * Opening the bubble plays a short CRT power-on on `.baby-nest-crt` only
  * (glass-edge phosphor → brighten → settle). The bubble line is not a Win95
@@ -76,6 +77,15 @@
   background: transparent;
   box-shadow: none;
   isolation: isolate;
+}
+
+/* Worn metal ring. The center of the PNG is clear, so the photograph shows through. */
+.baby-nest-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: url("/metalframe.png") center / 100% 100% no-repeat;
 }
 
 /* Glass-edge phosphor ignition — contained to the CRT well only. */

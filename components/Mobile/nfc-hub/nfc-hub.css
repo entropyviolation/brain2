@@ -1,0 +1,128 @@
+/* Phone NFC hub. Scoped so the header keycap pass can leave this page alone. */
+
+/* This page is not inside .cogs-mobile-app. Same fringe rule as mobile.css. */
+html:has(.nfc-hub) body {
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
+}
+
+.nfc-hub {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  padding-top: calc(0.85rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  color: var(--foreground, #000);
+  background: transparent;
+}
+
+.nfc-hub-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.nfc-hub-top h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.nfc-hub-back {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.nfc-hub p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.nfc-hub-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.nfc-hub label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.nfc-hub input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+}
+
+.nfc-hub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nfc-hub-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.45rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 650;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+}
+
+.nfc-hub-btn:disabled {
+  opacity: 0.55;
+}
+
+.nfc-hub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.nfc-hub-note {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.nfc-hub-note[data-kind="error"] {
+  color: #7a1b1b;
+}
+
+.nfc-hub-read {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.nfc-hub-read pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

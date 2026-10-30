@@ -1,7 +1,8 @@
 # NFC tags to Brain2
 
-A sticker does not write the vault, and Brain2 does not write the sticker.
-Shortcuts has no action that programs an NFC chip. iOS binds a Personal
+A sticker does not write the vault. Shortcuts cannot program the chip, so a
+logging sticker stays blank. The phone app’s NFC hub can write testing settings
+onto a sticker; that is separate from these shortcuts. iOS binds a Personal
 Automation to the tag’s hardware id, so the sticker stays blank. There is
 no second “write” shortcut to run once and delete. The phone remembers the
 chip when you scan it in Automation → NFC. The run shortcut opens Telegram
@@ -118,8 +119,12 @@ A dose asks how many. Blank posts `nfc:{id}` so the Mac uses the saved
 quantity. A door or a plain event posts with no question. The card holds the
 hub URL and the same token.
 
-The sticker stays blank. This build does not write a payload onto the chip.
-NDEF is in the entitlement so a later write does not need a second capability.
+A scan that logs a tag still leaves the chip blank. The phone’s NFC hub
+(`/mobile/nfc/`) writes one text record — hub URL, hub token, and sync URL —
+and reads it back (`components/Mobile/nfc-hub/`). That is the same `BrainNfc`
+plugin. `App.entitlements` leaves NFC Tag Reading out so a personal team can
+install the app. Add `NDEF` and `TAG` back on a paid account before a sticker
+will read or write.
 
 What is still true:
 

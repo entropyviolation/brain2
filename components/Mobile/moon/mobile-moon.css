@@ -1,0 +1,103 @@
+/*
+ * Phone Moon sheet. Loaded with the sheet, so the desktop sky chart
+ * never receives these rules. Safe areas and a 44px Close stay put
+ * while the phase scrolls.
+ */
+
+.mobile-moon-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.mobile-moon-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(12, 18, 16, 0.46);
+}
+
+.mobile-moon-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-radius: 16px 16px 0 0;
+  background: #f4f7f6;
+  color: #1c2422;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.mobile-moon-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding: 12px 12px 8px 16px;
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+
+.mobile-moon-bar h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mobile-moon-close {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #e7eeeb;
+  color: #1c2422;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.mobile-moon-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 16px 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-moon-phase {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-height: 240px;
+  overflow: hidden;
+}
+
+.mobile-moon-phase .home-moon-phase {
+  flex: none;
+  zoom: 0.72;
+}
+
+.mobile-moon-label {
+  margin: 12px 0 8px;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.mobile-moon-body ul {
+  margin: 0;
+  padding: 0 0 0 1.1em;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.mobile-moon-body li + li {
+  margin-top: 8px;
+}

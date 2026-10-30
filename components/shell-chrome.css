@@ -20,13 +20,16 @@
  * flex-shrink. Counts stay on the keys. A viewport 520px or narrower
  * (the block at the bottom of this file) leaves this mill: a phone bar,
  * the Go switcher, and a sheet for Friend, Rituals, System, and Capture.
- * A wider window keeps this mill.
+ * Those controls stay the same silver keycaps, at least 44px. A wider
+ * window keeps this mill. On that phone bar, Back and Forward are the far
+ * left, then BRAIN2, then a Quick Add (+) keycap and Menu.
  *
  * The now well (`header-now-box.tsx`) lives in Capture, as a peer of the
  * Capture keys; absent when idle. Sticky pin + shelf so the desk scrolls
  * under it. Do not restyle module interiors from here. The phone block
- * at the bottom of this file restyles the bar and the Go strip. It does
- * not change this mill above 520px.
+ * at the bottom of this file restyles the bar and the Go strip. Nav, the
+ * Quick Add keycap, Menu, the Go keys, and the sheet actions stay keycaps.
+ * It does not change this mill above 520px.
  */
 
 .b2-shell {
@@ -363,22 +366,21 @@ html[data-pcb-ink="light"] .b2-shell-caption .brain2-mark {
 .b2-shell-brand .baby-nest-crt {
   width: 64px;
   height: 64px;
-  padding: 5px;
-  background:
-    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.85) 0 8%, transparent 22%),
-    radial-gradient(circle at 70% 78%, rgba(0, 0, 0, 0.28) 0 18%, transparent 42%),
-    linear-gradient(165deg, #f6f6f6 0%, #c8c8c8 38%, #8c8c8c 72%, #d8d8d8 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    0 0 0 1px var(--b2-shell-frame),
-    var(--b2-shell-raised);
+  padding: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .b2-shell-brand .baby-nest-screen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96%;
+  height: 96%;
+  transform: translate(-50%, -50%);
   overflow: hidden;
-  background: #c8c8c8;
-  box-shadow: var(--b2-shell-field);
+  background: #111;
+  box-shadow: none;
 }
 
 .b2-shell-brand .baby-nest-hit:focus-visible {
@@ -1336,8 +1338,7 @@ body.win95-app .b2-shell-rituals .b2-shell-count {
   transform: translate(-50%, -50%);
 }
 
-/* Friend avatar is a round porthole. */
-.b2-shell-brand .baby-nest-crt,
+/* The photograph is a circle. The metal frame PNG is the ring, so it is not clipped to a second circle. */
 .b2-shell-brand .baby-nest-screen,
 .b2-shell-brand .baby-nest-screen img {
   border-radius: 50%;
@@ -1347,10 +1348,9 @@ body.win95-app .b2-shell-rituals .b2-shell-count {
   overflow: hidden;
 }
 
-/* The friend's shine stays inside the round porthole. */
 body .b2-shell-brand .baby-nest-hit {
-  border-radius: 50% !important;
-  overflow: hidden;
+  border-radius: 0 !important;
+  overflow: visible;
   background: none !important;
 }
 
@@ -1490,31 +1490,35 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   font-size: 11px;
 }
 
-/* Phone chrome. Hidden on the mill. `display: contents` keeps Nav in the
-   desktop flex line; the menu and the sheet close key paint nothing there. */
+/* Phone chrome. Hidden on the mill. `display: contents` keeps the + and
+   Menu out of the desktop flex line; those keys paint nothing there. */
 .b2-shell-phone-tools {
   display: contents;
 }
 
+.b2-shell-plus,
 .b2-shell-menu,
 .b2-shell-scrim,
+.b2-shell-sheet-bar,
+.b2-shell-sheet-refresh,
 .b2-shell-sheet-close {
   display: none;
 }
 
 /* Phone shell. Keyed off the viewport so this can restyle `.b2-shell`
    itself (a container query cannot). A wider window keeps the mill above.
-   One bar clear of the status bar, the Go switcher, and a sheet for the
-   rest. A live now well stays on the bar. Phone rules: docs/MOBILE_STYLE.md. */
+   One bar clear of the status bar: Back and Forward, then BRAIN2, then
+   Quick Add and Menu. Go is the switcher. A sheet holds the rest. A live
+   now well stays on the bar. Phone rules: docs/MOBILE_STYLE.md. */
 @media (max-width: 520px) {
   .b2-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "caption nav"
-      "tabs tabs"
-      "stage stage"
-      "shelf shelf";
+      "nav caption tools"
+      "tabs tabs tabs"
+      "stage stage stage"
+      "shelf shelf shelf";
     gap: 0;
     box-sizing: border-box;
     width: 100%;
@@ -1536,7 +1540,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     box-sizing: border-box;
     min-width: 0;
     min-height: calc(2.75rem + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 0.25rem 0 0.75rem;
+    padding: env(safe-area-inset-top, 0px) 0.35rem 0 0.45rem;
     background: transparent;
     background-image: none;
   }
@@ -1568,17 +1572,19 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   .b2-shell-phone-tools {
-    grid-area: nav;
+    grid-area: tools;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0;
+    gap: 6px;
     min-width: 0;
     box-sizing: border-box;
-    padding: env(safe-area-inset-top, 0px) 0.25rem 0 0;
+    min-height: calc(2.75rem + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 0.5rem 0 0;
   }
 
   .b2-shell[data-tools="open"] .b2-shell-caption,
+  .b2-shell[data-tools="open"] .b2-shell-nav,
   .b2-shell[data-tools="open"] .b2-shell-phone-tools,
   .b2-shell[data-tools="open"] .b2-shell-tabs {
     position: relative;
@@ -1586,7 +1592,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   .b2-shell-nav {
-    grid-area: auto;
+    grid-area: nav;
     align-self: center;
     display: flex;
     align-items: center;
@@ -1594,15 +1600,16 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     width: auto;
     min-width: 0;
     max-width: 100%;
+    min-height: calc(2.75rem + env(safe-area-inset-top, 0px));
     margin: 0;
-    padding: 0;
+    padding: env(safe-area-inset-top, 0px) 0 0 0.5rem;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
 
   .b2-shell-nav .b2-shell-keys {
-    gap: 0;
+    gap: 6px;
     min-height: 0;
     width: auto;
     max-width: 100%;
@@ -1684,6 +1691,12 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] > svg {
     width: 18px;
     height: 18px;
+  }
+
+  /* The phone bar leaves Scheduler off the strip for now. The desktop mill still has it. */
+  body.win95-app .b2-shell-tabs [data-tab="scheduler"],
+  html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="scheduler"] {
+    display: none;
   }
 
   /* Stage is a real box again (desktop makes it display:contents).
@@ -1795,7 +1808,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell-brand .baby-nest-crt {
     width: 2.75rem;
     height: 2.75rem;
-    padding: 3px;
+    padding: 0;
   }
 
   .b2-shell-brand .baby-nest-wordmark {
@@ -1905,6 +1918,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell:not([data-tools="open"]) .b2-shell-rituals,
   .b2-shell:not([data-tools="open"]) .b2-shell-system,
   .b2-shell:not([data-tools="open"]) .b2-shell-capture .b2-shell-keys,
+  .b2-shell:not([data-tools="open"]) .b2-shell-sheet-bar,
   .b2-shell:not([data-tools="open"]) .b2-shell-sheet-close {
     display: none;
   }
@@ -1953,8 +1967,9 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     padding-inline: 0.75rem;
   }
 
-  /* Menu and history. 44px, on the dark bar, not the mill cap. */
+  /* History, Quick Add, and Menu. Same silver keycap as the mill, 44px on the dark bar. */
   body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key),
+  body.win95-app .b2-shell button.b2-shell-plus:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key),
   body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
     display: inline-flex;
     align-items: center;
@@ -1966,28 +1981,41 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     height: 2.75rem;
     min-height: 2.75rem;
     margin: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    background-image: none;
-    box-shadow: none;
-    color: #f4f6f8;
+    padding: 0 0 4px;
+    border: 1px solid #6e7378;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    box-shadow:
+      inset 2px 0 0 #9aa0a6,
+      inset -2px 0 0 #9aa0a6,
+      inset 0 -4px 0 #9aa0a6,
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 2px 0 rgba(0, 0, 0, 0.5);
+    color: #1f2226;
     transform: none;
   }
 
   body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible,
+  body.win95-app .b2-shell button.b2-shell-plus:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible,
   body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus:not(:disabled),
   body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):focus-visible:not(:disabled) {
-    background: transparent;
-    background-image: none;
-    color: #f4f6f8;
-    border-color: transparent;
-    text-shadow: none;
-    box-shadow: none;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.22), transparent 55%),
+      #070c0a;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.22), transparent 55%),
+      #070c0a;
+    color: #7dffc4;
+    border-color: #070c0a;
+    text-shadow: 0 0 3px #7dffc4;
+    box-shadow:
+      0 0 0 1px #000,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 8px 12px rgba(0, 0, 0, 0.45);
     transform: none;
-    outline: 2px solid #9ad7ff;
-    outline-offset: 2px;
+    outline: 1px solid #7dffc4;
+    outline-offset: 1px;
   }
 
   body.win95-app .b2-shell .b2-shell-nav button:focus:not(:disabled) svg,
@@ -1997,19 +2025,29 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   body.win95-app .b2-shell .b2-shell-nav button.b2-shell-nav-btn:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active,
-  body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
-    transform: none;
-    background: rgba(255, 255, 255, 0.12);
-    background-image: none;
-    box-shadow: none;
+  body.win95-app .b2-shell button.b2-shell-menu:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active,
+  body.win95-app .b2-shell button.b2-shell-plus:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+    transform: translateY(2px);
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    color: #1f2226;
+    box-shadow:
+      inset 2px 0 0 #9aa0a6,
+      inset -2px 0 0 #9aa0a6,
+      inset 0 -2px 0 #9aa0a6,
+      inset 0 2px 3px rgba(0, 0, 0, 0.25);
   }
 
   body.win95-app .b2-shell .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):disabled,
   body.win95-app .b2-shell .b2-shell-nav button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key).is-dead {
-    color: rgba(244, 246, 248, 0.35);
-    background: transparent;
-    background-image: none;
-    box-shadow: none;
+    color: #8b9096;
+    background: linear-gradient(180deg, #e4e6e8, #cfd3d6);
+    background-image: linear-gradient(180deg, #e4e6e8, #cfd3d6);
+    box-shadow:
+      inset 2px 0 0 #b7bcc1,
+      inset -2px 0 0 #b7bcc1,
+      inset 0 -4px 0 #b7bcc1,
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
     opacity: 1;
   }
 
@@ -2018,6 +2056,15 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     width: 1.35rem;
     height: 1.35rem;
     color: currentColor;
+  }
+
+  .b2-shell-plus-mark {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 0.8;
+    transform: translateY(-1px);
   }
 
   .b2-shell-menu-bars,
@@ -2092,18 +2139,23 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     height: auto;
     min-height: 2.75rem;
     padding: 0.4rem 0.85rem;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    background-image: none;
-    color: #c8d0d8;
+    border: 1px solid #6e7378;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    color: #1f2226;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     line-height: 1.1;
     text-shadow: none;
-    box-shadow: none;
+    box-shadow:
+      inset 2px 0 0 #b3b8be,
+      inset -2px 0 0 #b3b8be,
+      inset 0 -4px 0 #b3b8be,
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 1px 0 rgba(0, 0, 0, 0.35);
     transform: none;
   }
 
@@ -2116,20 +2168,22 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="operations"],
   html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="modules"],
   html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab="analytics"] {
-    background: #f4f6f8;
-    background-image: none;
-    color: #121417;
-    font-weight: 650;
-    letter-spacing: 0;
-    text-shadow: none;
-    box-shadow: none;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+      #070c0a;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+      #070c0a;
+    color: #7dffc4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 3px #7dffc4;
+    box-shadow:
+      0 0 0 1px #000,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 8px 12px rgba(0, 0, 0, 0.45);
     transform: none;
     outline: 0;
-  }
-
-  html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell [data-tab]::before,
-  body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"]::before {
-    content: none;
   }
 
   body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
@@ -2185,25 +2239,40 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.28);
   }
 
+  .b2-shell[data-tools="open"] .b2-shell-sheet-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    gap: 0.75rem;
+  }
+
+  body.win95-app .b2-shell[data-tools="open"] button.b2-shell-sheet-refresh:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key),
   body.win95-app .b2-shell[data-tools="open"] button.b2-shell-sheet-close:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    align-self: flex-end;
+    align-self: center;
     flex: 0 0 auto;
     min-width: 2.75rem;
     min-height: 2.75rem;
     margin: 0;
     padding: 0 0.9rem;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    background-image: none;
-    box-shadow: none;
-    color: #3a4450;
+    border: 1px solid #6e7378;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    box-shadow:
+      inset 2px 0 0 #b3b8be,
+      inset -2px 0 0 #b3b8be,
+      inset 0 -4px 0 #b3b8be,
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 1px 0 rgba(0, 0, 0, 0.35);
+    color: #1f2226;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
   }
 
@@ -2283,17 +2352,22 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     max-width: 100%;
     height: auto;
     min-height: 2.75rem;
-    padding: 0.45rem 0.75rem;
-    border: 1px solid #d5d9de;
-    border-radius: 0.75rem;
-    background: #fff;
-    background-image: none;
-    box-shadow: none;
-    color: #14171a;
+    padding: 0.45rem 0.75rem 0.65rem;
+    border: 1px solid #6e7378;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    box-shadow:
+      inset 2px 0 0 #b3b8be,
+      inset -2px 0 0 #b3b8be,
+      inset 0 -4px 0 #b3b8be,
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 1px 0 rgba(0, 0, 0, 0.35);
+    color: #1f2226;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 0.9375rem;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     line-height: 1.2;
     white-space: normal;
     text-shadow: none;
@@ -2303,10 +2377,14 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold):not(:disabled):active,
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.dvd-key):not(.todo-cap):not(.b2-shell-now-name):not(.trk-handoff-x):not(.b2-shell-fold)[aria-pressed="true"] {
-    transform: none;
-    background: #eef1f4;
-    background-image: none;
-    box-shadow: none;
+    transform: translateY(2px);
+    background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+    box-shadow:
+      inset 2px 0 0 #b3b8be,
+      inset -2px 0 0 #b3b8be,
+      inset 0 -2px 0 #b3b8be,
+      inset 0 2px 3px rgba(0, 0, 0, 0.25);
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-icon,
@@ -2332,12 +2410,18 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap) {
-    outline: none;
-    color: #14171a;
+    outline: 2px solid #22306c;
+    outline-offset: 1px;
+    color: #1a2556;
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rail button.b2-shell-go:not(.todo-cap)::before {
-    content: none;
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: #22306c;
   }
 
   .b2-shell[data-tools="open"] .b2-shell-rituals .b2-shell-keys button:has(.b2-shell-count) .b2-key-word {

@@ -4,7 +4,7 @@ _Last mapped: 2026-10-25_
 
 The shared core for automatic phone sync. Plan: [`docs/PHONE_SYNC_PLAN.md`](../../docs/PHONE_SYNC_PLAN.md). Agent briefs: [`docs/phone-sync/`](../../docs/phone-sync/README.md).
 
-Status (_Last mapped: 2026-10-25_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `BRAIN2_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/imports/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health, phone Screen Time, email, and DMs are listed and not built.
+Status (_Last mapped: 2026-10-28_): the core, the Mac Messages and call-history readers, and the iOS location upload are built. The hub loads both readers and, when `BRAIN2_CAPTURE_BOX_URL` is set, starts the location drain. Settings → **Phone sync** (`components/Settings/imports/PhoneSyncPanel.tsx`) lists every source, its permission, and the last run. Texts, calls, and location can be turned off (`enabled.json`); the hub reads that on the next tick. The panel reads the run log through loopback `/api/phone-sync` and does not show message bodies. Health is imported on the iPhone (the whole history, one month at a time). The Mac hub does not read Health. Phone Screen Time, email, and DMs are listed and not built.
 
 ## Flow
 
@@ -34,7 +34,11 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 | `calls-reader.ts` | Node only. `callsReader`: opens `CallHistory.storedata` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the cursor. `BRAIN2_CALLS_DB` overrides the path. Loaded by `readers.ts`. |
 | `messages.ts` | `chat.db` row → `MessageRecord`. Apple time (nanoseconds since 2001, or seconds on old rows), `attributedBody` typedstream → text, group members. Tapbacks and group events map to null. Pure. Built 2026-10-22. |
 | `messages-reader.ts` | Node only. `messagesReader`: opens `~/Library/Messages/chat.db` read-only (`node:sqlite` via `process.getBuiltinModule`), 1000 rows past the ROWID cursor. Reads integers as bigints, since nanosecond dates pass 2^53. `BRAIN2_MESSAGES_DB` overrides the path. Needs Node 22.13+. Loaded by `readers.ts`. |
-| `location.ts` | iPhone location batches → Location rows. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
+| `location.ts` | iPhone location batches → Location rows. This is the primary location share. A closed visit is a block, sliced at midnight; a half-known visit is an "arrived" / "left" instant; a significant move is a "moved ±N m" instant. Pens follow `gps:`; an unknown move goes on one fixed "On the move" pen (`phone-location-moving`). `applyLocationBatch` is its own door, since `types.ts` has no location record. Built 2026-10-22. |
+| `location-share-order.ts` | _Last mapped: 2026-10-28._ Order is iOS app, then BIM. A Live Location update paints only when the phone share did not happen, Settings has location off, or the last iOS time is more than 12 hours from the sample. A typed `gps:` still paints. |
+| `health.ts` | _Last mapped: 2026-10-28._ Apple Health pages. `healthPages` walks from the oldest sample to now, 30 days at a time, with no recent-day cap. A page becomes daily totals (steps, walking and running distance, flights, active energy, heart rate), sleep mornings, and Exercise workouts. A logged morning is left alone. Re-reading a page writes nothing new. |
+| `health-apply.ts` | Lands one page in the sleep log, the Activity grid, and `health-store.ts`. |
+| `health-store.ts` | Daily totals and the ledger of mornings this import wrote. Persist key `health-import`. |
 | `location-drain.ts` | Node only. `startLocationDrain` pulls sealed batches from the Oracle box (`GET /uploads?kind=location`), opens them, applies, flushes, moves the `location` cursor, then acks that kind only. Started by the hub when `BRAIN2_CAPTURE_BOX_URL` is set. |
 
 ## Rules that keep it safe
@@ -46,7 +50,11 @@ reader.read(cursor) ─► records ─► archive.appendMessages (bodies, on dis
 
 ## Location
 
-_Last mapped: 2026-10-22_
+_Last mapped: 2026-10-28_
+
+The iPhone app shares location first. BIM Live Location is the backup, not a second writer beside the phone. The hub tells ingest when Settings has location off (`setIosLocationShareUnavailable` in `scripts/phone-hub.ts`), and then a Live Location update paints. While the phone has shared within 12 hours, or the sample sits inside an iOS visit, that update is ignored. A typed `gps:` still paints.
+
+**Planned:** the app does not yet tell the Mac that recording is on except by the batches it uploads. Until the first batch lands, BIM still paints. There is no separate “recording” heartbeat from `LocationPlugin.swift`.
 
 Brief: [`docs/phone-sync/03-location.md`](../../docs/phone-sync/03-location.md).
 
@@ -60,6 +68,22 @@ LocationPlugin.swift ─► queue file on the phone ─► seal ─► POST /upl
 - The arrival and the closed visit are two events with two ids. iOS reports both, so a visit you left shows an "arrived" instant plus the block.
 - Visit blocks are added beside existing Location blocks, not painted over them. A hand-made block in the same minutes stays, and the two overlap.
 - A new visit feeds the repeated-place clusters (`lib/ingest/gps-places.ts`). Moves do not; they are too coarse.
+
+## Health
+
+_Last mapped: 2026-10-28_
+
+The iPhone app imports Apple Health. It does not write HealthKit, and the Mac hub does not read it. On `/mobile/`, **Import all history** asks for the types below, finds the oldest sample, and reads forward to now in 30-day pages so a long history is not one query.
+
+Included: steps, walking and running distance, flights climbed, active energy, heart rate (daily average, min, and max), sleep, and workouts.
+
+- Sleep fills an empty morning on the sleep log. A morning you already logged stays.
+- Workouts paint Exercise on Activity, sliced at midnight. The id is the Health sample, so a second import adds nothing.
+- The other types are one row per day in `health-store.ts`.
+
+A page shows its month and how far along the run is. The result says how many days, nights, and workouts were imported, that nothing new was found, that Health returned nothing, or that access is off. Real HealthKit data needs the iPhone app. The browser control only says the import runs there.
+
+Brief: [`docs/phone-sync/04-health.md`](../../docs/phone-sync/04-health.md).
 
 ## Hub
 

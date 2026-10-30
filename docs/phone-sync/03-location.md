@@ -79,7 +79,7 @@ The Oracle box never sees coordinates in the clear. Over Tailscale only; the pho
 - Significant-change and visits are light on battery. Continuous GPS is not used.
 - Info.plist needs `NSLocationAlwaysAndWhenInUseUsageDescription`, `NSLocationWhenInUseUsageDescription`, and background mode `location`.
 - A free Apple ID signs the app for 7 days; a paid developer account lasts a year.
-- Fallback before the app ships: Telegram Live Location (already supported).
+- BIM Live Location is the backup. It paints when the iOS share did not happen, Settings has location off, or the last phone share is more than 12 hours from the sample. It does not paint beside the phone. A typed `gps:` still paints. The order lives in `lib/phone-sync/location-share-order.ts`.
 
 ## Done
 

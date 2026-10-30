@@ -13,5 +13,6 @@ class AppViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(LocationPlugin())
         bridge?.registerPluginInstance(NfcPlugin())
+        bridge?.registerPluginInstance(HealthPlugin())
     }
 }

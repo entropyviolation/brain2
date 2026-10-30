@@ -2,6 +2,10 @@
 const nextConfig = {
   // Produce a fully static build in `out/` so it can be served from the
   // Electron desktop shell (no Node server required at runtime).
+  // Leave distDir at `.next`. With output: "export", Next 15 uses a custom
+  // distDir as the export folder and still compiles into `.next`. Production
+  // builds stage a copy instead (`scripts/static-export-build.mjs`) so the
+  // Turbopack dev server can keep this directory.
   output: "export",
   // Emit `path/index.html` files which are simpler to resolve from the
   // custom `app://` protocol used by the Electron main process.
