@@ -18,6 +18,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const HOME_DAYS_UNTIL_STORAGE_KEY = persistKey("home-days-until")
 
@@ -234,3 +235,5 @@ export const useHomeDaysUntilStore = create<HomeDaysUntilState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useHomeDaysUntilStore)

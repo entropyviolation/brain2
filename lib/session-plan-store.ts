@@ -28,6 +28,7 @@ import {
   type SessionTemplate,
   type SessionTier,
 } from "@/lib/session-plan"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface KeptSessionRef {
   tier: SessionTier
@@ -172,3 +173,5 @@ export function parkLiveSession(now = new Date(), futureNote?: string): SessionP
   store.put(parked, now)
   return parked
 }
+
+registerPhoneWindowStore(useSessionPlanStore)

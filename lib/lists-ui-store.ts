@@ -29,6 +29,7 @@ import {
   sanitizeGravityFieldParams,
   type GravityFieldParams,
 } from "@/components/Lists/lib/list-icon-gravity"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type { GravityFieldParams }
 
@@ -390,3 +391,5 @@ export const useListsUiStore = create<ListsUiState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useListsUiStore)

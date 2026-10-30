@@ -23,6 +23,7 @@ import {
   sunCacheKey,
   type DaySunTimes,
 } from "@/lib/sun-times"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const SUN_TIMES_STORAGE_KEY = persistKey("sun-times")
 
@@ -160,3 +161,5 @@ export function sunForDate(date: string, lat: number, lng: number): DaySunTimes 
   if (!computed) return null
   return store.rememberIfAbsent(computed)
 }
+
+registerPhoneWindowStore(useSunTimesStore)

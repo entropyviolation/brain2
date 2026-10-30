@@ -33,6 +33,7 @@ import {
   visibleHomeWidgets,
   type HomeWidgetId,
 } from "@/lib/home-widgets"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 interface HomeWidgetsState {
   order: HomeWidgetId[]
@@ -116,3 +117,5 @@ export function selectHiddenHomeWidgets(state: Pick<HomeWidgetsState, "order" | 
   const hide = new Set(state.hidden)
   return state.order.filter((id) => hide.has(id))
 }
+
+registerPhoneWindowStore(useHomeWidgetsStore)

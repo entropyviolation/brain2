@@ -12,6 +12,7 @@ import { persist } from "zustand/middleware"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 const PERIOD_KEY = /^(?:week:\d{4}-\d{2}-\d{2}|month:\d{4}-\d{2}|year:\d{4})$/
@@ -173,3 +174,5 @@ export function resetKitchenDayNotes(): void {
     /* the test double may refuse */
   }
 }
+
+registerPhoneWindowStore(useKitchenDayNotes)

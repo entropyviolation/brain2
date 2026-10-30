@@ -13,6 +13,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { HealthDay, HealthNightLedger } from "./health"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface HealthImportState {
   days: Record<string, HealthDay>
@@ -27,3 +28,5 @@ export const useHealthImportStore = create<HealthImportState>()(
     storage: createCogsJSONStorage(),
   }),
 )
+
+registerPhoneWindowStore(useHealthImportStore)

@@ -102,6 +102,23 @@ const REHYDRATE: Record<string, () => Promise<unknown>> = {
   "telegram-feed": () => import("@/lib/ingest/telegram-feed-store").then((m) => m.useTelegramFeedStore.persist.rehydrate()),
 }
 
+/** Running persisted stores outside `REHYDRATE`, by bare vault name. */
+const refills = new Map<string, () => unknown>()
+
+type RefillableStore = {
+  persist: { getOptions: () => { name?: string }; rehydrate: () => unknown }
+}
+
+/**
+ * A persisted store refills from the next window too (pull to refresh, the Mac
+ * key). Before, only the 13 in `REHYDRATE` did, so points, reviews, modules,
+ * lists UI and the rest kept the first copy until the app was relaunched.
+ */
+export function registerPhoneWindowStore(store: RefillableStore): void {
+  const name = store.persist.getOptions().name
+  if (name) refills.set(bareVault(name), () => store.persist.rehydrate())
+}
+
 const memory = new Map<string, string>()
 const listeners = new Set<() => void>()
 const inflight = new Set<string>()
@@ -728,8 +745,8 @@ async function rehydrateMemory() {
   for (const key of memory.keys()) suffixes.add(bareVault(key))
   await Promise.all(
     [...suffixes].map((suffix) => {
-      const load = REHYDRATE[suffix]
-      return load ? load().catch(() => undefined) : undefined
+      const load = REHYDRATE[suffix] ?? refills.get(suffix)
+      return load ? Promise.resolve().then(load).catch(() => undefined) : undefined
     }),
   )
 }
@@ -799,6 +816,10 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
     await paintCache(gen)
     if (gen !== loadGen) return status
   }
+  // Edits during the fetch queue and replay onto the Mac's copy. A flush in
+  // that gap sent them and dropped the row before the replay, so a refresh
+  // hid an edit the Mac already had.
+  macAnswered = false
   detail = "(finding the Mac)"
   if (!windowInstalled) setStatus("loading")
   else emit()

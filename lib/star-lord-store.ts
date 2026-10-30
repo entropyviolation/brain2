@@ -15,6 +15,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { StarLordReport } from "@/lib/star-lord"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 interface StarLordState {
   reports: StarLordReport[]
@@ -38,3 +39,5 @@ export const useStarLordStore = create<StarLordState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useStarLordStore)

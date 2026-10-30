@@ -16,6 +16,7 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { NowObjective } from "@/lib/now-objective"
 import type { WorkPauseSpan } from "@/lib/work-pause"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface PenColorSession {
   penId: string
@@ -80,3 +81,5 @@ export const usePenColorSessionStore = create<PenColorSessionState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(usePenColorSessionStore)

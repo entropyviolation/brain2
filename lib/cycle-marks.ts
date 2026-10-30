@@ -15,6 +15,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage, registerPersistRehydrator } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type CycleDayMark = {
   /** Local YYYY-MM-DD. */
@@ -130,3 +131,5 @@ export function setCycleFlag(date: string, flag: CycleFlag, value: boolean): voi
 export function toggleCycleFlag(date: string, flag: CycleFlag): boolean {
   return useCycleMarksStore.getState().toggleFlag(date, flag)
 }
+
+registerPhoneWindowStore(useCycleMarksStore)
