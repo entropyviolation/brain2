@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-20_
 
-launchd jobs: the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
+launchd jobs: the always-on installer (below), the nightly vault backup (`com.brain2.backup`, see `docs/BIM_BACKUP.md`) and the iPhone app reinstall (`com.brain2.ios-reinstall`, below).
 
 ## Install
 
@@ -69,3 +69,28 @@ Notes:
 - A build needs about 2 GB free (the cache lives in `~/Library/Caches/brain2-ios-build`).
 - The build runs `npm run build` and `npx cap sync ios`, so it installs whatever `~/brain2` has checked out.
 - `PATH` is baked into the plist at install time, so `npx`, `pod` and `xcodebuild` resolve under launchd. Reinstall the plist if you move Node or CocoaPods.
+
+## Always-on Mac
+
+_Last mapped: 2026-10-30_
+
+`install-always-on.sh` sets up a Mac that stays on and runs Brain2. Run it from the repo root, dry first:
+
+```bash
+bash deploy/mac/install-always-on.sh --dry-run
+```
+
+```bash
+bash deploy/mac/install-always-on.sh
+```
+
+It installs Homebrew if missing, then `node` and `ollama`. It does not install ActivityWatch: the activity that matters is on the Mac you use, so ActivityWatch stays there. It starts Ollama as a login service and pulls `qwen2.5:14b-instruct`, `qwen2.5:3b-instruct`, and `nomic-embed-text`. It runs `npm ci` and `npm run build`. It renders and loads four launchd jobs that start at login and restart when they die:
+
+- `com.brain2.web`: the production app on `:3000` (`scripts/cogs-prod-server.mjs`).
+- `com.brain2.hub`: the Telegram and phone hub (`scripts/phone-hub.mjs`).
+- `com.brain2.awake`: `caffeinate -ims`, so the Mac does not sleep.
+- `com.brain2.backup`: the nightly backup to `~/Brain2Backups` (`BRAIN2_BACKUP_DIR` changes it).
+
+Re-running is safe. Flags: `--skip-models`, `--skip-build`, `--no-backup`, `--uninstall` (removes the jobs, keeps tools and models). After a `git pull`, run it with `--skip-models` to rebuild and restart.
+
+By hand, once: Energy settings (no sleep on power, start after power failure), secrets in `.env.local`, and `node scripts/backup-keygen.mjs`. The script prints these at the end. Logs: `~/Library/Logs/brain2-{web,hub,awake,backup}.log`.
