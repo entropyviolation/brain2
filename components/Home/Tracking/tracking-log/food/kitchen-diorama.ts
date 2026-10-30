@@ -9,8 +9,22 @@ import * as THREE from "three"
 import type { KitchenRoom } from "@/lib/kitchen-types"
 
 export interface DioramaLot {
+  id?: string
   room: KitchenRoom
   name: string
+}
+
+/** A jar wins over the cabinet behind it. */
+export function pickKitchenTarget(
+  hits: readonly { lotId?: string; room?: KitchenRoom }[],
+): { lotId: string } | { room: KitchenRoom } | null {
+  for (const hit of hits) {
+    if (hit.lotId) return { lotId: hit.lotId }
+  }
+  for (const hit of hits) {
+    if (hit.room) return { room: hit.room }
+  }
+  return null
 }
 
 const ROOMS: { id: KitchenRoom; x: number; h: number; color: number }[] = [
@@ -26,6 +40,7 @@ export function mountKitchen(
     lots: readonly DioramaLot[]
     active: KitchenRoom | "all"
     onRoom: (room: KitchenRoom) => void
+    onLot?: (id: string) => void
     reducedMotion: boolean
   },
 ): () => void {
@@ -87,6 +102,7 @@ export function mountKitchen(
   const jarGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.28, 10)
   const lidGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.05, 10)
   disposables.push(jarGeo, lidGeo)
+  const jars: THREE.Mesh[] = []
   const counts: Record<KitchenRoom, number> = { fridge: 0, pantry: 0, spice: 0, freezer: 0 }
   for (const lot of opts.lots) {
     if (counts[lot.room] >= 5) continue
@@ -97,11 +113,15 @@ export function mountKitchen(
     const jarMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(`hsl(${hue}, 28%, 62%)`), roughness: 0.4 })
     const jar = new THREE.Mesh(jarGeo, jarMat)
     jar.position.set(room.x - 0.46 + i * 0.24, 0.16, 0.72)
+    if (lot.id) jar.userData.lotId = lot.id
     scene.add(jar)
-    const lid = new THREE.Mesh(lidGeo, new THREE.MeshStandardMaterial({ color: 0xe7ebef, metalness: 0.35, roughness: 0.35 }))
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0xe7ebef, metalness: 0.35, roughness: 0.35 })
+    const lid = new THREE.Mesh(lidGeo, lidMat)
     lid.position.set(jar.position.x, 0.32, jar.position.z)
+    if (lot.id) lid.userData.lotId = lot.id
     scene.add(lid)
-    disposables.push(jarMat, lid.material)
+    jars.push(jar, lid)
+    disposables.push(jarMat, lidMat)
   }
 
   const raycaster = new THREE.Raycaster()
@@ -112,9 +132,14 @@ export function mountKitchen(
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
     raycaster.setFromCamera(pointer, camera)
-    const hit = raycaster.intersectObjects(cabinets, false)[0]
-    const room = hit?.object.userData.room as KitchenRoom | undefined
-    if (room) opts.onRoom(room)
+    const hits = raycaster.intersectObjects([...jars, ...cabinets], false).map((hit) => ({
+      lotId: typeof hit.object.userData.lotId === "string" ? hit.object.userData.lotId : undefined,
+      room: hit.object.userData.room as KitchenRoom | undefined,
+    }))
+    const target = pickKitchenTarget(hits)
+    if (!target) return
+    if ("lotId" in target) opts.onLot?.(target.lotId)
+    else opts.onRoom(target.room)
   }
   canvas.addEventListener("pointerdown", onPointer)
 

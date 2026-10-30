@@ -146,6 +146,10 @@
   outline-offset: -2px;
 }
 
+.trk95 .trk-log-week-row[data-selected="true"] {
+  background: rgba(0, 0, 0, 0.06);
+}
+
 .trk95 .trk-log-week-row.is-unknown {
   cursor: default;
 }

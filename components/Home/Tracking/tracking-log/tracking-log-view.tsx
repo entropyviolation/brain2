@@ -2,8 +2,9 @@
  * components/Home/Tracking/tracking-log/tracking-log-view.tsx — Intake, events, cycle; Day | Week
  *
  * Follows the Tracking day cursor. Local Day | Week (default Day; not persisted)
- * mirrors Day Log. Week replaces the day shelves with a seven-column board;
- * the composer still writes the selected day. The composer is one row of modes:
+ * mirrors Day Log. Week defaults to the seven-column agenda. Shelves reuses
+ * this board for the week. A log row opens that log item. The composer still
+ * writes the selected day. The composer is one row of modes:
  * Event, Switch, Intake, Spent, Note, Thought process. Spent asks for an amount,
  * what it was spent on, and the source. Event’s location is one field over
  * the Location pens. Note and Thought process are a few-line textarea; the other
@@ -13,8 +14,11 @@
  * Food opens its own detail: meals, snacks, nutrients, and the kitchen.
  * Note is the opening key. It paints a Text log instant and does not append
  * onto a covering block. Notes is its own steel shelf. Each day shelf except
- * Spent and Switch has a bottom add for this minute; Spent focuses the composer.
- * Week columns stay browse-only. A shelf dialog can widen the day.
+ * Spent and Switch has a bottom add for this minute. Those Add keys are the
+ * short silver keycap (`.trk-keycap`), readable on both the CRT shelves and
+ * the steel ones. Spent focuses the composer.
+ * A row drag onto another shelf changes only that shelf. Option or Alt copies.
+ * Week agenda columns stay browse-only. A shelf dialog can widen the day.
  * The clock stays visible. Custom phrases are added in Tracking settings
  * (the gear), not on this composer. Counts sits under the composer.
  * Estimated and Unknown are checkboxes. Cycle marks
@@ -37,7 +41,7 @@
  */
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react"
 import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
 import { addDays, addWeeks, format, subDays, subWeeks } from "date-fns"
 import { CountStatusesSection } from "@/components/Home/Tracking/tracking-log/count-statuses-section"
@@ -47,6 +51,8 @@ import { EntryDialog } from "@/components/Home/Tracking/entry-dialog"
 import { LogShelfDialog } from "@/components/Home/Tracking/tracking-log/log-shelf-dialog"
 import { FoodDetailDialog } from "@/components/Home/Tracking/tracking-log/food/food-detail-dialog"
 import { SpendingDialog } from "@/components/Home/Tracking/tracking-log/spending-dialog"
+import { openLogEntry } from "@/components/Home/Tracking/tracking-log/open-log-entry"
+import { useLogClipboard } from "@/components/Home/Tracking/tracking-log/use-log-clipboard"
 import { TrackingLogWeek } from "@/components/Home/Tracking/tracking-log/tracking-log-week"
 import { TelegramFeedWell } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
 import { TrackingPeriodNav } from "@/components/Home/Tracking/tracking-period-nav"
@@ -56,8 +62,10 @@ import {
   classifyLogBookRow,
   compareLogRows,
   ensureLocationPen,
+  entriesForLogShelf,
   logClockLabel,
   logRowWhenLabel,
+  logShelfDateBounds,
   submitTrackingLog,
   switchLogCopy,
   type IntakeClass,
@@ -82,7 +90,8 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { ScopeReadout } from "@/components/Home/Tracking/trk-scope"
 import { minutesToTimeString, timeStringToMinutes } from "@/lib/time-entries"
 import { raiseQuickAddWrote } from "@/components/quick-add-wrote"
-import { getTrackingViewPrefs, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { getTrackingViewPrefs, setTrackingViewPrefs, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
+import { duplicateLogEntry, reassignLogBookList } from "@/lib/tracking-log-ops"
 import "../tracking-chrome.css"
 import "../daylog-week.css"
 import { NativeSelect } from "@/components/ui/native-select"
@@ -107,6 +116,16 @@ const INTAKE_LISTS: { id: IntakeClass; title: string }[] = [
   { id: "drink", title: "Drink" },
   { id: "drug", title: "Drugs" },
 ]
+
+/** Shelf-row drag. Drop reads this type so a text selection is not a log move. */
+const LOG_ROW_MIME = "application/x-brain2-log-entry"
+
+function acceptsLogDrag(data: DataTransfer | null): boolean {
+  if (!data) return false
+  const types = Array.from(data.types)
+  if (types.length === 0) return true
+  return types.includes(LOG_ROW_MIME)
+}
 
 function defaultClock(day: Date): string {
   const now = new Date()
@@ -316,6 +335,8 @@ function LogRow({
   meta,
   lead,
   showDate,
+  selected,
+  draggable = false,
   onOpen,
   onRemove,
 }: {
@@ -324,6 +345,9 @@ function LogRow({
   meta?: string
   lead?: ReactNode
   showDate?: boolean
+  selected?: boolean
+  /** Shelf boards drag the whole row. Dialog rows stay put. */
+  draggable?: boolean
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
@@ -333,26 +357,68 @@ function LogRow({
   const badge = dated?.badge ?? clock.badge
   const shown = copy ? { ...entry, title: copy } : entry
   const scope = meta ? <span className="trk-log-scope">{meta}</span> : null
+  const when = timeText ? <span className={dated ? "trk-log-when is-dated" : "trk-log-when"}>{timeText}</span> : null
+  const skipClick = useRef(false)
+  const open = () => {
+    if (skipClick.current) {
+      skipClick.current = false
+      return
+    }
+    onOpen(entry.id)
+  }
+  const drag = draggable
+    ? {
+        draggable: true,
+        onPointerDown: () => {
+          skipClick.current = false
+        },
+        onDragStart: (event: DragEvent<HTMLElement>) => {
+          skipClick.current = true
+          event.dataTransfer.setData(LOG_ROW_MIME, entry.id)
+          event.dataTransfer.setData("text/plain", entry.id)
+          event.dataTransfer.effectAllowed = "copyMove"
+        },
+      }
+    : {}
   if (badge === "Unknown") {
     return (
-      <div className="trk-log-row is-unknown">
-        {timeText ? <span className="trk-log-when">{timeText}</span> : null}
+      <div className="trk-log-row is-unknown" data-entry={entry.id} data-selected={selected ? "true" : "false"} onClick={open} {...drag}>
+        {when}
         <span className="trk-logbook-badge">Unknown</span>
         {lead}
         <LogCopy entry={shown} />
         {scope}
-        <button type="button" onClick={() => onOpen(entry.id)}>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            open()
+          }}
+        >
           Edit
         </button>
-        <button type="button" onClick={() => onRemove(entry.id)}>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onRemove(entry.id)
+          }}
+        >
           Remove
         </button>
       </div>
     )
   }
   return (
-    <button type="button" className="trk-log-row" onClick={() => onOpen(entry.id)}>
-      {timeText ? <span className="trk-log-when">{timeText}</span> : null}
+    <button
+      type="button"
+      className="trk-log-row"
+      data-entry={entry.id}
+      data-selected={selected ? "true" : "false"}
+      onClick={open}
+      {...drag}
+    >
+      {when}
       {lead}
       <LogCopy entry={shown} />
       {scope}
@@ -375,6 +441,7 @@ const EMPTY_SHELF: Record<string, string> = {
 
 function LogListWell({
   title,
+  list,
   note,
   rows,
   extra,
@@ -382,12 +449,15 @@ function LogListWell({
   metaFor,
   leadFor,
   face,
+  showDate,
+  selectedId,
   onTitleOpen,
   quickAdd,
   onOpen,
   onRemove,
 }: {
   title: string
+  list: LogBookList
   note?: string
   rows: LogBookEntry[]
   extra?: ReactNode
@@ -396,6 +466,8 @@ function LogListWell({
   leadFor?: (entry: LogBookEntry) => ReactNode
   /** `steel` — the light well with black text, as in the Now popup. Default is the CRT shelf. */
   face?: "steel"
+  showDate?: boolean
+  selectedId?: string | null
   /** Makes the heading a button, such as Spent opening the Spending dialog. */
   onTitleOpen?: () => void
   /** Bottom of the well. Week columns do not mount this shelf. */
@@ -403,8 +475,36 @@ function LogListWell({
   onOpen: (id: string) => void
   onRemove: (id: string) => void
 }) {
+  const [dropOver, setDropOver] = useState(false)
+  const takeDrop = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    setDropOver(false)
+    const entryId = event.dataTransfer.getData(LOG_ROW_MIME)
+    if (!entryId) return
+    if (event.altKey) duplicateLogEntry(entryId, { targetList: list })
+    else reassignLogBookList(entryId, list)
+  }
   return (
-    <section className="trk-aside-well" aria-label={title} data-empty={rows.length === 0 ? "true" : "false"} data-face={face}>
+    <section
+      className="trk-aside-well"
+      aria-label={title}
+      data-empty={rows.length === 0 ? "true" : "false"}
+      data-face={face}
+      data-list={list}
+      data-drop={dropOver ? "true" : "false"}
+      onDragOver={(event) => {
+        if (!acceptsLogDrag(event.dataTransfer)) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = event.altKey ? "copy" : "move"
+        setDropOver(true)
+      }}
+      onDragLeave={(event) => {
+        const next = event.relatedTarget
+        if (next instanceof Node && event.currentTarget.contains(next)) return
+        setDropOver(false)
+      }}
+      onDrop={takeDrop}
+    >
       <h3 className="trk-logbook-heading">
         {onTitleOpen ? (
           <button type="button" className="trk-logbook-heading-open" data-no95="" onClick={onTitleOpen} title={`Open ${title.toLowerCase()}`}>
@@ -433,6 +533,9 @@ function LogListWell({
               copy={copyFor?.(entry)}
               meta={metaFor?.(entry)}
               lead={leadFor?.(entry)}
+              showDate={showDate}
+              selected={selectedId === entry.id}
+              draggable
               onOpen={onOpen}
               onRemove={onRemove}
             />
@@ -483,7 +586,7 @@ function LogShelfQuickAdd({
           add()
         }}
       />
-      <button type="button" aria-label={label} onClick={add} disabled={!text.trim()}>
+      <button type="button" data-no95="" className="trk-keycap" aria-label={label} onClick={add} disabled={!text.trim()}>
         Add
       </button>
     </div>
@@ -551,6 +654,12 @@ export function TrackingLogView({
   const [timeValue, setTimeValue] = useState(() => defaultClock(currentDate))
   const [locationPenId, setLocationPenId] = useState("")
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const activateRow = useCallback((id: string) => {
+    setSelectedId(id)
+    openLogEntry(id)
+  }, [])
+  useLogClipboard(selectedId, setSelectedId)
   const [spendingOpen, setSpendingOpen] = useState(false)
   const [foodOpen, setFoodOpen] = useState(false)
   const [shelf, setShelf] = useState<string | null>(null)
@@ -617,6 +726,17 @@ export function TrackingLogView({
     }
     return groups
   }, [allGrouped, dateKey])
+
+  const weekShelves = isWeek && viewPrefs.logWeekLayout === "shelves"
+  const boardGroups = useMemo(() => {
+    if (!weekShelves) return grouped
+    const bounds = logShelfDateBounds("week", currentDate)
+    const groups = {} as Record<LogBookList, LogBookEntry[]>
+    for (const list of Object.keys(allGrouped) as LogBookList[]) {
+      groups[list] = entriesForLogShelf(allGrouped[list], bounds)
+    }
+    return groups
+  }, [weekShelves, grouped, allGrouped, currentDate])
 
   // Recent intake by class (most used first) and recent purchases, across every day.
   const recents = useMemo(() => {
@@ -765,6 +885,28 @@ export function TrackingLogView({
           </button>
           <button type="button" className="trk-keycap" data-no95="" aria-pressed={isWeek} onClick={() => setSpan("week")}>
             Week
+          </button>
+        </div>
+      ) : null}
+      {isWeek ? (
+        <div className="daylog-week-switch trk-span-switch" role="toolbar" aria-label="Week layout">
+          <button
+            type="button"
+            className="trk-keycap"
+            data-no95=""
+            aria-pressed={viewPrefs.logWeekLayout !== "shelves"}
+            onClick={() => setTrackingViewPrefs({ logWeekLayout: "agenda" })}
+          >
+            Agenda
+          </button>
+          <button
+            type="button"
+            className="trk-keycap"
+            data-no95=""
+            aria-pressed={viewPrefs.logWeekLayout === "shelves"}
+            onClick={() => setTrackingViewPrefs({ logWeekLayout: "shelves" })}
+          >
+            Shelves
           </button>
         </div>
       ) : null}
@@ -1055,24 +1197,29 @@ export function TrackingLogView({
       <CountStatusesSection />
       </div>
 
-      {isWeek ? (
+      {isWeek && !weekShelves ? (
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={openDayFromWeek}
-          onOpenEntry={setOpenEntryId}
           onRemoveEntry={removeEntry}
+          onOpenFood={() => setFoodOpen(true)}
+          selectedId={selectedId}
+          onSelectEntry={setSelectedId}
         />
       ) : (
-        <div className="trk-logbook-board">
+        <div className="trk-logbook-board" data-span={weekShelves ? "week" : "day"}>
           <LogListWell
             title="Spent"
+            list="spend"
             note="Amount, what it was spent on, and the source."
-            rows={grouped.spend}
-            extra={<SpendLedger rows={grouped.spend} />}
+            rows={boardGroups.spend}
+            showDate={weekShelves}
+            selectedId={selectedId}
+            extra={<SpendLedger rows={boardGroups.spend} />}
             onTitleOpen={() => setSpendingOpen(true)}
             quickAdd={
               <div className="trk-logbook-well-add">
-                <button type="button" onClick={focusSpentComposer}>
+                <button type="button" data-no95="" className="trk-keycap" onClick={focusSpentComposer}>
                   Add spent now
                 </button>
               </div>
@@ -1084,7 +1231,7 @@ export function TrackingLogView({
                 <span className="trk-log-amount">{formatSpendAmount(entry.spendAmount)}</span>
               ) : null
             }
-            onOpen={setOpenEntryId}
+            onOpen={activateRow}
             onRemove={removeEntry}
           />
 
@@ -1092,7 +1239,10 @@ export function TrackingLogView({
             <LogListWell
               key={list.id}
               title={list.title}
-              rows={grouped[list.id]}
+              list={list.id}
+              rows={boardGroups[list.id]}
+              showDate={weekShelves}
+              selectedId={selectedId}
               onTitleOpen={() => (list.id === "food" ? setFoodOpen(true) : setShelf(list.id))}
               leadFor={
                 list.id === "food"
@@ -1114,16 +1264,19 @@ export function TrackingLogView({
                   onAdd={(text) => addShelfLine("intake", text, list.id)}
                 />
               }
-              onOpen={setOpenEntryId}
+              onOpen={activateRow}
               onRemove={removeEntry}
             />
           ))}
 
-          {grouped.intake.length > 0 ? (
+          {boardGroups.intake.length > 0 ? (
             <LogListWell
               title="Intake"
+              list="intake"
               note="Intake with no food, drink, or drug class."
-              rows={grouped.intake}
+              rows={boardGroups.intake}
+              showDate={weekShelves}
+              selectedId={selectedId}
               onTitleOpen={() => setShelf("intake")}
               quickAdd={
                 <LogShelfQuickAdd
@@ -1132,28 +1285,34 @@ export function TrackingLogView({
                   onAdd={(text) => addShelfLine("intake", text)}
                 />
               }
-              onOpen={setOpenEntryId}
+              onOpen={activateRow}
               onRemove={removeEntry}
             />
           ) : null}
 
           <LogListWell
             title="Events"
+            list="event"
             note="Any repeated phrase can be counted later. Example: left room."
-            rows={grouped.event}
+            rows={boardGroups.event}
+            showDate={weekShelves}
+            selectedId={selectedId}
             face="steel"
             onTitleOpen={() => setShelf("event")}
             quickAdd={
               <LogShelfQuickAdd label="Add to Events" placeholder="left room" onAdd={(text) => addShelfLine("event", text)} />
             }
-            onOpen={setOpenEntryId}
+            onOpen={activateRow}
             onRemove={removeEntry}
           />
 
           <LogListWell
             title="Notes"
+            list="note"
             note="A general note for this minute. Example: landlord called back."
-            rows={grouped.note}
+            rows={boardGroups.note}
+            showDate={weekShelves}
+            selectedId={selectedId}
             face="steel"
             onTitleOpen={() => setShelf("note")}
             quickAdd={
@@ -1163,7 +1322,7 @@ export function TrackingLogView({
                 onAdd={(text) => addShelfLine("note", text)}
               />
             }
-            onOpen={setOpenEntryId}
+            onOpen={activateRow}
             onRemove={removeEntry}
           />
 
@@ -1171,8 +1330,11 @@ export function TrackingLogView({
 
           <LogListWell
             title="Thought process"
+            list="thought"
             note="A strand from what you are doing, to what it leads to, to how it feels."
-            rows={grouped.thought}
+            rows={boardGroups.thought}
+            showDate={weekShelves}
+            selectedId={selectedId}
             face="steel"
             onTitleOpen={() => setShelf("thought")}
             quickAdd={
@@ -1182,18 +1344,21 @@ export function TrackingLogView({
                 onAdd={(text) => addShelfLine("thought", text)}
               />
             }
-            onOpen={setOpenEntryId}
+            onOpen={activateRow}
             onRemove={removeEntry}
           />
 
-          {grouped.switch.length > 0 ? (
+          {boardGroups.switch.length > 0 ? (
             <LogListWell
               title="Switch"
-              rows={grouped.switch}
+              list="switch"
+              rows={boardGroups.switch}
+              showDate={weekShelves}
+              selectedId={selectedId}
               copyFor={(entry) => switchLogCopy(entry, penName.get(entry.penId))}
               metaFor={(entry) => scopeName(entry.scopeId)}
               onTitleOpen={() => setShelf("switch")}
-              onOpen={setOpenEntryId}
+              onOpen={activateRow}
               onRemove={removeEntry}
             />
           ) : null}
@@ -1231,9 +1396,10 @@ export function TrackingLogView({
               key={entry.id}
               entry={entry}
               showDate={showDate}
+              selected={selectedId === entry.id}
               copy={id === "switch" ? switchLogCopy(entry, penName.get(entry.penId)) : undefined}
               meta={id === "switch" ? scopeName(entry.scopeId) : undefined}
-              onOpen={setOpenEntryId}
+              onOpen={activateRow}
               onRemove={removeEntry}
             />
           )}

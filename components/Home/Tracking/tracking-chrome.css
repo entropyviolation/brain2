@@ -348,13 +348,13 @@ body.win95-app .trk95 .trk-settings-gear:active {
 
 .trk95 .trk-mode-bar button:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 
 .trk95 .trk-mode-bar button[aria-pressed="true"] {
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   border-style: solid;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 40%),
@@ -524,7 +524,7 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
 .trk95 .trk-fill-row button:disabled,
 .trk95 .trk-plot-fill button:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 
@@ -578,7 +578,7 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
@@ -604,7 +604,7 @@ body.win95-app .trk95 .trk-super-bar button[aria-pressed="true"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--t-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   line-height: 1;
 }
 
@@ -1129,7 +1129,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
     linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
@@ -1522,7 +1522,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-new-pen .trk-micro:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 
@@ -1547,7 +1547,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
 
 .trk95 .trk-new-pen-add:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 
@@ -1663,7 +1663,7 @@ body.win95-app .trk95 .trk-tool-key[aria-pressed="true"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--t-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .trk95 .trk-help {
@@ -1908,7 +1908,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
 
 .trk95 .trk-parent-create-add:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 
@@ -2469,7 +2469,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   text-align: right;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .trk95 .trk-time-axis .trk-hour-bezel {
@@ -2896,7 +2896,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
@@ -3092,7 +3092,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--t-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .trk95 .trk-notes-fold {
@@ -3107,7 +3107,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--t-surface) 70%, var(--chrome-key-shade) 100%);
@@ -3838,7 +3838,7 @@ body.win95-app .task-card .tcs-pens .trk-chain-node .ipt-x {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--t-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .trk95 .trk-daylog-pen {

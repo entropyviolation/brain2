@@ -11,12 +11,91 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { FoodBarcodeScan } from "@/components/Home/Tracking/tracking-log/food/food-barcode-scan"
+import { FoodCreateSheet } from "@/components/Home/Tracking/tracking-log/food/food-create-sheet"
 import { LabelCapture } from "@/components/Home/Tracking/tracking-log/food/food-label-paste"
-import { formatNutrient, NUTRIENT_FACE, type Nutrients } from "@/lib/kitchen-nutrients"
+import { formatNutrient, LAB_GROUPS, labGroupHasAny, netCarbs, NUTRIENT_FACE, NUTRIENT_LAB, type Nutrients } from "@/lib/kitchen-nutrients"
 import { searchFoodsOnline, searchLocalFoods, type FoodHit } from "@/lib/kitchen-search"
 import { useKitchenStore } from "@/lib/kitchen-store"
+import type { FoodSource } from "@/lib/kitchen-types"
+
+function sourceWords(source: FoodSource | FoodHit["source"]): string {
+  if (source === "catalog" || source === "custom") return "On this device"
+  if (source === "usda") return "USDA"
+  if (source === "off") return "Open Food Facts"
+  return "Label"
+}
+
+function servingKcal(kcalPer100: number, gramsPerUnit: number): string {
+  const grams = gramsPerUnit > 0 ? gramsPerUnit : 100
+  return formatNutrient("kcal", (kcalPer100 * grams) / 100)
+}
+
+function HitLine({
+  name,
+  source,
+  kcalPer100,
+  gramsPerUnit,
+}: {
+  name: string
+  source: FoodSource | FoodHit["source"]
+  kcalPer100: number
+  gramsPerUnit: number
+}) {
+  return (
+    <>
+      <span className="trk-food-hit-name">
+        {name}
+        {source === "usda" ? (
+          <span className="trk-food-verified" aria-hidden="true">
+            {" "}
+            ✓
+          </span>
+        ) : null}
+      </span>
+      {source === "usda" ? <span className="trk-food-verified-word">Verified</span> : null}
+      <small>{sourceWords(source)}</small>
+      <small className="trk-food-hit-kcal">{servingKcal(kcalPer100, gramsPerUnit)}</small>
+    </>
+  )
+}
+
+/** Protein, fat, and carbs as a mix of this calorie figure. Not a target. */
+export function MacroShare({ row, scope }: { row: Nutrients; scope?: string }) {
+  const kcal = row.kcal
+  const parts = [
+    { id: "protein", label: "Protein", grams: formatNutrient("proteinG", row.proteinG), energy: row.proteinG * 4 },
+    { id: "fat", label: "Fat", grams: formatNutrient("fatG", row.fatG), energy: row.fatG * 9 },
+    { id: "carb", label: "Carbs", grams: formatNutrient("carbG", row.carbG), energy: row.carbG * 4 },
+  ]
+  const used = parts.reduce((sum, part) => sum + part.energy, 0)
+  const factor = kcal > 0 && used > kcal ? kcal / used : 1
+  const share = (energy: number) => (kcal > 0 ? Math.round((energy / kcal) * 100) : 0)
+  return (
+    <div className="trk-food-share">
+      <p>Share of these calories</p>
+      {scope ? <p className="trk-food-share-scope">{scope}</p> : null}
+      <div className="trk-food-share-bar" aria-hidden="true">
+        {parts.map((part) => (
+          <span
+            key={part.id}
+            data-part={part.id}
+            style={{ width: `${kcal > 0 ? (part.energy * factor / kcal) * 100 : 0}%` }}
+          />
+        ))}
+      </div>
+      <ul>
+        {parts.map((part) => (
+          <li key={part.id}>
+            {part.label} {part.grams} · {share(part.energy)}%
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export function NutrientGrid({ row, heading }: { row: Nutrients; heading?: string }) {
+  const [more, setMore] = useState(false)
   const macros = NUTRIENT_FACE.filter((face) => face.group === "macro")
   const micros = NUTRIENT_FACE.filter((face) => face.group === "micro")
   return (
@@ -24,6 +103,33 @@ export function NutrientGrid({ row, heading }: { row: Nutrients; heading?: strin
       {heading ? <h4>{heading}</h4> : null}
       <NutrientList title="Macros" faces={macros} row={row} />
       <NutrientList title="Micros" faces={micros} row={row} />
+      <div className="trk-food-caps">
+        <button type="button" data-no95="" className="trk-keycap" aria-pressed={more} onClick={() => setMore((open) => !open)}>
+          More
+        </button>
+      </div>
+      {more ? (
+        <div className="trk-food-profile">
+          <p className="trk-food-subtotal">Net carbs {netCarbs(row)} g</p>
+          {LAB_GROUPS.map((group) => (
+            <section key={group.id} aria-label={group.title}>
+              <p>{group.title}</p>
+              {labGroupHasAny(row, group.id) ? (
+                <dl>
+                  {NUTRIENT_LAB.filter((face) => face.group === group.id).map((face) => (
+                    <div key={face.key}>
+                      <dt>{face.label}</dt>
+                      <dd>{formatNutrient(face.key, row[face.key])}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="trk-food-status">None on this row.</p>
+              )}
+            </section>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -57,6 +163,7 @@ export function FoodSearch({ onPick, label = "Search foods" }: { onPick: (hit: F
   const [query, setQuery] = useState("")
   const [online, setOnline] = useState<FoodHit[]>([])
   const [status, setStatus] = useState("")
+  const [creating, setCreating] = useState(false)
   const local = useMemo(() => searchLocalFoods(query, foods), [query, foods])
 
   useEffect(() => {
@@ -97,13 +204,56 @@ export function FoodSearch({ onPick, label = "Search foods" }: { onPick: (hit: F
           {[...local, ...extra].map((hit) => (
             <li key={hit.id}>
               <button type="button" onClick={() => onPick(hit)}>
-                {hit.name}
-                {" "}
-                <small>{hit.source === "catalog" || hit.source === "custom" ? "On this device" : hit.source === "usda" ? "USDA" : hit.source === "off" ? "Open Food Facts" : "Label"}</small>
+                <HitLine name={hit.name} source={hit.source} kcalPer100={hit.per100g.kcal} gramsPerUnit={hit.gramsPerUnit} />
               </button>
             </li>
           ))}
         </ul>
+      ) : null}
+      {query.trim() === "" && foods.some((food) => food.pinned && !food.retired) ? (
+        <ul aria-label="Pinned foods">
+          {foods.filter((food) => food.pinned && !food.retired).map((food) => (
+            <li key={food.id}>
+              <button
+                type="button"
+                onClick={() =>
+                  onPick({
+                    id: food.id,
+                    name: food.name,
+                    per100g: food.per100g,
+                    gramsPerUnit: food.gramsPerUnit,
+                    source: food.source,
+                  })
+                }
+              >
+                <HitLine name={food.name} source={food.source} kcalPer100={food.per100g.kcal} gramsPerUnit={food.gramsPerUnit} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {query.trim().length >= 2 && !status.startsWith("Searching") && local.length + extra.length === 0 ? (
+        <div className="trk-food-caps">
+          <button type="button" data-no95="" className="trk-keycap" onClick={() => setCreating(true)}>
+            Create saved food
+          </button>
+        </div>
+      ) : null}
+      {creating ? (
+        <FoodCreateSheet
+          initialName={query}
+          onCancel={() => setCreating(false)}
+          onSaved={(food) => {
+            setCreating(false)
+            onPick({
+              id: food.id,
+              name: food.name,
+              per100g: food.per100g,
+              gramsPerUnit: food.gramsPerUnit,
+              source: food.source,
+            })
+          }}
+        />
       ) : null}
     </div>
     <FoodBarcodeScan onPick={onPick} />

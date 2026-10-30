@@ -160,7 +160,7 @@
 
 .trk95 .trk-tag-add button:disabled {
   color: var(--t-shadow);
-  text-shadow: 1px 1px var(--t-highlight);
+  text-shadow: none;
   cursor: default;
 }
 

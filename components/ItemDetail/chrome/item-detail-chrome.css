@@ -726,7 +726,7 @@ body.win95-app button.id-settings-key img {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
   box-shadow: var(--id-field);
   white-space: nowrap;
@@ -776,7 +776,7 @@ body.win95-app button.id-settings-key img {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
   box-shadow:
     0 0 0 1px var(--chrome-lip),
@@ -898,7 +898,7 @@ body.win95-app :is(.id95, .id95-dialog) button.id-keycap:active:not(:disabled) {
   border: none !important;
   border-radius: var(--r-2, 2px) !important;
   color: #1c1e20 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--id-key-face) !important;
   box-shadow: var(--id-key-ring) !important;
   font-family: inherit;
@@ -1163,7 +1163,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--id-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .id95 .bg-card .p-6,
@@ -1195,7 +1195,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-shadow: none;
 }
 
 /* Sunken white fields — do not restyle photographed hero / orb media */
@@ -1252,7 +1252,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--id-nameplate, #2a2c2e);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .item-activity-hint {
@@ -1449,7 +1449,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: none;
   border: 0;
   border-radius: 2px;
   background: var(--id-key-face);
@@ -1674,7 +1674,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.16em !important;
   text-transform: uppercase;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .id95 .id-bay,
@@ -1708,7 +1708,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--id-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
 }
 
 .id95 .id-attrs-count,
@@ -2877,7 +2877,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #1c1e20 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-key-sheen), var(--chrome-mill-soft)) !important;
   box-shadow: inset 0 1px 0 #fff, 0 0 0 1px var(--chrome-ring-deep);
 }
@@ -2966,7 +2966,7 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  text-shadow: none;
 }
 
 .id95 .id-sched-sechead p,
@@ -3265,7 +3265,9 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
   color: var(--chrome-lo);
 }
 
-/* Phone. The milled desktop fascia above stays. Compact width is a sheet. */
+/* Phone. The milled desktop fascia above stays. Compact width is a sheet.
+   Tab keys are content-wide and sit in normal flow, so a wrapped row cannot
+   paint over the panel. Word keys on the fascia use the same silver skirt. */
 @media (max-width: 767px) {
   .id95,
   .id95-dialog {
@@ -3273,18 +3275,100 @@ body.win95-app .id95 .id-view-keys [role="tab"]:active,
     min-width: 0;
   }
 
+  .id95-dialog .id-dialog-scroll {
+    display: block;
+    overflow: visible;
+    flex: 1 0 auto;
+    min-height: auto;
+  }
+
+  .id95-dialog .id-popup-tabs {
+    display: block !important;
+    flex: none !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .id95-dialog .id-popup-panel {
+    overflow: visible !important;
+    flex: none !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
   body.win95-app .id95 .id-view-keys[role="tablist"],
   .id95 .id-view-keys[role="tablist"],
   .id95-dialog .id-view-keys[role="tablist"] {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)) !important;
+    display: flex !important;
+    flex-flow: row wrap;
+    flex: none;
+    align-items: center;
+    align-content: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    gap: 6px;
   }
 
   body.win95-app .id95 .id-view-keys [role="tab"],
   .id95 .id-view-keys [role="tab"],
-  .id95-dialog .id-view-keys [role="tab"] {
+  .id95-dialog .id-view-keys [role="tab"],
+  body.win95-app .id95 .id-view-keys [role="tab"].id-tab-secondary,
+  .id95 .id-view-keys [role="tab"].id-tab-secondary,
+  .id95-dialog .id-view-keys [role="tab"].id-tab-secondary {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
     min-height: 44px;
-    white-space: normal;
-    font-size: 13px;
+    white-space: nowrap;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 6px 10px 10px 20px !important;
+  }
+
+  /* Fascia word keys: pale silver keycap, same skirt as .id-keycap. */
+  body.win95-app :is(.id95, .id95-dialog) :is(button.id-btn, button.id-type-plate, button.id-clarify-key, .id-save-flag, .id-chip) {
+    min-height: 44px;
+    padding: 6px 12px 10px;
+    border: 1px solid var(--cap-edge, #6e7378) !important;
+    border-radius: 4px !important;
+    background: linear-gradient(180deg, var(--cap-top, #f1f3f5), var(--cap-top2, #dfe2e6)) !important;
+    background-image: linear-gradient(180deg, var(--cap-top, #f1f3f5), var(--cap-top2, #dfe2e6)) !important;
+    box-shadow:
+      inset 2px 0 0 var(--cap-skirt, #b3b8be),
+      inset -2px 0 0 var(--cap-skirt, #b3b8be),
+      inset 0 -4px 0 var(--cap-skirt, #b3b8be),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 1px 0 rgba(0, 0, 0, 0.35) !important;
+    color: #1f2226 !important;
+    text-shadow: none;
+  }
+
+  body.win95-app :is(.id95, .id95-dialog) button.id-btn-danger {
+    color: #800000 !important;
+  }
+
+  body.win95-app :is(.id95, .id95-dialog) button.id-type-plate.is-view {
+    color: var(--id-crt, #7dffc4) !important;
+    background: var(--id-crt-glass, #070c0a) !important;
+    background-image: none !important;
+    box-shadow:
+      inset 2px 0 0 #0a3a28,
+      inset -2px 0 0 #0a3a28,
+      inset 0 -4px 0 #0a3a28,
+      inset 0 0 0 1px var(--id-crt, #7dffc4),
+      0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  }
+
+  body.win95-app :is(.id95, .id95-dialog) :is(button.id-btn, button.id-type-plate, button.id-clarify-key):active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow:
+      inset 2px 0 0 var(--cap-skirt, #b3b8be),
+      inset -2px 0 0 var(--cap-skirt, #b3b8be),
+      inset 0 -2px 0 var(--cap-skirt, #b3b8be),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 1px 0 rgba(0, 0, 0, 0.35) !important;
   }
 
   .id95 .id-save-cluster,

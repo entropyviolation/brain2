@@ -10,6 +10,8 @@ import type { Dispatch, SetStateAction } from "react"
 import type { AttributeDefinition, AttributeValue, ItemTypeCapabilities, List, Task } from "@/lib/types"
 import { AlertTriangle, FileText, Star } from "lucide-react"
 import { ComputerProjectDetail } from "@/components/ItemDetail/type-views/ComputerProjectDetail"
+import { isLogItemDetailType, LogItemDetail } from "@/components/ItemDetail/type-views/LogItemDetail"
+import { TimeblockItemDetail } from "@/components/ItemDetail/type-views/TimeblockItemDetail"
 import { ItemAttributesSection } from "@/components/ItemDetail/attributes/ItemAttributesSection"
 import { ItemEstimateField } from "@/components/ItemDetail/tabs/details/ItemEstimateField"
 import { ItemRewardField } from "@/components/ItemDetail/tabs/details/ItemRewardField"
@@ -21,6 +23,7 @@ import { IsolatedTextarea } from "@/components/ui/isolated-text-field"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { COMPUTER_PROJECT_DESK_ATTRS, COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
+import { TIMEBLOCK_TYPE_ID } from "@/lib/timeblock-types"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
 import { PERSON_ATTR } from "@/lib/person-types"
 import { isReminderTask } from "@/lib/reminders"
@@ -108,6 +111,8 @@ export function PopupDetailsMain({
                           onOpenItem={openItem}
                         />
                       ) : null}
+                      {isLogItemDetailType(activeTypeId) ? <LogItemDetail task={task} typeId={activeTypeId} /> : null}
+                      {activeTypeId === TIMEBLOCK_TYPE_ID ? <TimeblockItemDetail task={task} /> : null}
                       <div className="id-bay">
                         <ItemAttributesSection
                           attributes={task.attributes || {}}

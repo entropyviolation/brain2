@@ -14,8 +14,8 @@
  * - **Activity Log** — the shortest gap it lists, and whether log lines sit
  *   between blocks.
  * - **Day Log** — the span it opens on.
- * - **Tracking log** — the span and composer key it opens on, Recent chips,
- *   the bottom-right logged flag, and cycle tracking.
+ * - **Tracking log** — the span and composer key it opens on, week Agenda or
+ *   Shelves, Recent chips, the bottom-right logged flag, and cycle tracking.
  * - **BIM commands** — the Telegram bot guide plus the commands you added
  *   (`bim-commands-guide.tsx`).
  * Every control writes through as it changes; Done closes.
@@ -35,6 +35,7 @@ import {
   useTrackingViewPrefs,
   setTrackingViewPrefs,
   type LogComposerModePref,
+  type LogWeekLayout,
   type ScreenFace,
   type TrackingSpan,
 } from "@/components/Home/Tracking/tracking-view-prefs"
@@ -129,6 +130,11 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
     </section>
   )
 }
+
+const WEEK_LAYOUT_KEYS: { id: LogWeekLayout; label: string }[] = [
+  { id: "agenda", label: "Agenda" },
+  { id: "shelves", label: "Shelves" },
+]
 
 const SPAN_KEYS: { id: TrackingSpan; label: string }[] = [
   { id: "day", label: "Day" },
@@ -410,12 +416,20 @@ export function TrackingSettingsDialog({
               {section === "log" ? (
                 <>
                   <Group title="Composer">
-                    <Row title="Opens on" help="Day keeps the shelves; Week shows the seven-column board.">
+                    <Row title="Opens on" help="Day keeps the shelves. Week opens on Agenda unless Week layout is Shelves.">
                       <Keys
                         label="Tracking log opens on"
                         options={SPAN_KEYS}
                         value={prefs.logSpan}
                         onChange={(logSpan) => setTrackingViewPrefs({ logSpan })}
+                      />
+                    </Row>
+                    <Row title="Week layout" help="Agenda is the seven columns. Shelves is the same lists, across that week.">
+                      <Keys
+                        label="Week layout"
+                        options={WEEK_LAYOUT_KEYS}
+                        value={prefs.logWeekLayout}
+                        onChange={(logWeekLayout) => setTrackingViewPrefs({ logWeekLayout })}
                       />
                     </Row>
                     <Row title="First key" help="The Add a line key that is pressed when the view opens. Note, unless you pick another.">

@@ -11,6 +11,7 @@ import { inventoryOffers } from "@/lib/ingest/apply-inventory"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { formatNutrient, NUTRIENT_FACE, nutrientsFrom, type NutrientKey } from "@/lib/kitchen-nutrients"
 import { assessKeep, guessLabel, heldLabel } from "@/lib/kitchen-safety"
+import { groceryFromPlan } from "@/lib/kitchen-plan"
 import { notePantryBuy, resolveKitchenFood, useKitchenStore } from "@/lib/kitchen-store"
 import { KITCHEN_ROOMS, ROOM_LABEL, type KitchenFood, type KitchenRoom, type StockUnit } from "@/lib/kitchen-types"
 import type { FoodHit } from "@/lib/kitchen-search"
@@ -54,6 +55,11 @@ function refreshLoggedPlates(foodId: string) {
 export function FoodKitchenPanel() {
   const foods = useKitchenStore((s) => s.foods)
   const stock = useKitchenStore((s) => s.stock)
+  const plan = useKitchenStore((s) => s.plan)
+  const recipes = useKitchenStore((s) => s.recipes)
+  const orders = useKitchenStore((s) => s.orders)
+  const grocery = useKitchenStore((s) => s.grocery)
+  const [buyName, setBuyName] = useState("")
   const [room, setRoom] = useState<KitchenRoom | "all">("all")
   const [name, setName] = useState("")
   const [foodId, setFoodId] = useState("")
@@ -64,6 +70,7 @@ export function FoodKitchenPanel() {
   const [putRoom, setPutRoom] = useState<KitchenRoom>("pantry")
   const [draft, setDraft] = useState<FoodDraft | null>(null)
   const [showRetired, setShowRetired] = useState(false)
+  const [openLot, setOpenLot] = useState<string | null>(null)
   const today = formatLocalDateKey(new Date())
   const retiredCount = foods.filter((food) => food.retired).length
   const library = useMemo(
@@ -74,10 +81,11 @@ export function FoodKitchenPanel() {
     [foods, showRetired],
   )
   const offers = useMemo(() => inventoryOffers(), [stock, foods])
+  const needs = useMemo(() => groceryFromPlan(plan, recipes, orders, stock, foods), [plan, recipes, orders, stock, foods])
   const lots = stock.filter((lot) => !lot.finished && lot.amount > 0 && (room === "all" || lot.room === room))
   const dioramaLots = stock
     .filter((lot) => !lot.finished && lot.amount > 0)
-    .map((lot) => ({ room: lot.room, name: resolveKitchenFood(lot.foodId, foods)?.name || "Food" }))
+    .map((lot) => ({ id: lot.id, room: lot.room, name: resolveKitchenFood(lot.foodId, foods)?.name || "Food" }))
 
   const pick = (next: FoodHit) => {
     setHit(next)
@@ -161,13 +169,12 @@ export function FoodKitchenPanel() {
   return (
     <div className="trk-food-kitchen">
       <p className="trk-food-status">How long it has been here, and a house guess from a typical keep time. Not a safety test.</p>
-      <KitchenStage lots={dioramaLots} active={room} onRoom={setRoom} />
-      <div className="trk-span-switch" role="toolbar" aria-label="Kitchen rooms">
-        <button type="button" aria-pressed={room === "all"} onClick={() => setRoom("all")}>
+      <div className="trk-food-caps" role="toolbar" aria-label="Kitchen rooms">
+        <button type="button" data-no95="" className="trk-keycap" aria-pressed={room === "all"} onClick={() => setRoom("all")}>
           All
         </button>
         {KITCHEN_ROOMS.map((id) => (
-          <button key={id} type="button" aria-pressed={room === id} onClick={() => setRoom(id)}>
+          <button key={id} type="button" data-no95="" className="trk-keycap" aria-pressed={room === id} onClick={() => setRoom(id)}>
             {ROOM_LABEL[id]}
           </button>
         ))}
@@ -175,6 +182,8 @@ export function FoodKitchenPanel() {
       {offers.length > 0 ? (
         <button
           type="button"
+          data-no95=""
+          className="trk-keycap"
           onClick={() => {
             const now = new Date()
             for (const row of offers) notePantryBuy(row.name, row.qty, now)
@@ -220,15 +229,28 @@ export function FoodKitchenPanel() {
           Bought
           <input aria-label="Bought on" type="date" value={boughtOn} onChange={(event) => setBoughtOn(event.target.value)} />
         </label>
-        <button type="submit">Put away</button>
+        <button type="submit" data-no95="" className="trk-keycap">Put away</button>
       </form>
+      <div className="trk-food-kitchen-split">
+      <KitchenStage
+        lots={dioramaLots}
+        active={room}
+        onRoom={setRoom}
+        onLot={(id) => {
+          const lot = stock.find((row) => row.id === id)
+          if (!lot) return
+          setRoom(lot.room)
+          setOpenLot(id)
+        }}
+      />
+      <div className="trk-food-lot-col">
       {lots.length === 0 ? <p className="trk-shelf-empty">Nothing in this room.</p> : null}
       <ul className="trk-food-lots">
         {lots.map((lot) => {
           const food = resolveKitchenFood(lot.foodId, foods)
           const keep = assessKeep(lot, food, today)
           return (
-            <li key={lot.id} className="trk-food-lot">
+            <li key={lot.id} className="trk-food-lot" aria-current={openLot === lot.id ? "true" : undefined}>
               <header>
                 <strong>{food?.name || "Food"}</strong>
                 <span>{ROOM_LABEL[lot.room]}</span>
@@ -245,21 +267,21 @@ export function FoodKitchenPanel() {
                   onChange={(event) => useKitchenStore.getState().setStockAmount(lot.id, Number(event.target.value))}
                 />
               </label>
-              <div className="trk-span-switch" role="group" aria-label={`${food?.name || "Food"} room`}>
+              <div className="trk-food-caps" role="group" aria-label={`${food?.name || "Food"} room`}>
                 {KITCHEN_ROOMS.map((id) => (
-                  <button key={id} type="button" aria-pressed={lot.room === id} onClick={() => useKitchenStore.getState().setStockRoom(lot.id, id)}>
+                  <button key={id} type="button" data-no95="" className="trk-keycap" aria-pressed={lot.room === id} onClick={() => useKitchenStore.getState().setStockRoom(lot.id, id)}>
                     {ROOM_LABEL[id]}
                   </button>
                 ))}
               </div>
               <div className="trk-food-lot-actions">
-                <button type="button" onClick={() => useKitchenStore.getState().markOpened(lot.id, today)}>
+                <button type="button" data-no95="" className="trk-keycap" onClick={() => useKitchenStore.getState().markOpened(lot.id, today)}>
                   Opened
                 </button>
-                <button type="button" onClick={() => useKitchenStore.getState().markStillGood(lot.id, today)}>
+                <button type="button" data-no95="" className="trk-keycap" onClick={() => useKitchenStore.getState().markStillGood(lot.id, today)}>
                   Still good
                 </button>
-                <button type="button" onClick={() => useKitchenStore.getState().markFinished(lot.id)}>
+                <button type="button" data-no95="" className="trk-keycap" onClick={() => useKitchenStore.getState().markFinished(lot.id)}>
                   Finished
                 </button>
               </div>
@@ -267,10 +289,67 @@ export function FoodKitchenPanel() {
           )
         })}
       </ul>
+      </div>
+      </div>
+      <section className="trk-food-grocery" aria-label="Grocery list">
+        <h4>Grocery list</h4>
+        {needs.length === 0 && grocery.length === 0 ? <p className="trk-shelf-empty">Nothing to buy.</p> : null}
+        <ul>
+          {needs.map((row) => (
+            <li key={row.foodId}>
+              <span>{row.name}</span>
+              <span>{row.grams} g</span>
+              <button
+                type="button"
+                data-no95=""
+                className="trk-keycap"
+                onClick={() =>
+                  useKitchenStore.getState().putAway({
+                    name: row.name,
+                    foodId: row.foodId,
+                    room: row.room || "pantry",
+                    amount: row.grams,
+                    unit: "g",
+                    boughtOn: today,
+                  })
+                }
+              >
+                Put away
+              </button>
+            </li>
+          ))}
+          {grocery.map((row) => (
+            <li key={row.id}>
+              <span>{row.name}</span>
+              <button type="button" data-no95="" className="trk-keycap" onClick={() => useKitchenStore.getState().checkGrocery(row.id, today)}>
+                Put away
+              </button>
+              <button type="button" data-no95="" className="trk-keycap" onClick={() => useKitchenStore.getState().removeGrocery(row.id)}>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+        <form
+          className="trk-food-caps"
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!buyName.trim()) return
+            useKitchenStore.getState().addGrocery({ name: buyName.trim(), room: "pantry", amount: 1, unit: "count" })
+            setBuyName("")
+          }}
+        >
+          <label>
+            Add a row
+            <input aria-label="Grocery row" value={buyName} onChange={(event) => setBuyName(event.target.value)} />
+          </label>
+          <button type="submit" data-no95="" className="trk-keycap">Add a row</button>
+        </form>
+      </section>
       <section className="trk-food-library" aria-label="Saved foods">
         <h4>Saved foods</h4>
         {retiredCount > 0 ? (
-          <button type="button" aria-pressed={showRetired} onClick={() => setShowRetired((on) => !on)}>
+          <button type="button" data-no95="" className="trk-keycap" aria-pressed={showRetired} onClick={() => setShowRetired((on) => !on)}>
             Retired
           </button>
         ) : null}
@@ -333,11 +412,23 @@ export function FoodKitchenPanel() {
               ))}
             </fieldset>
             <div className="trk-food-library-actions">
-              <button type="submit">Save food</button>
-              <button type="button" onClick={() => refreshLoggedPlates(draft.id)}>
+              <button type="submit" data-no95="" className="trk-keycap">Save food</button>
+              <button
+                type="button"
+                data-no95=""
+                className="trk-keycap"
+                aria-pressed={draft && foods.find((food) => food.id === draft.id)?.pinned === true}
+                onClick={() => {
+                  const current = foods.find((food) => food.id === draft.id)
+                  useKitchenStore.getState().pinFood(draft.id, !current?.pinned)
+                }}
+              >
+                Pin
+              </button>
+              <button type="button" data-no95="" className="trk-keycap" onClick={() => refreshLoggedPlates(draft.id)}>
                 Refresh logged plates
               </button>
-              <button type="button" onClick={() => setRetired(!draft.retired)}>
+              <button type="button" data-no95="" className="trk-keycap" onClick={() => setRetired(!draft.retired)}>
                 {draft.retired ? "Restore" : "Retire"}
               </button>
             </div>

@@ -1,13 +1,23 @@
 /**
  * components/Home/Tracking/tracking-log/tracking-log-view.test.tsx
  */
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { format } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+
+vi.mock("@/lib/tracking-log-ops", () => ({
+  reassignLogBookList: vi.fn(() => true),
+  duplicateLogEntry: vi.fn(() => "pasted-entry"),
+}))
+
 import { resetAllStores } from "@/tests/test-utils"
+import { getTrackingViewPrefs, resetTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
 import { getDayNote } from "@/lib/day-notes-persist"
+import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
 import { minutesToTimeString } from "@/lib/time-entries"
+import { duplicateLogEntry, reassignLogBookList } from "@/lib/tracking-log-ops"
+import { trackingItemId } from "@/lib/tracking-lists"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { QuickAddWroteHost } from "@/components/quick-add-wrote"
 import { TrackingLogView } from "./tracking-log-view"
@@ -26,10 +36,47 @@ function logMode(name: string) {
   return within(screen.getByRole("toolbar", { name: "What to log" })).getByRole("button", { name })
 }
 
+const LOG_ROW_MIME = "application/x-brain2-log-entry"
+
+function openedIdsDuring(run: () => void): string[] {
+  const opened: string[] = []
+  const onOpen = (event: Event) => {
+    opened.push((event as CustomEvent<{ id: string }>).detail.id)
+  }
+  window.addEventListener(OPEN_ITEM_POPUP_EVENT, onOpen)
+  run()
+  window.removeEventListener(OPEN_ITEM_POPUP_EVENT, onOpen)
+  return opened
+}
+
+function logDrag(entryId: string): DataTransfer {
+  const store = new Map<string, string>()
+  const data = {
+    setData(type: string, value: string) {
+      store.set(type, value)
+    },
+    getData(type: string) {
+      return store.get(type) ?? ""
+    },
+    get types() {
+      return [...store.keys()]
+    },
+    effectAllowed: "copyMove",
+    dropEffect: "move",
+  }
+  data.setData(LOG_ROW_MIME, entryId)
+  data.setData("text/plain", entryId)
+  return data as unknown as DataTransfer
+}
+
 describe("TrackingLogView", () => {
   beforeEach(() => {
     resetAllStores()
     resetLogCycleMarks()
+    resetTrackingViewPrefs()
+    vi.mocked(reassignLogBookList).mockClear()
+    vi.mocked(duplicateLogEntry).mockReset()
+    vi.mocked(duplicateLogEntry).mockReturnValue("pasted-entry")
   })
 
   it("renders an empty day with intake lists and events, and hides cycle until the setting is on", () => {
@@ -342,7 +389,7 @@ describe("TrackingLogView", () => {
     expect(places[0]?.penId).toBe("loc-home")
   })
 
-  it("logs money spent with an amount, what, and source, and edits it", () => {
+  it("logs money spent with an amount, what, and source, and opens the log item", () => {
     renderLog()
     expect(screen.getByRole("region", { name: "Spent" })).toHaveTextContent("Nothing spent this day.")
     fireEvent.click(logMode("Spent"))
@@ -378,29 +425,13 @@ describe("TrackingLogView", () => {
     // The purchase is now offered again as a one-tap refill on the composer.
     expect(within(screen.getByRole("group", { name: "Recent purchases" })).getByRole("button", { name: /coffee/ })).toBeInTheDocument()
 
-    fireEvent.click(within(spent).getByRole("button", { name: /coffee/ }))
-    const dialog = screen.getByRole("dialog")
-    expect(within(dialog).getByLabelText("Amount")).toHaveValue("4.50")
-    fireEvent.change(within(dialog).getByLabelText("Amount"), { target: { value: "nope" } })
-    fireEvent.click(within(dialog).getByRole("button", { name: "Save event" }))
-    expect(screen.getByRole("dialog")).toBeInTheDocument()
-    expect(within(dialog).getByText("Amount is dollars and cents, such as 4.50.")).toBeInTheDocument()
-    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === saved?.id)?.spendAmount).toBe(450)
-
-    fireEvent.change(within(dialog).getByLabelText("Amount"), { target: { value: "9" } })
-    fireEvent.change(within(dialog).getByLabelText("Spent on"), { target: { value: "tea" } })
-    fireEvent.change(within(dialog).getByLabelText("Source"), { target: { value: "Card" } })
-    fireEvent.click(within(dialog).getByRole("button", { name: "Save event" }))
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
-    expect(spent).toHaveTextContent("$9.00")
-    expect(spent).toHaveTextContent("tea")
-    expect(spent).toHaveTextContent("Card")
-    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === saved?.id)).toMatchObject({
-      spendAmount: 900,
-      spendOn: "tea",
-      spendSource: "Card",
-      title: "tea",
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(within(spent).getByRole("button", { name: /\$4\.50/ }))
     })
+    expect(opened).toEqual([trackingItemId(saved!.id)])
+    expect(within(spent).getByRole("button", { name: /\$4\.50/ })).toHaveAttribute("data-selected", "true")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(useTimeTrackingStore.getState().entries.find((entry) => entry.id === saved?.id)?.spendAmount).toBe(450)
 
     fireEvent.click(screen.getByRole("button", { name: "Event" }))
     expect(screen.getByLabelText("Title")).toBeInTheDocument()
@@ -431,6 +462,7 @@ describe("TrackingLogView", () => {
     expect(screen.getByRole("button", { name: "Day" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("button", { name: "Week" })).toHaveAttribute("aria-pressed", "false")
     expect(screen.queryByTestId("tracking-log-week")).not.toBeInTheDocument()
+    expect(screen.queryByRole("toolbar", { name: "Week layout" })).not.toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Food" })).toBeInTheDocument()
   })
 
@@ -528,6 +560,111 @@ describe("TrackingLogView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add spent now" }))
     expect(logMode("Spent")).toHaveAttribute("aria-pressed", "true")
     await waitFor(() => expect(screen.getByLabelText("Amount")).toHaveFocus())
+  })
+
+  it("opens the log item from a shelf row and from a shelf dialog", () => {
+    const id = submitTrackingLog({
+      date: KEY,
+      title: "left room",
+      mode: "event",
+      clock: "exact",
+      minute: 8 * 60,
+    })!
+    renderLog()
+    const events = screen.getByRole("region", { name: "Events" })
+    const row = within(events).getByRole("button", { name: /left room/ })
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(row)
+    })
+    expect(opened).toEqual([trackingItemId(id)])
+    expect(row).toHaveAttribute("data-selected", "true")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+
+    fireEvent.click(within(events).getByRole("button", { name: "Events" }))
+    const dialog = screen.getByRole("dialog", { name: "Events" })
+    const again = openedIdsDuring(() => {
+      fireEvent.click(within(dialog).getByRole("button", { name: /left room/ }))
+    })
+    expect(again).toEqual([trackingItemId(id)])
+  })
+
+  it("moves a row onto another shelf and copies when Alt is held", () => {
+    const id = submitTrackingLog({
+      date: KEY,
+      title: "left room",
+      mode: "event",
+      clock: "exact",
+      minute: 8 * 60,
+    })!
+    renderLog()
+    const row = within(screen.getByRole("region", { name: "Events" })).getByRole("button", { name: /left room/ })
+    const notes = screen.getByRole("region", { name: "Notes" })
+    const data = logDrag(id)
+    fireEvent.dragStart(row, { dataTransfer: data })
+    fireEvent.dragOver(notes, { dataTransfer: data })
+    expect(notes).toHaveAttribute("data-drop", "true")
+    const opened = openedIdsDuring(() => {
+      fireEvent.drop(notes, { dataTransfer: data })
+      fireEvent.click(row)
+    })
+    expect(reassignLogBookList).toHaveBeenCalledWith(id, "note")
+    expect(duplicateLogEntry).not.toHaveBeenCalled()
+    expect(opened).toEqual([])
+
+    const copyDrop = createEvent.drop(notes, { dataTransfer: data })
+    Object.defineProperty(copyDrop, "altKey", { value: true })
+    fireEvent(notes, copyDrop)
+    expect(duplicateLogEntry).toHaveBeenCalledWith(id, { targetList: "note" })
+  })
+
+  it("copies the selected row and pastes a duplicate on the same shelf", () => {
+    const id = submitTrackingLog({
+      date: KEY,
+      title: "left room",
+      mode: "event",
+      clock: "exact",
+      minute: 8 * 60,
+    })!
+    renderLog()
+    const row = within(screen.getByRole("region", { name: "Events" })).getByRole("button", { name: /left room/ })
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(row)
+    })
+    expect(opened).toEqual([trackingItemId(id)])
+
+    fireEvent.keyDown(screen.getByLabelText("Note"), { key: "c", metaKey: true })
+    fireEvent.keyDown(window, { key: "v", metaKey: true })
+    expect(duplicateLogEntry).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(window, { key: "c", metaKey: true })
+    const afterPaste = openedIdsDuring(() => {
+      fireEvent.keyDown(window, { key: "v", metaKey: true })
+    })
+    expect(duplicateLogEntry).toHaveBeenCalledTimes(1)
+    expect(duplicateLogEntry).toHaveBeenCalledWith(id)
+    expect(afterPaste).toEqual([])
+  })
+
+  it("shows week shelves for the week, with the date on each row", () => {
+    submitTrackingLog({
+      date: "2026-06-18",
+      title: "earlier errand",
+      mode: "event",
+      clock: "exact",
+      minute: 9 * 60,
+    })
+    renderLog()
+    fireEvent.click(screen.getByRole("button", { name: "Week" }))
+    const layout = screen.getByRole("toolbar", { name: "Week layout" })
+    expect(within(layout).getByRole("button", { name: "Agenda" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByTestId("tracking-log-week")).toBeInTheDocument()
+
+    fireEvent.click(within(layout).getByRole("button", { name: "Shelves" }))
+    expect(screen.queryByTestId("tracking-log-week")).not.toBeInTheDocument()
+    const events = screen.getByRole("region", { name: "Events" })
+    expect(events).toHaveTextContent("earlier errand")
+    expect(events).toHaveTextContent("Thu Jun 18")
+    expect(getTrackingViewPrefs().logWeekLayout).toBe("shelves")
   })
 
   it("hides the Day Week switch when the date is locked", () => {

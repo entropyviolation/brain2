@@ -5,7 +5,9 @@
  * then agree their anchors and mirror details when the end stays on the same
  * day. Spend errors and the mood pen stay as they were. The form still wraps
  * the call in `runAsAction("edit block", saveNow)`.
+ * After the clock write, linked count ticks follow that entry.
  */
+import { syncCountTicksForEntry } from "@/lib/count-statuses"
 import { certaintyPatch, worseOf } from "@/lib/entry-edges"
 import { isInstant, timeStringToMinutes, type SpanLock, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 import { useTimeTrackingStore, type TrackScope } from "@/lib/time-tracking-store"
@@ -147,6 +149,7 @@ export function saveBlock(input: {
       ...spendPatch,
     })
     settle()
+    syncCountTicksForEntry(origin.id)
     onClose()
     return
   }
@@ -190,6 +193,7 @@ export function saveBlock(input: {
     wrapEndDate,
   )
   afterEndsSaved(endMin)
+  syncCountTicksForEntry(origin.id)
   // Cross-view details and the views they name agree over the saved window.
   if (!wrapEndDate) mirrorDetails({ date: fromDate, scopeId: entry.scopeId, startMin, endMin })
   onClose()

@@ -6,7 +6,8 @@
  * kitchen restores the last draw before it takes again, so saving twice does
  * not eat the pantry twice. An accepted plate stores the nutrients from that
  * save. Editing a food does not rewrite them. Receipt and `inv` bumps land in
- * the pantry.
+ * the pantry. `duplicatePlate` copies one plate onto another entry id and
+ * does not draw stock again.
  */
 "use client"
 
@@ -19,15 +20,23 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import type {
+  EatWhere,
+  FoodPortion,
   FoodSource,
+  GroceryRow,
   KitchenFood,
+  KitchenOrder,
   KitchenPlate,
   KitchenRecipe,
   KitchenRoom,
   KitchenStock,
+  LineOrigin,
+  MealPlanSlot,
+  PlanMeal,
   PlateLine,
   PlateMode,
   PlateSlot,
+  IngredientPart,
   RecipeLine,
   StockDraw,
   StockUnit,
@@ -90,6 +99,68 @@ function cleanFood(raw: Partial<KitchenFood> | null | undefined): KitchenFood | 
     ...(barcode ? { barcode } : {}),
     ...(brand ? { brand } : {}),
     ...(raw.retired === true ? { retired: true } : {}),
+    ...(raw.pinned === true ? { pinned: true } : {}),
+    ...(cleanPortions(raw.portions).length ? { portions: cleanPortions(raw.portions) } : {}),
+    ...(optionalText(raw.sourceUrl) ? { sourceUrl: optionalText(raw.sourceUrl) } : {}),
+    ...(optionalText(raw.ingredientStatement) ? { ingredientStatement: optionalText(raw.ingredientStatement) } : {}),
+    ...(cleanIngredients(raw.ingredients).length ? { ingredients: cleanIngredients(raw.ingredients) } : {}),
+  }
+}
+
+function cleanIngredients(raw: unknown): IngredientPart[] {
+  if (!Array.isArray(raw)) return []
+  const out: IngredientPart[] = []
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue
+    const part = row as Partial<IngredientPart>
+    const name = optionalText(part.name)
+    if (!name) continue
+    const amountText = optionalText(part.amount)
+    const grams = amount(part.grams)
+    const foodId = typeof part.foodId === "string" && part.foodId ? part.foodId : undefined
+    const per100g = part.per100g ? nutrientsFrom(part.per100g) : undefined
+    out.push({
+      name,
+      ...(amountText ? { amount: amountText } : {}),
+      ...(grams > 0 ? { grams } : {}),
+      ...(foodId ? { foodId } : {}),
+      ...(per100g ? { per100g } : {}),
+    })
+  }
+  return out
+}
+
+function cleanPortions(raw: unknown): FoodPortion[] {
+  if (!Array.isArray(raw)) return []
+  const out: FoodPortion[] = []
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue
+    const portion = row as Partial<FoodPortion>
+    const label = optionalText(portion.label)
+    const grams = amount(portion.grams)
+    if (!label || grams <= 0) continue
+    out.push({ label, grams })
+  }
+  return out
+}
+
+const ORIGINS: LineOrigin[] = ["order", "recipe", "api", "label", "catalog", "stock"]
+
+function cleanLine(line: Partial<PlateLine>): PlateLine | null {
+  if (typeof line.foodId !== "string" || !line.foodId) return null
+  const grams = amount(line.grams)
+  if (grams <= 0) return null
+  const origin = ORIGINS.includes(line.origin as LineOrigin) ? (line.origin as LineOrigin) : undefined
+  const unit = optionalText(line.unit)
+  const qty = amount(line.amount)
+  return {
+    foodId: line.foodId,
+    grams,
+    ...(qty > 0 ? { amount: qty } : {}),
+    ...(unit ? { unit } : {}),
+    ...(origin ? { origin } : {}),
+    ...(typeof line.orderId === "string" && line.orderId ? { orderId: line.orderId } : {}),
+    ...(typeof line.recipeId === "string" && line.recipeId ? { recipeId: line.recipeId } : {}),
   }
 }
 
@@ -98,11 +169,8 @@ function cleanLines(raw: unknown): PlateLine[] {
   const out: PlateLine[] = []
   for (const row of raw) {
     if (!row || typeof row !== "object") continue
-    const line = row as Partial<PlateLine>
-    if (typeof line.foodId !== "string" || !line.foodId) continue
-    const grams = amount(line.grams)
-    if (grams <= 0) continue
-    out.push({ foodId: line.foodId, grams })
+    const line = cleanLine(row as Partial<PlateLine>)
+    if (line) out.push(line)
   }
   return out
 }
@@ -110,11 +178,20 @@ function cleanLines(raw: unknown): PlateLine[] {
 function cleanRecipe(raw: Partial<KitchenRecipe> | null | undefined): KitchenRecipe | null {
   if (!raw || typeof raw.name !== "string" || !raw.name.trim()) return null
   const lines = cleanLines(raw.lines)
+  const sourceUrl = optionalText(raw.sourceUrl)
+  const roughText = optionalText(raw.roughText)
+  const analysis = raw.analysis ? nutrientsFrom(raw.analysis) : undefined
+  const published = raw.published ? nutrientsFrom(raw.published) : undefined
   return {
     id: typeof raw.id === "string" && raw.id ? raw.id : newId("rcp"),
     name: raw.name.trim(),
     servings: amount(raw.servings) || 1,
     lines,
+    ...(sourceUrl ? { sourceUrl } : {}),
+    ...(roughText ? { roughText } : {}),
+    ...(analysis && raw.analysis ? { analysis } : {}),
+    ...(published && raw.published ? { published } : {}),
+    ...(raw.draft === true ? { draft: true } : {}),
   }
 }
 
@@ -160,8 +237,12 @@ function cleanSnapshot(raw: unknown): Nutrients | undefined {
 
 function cleanPlate(raw: Partial<KitchenPlate> | null | undefined): KitchenPlate | null {
   if (!raw || typeof raw.entryId !== "string" || !raw.entryId) return null
-  const mode: PlateMode = raw.mode === "ingredients" || raw.mode === "recipe" || raw.mode === "single" ? raw.mode : "single"
+  const mode: PlateMode =
+    raw.mode === "ingredients" || raw.mode === "recipe" || raw.mode === "single" || raw.mode === "combination" ? raw.mode : "single"
   const nutrientSnapshot = cleanSnapshot(raw.nutrientSnapshot)
+  const photoId = optionalText(raw.photoId)
+  const roughText = optionalText(raw.roughText)
+  const where: EatWhere = raw.where === "out" ? "out" : "home"
   return {
     id: typeof raw.id === "string" && raw.id ? raw.id : newId("plt"),
     entryId: raw.entryId,
@@ -171,9 +252,62 @@ function cleanPlate(raw: Partial<KitchenPlate> | null | undefined): KitchenPlate
     lines: cleanLines(raw.lines),
     ...(typeof raw.recipeId === "string" && raw.recipeId ? { recipeId: raw.recipeId } : {}),
     ...(amount(raw.servings) > 0 ? { servings: amount(raw.servings) } : {}),
-    fromKitchen: raw.fromKitchen === true,
+    fromKitchen: where === "out" ? false : raw.fromKitchen === true,
     drawn: cleanDrawn(raw.drawn),
     ...(nutrientSnapshot ? { nutrientSnapshot } : {}),
+    where,
+    ...(photoId ? { photoId } : {}),
+    ...(roughText ? { roughText } : {}),
+    ...(typeof raw.orderId === "string" && raw.orderId ? { orderId: raw.orderId } : {}),
+    ...(raw.editedAfterAccept === true ? { editedAfterAccept: true } : {}),
+  }
+}
+
+function cleanOrder(raw: Partial<KitchenOrder> | null | undefined): KitchenOrder | null {
+  if (!raw || typeof raw.name !== "string" || !raw.name.trim()) return null
+  const place = optionalText(raw.place) || ""
+  const roughText = optionalText(raw.roughText)
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : newId("ord"),
+    name: raw.name.trim(),
+    place,
+    where: raw.where === "out" ? "out" : "home",
+    lines: cleanLines(raw.lines),
+    ...(raw.pinned === true ? { pinned: true } : {}),
+    ...(typeof raw.recipeId === "string" && raw.recipeId ? { recipeId: raw.recipeId } : {}),
+    ...(roughText ? { roughText } : {}),
+  }
+}
+
+const PLAN_MEALS: PlanMeal[] = ["breakfast", "lunch", "dinner", "snack"]
+
+function cleanSlot(raw: Partial<MealPlanSlot> | null | undefined): MealPlanSlot | null {
+  if (!raw || typeof raw.date !== "string" || !DATE_KEY.test(raw.date)) return null
+  if (typeof raw.refId !== "string" || !raw.refId) return null
+  if (raw.kind !== "recipe" && raw.kind !== "order") return null
+  const meal = PLAN_MEALS.includes(raw.meal as PlanMeal) ? (raw.meal as PlanMeal) : "dinner"
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : newId("plan"),
+    date: raw.date,
+    meal,
+    kind: raw.kind,
+    refId: raw.refId,
+    servings: amount(raw.servings) || 1,
+  }
+}
+
+function cleanGrocery(raw: Partial<GroceryRow> | null | undefined): GroceryRow | null {
+  if (!raw || typeof raw.name !== "string" || !raw.name.trim()) return null
+  const qty = amount(raw.amount)
+  if (qty <= 0) return null
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : newId("groc"),
+    name: raw.name.trim(),
+    ...(typeof raw.foodId === "string" && raw.foodId ? { foodId: raw.foodId } : {}),
+    room: roomOf(raw.room),
+    amount: qty,
+    unit: unitOf(raw.unit),
+    ...(raw.typed === true ? { typed: true } : {}),
   }
 }
 
@@ -260,18 +394,33 @@ export interface PlateDraft {
   recipeId?: string
   servings?: number
   fromKitchen: boolean
+  where?: EatWhere
+  photoId?: string
+  roughText?: string
+  orderId?: string
+  editedAfterAccept?: boolean
+  /** Rewrite from a saved order. Does not mark the plate as edited. */
+  applyingOrder?: boolean
 }
 
 interface KitchenState {
   foods: KitchenFood[]
   recipes: KitchenRecipe[]
+  orders: KitchenOrder[]
   stock: KitchenStock[]
   plates: KitchenPlate[]
+  plan: MealPlanSlot[]
+  grocery: GroceryRow[]
+  pinnedIds: string[]
   saveFood: (draft: Omit<KitchenFood, "id"> & { id?: string }) => KitchenFood
   saveRecipe: (draft: Omit<KitchenRecipe, "id"> & { id?: string }) => KitchenRecipe | null
   removeRecipe: (id: string) => void
+  saveOrder: (draft: Omit<KitchenOrder, "id"> & { id?: string }) => KitchenOrder | null
+  removeOrder: (id: string) => void
+  pinFood: (id: string, pinned?: boolean) => void
   putAway: (draft: PutAwayDraft) => KitchenStock | null
   setStockAmount: (id: string, next: number) => void
+  setStockUnit: (id: string, unit: StockUnit) => void
   setStockRoom: (id: string, room: KitchenRoom) => void
   markOpened: (id: string, day: string) => void
   markStillGood: (id: string, day: string) => void
@@ -279,7 +428,17 @@ interface KitchenState {
   savePlate: (draft: PlateDraft) => KitchenPlate | null
   /** Rewrite one plate's snapshot from the foods now. Does not draw stock. */
   refreshPlateSnapshot: (entryId: string) => KitchenPlate | null
+  /** Write an order's current lines onto plates that still follow it. */
+  updatePastOrder: (orderId: string) => number
   removePlate: (entryId: string) => void
+  /** Copy a plate onto another entry. Same lines and snapshot. Does not draw stock. */
+  duplicatePlate: (fromEntryId: string, toEntryId: string) => KitchenPlate | null
+  savePlanSlot: (draft: Omit<MealPlanSlot, "id"> & { id?: string }) => MealPlanSlot | null
+  removePlanSlot: (id: string) => void
+  addGrocery: (draft: Omit<GroceryRow, "id"> & { id?: string }) => GroceryRow | null
+  removeGrocery: (id: string) => void
+  /** Put the row away today and drop it from the list. */
+  checkGrocery: (id: string, today: string) => KitchenStock | null
 }
 
 function applyPlateDraw(state: Pick<KitchenState, "foods" | "recipes" | "stock" | "plates">, draft: PlateDraft, id: string): { stock: KitchenStock[]; plate: KitchenPlate } {
@@ -291,25 +450,45 @@ function applyPlateDraw(state: Pick<KitchenState, "foods" | "recipes" | "stock" 
     recipe,
   )
   let drawn: StockDraw[] = []
-  if (draft.fromKitchen && draft.accepted) {
-    const taken = drawFromStock(stock, lines, state.foods)
+  const atHome = draft.where !== "out"
+  const drawLines = !atHome
+    ? []
+    : lines.some((line) => line.origin === "stock")
+      ? lines.filter((line) => line.origin === "stock")
+      : draft.fromKitchen
+        ? lines
+        : []
+  if (draft.accepted && drawLines.length) {
+    const taken = drawFromStock(stock, drawLines, state.foods)
     stock = taken.stock
     drawn = taken.drawn
   }
-  const base = cleanPlate({ ...draft, id, drawn })!
+  const linesChanged = lineSignature(previous?.lines) !== lineSignature(draft.lines)
+  const editedAfterAccept = draft.applyingOrder
+    ? false
+    : draft.editedAfterAccept === true || (previous?.accepted === true && linesChanged) || previous?.editedAfterAccept === true
+  const base = cleanPlate({ ...draft, id, drawn, editedAfterAccept: editedAfterAccept || undefined, fromKitchen: atHome && draft.fromKitchen })!
   const plate = base.accepted
     ? refreshNutrientSnapshot(base, (foodId) => resolveKitchenFood(foodId, state.foods), recipe)
     : base
   return { stock, plate }
 }
 
-export function sanitizeKitchen(raw: unknown): Pick<KitchenState, "foods" | "recipes" | "stock" | "plates"> {
+function lineSignature(lines: readonly PlateLine[] | undefined): string {
+  return (lines ?? []).map((line) => `${line.foodId}:${line.grams}`).join("|")
+}
+
+export function sanitizeKitchen(raw: unknown): Pick<KitchenState, "foods" | "recipes" | "orders" | "stock" | "plates" | "plan" | "grocery" | "pinnedIds"> {
   const body = (raw ?? {}) as Partial<KitchenState>
   const foods = Array.isArray(body.foods) ? body.foods.map((row) => cleanFood(row)).filter((row): row is KitchenFood => !!row) : []
   const recipes = Array.isArray(body.recipes) ? body.recipes.map((row) => cleanRecipe(row)).filter((row): row is KitchenRecipe => !!row) : []
+  const orders = Array.isArray(body.orders) ? body.orders.map((row) => cleanOrder(row)).filter((row): row is KitchenOrder => !!row) : []
   const stock = Array.isArray(body.stock) ? body.stock.map((row) => cleanStock(row)).filter((row): row is KitchenStock => !!row) : []
   const plates = Array.isArray(body.plates) ? body.plates.map((row) => cleanPlate(row)).filter((row): row is KitchenPlate => !!row) : []
-  return { foods, recipes, stock, plates }
+  const plan = Array.isArray(body.plan) ? body.plan.map((row) => cleanSlot(row)).filter((row): row is MealPlanSlot => !!row) : []
+  const grocery = Array.isArray(body.grocery) ? body.grocery.map((row) => cleanGrocery(row)).filter((row): row is GroceryRow => !!row) : []
+  const pinnedIds = Array.isArray(body.pinnedIds) ? body.pinnedIds.filter((id): id is string => typeof id === "string" && !!id) : []
+  return { foods, recipes, orders, stock, plates, plan, grocery, pinnedIds }
 }
 
 export const useKitchenStore = create<KitchenState>()(
@@ -317,8 +496,12 @@ export const useKitchenStore = create<KitchenState>()(
     (set, get) => ({
       foods: [],
       recipes: [],
+      orders: [],
       stock: [],
       plates: [],
+      plan: [],
+      grocery: [],
+      pinnedIds: [],
       saveFood: (draft) => {
         const food = cleanFood(draft)
         if (!food) {
@@ -348,6 +531,26 @@ export const useKitchenStore = create<KitchenState>()(
         return recipe
       },
       removeRecipe: (id) => set({ recipes: get().recipes.filter((row) => row.id !== id) }),
+      saveOrder: (draft) => {
+        const order = cleanOrder(draft)
+        if (!order) return null
+        set({
+          orders: get().orders.some((row) => row.id === order.id)
+            ? get().orders.map((row) => (row.id === order.id ? order : row))
+            : [...get().orders, order],
+        })
+        return order
+      },
+      removeOrder: (id) => set({ orders: get().orders.filter((row) => row.id !== id) }),
+      pinFood: (id, pinned = true) => {
+        const ids = new Set(get().pinnedIds)
+        if (pinned) ids.add(id)
+        else ids.delete(id)
+        set({
+          pinnedIds: [...ids],
+          foods: get().foods.map((food) => (food.id === id ? { ...food, ...(pinned ? { pinned: true } : { pinned: undefined }) } : food)),
+        })
+      },
       putAway: (draft) => {
         const boughtOn = DATE_KEY.test(draft.boughtOn) ? draft.boughtOn : ""
         const qty = amount(draft.amount)
@@ -408,6 +611,21 @@ export const useKitchenStore = create<KitchenState>()(
             return { ...lot, amount: left, ...(left > 0 ? { finished: undefined } : { finished: true }) }
           }),
         }),
+      setStockUnit: (id, unit) =>
+        set({
+          stock: get().stock.map((lot) => {
+            if (lot.id !== id) return lot
+            const next = unitOf(unit)
+            if (next === lot.unit) return lot
+            const food = resolveKitchenFood(lot.foodId, get().foods)
+            const grams = stockToGrams(lot, food ?? { gramsPerUnit: lot.unit === "g" ? 1 : 0 } as KitchenFood)
+            if (next === "g") return { ...lot, unit: next, amount: amount(grams) || lot.amount }
+            if (lot.unit === "g" && next === "count" && food && food.gramsPerUnit > 0) {
+              return { ...lot, unit: next, amount: amount(grams / food.gramsPerUnit) || lot.amount }
+            }
+            return { ...lot, unit: next }
+          }),
+        }),
       setStockRoom: (id, room) =>
         set({ stock: get().stock.map((lot) => (lot.id === id ? { ...lot, room } : lot)) }),
       markOpened: (id, day) => {
@@ -440,6 +658,25 @@ export const useKitchenStore = create<KitchenState>()(
         set({ plates: state.plates.map((row) => (row.entryId === entryId ? plate : row)) })
         return plate
       },
+      updatePastOrder: (orderId) => {
+        const state = get()
+        const order = state.orders.find((row) => row.id === orderId)
+        if (!order) return 0
+        let count = 0
+        const plates = state.plates.map((plate) => {
+          if (plate.orderId !== orderId || plate.editedAfterAccept) return plate
+          const recipe = order.recipeId ? state.recipes.find((row) => row.id === order.recipeId) ?? null : null
+          const next = refreshNutrientSnapshot(
+            { ...plate, lines: order.lines.map((line) => ({ ...line, origin: line.origin ?? "order", orderId })), orderId, where: order.where },
+            (foodId) => resolveKitchenFood(foodId, state.foods),
+            recipe,
+          )
+          count += 1
+          return { ...next, editedAfterAccept: undefined }
+        })
+        if (count) set({ plates })
+        return count
+      },
       removePlate: (entryId) => {
         const previous = get().plates.find((plate) => plate.entryId === entryId)
         set({
@@ -447,12 +684,68 @@ export const useKitchenStore = create<KitchenState>()(
           stock: restoreDrawn(get().stock, previous?.drawn ?? []),
         })
       },
+      duplicatePlate: (fromEntryId, toEntryId) => {
+        const source = get().plates.find((plate) => plate.entryId === fromEntryId)
+        if (!source || !toEntryId || toEntryId === fromEntryId) return null
+        if (get().plates.some((plate) => plate.entryId === toEntryId)) return null
+        const plate: KitchenPlate = {
+          ...source,
+          id: newId("plt"),
+          entryId: toEntryId,
+          lines: source.lines.map((line) => ({ ...line })),
+          drawn: [],
+          ...(source.nutrientSnapshot ? { nutrientSnapshot: { ...source.nutrientSnapshot } } : {}),
+        }
+        set({ plates: [...get().plates, plate] })
+        return plate
+      },
+      savePlanSlot: (draft) => {
+        const slot = cleanSlot(draft)
+        if (!slot) return null
+        set({
+          plan: get().plan.some((row) => row.id === slot.id)
+            ? get().plan.map((row) => (row.id === slot.id ? slot : row))
+            : [...get().plan, slot],
+        })
+        return slot
+      },
+      removePlanSlot: (id) => set({ plan: get().plan.filter((row) => row.id !== id) }),
+      addGrocery: (draft) => {
+        const row = cleanGrocery({ ...draft, typed: true })
+        if (!row) return null
+        set({ grocery: [...get().grocery, row] })
+        return row
+      },
+      removeGrocery: (id) => set({ grocery: get().grocery.filter((row) => row.id !== id) }),
+      checkGrocery: (id, today) => {
+        const row = get().grocery.find((item) => item.id === id)
+        if (!row) return null
+        const lot = get().putAway({
+          name: row.name,
+          foodId: row.foodId,
+          room: row.room,
+          amount: row.amount,
+          unit: row.unit,
+          boughtOn: today,
+        })
+        if (lot) set({ grocery: get().grocery.filter((item) => item.id !== id) })
+        return lot
+      },
     }),
     {
       name: KITCHEN_STORAGE_KEY,
       version: 1,
       storage: createCogsJSONStorage(),
-      partialize: (state) => ({ foods: state.foods, recipes: state.recipes, stock: state.stock, plates: state.plates }),
+      partialize: (state) => ({
+        foods: state.foods,
+        recipes: state.recipes,
+        orders: state.orders,
+        stock: state.stock,
+        plates: state.plates,
+        plan: state.plan,
+        grocery: state.grocery,
+        pinnedIds: state.pinnedIds,
+      }),
       merge: (persisted, current) => ({ ...current, ...sanitizeKitchen(persisted) }),
     },
   ),

@@ -46,11 +46,18 @@ export function recipeNutrients(recipe: KitchenRecipe, resolve: (id: string) => 
 }
 
 export function plateGramLines(plate: Pick<KitchenPlate, "mode" | "lines" | "recipeId" | "servings">, recipe: KitchenRecipe | null): PlateLine[] {
+  const own = plate.lines.filter((line) => line.foodId && line.grams > 0)
+  if (plate.mode === "recipe" && recipe && own.length === 0) {
+    const scale = (plate.servings && plate.servings > 0 ? plate.servings : 1) / (recipe.servings > 0 ? recipe.servings : 1)
+    return recipe.lines.map((line) => ({ foodId: line.foodId, grams: line.grams * scale, origin: "recipe" as const, recipeId: recipe.id }))
+  }
   if (plate.mode === "recipe" && recipe) {
     const scale = (plate.servings && plate.servings > 0 ? plate.servings : 1) / (recipe.servings > 0 ? recipe.servings : 1)
-    return recipe.lines.map((line) => ({ foodId: line.foodId, grams: line.grams * scale }))
+    const scaled = recipe.lines.map((line) => ({ foodId: line.foodId, grams: line.grams * scale, origin: "recipe" as const, recipeId: recipe.id }))
+    const extra = own.filter((line) => line.origin !== "recipe")
+    return [...scaled, ...extra]
   }
-  return plate.lines.filter((line) => line.foodId && line.grams > 0)
+  return own
 }
 
 /** Live math from the foods as they are now. Ignores a saved snapshot. */

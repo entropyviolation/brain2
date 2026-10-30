@@ -21,6 +21,11 @@ const entry = {
   kindKey: "intake.food",
 } as LogBookEntry
 
+function acceptPlate() {
+  const buttons = screen.getAllByRole("button", { name: "Accept" })
+  fireEvent.click(buttons[buttons.length - 1]!)
+}
+
 function LiveFood({ anchor = new Date(2026, 9, 27, 15) }: { anchor?: Date }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const food = entries
@@ -41,7 +46,7 @@ describe("Food detail", () => {
   beforeEach(() => {
     resetAllStores()
     resetKitchenDayNotes()
-    useKitchenStore.setState({ foods: [], recipes: [], stock: [], plates: [] })
+    useKitchenStore.setState({ foods: [], recipes: [], orders: [], stock: [], plates: [], plan: [], grocery: [], pinnedIds: [] })
   })
 
   it("accepts a searched food as a meal and adds the calories", () => {
@@ -58,7 +63,7 @@ describe("Food detail", () => {
     fireEvent.change(screen.getByLabelText("Search foods"), { target: { value: "banana" } })
     fireEvent.click(screen.getByRole("button", { name: /Banana/ }))
     fireEvent.change(screen.getByLabelText("Grams of Banana"), { target: { value: "100" } })
-    fireEvent.click(screen.getByRole("button", { name: "Accept" }))
+    acceptPlate()
     const dialog = screen.getByRole("dialog", { name: "Food" })
     expect(within(dialog).getByRole("region", { name: "Meals" })).toHaveTextContent("89 kcal")
     expect(dialog).toHaveTextContent("89 kcal")
@@ -72,7 +77,7 @@ describe("Food detail", () => {
     fireEvent.change(screen.getByLabelText("Search foods"), { target: { value: "apple" } })
     fireEvent.click(screen.getByRole("button", { name: /^Apple/ }))
     fireEvent.change(screen.getByLabelText("Grams of Apple"), { target: { value: "100" } })
-    fireEvent.click(screen.getByRole("button", { name: "Accept" }))
+    acceptPlate()
     expect(useKitchenStore.getState().plates[0]?.slot).toBe("snack")
     expect(useKitchenStore.getState().plates[0]?.accepted).toBe(true)
     expect(screen.getByLabelText("Calories")).toHaveTextContent("52 kcal")
@@ -148,7 +153,7 @@ describe("Food detail", () => {
   it("copies a plate onto another day", () => {
     render(<LiveFood />)
     fireEvent.click(screen.getByRole("button", { name: "Add a meal" }))
-    fireEvent.click(screen.getByRole("button", { name: "Accept" }))
+    acceptPlate()
     fireEvent.change(screen.getByLabelText("Day"), { target: { value: "2026-10-20" } })
     fireEvent.click(screen.getByRole("button", { name: "Copy" }))
     const dates = useTimeTrackingStore
@@ -185,6 +190,51 @@ Protein 11g`,
     expect(saved?.per100g.kcal).toBe(364)
     expect(saved?.per100g.fiberG).toBe(0)
     expect(saved?.gramsPerUnit).toBe(50)
+  })
+
+  it("plans a recipe without logging it until the plate is accepted", () => {
+    const recipe = useKitchenStore.getState().saveRecipe({
+      name: "Oats",
+      servings: 1,
+      lines: [{ foodId: "cat_oats", grams: 40 }],
+    })
+    render(<LiveFood />)
+    fireEvent.click(screen.getByRole("tab", { name: "Recipes" }))
+    fireEvent.change(screen.getByLabelText("Breakfast on 2026-10-27"), { target: { value: `recipe:${recipe!.id}` } })
+    expect(useKitchenStore.getState().plates).toHaveLength(0)
+    expect(useTimeTrackingStore.getState().entries.filter((row) => row.intakeClass === "food")).toHaveLength(0)
+    expect(screen.getByText("1 to buy")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Grocery list" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Log this" }))
+    expect(useKitchenStore.getState().plates).toHaveLength(0)
+    expect(useKitchenStore.getState().plan).toHaveLength(1)
+    acceptPlate()
+    expect(useKitchenStore.getState().plates).toHaveLength(1)
+    expect(useKitchenStore.getState().plates[0]?.accepted).toBe(true)
+    expect(useKitchenStore.getState().plates[0]?.recipeId).toBe(recipe!.id)
+  })
+
+  it("shows a meal photo on the journal row", () => {
+    useKitchenStore.getState().savePlate({
+      entryId: "e1",
+      accepted: true,
+      slot: "meal",
+      mode: "single",
+      lines: [{ foodId: "cat_banana", grams: 100 }],
+      fromKitchen: false,
+      photoId: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+    })
+    render(
+      <FoodDetailDialog
+        open
+        onOpenChange={() => {}}
+        anchor={new Date(2026, 9, 27, 12)}
+        entries={[entry]}
+        onOpenEntry={() => {}}
+      />,
+    )
+    expect(screen.getByAltText("Meal photo")).toBeInTheDocument()
+    expect(screen.getByText("Days logged")).toBeInTheDocument()
   })
 
   it("keeps an inventory name off the offer once it is in the pantry", () => {

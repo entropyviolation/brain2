@@ -2,15 +2,23 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { matchCatalog, searchCatalog } from "@/lib/kitchen-catalog"
 import { labelDraftPer100g, labelPer100g, parseLabelDraft, parseNutritionLabel } from "@/lib/kitchen-label"
 import { gramsFromServings, nutrientsForPlate, plateNutrients, servingsFromGrams, totalsForPlates } from "@/lib/kitchen-plate"
+import { daysLogged } from "@/lib/kitchen-diary"
+import { dishQueryFromOcr, nutritionixConfigured } from "@/lib/kitchen-dish"
+import { foodNoteKey, monthFoodNotes, readFoodNote, resetKitchenDayNotes, weekFoodNotes, writeDayNote, writeFoodNote, yearFoodNotes } from "@/lib/kitchen-day-note"
+import { draftFromNutritionHtml, draftFromUsdaFood, fdcIdFromNutritionUrl, mergeNutritionDrafts } from "@/lib/kitchen-food-page"
+import { pickKitchenTarget } from "@/components/Home/Tracking/tracking-log/food/kitchen-diorama"
+import { groceryFromPlan } from "@/lib/kitchen-plan"
+import { recipeFromHtml } from "@/lib/kitchen-recipe-clip"
 import { foodsForPick, notePantryBuy, resolveKitchenFood, sanitizeKitchen, useKitchenStore } from "@/lib/kitchen-store"
 import { assessKeep, daysBetween } from "@/lib/kitchen-safety"
 import { nutrientsFrom, scaleNutrients } from "@/lib/kitchen-nutrients"
-import { offProductToHit, searchFoodsOnline, searchLocalFoods, usdaFoodToHit } from "@/lib/kitchen-search"
+import { foodSearchNames, keepFoodHits, offProductToHit, searchFoodsOnline, searchLocalFoods, usdaFoodToHit } from "@/lib/kitchen-search"
 import type { KitchenPlate, KitchenRecipe } from "@/lib/kitchen-types"
 
 function resetKitchen() {
   localStorage.clear()
-  useKitchenStore.setState({ foods: [], recipes: [], stock: [], plates: [] })
+  useKitchenStore.setState({ foods: [], recipes: [], orders: [], stock: [], plates: [], plan: [], grocery: [], pinnedIds: [] })
+  resetKitchenDayNotes()
 }
 
 const LABEL = `Nutrition Facts
@@ -138,6 +146,23 @@ describe("kitchen nutrients and keep time", () => {
 
   it("does not call the network under vitest", async () => {
     await expect(searchFoodsOnline("banana")).resolves.toEqual([])
+  })
+
+  it("keeps the brand and the bun on the first search name, and treats glaze as a food", () => {
+    expect(foodSearchNames("kewpie")[0]).toBe("kewpie")
+    expect(foodSearchNames("kewpie")).toContain("mayonnaise")
+    expect(foodSearchNames("brioche hamburger bun")[0]).toBe("brioche hamburger bun")
+    expect(foodSearchNames("brioche hamburger bun")).toContain("brioche bun")
+    expect(foodSearchNames("mozzerella")).toEqual(["mozzerella", "mozzarella"])
+    expect(foodSearchNames("butter (1 tbs)")).toEqual(["butter (1 tbs)", "butter"])
+    const glazed = { id: "ham", name: "Ham, honey glazed", per100g: nutrientsFrom({ kcal: 150 }), gramsPerUnit: 100, source: "usda" as const }
+    const sugar = { id: "ice", name: "Sugar glaze", per100g: nutrientsFrom({ kcal: 389 }), gramsPerUnit: 15, source: "usda" as const }
+    expect(keepFoodHits("glaze", [glazed, sugar]).map((hit) => hit.name)).toEqual(["Sugar glaze"])
+    const kewpie = searchLocalFoods("kewpie", [])[0]
+    const bun = searchLocalFoods("brioche hamburger bun", [])[0]
+    expect(kewpie?.per100g.kcal).toBeGreaterThan(0)
+    expect(bun?.per100g.kcal).toBeGreaterThan(0)
+    expect(bun?.name).toBe("Brioche hamburger bun")
   })
 
   it("guesses keep time from the bought date, and a still-good mark restarts it", () => {
@@ -461,5 +486,216 @@ Protein 8g`
     notePantryBuy("oats", 1, new Date(2026, 9, 27))
     expect(useKitchenStore.getState().stock).toHaveLength(1)
     expect(useKitchenStore.getState().stock[0]?.amount).toBe(3)
+  })
+
+  it("reads a MyFoodData id as USDA and keeps a fatty acid and an amino acid", () => {
+    expect(fdcIdFromNutritionUrl("https://tools.myfooddata.com/nutrition-facts/2655087/wt1")).toBe("2655087")
+    const usda = draftFromUsdaFood(
+      {
+        fdcId: 2655087,
+        description: "Chicken, thigh, roasted",
+        dataType: "Foundation",
+        ingredients: "Chicken thigh, sea salt.",
+        foodNutrients: [
+          { nutrient: { id: 1008, name: "Energy", unitName: "KCAL" }, amount: 179 },
+          { nutrient: { id: 1292, name: "Fatty acids, total monounsaturated", unitName: "G" }, amount: 4.2 },
+          { nutrient: { id: 1224, name: "Glutamic acid", unitName: "G" }, amount: 3.1 },
+        ],
+      },
+      "https://tools.myfooddata.com/nutrition-facts/2655087/wt1",
+    )
+    expect(usda?.seen.kcal).toBe(179)
+    expect(usda?.seen.monoFatG).toBe(4.2)
+    expect(usda?.seen.glutamicG).toBe(3.1)
+    expect(usda?.seen.leucineG).toBeUndefined()
+    expect(usda?.ingredients.map((part) => part.name)).toEqual(["Chicken thigh", "sea salt"])
+    expect(usda?.ingredients.every((part) => part.per100g == null)).toBe(true)
+    const page = draftFromNutritionHtml(
+      `<h1>Chicken thigh</h1><table><tr><th>Nutrient</th><th>Per 100 g</th></tr><tr><td>Leucine</td><td>2.1 g</td></tr></table><p>Ingredients: Chicken thigh, sea salt.</p>`,
+      "https://tools.myfooddata.com/nutrition-facts/2655087/wt1",
+    )
+    const merged = mergeNutritionDrafts(usda, page, usda?.sourceUrl)
+    expect(merged?.seen.monoFatG).toBe(4.2)
+    expect(merged?.seen.leucineG).toBe(2.1)
+    expect(merged?.seen.omega3G).toBeUndefined()
+    const saved = useKitchenStore.getState().saveFood({
+      name: merged!.name,
+      per100g: nutrientsFrom(merged!.seen),
+      gramsPerUnit: 100,
+      source: "usda",
+      sourceUrl: merged!.sourceUrl,
+      ingredientStatement: merged!.ingredientStatement,
+      ingredients: merged!.ingredients,
+    })
+    expect(saved.per100g.glutamicG).toBe(3.1)
+    expect(saved.per100g.omega3G).toBe(0)
+    expect(saved.ingredients?.[1]?.per100g).toBeUndefined()
+    expect(useKitchenStore.getState().plates).toEqual([])
+    expect(useKitchenStore.getState().stock).toEqual([])
+  })
+
+  it("scales an amino acid with grams and leaves a past plate until update is asked", () => {
+    expect(scaleNutrients(nutrientsFrom({ leucineG: 10 }), 50).leucineG).toBe(5)
+    const food = useKitchenStore.getState().saveFood({
+      name: "Oat latte",
+      per100g: nutrientsFrom({ kcal: 40, leucineG: 1 }),
+      gramsPerUnit: 100,
+      source: "custom",
+    })
+    const order = useKitchenStore.getState().saveOrder({
+      name: "Oat latte",
+      place: "The cafe",
+      where: "out",
+      lines: [{ foodId: food.id, grams: 100, origin: "order" }],
+    })
+    useKitchenStore.getState().savePlate({
+      entryId: "e-latte",
+      accepted: true,
+      slot: "meal",
+      mode: "combination",
+      lines: [{ foodId: food.id, grams: 100, origin: "order", orderId: order!.id }],
+      fromKitchen: true,
+      where: "out",
+      orderId: order!.id,
+    })
+    expect(useKitchenStore.getState().stock).toEqual([])
+    expect(useKitchenStore.getState().plates[0]?.nutrientSnapshot?.kcal).toBe(40)
+    useKitchenStore.getState().saveOrder({
+      ...order!,
+      lines: [{ foodId: food.id, grams: 200, origin: "order" }],
+    })
+    expect(useKitchenStore.getState().plates[0]?.nutrientSnapshot?.kcal).toBe(40)
+    expect(useKitchenStore.getState().updatePastOrder(order!.id)).toBe(1)
+    expect(useKitchenStore.getState().plates[0]?.lines[0]?.grams).toBe(200)
+    expect(useKitchenStore.getState().plates[0]?.nutrientSnapshot?.kcal).toBe(80)
+  })
+
+  it("keeps a week food note when a day note is edited", () => {
+    const anchor = new Date(2026, 9, 27)
+    const weekKey = foodNoteKey("week", anchor)
+    writeFoodNote(weekKey, "market week")
+    writeDayNote("2026-10-27", "late soup")
+    const bundle = weekFoodNotes(anchor)
+    expect(bundle.weekNote).toBe("market week")
+    expect(bundle.days.some((day) => day.key === "2026-10-27" && day.note === "late soup")).toBe(true)
+    expect(bundle.days.filter((day) => day.note === "market week")).toEqual([])
+    writeDayNote("2026-10-27", "earlier soup")
+    expect(weekFoodNotes(anchor).weekNote).toBe("market week")
+  })
+
+  it("keeps a year food note when a month note is edited, and a month note when a week note is edited", () => {
+    const anchor = new Date(2026, 9, 27)
+    const yearKey = foodNoteKey("year", anchor)
+    const monthKey = foodNoteKey("month", anchor)
+    const weekKey = foodNoteKey("week", anchor)
+    writeFoodNote(yearKey, "the year")
+    writeFoodNote(monthKey, "october")
+    writeFoodNote(weekKey, "market week")
+    const year = yearFoodNotes(anchor)
+    expect(year.yearNote).toBe("the year")
+    expect(year.months).toHaveLength(12)
+    const october = year.months.find((month) => month.monthKey === "month:2026-10")
+    expect(october?.monthNote).toBe("october")
+    expect(october?.weeks.some((week) => week.weekKey === weekKey && week.weekNote === "market week")).toBe(true)
+    writeFoodNote(monthKey, "later october")
+    expect(yearFoodNotes(anchor).yearNote).toBe("the year")
+    expect(readFoodNote(yearKey)).toBe("the year")
+    writeFoodNote(weekKey, "other week")
+    expect(monthFoodNotes(anchor).monthNote).toBe("later october")
+    expect(readFoodNote(monthKey)).toBe("later october")
+    expect(readFoodNote(yearKey)).toBe("the year")
+  })
+
+  it("subtracts stock from a meal plan and leaves the plan off the eaten total", () => {
+    const recipe = useKitchenStore.getState().saveRecipe({
+      name: "Oats",
+      servings: 1,
+      lines: [{ foodId: "cat_oats", grams: 80 }],
+    })
+    useKitchenStore.getState().putAway({
+      name: "Oats",
+      foodId: "cat_oats",
+      room: "pantry",
+      amount: 30,
+      unit: "g",
+      boughtOn: "2026-10-27",
+    })
+    const slot = useKitchenStore.getState().savePlanSlot({
+      date: "2026-10-28",
+      meal: "breakfast",
+      kind: "recipe",
+      refId: recipe!.id,
+      servings: 1,
+    })
+    const needs = groceryFromPlan(
+      useKitchenStore.getState().plan,
+      useKitchenStore.getState().recipes,
+      [],
+      useKitchenStore.getState().stock,
+      [],
+    )
+    expect(slot?.refId).toBe(recipe!.id)
+    expect(needs.find((row) => row.foodId === "cat_oats")?.grams).toBe(50)
+    expect(totalsForPlates(useKitchenStore.getState().plates, (id) => resolveKitchenFood(id, []), useKitchenStore.getState().recipes).day.kcal).toBe(0)
+  })
+
+  it("reads calories on their own line and keeps saturated fat, cholesterol, and added sugar", () => {
+    const draft = parseLabelDraft(`Nutrition Facts
+8 servings per container
+Serving size 1 cup (240g)
+Amount per serving
+Calories
+230
+Total Fat 8g
+Saturated Fat 3g 15%
+Cholesterol 30mg
+Total Carbohydrate 37g
+Total Sugars 12g
+Includes 10g Added Sugars
+Protein 3g`)
+    expect(draft?.nutrients.kcal).toBe(230)
+    expect(draft?.nutrients.satFatG).toBe(3)
+    expect(draft?.nutrients.cholesterolMg).toBe(30)
+    expect(draft?.nutrients.addedSugarG).toBe(10)
+    expect(draft?.nutrients.sugarG).toBe(12)
+    expect(draft?.servingsPerContainer).toBe(8)
+    expect(draft?.nutrients.satFatG).not.toBe(15)
+  })
+
+  it("counts consecutive days with an accepted plate", () => {
+    expect(daysLogged(["2026-10-25", "2026-10-26", "2026-10-27"], new Date(2026, 9, 27))).toBe(3)
+    expect(daysLogged(["2026-10-25", "2026-10-27"], new Date(2026, 9, 27))).toBe(1)
+    expect(daysLogged(["2026-10-20"], new Date(2026, 9, 27))).toBe(0)
+  })
+
+  it("saves a schema.org recipe and does not create a plate", () => {
+    const clip = recipeFromHtml(`<script type="application/ld+json">{"@type":"Recipe","name":"Garlic rice","recipeYield":"2 servings","recipeIngredient":["2 cloves garlic","1 cup rice"],"nutrition":{"calories":"180 calories","proteinContent":"4 g"}}</script>`)
+    expect(clip?.name).toBe("Garlic rice")
+    expect(clip?.servings).toBe(2)
+    expect(clip?.published?.kcal).toBe(180)
+    expect(clip?.published?.proteinG).toBe(4)
+    const saved = useKitchenStore.getState().saveRecipe({
+      name: clip!.name,
+      servings: clip!.servings,
+      lines: [{ foodId: "cat_rice-white", grams: 240 }],
+      published: clip!.published,
+      analysis: clip!.published,
+    })
+    expect(saved?.name).toBe("Garlic rice")
+    expect(useKitchenStore.getState().plates).toEqual([])
+    expect(useKitchenStore.getState().recipes).toHaveLength(1)
+  })
+
+  it("does not search Nutritionix unless both keys are set, and a photo line is only a suggestion", () => {
+    expect(nutritionixConfigured({ NEXT_PUBLIC_NUTRITIONIX_APP_ID: "", NEXT_PUBLIC_NUTRITIONIX_APP_KEY: "" })).toBe(false)
+    expect(nutritionixConfigured({ NEXT_PUBLIC_NUTRITIONIX_APP_ID: "app", NEXT_PUBLIC_NUTRITIONIX_APP_KEY: "key" })).toBe(true)
+    expect(dishQueryFromOcr("\n\n")).toBe("")
+    expect(dishQueryFromOcr("chicken rice\nmore")).toBe("chicken rice")
+  })
+
+  it("opens a jar before the cabinet behind it", () => {
+    expect(pickKitchenTarget([{ lotId: "lot-1", room: "pantry" }, { room: "fridge" }])).toEqual({ lotId: "lot-1" })
+    expect(pickKitchenTarget([{ room: "spice" }])).toEqual({ room: "spice" })
+    expect(pickKitchenTarget([])).toBeNull()
   })
 })
