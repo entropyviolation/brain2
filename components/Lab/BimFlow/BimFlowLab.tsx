@@ -178,23 +178,26 @@ export function BimFlowLab() {
   return (
     <div className="bf-lab">
       <header className="bf-top">
+        <button type="button" data-no95 className="bf-cap" onClick={() => (window.location.href = "/")}>
+          ← Brain2
+        </button>
         <b className="bf-title">BIM · FLOW</b>
         <span className="bf-k">{storeRows.length > 0 ? "vault: this window" : hub ? "vault: hub copy" : "vault: loading"}</span>
         <span className={`bf-lamp ${models ? "is-on" : "is-off"}`} title={models ? "Ollama answering" : "Ollama not answering on 127.0.0.1:11434"} />
-        <select className="bf-input" value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model">
+        <select className="bf-input on-mill" value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model">
           {[...new Set([model, ...(models ?? [])])].map((m) => <option key={m}>{m}</option>)}
         </select>
         <span className="bf-sep" />
         {(["gate", "search", "choose", "extract", "propose", "blocks"] as const).map((k) => (
-          <button key={k} type="button" data-no95 onClick={() => addNode(k)}>+ {k}</button>
+          <button key={k} type="button" data-no95 className="bf-cap" onClick={() => addNode(k)}>+ {k}</button>
         ))}
         <span className="bf-sep" />
         {selectedEdgeId ? (
-          <button type="button" data-no95 onClick={() => { setFlow((f) => ({ ...f, edges: f.edges.filter((e) => e.id !== selectedEdgeId) })); setSelectedEdgeId(null) }}>
+          <button type="button" data-no95 className="bf-cap" onClick={() => { setFlow((f) => ({ ...f, edges: f.edges.filter((e) => e.id !== selectedEdgeId) })); setSelectedEdgeId(null) }}>
             Cut wire
           </button>
         ) : null}
-        <button type="button" data-no95 onClick={() => { if (confirm("Replace this graph with the starter graph?")) setFlow(defaultFlow()) }}>
+        <button type="button" data-no95 className="bf-cap" onClick={() => { if (confirm("Replace this graph with the starter graph?")) setFlow(defaultFlow()) }}>
           Starter graph
         </button>
       </header>

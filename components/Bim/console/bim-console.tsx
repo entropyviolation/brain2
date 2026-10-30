@@ -3,7 +3,7 @@
  *
  * A green-phosphor terminal: tab strip, chat log, BIM's dossier card, and a
  * compose well with a keypad (digits answer numbered questions). CHAT, LOG,
- * and COMMANDS are live. GRAPH, LLM, ACTIONS, and RULES are **Planned**: they
+ * COMMANDS, and LLM (a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**: they
  * say what they will show once BIM reads the knowledge graph and a model.
  * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`).
  */
@@ -23,7 +23,6 @@ type ConsoleTab = (typeof TABS)[number]
 
 const PLANNED: Partial<Record<ConsoleTab, string>> = {
   graph: "Knowledge graph. Items, people, and links BIM can name and walk from a chat line.",
-  llm: "Model link. Free text BIM cannot parse goes to a model with the vault as context.",
   actions: "Actions. What BIM did for you, and what he proposes to do, each one approvable.",
   rules: "Rules. Standing instructions BIM follows when a message or a time matches.",
 }
@@ -185,6 +184,14 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
             {tab === "chat" ? <ChatPane /> : null}
             {tab === "log" ? <LogPane /> : null}
             {tab === "commands" ? <pre className="bim-crt-box bim-crt-log bim-crt-wide">{ALL_COMMANDS}</pre> : null}
+            {tab === "llm" ? (
+              <div className="bim-crt-box bim-crt-log bim-crt-wide">
+                <p className="bim-crt-line">FLOW BENCH — LOCAL MODEL GATES OVER BIM TEXT. WRITES NOTHING.</p>
+                <button data-no95 type="button" onClick={() => (window.location.href = "/lab/bim-flow/")}>
+                  OPEN FLOW BENCH
+                </button>
+              </div>
+            ) : null}
             {planned ? (
               <div className="bim-crt-box bim-crt-log bim-crt-wide">
                 <p className="bim-crt-line">PLANNED — NOT CONNECTED YET.</p>

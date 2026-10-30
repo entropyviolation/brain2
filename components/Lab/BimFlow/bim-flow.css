@@ -1,11 +1,14 @@
-/* components/Lab/BimFlow/bim-flow.css — BIM's flow bench, in the console's green phosphor. */
+/* components/Lab/BimFlow/bim-flow.css — BIM's flow bench: phosphor glass wells in a milled silver bay
+   (docs/DESIGN_STYLE.md → Milled fascia, Keycaps). */
 
 .bf-lab {
-  --crt-fg: #7dff9a;
-  --crt-dim: #3fa457;
-  --crt-faint: #1d5a2c;
-  --crt-bg: #04140a;
-  --crt-line: #2f9a4a;
+  --crt-fg: #7dffc4;
+  --crt-dim: #3fae86;
+  --crt-faint: #1a4a3a;
+  --crt-bg: #050b09;
+  --crt-line: #2f9a74;
+  --bf-ink: #2a2c2e;
+  --bf-ring: #5c6064;
   --bf-no: #6e8f78;
   --bf-seafoam: #7fe3c8;
   --bf-cornflower: #8fb1ff;
@@ -17,9 +20,10 @@
   gap: 8px;
   padding: 10px 12px;
   color: var(--crt-fg);
+  /* Brushed mill: 1px horizontal hairlines on cool silver. */
   background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%);
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #d9dcdf, #b9bdc1);
   font: 15px/1.35 "VT323", ui-monospace, "SF Mono", Menlo, monospace;
   letter-spacing: 0.03em;
   overflow: hidden;
@@ -44,7 +48,7 @@
 
 .bf-lab button:hover:not(:disabled),
 .bf-lab button:focus-visible {
-  background: rgba(125, 255, 154, 0.12);
+  background: rgba(125, 255, 196, 0.12);
   outline: none;
 }
 
@@ -55,8 +59,8 @@
 
 .bf-lab button.is-on,
 .bf-lab button.is-go {
-  background: rgba(125, 255, 154, 0.18);
-  text-shadow: 0 0 6px rgba(125, 255, 154, 0.7);
+  background: rgba(125, 255, 196, 0.18);
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.7);
 }
 
 .bf-lab select.bf-input option {
@@ -76,22 +80,93 @@
   gap: 6px;
 }
 
+.bf-top {
+  padding: 6px 8px;
+  border: 1px solid var(--bf-ring);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -2px 4px rgba(0, 0, 0, 0.12);
+  color: var(--bf-ink);
+}
+
 .bf-title {
-  letter-spacing: 0.2em;
-  text-shadow: 0 0 8px rgba(125, 255, 154, 0.6);
+  font: 700 12px/1 Karla, system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bf-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.bf-top .bf-k {
+  font: 700 10px/1 Karla, system-ui, sans-serif;
+  color: #55595d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.bf-sep {
+  background: #8a8f94;
+}
+
+/* Silver word keys: the house .todo-cap recipe (components/Home/ToDo/todo-chrome.css). */
+.bf-lab button.bf-cap {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  min-height: 26px;
+  padding: 3px 10px 6px;
+  font: 700 12px/1.1 var(--font-pixel, "VT323"), monospace;
+  color: #1f2226;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  text-shadow: none;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+.bf-lab button.bf-cap:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f7f8f9, #e6e9ec);
+}
+
+.bf-lab button.bf-cap:active:not(:disabled),
+.bf-lab button.bf-cap.is-on {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+  text-shadow: none;
+}
+
+.bf-lab button.bf-cap.is-go {
+  outline: 2px solid #22306c;
+  outline-offset: 1px;
+  color: #1a2556;
+  text-shadow: none;
+}
+
+.bf-lab select.bf-input.on-mill {
+  color: var(--bf-ink);
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  border-color: #6e7378;
 }
 
 .bf-sep {
   width: 1px;
   height: 18px;
-  background: var(--crt-faint);
 }
 
 .bf-lamp {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  border: 1px solid var(--crt-line);
+  border: 2px solid #3a3f44;
 }
 
 .bf-lamp.is-on {
@@ -121,13 +196,14 @@
 
 .bf-board-scroll {
   overflow: auto;
-  border: 1px solid var(--crt-faint);
-  border-radius: 6px;
+  border: 2px solid #3a3f44;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.7);
   background-image:
-    linear-gradient(var(--crt-faint) 1px, transparent 1px),
-    linear-gradient(90deg, var(--crt-faint) 1px, transparent 1px);
+    linear-gradient(rgba(47, 154, 116, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47, 154, 116, 0.22) 1px, transparent 1px);
   background-size: 24px 24px;
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: var(--crt-bg);
 }
 
 .bf-board {
@@ -183,7 +259,7 @@
   padding: 4px 18px 4px 10px;
   border: 1px solid var(--crt-line);
   border-radius: 4px;
-  background: rgba(4, 20, 10, 0.92);
+  background: rgba(5, 11, 9, 0.94);
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -197,7 +273,7 @@
 .bf-node.is-lit,
 .bf-node.is-yes {
   border-color: var(--crt-fg);
-  box-shadow: 0 0 12px rgba(125, 255, 154, 0.45), inset 0 0 10px rgba(125, 255, 154, 0.12);
+  box-shadow: 0 0 12px rgba(125, 255, 196, 0.45), inset 0 0 10px rgba(125, 255, 196, 0.12);
 }
 
 .bf-node.is-no {
@@ -244,7 +320,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 0 6px rgba(125, 255, 154, 0.7);
+  text-shadow: 0 0 6px rgba(125, 255, 196, 0.7);
 }
 
 .bf-port {
@@ -291,9 +367,14 @@
   flex-direction: column;
   gap: 8px;
   overflow: auto;
-  padding: 8px;
-  border: 1px solid var(--crt-faint);
-  border-radius: 6px;
+  padding: 8px 12px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    var(--crt-bg);
+  border: 2px solid #3a3f44;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .bf-inspector.is-empty {
@@ -387,9 +468,14 @@
   flex-direction: column;
   gap: 4px;
   min-height: 0;
-  padding: 6px 8px;
-  border: 1px solid var(--crt-faint);
-  border-radius: 6px;
+  padding: 8px 12px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    var(--crt-bg);
+  border: 2px solid #3a3f44;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .bf-progress {

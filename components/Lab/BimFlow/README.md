@@ -5,8 +5,9 @@ _Last mapped: 2026-10-30_
 Next steps and lessons for whoever picks this up: [`docs/BIM_FLOW_HANDOFF.md`](../../../docs/BIM_FLOW_HANDOFF.md).
 
 A bench for building BIM's routed model flow and testing it on real BIM text.
-Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). Nothing in the app
-links here. It writes nothing to the vault.
+Route: `/lab/bim-flow/` (`app/lab/bim-flow/page.tsx`). The BIM console's
+LLM tab opens it; **← Brain2** goes back to `/`. Chrome is a milled silver bay
+with house keycaps around phosphor glass wells. It writes nothing to the vault.
 
 ## What it is for
 
