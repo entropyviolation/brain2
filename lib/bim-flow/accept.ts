@@ -4,7 +4,8 @@
  * Each accept is one undo step (`runAsAction`). A time block is painted as an Activity entry
  * (marked estimated when the flow guessed), an item goes through Quick Add capture onto the list the
  * flow picked, a habit goes through the same writer BIM's `habit:` command uses. The note on a
- * block says the flow made it. **Planned:** an `llm` kind on `generatedBy`, so these rows can be found and swept.
+ * block says the flow made it, and `generatedBy` is `{ kind: "llm", id: "bim-suggest:<suggestion id>" }`
+ * (`acceptedBlockStamp`) so these rows can be found and swept.
  */
 "use client"
 
@@ -23,6 +24,11 @@ export interface Accepted {
 }
 
 const MINUTES_PER_DAY = 1440
+
+/** `generatedBy` on a block painted by Accept. */
+export function acceptedBlockStamp(suggestionId: string): { kind: "llm"; id: string } {
+  return { kind: "llm", id: `bim-suggest:${suggestionId}` }
+}
 
 /** Calendar-day pieces of [start, end): a block over midnight is stored as one entry per day. */
 export function dayPieces(startIso: string, endIso: string): { date: string; startMin: number; endMin: number }[] {
@@ -47,12 +53,19 @@ function acceptTimeblock(s: Suggestion): Accepted {
   // Someone may have painted this time since the suggestion was made.
   const taken = pieces.some((p) => entries.some((e) => e.scopeId === "activity" && e.date === p.date && e.startMin < p.endMin && e.endMin > p.startMin))
   if (taken) return { ok: false, message: "TIME NOW HAS AN ACTIVITY. RUN AGAIN." }
+  let penId = ""
   runAsAction(`Accept suggested block: ${s.title}`, () => {
-    const penId = ensureActivityPen(s.title)
+    penId = ensureActivityPen(s.title)
     for (const p of pieces) {
       useTimeTrackingStore.getState().paintMinutes(p.date, "activity", p.startMin, p.endMin, penId, undefined, undefined, s.estimated ? "estimated" : undefined, {
         notes: `Suggested by BIM flow (${s.source}): ${s.why}`,
       })
+    }
+    // Stamp only rows wholly inside the accepted time; a row merged with a hand-painted neighbour stays unstamped.
+    const store = useTimeTrackingStore.getState()
+    for (const e of store.entries) {
+      const inside = pieces.some((p) => e.date === p.date && e.startMin >= p.startMin && e.endMin <= p.endMin)
+      if (inside && e.scopeId === "activity" && e.penId === penId && !e.generatedBy) store.updateEntry(e.id, { generatedBy: acceptedBlockStamp(s.id) })
     }
   })
   return { ok: true, message: `PAINTED ${s.title.toUpperCase()}` }
