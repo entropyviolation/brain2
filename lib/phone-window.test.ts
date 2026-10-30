@@ -10,6 +10,7 @@ import {
   flushPhoneOutbox,
   loadPhoneWindow,
   phoneOutboxSettled,
+  phoneWindowNote,
   readPhoneWindowItem,
   resetPhoneWindowForTests,
 } from "@/lib/phone-window"
@@ -134,6 +135,24 @@ describe("phone window", () => {
     expect(setItem).not.toHaveBeenCalled()
     expect(localStorage.getItem("brain2-task-storage")).not.toContain("the long note")
     setItem.mockRestore()
+  })
+
+  it("names why the Mac missed when there is no saved copy", async () => {
+    asPhone()
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("Load failed")
+    }))
+
+    expect(await loadPhoneWindow()).toBe("offline")
+    expect(phoneWindowNote()).toMatch(/^Can't reach the Mac\. .+: TypeError: Load failed$/)
+  })
+
+  it("names the HTTP status a refusing Mac sent", async () => {
+    asPhone()
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 401 })))
+
+    expect(await loadPhoneWindow()).toBe("offline")
+    expect(phoneWindowNote()).toContain("answered 401 (hub token).")
   })
 
   it("enqueues one patch of the changed field and does not send it again after success", async () => {

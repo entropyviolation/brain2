@@ -213,6 +213,7 @@ function isPlain(value: unknown): value is Record<string, unknown> {
 function emptyAsNull(value: unknown): unknown {
   if (value === undefined || value === null || value === "") return null
   if (Array.isArray(value) && value.length === 0) return null
+  if (isPlain(value) && Object.keys(value).length === 0) return null
   return value
 }
 
