@@ -28,6 +28,15 @@ describe("tracking view prefs", () => {
     expect(DEFAULT_TRACKING_VIEW_PREFS.logDefaultMode).toBe("note")
   })
 
+  it("defaults the week layout to agenda and persists shelves", () => {
+    expect(getTrackingViewPrefs().logWeekLayout).toBe("agenda")
+    expect(DEFAULT_TRACKING_VIEW_PREFS.logWeekLayout).toBe("agenda")
+    setTrackingViewPrefs({ logWeekLayout: "shelves" })
+    expect(getTrackingViewPrefs().logWeekLayout).toBe("shelves")
+    setTrackingViewPrefs({ logWeekLayout: "board" as never })
+    expect(getTrackingViewPrefs().logWeekLayout).toBe("shelves")
+  })
+
   it("defaults the pen tray to Cat traces, not velvet", () => {
     const prefs = getTrackingViewPrefs()
     expect(prefs.penTray).toBe(DEFAULT_PEN_TRAY)

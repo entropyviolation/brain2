@@ -524,7 +524,7 @@ export function TaskDetailPopup({
           {reviewOpen ? <CompletionDialog taskId={task.id} basePoints={0} edit onClose={() => setReviewOpen(false)} /> : null}
 
           <div className="id-dialog-scroll">
-            <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="flex-1 min-h-0 flex flex-col">
+            <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="id-popup-tabs flex-1 min-h-0 flex flex-col">
               <PopupTabKeys
                 visiblePanels={visiblePanels}
                 popupTabs={popupTabs}
@@ -532,7 +532,7 @@ export function TaskDetailPopup({
                 resourceCount={resourceCount}
                 linkCount={linkCount}
               />
-              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <div className="id-popup-panel flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                 <TabsContent value="details" className="space-y-6 mt-0">
                   <div className="id-details-grid">
                     <PopupDetailsMain

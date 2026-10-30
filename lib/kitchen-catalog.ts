@@ -2,8 +2,10 @@
  * lib/kitchen-catalog.ts — Common foods, nutrients per 100 g, on this device
  *
  * Values follow USDA FoodData Central typical rows (Foundation / SR Legacy),
- * rounded. A search that reaches the network can replace a row. A name that
- * is not here is a food you add, or a label photo.
+ * rounded. Kewpie is the US tablespoon label scaled to 100 g. The brioche bun
+ * is a published burger-brioche row (75 g). Glaze is the sugar food, not the
+ * verb "glazed". A search that reaches the network can replace a row. A name
+ * that is not here is a food you add, or a label photo.
  */
 
 import { nutrientsFrom, type Nutrients } from "@/lib/kitchen-nutrients"
@@ -83,6 +85,7 @@ export const KITCHEN_CATALOG: KitchenFood[] = [
   food("chicken", "Chicken breast, cooked", row(165, 31, 0, 3.6, 0, 0, 74, 256, 15, 1, 0, 0.1), 120, "fridge", { fridge: 2, freezer: 180 }),
   food("turkey", "Turkey breast, cooked", row(135, 30, 0, 0.7, 0, 0, 52, 293, 10, 0.6, 0, 0.1), 120, "fridge", { fridge: 2, freezer: 180 }),
   food("beef", "Ground beef, cooked", row(250, 25.8, 0, 15.4, 0, 0, 72, 318, 18, 2.6, 0, 0.1), 100, "fridge", { fridge: 2, freezer: 120 }),
+  food("bacon", "Bacon, cooked", row(541, 37, 1.4, 41.8, 0, 0, 1717, 565, 11, 1.4, 0, 0), 8, "fridge", { fridge: 5, freezer: 90 }),
   food("salmon", "Salmon, cooked", row(208, 20.4, 0, 13.4, 0, 0, 59, 363, 9, 0.3, 0, 11), 120, "fridge", { fridge: 2, freezer: 180 }),
   food("shrimp", "Shrimp, cooked", row(99, 24, 0.2, 0.3, 0, 0, 111, 259, 70, 0.5, 0, 0.1), 85, "freezer", { freezer: 180, fridge: 2 }),
   food("tofu", "Tofu", row(76, 8, 1.9, 4.8, 0.3, 0.6, 7, 121, 350, 5.4, 0.1, 0), 100, "fridge", { fridge: 7 }),
@@ -99,6 +102,7 @@ export const KITCHEN_CATALOG: KitchenFood[] = [
   food("quinoa", "Quinoa, cooked", row(120, 4.4, 21.3, 1.9, 2.8, 0.9, 7, 172, 17, 1.5, 0, 0), 150, "fridge", { fridge: 4 }),
   food("pasta", "Pasta, cooked", row(131, 5, 25, 1.1, 1.8, 0.6, 1, 44, 7, 0.5, 0, 0), 140, "fridge", { fridge: 4 }),
   food("bread", "Bread, white", row(265, 9, 49, 3.2, 2.7, 5, 491, 115, 144, 3.6, 0, 0), 28, "pantry", { pantry: 5, freezer: 90 }),
+  food("brioche-bun", "Brioche hamburger bun", row(340, 11.1, 46.7, 12, 2, 11.1, 341, 0, 0, 0, 0, 0), 75, "pantry", { pantry: 5, freezer: 90 }),
   food("bread-wheat", "Bread, whole wheat", row(247, 13, 41, 4.2, 6.9, 6, 400, 248, 107, 2.5, 0, 0), 28, "pantry", { pantry: 5, freezer: 90 }),
   food("tortilla", "Flour tortilla", row(312, 8.2, 51.8, 8, 2.4, 2.4, 511, 120, 90, 2.5, 0, 0), 45, "pantry", { pantry: 7, freezer: 180 }),
   food("black-beans", "Black beans, cooked", row(132, 8.9, 23.7, 0.5, 8.7, 0.3, 1, 355, 27, 2.1, 0, 0), 170, "pantry", { pantry: 3, fridge: 4 }),
@@ -109,9 +113,11 @@ export const KITCHEN_CATALOG: KitchenFood[] = [
   food("olive-oil", "Olive oil", row(884, 0, 0, 100, 0, 0, 2, 1, 1, 0.6, 0, 0), 14, "pantry", { pantry: 365 }),
   food("flour", "Flour, all-purpose", row(364, 10.3, 76.3, 1, 2.7, 0.3, 2, 107, 15, 4.6, 0, 0), 120, "pantry", { pantry: 180 }),
   food("sugar", "Sugar", row(387, 0, 100, 0, 0, 100, 1, 2, 1, 0, 0, 0), 12, "pantry", { pantry: 3650 }),
+  food("glaze", "Glaze", row(389, 0, 99.8, 0, 0, 97.8, 1, 2, 1, 0.1, 0, 0), 15, "pantry", { pantry: 3650 }),
   food("honey", "Honey", row(304, 0.3, 82.4, 0, 0.2, 82.1, 4, 52, 6, 0.4, 0.5, 0), 21, "pantry", { pantry: 3650 }),
   food("cocoa", "Cocoa powder", row(228, 19.6, 57.9, 13.7, 37, 1.8, 21, 1524, 128, 13.9, 0, 0), 5, "pantry", { pantry: 365 }),
   food("mayonnaise", "Mayonnaise", row(680, 1, 0.6, 75, 0, 0.6, 635, 20, 8, 0.2, 0, 0.2), 15, "fridge", { fridge: 60 }),
+  food("kewpie", "Kewpie", row(769, 0, 0, 84.6, 0, 0, 615, 0, 0, 0, 0, 0), 15, "fridge", { fridge: 60 }),
   food("ketchup", "Ketchup", row(112, 1.7, 26, 0.3, 0.3, 22, 907, 315, 15, 0.4, 4.1, 0), 17, "fridge", { fridge: 180, pantry: 30 }),
   food("soy-sauce", "Soy sauce", row(53, 8.1, 4.9, 0.1, 0.8, 0.4, 5493, 435, 33, 2.4, 0, 0), 15, "fridge", { fridge: 180 }),
   food("lemon", "Lemon juice", row(22, 0.4, 6.9, 0.2, 0.3, 2.5, 1, 103, 6, 0.1, 38.7, 0), 15, "fridge", { fridge: 7 }),

@@ -7,19 +7,113 @@
   margin: 10px 0;
 }
 
+.trk-food-dialog .trk-food-caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+
 .trk-food-dialog .trk-food-kpis p {
   margin: 0;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.55);
+  background: #070c0a;
+  color: #c8f5df;
+  border: 1px solid #1c3d32;
+  border-radius: 2px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+.trk-food-dialog .trk-food-kpis strong {
+  color: #7dffc4;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+}
+
 .trk-food-dialog .trk-food-kpis span {
+  color: #8aa89a;
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+body.win95-app .trk95.trk-food-dialog button.trk-keycap[data-no95][aria-pressed="true"],
+body.win95-app .trk95.trk-food-dialog button.trk-keycap[data-no95][aria-selected="true"] {
+  color: #7dffc4;
+  text-shadow: 0 0 3px #7dffc4;
+  background: #070c0a;
+  background-image: none;
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 0 0 #0b4a32,
+    inset -2px 0 0 #0b4a32,
+    inset 0 -2px 0 #0b4a32,
+    0 0 0 1px #141816;
+}
+
+body.win95-app .trk95.trk-food-dialog button.trk-keycap[data-no95]:disabled {
+  color: #7d8185;
+  background: linear-gradient(180deg, #c4c8cc, #b9bdc1);
+  background-image: linear-gradient(180deg, #c4c8cc, #b9bdc1);
+  cursor: default;
+}
+
+.trk-food-dialog .trk-food-journal,
+.trk-food-dialog .trk-food-notes,
+.trk-food-dialog .trk-food-create,
+.trk-food-dialog .trk-food-grocery,
+.trk-food-dialog .trk-food-profile {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.trk-food-dialog .trk-food-notes textarea,
+.trk-food-dialog .trk-food-create textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  font: inherit;
+  padding: 4px 6px;
+}
+
+.trk-food-dialog .trk-food-profile dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+  margin: 0 0 8px;
+}
+
+.trk-food-dialog .trk-food-profile dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+body.win95-app .trk95.trk-food-dialog .trk-food-rows > li > button,
+body.win95-app .trk95.trk-food-dialog .trk-food-search li > button,
+body.win95-app .trk95.trk-food-dialog .trk-food-library-list button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
 }
 
 .trk-food-dialog .trk-food-nuts {
@@ -215,6 +309,17 @@
   font-size: 13px;
 }
 
+.trk-food-dialog .trk-food-ingredient-list textarea {
+  width: 100%;
+  min-height: 8rem;
+  font: inherit;
+  padding: 4px 6px;
+}
+
+.trk-food-dialog .trk-food-ingredient-list li p {
+  margin: 0;
+}
+
 .trk-food-dialog .trk-food-lot header,
 .trk-food-dialog .trk-food-recipe-list header {
   display: flex;
@@ -224,7 +329,8 @@
 
 @media (max-width: 767px) {
   .trk-food-dialog .trk-food-split,
-  .trk-food-dialog .trk-food-kpis,
+  .trk-food-dialog .trk-food-kitchen-split,
+  .trk-food-dialog .trk-food-recipes-split,
   .trk-food-dialog .trk-food-nuts dl {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -241,8 +347,112 @@
   }
 
   .trk-food-dialog .trk-food-diorama {
-    height: min(240px, 42dvh);
+    height: min(150px, 22dvh);
     max-width: 100%;
+  }
+
+  .trk-food-dialog.trk-dialog {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .trk-food-dialog .trk-food-kcal-hero {
+    display: flex;
+  }
+
+  .trk-food-dialog .trk-food-plate-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .trk-food-dialog .trk-food-plate-head .trk-food-file {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .trk-food-dialog .trk-food-tabs {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    order: 4;
+    margin-top: 12px;
+    padding: 8px 0 max(4px, env(safe-area-inset-bottom));
+    background: inherit;
+    border-top: 1px solid rgba(0, 0, 0, 0.16);
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-tabs > button.trk-keycap[data-no95] {
+    flex: 1 1 0;
+  }
+
+  .trk-food-dialog .trk-shelf-range .trk-food-caps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  body.win95-app .trk95.trk-food-dialog button.trk-keycap[data-no95] {
+    height: auto;
+    min-height: 44px;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-days .trk-span-switch > button.trk-keycap[data-no95] {
+    min-height: 44px;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-rows > li > button {
+    min-height: 44px;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-segment {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 0;
+    border: 1px solid rgba(0, 0, 0, 0.22);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-segment > button.trk-keycap[data-no95] {
+    flex: 1 1 0;
+    border: 0;
+    border-radius: 0;
+    border-right: 1px solid rgba(0, 0, 0, 0.12);
+    background: #fff;
+    background-image: none;
+    box-shadow: none;
+    color: #1c1e20;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 13px;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-segment > button.trk-keycap[data-no95]:last-child {
+    border-right: 0;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-segment > button.trk-keycap[data-no95][aria-pressed="true"],
+  body.win95-app .trk95.trk-food-dialog .trk-food-segment > button.trk-keycap[data-no95][aria-selected="true"] {
+    background: #143028;
+    background-image: none;
+    color: #f4fff9;
+    text-shadow: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .trk-food-dialog .trk-food-fractions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  body.win95-app .trk95.trk-food-dialog .trk-food-fractions > button.trk-keycap[data-no95] {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .trk-food-dialog input,
@@ -251,5 +461,222 @@
     font-size: 16px;
     min-height: 44px;
     max-width: 100%;
+  }
+}
+
+.trk-food-trend {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: 12px;
+}
+
+.trk-food-trend th,
+.trk-food-trend td {
+  text-align: left;
+  padding: 3px 8px 3px 0;
+}
+
+.trk-food-thumb {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+}
+
+.trk-food-lot[aria-current="true"] {
+  outline: 1px solid #1c3d32;
+}
+
+.trk-food-kcal-hero {
+  display: none;
+}
+
+body.win95-app .trk95.trk-food-dialog button.trk-keycap.trk-food-accept-top[data-no95] {
+  display: none;
+}
+
+.trk-food-kcal-hero {
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 2px 0 6px;
+}
+
+.trk-food-kcal-hero span {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-kcal-hero strong {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.trk-food-range-head {
+  margin: 2px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trk-food-rows-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trk-food-share {
+  margin: 4px 0 10px;
+}
+
+.trk-food-share > p,
+.trk-food-share-scope {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-share-bar {
+  display: flex;
+  height: 8px;
+  margin: 0 0 6px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.trk-food-share-bar span {
+  display: block;
+  height: 100%;
+}
+
+.trk-food-share-bar span[data-part="protein"] {
+  background: #0b4a32;
+}
+
+.trk-food-share-bar span[data-part="fat"] {
+  background: #8aa89a;
+}
+
+.trk-food-share-bar span[data-part="carb"] {
+  background: #d5e4dc;
+}
+
+.trk-food-share ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+body.win95-app .trk95.trk-food-dialog .trk-food-rows > li > button.trk-food-diary-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trk-food-row-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 1px;
+}
+
+.trk-food-row-kcal,
+.trk-food-hit-kcal {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk-food-verified-word {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body.win95-app .trk95.trk-food-dialog .trk-food-rows > li > button[aria-pressed="true"] {
+  background: #070c0a;
+  background-image: none;
+  color: #c8f5df;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+body.win95-app .trk95.trk-food-dialog .trk-food-days .trk-span-switch > button.trk-keycap[data-no95] {
+  flex-direction: column;
+  gap: 1px;
+  height: auto;
+  min-height: 36px;
+  min-width: 4.5rem;
+  padding-top: 4px;
+  padding-bottom: 6px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.trk-food-mix section {
+  margin: 8px 0;
+  padding: 8px 10px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.trk-food-mix section > p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-plan-day {
+  min-width: 0;
+}
+
+.trk-food-plan-day select {
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .trk-food-dialog.trk-dialog {
+    width: min(1120px, calc(100vw - 2rem));
+    max-width: min(1120px, calc(100vw - 2rem));
+  }
+
+  .trk-food-dialog .trk-food-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.05fr);
+    gap: 8px 22px;
+    align-items: start;
+  }
+
+  .trk-food-dialog .trk-food-kitchen-split,
+  .trk-food-dialog .trk-food-recipes-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .trk-food-dialog .trk-food-plan-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 767px) {
+  body.win95-app .trk95.trk-food-dialog .trk-food-days .trk-span-switch > button.trk-keycap[data-no95] {
+    min-height: 44px;
+  }
+
+  body.win95-app .trk95.trk-food-dialog button.trk-keycap.trk-food-accept-top[data-no95] {
+    display: inline-flex;
   }
 }

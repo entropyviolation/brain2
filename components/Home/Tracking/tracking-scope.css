@@ -429,7 +429,7 @@ body.win95-app .trk95 .trk-screw:hover {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* ---------- latching push buttons ---------- */
@@ -1891,7 +1891,7 @@ body.win95-app .trk95 .trk-dayhead-row button:hover {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .trk95 .trk-now-arrow {
@@ -2060,7 +2060,7 @@ body.win95-app .trk95 .trk-logbook .trk-logbook-sub .trk-span-switch > button {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+  text-shadow: none;
   transition: transform 0.08s;
 }
 
@@ -2225,6 +2225,13 @@ body.win95-app .trk95 .trk-logbook-chip[aria-pressed="true"] {
     0 0 0 3px #6b6f72;
 }
 
+.trk95 .trk-logbook-board > .trk-aside-well[data-drop="true"] {
+  box-shadow:
+    0 0 0 1px #050505,
+    0 0 0 2px #7dffc4,
+    0 0 0 3px #145c38;
+}
+
 .trk95 .trk-logbook-board > .trk-aside-well > .trk-logbook-heading {
   display: flex;
   align-items: center;
@@ -2295,6 +2302,11 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
   background: rgba(125, 255, 196, 0.06);
 }
 
+.trk95 .trk-logbook-board .trk-log-row[data-selected="true"],
+body.win95-app .trk95 .trk-logbook-board .trk-log-row[data-selected="true"] {
+  background: rgba(125, 255, 196, 0.14);
+}
+
 .trk95 .trk-logbook-board .trk-log-row *,
 .trk95 .trk-logbook-board .trk-log-row span {
   color: inherit;
@@ -2305,6 +2317,11 @@ body.win95-app .trk95 .trk-logbook-board .trk-log-row:hover {
   padding-top: 1px;
   color: var(--scope-crt) !important;
   text-shadow: 0 0 3px rgba(125, 255, 196, 0.55);
+}
+
+.trk95 .trk-logbook-board .trk-log-when.is-dated {
+  width: auto;
+  white-space: nowrap;
 }
 
 .trk95 .trk-logbook-board .trk-log-amount {
@@ -2395,6 +2412,11 @@ body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .t
   background: var(--chrome-mill-hi, #d8dce0);
 }
 
+.trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row[data-selected="true"],
+body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-row[data-selected="true"] {
+  background: rgba(20, 40, 32, 0.08);
+}
+
 .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .trk-log-when {
   color: #000080 !important;
   font-variant-numeric: tabular-nums;
@@ -2437,6 +2459,20 @@ body.win95-app .trk95 .trk-logbook-board > .trk-aside-well[data-face="steel"] .t
 
 .trk95 .trk-logbook-well-add > button {
   flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Shelf Add is the short silver keycap. The CRT wells are near black, and a
+   transparent button there inherited the well's black ink. Keep the face
+   opaque when the field is empty so the legend stays readable. */
+body.win95-app .trk95 .trk-logbook-well-add > button.trk-keycap[data-no95] {
+  align-self: flex-end;
+}
+
+body.win95-app .trk95 .trk-logbook-well-add > button.trk-keycap[data-no95]:disabled {
+  opacity: 1;
+  color: #1f2226;
+  cursor: default;
 }
 
 /* spend ledger bars */

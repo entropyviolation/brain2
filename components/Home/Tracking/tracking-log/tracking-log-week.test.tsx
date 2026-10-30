@@ -6,9 +6,23 @@ import { format } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { formatLocalDateKey, getWeekDates, getWeekStartDate } from "@/lib/date-utils"
+import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+import { useKitchenStore } from "@/lib/kitchen-store"
+import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
+import { trackingItemId } from "@/lib/tracking-lists"
 import { submitTrackingLog } from "../tracking-log-model"
 import { TrackingLogWeek } from "./tracking-log-week"
-import { useTelegramFeedStore } from "@/lib/ingest/telegram-feed-store"
+
+function openedIdsDuring(run: () => void): string[] {
+  const opened: string[] = []
+  const onOpen = (event: Event) => {
+    opened.push((event as CustomEvent<{ id: string }>).detail.id)
+  }
+  window.addEventListener(OPEN_ITEM_POPUP_EVENT, onOpen)
+  run()
+  window.removeEventListener(OPEN_ITEM_POPUP_EVENT, onOpen)
+  return opened
+}
 
 describe("TrackingLogWeek", () => {
   const currentDate = new Date(2026, 5, 17, 12, 0, 0) // Wednesday
@@ -24,7 +38,6 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={vi.fn()}
-          onOpenEntry={vi.fn()}
           onRemoveEntry={vi.fn()}
         />
       </div>,
@@ -43,7 +56,6 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={onOpenDay}
-          onOpenEntry={vi.fn()}
           onRemoveEntry={vi.fn()}
         />
       </div>,
@@ -78,7 +90,6 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={vi.fn()}
-          onOpenEntry={vi.fn()}
           onRemoveEntry={vi.fn()}
         />
       </div>,
@@ -101,7 +112,6 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={today}
           onOpenDay={vi.fn()}
-          onOpenEntry={vi.fn()}
           onRemoveEntry={vi.fn()}
         />
       </div>,
@@ -117,8 +127,7 @@ describe("TrackingLogWeek", () => {
     expect(todayHead).toHaveAttribute("data-today", "true")
   })
 
-  it("opens an entry when a known-clock row is clicked", () => {
-    const onOpenEntry = vi.fn()
+  it("opens the log item when a known-clock row is clicked", () => {
     const monday = weekDates[0]!
     const id = submitTrackingLog({
       date: formatLocalDateKey(monday),
@@ -134,14 +143,15 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={vi.fn()}
-          onOpenEntry={onOpenEntry}
           onRemoveEntry={vi.fn()}
         />
       </div>,
     )
 
-    fireEvent.click(screen.getByRole("button", { name: /coffee/ }))
-    expect(onOpenEntry).toHaveBeenCalledWith(id)
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(screen.getByRole("button", { name: /coffee/ }))
+    })
+    expect(opened).toEqual([trackingItemId(id!)])
   })
 
   it("shows texts to BIM in their day column, even a link that made no tracking row", () => {
@@ -171,7 +181,6 @@ describe("TrackingLogWeek", () => {
         <TrackingLogWeek
           currentDate={currentDate}
           onOpenDay={vi.fn()}
-          onOpenEntry={vi.fn()}
           onRemoveEntry={vi.fn()}
         />
       </div>,
@@ -181,5 +190,71 @@ describe("TrackingLogWeek", () => {
     expect(within(wed).getByText("→ Inbox link")).toBeInTheDocument()
     const sat = screen.getByLabelText("Log for Saturday, Jun 20")
     expect(within(sat).getByText("Saturday thought")).toBeInTheDocument()
+  })
+
+  it("shows accepted-plate calories and opens the log item from a food row", () => {
+    const monday = weekDates[0]!
+    const onOpenFood = vi.fn()
+    const id = submitTrackingLog({
+      date: formatLocalDateKey(monday),
+      title: "oatmeal",
+      mode: "intake",
+      intakeClass: "food",
+      clock: "exact",
+      minute: 8 * 60,
+    })
+    useKitchenStore.getState().savePlate({
+      entryId: id!,
+      accepted: true,
+      slot: "meal",
+      mode: "single",
+      lines: [{ foodId: "cat_banana", grams: 100 }],
+      fromKitchen: false,
+      where: "home",
+    })
+    render(
+      <div className="trk95">
+        <TrackingLogWeek
+          currentDate={currentDate}
+          onOpenDay={vi.fn()}
+          onRemoveEntry={vi.fn()}
+          onOpenFood={onOpenFood}
+        />
+      </div>,
+    )
+    expect(screen.getByText("89 kcal · Home")).toBeInTheDocument()
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(screen.getByRole("button", { name: /oatmeal/ }))
+    })
+    expect(opened).toEqual([trackingItemId(id!)])
+    expect(onOpenFood).not.toHaveBeenCalled()
+  })
+
+  it("keeps Open food on an unknown-clock food row", () => {
+    const monday = weekDates[0]!
+    const onOpenFood = vi.fn()
+    submitTrackingLog({
+      date: formatLocalDateKey(monday),
+      title: "late snack",
+      mode: "intake",
+      intakeClass: "food",
+      clock: "unknown",
+      minute: 0,
+    })
+    render(
+      <div className="trk95">
+        <TrackingLogWeek
+          currentDate={currentDate}
+          onOpenDay={vi.fn()}
+          onRemoveEntry={vi.fn()}
+          onOpenFood={onOpenFood}
+        />
+      </div>,
+    )
+    const opened = openedIdsDuring(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open food" }))
+    })
+    expect(onOpenFood).toHaveBeenCalledTimes(1)
+    expect(opened).toEqual([])
   })
 })

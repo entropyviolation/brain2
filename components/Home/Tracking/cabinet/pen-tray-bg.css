@@ -68,7 +68,7 @@
 
 .trk95 .trk-tray-chip[data-ink="dark"] {
   color: #161410;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
 }
 
 .trk95 .trk-tray-chip[aria-pressed="true"] {

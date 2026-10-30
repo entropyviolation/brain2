@@ -39,6 +39,22 @@ export function foodDayLabel(key: string): string {
   return format(date, "EEE d")
 }
 
+/** Each local day from `fromKey` through `toKey`, inclusive. */
+export function foodRangeDayKeys(fromKey: string, toKey: string): string[] {
+  const start = parseLocalDate(fromKey)
+  const end = parseLocalDate(toKey)
+  if (!start || !end) return []
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  if (last < cursor) return []
+  const days: string[] = []
+  while (cursor <= last && days.length < 400) {
+    days.push(formatLocalDateKey(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return days
+}
+
 export function foodRailDays(
   range: LogShelfRange,
   bounds: { fromKey: string; toKey: string } | null,
@@ -72,6 +88,8 @@ export function FoodDayRail({
           <button
             key={day.key}
             type="button"
+            data-no95=""
+            className="trk-keycap"
             aria-pressed={selected === day.key}
             aria-label={`${day.label}, ${day.kcal} kcal`}
             onClick={() => onSelect(day.key)}

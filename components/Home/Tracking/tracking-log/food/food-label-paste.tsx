@@ -21,6 +21,7 @@ export interface LabelForm {
   lines: Record<NutrientKey, string>
   barcode: string
   basis: LabelBasis
+  servingsPerContainer?: number
 }
 
 export function blankLabelForm(barcode = ""): LabelForm {
@@ -49,6 +50,7 @@ function formFromDraft(draft: unknown, barcode: string): LabelForm | null {
     servingG?: unknown
     servingGrams?: unknown
     basis?: unknown
+    servingsPerContainer?: unknown
     perServing?: Partial<Record<NutrientKey, unknown>> | null
     nutrients?: Partial<Record<NutrientKey, unknown>> | null
   }
@@ -58,7 +60,8 @@ function formFromDraft(draft: unknown, barcode: string): LabelForm | null {
   const name = typeof row.name === "string" ? row.name : ""
   const basis: LabelBasis = row.basis === "100g" || row.basis === "container" || row.basis === "serving" ? row.basis : "serving"
   if (!source && !grams && !name) return null
-  return { name, grams, lines: linesFromRow(source), barcode, basis }
+  const servings = typeof row.servingsPerContainer === "number" && row.servingsPerContainer > 0 ? row.servingsPerContainer : undefined
+  return { name, grams, lines: linesFromRow(source), barcode, basis, ...(servings ? { servingsPerContainer: servings } : {}) }
 }
 
 /** Prefer `parseLabelDraft` when the label module exports it. Missing lines stay blank. */
@@ -213,7 +216,7 @@ export function LabelCapture({
         Label text
         <textarea aria-label="Label text" value={paste} onChange={(event) => setPaste(event.target.value)} />
       </label>
-      <button type="button" onClick={() => openText(paste, "No calorie line in that text.")}>
+      <button type="button" data-no95="" className="trk-keycap" onClick={() => openText(paste, "No calorie line in that text.")}>
         Read label
       </button>
       {status ? <p className="trk-food-status">{status}</p> : null}
@@ -254,8 +257,26 @@ export function LabelCapture({
                 ))}
               </section>
             ))}
+            {(
+              [
+                ["satFatG", "Saturated fat"],
+                ["cholesterolMg", "Cholesterol"],
+                ["addedSugarG", "Added sugar"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  aria-label={label}
+                  inputMode="decimal"
+                  value={form.lines[key]}
+                  onChange={(event) => setForm(setLine(form, key, event.target.value))}
+                />
+              </label>
+            ))}
+            {form.servingsPerContainer ? <p>{form.servingsPerContainer} servings per container</p> : null}
           </div>
-          <button type="button" onClick={useLabel}>
+          <button type="button" data-no95="" className="trk-keycap" onClick={useLabel}>
             Use these numbers
           </button>
         </div>

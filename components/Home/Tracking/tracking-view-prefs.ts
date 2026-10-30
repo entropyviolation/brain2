@@ -23,7 +23,8 @@
  * Per-view defaults from Tracking settings: `activityGapMinutes` (shortest
  * untracked gap the Activity Log lists; 0 lists none), `activityShowLogLines`
  * (Text log / Intake / Switch instants between blocks), `dayLogSpan` and
- * `logSpan` (Day or Week when the view opens), `logDefaultMode` (the composer
+ * `logSpan` (Day or Week when the view opens), `logWeekLayout` (Agenda or
+ * Shelves while the span is Week; Agenda), `logDefaultMode` (the composer
  * key the Tracking log opens on; Note), `logShowRecents` (Recent intake / Again
  * chips), and `logFlagOnAdd` (the bottom-right "LOGGED" flag after Add).
  */
@@ -84,6 +85,8 @@ export type TrackingViewPrefs = {
   dayLogSpan: TrackingSpan
   /** Tracking log opens on Day or Week. */
   logSpan: TrackingSpan
+  /** Week span: seven columns, or the shelf board across that week. */
+  logWeekLayout: LogWeekLayout
   /** Composer key the Tracking log opens on. */
   logDefaultMode: LogComposerModePref
   /** Recent intake and Again purchase chips on the composer. */
@@ -94,11 +97,16 @@ export type TrackingViewPrefs = {
 
 export const ACTIVITY_GAP_STEPS = [0, 5, 15, 30, 60] as const
 export type TrackingSpan = "day" | "week"
+export type LogWeekLayout = "agenda" | "shelves"
 export const LOG_COMPOSER_MODES = ["event", "switch", "intake", "spend", "note", "thought"] as const
 export type LogComposerModePref = (typeof LOG_COMPOSER_MODES)[number]
 
 function isSpan(value: unknown): value is TrackingSpan {
   return value === "day" || value === "week"
+}
+
+function isWeekLayout(value: unknown): value is LogWeekLayout {
+  return value === "agenda" || value === "shelves"
 }
 
 function isComposerMode(value: unknown): value is LogComposerModePref {
@@ -167,6 +175,7 @@ export const DEFAULT_TRACKING_VIEW_PREFS: TrackingViewPrefs = {
   activityShowLogLines: true,
   dayLogSpan: "day",
   logSpan: "day",
+  logWeekLayout: "agenda",
   logDefaultMode: "note",
   logShowRecents: true,
   logFlagOnAdd: true,
@@ -300,6 +309,7 @@ function load(): TrackingViewPrefs {
       activityShowLogLines: parsed.activityShowLogLines !== false,
       dayLogSpan: isSpan(parsed.dayLogSpan) ? parsed.dayLogSpan : DEFAULT_TRACKING_VIEW_PREFS.dayLogSpan,
       logSpan: isSpan(parsed.logSpan) ? parsed.logSpan : DEFAULT_TRACKING_VIEW_PREFS.logSpan,
+      logWeekLayout: isWeekLayout(parsed.logWeekLayout) ? parsed.logWeekLayout : DEFAULT_TRACKING_VIEW_PREFS.logWeekLayout,
       logDefaultMode: isComposerMode(parsed.logDefaultMode) ? parsed.logDefaultMode : DEFAULT_TRACKING_VIEW_PREFS.logDefaultMode,
       logShowRecents: parsed.logShowRecents !== false,
       logFlagOnAdd: parsed.logFlagOnAdd !== false,
@@ -338,6 +348,7 @@ function sameAsDefault(prefs: TrackingViewPrefs): boolean {
     prefs.activityShowLogLines === DEFAULT_TRACKING_VIEW_PREFS.activityShowLogLines &&
     prefs.dayLogSpan === DEFAULT_TRACKING_VIEW_PREFS.dayLogSpan &&
     prefs.logSpan === DEFAULT_TRACKING_VIEW_PREFS.logSpan &&
+    prefs.logWeekLayout === DEFAULT_TRACKING_VIEW_PREFS.logWeekLayout &&
     prefs.logDefaultMode === DEFAULT_TRACKING_VIEW_PREFS.logDefaultMode &&
     prefs.logShowRecents === DEFAULT_TRACKING_VIEW_PREFS.logShowRecents &&
     prefs.logFlagOnAdd === DEFAULT_TRACKING_VIEW_PREFS.logFlagOnAdd
@@ -385,6 +396,7 @@ export function setTrackingViewPrefs(patch: Partial<TrackingViewPrefs>): void {
       typeof patch.activityShowLogLines === "boolean" ? patch.activityShowLogLines : snapshot.activityShowLogLines,
     dayLogSpan: isSpan(patch.dayLogSpan) ? patch.dayLogSpan : snapshot.dayLogSpan,
     logSpan: isSpan(patch.logSpan) ? patch.logSpan : snapshot.logSpan,
+    logWeekLayout: isWeekLayout(patch.logWeekLayout) ? patch.logWeekLayout : snapshot.logWeekLayout,
     logDefaultMode: isComposerMode(patch.logDefaultMode) ? patch.logDefaultMode : snapshot.logDefaultMode,
     logShowRecents: typeof patch.logShowRecents === "boolean" ? patch.logShowRecents : snapshot.logShowRecents,
     logFlagOnAdd: typeof patch.logFlagOnAdd === "boolean" ? patch.logFlagOnAdd : snapshot.logFlagOnAdd,

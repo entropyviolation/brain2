@@ -35,6 +35,7 @@ export function LogShelfRangeBar({
   onFrom,
   onTo,
   anchor,
+  caps = false,
 }: {
   range: LogShelfRange
   onRange: (range: LogShelfRange) => void
@@ -43,14 +44,18 @@ export function LogShelfRangeBar({
   onFrom: (value: string) => void
   onTo: (value: string) => void
   anchor: Date
+  /** Food uses the silver keycap. Other shelves keep the milled span switch. */
+  caps?: boolean
 }) {
   return (
     <div className="trk-shelf-range">
-      <div className="trk-span-switch" role="toolbar" aria-label="Shelf dates">
+      <div className={caps ? "trk-food-caps" : "trk-span-switch"} role="toolbar" aria-label="Shelf dates">
         {RANGES.map((row) => (
           <button
             key={row.id}
             type="button"
+            data-no95={caps ? "" : undefined}
+            className={caps ? "trk-keycap" : undefined}
             aria-pressed={range === row.id}
             onClick={() => {
               if (row.id === "custom" && !from) {

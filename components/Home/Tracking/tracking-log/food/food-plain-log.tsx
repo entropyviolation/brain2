@@ -4,16 +4,26 @@
  * components/Home/Tracking/tracking-log/food/food-plain-log.tsx — One day's lines and note
  *
  * The lines are the same food instants as the lists. A new line is a title
- * until Accept. The note is the day note and stays out of the nutrient totals.
+ * until Accept. A changed time follows onto ticks linked to that entry.
+ * The note is the day note and stays out of the nutrient totals.
  */
 
 import { useEffect, useState } from "react"
+import { useAttachmentSrc } from "@/components/use-attachment-src"
 import { compareLogRows, submitTrackingLog, type LogBookEntry } from "@/components/Home/Tracking/tracking-log-model"
+import { syncCountTicksForEntry } from "@/lib/count-statuses"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { parseClockToken } from "@/lib/ingest/times"
 import { readDayNote, useKitchenDayNotes, writeDayNote } from "@/lib/kitchen-day-note"
+import type { KitchenPlate } from "@/lib/kitchen-types"
 import { entryClockCertainty, minutesToLabel } from "@/lib/time-entries"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+
+function MealThumb({ uri }: { uri?: string }) {
+  const src = useAttachmentSrc(uri)
+  if (!src) return null
+  return <img className="trk-food-thumb" src={src} alt="Meal photo" width={36} height={36} />
+}
 
 function splitLogLine(raw: string): { title: string; minute: number | null } {
   const text = raw.trim()
@@ -31,7 +41,7 @@ function splitLogLine(raw: string): { title: string; minute: number | null } {
   return { title: text, minute: null }
 }
 
-function LogLine({ entry }: { entry: LogBookEntry }) {
+function LogLine({ entry, photoId }: { entry: LogBookEntry; photoId?: string }) {
   const unknown = entryClockCertainty(entry) === "unknown"
   const [title, setTitle] = useState(entry.title ?? "")
   const [time, setTime] = useState(unknown ? "" : minutesToLabel(entry.startMin))
@@ -63,10 +73,12 @@ function LogLine({ entry }: { entry: LogBookEntry }) {
     if (minute === entry.startMin) return
     const span = entry.endMin - entry.startMin
     useTimeTrackingStore.getState().updateEntry(entry.id, { startMin: minute, endMin: minute + span })
+    syncCountTicksForEntry(entry.id)
   }
 
   return (
     <li>
+      <MealThumb uri={photoId} />
       {unknown ? (
         <span>Unknown</span>
       ) : (
@@ -105,7 +117,7 @@ function LogLine({ entry }: { entry: LogBookEntry }) {
   )
 }
 
-export function FoodPlainLog({ day, rows }: { day: string; rows: readonly LogBookEntry[] }) {
+export function FoodPlainLog({ day, rows, plates = [] }: { day: string; rows: readonly LogBookEntry[]; plates?: readonly KitchenPlate[] }) {
   const stored = useKitchenDayNotes((s) => s.notes[day] ?? "")
   const [line, setLine] = useState("")
   const [note, setNote] = useState(() => readDayNote(day))
@@ -137,7 +149,7 @@ export function FoodPlainLog({ day, rows }: { day: string; rows: readonly LogBoo
     <div className="trk-food-log">
       <ul>
         {ordered.map((entry) => (
-          <LogLine key={entry.id} entry={entry} />
+          <LogLine key={entry.id} entry={entry} photoId={plates.find((plate) => plate.entryId === entry.id)?.photoId} />
         ))}
       </ul>
       <form
@@ -150,7 +162,7 @@ export function FoodPlainLog({ day, rows }: { day: string; rows: readonly LogBoo
           Line
           <input value={line} onChange={(event) => setLine(event.target.value)} />
         </label>
-        <button type="submit">Add</button>
+        <button type="submit" data-no95="" className="trk-keycap">Add</button>
       </form>
       <label>
         Note

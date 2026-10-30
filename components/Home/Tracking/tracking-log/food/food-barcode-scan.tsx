@@ -128,6 +128,7 @@ export function FoodBarcodeScan({ onPick }: { onPick: (hit: FoodHit) => void }) 
   const [status, setStatus] = useState("")
   const [live, setLive] = useState(false)
   const [miss, setMiss] = useState("")
+  const [pending, setPending] = useState<FoodHit | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -166,9 +167,15 @@ export function FoodBarcodeScan({ onPick }: { onPick: (hit: FoodHit) => void }) 
     setMiss("")
     const result = await resolveBarcode(digits, useKitchenStore.getState().foods)
     if (result.found) {
+      if (!(result.hit.per100g.kcal > 0)) {
+        setPending(result.hit)
+        setStatus("Energy is missing on this product.")
+        return
+      }
       onPick(result.hit)
       rememberBarcode(digits, result.hit.id)
       setStatus("")
+      setPending(null)
       return
     }
     setStatus("No Open Food Facts product for this code.")
@@ -216,15 +223,35 @@ export function FoodBarcodeScan({ onPick }: { onPick: (hit: FoodHit) => void }) 
           }}
         />
       </label>
-      <div className="trk-span-switch trk-food-scan-actions" role="group" aria-label="Barcode lookup">
-        <button type="button" onClick={() => void lookup(code)}>
+      <div className="trk-food-caps trk-food-scan-actions" role="group" aria-label="Barcode lookup">
+        <button type="button" data-no95="" className="trk-keycap" onClick={() => void lookup(code)}>
           Look up
         </button>
-        <button type="button" onClick={() => (live ? setLive(false) : void onScan())}>
+        <button type="button" data-no95="" className="trk-keycap" onClick={() => (live ? setLive(false) : void onScan())}>
           {live ? "Stop" : "Scan"}
         </button>
       </div>
       {status ? <p className="trk-food-status">{status}</p> : null}
+      {pending ? (
+        <div className="trk-food-caps">
+          <button
+            type="button"
+            data-no95=""
+            className="trk-keycap"
+            onClick={() => {
+              onPick(pending)
+              rememberBarcode(normalizeBarcode(code), pending.id)
+              setPending(null)
+              setStatus("")
+            }}
+          >
+            Use this product
+          </button>
+          <button type="button" data-no95="" className="trk-keycap" onClick={() => setPending(null)}>
+            Close
+          </button>
+        </div>
+      ) : null}
       {live ? <video ref={videoRef} muted playsInline aria-label="Barcode camera" /> : null}
       {miss ? <LabelCapture showPhoto={false} barcode={miss} onUse={acceptLabel} /> : null}
     </div>

@@ -470,6 +470,7 @@ function EntryDialogForm({ entry, onClose, contentClassName, onOpenEntry }: Entr
         aria-describedby={undefined}
         data-ui-name="Tracking entry"
         data-ui-docs="components/Home/Tracking/README.md"
+        data-item-layer=""
         {...unsavedDismissProps(guard.requestClose)}
       >
         <EntryDialogHead

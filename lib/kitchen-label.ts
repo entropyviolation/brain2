@@ -76,21 +76,7 @@ export function parseNutritionLabel(text: string): LabelRead | null {
 
 export function labelPer100g(read: LabelRead, servingG: number): Nutrients | null {
   if (!Number.isFinite(servingG) || servingG <= 0) return null
-  const per100 = scaleNutrients(read.perServing, 10_000 / servingG)
-  return {
-    kcal: cleanNutrient(per100.kcal),
-    proteinG: per100.proteinG,
-    carbG: per100.carbG,
-    fatG: per100.fatG,
-    fiberG: per100.fiberG,
-    sugarG: per100.sugarG,
-    sodiumMg: per100.sodiumMg,
-    potassiumMg: per100.potassiumMg,
-    calciumMg: per100.calciumMg,
-    ironMg: per100.ironMg,
-    vitCMg: per100.vitCMg,
-    vitDMcg: per100.vitDMcg,
-  }
+  return scaleNutrients(read.perServing, 10_000 / servingG)
 }
 
 export type LabelBasis = "serving" | "100g" | "container"
@@ -104,12 +90,17 @@ export interface LabelDraft {
   servingGrams: number | null
   nutrients: LabelNutrients
   basis: LabelBasis
+  /** Printed count. Not a nutrient. */
+  servingsPerContainer?: number | null
 }
 
 const NUM = "(\\d{1,3}(?:,\\d{3})+|\\d+(?:\\.\\d+)?)"
 
 const LINE_SPECS: { key: NutrientKey; test: RegExp; kind: "kcal" | "g" | "mg" | "mcg" }[] = [
   { key: "kcal", test: /\bcalories\b(?!\s+from\b)|\benergy\b/i, kind: "kcal" },
+  { key: "satFatG", test: /^saturated\s+fat\b/i, kind: "g" },
+  { key: "cholesterolMg", test: /^cholesterol\b/i, kind: "mg" },
+  { key: "addedSugarG", test: /added\s+sugars?\b/i, kind: "g" },
   { key: "fatG", test: /^total\s+fat\b|^fat\b/i, kind: "g" },
   { key: "carbG", test: /^total\s+carbohydrates?\b|^carbohydrates?\b/i, kind: "g" },
   { key: "fiberG", test: /^(?:dietary\s+)?fib(?:re|er)\b/i, kind: "g" },
@@ -128,7 +119,7 @@ function plainNumber(raw: string): number {
 }
 
 function skipNutrientLine(line: string): boolean {
-  return /^(?:saturated|trans|polyunsaturated|monounsaturated|includes|added|cholesterol|soluble|insoluble)\b/i.test(line) || /^of\s+which\b/i.test(line)
+  return /^(?:trans|polyunsaturated|monounsaturated|soluble|insoluble)\b/i.test(line) || /^of\s+which\b/i.test(line)
 }
 
 function specFor(line: string): (typeof LINE_SPECS)[number] | null {
@@ -240,7 +231,8 @@ export function parseLabelDraft(text: string): LabelDraft | null {
   let current: LabelBasis = "serving"
   let column = 0
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
     if (!line || skipNutrientLine(line)) continue
     const dual = servingColumn(line)
     if (dual != null && !specFor(line)) {
@@ -262,7 +254,18 @@ export function parseLabelDraft(text: string): LabelDraft | null {
     }
     const spec = specFor(line)
     if (!spec) continue
-    const token = pickToken(tokensFor(spec.kind, restAfter(line, spec.test)), column)
+    let token = pickToken(tokensFor(spec.kind, restAfter(line, spec.test)), column)
+    if (!token) token = pickToken(tokensFor(spec.kind, line), column)
+    if (!token) {
+      const next = lines[i + 1] ?? ""
+      if (next && !specFor(next) && !skipNutrientLine(next)) {
+        const borrowed = pickToken(tokensFor(spec.kind, next), column)
+        if (borrowed) {
+          token = borrowed
+          i += 1
+        }
+      }
+    }
     if (!token) continue
     const value = tokenValue(spec.kind, token)
     if (value == null) continue
@@ -273,13 +276,22 @@ export function parseLabelDraft(text: string): LabelDraft | null {
   const nutrients = basis === "100g" ? buckets["100g"] : basis === "container" ? buckets.container : buckets.serving
   if (!hasAny(nutrients)) return null
   const serving = readServingLine(raw)
+  const perContainer = readServingsPerContainer(raw)
   return {
     name: draftName(lines),
     servingLabel: serving.servingLabel,
     servingGrams: serving.servingGrams,
     nutrients,
     basis,
+    ...(perContainer != null ? { servingsPerContainer: perContainer } : {}),
   }
+}
+
+function readServingsPerContainer(text: string): number | null {
+  const lead = /(\d+(?:\.\d+)?)\s+servings?\s+per\s+container/i.exec(text)
+  const trail = /servings?\s+per\s+container\s*[:\-]?\s*(\d+(?:\.\d+)?)/i.exec(text)
+  const value = Number(lead?.[1] ?? trail?.[1])
+  return Number.isFinite(value) && value > 0 ? value : null
 }
 
 /** Per 100 g after a draft is checked. A per-100g panel is not scaled again. Missing lines become 0. */

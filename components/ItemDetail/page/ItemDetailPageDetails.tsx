@@ -4,6 +4,8 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react"
 import { ComputerProjectDetail } from "@/components/ItemDetail/type-views/ComputerProjectDetail"
 import { HabitLinkedDetail } from "@/components/ItemDetail/type-views/HabitLinkedDetail"
+import { isLogItemDetailType, LogItemDetail } from "@/components/ItemDetail/type-views/LogItemDetail"
+import { TimeblockItemDetail } from "@/components/ItemDetail/type-views/TimeblockItemDetail"
 import { ItemAttributesSection } from "@/components/ItemDetail/attributes/ItemAttributesSection"
 import { ItemDetailPageRail } from "@/components/ItemDetail/page/ItemDetailPageRail"
 import { ItemDetailPageTaskInfo } from "@/components/ItemDetail/page/ItemDetailPageTaskInfo"
@@ -13,6 +15,7 @@ import { PersonDetail } from "@/components/People/person-detail"
 import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
 import { TabsContent } from "@/components/ui/tabs"
 import { COMPUTER_PROJECT_DESK_ATTRS, COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
+import { TIMEBLOCK_TYPE_ID } from "@/lib/timeblock-types"
 import { armHabitSettingsReturn, sourceHabitIdOf } from "@/lib/habit-list-item"
 import type { DetailViewResolution } from "@/lib/item-types"
 import { itemShowsPersonPipelines } from "@/lib/people-i-know"
@@ -226,6 +229,8 @@ export function ItemDetailPageDetails({
               onOpenItem={openItem}
             />
           ) : null}
+          {isLogItemDetailType(activeTypeId) ? <LogItemDetail task={task} typeId={activeTypeId} /> : null}
+          {activeTypeId === TIMEBLOCK_TYPE_ID ? <TimeblockItemDetail task={task} /> : null}
           <div className="id-bay">
             <ItemAttributesSection
               attributes={task.attributes || {}}

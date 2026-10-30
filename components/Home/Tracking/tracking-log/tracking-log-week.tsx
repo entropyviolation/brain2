@@ -4,7 +4,8 @@
  * Seven columns for the week containing `currentDate`. The today column follows
  * the wall clock, not the selected day. Same classify/sort rules as the day
  * shelves — not Day Log agenda week and not Time Grid paint week. Date headings
- * open that day in day mode.
+ * open that day in day mode. A log row opens that log item. Food's Open food
+ * button stays. Rows are not dragged between days.
  */
 "use client"
 
@@ -25,8 +26,12 @@ import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useLiveToday } from "@/lib/use-current-date"
 import { latestOutfit, useWardrobeStore } from "@/lib/wardrobe"
 import { useAttachmentSrc } from "@/components/use-attachment-src"
+import { nutrientsForPlate } from "@/lib/kitchen-plate"
+import { resolveKitchenFood, useKitchenStore } from "@/lib/kitchen-store"
+import { whereOf } from "@/lib/kitchen-types"
 import { feedRowDayKey, feedRowMinute, type TelegramFeedRow } from "@/lib/ingest/telegram-feed"
 import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
+import { openLogEntry } from "@/components/Home/Tracking/tracking-log/open-log-entry"
 import "./tracking-log-week.css"
 
 const SHELF_TAG: Record<LogBookList, string> = {
@@ -55,16 +60,30 @@ function rowTitle(entry: LogBookEntry, penName: Map<string, string>): string {
   return entry.title?.trim() || "Untitled"
 }
 
+function FoodWeekMark({ entryId }: { entryId: string }) {
+  const plate = useKitchenStore((s) => s.plates.find((row) => row.entryId === entryId && row.accepted))
+  const foods = useKitchenStore((s) => s.foods)
+  const recipes = useKitchenStore((s) => s.recipes)
+  const recipe = plate?.recipeId ? recipes.find((row) => row.id === plate.recipeId) ?? null : null
+  if (!plate) return null
+  const kcal = Math.round(nutrientsForPlate(plate, (id) => resolveKitchenFood(id, foods), recipe).kcal)
+  return <span className="trk-log-week-food">{kcal} kcal · {whereOf(plate) === "out" ? "Out" : "Home"}</span>
+}
+
 function WeekLogRow({
   entry,
   penName,
-  onOpen,
+  selected,
+  onSelect,
   onRemove,
+  onOpenFood,
 }: {
   entry: LogBookEntry
   penName: Map<string, string>
-  onOpen: (id: string) => void
+  selected?: boolean
+  onSelect?: (id: string) => void
   onRemove: (id: string) => void
+  onOpenFood?: () => void
 }) {
   const clock = logClockLabel(entry)
   const title = rowTitle(entry, penName)
@@ -73,21 +92,56 @@ function WeekLogRow({
     entry.list === "spend" && typeof entry.spendAmount === "number" ? (
       <span className="trk-log-week-amount">{formatSpendAmount(entry.spendAmount)}</span>
     ) : null
+  const open = () => {
+    onSelect?.(entry.id)
+    openLogEntry(entry.id)
+  }
 
   if (clock.badge === "Unknown") {
     return (
-      <div className="trk-log-week-row is-unknown" data-entry={entry.id}>
+      <div
+        className="trk-log-week-row is-unknown"
+        data-entry={entry.id}
+        data-selected={selected ? "true" : "false"}
+        onClick={open}
+      >
         <span className="trk-log-week-badge">Unknown</span>
         {amount}
         <span className="trk-log-week-copy" title={title}>
           {title}
         </span>
         <span className="trk-log-week-tag">{tag}</span>
+        {entry.list === "food" ? <FoodWeekMark entryId={entry.id} /> : null}
+        {entry.list === "food" && onOpenFood ? (
+          <button
+            type="button"
+            data-no95=""
+            className="trk-keycap"
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenFood()
+            }}
+          >
+            Open food
+          </button>
+        ) : null}
         <span className="trk-log-week-actions">
-          <button type="button" onClick={() => onOpen(entry.id)}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              open()
+            }}
+          >
             Edit
           </button>
-          <button type="button" onClick={() => onRemove(entry.id)}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onRemove(entry.id)
+            }}
+          >
             Remove
           </button>
         </span>
@@ -101,7 +155,8 @@ function WeekLogRow({
       data-no95=""
       className="trk-log-week-row"
       data-entry={entry.id}
-      onClick={() => onOpen(entry.id)}
+      data-selected={selected ? "true" : "false"}
+      onClick={open}
     >
       {clock.time ? <span className="trk-log-week-when">{clock.time}</span> : null}
       {amount}
@@ -109,6 +164,7 @@ function WeekLogRow({
         {title}
       </span>
       <span className="trk-log-week-tag">{tag}</span>
+      {entry.list === "food" ? <FoodWeekMark entryId={entry.id} /> : null}
       {clock.badge ? <span className="trk-log-week-badge">{clock.badge}</span> : null}
     </button>
   )
@@ -135,13 +191,17 @@ function interleaveTelegram(rows: LogBookEntry[], telegram: TelegramFeedRow[]): 
 export function TrackingLogWeek({
   currentDate,
   onOpenDay,
-  onOpenEntry,
   onRemoveEntry,
+  onOpenFood,
+  selectedId = null,
+  onSelectEntry,
 }: {
   currentDate: Date
   onOpenDay: (date: Date) => void
-  onOpenEntry: (id: string) => void
   onRemoveEntry: (id: string) => void
+  onOpenFood?: () => void
+  selectedId?: string | null
+  onSelectEntry?: (id: string) => void
 }) {
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
@@ -239,8 +299,10 @@ export function TrackingLogWeek({
                       key={item.entry.id}
                       entry={item.entry}
                       penName={penName}
-                      onOpen={onOpenEntry}
+                      selected={selectedId === item.entry.id}
+                      onSelect={onSelectEntry}
                       onRemove={onRemoveEntry}
+                      onOpenFood={onOpenFood}
                     />
                   ),
                 )
