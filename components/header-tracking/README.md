@@ -2,6 +2,8 @@
 
 The header **Now** word key (`components/cognitive-state.tsx`) opens this popup. It is the edge of the current moment: the recent past that was not tracked yet, what is true now, and the short plan ahead. Home → Tracking (`components/Home/Tracking/tracking-desk.tsx`) is a different screen and is not this dialog.
 
+_Last mapped: 2026-10-27._ The operation clock and the activity-pen clock on Current moment are open work sessions (Working on now). A To Do **Session** is a planned work session. It is not drawn here. Play inside one starts the pen clock for that task or subtask. See [`components/Home/ToDo/README.md`](../Home/ToDo/README.md#open-work-sessions-and-planned-work-sessions).
+
 _Last mapped: 2026-10-25_
 
 The dialog caption is **Recent now** on the Tracking pane and **Upcoming now** on the Plan pane. The frame is the shared milled header dialog (`.hpp95` / `.hpp95-shell-only`), `min(96vw, 84rem)`. That is wide enough for the Home desk’s three bays side by side. Below the desk’s 980px container break they stack, as on Home.
@@ -35,20 +37,24 @@ _Last mapped: 2026-10-25._
 
 The **Tracking pane** mounts the Home desk’s bays: `PenPalette variant="rack"`, `TimeGrid desk` with `PenModeDeck`, and the time recorder column. The day summary sits under them in the same `.trk-lace` frame. All of it is inside a `.trk95` wrapper (`.htk-desk`), because the summary well’s styles are scoped to `.trk95`. Without it the well crowded the bottom of the dialog.
 
-Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Plan versus reality stays on Analytics.
+Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Plan versus reality stays on Data.
 
 ## Files
+
+_Last mapped: 2026-10-27._
+
+`current-moment/` is the Current moment stack: the deck, Update state, Intake, Events / Notes / Thought process, and the pen search field. `panes/` is the Tracking pane and the Plan pane. The popup door, its stylesheet, and the shared est. mark stay at the room root.
 
 | File | Purpose |
 |------|---------|
 | `header-tracking-popup.tsx` | Current moment, then the Tracking / Plan switch. Panes load when the dialog opens. |
-| `current-moment.tsx` | Shared Current moment + `CurrentMomentDeck`: operation clock and activity-pen clock; four lanes + Metrics, always up; Update state under a picked lane; Intake, Events, Notes, Thought process. |
-| `update-state.tsx` | Update state. Now stamp, optional detail keys, color dot, notes, recent sequence (collapsible; double-click opens `EntryDialog`), exact or estimated clocks. |
-| `tracking-pane.tsx` | The Home desk’s three bays (pen rack, Time Grid screen, time recorder) and the day summary in the lace frame. |
-| `plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
-| `now-log-lists.tsx` | Events, Notes, and Thought process. Written through `submitTrackingLog`. A Text log instant with no `eventKind` is a Note here; the Tracking log still shelves that row with Events. |
-| `now-intake.tsx` | Intake row: class keys, quick chips, name field, and today's uncategorized intake with Food / Drink / Drug / med sort (`setIntakeClass`). Same writer as the Tracking log. |
-| `pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |
+| `current-moment/current-moment.tsx` | Shared Current moment + `CurrentMomentDeck`: operation clock and activity-pen clock; four lanes + Metrics, always up; Update state under a picked lane; Intake, Events, Notes, Thought process. |
+| `current-moment/update-state.tsx` | Update state. Now stamp, optional detail keys, color dot, notes, recent sequence (collapsible; double-click opens `EntryDialog`), exact or estimated clocks. |
+| `panes/tracking-pane.tsx` | The Home desk’s three bays (pen rack, Time Grid screen, time recorder) and the day summary in the lace frame. |
+| `panes/plan-pane.tsx` | Short sequence, plan agenda, and the day plan log. |
+| `current-moment/now-log-lists.tsx` | _Last mapped: 2026-10-27._ Events, Notes, and Thought process. Written through `submitTrackingLog` with `logSource: "now-popup"`. A Text log instant with no `eventKind` is a Note (`classifyLogBookRow` list `note`). The Tracking log shelves it the same way. |
+| `current-moment/now-intake.tsx` | Intake row: class keys, quick chips, name field, and today's uncategorized intake with Food / Drink / Drug / med sort (`setIntakeClass`). Same writer as the Tracking log. |
+| `current-moment/pen-search-select.tsx` | Searchable pen list. A new name uses `ensureScopePen`. |
 | `est-mark.tsx` | `~` and the dashed `.trk-est` treatment, plus the compact Exact key. |
 | `header-tracking.css` | Popup layout. The lane color swatch corner is `--r-1`. Does not restyle the Home desk. |
 
@@ -56,7 +62,7 @@ Day notes stay on the Tracking pane. The day plan log stays on the Plan pane. Pl
 
 Tracking paint goes through `lib/tracking-presence.ts` (`applyScopeNowUpdate`, `paintScopeSequence`) into `useTimeTrackingStore`. A new value is a pen on that view. `open` fills the stretch from the previous log through now, so a matching pen becomes one block (**Update**). `minute` paints only this minute and keeps a seam, so a matching pen stays a second block (**Add for now** when the value is unchanged). Pass `variantIds` to store a detail split; when that detail differs from the continued block, the old detail is painted up to this minute and the new detail starts here. Pass `notes` when the field is filled. The stamp appends `\n\n {time}- {note} \n\n` and does not replace the notes already on the block. A blank field does not clear them and does not copy them onto new minutes. _Last mapped: 2026-10-25._
 
-Events, Notes, and Thought process use `submitTrackingLog` (`components/Home/Tracking/tracking-log-model.ts`), the same writer as the Home Tracking log. Events are `mode: "event"`. Notes are `mode: "note"` (a general note, `note:` / `n`). Thought process is `mode: "thought"`. Enter adds the line; Shift+Enter starts another line inside the field. The first line is the title and later lines are `notes`, and the row grows to show both. The lists reuse that log’s scroll well. Day notes use `TrackingDayNotes` (`appendDayNote`). The popup opens that well for today, the same day the Time Grid opens on, without changing the desk’s Expand preference or the desk’s selected day.
+_Last mapped: 2026-10-27._ Events, Notes, and Thought process use `submitTrackingLog` (`components/Home/Tracking/tracking-log-model.ts`), the same writer as the Home Tracking log, with `logSource: "now-popup"`. Events are `mode: "event"`. Notes are `mode: "note"` (a general note). The Home log shelves that row under Notes, not Events. Thought process is `mode: "thought"`. Intake on this popup passes `now-popup` too. Enter adds the line; Shift+Enter starts another line inside the field. The first line is the title and later lines are `notes`, and the row grows to show both. The lists reuse that log’s scroll well. Day notes use `TrackingDayNotes` (`appendDayNote`). The popup opens that well for today, the same day the Time Grid opens on, without changing the desk’s Expand preference or the desk’s selected day.
 
 _Last mapped: 2026-10-24_ Now’s log rows sit in a column flexbox with a height cap (`.htk-moment .trk-log` in `header-tracking.css`). Rows stay `flex: 0 0 auto` and the copy wraps (`white-space: pre-wrap`), so a long thought grows the row instead of painting over the next one. The Tracking log board has the same shrink bug if a row is `flex: 1` (`.trk-log` in `tracking-scope.css`, board rules ~2261).
 

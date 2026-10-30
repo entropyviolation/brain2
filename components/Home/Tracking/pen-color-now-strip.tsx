@@ -30,6 +30,8 @@ import {
   attachPenNowObjective,
   editPenColorNowObjectiveText,
   pausePenColorSession,
+  movePenColorNowObjectiveToNext,
+  movePenColorNowObjectiveToNow,
   removePenColorNowObjective,
   resumePenColorSession,
   savePenObjectiveForLater,
@@ -44,6 +46,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { NowObjectivesList } from "@/components/Home/Tracking/now-objectives-list"
 import { ClockTaskButton } from "@/components/Home/Tracking/clock-task-panel"
 import { useUnfinishedStop } from "@/components/Home/Tracking/save-unfinished-dialog"
+import { usePauseReason } from "@/components/Home/Tracking/pause-reason-dialog"
 import { reviewPenStop } from "@/lib/session-debrief"
 import { useClockTask } from "@/components/Focus/use-clock-task"
 import "@/components/Operations/operations-chrome.css"
@@ -143,6 +146,7 @@ export function PenColorNowStrip({
   const unfinished = useUnfinishedStop(activeNowObjectives(session?.nowObjectives).length, (park) =>
     reviewPenStop(park),
   )
+  const pauseAsk = usePauseReason()
   const listId = useId()
   const allChoices = useMemo(() => choicesFrom(scopes), [scopes])
   const choices = useMemo(
@@ -350,12 +354,19 @@ export function PenColorNowStrip({
             className="trk-pen-now-icon"
             mark={isSessionPaused(session) ? "play" : "pause"}
             label={isSessionPaused(session) ? `Resume ${selected.name}` : `Pause ${selected.name}`}
-            onClick={() => (isSessionPaused(session) ? resumePenColorSession() : pausePenColorSession())}
+            onClick={() => {
+              if (isSessionPaused(session)) resumePenColorSession()
+              else void pauseAsk.ask().then((reason) => {
+                if (reason) pausePenColorSession(new Date(), reason)
+              })
+            }}
           />
           <NowObjectivesList
             objectives={session.nowObjectives}
             contextName={selected.name}
-            onAdd={(text) => addPenColorNowObjective(text)}
+            onAdd={(text, lane) => addPenColorNowObjective(text, new Date(), undefined, lane)}
+            onMoveToNow={(id) => movePenColorNowObjectiveToNow(id)}
+            onMoveToNext={(id) => movePenColorNowObjectiveToNext(id)}
             onAddCompleted={(text) => addPenColorCompletedObjective(text)}
             onEditText={(id, text) => editPenColorNowObjectiveText(id, text)}
             onToggleComplete={(id) => togglePenColorNowObjectiveComplete(id)}
@@ -387,6 +398,7 @@ export function PenColorNowStrip({
         </button>
       )}
       {unfinished.dialog}
+      {pauseAsk.dialog}
       {compact && !live ? null : (
       <span
         className="ops-now-meta"

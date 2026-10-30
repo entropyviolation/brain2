@@ -1,0 +1,15 @@
+---
+description: Verify a change, run the tests, or check the work without rewriting it
+alwaysApply: false
+---
+
+# Verify a change
+
+Use this when the user asks to verify a change, run the tests, or check the work without rewriting it.
+
+Run `npx vitest run` on the test files for the code that changed. Do not rewrite the feature to make a test pass. If a test fails, report the failure. Do not spawn a planner or a second coder. Do not recapture screenshots. Do not regenerate the tree.
+
+```text
+❌ BAD: edit the feature until the test is green, then recapture screenshots or run npm run tree
+✅ GOOD: npx vitest run path/to/the-changed.test.ts, then report a failure as a failure
+```

@@ -35,12 +35,12 @@ retrospective record
 [`CANONICAL_FIELDS.md`](CANONICAL_FIELDS.md)). The next period starts where the
 last one stopped.
 
-Without this, the loop steers on a lie, and Analytics writes “you typically”
+Without this, the loop steers on a lie, and Data writes “you typically”
 over a thin week.
 
 **The miss is the next input.** Capture and Tracking are sense organs. The vault
 is memory. Plan, Scheduler, To Do, the friend, and BIM act. The house already
-senses, stores, and acts. The miss is computed in Analytics and then left
+senses, stores, and acts. The miss is computed in Data and then left
 there. Perfecting the loop means one derived **gap** circulates: fast, day, and
 slow. Rooms stay wired in parallel on the tag bus. The gap is a second bus, for
 errors. It is not an Item. Inside a band, nothing speaks. A day that holds, and
@@ -108,7 +108,7 @@ Home → Habits. A control diagram does not belong on a screen.
 
 ### 5. Leave a window for what will not causalize.
 
-Causal rooms stay causal. Meaning sits beside them as a sixth Analytics group,
+Causal rooms stay causal. Meaning sits beside them as a sixth Data group,
 on by default. Same room twice is a repeat, not a series. Cross-section
 alignment without a shared tag, type, or word stays on Cross-section. No
 runtime model judges a coincidence, writes a card, fits a weight, or summarizes

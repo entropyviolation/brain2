@@ -128,6 +128,9 @@ function taskRow(partial: Partial<Task> & Pick<Task, "id" | "description">, now:
     allowPartialCompletion: false,
     minimumChunkSize: 15,
     type: "task",
+    tags: [],
+    links: [],
+    subtasks: [],
     ...partial,
     createdAt,
   }

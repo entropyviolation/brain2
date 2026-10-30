@@ -11,6 +11,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { GraphProposal } from "@/lib/graph/proposal-schema"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const INBOX_OPEN_CAP = 500
 const KEEP_CLOSED = 200
@@ -50,3 +51,5 @@ export const useGraphInboxStore = create<GraphInboxState>()(
 export function openProposalsFor(rows: readonly GraphProposal[], itemId: string): GraphProposal[] {
   return rows.filter((p) => p.status === "open" && p.kind === "link" && (p.sourceId === itemId || p.targetId === itemId))
 }
+
+registerPhoneWindowStore(useGraphInboxStore)

@@ -1,0 +1,432 @@
+/**
+ * components/Inventory/closet/closet.css — Closet garment wall
+ *
+ * Cool cards inside the chrome stage. Scene keys stay the room's keycaps.
+ * Class prefix: inv-closet-
+ */
+
+.inv-closet {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 320px;
+  font-family: inherit;
+}
+
+.inv-closet-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inv-closet-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.inv-closet-switch-btn {
+  margin: 0;
+  padding: 2px 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.inv-closet-switch-btn[aria-selected="true"] {
+  opacity: 1;
+  box-shadow: inset 0 -2px 0 currentColor;
+}
+
+.inv-closet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.inv-closet-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.inv-closet-chip,
+.inv-closet-new,
+.inv-closet-save,
+.inv-closet-quiet,
+.inv-closet-tray-piece,
+.inv-closet-saved-btn,
+.inv-closet-pack-link {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.inv-closet-chip {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.inv-closet-chip[aria-pressed="true"] {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.inv-closet-new,
+.inv-closet-save {
+  margin: 0;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #4a6298;
+  color: #f4f7ff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inv-closet-new {
+  margin-left: auto;
+}
+
+.inv-closet-new:disabled,
+.inv-closet-save:disabled,
+.inv-closet-quiet:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.inv-closet-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.inv-closet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inv-closet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 1;
+  margin: 0;
+  padding: 12px 10px 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.inv-closet-card:not(:has(img))::before {
+  content: "";
+  width: 34px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.28);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+}
+
+.inv-closet-cutout {
+  max-width: 100%;
+  max-height: 72%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.inv-closet-card-name,
+.inv-closet-placed-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-closet-empty,
+.inv-closet-notice,
+.inv-closet-note,
+.inv-closet-wear-when,
+.inv-closet-pack-list {
+  margin: 0;
+}
+
+.inv-closet-empty,
+.inv-closet-notice,
+.inv-closet-note {
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.78;
+}
+
+.inv-closet-form {
+  display: grid;
+  gap: 10px;
+  max-width: 22rem;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.inv-closet-form-preview {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.inv-closet-field {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.inv-closet-field input,
+.inv-closet-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+
+.inv-closet-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.inv-closet-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-closet-quiet,
+.inv-closet-saved-btn,
+.inv-closet-pack-link {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.inv-closet-quiet {
+  padding: 8px 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.inv-closet-board-stage {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.inv-closet-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  touch-action: none;
+  overflow: hidden;
+}
+
+.inv-closet-board::before,
+.inv-closet-board::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+}
+
+.inv-closet-board::before {
+  top: 8%;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+}
+
+.inv-closet-board::after {
+  top: 24%;
+  width: 46%;
+  height: 54%;
+  border-radius: 80px 80px 36px 36px;
+}
+
+.inv-closet-placed {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42%;
+  height: 28%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  touch-action: none;
+}
+
+.inv-closet-placed .inv-closet-cutout {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.inv-closet-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.inv-closet-tray-piece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 84px;
+  min-height: 84px;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: inherit;
+  font-size: 12px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.inv-closet-tray-piece .inv-closet-cutout {
+  width: 56px;
+  height: 48px;
+}
+
+.inv-closet-tray-piece[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px #4a6298;
+}
+
+.inv-closet-saved,
+.inv-closet-wears,
+.inv-closet-pack-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inv-closet-saved {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.inv-closet-saved-btn[aria-current="true"] {
+  font-weight: 700;
+}
+
+.inv-closet-wears {
+  display: grid;
+  gap: 12px;
+}
+
+.inv-closet-wear {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.inv-closet-wear-photo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.inv-closet-wear-when {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.inv-closet-packing {
+  display: grid;
+  gap: 16px;
+}
+
+.inv-closet-pack-list {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inv-closet-pack-link {
+  padding: 8px 0;
+  font-family: inherit;
+  font-size: 18px;
+  text-align: left;
+}
+
+.inv-closet-pack-items li + li {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 640px) {
+  .inv-closet-board-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .inv-closet-board {
+    max-width: 240px;
+  }
+}

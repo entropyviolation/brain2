@@ -7,7 +7,9 @@
  * pen-color session loads `header-now-rows.tsx` for the clocks, pause, stop,
  * and pen color. A refresh should not JSON.parse the timegrid blob before
  * the desk paints. The pen clock's paint lives here, and only while that
- * clock is actually on screen. If it is not, the sitting ends: the block
+ * clock is actually on screen. A refresh keeps the sitting: the well may
+ * not be in the document yet, and that wait is not "off screen". Once the
+ * well has been on screen and then leaves it, the sitting ends: the block
  * gets an end, and the task and step stay open.
  *
  * Sessions (slice H2): a running or parked To Do session shows a small
@@ -54,7 +56,9 @@ function SessionHost() {
 export function headerPenClockOnScreen(): boolean {
   if (typeof document === "undefined") return false
   const el = document.querySelector('[data-testid="header-now-box"]')
-  if (!(el instanceof HTMLElement)) return false
+  // The rows load after the sitting is already live. Missing is a refresh
+  // still coming up, not a clock that left the screen.
+  if (!(el instanceof HTMLElement)) return true
   const r = el.getBoundingClientRect()
   // jsdom, and a node that has not been laid out, reports an all-zero box.
   if (r.width === 0 && r.height === 0 && r.top === 0 && r.left === 0) return true

@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-22_
 
-One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). Status (_Last mapped: 2026-10-25_): Wave 0 (core) and Wave 1 (texts, calls, location) are built. Settings → Phone sync lists every source. Wave 2 is **Planned**. Each brief has its own status section.
+One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). Status (_Last mapped: 2026-10-28_): Wave 0 (core) and Wave 1 (texts, calls, location) are built. Settings → Phone sync lists every source. Health import on the iPhone is built (all history, paged). The Mac hub does not read Health. The rest of Wave 2 is **Planned**. Each brief has its own status section.
 
 | Brief | Agent | Wave |
 | --- | --- | --- |
@@ -22,4 +22,4 @@ One brief per build agent for [`../PHONE_SYNC_PLAN.md`](../PHONE_SYNC_PLAN.md). 
 - Reads are read-only. Never write to `chat.db`, `CallHistory.storedata`, HealthKit, or Notes.
 - Nothing readable leaves your devices. Anything sent through Oracle is sealed to the public key first (`scripts/sealed-box.mjs`), the same as BIM texts ([`../ORACLE_CAPTURE_BOX.md`](../ORACLE_CAPTURE_BOX.md)).
 - Tests land with the code (vitest, fixtures under `tests/fixtures/phone-sync/`). Fixtures are made up; never commit real messages.
-- Update the folder README you changed, per `CLAUDE.md`.
+- Update the folder README you changed, per `AGENTS.md` (Claude Code: the short form in `CLAUDE.md`).

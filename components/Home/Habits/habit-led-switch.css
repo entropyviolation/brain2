@@ -66,7 +66,7 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #6a6c6e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .hab-bar-rocker-plate::before {

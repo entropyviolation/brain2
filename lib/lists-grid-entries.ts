@@ -19,6 +19,8 @@ export interface BuildGridEntriesParams {
   /** Global All only: when false, omit period To do / Done / Undone ledger lists. Default true. */
   showPeriodLedgerListsInAll?: boolean
   allTasks: Task[]
+  /** When set, the All Items card uses this count instead of filtering again. */
+  globalAllCount?: number
   getSmartTasks: (id: SmartId) => Task[]
   getTasksForCategory: (categoryId: string) => Task[]
   countForFolder: (f: Folder) => number
@@ -41,6 +43,7 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
     showSmartLists,
     showPeriodLedgerListsInAll = true,
     allTasks,
+    globalAllCount,
     getSmartTasks,
     getTasksForCategory,
     countForFolder,
@@ -89,11 +92,13 @@ export function buildGridEntries(params: BuildGridEntriesParams): GridEntry[] {
       id: "all-root",
       name: "All Items",
       color: "#64748b",
-      count: filterTasksHiddenFromGlobalAll(
-        allTasks.filter((t) => !isClearedFromWork(t)),
-        categories,
-        folders,
-      ).length,
+      count:
+        globalAllCount ??
+        filterTasksHiddenFromGlobalAll(
+          allTasks.filter((t) => !isClearedFromWork(t)),
+          categories,
+          folders,
+        ).length,
     })
     getRootFolders(folders)
       .filter((f) => !isFolderHiddenFromGlobalAll(f, folders))

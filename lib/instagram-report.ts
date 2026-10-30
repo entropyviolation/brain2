@@ -236,7 +236,7 @@ export function readAccountRequest(data: unknown): AccountRequest | null {
 
 const OPEN_KEY = "brain2-instagram-open"
 
-/** Go to Analytics → Sources → Instagram and open this account's card. */
+/** Go to Data → Sources → Instagram and open this account's card. */
 export function openInstagramFor(handle: string): void {
   const clean = normalizeInstagram(handle)
   if (!clean) return

@@ -474,14 +474,13 @@ export function DocsPanel() {
                     placeholder="Document title"
                   />
                   <input
-                    className="docs-field"
+                    className="docs-field docs-folder-field"
                     value={folderDraft}
                     onChange={(e) => setFolderDraft(e.target.value)}
                     onBlur={handleFolderBlur}
                     list="docs-folder-suggestions"
                     placeholder="Folder"
                     aria-label="Folder"
-                    style={{ width: 140 }}
                   />
                   <datalist id="docs-folder-suggestions">
                     {folders.map((f) => (

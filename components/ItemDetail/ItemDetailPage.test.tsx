@@ -14,7 +14,7 @@ import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { TaskType } from "@/lib/types"
 import { EnhancedTaskDetail } from "@/components/ItemDetail/ItemDetailPage"
-import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 
 describe("EnhancedTaskDetail", () => {
   const onBack = vi.fn()
@@ -113,11 +113,11 @@ describe("EnhancedTaskDetail", () => {
     await user.click(screen.getByRole("button", { name: /^Save$/i }))
     expect(screen.getByRole("status")).toHaveTextContent("Saved")
     expect(useTaskStore.getState().tasks[0].estimatedDuration).toBe(90)
-    const rows = listItemActivity("task-detail-1")
+    const rows = listItemActivity("task-detail-1").filter((row) => !row.create)
     expect(rows).toHaveLength(1)
-    expect(rows[0].changes.some((c) => c.field === "estimatedDuration" && c.to === "90")).toBe(true)
+    expect(rows[0].changes.some((c) => c.field === "estimatedDuration" && c.to === "90m")).toBe(true)
     await user.click(screen.getByRole("tab", { name: "History" }))
-    expect(screen.getByText(/Estimated duration/)).toBeInTheDocument()
+    expect(screen.getByText(/Estimate — 45m → 90m/)).toBeInTheDocument()
   })
 
   it("saves unsaved edits with Ctrl+S", async () => {

@@ -80,6 +80,8 @@ interface PlanTextLogProps {
   placeholder: string
   size?: "day" | "period" | "compact"
   composerTestId?: string
+  /** Replaces the period's UI-name stamp (e.g. a scratch pad on a plan key). */
+  stamp?: UiNameStamp
 }
 
 const DRAFT_DEBOUNCE_MS = 0
@@ -90,6 +92,7 @@ export function PlanTextLog({
   placeholder,
   size = "period",
   composerTestId,
+  stamp,
 }: PlanTextLogProps) {
   const [entries, setEntries] = useState<PlanEntry[]>(() => getPlanEntries(period, periodKey))
   const [draftEpoch, setDraftEpoch] = useState(0)
@@ -172,7 +175,7 @@ export function PlanTextLog({
       composerAriaLabel="New plan entry"
       bulkAriaLabel="All plan entries, copy only"
       viewsAriaLabel="How to show plan entries"
-      rootStamp={PLAN_PERIOD_STAMPS[period]}
+      rootStamp={stamp ?? PLAN_PERIOD_STAMPS[period]}
       logStamp={PLAN_LOG_STAMP}
       bulkStamp={PLAN_BULK_STAMP}
     />

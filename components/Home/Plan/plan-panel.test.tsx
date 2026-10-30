@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { PlanPanel } from "./plan-panel"
 
-vi.mock("./month-view", () => ({
+vi.mock("./views/month-view", () => ({
   MonthView: ({ onOpenDay }: { onOpenDay: (date: Date) => void }) => (
     <button type="button" data-testid="month-view" onClick={() => onOpenDay(new Date("2026-06-15T12:00:00"))}>
       Month View
@@ -13,11 +13,11 @@ vi.mock("./month-view", () => ({
   ),
 }))
 
-vi.mock("./week-view", () => ({
+vi.mock("./views/week-view", () => ({
   WeekView: () => <div data-testid="week-view">Week View</div>,
 }))
 
-vi.mock("./day-view", () => ({
+vi.mock("./views/day-view", () => ({
   DayView: () => <div data-testid="day-view">Day View</div>,
 }))
 
@@ -25,7 +25,7 @@ vi.mock("./event-dialog", () => ({
   EventDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="event-dialog">Event Dialog</div> : null),
 }))
 
-vi.mock("./settings-dialog", () => ({
+vi.mock("./dialogs/settings-dialog", () => ({
   SettingsDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="plan-settings">Plan Settings</div> : null),
 }))
 
@@ -33,7 +33,7 @@ vi.mock("./planned-action-dialog", () => ({
   PlannedActionDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="plan-dialog">Plan Dialog</div> : null),
 }))
 
-vi.mock("./paste-events-dialog", () => ({
+vi.mock("./dialogs/paste-events-dialog", () => ({
   PasteEventsDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="paste-events-dialog">Paste Events Dialog</div> : null,
 }))

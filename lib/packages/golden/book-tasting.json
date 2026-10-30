@@ -1,0 +1,83 @@
+{
+  "id": "book-tasting",
+  "name": "Book Tasting",
+  "version": "1",
+  "description": "Match PDFs to books, then taste them: guess the title from a random snippet.",
+  "slots": [
+    {
+      "role": "books",
+      "name": "Reading List",
+      "policy": "create",
+      "description": "Books you want to read; PDFs get matched and linked to these.",
+      "color": "#b45309",
+      "itemLabel": "book",
+      "attributes": [
+        { "id": "author", "name": "Author", "type": "string" },
+        {
+          "id": "status",
+          "name": "Status",
+          "type": "selection",
+          "optionSource": "manual",
+          "options": ["to-read", "reading", "read", "abandoned"]
+        }
+      ],
+      "displayedAttributes": ["author", "status"],
+      "defaultAttributeValues": { "status": "to-read" }
+    },
+    {
+      "role": "pdfs",
+      "name": "PDF Shelf",
+      "policy": "create",
+      "description": "Attached PDFs whose extracted text is matched to a book.",
+      "color": "#475569",
+      "itemLabel": "PDF",
+      "attributes": [
+        { "id": "file", "name": "File", "type": "file" },
+        { "id": "matchedBook", "name": "Matched book", "type": "string" }
+      ],
+      "displayedAttributes": ["matchedBook"]
+    }
+  ],
+  "views": [
+    {
+      "title": "Reading List",
+      "kind": "spreadsheet",
+      "slot": "books",
+      "config": { "categoryId": "books" }
+    },
+    {
+      "title": "Match PDFs → books",
+      "kind": "matcher",
+      "slot": "pdfs",
+      "config": {
+        "categoryId": "pdfs",
+        "matchTargetCategoryId": "books",
+        "matchTextAttrId": "file",
+        "linkRelation": "about"
+      }
+    },
+    {
+      "title": "Taste a book",
+      "kind": "quiz",
+      "slot": "books",
+      "config": {
+        "categoryId": "books",
+        "quizSourceCategoryId": "pdfs",
+        "fileAttrId": "file",
+        "matchTextAttrId": "file",
+        "quizChoiceCount": 4
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "name": "On PDF added → match to a book, else flag",
+      "scope": { "listIds": ["pdfs"] },
+      "trigger": { "kind": "item", "event": "create" },
+      "conditions": [{ "field": "matchedBook", "operator": "empty" }],
+      "actions": [
+        { "kind": "throw", "message": "No matching book found — link this PDF in the Matcher view." }
+      ]
+    }
+  ]
+}

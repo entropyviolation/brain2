@@ -16,6 +16,7 @@ import fs from "node:fs"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import { isLoopbackRemoteAddress } from "./screentime-api.mjs"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
 
 const require = createRequire(fileURLToPath(import.meta.url))
 const ig = require("../electron/instagram-report.js")
@@ -81,6 +82,7 @@ function sendFile(req, res, file) {
 export async function handleInstagramApi(req, res, pathname, deps = {}) {
   const p = String(pathname || "")
   if (!p.startsWith("/api/instagram")) return false
+  if (!guardBrowserOrigin(req, res)) return true
   if (!isLoopbackRemoteAddress(req.socket?.remoteAddress)) {
     sendJson(res, 403, { ok: false, error: "The Instagram report is only served on this Mac." })
     return true

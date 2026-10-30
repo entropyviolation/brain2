@@ -28,6 +28,7 @@ import type {
   WorkflowDefinition,
 } from "@/lib/types"
 import { evaluateCondition, type ItemLike } from "@/lib/item-types"
+import { withItemWriteSource } from "@/lib/item-write-source"
 
 /** A normalized event the engine reacts to. Derived from `ItemMutationEvent`. */
 export interface WorkflowEvent {
@@ -225,6 +226,7 @@ function runWorkflow(
   const record = (action: WorkflowAction["kind"], detail?: Record<string, unknown>) =>
     result.effects.push({ workflowId: def.id, action, itemId, detail })
 
+  withItemWriteSource({ surface: "workflow", name: def.name }, () => {
   for (const action of def.actions) {
     try {
       switch (action.kind) {
@@ -342,6 +344,7 @@ function runWorkflow(
       })
     }
   }
+  })
 }
 
 /** Apply a value to the in-memory working item so later actions/conditions see it. */

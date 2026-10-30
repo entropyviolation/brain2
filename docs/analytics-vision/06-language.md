@@ -1,4 +1,4 @@
-# Analytics vision — Language
+# Data vision — Language
 
 This is an **intention**. It is not a surface that ships, and it is not a claim that a model has already read the vault.
 
@@ -60,7 +60,7 @@ The same lines are also meant to be read with methods that interpret, group, and
 
 A word count and an embedding neighbor answer different questions. Neither replaces the line. A person should be able to stand on the classical picture with the further reading closed.
 
-Hosted models and on-device models are both in scope. Each reading names the method that produced it. The vault text is the input. The reading is not smuggled back in as if it had been typed.
+_Last mapped: 2026-10-28._ Local only. No hosted model, including a free tier. The first grouping of why-it-wasn't-done notes, and the other readings that share that rule, are [`docs/analytics-plan/13-local-readings.md`](../analytics-plan/13-local-readings.md). Each reading names the method that produced it. The vault text is the input. The reading is not smuggled back in as if it had been typed.
 
 ---
 

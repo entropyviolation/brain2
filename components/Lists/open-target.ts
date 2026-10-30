@@ -21,6 +21,8 @@ export function openTargetReducer(_state: OpenTarget, action: OpenTargetAction):
       return { type: "objectives" }
     case "OPEN_FOLDER_ALL":
       return { type: "folder-all", folderId: action.folderId }
+    case "OPEN_ITEM_TYPE":
+      return { type: "item-type", id: action.id }
     case "SET":
       return action.target
     default:
@@ -47,5 +49,6 @@ export function openTargetFromEntry(
     return { type: "habits", id: entry.id as "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   }
   if (entry.kind === "objectives") return { type: "objectives" }
+  if (entry.kind === "item-type") return { type: "item-type", id: entry.id }
   return { type: "smart", id: entry.id as "daily" | "weekly" | "monthly" | "quarterly" }
 }

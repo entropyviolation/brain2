@@ -72,6 +72,7 @@ const EXPECTED_KIND_MARKERS: Array<{ kind: string; mustMention: string }> = [
   { kind: "switch-objective", mustMention: "so:" },
   { kind: "transit", mustMention: "transit:" },
   { kind: "habit-trigger", mustMention: "dh:" },
+  { kind: "nfc", mustMention: "nfc:" },
 ]
 
 describe("BIM_COMMAND_CATALOG", () => {

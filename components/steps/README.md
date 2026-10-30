@@ -1,19 +1,19 @@
 # Steps (shared step tree)
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-One step tree for every host, so item detail never imports from Home. Built in Phase 9 (slice K) of [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md#phase-9-one-step-tree).
+One step tree for every host, so item detail never imports from Home. Built in Phase 9 (slice K) of [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md#phase-9-one-step-tree). That redesign is resolved. The session pick list stays its own list.
 
 ## Hosts
 
 | Host | Columns it passes |
 |------|-------------------|
 | To Do lid (`components/Home/ToDo/TodoBreakdown.tsx`) | Tier tag and spark (`tierTags`), Needs…, ▶, minutes, spent, counts, progress (a branch's level gauge on hover), delete. Tier filter from `todo-prefs` `tierView`. Hide locked and Show next only from `todo-prefs`. A move is one undo step (`rememberWorld`). |
-| Item detail → Subtasks (`components/ItemDetail/SubtaskTree.tsx`) | Tier tag and spark (`tierTags`), parts (`n/m`), minutes, `=Nm`, delete, ↗ (stored tasks only). No view switches. |
+| Item detail → Subtasks (`components/ItemDetail/tabs/subtasks/SubtaskTree.tsx`) | Tier tag and spark (`tierTags`), parts (`n/m`), minutes, `=Nm`, delete, ↗ (stored tasks only). No view switches. |
 
-| Task card (`components/Home/ToDo/TaskCard.tsx`) | _Last mapped: 2026-10-25_ (Phase 12). Tier tags, ↗, and its column picker. Passes controlled `selected` / `onSelectedChange` (mass edit) and `onVisibleIds` (Chain order). Card-local level filter, Hide locked, Hide completed, Show next only. |
+| Task card (`components/Home/ToDo/task-card/TaskCard.tsx`) | _Last mapped: 2026-10-25_ (Phase 12). Tier tags, ↗, and its column picker. Passes controlled `selected` / `onSelectedChange` (mass edit) and `onVisibleIds` (Chain order). Card-local level filter, Hide locked, Hide completed, Show next only. |
 
-**Planned:** the session pick list (Phase 13) hosts it too.
+The session pick list does not host this tree. Phase 13 (a pick list that was `StepTree`) was declined with the redesign.
 
 ## Files
 
@@ -37,7 +37,7 @@ One step tree for every host, so item detail never imports from Home. Built in P
 - **Hide locked.** Hides a step waiting on an open prerequisite (`lib/prereqs.ts`, ancestors' waits included) and a branch whose children are all hidden that way. Never hides a step for being incomplete. Hidden steps still count in progress. Ticking the prerequisite brings them back.
 - **Hide completed.** _Last mapped: 2026-10-25._ The task card’s checkbox, default off. `hideCompleted` on `buildStepView` skips done steps. An open parent stays. A completed parent is skipped with its subtree. The “+ step” row under a visible parent stays. Done steps are not counted in the calm “waiting, not forgotten” line. List mode on the card omits them too. The Steps count is the steps still in view. It does not change the ledger.
 - **Tier filter** (_Last mapped: 2026-10-16_, Phase 10). `tier` keeps one level's view (`stepsForTier`, cumulative). A step outside it with an in-view step inside shows greyed (`is-greyed`, `StepRowInfo.greyed`) as its container. The rest is hidden and counted in the calm line; the peek shows it.
-- **Show next only.** A branch with two or more steps inside shows only its next step (the `pickStartStep` pick inside it, else its first open leaf) and a dim **+ N more**; one click opens the branch. The data never changes. **Planned:** switch to `rankStartSteps` once it exists (its `[0]` equals `pickStartStep`).
+- **Show next only.** A branch with two or more steps inside shows only its next step (the `pickStartStep` pick inside it, else its first open leaf) and a dim **+ N more**; one click opens the branch. The data never changes. `rankStartSteps(task)[0]` is that same step, so the branch pick stays `pickStartStep`.
 
 ## Fold motion
 
@@ -50,10 +50,10 @@ _Last mapped: 2026-10-20_
 - A host passes `onOpenStep`. Then each row gets a hover **↗** that opens the step's item. The dot only selects the step (⌘/Shift add; a drag still moves). Hosts that show a detail panel (the task card) put **Open item** there. A dot with an item wears a violet ring (`is-item`). The lid (`TodoTable`, `todo-panel`) and item detail → Subtasks pass `openStepItem(taskId, stepId)`.
 - `openStepItem` makes the item if needed (`lib/step-items.ts`) and pushes a layer. Layers stack: Esc and **‹ Back** close only the top; a crumb opens that ancestor (the task, or a step's item) as a new layer. Everything underneath stays mounted, so the lid, scroll, selection, link mode and running session keep their state.
 - `TaskDetailPopup` ignores a click or focus inside a layer above it (`data-item-layer`, `layerSafeDismiss`), so it stays open under the stack.
-- ↗ from the task card and **Card** on a step item (the parent's card, scrolled to the step) are built (Phase 12). **Planned:** ↗ from a session (Phase 13). The level gauge on a step item's bar waits on slice N's `LevelGauge`.
+- ↗ from the task card and **Card** on a step item (the parent's card, scrolled to the step) are built (Phase 12). A session does not open a step with ↗ (Phase 13 was declined). The step-item bar does not draw `LevelGauge`. The level stays on Subtasks and the task card.
 
-## Not built yet
+## Closed with the redesign (2026-10-27)
 
-- Cross-task drag (Decision 9 is open). Drag between B / G / E columns is the task card's own three-column view, not `StepTree`. Show next only still picks inside a branch without the tier filter. **Paste as log** waits for `lib/work-log-parse.ts` (slice I).
+- Cross-task drag stays off (Decision 9: moves stay inside one task). Drag between B / G / E columns is the task card's own three-column view, not `StepTree`. Show next only still picks inside a branch without the tier filter. **Paste as log** was declined. There is no `lib/work-log-parse.ts`.
 
 Tests: `StepTree.test.tsx`, `step-tree-view.test.ts`, `StepItemStack.test.tsx`, `lib/todo-steps-move.test.ts`, `lib/step-items.test.ts`.

@@ -1,0 +1,132 @@
+/**
+ * components/Inventory/inventory-chrome.css — Inventory desk interior
+ *
+ * The room is the house chrome face, the same silver as Home and Docs.
+ * Scene keys are the latching keycap (`.b2-keycap-tab` plus the CRT on-light).
+ * Phone rules live in `phone/inventory-phone.css`.
+ */
+
+.inv-room {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 24px;
+  color: #111;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  background: var(--chrome-face, #c0c0c0);
+}
+
+.inv-room .inv-scene-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: fit-content;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.inv-room .inv-scene-keys [role="tab"] {
+  min-height: 36px;
+  padding: 8px 16px 12px;
+  letter-spacing: 0.08em;
+}
+
+.inv-room .inv-scene-keys [role="tab"][data-state="active"] {
+  color: #7dffc4;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 3px #7dffc4;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    #070c0a;
+  box-shadow:
+    inset 2px 0 0 #141816,
+    inset -2px 0 0 #141816,
+    inset 0 -4px 0 #141816,
+    0 0 0 1px #9aa09c;
+}
+
+.inv-room .inv-scene-keys [role="tab"][data-state="active"]::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4fff8 0 16%, #7dffc4 42%, #0b4a32 100%);
+  box-shadow:
+    0 0 0 1px #141816,
+    0 0 0 2px #9aa09c,
+    0 0 4px #7dffc4;
+}
+
+.inv-room .inv-scene-keys [role="tab"]:active {
+  transform: translateY(2px);
+}
+
+.inv-room .inv-scene-keys [role="tab"]:focus-visible {
+  outline: 2px solid #7dffc4;
+  outline-offset: 2px;
+}
+
+.inv-room .inv-scene-note {
+  margin: 8px 0 0;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--chrome-ink-soft, #404040);
+}
+
+.inv-room .inv-shelf-pick {
+  max-width: 22rem;
+  margin-top: 16px;
+}
+
+.inv-room .inv-shelf-label {
+  display: block;
+  margin: 0 0 8px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inv-room .list-picker-body {
+  max-height: 160px;
+}
+
+.inv-room .inv-stage {
+  margin-top: 16px;
+  min-height: 320px;
+  padding: 24px;
+  color: #111;
+  background: var(--chrome-paper, #f4f6f8);
+  box-shadow: var(--w95-sunken);
+}
+
+.inv-room .inv-stage-count {
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inv-room .inv-stage-titles {
+  max-height: 28rem;
+  margin: 16px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.inv-room .inv-stage-titles li {
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.16);
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1.4;
+}

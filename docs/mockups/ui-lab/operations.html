@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operations — UI Lab</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/ui/native-select.css">
+<link rel="stylesheet" href="/components/Operations/operations-chrome.css">
+<style>
+  body.win95-app {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    body.win95-app { grid-template-columns: 1fr; }
+  }
+  .lab-bench {
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow: auto;
+    padding: 10px;
+    background: var(--chrome-face, #c0c0c0);
+    box-shadow: inset -1px 0 var(--chrome-lo, #808080);
+    font-size: 12px;
+    color: #1c1e20;
+  }
+  body.win95-app .lab-bench h1 {
+    margin: 0 0 8px;
+    color: #1c1e20;
+    text-shadow: 0 1px 0 #fff;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lab-sections { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+  .lab-sections a {
+    color: #000080;
+    text-decoration: none;
+    padding: 2px 5px;
+    background: #fff;
+    box-shadow: var(--w95-field, inset 1px 1px #808080);
+  }
+  .lab-sections a[aria-current="page"] { background: #000080; color: #fff; }
+  .lab-bench fieldset {
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    border: none;
+    background: var(--chrome-mid, #dfdfdf);
+    box-shadow: var(--w95-field, inset 1px 1px #808080);
+  }
+  .lab-bench legend { padding: 0 4px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .lab-bench label { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; margin: 4px 0; }
+  .lab-bench select, .lab-bench input[type="range"] { width: 100%; grid-column: 1 / -1; }
+  .lab-bench output { font-variant-numeric: tabular-nums; }
+  .lab-bench button[data-no95] {
+    margin-top: 4px;
+    padding: 4px 10px;
+    border: none;
+    background: var(--chrome-face, #c0c0c0);
+    box-shadow: var(--fascia-key-ring, 0 0 0 1px #808080);
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .lab-stage {
+    padding: 24px;
+    min-width: 0;
+  }
+  /* Overrides exist only while a control has left the house. */
+  body.win95-app [data-lab-face],
+  body.win95-app [data-lab-face] :is(button, input, select, textarea, h2, h3, label) {
+    font-family: var(--lab-face);
+  }
+  [data-lab-type] .ops-mark h2 { font-size: calc(15px * var(--lab-type)); }
+  [data-lab-type] .ops-btn,
+  .ops-btn[data-lab-type] { font-size: calc(11px * var(--lab-type)); }
+  [data-lab-type] .ops-inline-label,
+  [data-lab-type] .ops-input-sm,
+  [data-lab-type] .native-select.ops-input-sm,
+  [data-lab-type] .ops-status,
+  [data-lab-type] .ops-check,
+  [data-lab-type] .ops-filter-item,
+  [data-lab-type] .ops-category-head,
+  [data-lab-type] .ops-card-head > span:first-of-type,
+  [data-lab-type] .ops-card-body { font-size: calc(11px * var(--lab-type)); }
+  [data-lab-type] .ops-card-meta,
+  [data-lab-type] .ops-stage,
+  [data-lab-type] .ops-chip { font-size: calc(10px * var(--lab-type)); }
+  [data-lab-type] .ops-menubar input[type="text"] { font-size: calc(12px * var(--lab-type)); }
+  [data-lab-density] .ops-fascia,
+  .ops-fascia[data-lab-density] {
+    padding: clamp(6px, calc(10px + var(--lab-d) * 8px), 16px);
+    gap: clamp(4px, calc(8px + var(--lab-d) * 6px), 14px);
+  }
+  [data-lab-density] .ops-menubar,
+  [data-lab-density] .ops-toolbar,
+  [data-lab-density] .ops-body {
+    gap: clamp(4px, calc(8px + var(--lab-d) * 6px), 14px);
+    padding: clamp(4px, calc(8px + var(--lab-d) * 6px), 14px);
+  }
+  [data-lab-density] .ops-groups { gap: clamp(6px, calc(12px + var(--lab-d) * 8px), 20px); }
+  [data-lab-density] .ops-category,
+  .ops-category[data-lab-density] {
+    gap: clamp(4px, calc(8px + var(--lab-d) * 6px), 14px);
+    padding: clamp(6px, calc(10px + var(--lab-d) * 8px), 16px);
+  }
+  [data-lab-density] .ops-board,
+  .ops-category[data-lab-density] .ops-board { gap: clamp(6px, calc(10px + var(--lab-d) * 8px), 18px); }
+  [data-lab-density] .ops-card-head { padding: clamp(4px, calc(6px + var(--lab-d) * 4px), 10px) clamp(6px, calc(8px + var(--lab-d) * 4px), 12px); }
+  [data-lab-density] .ops-card-body { padding: clamp(4px, calc(8px + var(--lab-d) * 6px), 14px); }
+  [data-lab-density] .ops-btn,
+  .ops-btn[data-lab-density] {
+    min-height: clamp(24px, calc(28px + var(--lab-d) * 8px), 36px);
+    padding: clamp(2px, calc(4px + var(--lab-d) * 3px), 8px) clamp(8px, calc(12px + var(--lab-d) * 6px), 18px) clamp(3px, calc(5px + var(--lab-d) * 3px), 9px);
+  }
+  [data-lab-layout="stack"] .ops-board,
+  .ops-category[data-lab-layout="stack"] .ops-board { grid-template-columns: minmax(0, 420px); }
+  [data-lab-layout="stack"] .ops-menubar,
+  [data-lab-layout="stack"] .ops-toolbar,
+  .ops-menubar[data-lab-layout="stack"],
+  .ops-toolbar[data-lab-layout="stack"] { flex-direction: column; align-items: stretch; }
+  [data-lab-layout="stack"] .ops-menubar input[type="text"] { max-width: none; }
+  .ops95[data-lab-layout="row"] .ops-fascia,
+  .ops-fascia[data-lab-layout="row"] { flex-direction: row; align-items: center; }
+  .ops95[data-lab-layout="row"] .ops-groups { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
+  .ops95[data-lab-layout="row"] .ops-category { flex: 1 1 240px; min-width: 0; }
+  .ops-menubar[data-lab-layout="row"],
+  .ops-toolbar[data-lab-layout="row"] { flex-wrap: nowrap; }
+  [data-lab-layout="spread"] .ops-board,
+  .ops-category[data-lab-layout="spread"] .ops-board {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .ops-menubar[data-lab-layout="spread"],
+  .ops-toolbar[data-lab-layout="spread"] { gap: 14px; }
+  [data-lab-palette] {
+    --o-surface: var(--chrome-face);
+    --o-face: var(--chrome-mid);
+    --o-mill:
+      repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
+      linear-gradient(165deg, var(--chrome-sheen) 0%, var(--o-surface) 48%, var(--chrome-shade) 100%);
+    --o-key-face:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
+      linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--o-surface) 70%, var(--chrome-key-shade) 100%);
+    --fascia-mill: var(--o-mill);
+    --fascia-key-face: var(--o-key-face);
+    --o-bay-ring:
+      0 0 0 1px var(--chrome-ring),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -1px 0 rgba(40, 42, 46, 0.4),
+      inset 0 0 0 2px var(--chrome-inset);
+    --o-key-ring:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -1px 0 rgba(55, 58, 62, 0.45),
+      0 0 0 1px var(--chrome-ring),
+      0 1px 0 var(--chrome-lip);
+    --fascia-key-ring: var(--o-key-ring);
+  }
+  [data-lab-palette="pewter"] {
+    --chrome-face: #c8c0b4; --chrome-mid: #e4dcd0; --chrome-sheen: #ddd4c8; --chrome-shade: #a3988c;
+    --chrome-key-sheen: #f3ece4; --chrome-key-mid: #ddd4c8; --chrome-key-shade: #a89c90;
+    --chrome-mill-hi: #e4dcd2; --chrome-grade-sheen: #d0c6ba; --chrome-stone: #b4aa9e; --chrome-foot: #b0a496;
+    --chrome-mist: #f4eee8; --chrome-mist-2: #efe8e0; --chrome-lip: #7a7268; --chrome-ring: #6a6258;
+    --chrome-inset: #c0b6aa; --chrome-brush: #b8aea2; --o-nameplate: #2a2824;
+  }
+  [data-lab-palette="bay"] {
+    --chrome-face: #b7c3c8; --chrome-mid: #d5e0e4; --chrome-sheen: #d5e0e4; --chrome-shade: #8e9aa0;
+    --chrome-key-sheen: #eef4f6; --chrome-key-mid: #d0dbe0; --chrome-key-shade: #8a989e;
+    --chrome-mill-hi: #dce6ea; --chrome-grade-sheen: #c5d0d4; --chrome-stone: #a8b4b8; --chrome-foot: #9aa8ac;
+    --chrome-mist: #eef4f6; --chrome-mist-2: #e4eef2; --chrome-lip: #5c6c72; --chrome-ring: #4a5a60;
+    --chrome-inset: #b0bcc0; --chrome-brush: #a8b4b8; --o-nameplate: #1e282c;
+  }
+  [data-lab-palette="graphite"] {
+    --chrome-face: #c6c8cc; --chrome-mid: #e0e2e6; --chrome-sheen: #e2e4e8; --chrome-shade: #969aa0;
+    --chrome-key-sheen: #f2f3f5; --chrome-key-mid: #d6d8dc; --chrome-key-shade: #94989e;
+    --chrome-mill-hi: #dcdee2; --chrome-grade-sheen: #c4c6ca; --chrome-stone: #aaacb0; --chrome-foot: #a0a2a6;
+    --chrome-mist: #f0f1f3; --chrome-mist-2: #e6e7ea; --chrome-lip: #64686e; --chrome-ring: #52565c;
+    --chrome-inset: #b4b6ba; --chrome-brush: #b0b2b6; --o-nameplate: #242628;
+  }
+</style>
+</head>
+<body class="win95-app">
+<aside class="lab-bench">
+  <nav class="lab-sections" aria-label="UI lab sections">
+    <a href="index.html">Index</a>
+    <a href="shell.html">Shell</a>
+    <a href="home.html">Home</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html" aria-current="page">Operations</a>
+    <a href="modules.html">Modules</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="settings.html">Settings</a>
+  </nav>
+  <h1>Operations lab</h1>
+  <fieldset>
+    <legend>Scope</legend>
+    <label>Region
+      <select id="lab-scope">
+        <option value="section" selected>Whole section</option>
+        <option value="fascia">Fascia</option>
+        <option value="plates">Category plates</option>
+        <option value="keys">Keys</option>
+      </select>
+    </label>
+  </fieldset>
+  <fieldset>
+    <legend>Type</legend>
+    <label>Face
+      <select id="lab-face">
+        <option value="house" selected>House</option>
+        <option value="tahoma">Tahoma</option>
+        <option value="georgia">Georgia</option>
+        <option value="courier">Courier</option>
+      </select>
+    </label>
+    <label>Scale <output id="lab-scale-out">1</output>
+      <input id="lab-scale" type="range" min="0.9" max="1.16" step="0.02" value="1">
+    </label>
+  </fieldset>
+  <fieldset>
+    <legend>Material</legend>
+    <label>Density <output id="lab-density-out">House</output>
+      <input id="lab-density" type="range" min="0" max="100" step="1" value="50">
+    </label>
+    <label>Radius <output id="lab-radius-out">House</output>
+      <input id="lab-radius" type="range" min="0" max="8" step="1" value="2">
+    </label>
+    <label>Layout
+      <select id="lab-layout">
+        <option value="house" selected>As built</option>
+        <option value="stack">Stack</option>
+        <option value="row">Row</option>
+        <option value="spread">Spread</option>
+      </select>
+    </label>
+    <label>Palette
+      <select id="lab-palette">
+        <option value="house" selected>House</option>
+        <option value="pewter">Pewter</option>
+        <option value="bay">Bay</option>
+        <option value="graphite">Graphite</option>
+      </select>
+    </label>
+  </fieldset>
+  <button type="button" id="lab-reset" data-no95>Reset</button>
+</aside>
+
+<main class="lab-stage" id="stage">
+  <div class="ops95" data-ui-name="Operations" data-ui-help="Command center for project operations — board, panels, and working-now clock." data-ui-docs="components/Operations/README.md">
+    <div class="ops-window">
+      <div class="ops-fascia">
+        <div class="ops-mark">
+          <span class="ops-power-lamp is-on" aria-hidden="true"></span>
+          <svg class="ops-title-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+          <h2>Operations — Command Center</h2>
+        </div>
+        <div class="ops-menubar">
+          <input type="text" placeholder="Name a new operation…" aria-label="New operation name">
+          <label class="ops-inline-label" for="ops-new-preset">Shape</label>
+          <button type="button" class="native-select ops-input ops-input-sm" id="ops-new-preset" title="To do, phases, parts, log, and the queue rail.">
+            <span class="native-select-value">Standard</span>
+            <svg class="native-select-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <button type="button" class="ops-btn ops-btn-default" disabled>New Operation</button>
+        </div>
+      </div>
+      <div class="ops-toolbar">
+        <label class="ops-inline-label" for="ops-sort">Sort</label>
+        <button type="button" class="native-select ops-input ops-input-sm" id="ops-sort">
+          <span class="native-select-value">Name</span>
+          <svg class="native-select-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <label class="ops-check ops-check-inline">
+          <input type="checkbox" checked>
+          Group by category
+        </label>
+        <button type="button" class="ops-btn" aria-pressed="false">Show archived</button>
+        <div class="ops-filter" role="group" aria-label="Filter categories">
+          <label class="ops-filter-item"><input type="checkbox" checked> print</label>
+          <label class="ops-filter-item"><input type="checkbox" checked> studio</label>
+          <label class="ops-filter-item"><input type="checkbox" checked> Uncategorized</label>
+        </div>
+      </div>
+      <div class="ops-body">
+        <div class="ops-groups">
+          <section class="ops-category">
+            <h3 class="ops-category-head">
+              <span>print</span>
+              <span class="ops-category-count">1</span>
+            </h3>
+            <div class="ops-board">
+              <button type="button" class="ops-card">
+                <div class="ops-card-head">
+                  <span>Dove plate</span>
+                  <span class="ops-stage ops-stage-planning">planning</span>
+                </div>
+                <div class="ops-card-body">Print the dove plate and file the edition.</div>
+                <div class="ops-card-foot">
+                  <span class="ops-chip-row">
+                    <span class="ops-chip ops-chip-static">print</span>
+                    <span class="ops-chip ops-chip-static">studio</span>
+                  </span>
+                  <span class="ops-card-meta">6 panels</span>
+                </div>
+              </button>
+            </div>
+          </section>
+          <section class="ops-category">
+            <h3 class="ops-category-head">
+              <span>studio</span>
+              <span class="ops-category-count">1</span>
+            </h3>
+            <div class="ops-board">
+              <button type="button" class="ops-card">
+                <div class="ops-card-head">
+                  <span>Dove plate</span>
+                  <span class="ops-stage ops-stage-planning">planning</span>
+                </div>
+                <div class="ops-card-body">Print the dove plate and file the edition.</div>
+                <div class="ops-card-foot">
+                  <span class="ops-chip-row">
+                    <span class="ops-chip ops-chip-static">print</span>
+                    <span class="ops-chip ops-chip-static">studio</span>
+                  </span>
+                  <span class="ops-card-meta">6 panels</span>
+                </div>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+      <div class="ops-status">
+        <span class="ops-status-led" aria-hidden="true"></span>
+        1 showing · 2 categories
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var FACES = {
+    tahoma: 'Tahoma, "MS Sans Serif", Geneva, sans-serif',
+    georgia: 'Georgia, "Times New Roman", serif',
+    courier: '"Courier New", Courier, monospace'
+  };
+  var scope = document.getElementById("lab-scope");
+  var face = document.getElementById("lab-face");
+  var scale = document.getElementById("lab-scale");
+  var density = document.getElementById("lab-density");
+  var radius = document.getElementById("lab-radius");
+  var layout = document.getElementById("lab-layout");
+  var palette = document.getElementById("lab-palette");
+  var scaleOut = document.getElementById("lab-scale-out");
+  var densityOut = document.getElementById("lab-density-out");
+  var radiusOut = document.getElementById("lab-radius-out");
+
+  function hosts() {
+    if (scope.value === "fascia") return [document.querySelector(".ops-fascia")];
+    if (scope.value === "plates") return Array.prototype.slice.call(document.querySelectorAll(".ops-category"));
+    if (scope.value === "keys") return Array.prototype.slice.call(document.querySelectorAll(".ops-btn"));
+    return [document.querySelector(".ops95")];
+  }
+
+  function layoutHosts() {
+    if (scope.value === "keys") return Array.prototype.slice.call(document.querySelectorAll(".ops-menubar, .ops-toolbar"));
+    return hosts();
+  }
+
+  function clearLab() {
+    Array.prototype.forEach.call(document.querySelectorAll("#stage [data-lab]"), function (el) {
+      el.removeAttribute("data-lab");
+      el.removeAttribute("data-lab-face");
+      el.removeAttribute("data-lab-type");
+      el.removeAttribute("data-lab-density");
+      el.removeAttribute("data-lab-layout");
+      el.removeAttribute("data-lab-palette");
+      el.style.cssText = "";
+    });
+  }
+
+  function paint(list, apply) {
+    list.forEach(function (el) {
+      if (!el) return;
+      el.setAttribute("data-lab", "");
+      apply(el);
+    });
+  }
+
+  function apply() {
+    var type = Math.min(1.16, Math.max(0.9, Number(scale.value) || 1));
+    var dense = Math.min(0.48, Math.max(-0.42, (Number(density.value) - 50) / 50));
+    var rad = Math.min(8, Math.max(0, Number(radius.value)));
+    scale.value = String(type);
+    scaleOut.textContent = type.toFixed(2);
+    densityOut.textContent = Number(density.value) === 50 ? "House" : (dense > 0 ? "+" : "") + dense.toFixed(2);
+    radiusOut.textContent = rad === 2 ? "House" : rad + "px";
+    clearLab();
+    if (face.value !== "house") {
+      paint(hosts(), function (el) {
+        el.setAttribute("data-lab-face", face.value);
+        el.style.setProperty("--lab-face", FACES[face.value]);
+      });
+    }
+    if (type !== 1) {
+      paint(hosts(), function (el) {
+        el.setAttribute("data-lab-type", "");
+        el.style.setProperty("--lab-type", String(type));
+      });
+    }
+    if (Number(density.value) !== 50) {
+      paint(hosts(), function (el) {
+        el.setAttribute("data-lab-density", "");
+        el.style.setProperty("--lab-d", dense.toFixed(3));
+      });
+    }
+    if (rad !== 2) {
+      paint(hosts(), function (el) {
+        el.style.setProperty("--r-2", rad + "px");
+        el.style.setProperty("--r-3", Math.min(rad + 1, 9) + "px");
+      });
+    }
+    if (layout.value !== "house") {
+      paint(layoutHosts(), function (el) {
+        el.setAttribute("data-lab-layout", layout.value);
+      });
+    }
+    if (palette.value !== "house") {
+      paint(hosts(), function (el) {
+        el.setAttribute("data-lab-palette", palette.value);
+      });
+    }
+  }
+
+  function reset() {
+    scope.value = "section";
+    face.value = "house";
+    scale.value = "1";
+    density.value = "50";
+    radius.value = "2";
+    layout.value = "house";
+    palette.value = "house";
+    apply();
+  }
+
+  [scope, face, scale, density, radius, layout, palette].forEach(function (el) {
+    el.addEventListener("input", apply);
+    el.addEventListener("change", apply);
+  });
+  document.getElementById("lab-reset").addEventListener("click", reset);
+  apply();
+})();
+</script>
+</body>
+</html>

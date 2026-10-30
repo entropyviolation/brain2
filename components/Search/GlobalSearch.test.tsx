@@ -1,6 +1,8 @@
 /**
  * GlobalSearch — palette keyboard, empty states, and result rows.
  */
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -166,6 +168,55 @@ describe("GlobalSearch", () => {
     await user.type(screen.getByRole("combobox", { name: "Search items" }), "zzzz")
     expect(screen.getByRole("status")).toHaveTextContent("No results.")
     expect(screen.getByText("0 shown")).toBeInTheDocument()
+  })
+
+  it("answers a house question with triples and stays on node lookup otherwise", async () => {
+    const user = userEvent.setup()
+    addItem({ id: "milk", description: "Buy milk", type: "task" })
+    renderSearch()
+    const box = screen.getByRole("combobox", { name: "Search items" })
+
+    await user.type(box, "where from belief strength")
+    const answer = screen.getByTestId("pattern-answer")
+    expect(answer).toHaveTextContent("Belief strength is derived from")
+    expect(answer).toHaveTextContent("derived")
+    expect(screen.queryByRole("option", { name: /Buy milk/i })).not.toBeInTheDocument()
+
+    await user.clear(box)
+    await user.type(box, "milk")
+    expect(screen.queryByTestId("pattern-answer")).not.toBeInTheDocument()
+    expect(screen.getByRole("option", { name: /Buy milk/i })).toBeInTheDocument()
+  })
+
+  it("says when no triple supports a pattern", async () => {
+    const user = userEvent.setup()
+    renderSearch()
+    await user.type(screen.getByRole("combobox", { name: "Search items" }), "places with one person")
+    expect(screen.getByTestId("pattern-answer")).toHaveTextContent("No triple supports an answer.")
+  })
+
+  it("fits the phone sheet inside the visual viewport and leaves the desktop palette", () => {
+    const css = readFileSync(join(process.cwd(), "components/Search/search-chrome.css"), "utf8")
+    const phoneAt = css.indexOf("@media (max-width: 767px)")
+    expect(phoneAt).toBeGreaterThan(0)
+    const desktop = css.slice(0, phoneAt)
+    const phone = css.slice(phoneAt)
+
+    expect(desktop).toContain("font-size: 14px")
+    expect(desktop).toContain("min(36rem, calc(100vw - 1.5rem))")
+    expect(desktop).toMatch(/\.b2-search \.b2-search-field \{[^}]*font-size: 14px !important/)
+
+    expect(phone).toContain("max-width: min(100%, 100vw)")
+    expect(phone).toContain("min-width: 0")
+    expect(phone).toContain("transform: none")
+    expect(phone).toContain("100dvh")
+    expect(phone).toContain("safe-area-inset-top")
+    expect(phone).toContain("safe-area-inset-bottom")
+    expect(phone).toMatch(/\.b2-search \.b2-search-field \{[^}]*font-size: 16px !important/)
+    expect(phone).toContain("min-height: 44px")
+    expect(phone).toContain("overflow-wrap: anywhere")
+    expect(phone).not.toContain("user-scalable")
+    expect(phone).not.toContain("maximum-scale")
   })
 
   it("closes on Escape", async () => {

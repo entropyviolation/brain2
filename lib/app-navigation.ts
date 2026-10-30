@@ -3,7 +3,8 @@
  *
  * Stores the user's last active tab/location in localStorage so a refresh
  * returns them to the same place (top-level tab, Lists folder/list, Home
- * sub-panels, Scheduler period, Analytics view, Docs scroll, etc.).
+ * sub-panels, Scheduler period, Data view, Docs scroll, etc.).
+ * The Data desk tab keeps the stored id `analytics` (formerly Analytics).
  */
 import type { OpenTarget } from "@/components/Lists/types"
 
@@ -39,12 +40,19 @@ export const APP_NAV_KEYS = {
   opsPanel: persistKey("ops-panel"),
   modulesWorkspaceId: persistKey("modules-workspace-id"),
   modulesView: persistKey("modules-view"),
+  inventoryScene: persistKey("inventory-scene"),
+  inventoryBookshelfList: persistKey("inventory-bookshelf-list"),
+  /** Shopping views and the vault lists each one aggregates. */
+  inventoryShoppingLists: persistKey("inventory-shopping-lists"),
   itemDetailTab: persistKey("item-detail-tab"),
   uiScroll: persistKey("ui-scroll"),
 } as const
 
 export const HOME_NEEDS_ATTENTION_STATES = ["expanded", "collapsed"] as const
 export type HomeNeedsAttentionState = (typeof HOME_NEEDS_ATTENTION_STATES)[number]
+
+/** Visible name of the `analytics` desk tab. Formerly Analytics. */
+export const DATA_TAB_LABEL = "Data"
 
 export const APP_TABS = [
   "home",
@@ -53,6 +61,7 @@ export const APP_TABS = [
   "scheduler",
   "operations",
   "modules",
+  "inventory",
   "analytics",
 ] as const
 export type AppTab = (typeof APP_TABS)[number]
@@ -226,6 +235,8 @@ function isValidOpenTarget(value: unknown): value is OpenTarget {
       return true
     case "folder-all":
       return typeof t.folderId === "string"
+    case "item-type":
+      return typeof t.id === "string" && t.id.length > 0
     default:
       return false
   }
@@ -269,6 +280,8 @@ function detailListIdFor(state: ListsNavigationState): string {
       return state.openTarget.folderId
     case "objectives":
       return "objectives"
+    case "item-type":
+      return state.openTarget.id
     default:
       return state.location
   }

@@ -9,29 +9,10 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { isLoopbackRemoteAddress } from "./screentime-api.mjs"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { readBody, sendJson } from "./local-api-json.mjs"
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
-
-function sendJson(res, status, body) {
-  const json = JSON.stringify(body)
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(json),
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  })
-  res.end(json)
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
-}
 
 function readJson(file, fallback) {
   try {
@@ -73,6 +54,7 @@ export function writePhoneSyncEnabled(dataDir, source, on) {
 export async function handlePhoneSyncApi(req, res, pathname, deps = {}) {
   const route = String(pathname || "").replace(/\/$/, "") || "/"
   if (route !== "/api/phone-sync/status" && route !== "/api/phone-sync/enabled") return false
+  if (!guardBrowserOrigin(req, res)) return true
 
   if (req.method === "OPTIONS") {
     sendJson(res, 204, {})

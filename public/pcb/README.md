@@ -15,6 +15,6 @@ Source stills live in [`designrefs/`](../../designrefs/).
 | `fr4.jpg` | Classic dark-green FR4 | `designrefs/5f3b8feaa2e9037ae0323d6635e28bb5.jpg` |
 
 Modes, overlays, and the Settings picker: `lib/pcb-backdrop.ts`,
-`app/pcb-backdrop.css`, `components/Settings/PcbBackdropField.tsx`.
+`app/pcb-backdrop.css`, `components/Settings/appearance/PcbBackdropField.tsx`.
 Choice persists on `brain2-theme-store` (`pcbMode`); `cogs-theme-store` is
 still dual-written. Saved plates are never migrated onto teal.

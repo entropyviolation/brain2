@@ -16,7 +16,7 @@
  */
 "use client"
 
-import { DayPhotos } from "./day-photos"
+import { DayPhotos } from "./day-summary/day-photos"
 import { useState, useSyncExternalStore } from "react"
 import { format } from "date-fns"
 import { DAY_NOTES_PERSIST_KEY } from "@/lib/day-notes-persist"
@@ -24,14 +24,14 @@ import { persistKeyFailed, subscribePersistStatus } from "@/lib/persist-storage"
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { SUMMARY_PERIODS, type SummaryPeriod } from "@/lib/tracking-summaries"
 import { setTrackingViewPrefs, useTrackingViewPrefs } from "./tracking-view-prefs"
-import { SummaryReference } from "./summary-reference"
+import { SummaryReference } from "./day-summary/summary-reference"
 import {
   MonthSummaryNest,
   SeasonSummaryNest,
   SummaryEditor,
   WeekSummaryNest,
   YearSummaryNest,
-} from "./tracking-summaries"
+} from "./day-summary/tracking-summaries"
 
 const notesUnsaved = () => persistKeyFailed(DAY_NOTES_PERSIST_KEY)
 

@@ -60,7 +60,7 @@ export function useInstagramAnalysisLists(): void {
 }
 
 /**
- * Fill the Instagram lists from the Analytics report. Runs after the vault and
+ * Fill the Instagram lists from the Data report. Runs after the vault and
  * the lists UI have hydrated, then again when the desktop builds a new report.
  */
 export function useInstagramListsSync(): void {

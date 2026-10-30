@@ -27,6 +27,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { SeriesPoint } from "@/lib/metrics"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 /** The five core wellbeing metrics, all reported on a 0–100 scale. */
 export type MetricKey = "joy" | "suffering" | "alignment" | "selfSatisfaction" | "situationalSatisfaction"
@@ -254,3 +255,5 @@ export const useMetricsStore = create<MetricsState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useMetricsStore)

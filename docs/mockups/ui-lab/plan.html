@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 Plan — UI Lab</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/period-nav-chrome.css">
+<link rel="stylesheet" href="/components/Home/Plan/plan-chrome.css">
+<style>
+  body.win95-app { margin: 0; }
+  .lab-shell {
+    display: grid;
+    grid-template-columns: minmax(240px, 292px) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 12px;
+    min-height: 100vh;
+  }
+  @media (max-width: 900px) {
+    .lab-shell { grid-template-columns: 1fr; }
+  }
+  .lab-bench {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    padding: 10px;
+    background: #c0c0c0;
+    color: #111;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+  }
+  .lab-bench h1 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lab-bench p {
+    margin: 0 0 8px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .lab-bench fieldset {
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    border: 1px solid #808080;
+  }
+  .lab-bench legend { padding: 0 4px; font-size: 11px; }
+  .lab-bench label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    align-items: center;
+    margin: 4px 0;
+    font-size: 11px;
+  }
+  .lab-bench select,
+  .lab-bench input[type="range"] { width: 100%; }
+  .lab-bench output { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
+  .lab-bench button {
+    min-height: 26px;
+    padding: 4px 10px;
+  }
+  .lab-stage { min-width: 0; }
+  .lab-stage .plan95 { min-height: calc(100vh - 24px); }
+
+  /* Overrides exist only while data-lab is on. Defaults set no attributes. */
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="section"] :is(button, input, textarea, select, h2, h3, [role="tab"]),
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="fascia"] .plan-fascia :is(button, h2, [role="tab"]),
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="keys"] .plan-view-keys [role="tab"],
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="calendar"] .plan-cal :is(button, span),
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="calendar"] .plan-period :is(button, h3),
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="chips"] .plan-chip,
+  body.win95-app .plan95[data-lab="on"][data-lab-face][data-scope="rail"] .plan-rail :is(button, input, select, span, p) {
+    font-family: var(--lab-face);
+  }
+
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="section"] { zoom: var(--lab-scale); }
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="fascia"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="keys"] .plan-view-keys,
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="calendar"] .plan-desktop,
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="chips"] .plan-chip,
+  body.win95-app .plan95[data-lab="on"][data-lab-scale][data-scope="rail"] .plan-rail {
+    zoom: var(--lab-scale);
+  }
+
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="fascia"] .plan-fascia {
+    padding: calc(10px + var(--lab-density));
+    gap: calc(8px + var(--lab-density));
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-body,
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-fascia-row {
+    gap: calc(8px + var(--lab-density));
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="keys"] .plan-view-keys {
+    gap: calc(4px + var(--lab-density));
+    padding: calc(4px + var(--lab-density));
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="calendar"] .plan-day,
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-day {
+    min-height: calc(88px + var(--lab-density) * 2);
+    padding: calc(3px + var(--lab-density) * 0.35);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="chips"] .plan-month-grid .plan-chip,
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-month-grid .plan-chip {
+    padding: calc(1px + var(--lab-density) * 0.25) calc(5px + var(--lab-density) * 0.4) calc(2px + var(--lab-density) * 0.25) calc(6px + var(--lab-density) * 0.35);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="rail"] .plan-rail,
+  body.win95-app .plan95[data-lab="on"][data-lab-density][data-scope="section"] .plan-rail {
+    gap: calc(6px + var(--lab-density) * 0.45);
+    padding: calc(8px + var(--lab-density) * 0.5);
+  }
+
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="section"] {
+    --r-0: var(--lab-radius);
+    --r-1: var(--lab-radius);
+    --r-2: var(--lab-radius);
+    --r-3: var(--lab-radius);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="fascia"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="fascia"] .plan-mark,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="fascia"] .plan-btn,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="fascia"] .plan-mode-toggle {
+    --r-2: var(--lab-radius);
+    --r-3: var(--lab-radius);
+    border-radius: var(--lab-radius);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="keys"] .plan-view-keys,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="keys"] .plan-view-keys [role="tab"] {
+    border-radius: var(--lab-radius);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="calendar"] .plan-cal,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="calendar"] .plan-period {
+    border-radius: var(--lab-radius);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="chips"] .plan-chip,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="section"] .plan-chip {
+    border-radius: min(8px, var(--lab-radius));
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="rail"] .plan-rail,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="rail"] .plan-rail-item,
+  body.win95-app .plan95[data-lab="on"][data-lab-radius][data-scope="rail"] .plan-rail-filters button {
+    border-radius: var(--lab-radius);
+  }
+
+  body.win95-app .plan95[data-lab="on"][data-lab-layout="stack"][data-scope="section"] .plan-split {
+    flex-direction: column;
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-layout="stack"][data-scope="section"] .plan-rail {
+    width: auto;
+    max-width: none;
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-layout="rail-end"][data-scope="section"] .plan-split {
+    flex-direction: row-reverse;
+  }
+
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="section"],
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="fascia"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="keys"] .plan-view-keys,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="calendar"] .plan-desktop,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="rail"] .plan-rail {
+    --chrome-face: #c3c8cc;
+    --chrome-mid: #dfe4e8;
+    --chrome-sheen: #e7ebef;
+    --chrome-shade: #8d959b;
+    --chrome-nickel: #b7c0c6;
+    --p-surface: #c3c8cc;
+    --p-face: #e3e8ec;
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="section"],
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="fascia"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="keys"] .plan-view-keys,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="calendar"] .plan-desktop,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="rail"] .plan-rail {
+    --chrome-face: #c9c3b6;
+    --chrome-mid: #e4ddd0;
+    --chrome-sheen: #ebe4d6;
+    --chrome-shade: #9a907e;
+    --chrome-nickel: #c4bbaa;
+    --p-surface: #c9c3b6;
+    --p-face: #e8e1d4;
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="section"],
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="fascia"] .plan-fascia,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="keys"] .plan-view-keys,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="calendar"] .plan-desktop,
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="rail"] .plan-rail {
+    --chrome-face: #c2c8c3;
+    --chrome-mid: #dde4de;
+    --chrome-sheen: #e5eee8;
+    --chrome-shade: #87948c;
+    --chrome-nickel: #b4c0b8;
+    --p-surface: #c2c8c3;
+    --p-face: #e3ebe5;
+    --p-today: #e7fff3;
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="cool"][data-scope="chips"] .plan-chip {
+    filter: hue-rotate(-14deg) saturate(1.05);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="warm"][data-scope="chips"] .plan-chip {
+    filter: hue-rotate(10deg) saturate(1.02);
+  }
+  body.win95-app .plan95[data-lab="on"][data-lab-palette="phosphor"][data-scope="chips"] .plan-chip {
+    filter: hue-rotate(-6deg) saturate(1.12);
+  }
+</style>
+</head>
+<body class="win95-app">
+<div class="lab-shell">
+  <aside class="lab-bench" aria-label="Lab bench">
+    <h1>Plan desk</h1>
+    <p>October, as the app draws it. Controls stay off the stage until they leave the house default. Scope decides what they may touch.</p>
+    <fieldset>
+      <legend>Scope</legend>
+      <label>Piece
+        <select id="lab-scope">
+          <option value="section">Whole section</option>
+          <option value="fascia">Fascia</option>
+          <option value="keys">Period keys</option>
+          <option value="calendar">Calendar</option>
+          <option value="chips">Event chips</option>
+          <option value="rail">Rail</option>
+        </select>
+      </label>
+    </fieldset>
+    <fieldset>
+      <legend>Type</legend>
+      <label>Face
+        <select id="lab-face">
+          <option value="app">App</option>
+          <option value="tahoma">Tahoma</option>
+          <option value="georgia">Georgia</option>
+          <option value="courier">Courier</option>
+          <option value="system">System</option>
+        </select>
+      </label>
+      <label>Scale
+        <input id="lab-scale" type="range" min="0.94" max="1.1" step="0.02" value="1">
+      </label>
+      <label>Scale readout <output id="lab-scale-out" for="lab-scale">1.00</output></label>
+    </fieldset>
+    <fieldset>
+      <legend>Material</legend>
+      <label>Density
+        <input id="lab-density" type="range" min="0" max="5" step="1" value="0">
+      </label>
+      <label>Density readout <output id="lab-density-out" for="lab-density">0</output></label>
+      <label>Radius
+        <select id="lab-radius">
+          <option value="app">App</option>
+          <option value="0">Square</option>
+          <option value="4">Soft</option>
+          <option value="8">Round</option>
+        </select>
+      </label>
+      <label>Layout
+        <select id="lab-layout">
+          <option value="app">App</option>
+          <option value="stack">Stack</option>
+          <option value="rail-end">Rail at end</option>
+        </select>
+      </label>
+      <label>Palette
+        <select id="lab-palette">
+          <option value="app">App</option>
+          <option value="cool">Cool mill</option>
+          <option value="warm">Warm mill</option>
+          <option value="phosphor">Phosphor mill</option>
+        </select>
+      </label>
+    </fieldset>
+    <button type="button" id="lab-reset">Reset</button>
+  </aside>
+
+  <div class="lab-stage">
+    <div
+      class="plan95"
+      id="desk"
+      data-lab="off"
+      data-scope="section"
+      data-plan-dark="false"
+      data-ui-name="Plan"
+      data-ui-help="Prospective calendar: Season, Month, Week, and Day plus written intentions — not what was lived."
+      data-temporal="prospective"
+      data-ui-docs="components/Home/Plan/README.md"
+    >
+      <div class="plan-window">
+        <div class="plan-fascia">
+          <div class="plan-fascia-row">
+            <div class="plan-mark">
+              <img src="/orbs-removebackground/00122e5fb5c048f8ecdf43d83357c361.png" alt="" class="plan-title-orb" width="22" height="22">
+              <h2>Plan</h2>
+              <span class="plan-mark-note">Calendar</span>
+            </div>
+            <div class="plan-toolbar-actions">
+              <button type="button" class="plan-btn">Settings</button>
+              <button type="button" class="plan-btn">Paste Events</button>
+              <button type="button" class="plan-btn">Add Event</button>
+              <button type="button" class="plan-btn">Add Plan</button>
+            </div>
+            <div class="plan-view-keys" role="tablist" aria-label="Plan period">
+              <button type="button" role="tab" data-state="inactive" aria-selected="false">Season</button>
+              <button type="button" role="tab" data-state="active" aria-selected="true">Month</button>
+              <button type="button" role="tab" data-state="inactive" aria-selected="false">Week</button>
+              <button type="button" role="tab" data-state="inactive" aria-selected="false">Day</button>
+            </div>
+            <div class="plan-toolbar-modes" id="plan-chrome-toggles">
+              <button type="button" id="plan-dark-mode" class="plan-mode-toggle plan-btn" aria-pressed="false" aria-label="Dark" title="Dark">Dark</button>
+              <button type="button" id="plan-gem-mode" class="plan-mode-toggle" aria-pressed="false" aria-label="Gem and trinket" title="Gem and trinket — past days show completed work as gems and orbs">Gem and trinket</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-body">
+          <div role="tabpanel" data-state="active">
+            <div class="plan-split">
+              <aside class="plan-rail" data-plan-drop="rail" data-ui-name="Planned tasks" data-ui-help="Explorer rail: To Do, undone habits, and Next actions for this period. Drag onto Day to plan." data-ui-docs="components/Home/Plan/README.md">
+                <div class="plan-rail-head">
+                  <span>Planned This Month</span>
+                  <span class="plan-rail-count">3</span>
+                </div>
+                <p class="plan-capacity" data-over="false">
+                  <span class="plan-capacity-pips" aria-hidden>
+                    <span class="plan-pip" data-on="true"></span>
+                    <span class="plan-pip" data-on="true"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                    <span class="plan-pip" data-on="false"></span>
+                  </span>
+                  <span class="plan-capacity-line">3h into a 16h window</span>
+                </p>
+                <p class="plan-rail-hint">Drop scheduled items here to unschedule</p>
+                <div class="plan-rail-tools">
+                  <input type="search" placeholder="Search this rail…" aria-label="Search planned items">
+                  <label>
+                    <span class="sr-only">Sort planned items</span>
+                    <select class="native-select" aria-label="Sort planned items">
+                      <option value="name">Sort: Name</option>
+                      <option value="duration">Sort: Duration</option>
+                      <option value="created">Sort: Created</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="plan-rail-filters">
+                  <button type="button" aria-pressed="true">To Do (2)</button>
+                  <button type="button" aria-pressed="true">Habits (0)</button>
+                  <button type="button" aria-pressed="true">Next actions (1)</button>
+                </div>
+                <div class="plan-rail-list">
+                  <div class="plan-rail-item" data-kind="next-action">
+                    <span class="plan-rail-handle" aria-hidden>⠿</span>
+                    <img src="/orbs-removebackground/0022dfe6bb6b9a5b43020ea446cbf73b.png" alt="" class="plan-rail-gem" width="16" height="16">
+                    <div class="plan-rail-title">Mend the dove<span class="plan-rail-meta">Next action</span></div>
+                    <span class="plan-rail-mins">90m</span>
+                  </div>
+                  <div class="plan-rail-item" data-kind="todo">
+                    <span class="plan-rail-handle" aria-hidden>⠿</span>
+                    <img src="/orbs-removebackground/0073f9caf9df33a0b24268e75bb4fa08.png" alt="" class="plan-rail-gem" width="16" height="16">
+                    <div class="plan-rail-title">Letters</div>
+                    <span class="plan-rail-mins">45m</span>
+                  </div>
+                  <div class="plan-rail-item" data-kind="todo">
+                    <span class="plan-rail-handle" aria-hidden>⠿</span>
+                    <img src="/orbs-removebackground/009b4e7f7b85628e90984654caace5b7.png" alt="" class="plan-rail-gem" width="16" height="16">
+                    <div class="plan-rail-title">June<span class="plan-rail-meta">desk</span></div>
+                    <span class="plan-rail-mins">30m</span>
+                  </div>
+                </div>
+                <form class="plan-add" action="#">
+                  <input placeholder="Add a to-do for this month…" aria-label="Add a to-do for this month">
+                  <button type="submit" disabled aria-label="Add to-do">+</button>
+                </form>
+              </aside>
+
+              <div class="plan-desktop">
+                <div class="plan-period">
+                  <button type="button" class="plan-period-chev" aria-label="Previous month">&lt;</button>
+                  <h3>October 2026</h3>
+                  <button type="button" class="plan-period-chev" aria-label="Next month">&gt;</button>
+                  <button type="button" class="plan-period-today">Today</button>
+                </div>
+
+                <div class="plan-cal" data-ui-name="Month calendar" data-ui-help="Month grid of days. Event chips live here — the written Month Plan is the cabinet below." data-ui-docs="components/Home/Plan/README.md" data-ui-docs-anchor="month">
+                  <div class="plan-weekdays">
+                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                  </div>
+                  <div class="plan-month-grid">
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-09-27" aria-label="Open September 27, 2026 in Day view"><span class="plan-day-num">27</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-09-28" aria-label="Open September 28, 2026 in Day view"><span class="plan-day-num">28</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-09-29" aria-label="Open September 29, 2026 in Day view"><span class="plan-day-num">29</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-09-30" aria-label="Open September 30, 2026 in Day view"><span class="plan-day-num">30</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-01" aria-label="Open October 1, 2026 in Day view"><span class="plan-day-num">1</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-02" aria-label="Open October 2, 2026 in Day view"><span class="plan-day-num">2</span><div class="plan-chips" data-plan-day-body="chips"><button type="button" class="plan-chip" title="09:00–10:30  Letters" style="--plan-chip-color:#b89fbf"><span class="plan-chip-time">09:00–10:30 </span><span class="plan-chip-title">Letters</span></button></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-03" aria-label="Open October 3, 2026 in Day view"><span class="plan-day-num">3</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-04" aria-label="Open October 4, 2026 in Day view"><span class="plan-day-num">4</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-05" aria-label="Open October 5, 2026 in Day view"><span class="plan-day-num">5</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-06" aria-label="Open October 6, 2026 in Day view"><span class="plan-day-num">6</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-07" aria-label="Open October 7, 2026 in Day view"><span class="plan-day-num">7</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-08" aria-label="Open October 8, 2026 in Day view"><span class="plan-day-num">8</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-09" aria-label="Open October 9, 2026 in Day view"><span class="plan-day-num">9</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-10" aria-label="Open October 10, 2026 in Day view"><span class="plan-day-num">10</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-11" aria-label="Open October 11, 2026 in Day view"><span class="plan-day-num">11</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-12" aria-label="Open October 12, 2026 in Day view"><span class="plan-day-num">12</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-13" aria-label="Open October 13, 2026 in Day view"><span class="plan-day-num">13</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-14" aria-label="Open October 14, 2026 in Day view"><span class="plan-day-num">14</span><div class="plan-chips" data-plan-day-body="chips"><button type="button" class="plan-chip" title="14:00–16:00  Mend the dove" style="--plan-chip-color:#8cd4a5"><span class="plan-chip-time">14:00–16:00 </span><span class="plan-chip-title">Mend the dove</span></button></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-15" aria-label="Open October 15, 2026 in Day view"><span class="plan-day-num">15</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-16" aria-label="Open October 16, 2026 in Day view"><span class="plan-day-num">16</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-17" aria-label="Open October 17, 2026 in Day view"><span class="plan-day-num">17</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-18" aria-label="Open October 18, 2026 in Day view"><span class="plan-day-num">18</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-19" aria-label="Open October 19, 2026 in Day view"><span class="plan-day-num">19</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-20" aria-label="Open October 20, 2026 in Day view"><span class="plan-day-num">20</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-21" aria-label="Open October 21, 2026 in Day view"><span class="plan-day-num">21</span><div class="plan-chips" data-plan-day-body="chips"><button type="button" class="plan-chip" title="11:00–12:00  June" style="--plan-chip-color:#7eb8b2"><span class="plan-chip-time">11:00–12:00 </span><span class="plan-chip-title">June</span></button></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-22" aria-label="Open October 22, 2026 in Day view"><span class="plan-day-num">22</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-23" aria-label="Open October 23, 2026 in Day view"><span class="plan-day-num">23</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-24" aria-label="Open October 24, 2026 in Day view"><span class="plan-day-num">24</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="true" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-25" aria-label="Open October 25, 2026 in Day view"><span class="plan-day-num">25</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="true" data-selected="true" data-plan-drop="day" data-date="2026-10-26" aria-current="date" aria-label="Open October 26, 2026 in Day view"><span class="plan-day-num">26<span class="plan-day-today-mark" title="Today">today</span></span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-27" aria-label="Open October 27, 2026 in Day view"><span class="plan-day-num">27</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-28" aria-label="Open October 28, 2026 in Day view"><span class="plan-day-num">28</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-29" aria-label="Open October 29, 2026 in Day view"><span class="plan-day-num">29</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-30" aria-label="Open October 30, 2026 in Day view"><span class="plan-day-num">30</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="false" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-10-31" aria-label="Open October 31, 2026 in Day view"><span class="plan-day-num">31</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-01" aria-label="Open November 1, 2026 in Day view"><span class="plan-day-num">1</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-02" aria-label="Open November 2, 2026 in Day view"><span class="plan-day-num">2</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-03" aria-label="Open November 3, 2026 in Day view"><span class="plan-day-num">3</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-04" aria-label="Open November 4, 2026 in Day view"><span class="plan-day-num">4</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-05" aria-label="Open November 5, 2026 in Day view"><span class="plan-day-num">5</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-06" aria-label="Open November 6, 2026 in Day view"><span class="plan-day-num">6</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                    <div class="plan-day" role="button" tabindex="0" data-outside="true" data-past="false" data-today="false" data-selected="false" data-plan-drop="day" data-date="2026-11-07" aria-label="Open November 7, 2026 in Day view"><span class="plan-day-num">7</span><div class="plan-chips" data-plan-day-body="chips"></div></div>
+                  </div>
+                </div>
+
+                <fieldset class="plan-group" data-ui-name="Month Plan" data-ui-help="Monthly written plan log. Submit stamps an entry — not the calendar and not the event chips." data-ui-docs="components/Home/Plan/README.md" data-ui-docs-anchor="month">
+                  <legend>Month Plan — October 2026</legend>
+                  <div class="append-log" data-ui-name="Month Plan" data-ui-help="Monthly written plan log. Submit stamps an entry — not the calendar and not the event chips." data-ui-docs="components/Home/Plan/README.md" data-ui-docs-anchor="month">
+                    <div class="append-log-toolbar" role="toolbar" aria-label="Append log views">
+                      <div class="append-log-views-well">
+                        <div class="append-log-views" role="tablist" aria-label="How to show plan entries">
+                          <button type="button" role="tab" aria-selected="true" aria-pressed="true" data-state="active">List</button>
+                          <button type="button" role="tab" aria-selected="false" aria-pressed="false">Bulk</button>
+                          <button type="button" role="tab" aria-selected="false" aria-pressed="false">Latest</button>
+                        </div>
+                      </div>
+                      <button type="button" class="append-log-copy">Copy</button>
+                    </div>
+                    <textarea rows="6" placeholder="Write your month plan, goals, and objectives..." aria-label="New plan entry"></textarea>
+                    <div class="append-log-compose">
+                      <button type="button" class="append-log-submit" data-default="true" disabled>Submit plan</button>
+                      <p class="append-log-hint">Will stamp as <strong>10/26 11pm</strong> — ⌘/Ctrl+Enter</p>
+                    </div>
+                    <div class="append-log-history" data-ui-name="Plan log">
+                      <ol class="append-log-list">
+                        <li class="append-log-entry">
+                          <div class="append-log-stamp">10/20 9pm -</div>
+                          <pre class="append-log-body">Letters, then mend the dove with June.</pre>
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-status">
+          <span>Month view · Monday, October 26, 2026</span>
+          <span>3 event(s)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var desk = document.getElementById("desk");
+  var scope = document.getElementById("lab-scope");
+  var face = document.getElementById("lab-face");
+  var scale = document.getElementById("lab-scale");
+  var scaleOut = document.getElementById("lab-scale-out");
+  var density = document.getElementById("lab-density");
+  var densityOut = document.getElementById("lab-density-out");
+  var radius = document.getElementById("lab-radius");
+  var layout = document.getElementById("lab-layout");
+  var palette = document.getElementById("lab-palette");
+  var faces = {
+    tahoma: "Tahoma, Geneva, sans-serif",
+    georgia: "Georgia, 'Times New Roman', serif",
+    courier: "'Courier New', Courier, monospace",
+    system: "system-ui, sans-serif"
+  };
+
+  function clearFlag(name) {
+    delete desk.dataset[name];
+  }
+
+  function apply() {
+    var scaleVal = Number(scale.value);
+    var densityVal = Number(density.value);
+    scaleOut.textContent = scaleVal.toFixed(2);
+    densityOut.textContent = String(densityVal);
+    layout.disabled = scope.value !== "section";
+    desk.dataset.scope = scope.value;
+
+    var faceOn = face.value !== "app";
+    var scaleOn = scaleVal !== 1;
+    var densityOn = densityVal !== 0;
+    var radiusOn = radius.value !== "app";
+    var layoutOn = !layout.disabled && layout.value !== "app";
+    var paletteOn = palette.value !== "app";
+    var on = faceOn || scaleOn || densityOn || radiusOn || layoutOn || paletteOn;
+
+    desk.dataset.lab = on ? "on" : "off";
+
+    if (faceOn) {
+      desk.dataset.labFace = face.value;
+      desk.style.setProperty("--lab-face", faces[face.value]);
+    } else {
+      clearFlag("labFace");
+      desk.style.removeProperty("--lab-face");
+    }
+    if (scaleOn) {
+      desk.dataset.labScale = "1";
+      desk.style.setProperty("--lab-scale", String(scaleVal));
+    } else {
+      clearFlag("labScale");
+      desk.style.removeProperty("--lab-scale");
+    }
+    if (densityOn) {
+      desk.dataset.labDensity = "1";
+      desk.style.setProperty("--lab-density", densityVal + "px");
+    } else {
+      clearFlag("labDensity");
+      desk.style.removeProperty("--lab-density");
+    }
+    if (radiusOn) {
+      desk.dataset.labRadius = radius.value;
+      desk.style.setProperty("--lab-radius", radius.value + "px");
+    } else {
+      clearFlag("labRadius");
+      desk.style.removeProperty("--lab-radius");
+    }
+    if (layoutOn) desk.dataset.labLayout = layout.value;
+    else clearFlag("labLayout");
+    if (paletteOn) desk.dataset.labPalette = palette.value;
+    else clearFlag("labPalette");
+  }
+
+  function reset() {
+    scope.value = "section";
+    face.value = "app";
+    scale.value = "1";
+    density.value = "0";
+    radius.value = "app";
+    layout.value = "app";
+    palette.value = "app";
+    apply();
+  }
+
+  [scope, face, scale, density, radius, layout, palette].forEach(function (el) {
+    el.addEventListener("input", apply);
+    el.addEventListener("change", apply);
+  });
+  document.getElementById("lab-reset").addEventListener("click", reset);
+  apply();
+})();
+</script>
+</body>
+</html>

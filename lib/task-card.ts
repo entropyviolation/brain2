@@ -1,7 +1,7 @@
 /**
  * lib/task-card.ts — The To Do task card's rules (Phase 12, R7 R8 R15)
  *
- * Pure. The card (`components/Home/ToDo/TaskCard.tsx`) plans this period's
+ * Pure. The card (`components/Home/ToDo/task-card/TaskCard.tsx`) plans this period's
  * work on one task. Here: which card is open (a tiny store, so item detail and
  * a step item can open it), the mass-edit bar's tree edits (each returns a new
  * tree; the card writes it once, so one undo per bar action), the task's
@@ -24,7 +24,7 @@ interface TaskCardState {
   stepId?: string
   /** Open the card with this step as its root: the tree and totals show only what is inside it. */
   rootStepId?: string
-  /** How many hosts (`todo-panel`) are mounted; item detail shows **Card** only when one is. */
+  /** How many desk hosts are mounted. The phone switch does not register one. Item detail shows **Card** only when a host is. */
   hosts: number
 }
 

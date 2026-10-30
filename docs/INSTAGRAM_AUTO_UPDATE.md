@@ -2,7 +2,7 @@
 
 _Last mapped: 2026-10-25_
 
-Brain2 shows the Instagram report in Analytics → Sources → **Instagram**
+Brain2 shows the Instagram report in Data → Sources → **Instagram**
 (`components/Analytics/README.md` → Instagram (Sources)). This doc covers how
 new data gets in today, and the routes we hope to add later.
 

@@ -396,7 +396,7 @@ describe("copy from Google Drive", () => {
   function flakyRead(match: string, times: number, code = "ECANCELED") {
     let left = times
     const wrapped = Object.create(fs) as typeof fs
-    wrapped.createReadStream = ((p: fs.PathLike, opts?: { encoding?: BufferEncoding | null }) => {
+    wrapped.createReadStream = ((p: fs.PathLike, opts?: Parameters<typeof fs.createReadStream>[1]) => {
       if (left > 0 && String(p).endsWith(match)) {
         left -= 1
         const { Readable } = require("node:stream") as typeof import("node:stream")

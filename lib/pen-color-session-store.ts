@@ -2,9 +2,11 @@
  * lib/pen-color-session-store.ts — Persisted pen-color "working on right now"
  *
  * Holds at most one live pen-color session so a refresh does not forget that
- * you started. Start/stop/tick live in `lib/pen-color-session.ts`; this store
- * is only the blob those functions read and write. Independent of the
- * Operations session in `work-session-store.ts`.
+ * you started. Unload must not clear this blob: the next page reads it and
+ * the clock is still "working on right now". Start/stop/tick live in
+ * `lib/pen-color-session.ts`; this store is only the blob those functions
+ * read and write. Independent of the Operations session in
+ * `work-session-store.ts`.
  */
 "use client"
 
@@ -13,6 +15,8 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { NowObjective } from "@/lib/now-objective"
+import type { WorkPauseSpan } from "@/lib/work-pause"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface PenColorSession {
   penId: string
@@ -34,10 +38,27 @@ export interface PenColorSession {
   pausedAt?: string
   /** Completed pause milliseconds from earlier pause/resume cycles. */
   pausedAccumMs?: number
+  /**
+   * Reasons for pausing this sitting. The open gap has no `resumedAt` yet.
+   * Copied onto the painted block and, when a task is on the clock, its time log.
+   */
+  pauseSpans?: WorkPauseSpan[]
   /** The task on this clock (`lib/task-clock.ts`). Omitted for a plain pen clock. */
   taskId?: string
-  /** The step of that task being worked right now. */
+  /** The step of that task being worked right now. Omitted when the sitting is the task itself. */
   stepId?: string
+  /**
+   * Step timers beside this sitting. Each one starts when that step's play is
+   * pressed and ends on its own stop. The parent `startedAt` keeps running.
+   * Omitted when no step has its own timer.
+   */
+  subclocks?: PenSubclock[]
+}
+
+/** A step timer inside a task sitting. `startedAt` is the second play was pressed. */
+export interface PenSubclock {
+  stepId: string
+  startedAt: string
 }
 
 interface PenColorSessionState {
@@ -60,3 +81,5 @@ export const usePenColorSessionStore = create<PenColorSessionState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(usePenColorSessionStore)

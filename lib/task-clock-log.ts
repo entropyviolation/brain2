@@ -16,16 +16,20 @@
 import type { Subtask, Task, TimeLogEntry } from "@/lib/types"
 import { objectiveCompletesTarget, objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
 import { useTaskStore } from "@/lib/task-store"
-import { formatLocalDateKey } from "@/lib/date-utils"
+import { formatLocalDateKey, formatLocalHhmm } from "@/lib/date-utils"
 import { finishStep, placeSteps, stepPath } from "@/lib/next-step"
 import { addNestedStep, updateNestedStep } from "@/lib/todo-steps"
 import { itemTitleOrUntitled } from "@/lib/item-utils"
+import { recordClockSitting } from "@/lib/item-activity"
+import { mergeSittingNote, type WorkPauseSpan } from "@/lib/work-pause"
 
 export interface ClockTaskRef {
   taskId?: string
   stepId?: string
   trackingEntryIds?: string[]
   nowObjectives?: readonly NowObjective[]
+  /** Reasons for pausing this sitting. Written onto the time log at Stop. */
+  pauseSpans?: readonly WorkPauseSpan[]
 }
 
 /** Every block this clock paints starts its note with this. A hand-written note does not. */
@@ -97,10 +101,6 @@ function getTask(taskId: string | undefined): Task | undefined {
   return useTaskStore.getState().tasks.find((t) => t.id === taskId)
 }
 
-function hhmm(date: Date): string {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-}
-
 /** `Finish CDs › insert › find photos`, or the task name alone. */
 export function clockPathLabel(task: Task | undefined, stepId?: string): string {
   if (!task) return ""
@@ -111,22 +111,51 @@ export function clockPathLabel(task: Task | undefined, stepId?: string): string 
   return [title, ...placed.path.map((s) => s.description), placed.step.description].join(" › ")
 }
 
-/** Write one time log for a clock span. Under a minute writes nothing. */
+/**
+ * Write one time log for a clock span. Under a minute the time log is skipped,
+ * and the sitting is still one History line on the task (active time only).
+ */
 export function logTaskClockSpan(ref: ClockTaskRef, start: Date, end: Date, activeMs: number): TimeLogEntry | null {
   const task = getTask(ref.taskId)
   if (!task) return null
   const minutes = Math.round(activeMs / 60_000)
-  if (minutes < 1) return null
+  if (minutes < 1) {
+    if (activeMs > 0) {
+      const placed = ref.stepId ? placeSteps(task.subtasks).find((p) => p.step.id === ref.stepId) : undefined
+      recordClockSitting({
+        itemId: task.id,
+        activeMs,
+        sittingAt: start,
+        recordedAt: end,
+        stepName: ref.stepId ? placed?.step.description?.trim() || ref.stepId : undefined,
+        dedupeKey: `pen:${task.id}:${start.toISOString()}`,
+      })
+    }
+    return null
+  }
+  const base = workingOnNowBlockNote(ref)
+  const notes =
+    mergeSittingNote({
+      existing: undefined,
+      base,
+      owned: true,
+      replaceOwned: true,
+      startedAt: start,
+      endedAt: end,
+      spans: ref.pauseSpans,
+      stopped: true,
+    }) ?? base
   const entry: TimeLogEntry = {
     id: `tl-${end.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     date: formatLocalDateKey(start),
-    startTime: hhmm(start),
-    endTime: hhmm(end),
+    startTime: formatLocalHhmm(start),
+    endTime: formatLocalHhmm(end),
     durationMinutes: minutes,
-    notes: workingOnNowBlockNote(ref),
+    notes,
     taskId: task.id,
     ...(ref.stepId ? { stepId: ref.stepId } : {}),
     ...(ref.trackingEntryIds?.length ? { entryIds: [...ref.trackingEntryIds] } : {}),
+    ...(ref.pauseSpans?.length ? { pauseSpans: ref.pauseSpans.map((span) => ({ ...span })) } : {}),
   }
   useTaskStore.getState().updateTask({ ...task, timeLogs: [...(task.timeLogs ?? []), entry] })
   return entry
@@ -215,6 +244,26 @@ export function addStepForObjective(ref: ClockTaskRef, objective: NowObjective):
   }
   useTaskStore.getState().updateTask({ ...task, subtasks })
   return made.step.id
+}
+
+/**
+ * Stopping the sitting paints the block again and can replace its id.
+ * Logs that named the old id should name the block that is still there.
+ */
+export function retargetClockLogs(taskId: string, fromIds: readonly string[], toIds: readonly string[]): void {
+  if (!fromIds.length || !toIds.length) return
+  const task = getTask(taskId)
+  if (!task?.timeLogs?.length) return
+  const from = new Set(fromIds)
+  const to = new Set(toIds)
+  let changed = false
+  const timeLogs = task.timeLogs.map((log) => {
+    const named = log.entryIds ?? []
+    if (!named.some((id) => from.has(id)) || named.every((id) => to.has(id))) return log
+    changed = true
+    return { ...log, entryIds: [...toIds] }
+  })
+  if (changed) useTaskStore.getState().updateTask({ ...task, timeLogs })
 }
 
 /** An active task starts reading "in progress" once it is on the clock. */

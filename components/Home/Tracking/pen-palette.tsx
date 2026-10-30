@@ -26,12 +26,12 @@ import { orbFor } from "@/components/Icons"
 import { restoreOccupiedScope, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { PEN_SORT_LABELS, PEN_SORT_MODES, type PenSortMode } from "@/lib/pen-sort"
 import { openPenSettings } from "@/components/Home/Tracking/open-pen-settings"
-import { TrackingViewSettingsDialog } from "@/components/Home/Tracking/tracking-view-settings-dialog"
-import { TrackingTagsPanel } from "@/components/Home/Tracking/tracking-tags-panel"
+import { TrackingViewSettingsDialog } from "@/components/Home/Tracking/settings/tracking-view-settings-dialog"
+import { TrackingTagsPanel } from "@/components/Home/Tracking/tags/tracking-tags-panel"
 import { VariantChips } from "@/components/Home/Tracking/variant-chips"
-import { PenSwatches } from "@/components/Home/Tracking/pen-swatches"
+import { PenSwatches } from "@/components/Home/Tracking/cabinet/pen-swatches"
 import { DepthControl } from "@/components/Home/Tracking/depth-control"
-import { TrackingToolsTray, TrackingViewLatches } from "@/components/Home/Tracking/tracking-tools-tray"
+import { TrackingToolsTray, TrackingViewLatches } from "@/components/Home/Tracking/cabinet/tracking-tools-tray"
 import { TrkLatchesWell, TrkPenToolsRow } from "@/components/Home/Tracking/trk-instrument"
 import { PushKey, ScopePanel, ScopeSection } from "@/components/Home/Tracking/trk-scope"
 import {
@@ -39,11 +39,11 @@ import {
   rememberDrawPenId,
   showPenTray,
   trackingPaintTool,
-} from "@/components/Home/Tracking/tracking-tool-mode"
+} from "@/components/Home/Tracking/cabinet/tracking-tool-mode"
 import { setTrackingViewPrefs, useTrackingViewPrefs } from "@/components/Home/Tracking/tracking-view-prefs"
 import "./tracking-chrome.css"
 
-export { ERASE, SCISSORS } from "./tracking-tool-mode"
+export { ERASE, SCISSORS } from "./cabinet/tracking-tool-mode"
 
 /** A pen still named by raw coordinates ("32.7381,-117.2402") — a place waiting for a name. */
 export function isUnnamedPlace(name: string): boolean {

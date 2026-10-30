@@ -56,8 +56,10 @@ import { PackingChecklistView, PreTripChecklistView } from "@/components/Modules
 import { TripActivitiesView } from "@/components/Modules/workspace/itinerary/TripActivitiesView"
 import { FilmDnaView } from "@/components/Modules/workspace/filmrecs/FilmDnaView"
 import { TidyView } from "@/components/Modules/workspace/housecleaning/TidyView"
+import { SweepView } from "@/components/Modules/workspace/sweep/SweepView"
 import { GradSearchView } from "@/components/Modules/workspace/gradsearch/GradSearchView"
 import { HtmlModuleView } from "@/components/Modules/workspace/html/HtmlModuleView"
+import { PackageAppView } from "@/components/Modules/workspace/package-app/PackageAppView"
 import type { ModuleInstance } from "@/lib/modules-store"
 import { useWorkSessionStore } from "@/lib/work-session-store"
 import {
@@ -131,6 +133,8 @@ export function ModuleViewBody({
       return <FilmDnaView view={view} />
     case "house-cleaning":
       return <TidyView module={module} />
+    case "sweep":
+      return <SweepView />
     case "grad-search":
       return <GradSearchView />
     case "html":
@@ -147,6 +151,8 @@ export function ModuleViewBody({
       return <QuizView view={view} onOpenItem={onOpenItem} />
     case "dashboard":
       return <DashboardView view={view} onOpenItem={onOpenItem} />
+    case "package-app":
+      return <PackageAppView view={view} onOpenItem={onOpenItem} />
     default:
       return null
   }

@@ -17,6 +17,9 @@
  *
  * Ids come from the event itself, so a batch the phone re-sends writes nothing
  * new. Rows are exact: no `precision: "estimated"`.
+ *
+ * This is the primary location share. A BIM Live Location update paints only
+ * when this share did not (`location-share-order.ts`).
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import type { TimeEntry } from "@/lib/time-entries"
@@ -25,6 +28,7 @@ import { lookupGpsPlaceName, recordGpsSample } from "@/lib/ingest/gps-places"
 import { penForCoordinate } from "@/lib/pen-place"
 import { fileNewGpsPen } from "@/lib/pen-place-actions"
 import { phoneEntryId, phoneStamp } from "./ids"
+import { noteIosLocationShare } from "./location-share-order"
 import type { PhoneSyncSource } from "./types"
 import type { ApplyPhoneResult } from "./write"
 
@@ -298,6 +302,11 @@ export function applyLocationBatch(batch: LocationBatch): ApplyPhoneResult {
   if (read === 0) return { read: 0, written: 0, skipped: 0 }
   const start = useTimeTrackingStore.getState()
   if (!start.scopes.some((s) => s.id === LOCATION_SCOPE_ID)) throw new Error("no Location scope")
+
+  for (const event of batch.events) {
+    const stamp = event.type === "point" ? event.at : event.departAt ?? event.arriveAt
+    if (stamp !== undefined) noteIosLocationShare(stamp)
+  }
 
   const have = new Set(start.entries.map((e) => e.id))
   for (const id of start.removedEntryIds ?? []) have.add(id)

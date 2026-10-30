@@ -94,6 +94,7 @@ export function listSettingsClone(
     name: _name,
     createdAt: _createdAt,
     createdByModuleId: _auto,
+    moduleSlotId: _slot,
     peopleList: _peopleList,
     instagramFollowingList: _instagramFollowingList,
     instagramFollowersList: _instagramFollowersList,

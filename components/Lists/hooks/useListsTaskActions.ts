@@ -24,7 +24,9 @@ import { addTag } from "@/lib/links"
 import { resolveCompletionPoints } from "@/lib/item-utils"
 import { taskRepository } from "@/lib/data/task-repository"
 import { ROOT_ALL_FOLDER_ID } from "@/components/Lists/constants"
+import { applyItemTypeToNewTask } from "@/lib/item-type-lists"
 import type { OpenTarget } from "@/components/Lists/types"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 
 /** A new task scheduled onto a period To do list. Membership stays empty; the list is a view. */
 function taskForPeriodTodoList(description: string, listId: string): Task {
@@ -34,10 +36,15 @@ function taskForPeriodTodoList(description: string, listId: string): Task {
   return { ...base, ...scheduleFieldsForPeriod(parsed.period, parsed.value) }
 }
 
+function listAttribution(lists: List[], id?: string): ItemWriteAttribution {
+  const name = id ? lists.find((list) => list.id === id)?.name?.trim() : ""
+  return name ? { surface: "list", name } : { surface: "list" }
+}
+
 export function useListsTaskActions(
   lists: List[],
   folders: Folder[],
-  addTask: (task: Task) => void,
+  addTask: (task: Task, attribution?: ItemWriteAttribution) => void,
   types: ItemTypeDefinition[] = [],
 ) {
   const buildBaseTask = useCallback(
@@ -78,7 +85,7 @@ export function useListsTaskActions(
     ) => {
       if (!newTaskDescription.trim() || !openTarget) return
       if (openTarget.type === "category" && isPeriodLedgerListId(openTarget.id)) {
-        addTask(taskForPeriodTodoList(newTaskDescription, openTarget.id))
+        addTask(taskForPeriodTodoList(newTaskDescription, openTarget.id), listAttribution(lists, openTarget.id))
         onDone()
         return
       }
@@ -94,11 +101,13 @@ export function useListsTaskActions(
         if (openTarget.id === "daily") base.scheduledDate = now
         else if (openTarget.id === "weekly") base.scheduledWeek = getWeekString(now)
         else base.scheduledMonth = formatLocalMonthKey(now)
+      } else if (openTarget.type === "item-type") {
+        Object.assign(base, applyItemTypeToNewTask(base, openTarget.id, types))
       }
-      addTask(base)
+      addTask(base, openTarget.type === "category" ? listAttribution(lists, openTarget.id) : { surface: "list" })
       onDone()
     },
-    [buildBaseTask, addTask],
+    [buildBaseTask, addTask, types, lists],
   )
 
   const handleBulkAddToOpen = useCallback(
@@ -116,7 +125,7 @@ export function useListsTaskActions(
         if (openTarget.type === "category" && isPeriodLedgerListId(openTarget.id)) {
           const tagged = taskForPeriodTodoList(row.description, openTarget.id)
           tagged.tags = row.tags.reduce((acc, tag) => addTag(acc, tag), [...(tagged.tags ?? [])])
-          addTask(tagged)
+          addTask(tagged, listAttribution(lists, openTarget.id))
           continue
         }
         let categoryId: string | undefined
@@ -143,12 +152,14 @@ export function useListsTaskActions(
           tagged.stage = "list"
         } else if (openTarget.type === "folder-all" && currentFolder) {
           Object.assign(tagged, assignTaskToFolderUncategorized(tagged, currentFolder))
+        } else if (openTarget.type === "item-type") {
+          Object.assign(tagged, applyItemTypeToNewTask(tagged, openTarget.id, types))
         }
-        addTask(tagged)
+        addTask(tagged, openTarget.type === "category" ? listAttribution(lists, openTarget.id) : { surface: "list" })
       }
       onDone()
     },
-    [buildBaseTask, addTask],
+    [buildBaseTask, addTask, types, lists],
   )
 
   const handleAddTaskToCategory = useCallback(
@@ -156,10 +167,10 @@ export function useListsTaskActions(
       if (!newTaskDescription.trim()) return
       const base = buildBaseTask(newTaskDescription, categoryId)
       base.lists = [categoryId]
-      addTask(base)
+      addTask(base, listAttribution(lists, categoryId))
       onDone()
     },
-    [buildBaseTask, addTask],
+    [buildBaseTask, addTask, lists],
   )
 
   return {

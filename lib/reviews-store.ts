@@ -21,8 +21,9 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { PeriodReview, PeriodStartRitual, ReviewPeriod, StoredBlockedReason } from "@/lib/types"
-import { getWeekString, parseWeekString } from "@/lib/date-utils"
+import { formatLocalDateKey, getWeekString, parseWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export { quarterOf } from "@/lib/seasons"
 
@@ -113,7 +114,7 @@ interface ReviewsState {
   getOperationReview: (operationId: string) => OperationReview | undefined
 }
 
-function emptyReview(period: ReviewPeriod, key: string): PeriodReview {
+export function emptyReview(period: ReviewPeriod, key: string): PeriodReview {
   return {
     id: `${period}:${key}`,
     period,
@@ -262,10 +263,7 @@ export function morningReviewPhase(
 export const REVIEW_PERIODS: ReviewPeriod[] = ["day", "week", "month", "quarter", "year"]
 
 export function localDayKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
+  return formatLocalDateKey(date)
 }
 
 export function getPeriodKey(period: ReviewPeriod, date: Date): string {
@@ -360,3 +358,5 @@ export function periodLabel(period: ReviewPeriod, key: string): string {
       return key
   }
 }
+
+registerPhoneWindowStore(useReviewsStore)

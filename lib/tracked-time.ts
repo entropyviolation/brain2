@@ -17,7 +17,7 @@
  * touch a store.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
+import { objectiveLane, objectiveWorkedMs, type NowObjective } from "@/lib/now-objective"
 import { numericFieldValue } from "@/lib/pen-fields"
 import type { TimeEntry } from "@/lib/time-entries"
 import type { Subtask } from "@/lib/types"
@@ -512,14 +512,77 @@ function sliceOf(block: TimeEntry, stepId: string | undefined, objectiveId?: str
   }
 }
 
-function attributeBlock(buckets: ActualBuckets, block: TimeEntry, stepIds: ReadonlySet<string>) {
+function stepDepths(steps: readonly StepNode[] | undefined, depth = 1, into = new Map<string, number>()): Map<string, number> {
+  for (const step of steps ?? []) {
+    into.set(step.id, depth)
+    stepDepths(step.subtasks, depth + 1, into)
+  }
+  return into
+}
+
+/**
+ * Minutes of a step timer that ran inside this block.
+ * The deepest step that covers a minute keeps it. A log for the block's own
+ * step is the sitting itself, not a nested timer, so it is left to the block.
+ */
+function claimSubclockLogs(
+  buckets: ActualBuckets,
+  block: TimeEntry,
+  stepIds: ReadonlySet<string>,
+  logs: NonNullable<TrackedItem["timeLogs"]>,
+  depth: ReadonlyMap<string, number>,
+  claimIds: Set<string>,
+  covered: Set<number>,
+): void {
+  const spans: { stepId: string; from: number; to: number; depth: number }[] = []
+  for (const log of logs) {
+    if (!log.stepId || !stepIds.has(log.stepId) || log.stepId === block.stepId) continue
+    if (!(log.entryIds ?? []).includes(block.id)) continue
+    if (log.date && log.date !== block.date) continue
+    const from = clockMinute(log.startTime)
+    const to = clockMinute(log.endTime)
+    if (from == null || to == null || to <= from) continue
+    spans.push({ stepId: log.stepId, from, to, depth: depth.get(log.stepId) ?? 0 })
+  }
+  if (!spans.length) return
+  const byStep = new Map<string, number[]>()
+  for (let minute = block.startMin; minute < block.endMin; minute++) {
+    if (covered.has(minute)) continue
+    let best: (typeof spans)[number] | undefined
+    for (const span of spans) {
+      if (minute < span.from || minute >= span.to) continue
+      if (!best || span.depth > best.depth) best = span
+    }
+    if (!best) continue
+    covered.add(minute)
+    claimIds.add(best.stepId)
+    const list = byStep.get(best.stepId) ?? []
+    list.push(minute)
+    byStep.set(best.stepId, list)
+  }
+  for (const [stepId, mins] of byStep) {
+    remember(
+      buckets,
+      { ...sliceOf(block, stepId), id: `${block.id}:sub:${stepId}`, date: block.date },
+      placeMinutes(buckets, stepId, block.date, mins),
+    )
+  }
+}
+
+function attributeBlock(
+  buckets: ActualBuckets,
+  block: TimeEntry,
+  stepIds: ReadonlySet<string>,
+  logs: NonNullable<TrackedItem["timeLogs"]>,
+  depth: ReadonlyMap<string, number>,
+) {
   const claimIds = new Set<string>()
   const covered = new Set<number>()
   for (const row of block.nowObjectives ?? []) {
     if (!row.stepId || !stepIds.has(row.stepId)) continue
     const worked = objectiveMinutes(row)
     if (worked < 1) continue
-    const openStint = !row.completedAt && !!row.stintStartedAt
+    const openStint = objectiveLane(row) === "now" && !!row.stintStartedAt
     claimIds.add(row.stepId)
     const start = clockOnDate(openStint ? row.stintStartedAt : row.addedAt, block.date)
     const endClock = clockOnDate(row.completedAt, block.date)
@@ -556,6 +619,7 @@ function attributeBlock(buckets: ActualBuckets, block: TimeEntry, stepIds: Reado
       addLoose(buckets, row.stepId, Math.max(0, worked - span), { ...note, date: block.date })
     }
   }
+  claimSubclockLogs(buckets, block, stepIds, logs, depth, claimIds, covered)
   const paint = (key: string, mins: number[]) => {
     remember(buckets, { ...sliceOf(block, key || undefined), date: block.date }, placeMinutes(buckets, key, block.date, mins))
   }
@@ -612,7 +676,8 @@ function compileActual(task: ActualTask, entries: readonly TimeEntry[]): { task:
     blocks.push(entry)
   }
   blocks.sort((a, b) => a.date.localeCompare(b.date) || a.startMin - b.startMin)
-  for (const block of blocks) attributeBlock(buckets, block, stepIds)
+  const depth = stepDepths(task.subtasks)
+  for (const block of blocks) attributeBlock(buckets, block, stepIds, task.timeLogs ?? [], depth)
   attributeLogs(buckets, task, stepIds, blocks)
 
   const steps = new Map<string, ActualAccount>()

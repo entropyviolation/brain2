@@ -21,6 +21,7 @@ import {
   type VocabLang,
   type VocabLevel,
 } from "@/lib/vocab-words"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type VocabShuffle = { date: string; count: number }
 
@@ -143,3 +144,5 @@ export const useVocabStore = create<VocabState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useVocabStore)

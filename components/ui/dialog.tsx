@@ -5,6 +5,8 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cn } from "@/lib/utils"
 import { KeycapClose } from "@/components/keycap-close"
 
+import "./touch.css"
+
 const Dialog = DialogPrimitive.Root
 
 const DialogTrigger = DialogPrimitive.Trigger
@@ -43,10 +45,10 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        /* duration-200 sizes the enter/exit animation. win95.css sets
-           transition-property: none on dialogs so that duration does not
-           ease --chrome-face when a popup mounts. */
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        /* Centered in win95.css without a transform. A translate layer
+           makes Chrome paint typed characters late. Phone sheets clear
+           the same layer in touch.css. */
+        "ui-dialog-content fixed z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
         className
       )}
       {...props}
@@ -97,7 +99,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "ui-touch-label text-lg font-semibold leading-none tracking-tight",
       className
     )}
     {...props}

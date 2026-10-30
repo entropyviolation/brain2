@@ -4,6 +4,7 @@
  * Roster + cute-name shapes for the in-app **today’s friend** CRT nest.
  */
 
+import { formatLocalDateKey } from "@/lib/date-utils"
 import { hashString } from "./string-utils"
 import { persistKey } from "./storage-keys"
 
@@ -163,10 +164,7 @@ export function pickBabyAnimalFromKey(key: string): PickedBabyAnimal {
 }
 
 export function localDayKey(at: Date): string {
-  const y = at.getFullYear()
-  const m = String(at.getMonth() + 1).padStart(2, "0")
-  const d = String(at.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
+  return formatLocalDateKey(at)
 }
 
 /** Local Monday (week starts Monday) as YYYY-MM-DD. Auto-shuffle uses this, not every refresh. */

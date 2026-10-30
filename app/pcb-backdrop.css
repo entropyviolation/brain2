@@ -4,7 +4,9 @@
  * Replaces nothing — the Snowflake plate (`mint`) is the default estate; teal
  * and the other photographed plates are picked in Settings. `data-pcb-mode` / `data-pcb-ink` are stamped on `<html>`
  * by `pcb-backdrop.tsx`. Windows, glass, and widgets stay on top — this file
- * only paints the field behind them.
+ * only paints the field behind them. The iOS shell (`/mobile`) always
+ * uses the Snowflake plate, and scrolls it, because a fixed attachment
+ * does not paint the photograph on iOS.
  *
  * Specificity beats `body.win95-app` / `main.bg-background` so Fast Refresh
  * cannot restore a white main.
@@ -103,7 +105,7 @@ html[data-pcb-ink="dark"] body.win95-app h1,
 html[data-pcb-ink="dark"] .brain2-mark,
 html[data-pcb-ink="dark"] .baby-nest-name {
   color: #161410;
-  text-shadow: 0 1px 0 rgba(255, 252, 246, 0.7);
+  text-shadow: none;
 }
 
 html[data-pcb-ink="dark"] .baby-nest-hit:focus-visible {
@@ -112,6 +114,48 @@ html[data-pcb-ink="dark"] .baby-nest-hit:focus-visible {
 
 html[data-pcb-ink="light"] body.win95-app {
   --muted-foreground: 0 0% 100%;
+}
+
+/*
+ * iOS / Capacitor shell (`/mobile`). The phone field is the default
+ * Snowflake plate, even when a saved desktop pin is plain teal.
+ * `background-attachment: fixed` does not paint the photograph on iOS,
+ * so the field would stay a flat desk color.
+ */
+html:has(.cogs-mobile-app),
+html:has(.cogs-mobile-login) {
+  --pcb-desk: #c5ddd4;
+  --pcb-plate: url("/pcb/mint.jpg");
+  --pcb-size: cover;
+  --pcb-repeat: no-repeat;
+  --pcb-pos: center;
+  --pcb-veil: linear-gradient(180deg, rgba(232, 246, 240, 0.28) 0%, rgba(197, 221, 212, 0.18) 42%, rgba(28, 48, 42, 0.2) 100%);
+  --pcb-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Literal color: the boot script writes `--pcb-desk` inline for the saved plate. */
+  background-color: #c5ddd4;
+  background-image:
+    var(--pcb-veil),
+    var(--pcb-grain),
+    var(--pcb-plate);
+  background-repeat: no-repeat, repeat, var(--pcb-repeat, no-repeat);
+  background-size: auto, 180px 180px, var(--pcb-size, cover);
+  background-position: center, 0 0, var(--pcb-pos, center);
+  background-attachment: scroll;
+}
+
+html:has(.cogs-mobile-app) body.win95-app,
+html:has(.cogs-mobile-app) body.win95-app main,
+html:has(.cogs-mobile-login) body.win95-app,
+html:has(.cogs-mobile-login) body.win95-app main {
+  background-color: #c5ddd4;
+  background-image:
+    var(--pcb-veil),
+    var(--pcb-grain),
+    var(--pcb-plate);
+  background-repeat: no-repeat, repeat, var(--pcb-repeat, no-repeat);
+  background-size: auto, 180px 180px, var(--pcb-size, cover);
+  background-position: center, 0 0, var(--pcb-pos, center);
+  background-attachment: scroll;
 }
 
 /* Settings plate picker */
@@ -145,7 +189,7 @@ html[data-pcb-ink="light"] body.win95-app {
 
 .pcb-mode-chip[data-ink="dark"] {
   color: #161410;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
 }
 
 .pcb-mode-chip[data-plain="true"] {

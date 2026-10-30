@@ -1,13 +1,15 @@
-# Analytics section map
+# Data section map
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-28_
 
 One line per view so a section can be worked on alone. Read this, then the
 view's file and its row in [`components/Analytics/README.md`](../../components/Analytics/README.md).
 Do not re-map the whole room.
 
-- Groups and view ids: `components/Analytics/analytics-tabs.ts`. Help copy per view is `ANALYTICS_TAB_HELP` in the same file.
-- View id → component: `components/Analytics/analytics-views.tsx` (one lazy chunk each).
+The person’s intention for the tab — combined analysis over all vault data, plain spreadsheet libraries, sources (Instagram, texts, browser history), and screens that clean, annotate, correct, or confirm — is the **Intention** section of that README. This index is the shipping views.
+
+- Groups and view ids: `components/Analytics/chrome/analytics-tabs.ts`. Help copy per view is `ANALYTICS_TAB_HELP` in the same file.
+- View id → component: `components/Analytics/chrome/analytics-views.tsx` (one lazy chunk each).
 - Shell: `enhanced-analytics.tsx`, `AnalyticsNav.tsx`, range in `analytics-range.ts` / `analytics-range-store.ts`.
 - Shared chart kit: `studio-kit.tsx`, `studio-plots.tsx`, `chart-frame.tsx`, `open-in-lists.ts`.
 - Skin: `analytics-chrome.css` (base), `analytics-atlas.css` (look), `analytics-boards.css` (Tracking boards).
@@ -91,7 +93,7 @@ Per-section docs go in this folder as `docs/analytics/<group>-<view>.md` (for ex
 | `texts-report` | Texts | `TextsReportView.tsx` |
 | `instagram` | Sources | `InstagramView.tsx`, `instagram-view.css` |
 
-## Every data type that flows into Analytics
+## Every data type that flows into Data
 
 Tasks and items: status, stage, list, area, item type, tags, importance, cognitive load, entropy, tier, due and scheduled dates, day-pushes, estimates (single and three-point), actual duration, time logs, start and completion stamps, cycle time, completion reviews (satisfaction, resistance, focus, distraction, expected vs actual difficulty, feelings, reflect notes, review points, time certainty), morning walkthrough fields (expected duration, day importance, resistance readings, day excitement), why-not and blocked reasons, operations (stage, category, neglect), goal and objective links.
 

@@ -22,8 +22,10 @@ const DISPLAY_READ = /[{$]\{?(?:task|todo|item|t|p|doc|place)\.description\}/
 const ALLOWED = new Map([
   // The name editors. Each reads and writes the same field in lockstep;
   // reading `title` while writing `description` is how a body gets clobbered.
-  ["components/ItemDetail/ItemDetailPage.tsx", "item name editor"],
+  ["components/ItemDetail/page/ItemDetailPageFascia.tsx", "item name editor"],
+  ["components/ItemDetail/page/useItemDetailPageCommands.ts", "delete confirm"],
   ["components/ItemDetail/ItemDetailPopup.tsx", "item name editor"],
+  ["components/ItemDetail/popup/PopupFascia.tsx", "item name editor"],
   ["components/spreadsheet/SheetGrid.tsx", "editable name column"],
   ["components/Modules/workspace/itinerary/TripActivitiesView.tsx", "place name editor"],
   // Tracking belongs to another agent; these are pure display and should be

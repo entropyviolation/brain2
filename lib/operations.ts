@@ -21,6 +21,9 @@
 import type { Task, TimeLogEntry } from "@/lib/types"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { addCalendarDays, formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
+import { localDayIso } from "@/lib/item-notes"
+import { itemTitle } from "@/lib/item-utils"
+import { taskModifiedMs } from "@/lib/task-modified"
 import {
   OPERATION_ATTR,
   OPERATION_STAGES,
@@ -30,6 +33,7 @@ import {
   operationCategoryKey,
   type OperationStage,
 } from "@/lib/operation-types"
+import { COMPUTER_PROJECT_TYPE_ID } from "@/lib/computer-project-types"
 
 /**
  * Relation ids the Operations feature uses (added to `lib/links.ts` upfront).
@@ -45,9 +49,12 @@ export const OP_REL = {
   resourceOf: "resource-of",
 } as const
 
-/** True when a task is an Operation (directed enterprise). */
+/**
+ * True when a task is an Operation. Computer Project is a subtype, so those
+ * items stay on the Operations board and in the operation workspace.
+ */
 export function isOperation(task: Pick<Task, "type"> | null | undefined): boolean {
-  return task?.type === OPERATION_TYPE_ID
+  return task?.type === OPERATION_TYPE_ID || task?.type === COMPUTER_PROJECT_TYPE_ID
 }
 
 // --- Hours rollup ----------------------------------------------------------
@@ -123,7 +130,7 @@ export function getParts(parentId: string, allTasks: Task[]): Task[] {
   return getRelatedChildren(parentId, allTasks, OP_REL.hasPart, OP_REL.partOf)
 }
 
-/** Resource items attached to an operation (via `has-resource` / `resource-of`). */
+/** Older child tasks linked `has-resource`. The Resources tab uses `Task.resources` instead. */
 export function getResources(operationId: string, allTasks: Task[]): Task[] {
   return getRelatedChildren(operationId, allTasks, OP_REL.hasResource, OP_REL.resourceOf)
 }
@@ -383,7 +390,41 @@ export function collectOperationCategories(operations: Task[]): string[] {
 }
 
 /** How the Operations home board orders operations inside a group. */
-export type OperationSortMode = "name" | "stage" | "recent" | "target"
+export type OperationSortMode = "name" | "stage" | "recent" | "target" | "modified"
+
+/** Id of the note entry a legacy `homeNotes` blob folds into. Stable per operation. */
+export function operationHomeNotesEntryId(operationId: string): string {
+  return `note_legacy_${operationId}_homenotes`
+}
+
+/**
+ * Move a legacy Home notes blob (`attributes.homeNotes`) onto `noteLog`.
+ * The entry is dated with the operation's created day — the blob had no clock.
+ * The same text or the stable id is not added twice. Returns the same task
+ * when there is nothing to fold.
+ */
+export function foldOperationHomeNotes(task: Task, now: Date = new Date()): Task {
+  const attrs = task.attributes
+  if (!attrs || !Object.prototype.hasOwnProperty.call(attrs, OPERATION_ATTR.homeNotes)) return task
+  const raw = attrs[OPERATION_ATTR.homeNotes]
+  const text = typeof raw === "string" ? raw.trim() : ""
+  const rest = { ...attrs }
+  delete rest[OPERATION_ATTR.homeNotes]
+  const attributes = Object.keys(rest).length > 0 ? rest : undefined
+  if (!text) return { ...task, attributes }
+  const id = operationHomeNotesEntryId(task.id)
+  const log = task.noteLog ?? []
+  if (log.some((entry) => entry.id === id || entry.text.trim() === text)) {
+    return { ...task, attributes }
+  }
+  const created = task.createdAt instanceof Date ? task.createdAt : new Date(task.createdAt)
+  const day = localDayIso(Number.isNaN(created.getTime()) ? now : created)
+  return {
+    ...task,
+    attributes,
+    noteLog: [...log, { id, date: day, text }],
+  }
+}
 
 export interface OperationCategoryGroup {
   /** Display name; `UNCATEGORIZED_OPERATION_CATEGORY` for the fallback bucket. */
@@ -410,7 +451,7 @@ function targetTime(op: Task): number {
 
 /** Order operations by the home board's chosen sort (stable, non-mutating). */
 export function sortOperations(operations: Task[], mode: OperationSortMode = "name"): Task[] {
-  const byName = (a: Task, b: Task) => a.description.localeCompare(b.description)
+  const byName = (a: Task, b: Task) => itemTitle(a).localeCompare(itemTitle(b))
   const out = [...operations]
   if (mode === "stage") {
     out.sort((a, b) => (STAGE_RANK.get(stageOf(a)) ?? 0) - (STAGE_RANK.get(stageOf(b)) ?? 0) || byName(a, b))
@@ -420,6 +461,8 @@ export function sortOperations(operations: Task[], mode: OperationSortMode = "na
       const bt = toDate(b.createdAt)?.getTime() ?? 0
       return bt - at || byName(a, b)
     })
+  } else if (mode === "modified") {
+    out.sort((a, b) => taskModifiedMs(b) - taskModifiedMs(a) || byName(a, b))
   } else if (mode === "target") {
     out.sort((a, b) => targetTime(a) - targetTime(b) || byName(a, b))
   } else {

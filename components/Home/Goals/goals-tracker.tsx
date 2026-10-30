@@ -4,6 +4,9 @@
  * Milled fascia: all-time Objectives (prioritizable), quantifiable Goals, and
  * the Direction report. Same language as the header and To Do. The title jewel also sits at photograph size on the desktop
  * under the window.
+ *
+ * At the room's 720px phone query, `GoalsPhone` mounts instead. The desktop
+ * tree below stays the fascia.
  */
 "use client"
 
@@ -13,12 +16,17 @@ import { ObjectivesPanel } from "./ObjectivesPanel"
 import { GoalsContainer } from "./GoalsContainer"
 import { DirectionReport } from "./DirectionReport"
 import { GolRose, GolStar } from "./goals-ornaments"
+import { GoalsPhone } from "./phone/goals-phone"
+import { useGoalsPhone } from "./phone/use-goals-phone"
 import "./goals-chrome.css"
 
 export function GoalsTracker() {
+  const phone = useGoalsPhone()
   const objectives = useGoalsStore((s) => s.objectives)
   const goals = useGoalsStore((s) => s.goals)
   const activeObjectives = objectives.filter((o) => !o.archived).length
+
+  if (phone) return <GoalsPhone />
 
   return (
     <div

@@ -57,7 +57,7 @@ edges with reasons, not because anything writes itself.
   6.2–6.5 and 8.1 first. Phase L1 here can start before them. Every later
   phase draws on their furniture.
 - Tick the board, add a handoff line, and update
-  `components/ItemDetail/README.md` and `lib/README.md` as you go (CLAUDE.md).
+  `components/ItemDetail/README.md` and `lib/README.md` as you go (`AGENTS.md`).
 
 ---
 
@@ -81,7 +81,7 @@ edges with reasons, not because anything writes itself.
 | L3.4 | "Why is this here?" proof card | L3.3 | ☑ |
 | L3.5 | Rule editor + dry run | L3.2, L2.1 | ☑ |
 | L4.1 | Suggestion core (`lib/graph/densify.ts`) | L0.2 | ☑ |
-| L4.2 | Deterministic sources (reciprocal, triad, co-member, mention, co-time) | L4.1 | ◐ co-time not wired to tracking |
+| L4.2 | Deterministic sources (reciprocal, triad, co-member, mention, co-time) | L4.1 | ☑ co-time reads Company blocks for person items |
 | L4.3 | Suggestions shelf + dismiss + mute a source | L4.1 | ☑ |
 | L4.4 | Density readout (degree, clustering, open triads) | L4.1 | ☑ |
 | L5.1 | Checks: scope, functional, acyclic, irreflexive, disjoint | L1.2 | ☑ |
@@ -101,7 +101,7 @@ edges with reasons, not because anything writes itself.
 
 ## 2. What exists today
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
 **Storage.** `Task.links: ItemLink[]` (`lib/types.ts` ~79):
 `{ id, relation, targetId, stance?, weight? }`. Stored on the source item
@@ -110,9 +110,11 @@ only. Backlinks are found by scanning (`useTaskStore.getBacklinks`,
 
 **Built-in relations.** `RELATIONS` in `lib/links.ts`: blocks, supports,
 refutes, reviews, goal-of, checklist-of, objective-of, subgoal-of, part-of,
-phase-of, resource-of, related, plus the evidence pair (`supported-by`,
-`refuted-by`) with `stance`. Unknown ids read as symmetric and show the raw
-id. `relationLabel`, `inverseRelation` and `inverseRelationLabel` fall back
+phase-of, resource-of, related, the symmetric identity pair `same-as` and
+`different-from` (a person accepts `same-as`; a dismissal does not write
+`different-from`), plus the evidence pair (`supported-by`, `refuted-by`)
+with `stance`. Unknown ids read as symmetric and show the raw id.
+`relationLabel`, `inverseRelation` and `inverseRelationLabel` fall back
 to the registry.
 
 **Registry.** `lib/relation-registry.ts`: built-ins, then code seeds (person
@@ -136,7 +138,7 @@ green across registry, ego graph and person seeds.
 
 **UI today.** `LinkPicker` + `RelatedItemsPanel` on the popup Links tab and
 the page Related card. PD Phase 6 replaces them with
-`components/ItemDetail/links/` (composer, ledger, radial plate,
+`components/ItemDetail/tabs/links/` (composer, ledger, radial plate,
 `RichLinksPanel`).
 
 **Other edges that already behave like relations** (KG plan §3.1): list
@@ -145,7 +147,7 @@ parents, pen "always means" links, `checklist-of` deriving deadlines,
 `supported-by` feeding `lib/belief-strength.ts`. This plan leaves them in
 their stores. KG-D1 (vault edge view) reads them later.
 
-**Graph layer** _Last mapped: 2026-10-16_ (L3–L9). Pure code in `lib/graph/` (see `lib/README.md`). The Links tab reads it through `components/ItemDetail/links/use-links-graph.ts`. Library views in `components/Analytics/relations/`. Weekly section in `components/Reviews/GraphReviewSection.tsx`.
+**Graph layer** _Last mapped: 2026-10-16_ (L3–L9). Pure code in `lib/graph/` (see `lib/README.md`). The Links tab reads it through `components/ItemDetail/tabs/links/use-links-graph.ts`. Library views in `components/Analytics/relations/`. Weekly section in `components/Reviews/graph/GraphReviewSection.tsx`.
 
 Where the build differs from the text below:
 
@@ -462,7 +464,7 @@ editing, as PD 8.1 says.
 
 ## 8. The Relations library
 
-A new **Relations** tab in `components/Analytics/ItemTypesLibrary.tsx`,
+A new **Relations** tab in `components/Analytics/library/ItemTypesLibrary.tsx`,
 beside the types. Vocabulary next to types, as PD decision 1 says.
 
 - **List.** Grouped by family. Each row: label ⇄ inverse label, scope
@@ -752,7 +754,7 @@ icons are fine. Avoid celestial costume.
 ### Phase L2: Relations library
 
 #### L2.1 Relations tab
-- **Files**: `components/Analytics/ItemTypesLibrary.tsx`, new
+- **Files**: `components/Analytics/library/ItemTypesLibrary.tsx`, new
   `components/Analytics/relations/RelationsLibrary.tsx` +
   `relations-library.css`.
 - **Do**: section 8 list + tree toggle. Usage counts from
@@ -805,7 +807,7 @@ icons are fine. Avoid celestial costume.
   derived twin drops.
 
 #### L3.4 Proof card
-- **Files**: `components/ItemDetail/links/ProofCard.tsx`.
+- **Files**: `components/ItemDetail/tabs/links/ProofCard.tsx`.
 - **Tests**: each step opens its item through the guarded `openItem`.
 
 #### L3.5 Rule editor
@@ -829,7 +831,7 @@ icons are fine. Avoid celestial costume.
   sample floor where one applies.
 
 #### L4.3 Shelf
-- **Files**: `components/ItemDetail/links/SuggestionShelf.tsx`.
+- **Files**: `components/ItemDetail/tabs/links/SuggestionShelf.tsx`.
 - **Tests**: accept adds a draft link (dirty lamp), dismiss persists after
   save, mute hides the source on another item.
 
@@ -889,7 +891,7 @@ icons are fine. Avoid celestial costume.
 ### Phase L10: docs
 
 - **L10.1**: `components/ItemDetail/README.md` (rich links, derived,
-  shelf), `lib/README.md` (`lib/graph/*`), Analytics README (Relations
+  shelf), `lib/README.md` (`lib/graph/*`), Data README (Relations
   library), `docs/README.md` row for this file. Screenshots of the tab
   (radial, matrix, shelf) and the library. DESIGN_STYLE checklist.
 
@@ -960,4 +962,5 @@ _Append one line per finished step: `YYYY-MM-DD · step · who · result`._
 2026-10-16 · L1.3 · Claude · `person-relations.ts`: new seed `family-of` (sym), `SEED_PARENTS`, and every seed gets `parent` (default `related`) and `origin: "seed"`. No id or label changed. `builtin-traits.ts` filled: part-of / has-part / subgoal-of / has-subgoal transitive + acyclic, phase-of ⊑ part-of, blocks acyclic, evidence pairs disjoint, reviews quiet, mother-of / father-of inverse-functional 1, married-to functional 1. The lattice over `allRelations()` has no cycles and no unexplained inverses. `components/People/person-pipelines.test.tsx` "double-clicking a joined pen" fails on the uncommitted People edits. It is not links work.
 2026-10-16 · L2.1 · Claude · `ItemTypesLibrary` now has Types / Relations tabs. `components/Analytics/relations/RelationsLibrary.tsx`: by family or tree (lattice `parentOf`), label ⇄ inverse, scope, usage (`lib/graph/relation-usage.ts`, cached by tasks identity), origin badge (built-in · seed · yours · proposed), archived folded.
 2026-10-16 · side · Claude · Built-in **Location** type (`lib/location-types.ts`). Place seeds `born-in` / `birthplace-of`, `grew-up-in` / `where-grew-up` (person → location), `located-in` / `location-of` (location ↔ location, transitive + acyclic). Composer target search ends with Create "<query>": a store write at once (type = relation's first `toTypes`, else item); the link stays a draft. Native `<select>`s in the composer and library now use `components/ui/native-select.tsx` (drop-in over the Radix select). Pre-existing failures outside links: enhanced-analytics, habit, session-plan, task-store titles, iPhone notes, person-pipelines.
-2026-10-16 · L2.2–L2.4, L3.1–L3.5, L4.1–L4.4, L5.1–L5.2, L6.1–L6.3, L7.1, L8.1–L8.2, L9.1–L9.2 · Claude · Built in one pass. Libs in `lib/graph/` with `graph-core.test.ts` and `graph-library.test.ts` (16 tests). UI test `components/ItemDetail/links/links-graph-ui.test.tsx` (shelf accept, dismiss, with derived + proof, sheet override, merge/unmerge). `relationRules`, `mergeRelation`, `unmergeRelation` on `useItemTypeStore`. New keys `brain2-graph-inbox`, `brain2-links-view` in backup and declared in `vault-coverage.test.ts`. Left: co-time wiring, created date in the inspector, screenshots (L10.1), PD board ticks for 6.2–8.1. Failures outside links not touched: enhanced-analytics, enhanced-list-view, habit counts, iPhone notes, item-title-reads, next-step, session-plan, task-store titles.
+2026-10-28 · L4.2 · co-time · `coTimeRows` reads Company blocks for a person with a `company-pen` pipeline. Floor stays 7 sittings. The shelf relation is `spends-time-with`. Dismiss and mute are unchanged.
+2026-10-16 · L2.2–L2.4, L3.1–L3.5, L4.1–L4.4, L5.1–L5.2, L6.1–L6.3, L7.1, L8.1–L8.2, L9.1–L9.2 · Claude · Built in one pass. Libs in `lib/graph/` with `graph-core.test.ts` and `graph-library.test.ts` (16 tests). UI test `components/ItemDetail/tabs/links/links-graph-ui.test.tsx` (shelf accept, dismiss, with derived + proof, sheet override, merge/unmerge). `relationRules`, `mergeRelation`, `unmergeRelation` on `useItemTypeStore`. New keys `brain2-graph-inbox`, `brain2-links-view` in backup and declared in `vault-coverage.test.ts`. Left: co-time wiring, created date in the inspector, screenshots (L10.1), PD board ticks for 6.2–8.1. Failures outside links not touched: enhanced-analytics, enhanced-list-view, habit counts, iPhone notes, item-title-reads, next-step, session-plan, task-store titles.

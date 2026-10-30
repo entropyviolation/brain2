@@ -424,7 +424,7 @@
   font-variant: small-caps;
   letter-spacing: 0.08em;
   color: var(--id-nameplate, #2a2c2e);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: none;
 }
 
 /* Nickname chips sit inside one sunken field, with the typing input after them. */
@@ -469,7 +469,7 @@
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--id-key-face, #c8ccd2);
   box-shadow: var(--id-key-ring, inset 1px 1px #fff, inset -1px -1px #808080);
   font-size: 11px;
@@ -740,7 +740,7 @@ body.win95-app .person-detail .person-nickfield .person-chipfield input.person-c
 }
 
 
-/* View text analytics: a readout that jumps to Analytics → Texts. */
+/* View text analytics: a readout that jumps to Data → Texts. */
 .person-readout-link {
   background: none;
   border: 0;
@@ -756,4 +756,23 @@ body.win95-app .person-detail .person-nickfield .person-chipfield input.person-c
 .person-readout-owe {
   color: #7dffc4;
   font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .person-date-met,
+  .person-detail .person-est {
+    flex-wrap: wrap;
+  }
+
+  .person-detail input[type="text"],
+  .person-detail input[type="date"],
+  .person-detail select,
+  .person-detail textarea,
+  .person-log-add input[type="text"],
+  .person-log-add input[type="date"],
+  .person-detail .native-select {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+  }
 }

@@ -55,6 +55,7 @@ const toLocation = { fromTypes: P, toTypes: [LOCATION_TYPE_ID] }
  */
 const SEED_PARENTS: Record<string, string> = {
   knows: "related",
+  "spends-time-with": "knows",
   "friends-with": "knows",
   "best-friends-with": "friends-with",
   "partner-of": "knows",
@@ -85,6 +86,7 @@ const SEEDS: RelationDef[] = [
   // friend
   sym("friends-with", "is friends with", "friend"),
   sym("knows", "knows", "friend"),
+  sym("spends-time-with", "spends time with", "friend"),
   sym("best-friends-with", "is best friends with", "friend"),
   // romance
   sym("partner-of", "is the partner of", "romance"),

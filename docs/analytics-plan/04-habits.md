@@ -1,8 +1,8 @@
 # Habits plates — build brief
 
-One later owner: a habits-plates agent. Touch only `components/Analytics/HabitsView.tsx`, `StreaksWidget.tsx`, `PointsView.tsx`, and new habit plate files beside them. Leave Tracking and Plan alone. Do not rewrite `docs/analytics-vision/02-habits.md`.
+One later owner: a habits-plates agent. Touch only `components/Analytics/behavior/HabitsView.tsx`, `StreaksWidget.tsx`, `PointsView.tsx`, and new habit plate files beside them. Leave Tracking and Plan alone. Do not rewrite `docs/analytics-vision/02-habits.md`.
 
-Home-matching grade math stays the source of the numbers. Analytics draws those numbers; it does not invent a second grade. Reader A is the grade (`calculateDayPercentageAV` and the week, output, and period grades). Reader B is met (`isHabitGoalMet`). Label which reader a plate used. Round to a whole percent only for a lift or a points-still-needed gap.
+Home-matching grade math stays the source of the numbers. Data draws those numbers; it does not invent a second grade. Reader A is the grade (`calculateDayPercentageAV` and the week, output, and period grades). Reader B is met (`isHabitGoalMet`). Label which reader a plate used. Round to a whole percent only for a lift or a points-still-needed gap.
 
 ## Plates already drawn
 
@@ -18,7 +18,7 @@ Keep these. Add beside them.
 | Habit % lag | `HabitsView` | Trace of daily habit completion percent, plus r(1) and r(7). |
 | Horizon | `HabitsView` | “Horizon · daily %,” three folded bands. |
 | Slopegraph | `HabitsView` | “Weekday vs weekend.” |
-| Current and longest | `StreaksWidget` | All-time, not clipped to the Analytics window. Optional week-habit streak. Daily review streak stays. |
+| Current and longest | `StreaksWidget` | All-time, not clipped to the Data window. Optional week-habit streak. Daily review streak stays. |
 | Points stack | `PointsView` | Daily stacked habit / bonus / task, cumulative line, source split, top earners. Stays here. Do not fold it into the grade ribbon. |
 
 ## Additions

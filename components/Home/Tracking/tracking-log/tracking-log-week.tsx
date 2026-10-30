@@ -1,0 +1,316 @@
+/**
+ * components/Home/Tracking/tracking-log/tracking-log-week.tsx — Tracking log week of log lines
+ *
+ * Seven columns for the week containing `currentDate`. The today column follows
+ * the wall clock, not the selected day. Same classify/sort rules as the day
+ * shelves — not Day Log agenda week and not Time Grid paint week. Date headings
+ * open that day in day mode. A log row opens that log item. Food's Open food
+ * button stays. Rows are not dragged between days.
+ */
+"use client"
+
+import { useMemo } from "react"
+import { format } from "date-fns"
+import {
+  asLogEntry,
+  classifyLogBookRow,
+  compareLogRows,
+  logClockLabel,
+  switchLogCopy,
+  type LogBookEntry,
+  type LogBookList,
+} from "@/components/Home/Tracking/tracking-log-model"
+import { formatLocalDateKey, getWeekDates, getWeekStartDate, sameCalendarDay } from "@/lib/date-utils"
+import { formatSpendAmount, summarizeSpend } from "@/lib/spend"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { useLiveToday } from "@/lib/use-current-date"
+import { latestOutfit, useWardrobeStore } from "@/lib/wardrobe"
+import { useAttachmentSrc } from "@/components/use-attachment-src"
+import { nutrientsForPlate } from "@/lib/kitchen-plate"
+import { resolveKitchenFood, useKitchenStore } from "@/lib/kitchen-store"
+import { whereOf } from "@/lib/kitchen-types"
+import { feedRowDayKey, feedRowMinute, type TelegramFeedRow } from "@/lib/ingest/telegram-feed"
+import { TelegramWeekRow, useTelegramFeedForDays } from "@/components/Home/Tracking/tracking-log/telegram-feed-well"
+import { openLogEntry } from "@/components/Home/Tracking/tracking-log/open-log-entry"
+import "./tracking-log-week.css"
+
+const SHELF_TAG: Record<LogBookList, string> = {
+  food: "Food",
+  drink: "Drink",
+  drug: "Drug",
+  intake: "Intake",
+  event: "Event",
+  note: "Note",
+  switch: "Switch",
+  thought: "Thought",
+  spend: "Spent",
+}
+
+function WeekLook({ dayKey }: { dayKey: string }) {
+  const outfits = useWardrobeStore((state) => state.outfits)
+  const look = latestOutfit(outfits.filter((row) => row.dayKey === dayKey))
+  const src = useAttachmentSrc(look?.photoUri)
+  if (!look || !src) return null
+  return <img className="trk-log-week-look" src={src} alt="" width={28} height={28} />
+}
+
+function rowTitle(entry: LogBookEntry, penName: Map<string, string>): string {
+  if (entry.list === "spend") return entry.spendOn?.trim() || entry.title?.trim() || "Untitled"
+  if (entry.list === "switch") return switchLogCopy(entry, penName.get(entry.penId))
+  return entry.title?.trim() || "Untitled"
+}
+
+function FoodWeekMark({ entryId }: { entryId: string }) {
+  const plate = useKitchenStore((s) => s.plates.find((row) => row.entryId === entryId && row.accepted))
+  const foods = useKitchenStore((s) => s.foods)
+  const recipes = useKitchenStore((s) => s.recipes)
+  const recipe = plate?.recipeId ? recipes.find((row) => row.id === plate.recipeId) ?? null : null
+  if (!plate) return null
+  const kcal = Math.round(nutrientsForPlate(plate, (id) => resolveKitchenFood(id, foods), recipe).kcal)
+  return <span className="trk-log-week-food">{kcal} kcal · {whereOf(plate) === "out" ? "Out" : "Home"}</span>
+}
+
+function WeekLogRow({
+  entry,
+  penName,
+  selected,
+  onSelect,
+  onRemove,
+  onOpenFood,
+}: {
+  entry: LogBookEntry
+  penName: Map<string, string>
+  selected?: boolean
+  onSelect?: (id: string) => void
+  onRemove: (id: string) => void
+  onOpenFood?: () => void
+}) {
+  const clock = logClockLabel(entry)
+  const title = rowTitle(entry, penName)
+  const tag = SHELF_TAG[entry.list]
+  const amount =
+    entry.list === "spend" && typeof entry.spendAmount === "number" ? (
+      <span className="trk-log-week-amount">{formatSpendAmount(entry.spendAmount)}</span>
+    ) : null
+  const open = () => {
+    onSelect?.(entry.id)
+    openLogEntry(entry.id)
+  }
+
+  if (clock.badge === "Unknown") {
+    return (
+      <div
+        className="trk-log-week-row is-unknown"
+        data-entry={entry.id}
+        data-selected={selected ? "true" : "false"}
+        onClick={open}
+      >
+        <span className="trk-log-week-badge">Unknown</span>
+        {amount}
+        <span className="trk-log-week-copy" title={title}>
+          {title}
+        </span>
+        <span className="trk-log-week-tag">{tag}</span>
+        {entry.list === "food" ? <FoodWeekMark entryId={entry.id} /> : null}
+        {entry.list === "food" && onOpenFood ? (
+          <button
+            type="button"
+            data-no95=""
+            className="trk-keycap"
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenFood()
+            }}
+          >
+            Open food
+          </button>
+        ) : null}
+        <span className="trk-log-week-actions">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              open()
+            }}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onRemove(entry.id)
+            }}
+          >
+            Remove
+          </button>
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      data-no95=""
+      className="trk-log-week-row"
+      data-entry={entry.id}
+      data-selected={selected ? "true" : "false"}
+      onClick={open}
+    >
+      {clock.time ? <span className="trk-log-week-when">{clock.time}</span> : null}
+      {amount}
+      <span className="trk-log-week-copy" title={title}>
+        {title}
+      </span>
+      <span className="trk-log-week-tag">{tag}</span>
+      {entry.list === "food" ? <FoodWeekMark entryId={entry.id} /> : null}
+      {clock.badge ? <span className="trk-log-week-badge">{clock.badge}</span> : null}
+    </button>
+  )
+}
+
+type WeekItem = { entry: LogBookEntry; telegram?: undefined } | { telegram: TelegramFeedRow; entry?: undefined }
+
+/**
+ * Texts to BIM sit among the day's log lines by the minute they were sent.
+ * Lines with an unknown clock stay at the end, as they do without the feed.
+ */
+function interleaveTelegram(rows: LogBookEntry[], telegram: TelegramFeedRow[]): WeekItem[] {
+  const timed: { at: number; item: WeekItem }[] = []
+  const tail: WeekItem[] = []
+  for (const entry of rows) {
+    if (logClockLabel(entry).badge === "Unknown") tail.push({ entry })
+    else timed.push({ at: entry.startMin, item: { entry } })
+  }
+  for (const row of telegram) timed.push({ at: feedRowMinute(row), item: { telegram: row } })
+  timed.sort((a, b) => a.at - b.at)
+  return [...timed.map((t) => t.item), ...tail]
+}
+
+export function TrackingLogWeek({
+  currentDate,
+  onOpenDay,
+  onRemoveEntry,
+  onOpenFood,
+  selectedId = null,
+  onSelectEntry,
+}: {
+  currentDate: Date
+  onOpenDay: (date: Date) => void
+  onRemoveEntry: (id: string) => void
+  onOpenFood?: () => void
+  selectedId?: string | null
+  onSelectEntry?: (id: string) => void
+}) {
+  const entries = useTimeTrackingStore((s) => s.entries)
+  const scopes = useTimeTrackingStore((s) => s.scopes)
+  const today = useLiveToday()
+  const weekStart = getWeekStartDate(currentDate)
+  const weekDates = getWeekDates(weekStart)
+  const weekKeys = useMemo(() => new Set(weekDates.map((d) => formatLocalDateKey(d))), [weekDates])
+
+  const feed = useTelegramFeedForDays(weekKeys)
+
+  const penName = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const scope of scopes) {
+      for (const pen of scope.pens) map.set(pen.id, pen.name)
+    }
+    return map
+  }, [scopes])
+
+  const columns = useMemo(() => {
+    return weekDates.map((date) => {
+      const dayKey = formatLocalDateKey(date)
+      const rows: LogBookEntry[] = []
+      for (const entry of entries) {
+        if (entry.date !== dayKey) continue
+        const row = classifyLogBookRow(asLogEntry(entry), penName.get(entry.penId))
+        if (row) rows.push(row)
+      }
+      rows.sort(compareLogRows)
+      const telegram = feed.filter((row) => feedRowDayKey(row) === dayKey)
+      return {
+        date,
+        dayKey,
+        rows: interleaveTelegram(rows, telegram),
+        isToday: sameCalendarDay(date, today),
+        isSelected: sameCalendarDay(date, currentDate),
+      }
+    })
+  }, [weekDates, entries, penName, today, currentDate, feed])
+
+  const weekSpend = useMemo(() => {
+    const spend: LogBookEntry[] = []
+    for (const entry of entries) {
+      if (!weekKeys.has(entry.date)) continue
+      const row = classifyLogBookRow(asLogEntry(entry), penName.get(entry.penId))
+      if (row?.list === "spend") spend.push(row)
+    }
+    return summarizeSpend(spend)
+  }, [entries, weekKeys, penName])
+
+  return (
+    <div className="trk-log-week" data-testid="tracking-log-week">
+      {weekSpend.total > 0 ? (
+        <div className="trk-log-week-ledger" aria-label="Spent this week">
+          <p>
+            <span className="trk-log-week-spent-total">{formatSpendAmount(weekSpend.total)}</span> spent this
+            week
+          </p>
+          <p>{weekSpend.bySource.map((row) => `${row.label} ${formatSpendAmount(row.amount)}`).join(" · ")}</p>
+        </div>
+      ) : null}
+
+      <div className="trk-log-week-board">
+        {columns.map((col) => (
+          <div
+            key={col.dayKey}
+            className="trk-log-week-col"
+            data-day={col.dayKey}
+            data-today={col.isToday ? "true" : "false"}
+            data-selected={col.isSelected ? "true" : "false"}
+          >
+            <button
+              type="button"
+              data-no95=""
+              className="trk-log-week-head"
+              data-day={col.dayKey}
+              data-today={col.isToday ? "true" : "false"}
+              aria-label={`Open ${format(col.date, "EEEE, MMM d")}`}
+              onClick={() => onOpenDay(col.date)}
+            >
+              <span className="trk-log-week-head-dow">{format(col.date, "EEE")}</span>
+              <span className="trk-log-week-head-dom">{format(col.date, "d")}</span>
+            </button>
+            <WeekLook dayKey={col.dayKey} />
+            <div className="trk-log-week-rows" aria-label={`Log for ${format(col.date, "EEEE, MMM d")}`}>
+              {col.rows.length === 0 ? (
+                <p className="trk-log-week-empty" aria-hidden>
+                  —
+                </p>
+              ) : (
+                col.rows.map((item) =>
+                  item.telegram ? (
+                    <TelegramWeekRow key={item.telegram.id} row={item.telegram} />
+                  ) : (
+                    <WeekLogRow
+                      key={item.entry.id}
+                      entry={item.entry}
+                      penName={penName}
+                      selected={selectedId === item.entry.id}
+                      onSelect={onSelectEntry}
+                      onRemove={onRemoveEntry}
+                      onOpenFood={onOpenFood}
+                    />
+                  ),
+                )
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

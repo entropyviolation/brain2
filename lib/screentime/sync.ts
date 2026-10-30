@@ -11,9 +11,10 @@
 "use client"
 
 import { formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
+import { hashPenColor } from "@/lib/ingest/clock-pen"
 import { mergeAdjacent, type TimeEntry } from "@/lib/time-entries"
 import * as trackingStore from "@/lib/time-tracking-store"
-import { PEN_PALETTE, useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
+import { useTimeTrackingStore, type TrackPen, type TrackScope } from "@/lib/time-tracking-store"
 import { slugApp } from "./app-categories"
 import { mapScreenTimeEvents, type AwEvent, type ScreenTimeInterval } from "./map-events"
 import { loadScreenTimePrefs, saveScreenTimePrefs } from "./prefs"
@@ -83,14 +84,6 @@ export function isLocalScreenTimeHubOrigin(
   if (!location) return false
   const host = location.hostname
   return host === "localhost" || host === "127.0.0.1" || host === "[::1]"
-}
-
-function hashPenColor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  }
-  return PEN_PALETTE[hash % PEN_PALETTE.length]
 }
 
 function scopeId(): string {

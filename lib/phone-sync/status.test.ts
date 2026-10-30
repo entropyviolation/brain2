@@ -27,7 +27,8 @@ describe("phone sync status rows", () => {
       "calls",
       "location",
     ])
-    expect(phoneSyncRow("health")?.needs).toMatch(/Not built yet/)
+    expect(phoneSyncRow("health")?.needs).toMatch(/iPhone app/)
+    expect(phoneSyncRow("health")?.switchable).toBe(false)
   })
 
   it("keeps the newest run for a source", () => {

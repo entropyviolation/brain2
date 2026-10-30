@@ -7,7 +7,7 @@
  * to, the objective multipliers on that item for that day, and the other rows
  * the same thing earned that day (a completion and its objective bonus are two
  * rows). Nothing here writes. Shared by the Home Latest award detail and the
- * Analytics Points ledger.
+ * Data Points ledger.
  *
  * The rule numbers are today's values. A row written before a rule changed was
  * paid with the number of that day; the ledger does not keep it, so the

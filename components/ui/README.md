@@ -18,11 +18,11 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `card.tsx` | Card, CardHeader, CardTitle, CardContent |
 | `checkbox.tsx` | Checkboxes |
 | `collapsible.tsx` | Expand/collapse sections (Scheduler filters) |
-| `dialog.tsx` | Modal dialogs. The default close is `KeycapClose` (grey keycap ×, brick on hover). `hideClose` drops it when a window draws its own caption ×. `overlayClassName` lifts the scrim; `container` portals a dialog inside one already open so it is not marked hidden |
-| `window-sand-close.tsx` | Opt-in close: `useWindowSandClose` + `WindowSandClose`. From the ×, the window becomes tiny lit grains (~1px), which tumble with their own little depth, bounce, and heap into a dune in the colors of its pixels. The frame becomes sand too. A click on the background, Escape, or the skip × closes immediately; left alone, the wind comes on its own (~4.8s). A second `start()` while it plays does not restart the pour. Any captioned window can use it. Reduced motion snaps shut. The live window stays hidden through close; the host kills the Radix zoom/fade. |
-| `window-sand-sim.ts` | Grain bodies, not a powder grid. A ragged front releases them from the × (0.9s to the far corner). Each grain falls, bounces, and rolls into a steep dune (heightfield columns, a little depth toward the camera). Nothing stays solid as a frame. After the dune rests (~3.1s) wind lifts the windward crest and carries the pile off to the right. |
+| `dialog.tsx` | Modal dialogs. Centered from `app/win95.css` with the margin box, not a translate, so Chrome paints typed characters immediately. The default close is `KeycapClose` (grey keycap ×, brick on hover). `hideClose` drops it when a window draws its own caption ×. `overlayClassName` lifts the scrim; `container` portals a dialog inside one already open so it is not marked hidden |
+| `window-sand-close.tsx` | Opt-in close: `useWindowSandClose` + `WindowSandClose`. From the ×, the window becomes tiny lit grains (~1px), which tumble with their own little depth, bounce, and heap into a dune in the colors of its pixels. The frame becomes sand too. A click on the background, Escape, or the skip × closes immediately. On the desktop, Enter hurries the wind once the dune can take it (~2s); left alone, the wind comes on its own (~4.8s) and carries the pile to the right. On iOS the dune waits. **Blow on the sand** stays on screen, and a long hard breath (`lib/mic-blow.ts` reading `lib/live-mic.ts`) pushes the grains straight into the screen. Desktop does not listen. A second `start()` while it plays does not restart the pour. Any captioned window can use it. Reduced motion snaps shut. The live window stays hidden through close; the host kills the Radix zoom/fade. |
+| `window-sand-sim.ts` | Grain bodies, not a powder grid. A ragged front releases them from the × (0.9s to the far corner). Each grain falls, bounces, and rolls into a steep dune (heightfield columns, a little depth toward the camera). Nothing stays solid as a frame. After the dune rests (~3.1s) wind lifts the windward crest and carries the pile off to the right. An iOS breath (`beginWind(..., true)`) is the other wind: the pile is pushed into the screen, toward the center of the glass, and does not start on its own. |
 | `window-sand-capture.ts` | Synchronous clone of the live window, decoded through an SVG `foreignObject` data URL into `ImageData`. Grains are recolored from their home pixel when it arrives, including ones that have already let go. A blob URL is not used — it taints the canvas and the sand would stay flat navy and gray. |
-| `window-sand-close.css` | `.window-sand-source` hides the live window while the canvas plays. `.window-sand-host[data-state=closed]` is opacity 0, visibility hidden, animation none. `.window-sand-skip` is the small × (top right) that closes immediately. Imported from the root layout so the skip control stays clickable. |
+| `window-sand-close.css` | `.window-sand-source` hides the live window while the canvas plays. `.window-sand-host[data-state=closed]` is opacity 0, visibility hidden, animation none. `.window-sand-skip` is the small × (top right) that closes immediately. `.window-sand-blow` is the iOS line **Blow on the sand**, centered above the home indicator until the breath starts. Imported from the root layout so the skip control stays clickable. |
 | `unsaved-changes-guard.tsx` | House dirty-close confirm: Save changes / Cancel / Exit without saving. Milled fascia look via `unsaved-changes.css`. Pair with `lib/unsaved-changes.ts`. |
 | `unsaved-changes.css` | `.w95-confirm` milled fascia confirm (~24.5rem): CRT title, brushed bay, three keycaps centered in the bay |
 | `menu-layer.ts` | Shared menu layer. Select and dropdown lists portal to `document.body` on this z-index so a sheet, frozen header, bar, or dialog cannot cover them |
@@ -38,13 +38,15 @@ Only the primitives actively imported by the app are kept. As of the current cod
 | `table.tsx` | Table layout (Lists details view) |
 | `tabs.tsx` | Tab navigation |
 | `textarea.tsx` | Multi-line text |
-| `tooltip.tsx` | Hover tooltips |
+| `tooltip.tsx` | Hover tooltips. On a phone the bubble stays inside the screen |
+| `touch.css` | _Last mapped: 2026-10-28._ Phone-only overrides (max-width 767px). Desktop rules in this folder are unchanged at 768px and up |
+| `safe-insets.ts` | Reads `env(safe-area-inset-*)` and, on a phone, keeps menus inside that inset |
 
 ## Removed (not present)
 
 Many default shadcn components were deleted as unused, including: `accordion`, `alert-dialog`, `avatar`, `breadcrumb`, `calendar`, `carousel`, `chart`, `command`, `context-menu`, `drawer`, `form`, `hover-card`, `input-otp`, `menubar`, `navigation-menu`, `pagination`, `popover`, `radio-group`, `resizable`, `scroll-area`, `sheet`, `sidebar`, `skeleton`, `slider`, `sonner`, `toast`, `toaster`, `toggle`, `toggle-group`, and associated hooks.
 
-Charts in Analytics import **recharts** directly, not `ui/chart.tsx`.
+Charts in Data import **recharts** directly, not `ui/chart.tsx`.
 
 ## Styling
 
@@ -64,4 +66,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 ```
 
-All modules (Home, Lists, Scheduler, Analytics, etc.) import from this folder.
+All modules (Home, Lists, Scheduler, Data, etc.) import from this folder.
+
+## Phone
+
+_Last mapped: 2026-10-28._ Under 768px these controls follow [`docs/MOBILE_STYLE.md`](../../docs/MOBILE_STYLE.md). The same components at 768px and wider keep their desktop size, type, and placement.
+
+- Buttons, tabs, menu rows, and select rows are at least 44×44. A checkbox or switch keeps its face; the hit area grows to 44px.
+- Inputs, textareas, and selects are 16px so iOS does not zoom on focus, and the row grows when the text is long.
+- Dialogs sit in the safe area (`env(safe-area-inset-*)`), scroll inside `100dvh`, and still dismiss from the scrim, Escape, or the close key. Menus and select lists do the same. A fixed width passed by a caller cannot run off the screen.
+- The clock field, its open key, and the panel follow the same rules. Address suggestions pin to the bottom of the screen. The sand-close skip key is 44px and clears the status inset.

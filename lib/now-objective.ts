@@ -22,14 +22,23 @@ export interface NowObjective {
    */
   startUnknown?: boolean
   /**
-   * Milliseconds of work already banked, excluding time the objective spent
-   * parked in unfinished. The open stint, when there is one, begins at
-   * `stintStartedAt`. Omitted on older rows: a completed one then uses
+   * Milliseconds of closed Now stints, excluding the open one. Time in Next
+   * does not add. Omitted on older completed rows: those still use
    * `completedAt − addedAt`.
    */
   workedMs?: number
-  /** ISO when the current active stint began. Omitted while parked or done. */
+  /**
+   * ISO when this objective last entered Now. Set only while it is in Now,
+   * and kept after complete so the done line can name that moment. Cleared
+   * on the way back to Next, after the stint is banked.
+   */
   stintStartedAt?: string
+  /**
+   * Open rows only. `now` is the one being worked; `next` is waiting and its
+   * clock is not running. Omitted on a completed row. An older open row with
+   * no lane is Now when it still has `stintStartedAt`, otherwise Next.
+   */
+  lane?: "now" | "next"
   /**
    * Task this objective is attached to. With `stepId`, that step belongs to
    * this task. Omitted = the task on the clock, if any.
@@ -54,6 +63,20 @@ function rid(): string {
   return `nobj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+export type NowObjectiveLane = "now" | "next"
+
+/**
+ * Which open list a row is on. Completed rows have no lane. An older open
+ * row with no `lane` is Now when a stint is still open, otherwise Next.
+ */
+export function objectiveLane(
+  row: Pick<NowObjective, "lane" | "stintStartedAt" | "completedAt">,
+): NowObjectiveLane | undefined {
+  if (row.completedAt) return undefined
+  if (row.lane === "now" || row.lane === "next") return row.lane
+  return row.stintStartedAt ? "now" : "next"
+}
+
 export function activeNowObjectives(list: NowObjective[] | undefined): NowObjective[] {
   return (list ?? []).filter((row) => !row.completedAt)
 }
@@ -76,6 +99,7 @@ export function sameNowObjectives(
       x.startUnknown !== y.startUnknown ||
       x.workedMs !== y.workedMs ||
       x.stintStartedAt !== y.stintStartedAt ||
+      x.lane !== y.lane ||
       x.taskId !== y.taskId ||
       x.stepId !== y.stepId ||
       x.completes !== y.completes
@@ -96,8 +120,9 @@ export function compactNowObjectives(list: NowObjective[] | undefined): NowObjec
       const packed: NowObjective = { id: row.id, text, addedAt: row.addedAt }
       if (row.completedAt) packed.completedAt = row.completedAt
       if (row.startUnknown) packed.startUnknown = true
-      if (row.workedMs) packed.workedMs = row.workedMs
-      if (row.stintStartedAt && !row.completedAt) packed.stintStartedAt = row.stintStartedAt
+      if (typeof row.workedMs === "number" && (row.workedMs > 0 || row.completedAt)) packed.workedMs = row.workedMs
+      if (row.stintStartedAt) packed.stintStartedAt = row.stintStartedAt
+      if (!row.completedAt && (row.lane === "now" || row.lane === "next")) packed.lane = row.lane
       if (row.taskId) packed.taskId = row.taskId
       if (row.stepId) packed.stepId = row.stepId
       if (row.completes !== undefined) packed.completes = row.completes
@@ -111,12 +136,14 @@ export function addNowObjective(
   list: NowObjective[] | undefined,
   text: string,
   now = new Date(),
-  extra: { stepId?: string; addedAt?: Date } = {},
+  extra: { stepId?: string; addedAt?: Date; lane?: NowObjectiveLane } = {},
 ): NowObjective[] {
   const trimmed = text.trim()
   if (!trimmed) return list ?? []
   const addedAt = (extra.addedAt ?? now).toISOString()
-  const row: NowObjective = { id: rid(), text: trimmed, addedAt, stintStartedAt: addedAt }
+  const lane = extra.lane ?? "next"
+  const row: NowObjective = { id: rid(), text: trimmed, addedAt, lane }
+  if (lane === "now") row.stintStartedAt = addedAt
   if (extra.stepId) row.stepId = extra.stepId
   return [...(list ?? []), row]
 }
@@ -145,11 +172,11 @@ export function addCompletedNowObjective(
   return [...(list ?? []), row]
 }
 
-/** Fold the open stint into `workedMs` and close it. Done and unknown-start rows stay put. */
+/** Fold the open stint into `workedMs` and close it. The row leaves Now. Done and unknown-start rows stay put. */
 export function bankOpenStint(row: NowObjective, now = new Date()): NowObjective {
   if (row.completedAt || row.startUnknown || !row.stintStartedAt) return row
   const extra = Math.max(0, now.getTime() - Date.parse(row.stintStartedAt))
-  const next: NowObjective = { ...row, workedMs: (row.workedMs ?? 0) + extra }
+  const next: NowObjective = { ...row, workedMs: (row.workedMs ?? 0) + extra, lane: "next" }
   delete next.stintStartedAt
   return next
 }
@@ -159,15 +186,52 @@ export function bankOpenStint(row: NowObjective, now = new Date()): NowObjective
  * rows with no banked time use the wall span from `addedAt`.
  */
 export function objectiveWorkedMs(
-  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt">,
+  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt" | "lane">,
   now = new Date(),
 ): number | undefined {
   if (row.startUnknown) return undefined
+  if (row.completedAt) {
+    if (typeof row.workedMs === "number") return row.workedMs
+    return Math.max(0, Date.parse(row.completedAt) - Date.parse(row.addedAt))
+  }
   const open =
-    row.stintStartedAt && !row.completedAt ? Math.max(0, now.getTime() - Date.parse(row.stintStartedAt)) : 0
-  if (row.workedMs != null || row.stintStartedAt) return (row.workedMs ?? 0) + open
-  if (row.completedAt) return Math.max(0, Date.parse(row.completedAt) - Date.parse(row.addedAt))
+    objectiveLane(row) === "now" && row.stintStartedAt
+      ? Math.max(0, now.getTime() - Date.parse(row.stintStartedAt))
+      : 0
+  if (typeof row.workedMs === "number" || (objectiveLane(row) === "now" && row.stintStartedAt)) {
+    return (row.workedMs ?? 0) + open
+  }
   return undefined
+}
+
+const objectiveClock = (iso: string) =>
+  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+
+/**
+ * One line for an objective, shared by the popup, the item Time tab, the
+ * debrief, and a task-card spent row. `now` is only for an open Now stint's
+ * worked total; the words themselves name the clocks. `clock` is injectable
+ * so a test can lock the words without a locale.
+ */
+export function formatObjectiveWhen(
+  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt" | "lane">,
+  now = new Date(),
+  clock: (iso: string) => string = objectiveClock,
+): string {
+  if (row.startUnknown && row.completedAt) return `completed ${clock(row.completedAt)} · start unknown`
+  if (row.completedAt) {
+    const ms = objectiveWorkedMs(row, now) ?? 0
+    const mins = Math.max(0, Math.round(ms / 60_000))
+    const right = row.stintStartedAt ?? row.completedAt
+    return `${clock(row.addedAt)} → ${clock(right)} · ${mins}m`
+  }
+  const pastMin = Math.round((row.workedMs ?? 0) / 60_000)
+  const past = pastMin > 0 ? ` past ${pastMin}m` : ""
+  const added = `added ${clock(row.addedAt)}`
+  if (objectiveLane(row) === "now" && row.stintStartedAt) {
+    return `${added}${past} working on since ${clock(row.stintStartedAt)}`
+  }
+  return `${added}${past}`
 }
 
 /** Point an objective at a task, and optionally one of that task's steps. */
@@ -263,6 +327,31 @@ export function editNowObjectiveText(
   return (list ?? []).map((row) => (row.id === id ? { ...row, text } : row))
 }
 
+/** Bank the open Now stint and move the row to Next. The wait does not count. */
+export function moveNowObjectiveToNext(
+  list: NowObjective[] | undefined,
+  id: string,
+  now = new Date(),
+): NowObjective[] {
+  return (list ?? []).map((row) => {
+    if (row.id !== id || row.completedAt) return row
+    return { ...bankOpenStint(row, now), lane: "next" }
+  })
+}
+
+/** Move the row to Now and start a stint. A row already in Now keeps its stint. */
+export function moveNowObjectiveToNow(
+  list: NowObjective[] | undefined,
+  id: string,
+  now = new Date(),
+): NowObjective[] {
+  return (list ?? []).map((row) => {
+    if (row.id !== id || row.completedAt) return row
+    if (objectiveLane(row) === "now" && row.stintStartedAt) return { ...row, lane: "now" }
+    return { ...row, lane: "now", stintStartedAt: now.toISOString() }
+  })
+}
+
 export function toggleNowObjectiveComplete(
   list: NowObjective[] | undefined,
   id: string,
@@ -271,14 +360,17 @@ export function toggleNowObjectiveComplete(
   return (list ?? []).map((row) => {
     if (row.id !== id) return row
     if (row.completedAt) {
-      const next = { ...row, stintStartedAt: now.toISOString() }
+      const next: NowObjective = { ...row, lane: "now", stintStartedAt: now.toISOString() }
       delete next.completedAt
       delete next.startUnknown
       return next
     }
+    const started = row.stintStartedAt
     const banked = bankOpenStint(row, now)
     const next: NowObjective = { ...banked, completedAt: now.toISOString() }
-    delete next.stintStartedAt
+    if (started) next.stintStartedAt = started
+    if (typeof next.workedMs !== "number") next.workedMs = 0
+    delete next.lane
     return next
   })
 }

@@ -3,7 +3,7 @@
  *
  * User-facing concept is Rituals. Persistence stays on PeriodReview
  * (morning = day start, start = period start, root body = end/night).
- * Shared by the header Rituals menu, Home tile, Analytics, and BIM text.
+ * Shared by the header Rituals menu, Home tile, Data, and BIM text.
  */
 import type { PeriodReview, PeriodStartRitual, ReviewPeriod, RitualPhase } from "@/lib/types"
 import {

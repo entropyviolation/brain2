@@ -19,8 +19,10 @@ not the pattern to copy. The full account is "Debt" below.
 
 A module that keeps its records as Items is a room in the house — searchable
 from Cmd/Ctrl-K, schedulable, analyzable, ingestible by text message — because
-it never invented its own storage. **Analytics is the heart** of that graph:
-collection, presentation, analysis, and the next tool grown from the same mass.
+it never invented its own storage. **Data is the heart** of that graph:
+analytics and combined analysis, visualization and stats, libraries for viewing
+the rows, sources, and annotation
+([`components/Analytics/README.md`](../components/Analytics/README.md)).
 **Infinite adaptability, one nervous system.** New organs grow on that same
 graph.
 
@@ -79,7 +81,7 @@ A module whose records are Items belongs to the same house:
 - Its dated things land in **Scheduler / Plan**.
 - Its effort lands in **Tracking** minutes and **Habits** via tags.
 - Its completions award **points** and feed **Objectives / Goals**.
-- Its numbers are chartable in **Analytics**.
+- Its numbers are chartable in **Data**.
 - A text from a phone can create one of its records through **ingest**.
 - Undo, backup, and (eventually) sync cover it, because it never invented its
   own storage.
@@ -177,11 +179,69 @@ built.
 
 ---
 
+## Package file (create-only)
+
+_Last mapped: 2026-10-27._
+
+A narrower file than the manifest above lives in `lib/module-package.ts`.
+It is JSON: `id`, `name`, `version`, `slots` (a `role`, list `name`,
+attributes, optional item type, `policy: "create"`), `views` (a view kind the
+workspace switch already renders, plus a slot `role` instead of a list id),
+optional workflows, and an optional `nativeTemplate` id from `MODULE_TEMPLATES`.
+`parseModulePackage` reads that JSON. It rejects functions, unknown view kinds,
+a slot with no role, and a `nativeTemplate` that is not a current template.
+When `nativeTemplate` is set, the rest of the recipe is ignored.
+
+`installModulePackage(input): string` mints new lists and a new workspace and
+returns the instance id. Every slot creates a new list, stamped
+`createdByModuleId` and `moduleSlotId`. The new instance stores the package id
+and the role → list map on `config.package`. It does not read or write
+`houseCleaning` or `tripItinerary`, and it does not rewrite a list that already
+exists. A `nativeTemplate` install commits `buildModuleTemplate(id)` unchanged
+(no `config.package`, no `moduleSlotId`).
+
+**Install package** in the builder reads a JSON file and calls
+`installModulePackage` for a create-only file or a `nativeTemplate` file. The
+template cards still call `instantiateModuleTemplate`. Those cards remain the
+live path for the built-in templates.
+
+A slot with `policy: "bind"` is scored with `scoreSlot` before any install.
+Create-only packages and `nativeTemplate` packages skip the scorer. A bind
+installs only when every bind slot's decision is `"bind"` (full attribute
+cover and Jaccard at least 0.75, one list). `"ask"`, `"none"`, or a refusal
+shows the candidate lists and installs nothing. The scorer does not write. A
+bound list is left as it is: no `createdByModuleId`, no `moduleSlotId`, no
+attribute edits. Create slots in that same file still mint new lists.
+`parseModulePackage` still accepts only `policy: "create"`; the dialog does
+not pass a bind file into that parser.
+
+This file is not rung 2: it declares no bridges and does not merge item types
+into the registry. The five laws are unchanged.
+
+_Last mapped: 2026-10-27._ A new Budget or Book Tasting build reads
+`lib/packages/golden/budget.json` or `book-tasting.json` for lists, attributes,
+views, and workflows, then `buildModuleTemplate` stamps `templateId` and the
+sample rows (including Book Tasting PDF text). The package schema has no place
+for those seeds. Itinerary, Tidy, Film DNA, GradSearch, and Blank stay written
+in `lib/module-templates.ts`. Stored modules are left as they are.
+
+---
+
 ## Uploaded HTML (shipped, bridge-lite)
 
 _Last mapped: 2026-10-22._
 
 An `html` view runs a user-uploaded `.html` file in a sandboxed frame with a small `window.brain2` bridge: read the lists the user attached, write them only if the user allowed edits, and keep page memory in a per-module kv. It is the first outside code that runs without a port, so its door is narrow on purpose: items only, no delete, no tracking/habits/points yet. Those arrive as manifest `bridges` grants in rung 2. Details: [`components/Modules/README.md`](../components/Modules/README.md) → "Uploaded HTML modules".
+
+---
+
+## Package app (new downloads)
+
+_Last mapped: 2026-10-27._
+
+A `package-app` view is for a new downloaded package. Its folder — html, css, js, and assets — renders in a sandboxed frame with the same `window.brain2` bridge as an uploaded page. The folder is stored in `lib/module-package-app-store.ts` under `brain2-module-package-app`, separate from the one-file HTML store.
+
+Current modules still use their compiled views. House cleaning, the trip document, the trip map, Film DNA, and GradSearch do not render through `package-app`. An uploaded `.html` file is still one file on the `html` view.
 
 ---
 
@@ -235,9 +295,11 @@ the refactor order that makes that step honest.
 6. **Migrate the shadow databases** onto Items, keeping both stylesheets
    untouched. **Partial (Wave 10):** Items are the write path; config dual-write
    shim for one release; drop the shim and finish two-way Lists sync next.
-7. **Then** harvest shared chrome, if it still seems worth it — `usePaintStroke`,
-   `confirm()`, and one `ItemDetail` with a density mode. Doing this before the
-   manifest exists would freeze today's chrome as the platform's API.
+7. **Then** harvest shared chrome, if it still seems worth it — `usePaintStroke`
+   and `confirm()`. One `ItemDetail` with a density mode is refused: the popup
+   is an orchestrator plus private `popup/` modules, and the page stays its own
+   shell. Doing the shared-chrome harvest before the
+   manifest exists would freeze today's chrome as the platform's API. _Last mapped: 2026-10-27._
 
 See [`ARCHITECTURE_MODULARITY.md`](ARCHITECTURE_MODULARITY.md) for the same
 sequence expressed as refactors, and for what deliberately is *not* worth

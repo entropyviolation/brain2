@@ -1,5 +1,5 @@
 /**
- * AppHeader — pinned mill title bar (Nav + friend jewel + milled silver key-wells).
+ * AppHeader — pinned mill title bar (Nav + friend jewel + pale silver keycaps).
  * Clusters share one flex line. Free width widens Rituals, System, and
  * Capture up to a cap; the clusters stay packed. Narrower than the caps,
  * clusters wrap. A cluster wider than the shell scrolls inside its bay.
@@ -7,7 +7,7 @@
  * search glass, and reminder bell. Capture is Now, Inbox, and Quick Add. The live now well is a peer
  * of those keys, inside Capture, and absent when idle. Metrics is on Current moment.
  */
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetLocalStorage } from "@/tests/test-utils"
@@ -212,6 +212,105 @@ describe("AppHeader", () => {
     expect(names).toHaveAttribute("aria-pressed", "false")
     expect(names.querySelector(".b2-shell-glyph-strike")).toBeNull()
     expect(useUiNamesStore.getState().mode).toBe("off")
+  })
+
+  it("shows CODE DOCUMENTATION only while names mode is on and opens the docs reader", async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const href = String(url)
+      if (href === "/api/code-docs") {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            missing: false,
+            files: [{ path: "README.md", name: "README.md", dir: "", kind: "markdown", bytes: 24 }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+      if (href.includes("README.md")) return new Response("# Docs home\n\nHello from the vault.", { status: 200 })
+      return new Response("missing", { status: 404 })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    render(<AppHeader onTaskSelect={() => {}} />)
+    expect(screen.queryByRole("button", { name: "CODE DOCUMENTATION" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Names help mode" }))
+    await user.click(screen.getByRole("button", { name: "CODE DOCUMENTATION" }))
+    expect(await screen.findByText("Hello from the vault.")).toBeTruthy()
+    expect(screen.getByTestId("code-docs-viewer")).toBeTruthy()
+    expect(useUiNamesStore.getState().mode).toBe("off")
+    const names = screen.getByRole("button", { name: "Names help mode", hidden: true })
+    expect(names).toHaveAttribute("aria-pressed", "false")
+    expect(screen.queryByRole("button", { name: "CODE DOCUMENTATION" })).toBeNull()
+    await act(async () => {
+      names.click()
+    })
+    expect(useUiNamesStore.getState().mode).toBe("off")
+    vi.unstubAllGlobals()
+  })
+
+  it("puts history beside the brand and Quick Add to the left of Menu", () => {
+    const onCaptureOpenChange = vi.fn()
+    render(<AppHeader onTaskSelect={() => {}} onCaptureOpenChange={onCaptureOpenChange} />)
+    const header = screen.getByTestId("app-header")
+    const nav = screen.getByTestId("header-nav")
+    const tools = header.querySelector(".b2-shell-phone-tools")
+    const plus = header.querySelector(".b2-shell-plus")
+    const menu = header.querySelector(".b2-shell-menu")
+
+    expect(tools).toBeTruthy()
+    expect(nav.closest(".b2-shell-phone-tools")).toBeNull()
+    expect(plus).toHaveAttribute("aria-label", "Quick Add")
+    expect(tools).toContainElement(plus)
+    expect(tools).toContainElement(menu)
+    expect(plus?.compareDocumentPosition(menu as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    act(() => {
+      ;(plus as HTMLButtonElement).click()
+    })
+    expect(onCaptureOpenChange).toHaveBeenCalledWith(true)
+    expect(header).toHaveAttribute("data-tools", "closed")
+  })
+
+  it("opens a menu for the destinations that are not the section switcher", () => {
+    render(<AppHeader onTaskSelect={() => {}} />)
+    const menu = screen.getByRole("button", { name: "Menu", hidden: true })
+    expect(menu).toHaveAttribute("aria-expanded", "false")
+    expect(menu).toHaveAttribute("aria-controls", "b2-shell-tools")
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "closed")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+
+    act(() => {
+      menu.click()
+    })
+    expect(menu).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "open")
+    expect(screen.getByRole("dialog", { name: "Menu" })).toBe(document.getElementById("b2-shell-tools"))
+
+    act(() => {
+      menu.click()
+    })
+    expect(screen.getByTestId("app-header")).toHaveAttribute("data-tools", "closed")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("reloads the page from Refresh, opposite Close in the menu", () => {
+    const reload = vi.fn()
+    vi.stubGlobal("location", { reload })
+    render(<AppHeader onTaskSelect={() => {}} />)
+    const refresh = screen.getByText("Refresh").closest("button")
+    const close = screen.getByText("Close").closest("button")
+    expect(refresh).toBeTruthy()
+    expect(close).toBeTruthy()
+    expect(refresh?.parentElement).toBe(close?.parentElement)
+    expect(refresh?.parentElement?.className).toContain("b2-shell-sheet-bar")
+    expect(refresh?.parentElement?.firstElementChild).toBe(refresh)
+    expect(refresh?.parentElement?.lastElementChild).toBe(close)
+    act(() => {
+      refresh?.click()
+    })
+    expect(reload).toHaveBeenCalledOnce()
+    vi.unstubAllGlobals()
   })
 
   it("opens search from the magnifying-glass key", async () => {

@@ -20,6 +20,7 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { action, textWithTokens } from "./iphone-shortcut-actions.mjs"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const OUT_DIR = join(ROOT, "docs", "shortcuts")
@@ -134,35 +135,6 @@ function noteField(propertyName) {
         PropertyName: propertyName,
       },
     ],
-  }
-}
-
-function textWithTokens(parts) {
-  let string = ""
-  const attachmentsByRange = {}
-  for (const part of parts) {
-    if (typeof part === "string") {
-      string += part
-      continue
-    }
-    const start = string.length
-    string += "\uFFFC"
-    attachmentsByRange[`{${start}, 1}`] = {
-      Type: part.uuid ? "ActionOutput" : "Variable",
-      ...(part.uuid ? { OutputUUID: part.uuid, OutputName: part.name } : { VariableName: part.name }),
-      ...(part.aggrandizements ? { Aggrandizements: part.aggrandizements } : {}),
-    }
-  }
-  return {
-    Value: { string, attachmentsByRange },
-    WFSerializationType: "WFTextTokenString",
-  }
-}
-
-function action(identifier, uuid, params) {
-  return {
-    WFWorkflowActionIdentifier: identifier,
-    WFWorkflowActionParameters: { UUID: uuid, ...params },
   }
 }
 
@@ -375,6 +347,13 @@ export function buildWorkflow() {
     }),
     action("is.workflow.actions.sendmessage", ID.send, {
       IntentAppIdentifier: TELEGRAM_BUNDLE,
+      IntentAppDefinition: {
+        BundleIdentifier: TELEGRAM_BUNDLE,
+        Name: "Telegram",
+        TeamIdentifier: "C67CF9S4VU",
+        IntentClassName: "INSendMessageIntent",
+      },
+      ShowWhenRun: false,
       WFSendMessageContent: variable("Outgoing"),
     }),
     action("is.workflow.actions.delay", ID.wait, { WFDelayTime: 1 }),
@@ -506,6 +485,12 @@ export function assertWorkflowShape(workflow = buildWorkflow()) {
     if (id === "is.workflow.actions.sendmessage") {
       if (a.WFWorkflowActionParameters.IntentAppIdentifier !== TELEGRAM_BUNDLE) {
         throw new Error("Send Message must target Telegram")
+      }
+      if (a.WFWorkflowActionParameters.IntentAppDefinition?.BundleIdentifier !== TELEGRAM_BUNDLE) {
+        throw new Error("Send Message must define the Telegram app, or iOS opens Messages")
+      }
+      if (a.WFWorkflowActionParameters.ShowWhenRun !== false) {
+        throw new Error("Send Message must not show the Messages compose sheet")
       }
       const content = a.WFWorkflowActionParameters.WFSendMessageContent?.Value
       // Must be the Outgoing text variable — never Notes / Repeat Item / Find Notes.

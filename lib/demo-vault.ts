@@ -51,7 +51,7 @@ function put(logical: string, value: string): void {
 
 function task(partial: Partial<Task> & Pick<Task, "id" | "description">): Task {
   const created = partial.createdAt instanceof Date ? partial.createdAt : new Date(partial.createdAt ?? Date.now())
-  return {
+  const row: Task = {
     stage: "clarified",
     estimatedDuration: 45,
     cognitiveLoad: 2,
@@ -69,6 +69,8 @@ function task(partial: Partial<Task> & Pick<Task, "id" | "description">): Task {
     ...partial,
     createdAt: created,
   }
+  row.title = row.title ?? row.description
+  return row
 }
 
 function buildLists(now: Date): List[] {
@@ -197,9 +199,15 @@ function buildTasks(now: Date): Task[] {
         [OPERATION_ATTR.mission]: "Get the studio firing again before the October class.",
         [OPERATION_ATTR.stage]: "active",
         [OPERATION_ATTR.categories]: ["studio", "maintenance"],
-        [OPERATION_ATTR.homeNotes]: "Controller board is on order. Document each wiring photo.",
         [OPERATION_ATTR.trackingTagIds]: ["tag-work"],
       },
+      noteLog: [
+        {
+          id: "note_legacy_demo-op-kiln_homenotes",
+          date: "2026-06-01",
+          text: "Controller board is on order. Document each wiring photo.",
+        },
+      ],
     }),
     task({
       id: "demo-op-phase-photos",

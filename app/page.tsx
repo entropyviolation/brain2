@@ -4,7 +4,7 @@
  * The single page of the app. Renders the pinned full-width mill title bar
  * (`AppHeader`: BRAIN2 caption + Nav Back/Forward + today's-friend jewel +
  * grouped press keys) and the top-level tab bar (`data-ui-name="App tabs"`:
- * Home, Lists, Docs, Scheduler, Operations, Modules, Analytics) as one stuck
+ * Home, Lists, Docs, Scheduler, Operations, Modules, Inventory, Data) as one stuck
  * stack (`.b2-app-pin`): the bay sits flush under the fascia and keeps the
  * desk container's width, so the keys do not grow. Each module panel
  * lazy-loads below that stack. Item detail fills the desk *below* the pin —
@@ -19,7 +19,8 @@
  * past periods and `useProcessInboxTodo` adds today's "process inbox
  * information" To Do when the revisit Inbox has more than 100 open ideas.
  * `useReminderTick` delivers due Reminders to the Inbox and Telegram while
- * this window is open. `useSystemHomeListPins`, `usePeopleIKnowList`,
+ * this window is open. `useChromeHistoryInbox` files a finished Chrome day
+ * from the Brain2 extension when one is waiting. `useSystemHomeListPins`, `usePeopleIKnowList`,
  * `useCloseGiftIdeas`, `useInstagramFollowingList`, and
  * `useInstagramFollowersList` start on idle after the desk nav mark
  * (`brain2-nav-ready`), not during first paint: the pins keep the built-in
@@ -35,13 +36,13 @@
 "use client"
 
 import { useState, useCallback, lazy, Suspense, useEffect, useLayoutEffect, useRef, type ReactNode } from "react"
-import { APP_NAV_KEYS, APP_TABS, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
+import { APP_NAV_KEYS, APP_TABS, DATA_TAB_LABEL, applyListsNavigation, COGS_NAVIGATE_TO_LIST_EVENT, readStoredId, readStoredTab, writeStoredId, type AppTab } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { OPEN_ITEM_POPUP_EVENT } from "@/lib/points-ledger-nav"
-import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { clearItemDetailDock, readItemDetailDock } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 import { returnToHabitSettings } from "@/lib/habit-list-item"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
-import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, ChartLine } from "lucide-react"
+import { House, ListChecks, FileText, CalendarClock, Workflow, Blocks, Library, ChartLine } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMessageIngest } from "@/hooks/useMessageIngest"
 import { AppHeader } from "@/components/AppHeader"
@@ -55,6 +56,7 @@ import { useUndoHotkey } from "@/hooks/useUndoHotkey"
 import { useDayScheduleRollover } from "@/hooks/use-day-rollover"
 import { useProcessInboxTodo } from "@/hooks/use-inbox-process-todo"
 import { useReminderTick } from "@/hooks/use-reminder-tick"
+import { useChromeHistoryInbox } from "@/hooks/use-chrome-history-inbox"
 import { useListMembershipRulesTick } from "@/hooks/use-list-membership-rules-tick"
 import { useSystemHomeListPins } from "@/lib/home-system-lists"
 import { usePeopleIKnowList } from "@/hooks/use-people-i-know"
@@ -90,6 +92,9 @@ const EnhancedAnalytics = lazy(() =>
   import("@/components/Analytics/enhanced-analytics").then((mod) => ({ default: mod.EnhancedAnalytics })),
 )
 const ModulesPanel = lazy(() => import("@/components/Modules/modules-panel").then((mod) => ({ default: mod.ModulesPanel })))
+const InventoryView = lazy(() =>
+  import("@/components/Inventory/InventoryView").then((mod) => ({ default: mod.InventoryView })),
+)
 const ModulePopoutView = lazy(() =>
   import("@/components/Modules/workspace/ModulePopoutView").then((mod) => ({ default: mod.ModulePopoutView })),
 )
@@ -203,6 +208,7 @@ export default function Home() {
   useDayScheduleRollover()
   useProcessInboxTodo()
   useReminderTick()
+  useChromeHistoryInbox()
   useListMembershipRulesTick()
   const [popoutModuleId, setPopoutModuleId] = useState<string | null>(null)
   const [popoutSheetCategoryId, setPopoutSheetCategoryId] = useState<string | null>(null)
@@ -289,7 +295,7 @@ export default function Home() {
     return () => window.removeEventListener(COGS_NAVIGATE_TO_LIST_EVENT, handler)
   }, [])
 
-  // Analytics (texts report, Instagram report) opens a Person as a popup over itself.
+  // Data (texts report, Instagram report) opens a Person as a popup over itself.
   useEffect(() => {
     const handler = (event: Event) => {
       const id = (event as CustomEvent<{ id?: unknown }>).detail?.id
@@ -416,9 +422,13 @@ export default function Home() {
                   <Blocks aria-hidden="true" />
                   <span className="b2-tab-label">Modules</span>
                 </TabsTrigger>
-                <TabsTrigger value="analytics" data-tab="analytics" aria-label="Analytics" title="Analytics">
+                <TabsTrigger value="inventory" data-tab="inventory" aria-label="Inventory" title="Inventory">
+                  <Library aria-hidden="true" />
+                  <span className="b2-tab-label">Inventory</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" data-tab="analytics" aria-label={DATA_TAB_LABEL} title={DATA_TAB_LABEL}>
                   <ChartLine aria-hidden="true" />
-                  <span className="b2-tab-label">Analytics</span>
+                  <span className="b2-tab-label">{DATA_TAB_LABEL}</span>
                 </TabsTrigger>
               </TabsList>
             }
@@ -461,12 +471,17 @@ export default function Home() {
             )}
             {warm.includes("operations") && (
               <DeskTab tab="operations" active={activeTab === "operations"}>
-                <OperationsView onTaskSelect={handleTaskSelect} />
+                <OperationsView />
               </DeskTab>
             )}
             {warm.includes("modules") && (
               <DeskTab tab="modules" active={activeTab === "modules"}>
                 <ModulesPanel onTaskSelect={handleTaskSelect} />
+              </DeskTab>
+            )}
+            {warm.includes("inventory") && (
+              <DeskTab tab="inventory" active={activeTab === "inventory"}>
+                <InventoryView />
               </DeskTab>
             )}
             {warm.includes("analytics") && (

@@ -20,6 +20,23 @@
   box-shadow: none !important;
 }
 
+.window-sand-blow {
+  position: fixed;
+  z-index: 360;
+  left: 50%;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 20px));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  pointer-events: none;
+  font: 600 17px/1.2 var(--font-karla), Karla, sans-serif;
+  color: #f7f4ee;
+  background: rgba(0, 0, 40, 0.78);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .window-sand-canvas {
   display: block;
   image-rendering: pixelated;
@@ -57,5 +74,14 @@
 @media (prefers-reduced-motion: reduce) {
   .window-sand-canvas {
     display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .window-sand-skip {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    width: 44px;
+    height: 44px;
   }
 }

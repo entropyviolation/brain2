@@ -1,10 +1,11 @@
 /**
  * scripts/build-iphone-phone-shortcuts.mjs — Write + sign Screen Time / Call /
- * Text / Location
+ * Text / Location / NFC / NFC dose
  *
  * Same pipeline as scripts/build-iphone-notes-shortcut.mjs: JSON workflow →
  * binary plist → `shortcuts sign --mode anyone`. AirDrop the signed files
  * onto the iPhone. Re-run: node scripts/build-iphone-phone-shortcuts.mjs
+ * Pass a shortcut name to sign just that one.
  *
  * No `is.workflow.actions.conditional`: a hand-written If imports with an empty
  * condition ("Please choose a value for each parameter in this action") and the
@@ -18,13 +19,21 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { action, textWithTokens } from "./iphone-shortcut-actions.mjs"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const OUT_DIR = join(ROOT, "docs", "shortcuts")
 
 const TELEGRAM_BUNDLE = "ph.telegra.Telegraph"
+/** Without this dictionary the action’s built-in app is Messages. */
+const TELEGRAM_APP = {
+  BundleIdentifier: TELEGRAM_BUNDLE,
+  Name: "Telegram",
+  TeamIdentifier: "C67CF9S4VU",
+  IntentClassName: "INSendMessageIntent",
+}
 const BOT = "@brain2_phone_bot"
-const IMPORT_QUESTION = `Pick the Brain2 bot chat in Telegram (${BOT}). Pair it in Brain2 Settings first, then open that chat once.`
+const IMPORT_QUESTION = `Choose Telegram, not Messages. Then pick the ${BOT} chat. An iMessage contact does not reach Brain2. Pair that chat in Brain2 first, and open it once.`
 
 const CLIENT = {
   WFWorkflowClientVersion: "1300.0.0",
@@ -52,35 +61,6 @@ function variable(name, extra = {}) {
   }
 }
 
-function textWithTokens(parts) {
-  let string = ""
-  const attachmentsByRange = {}
-  for (const part of parts) {
-    if (typeof part === "string") {
-      string += part
-      continue
-    }
-    const start = string.length
-    string += "\uFFFC"
-    attachmentsByRange[`{${start}, 1}`] = {
-      Type: part.uuid ? "ActionOutput" : "Variable",
-      ...(part.uuid ? { OutputUUID: part.uuid, OutputName: part.name } : { VariableName: part.name }),
-      ...(part.aggrandizements ? { Aggrandizements: part.aggrandizements } : {}),
-    }
-  }
-  return {
-    Value: { string, attachmentsByRange },
-    WFSerializationType: "WFTextTokenString",
-  }
-}
-
-function action(identifier, uuid, params) {
-  return {
-    WFWorkflowActionIdentifier: identifier,
-    WFWorkflowActionParameters: { UUID: uuid, ...params },
-  }
-}
-
 function setOutgoing(uuid, textUuid) {
   return action("is.workflow.actions.setvariable", uuid, {
     WFVariableName: "Outgoing",
@@ -88,15 +68,22 @@ function setOutgoing(uuid, textUuid) {
   })
 }
 
-/** Telegram Send Message — content is Variable Outgoing only (plain text). */
+/**
+ * Telegram Send Message — content is Variable Outgoing only (plain text).
+ * IntentAppIdentifier alone still opens Messages. IntentAppDefinition is the
+ * app the action actually uses. ShowWhenRun stays off so a scan does not
+ * present the Messages compose sheet.
+ */
 function sendMessage(uuid) {
   return action("is.workflow.actions.sendmessage", uuid, {
     IntentAppIdentifier: TELEGRAM_BUNDLE,
+    IntentAppDefinition: TELEGRAM_APP,
+    ShowWhenRun: false,
     WFSendMessageContent: variable("Outgoing"),
   })
 }
 
-function wrapWorkflow({ name, color, glyph, actions, sendId, inputClasses, types, hasInputVars }) {
+function wrapWorkflow({ name, color, glyph, actions, sendId, inputClasses, types, hasInputVars, importQuestions = true }) {
   const sendIndex = actions.findIndex((row) => row.WFWorkflowActionParameters.UUID === sendId)
   return {
     ...CLIENT,
@@ -105,14 +92,16 @@ function wrapWorkflow({ name, color, glyph, actions, sendId, inputClasses, types
       WFWorkflowIconStartColor: color,
       WFWorkflowIconGlyphNumber: glyph,
     },
-    WFWorkflowImportQuestions: [
-      {
-        ActionIndex: sendIndex,
-        Category: "Parameter",
-        ParameterKey: "WFSendMessageActionRecipients",
-        Text: IMPORT_QUESTION,
-      },
-    ],
+    WFWorkflowImportQuestions: importQuestions
+      ? [
+          {
+            ActionIndex: sendIndex,
+            Category: "Parameter",
+            ParameterKey: "WFSendMessageActionRecipients",
+            Text: IMPORT_QUESTION,
+          },
+        ]
+      : [],
     WFWorkflowInputContentItemClasses: inputClasses,
     WFWorkflowOutputContentItemClasses: [],
     WFWorkflowTypes: types,
@@ -416,11 +405,230 @@ export function buildLocationWorkflow() {
   return workflow
 }
 
+const NFC = {
+  comment: "BB111111-1111-4111-A111-111111111111",
+  ask: "BB222222-2222-4222-A222-222222222222",
+  message: "BB333333-3333-4333-A333-333333333333",
+  setOutgoing: "BB3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "BB444444-4444-4444-A444-444444444444",
+  notify: "BB555555-5555-4555-A555-555555555555",
+}
+
+const DOSE = {
+  comment: "CC111111-1111-4111-A111-111111111111",
+  askId: "CC222222-2222-4222-A222-222222222222",
+  askQty: "CC333333-3333-4333-A333-333333333333",
+  message: "CC444444-4444-4444-A444-444444444444",
+  setOutgoing: "CC3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "CC555555-5555-4555-A555-555555555555",
+  notify: "CC666666-6666-4666-A666-666666666666",
+}
+
+export function buildNfcWorkflow() {
+  const actions = [
+    action("is.workflow.actions.comment", NFC.comment, {
+      WFCommentActionText:
+        `Sends nfc:tag-id to ${BOT}.\n` +
+        `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+        `Type the tag id from Settings → NFC tags (vitamin-d), not the whole line.\n` +
+        `For a sticker that should run with no question, duplicate this Shortcut and replace the Ask with the text nfc:your-id.\n` +
+        `A dose that sometimes changes count uses NFC dose to Brain2 instead.`,
+    }),
+    action("is.workflow.actions.ask", NFC.ask, {
+      WFAskActionPrompt: "Tag id? (vitamin-d, door, shower — the id from Brain2, not nfc:)",
+      WFInputType: "Text",
+      CustomOutputName: "Tag Id",
+    }),
+    action("is.workflow.actions.gettext", NFC.message, {
+      WFTextActionText: textWithTokens(["nfc:", { uuid: NFC.ask, name: "Tag Id" }]),
+    }),
+    setOutgoing(NFC.setOutgoing, NFC.message),
+    sendMessage(NFC.send),
+    action("is.workflow.actions.notification", NFC.notify, {
+      WFNotificationActionBody: "Sent NFC tag to Brain2.",
+      WFNotificationActionTitle: "Brain2",
+    }),
+  ]
+
+  return wrapWorkflow({
+    name: "NFC to Brain2",
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: NFC.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+  })
+}
+
+const BOUND = {
+  comment: "DD111111-1111-4111-A111-111111111111",
+  askQty: "DD222222-2222-4222-A222-222222222222",
+  message: "DD333333-3333-4333-A333-333333333333",
+  setOutgoing: "DD3A3A3A-3A3A-43A3-A3A3-3333333333A3",
+  send: "DD444444-4444-4444-A444-444444444444",
+  notify: "DD555555-5555-4555-A555-555555555555",
+}
+
+/** Download name for one saved tag. The id is already inside the shortcut. */
+export function nfcShortcutDownloadName(name, id) {
+  const label =
+    String(name || id || "tag")
+      .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 60) || "tag"
+  return `NFC ${label}.shortcut`
+}
+
+/**
+ * Telegram’s Send Message intent rejects a bot (`customIdentifier` must start
+ * with `tg`, and a bot chat is not a saved person). Shortcuts shows that as
+ * “unknown error”. Open the bot chat with the line filled in instead. The
+ * message lands when Send is tapped.
+ */
+function openBotChat(textUuid, encodeUuid, openUuid) {
+  return [
+    action("is.workflow.actions.urlencode", encodeUuid, {
+      WFInput: attachment(textUuid, "Text"),
+      WFEncodeMode: "Encode",
+      CustomOutputName: "Encoded",
+    }),
+    action("is.workflow.actions.openurl", openUuid, {
+      WFInput: textWithTokens([
+        "tg://resolve?domain=brain2_phone_bot&text=",
+        { uuid: encodeUuid, name: "Encoded" },
+      ]),
+    }),
+  ]
+}
+
+/**
+ * One sticker. The tag id is baked in, so the automation does not ask for it.
+ * A dose asks how many (blank uses the quantity saved on the tag). A door or
+ * a plain event opens Telegram with `nfc:{id}` and no question. Returns null
+ * for a bad id.
+ */
+export function buildBoundNfcWorkflow({ id, name, askQuantity } = {}) {
+  const slug = String(id || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null
+  const display = String(name || slug)
+    .replace(/[\u0000-\u001f]/g, " ")
+    .trim()
+    .slice(0, 80) || slug
+  const shortcutName = `NFC ${display}`.slice(0, 90)
+  const actions = askQuantity
+    ? [
+        action("is.workflow.actions.comment", BOUND.comment, {
+          WFCommentActionText:
+            `Opens ${BOT} with nfc:${slug} and a count filled in.\n` +
+            `Tap Send. Pair Brain2 first and open that chat once.\n` +
+            `How many is optional: blank uses the quantity saved on this tag.\n` +
+            `Attach this Shortcut to Automation → NFC for this sticker. Turn Ask Before Running off.`,
+        }),
+        action("is.workflow.actions.ask", BOUND.askQty, {
+          WFAskActionPrompt: "How many? Leave blank to use the quantity saved on the tag.",
+          WFInputType: "Text",
+          CustomOutputName: "How many",
+        }),
+        action("is.workflow.actions.gettext", BOUND.message, {
+          WFTextActionText: textWithTokens([`nfc:${slug} `, { uuid: BOUND.askQty, name: "How many" }]),
+        }),
+        ...openBotChat(BOUND.message, BOUND.setOutgoing, BOUND.send),
+        action("is.workflow.actions.notification", BOUND.notify, {
+          WFNotificationActionBody: "Tap Send in Telegram.",
+          WFNotificationActionTitle: "Brain2",
+        }),
+      ]
+    : [
+        action("is.workflow.actions.comment", BOUND.comment, {
+          WFCommentActionText:
+            `Opens ${BOT} with nfc:${slug} filled in.\n` +
+            `Tap Send. Pair Brain2 first and open that chat once.\n` +
+            `Attach this Shortcut to Automation → NFC for this sticker. Turn Ask Before Running off.`,
+        }),
+        action("is.workflow.actions.gettext", BOUND.message, {
+          WFTextActionText: textWithTokens([`nfc:${slug}`]),
+        }),
+        ...openBotChat(BOUND.message, BOUND.setOutgoing, BOUND.send),
+        action("is.workflow.actions.notification", BOUND.notify, {
+          WFNotificationActionBody: "Tap Send in Telegram.",
+          WFNotificationActionTitle: "Brain2",
+        }),
+      ]
+
+  return wrapWorkflow({
+    name: shortcutName,
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: BOUND.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+    importQuestions: false,
+  })
+}
+
+export function buildNfcDoseWorkflow() {
+  const actions = [
+    action("is.workflow.actions.comment", DOSE.comment, {
+      WFCommentActionText:
+        `Sends nfc:tag-id and a count to ${BOT}.\n` +
+        `Pair Brain2 first. On import, pick the bot chat in Telegram.\n` +
+        `Tag id is the slug from Settings → NFC tags. How many is optional: blank uses the quantity saved on that tag.\n` +
+        `For a bottle, duplicate this Shortcut, delete the tag-id Ask, and set the text to nfc:adderall plus a space plus How many.`,
+    }),
+    action("is.workflow.actions.ask", DOSE.askId, {
+      WFAskActionPrompt: "Tag id? (adderall — the id from Brain2, not nfc:)",
+      WFInputType: "Text",
+      CustomOutputName: "Tag Id",
+    }),
+    action("is.workflow.actions.ask", DOSE.askQty, {
+      WFAskActionPrompt: "How many? Leave blank to use the quantity saved on the tag.",
+      WFInputType: "Text",
+      CustomOutputName: "How many",
+    }),
+    action("is.workflow.actions.gettext", DOSE.message, {
+      WFTextActionText: textWithTokens([
+        "nfc:",
+        { uuid: DOSE.askId, name: "Tag Id" },
+        " ",
+        { uuid: DOSE.askQty, name: "How many" },
+      ]),
+    }),
+    setOutgoing(DOSE.setOutgoing, DOSE.message),
+    sendMessage(DOSE.send),
+    action("is.workflow.actions.notification", DOSE.notify, {
+      WFNotificationActionBody: "Sent NFC dose to Brain2.",
+      WFNotificationActionTitle: "Brain2",
+    }),
+  ]
+
+  return wrapWorkflow({
+    name: "NFC dose to Brain2",
+    color: 463140863,
+    glyph: 59511,
+    actions,
+    sendId: DOSE.send,
+    inputClasses: [],
+    types: RUN_TYPES,
+    hasInputVars: false,
+  })
+}
+
 export const PHONE_SHORTCUTS = [
   { name: "Screen Time to Brain2", build: buildScreenTimeWorkflow },
   { name: "iPhone Call to Brain2", build: buildCallWorkflow },
   { name: "iPhone Text to Brain2", build: buildTextWorkflow },
   { name: "Location to Brain2", build: buildLocationWorkflow },
+  { name: "NFC to Brain2", build: buildNfcWorkflow },
+  { name: "NFC dose to Brain2", build: buildNfcDoseWorkflow },
 ]
 
 function writePlistJson(workflow, jsonPath) {
@@ -466,8 +674,10 @@ function emitOne({ name, build }) {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
 if (isMain) {
+  const only = process.argv.slice(2)
   let ok = true
   for (const spec of PHONE_SHORTCUTS) {
+    if (only.length && !only.includes(spec.name)) continue
     if (!emitOne(spec)) ok = false
   }
   if (!ok) process.exitCode = 1

@@ -6,6 +6,7 @@
  * (San Diego / Ocean Beach → La Jolla Scripps 9410230).
  */
 
+import { shiftUtcDateKey } from "@/lib/date-utils"
 import { TTL, cached } from "@/lib/api-cache"
 import { geocodeCity } from "@/lib/weather-client"
 
@@ -181,13 +182,7 @@ export function noaaStamp(date: string): string {
 }
 
 export function shiftDateKey(date: string, days: number): string {
-  const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (!m) return date
-  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days))
-  const y = dt.getUTCFullYear()
-  const mo = String(dt.getUTCMonth() + 1).padStart(2, "0")
-  const d = String(dt.getUTCDate()).padStart(2, "0")
-  return `${y}-${mo}-${d}`
+  return shiftUtcDateKey(date, days)
 }
 
 export function formatTideClock(stamp: string): { label: string; compact: string } | null {

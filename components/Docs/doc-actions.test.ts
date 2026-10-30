@@ -1,7 +1,7 @@
 /**
  * components/Docs/doc-actions.test.ts — Docs note mutations
  */
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useTaskStore } from "@/lib/task-store"
 import { NOTE_TYPE_ID, NOTE_ATTR } from "@/lib/note-types"
 import {
@@ -18,7 +18,7 @@ import {
   setDocumentFolder,
   setDocumentFont,
 } from "./doc-actions"
-import { clearAllPersistedDocs } from "@/lib/doc-persist"
+import { clearAllPersistedDocs, getPersistedDoc } from "@/lib/doc-persist"
 
 describe("doc-actions", () => {
   beforeEach(async () => {
@@ -72,5 +72,24 @@ describe("doc-actions", () => {
     expect(restored).toHaveLength(1)
     expect(restored[0]?.description).toBe("Keep me")
     expect(await loadDocumentBody(restored[0]!.id)).toContain("edited forever")
+  })
+
+  it("saves the body through doc-persist and keeps the renamed title and folder", async () => {
+    const doc = createDocument("Scratch", "Inbox", "<p>seed</p>")
+    expect(await setDocumentBody(doc.id, "<p>kept sentence</p>")).toBe(true)
+    renameDocument(doc.id, "Field note")
+    setDocumentFolder(doc.id, "Plans")
+
+    const task = useTaskStore.getState().tasks.find((t) => t.id === doc.id)
+    expect(task?.description).toBe("Field note")
+    expect(documentFolder(task!)).toBe("Plans")
+    expect(task?.body).toContain("kept sentence")
+
+    await vi.waitFor(async () => {
+      const rec = await getPersistedDoc(doc.id)
+      expect(rec?.title).toBe("Field note")
+      expect(rec?.folder).toBe("Plans")
+      expect(rec?.body).toContain("kept sentence")
+    })
   })
 })

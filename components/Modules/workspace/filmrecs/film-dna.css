@@ -532,3 +532,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 767px) {
+  .film-dna {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .film-dna .fd-pcard .ov {
+    opacity: 1;
+  }
+
+  .film-dna .fd-pcard .ov button,
+  .film-dna input,
+  .film-dna textarea,
+  .film-dna select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

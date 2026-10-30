@@ -12,9 +12,10 @@
  * listening data yet. Plan: docs/SPOTIFY_LISTENING.md.
  */
 const fs = require("fs")
-const path = require("path")
 const crypto = require("crypto")
 const { safeStorageCipher } = require("./instagram-accounts")
+const { openExternalWeb } = require("./external-url")
+const { hostAllowed: hostOnList, sealedAccountFile } = require("./account-seal")
 
 const CHANNELS = {
   status: "cogs:spotify:status",
@@ -76,12 +77,7 @@ function readRedirect(url, expectedState) {
 }
 
 function hostAllowed(url) {
-  try {
-    const host = new URL(url).hostname.toLowerCase()
-    return LOGIN_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
-  } catch {
-    return false
-  }
+  return hostOnList(url, LOGIN_HOSTS)
 }
 
 async function postToken(body, fetchImpl) {
@@ -131,7 +127,7 @@ async function fetchMe(accessToken, fetchImpl = globalThis.fetch) {
 }
 
 function createSpotifyStore({ dir, cipher, now = () => new Date() }) {
-  const file = path.join(dir, FILE_NAME)
+  const { file, write, seal, open } = sealedAccountFile({ dir, fileName: FILE_NAME, cipher })
 
   function read() {
     try {
@@ -143,27 +139,6 @@ function createSpotifyStore({ dir, cipher, now = () => new Date() }) {
       }
     } catch {
       return { version: 1, clientId: "", accounts: [] }
-    }
-  }
-
-  function write(data) {
-    fs.mkdirSync(dir, { recursive: true })
-    const tmp = `${file}.tmp`
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), { encoding: "utf8", mode: 0o600 })
-    fs.renameSync(tmp, file)
-  }
-
-  function seal(text) {
-    if (!cipher.available()) throw new Error("No OS keychain encryption on this computer, so Brain2 will not store a login.")
-    return cipher.encrypt(String(text)).toString("base64")
-  }
-
-  function open(sealed) {
-    if (!sealed || !cipher.available()) return null
-    try {
-      return cipher.decrypt(Buffer.from(sealed, "base64"))
-    } catch {
-      return null
     }
   }
 
@@ -311,13 +286,13 @@ function openLoginWindow({ BrowserWindow, session, shell, parent, url, state }) 
       }
       if (!hostAllowed(target)) {
         event.preventDefault()
-        shell.openExternal(target)
+        openExternalWeb(shell, target)
       }
     }
     win.webContents.on("will-redirect", watch)
     win.webContents.on("will-navigate", watch)
     win.webContents.setWindowOpenHandler(({ url: opened }) => {
-      if (/^https?:/i.test(opened)) shell.openExternal(opened)
+      openExternalWeb(shell, opened)
       return { action: "deny" }
     })
     win.on("closed", () => finish(null))

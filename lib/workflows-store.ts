@@ -18,6 +18,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { WorkflowDefinition } from "@/lib/types"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 /** Query for selecting workflows relevant to an item / list / type. */
 export interface WorkflowScopeQuery {
@@ -116,3 +117,5 @@ export const useWorkflowsStore = create<WorkflowsState>()(
     { name: persistKey("workflows-store"), version: 1, storage: createCogsJSONStorage() },
   ),
 )
+
+registerPhoneWindowStore(useWorkflowsStore)

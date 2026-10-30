@@ -3,28 +3,40 @@
  *
  * Popup checklist for free-form objectives on a live timer or a painted block.
  * Opens as a floating panel so the header / strip layout does not grow. Not
- * Home Goals, not the Tracking Objective pen.
+ * Home Goals, not the Tracking Objective pen. The text field stays local;
+ * `onEditText` runs after a short pause, on blur, and when the field unmounts.
  */
 "use client"
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import type { NowObjective } from "@/lib/now-objective"
-import { activeNowObjectives, objectiveCompletesTarget, objectiveWorkedMs } from "@/lib/now-objective"
+import type { NowObjective, NowObjectiveLane } from "@/lib/now-objective"
+import { activeNowObjectives, formatObjectiveWhen, objectiveCompletesTarget, objectiveLane } from "@/lib/now-objective"
 import "@/components/Home/Tracking/tracking-chrome.css"
 
 export interface NowObjectivesHandlers {
-  onAdd: (text: string) => void
+  /** Now starts a stint. Next waits, and its clock does not run. */
+  onAdd: (text: string, lane: NowObjectiveLane) => void
   /** Log an objective already finished during this sitting. Start is unknown. */
   onAddCompleted?: (text: string) => void
+  /**
+   * Edit an objective's text. Debounced in this list (400 ms): the field
+   * updates immediately, and this callback runs after a pause in typing,
+   * immediately on blur, and on unmount so the last characters are kept.
+   * Pen, Operations, and the block editor all share that schedule.
+   */
   onEditText: (id: string, text: string) => void
   onToggleComplete: (id: string) => void
+  /** Next's square. Starts a Now stint. Does not complete the row. */
+  onMoveToNow?: (id: string) => void
+  /** Now's Next button. Banks the open stint and waits. */
+  onMoveToNext?: (id: string) => void
   onRemove?: (id: string) => void
   /** Park it for the task or subtask and take it off this sitting. The open stint does not count. */
   onSaveForLater?: (id: string) => void
   /**
-   * Attach to a task or subtask of the current activity, or create a task
-   * (`createName`) from the search text.
+   * Attach to a task in the vault, or create a task (`createName`) from the
+   * search text. The search lists every task. Steps stay on the tie control.
    */
   onAttach?: (id: string, target: { taskId: string; stepId?: string } | { createName: string }) => void
   attachChoices?: { taskId: string; stepId?: string; label: string }[]
@@ -45,21 +57,11 @@ interface NowObjectivesListProps extends NowObjectivesHandlers {
   mode?: "popup" | "inline"
   /** Optional name fragment for aria (pen or operation title). */
   contextName?: string
-}
-
-const clockLabel = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-
-/** "3:12 PM → 3:40 PM · 28m" for one objective. Unknown starts name no duration. */
-export function objectiveSpanLabel(
-  row: Pick<NowObjective, "addedAt" | "completedAt" | "startUnknown" | "workedMs" | "stintStartedAt">,
-  now = new Date(),
-): string {
-  if (!row.completedAt) return `added ${clockLabel(row.addedAt)}`
-  if (row.startUnknown) return `completed ${clockLabel(row.completedAt)} · start unknown`
-  const ms = objectiveWorkedMs(row, now) ?? Math.max(0, Date.parse(row.completedAt) - Date.parse(row.addedAt))
-  const mins = Math.max(0, Math.round(ms / 60_000))
-  return `${clockLabel(row.addedAt)} → ${clockLabel(row.completedAt)} · ${mins}m`
+  /**
+   * The add field. The block editor turns this off unless the block is the
+   * one Working on right now is painting.
+   */
+  allowAdd?: boolean
 }
 
 /**
@@ -94,12 +96,12 @@ export function StepSearchPicker({
     return (
       <button
         type="button"
-        className="trk-now-obj-link"
+        className="todo-cap trk-now-obj-mode"
         aria-label={`Task step for ${label}`}
         title="Tie this objective to a step"
         onClick={() => setOpen(true)}
       >
-        {value ? `↳ ${current?.label ?? "step (done)"}` : "↳ not tied to a step"}
+        {value ? (current?.label ?? "step (done)") : "tie to step"}
       </button>
     )
   }
@@ -145,24 +147,89 @@ export function StepSearchPicker({
   )
 }
 
-/** A textarea that grows with its text, so a long objective is readable. */
+/** Pause before an objective edit mirrors onto the painted block and the time grid. */
+const OBJECTIVE_TEXT_COMMIT_MS = 400
+
+/**
+ * A textarea that grows with its text. Letters stay in local state so the
+ * field feels instant. `onChange` is the store mirror: it waits out a pause,
+ * then also runs on blur and on unmount.
+ */
 function GrowText({ value, onChange, onBlur }: { value: string; onChange: (v: string) => void; onBlur: (v: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const [draft, setDraft] = useState<string | null>(null)
+  const shown = draft ?? value
+  const timer = useRef<number | null>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const pendingRef = useRef<string | null>(null)
+
+  const clearTimer = () => {
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+  }
+
+  const flush = (text: string) => {
+    clearTimer()
+    pendingRef.current = null
+    if (text !== valueRef.current) onChangeRef.current(text)
+  }
+
+  const schedule = (text: string) => {
+    clearTimer()
+    if (text === valueRef.current) {
+      pendingRef.current = null
+      return
+    }
+    pendingRef.current = text
+    timer.current = window.setTimeout(() => {
+      timer.current = null
+      pendingRef.current = null
+      if (text !== valueRef.current) onChangeRef.current(text)
+    }, OBJECTIVE_TEXT_COMMIT_MS)
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTimer()
+      const pending = pendingRef.current
+      pendingRef.current = null
+      if (pending !== null && pending !== valueRef.current) onChangeRef.current(pending)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (draft !== null && value === draft) setDraft(null)
+  }, [value, draft])
+
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     el.style.height = "auto"
     el.style.height = `${el.scrollHeight}px`
-  }, [value])
+  }, [shown])
+
   return (
     <textarea
       ref={ref}
       rows={1}
       className="trk-now-obj-text"
-      value={value}
+      value={shown}
       aria-label="Objective text"
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={(e) => onBlur(e.target.value)}
+      onChange={(e) => {
+        const next = e.target.value
+        setDraft(next)
+        schedule(next)
+      }}
+      onBlur={(e) => {
+        const next = e.target.value
+        flush(next)
+        onBlur(next)
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault()
@@ -173,12 +240,55 @@ function GrowText({ value, onChange, onBlur }: { value: string; onChange: (v: st
   )
 }
 
+function ModePair({
+  row,
+  onSetCompletes,
+}: {
+  row: NowObjective
+  onSetCompletes: (id: string, completes: boolean) => void
+}) {
+  const onStep = !!row.stepId
+  const onTask = !!row.taskId && !onStep
+  if (!onStep && !onTask) return null
+  const finishes = objectiveCompletesTarget(row)
+  const options = onStep
+    ? [
+        { completes: false, label: "counts toward", title: "Ticking counts the time. The step stays open." },
+        { completes: true, label: "finishes step", title: "Ticking finishes the step." },
+      ]
+    : [
+        { completes: false, label: "just a line", title: "Ticking only records the line. The task stays open." },
+        { completes: true, label: "finishes task", title: "Ticking finishes the whole task." },
+      ]
+  return (
+    <div className="trk-now-obj-mode-pair" role="group" aria-label={`What ticking does for ${row.text}`}>
+      {options.map((option) => {
+        const selected = finishes === option.completes
+        return (
+          <button
+            key={option.label}
+            type="button"
+            className={`todo-cap trk-now-obj-mode${selected ? " is-raised" : " is-sunken"}`}
+            aria-pressed={selected}
+            title={option.title}
+            onClick={() => onSetCompletes(row.id, option.completes)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function ObjectivesEditor({
   objectives,
   onAdd,
   onAddCompleted,
   onEditText,
   onToggleComplete,
+  onMoveToNow,
+  onMoveToNext,
   onRemove,
   onSaveForLater,
   onAttach,
@@ -187,7 +297,8 @@ function ObjectivesEditor({
   onTieStep,
   onSetCompletes,
   autoFocusAdd,
-}: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean }) {
+  allowAdd = true,
+}: NowObjectivesHandlers & { objectives: NowObjective[] | undefined; autoFocusAdd?: boolean; allowAdd?: boolean }) {
   const [draft, setDraft] = useState("")
   const [hideCompleted, setHideCompleted] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -205,10 +316,10 @@ function ObjectivesEditor({
     if (autoFocusAdd) addRef.current?.focus()
   }, [autoFocusAdd])
 
-  const submit = () => {
+  const submit = (lane: NowObjectiveLane) => {
     const text = draft.trim()
     if (!text) return
-    onAdd(text)
+    onAdd(text, lane)
     setDraft("")
   }
 
@@ -237,14 +348,26 @@ function ObjectivesEditor({
           {hideCompleted ? "Show completed" : "Hide completed"}
         </button>
       </div>
-      <ul className="trk-now-obj-list" aria-label="Objectives for right now">
+      <div className="trk-now-obj-list" aria-label="Objectives for right now">
         {list.length === 0 ? (
-          <li className="trk-now-obj-empty">What are you trying to finish this instant?</li>
+          <p className="trk-now-obj-empty">What are you trying to finish this instant?</p>
         ) : shown.length === 0 ? (
-          <li className="trk-now-obj-empty">Completed objectives are hidden.</li>
+          <p className="trk-now-obj-empty">Completed objectives are hidden.</p>
         ) : (
-          shown.map((row) => {
+          (["now", "next", "done"] as const).map((section) => {
+            const rows = shown.filter((row) => {
+              if (row.completedAt) return section === "done"
+              return objectiveLane(row) === section
+            })
+            if (!rows.length) return null
+            const heading = section === "now" ? "Now" : section === "next" ? "Next" : "Done"
+            return (
+              <section key={section} className="trk-now-obj-section" aria-label={heading}>
+                <h3 className="trk-now-obj-heading">{heading}</h3>
+                <ul>
+                  {rows.map((row) => {
             const done = Boolean(row.completedAt)
+            const lane = objectiveLane(row)
             const open = openId === row.id
             return (
               <li
@@ -260,18 +383,36 @@ function ObjectivesEditor({
                   type="button"
                   className="trk-now-obj-check"
                   aria-pressed={done}
-                  aria-label={done ? `Reopen objective ${row.text}` : `Mark objective complete: ${row.text}`}
-                  onClick={() => onToggleComplete(row.id)}
+                  aria-label={
+                    done
+                      ? `Reopen objective ${row.text}`
+                      : lane === "next"
+                        ? `Move to now: ${row.text}`
+                        : `Mark objective complete: ${row.text}`
+                  }
+                  onClick={() => (lane === "next" ? onMoveToNow?.(row.id) : onToggleComplete(row.id))}
                 />
                 <div className="trk-now-obj-body">
-                  <GrowText
-                    value={row.text}
-                    onChange={(v) => onEditText(row.id, v)}
-                    onBlur={(v) => {
-                      if (!v.trim() && onRemove) onRemove(row.id)
-                    }}
-                  />
-                  <div className="trk-now-obj-meta">{objectiveSpanLabel(row)}</div>
+                  <div className="trk-now-obj-line">
+                    <GrowText
+                      value={row.text}
+                      onChange={(v) => onEditText(row.id, v)}
+                      onBlur={(v) => {
+                        if (!v.trim() && onRemove) onRemove(row.id)
+                      }}
+                    />
+                    {lane === "now" && onMoveToNext ? (
+                      <button
+                        type="button"
+                        className="todo-cap trk-now-obj-lane"
+                        aria-label={`Move to next: ${row.text}`}
+                        onClick={() => onMoveToNext(row.id)}
+                      >
+                        Next
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="trk-now-obj-meta">{formatObjectiveWhen(row)}</div>
                   {open ? (
                     <div className="trk-now-obj-detail">
                       {onRemove ? (
@@ -291,8 +432,17 @@ function ObjectivesEditor({
                           aria-expanded={attachId === row.id}
                           onClick={() => (attachId === row.id ? setAttachId(null) : openAttach(row))}
                         >
-                          Attach to task/subtask
+                          Attach to task
                         </button>
+                      ) : null}
+                      {onTieStep ? (
+                        <StepSearchPicker
+                          value={row.stepId}
+                          choices={stepChoices ?? []}
+                          allowNew
+                          label={row.text}
+                          onPick={(id) => onTieStep(row.id, id)}
+                        />
                       ) : null}
                       {onAttach && attachId === row.id ? (
                         <div className="trk-now-obj-picker">
@@ -303,7 +453,7 @@ function ObjectivesEditor({
                             placeholder="Search tasks"
                             onChange={(event) => setAttachQuery(event.target.value)}
                           />
-                          <ul className="trk-now-obj-picker-list" role="listbox" aria-label="Tasks and subtasks">
+                          <ul className="trk-now-obj-picker-list" role="listbox" aria-label="Tasks">
                             {attachShown.map((choice) => (
                               <li key={`${choice.taskId}:${choice.stepId ?? ""}`}>
                                 <button
@@ -335,60 +485,43 @@ function ObjectivesEditor({
                       ) : null}
                     </div>
                   ) : null}
-                  {onTieStep ? (
+                  {onTieStep && onSetCompletes ? (
                     <div className="trk-now-obj-tie">
-                      <StepSearchPicker
-                        value={row.stepId}
-                        choices={stepChoices ?? []}
-                        allowNew
-                        label={row.text}
-                        onPick={(id) => onTieStep(row.id, id)}
-                      />
-                      {onSetCompletes ? (
-                        <button
-                          type="button"
-                          className="todo-cap trk-now-obj-mode"
-                          aria-pressed={objectiveCompletesTarget(row)}
-                          title={
-                            objectiveCompletesTarget(row)
-                              ? row.stepId
-                                ? "Ticking this ticks the step. Click to make it only count toward the step."
-                                : "Ticking this finishes the whole task. Click to undo."
-                              : row.stepId
-                                ? "Counts toward the step; the step stays open. Click so ticking finishes it."
-                                : "Click so ticking this finishes the whole task."
-                          }
-                          onClick={() => onSetCompletes(row.id, !objectiveCompletesTarget(row))}
-                        >
-                          {objectiveCompletesTarget(row) ? (row.stepId ? "finishes step" : "finishes task") : row.stepId ? "counts toward" : "just a line"}
-                        </button>
-                      ) : null}
+                      <ModePair row={row} onSetCompletes={onSetCompletes} />
                     </div>
                   ) : null}
                 </div>
               </li>
             )
+                  })}
+                </ul>
+              </section>
+            )
           })
         )}
-      </ul>
+      </div>
+      {allowAdd ? (
       <div className="trk-now-obj-add">
+        <div className="trk-now-obj-add-label">Add objective</div>
         <input
           ref={addRef}
           className="trk-now-obj-add-field"
           value={draft}
-          placeholder="Add objective"
           aria-label="Add objective"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault()
-              submit()
+              submit("now")
             }
           }}
         />
         <div className="trk-now-obj-add-actions">
-          <button type="button" className="todo-cap is-primary trk-now-obj-add-btn" disabled={!draft.trim()} onClick={submit}>
-            Add objective
+          <button type="button" className="todo-cap is-primary trk-now-obj-add-btn" disabled={!draft.trim()} onClick={() => submit("now")}>
+            Now
+          </button>
+          <button type="button" className="todo-cap trk-now-obj-add-btn" disabled={!draft.trim()} onClick={() => submit("next")}>
+            Next
           </button>
           {onAddCompleted ? (
             <button
@@ -397,11 +530,12 @@ function ObjectivesEditor({
               disabled={!draft.trim()}
               onClick={submitCompleted}
             >
-              Completed objective
+              Completed
             </button>
           ) : null}
         </div>
       </div>
+      ) : null}
     </div>
   )
 }
@@ -412,6 +546,8 @@ export function NowObjectivesList({
   onAddCompleted,
   onEditText,
   onToggleComplete,
+  onMoveToNow,
+  onMoveToNext,
   onRemove,
   onSaveForLater,
   onAttach,
@@ -421,6 +557,7 @@ export function NowObjectivesList({
   onSetCompletes,
   mode = "popup",
   contextName,
+  allowAdd = true,
 }: NowObjectivesListProps) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -483,13 +620,15 @@ export function NowObjectivesList({
   if (mode === "inline") {
     return (
       <div className="trk-now-obj-inline" data-testid="now-objectives-inline">
-        <div className="trk-now-obj-legend">Live tracked from Brain 2, objectives:</div>
+        <div className="trk-now-obj-legend trk-section-title">Live tracked from Brain 2, objectives:</div>
         <ObjectivesEditor
           objectives={objectives}
           onAdd={onAdd}
           onAddCompleted={onAddCompleted}
           onEditText={onEditText}
           onToggleComplete={onToggleComplete}
+          onMoveToNow={onMoveToNow}
+          onMoveToNext={onMoveToNext}
           onRemove={onRemove}
           onSaveForLater={onSaveForLater}
           onAttach={onAttach}
@@ -497,6 +636,7 @@ export function NowObjectivesList({
           stepChoices={stepChoices}
           onTieStep={onTieStep}
           onSetCompletes={onSetCompletes}
+          allowAdd={allowAdd}
         />
       </div>
     )
@@ -524,6 +664,8 @@ export function NowObjectivesList({
               onAddCompleted={onAddCompleted}
               onEditText={onEditText}
               onToggleComplete={onToggleComplete}
+              onMoveToNow={onMoveToNow}
+              onMoveToNext={onMoveToNext}
               onRemove={onRemove}
               onSaveForLater={onSaveForLater}
               onAttach={onAttach}

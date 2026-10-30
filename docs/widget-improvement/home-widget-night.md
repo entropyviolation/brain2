@@ -83,7 +83,7 @@ These follow this vault: Follow the clock on, the tile hidden, tonight’s face 
 
 1. **Show the last logged morning when the tile is empty.** The glass can stay `—` for a blank Oct 9. The handheld should name 2026-10-06 as an all-nighter and 2026-10-04 as the last duration (5h 59m, 4:11 AM–10:10 AM, 9h 39m after sunset), and list the blank mornings since: Oct 7, Oct 8, Oct 9. That is the gap `No night logged` is failing to be.
 
-2. **Four wells, one word each.** Hours, Asleep, Woke, Sunset. Phosphor green for the hours, the same green as the tile. Nameplates stay single words. For 2026-10-04 the figures are `5h 59m`, `4:11 AM`, `10:10 AM`, and `6:32 PM`. The sunset well carries `9h 39m after` at body size, plus the evening date Oct 3. Estimated ends get the same small mark Analytics already uses; the only definite end in the vault is the 1:00 PM wake on 2026-09-20.
+2. **Four wells, one word each.** Hours, Asleep, Woke, Sunset. Phosphor green for the hours, the same green as the tile. Nameplates stay single words. For 2026-10-04 the figures are `5h 59m`, `4:11 AM`, `10:10 AM`, and `6:32 PM`. The sunset well carries `9h 39m after` at body size, plus the evening date Oct 3. Estimated ends get the same small mark Data already uses; the only definite end in the vault is the 1:00 PM wake on 2026-09-20.
 
 3. **A week of mornings in the dialog.** Seven cells, newest at the right, each one a duration, `all-nighter`, `incomplete`, or a blank. Tonight the last three are blank, Oct 6 is the all-nighter, and Oct 4 is `5h 59m`. The sixteen-day hole stays out of the tile and becomes visible here. Sibling wells share one height.
 

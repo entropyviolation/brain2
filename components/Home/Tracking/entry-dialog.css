@@ -1,8 +1,10 @@
 /**
  * components/Home/Tracking/entry-dialog.css — Block editor popup
  *
- * Centered on the screen, same milled fascia as other `.trk95.trk-dialog`
- * furniture. Click outside or Close dismisses; the unsaved-changes guard
+ * Centered on the screen at 768px and wider. On a phone the same dialog
+ * anchors to the bottom edge. This sheet is a flatter paper face than the other
+ * milled dialogs: the phosphor title runs up to the close key, clocks are
+ * white, and word keys are keycaps. Click outside or Close dismisses; the unsaved-changes guard
  * still owns a dirty draft.
  *
  * The title blur was the unskinned CRT caption in `app/win95.css`: `text-shadow:
@@ -34,18 +36,42 @@
   transition: none !important;
 }
 
-.trk95.trk-dialog.trk-entry .trk-entry-head {
-  padding-right: 1.75rem;
+.trk95.trk-dialog.trk-entry {
+  --b2-close-top: 10px;
+  --b2-close-right: 10px;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 #404040,
+    0 0 0 1px #808080;
 }
 
-/* Crisp phosphor. Specificity beats the unskinned CRT caption. Analytics
+.trk95.trk-dialog.trk-entry .trk-entry-head {
+  padding-right: 0;
+}
+
+.trk95.trk-dialog.trk-entry .trk-section {
+  background: #d4d6da;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px #808080;
+}
+
+/* Crisp phosphor. Specificity beats the unskinned CRT caption. Data
  * `.an-popup` keeps its own ink title. */
+.trk95.trk-dialog.trk-entry:not(.an-popup) .trk-entry-head {
+  width: 100%;
+}
+
 .trk95.trk-dialog.trk-entry:not(.an-popup) .trk-entry-head h2.trk-entry-title {
-  display: block;
-  width: auto;
-  max-width: 100%;
+  display: flex !important;
+  align-items: center;
+  box-sizing: border-box;
+  width: calc(100% - 18px) !important;
+  max-width: none !important;
+  min-height: 26px;
   margin: 0;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-radius: var(--r-2, 2px);
   background: #070c0a;
   box-shadow:
@@ -144,4 +170,346 @@
   font-size: 12px;
   line-height: 1.4;
   color: #111;
+}
+
+/* Clocks, duration, and the house keycap on this dialog only. */
+
+.trk95.trk-dialog.trk-entry .trk-entry-source {
+  margin: 4px 0 0;
+  line-height: 1.35;
+  color: #222;
+}
+
+.trk95.trk-dialog.trk-entry .trk-help,
+.trk95.trk-dialog.trk-entry .trk-entry-source,
+.trk95.trk-dialog.trk-entry .trk-blockpen-path,
+.trk95.trk-dialog.trk-entry .trk-blockpen-state,
+.trk95.trk-dialog.trk-entry .trk-now-obj-meta,
+.trk95.trk-dialog.trk-entry .trk-entry-field-from,
+.trk95.trk-dialog.trk-entry .trk-edge-next-row span,
+.trk95.trk-dialog.trk-entry .trk-edge-also,
+.trk95.trk-dialog.trk-entry .trk-tag-always {
+  font-size: 13px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-section-title,
+.trk95.trk-dialog.trk-entry .trk-clock-head label,
+.trk95.trk-dialog.trk-entry .trk-company-details-label {
+  font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  line-height: 1.3 !important;
+  text-transform: uppercase !important;
+  color: var(--t-nameplate, #222) !important;
+  text-shadow: none;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-field-from {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #3a3d42;
+}
+
+.trk95.trk-dialog.trk-entry .trk-assumed-row {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-assumed-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.win95-app .trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"],
+.win95-app .trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"] > span,
+.trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"],
+.trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"] > span {
+  border-radius: 999px !important;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"] {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 44px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  background: #6e7378 !important;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"][data-state="checked"] {
+  background: #1f3a37 !important;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-assumed-switch[role="switch"] > span {
+  width: 18px !important;
+  height: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.trk95.trk-dialog.trk-entry .trk-pen-card,
+.trk95.trk-dialog.trk-entry .trk-blockpen-chip {
+  border-radius: 8px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-blockpen-chip {
+  overflow: hidden;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-clocks {
+  gap: 8px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-clock-grid,
+.trk95.trk-dialog.trk-entry .trk-cert-row,
+.trk95.trk-dialog.trk-entry .trk-clock-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-clock-grid.is-one,
+.trk95.trk-dialog.trk-entry .trk-cert-row.is-one,
+.trk95.trk-dialog.trk-entry .trk-clock-dates.is-one {
+  grid-template-columns: 1fr;
+}
+
+.trk95.trk-dialog.trk-entry .trk-cert-row {
+  margin-top: 0;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-clock-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-clock-dates {
+  width: 100%;
+}
+
+.trk95.trk-dialog.trk-entry .clock-picker {
+  width: 100%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #808080;
+}
+
+.trk95.trk-dialog.trk-entry .clock-picker-field,
+.trk95.trk-dialog.trk-entry .clock-picker-field:focus,
+.trk95.trk-dialog.trk-entry .clock-picker-field:focus-visible {
+  background: #fff;
+  box-shadow: none;
+}
+
+.trk95.trk-dialog.trk-entry .trk-edge-certainty {
+  background: #fff;
+  border: 1px solid #808080;
+}
+
+.trk95.trk-dialog.trk-entry .trk-edge-certainty button {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #1c1e20;
+  background: #fff;
+  border: 0;
+  border-left: 1px solid #c0c0c0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.trk95.trk-dialog.trk-entry .trk-edge-certainty button:first-child {
+  border-left: 0;
+}
+
+.trk95.trk-dialog.trk-entry .trk-edge-certainty button[aria-checked="true"] {
+  background: #1f3a37;
+  color: #8ff0d8;
+}
+
+.trk95.trk-dialog.trk-entry .trk-span-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #5c6166;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.trk95.trk-dialog.trk-entry .trk-span-lock[aria-pressed="true"] {
+  opacity: 1;
+  color: #1c1e20;
+}
+
+.trk95.trk-dialog.trk-entry .trk-dur-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-dur-hero {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: #111;
+  font-variant-numeric: tabular-nums;
+}
+
+.trk95.trk-dialog.trk-entry .trk-dur-hero[data-estimated="true"] {
+  color: #1f3a37;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-tools,
+.trk95.trk-dialog.trk-entry .trk-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-tools {
+  margin-top: 6px;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-actions {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid #9a9ea4;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto !important;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, Tahoma, "MS Sans Serif", Geneva, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: #1f2226;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-compact {
+  min-height: 24px;
+  padding: 2px 8px 5px;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-mod {
+  --cap-top: #c9ccd0;
+  --cap-top2: #b9bdc1;
+  --cap-skirt: #969a9f;
+  --cap-edge: #55595d;
+  color: #25282b;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-primary {
+  --cap-edge: #2a3570;
+  color: #1a2556;
+  outline: 2px solid #22306c;
+  outline-offset: 1px;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-primary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: #22306c;
+  box-shadow: 0 0 0 1px #0f1638;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.trk-entry-icon {
+  min-width: 32px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-danger:hover,
+.trk95.trk-dialog.trk-entry button.trk-entry-key.is-danger:focus-visible {
+  --cap-top: #c45648;
+  --cap-top2: #9a3228;
+  --cap-skirt: #6e221c;
+  --cap-edge: #4a1612;
+  color: #fff;
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key[aria-pressed="true"] {
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.trk95.trk-dialog.trk-entry button.trk-entry-key:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.trk95.trk-dialog.trk-entry .trk-entry-actions .is-primary {
+  flex: 1 1 auto;
+}
+
+/* Phone: the block editor is a bottom sheet. 768px and wider stays centered. */
+@media (max-width: 767px) {
+  .trk95.trk-dialog.trk-entry {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .trk95.trk-dialog.trk-entry {
+    animation: trk-entry-sheet 420ms cubic-bezier(0.22, 1.15, 0.36, 1) !important;
+  }
+}
+
+@keyframes trk-entry-sheet {
+  from {
+    transform: translateY(18%);
+  }
+  to {
+    transform: none;
+  }
 }

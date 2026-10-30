@@ -5,7 +5,7 @@
  * email) saved on the Person item (`personProfile.phones` / `emails`); the
  * iPhone Texts and iPhone Calls pens then follow it. One number belongs to one
  * person, so linking it takes it off anyone else. Used by the pen settings
- * dialog, person detail, and Analytics → Texts.
+ * dialog, person detail, and Data → Texts.
  */
 import { commitItemEdit } from "@/lib/commit-item-edit"
 import { isEmailHandle, normalizeHandle } from "@/lib/phone-sync/handles"
@@ -18,7 +18,7 @@ import { PERSON_ATTR } from "@/lib/person-types"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 
-const SOURCE = "phone link"
+const PHONE_LINK: { surface: "unknown" } = { surface: "unknown" }
 
 /**
  * Rename and link the phone pens to match the people. `draft` stands in for a
@@ -59,7 +59,7 @@ function writeHandles(personId: string, add: readonly string[], remove: readonly
       personProfile: presentPersonProfile({ ...profile, phones, emails }),
       attributes: { ...(person.attributes ?? {}), [PERSON_ATTR.phone]: phones.length ? phones : undefined },
     },
-    SOURCE,
+    PHONE_LINK,
   )
 }
 

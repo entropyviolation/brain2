@@ -65,11 +65,13 @@ const COGS_IPC_CHANNELS = {
   telegramMessage: "cogs:telegram:message",
   telegramPollStatus: "cogs:telegram:pollStatus",
   telegramAck: "cogs:telegram:ack",
-  // Analytics → Texts: the loopback texts report server (electron/texts-report.js).
+  // Data → Texts: the loopback texts report server (electron/texts-report.js).
   // Bridged as `window.desktop.texts.{ ensureServer, status, refresh }`.
   textsEnsureServer: "cogs:texts:ensureServer",
   textsStatus: "cogs:texts:status",
   textsRefresh: "cogs:texts:refresh",
+  // Settings → NFC tags. Sign one saved tag and write the .shortcut into Downloads.
+  nfcSignShortcut: "cogs:nfc:signShortcut",
 }
 
 /** All channel strings (handy for bulk `ipcMain.handle` registration). */

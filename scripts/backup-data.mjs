@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Nightly backup of data/ into a timestamped tar.gz. Node built-ins plus the system `tar`.
-// Usage: node scripts/backup-data.mjs [destDir]   (or COGS_BACKUP_DIR; default ~/Brain2Backups)
-// Env: COGS_BACKUP_KEEP (default 14), COGS_BACKUP_SRC (default <repo>/data),
-//      COGS_BACKUP_PUBLIC_KEY (else ~/.brain2/backup-public.key). With a key the tar is encrypted (.b2enc).
+// Usage: node scripts/backup-data.mjs [destDir]   (or BRAIN2_BACKUP_DIR; default ~/Brain2Backups)
+// Env: BRAIN2_BACKUP_KEEP (default 14), BRAIN2_BACKUP_SRC (default <repo>/data),
+//      BRAIN2_BACKUP_PUBLIC_KEY (else ~/.brain2/backup-public.key). With a key the tar is encrypted (.b2enc).
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { ENCRYPTED_SUFFIX, encryptFile } from "./backup-crypt.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
 export const BACKUP_PREFIX = "brain2-data-"
 export const BACKUP_SUFFIX = ".tar.gz"
@@ -58,7 +59,7 @@ export function dirSize(dir) {
  * @param {string} [file]
  */
 export function readBackupPublicKey(env = process.env, file = BACKUP_PUBLIC_KEY_PATH) {
-  const fromEnv = (env.COGS_BACKUP_PUBLIC_KEY || "").trim()
+  const fromEnv = (brain2Env("BACKUP_PUBLIC_KEY", env) || "").trim()
   if (fromEnv) return fromEnv
   return fs.existsSync(file) ? fs.readFileSync(file, "utf8").trim() || null : null
 }
@@ -118,9 +119,9 @@ export function runBackup({ src, destDir, keep = DEFAULT_KEEP, now = new Date(),
 
 function main() {
   const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-  const src = path.resolve(process.env.COGS_BACKUP_SRC || path.join(repo, "data"))
-  const destDir = path.resolve(process.argv[2] || process.env.COGS_BACKUP_DIR || path.join(os.homedir(), "Brain2Backups"))
-  const keep = Number(process.env.COGS_BACKUP_KEEP) || DEFAULT_KEEP
+  const src = path.resolve(brain2Env("BACKUP_SRC") || path.join(repo, "data"))
+  const destDir = path.resolve(process.argv[2] || brain2Env("BACKUP_DIR") || path.join(os.homedir(), "Brain2Backups"))
+  const keep = Number(brain2Env("BACKUP_KEEP")) || DEFAULT_KEEP
   const publicKey = readBackupPublicKey()
   if (!publicKey) {
     console.warn("WARNING: no backup key, so this backup is NOT encrypted. Run: node scripts/backup-keygen.mjs")

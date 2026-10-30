@@ -3,12 +3,15 @@
  *
  * Native `<input type="color">` chips collapse inside padded UA chrome, so a
  * 22×18 control (the Tracking "New pen" row) showed a sliver of color. This
- * wraps the same input in a raised bezel and stretches the swatch to fill it.
+ * wraps the same input and stretches the swatch to the edges of the bezel.
+ * Do not inset the chip: a silver gutter around the color reads as empty space.
  * Use it anywhere a hex color is picked — Tracking pens, tags, Habits, Lists.
  */
 "use client"
 
 import { cn } from "@/lib/utils"
+
+import "./touch.css"
 
 const SIZES = {
   sm: "h-[22px] w-8",
@@ -35,7 +38,7 @@ export function ColorSwatch({
 }) {
   const hex = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#2563eb"
   return (
-    <span className={cn("cogs-color-swatch", SIZES[size], className)} data-disabled={disabled ? "true" : undefined}>
+    <span className={cn("cogs-color-swatch ui-touch-swatch", SIZES[size], className)} data-disabled={disabled ? "true" : undefined}>
       <input
         id={id}
         type="color"

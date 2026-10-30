@@ -33,7 +33,7 @@ export function parseChatIds(raw) {
 }
 
 /**
- * Startup check. `chats` is a Set of ids, `allowAny` the COGS_CAPTURE_ALLOW_ANY_CHAT=1 switch.
+ * Startup check. `chats` is a Set of ids, `allowAny` the BRAIN2_CAPTURE_ALLOW_ANY_CHAT=1 switch.
  * Returns { ok, error?, warning? }; the caller prints and exits.
  */
 export function checkConfig({ chats, allowAny }) {
@@ -42,13 +42,13 @@ export function checkConfig({ chats, allowAny }) {
     return {
       ok: true,
       warning:
-        "COGS_CAPTURE_ALLOW_ANY_CHAT=1 and no COGS_CAPTURE_CHAT_IDS: keeping texts from ANY private chat with the bot. Set COGS_CAPTURE_CHAT_IDS to your own chat id.",
+        "BRAIN2_CAPTURE_ALLOW_ANY_CHAT=1 and no BRAIN2_CAPTURE_CHAT_IDS: keeping texts from ANY private chat with the bot. Set BRAIN2_CAPTURE_CHAT_IDS to your own chat id.",
     }
   }
   return {
     ok: false,
     error:
-      "COGS_CAPTURE_CHAT_IDS is empty. Set it to your own Telegram chat id (comma list for more), or set COGS_CAPTURE_ALLOW_ANY_CHAT=1 to accept any private chat (not recommended).",
+      "BRAIN2_CAPTURE_CHAT_IDS is empty. Set it to your own Telegram chat id (comma list for more), or set BRAIN2_CAPTURE_ALLOW_ANY_CHAT=1 to accept any private chat (not recommended).",
   }
 }
 

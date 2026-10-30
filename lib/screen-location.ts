@@ -70,6 +70,8 @@ function openTargetKey(target: OpenTarget): string {
       return `folder-all:${target.folderId}`
     case "objectives":
       return "objectives"
+    case "item-type":
+      return `item-type:${target.id}`
     default:
       return "unknown"
   }

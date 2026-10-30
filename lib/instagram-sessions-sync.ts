@@ -1,7 +1,7 @@
 /**
  * lib/instagram-sessions-sync.ts — Paint Instagram sessions on iPhone Screen Time
  *
- * Reads the current Analytics → Sources → Instagram build through
+ * Reads the current Data → Sources → Instagram build through
  * `instagramSource()` and hands its `time_active.sessions_recent` to
  * `applyInstagramSessions` (`lib/instagram-sessions.ts`). A build is applied once
  * per vault (the id is kept in localStorage); the **Update my lists** key in

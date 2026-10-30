@@ -4,7 +4,7 @@
  * Finds a new Instagram "Download your information" export (zip or unzipped
  * folder) in ~/Downloads, a picked folder, or Google Drive, copies it into
  * Brain2's data folder, runs the person's `analyze.py` then `build_report.py`,
- * and points the Analytics → Sources → Instagram view at the new `report.html`.
+ * and points the Data → Sources → Instagram view at the new `report.html`.
  * Drive files are read, not `copyfile`d: Drive cancels `copyfile` on a streamed file.
  *
  * Plain Node (no `electron` import) so `scripts/instagram-api.mjs` can serve

@@ -8,7 +8,6 @@
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { slugApp } from "@/lib/screentime/app-categories"
 import {
-  PEN_PALETTE,
   defaultIphoneCallsScope,
   defaultIphoneTextsScope,
   findIphoneCallsScope,
@@ -17,31 +16,10 @@ import {
   type TrackPen,
   type TrackScope,
 } from "@/lib/time-tracking-store"
+import { formatClock, hashPenColor, namedPens } from "./clock-pen"
 import { resolveName, type Named } from "./name-resolve"
 import { MINUTES_PER_DAY, addLocalDays, minutesPastMidnight, parseTrackWindow } from "./times"
 import type { ApplyResult, IngestIntentKind } from "./types"
-
-function formatClock(min: number): string {
-  const wrapped = ((Math.floor(min) % 1440) + 1440) % 1440
-  const h = Math.floor(wrapped / 60)
-  const m = wrapped % 60
-  const am = h < 12
-  const h12 = h % 12 || 12
-  return `${h12}:${String(m).padStart(2, "0")} ${am ? "AM" : "PM"}`
-}
-
-function hashPenColor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  }
-  return PEN_PALETTE[hash % PEN_PALETTE.length]
-}
-
-function namedPens(scopeId: string): Named[] {
-  const scope = useTimeTrackingStore.getState().scopes.find((s) => s.id === scopeId)
-  return (scope?.pens ?? []).map((p) => ({ id: p.id, name: p.name }))
-}
 
 function ensureScope(
   find: (scopes: TrackScope[]) => TrackScope | undefined,

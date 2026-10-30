@@ -21,7 +21,15 @@ describe("reorderStrings", () => {
 
 describe("withTextListId", () => {
   it("joins an attribute to a list id without renaming either side", () => {
-    const task = { id: "t", description: "Idea", textListIds: { other: "list-a" } } as unknown as Task
+    const task = {
+      id: "t",
+      description: "Idea",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
+      textListIds: { other: "list-a" },
+    } as Task
     const next = withTextListId(task, "todo", "list-b")
     expect(next.textListIds).toEqual({ other: "list-a", todo: "list-b" })
     expect(task.textListIds).toEqual({ other: "list-a" })
@@ -32,6 +40,7 @@ describe("textListToBrainList", () => {
   it("builds a list and one item per non-empty line", () => {
     const { list, items } = textListToBrainList("To do", ["write script", " film ", ""])
     expect(list.name).toBe("To do")
+    expect(list.scheduleable).toBe(false)
     expect(items).toHaveLength(2)
     expect(items.map((item) => item.title)).toEqual(["write script", "film"])
     expect(items.every((item) => item.lists?.[0] === list.id && item.lists.length === 1)).toBe(true)
@@ -45,10 +54,14 @@ describe("asListReference", () => {
     const task = {
       id: "t",
       description: "Shoot",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
       attributes: { todo: ["write script"] },
       itemAttributeDefinitions: [{ id: "todo", name: "To do", type: "multistring" }],
       textListIds: { todo: "old", other: "keep" },
-    } as unknown as Task
+    } as Task
     const next = asListReference(task, "todo", "list-b")
     expect(next.attributes?.todo).toBe("list-b")
     expect(next.itemAttributeDefinitions?.[0].type).toBe("list")
@@ -60,8 +73,12 @@ describe("asListReference", () => {
     const task = {
       id: "t",
       description: "Shoot",
+      stage: "clarified",
+      createdAt: new Date(0),
+      completed: false,
+      lists: [],
       attributes: { todo: ["write script"] },
-    } as unknown as Task
+    } as Task
     const next = asListReference(task, "todo", "list-b")
     expect(next.attributes?.todo).toEqual(["write script"])
     expect(next.textListIds).toEqual({ todo: "list-b" })

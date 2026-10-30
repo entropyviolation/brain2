@@ -24,6 +24,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { formatLocalDateKey, parseLocalDate } from "./date-utils"
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 interface PointsEntry {
   date: string // YYYY-MM-DD
@@ -177,3 +178,5 @@ export const usePointsStore = create<PointsStore>()(
     },
   ),
 )
+
+registerPhoneWindowStore(usePointsStore)

@@ -7,7 +7,7 @@ import { resetAllStores } from "@/tests/test-utils"
 import { StepTree } from "./StepTree"
 import { resetStepFoldsForTests } from "./step-folds"
 import { TodoBreakdown } from "@/components/Home/ToDo/TodoBreakdown"
-import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
+import { SubtaskTree } from "@/components/ItemDetail/tabs/subtasks/SubtaskTree"
 import { setTodoPrefs } from "@/components/Home/ToDo/todo-prefs"
 
 const s = (id: string, extra: Partial<Subtask> = {}): Subtask => ({ id, description: id, completed: false, ...extra })

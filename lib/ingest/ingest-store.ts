@@ -11,6 +11,7 @@
  *
  * v5 drops GPS tracking rows from `events`. They stay on Location and in
  * the memory-only ring (`gps-log.ts`) so a live stream cannot fill the log.
+ * v7 stores NFC tags (`nfcTags`). A missing list migrates to empty.
  */
 "use client"
 
@@ -23,6 +24,7 @@ import { useGpsIngestLog, withoutGpsTrackingLog } from "./gps-log"
 import { chatKey } from "./pairing"
 import { remapRetiredGroceryExpansion, remapRetiredGroceryShortcuts } from "./shortcut-remap"
 import type { IngestChannel, IngestEvent, PendingClarify } from "./types"
+import { sanitizeNfcTag, sanitizeNfcTagList, type NfcDoorSide, type NfcTag } from "./nfc-tag"
 import {
   DEFAULT_DISCRETE_EVENT_TRIGGERS,
   type DiscreteTriggerDef,
@@ -70,11 +72,13 @@ interface IngestState {
   groceryListId: string | null
   /** Editable discrete-event trigger patterns (smoked weed, ate {item}, …). */
   discreteEventTriggers: DiscreteTriggerDef[]
+  /** NFC stickers. A phone tap sends `nfc:{id}` or `nfc:{id} {n}`. */
+  nfcTags: NfcTag[]
   /** Recently processed Telegram update/message keys (dedupe). */
   seenIngestKeys: string[]
   /** Optional always-on hub origin, e.g. http://127.0.0.1:8787 */
   phoneHubUrl: string
-  /** Bearer token for the hub vault API (COGS_PHONE_HUB_TOKEN on the host). */
+  /** Bearer token for the hub vault API (BRAIN2_PHONE_HUB_TOKEN on the host). */
   phoneHubToken: string
   livePins: Record<string, LivePin>
 
@@ -95,6 +99,9 @@ interface IngestState {
   setDiscreteEventTriggers: (triggers: DiscreteTriggerDef[]) => void
   upsertDiscreteEventTrigger: (trigger: DiscreteTriggerDef) => void
   removeDiscreteEventTrigger: (id: string) => void
+  upsertNfcTag: (tag: Partial<NfcTag>) => void
+  removeNfcTag: (id: string) => void
+  touchNfcTag: (id: string, patch: { lastAt: string; lastSide?: NfcDoorSide }) => void
   hasSeenIngestKey: (key: string) => boolean
   rememberIngestKey: (key: string) => void
   setPhoneHubUrl: (url: string) => void
@@ -127,6 +134,7 @@ export const useIngestStore = create<IngestState>()(
       shortcuts: {},
       groceryListId: null,
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
+      nfcTags: [],
       seenIngestKeys: [],
       phoneHubUrl: "",
       phoneHubToken: "",
@@ -216,6 +224,28 @@ export const useIngestStore = create<IngestState>()(
         set((state) => ({
           discreteEventTriggers: state.discreteEventTriggers.filter((t) => t.id !== id),
         })),
+      upsertNfcTag: (tag) =>
+        set((state) => {
+          const clean = sanitizeNfcTag(tag)
+          if (!clean) return state
+          const prev = state.nfcTags.find((row) => row.id === clean.id)
+          const row: NfcTag = prev
+            ? {
+                ...clean,
+                lastAt: clean.lastAt ?? prev.lastAt,
+                lastSide: clean.lastSide ?? prev.lastSide,
+              }
+            : clean
+          return { nfcTags: [...state.nfcTags.filter((item) => item.id !== row.id), row] }
+        }),
+      removeNfcTag: (id) =>
+        set((state) => ({
+          nfcTags: state.nfcTags.filter((tag) => tag.id !== id),
+        })),
+      touchNfcTag: (id, patch) =>
+        set((state) => ({
+          nfcTags: state.nfcTags.map((tag) => (tag.id === id ? { ...tag, ...patch } : tag)),
+        })),
       hasSeenIngestKey: (key) => get().seenIngestKeys.includes(key),
       rememberIngestKey: (key) =>
         set((state) => {
@@ -240,7 +270,7 @@ export const useIngestStore = create<IngestState>()(
     }),
     {
       name: persistKey("ingest-store"),
-      version: 6,
+      version: 7,
       storage: createCogsJSONStorage(),
       migrate: (persisted) => {
         const p = (persisted ?? {}) as Record<string, unknown>
@@ -260,6 +290,7 @@ export const useIngestStore = create<IngestState>()(
           revokedChatIds: Array.isArray(p.revokedChatIds) ? p.revokedChatIds : [],
           allowlistRev: typeof p.allowlistRev === "number" ? p.allowlistRev : 0,
           discreteEventTriggers: triggers.length ? triggers : DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
+          nfcTags: sanitizeNfcTagList(p.nfcTags),
           seenIngestKeys: Array.isArray(p.seenIngestKeys) ? (p.seenIngestKeys as string[]) : [],
           groceryListId: typeof p.groceryListId === "string" && p.groceryListId.trim() ? p.groceryListId : null,
         }
@@ -287,6 +318,7 @@ export const useIngestStore = create<IngestState>()(
             saved.discreteEventTriggers && saved.discreteEventTriggers.length > 0
               ? saved.discreteEventTriggers
               : live.discreteEventTriggers,
+          nfcTags: Array.isArray(saved.nfcTags) ? sanitizeNfcTagList(saved.nfcTags) : live.nfcTags,
           seenIngestKeys: saved.seenIngestKeys ?? live.seenIngestKeys,
           groceryListId:
             typeof saved.groceryListId === "string" && saved.groceryListId.trim()
@@ -309,6 +341,7 @@ export const useIngestStore = create<IngestState>()(
         shortcuts: state.shortcuts,
         groceryListId: state.groceryListId,
         discreteEventTriggers: state.discreteEventTriggers,
+        nfcTags: state.nfcTags,
         seenIngestKeys: state.seenIngestKeys,
         phoneHubUrl: state.phoneHubUrl,
         phoneHubToken: state.phoneHubToken,

@@ -35,6 +35,7 @@
 import type { ItemLink, AttributeValue } from "@/lib/types"
 import { isEvidenceRelation, linkStanceWeight } from "@/lib/links"
 import { SOURCE_ATTR, DEFAULT_SOURCE_TRUST } from "@/lib/second-brain-types"
+import { isObservationAddress, OBSERVATION_TRUST } from "@/lib/graph/vault-graph"
 
 /** Minimal source shape: an id and attributes carrying `trust`. */
 export interface SourceLike {
@@ -80,7 +81,11 @@ export function getSourceTrust(source: SourceLike | undefined): number {
  * belief to its sources (defaults to `belief.links`); `linkedSources` supplies
  * the trust for each linked source by id. Only evidence relations
  * (`supports`/`supported-by`/`refutes`/`refuted-by`) pointing at a known source
- * contribute; unknown targets and non-evidence relations are ignored.
+ * contribute. An observation address (`block:`, `habit:`, `message:`, `place:`,
+ * `day:`, `week:`, `month:`, `season:`, `year:`) also contributes, at trust
+ * `OBSERVATION_TRUST` (1): the address is a fact on the day spine, not a
+ * source's trust score. Unknown item ids and other relations are ignored.
+ * Strength is recomputed. Nothing here writes a certainty column.
  */
 export function computeBeliefStrengthDetailed(
   belief: BeliefLike,
@@ -97,8 +102,9 @@ export function computeBeliefStrengthDetailed(
 
   for (const link of links ?? []) {
     if (!isEvidenceRelation(link.relation)) continue
-    if (!trustById.has(link.targetId)) continue
-    const trust = trustById.get(link.targetId) as number
+    const observed = isObservationAddress(link.targetId)
+    if (!observed && !trustById.has(link.targetId)) continue
+    const trust = observed ? OBSERVATION_TRUST : (trustById.get(link.targetId) as number)
     const sign = linkStanceWeight(link) // ∈ [-1, +1]
     const signed = sign * trust
     net += signed

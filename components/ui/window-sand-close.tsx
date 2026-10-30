@@ -5,8 +5,10 @@
  * if that guard exists), call `start()`. The live window hides and a canvas
  * shows the same rectangle breaking into tiny lit grains from the ×. They
  * tumble, bounce, and heap into a dune. A click on the background, Escape,
- * or the skip × leaves immediately. If it is left alone the wind takes it.
- * Then the dialog unmounts.
+ * or the skip × leaves immediately. On the desktop, Enter hurries the wind
+ * and, left alone, the wind carries the dune off to the right. On iOS the
+ * dune waits. A line asks for a breath, and a long hard blow pushes the
+ * sand straight into the screen.
  *
  * `prefers-reduced-motion: reduce` skips the canvas and closes immediately.
  */
@@ -14,6 +16,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { hearBlow, createBlowEar, sandHearsBreath } from "@/lib/mic-blow"
+import { micLevel } from "@/lib/live-mic"
 import { captureWindow } from "./window-sand-capture"
 import {
   WINDOW_SAND_MS,
@@ -128,9 +132,11 @@ type CanvasProps = {
 
 export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const hintRef = useRef<HTMLParagraphElement>(null)
   const onDoneRef = useRef(onDone)
   const skipRef = useRef<() => void>(() => {})
   onDoneRef.current = onDone
+  const hears = sandHearsBreath()
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current
@@ -142,6 +148,7 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
     let endTimer = 0
     let hurried = false
     let wantWind = false
+    const ear = hears ? createBlowEar() : null
     const start = performance.now()
     const box = sandCanvasBox(geom)
 
@@ -154,7 +161,7 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
 
     const boot = (shot: ImageData | null) => {
       if (dead || !canvas) return
-      world = createSandWorld(geom, shot)
+      world = createSandWorld(geom, shot, hears ? { windAt: Number.POSITIVE_INFINITY } : undefined)
       canvas.width = box.width
       canvas.height = box.height
       canvas.style.width = `${box.width}px`
@@ -175,7 +182,7 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
       }).catch(() => {})
     }
 
-    endTimer = window.setTimeout(finish, WINDOW_SAND_MS)
+    if (!hears) endTimer = window.setTimeout(finish, WINDOW_SAND_MS)
 
     const onDismiss = (event: PointerEvent) => {
       const raw = event.target
@@ -192,7 +199,7 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
         finish()
         return
       }
-      if (event.key === "Enter") wantWind = true
+      if (!hears && event.key === "Enter") wantWind = true
     }
     window.addEventListener("pointerdown", onDismiss, true)
     window.addEventListener("keydown", onKey, true)
@@ -201,20 +208,28 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
     const loop = (now: number) => {
       if (dead || !ctx || !world || !frame) return
       const t = now - start
-      if (wantWind && !hurried && t >= WINDOW_SAND_PILE_AT && t < world.windAt) {
-        hurried = true
-        beginWind(world, t)
-        window.clearTimeout(endTimer)
-        endTimer = window.setTimeout(finish, WINDOW_SAND_WIND_MS)
-      } else if (!hurried && t >= WINDOW_SAND_WIND_AT) {
-        hurried = true
-      }
       const dt = Math.min(100, Math.max(0, now - simPrev))
       simPrev = now
+      if (ear && hearBlow(ear, micLevel(), dt)) {
+        wantWind = true
+        if (hintRef.current) hintRef.current.hidden = true
+      }
+      if (wantWind && !hurried && t >= WINDOW_SAND_PILE_AT && t < world.windAt) {
+        hurried = true
+        beginWind(world, t, hears)
+        if (hintRef.current) hintRef.current.hidden = true
+        window.clearTimeout(endTimer)
+        endTimer = window.setTimeout(finish, WINDOW_SAND_WIND_MS)
+      } else if (!hears && !hurried && t >= WINDOW_SAND_WIND_AT) {
+        hurried = true
+      }
       stepSandWorld(world, t, dt)
       paintSand(world, frame.data, box.width, box.height, box.padX, box.padTop)
       ctx.putImageData(frame, 0, 0)
-      if (!dead && t < WINDOW_SAND_MS + WINDOW_SAND_WIND_MS) raf = requestAnimationFrame(loop)
+      const keep = hears
+        ? !hurried || t < world.windAt + WINDOW_SAND_WIND_MS + 200
+        : t < WINDOW_SAND_MS + WINDOW_SAND_WIND_MS
+      if (!dead && keep) raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
 
@@ -225,7 +240,7 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
       window.removeEventListener("pointerdown", onDismiss, true)
       window.removeEventListener("keydown", onKey, true)
     }
-  }, [geom, capture])
+  }, [geom, capture, hears])
 
   if (typeof document === "undefined") return null
 
@@ -245,6 +260,11 @@ export function WindowSandClose({ geom, capture, onDone }: CanvasProps) {
           zIndex: 200,
         }}
       />
+      {hears ? (
+        <p ref={hintRef} className="window-sand-blow">
+          Blow on the sand
+        </p>
+      ) : null}
       <button
         type="button"
         className="window-sand-skip"

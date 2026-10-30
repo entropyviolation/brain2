@@ -15,9 +15,9 @@ export type LensSection = {
   paragraphs: readonly string[]
 }
 
-/** Shown with this lens so it is never mistaken for science. */
+/** Shown with the esoteric lens so it is never mistaken for science. */
 export const ESOTERIC_LENS_LINE =
-  "This is a lens on attention, not a scientific claim. It does not require a belief."
+  "This is a lens on attention, not a scientific claim, and it does not require a belief."
 
 function sections(
   season: readonly string[],

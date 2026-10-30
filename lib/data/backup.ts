@@ -62,6 +62,7 @@ import { useItemTypeStore } from "@/lib/item-type-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useModuleDefinitionsStore } from "@/lib/module-definitions"
 import { useModuleHtmlStore } from "@/lib/module-html-store"
+import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import { useMetricsStore } from "@/lib/metrics-store"
 import { useRegretStore } from "@/lib/regret-store"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
@@ -81,6 +82,10 @@ import { useGraphInboxStore } from "@/lib/graph/graph-inbox-store"
 import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
+import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
+import { useKitchenNeeds } from "@/lib/kitchen-needs"
+import { useKitchenStore } from "@/lib/kitchen-store"
+import { useWardrobeStore } from "@/lib/wardrobe"
 import {
   exportAllAttachments,
   importAttachments,
@@ -92,7 +97,7 @@ import {
 import { listPersistedDocs, putPersistedDoc, replaceAllPersistedDocs } from "@/lib/doc-persist"
 import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
 import { parseAppendLog, parseAppendLogDraft, serializeAppendLog } from "@/lib/append-log"
-import { isQuotaExceededError, persistErrorMessage, recordPersistFailure } from "@/lib/persist-storage"
+import { isQuotaExceededError, recordPersistFailure } from "@/lib/persist-storage"
 import { unionPersistSnapshots } from "@/lib/vault-guard.js"
 import { APP_ID, APP_ID_LEGACY, backupDownloadName } from "@/lib/app-brand"
 import {
@@ -111,6 +116,9 @@ import {
   isDemoProfile,
   isDemoPhysicalKey,
   demoPhysicalKey,
+  releaseCopiedUnprefixedKeys,
+  releaseDuplicateLegacyTwins,
+  releaseFriendPicLocalKeys,
 } from "@/lib/storage-keys"
 
 const appIdSchema = z.union([z.literal(APP_ID), z.literal(APP_ID_LEGACY)])
@@ -182,6 +190,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("workflows-store"), rehydrate: persistRehydrate(useWorkflowsStore) },
   { key: persistKey("module-definitions"), rehydrate: persistRehydrate(useModuleDefinitionsStore) },
   { key: persistKey("module-html"), rehydrate: persistRehydrate(useModuleHtmlStore) },
+  { key: persistKey("module-package-app"), rehydrate: persistRehydrate(useModulePackageAppStore) },
   { key: persistKey("metrics-store"), rehydrate: persistRehydrate(useMetricsStore) },
   { key: "regret-store", rehydrate: persistRehydrate(useRegretStore) },
   { key: persistKey("ingest-store"), rehydrate: persistRehydrate(useIngestStore) },
@@ -200,6 +209,10 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("ui-names"), rehydrate: persistRehydrate(useUiNamesStore) },
   { key: persistKey("log-keywords"), rehydrate: persistRehydrate(useLogKeywordsStore) },
   { key: persistKey("count-statuses"), rehydrate: persistRehydrate(useCountStatusesStore) },
+  { key: persistKey("wardrobe"), rehydrate: persistRehydrate(useWardrobeStore) },
+  { key: persistKey("kitchen"), rehydrate: persistRehydrate(useKitchenStore) },
+  { key: persistKey("kitchen-day-note"), rehydrate: persistRehydrate(useKitchenDayNotes) },
+  { key: persistKey("kitchen-needs"), rehydrate: persistRehydrate(useKitchenNeeds) },
 ]
 
 /** Human labels for Settings restore preview (same keys as BACKUP_STORES, plus cogs-* aliases). */
@@ -249,6 +262,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-module-definitions": "Module definitions",
   [persistKey("module-html")]: "Module HTML pages",
   "cogs-module-html": "Module HTML pages",
+  [persistKey("module-package-app")]: "Module package folders",
+  "cogs-module-package-app": "Module package folders",
   [persistKey("metrics-store")]: "Metrics",
   "cogs-metrics-store": "Metrics",
   "regret-store": "Regret",
@@ -282,6 +297,14 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-log-keywords": "Log keywords",
   [persistKey("count-statuses")]: "Counts",
   "cogs-count-statuses": "Counts",
+  [persistKey("wardrobe")]: "Wardrobe",
+  "cogs-wardrobe": "Wardrobe",
+  [persistKey("kitchen")]: "Kitchen",
+  "cogs-kitchen": "Kitchen",
+  [persistKey("kitchen-day-note")]: "Kitchen day notes",
+  "cogs-kitchen-day-note": "Kitchen day notes",
+  [persistKey("kitchen-needs")]: "Kitchen nutrient needs",
+  "cogs-kitchen-needs": "Kitchen nutrient needs",
 }
 
 export function backupStoreLabel(key: string): string {
@@ -521,6 +544,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("workflows-store")]: asLiveStore(useWorkflowsStore),
   [persistKey("module-definitions")]: asLiveStore(useModuleDefinitionsStore),
   [persistKey("module-html")]: asLiveStore(useModuleHtmlStore),
+  [persistKey("module-package-app")]: asLiveStore(useModulePackageAppStore),
   [persistKey("metrics-store")]: asLiveStore(useMetricsStore),
   "regret-store": asLiveStore(useRegretStore),
   [persistKey("ingest-store")]: asLiveStore(useIngestStore),
@@ -538,6 +562,10 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("ui-names")]: asLiveStore(useUiNamesStore),
   [persistKey("log-keywords")]: asLiveStore(useLogKeywordsStore),
   [persistKey("count-statuses")]: asLiveStore(useCountStatusesStore),
+  [persistKey("wardrobe")]: asLiveStore(useWardrobeStore),
+  [persistKey("kitchen")]: asLiveStore(useKitchenStore),
+  [persistKey("kitchen-day-note")]: asLiveStore(useKitchenDayNotes),
+  [persistKey("kitchen-needs")]: asLiveStore(useKitchenNeeds),
 }
 
 /**
@@ -950,18 +978,54 @@ function forgetLiveTaskTombstones(serialized: string): void {
   }
 }
 
+function restoreWriteError(key: string, error: unknown): Error {
+  recordPersistFailure(error)
+  const reason = isQuotaExceededError(error)
+    ? "Web storage is full. On a phone that box is about 5 MB, separate from free space on the device."
+    : error instanceof Error
+      ? error.message
+      : "Unknown error"
+  return new Error(`Restore failed while writing ${key}: ${reason}`)
+}
+
 function writeLocalStorage(key: string, value: string): void {
-  try {
+  const write = () => {
     if (persistSuffix(key) != null) writeAliasedLocal(key, value)
     else localStorage.setItem(key, value)
+  }
+  try {
+    write()
+    return
   } catch (error) {
-    recordPersistFailure(error)
-    const reason = isQuotaExceededError(error)
-      ? persistErrorMessage(error)
-      : error instanceof Error
-        ? error.message
-        : "Unknown error"
-    throw new Error(`Restore failed while writing ${key}: ${reason}`)
+    if (!isQuotaExceededError(error)) throw restoreWriteError(key, error)
+    // WebKit counts the old value and the new one together. Drop the previous
+    // vault (and leftover twins) so the replacement has the box to itself.
+    releaseDuplicateLegacyTwins()
+    releaseCopiedUnprefixedKeys()
+    releaseFriendPicLocalKeys()
+    const aliases = persistSuffix(key) != null ? persistKeyAliases(key) : [key]
+    const previous = new Map<string, string>()
+    for (const alias of aliases) {
+      try {
+        const cur = localStorage.getItem(alias)
+        if (cur != null) previous.set(alias, cur)
+        localStorage.removeItem(alias)
+      } catch {
+        /* the retry below is the one that has to succeed */
+      }
+    }
+    try {
+      write()
+    } catch (again) {
+      for (const [alias, cur] of previous) {
+        try {
+          localStorage.setItem(alias, cur)
+        } catch {
+          /* the new value did not fit, and neither did putting the old one back */
+        }
+      }
+      throw restoreWriteError(key, again)
+    }
   }
 }
 
@@ -1309,11 +1373,12 @@ export function importCategory(
       store.addList(category)
     }
   }
+  const backupWrite = { surface: "import" as const, name: "backup" }
   for (const task of tasks) {
     if (existingTaskIds.has(task.id)) {
-      if (mode === "replace") store.updateTask(task)
+      if (mode === "replace") store.updateTask(task, undefined, { attribution: backupWrite })
     } else {
-      store.addTask(task)
+      store.addTask(task, backupWrite)
     }
   }
 

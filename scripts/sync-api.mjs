@@ -5,14 +5,20 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
+import { pullBackupView, requestWantsFullPull } from "../lib/phone-hub-view.mjs"
+import { readBody } from "./local-api-json.mjs"
+
+export { pullBackupView, requestWantsFullPull }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
 const DATA_DIR = path.join(ROOT, "data")
 const DATA_FILE = path.join(DATA_DIR, "mobile-sync.json")
 
-const USER = process.env.COGS_SYNC_USER || "admin"
-const PASS = process.env.COGS_SYNC_PASS || "admin"
+const USER = brain2Env("SYNC_USER") || "admin"
+const PASS = brain2Env("SYNC_PASS") || "admin"
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
@@ -62,6 +68,40 @@ function isMeaningfulBackup(backup) {
   return stats.storeCount > 0 && (stats.taskCount > 0 || stats.eventCount > 0 || stats.listCount > 0)
 }
 
+const SYNC_APP_IDS = new Set(["brain2", "cogs"])
+
+/**
+ * Accept a hub push, or say why not. A current backup is `app: "brain2"`.
+ * Older files are `cogs`. A smaller task list must not replace a full vault.
+ * @returns {{ ok: true } | { ok: false, status: number, error: string }}
+ */
+export function validateIncomingBackup(existingBackup, backup) {
+  if (!backup || !SYNC_APP_IDS.has(backup.app) || typeof backup.stores !== "object" || Array.isArray(backup.stores)) {
+    return { ok: false, status: 400, error: "Invalid backup payload" }
+  }
+  const incomingStats = backupStats(backup)
+  const existingStats = backupStats(existingBackup)
+  if (!isMeaningfulBackup(backup)) {
+    return { ok: false, status: 400, error: "Empty snapshot — nothing to store" }
+  }
+  if (
+    existingStats.taskCount >= 20 &&
+    incomingStats.taskCount < Math.floor(existingStats.taskCount * 0.25)
+  ) {
+    return {
+      ok: false,
+      status: 409,
+      error: `Refusing shrink from ${existingStats.taskCount} → ${incomingStats.taskCount} tasks`,
+    }
+  }
+  return { ok: true }
+}
+
+function wantsFullPull(req) {
+  const ua = req.headers?.["user-agent"]
+  return requestWantsFullPull(req.url, typeof ua === "string" ? ua : "")
+}
+
 function sendJson(res, status, body) {
   const json = JSON.stringify(body)
   res.writeHead(status, {
@@ -98,17 +138,11 @@ function checkAuth(req) {
   }
 }
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
-}
-
 /** @returns {Promise<boolean>} true if the request was handled */
 export async function handleSyncApi(req, res, pathname) {
+  if (pathname !== "/api/health" && !pathname.startsWith("/api/sync")) return false
+  if (!guardBrowserOrigin(req, res)) return true
+
   if (req.method === "OPTIONS" && (pathname.startsWith("/api/sync") || pathname === "/api/health")) {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -148,7 +182,7 @@ export async function handleSyncApi(req, res, pathname) {
     const store = readSyncStore()
     sendJson(res, 200, {
       ok: true,
-      backup: store.backup,
+      backup: pullBackupView(store.backup, wantsFullPull(req)),
       updatedAt: store.updatedAt,
     })
     return true
@@ -159,27 +193,10 @@ export async function handleSyncApi(req, res, pathname) {
       const raw = await readBody(req)
       const body = JSON.parse(raw || "{}")
       const backup = body.backup
-      if (!backup || backup.app !== "cogs" || typeof backup.stores !== "object") {
-        sendJson(res, 400, { ok: false, error: "Invalid backup payload" })
-        return true
-      }
-      // Refuse to overwrite a good hub with a blank / near-empty snapshot.
-      const incomingStats = backupStats(backup)
       const existing = readSyncStore()
-      const existingStats = backupStats(existing.backup)
-      if (!isMeaningfulBackup(backup)) {
-        sendJson(res, 400, { ok: false, error: "Empty snapshot — nothing to store" })
-        return true
-      }
-      // Guard: a tiny client must not clobber a full vault (e.g. phone before Pull).
-      if (
-        existingStats.taskCount >= 20 &&
-        incomingStats.taskCount < Math.floor(existingStats.taskCount * 0.25)
-      ) {
-        sendJson(res, 409, {
-          ok: false,
-          error: `Refusing shrink from ${existingStats.taskCount} → ${incomingStats.taskCount} tasks`,
-        })
+      const verdict = validateIncomingBackup(existing.backup, backup)
+      if (!verdict.ok) {
+        sendJson(res, verdict.status, { ok: false, error: verdict.error })
         return true
       }
       const stored = writeSyncStore(backup)

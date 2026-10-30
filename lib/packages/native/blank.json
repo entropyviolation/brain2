@@ -1,0 +1,7 @@
+{
+  "id": "blank",
+  "name": "Blank Workspace",
+  "version": "1.0.0",
+  "description": "An empty workspace. Add your own lists and views (spreadsheet, agenda, summary, randomizer, timer, …).",
+  "nativeTemplate": "blank"
+}

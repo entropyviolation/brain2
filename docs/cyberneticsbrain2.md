@@ -27,7 +27,7 @@ A. Structure: the data model
     ◦ In Brain2: the app keeps real choices apart from defaults. In the morning walk grammar, a dash "leaves that slot unchanged" rather than creating a value (lib/morning-todo-walk.ts). Autofilled durations and times carry a FieldEstimate so they never pass as observed (lib/estimated-values.ts). An exempted habit period drops out of both sides of the fraction (lib/habit-exemption.ts).
 4. Information is not matter or energy.
     ◦ Wiener: "Information is information, not matter or energy" (p. 132). Neurons, like vacuum tubes, run on a small outside power supply. What describes their work is a count of messages, not of energy (p. 42).
-    ◦ In Brain2: the module law "Item is the only noun" treats a record's value as the connections it carries, not what it is made of. The first law makes the same point: an item is captured once, then used in as many rooms as it can serve. A grocery line is worth what it tells Lists, the pantry, BIM and Analytics.
+    ◦ In Brain2: the module law "Item is the only noun" treats a record's value as the connections it carries, not what it is made of. The first law makes the same point: an item is captured once, then used in as many rooms as it can serve. A grocery line is worth what it tells Lists, the pantry, BIM and Data.
 5. Two kinds of memory.
     ◦ Wiener: working memory must record, read and erase quickly. The files are permanent and shape all future behavior. A machine is cleared between runs, but a brain never clears its past, so a life is like one long run (p. 121).
     ◦ In Brain2: lib/action-history.ts is the fast, erasable memory: an in-memory undo stack. lib/item-activity.ts is the files: an append-only ledger whose entries "are never rewritten". Append-log drafts can be edited, but submitted entries are read-only (components/append-log.tsx). Tracking day notes are the space between the two, jots kept "while you figure out where they belong."
@@ -61,14 +61,14 @@ B. Function: what the rooms do
     ◦ In Brain2: the "usually ~N" glance takes the median of past durations for the same title or type. Missing bedtimes fall back to the user's median over the last month (lib/sleep-sync.ts). Calibration trends the median actual-to-estimated ratio (lib/calibration.ts). The short past drives Working Now and the long past drives these glances.
 15. Stars and clouds.
     ◦ Wiener: a star is an object you can count and catalogue. A cloud has no lasting identity, and a meteorologist reports it as a statistic, such as the sky being 38% overcast (pp. 30–33).
-    ◦ In Brain2: Items are stars, each with an id, a history and an identity. Mood, Company, Location and time use are clouds. Analytics reports them as statistics: occupancy percentages, the hour-by-day atlas in CircadianView and the Markov transition matrix in TransitionsView.
+    ◦ In Brain2: Items are stars, each with an id, a history and an identity. Mood, Company, Location and time use are clouds. Data reports them as statistics: occupancy percentages, the hour-by-day atlas in CircadianView and the Markov transition matrix in TransitionsView.
 16. Gestalt: bring it to a standard position.
     ◦ Wiener: perception first pulls an object into a standard position and size, and reduces it toward an outline. Only then does it compare it with stored forms. The resulting universals are not sharp; they shade into one another (pp. 134–138).
     ◦ In Brain2: capture does the same with text. lib/smart-parse.ts, lib/parse-event-text.ts and BIM's name-resolve turn many phrasings into one standard item. Similar items are compared with a tolerance: identical open grocery lines ask "see / again / dismiss". Pen trees and tags let categories overlap instead of forcing hard classes.
 17. Memory is not a lock with one key.
     ◦ Wiener: the memory and association areas accept impressions from any sense. That is why replacing a lost sense is possible (p. 142).
     ◦ In Brain2: one item can arrive by text, iPhone Notes dump, receipt photo, forwarded PDF, gps:, Screen Time or the desktop. All of them "land through the same writes as the desktop." The vault does not care which sense brought the message.
-One more function belongs here: the observer is inside the system. Wiener warns that social statistics come in short runs and that studying a market upsets it (pp. 24–25, 163–164). Self-tracking has both problems. Analytics already guards the first with sample floors: CorrelationExplorer hides its ranked links until the overlap clears a minimum, and TransitionsView keeps "empty/thin frames" honest.
+One more function belongs here: the observer is inside the system. Wiener warns that social statistics come in short runs and that studying a market upsets it (pp. 24–25, 163–164). Self-tracking has both problems. Data already guards the first with sample floors: CorrelationExplorer hides its ranked links until the overlap clears a minimum, and TransitionsView keeps "empty/thin frames" honest.
 C. Process: the loops
 18. Negative feedback: read the output and subtract it.
     ◦ Wiener: the output is read and subtracted from the input, and that difference drives the effector (p. 97, p. 102). We do not will each muscle. We will to pick up the pencil, and the motion is steered by how far it is from done (pp. 7, 97).
@@ -96,7 +96,7 @@ C. Process: the loops
     ◦ In Brain2: dependency chains, critical path (lib/critical-path.ts) and Gantt are chains of stages. cognitiveLoad and the Overcommit sentence watch for the edge. lib/available-tasks.ts blocks work whose prerequisites are still open.
 26. A community reaches only as far as its messages.
     ◦ Wiener: a community extends only as far as information actually moves within it. Its autonomy can be measured by comparing decisions made inside the group with decisions entering from outside (pp. 157–158). Leibniz's monads "have no windows" and only seem to act together (p. 41).
-    ◦ In Brain2: "Isolation is a bug." Rooms must have windows. An installed module is "not a guest" because its writes reach Lists, search, Scheduler, Habits, points and Analytics. The one-way Module Lists projection is a window that opens in only one direction so far.
+    ◦ In Brain2: "Isolation is a bug." Rooms must have windows. An installed module is "not a guest" because its writes reach Lists, search, Scheduler, Habits, points and Data. The one-way Module Lists projection is a window that opens in only one direction so far.
 D. Future: the roadmap
 27. The white box that learns to be the black box.
     ◦ Wiener: a black box does a known job by an unknown structure. A white box is built to a plan. Feed both the same random input, compare the outputs, and let feedback adjust the white box until it acts like the black box, even though its insides differ (pp. x–xi, 180). Blueprint machines are specific, while living systems organize themselves (p. xv).
@@ -121,7 +121,7 @@ Each feature turns one of Wiener's mechanisms into a working room of the house. 
 1. The Homeostat: setpoints with slow corrective loops
 From the text. Life continues only inside narrow bands. The body holds them with a bank of thermostats and governors that act slowly, through hormones and other diffuse channels (pp. 114–115). A thermostat compares a setting with the actual reading and acts on the difference. A badly designed one swings the house into oscillation (pp. 96–97).
 What it does. The person sets a band, not a single target, for a few vital variables. Examples: sleep 7–9 h, screen time under 3 h, Inbox under 25 items, tracked deep work 2–4 h, and a mood floor. A Home panel shows each variable as a needle inside its band, using a 7-day rolling mean so it responds slowly. When a needle leaves its band, one corrective message goes to one effector. The friend suggests the fix, Plan offers a block, or BIM sends a single line. Inside the band, nothing happens.
-Where it lands. A pure lib/homeostat.ts reads the metrics store, lib/sleep-inference.ts, lib/screentime/ and lib/tracked-time.ts. The panel is a Home widget (lib/home-widgets.ts) plus an Analytics view. Bands are stored on the metric definitions.
+Where it lands. A pure lib/homeostat.ts reads the metrics store, lib/sleep-inference.ts, lib/screentime/ and lib/tracked-time.ts. The panel is a Home widget (lib/home-widgets.ts) plus an Data view. Bands are stored on the metric definitions.
 Done when. Each band shows its reading, the band edges and the days out of band. At most one correction fires per variable per day. A test shows a variable that returns to its band stops generating messages.
 2. Telltales: every planned order reports back
 From the text. A signalman needs a telltale for each switch because snow may have bent a signal arm. Sailors repeat orders back (p. 96). Without that report, action becomes ataxic (pp. 95–96). A prosthesis should report through a vibrator on intact skin (p. 26).
@@ -136,12 +136,12 @@ Done when. The review shows at least one proposal once the sample floor is met, 
 4. Maxwell's Demon: a negentropy ledger
 From the text. Maxwell's demon sorts fast molecules from slow ones at a gate. It can only do this by acting on information, and information is negative entropy (pp. 57–58). Living things are metastable demons: their stable state is to be dead, so they must keep sorting (p. 58). Information is measured in decisions between alternatives (p. 61). Noise drives the information in a message toward zero (p. 64).
 What it does. It is a third ledger beside points and regret, counting the order the person creates. Filing an Inbox item, lowering a task's entropy, merging a duplicate, answering a clarifying question and splitting a vague task into molecular steps each earn negentropy. The amount is the entropy drop, measured in bits of decisions resolved. A per-channel view shows which receptors (BIM, Shortcuts, ActivityWatch, desktop) deliver signal and which deliver noise: the share of captures that were clarified and used versus deleted or left to rot.
-Where it lands. lib/negentropy.ts hooks into lib/services/item-mutation-service.ts wherever entropy or stage changes. Analytics gets a Channels view. The ledger mirrors the append-only pattern of lib/regret-store.ts.
+Where it lands. lib/negentropy.ts hooks into lib/services/item-mutation-service.ts wherever entropy or stage changes. Data gets a Channels view. The ledger mirrors the append-only pattern of lib/regret-store.ts.
 Done when. Sorting a full Inbox shows a rising curve for the day. The Channels view lists each capture channel with a signal share and an n. The measure is labelled as derived.
 5. The Rhythm Lab: autocorrelation, entrainment and gating
 From the text. Wiener read hidden structure out of brain waves with autocorrelation and its power spectrum. The method revealed a sharp clump near 10 cycles per second with a gap beside it, where nearby oscillators pull together (pp. 183–199). A sharp rhythm is a clock that gates when messages can combine (pp. 197–198). A 23½-hour body rhythm is pulled into the 24-hour day by outside cues (p. 200).
-What it does. An Analytics view runs autocorrelation over any daily or minute series: sleep midpoint, first tracked minute, mood, habit completion, screen time. It plots the power spectrum and names the periods that stand out (24 h, 7 d, about 28 d), along with clumps and gaps. For sleep it estimates free-running drift: how far bedtime slides per day when the cues weaken, as on weekends or trips. It also finds gating windows, the hours when completions actually cluster, so Plan can place hard work where the gate is open.
-Where it lands. Autocorrelation and the spectrum go into lib/metrics.ts next to trend and change-points. The view goes under Analytics → Time, beside CircadianView, and reuses the shared range store and sample floors.
+What it does. An Data view runs autocorrelation over any daily or minute series: sleep midpoint, first tracked minute, mood, habit completion, screen time. It plots the power spectrum and names the periods that stand out (24 h, 7 d, about 28 d), along with clumps and gaps. For sleep it estimates free-running drift: how far bedtime slides per day when the cues weaken, as on weekends or trips. It also finds gating windows, the hours when completions actually cluster, so Plan can place hard work where the gate is open.
+Where it lands. Autocorrelation and the spectrum go into lib/metrics.ts next to trend and change-points. The view goes under Data → Time, beside CircadianView, and reuses the shared range store and sample floors.
 Done when. A synthetic 7-day series shows a peak at 7 in tests. The view reports its n and hides peaks below the floor. The gating-window list can be sent to Plan as suggested blocks.
 Part 2b — Five key changes
 These change behavior Brain2 already has. Each one fixes a place where a loop is open, too sharp or silent.
@@ -157,7 +157,7 @@ The Overcommit view marks any task that has swung between dates or lists three o
 Where. lib/services/scheduling-service.ts, the push controls in To Do and Plan, and lib/needs-attention.ts.
 2. Put a compensator in front of the plan (anticipatory feedback)
 From the text. A lagging effector needs a predictor in the loop, so the error closed is between aim and expected position (pp. 112–113). Compensation and feedback work best combined (pp. 111–112).
-Today. Calibration and Overcommit report after the fact in Analytics. The plan is drawn at face value.
+Today. Calibration and Overcommit report after the fact in Data. The plan is drawn at face value.
 Change. Plan and the Scheduler day view show a compensated total as the plan is built: "Planned 4 h → likely 5 h 10 m at your ratio of 1.29 (n = 41)." Each block gets a faint tail showing its likely overrun. The Overcommit sentence appears inside Plan when the compensated total exceeds waking hours minus tracked routine. The raw estimate stays unchanged. The compensation is labelled as derived and never overwrites estimatedDuration.
 Where. lib/calibration.ts (per-type median ratio), lib/plan-vs-reality.ts, the Plan agenda and DayAgenda.tsx.
 3. Collate sources and file a minority report
@@ -197,7 +197,7 @@ Modules install wizard, Reviews
 2a-3
 Introduction (1–29)
 Feedback in voluntary action; the message as time series; information as negentropy
-Plan, Tracking, Analytics
+Plan, Tracking, Data
 1, 2, 3, 18, 19
 2b-1
 I. Newtonian and Bergsonian Time (30–44)
@@ -237,7 +237,7 @@ Dedupe, sleep reconciliation, Inbox, dependencies
 2b-3
 VIII. Information, Language, and Society (155–168)
 Community bounded by communication; autonomy; observer effects; who controls the channels
-Module law, Analytics sample floors, offline-first
+Module law, Data sample floors, offline-first
 26, 32
 —
 IX. On Learning and Self-Reproducing Machines (169–180)
@@ -260,7 +260,7 @@ The product never names the book. No tab, tooltip, or empty state says Wiener, c
 
 Where it sits. Wave 15 does not wait on Wave 13 or Wave 14. GS slices and JG slices share no required order with these. Where a file is claimed by more than one wave, the slice below names the seam. UI follows the screen law in the plan of action and in [`DESIGN_STYLE.md`](DESIGN_STYLE.md): look at Home → Habits. Needles, lamps, and tubes. A control diagram does not belong on a screen.
 
-The one idea. Brain2 already senses, stores, compares, and acts. The miss is computed in Analytics and then left there. This wave makes the miss the next input. One derived value, the **gap**, circulates. Fast loops, day loops, and slow loops all read it. They do not invent a private difference type, and they do not wait on each other. Rooms stay wired in parallel, the way tagged minutes already are (`lib/tracked-time.ts`). The gap is a second bus, for errors. It does not replace the tag bus, and it is not an Item.
+The one idea. Brain2 already senses, stores, compares, and acts. The miss is computed in Data and then left there. This wave makes the miss the next input. One derived value, the **gap**, circulates. Fast loops, day loops, and slow loops all read it. They do not invent a private difference type, and they do not wait on each other. Rooms stay wired in parallel, the way tagged minutes already are (`lib/tracked-time.ts`). The gap is a second bus, for errors. It does not replace the tag bus, and it is not an Item.
 
 ### Decisions locked
 
@@ -298,7 +298,7 @@ Labels on screen:
 
 Already in the house. Do not rebuild these, and do not add a second copy:
 
-- Spectrum already computes lag autocorrelation, a naive periodogram, and sleep CV (`lib/metrics.ts`, `components/Analytics/SpectrumView.tsx`). CY-8 extends that view.
+- Spectrum already computes lag autocorrelation, a naive periodogram, and sleep CV (`lib/metrics.ts`, `components/Analytics/meta/SpectrumView.tsx`). CY-8 extends that view.
 - Overcommit already rebuilds pushes and writes a sentence with n (`lib/overcommitment.ts`). CY-4 adds the damper. It does not add a second warning tab.
 - Calibration already trends the actual-to-estimated ratio (`lib/calibration.ts`). CY-5 shows it on the plan. It does not fork the math.
 - Just Start is the small probe (`components/Focus/JustStartMode.tsx`). CY-4 offers it. It does not grow a new timer.
@@ -328,17 +328,17 @@ Do not persist gaps. Do not add a tab. Do not name the type on a screen.
 
 ### CY-2 — Bands
 
-Part 2a feature 1. Depends on CY-1. One agent, in this order: `lib/homeostat.ts`, then `lib/user-settings-store.ts`, then a Home widget, then one Analytics view.
+Part 2a feature 1. Depends on CY-1. One agent, in this order: `lib/homeostat.ts`, then `lib/user-settings-store.ts`, then a Home widget, then one Data view.
 
 The person sets a band, not a point, on a few vital variables: sleep 7–9 h, screen under a cap, Inbox under a count, tracked deep work inside a range, a mood floor. Each band stores its edges and which single effector may speak: the friend, a Plan offer, or one BIM line. The default is the friend.
 
 `lib/homeostat.ts` reads the metrics store, `lib/sleep-inference.ts`, `lib/screentime/`, `lib/tracked-time.ts`, and the inbox count. The reading is a 7-day rolling mean. Inside the band, gain is 0 and the gap produces no message. Outside, gain rises with days out of band and stays capped. At most one message per variable per day. A test shows that a variable which returns to its band stops.
 
-The Home widget id is `bands`. First migrate tucks it, the way later tiles were tucked in `lib/home-widgets.ts`. The open instrument is a needle between two edges, in the language of the Habits tubes. The Analytics view is **Bands**, added under Behavior beside Overcommit in `components/Analytics/analytics-tabs.ts`. It shows the same readings, the edges, and the days out. It does not send the message. The widget's effector does.
+The Home widget id is `bands`. First migrate tucks it, the way later tiles were tucked in `lib/home-widgets.ts`. The open instrument is a needle between two edges, in the language of the Habits tubes. The Data view is **Bands**, added under Behavior beside Overcommit in `components/Analytics/chrome/analytics-tabs.ts`. It shows the same readings, the edges, and the days out. It does not send the message. The widget's effector does.
 
 Done when each band shows its reading, its edges, and its days out; a return to band stops messages; the widget can be hidden; a day inside every band sends nothing.
 
-Do not nag inside the band. Do not reschedule the day. Do not let two effectors speak for one variable. Do not put this on a new Analytics group.
+Do not nag inside the band. Do not reschedule the day. Do not let two effectors speak for one variable. Do not put this on a new Data group.
 
 ### CY-3 — Reports
 
@@ -409,7 +409,7 @@ Do not add the bits to points, regret, or tone. Do not make a streak of it. Do n
 
 ### CY-8 — Gates
 
-Part 2a feature 5. Lane: `lib/metrics.ts` and `components/Analytics/SpectrumView.tsx` only. The view keeps its name and its place under Meta.
+Part 2a feature 5. Lane: `lib/metrics.ts` and `components/Analytics/meta/SpectrumView.tsx` only. The view keeps its name and its place under Meta.
 
 Add a series choice: sleep midpoint, first tracked minute, mood, habit completion, screen time. Name the periods that clear the floor. On a daily series those are 7 days, and about 28 days when n is long enough to support it. A 24-hour peak is stated only for a minute-grained series, and the caption says which. For sleep, estimate free-running drift: how many minutes bedtime slides per day on weekends against weekdays, with n. List gating windows, the hours where completions actually cluster.
 
@@ -471,12 +471,12 @@ Claim one slice. CY-2's four files are sequential, one agent. CY-3's Plan lamps 
 | Slice | Speed | Owns | Does not touch |
 | --- | --- | --- | --- |
 | CY-1 | — | `lib/error-signal.ts` | UI, persist |
-| CY-2 | Slow | `lib/homeostat.ts`, user settings, Home widget `bands`, Analytics → Behavior → Bands | Plan blocks, BIM readback |
+| CY-2 | Slow | `lib/homeostat.ts`, user settings, Home widget `bands`, Data → Behavior → Bands | Plan blocks, BIM readback |
 | CY-3 | Fast | `lib/telltale.ts`, Plan lamps, `apply-readback.ts`, variance split | Band messages, chip CSS |
 | CY-4 | Day | Push menus, scheduling service, needs-attention swing sentence, Overcommit hunting mark | Auto-split, the word Zombie |
 | CY-5 | Fast | Per-type ratio, Plan likely total and tails | Writes to `estimatedDuration` |
 | CY-6 | Slow | `lib/reweight.ts`, weekly review, formula-panel weight rows | Silent apply, a model |
-| CY-7 | Slow | `lib/negentropy.ts`, ledger, Analytics → Meta → Channels | Points, tone |
+| CY-7 | Slow | `lib/negentropy.ts`, ledger, Data → Meta → Channels | Points, tone |
 | CY-8 | Slow | `lib/metrics.ts`, SpectrumView | A new tab, auto-place |
 | CY-9 | Day | `lib/collate.ts`, split chip, weekly list | Winner rules |
 | CY-10 | Slow | Workflow builder, runner, module law 6 | The install wizard |

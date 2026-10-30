@@ -24,13 +24,16 @@ import type {
   ItemTypeRule,
 } from "@/lib/types"
 import { withOperationType } from "@/lib/operation-types"
+import { withComputerProjectType } from "@/lib/computer-project-types"
 import { withNoteType } from "@/lib/note-types"
-import { withBookType } from "@/lib/book-types"
+import { withBookSizeAttributes, withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withLocationType } from "@/lib/location-types"
 import { withDocumentType } from "@/lib/document-types"
 import { withPhotoType } from "@/lib/photo-types"
 import { withTrackingItemTypes } from "@/lib/tracking-item-types"
+import { withLogItemTypes } from "@/lib/log-item-types"
+import { withTimeblockType } from "@/lib/timeblock-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
 import { withPersonPhoneAttribute, withPersonType } from "@/lib/person-types"
@@ -46,6 +49,7 @@ export const SYSTEM_TYPE_IDS = [
   BUILTIN_ITEM_TYPE_ID,
   "note",
   "operation",
+  "computer-project",
 ] as const
 
 export const DETAIL_PANEL_ORDER: ItemDetailPanel[] = [
@@ -78,10 +82,16 @@ export interface AttributeSource {
 export function getBuiltinItemTypes(): ItemTypeDefinition[] {
   // Item + Task ship first; Operation, Note, Book, Person, Flight, and catalog
   // starters merge in via idempotent helpers so each module owns its definition.
-  return withPersonType(
-    withCatalogTypes(
-      withFilmType(
-        withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+  return withComputerProjectType(
+    withPersonType(
+      withCatalogTypes(
+        withFilmType(
+          withTimeblockType(
+            withLogItemTypes(
+              withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+            ),
+          ),
+        ),
       ),
     ),
   )
@@ -144,6 +154,19 @@ export function isCatalogItemType(type: Pick<ItemTypeDefinition, "kind">): boole
 }
 
 /**
+ * A catalog seed may grow a parent later. Copy that field onto a stored type
+ * only when the stored type has none. Name, attributes, panels, and rules stay.
+ */
+function fillMissingParent(
+  chosen: ItemTypeDefinition,
+  seed: ItemTypeDefinition,
+  hadStored: boolean,
+): ItemTypeDefinition {
+  if (!hadStored || chosen.parentTypeId || !seed.parentTypeId) return chosen
+  return { ...chosen, parentTypeId: seed.parentTypeId }
+}
+
+/**
  * Merge persisted types with seeds: system ids always come from code; catalog
  * ids keep the stored definition if present and only insert the seed when missing.
  */
@@ -160,7 +183,9 @@ export function mergeTypeRegistry(stored: ItemTypeDefinition[]): ItemTypeDefinit
       result.push(seed)
       continue
     }
-    result.push(withPersonPhoneAttribute(storedById.get(id) ?? seed))
+    const stored = storedById.get(id)
+    const chosen = withBookSizeAttributes(withPersonPhoneAttribute(stored ?? seed))
+    result.push(fillMissingParent(chosen, seed, stored != null))
   }
   for (const t of stored) {
     const id = t.id as string
@@ -287,11 +312,18 @@ export interface DetailViewResolution {
 }
 
 /**
- * Resolve which detail tabs, capabilities, and layout an item should show.
- * Type panels (or capability inference) first, lists may add panels, then
- * hiddenDetailPanels and capabilities filter the result. Next-action / Task
- * items inherit Task capabilities so the hardcoded Task surface still works.
+ * Which assigned type the detail view is showing. A pick counts only when that
+ * type is actually assigned; otherwise the primary type stays.
  */
+export function activeDetailTypeId(
+  primaryTypeId: string,
+  picked: string | null | undefined,
+  assignedIds: readonly string[],
+): string {
+  if (picked && assignedIds.includes(picked)) return picked
+  return primaryTypeId
+}
+
 export function resolveDetailView(
   item: {
     type?: ItemType
@@ -301,10 +333,20 @@ export function resolveDetailView(
   },
   lists: DetailListSource[],
   types: ItemTypeDefinition[],
-  opts?: { isTask?: boolean },
+  opts?: { isTask?: boolean; viewAsTypeId?: ItemType },
 ): DetailViewResolution {
-  const isTask = opts?.isTask ?? false
-  const ownType = exactType(types, item.type)
+  // Type panels (or capability inference) first, lists may add panels, then
+  // hiddenDetailPanels and capabilities filter the result. Next-action / Task
+  // items inherit Task capabilities so the hardcoded Task surface still works,
+  // unless `viewAsTypeId` is set — then that type's profile is the view.
+  const viewAs = opts?.viewAsTypeId
+  const viewType = viewAs ? exactType(types, viewAs) : undefined
+  // A chosen view uses that type alone. The Next Actions task surface stays
+  // only when nobody has switched the view away from the item's own type.
+  const isTask = viewAs
+    ? viewAs === BUILTIN_TASK_TYPE_ID
+    : (opts?.isTask ?? false)
+  const ownType = viewType ?? exactType(types, item.type)
   const fallbackId = isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID
   const typeDef = ownType ?? exactType(types, fallbackId)
 
@@ -325,7 +367,7 @@ export function resolveDetailView(
   const hidden = new Set(memberLists.flatMap((l) => l.hiddenDetailPanels ?? []))
 
   const merged = new Set<ItemDetailPanel>([...typePanels, ...listAdded])
-  if (item.type === "note") merged.add("body")
+  if ((typeDef?.id ?? item.type) === "note") merged.add("body")
   for (const panel of UNIVERSAL_DETAIL_PANELS) merged.add(panel)
 
   const typeListed = new Set(typeDef?.detailPanels ?? [])
@@ -658,8 +700,17 @@ export type ImpliedRuleEffect =
       awardPoints?: boolean
       field?: string
       delta: number
+      /** `ItemTypeRule.name` of the rule that asked for this effect. */
+      ruleName?: string
     }
-  | { kind: "incrementHabit"; habitId: string; amount: number }
+  | { kind: "incrementHabit"; habitId: string; amount: number; ruleName?: string }
+
+export interface RuleMutation<T extends ItemLike> {
+  /** `ItemTypeRule.name` (or the rule id when the name is blank). */
+  name: string
+  /** Item after this rule's action. */
+  item: T
+}
 
 export interface RuleApplication<T extends ItemLike> {
   /** Item with automation actions (setDefault/setAttribute/addTag) applied. */
@@ -670,6 +721,8 @@ export interface RuleApplication<T extends ItemLike> {
   addToNextActions: boolean
   /** Side effects that must run after the item is persisted (log Done, habits). */
   effects: ImpliedRuleEffect[]
+  /** Rules whose setDefault / setAttribute / addTag actually changed the item, in order. */
+  mutations: RuleMutation<T>[]
 }
 
 /**
@@ -688,6 +741,24 @@ export function applyRules<T extends ItemLike>(
   const errors: string[] = []
   let addToNextActions = false
   const effects: ImpliedRuleEffect[] = []
+  const mutations: RuleMutation<T>[] = []
+
+  const shot = (): T =>
+    ({
+      ...next,
+      attributes: { ...(next.attributes ?? {}) },
+      tags: Array.isArray(next.tags) ? [...(next.tags as string[])] : next.tags,
+    }) as unknown as T
+
+  const changedBy = (before: string, after: T) => {
+    let afterJson = ""
+    try {
+      afterJson = JSON.stringify(after)
+    } catch {
+      afterJson = ""
+    }
+    return afterJson !== before
+  }
 
   for (const rule of rules ?? []) {
     if (rule.enabled === false) continue
@@ -695,6 +766,16 @@ export function applyRules<T extends ItemLike>(
     if (rule.when && !evaluateCondition(next, rule.when, previous)) continue
 
     const action = rule.action
+    const ruleName = rule.name?.trim() || rule.id
+    let beforeJson = ""
+    const mayMutate = action.kind === "setDefault" || action.kind === "setAttribute" || action.kind === "addTag"
+    if (mayMutate) {
+      try {
+        beforeJson = JSON.stringify(shot())
+      } catch {
+        beforeJson = ""
+      }
+    }
     switch (action.kind) {
       case "require":
         if (isEmpty(getFieldValue(next, action.field))) {
@@ -730,6 +811,7 @@ export function applyRules<T extends ItemLike>(
           awardPoints: action.awardPoints,
           field,
           delta,
+          ruleName,
         })
         break
       }
@@ -738,14 +820,18 @@ export function applyRules<T extends ItemLike>(
         const amount =
           action.amount === "delta" ? (field ? numericDelta(previous, next, field) : 0) : action.amount
         if (amount !== 0) {
-          effects.push({ kind: "incrementHabit", habitId: action.habitId, amount })
+          effects.push({ kind: "incrementHabit", habitId: action.habitId, amount, ruleName })
         }
         break
       }
     }
+    if (mayMutate) {
+      const after = shot()
+      if (changedBy(beforeJson, after)) mutations.push({ name: ruleName, item: after })
+    }
   }
 
-  return { item: next as T, errors, addToNextActions, effects }
+  return { item: next as unknown as T, errors, addToNextActions, effects, mutations }
 }
 
 /**

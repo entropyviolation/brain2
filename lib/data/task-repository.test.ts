@@ -44,6 +44,27 @@ describe("taskRepository", () => {
     expect(taskRepository.getById("a")).toBeUndefined()
   })
 
+  it("saves a phone row that only kept a name", () => {
+    useTaskStore.setState({
+      tasks: [
+        {
+          id: "slim",
+          title: "Milk",
+          completed: false,
+          stage: "inbox",
+          scheduledDate: new Date("2026-06-10T07:00:00.000Z"),
+        } as Task,
+      ],
+    })
+    const slim = taskRepository.getById("slim")!
+    expect(() => taskRepository.update({ ...slim, completed: true })).not.toThrow()
+    const saved = taskRepository.getById("slim")
+    expect(saved?.description).toBe("Milk")
+    expect(saved?.completed).toBe(true)
+    expect(saved?.lists).toContain("na-smart-completed")
+    expect(new Date(saved!.createdAt).toISOString()).toContain("2026-06-10")
+  })
+
   it("rejects invalid writes with a ValidationError", () => {
     expect(() => taskRepository.add(task({ id: "", description: "bad" }))).toThrow(ValidationError)
     expect(useTaskStore.getState().tasks).toHaveLength(0)

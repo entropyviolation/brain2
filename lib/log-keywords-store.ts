@@ -13,6 +13,7 @@ import { persist } from "zustand/middleware"
 import { normalizeLogKeyword } from "@/lib/log-keywords"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const LOG_KEYWORDS_STORAGE_KEY = persistKey("log-keywords")
 
@@ -164,3 +165,5 @@ export function savedLogKeywordPhrases(): string[] {
     .keywords.map(logKeywordPhrase)
     .filter((phrase) => phrase.length > 0)
 }
+
+registerPhoneWindowStore(useLogKeywordsStore)

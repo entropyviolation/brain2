@@ -5,31 +5,66 @@
  * then the SPA index). Repeated asset requests must not stat the same path
  * again for the life of the process. `out/` does not change while a packaged
  * app is running.
+ *
+ * A URL pathname is absolute (`/etc/passwd`). `path.join(outDir, pathname)`
+ * would drop `outDir` on POSIX and serve a file outside the export. The
+ * lookup strips that leading slash, then refuses `..` and a symlink whose
+ * real path leaves `out/`.
  */
 const path = require("path")
+
+function indexFile(outDir) {
+  return path.join(outDir, "index.html")
+}
+
+/** True when `candidate` resolves inside `root` (both absolute). */
+function isInsideDir(root, candidate) {
+  const base = path.resolve(root)
+  const resolved = path.resolve(candidate)
+  const rel = path.relative(base, resolved)
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel))
+}
+
+function realStaysInside(fsImpl, outDir, candidate) {
+  if (typeof fsImpl.realpathSync !== "function") return true
+  try {
+    return isInsideDir(fsImpl.realpathSync(outDir), fsImpl.realpathSync(candidate))
+  } catch {
+    return false
+  }
+}
+
+function fileInside(fsImpl, outDir, candidate) {
+  if (!isInsideDir(outDir, candidate)) return false
+  try {
+    if (!fsImpl.existsSync(candidate) || !fsImpl.statSync(candidate).isFile()) return false
+  } catch {
+    return false
+  }
+  return realStaysInside(fsImpl, outDir, candidate)
+}
 
 function resolveStaticFileUncached(fsImpl, outDir, pathname) {
   const relativePath = decodeURIComponent(pathname)
   if (relativePath === "/" || relativePath === "") {
-    return path.join(outDir, "index.html")
+    return indexFile(outDir)
   }
 
-  const candidate = path.join(outDir, relativePath)
+  const rel = relativePath.replace(/^[/\\]+/, "")
+  if (!rel || rel.includes("\0")) return indexFile(outDir)
 
-  if (fsImpl.existsSync(candidate) && fsImpl.statSync(candidate).isFile()) {
-    return candidate
-  }
+  const candidate = path.join(outDir, rel)
+  if (!isInsideDir(outDir, candidate)) return indexFile(outDir)
 
-  if (fsImpl.existsSync(`${candidate}.html`)) {
-    return `${candidate}.html`
-  }
+  if (fileInside(fsImpl, outDir, candidate)) return candidate
+
+  const htmlCandidate = `${candidate}.html`
+  if (fileInside(fsImpl, outDir, htmlCandidate)) return htmlCandidate
 
   const indexCandidate = path.join(candidate, "index.html")
-  if (fsImpl.existsSync(indexCandidate)) {
-    return indexCandidate
-  }
+  if (fileInside(fsImpl, outDir, indexCandidate)) return indexCandidate
 
-  return path.join(outDir, "index.html")
+  return indexFile(outDir)
 }
 
 function createStaticFileResolver(fsImpl, outDir) {
@@ -43,4 +78,4 @@ function createStaticFileResolver(fsImpl, outDir) {
   }
 }
 
-module.exports = { createStaticFileResolver, resolveStaticFileUncached }
+module.exports = { createStaticFileResolver, isInsideDir, resolveStaticFileUncached }

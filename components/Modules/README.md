@@ -24,6 +24,12 @@ module live here:
   cards keep their bindings. The gray field stays. Phosphor stays on the
   analytics stat.
 
+## File length
+
+_Last mapped: 2026-10-28._
+
+Files under `components/Modules` are allowed to be long. On a phone (`max-width: 767px`) the workspace and its dialogs fit the viewport: fields are 16px, targets are 44px, and hover-only row actions stay visible. Desktop layouts are unchanged. They are ported workspace apps (Tidy, itinerary, grad search, and the other module bodies). Length there is expected. Do not split them for line count alone.
+
 ## Public door
 
 Other rooms may mount **`ModulesPanel`** (`modules-panel.tsx`) — the Modules tab,
@@ -44,7 +50,7 @@ Workspace interiors are private. Other rooms must not import Tidy
 screens).
 
 Current practice: Operations already imports three Trip interiors from
-`components/Operations/OperationFieldPlanPanels.tsx` — `ItineraryDocumentView`,
+`components/Operations/panels/OperationFieldPlanPanels.tsx` — `ItineraryDocumentView`,
 `TripActivitiesView`, and `DocPlanView`.
 
 ## Where this is going
@@ -75,24 +81,30 @@ Full contract, install ladder, manifest shape, and migration plan:
 
 ## Files
 
+_Last mapped: 2026-10-28._
+
 | File | Purpose |
 |------|---------|
 | `modules-panel.tsx` | **Orchestrator**: lists workspaces + widgets, opens a workspace full-screen, hosts the build/config dialogs. Board faces use `orbFor` (or a stored photograph) — no Lucide fallbacks on the catalog. Trip / Tidy / Film DNA interiors are unchanged. Last open workspace survives refresh / tab switch. Catalog chrome is `.mod95` in `modules-chrome.css` (miniature windows + gadget wells; interiors keep their own skins). |
-| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. Catalog cards (workspace windows and dashboard widgets) take the Home overview face from `home-chrome.css`: Karla, titles 14px, descriptions and view counts 13px, widget body sentences one step up (`text-sm` 16px, `text-xs` 13px, `text-[10px]` 12px). The opened workspace stays on the pixel face. |
+| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. Catalog cards (workspace windows and dashboard widgets) take the Home overview face from `home-chrome.css`: Karla, titles 14px, descriptions and view counts 13px, widget body sentences one step up (`text-sm` 16px, `text-xs` 13px, `text-[10px]` 12px). The opened workspace stays on the pixel face. Build module, the workspace bar (Sync to Plan, Print / Export, Workflows, Settings, Pop out, Add view), and the caption glyphs (back, pop out, edit view) are the house silver keycap (`.todo-cap`, `data-no95`). Build module and Add view wear the navy primary lamp. |
 | `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `WIDGET_MODULE_CATALOG` (what each card should tell), `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
 | `module-bodies.tsx` | `ModuleCard` + per-widget render bodies (analytics stat, list summary, writing prompt, list explorer, random task, rules). Exports `AnalyticsStat` (reused by workspace `stat` views) |
 | `module-helpers.test.ts` | Unit tests for the pure helpers (`ruleMatches`, `tasksInList`, `randN`) |
 | `ModuleConfigDialog.tsx` | Add/configure a **widget**. Its list field is `SingleListPicker` (built-in topics, or choose a list). |
-| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. |
+| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. The ? key beside Settings opens `ModuleHelpDialog`. |
 | `workspace/module-popout.ts` | `/popout/?module=<id>` helpers + `openModulePopout` (Electron `BrowserWindow` or `window.open`). Hash `#popout/module/<id>` still parsed. |
 | `workspace/module-popout.test.ts` | Unit tests for path + hash round-trip |
 | `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` (writes `timeLogs` on complete). When the timer must ask which item to log, that choice is `ItemPicker`. |
 | `workspace/module-view-bodies.timer.test.tsx` | Focus-timer complete → Working Now `timeLogs`, or a one-step item prompt |
 | `workspace/ModuleViewEditor.tsx` | Add/edit one bound view (kind, title, source list, group/sum/date attrs, pick count, timer, stat). Source, match, quiz, and dashboard-card lists are `SingleListPicker`. |
-| `workspace/ModuleBuilderDialog.tsx` | "Build a module" chooser: **build from scratch** (definition-first), saved definitions, workspace templates, or a classic widget |
+| `workspace/ModuleBuilderDialog.tsx` | "Build a module" chooser: **build from scratch** (definition-first), **Install package**, saved definitions, workspace templates, **Upload HTML file**, or a classic widget. Template cards still call `instantiateModuleTemplate`. The Upload HTML control is unchanged. |
+| `workspace/ModulePackageInstallDialog.tsx` | **Install package**, opened from that chooser. The user picks a `.json` file. Create-only files and `nativeTemplate` files call `installModulePackage` and skip `scoreSlot`. A `policy: "bind"` slot is scored first. `"ask"`, `"none"`, or a refusal shows the candidate lists and installs nothing. A clear bind references that existing list and does not rewrite it. A thrown parser or installer error stays in the dialog. On success the builder closes and `onOpenWorkspace` opens the new module, the same sequence as a template card. |
+| `workspace/module-package-install.ts` | Gate for that dialog. Create-only and `nativeTemplate` skip the scorer. Bind slots call `scoreSlot`. Unit-tested in `module-package-install.test.ts`. |
+| `workspace/package-app/PackageAppView.tsx` | `package-app` view: a downloaded folder (html, css, js, assets) in a sandboxed frame. Store is `lib/module-package-app-store.ts` (`brain2-module-package-app`), separate from uploaded HTML. House cleaning, the trip, Film DNA, and GradSearch do not use this view. |
 | `workspace/html/HtmlModuleView.tsx` | `html` view body: runs an uploaded `.html` in a sandboxed `<iframe srcDoc>` and answers its `window.brain2` calls (`lib/module-html-bridge.ts`). Writes go through `task-store`. |
 | `workspace/html/HtmlUploadDialog.tsx` | **Upload HTML file** from the Build a module dialog: pick a file (2 MB cap), name it, tick lists it may see, optionally allow edits. Creates a workspace with one `html` view. |
 | `workspace/html/HtmlViewFields.tsx` | Which lists an HTML page may see (`ListPicker`, multi, searchable) and the "Allow edits" toggle. Shared by the upload dialog and `ModuleViewEditor`. |
+| `workspace/ModuleHelpDialog.tsx` | Guide opened from the ? key beside Settings: the five Build module paths, each template’s own blurb, the caption keys, every view kind, plan sync, and where the records live. |
 | `workspace/ModuleSettingsDialog.tsx` | **Module definition / settings editor**: name, icon, description, bound lists (+ roles + attribute extensions), views (add/edit/remove/**reorder**), plan-sync + print toggles, attach workflows. Edits a controlled `ModuleDefinition` and reports via `onSave` |
 | `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (`SingleListPicker`), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |
@@ -111,6 +123,8 @@ Full contract, install ladder, manifest shape, and migration plan:
 | `workspace/filmrecs/film-dna.css` | Letterboxd-adjacent Film DNA styles |
 | `workspace/housecleaning/TidyView.tsx` | **Tidy** house-cleaning mini-app (areas, stuck mode, plans) |
 | `workspace/housecleaning/tidy.css` | Scoped port of the Tidy stylesheet. Card, field, and button corners follow Bouba/Kiki (`--r-10` where the local `--r` was `10px`) |
+| `workspace/sweep/SweepView.tsx` | **Sweep** scan and duplicate finder. One rail, one panel. The browser build says the scan lives in the desktop app |
+| `workspace/sweep/sweep.css` | Sweep's own skin: silver `.todo-cap` keys on one instrument |
 | `workspace/gradsearch/GradSearchView.tsx` | **GradSearch** program explorer (shadow-DOM port of the standalone app) |
 | `workspace/gradsearch/engine.ts` | Search, filter, sort, score, compare, verify, favorites, hide |
 | `workspace/gradsearch/data.json` | Bundled catalog (the gradsearch `data.js` store) |
@@ -123,7 +137,10 @@ Module instances persist in **`lib/modules-store.ts`** (`cogs-modules-store`).
 
 A module is `{ id, type, title, config }` plus optional **workspace** fields:
 `kind: "workspace"`, `icon`, `description`, `templateId`, `views: ModuleView[]`,
-`enablePrint`, and `planSync`.
+`enablePrint`, and `planSync`. A package install may also set `config.package`
+(`{ id, version, slots }`, role → list id). Template instances leave it unset.
+A list minted by that install may carry `moduleSlotId` (the slot role). Lists
+that already exist omit it.
 
 A **view** is `{ id, title, kind, config }` where `config` binds it to a source
 list (`categoryId`) and kind-specific options (`groupAttrId`/`valueAttrId`,
@@ -134,11 +151,13 @@ list (`categoryId`) and kind-specific options (`groupAttrId`/`valueAttrId`,
 `scheduleSync` (turn finalized dated items into events).
 
 The lists, items, and attributes a workspace operates on are **ordinary Brain2
-data** in `task-store` — so they also show up in Lists, Scheduler, Analytics, etc.
+data** in `task-store` — so they also show up in Lists, Scheduler, Data, etc.
 Templates and the grid live in `lib/module-templates.ts` and
 `components/spreadsheet/SheetGrid.tsx`.
 
 ## Workspace view kinds
+
+_Last mapped: 2026-10-27._
 
 | Kind | Behavior |
 |------|----------|
@@ -156,8 +175,10 @@ Templates and the grid live in `lib/module-templates.ts` and
 | `trip-map` | City-split Leaflet map of stays + wishlist places; multi-list filters (a place can be on several lists); walking/driving/transit distance |
 | `film-dna` | Film DNA Lab: shelves + likes wall, offline Watch ranking (safe/balanced/explore), Letterboxd **export folder** import/blend (`lib/letterboxd-parse.ts` merges watchlist/watched/ratings/diary/`likes/films.csv`) |
 | `house-cleaning` | Tidy house-cleaning app (writes `module.config.houseCleaning`; **projected** into Module Lists as Whole house / area lists): area cards, hierarchical chores with importance/estimates/actuals, per-task timer + focus bar, today’s goal, bulk paste, Needed list, Stuck mode, Bare-minimum / Goal / Exceptional plans |
+| `sweep` | Desktop scan of user caches, user logs, Xcode DerivedData (Archives and iOS DeviceSupport stay listed and unchecked), Trash, and orphan preferences, plus a duplicate finder for Desktop, Documents, Downloads, Pictures, Movies, and Music. Checked scan rows move to the Trash; Trash itself is deleted only after a permanent confirm. One copy of each duplicate stays. The browser build says the scan lives in the desktop app. No lists. |
 | `grad-search` | GradSearch program explorer. Search, filters, live scoring, compare, verify, hide/restore, and card or table views. A **Save** control on every card (and **Saved** in the toolbar) keeps favorites on this device. Programs that have a deadline show it on the card, in the table, and at the top of the detail drawer; an application note shows the same way when the record has one. The header scrolls inside the module pane so it stays under the Brain2 window bar. Catalog is the bundled research dataset. Personal marks use the same `gs-*` localStorage keys as the standalone explorer. |
 | `html` | An **uploaded HTML page** (data tool, lesson, game, anything). See "Uploaded HTML modules" below |
+| `package-app` | A **downloaded package folder** (html, css, js, assets) in a sandboxed frame with the same `window.brain2` bridge as an uploaded page. The folder lives in `lib/module-package-app-store.ts` (`brain2-module-package-app`), not in the one-file HTML store. House cleaning, the trip document, the trip map, Film DNA, and GradSearch stay on their compiled views. An uploaded `.html` file stays the `html` view. |
 | `kanban` | Board grouped into columns by a selection/text attribute (`config.statusAttrId`); columns derived via `isKanbanGroupable` (`components/Lists/list-content/kanban-utils.ts`) |
 | `decision-matrix` | Weighted multi-criteria ranking (MCDA): rows = options (items), columns = criteria (numeric attributes, each with a weight + direction). Computes a normalized weighted score per option, ranks highest-first, and highlights the winner. Scoring core is `lib/decision-matrix.ts` |
 | `timeline` | Day-by-day timeline of dated items (`config.dateAttrId`/`timeAttrId`) with time, cost, and booked/finalized badges — the confirmed-trip companion to `agenda` |
@@ -197,7 +218,7 @@ and persists onto the view. Pure + unit-tested in `lib/decision-matrix.test.ts`.
 
 ### Tidy internals (`house-cleaning`)
 
-_Last mapped: 2026-10-15. Line numbers are approximate. Planned: Home → To Do borrows the plan and focus patterns, but does not import them ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md))._
+_Last mapped: 2026-10-27. Line numbers are approximate. Home → To Do borrows the plan and focus patterns and does not import `TidyView`. That redesign is resolved ([`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md))._
 
 All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleaningState`. `TidyView.tsx` is one component (~189) built from inline closures and styled by the scoped `tidy.css`. Nothing in it is exported for reuse.
 
@@ -236,8 +257,46 @@ All of the model is pure functions in `lib/house-cleaning.ts` over `HouseCleanin
 | **Book Tasting** | Reading List, PDF Shelf | A **matcher** that links each PDF (`file` attribute, extracted text) to its book with confidence + unmatched flags, plus a **quiz** that shows a random snippet and asks you to guess the title; "PDF added with no match → throw" workflow |
 | **Film DNA Lab** | Films (watchlist + likes) | **Film DNA** view (`film-dna`): vibe shelves, likes wall, Watch scatter + ranking, Blend with a friend's CSV, Letterboxd import; plus Films spreadsheet, poster gallery, randomizer, shelf summary. Seeded from Filmrecs catalog; import your own exports to replace |
 | **House Cleaning App** | **Whole house** + nested area lists (Kitchen, Living Room, …) + **Needed** — projected from `houseCleaning` on instantiate / Lists hydrate | **Tidy** (`house-cleaning`): areas, hierarchical tasks, importance + time, per-task timer, Needed, Stuck mode, three-tier plans. State still writes `module.config.houseCleaning`; Module Lists import maps every useful field onto items ([`MODULE_LISTS.md`](../Lists/MODULE_LISTS.md)). Two-way Item storage is still the platform target. |
+| **Sweep** | None | **Sweep** (`sweep`): Scan and Duplicates on one rail. Caches, logs, DerivedData, Trash, orphan preferences, and duplicate files. The scan runs in the Electron app. |
 | **GradSearch** | None — the catalog is the bundled research dataset, not Brain2 items | **Explorer** (`grad-search`): the standalone GradSearch app, shadow-DOM mounted so it looks and behaves the same (search, filters, scoring model, compare, verify, favorites, hide). |
 | **Blank Workspace** | New List | Empty starting point — add your own lists and views |
+
+_Last mapped: 2026-10-27._ Budget and Book Tasting read their lists, attributes, views, and workflows from `lib/packages/golden/budget.json` and `lib/packages/golden/book-tasting.json`. `buildBudget` and `buildBookTasting` still create the sample rows (Book Tasting PDFs include extracted text) and set `templateId` to `budget` or `book-tasting`. `buildModuleTemplate` and `instantiateModuleTemplate` stay the door for those cards. Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written in `lib/module-templates.ts`. A new build reads the JSON. Modules already stored are left as they are.
+
+## Module packages (`lib/module-package.ts`)
+
+_Last mapped: 2026-10-27._
+
+A module package is JSON beside those templates. `parseModulePackage` reads
+`id`, `name`, `version`, `slots` (role, list name, attributes, optional item
+type, `policy: "create"`), `views` (a rendered `ModuleViewKind` plus a slot
+role instead of a list id), optional workflows, and an optional
+`nativeTemplate` id from `MODULE_TEMPLATES`. The parser rejects functions,
+unknown view kinds, a slot with no role, and a `nativeTemplate` that is not a
+current template.
+
+`installModulePackage` installs a new package only. Each slot mints a new list
+stamped `createdByModuleId` and `moduleSlotId`. The new instance stores the
+package id and the role-to-list map on `config.package`. It does not read or
+write `houseCleaning` or `tripItinerary`. When `nativeTemplate` is set, the
+rest of the file is ignored and the install commits `buildModuleTemplate(id)`
+unchanged (no `config.package`, no `moduleSlotId`).
+
+**Install package** in the builder reads a JSON file the user picks. Create-only
+files and `nativeTemplate` files call `installModulePackage` and skip
+`scoreSlot`. The template cards still call `instantiateModuleTemplate`.
+Existing templates remain the live install path for those cards.
+
+A slot with `policy: "bind"` is scored with `scoreSlot` (`lib/module-slot-score.ts`)
+before any install. The install proceeds only when every bind slot's decision
+is `"bind"` (full attribute cover and Jaccard at least 0.75, one list).
+`"ask"`, `"none"`, or a refusal shows the candidate lists and installs nothing.
+The scorer does not write. A matched list stays as it is: no `createdByModuleId`,
+no `moduleSlotId`, no attribute edits. Create slots in that same file still mint
+new lists. `parseModulePackage` itself still accepts only `policy: "create"`;
+the dialog does not hand a bind file to that parser. A committed bind file
+does use `reqString`, `resolveRole`, `resolveViewConfig`, and `makeIds` from
+`lib/module-package.ts`.
 
 ## Building modules from scratch (definitions)
 

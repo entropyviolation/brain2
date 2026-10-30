@@ -1,0 +1,72 @@
+/* Saved foods, apart from the stock lots. Controls stay the dialog's own. */
+
+.trk-food-kitchen .trk-food-library {
+  margin-top: 16px;
+  padding-top: 4px;
+}
+
+.trk-food-kitchen .trk-food-library h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+
+.trk-food-kitchen .trk-food-library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trk-food-kitchen .trk-food-library-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.trk-food-kitchen .trk-food-library-list button[aria-pressed="true"] strong {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.trk-food-kitchen .trk-food-library-edit {
+  margin-top: 4px;
+}
+
+.trk-food-kitchen .trk-food-library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.trk-food-kitchen .trk-food-library-nuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.trk-food-kitchen .trk-food-library-nuts legend {
+  grid-column: 1 / -1;
+  padding: 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 767px) {
+  .trk-food-kitchen .trk-food-library-nuts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

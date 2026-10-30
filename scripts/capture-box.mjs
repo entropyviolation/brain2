@@ -5,23 +5,23 @@
  * Long-polls Telegram and stores every incoming update ENCRYPTED to your public
  * key (`scripts/sealed-box.mjs`). It has no vault and no private key, so nothing
  * it stores can be read on this machine. Your own device pulls the queue,
- * decrypts it, and applies it (`COGS_CAPTURE_BOX_URL` on `npm run phone:hub`).
+ * decrypts it, and applies it (`BRAIN2_CAPTURE_BOX_URL` on `npm run phone:hub`).
  *
  * Needs only Node 20+ and four files: capture-box.mjs, sealed-box.mjs, capture-filter.mjs, capture-upload.mjs. No npm install.
  *
  * Env:
- *   COGS_TELEGRAM_BOT_TOKEN   bot token (the one secret this machine holds)
- *   COGS_CAPTURE_PUBLIC_KEY   from `node scripts/capture-keygen.mjs`
- *   COGS_CAPTURE_TOKEN        bearer token your device sends to pull/ack
- *   COGS_CAPTURE_UPLOAD_TOKEN bearer token the iPhone app sends to POST /upload (add only)
- *   COGS_CAPTURE_CHAT_IDS     REQUIRED, comma list of your chat id(s): other chats are dropped
+ *   BRAIN2_TELEGRAM_BOT_TOKEN   bot token (the one secret this machine holds)
+ *   BRAIN2_CAPTURE_PUBLIC_KEY   from `node scripts/capture-keygen.mjs`
+ *   BRAIN2_CAPTURE_TOKEN        bearer token your device sends to pull/ack
+ *   BRAIN2_CAPTURE_UPLOAD_TOKEN bearer token the iPhone app sends to POST /upload (add only)
+ *   BRAIN2_CAPTURE_CHAT_IDS     REQUIRED, comma list of your chat id(s): other chats are dropped
  *                             (offset still advances). Groups/channels are kept only if listed.
- *   COGS_CAPTURE_ALLOW_ANY_CHAT  set 1 to start with no list (keeps any private chat; loud warning)
- *   COGS_CAPTURE_BIND         listen address, default 0.0.0.0; use the Tailscale 100.x address
- *   COGS_CAPTURE_PORT         default 8788
- *   COGS_CAPTURE_DIR          default ./capture-data
- *   COGS_HEALTHCHECK_URL      healthchecks.io ping URL (alerts you on Telegram if pings stop)
- *   COGS_CAPTURE_MAX_MB       queue cap, default 50
+ *   BRAIN2_CAPTURE_ALLOW_ANY_CHAT  set 1 to start with no list (keeps any private chat; loud warning)
+ *   BRAIN2_CAPTURE_BIND         listen address, default 0.0.0.0; use the Tailscale 100.x address
+ *   BRAIN2_CAPTURE_PORT         default 8788
+ *   BRAIN2_CAPTURE_DIR          default ./capture-data
+ *   BRAIN2_HEALTHCHECK_URL      healthchecks.io ping URL (alerts you on Telegram if pings stop)
+ *   BRAIN2_CAPTURE_MAX_MB       queue cap, default 50
  *
  * Routes: GET /health (open, counts only) · GET /queue?after=N (bearer) · POST /ack {upto} (bearer)
  */
@@ -32,23 +32,28 @@ import path from "node:path"
 import { createUploadRoutes } from "./capture-upload.mjs"
 import { checkConfig, parseChatIds, shouldKeep } from "./capture-filter.mjs"
 import { seal } from "./sealed-box.mjs"
+import { brain2Env } from "../lib/brain2-env.mjs"
 
-const env = (k, d = "") => String(process.env[k] ?? d).trim()
-const BOT = env("COGS_TELEGRAM_BOT_TOKEN")
-const PUB = env("COGS_CAPTURE_PUBLIC_KEY")
-const TOKEN = env("COGS_CAPTURE_TOKEN")
-const PORT = Number(env("COGS_CAPTURE_PORT", "8788"))
-const DIR = path.resolve(env("COGS_CAPTURE_DIR", "capture-data"))
-const PING = env("COGS_HEALTHCHECK_URL").replace(/\/+$/, "")
-const MAX_BYTES = Number(env("COGS_CAPTURE_MAX_MB", "50")) * 1024 * 1024
-const BIND = env("COGS_CAPTURE_BIND", "0.0.0.0")
-const CHATS = parseChatIds(env("COGS_CAPTURE_CHAT_IDS"))
-const ALLOW_ANY = env("COGS_CAPTURE_ALLOW_ANY_CHAT") === "1"
+const env = (suffix, d = "") => {
+  const value = brain2Env(suffix)
+  if (value === undefined || value === "") return String(d)
+  return String(value).trim()
+}
+const BOT = env("TELEGRAM_BOT_TOKEN")
+const PUB = env("CAPTURE_PUBLIC_KEY")
+const TOKEN = env("CAPTURE_TOKEN")
+const PORT = Number(env("CAPTURE_PORT", "8788"))
+const DIR = path.resolve(env("CAPTURE_DIR", "capture-data"))
+const PING = env("HEALTHCHECK_URL").replace(/\/+$/, "")
+const MAX_BYTES = Number(env("CAPTURE_MAX_MB", "50")) * 1024 * 1024
+const BIND = env("CAPTURE_BIND", "0.0.0.0")
+const CHATS = parseChatIds(env("CAPTURE_CHAT_IDS"))
+const ALLOW_ANY = env("CAPTURE_ALLOW_ANY_CHAT") === "1"
 const MAX_UPDATE_BYTES = 256 * 1024
 const ALLOWED = JSON.stringify(["message", "edited_message", "callback_query"])
 
 if (!BOT || !PUB || !TOKEN) {
-  console.error("[capture-box] Set COGS_TELEGRAM_BOT_TOKEN, COGS_CAPTURE_PUBLIC_KEY and COGS_CAPTURE_TOKEN")
+  console.error("[capture-box] Set BRAIN2_TELEGRAM_BOT_TOKEN, BRAIN2_CAPTURE_PUBLIC_KEY and BRAIN2_CAPTURE_TOKEN")
   process.exit(1)
 }
 const config = checkConfig({ chats: CHATS, allowAny: ALLOW_ANY })
@@ -187,7 +192,7 @@ const readBody = (req) =>
     req.on("error", reject)
   })
 
-const uploads = createUploadRoutes({ dir: DIR, uploadToken: env("COGS_CAPTURE_UPLOAD_TOKEN"), pullToken: TOKEN })
+const uploads = createUploadRoutes({ dir: DIR, uploadToken: env("CAPTURE_UPLOAD_TOKEN"), pullToken: TOKEN })
 
 const server = http.createServer(async (req, res) => {
   try {

@@ -39,7 +39,7 @@ never overwrites it
 **Domain modularity is split, not strong.** Three regimes coexist:
 
 1. The **Item graph** — Lists, Docs, Scheduler, search, ingest, implied actions,
-   Analytics. This is the brain, and it is good.
+   Data. This is the brain, and it is good.
 2. **Shadow databases (Wave 10 — shim only)** — Tidy / Trip records live on
    Items; `module.config.houseCleaning` / `tripItinerary` are dual-written for
    one release (session chrome + day meta + unmigrated vaults). A new module
@@ -53,7 +53,7 @@ never overwrites it
 **UI reuse is uneven, and only some of that is a problem.** Lists' Win95 chrome
 and Tidy's overlays *should* differ — that is the gold standard. Habits speaks
 the same milled fascia: `WeekNavigation` is `habit-chrome-btn` keys
-(`components/Home/Habits/week-navigation.tsx` — previous, Today with `is-on`
+(`components/Home/Habits/period/week-navigation.tsx` — previous, Today with `is-on`
 on the current period, the engraved range, next). Raised metal lives in
 `habit-chrome.css` under `.hab95`. [`DESIGN_STYLE.md`](DESIGN_STYLE.md) says
 to protect that chrome. Do not restyle it.
@@ -103,7 +103,7 @@ kinds, workflows — and, as the next platform step, a hand-written manifest
 and bridge grants. That is what makes variety infinite. Splitting
 `TidyView` into more files does not.
 
-The extract list below applies to **Home, Lists, Scheduler, Analytics,
+The extract list below applies to **Home, Lists, Scheduler, Data,
 ItemDetail** — the shared brain UI — not to every module view.
 
 ## What is already excellent
@@ -141,7 +141,7 @@ not — see the deferred list under the sequenced plan.
 | Period as **data** (`useCurrentDate` + `periodAnchorsFromDay`; chrome stays local) | High (partially landed) | `WeekNavigation`, `TodoPeriodNav`, inline chevrons, Tracking/Plan dates | Habits adapts via `habits-period-cursor.ts`; To Do day shares Home day; week/month/season stay lens offsets |
 | `usePaintStroke` (gesture math only, not `PaintGridChrome`) | High | Shared stroke/selection logic | `time-grid.tsx`, `week-grid.tsx` |
 | `confirm()` as a **function**, skinned per surface | Medium | Repeated Dialog + footer | Lists merge confirms, destructive actions |
-| `ItemDetail` density mode (`page` \| `popover`) | Medium | Popup/page chrome delta | `ItemDetailPage`, `ItemDetailPopup` |
+| `ItemDetail` density mode (`page` \| `popover`) | Refused | A shared chrome with the page would merge the three task editors | The popup is an orchestrator plus private `popup/` modules. The page is an orchestrator plus private `page/` modules. A shared density mode is declined. _Last mapped: 2026-10-27._ |
 | `DayAgendaShell` | Low | Date chrome around `AgendaGrid` | Plan day-view + Tracking actual-day-view |
 
 A generic `PeriodNavigator` is explicitly **not** the goal. Habits'
@@ -161,6 +161,9 @@ A shared pill variant would flatten that chrome, which
   the point. Platform (manifests, definitions, templates, view kinds) is the
   reuse. This protects their CSS, not their private data shapes.
 - **All stores into one store** — backup and persist keys assume slices.
+- **Item detail page and popup** into one density mode. The popup is an
+  orchestrator plus private `popup/` modules. The page stays its own shell.
+  The three task editors stay separate. _Last mapped: 2026-10-27._
 
 ## Split candidates
 
@@ -169,13 +172,13 @@ A shared pill variant would flatten that chrome, which
 | `components/Modules/workspace/housecleaning/TidyView.tsx` | Optional local split only — this is a mini-app, not shared chrome |
 | `components/Modules/workspace/itinerary/TripActivitiesView.tsx` | Same: itinerary app interior; keep on the Item/list bus |
 | `lib/house-cleaning.ts` | Should not exist as a second model — migrate to Items ([`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)) |
-| `components/ItemDetail/ItemDetailPopup.tsx` | Data seam is already shared (`useItemDetailDraft`); remaining delta is chrome density |
+| `components/ItemDetail/ItemDetailPopup.tsx` | Done as an orchestrator plus private `popup/` modules. A shared density-mode component with the page is refused: the three task editors stay separate, and the page’s field wiring is not the popup’s. _Last mapped: 2026-10-27._ |
 | `components/spreadsheet/SheetGrid.tsx` | Selection, fill, formula bar, clipboard |
 | `ItineraryDocumentView.tsx` | Doc chrome vs day blocks |
-| `components/ItemDetail/ItemDetailPage.tsx` | Same — one surface with a density mode, not a second mirror |
+| `components/ItemDetail/ItemDetailPage.tsx` | Landed as private `page/` modules. The door stays `EnhancedTaskDetail`. A `page` \| `popover` density mode is declined, because it would merge the two shells. _Last mapped: 2026-10-27._ |
 | `module-view-bodies.tsx` | One file per view kind |
 | `lib/types.ts` | The field problem itself; slice after `Item` is one type |
-| `components/Lists/enhanced-list-view.tsx` | Further orchestrator thinning |
+| `components/Lists/enhanced-list-view.tsx` | Orchestrator thinning is the `board/` extraction in [`modular-splits/enhanced-list-view.md`](modular-splits/enhanced-list-view.md). Not a Modules change |
 
 ## Pattern inconsistencies
 
@@ -188,12 +191,13 @@ A shared pill variant would flatten that chrome, which
 4. **Settings** — global `SettingsDialog` plus Habits / Plan / Pen / Lists /
    Module / Operation settings shells.
 5. **Item detail** — page and popup. The *data* seam is
-   already de-duplicated (`useItemDetailDraft`); what differs is chrome density.
+   already de-duplicated (`useItemDetailDraft`). The popup’s panels are private
+   modules in `popup/`. A shared density-mode component is refused. _Last mapped: 2026-10-27._
 6. **Four “grids”** — paint, agenda, habit spreadsheet, SheetGrid. Only
    time-grid and week-grid share a data model.
 
 `components/ui/` is a thin, documented primitive set. Missing shadcn pieces
-(form, calendar, chart) are intentional; Analytics uses **recharts** directly.
+(form, calendar, chart) are intentional; Data uses **recharts** directly.
 
 ## Sequenced plan
 
@@ -203,9 +207,9 @@ Foundation before paint. Do not batch; after each step update colocated READMEs
 This is the same sequence as [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md)
 "How we get there from here" — steps 1–7 match on purpose. The optional file
 split below is only in this doc. **Data first, chrome last.** The period
-cursor is early because it is shared *data*; the paint hook, `confirm()`, and
-the ItemDetail density mode are late because they are shared *chrome*, and
-harvesting chrome before the manifest exists would freeze today's chrome as
+cursor is early because it is shared *data*; the paint hook and `confirm()`
+are late because they are shared *chrome*. A shared ItemDetail density mode
+is refused. Harvesting chrome before the manifest exists would freeze today's chrome as
 the platform's API. Rung 3 (install wizard), rung 4 (LLM mapping), rung 5
 (share), and the sixth workflow law (CY-10) are **UNBUILT**. They are the
 appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
@@ -258,10 +262,11 @@ appendix in [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md), not the next edit.
    dropping the config record trees remain.
 7. **Then** the small shared verbs, and only these: `usePaintStroke` (gesture
    math shared by the day and week Tracking grids, Tracking's look stays in
-   Tracking), `confirm({ title, body, danger })` as a function skinned per
-   surface, and **ItemDetail** as one surface with
-   `density: "page" | "popover"` since the draft/mutator seam
-   (`useItemDetailDraft`) is already shared. Call sites stay specific — a
+   Tracking) and `confirm({ title, body, danger })` as a function skinned per
+   surface. **ItemDetail** stays two shells. The popup is an orchestrator plus
+   private `popup/` modules. A `density: "page" | "popover"` component is
+   refused, because the three task editors stay separate and the page’s field
+   wiring is not the popup’s. Call sites stay specific — a
    merge-lists confirm is not "Add Todo," and a generic `FormDialog` is how a
    product becomes Settings.exe. This waits on the manifest (rung 2).
 8. **Optional:** split TidyView / TripActivities only if those files hurt the
@@ -293,7 +298,7 @@ any of them.
 - **Selectors**, so a workspace tab does not subscribe to every task.
 - **Do not remount** Tidy (or any mini-app) when switching chrome tabs.
 - Fewer **god-components** re-rendering entire workspaces.
-- One **ItemDetail** with a density mode instead of two drifting surfaces.
+- The popup and the page stay two shells. The page’s sections are private `page/` modules. A density mode that would merge them is refused. _Last mapped: 2026-10-27._
 - Keep **formula.ts** vs **sheet-eval.ts** layered; do not merge engines.
 - Do not add react-hook-form; a generic form layer is not on the path.
 

@@ -5,6 +5,7 @@
  * or as the hierarchy tree (`parent`, root `related`). Archived rows fold.
  * A row opens its sheet (L2.2, merge L2.3). Also: Schematic (L2.4), Rules
  * (L3.5), and Inbox (snapshot export, proposal import, review; L8.1–8.2).
+ * Two chips add the Taxonomy and Lexical packs. A pack already on is left as it is.
  */
 "use client"
 
@@ -15,6 +16,8 @@ import { allRelations } from "@/lib/relation-registry"
 import { buildLattice, LATTICE_ROOT } from "@/lib/graph/relation-lattice"
 import { relationUsage } from "@/lib/graph/relation-usage"
 import type { RelationDef, RelationFamily } from "@/lib/links"
+import { LEXICAL_RELATIONS } from "@/lib/graph/seed-packs/lexical"
+import { TAXONOMY_RELATIONS, addSeedPack, seedPackOn } from "@/lib/graph/seed-packs/taxonomy"
 import { GraphInbox } from "./GraphInbox"
 import { RelationSchematic } from "./RelationSchematic"
 import { RelationSheet } from "./RelationSheet"
@@ -27,8 +30,8 @@ const FAMILY_ORDER: RelationFamily[] = ["family", "friend", "romance", "work", "
 
 export function relationOrigin(def: RelationDef): "built-in" | "seed" | "yours" | "proposed" {
   if (def.origin?.startsWith("model:") || def.origin?.startsWith("import:")) return "proposed"
-  if (def.custom || def.origin === "person") return "yours"
   if (def.origin === "seed") return "seed"
+  if (def.custom || def.origin === "person") return "yours"
   return "built-in"
 }
 
@@ -49,6 +52,8 @@ export function RelationsLibrary() {
 
   const live = defs.filter((d) => !d.archived)
   const archived = defs.filter((d) => d.archived)
+  const taxonomyOn = seedPackOn(TAXONOMY_RELATIONS, relations)
+  const lexicalOn = seedPackOn(LEXICAL_RELATIONS, relations)
 
   const row = (def: RelationDef, depth = 0) => {
     const origin = relationOrigin(def)
@@ -121,6 +126,14 @@ export function RelationsLibrary() {
         <div>
           <p className="an-canvas-title">Relations</p>
           <p className="an-canvas-kicker">{`${live.length} relation${live.length === 1 ? "" : "s"} · ${archived.length} archived`}</p>
+          <div className="an-library-filters" role="group" aria-label="Relation packs">
+            <button type="button" className="an-chip" aria-pressed={taxonomyOn} onClick={() => addSeedPack(TAXONOMY_RELATIONS)}>
+              {taxonomyOn ? "Taxonomy pack already on" : "Add the Taxonomy pack"}
+            </button>
+            <button type="button" className="an-chip" aria-pressed={lexicalOn} onClick={() => addSeedPack(LEXICAL_RELATIONS)}>
+              {lexicalOn ? "Lexical pack already on" : "Add the Lexical pack"}
+            </button>
+          </div>
         </div>
         <div className="an-library-filters" role="group" aria-label="Relation view">
           {(["list", "tree", "schematic", "rules", "inbox"] as const).map((v) => (

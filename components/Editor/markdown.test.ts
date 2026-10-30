@@ -117,6 +117,12 @@ describe("embedSrcForUrl", () => {
 })
 
 describe("applyInlineWrap", () => {
+  it("bold command serializes the selection as strong HTML", () => {
+    const edited = applyInlineWrap("note", 0, 4, "**")
+    expect(edited.text).toBe("**note**")
+    expect(renderMarkdown(edited.text)).toBe("<p><strong>note</strong></p>")
+  })
+
   it("wraps a selection and keeps it selected", () => {
     const r = applyInlineWrap("hello", 0, 5, "**")
     expect(r.text).toBe("**hello**")

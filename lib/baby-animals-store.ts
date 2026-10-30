@@ -67,6 +67,7 @@ import {
   type FriendMissionNote,
 } from "@/lib/friend-mission"
 import { grantFriendReward } from "@/lib/friend-reward"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const BABY_ANIMALS_STORE_KEY = persistKey("baby-animals-store")
 
@@ -731,3 +732,5 @@ export function blockedFriendIds(state: Pick<CompanionSlice, "photos" | "dismiss
   const dismissed = unionDismissedIds(state.dismissedAnimalIds, readDismissedFriendPin())
   return galleryBlockedIds(state.photos, dismissed)
 }
+
+registerPhoneWindowStore(useBabyAnimalsStore)

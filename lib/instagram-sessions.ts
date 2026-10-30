@@ -1,7 +1,7 @@
 /**
  * lib/instagram-sessions.ts — Instagram "Time active" sessions as iPhone Screen Time blocks
  *
- * Analytics → Sources → Instagram → Time active splits every logged action into
+ * Data → Sources → Instagram → Time active splits every logged action into
  * sessions (`time_active` in `analyze.py`). `summary.time_active.sessions_recent`
  * lists the ones inside the view-log window as `[startEpoch, endEpoch, actions]`.
  * Each becomes an interval on iPhone Screen Time, on the `Instagram` app pen,
@@ -12,7 +12,7 @@
  * the ~5 MB localStorage Tracking lives in. Only the recent window is painted.
  * Rows carry a per-session phone-sync stamp (`instagram:<startEpoch>`), so the
  * vault guard never mistakes a stale snapshot for a deletion. Pure except
- * `applyInstagramSessions`.
+ * `applyInstagramSessions`. Chrome history runs share `localMidnightSlices`.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { ensureIphoneAppPen } from "@/lib/ingest/apply-phone-screen"
@@ -22,6 +22,37 @@ import { findIphoneScreenTimeScope, useTimeTrackingStore } from "@/lib/time-trac
 export const INSTAGRAM_SESSION_NOTE = "derived from instagram data"
 export const INSTAGRAM_APP_NAME = "Instagram"
 const MINUTES_PER_DAY = 1440
+const MAX_MIDNIGHT_SLICES = 400
+
+/**
+ * Cut a span at local midnights. A slice closes when `endMs` is at or before
+ * the next local midnight. A leftover second or millisecond rounds that end
+ * minute up. Each slice is at least one minute. Stops at 400 slices.
+ */
+export function localMidnightSlices(
+  startMs: number,
+  endMs: number,
+): { date: string; startMin: number; endMin: number }[] {
+  const first = new Date(startMs)
+  let dayStart = new Date(first.getFullYear(), first.getMonth(), first.getDate())
+  let startMin = first.getHours() * 60 + first.getMinutes()
+  const out: { date: string; startMin: number; endMin: number }[] = []
+  for (let part = 0; part < MAX_MIDNIGHT_SLICES; part++) {
+    const nextDay = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate() + 1)
+    const last = endMs <= nextDay.getTime()
+    let endMin = MINUTES_PER_DAY
+    if (last) {
+      const d = new Date(endMs)
+      endMin = d.getHours() * 60 + d.getMinutes() + (d.getSeconds() || d.getMilliseconds() ? 1 : 0)
+    }
+    endMin = Math.min(MINUTES_PER_DAY, Math.max(startMin + 1, endMin))
+    out.push({ date: formatLocalDateKey(dayStart), startMin, endMin })
+    if (last) break
+    dayStart = nextDay
+    startMin = 0
+  }
+  return out
+}
 
 export interface InstagramSession {
   /** Unix seconds of the first action. */
@@ -62,37 +93,20 @@ function sessionId(start: number, part: number): string {
 export function sessionEntries(session: InstagramSession, scopeId: string, penId: string): TimeEntry[] {
   const startMs = session.start * 1000
   const endMs = (session.end + 60) * 1000
-  const first = new Date(startMs)
-  let dayStart = new Date(first.getFullYear(), first.getMonth(), first.getDate())
-  let startMin = first.getHours() * 60 + first.getMinutes()
   const stamp = instagramSessionStamp(session.start)
   const spanId = `ig-span-${session.start}`
-  const out: TimeEntry[] = []
-  for (let part = 0; part < 400; part++) {
-    const nextDay = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate() + 1)
-    const last = endMs <= nextDay.getTime()
-    let endMin = MINUTES_PER_DAY
-    if (last) {
-      const d = new Date(endMs)
-      endMin = d.getHours() * 60 + d.getMinutes() + (d.getSeconds() || d.getMilliseconds() ? 1 : 0)
-    }
-    endMin = Math.min(MINUTES_PER_DAY, Math.max(startMin + 1, endMin))
-    out.push({
-      id: sessionId(session.start, part),
-      date: formatLocalDateKey(dayStart),
-      scopeId,
-      penId,
-      startMin,
-      endMin,
-      notes: INSTAGRAM_SESSION_NOTE,
-      precision: "estimated",
-      clockCertainty: "estimated",
-      generatedBy: stamp,
-    })
-    if (last) break
-    dayStart = nextDay
-    startMin = 0
-  }
+  const out: TimeEntry[] = localMidnightSlices(startMs, endMs).map((slice, part) => ({
+    id: sessionId(session.start, part),
+    date: slice.date,
+    scopeId,
+    penId,
+    startMin: slice.startMin,
+    endMin: slice.endMin,
+    notes: INSTAGRAM_SESSION_NOTE,
+    precision: "estimated",
+    clockCertainty: "estimated",
+    generatedBy: stamp,
+  }))
   if (out.length > 1) for (const entry of out) entry.spanId = spanId
   return out
 }

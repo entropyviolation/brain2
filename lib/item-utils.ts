@@ -315,6 +315,45 @@ export function withCategoryDefaults(
  * persists state, it does not block edits. Pure (no store reads) so it stays
  * testable; callers pass the current `categories` and `types`.
  */
+export interface ItemRuleMutation {
+  /** Rule name that changed the item. */
+  name: string
+  item: ItemRecord
+}
+
+/**
+ * Same rules as `applyItemRules`, plus each rule whose action actually changed
+ * the item. The store uses the steps to attribute those fields apart from the
+ * caller's edit.
+ */
+export function applyItemRulesTrace(
+  item: ItemRecord,
+  lists: List[],
+  types: ItemTypeDefinition[],
+  trigger: ItemTypeRule["trigger"],
+  previous?: ItemRecord,
+): { item: ItemRecord; mutations: ItemRuleMutation[] } {
+  const memberLists = (item.lists ?? [])
+    .map((id) => lists.find((c) => c.id === id))
+    .filter((c): c is List => !!c)
+  const type = getItemType(types, item.type)
+  const rules = gatherItemRules(type, memberLists, types)
+  if (rules.length === 0) return { item, mutations: [] }
+  const result = applyRules(
+    item as unknown as ItemLike,
+    rules,
+    trigger,
+    previous as unknown as ItemLike | undefined,
+  )
+  return {
+    item: result.item as unknown as ItemRecord,
+    mutations: result.mutations.map((step) => ({
+      name: step.name,
+      item: step.item as unknown as ItemRecord,
+    })),
+  }
+}
+
 export function applyItemRules(
   item: ItemRecord,
   lists: List[],
@@ -322,18 +361,7 @@ export function applyItemRules(
   trigger: ItemTypeRule["trigger"],
   previous?: ItemRecord,
 ): ItemRecord {
-  const memberLists = (item.lists ?? [])
-    .map((id) => lists.find((c) => c.id === id))
-    .filter((c): c is List => !!c)
-  const type = getItemType(types, item.type)
-  const rules = gatherItemRules(type, memberLists, types)
-  if (rules.length === 0) return item
-  return applyRules(
-    item as unknown as ItemLike,
-    rules,
-    trigger,
-    previous as unknown as ItemLike | undefined,
-  ).item as unknown as ItemRecord
+  return applyItemRulesTrace(item, lists, types, trigger, previous).item
 }
 
 /**

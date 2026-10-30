@@ -14,10 +14,10 @@
  * at the time the caller passes, with the line kept whole.
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
-import { recordCountForKeyword } from "@/lib/count-statuses"
+import { recordCountForKeyword, useCountStatusesStore } from "@/lib/count-statuses"
 import { formatLogKeywordList, isLogKeywordListQuery } from "@/lib/log-keywords"
 import { savedLogKeywordPhrases } from "@/lib/log-keywords-store"
-import { eventKindSlug, type IntakeClass, type TimeEntry } from "@/lib/time-entries"
+import { eventKindSlug, type IntakeClass, type LogSource, type TimeEntry } from "@/lib/time-entries"
 import { appendTrackingInstants, PEN_PALETTE, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { minutesPastMidnight } from "./times"
 import {
@@ -99,6 +99,7 @@ export function applyDiscreteLog(
   )
     const placeId = pairLocation(parsed, parsed.start)
     if (id) mirrorTrackingEntry(id, "log")
+    tallySavedKeyword(parsed.title, parsed.end, phrases, parsed.clockCertainty)
     return {
       status: "ok",
       kind: "event-log",
@@ -116,9 +117,12 @@ export function applyDiscreteLog(
     ACTIVITY,
     logMeta(parsed.title, parsed.clockCertainty),
   )
+  if (!id) {
+    return { status: "error", kind: "event-log", reply: "Could not save that log note." }
+  }
   const placeId = pairLocation(parsed, parsed.at)
   tallySavedKeyword(parsed.title, parsed.at, phrases, parsed.clockCertainty)
-  if (id) mirrorTrackingEntry(id, "log")
+  mirrorTrackingEntry(id, "log")
   return {
     status: "ok",
     kind: "event-log",
@@ -189,6 +193,7 @@ export function applyTransferredLogLines(
       title: item.title,
       notes: eventNotes(undefined, item.at),
       generatedBy: { kind: "text", id: date },
+      logSource: "inbox-transfer",
       ...(eventKind ? { eventKind } : {}),
     }
   })
@@ -212,7 +217,12 @@ function tallySavedKeyword(
   clockCertainty?: NoteClockCertainty,
 ): void {
   const key = title.trim().toLowerCase()
-  if (!key || !phrases.some((phrase) => phrase.trim().toLowerCase() === key)) return
+  if (!key) return
+  const listed = phrases.some((phrase) => phrase.trim().toLowerCase() === key)
+  const bound = useCountStatusesStore
+    .getState()
+    .counts.some((count) => count.keyword && count.keyword.trim().toLowerCase() === key)
+  if (!listed && !bound) return
   recordCountForKeyword(title, {
     date: formatLocalDateKey(at),
     startMin: minutesPastMidnight(at),
@@ -619,6 +629,7 @@ function paintPairedLocationInstant(
   if (!created) return undefined
   useTimeTrackingStore.getState().updateEntry(created.id, {
     generatedBy: { kind: "text", id: date },
+    logSource: "bim",
     ...(clockCertainty ? { clockCertainty } : {}),
   })
   return created.id
@@ -647,6 +658,7 @@ interface EntryMeta {
   eventKind?: string
   intakeClass?: IntakeClass
   clockCertainty?: NoteClockCertainty
+  logSource?: LogSource
 }
 
 function logMeta(phrase: string, clockCertainty?: NoteClockCertainty): EntryMeta {
@@ -655,6 +667,55 @@ function logMeta(phrase: string, clockCertainty?: NoteClockCertainty): EntryMeta
     ...(eventKind ? { eventKind } : {}),
     ...(clockCertainty ? { clockCertainty } : {}),
   }
+}
+
+export type FeedLogShelf = "event" | "food" | "drink" | "drug" | "thought"
+
+function shelfFields(shelf: FeedLogShelf, title: string): { eventKind: string; intakeClass?: IntakeClass } {
+  if (shelf === "food" || shelf === "drink" || shelf === "drug") {
+    return { eventKind: `intake.${shelf}`, intakeClass: shelf }
+  }
+  if (shelf === "thought") return { eventKind: THOUGHT_PROCESS_KIND }
+  return { eventKind: eventKindSlug(title) || "event" }
+}
+
+/**
+ * File one text onto a Tracking log shelf at `at`.
+ * An existing entry is reclassified in place. A missing id paints a new instant.
+ * Returns the entry id, or undefined when the write did not land.
+ */
+export function fileTextAsShelf(input: {
+  title: string
+  at: Date
+  shelf: FeedLogShelf
+  entryId?: string
+}): string | undefined {
+  const title = input.title.trim()
+  if (!title || Number.isNaN(input.at.getTime())) return undefined
+  const fields = shelfFields(input.shelf, title)
+  const existing = input.entryId
+    ? useTimeTrackingStore.getState().entries.find((entry) => entry.id === input.entryId)
+    : undefined
+  if (existing) {
+    useTimeTrackingStore.getState().updateEntry(existing.id, {
+      title,
+      eventKind: fields.eventKind,
+      intakeClass: fields.intakeClass,
+    })
+    if (input.shelf === "thought") mirrorTrackingEntry(existing.id, "thought-process")
+    else if (input.shelf === "event") mirrorTrackingEntry(existing.id, "log")
+    return existing.id
+  }
+  const pen = input.shelf === "food" || input.shelf === "drink" || input.shelf === "drug" ? "Intake" : DEFAULT_PEN
+  const id = paintInstant(title, input.at, input.shelf === "thought" ? "thought-process" : "event-log", pen, undefined, ACTIVITY, {
+    eventKind: fields.eventKind,
+    ...(fields.intakeClass ? { intakeClass: fields.intakeClass } : {}),
+    logSource: "telegram-feed",
+  })
+  if (!id) return undefined
+  if (input.shelf === "thought") mirrorTrackingEntry(id, "thought-process")
+  else if (input.shelf === "event") mirrorTrackingEntry(id, "log")
+  return id
 }
 
 function intakeMeta(intakeClass: IntakeClass | undefined, clockCertainty?: NoteClockCertainty): EntryMeta {
@@ -749,10 +810,35 @@ function paintEntry(
         (wantInstant ? e.kind === "instant" : e.kind !== "instant"),
     )
     .sort((a, b) => b.id.localeCompare(a.id))[0]
-  if (!just) return undefined
+  if (!just) {
+    // paintMinutes can no-op while a restore is settling, and a late rehydrate
+    // can drop the row before this read. Put the same instant back once.
+    const fallback: TimeEntry = {
+      id: `te-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      date,
+      scopeId,
+      penId,
+      startMin,
+      endMin,
+      ...(kind ? { kind } : {}),
+      title,
+      notes,
+      ...(endDate ? { endDate } : {}),
+      generatedBy: { kind: "text", id: date },
+      logSource: meta?.logSource ?? "bim",
+      ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
+      ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
+      ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),
+      ...(precision ? { precision } : {}),
+    }
+    appendTrackingInstants([fallback])
+    if (!useTimeTrackingStore.getState().entries.some((entry) => entry.id === fallback.id)) return undefined
+    return fallback.id
+  }
   useTimeTrackingStore.getState().updateEntry(just.id, {
     notes,
     generatedBy: { kind: "text", id: date },
+    logSource: meta?.logSource ?? "bim",
     ...(meta?.eventKind ? { eventKind: meta.eventKind } : {}),
     ...(meta?.intakeClass ? { intakeClass: meta.intakeClass } : {}),
     ...(meta?.clockCertainty ? { clockCertainty: meta.clockCertainty } : {}),

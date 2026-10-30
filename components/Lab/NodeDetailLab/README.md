@@ -1,13 +1,18 @@
 # Node detail lab
 
-_Last mapped: 2026-10-20_
+_Last mapped: 2026-10-28_
 
-Four design studies for the task card's right bar (`components/Home/ToDo/TaskCardSide.tsx`).
+On a phone (`max-width: 767px`) the tree stacks above the stage, the frame fits the width, and fields are 16px. Desktop is unchanged.
+
+Four design studies for the task card's right bar (`components/Home/ToDo/task-card/TaskCardSide.tsx`).
 Route: `/lab/node-detail/` (`app/lab/node-detail/page.tsx`). Nothing in the app links here or imports this folder.
 In the Electron app, open it from the dev tools console: `location.href = "/lab/node-detail/"`.
 
 ## How it is wired
 
+_Last mapped: 2026-10-27_
+
+- Silkscreen and DotGothic16 load with this bench (`lib/fonts/home-pixel-faces.ts`), on `.lab` and on `<html>`. The arcade cabinet body is Karla.
 - `lab-store.ts` copies `useTaskStore` (tasks, lists, folders) into its own zustand store.
   - **Sandbox** (default): writes stay in the copy. While the copy is untouched, it follows the real store live.
   - **Live**: writes go through the real `updateTask` / `addTask`. It asks first.

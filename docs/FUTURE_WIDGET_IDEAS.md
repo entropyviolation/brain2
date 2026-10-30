@@ -71,7 +71,7 @@ CRT: today’s accrued regret, same glass as Today’s Points, darker phosphor. 
 
 ### 9. Overcommit needle
 
-CRT: analog needle from reconstructed day-pushes + logged minutes. Footer: one sentence (`load rising · n=14`). Does not reschedule. Click → Analytics Overcommit.
+CRT: analog needle from reconstructed day-pushes + logged minutes. Footer: one sentence (`load rising · n=14`). Does not reschedule. Click → Data Overcommit.
 
 ### 10. Calibration compass
 
@@ -99,7 +99,7 @@ Finer than Tracking now: current Location pen + duration. Not a map.
 
 ### 15. Switch geiger
 
-CRT: today’s context-switch count. Footer: `peak 10–11a`. Click → Analytics.
+CRT: today’s context-switch count. Footer: `peak 10–11a`. Click → Data.
 
 ### 16. Screen hourglass
 
@@ -217,7 +217,7 @@ Consciousness of abstracting as a well. GS-1 puts an order on every derived valu
 
 CRT: share of today’s claims that actually have evidence (`n / possible`). Footer: `61% of tasks had no estimate`.
 
-Non-allness: no map represents all of its territory. Analytics sentences should already carry coverage; this square is the day’s etc. — what the map refuses to pretend it knows.
+Non-allness: no map represents all of its territory. Data sentences should already carry coverage; this square is the day’s etc. — what the map refuses to pretend it knows.
 
 ### 36. Delay well
 

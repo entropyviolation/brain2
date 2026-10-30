@@ -39,6 +39,10 @@ export const SOURCE_ATTR = {
   trust: "trust",
   factCheckLevel: "factCheckLevel",
   tags: "tags",
+  wikidata: "wikidata",
+  orcid: "orcid",
+  isbn: "isbn",
+  url: "url",
 } as const
 
 /** Attribute ids for the Belief type. */
@@ -71,7 +75,37 @@ const SOURCE_ATTRIBUTES: AttributeDefinition[] = [
   { id: SOURCE_ATTR.trust, name: "Trust", type: "number", allowFloat: true },
   { id: SOURCE_ATTR.factCheckLevel, name: "Fact-Check Level", type: "number" },
   { id: SOURCE_ATTR.tags, name: "Tags", type: "multistring" },
+  { id: SOURCE_ATTR.wikidata, name: "Wikidata", type: "string" },
+  { id: SOURCE_ATTR.orcid, name: "ORCID", type: "string" },
+  { id: SOURCE_ATTR.isbn, name: "ISBN", type: "string" },
+  { id: SOURCE_ATTR.url, name: "URL", type: "string" },
 ]
+
+const SOURCE_IDENTIFIER_ATTRIBUTES: AttributeDefinition[] = [
+  { id: SOURCE_ATTR.wikidata, name: "Wikidata", type: "string" },
+  { id: SOURCE_ATTR.orcid, name: "ORCID", type: "string" },
+  { id: SOURCE_ATTR.isbn, name: "ISBN", type: "string" },
+  { id: SOURCE_ATTR.url, name: "URL", type: "string" },
+]
+
+/** Add identifier fields onto a Source type the vault already saved. Other types stay as they are. */
+export function withSourceIdentifierAttributes(types: ItemTypeDefinition[]): ItemTypeDefinition[] {
+  let changed = false
+  const next = types.map((type) => {
+    if (type.id !== SOURCE_TYPE_ID) return type
+    const have = new Set((type.attributes ?? []).map((attribute) => attribute.id))
+    const missing = SOURCE_IDENTIFIER_ATTRIBUTES.filter((attribute) => !have.has(attribute.id))
+    if (!missing.length) return type
+    changed = true
+    const displayed = new Set(type.displayedAttributes ?? [])
+    return {
+      ...type,
+      attributes: [...(type.attributes ?? []), ...missing],
+      displayedAttributes: [...(type.displayedAttributes ?? []), ...missing.map((attribute) => attribute.id).filter((id) => !displayed.has(id))],
+    }
+  })
+  return changed ? next : types
+}
 
 const BELIEF_ATTRIBUTES: AttributeDefinition[] = [
   { id: BELIEF_ATTR.statement, name: "Statement", type: "string" },
@@ -107,6 +141,10 @@ export function getSourceTypeDefinition(): ItemTypeDefinition {
       SOURCE_ATTR.trust,
       SOURCE_ATTR.origin,
       SOURCE_ATTR.summaryShort,
+      SOURCE_ATTR.wikidata,
+      SOURCE_ATTR.orcid,
+      SOURCE_ATTR.isbn,
+      SOURCE_ATTR.url,
     ],
     detailPanels: ["details", "dependencies"],
     capabilities: { completable: false },
@@ -184,5 +222,6 @@ export const SECOND_BRAIN_TYPE_IDS = [SOURCE_TYPE_ID, BELIEF_TYPE_ID] as const
 export function withSecondBrainTypes(existing: ItemTypeDefinition[]): ItemTypeDefinition[] {
   const present = new Set(existing.map((t) => t.id))
   const additions = getSecondBrainTypeDefinitions().filter((t) => !present.has(t.id))
-  return additions.length ? [...existing, ...additions] : existing
+  const next = additions.length ? [...existing, ...additions] : existing
+  return withSourceIdentifierAttributes(next)
 }

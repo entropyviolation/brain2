@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en" data-pcb-mode="mint" data-pcb-ink="dark" style="--pcb-desk:#c5ddd4">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 Goals — UI Lab</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/app/pcb-backdrop.css">
+<link rel="stylesheet" href="/components/Home/Goals/goals-chrome.css">
+<style>
+  body.win95-app {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    body.win95-app { grid-template-columns: 1fr; }
+  }
+  .bench {
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow: auto;
+    box-sizing: border-box;
+    margin: 10px;
+    padding: 10px;
+    background: var(--chrome-face, #c0c0c0);
+    color: #161410;
+    box-shadow: var(--w95-raised, inset -1px -1px #0a0a0a, inset 1px 1px #fff);
+  }
+  .bench h1 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lab-sections { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+  .lab-sections a {
+    color: #161410;
+    font-size: 10px;
+    text-decoration: none;
+    padding: 2px 5px;
+    background: var(--chrome-mid, #dfdfdf);
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+  }
+  .lab-sections a[aria-current="page"] { background: #070c0a; color: #7dffc4; }
+  .bench fieldset {
+    margin: 0 0 8px;
+    padding: 6px 8px 8px;
+    border: 1px solid var(--chrome-lo, #808080);
+  }
+  .bench legend { padding: 0 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .bench label {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr auto;
+    gap: 6px;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 11px;
+  }
+  .bench select, .bench input[type="range"] { width: 100%; min-width: 0; }
+  .bench output { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; font-size: 11px; }
+  .bench p { margin: 0 0 8px; font-size: 11px; }
+  .stage-wrap {
+    min-width: 0;
+    max-height: 100vh;
+    overflow: auto;
+    padding: 10px 12px 24px;
+  }
+  #stage { min-width: 0; }
+
+  #stage[data-face="tahoma"] .gol95,
+  #stage[data-face="tahoma"] .gol95 :is(button, [role="tab"], h2, h3, h4) {
+    font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif;
+  }
+  #stage[data-face="georgia"] .gol95,
+  #stage[data-face="georgia"] .gol95 :is(button, [role="tab"], h2, h3, h4) {
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.01em;
+  }
+  #stage[data-face="mono"] .gol95,
+  #stage[data-face="mono"] .gol95 :is(button, [role="tab"], h2, h3, h4) {
+    font-family: "Courier New", Courier, monospace;
+    letter-spacing: 0;
+  }
+  #stage[data-face="system"] .gol95,
+  #stage[data-face="system"] .gol95 :is(button, [role="tab"], h2, h3, h4) {
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0;
+  }
+
+  #stage[data-scale] .gol95 .gol-mark h2 { font-size: calc(16px * var(--lab-scale)); }
+  #stage[data-scale] .gol95 .gol-mark-note,
+  #stage[data-scale] .gol95 .gol-btn,
+  #stage[data-scale] .gol95 .gol-legend,
+  #stage[data-scale] .gol95 .gol-status,
+  #stage[data-scale] .gol95 .gol-collapse,
+  #stage[data-scale] .gol95 .gol-tabs [role="tab"],
+  #stage[data-scale] .gol95 .gol-goal-count,
+  #stage[data-scale] .gol95 .gol-ok,
+  #stage[data-scale] .gol95 .gol-dir-date { font-size: calc(11px * var(--lab-scale)); }
+  #stage[data-scale] .gol95 .gol-section.is-objectives .gol-legend-plate,
+  #stage[data-scale] .gol95 .gol-dir-copy strong { font-size: calc(12px * var(--lab-scale)); }
+  #stage[data-scale] .gol95 .gol-btn.is-stepper { font-size: calc(14px * var(--lab-scale)); }
+  #stage[data-scale] .gol95 .gol-hint,
+  #stage[data-scale] .gol95 .gol-cap,
+  #stage[data-scale] .gol95 .gol-meta,
+  #stage[data-scale] .gol95 .gol-chip,
+  #stage[data-scale] .gol95 .gol-index .gol-btn,
+  #stage[data-scale] .gol95 .gol-goal-no,
+  #stage[data-scale] .gol95 .gol-dir-kicker,
+  #stage[data-scale] .gol95 .gol-dir-sub,
+  #stage[data-scale] .gol95 .gol-dir-key { font-size: calc(10px * var(--lab-scale)); }
+  #stage[data-scale] .gol95 .gol-dir-crt { font-size: calc(20px * var(--lab-scale)); }
+
+  #stage[data-density] .gol95 .gol-body {
+    gap: calc(8px * var(--lab-dense));
+    padding: calc(8px * var(--lab-dense));
+  }
+  #stage[data-density] .gol95 .gol-fascia {
+    gap: calc(12px * var(--lab-dense));
+    padding: calc(10px * var(--lab-dense));
+  }
+  #stage[data-density] .gol95 .gol-section {
+    padding: calc(12px * var(--lab-dense)) calc(10px * var(--lab-dense)) calc(10px * var(--lab-dense));
+  }
+  #stage[data-density] .gol95 .gol-section-head { margin-bottom: calc(6px * var(--lab-dense)); }
+  #stage[data-density] .gol95 .gol-row {
+    gap: calc(8px * var(--lab-dense));
+    padding: calc(6px * var(--lab-dense)) calc(8px * var(--lab-dense));
+  }
+  #stage[data-density] .gol95 .gol-goals { gap: calc(6px * var(--lab-dense)); }
+  #stage[data-density] .gol95 .gol-goal > * { padding: calc(8px * var(--lab-dense)) calc(10px * var(--lab-dense)); }
+
+  #stage[data-layout="split"] .gol95 .gol-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  #stage[data-layout="split"] .gol95 .gol-section.is-direction { grid-column: 1 / -1; }
+  #stage[data-layout="compact"] .gol95 .gol-window { min-height: 0; height: auto; }
+  #stage[data-layout="compact"] .gol95 .gol-list { max-height: 16rem; }
+  #stage[data-layout="compact"] .gol95 .gol-desk-plate { min-height: 36vh; }
+  #stage[data-layout="compact"] .gol95 .gol-desk-plate img { height: min(42vh, 480px); }
+
+  #stage[data-palette="warm"] .gol95 {
+    --chrome-face: #c8bfb2;
+    --chrome-mid: #e4dcd0;
+    --chrome-sheen: #ddd4c6;
+    --chrome-shade: #a39888;
+    --chrome-mill-hi: #e2d8cc;
+    --chrome-mill-soft: #c8bdb0;
+    --chrome-stone: #b0a496;
+    --chrome-nickel: #c0b4a6;
+    --chrome-mist-2: #efe8de;
+    --chrome-key-sheen: #f3eee6;
+    --chrome-key-mid: #ddd6cc;
+    --chrome-inset: #b8aea2;
+    --chrome-slate: #8d8680;
+    --g-surface: #c8bfb2;
+    --g-face: #e4dcd0;
+    --g-crt: #9dff7a;
+  }
+  #stage[data-palette="cool"] .gol95 {
+    --chrome-face: #b7c3cc;
+    --chrome-mid: #d5e0e6;
+    --chrome-sheen: #c9d6de;
+    --chrome-shade: #8ea0ab;
+    --chrome-mill-hi: #d0dce4;
+    --chrome-mill-soft: #b7c6d0;
+    --chrome-stone: #9aadb8;
+    --chrome-nickel: #a9bcc6;
+    --chrome-mist-2: #e4eef3;
+    --chrome-key-sheen: #eef4f7;
+    --chrome-key-mid: #d0dde4;
+    --chrome-inset: #a8b8c2;
+    --chrome-slate: #7d8e99;
+    --g-surface: #b7c3cc;
+    --g-face: #d5e0e6;
+    --g-crt: #7dffe0;
+  }
+  #stage[data-palette="lamp"] .gol95 {
+    --g-crt: #5dffb0;
+  }
+</style>
+</head>
+<body class="win95-app">
+<aside class="bench">
+  <nav class="lab-sections" aria-label="UI labs">
+    <a href="index.html">Index</a>
+    <a href="shell.html">Shell</a>
+    <a href="home.html">Home</a>
+    <a href="goals.html" aria-current="page">Goals</a>
+    <a href="lists.html">Lists</a>
+    <a href="docs.html">Docs</a>
+    <a href="scheduler.html">Scheduler</a>
+    <a href="operations.html">Operations</a>
+    <a href="modules.html">Modules</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="settings.html">Settings</a>
+  </nav>
+  <h1>Goals desk</h1>
+  <p>House settings leave the desk on the app CSS. Reset clears every override.</p>
+  <fieldset>
+    <legend>Type</legend>
+    <label>Face
+      <select id="face">
+        <option value="house" selected>House</option>
+        <option value="tahoma">Tahoma</option>
+        <option value="georgia">Georgia</option>
+        <option value="mono">Courier</option>
+        <option value="system">System</option>
+      </select>
+      <output id="face-out">House</output>
+    </label>
+    <label>Scale
+      <input id="scale" type="range" min="80" max="130" value="100" step="1">
+      <output id="scale-out">1.00</output>
+    </label>
+  </fieldset>
+  <fieldset>
+    <legend>Measure</legend>
+    <label>Density
+      <input id="density" type="range" min="75" max="135" value="100" step="1">
+      <output id="density-out">1.00</output>
+    </label>
+    <label>Radius
+      <input id="radius" type="range" min="0" max="12" value="2" step="1">
+      <output id="radius-out">2px</output>
+    </label>
+  </fieldset>
+  <fieldset>
+    <legend>Arrangement</legend>
+    <label>Layout
+      <select id="layout">
+        <option value="desk" selected>Desk</option>
+        <option value="split">Split</option>
+        <option value="compact">Compact</option>
+      </select>
+      <output id="layout-out">Desk</output>
+    </label>
+    <label>Palette
+      <select id="palette">
+        <option value="house" selected>House</option>
+        <option value="warm">Warm nickel</option>
+        <option value="cool">Cool steel</option>
+        <option value="lamp">Lamp green</option>
+      </select>
+      <output id="palette-out">House</output>
+    </label>
+  </fieldset>
+  <button type="button" id="reset">Reset</button>
+</aside>
+
+<div class="stage-wrap">
+  <div id="stage">
+    <div class="gol95" data-ui-name="Goals" data-ui-help="Objectives to prioritize, measurable goals, and a direction report." data-ui-docs="components/Home/Goals/README.md">
+      <div class="gol-window">
+        <div class="gol-fascia">
+          <span class="gol-fascia-sky" aria-hidden="true"></span>
+          <svg class="gol-fascia-rose" id="gol-rose" viewBox="-100 -100 200 200" aria-hidden="true" focusable="false"></svg>
+          <div class="gol-mark">
+            <img src="/orbs-removebackground/65f0bee7629bcce3a7002e0c3eb46996.png" alt="" class="gol-title-orb">
+            <h2>Objectives &amp; Goals</h2>
+          </div>
+          <p class="gol-mark-note">Directions, then the numbers that move them.</p>
+        </div>
+
+        <div class="gol-body">
+          <div class="gol-section is-objectives">
+            <div class="gol-section-head">
+              <div>
+                <h3 class="gol-legend gol-legend-plate">Objectives</h3>
+                <p class="gol-hint">Your all-time directions. Prioritize a few per period to multiply points.</p>
+              </div>
+              <button data-no95 type="button" class="gol-btn">Add Objective</button>
+            </div>
+            <div class="gol-section-head">
+              <div class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground gol-tabs" role="tablist" aria-label="Period">
+                <button type="button" role="tab" data-state="inactive" aria-selected="false" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Day</button>
+                <button type="button" role="tab" data-state="active" aria-selected="true" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Week</button>
+                <button type="button" role="tab" data-state="inactive" aria-selected="false" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Month</button>
+                <button type="button" role="tab" data-state="inactive" aria-selected="false" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Season</button>
+                <button type="button" role="tab" data-state="inactive" aria-selected="false" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Year</button>
+                <button type="button" role="tab" data-state="inactive" aria-selected="false" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">All</button>
+              </div>
+              <span class="gol-cap">2/3 this week</span>
+            </div>
+            <h4 class="gol-legend">Prioritized · Week</h4>
+            <div class="gol-list">
+              <div class="gol-row is-prio">
+                <button data-no95 type="button" class="gol-row-name">Read a lot</button>
+                <div class="gol-chips"><span class="gol-chip is-gold">Week ×2</span></div>
+                <button data-no95 type="button" class="gol-btn is-star is-on" title="Remove priority">★</button>
+              </div>
+              <div class="gol-row is-prio">
+                <button data-no95 type="button" class="gol-row-name">Be healthy</button>
+                <div class="gol-chips"><span class="gol-chip is-gold">Week ×2</span></div>
+                <button data-no95 type="button" class="gol-btn is-star is-on" title="Remove priority">★</button>
+              </div>
+            </div>
+            <button type="button" class="gol-collapse" data-no95 aria-expanded="true">
+              <span aria-hidden="true">▾</span>
+              <span>All objectives</span>
+              <span class="gol-cap">(2)</span>
+            </button>
+            <div class="gol-list" data-state="open">
+              <div class="gol-row is-prio">
+                <button type="button" data-no95 class="gol-btn is-star is-on" title="Prioritize for this week">★</button>
+                <button type="button" data-no95 class="gol-row-name">Read a lot</button>
+                <div class="gol-chips"><span class="gol-chip is-gold">Week ×2</span></div>
+                <span class="gol-meta">1 goal</span>
+              </div>
+              <div class="gol-row is-prio">
+                <button type="button" data-no95 class="gol-btn is-star is-on" title="Prioritize for this week">★</button>
+                <button type="button" data-no95 class="gol-row-name">Be healthy</button>
+                <div class="gol-chips"><span class="gol-chip is-gold">Week ×2</span></div>
+                <span class="gol-meta">1 goal</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="gol-section">
+            <div class="gol-section-head">
+              <div>
+                <h3 class="gol-legend">Goals</h3>
+                <p class="gol-hint">Quantifiable metrics that move your objectives forward.</p>
+              </div>
+              <button data-no95 type="button" class="gol-btn">Add Goal</button>
+            </div>
+            <div class="gol-tabs gol-index">
+              <button data-no95 type="button" class="gol-btn" aria-pressed="true">All</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Day</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Week</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Month</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Season</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Year</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Custom range</button>
+              <button data-no95 type="button" class="gol-btn" aria-pressed="false">Aspirational</button>
+            </div>
+            <div class="gol-goals">
+              <div class="gol-goal">
+                <span class="gol-goal-no" aria-hidden="true">01</span>
+                <div class="gol-goal-main">
+                  <div class="gol-row-name" style="display:block">Read 20 books this year</div>
+                  <div class="gol-meta">Year</div>
+                  <div class="gol-chips" style="justify-content:flex-start;margin-top:4px"><span class="gol-chip">Read a lot</span></div>
+                </div>
+                <div class="gol-goal-gauge">
+                  <div class="gol-meta gol-goal-count">8 / 20 books</div>
+                  <div class="gol-pips" aria-hidden="true">
+                    <span class="gol-pip is-on"></span><span class="gol-pip is-on"></span><span class="gol-pip is-on"></span><span class="gol-pip is-on is-lead"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span>
+                  </div>
+                </div>
+                <div class="gol-actions">
+                  <button data-no95 type="button" class="gol-btn is-quiet">Edit</button>
+                  <button data-no95 type="button" class="gol-btn is-stepper">-1</button>
+                  <button data-no95 type="button" class="gol-btn is-stepper">+1</button>
+                  <button data-no95 type="button" class="gol-btn is-quiet" title="Record a completed action + earn objective points">Log</button>
+                </div>
+              </div>
+              <div class="gol-goal">
+                <span class="gol-goal-no" aria-hidden="true">02</span>
+                <div class="gol-goal-main">
+                  <div class="gol-row-name" style="display:block">Surf once a week</div>
+                  <div class="gol-meta">Week</div>
+                  <div class="gol-chips" style="justify-content:flex-start;margin-top:4px"><span class="gol-chip">Be healthy</span></div>
+                </div>
+                <div class="gol-goal-gauge">
+                  <div class="gol-meta gol-goal-count">0 / 1</div>
+                  <div class="gol-pips" aria-hidden="true">
+                    <span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span><span class="gol-pip"></span>
+                  </div>
+                </div>
+                <div class="gol-actions">
+                  <button data-no95 type="button" class="gol-btn is-quiet">Edit</button>
+                  <button data-no95 type="button" class="gol-btn is-stepper">-1</button>
+                  <button data-no95 type="button" class="gol-btn is-stepper">+1</button>
+                  <button data-no95 type="button" class="gol-btn is-quiet" title="Record a completed action + earn objective points">Log</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gol-section is-direction">
+            <div class="gol-section-head">
+              <div>
+                <h3 class="gol-legend">Direction in Life</h3>
+                <p class="gol-hint">Did the last 30 days move your goals forward? Recomputed from your task links.</p>
+              </div>
+            </div>
+            <div class="gol-dir-console">
+              <div class="gol-dir-readout">
+                <div class="gol-dir-dial">
+                  <svg class="gol-dial-svg" viewBox="-60 -60 120 120" aria-hidden="true" focusable="false">
+                    <circle r="56" class="gol-dial-rim"></circle>
+                    <circle r="47" class="gol-dial-track"></circle>
+                    <circle r="47" class="gol-dial-arc" pathLength="100" stroke-dasharray="67 100" transform="rotate(-90)"></circle>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(0)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(7.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(14.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(21.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(28.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(36)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(43.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(50.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(57.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(64.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(72)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(79.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(86.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(93.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(100.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(108)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(115.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(122.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(129.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(136.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(144)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(151.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(158.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(165.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(172.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(180)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(187.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(194.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(201.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(208.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(216)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(223.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(230.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(237.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(244.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(252)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(259.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(266.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(273.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(280.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(288)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(295.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(302.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(309.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(316.8)"></line>
+                    <line class="gol-dial-tick is-major" x1="0" y1="-56" x2="0" y2="-51" transform="rotate(324)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(331.2)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(338.4)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(345.6)"></line>
+                    <line class="gol-dial-tick" x1="0" y1="-54" x2="0" y2="-51" transform="rotate(352.8)"></line>
+                    <circle r="38" class="gol-dial-inner"></circle>
+                    <g transform="rotate(241.2) translate(0 -47)">
+                      <path class="gol-dial-star" d="M0 -6 L1.3 -1.3 L6 0 L1.3 1.3 L0 6 L-1.3 1.3 L-6 0 L-1.3 -1.3 Z"></path>
+                    </g>
+                  </svg>
+                  <div class="gol-dir-crt" aria-label="Coverage">67%</div>
+                </div>
+                <div class="gol-dir-copy">
+                  <span class="gol-dir-kicker">Coverage · last 30 days</span>
+                  <strong>8/12 active days served a goal</strong>
+                  <span class="gol-dir-sub">4 drift · 1 neglected</span>
+                </div>
+              </div>
+              <div class="gol-dir-tape" role="img" aria-label="Last 30 days: served, drift, or idle">
+                <div class="gol-day" title="2026-09-27: 0/0 served"></div>
+                <div class="gol-day" title="2026-09-28: 0/0 served"></div>
+                <div class="gol-day" title="2026-09-29: 0/0 served"></div>
+                <div class="gol-day" title="2026-09-30: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-01: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-02: 0/0 served"></div>
+                <div class="gol-day is-served" title="2026-10-03: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-04: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-05: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-06: 1/1 served"></div>
+                <div class="gol-day" title="2026-10-07: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-08: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-09: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-10: 0/0 served"></div>
+                <div class="gol-day is-drift" title="2026-10-11: 0/1 served"></div>
+                <div class="gol-day is-drift" title="2026-10-12: 0/1 served"></div>
+                <div class="gol-day is-drift" title="2026-10-13: 0/1 served"></div>
+                <div class="gol-day is-drift" title="2026-10-14: 0/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-15: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-16: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-17: 1/1 served"></div>
+                <div class="gol-day is-served" title="2026-10-18: 1/1 served"></div>
+                <div class="gol-day" title="2026-10-19: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-20: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-21: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-22: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-23: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-24: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-25: 0/0 served"></div>
+                <div class="gol-day" title="2026-10-26: 0/0 served"></div>
+              </div>
+              <div class="gol-dir-key">
+                <span><i class="is-served"></i>served</span>
+                <span><i class="is-drift"></i>drift</span>
+                <span><i></i>idle</span>
+              </div>
+            </div>
+            <div class="gol-dir-split">
+              <div class="gol-dir-well">
+                <h4 class="gol-legend">Drift days <span class="gol-cap">(4)</span></h4>
+                <div class="gol-dir-dates">
+                  <span class="gol-dir-date" title="2026-10-11">Oct 11</span>
+                  <span class="gol-dir-date" title="2026-10-12">Oct 12</span>
+                  <span class="gol-dir-date" title="2026-10-13">Oct 13</span>
+                  <span class="gol-dir-date" title="2026-10-14">Oct 14</span>
+                </div>
+              </div>
+              <div class="gol-dir-well">
+                <h4 class="gol-legend">Neglected goals <span class="gol-cap">(1)</span></h4>
+                <ul class="gol-dir-list m-0 p-0 list-none">
+                  <li class="gol-row">
+                    <span class="gol-row-name">Surf once a week</span>
+                    <span class="gol-meta">never</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gol-status">
+          <svg class="gol-status-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 0 L13.6 10.4 L24 12 L13.6 13.6 L12 24 L10.4 13.6 L0 12 L10.4 10.4 Z" fill="currentColor"></path><path d="M12 4.2 L13.1 10.9 L19.8 12 L13.1 13.1 L12 19.8 L10.9 13.1 L4.2 12 L10.9 10.9 Z" fill="currentColor" opacity="0.55" transform="rotate(45 12 12)"></path></svg>
+          <span>2 objectives · 2 goals</span>
+          <svg class="gol-status-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 0 L13.6 10.4 L24 12 L13.6 13.6 L12 24 L10.4 13.6 L0 12 L10.4 10.4 Z" fill="currentColor"></path><path d="M12 4.2 L13.1 10.9 L19.8 12 L13.1 13.1 L12 19.8 L10.9 13.1 L4.2 12 L10.9 10.9 Z" fill="currentColor" opacity="0.55" transform="rotate(45 12 12)"></path></svg>
+        </div>
+      </div>
+      <div class="gol-desk-plate" data-desk-plate="goals" aria-hidden="true">
+        <img src="/orbs-removebackground/65f0bee7629bcce3a7002e0c3eb46996.png" alt="" draggable="false">
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var rose = document.getElementById("gol-rose");
+  var ns = "http://www.w3.org/2000/svg";
+  var rings = document.createElementNS(ns, "g");
+  rings.setAttribute("fill", "none");
+  rings.setAttribute("stroke", "currentColor");
+  [["96", "0.8", ""], ["88", "0.5", ""], ["62", "0.5", "1.5 3"], ["40", "0.6", ""], ["14", "0.6", ""]].forEach(function (c) {
+    var el = document.createElementNS(ns, "circle");
+    el.setAttribute("r", c[0]);
+    el.setAttribute("stroke-width", c[1]);
+    if (c[2]) el.setAttribute("stroke-dasharray", c[2]);
+    rings.appendChild(el);
+  });
+  for (var i = 0; i < 72; i++) {
+    var deg = i * 5;
+    var line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", "0");
+    line.setAttribute("y1", deg % 45 === 0 ? "-78" : deg % 15 === 0 ? "-83" : "-86");
+    line.setAttribute("x2", "0");
+    line.setAttribute("y2", "-88");
+    line.setAttribute("stroke-width", deg % 45 === 0 ? "1" : "0.5");
+    line.setAttribute("transform", "rotate(" + deg + ")");
+    rings.appendChild(line);
+  }
+  [0, 30, 60, 90, 120, 150].forEach(function (deg) {
+    var line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", "0");
+    line.setAttribute("y1", "-96");
+    line.setAttribute("x2", "0");
+    line.setAttribute("y2", "96");
+    line.setAttribute("stroke-width", "0.3");
+    line.setAttribute("transform", "rotate(" + deg + ")");
+    rings.appendChild(line);
+  });
+  rose.appendChild(rings);
+  var fill = document.createElementNS(ns, "g");
+  fill.setAttribute("fill", "currentColor");
+  var star = document.createElementNS(ns, "path");
+  star.setAttribute("d", "M0 -76 L7 -7 L76 0 L7 7 L0 76 L-7 7 L-76 0 L-7 -7 Z");
+  star.setAttribute("opacity", "0.9");
+  var inner = document.createElementNS(ns, "path");
+  inner.setAttribute("d", "M0 -50 L4 -4 L50 0 L4 4 L0 50 L-4 4 L-50 0 L-4 -4 Z");
+  inner.setAttribute("opacity", "0.6");
+  inner.setAttribute("transform", "rotate(45)");
+  fill.appendChild(star);
+  fill.appendChild(inner);
+  rose.appendChild(fill);
+  var hub = document.createElementNS(ns, "circle");
+  hub.setAttribute("r", "3");
+  hub.setAttribute("fill", "var(--g-night, #0b1020)");
+  rose.appendChild(hub);
+
+  var stage = document.getElementById("stage");
+  var face = document.getElementById("face");
+  var scale = document.getElementById("scale");
+  var density = document.getElementById("density");
+  var radius = document.getElementById("radius");
+  var layout = document.getElementById("layout");
+  var palette = document.getElementById("palette");
+  var faces = { tahoma: "Tahoma", georgia: "Georgia", mono: "Courier", system: "System" };
+  var layouts = { split: "Split", compact: "Compact" };
+  var palettes = { warm: "Warm", cool: "Cool", lamp: "Lamp" };
+
+  function clamp(n, lo, hi, fallback) {
+    n = Number(n);
+    if (!Number.isFinite(n)) n = fallback;
+    return Math.min(hi, Math.max(lo, n));
+  }
+
+  function sync() {
+    if (faces[face.value]) stage.dataset.face = face.value;
+    else stage.removeAttribute("data-face");
+    document.getElementById("face-out").textContent = faces[face.value] || "House";
+
+    var s = Math.round(clamp(scale.value, 80, 130, 100));
+    scale.value = String(s);
+    document.getElementById("scale-out").textContent = (s / 100).toFixed(2);
+    if (s === 100) {
+      stage.removeAttribute("data-scale");
+      stage.style.removeProperty("--lab-scale");
+    } else {
+      stage.dataset.scale = "";
+      stage.style.setProperty("--lab-scale", (s / 100).toFixed(3));
+    }
+
+    var d = Math.round(clamp(density.value, 75, 135, 100));
+    density.value = String(d);
+    document.getElementById("density-out").textContent = (d / 100).toFixed(2);
+    if (d === 100) {
+      stage.removeAttribute("data-density");
+      stage.style.removeProperty("--lab-dense");
+    } else {
+      stage.dataset.density = "";
+      stage.style.setProperty("--lab-dense", (d / 100).toFixed(3));
+    }
+
+    var r = Math.round(clamp(radius.value, 0, 12, 2));
+    radius.value = String(r);
+    document.getElementById("radius-out").textContent = r + "px";
+    if (r === 2) {
+      stage.style.removeProperty("--r-2");
+      stage.style.removeProperty("--r-3");
+    } else {
+      stage.style.setProperty("--r-2", r + "px");
+      stage.style.setProperty("--r-3", (r + 1) + "px");
+    }
+
+    if (layouts[layout.value]) stage.dataset.layout = layout.value;
+    else stage.removeAttribute("data-layout");
+    document.getElementById("layout-out").textContent = layouts[layout.value] || "Desk";
+
+    if (palettes[palette.value]) stage.dataset.palette = palette.value;
+    else stage.removeAttribute("data-palette");
+    document.getElementById("palette-out").textContent = palettes[palette.value] || "House";
+  }
+
+  [face, scale, density, radius, layout, palette].forEach(function (el) {
+    el.addEventListener("input", sync);
+    el.addEventListener("change", sync);
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    face.value = "house";
+    scale.value = "100";
+    density.value = "100";
+    radius.value = "2";
+    layout.value = "desk";
+    palette.value = "house";
+    sync();
+  });
+  sync();
+})();
+</script>
+</body>
+</html>

@@ -1,131 +1,42 @@
 /**
- * components/ItemDetail/ItemDetailPage.tsx — Full-screen item detail/editor
+ * components/ItemDetail/ItemDetailPage.tsx — Full-screen item detail door
  *
- * The full task editor opened from the app shell when a task is selected. Exposes
- * all task attributes — details, description, scheduling, dependencies, subtasks,
- * partial completion, repeat settings, and analysis. Shares load/draft state and
- * the category/dependency mutators with `ItemDetailPopup` via `useItemDetailDraft`.
+ * Composes the page-only modules in `page/`. The screen, the DOM, and the copy
+ * stay as they were. Shares load/draft state with `ItemDetailPopup` via
+ * `useItemDetailDraft`. `page/` is not for the popup, the To do drawer, or the
+ * task card.
  *
  * Import as `EnhancedTaskDetail` from `@/components/ItemDetail/ItemDetailPage`.
  * Spec: §5.5 (Item detail view) — docs/SPEC_MAPPING.md §5.
  */
 "use client"
 
-import { FasciaOrb } from "@/components/ItemDetail/FasciaOrb"
-import { InboxClarifyKey } from "@/components/ItemDetail/InboxClarifyKey"
-import { useState, useCallback, useEffect, useRef, useMemo } from "react"
-import { useItemDetailDraft } from "@/components/ItemDetail/useItemDetailDraft"
-import { useItemDetailSession } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { ItemDetailPageAnalysis } from "@/components/ItemDetail/page/ItemDetailPageAnalysis"
+import { ItemDetailPageDependencies } from "@/components/ItemDetail/page/ItemDetailPageDependencies"
+import { ItemDetailPageDetails } from "@/components/ItemDetail/page/ItemDetailPageDetails"
+import { ItemDetailPageDialogs } from "@/components/ItemDetail/page/ItemDetailPageDialogs"
+import { ItemDetailPageFascia } from "@/components/ItemDetail/page/ItemDetailPageFascia"
+import { ItemDetailPageLedgerTabs } from "@/components/ItemDetail/page/ItemDetailPageLedgerTabs"
+import { ItemDetailPageScheduling } from "@/components/ItemDetail/page/ItemDetailPageScheduling"
+import { ItemDetailPageSubtasks } from "@/components/ItemDetail/page/ItemDetailPageSubtasks"
+import { ItemDetailPageTabList } from "@/components/ItemDetail/page/ItemDetailPageTabList"
+import { useItemDetailPageCommands } from "@/components/ItemDetail/page/useItemDetailPageCommands"
+import { useItemDetailPageView } from "@/components/ItemDetail/page/useItemDetailPageView"
+import { useItemDetailDraft } from "@/components/ItemDetail/draft/useItemDetailDraft"
+import { useItemDetailSession } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
+import { useItemDetailSaveHotkey } from "@/components/ItemDetail/draft/useItemDetailSaveHotkey"
+import { useItemDetailUndoHotkey } from "@/components/ItemDetail/draft/useItemDetailUndoHotkey"
 import { UnsavedChangesDialog, useUnsavedGuard } from "@/components/ui/unsaved-changes-guard"
-import { TagInput } from "@/components/ItemDetail/TagInput"
-import { ItemTagChip } from "@/components/ItemDetail/ItemTagChip"
-import { RichLinksPanel } from "@/components/ItemDetail/links/RichLinksPanel"
-import { BodyPanel } from "@/components/ItemDetail/BodyPanel"
-import { HabitLinkedDetail } from "@/components/ItemDetail/HabitLinkedDetail"
-import { ItemNotesLog } from "@/components/ItemDetail/ItemNotesLog"
-import { ItemResourcesPanel } from "@/components/ItemDetail/ItemResourcesPanel"
-import { ListPicker } from "@/components/Lists/list-picker"
-import { ItemPicker } from "@/components/Lists/item-picker"
-import { IsolatedInput, IsolatedTextarea } from "@/components/ui/isolated-text-field"
-import { ClockPicker } from "@/components/ui/clock-picker/clock-picker"
-import { openStepItem } from "@/lib/step-item-stack"
-import { SubtaskTree } from "@/components/ItemDetail/SubtaskTree"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { ReminderScheduleFields } from "@/components/ItemDetail/ReminderScheduleFields"
-import { PersonDetail } from "@/components/People/person-detail"
-import { PersonNotes } from "@/components/People/person-notes"
-import { foldPersonNoteLog } from "@/lib/person-notes-fold"
-import { PersonPipelinesEditor } from "@/components/People/person-pipelines"
-import { itemShowsPersonPipelines } from "@/lib/people-i-know"
-import { PERSON_ATTR } from "@/lib/person-types"
-import { TodoCommitmentFields } from "@/components/ItemDetail/TodoCommitmentFields"
-import { isReminderTask } from "@/lib/reminders"
-import { ItemEstimateField } from "@/components/ItemDetail/ItemEstimateField"
-import { ItemRewardField } from "@/components/ItemDetail/ItemRewardField"
-import { ItemPenTimeSection } from "@/components/ItemDetail/ItemPenTime"
-import { ItemTaskCardKey } from "@/components/ItemDetail/ItemTaskCardKey"
-import { WorkingNowBanner } from "@/components/ItemDetail/WorkingNowBanner"
-import { ItemScheduleFlags } from "@/components/ItemDetail/ItemScheduleFlags"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  ArrowLeft,
-  Save,
-  Calendar,
-  AlertTriangle,
-  Star,
-  CheckCircle,
-  XCircle,
-  Plus,
-  Trash,
-  GitBranch,
-  Target,
-  CalendarDays,
-  Users,
-  Timer,
-  Sparkles,
-  Split,
-  MoreHorizontal,
-  Rocket,
-  History,
-  TimerOff,
-  Undo2,
-} from "lucide-react"
-import { ItemActivityPanel } from "@/components/ItemDetail/ItemActivityPanel"
-import { ItemSettingsKey } from "@/components/ItemDetail/ItemSettingsKey"
-import { ItemSettingsPanel } from "@/components/ItemDetail/ItemSettingsPanel"
-import { AttributeSettingsDialog } from "@/components/ItemDetail/AttributeSettingsDialog"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { ItemSaveFlag } from "@/components/ItemDetail/ItemSaveFlag"
-import { useItemDetailSaveHotkey } from "@/components/ItemDetail/useItemDetailSaveHotkey"
-import { useItemDetailUndoHotkey } from "@/components/ItemDetail/useItemDetailUndoHotkey"
-import { CycleConfirmDialog } from "@/components/ItemDetail/CycleConfirmDialog"
-import { upgradeTaskToOperation, OPERATION_TYPE_ID } from "@/components/Operations"
-import { ItemAttributesSection } from "@/components/ItemDetail/ItemAttributesSection"
+import { Tabs } from "@/components/ui/tabs"
 import { useItemTypeStore } from "@/lib/item-type-store"
-import {
-  assignedItemTypes,
-  BUILTIN_ITEM_TYPE_ID,
-  BUILTIN_TASK_TYPE_ID,
-  resolveDetailView,
-  type DetailViewResolution,
-} from "@/lib/item-types"
-import { isTaskItem, itemTitleOrUntitled } from "@/lib/item-utils"
-import { isClearedFromWork, withCompleted } from "@/lib/completion-status"
-import { CompletionDialog } from "@/components/Completion/CompletionDialog"
-import { ItemDoneBanner } from "@/components/ItemDetail/ItemDoneBanner"
-import { SchedulingSummary } from "@/components/ItemDetail/SchedulingSummary"
-import { markMissedOpportunity } from "@/lib/services/completion-service"
-import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
-import { getScheduleableCategoryIds } from "@/components/Scheduler/scheduler-utils"
+import { peekHabitSettingsReturn } from "@/lib/habit-list-item"
+import { requestNavigateToListAfterPaint } from "@/lib/app-navigation"
 import { useTaskStore } from "@/lib/task-store"
-import { asListReference } from "@/lib/text-list-to-list"
-import type { AttributeDefinition, AttributeValue, ItemTypeDefinition, Subtask, Task } from "@/lib/types"
-import { dateInputValue, parseLocalDate, safeDateFormat } from "@/lib/date-utils"
-import { ItemTypeEditor } from "@/components/ItemTypes/ItemTypeEditor"
-import { APP_NAV_KEYS, readStoredRecord, requestNavigateToListAfterPaint, writeStoredRecordField } from "@/lib/app-navigation"
-import { armHabitSettingsReturn, peekHabitSettingsReturn, sourceHabitIdOf } from "@/lib/habit-list-item"
-import {
-  addStepsAsSubtasks,
-  parseSteps,
-  setSubtaskContext,
-  toggleMolecular,
-  toggleSubtaskComplete,
-  removeSubtask as removeMolecularStep,
-} from "@/lib/molecular"
-import "./item-detail-chrome.css"
+import type { ItemTypeDefinition, Task } from "@/lib/types"
+import "@/components/ItemDetail/chrome/item-detail-chrome.css"
+import { dmMonoFace } from "@/lib/fonts/dm-mono"
+import { useStampFontVariables } from "@/lib/fonts/stamp-font-variables"
 
 interface EnhancedTaskDetailProps {
   taskId: string
@@ -134,8 +45,6 @@ interface EnhancedTaskDetailProps {
 
 export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) {
   const detailRef = useRef<HTMLDivElement>(null)
-  const settingsHost = useRef<HTMLDivElement>(null)
-  const attributeLock = useRef(false)
   const [overrideId, setOverrideId] = useState<string | null>(null)
   const [missAsk, setMissAsk] = useState(false)
   const effectiveId = overrideId ?? taskId
@@ -170,7 +79,6 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     removeLink,
   } = useItemDetailDraft(effectiveId)
 
-  const updateList = useTaskStore((state) => state.updateList)
   const folders = useTaskStore((state) => state.folders)
   const itemTypes = useItemTypeStore((state) => state.types)
   const updateItemType = useItemTypeStore((state) => state.updateType)
@@ -181,226 +89,53 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
   const [cycleLabel, setCycleLabel] = useState<string | null>(null)
   const actualDurationRef = useRef("")
   const [editingItemType, setEditingItemType] = useState<ItemTypeDefinition | null>(null)
-  const isTask = task ? isTaskItem(task, folders) : false
-  const detailView = useMemo<DetailViewResolution>(
-    () =>
-      task
-        ? resolveDetailView(task, lists, itemTypes, { isTask })
-        : { panels: ["details"], capabilities: {}, layout: undefined },
-    [task, lists, itemTypes, isTask],
-  )
-  const visiblePanels = detailView.panels
-  const caps = detailView.capabilities
-  const scheduleableCategoryIds = useMemo(() => getScheduleableCategoryIds(lists), [lists])
-  const detailTabs = useMemo(() => {
-    const hidden = new Set(task?.hiddenShellTabs ?? [])
-    const tabs = ["details", ...visiblePanels.filter((panel) => panel !== "details")]
-    if (!hidden.has("history")) tabs.push("history")
-    return tabs
-  }, [visiblePanels, task?.hiddenShellTabs])
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [itemSettingsOpen, setItemSettingsOpen] = useState(false)
-  const [attributeSettingsId, setAttributeSettingsId] = useState<string | null>(null)
-  const [detailTab, setDetailTab] = useState(() => {
-    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
-    return stored || "details"
+
+  const {
+    isTask,
+    setTypePick,
+    primaryTypeId,
+    itemTypesAssigned,
+    activeTypeId,
+    viewAsTypeId,
+    detailView,
+    visiblePanels,
+    caps,
+    scheduleableCategoryIds,
+    detailTabs,
+    setDetailTab,
+    activeDetailTab,
+  } = useItemDetailPageView({ task, folders, lists, itemTypes, effectiveId })
+
+  const {
+    handleSave,
+    handleDelete,
+    handleComplete,
+    handleReopen,
+    handleMissed,
+    handleSaveItemType,
+    deleteEditingItemType,
+  } = useItemDetailPageCommands({
+    task,
+    getDraft,
+    commitDraft,
+    deleteTask,
+    onBack,
+    setIsEditing,
+    actualDurationRef,
+    setMissAsk,
+    itemTypes,
+    updateItemType,
+    addItemType,
+    deleteItemType,
+    editingItemType,
+    setEditingItemType,
   })
-
-  useEffect(() => {
-    const stored = readStoredRecord(APP_NAV_KEYS.itemDetailTab)[effectiveId]
-    setDetailTab(stored || "details")
-  }, [effectiveId])
-
-  useEffect(() => {
-    writeStoredRecordField(APP_NAV_KEYS.itemDetailTab, effectiveId, detailTab)
-  }, [effectiveId, detailTab])
-
-  const activeDetailTab = detailTabs.includes(detailTab) ? detailTab : "details"
-
-  // Create a new attribute from the detail view. Targeting a list persists the
-  // definition onto that list's schema immediately; the value lands on the draft
-  // and persists with Save Changes.
-  const handleCreateAttribute = useCallback(
-    (def: AttributeDefinition, value: AttributeValue, listId: string | null) => {
-      if (!task) return
-      if (listId) {
-        const cat = lists.find((c) => c.id === listId)
-        if (cat) {
-          updateList({ ...cat, itemAttributes: [...(cat.itemAttributes ?? []), def] })
-        }
-        setTask({ ...task, attributes: { ...(task.attributes || {}), [def.id]: value } })
-        return
-      }
-      setTask({
-        ...task,
-        itemAttributeDefinitions: [...(task.itemAttributeDefinitions ?? []), def],
-        attributes: { ...(task.attributes || {}), [def.id]: value },
-      })
-    },
-    [task, lists, updateList, setTask],
-  )
-
-  const commitReminder = useCallback(
-    (patch: Pick<Task, "scheduledDate" | "scheduledTime" | "reminder">) => {
-      touchDraft(patch)
-      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-      const next = getDraft()
-      if (!next) return
-      commitDraft(next)
-    },
-    [touchDraft, setTask, getDraft, commitDraft],
-  )
-
-  const handleSave = useCallback(() => {
-    const draft = getDraft()
-    if (draft) {
-      commitDraft(draft)
-      setIsEditing(false)
-    }
-  }, [getDraft, commitDraft])
 
   useItemDetailSaveHotkey(detailRef, handleSave, Boolean(task))
   useItemDetailUndoHotkey(detailRef, undo, redo, Boolean(task))
-
-  const handleDelete = useCallback(() => {
-    if (!task) return
-    if (confirm(`Delete "${task.description}"? This cannot be undone.`)) {
-      deleteTask(task.id)
-      onBack()
-    }
-  }, [task, deleteTask, onBack])
-
-  const handleComplete = useCallback(() => {
-    const draft = getDraft()
-    if (draft) {
-      const raw = actualDurationRef.current
-      const actualDuration = raw ? Number.parseInt(raw) : undefined
-      commitDraft({
-        ...draft,
-        completed: true,
-        actualDuration: actualDuration,
-      })
-    }
-  }, [getDraft, commitDraft])
-
-  const [reviewOpen, setReviewOpen] = useState(false)
-  const handleReopen = useCallback(() => {
-    const draft = getDraft()
-    if (draft) commitDraft(withCompleted(draft, false))
-  }, [getDraft, commitDraft])
-
-  const handleMissed = useCallback(() => {
-    if (!task) return
-    setMissAsk(true)
-  }, [task])
-
-  const handleSchedule = useCallback(
-    (type: "date" | "week" | "month" | "year", value: string) => {
-      if (task) {
-        const updates: Partial<Task> = {}
-
-        switch (type) {
-          case "date":
-            updates.scheduledDate = value ? parseLocalDate(value) ?? undefined : undefined
-            break
-          case "week":
-            updates.scheduledWeek = value
-            break
-          case "month":
-            updates.scheduledMonth = value
-            break
-          case "year":
-            updates.scheduledYear = value
-            break
-        }
-
-        setTask({ ...task, ...updates })
-      }
-    },
-    [task],
-  )
-
-  // ---- Molecular steps (operate on the Task.subtasks tree directly) --------
-  const persistSubtasks = useCallback(
-    (subtasks: Subtask[]) => {
-      if (!task) return
-      const updated = { ...task, subtasks }
-      setTask(updated)
-      updateTask(updated)
-    },
-    [task, setTask, updateTask],
-  )
-
-  // Older subtasks were also saved as their own Tasks; drop those with the step.
-  const removeBackingSubtasks = useCallback(
-    (ids: string[]) => {
-      for (const id of ids) {
-        if (allTasks.some((t) => t.id === id && t.parentTaskId === effectiveId)) deleteTask(id)
-      }
-    },
-    [allTasks, effectiveId, deleteTask],
-  )
-
-  const splitIntoSteps = useCallback((text: string) => {
-    if (!task) return
-    const steps = parseSteps(text)
-    if (steps.length === 0) return
-    persistSubtasks(addStepsAsSubtasks(task.subtasks, steps))
-  }, [task, persistSubtasks])
-
-  const handleToggleStepComplete = useCallback(
-    (id: string) => {
-      if (task) persistSubtasks(toggleSubtaskComplete(task.subtasks ?? [], id))
-    },
-    [task, persistSubtasks],
-  )
-
-  const handleToggleStepMolecular = useCallback(
-    (id: string) => {
-      if (task) persistSubtasks(toggleMolecular(task.subtasks ?? [], id))
-    },
-    [task, persistSubtasks],
-  )
-
-  const handleStepContextChange = useCallback(
-    (id: string, context: string) => {
-      if (task) persistSubtasks(setSubtaskContext(task.subtasks ?? [], id, context))
-    },
-    [task, persistSubtasks],
-  )
-
-  const handleDeleteStep = useCallback(
-    (id: string) => {
-      if (task) persistSubtasks(removeMolecularStep(task.subtasks ?? [], id))
-    },
-    [task, persistSubtasks],
-  )
-
-  const syncDependencies = useCallback(
-    (ids: string[]) => {
-      if (!task) return
-      const prev = task.dependencies ?? []
-      const added = ids.find((id) => !prev.includes(id))
-      const removed = prev.filter((id) => !ids.includes(id))
-      if (added && removed.length === 0) {
-        const result = addDependency(added)
-        if (!result.ok) setCycleLabel(result.cycleLabel)
-        return
-      }
-      for (const id of removed) removeDependency(id)
-    },
-    [task, addDependency, removeDependency],
-  )
-
-  // Every item type assigned to this item: its own type plus any type pinned by
-  // a list it belongs to (e.g. a task that also lives in a "Goals" list).
-  const itemTypes_assigned = assignedItemTypes(
-    { type: task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID), lists: task?.lists ?? [] },
-    lists,
-    itemTypes,
-  )
-  const primaryTypeId = task?.type ?? (isTask ? BUILTIN_TASK_TYPE_ID : BUILTIN_ITEM_TYPE_ID)
-
-  const sourceHabitId = sourceHabitIdOf(task?.attributes)
+  useStampFontVariables(dmMonoFace)
 
   // Every way out of the page asks about unsaved edits first.
   const guard = useUnsavedGuard({
@@ -432,62 +167,12 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
       }),
     [guardAction, folders, onBack],
   )
-  const bindTextList = useCallback(
-    (attributeId: string, listId: string) => {
-      const id = task?.id
-      if (!id) return
-      const current = getDraft()
-      if (!current || current.id !== id) return
-      const converted = asListReference(current, attributeId, listId)
-      const owns = current.itemAttributeDefinitions?.some((def) => def.id === attributeId) ?? false
-      const stamp = (base: Task): Task => ({
-        ...base,
-        attributes: owns ? { ...(base.attributes ?? {}), [attributeId]: listId } : base.attributes,
-        itemAttributeDefinitions: owns ? converted.itemAttributeDefinitions : base.itemAttributeDefinitions,
-        textListIds: converted.textListIds,
-      })
-      const stored = useTaskStore.getState().tasks.find((row) => row.id === id)
-      if (stored) updateTask(stamp(stored))
-      setOriginalTask(originalTask?.id === id ? stamp(originalTask) : stored ? stamp(stored) : converted)
-      setTask(converted)
-    },
-    [task?.id, originalTask, getDraft, updateTask, setOriginalTask, setTask],
-  )
   const patchItem = useCallback(
     (patch: Partial<Task>) => {
       touchDraft(patch)
       setTask((prev) => (prev ? { ...prev, ...patch } : prev))
     },
     [touchDraft, setTask],
-  )
-
-  const commitNotes = useCallback(
-    (notes: string) => {
-      touchDraft({ notes })
-      setTask((prev) => (prev ? { ...prev, notes } : prev))
-      if (isEditing) return
-      const base = getDraft()
-      if (!base) return
-      commitDraft({ ...base, notes })
-    },
-    [touchDraft, setTask, isEditing, getDraft, commitDraft],
-  )
-
-  const openHabitSettings = useCallback(() => {
-    if (!sourceHabitId) return
-    guardAction(() => {
-      armHabitSettingsReturn(sourceHabitId)
-      onBack()
-    })
-  }, [sourceHabitId, guardAction, onBack])
-
-  const handleSaveItemType = useCallback(
-    (def: ItemTypeDefinition) => {
-      if (itemTypes.some((t) => t.id === def.id)) updateItemType(def)
-      else addItemType(def)
-      setEditingItemType(null)
-    },
-    [itemTypes, updateItemType, addItemType],
   )
 
   // Read-only attribute summary is rendered inline where needed; attributes are
@@ -501,1102 +186,136 @@ export function EnhancedTaskDetail({ taskId, onBack }: EnhancedTaskDetailProps) 
     )
   }
 
-  const tabCount = detailTabs.length
-  // Old person notes still on personProfile.noteLog count too (3.3 fold).
-  const noteCount = foldPersonNoteLog(task).noteLog?.length ?? 0
-
   return (
     <>
-    <div ref={detailRef} className="id95" data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
+    <div ref={detailRef} className={`id95 ${dmMonoFace}`} data-ui-name="Item detail" data-ui-docs="components/ItemDetail/README.md">
       <div className="id-window">
-      <div className="id-fascia">
-        <WorkingNowBanner itemId={task.id} />
-        <div className="id-fascia-row">
-          <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="Back" onClick={requestClose}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="id-mark">
-            <span className="id-power-lamp is-on" aria-hidden />
-            <FasciaOrb
-              id={task.id}
-              icon={task.icon}
-              onPick={isEditing ? (icon) => setTask((prev) => (prev ? { ...prev, icon } : prev)) : undefined}
-            />
-            <h1 className="id-title">
-              {isEditing ? (
-                <IsolatedInput
-                  value={task.description}
-                  onLiveChange={(description) => touchDraft({ description, title: description })}
-                  onCommit={(description) =>
-                    setTask((prev) => (prev ? { ...prev, description, title: description } : prev))
-                  }
-                  className="id-title-input"
-                  placeholder="Item name"
-                />
-              ) : (
-                task.description
-              )}
-            </h1>
-          </div>
-          <div className="id-key-row">
-            <div className="id-save-cluster">
-              <ItemSaveFlag originalTask={originalTask} getDraft={getDraft} subscribeDraft={subscribeDraft} />
-              {isEditing ? (
-                <>
-                  <Button variant="outline" className="id-btn id-btn-secondary" onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </Button>
-                  <Button className="id-btn id-btn-primary" onClick={handleSave} title="Cmd/Ctrl+S">
-                    <Save className="h-4 w-4" />
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <Button className="id-btn id-btn-primary" onClick={() => setIsEditing(true)}>Edit</Button>
-              )}
-            </div>
-            {task.completed && caps.completable && (
-              <Button variant="outline" className="id-btn id-btn-reopen" onClick={handleReopen} title="Mark incomplete: undo Complete and keep everything else">
-                <Undo2 className="h-4 w-4" />
-                Mark incomplete
-              </Button>
-            )}
-            {!isClearedFromWork(task) && caps.completable && (
-              <>
-                {caps.duration && (
-                <IsolatedInput
-                  type="number"
-                  placeholder="Actual minutes"
-                  value=""
-                  onLiveChange={(v) => {
-                    actualDurationRef.current = v
-                  }}
-                  onCommit={(v) => {
-                    actualDurationRef.current = v
-                  }}
-                  className="id-duration"
-                />
-                )}
-                <Button variant="outline" className="id-btn id-btn-primary" onClick={handleComplete}>
-                  <CheckCircle className="h-4 w-4" />
-                  Complete
-                </Button>
-                <Button
-                  variant="outline"
-                  className="id-btn id-btn-secondary"
-                  onClick={handleMissed}
-                  title="Too late — file as a missed opportunity"
-                >
-                  <TimerOff className="h-4 w-4" />
-                  Missed
-                </Button>
-              </>
-            )}
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="id-btn id-btn-danger id-btn-quiet"
-            >
-              <Trash className="h-4 w-4" />
-              Delete
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="id-btn id-btn-icon" aria-label="More actions">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={task.type === OPERATION_TYPE_ID}
-                  onClick={() => upgradeTaskToOperation(task.id)}
-                >
-                  <Rocket className="h-4 w-4 mr-2" />
-                  {task.type === OPERATION_TYPE_ID ? "Already an Operation" : "Upgrade to Operation"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <ItemDoneBanner task={task} onReopen={handleReopen} onEditReview={() => setReviewOpen(true)} />
-          {reviewOpen ? <CompletionDialog taskId={task.id} basePoints={0} edit onClose={() => setReviewOpen(false)} /> : null}
-        <div className="id-fascia-row id-meta">
-          <Badge variant={task.completed ? "default" : "secondary"} className="id-chip">
-            {task.completed ? "Completed" : task.stage}
-          </Badge>
-          <InboxClarifyKey task={task} getDraft={getDraft} commitDraft={commitDraft} />
-          <ItemSettingsKey onClick={() => setItemSettingsOpen(true)} />
-          {task.actualDuration && (
-            <Badge variant="outline" className="id-chip">
-              <Timer className="h-3 w-3" />
-              Took {task.actualDuration}m
-            </Badge>
-          )}
-        </div>
-      </div>
+      <ItemDetailPageFascia
+        task={task}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        touchDraft={touchDraft}
+        setTask={setTask}
+        originalTask={originalTask}
+        getDraft={getDraft}
+        subscribeDraft={subscribeDraft}
+        requestClose={requestClose}
+        handleSave={handleSave}
+        handleReopen={handleReopen}
+        caps={caps}
+        actualDurationRef={actualDurationRef}
+        handleComplete={handleComplete}
+        handleMissed={handleMissed}
+        handleDelete={handleDelete}
+        reviewOpen={reviewOpen}
+        setReviewOpen={setReviewOpen}
+        itemTypesAssigned={itemTypesAssigned}
+        activeTypeId={activeTypeId}
+        primaryTypeId={primaryTypeId}
+        setTypePick={setTypePick}
+        setEditingItemType={setEditingItemType}
+        commitDraft={commitDraft}
+        setItemSettingsOpen={setItemSettingsOpen}
+      />
 
       <Tabs value={activeDetailTab} onValueChange={setDetailTab} className="id-body w-full">
-        <TabsList
-          className="id-view-keys"
-          style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
-        >
-          {visiblePanels.includes("body") && <TabsTrigger value="body">Body</TabsTrigger>}
-          <TabsTrigger value="details">Details</TabsTrigger>
-          {visiblePanels.includes("scheduling") && <TabsTrigger value="scheduling">Scheduling</TabsTrigger>}
-          {visiblePanels.includes("dependencies") && <TabsTrigger value="dependencies">Dependencies</TabsTrigger>}
-          {visiblePanels.includes("subtasks") && <TabsTrigger value="subtasks">Subtasks</TabsTrigger>}
-          {visiblePanels.includes("notes") && (
-            <TabsTrigger value="notes">
-              Notes
-              {noteCount > 0 && <span className="id-tab-count">{noteCount}</span>}
-            </TabsTrigger>
-          )}
-          {visiblePanels.includes("resources") && (
-            <TabsTrigger value="resources">
-              Resources
-              {(task.resources?.length ?? 0) > 0 && <span className="id-tab-count">{task.resources!.length}</span>}
-            </TabsTrigger>
-          )}
-          {visiblePanels.includes("analysis") && (
-            <TabsTrigger value="analysis" className="id-tab-secondary">Analysis</TabsTrigger>
-          )}
-          {visiblePanels.includes("time") && (
-            <TabsTrigger value="time" className="id-tab-secondary">
-              <Timer className="h-4 w-4" />
-              Time
-            </TabsTrigger>
-          )}
-          {detailTabs.includes("history") && (
-          <TabsTrigger value="history" className="id-tab-secondary">
-            <History className="h-4 w-4" />
-            History
-          </TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="details" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={sourceHabitId ? "id-detail-main lg:col-span-2" : "lg:col-span-2 space-y-6"}>
-              {task && isReminderTask(task, lists) ? (
-                        <ReminderScheduleFields
-                          task={task}
-                          onChange={(patch) => commitReminder(patch)}
-                        />
-              ) : null}
-              {task && itemShowsPersonPipelines(task, lists) ? (
-                <PersonDetail
-                  person={task}
-                  onChange={(patch) => {
-                    touchDraft(patch)
-                    setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-                  }}
-                  onLive={touchDraft}
-                  readDraft={getDraft}
-                  onNavigateToList={handleNavigateToList}
-                  pipelines={
-                    <PersonPipelinesEditor
-                      mode="person"
-                      person={task}
-                      onChange={(personPipelines) => {
-                        const next = personPipelines.length > 0 ? personPipelines : undefined
-                        touchDraft({ personPipelines: next })
-                        setTask((prev) => (prev ? { ...prev, personPipelines: next } : prev))
-                      }}
-                    />
-                  }
-                />
-              ) : null}
-              {sourceHabitId ? (
-                <HabitLinkedDetail
-                  habitId={sourceHabitId}
-                  notes={task.notes || ""}
-                  onNotesLive={(notes) => touchDraft({ notes })}
-                  onNotesCommit={commitNotes}
-                  onHabitSettings={openHabitSettings}
-                />
-              ) : null}
-              <div className="id-bay">
-                <ItemAttributesSection
-                  attributes={task.attributes || {}}
-                  itemCategoryIds={task.lists ?? []}
-                  categories={lists}
-                  itemAttributeDefinitions={task.itemAttributeDefinitions}
-                  itemType={task.type}
-                  layout={detailView.layout}
-                  omitAttributeIds={
-                    itemShowsPersonPipelines(task, lists)
-                      ? [PERSON_ATTR.birthday, PERSON_ATTR.phone, PERSON_ATTR.notes]
-                      : undefined
-                  }
-                  onLiveValue={(id, value) =>
-                    touchDraft({ attributes: { ...(getDraft()?.attributes ?? {}), [id]: value } })
-                  }
-                  onChangeValues={(attributes) => {
-                    touchDraft({ attributes })
-                    setTask((prev) => (prev ? { ...prev, attributes } : prev))
-                  }}
-                  onChangeItemAttributeDefinitions={(itemAttributeDefinitions) =>
-                    setTask({ ...task, itemAttributeDefinitions })
-                  }
-                  onCreateAttribute={handleCreateAttribute}
-                  onOpenItem={openItem}
-                  attributeLabels={task.attributeLabels}
-                  hiddenAttributeIds={task.hiddenAttributeIds}
-                  textListIds={task.textListIds}
-                  onBindTextList={bindTextList}
-                  onOpenTextList={handleNavigateToList}
-                />
-              </div>
-              {isTask && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Task Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <ItemEstimateField
-                      estimatedDuration={task.estimatedDuration}
-                      touchDraft={touchDraft}
-                      setTask={setTask}
-                      variant="page"
-                      isEditing={isEditing}
-                    />
-
-                    <ItemRewardField
-                      task={task}
-                      touchDraft={touchDraft}
-                      setTask={setTask}
-                      variant="page"
-                      isEditing={isEditing}
-                    />
-
-                    <div className="space-y-2">
-                      <Label htmlFor="urgency">Urgency</Label>
-                      {isEditing ? (
-                        <Select
-                          value={(task.urgency ?? 3).toString()}
-                          onValueChange={(value) => setTask({ ...task, urgency: Number.parseInt(value) })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1 - Low</SelectItem>
-                            <SelectItem value="2">2 - Medium-Low</SelectItem>
-                            <SelectItem value="3">3 - Medium</SelectItem>
-                            <SelectItem value="4">4 - High</SelectItem>
-                            <SelectItem value="5">5 - Critical</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                          <span>{task.urgency ?? 3}/5</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="importance">Importance</Label>
-                      {isEditing ? (
-                        <Select
-                          value={(task.importance ?? 3).toString()}
-                          onValueChange={(value) => setTask({ ...task, importance: Number.parseInt(value) })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1 - Low</SelectItem>
-                            <SelectItem value="2">2 - Medium-Low</SelectItem>
-                            <SelectItem value="3">3 - Medium</SelectItem>
-                            <SelectItem value="4">4 - High</SelectItem>
-                            <SelectItem value="5">5 - Critical</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-muted-foreground" />
-                          <span>{task.importance ?? 3}/5</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="context">Context</Label>
-                      {isEditing ? (
-                        <IsolatedInput
-                          id="context"
-                          value={task.context || ""}
-                          onLiveChange={(context) => touchDraft({ context })}
-                          onCommit={(context) => setTask((prev) => (prev ? { ...prev, context } : prev))}
-                        />
-                      ) : (
-                        <Badge variant="outline">{task.context}</Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Partial Completion Settings */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <h3 className="font-medium">Partial Completion Settings</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="allow-partial"
-                          checked={task.allowPartialCompletion}
-                          onCheckedChange={(checked) =>
-                            isEditing && setTask({ ...task, allowPartialCompletion: !!checked })
-                          }
-                          disabled={!isEditing}
-                        />
-                        <Label htmlFor="allow-partial">Allow partial completion</Label>
-                      </div>
-
-                      {task.allowPartialCompletion && (
-                        <div className="space-y-2">
-                          <Label htmlFor="chunk-size">Minimum chunk size (minutes)</Label>
-                          {isEditing ? (
-                            <IsolatedInput
-                              id="chunk-size"
-                              type="number"
-                              min="5"
-                              value={String(task.minimumChunkSize ?? "")}
-                              onLiveChange={(v) =>
-                                touchDraft({ minimumChunkSize: Number.parseInt(v) || 15 })
-                              }
-                              onCommit={(v) =>
-                                setTask((prev) =>
-                                  prev ? { ...prev, minimumChunkSize: Number.parseInt(v) || 15 } : prev,
-                                )
-                              }
-                            />
-                          ) : (
-                            <span className="text-sm">{task.minimumChunkSize} minutes</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              {isTask && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Task card</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ItemTaskCardKey task={task} onBeforeOpen={requestClose} />
-                  </CardContent>
-                </Card>
-              )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Type</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {itemTypes_assigned.map((type) => (
-                      <Badge
-                        key={type.id}
-                        variant="secondary"
-                        className="flex items-center gap-1.5 cursor-pointer"
-                        style={{
-                          backgroundColor: `${type.color ?? "#cbd5e1"}20`,
-                          borderColor: type.color ?? "#cbd5e1",
-                        }}
-                        title="Double-click to view or edit this type"
-                        onDoubleClick={() => setEditingItemType(type)}
-                      >
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: type.color ?? "#cbd5e1" }}
-                        />
-                        {type.name}
-                        {type.id === primaryTypeId && itemTypes_assigned.length > 1 && (
-                          <span className="text-[10px] text-muted-foreground">primary</span>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lists</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {task.lists?.map((categoryId) => {
-                      const category = lists.find((c) => c.id === categoryId)
-                      if (!category) return null
-
-                      return (
-                        <Badge
-                          key={categoryId}
-                          variant="secondary"
-                          className="flex items-center gap-1 cursor-pointer"
-                          style={{ backgroundColor: `${category.color}20`, borderColor: category.color }}
-                          title="Double-click to open this list"
-                          onDoubleClick={() => handleNavigateToList(categoryId)}
-                        >
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
-                          {category.name}
-                          {isEditing && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                removeFromCategory(categoryId)
-                              }}
-                              onDoubleClick={(e) => e.stopPropagation()}
-                              className="ml-1 hover:text-destructive"
-                            >
-                              <XCircle className="h-3 w-3" />
-                            </button>
-                          )}
-                        </Badge>
-                      )
-                    })}
-                  </div>
-
-                  {isEditing && (
-                    <div className="space-y-2">
-                      <Label>Add to List</Label>
-                      <ListPicker
-                        selected={task.lists ?? []}
-                        onChange={setLists}
-                        mode="multi"
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tags</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isEditing ? (
-                    <TagInput tags={task.tags ?? []} onAdd={addTag} onRemove={removeTag} />
-                  ) : (task.tags?.length ?? 0) > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {task.tags!.map((tag) => (
-                        <ItemTagChip key={tag} name={tag} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No tags</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Related</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <RichLinksPanel
-                    task={task}
-                    editable={isEditing}
-                    addLink={addLink}
-                    removeLink={removeLink}
-                    writeDraft={(patch) => {
-                      touchDraft(patch)
-                      setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-                    }}
-                    onOpenItem={openItem}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Task Metadata</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <div>Created: {safeDateFormat(task.createdAt)}</div>
-                  <div>Status: {task.stage}</div>
-                  <div>Completed: {task.completed ? "Yes" : "No"}</div>
-                  {task.deadline && <div>Deadline: {safeDateFormat(task.deadline)}</div>}
-                  {task.parentTaskId && (
-                    <div>Parent Task: {allTasks.find((t) => t.id === task.parentTaskId)?.description}</div>
-                  )}
-                  {task.actualDuration && <div>Actual Duration: {task.actualDuration} minutes</div>}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="scheduling" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                Scheduling & Deadlines
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <SchedulingSummary task={task} scheduleableCategoryIds={scheduleableCategoryIds} />
-              <ItemScheduleFlags
-                task={task}
-                scheduleableCategoryIds={scheduleableCategoryIds}
-                onChange={setTask}
-                disabled={!isEditing}
-              />
-              <TodoCommitmentFields task={task} onChange={setTask} disabled={!isEditing} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium">Specific Date & Time</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled-date">Scheduled Date</Label>
-                    <Input
-                      id="scheduled-date"
-                      type="date"
-                      value={dateInputValue(task.scheduledDate)}
-                      onChange={(e) => handleSchedule("date", e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled-time">Scheduled Time</Label>
-                    <ClockPicker
-                      id="scheduled-time"
-                      value={task.scheduledTime || ""}
-                      onChange={(scheduledTime) => {
-                        touchDraft({ scheduledTime })
-                        setTask((prev) => (prev ? { ...prev, scheduledTime } : prev))
-                      }}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-medium">Deadline</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="deadline">Deadline Date</Label>
-                    <Input
-                      id="deadline"
-                      type="date"
-                      value={dateInputValue(task.deadline)}
-                      onChange={(e) => {
-                        const date = e.target.value ? parseLocalDate(e.target.value) ?? undefined : undefined
-                        setTask({ ...task, deadline: date })
-                      }}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-medium">Flexible Scheduling</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled-week">Scheduled Week</Label>
-                    <Input
-                      id="scheduled-week"
-                      placeholder="e.g., 2024-05-19_2024-05-25"
-                      value={task.scheduledWeek || ""}
-                      onChange={(e) => handleSchedule("week", e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled-month">Scheduled Month</Label>
-                    <Input
-                      id="scheduled-month"
-                      type="month"
-                      value={task.scheduledMonth || ""}
-                      onChange={(e) => handleSchedule("month", e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="scheduled-year">Scheduled Year</Label>
-                    <Input
-                      id="scheduled-year"
-                      type="number"
-                      min="2024"
-                      max="2030"
-                      value={task.scheduledYear || ""}
-                      onChange={(e) => handleSchedule("year", e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {(task.scheduledDate ||
-                task.deadline ||
-                task.scheduledWeek ||
-                task.scheduledMonth ||
-                task.scheduledYear) && (
-                <div className="p-4 bg-muted rounded-md space-y-2">
-                  {task.scheduledDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        Scheduled for {safeDateFormat(task.scheduledDate)}
-                        {task.scheduledTime && ` at ${task.scheduledTime}`}
-                      </span>
-                    </div>
-                  )}
-                  {task.deadline && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Target className="h-4 w-4" />
-                      <span>Deadline: {safeDateFormat(task.deadline)}</span>
-                    </div>
-                  )}
-                  {task.scheduledWeek && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>Scheduled for week: {task.scheduledWeek}</span>
-                    </div>
-                  )}
-                  {task.scheduledMonth && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>Scheduled for month: {task.scheduledMonth}</span>
-                    </div>
-                  )}
-                  {task.scheduledYear && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>Scheduled for year: {task.scheduledYear}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="dependencies" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitBranch className="h-5 w-5" />
-                Task Dependencies
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Current Dependencies</Label>
-                {(task.dependencies ?? []).length > 0 ? (
-                  <div className="space-y-2">
-                    {(task.dependencies ?? []).map((depId) => {
-                      const depTask = allTasks.find((t) => t.id === depId)
-                      return (
-                        <div key={depId} className="flex justify-between items-center p-2 border rounded-md">
-                          <span className="text-sm">{depTask?.description || "Unknown Task"}</span>
-                          {isEditing && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => removeDependency(depId)}
-                            >
-                              <Trash className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No dependencies</p>
-                )}
-              </div>
-
-              {isEditing && (
-                <div className="space-y-2">
-                  <Label>Add dependency</Label>
-                  <ItemPicker
-                    mode="multi"
-                    searchLabel="Add dependency"
-                    choices={allTasks
-                      .filter(
-                        (t) =>
-                          t.id !== effectiveId &&
-                          ((task.dependencies ?? []).includes(t.id) || (!t.completed && t.parentTaskId !== effectiveId)),
-                      )
-                      .map((t) => ({ id: t.id, title: itemTitleOrUntitled(t), icon: t.icon }))}
-                    selected={task.dependencies ?? []}
-                    onChange={syncDependencies}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="subtasks" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Subtasks
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Use + on any step to break it down again. Minutes on a step count as its own estimate or the sum of the
-                steps inside, whichever is larger.
-              </p>
-              <SubtaskTree steps={task.subtasks} onChange={persistSubtasks} onRemoved={removeBackingSubtasks} onOpenStep={allTasks.some((t) => t.id === task.id) ? (step) => openStepItem(task.id, step.id) : undefined} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Split className="h-5 w-5" />
-                Molecular Breakdown
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Split this task into as many separate steps as you can. If a step can&apos;t be split further, mark it{" "}
-                <span className="font-medium">MOLECULAR</span>. Give each step enough context to understand it on its
-                own — that&apos;s what &quot;Just Start&quot; focuses on.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="split-steps">Split into steps (one per line)</Label>
-                <SplitStepsComposer onSplit={splitIntoSteps} />
-              </div>
-
-              <div className="space-y-3">
-                <Label>Steps</Label>
-                {(task.subtasks ?? []).length > 0 ? (
-                  <div className="space-y-3">
-                    {(task.subtasks ?? []).map((step) => (
-                      <div key={step.id} className="rounded-md border p-3 space-y-2">
-                        <div className="flex items-start gap-2">
-                          <Checkbox
-                            checked={step.completed}
-                            onCheckedChange={() => handleToggleStepComplete(step.id)}
-                            className="mt-1"
-                          />
-                          <span
-                            className={`flex-1 text-sm ${step.completed ? "line-through text-muted-foreground" : ""}`}
-                          >
-                            {step.description}
-                          </span>
-                          <Button
-                            variant={step.isMolecular ? "default" : "outline"}
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
-                            onClick={() => handleToggleStepMolecular(step.id)}
-                            title="Atomic step that can't be split further"
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            {step.isMolecular ? "MOLECULAR" : "Atomic?"}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleDeleteStep(step.id)}
-                          >
-                            <Trash className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <IsolatedInput
-                          placeholder="Context — what you need to know to do this step on its own…"
-                          value={step.context ?? ""}
-                          onCommit={(context) => handleStepContextChange(step.id, context)}
-                          className="text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No steps yet — split the task above to begin.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analysis" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Analysis</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="why">Why do you need to do this task?</Label>
-                {isEditing ? (
-                  <IsolatedTextarea
-                    id="why"
-                    value={task.why || ""}
-                    onLiveChange={(why) => touchDraft({ why })}
-                    onCommit={(why) => setTask((prev) => (prev ? { ...prev, why } : prev))}
-                    placeholder="Explain the purpose and motivation behind this task..."
-                    rows={3}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{task.why || "No reason specified"}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="consequences">What happens if you don't do it?</Label>
-                {isEditing ? (
-                  <IsolatedTextarea
-                    id="consequences"
-                    value={task.consequences || ""}
-                    onLiveChange={(consequences) => touchDraft({ consequences })}
-                    onCommit={(consequences) =>
-                      setTask((prev) => (prev ? { ...prev, consequences } : prev))
-                    }
-                    placeholder="Describe the potential consequences of not completing this task..."
-                    rows={3}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{task.consequences || "No consequences specified"}</p>
-                )}
-              </div>
-
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-medium mb-2">Task Metrics</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Entropy:</span>
-                    <span className="font-medium">{(task.entropy ?? 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Reward Value:</span>
-                    <span className="font-medium">{task.pointsOverride == null ? "—" : task.pointsOverride}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Cognitive Load:</span>
-                    <span className="font-medium">{task.cognitiveLoad}/3</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Estimated Duration:</span>
-                    <span className="font-medium">{task.estimatedDuration} minutes</span>
-                  </div>
-                  {task.actualDuration && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Actual Duration:</span>
-                      <span className="font-medium">{task.actualDuration} minutes</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {visiblePanels.includes("time") && (
-          <TabsContent value="time" className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <ItemPenTimeSection
-                  task={task}
-                  editableTime={isTask}
-                  readOnly={!isEditing}
-                  onPatch={patchItem}
-                  onPenLinksChange={(penLinks) => {
-                    touchDraft({ penLinks })
-                    setTask((prev) => (prev ? { ...prev, penLinks } : prev))
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {visiblePanels.includes("body") && (
-          <TabsContent value="body" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Body</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BodyPanel taskId={task.id} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {visiblePanels.includes("notes") && (
-          <TabsContent value="notes">
-            {itemShowsPersonPipelines(task, lists) ? (
-              <PersonNotes
-                person={task}
-                onChange={(patch) => {
-                  touchDraft(patch)
-                  setTask((prev) => (prev ? { ...prev, ...patch } : prev))
-                }}
-                onLive={touchDraft}
-                readDraft={getDraft}
-              />
-            ) : (
-              <ItemNotesLog
-                entries={task.noteLog}
-                standing={task.notes}
-                onChangeEntries={(noteLog) => {
-                  touchDraft({ noteLog })
-                  setTask((prev) => (prev ? { ...prev, noteLog } : prev))
-                }}
-                onLiveStanding={(notes) => touchDraft({ notes })}
-                onChangeStanding={(notes) => setTask((prev) => (prev ? { ...prev, notes } : prev))}
-              />
-            )}
-          </TabsContent>
-        )}
-
-        {visiblePanels.includes("resources") && (
-          <TabsContent value="resources">
-            <ItemResourcesPanel
-              resources={task.resources}
-              onChange={(resources) => {
-                touchDraft({ resources })
-                setTask((prev) => (prev ? { ...prev, resources } : prev))
-              }}
-            />
-          </TabsContent>
-        )}
-
-        <TabsContent value="history" className="space-y-6">
-          <ItemActivityPanel itemId={task.id} />
-        </TabsContent>
+        <ItemDetailPageTabList detailTabs={detailTabs} visiblePanels={visiblePanels} task={task} />
+        <ItemDetailPageDetails
+          task={task}
+          isEditing={isEditing}
+          isTask={isTask}
+          lists={lists}
+          touchDraft={touchDraft}
+          setTask={setTask}
+          getDraft={getDraft}
+          commitDraft={commitDraft}
+          originalTask={originalTask}
+          setOriginalTask={setOriginalTask}
+          updateTask={updateTask}
+          activeTypeId={activeTypeId}
+          viewAsTypeId={viewAsTypeId}
+          detailView={detailView}
+          openItem={openItem}
+          handleNavigateToList={handleNavigateToList}
+          onBack={onBack}
+          guardAction={guardAction}
+          itemTypesAssigned={itemTypesAssigned}
+          primaryTypeId={primaryTypeId}
+          setTypePick={setTypePick}
+          setEditingItemType={setEditingItemType}
+          removeFromCategory={removeFromCategory}
+          setLists={setLists}
+          addTag={addTag}
+          removeTag={removeTag}
+          addLink={addLink}
+          removeLink={removeLink}
+          allTasks={allTasks}
+          requestClose={requestClose}
+        />
+        <ItemDetailPageScheduling
+          task={task}
+          isEditing={isEditing}
+          scheduleableCategoryIds={scheduleableCategoryIds}
+          setTask={setTask}
+          touchDraft={touchDraft}
+        />
+        <ItemDetailPageDependencies
+          task={task}
+          isEditing={isEditing}
+          allTasks={allTasks}
+          effectiveId={effectiveId}
+          addDependency={addDependency}
+          removeDependency={removeDependency}
+          setCycleLabel={setCycleLabel}
+        />
+        <ItemDetailPageSubtasks
+          task={task}
+          effectiveId={effectiveId}
+          allTasks={allTasks}
+          setTask={setTask}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+        />
+        <ItemDetailPageAnalysis
+          task={task}
+          isEditing={isEditing}
+          touchDraft={touchDraft}
+          setTask={setTask}
+        />
+        <ItemDetailPageLedgerTabs
+          visiblePanels={visiblePanels}
+          task={task}
+          isTask={isTask}
+          isEditing={isEditing}
+          patchItem={patchItem}
+          touchDraft={touchDraft}
+          setTask={setTask}
+          lists={lists}
+          getDraft={getDraft}
+        />
       </Tabs>
       </div>
     </div>
 
-    <Dialog
-      open={itemSettingsOpen}
-      onOpenChange={(next) => {
-        if (!next && attributeLock.current) return
-        setItemSettingsOpen(next)
-      }}
-    >
-      <DialogContent
-        ref={settingsHost}
-        className="id95-dialog id95 z-[90] sm:max-w-xl max-h-[85vh] overflow-hidden !flex flex-col"
-        overlayClassName="z-[90]"
-        data-ui-name="Item settings"
-        onPointerDownOutside={(event) => {
-          const target = event.target as Element | null
-          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
-        }}
-        onInteractOutside={(event) => {
-          const target = event.target as Element | null
-          if (target?.closest?.("[data-ui-name='Attribute settings']")) event.preventDefault()
-        }}
-      >
-        <div className="id-settings-host">
-          <ItemSettingsPanel
-            task={task}
-            lists={lists}
-            isTask={isTask}
-            showLinks={false}
-            onPatch={patchItem}
-            onOpenAttribute={(id) => {
-              attributeLock.current = true
-              setAttributeSettingsId(id)
-            }}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
-    <AttributeSettingsDialog
-      attributeId={attributeSettingsId}
-      open={attributeSettingsId != null}
-      container={settingsHost.current}
-      onOpenChange={(next) => {
-        if (!next) {
-          attributeLock.current = false
-          setAttributeSettingsId(null)
-        }
-      }}
-      draftTask={task}
-      onPatchDraft={patchItem}
-    />
-    <CycleConfirmDialog
-      open={!!cycleLabel}
-      cycleLabel={cycleLabel ?? ""}
-      onDismiss={() => setCycleLabel(null)}
-    />
-
-    <ItemTypeEditor
-      open={!!editingItemType}
-      onOpenChange={(open) => {
-        if (!open) setEditingItemType(null)
-      }}
-      type={editingItemType}
-      existingIds={itemTypes.map((t) => t.id as string)}
-      allTypes={itemTypes}
-      onSave={handleSaveItemType}
-      onNavigateType={(t) => setEditingItemType(t)}
-      onDelete={
-        editingItemType && !editingItemType.builtin
-          ? () => {
-              if (
-                typeof window !== "undefined" &&
-                !window.confirm(`Delete the "${editingItemType.name}" item type? Items keep their data.`)
-              ) {
-                return
-              }
-              deleteItemType(editingItemType.id as string)
-              setEditingItemType(null)
-            }
-          : undefined
-      }
-      onOpenItem={(id) => {
-        setEditingItemType(null)
-        openItem(id)
-      }}
-    />
-    <MissReasonDialog
-      open={missAsk}
-      subject={itemTitleOrUntitled(task)}
-      onResolve={(reason) => {
-        setMissAsk(false)
-        if (task) markMissedOpportunity(task.id, undefined, reason)
-      }}
+    <ItemDetailPageDialogs
+      itemSettingsOpen={itemSettingsOpen}
+      setItemSettingsOpen={setItemSettingsOpen}
+      task={task}
+      lists={lists}
+      isTask={isTask}
+      patchItem={patchItem}
+      cycleLabel={cycleLabel}
+      setCycleLabel={setCycleLabel}
+      editingItemType={editingItemType}
+      setEditingItemType={setEditingItemType}
+      itemTypes={itemTypes}
+      onSaveItemType={handleSaveItemType}
+      onDeleteItemType={deleteEditingItemType}
+      openItem={openItem}
+      missAsk={missAsk}
+      setMissAsk={setMissAsk}
     />
     <UnsavedChangesDialog {...guard.prompt} />
-    </>
-  )
-}
-
-function SplitStepsComposer({ onSplit }: { onSplit: (text: string) => void }) {
-  const [text, setText] = useState("")
-  return (
-    <>
-      <Textarea
-        id="split-steps"
-        rows={4}
-        placeholder={"1. Open the file\n2. Find the section\n3. Write the first sentence"}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <Button
-        onClick={() => {
-          onSplit(text)
-          setText("")
-        }}
-        disabled={!parseSteps(text).length}
-      >
-        <Split className="h-4 w-4 mr-2" />
-        Add steps
-      </Button>
     </>
   )
 }

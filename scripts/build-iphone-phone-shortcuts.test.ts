@@ -3,10 +3,12 @@
  */
 import { describe, expect, it } from "vitest"
 import {
+  buildBoundNfcWorkflow,
   buildCallWorkflow,
   buildLocationWorkflow,
   buildScreenTimeWorkflow,
   buildTextWorkflow,
+  nfcShortcutDownloadName,
 } from "./build-iphone-phone-shortcuts.mjs"
 
 function sendIndex(workflow: { WFWorkflowActions: { WFWorkflowActionIdentifier: string }[] }) {
@@ -30,6 +32,13 @@ function expectTelegramSend(workflow: {
   expect(index).toBeGreaterThan(-1)
   const send = workflow.WFWorkflowActions[index]
   expect(send.WFWorkflowActionParameters.IntentAppIdentifier).toBe("ph.telegra.Telegraph")
+  expect(send.WFWorkflowActionParameters.IntentAppDefinition).toEqual({
+    BundleIdentifier: "ph.telegra.Telegraph",
+    Name: "Telegram",
+    TeamIdentifier: "C67CF9S4VU",
+    IntentClassName: "INSendMessageIntent",
+  })
+  expect(send.WFWorkflowActionParameters.ShowWhenRun).toBe(false)
   expect(send.WFWorkflowActionParameters.WFSendMessageContent).toEqual({
     Value: { Type: "Variable", VariableName: "Outgoing" },
     WFSerializationType: "WFTextTokenAttachment",
@@ -166,6 +175,55 @@ describe("buildLocationWorkflow", () => {
           a.WFWorkflowActionParameters.WFContentItemPropertyName,
       ),
     ).toEqual(["Name", "Latitude", "Longitude"])
+  })
+})
+
+function openBotUrl(workflow: {
+  WFWorkflowActions: {
+    WFWorkflowActionIdentifier: string
+    WFWorkflowActionParameters: { WFInput?: { Value?: { string?: string } } }
+  }[]
+}) {
+  const open = workflow.WFWorkflowActions.find((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.openurl")
+  return open?.WFWorkflowActionParameters.WFInput?.Value?.string ?? ""
+}
+
+describe("buildBoundNfcWorkflow", () => {
+  it("bakes a door id in and opens the bot chat", () => {
+    const workflow = buildBoundNfcWorkflow({ id: "door", name: "Front door", askQuantity: false })
+    expect(workflow).not.toBeNull()
+    expect(workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.sendmessage")).toBe(
+      false,
+    )
+    expect(workflow!.WFWorkflowName).toBe("NFC Front door")
+    expect(textBlob(workflow!)).toBe("nfc:door")
+    expect(openBotUrl(workflow!)).toBe("tg://resolve?domain=brain2_phone_bot&text=\uFFFC")
+    expect(
+      workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.urlencode"),
+    ).toBe(true)
+    expect(
+      workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask"),
+    ).toBe(false)
+    expect(workflow!.WFWorkflowImportQuestions).toEqual([])
+    expect(nfcShortcutDownloadName("Front door", "door")).toBe("NFC Front door.shortcut")
+  })
+
+  it("asks how many for a dose and keeps the id in the line", () => {
+    const workflow = buildBoundNfcWorkflow({ id: "Adderall", name: "Adderall", askQuantity: true })
+    expect(workflow).not.toBeNull()
+    expect(textBlob(workflow!)).toBe("nfc:adderall \uFFFC")
+    expect(openBotUrl(workflow!)).toContain("tg://resolve?domain=brain2_phone_bot&text=")
+    const asks = workflow!.WFWorkflowActions.filter(
+      (a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.ask",
+    )
+    expect(asks).toHaveLength(1)
+    expect(workflow!.WFWorkflowActions.some((a) => a.WFWorkflowActionIdentifier === "is.workflow.actions.conditional")).toBe(
+      false,
+    )
+  })
+
+  it("refuses an empty id", () => {
+    expect(buildBoundNfcWorkflow({ id: "  ", name: "Nope" })).toBeNull()
   })
 })
 

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Lab — Habits</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/Home/Habits/habit-grid.css">
+<link rel="stylesheet" href="/components/Home/Habits/habit-chrome.css">
+<link rel="stylesheet" href="/components/Home/Habits/habit-led-lamp.css">
+<link rel="stylesheet" href="/components/Home/Habits/percent-led-bar.css">
+<link rel="stylesheet" href="/components/Home/Habits/cockpit-switch.css">
+<link rel="stylesheet" href="/components/Home/Habits/noble-gas-tube.css">
+<style>
+  .lab-page { display: flex; align-items: stretch; height: 100vh; min-height: 0; }
+  .lab-bench {
+    flex: 0 0 216px;
+    width: 216px;
+    box-sizing: border-box;
+    overflow: auto;
+    padding: 10px 10px 16px;
+    background: #d4d0c8;
+    color: #111;
+    border-right: 2px solid #808080;
+    box-shadow: inset -1px 0 #fff;
+    font-size: 12px;
+  }
+  .lab-bench h1 { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .lab-bench label { display: flex; flex-direction: column; gap: 2px; margin: 0 0 8px; }
+  .lab-bench select, .lab-bench input[type="range"] { width: 100%; }
+  .lab-bench button { margin-top: 4px; }
+  .lab-read { margin: -4px 0 8px; font-size: 11px; color: #333; }
+  .lab-stage { flex: 1 1 auto; min-width: 0; height: 100vh; overflow: auto; }
+
+  [data-lab-face="tahoma"] { font-family: Tahoma, "MS Sans Serif", Geneva, sans-serif; }
+  [data-lab-face="georgia"] { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; }
+  [data-lab-face="courier"] { font-family: "Courier New", Courier, monospace; }
+
+  [data-lab-scale="94"] { font-size: 94%; }
+  [data-lab-scale="96"] { font-size: 96%; }
+  [data-lab-scale="98"] { font-size: 98%; }
+  [data-lab-scale="102"] { font-size: 102%; }
+  [data-lab-scale="104"] { font-size: 104%; }
+  [data-lab-scale="106"] { font-size: 106%; }
+
+  .hab-head[data-lab-density="tight"],
+  .hab95[data-lab-density="tight"] .hab-head { padding: 6px 8px; gap: 6px; }
+  .hab-head[data-lab-density="roomy"],
+  .hab95[data-lab-density="roomy"] .hab-head { padding: 10px 12px; gap: 10px; }
+  .hab-view-changer[data-lab-density="tight"] [role="tablist"],
+  .hab95[data-lab-density="tight"] .hab-view-changer [role="tablist"] { gap: 2px; }
+  .hab-view-changer[data-lab-density="roomy"] [role="tablist"],
+  .hab95[data-lab-density="roomy"] .hab-view-changer [role="tablist"] { gap: 6px; }
+  .hab-control-panel[data-lab-density="tight"] .hab-control-stack,
+  .hab95[data-lab-density="tight"] .hab-control-stack { gap: 4px; }
+  .hab-control-panel[data-lab-density="roomy"] .hab-control-stack,
+  .hab95[data-lab-density="roomy"] .hab-control-stack { gap: 10px; }
+  .hab-well[data-lab-density="roomy"],
+  .hab95[data-lab-density="roomy"] .hab-well { padding-bottom: 6px; }
+  .hab-willpower-gems[data-lab-density="tight"] { --hab-willpower-scale: 0.8; }
+  .hab-willpower-gems[data-lab-density="roomy"],
+  .hab95[data-lab-density="roomy"] .hab-willpower-gems { --hab-willpower-scale: 0.94; }
+
+  [data-lab-radius="square"] :where(button, [role="tab"], .habit95-select):not(.hab-willpower-gems-hit):not(.hab-lamp):not(.hab-rocker) { border-radius: 0; }
+  [data-lab-radius="soft"] :where(button, [role="tab"], .habit95-select):not(.hab-willpower-gems-hit):not(.hab-lamp):not(.hab-rocker) { border-radius: 6px; }
+
+  .hab95[data-lab-layout="left"] .hab-desk { grid-template-columns: var(--hab-control-panel-width, 196px) minmax(0, 1fr); }
+  .hab95[data-lab-layout="left"] .hab-sheet > .hab-sheet-mast,
+  .hab95[data-lab-layout="left"] .hab-sheet > .hab-well { grid-column: 2; }
+  .hab95[data-lab-layout="left"] .hab-desk > .hab-control-panel { grid-column: 1; grid-row: 1 / span 2; }
+  .hab95[data-lab-layout="stack"] .hab-desk { grid-template-columns: minmax(0, 1fr); height: auto; max-height: none; }
+  .hab95[data-lab-layout="stack"] .hab-sheet > .hab-well { min-height: 280px; max-height: 52vh; }
+  .hab95[data-lab-layout="stack"] .hab-desk > .hab-control-panel {
+    grid-column: 1; grid-row: 3; width: 100% !important; min-width: 0; max-width: none; position: relative;
+  }
+  .hab-head[data-lab-layout="stack"] { grid-template-columns: 1fr auto; }
+  .hab-head[data-lab-layout="stack"] .hab-head-center { grid-column: 1 / -1; }
+  .hab-head[data-lab-layout="left"] .hab-head-utils { order: -1; }
+  .hab-view-changer[data-lab-layout="stack"] [role="tablist"].hab-period-keys { grid-template-columns: 1fr 1fr; }
+  .hab-control-panel[data-lab-layout="stack"] .hab-control-streak { grid-template-columns: 1fr; }
+  .hab-willpower-gems[data-lab-layout="stack"] { --hab-willpower-scale: 0.78; }
+
+  [data-lab-palette="cool"] { background-color: #c5ced6; background-image: linear-gradient(165deg, #e6edf2 0%, #c5ced6 52%, #aeb8c2 100%); }
+  [data-lab-palette="warm"] { background-color: #d4cfc6; background-image: linear-gradient(165deg, #efe8dc 0%, #d4cfc6 52%, #c4b8a8 100%); }
+  [data-lab-palette="graphite"] { background-color: #b4b8bc; background-image: linear-gradient(165deg, #d7dbde 0%, #b4b8bc 52%, #9a9ea2 100%); }
+</style>
+</head>
+<body class="win95-app">
+<div class="lab-page">
+  <aside class="lab-bench" aria-label="Lab">
+    <h1>Lab</h1>
+    <label>Scope
+      <select id="lab-scope">
+        <option value="section">Whole section</option>
+        <option value="fascia">Fascia</option>
+        <option value="period">Period keys</option>
+        <option value="rail">Control rail</option>
+        <option value="grid">Grid</option>
+        <option value="gems">Willpower gems</option>
+      </select>
+    </label>
+    <label>Type face
+      <select id="lab-face">
+        <option value="app">App</option>
+        <option value="tahoma">Tahoma</option>
+        <option value="georgia">Georgia</option>
+        <option value="courier">Courier</option>
+      </select>
+    </label>
+    <label>Type scale
+      <input id="lab-scale" type="range" min="94" max="106" step="2" value="100">
+    </label>
+    <p class="lab-read" id="lab-scale-read">100%</p>
+    <label>Density
+      <input id="lab-density" type="range" min="0" max="2" step="1" value="1">
+    </label>
+    <p class="lab-read" id="lab-density-read">App</p>
+    <label>Radius
+      <input id="lab-radius" type="range" min="0" max="2" step="1" value="1">
+    </label>
+    <p class="lab-read" id="lab-radius-read">App</p>
+    <label>Layout
+      <select id="lab-layout">
+        <option value="app">Desk</option>
+        <option value="left">Rail left</option>
+        <option value="stack">Stack</option>
+      </select>
+    </label>
+    <label>Palette
+      <select id="lab-palette">
+        <option value="app">House metal</option>
+        <option value="cool">Cool</option>
+        <option value="warm">Warm</option>
+        <option value="graphite">Graphite</option>
+      </select>
+    </label>
+    <button type="button" id="lab-reset">Reset</button>
+  </aside>
+
+  <div class="lab-stage">
+    <div class="hab95" data-lab-piece="section">
+      <div class="hab-frame" data-ui-name="Habits" data-ui-docs="components/Home/Habits/README.md">
+        <div class="hab-frame-tabs" data-orientation="horizontal">
+          <div class="hab-head" data-lab-piece="fascia">
+            <h3 class="hab-head-title">Habits</h3>
+            <div class="hab-head-center">
+              <div class="habit-week-nav">
+                <button type="button" class="habit-chrome-btn" aria-label="Previous Week">
+                  <svg class="h-3 w-3" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <button type="button" class="habit-chrome-btn is-on" aria-pressed="true">
+                  <svg class="h-3 w-3" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                  Today
+                </button>
+                <span class="habit-week-nav-range">Oct 26 - Nov 1, 2026</span>
+                <button type="button" class="habit-chrome-btn" aria-label="Next Week">
+                  <svg class="h-3 w-3" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="hab-head-utils">
+              <button type="button" class="habit-chrome-btn">
+                <svg class="h-3.5 w-3.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Settings
+              </button>
+            </div>
+          </div>
+
+          <div class="habit-grades hab-view-changer" data-lab-piece="period">
+            <div role="tablist" aria-label="Habit period" class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground hab-period-keys">
+              <button type="button" role="tab" aria-selected="true" data-state="active" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Daily (3)</button>
+              <button type="button" role="tab" aria-selected="false" data-state="inactive" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Weekly (0)</button>
+              <button type="button" role="tab" aria-selected="false" data-state="inactive" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Monthly (0)</button>
+              <button type="button" role="tab" aria-selected="false" data-state="inactive" data-season="winter" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium">Season (0)</button>
+            </div>
+          </div>
+
+          <div role="tabpanel" data-state="active" class="hab-pane">
+            <div class="hab-desk">
+              <div class="hab-sheet">
+                <div class="hab-sheet-mast">
+                  <div class="hab-wand-mount" data-testid="habit-wand-banner-mount"></div>
+                </div>
+                <div class="hab-well" data-lab-piece="grid">
+                  <div class="habit-grid-wrap">
+                    <table class="habit-grid">
+                      <colgroup>
+                        <col class="col-act">
+                        <col class="col-name">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-day">
+                        <col class="col-pct">
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th class="col-act"></th>
+                          <th class="col-name">Task</th>
+                          <th class="col-day habit-day-today">Mon<span class="habit-day-sub">10/26</span></th>
+                          <th class="col-day">Tue<span class="habit-day-sub">10/27</span></th>
+                          <th class="col-day">Wed<span class="habit-day-sub">10/28</span></th>
+                          <th class="col-day">Thu<span class="habit-day-sub">10/29</span></th>
+                          <th class="col-day">Fri<span class="habit-day-sub">10/30</span></th>
+                          <th class="col-day">Sat<span class="habit-day-sub">10/31</span></th>
+                          <th class="col-day">Sun<span class="habit-day-sub">11/1</span></th>
+                          <th class="col-pct">%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="habit-kind-band" data-habit-kind="BOOLEAN"><td colspan="10">Lamps</td></tr>
+                        <tr class="group" data-habit-id="letters" data-habit-kind="BOOLEAN">
+                          <td class="col-act"><button type="button" data-no95="" class="habit-gem-btn habit-gem-socket" aria-label="Edit"><span class="habit-gem-press"><img src="/gems-removebackground/0073f9caf9df33a0b24268e75bb4fa08.png" alt="" width="18" height="18" class="habit-gem is-inverted" data-inverted="true"></span></button></td>
+                          <td class="col-name font-medium" title="Letters. 2 days done this week.">
+                            <div class="habit-name"><span class="habit-name-title">Letters</span><span class="habit-name-meta"><span class="habit-week-streak" aria-label="2 days done this week"><span>2d</span></span></span></div>
+                          </td>
+                          <td class="col-day habit-day-today"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="true" aria-label="Letters 2026-10-26" data-state="on" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Letters 2026-10-27" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="true" aria-label="Letters 2026-10-28" data-state="on" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Letters 2026-10-29" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Letters 2026-10-30" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Letters 2026-10-31" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Letters 2026-11-01" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-pct" data-testid="habit-span-percent" title="Double-click for the span breakdown"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="29" aria-label="Letters week 29%" data-lit="3" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:29%"></span></span></span><span class="hab-pled-bar-read">29%</span></span></span></td>
+                        </tr>
+                        <tr class="group" data-habit-id="outside" data-habit-kind="BOOLEAN">
+                          <td class="col-act"><button type="button" data-no95="" class="habit-gem-btn habit-gem-socket" aria-label="Edit"><span class="habit-gem-press"><img src="/gems-removebackground/060f3262fe39ff5f50889aa3d4a4a8f4.png" alt="" width="18" height="18" class="habit-gem is-inverted" data-inverted="true"></span></button></td>
+                          <td class="col-name font-medium" title="Outside. 2 days done this week.">
+                            <div class="habit-name"><span class="habit-name-title">Outside</span><span class="habit-name-meta"><span class="habit-week-streak" aria-label="2 days done this week"><span>2d</span></span></span></div>
+                          </td>
+                          <td class="col-day habit-day-today"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="true" aria-label="Outside 2026-10-26" data-state="on" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="true" aria-label="Outside 2026-10-27" data-state="on" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Outside 2026-10-28" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Outside 2026-10-29" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Outside 2026-10-30" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Outside 2026-10-31" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-day"><div class="habit-lamp-cell"><button type="button" role="checkbox" aria-checked="false" aria-label="Outside 2026-11-01" data-state="off" data-no95="" class="hab-lamp" style="--hab-lamp-tint:#7d6bb8"><span class="hab-lamp-socket" aria-hidden="true"><span class="hab-lamp-bezel"><span class="hab-lamp-glass"><span class="hab-lamp-die"></span><span class="hab-lamp-core"></span><span class="hab-lamp-bloom"></span><span class="hab-lamp-spec"></span><span class="hab-lamp-spec hab-lamp-spec-low"></span></span></span></span></button></div></td>
+                          <td class="col-pct" data-testid="habit-span-percent" title="Double-click for the span breakdown"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="29" aria-label="Outside week 29%" data-lit="3" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:29%"></span></span></span><span class="hab-pled-bar-read">29%</span></span></span></td>
+                        </tr>
+                        <tr class="habit-kind-band" data-habit-kind="GOAL"><td colspan="10">Goals</td></tr>
+                        <tr class="group" data-habit-id="sleep" data-habit-kind="GOAL">
+                          <td class="col-act"><button type="button" data-no95="" class="habit-gem-btn habit-gem-socket" aria-label="Edit"><span class="habit-gem-press"><img src="/gems-removebackground/0a86dbc1946d359b3aa1b1860fa5d27b.png" alt="" width="18" height="18" class="habit-gem is-inverted" data-inverted="true"></span></button></td>
+                          <td class="col-name font-medium" title="Sleep by 1. 1 day done this week.">
+                            <div class="habit-name"><span class="habit-name-title">Sleep by 1</span><span class="habit-name-meta"><span class="habit-week-streak" aria-label="1 day done this week"><span>1d</span></span></span></div>
+                          </td>
+                          <td class="col-day habit-day-today"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="1" aria-label="Sleep by 1 2026-10-26" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-10-27" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-10-28" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-10-29" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-10-30" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-10-31" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-day"><div class="habit-cell-stack"><div class="habit-cell-num"><input type="text" inputmode="decimal" autocomplete="off" value="" aria-label="Sleep by 1 2026-11-01" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base habit-cell-slot" style="border-color:#3b82f640"><span class="habit-goal"><span class="habit-goal-den">/1</span></span></div></div></td>
+                          <td class="col-pct" data-testid="habit-span-percent" title="Double-click for the span breakdown"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="14" aria-label="Sleep by 1 week 14%" data-lit="1" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:14%"></span></span></span><span class="hab-pled-bar-read">14%</span></span></span></td>
+                        </tr>
+                        <tr class="habit-grid-foot font-semibold">
+                          <td class="col-act"></td>
+                          <td class="col-name">Daily Completion</td>
+                          <td class="col-day habit-day-today"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="2026-10-26 daily 100%" data-lit="10" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:100%"></span></span></span><span class="hab-pled-bar-read">100%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33" aria-label="2026-10-27 daily 33%" data-lit="3" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:33%"></span></span></span><span class="hab-pled-bar-read">33%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33" aria-label="2026-10-28 daily 33%" data-lit="3" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:33%"></span></span></span><span class="hab-pled-bar-read">33%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="2026-10-29 daily 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span><span class="hab-pled-bar-read">0%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="2026-10-30 daily 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span><span class="hab-pled-bar-read">0%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="2026-10-31 daily 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span><span class="hab-pled-bar-read">0%</span></span></span></td>
+                          <td class="col-day"><span class="habit-pct"><span class="hab-pled-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="2026-11-01 daily 0%" data-lit="0" data-density="compact" style="--hab-led-tint:#7d6bb8"><span class="hab-pled-bar-bezel" aria-hidden="true"><span class="hab-pled-bar-glass"><span class="hab-pled-bar-mercury" style="width:0%"></span></span></span><span class="hab-pled-bar-read">0%</span></span></span></td>
+                          <td class="col-pct"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="hab-control-panel hab-control-rail" aria-label="Home Dashboard Habits Tab Control Panel" data-control-panel="habits" data-ui-name="Habits control panel" data-ui-help="Grades, streaks, exemption wand, missed op wand, view rockers, New habit, and Willpower gems." data-ui-docs="components/Home/Habits/README.md" data-lab-piece="rail" style="width:196px;--hab-control-panel-width:196px;--hab-willpower-scale:1">
+                <div class="hab-control-stack">
+                  <div class="hab-control-band" data-band="meters">
+                    <div class="hab-control-gauges">
+                      <button type="button" class="habit-week-grade" title="Click for raw vs curved breakdown">
+                        <span class="text-muted-foreground">Week grade</span>
+                        <strong>100%</strong>
+                        <div class="hab-gas-tube" role="progressbar" aria-label="Week grade" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="100 percent" data-percent="100" data-gas="argon" data-hue="#508b51" data-shape="finger-tube" style="--hab-plasma:100%;--hab-gas-core:#e8f6e4;--hab-gas-mid:#3d7a40;--hab-gas-halo:#508b51;--hab-gas-volume:#1d5c34;--hab-gas-residual:#07120a;--hab-gas-residual-hi:#14301c">
+                          <svg class="hab-gas-svg" viewBox="0 0 320 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                            <defs>
+                              <clipPath id="hab-bore-a"><path d="M 28 13 H 292 A 15 15 0 0 1 292 43 H 28 A 15 15 0 0 1 28 13 Z"/></clipPath>
+                              <clipPath id="hab-clip-a"><rect class="hab-gas-plasma-clip" x="38" y="13" width="268" height="30" rx="15" ry="15"/></clipPath>
+                            </defs>
+                            <rect x="1" y="8" width="30" height="40" rx="12" class="hab-gas-cradle"/>
+                            <path class="hab-gas-envelope" data-dome="hemisphere" d="M 28 10 H 292 A 18 18 0 0 1 292 46 H 28 A 18 18 0 0 1 28 10 Z" fill="rgba(18,28,36,0.42)" stroke="rgba(168,196,214,0.38)" stroke-width="1.05"/>
+                            <path d="M 28 13 H 292 A 15 15 0 0 1 292 43 H 28 A 15 15 0 0 1 28 13 Z" fill="var(--hab-gas-residual)"/>
+                            <g clip-path="url(#hab-bore-a)">
+                              <g clip-path="url(#hab-clip-a)" class="hab-gas-live">
+                                <rect class="hab-gas-bloom" x="38" y="13" width="268" height="30" rx="15" fill="var(--hab-gas-halo)"/>
+                                <rect class="hab-gas-volume" x="38" y="13" width="268" height="30" rx="15" fill="var(--hab-gas-volume)"/>
+                                <rect class="hab-gas-column" x="38" y="20" width="268" height="16" rx="8" fill="var(--hab-gas-core)"/>
+                                <ellipse class="hab-gas-head" cx="291" cy="28" rx="15" ry="11.7" fill="var(--hab-gas-halo)"/>
+                              </g>
+                            </g>
+                            <path class="hab-gas-skin" d="M 28 10 H 292 A 18 18 0 0 1 292 46 H 28 A 18 18 0 0 1 28 10 Z" fill="rgba(200,220,232,0.14)"/>
+                            <rect x="1" y="8" width="16" height="40" rx="10" class="hab-gas-occlusion"/>
+                          </svg>
+                        </div>
+                      </button>
+                      <button type="button" class="habit-week-grade" title="Click for elapsed row completion breakdown">
+                        <span class="text-muted-foreground">Perfect output</span>
+                        <strong>86%</strong>
+                        <div class="hab-gas-tube" role="progressbar" aria-label="Perfect output" aria-valuemin="0" aria-valuemax="100" aria-valuenow="86" aria-valuetext="86 percent" data-percent="86" data-gas="xenon" data-hue="#25366a" data-shape="finger-tube" style="--hab-plasma:86%;--hab-gas-core:#e4eaf6;--hab-gas-mid:#3a4e86;--hab-gas-halo:#25366a;--hab-gas-volume:#1a2748;--hab-gas-residual:#070a12;--hab-gas-residual-hi:#141c30">
+                          <svg class="hab-gas-svg" viewBox="0 0 320 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                            <defs>
+                              <clipPath id="hab-bore-b"><path d="M 28 13 H 292 A 15 15 0 0 1 292 43 H 28 A 15 15 0 0 1 28 13 Z"/></clipPath>
+                              <clipPath id="hab-clip-b"><rect class="hab-gas-plasma-clip" x="38" y="13" width="230" height="30" rx="15" ry="15"/></clipPath>
+                            </defs>
+                            <rect x="1" y="8" width="30" height="40" rx="12" class="hab-gas-cradle"/>
+                            <path class="hab-gas-envelope" data-dome="hemisphere" d="M 28 10 H 292 A 18 18 0 0 1 292 46 H 28 A 18 18 0 0 1 28 10 Z" fill="rgba(18,28,36,0.42)" stroke="rgba(168,196,214,0.38)" stroke-width="1.05"/>
+                            <path d="M 28 13 H 292 A 15 15 0 0 1 292 43 H 28 A 15 15 0 0 1 28 13 Z" fill="var(--hab-gas-residual)"/>
+                            <g clip-path="url(#hab-bore-b)">
+                              <g clip-path="url(#hab-clip-b)" class="hab-gas-live">
+                                <rect class="hab-gas-bloom" x="38" y="13" width="230" height="30" rx="15" fill="var(--hab-gas-halo)"/>
+                                <rect class="hab-gas-volume" x="38" y="13" width="230" height="30" rx="15" fill="var(--hab-gas-volume)"/>
+                                <rect class="hab-gas-column" x="38" y="20" width="230" height="16" rx="8" fill="var(--hab-gas-core)"/>
+                                <ellipse class="hab-gas-head" cx="253" cy="28" rx="15" ry="11.7" fill="var(--hab-gas-halo)"/>
+                              </g>
+                            </g>
+                            <path class="hab-gas-skin" d="M 28 10 H 292 A 18 18 0 0 1 292 46 H 28 A 18 18 0 0 1 28 10 Z" fill="rgba(200,220,232,0.14)"/>
+                            <rect x="1" y="8" width="16" height="40" rx="10" class="hab-gas-occlusion"/>
+                          </svg>
+                        </div>
+                      </button>
+                      <p class="hab-control-through">through Mon</p>
+                    </div>
+                    <div class="hab-control-streak">
+                      <span class="hab-control-streak-plate">Good days</span>
+                      <button type="button" class="habit-good-days" title="Click for Good day streak, last 30 days, and accomplishment settings">
+                        <span class="habit-good-days-stat"><span class="text-muted-foreground">Streak</span><strong>4</strong></span>
+                      </button>
+                      <button type="button" class="habit-good-days" title="Click for Good day streak, last 30 days, and accomplishment settings">
+                        <span class="habit-good-days-stat"><span class="text-muted-foreground">Last 30</span><strong>12<span class="habit-good-days-of">/30</span></strong></span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="hab-control-band" data-band="views">
+                    <div class="hab-control-plate">
+                      <span class="hab-sort-legend">Views</span>
+                      <div class="hab-sort-bay">
+                        <button type="button" id="highlight-priorities" role="switch" aria-checked="false" aria-label="Highlight priorities" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Highlight priorities</span></button>
+                        <button type="button" id="streak-marks" role="switch" aria-checked="true" aria-label="Streaks and multipliers" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Streaks and multipliers</span></button>
+                        <button type="button" id="group-by-kind" role="switch" aria-checked="true" aria-label="Group by category" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Group by category</span></button>
+                        <button type="button" id="heatmap-view" role="switch" aria-checked="false" aria-label="Heatmap View" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Heatmap View</span></button>
+                        <button type="button" id="day-view" role="switch" aria-checked="false" aria-label="Day View" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Day View</span></button>
+                        <button type="button" id="hide-done" role="switch" aria-checked="false" aria-label="Hide Done" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Hide Done</span></button>
+                        <button type="button" id="hide-completed-and-missed" role="switch" aria-checked="false" aria-label="Mask done and missed" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Mask done and missed</span></button>
+                      </div>
+                    </div>
+                    <div class="hab-control-plate">
+                      <span class="hab-sort-legend">Order</span>
+                      <div class="hab-sort-bay">
+                        <div class="hab-priority hab-control-bar" role="region" aria-label="Control bar">
+                          <div class="hab-bar-tools">
+                            <button type="button" class="hab-priority-text">Edit default order</button>
+                            <div class="hab-priority-sort" id="habit-sort">
+                              <span class="hab-priority-sort-legend">SORT:</span>
+                              <div class="habit95-pick">
+                                <button type="button" class="habit95-select" aria-label="Sort" aria-expanded="false" aria-haspopup="listbox"><span class="habit95-select-label">Default</span><span class="habit95-select-arrow" aria-hidden="true"></span></button>
+                              </div>
+                              <button type="button" class="hab-priority-dir is-asc" aria-pressed="false" aria-label="Sort ascending" title="As stored"><span aria-hidden="true">↑</span></button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="hab-control-band" data-band="sheet">
+                    <div class="hab-control-toggles">
+                      <div class="hab-control-plate">
+                        <span class="hab-sort-legend">Sheet lamps</span>
+                        <div class="hab-sort-bay">
+                          <button type="button" class="hab-wand" aria-pressed="false" data-ui-name="Exemption wand" aria-label="Exemption wand" title="Exemption wand. Turn it on to waive periods that do not apply, without marking them done.">
+                            <svg class="hab-wand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 3.2c.4-.8 1.6-.8 2 0l.7 1.4 1.5.3c.9.2 1.2 1.3.6 1.9l-1.1 1 .3 1.5c.2.9-.7 1.6-1.5 1.2l-1.3-.7-1.3.7c-.8.4-1.7-.3-1.5-1.2l.3-1.5-1.1-1c-.6-.6-.3-1.7.6-1.9l1.5-.3.7-1.4z" fill="currentColor"/><path d="M13.2 9.6 4.2 20.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3.4 20.8h2.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                            <span>Exemption wand</span>
+                          </button>
+                          <button type="button" class="hab-wand" aria-pressed="false" data-ui-name="Missed op wand" aria-label="Missed op wand" title="Missed op wand. Turn it on to mark a period definitely not done.">
+                            <svg class="hab-wand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 3.2c.4-.8 1.6-.8 2 0l.7 1.4 1.5.3c.9.2 1.2 1.3.6 1.9l-1.1 1 .3 1.5c.2.9-.7 1.6-1.5 1.2l-1.3-.7-1.3.7c-.8.4-1.7-.3-1.5-1.2l.3-1.5-1.1-1c-.6-.6-.3-1.7.6-1.9l1.5-.3.7-1.4z" fill="currentColor"/><path d="M13.2 9.6 4.2 20.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3.4 20.8h2.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                            <span>Missed op wand</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="hab-control-band" data-band="lamps">
+                    <div class="hab-control-plate">
+                      <span class="hab-sort-legend">Lamps</span>
+                      <div class="hab-sort-bay">
+                        <button type="button" id="loading-bar" role="switch" aria-checked="true" aria-label="Loading Bar" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Loading Bar</span></button>
+                        <button type="button" id="small-leds" role="switch" aria-checked="true" aria-label="Small LEDs" class="hab-rocker"><span class="hab-rocker-plate" aria-hidden="true"><span class="hab-rocker-throw"></span><span class="hab-rocker-jewel"></span></span><span class="hab-rocker-caption">Small LEDs</span></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="habit-chrome-btn habit-chrome-btn-cta hab-control-new">
+                  <svg class="inline h-3 w-3" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                  New habit
+                </button>
+                <figure class="hab-willpower-gems" aria-label="Willpower gems" data-ui-name="Willpower gems" data-ui-docs="components/Home/Habits/README.md" data-lab-piece="gems">
+                  <button type="button" class="hab-willpower-gems-hit" aria-label="Stir Willpower gems" title="Press the plate to stir. Grab a gem to throw it." data-physics="willpower-gems" data-no95="">
+                    <span class="hab-willpower-stage">
+                      <img src="/orbs-removebackground/d7fec8012ff08f0901df8f4c28f718a0.png" alt="" class="hab-willpower-crystal" draggable="false">
+                      <img src="/gems-removebackground/0073f9caf9df33a0b24268e75bb4fa08.png" alt="" width="14" height="14" class="hab-willpower-stone is-front" data-depth="front" style="left:8px;top:6px;width:14px;height:14px" draggable="false">
+                      <img src="/gems-removebackground/060f3262fe39ff5f50889aa3d4a4a8f4.png" alt="" width="14" height="14" class="hab-willpower-stone is-front" data-depth="front" style="left:92px;top:18px;width:14px;height:14px" draggable="false">
+                    </span>
+                    <span class="hab-willpower-gems-label">Willpower gems</span>
+                  </button>
+                  <figcaption>
+                    <button type="button" class="habit-chrome-btn hab-willpower-lab-toggle" aria-haspopup="dialog" aria-expanded="false">Physics</button>
+                  </figcaption>
+                </figure>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var attrs = ["data-lab-face", "data-lab-scale", "data-lab-density", "data-lab-radius", "data-lab-layout", "data-lab-palette"];
+  var densityName = ["tight", "app", "roomy"];
+  var radiusName = ["square", "app", "soft"];
+  var scopeEl = document.getElementById("lab-scope");
+  var faceEl = document.getElementById("lab-face");
+  var scaleEl = document.getElementById("lab-scale");
+  var densityEl = document.getElementById("lab-density");
+  var radiusEl = document.getElementById("lab-radius");
+  var layoutEl = document.getElementById("lab-layout");
+  var paletteEl = document.getElementById("lab-palette");
+
+  function piece() {
+    return document.querySelector('[data-lab-piece="' + scopeEl.value + '"]');
+  }
+
+  function layoutFor(scope, layout) {
+    if (layout === "app") return null;
+    if (scope === "section") return layout;
+    if (scope === "fascia") return layout;
+    if (scope === "period" && layout === "stack") return "stack";
+    if (scope === "rail" && layout === "stack") return "stack";
+    if (scope === "gems" && layout === "stack") return "stack";
+    return null;
+  }
+
+  function paint() {
+    document.querySelectorAll("[data-lab-piece]").forEach(function (el) {
+      attrs.forEach(function (name) { el.removeAttribute(name); });
+    });
+    var host = piece();
+    if (!host) return;
+    if (faceEl.value !== "app") host.setAttribute("data-lab-face", faceEl.value);
+    if (scaleEl.value !== "100") host.setAttribute("data-lab-scale", scaleEl.value);
+    if (densityEl.value !== "1") host.setAttribute("data-lab-density", densityName[Number(densityEl.value)]);
+    if (radiusEl.value !== "1") host.setAttribute("data-lab-radius", radiusName[Number(radiusEl.value)]);
+    var layout = layoutFor(scopeEl.value, layoutEl.value);
+    if (layout) host.setAttribute("data-lab-layout", layout);
+    if (paletteEl.value !== "app") host.setAttribute("data-lab-palette", paletteEl.value);
+    document.getElementById("lab-scale-read").textContent = scaleEl.value + "%";
+    document.getElementById("lab-density-read").textContent = densityEl.value === "1" ? "App" : densityName[Number(densityEl.value)];
+    document.getElementById("lab-radius-read").textContent = radiusEl.value === "1" ? "App" : radiusName[Number(radiusEl.value)];
+  }
+
+  function reset() {
+    scopeEl.value = "section";
+    faceEl.value = "app";
+    scaleEl.value = "100";
+    densityEl.value = "1";
+    radiusEl.value = "1";
+    layoutEl.value = "app";
+    paletteEl.value = "app";
+    paint();
+  }
+
+  [scopeEl, faceEl, scaleEl, densityEl, radiusEl, layoutEl, paletteEl].forEach(function (el) {
+    el.addEventListener("input", paint);
+    el.addEventListener("change", paint);
+  });
+  document.getElementById("lab-reset").addEventListener("click", reset);
+})();
+</script>
+</body>
+</html>

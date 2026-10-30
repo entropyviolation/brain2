@@ -12,7 +12,7 @@
 import type { CompletionReviewSummary, GoalTexture } from "@/lib/completion-review"
 import { formatReviewPoints } from "@/lib/completion-review"
 import { formatDurationMinutes } from "@/lib/estimated-values"
-import { FindingBlock, StudioBars, StudioReadout } from "./studio-kit"
+import { FindingBlock, StudioBars, StudioReadout } from "./studio/studio-kit"
 
 function signedGap(gap: number): string {
   const rounded = Math.round(gap * 10) / 10

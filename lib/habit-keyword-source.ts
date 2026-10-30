@@ -16,6 +16,7 @@
  * A hit with no timestamp is skipped. It is not painted onto every period.
  */
 import { peelLogLineWhen } from "@/lib/ingest/log-line-time"
+import { escapeRegExp } from "@/lib/string-utils"
 import type { HabitKeywordSource, HabitKeywordUse, TaskCompletion } from "./types"
 
 /**
@@ -116,10 +117,6 @@ export function exactKeywordPhrase(message: string, phrase: string): boolean {
   const left = message.trim().toLowerCase()
   const right = phrase.trim().toLowerCase()
   return left.length > 0 && left === right
-}
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
 /**

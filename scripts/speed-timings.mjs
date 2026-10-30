@@ -8,7 +8,7 @@
  *   SPEED_BASE_URL=http://127.0.0.1:4173 node scripts/speed-timings.mjs
  *
  * Records: first paint, time until the saved tab is visible, a Home → Lists →
- * Analytics → Lists switch, and scripting time for one habit check is left to
+ * Data → Lists switch, and scripting time for one habit check is left to
  * the performance panel (a scripted click cannot see a private vault). Prints
  * JSON to stdout.
  */
@@ -49,7 +49,7 @@ async function switchTo(name) {
 }
 
 const switches = {}
-for (const name of ["Home", "Lists", "Analytics", "Lists"]) {
+for (const name of ["Home", "Lists", "Data", "Lists"]) {
   switches[name + (switches[name] ? "-back" : "")] = await switchTo(name)
 }
 

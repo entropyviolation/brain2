@@ -1,5 +1,5 @@
 /**
- * components/header-nav-buttons.tsx — Mill Back / Forward keys
+ * components/header-nav-buttons.tsx — Keycap Back / Forward keys
  *
  * Compact Nav well at the leading edge of the header body (left of Friend).
  * Tracks in-app screens via `useScreenHistory` — not window.history alone.

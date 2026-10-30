@@ -5,14 +5,18 @@
  * The phase is not stored. Spotting is not a phase. This file is education
  * and reflection from the user's own marks. It is not a diagnosis.
  *
- * The popup reads `clinicalLensSections`, `chineseLensSections`, and
- * `esotericLensSections`. `cycleLensParagraphs` flattens those sections.
+ * The popup reads the lens lines re-exported below, plus
+ * `clinicalLensSections`, `chineseLensSections`, and `esotericLensSections`.
+ * `cycleLensParagraphs` flattens those sections.
  * The paragraph constants below stay as they were written.
  */
 import type { CyclePhase } from "@/lib/cycle-phase"
-import { chineseLensSections } from "@/lib/cycle-lens-chinese"
-import { clinicalLensSections } from "@/lib/cycle-lens-clinical"
-import { esotericLensSections } from "@/lib/cycle-lens-esoteric"
+import { CHINESE_LENS_LINE, chineseLensSections } from "@/lib/cycle-lens-chinese"
+import { CLINICAL_EDUCATION_LINE, clinicalLensSections } from "@/lib/cycle-lens-clinical"
+import { ESOTERIC_LENS_LINE, esotericLensSections } from "@/lib/cycle-lens-esoteric"
+
+/** Dialog lines. Each lens module owns the sentence; this file re-exports it. */
+export { CHINESE_LENS_LINE, CLINICAL_EDUCATION_LINE, ESOTERIC_LENS_LINE }
 
 export const CYCLE_PHASES: readonly CyclePhase[] = [
   "menstrual",
@@ -38,18 +42,6 @@ export const CYCLE_PHASE_TITLE: Record<CyclePhase, string> = {
   luteal: "Luteal",
   unknown: "Unknown",
 }
-
-/** Shown with the clinical lens. Education from marks, not a clinical act. */
-export const CLINICAL_EDUCATION_LINE =
-  "This is education from your own bleed and ovulation marks, not a diagnosis or a fertility guarantee."
-
-/** Shown with the Chinese-medicine lens. A reading, not a formula to take. */
-export const CHINESE_LENS_LINE =
-  "A traditional reading of these marks. Not a prescription, and not a diagnosis."
-
-/** Shown with the esoteric lens so it is never mistaken for science. */
-export const ESOTERIC_LENS_LINE =
-  "This is a lens on attention, not a scientific claim, and it does not require a belief."
 
 export type CycleLensBody = { paragraphs: readonly string[] }
 

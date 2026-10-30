@@ -1,7 +1,8 @@
+import { EventEmitter } from "node:events"
 import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync, statSync, readdirSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   shouldRejectVaultShrink,
   vaultRecordCount,
@@ -15,7 +16,20 @@ import {
   flushSharedPersist,
   flushSharedPersistSync,
   _resetSharedPersistForTests,
+  handlePersistApi,
 } from "@/scripts/persist-api.mjs"
+
+const phonePatch = vi.hoisted(() => ({
+  applyVaultPatch: vi.fn(() => ({ ok: false, reason: "patch refused" })),
+}))
+
+vi.mock("../lib/vault-guard.js", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  const fromDefault =
+    actual.default && typeof actual.default === "object" ? (actual.default as Record<string, unknown>) : {}
+  const base = { ...fromDefault, ...actual }
+  return { ...base, applyVaultPatch: phonePatch.applyVaultPatch }
+})
 
 function timegrid(n: number) {
   return JSON.stringify({
@@ -247,5 +261,198 @@ describe("hub flush ordering", () => {
       _resetSharedPersistForTests()
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe("persist HTTP canon and phone patch", () => {
+  const dirs: string[] = []
+  function setup(initial?: object) {
+    const dir = mkdtempSync(path.join(tmpdir(), "brain2-persist-http-"))
+    dirs.push(dir)
+    const file = path.join(dir, "shared-persist.json")
+    if (initial) writeFileSync(file, JSON.stringify(initial), "utf8")
+    _resetSharedPersistForTests(file, { flushMs: 60_000 })
+    return file
+  }
+  afterEach(() => {
+    phonePatch.applyVaultPatch.mockReset()
+    phonePatch.applyVaultPatch.mockImplementation(() => ({ ok: false, reason: "patch refused" }))
+    _resetSharedPersistForTests()
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
+  })
+
+  async function persistHttp(
+    method: string,
+    url: string,
+    jsonBody?: unknown,
+    headers: Record<string, string> = {},
+  ) {
+    const req = new EventEmitter() as EventEmitter & {
+      method: string
+      url: string
+      headers: Record<string, string>
+    }
+    req.method = method
+    req.url = url
+    req.headers = headers
+    const res = {
+      statusCode: 0,
+      headers: {} as Record<string, unknown>,
+      raw: "",
+      writeHead(status: number, h?: Record<string, unknown>) {
+        this.statusCode = status
+        if (h && typeof h === "object" && !Array.isArray(h)) Object.assign(this.headers, h)
+      },
+      end(chunk?: string) {
+        this.raw = chunk ?? ""
+      },
+    }
+    const pathname = new URL(url, "http://127.0.0.1").pathname
+    const pending = handlePersistApi(req, res, pathname)
+    const raw = jsonBody === undefined ? null : Buffer.from(JSON.stringify(jsonBody))
+    process.nextTick(() => {
+      if (raw) req.emit("data", raw)
+      req.emit("end")
+    })
+    await pending
+    let body: unknown = res.raw
+    if (res.raw) {
+      try {
+        body = JSON.parse(res.raw)
+      } catch {
+        body = res.raw
+      }
+    } else body = null
+    return { status: res.statusCode, body }
+  }
+
+  const stored = JSON.stringify({
+    state: { tasks: [{ id: "a", title: "Old", notes: "keep" }] },
+    version: 12,
+  })
+  const patched = JSON.stringify({
+    state: { tasks: [{ id: "a", title: "New", notes: "keep" }] },
+    version: 12,
+  })
+  const patch = { upserts: [{ id: "a", title: "New" }], removedIds: [] as string[] }
+
+  it("GET ?canon=1 omits cogs twins and leaves the file unchanged", async () => {
+    const file = setup({
+      updatedAt: "t0",
+      source: "desk",
+      items: {
+        "brain2-task-storage": stored,
+        "cogs-task-storage": stored,
+        legacy: "L",
+        "friend-pic:z": "img",
+      },
+    })
+    const before = readFileSync(file, "utf8")
+    const full = await persistHttp("GET", "/api/persist")
+    const canon = await persistHttp("GET", "/api/persist?canon=1")
+    const fullBody = full.body as { items: Record<string, string>; source: string }
+    const canonBody = canon.body as { items: Record<string, string>; source: string; updatedAt: string }
+    expect(full.status).toBe(200)
+    expect(fullBody.items["brain2-task-storage"]).toBe(stored)
+    expect(fullBody.items["cogs-task-storage"]).toBe(stored)
+    expect(fullBody.items.legacy).toBe("L")
+    expect(fullBody.items["friend-pic:z"]).toBeUndefined()
+    expect(canon.status).toBe(200)
+    expect(canonBody.source).toBe("desk")
+    expect(canonBody.updatedAt).toBe("t0")
+    expect(Object.keys(canonBody.items).sort()).toEqual(["brain2-task-storage", "legacy"])
+    expect(canonBody.items["brain2-task-storage"]).toBe(stored)
+    expect(canonBody.items["cogs-task-storage"]).toBeUndefined()
+    expect(readFileSync(file, "utf8")).toBe(before)
+  })
+
+  it("allows a capacitor origin and refuses a public website origin", async () => {
+    const file = setup({ items: { "brain2-a": "1", "cogs-a": "1" } })
+    const before = readFileSync(file, "utf8")
+    const phone = await persistHttp("GET", "/api/persist?canon=1", undefined, {
+      origin: "capacitor://localhost",
+      host: "192.168.1.20:3000",
+    })
+    const phoneBody = phone.body as { items: Record<string, string> }
+    expect(phone.status).toBe(200)
+    expect(phoneBody.items["brain2-a"]).toBe("1")
+    expect(phoneBody.items["cogs-a"]).toBeUndefined()
+    const web = await persistHttp("POST", "/api/persist", { name: "brain2-a", value: "wiped" }, {
+      origin: "https://evil.example",
+      host: "192.168.1.20:3000",
+    })
+    expect(web.status).toBe(403)
+    expect(web.body).toBe("forbidden origin")
+    expect(readFileSync(file, "utf8")).toBe(before)
+    expect(phonePatch.applyVaultPatch).not.toHaveBeenCalled()
+  })
+
+  it("applies a phone patch through the hub merge and refuses a phone whole store", async () => {
+    const file = setup({
+      updatedAt: "t0",
+      source: "desk",
+      items: { "brain2-task-storage": stored, "cogs-task-storage": stored },
+    })
+    phonePatch.applyVaultPatch.mockReturnValueOnce({ ok: true, value: patched })
+    const ok = await persistHttp("POST", "/api/persist", {
+      name: "brain2-task-storage",
+      source: "phone",
+      patch,
+    })
+    expect(ok.status).toBe(200)
+    expect((ok.body as { ok: boolean; skipped: boolean }).ok).toBe(true)
+    expect((ok.body as { skipped: boolean }).skipped).toBe(false)
+    expect(phonePatch.applyVaultPatch).toHaveBeenCalledWith("brain2-task-storage", stored, patch)
+    await flushSharedPersist()
+    const disk = JSON.parse(readFileSync(file, "utf8"))
+    expect(disk.items["brain2-task-storage"]).toBe(patched)
+    expect(disk.items["cogs-task-storage"]).toBe(patched)
+    const row = JSON.parse(disk.items["brain2-task-storage"]).state.tasks[0]
+    expect(row).toMatchObject({ id: "a", title: "New", notes: "keep" })
+
+    const refused = await persistHttp("POST", "/api/persist", {
+      name: "brain2-task-storage",
+      source: "phone",
+      patch: { upserts: [{ id: "a", title: "Nope" }], removedIds: [] },
+    })
+    expect(phonePatch.applyVaultPatch).toHaveBeenCalledTimes(2)
+    expect(refused.status).toBe(409)
+    expect(refused.body).toMatchObject({ ok: false, reason: "patch refused" })
+    expect(JSON.parse(readFileSync(file, "utf8")).items["brain2-task-storage"]).toBe(patched)
+
+    phonePatch.applyVaultPatch.mockClear()
+    const before = readFileSync(file, "utf8")
+    const whole = await persistHttp("POST", "/api/persist", {
+      name: "brain2-task-storage",
+      value: stored,
+      source: "phone",
+    })
+    expect(whole.status).toBe(409)
+    expect(whole.body).toMatchObject({ ok: false, reason: "phone whole-store write refused" })
+    expect(phonePatch.applyVaultPatch).not.toHaveBeenCalled()
+    expect(readFileSync(file, "utf8")).toBe(before)
+  })
+
+  it("still accepts a desktop whole-store post, including phone-hub", async () => {
+    setup({ items: { "brain2-a": "1", "cogs-a": "1" }, source: "desk" })
+    const electron = await persistHttp("POST", "/api/persist", { name: "brain2-a", value: "2" })
+    expect(electron.status).toBe(200)
+    expect(readSharedPersist().items["brain2-a"]).toBe("2")
+    expect(readSharedPersist().items["cogs-a"]).toBe("2")
+    const chrome = await persistHttp("POST", "/api/persist", {
+      name: "brain2-b",
+      value: "chrome",
+      source: "chrome",
+    })
+    expect(chrome.status).toBe(200)
+    expect(readSharedPersist().items["cogs-b"]).toBe("chrome")
+    const hub = await persistHttp("POST", "/api/persist", {
+      name: "brain2-tg",
+      value: "from-hub",
+      source: "phone-hub",
+    })
+    expect(hub.status).toBe(200)
+    expect(readSharedPersist().items["brain2-tg"]).toBe("from-hub")
+    expect(phonePatch.applyVaultPatch).not.toHaveBeenCalled()
   })
 })

@@ -32,6 +32,7 @@ describe("ListsToolbar", () => {
     expect(screen.getByRole("button", { name: "New List" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Select" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Import spreadsheet" })).toHaveClass("fm-import-sheet")
     expect(screen.queryByRole("button", { name: "Completed" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Missed Opportunities" })).not.toBeInTheDocument()
   })

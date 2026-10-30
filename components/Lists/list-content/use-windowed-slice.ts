@@ -7,9 +7,11 @@ import { useEffect, useRef, useState } from "react"
  * (the sunken Lists pane, or the window). Spacers keep the scrollbar honest.
  * A hidden desk (`display: none`) collapses to the overscan, so a big list
  * sitting under item detail does not keep thousands of rows mounted.
+ * A pane that has stretched to fit every row is measured as the screen, so
+ * the slice does not grow until the whole list is mounted.
  */
-export function useWindowedSlice(count: number, rowPx: number) {
-  const ref = useRef<HTMLDivElement>(null)
+export function useWindowedSlice<T extends HTMLElement = HTMLDivElement>(count: number, rowPx: number) {
+  const ref = useRef<T>(null)
   const [range, setRange] = useState(() => ({ start: 0, end: Math.min(count, 48) }))
 
   useEffect(() => {
@@ -21,8 +23,14 @@ export function useWindowedSlice(count: number, rowPx: number) {
     let timer = 0
 
     const update = () => {
-      const viewTop = onWindow ? 0 : scroller.getBoundingClientRect().top
-      const viewHeight = onWindow ? window.innerHeight : scroller.clientHeight
+      // A pane that grew with its rows (phone Lists, or a table taller than the
+      // screen) is not a viewport. Measuring it would mount every row.
+      const unbounded =
+        !onWindow &&
+        scroller.clientHeight > window.innerHeight * 1.5 &&
+        scroller.scrollHeight <= scroller.clientHeight + 2
+      const viewTop = onWindow || unbounded ? 0 : scroller.getBoundingClientRect().top
+      const viewHeight = onWindow || unbounded ? window.innerHeight : scroller.clientHeight
       const listTop = node.getBoundingClientRect().top
       const scrolled = viewTop - listTop
       const start = Math.max(0, Math.floor(scrolled / rowPx) - 8)
@@ -39,6 +47,7 @@ export function useWindowedSlice(count: number, rowPx: number) {
     onScroll()
     const target: HTMLElement | Window = onWindow ? window : scroller
     target.addEventListener("scroll", onScroll, { passive: true })
+    if (!onWindow) window.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", onScroll)
     const observed = typeof ResizeObserver === "function" ? new ResizeObserver(onScroll) : null
     observed?.observe(scroller)
@@ -47,6 +56,7 @@ export function useWindowedSlice(count: number, rowPx: number) {
     return () => {
       window.clearTimeout(timer)
       target.removeEventListener("scroll", onScroll)
+      if (!onWindow) window.removeEventListener("scroll", onScroll)
       window.removeEventListener("resize", onScroll)
       observed?.disconnect()
     }

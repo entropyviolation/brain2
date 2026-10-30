@@ -317,6 +317,24 @@ function isExecutablePath(p) {
   return EXECUTABLE_EXT.test(p.replace(/[/\\]+$/, ""))
 }
 
+/**
+ * Canonical path for Open, or an error string. A symlink is judged by its
+ * target, so a document name cannot point at a program.
+ */
+async function pathForOpen(p, fsImpl = fs) {
+  if (!isAbsolutePath(p)) return { error: "Not a full path." }
+  let real
+  try {
+    real = await fsImpl.promises.realpath(p)
+  } catch {
+    return { error: "The file is not at that path." }
+  }
+  if (isExecutablePath(p) || isExecutablePath(real)) {
+    return { error: "Brain2 does not open programs. Use Show in folder." }
+  }
+  return { path: real }
+}
+
 /** Token → path for the preview scheme. Only issued tokens are served. */
 function createPreviewRegistry() {
   const byToken = new Map()
@@ -384,7 +402,7 @@ function registerFileLinkIpc({ ipcMain, dialog, shell, protocol, net, getWindow 
       }
       return out
     } catch (err) {
-      console.warn("[cogs] link pick failed:", err && err.message)
+      console.warn("[brain2] link pick failed:", err && err.message)
       return []
     }
   })
@@ -393,14 +411,9 @@ function registerFileLinkIpc({ ipcMain, dialog, shell, protocol, net, getWindow 
   ipcMain.handle(FILE_LINK_CHANNELS.extractText, (_event, p) => extractLinkText(p))
   ipcMain.handle(FILE_LINK_CHANNELS.previewUrl, (_event, p) => previews.urlFor(p))
   ipcMain.handle(FILE_LINK_CHANNELS.open, async (_event, p) => {
-    if (!isAbsolutePath(p)) return "Not a full path."
-    if (isExecutablePath(p)) return "Brain2 does not open programs. Use Show in folder."
-    try {
-      await fs.promises.access(p)
-    } catch {
-      return "The file is not at that path."
-    }
-    return shell.openPath(p)
+    const opened = await pathForOpen(p)
+    if (opened.error) return opened.error
+    return shell.openPath(opened.path)
   })
   ipcMain.on(FILE_LINK_CHANNELS.reveal, (_event, p) => {
     if (isAbsolutePath(p)) shell.showItemInFolder(p)
@@ -414,6 +427,7 @@ module.exports = {
   createPreviewRegistry,
   extractLinkText,
   isExecutablePath,
+  pathForOpen,
   registerFileLinkIpc,
   resolveLink,
   statLink,

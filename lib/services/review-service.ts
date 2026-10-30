@@ -8,7 +8,7 @@
  * Spec: §13 (end-of-period reviews, carry-over prompts).
  */
 import type { PeriodReview, ReviewPeriod, Task } from "@/lib/types"
-import { useReviewsStore, dateFromPeriodKey, nextPeriodDate } from "@/lib/reviews-store"
+import { useReviewsStore, dateFromPeriodKey, emptyReview, nextPeriodDate } from "@/lib/reviews-store"
 import { taskRepository, type TaskRepository } from "@/lib/data/task-repository"
 import {
   taskScheduledOnDay,
@@ -50,22 +50,6 @@ export function getPeriodReview(
   repo: ReviewRepository = reviewRepository,
 ): PeriodReview | undefined {
   return repo.get(period, key)
-}
-
-/** A blank review for a period bucket (stable id = `${period}:${key}`). */
-function emptyReview(period: ReviewPeriod, key: string): PeriodReview {
-  return {
-    id: `${period}:${key}`,
-    period,
-    periodKey: key,
-    completedAt: new Date(),
-    summary: "",
-    gratitude: [],
-    nextPlans: "",
-    reflections: {},
-    resolvedTaskIds: [],
-    pushedTaskIds: [],
-  }
 }
 
 /** Create or update a review for a period key (stable id = `${period}:${key}`). */

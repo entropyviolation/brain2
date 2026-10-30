@@ -128,6 +128,6 @@ describe("encrypted backups", () => {
     expect(readBackupPublicKey({}, file)).toBeNull()
     fs.writeFileSync(file, "FROMFILE\n")
     expect(readBackupPublicKey({}, file)).toBe("FROMFILE")
-    expect(readBackupPublicKey({ COGS_BACKUP_PUBLIC_KEY: "FROMENV" }, file)).toBe("FROMENV")
+    expect(readBackupPublicKey({ BRAIN2_BACKUP_PUBLIC_KEY: "FROMENV" }, file)).toBe("FROMENV")
   })
 })

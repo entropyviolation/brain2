@@ -6,6 +6,8 @@ The panel is the same bay. Hour, minute, and AM/PM sit in a CRT well. **Now** is
 
 A small **Dial** control switches the center painting. **Shuffle** picks another one. **Edit** hides or restores a painting for this browser. Those choices live in `localStorage`: `brain2.clock-dial` is the selected id, `brain2.clock-dial-hidden` is a JSON array of hidden ids. The PNG files stay. Ceramic is the default and cannot be hidden. A center painting sits in the ceramic well, under the hands. The list is `backgrounds/manifest.json`.
 
+On a phone (under 768px) the closed field and the open key are at least 44px, the typed text is 16px, and the panel scrolls inside the safe area. Confirm, Cancel, Now, and the drums are 44px. At 768px and wider the desktop sizes stay.
+
 The popup is portaled above dialogs. Radix sets `pointer-events: none` on the page while a dialog is open, so the layer sets `pointer-events: auto` and a z-index above `.trk-entry`. Clicks on a drum, Now, Confirm, or the face hit the picker. A click on the backdrop closes the picker and does not fall through to the dialog.
 
 While the hour or minute lamp is on, the page stays still. The wheel and the trackpad step that drum. The lock lets go on Confirm, on Enter, on Cancel, on a click outside, on Escape, and when the lamp moves to AM/PM. It also lets go if the clock unmounts. The page is not locked just because the panel is open.
@@ -17,12 +19,13 @@ The closed field accepts `8:00 AM`, `08:00`, `16:02`, `4.02pm`, `1pm`, and `1:00
 | File | Purpose |
 |------|---------|
 | `clock-picker.tsx` | `ClockPicker`. The closed field takes a typed time (`09:15`, `16:02`, `1pm`, `4:02 PM`, `4.02pm`) and commits `HH:MM` on blur or Enter. The clock mark opens the panel. Arrow keys, digits, and `a`/`p` change the open drums without writing the field. **Now** is inside the panel and writes at once. **Confirm** writes the drums. **Cancel**, Escape, and a click outside leave the field. An armed hour or minute holds page scroll and takes the wheel. Double-click that drum to type the part. The layer keeps its own clicks inside a dialog. |
-| `clock-dials.ts` | Loads `backgrounds/manifest.json`. Ceramic is the rim and the default. Other entries are center paintings. Hide/restore and the selected id persist in `localStorage`. |
+| `clock-dials.ts` | _Last mapped: 2026-10-27_ Loads `backgrounds/manifest.json`. Ceramic is the rim and the default. Other entries are center paintings. Each PNG is a dynamic `import()` of that dial only (`loadDial`), requested when the panel is open on the selected id. The face stays empty until that URL arrives, so a slow load does not flash another painting. Hide/restore and the selected id persist in `localStorage`. |
 | `clock-hands.ts` | _Last mapped: 2026-10-20_ Loads `hands/manifest.json`: chrome hour/minute PNG pairs cut from hand sheets (480px, pointing at 12, pivot at center). A **Hands** select and Shuffle under the dial row swap them in for the drawn filigree hands (the default). Selected id lives in `localStorage` `brain2.clock-hands`. |
 | `ceramic-face.png` | The analog face. Cream ceramic rim and metal 12, 3, 6, and 9. Live hands are drawn in the component. Center paintings sit in the well. |
 | `backgrounds/` | Isolated dial paintings on transparency. `manifest.json` lists `{ id, file, label }` for each, plus ceramic (`../ceramic-face.png`). |
 | `clock-picker.css` | Milled bay, cream field, CRT drums, Now, Confirm, Cancel, dial control, ceramic face, silver hands. |
-| `clock-picker.test.tsx` | Open from the clock mark, Confirm the `HH:MM` sent to `onChange`. Cancel and Escape leave it. A click outside closes. Typed `1:00 PM` commits `13:00`. Now is inside the popup and writes at once. The popup’s pointer events and z-index sit above `.trk-entry`. An armed minute wheel steps the minute and does not scroll the page. Hand angles for 1:00 and 6:30. Ceramic is the default dial. |
+| `clock-picker.test.tsx` | Open from the clock mark, Confirm the `HH:MM` sent to `onChange`. Cancel and Escape leave it. A click outside closes. Typed `1:00 PM` commits `13:00`. Now is inside the popup and writes at once. The popup’s pointer events and z-index sit above `.trk-entry`. An armed minute wheel steps the minute and does not scroll the page. Hand angles for 1:00 and 6:30. Ceramic is the default dial; its plate image arrives after that dial loads. |
+| `clock-dials.test.ts` | _Last mapped: 2026-10-27_ The dial module does not statically import the PNGs. The manifest ids are listed with empty `src` until `loadDial` of one id, and a different id stays empty. |
 
 Pass `className` when a caller needs a different size or a room’s field class (`itinerary-time-input`, `habit95-input`). Do not add a second picker.
 
@@ -35,7 +38,7 @@ _Last mapped: 2026-10-20_ The drums share one dark scope container with the colo
 _Last mapped: 2026-10-20_ One vocabulary for the whole control. Class names follow it.
 
 1. **Entry** (`.clock-picker-field`, `.clock-picker-open`). The typed field. It parses sloppy input (`1pm`, `4.02pm`, `0915`, `16:02`) and commits `HH:MM` on blur or Enter. Start and End are two separate pickers and never share state.
-2. **Certainty buttons** (`CertaintyToggle` in `components/Home/Tracking/entry-edges.tsx`, `.trk-edge-certainty`). Exact, ~ Est., ? for each edge, one at a time. Click the lit button again to clear it; a cleared edge saves as exact. The end-event link (`EndEventSection`) lives beside them. **Planned**: attach known values and events to an edge more directly from this row.
+2. **Certainty buttons** (`CertaintyToggle` in `components/Home/Tracking/block-editor/entry-edges.tsx`, `.trk-edge-certainty`). Exact, ~ Est., ? for each edge, one at a time. Click the lit button again to clear it; a cleared edge saves as exact. The end-event link (`EndEventSection`) lives beside them. **Planned**: attach known values and events to an edge more directly from this row.
 3. **Picker popup** (`.clock-picker-panel`), top to bottom:
    - **Digital display** (`.clock-picker-drums`). One scope with Hour, Min, Day. Each is three rows tall, so the cursor row of all three sits on one line (the Day column pads with a blank slot).
    - **Now** (`.clock-picker-now`). Writes the current time at once.

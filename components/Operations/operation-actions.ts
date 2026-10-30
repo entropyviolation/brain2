@@ -4,13 +4,16 @@
  * Thin imperative helpers the Operations UI calls to mutate the task store. They
  * never edit a store file: they only CALL `useTaskStore.getState().updateTask` /
  * `addTask` and the pure `lib/links.ts` helpers to attach phases / parts /
- * resources, write the Home notes pad, set the stage, and log time. The op
+ * resources, append the item note log, set the stage, and log time. The op
  * post-mortem is persisted through the reviews-store action Worker G added
  * (`addOperationReview`), called defensively in case it is not present yet.
  */
 "use client"
 
+import { formatLocalDateKey } from "@/lib/date-utils"
+import { makeNoteEntry } from "@/lib/item-notes"
 import { trackedTimeForItems } from "@/lib/tracked-time"
+import { isOperation } from "@/lib/operations"
 import { useTaskStore } from "@/lib/task-store"
 import { useReviewsStore, type OperationReviewInput, type OperationReview } from "@/lib/reviews-store"
 import { addLink, removeLinkByTarget } from "@/lib/links"
@@ -32,7 +35,7 @@ import {
   type OperationPanelId,
   type OperationStage,
 } from "@/lib/operation-types"
-import { OP_REL, getOperationTaskTree, getParts, getPhases } from "@/lib/operations"
+import { OP_REL, foldOperationHomeNotes, getOperationTaskTree, getParts, getPhases } from "@/lib/operations"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   OPERATIONS_FOLDER_ID,
@@ -48,14 +51,13 @@ import {
   formulaDescendantIds,
   instanceTreeIds,
   normalizePartLabels,
+  partFinishChecked,
   partFormulasAttribute,
   partInstancesAttribute,
-  partTaskFor,
   readPartFormulas,
   readPartInstances,
   type PartFormula,
   type PartInstance,
-  type PartTaskRole,
 } from "@/lib/operation-parts"
 import { ensureOperationPen } from "@/lib/operation-work-session"
 import type { StoredBlockedReason, Task, TimeLogEntry } from "@/lib/types"
@@ -80,7 +82,7 @@ export function upgradeTaskToOperation(taskId: string): Task | null {
   const store = useTaskStore.getState()
   const task = store.tasks.find((t) => t.id === taskId)
   if (!task) return null
-  if (task.type === OPERATION_TYPE_ID) return task
+  if (isOperation(task)) return task
   const updated: Task = {
     ...task,
     type: OPERATION_TYPE_ID,
@@ -148,9 +150,22 @@ function patchOperationAttributes(operationId: string, attrs: Record<string, unk
   store.updateTask({ ...op, attributes: { ...(op.attributes ?? {}), ...attrs } } as Task)
 }
 
-/** Set the Home notes pad (stored in the dedicated `homeNotes` attribute). */
+/**
+ * Append one dated entry on the operation's item note log (`Task.noteLog`).
+ * A leftover `homeNotes` blob is folded in on the same write. Blank text only
+ * folds that blob.
+ */
 export function setHomeNotes(operationId: string, notes: string): void {
-  patchOperationAttributes(operationId, { [OPERATION_ATTR.homeNotes]: notes })
+  const store = useTaskStore.getState()
+  const op = store.tasks.find((t) => t.id === operationId)
+  if (!op) return
+  const folded = foldOperationHomeNotes(op)
+  const entry = makeNoteEntry(notes)
+  if (!entry) {
+    if (folded !== op) store.updateTask(folded)
+    return
+  }
+  store.updateTask({ ...folded, noteLog: [...(folded.noteLog ?? []), entry] })
 }
 
 export function setStage(operationId: string, stage: OperationStage): void {
@@ -368,7 +383,7 @@ export function logTime(
   if (!task) return
   const log: TimeLogEntry = {
     id: genId("log"),
-    date: entry.date ?? localDayKey(new Date()),
+    date: entry.date ?? formatLocalDateKey(new Date()),
     durationMinutes: entry.durationMinutes,
     notes: entry.notes,
     activityLabel: entry.activityLabel,
@@ -467,39 +482,19 @@ function writeInstances(operationId: string, instances: PartInstance[]): void {
   patchOperationAttributes(operationId, partInstancesAttribute(instances))
 }
 
-function ensurePartTask(
-  operationId: string,
-  instance: PartInstance,
-  role: PartTaskRole,
-  label: string,
-): void {
-  const existing = partTaskFor(useTaskStore.getState().tasks, instance.id, role, label)
-  if (existing) {
+/**
+ * Keep titles of stage/finish mirrors that already exist. Does not create
+ * tasks. Stages now live on the part (`currentStage`).
+ */
+function retitlePartMirrorTasks(instance: PartInstance): void {
+  const store = useTaskStore.getState()
+  for (const task of store.tasks) {
+    if (String(task.attributes?.[PART_TASK_ATTR.instanceId] ?? "") !== instance.id) continue
+    const role = String(task.attributes?.[PART_TASK_ATTR.role] ?? "")
+    if (role !== "stage" && role !== "finish") continue
+    const label = String(task.attributes?.[PART_TASK_ATTR.label] ?? "")
     const description = `${instance.title} — ${label}`
-    if (existing.description !== description) {
-      useTaskStore.getState().updateTask({ ...existing, description })
-    }
-    return
-  }
-  addOperationListTask(operationId, `${instance.title} — ${label}`, {
-    attributes: {
-      [PART_TASK_ATTR.instanceId]: instance.id,
-      [PART_TASK_ATTR.role]: role,
-      [PART_TASK_ATTR.label]: label,
-      [PART_TASK_ATTR.operationId]: operationId,
-    },
-  })
-}
-
-/** Create any missing stage and finish tasks for every part of this operation. */
-export function syncAllPartTasks(operationId: string): void {
-  const formulas = readFormulas(operationId)
-  const instances = readInstances(operationId)
-  for (const instance of instances) {
-    const formula = formulas.find((entry) => entry.id === instance.formulaId)
-    if (!formula) continue
-    for (const label of formula.stages) ensurePartTask(operationId, instance, "stage", label)
-    for (const label of formula.finishSteps) ensurePartTask(operationId, instance, "finish", label)
+    if (task.description !== description) store.updateTask({ ...task, description })
   }
 }
 
@@ -511,7 +506,7 @@ export interface SavePartFormulaInput {
   finishSteps?: string | string[]
 }
 
-/** Create or replace a part kind. New stages spawn tasks on existing parts. */
+/** Create or replace a part kind. Stages stay on each part; they do not spawn tasks. */
 export function savePartFormula(operationId: string, input: SavePartFormulaInput): PartFormula | null {
   const name = input.name.trim()
   if (!name) return null
@@ -538,7 +533,6 @@ export function savePartFormula(operationId: string, input: SavePartFormulaInput
     operationId,
     exists ? formulas.map((formula) => (formula.id === id ? next : formula)) : [...formulas, next],
   )
-  syncAllPartTasks(operationId)
   return next
 }
 
@@ -582,7 +576,6 @@ export function addPartInstance(
     ideas: [],
   }
   writeInstances(operationId, [...instances, instance])
-  syncAllPartTasks(operationId)
   return instance
 }
 
@@ -592,11 +585,12 @@ export function renamePartInstance(operationId: string, instanceId: string, titl
   const instances = readInstances(operationId)
   const current = instances.find((instance) => instance.id === instanceId)
   if (!current || current.title === name) return
+  const renamed = { ...current, title: name }
   writeInstances(
     operationId,
-    instances.map((instance) => (instance.id === instanceId ? { ...instance, title: name } : instance)),
+    instances.map((instance) => (instance.id === instanceId ? renamed : instance)),
   )
-  syncAllPartTasks(operationId)
+  retitlePartMirrorTasks(renamed)
 }
 
 /** Remove a part, the parts inside it, and the tasks those formulas spawned. */
@@ -615,7 +609,7 @@ export function deletePartInstance(operationId: string, instanceId: string): voi
   }
 }
 
-/** An idea is a note on a part. It is not a task and does not join To do. */
+/** A note on this part, stored with the part's ideas. It is not a task and does not join To do. */
 export function addPartIdea(operationId: string, instanceId: string, text: string): void {
   const idea = text.trim()
   if (!idea) return
@@ -635,6 +629,82 @@ export function addPartIdea(operationId: string, instanceId: string, text: strin
         : instance,
     ),
   )
+}
+
+function mapInstance(
+  operationId: string,
+  instanceId: string,
+  patch: (instance: PartInstance) => PartInstance,
+): void {
+  const instances = readInstances(operationId)
+  if (!instances.some((instance) => instance.id === instanceId)) return
+  writeInstances(
+    operationId,
+    instances.map((instance) => (instance.id === instanceId ? patch(instance) : instance)),
+  )
+}
+
+/**
+ * Furthest stage reached for this part. `""` means none.
+ * A label that is not one of the kind's stages is stored as none.
+ * This does not create or complete tasks.
+ */
+export function setPartCurrentStage(operationId: string, instanceId: string, stage: string): void {
+  const instance = readInstances(operationId).find((entry) => entry.id === instanceId)
+  if (!instance) return
+  const formula = readFormulas(operationId).find((entry) => entry.id === instance.formulaId)
+  const wanted = stage.trim().toLowerCase()
+  const match = wanted ? formula?.stages.find((label) => label.toLowerCase() === wanted) ?? "" : ""
+  if (instance.currentStage === match) return
+  mapInstance(operationId, instanceId, (current) => ({ ...current, currentStage: match }))
+}
+
+/** Replace this part's one status report. Empty text clears it. */
+export function setPartStatusReport(operationId: string, instanceId: string, text: string): void {
+  const statusReport = text.trim()
+  const instance = readInstances(operationId).find((entry) => entry.id === instanceId)
+  if (!instance || (instance.statusReport ?? "") === statusReport) return
+  mapInstance(operationId, instanceId, (current) => ({ ...current, statusReport }))
+}
+
+/**
+ * Check or clear one finish step on the part. The first write copies any
+ * older finish-task checks onto the part, then applies this one.
+ * This does not create or complete tasks.
+ */
+export function setPartFinishStep(
+  operationId: string,
+  instanceId: string,
+  label: string,
+  done: boolean,
+): void {
+  const instance = readInstances(operationId).find((entry) => entry.id === instanceId)
+  if (!instance) return
+  const formula = readFormulas(operationId).find((entry) => entry.id === instance.formulaId)
+  const canonical = formula?.finishSteps.find((step) => step.toLowerCase() === label.trim().toLowerCase())
+  if (!canonical || !formula) return
+  const tasks = useTaskStore.getState().tasks
+  const base =
+    instance.completedFinish !== undefined
+      ? instance.completedFinish
+      : formula.finishSteps.filter((step) => partFinishChecked(instance, step, tasks))
+  const next = done
+    ? normalizePartLabels([...base, canonical])
+    : base.filter((step) => step.toLowerCase() !== canonical.toLowerCase())
+  mapInstance(operationId, instanceId, (current) => ({ ...current, completedFinish: next }))
+}
+
+/** A real to-do for this part, on the operation's list. Not a stage step. */
+export function addPartTodo(operationId: string, instanceId: string, description: string): Task | null {
+  const title = description.trim()
+  if (!title) return null
+  if (!readInstances(operationId).some((instance) => instance.id === instanceId)) return null
+  return addOperationListTask(operationId, title, {
+    attributes: {
+      [PART_TASK_ATTR.instanceId]: instanceId,
+      [PART_TASK_ATTR.operationId]: operationId,
+    },
+  })
 }
 
 export function removePartIdea(operationId: string, instanceId: string, ideaId: string): void {
@@ -662,7 +732,7 @@ export function deleteOperation(operationId: string): void {
   const store = useTaskStore.getState()
   const tasks = store.tasks
   const op = tasks.find((t) => t.id === operationId)
-  if (!op || op.type !== OPERATION_TYPE_ID) return
+  if (!op || !isOperation(op)) return
 
   const ids = new Set<string>([operationId])
   for (const phase of getPhases(operationId, tasks)) {
@@ -683,11 +753,4 @@ export function deleteOperation(operationId: string): void {
 
   const latest = useTaskStore.getState()
   for (const id of ids) latest.deleteTask(id)
-}
-
-function localDayKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
 }

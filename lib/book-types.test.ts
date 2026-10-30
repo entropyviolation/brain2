@@ -31,6 +31,9 @@ describe("Book type definition", () => {
     expect(byId.get(BOOK_ATTR.cover)?.type).toBe("image")
     expect(byId.get(BOOK_ATTR.pagesRead)?.type).toBe("number")
     expect(byId.get(BOOK_ATTR.pageCount)?.type).toBe("number")
+    expect(byId.get(BOOK_ATTR.heightCm)?.unit).toBe("cm")
+    expect(byId.get(BOOK_ATTR.widthCm)?.type).toBe("number")
+    expect(byId.get(BOOK_ATTR.thicknessCm)?.type).toBe("number")
   })
 
   it("defaults the status to 'to-read'", () => {

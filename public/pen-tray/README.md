@@ -14,5 +14,5 @@ parsed so an older blob loads, and View settings no longer offers a picker.
 | `fr4.jpg` | FR4 classic | `designrefs/5f3b8feaa2e9037ae0323d6635e28bb5.jpg` |
 | `xray.jpg` | X-ray PCB | `designrefs/2dc0e2cd6390065e28da01f96665db4a.jpg` |
 
-Catalog still lives in `components/Home/Tracking/pen-tray-bg.ts`. The well
+Catalog still lives in `components/Home/Tracking/cabinet/pen-tray-bg.ts`. The well
 does not use it.

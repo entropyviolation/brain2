@@ -1,7 +1,7 @@
 /**
- * lib/points-ledger-nav.ts — Jump to the Analytics points ledger, or to one item
+ * lib/points-ledger-nav.ts — Jump to the Data points ledger, or to one item
  *
- * `openPointsLedger` writes the app tab (Analytics) and the Analytics view
+ * `openPointsLedger` writes the app tab (Data) and the Data view
  * (Points), fires the nav-restore event so the mounted shell re-reads them,
  * then scrolls the ledger plate (`#analytics-points-ledger`) into view once the
  * lazy view has painted. An optional row is remembered for one read so the
@@ -69,7 +69,7 @@ export function openItemDetailPage(itemId: string): void {
 /** The app shell listens for this and opens the item as a popup over the current screen. */
 export const OPEN_ITEM_POPUP_EVENT = "brain2-open-item-popup"
 
-/** Open item detail as a popup above whatever is showing (Analytics keeps its place). */
+/** Open item detail as a popup above whatever is showing (Data keeps its place). */
 export function openItemDetailPopup(itemId: string): void {
   if (typeof window === "undefined") return
   window.dispatchEvent(new CustomEvent(OPEN_ITEM_POPUP_EVENT, { detail: { id: itemId } }))

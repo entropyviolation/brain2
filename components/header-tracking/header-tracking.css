@@ -97,7 +97,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* Lanes + Metrics, then Update state or the hint. One block, always up. */

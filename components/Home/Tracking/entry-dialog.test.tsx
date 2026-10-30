@@ -1,8 +1,9 @@
-import { render, screen, fireEvent, act } from "@testing-library/react"
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
+import { usePenColorSessionStore } from "@/lib/pen-color-session-store"
 import { trackedMinutesForTags } from "@/lib/tracked-time"
 import { moodPenColor } from "@/lib/mood-reading"
 import { EntryDialog } from "./entry-dialog"
@@ -39,6 +40,26 @@ beforeEach(() => {
 })
 
 describe("EntryDialog", () => {
+  it("names the door on a discrete log instant", () => {
+    render(<EntryDialog entry={paint()} onClose={() => {}} />)
+    expect(screen.queryByText(/Added from/)).not.toBeInTheDocument()
+    cleanup()
+
+    useTimeTrackingStore.getState().paintMinutes(KEY, "activity", 480, 480, "act-work", undefined, undefined, undefined, {
+      kind: "instant",
+      title: "left room",
+      eventKind: "left room",
+    })
+    const entry = useTimeTrackingStore.getState().entries.find((row) => row.title === "left room")!
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    expect(screen.getByText("Added from Unknown source")).toBeInTheDocument()
+    cleanup()
+
+    useTimeTrackingStore.getState().updateEntry(entry.id, { logSource: "quick-add" })
+    render(<EntryDialog entry={reload(entry.id)!} onClose={() => {}} />)
+    expect(screen.getByText("Added from quick add")).toBeInTheDocument()
+  })
+
   it("shows the block's window, duration and tags", () => {
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     expect(screen.getByText(/Work · 9:00 AM – 10:00 AM/)).toBeInTheDocument()
@@ -55,6 +76,40 @@ describe("EntryDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save block" }))
 
     expect(reload(entry.id)).toMatchObject({ startMin: 570, endMin: 675 })
+  })
+
+  it("locks one of start, end, or duration and follows with the free value", () => {
+    const entry = paint()
+    render(<EntryDialog entry={entry} onClose={() => {}} />)
+    expect(screen.getByTestId("entry-duration-readout")).toHaveTextContent("1h")
+    expect(screen.getAllByRole("button", { name: "Date" })).toHaveLength(1)
+    expect(screen.getByRole("button", { name: "Start locked" })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "2h" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    expect(screen.getByLabelText("Start")).toHaveValue("09:00")
+    expect(screen.getByLabelText("End")).toHaveValue("11:00")
+
+    fireEvent.click(screen.getByRole("button", { name: "Lock End" }))
+    fireEvent.change(screen.getByLabelText("Duration"), { target: { value: "30m" } })
+    fireEvent.blur(screen.getByLabelText("Duration"))
+    expect(screen.getByLabelText("End")).toHaveValue("11:00")
+    expect(screen.getByLabelText("Start")).toHaveValue("10:30")
+
+    fireEvent.click(screen.getByRole("button", { name: "Lock Duration" }))
+    fireEvent.change(screen.getByLabelText("End"), { target: { value: "12:00" } })
+    expect(screen.getByLabelText("Start")).toHaveValue("11:30")
+    expect(screen.getByLabelText("Duration")).toHaveValue("30m")
+
+    fireEvent.click(screen.getByRole("button", { name: "Duration estimated" }))
+    fireEvent.click(screen.getByRole("button", { name: "Save block" }))
+    expect(reload(entry.id)).toMatchObject({
+      startMin: 11 * 60 + 30,
+      endMin: 12 * 60,
+      spanLock: "duration",
+      durationEstimated: true,
+      precision: "estimated",
+    })
   })
 
   it("treats an end of midnight as the end of the day", () => {
@@ -228,14 +283,49 @@ describe("EntryDialog", () => {
   it("keeps date pickers optional and defaults them to the block's calendar day", () => {
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     expect(screen.queryByLabelText("Start date")).not.toBeInTheDocument()
-    fireEvent.click(screen.getAllByRole("button", { name: "Date" })[0])
+    expect(screen.getAllByRole("button", { name: "Date" })).toHaveLength(1)
+    fireEvent.click(screen.getByRole("button", { name: "Date" }))
     expect(screen.getByLabelText("Start date")).toHaveValue(KEY)
   })
 
-  it("deletes a block", () => {
+  it("deletes a block only after you confirm", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
     render(<EntryDialog entry={paint()} onClose={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: "Delete block" }))
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/Are you sure/))
+    expect(useTimeTrackingStore.getState().entriesFor(KEY, "activity")).toHaveLength(1)
+    confirm.mockReturnValue(true)
+    fireEvent.click(screen.getByRole("button", { name: "Delete block" }))
     expect(useTimeTrackingStore.getState().entriesFor(KEY, "activity")).toHaveLength(0)
+    confirm.mockRestore()
+  })
+
+  it("shows live objectives only when this block is the sitting or already has them", () => {
+    const entry = paint()
+    const { unmount } = render(<EntryDialog entry={entry} onClose={() => {}} />)
+    expect(screen.queryByText(/Live tracked from Brain 2/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Add objective" })).not.toBeInTheDocument()
+    unmount()
+
+    useTimeTrackingStore.getState().updateEntry(entry.id, {
+      nowObjectives: [{ id: "n1", text: "finish the nest", addedAt: "2026-09-17T16:00:00.000Z" }],
+    })
+    const kept = useTimeTrackingStore.getState().entries.find((row) => row.id === entry.id)!
+    const recorded = render(<EntryDialog entry={kept} onClose={() => {}} />)
+    expect(screen.getByText(/Live tracked from Brain 2/)).toBeInTheDocument()
+    expect(screen.getByDisplayValue("finish the nest")).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Add objective" })).not.toBeInTheDocument()
+    recorded.unmount()
+
+    usePenColorSessionStore.getState().setSession({
+      penId: "act-work",
+      scopeId: "activity",
+      title: "Work",
+      startedAt: "2026-09-17T16:00:00.000Z",
+      trackingEntryIds: [entry.id],
+    })
+    render(<EntryDialog entry={kept} onClose={() => {}} />)
+    expect(screen.getByRole("textbox", { name: "Add objective" })).toBeInTheDocument()
   })
 
   it("hides the stretch on activity and shows the guide on a mood block", () => {

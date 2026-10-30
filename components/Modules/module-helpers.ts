@@ -33,7 +33,9 @@ import {
   Clapperboard,
   GraduationCap,
   FileCode,
+  AppWindow,
   Home,
+  Brush,
 } from "lucide-react"
 import type { ModuleType, ModuleViewKind, AttrRule, RuleOperator } from "@/lib/modules-store"
 import type { Task, AttributeValue } from "@/lib/types"
@@ -106,8 +108,10 @@ export const MODULE_VIEW_KINDS: ModuleViewKindMeta[] = [
   { kind: "trip-map", label: "Trip activities map", needsList: true, icon: Map },
   { kind: "film-dna", label: "Film DNA Lab", needsList: true, icon: Clapperboard },
   { kind: "house-cleaning", label: "House cleaning (Tidy)", needsList: false, icon: Home },
+  { kind: "sweep", label: "Sweep", needsList: false, icon: Brush },
   { kind: "grad-search", label: "GradSearch (program explorer)", needsList: false, icon: GraduationCap },
   { kind: "html", label: "Uploaded HTML page", needsList: false, icon: FileCode },
+  { kind: "package-app", label: "Package app (downloaded folder)", needsList: false, icon: AppWindow },
   { kind: "doc", label: "Document (Docs editor)", needsList: false, icon: FileText },
   { kind: "summary", label: "Summary / rollup", needsList: true, icon: ListChecks },
   { kind: "dashboard", label: "Dashboard (rollup cards)", needsList: false, icon: Gauge },

@@ -15,7 +15,7 @@ public port is open on the VM. The box also keeps only texts from your own chat 
 ```
 Phone → Telegram → [VM: scripts/capture-box.mjs] seals + queues (encrypted)
                           ↑ pulls over the tailnet, acks only after the vault write
-Your Mac: npm run phone:hub  (COGS_CAPTURE_BOX_URL) opens with private key → vault → reply
+Your Mac: npm run phone:hub  (BRAIN2_CAPTURE_BOX_URL) opens with private key → vault → reply
 ```
 
 Files on the VM (Node 20, no npm): `scripts/capture-box.mjs`,
@@ -46,10 +46,10 @@ _Last mapped: 2026-10-20_
 | Threat | What stops it | What does not |
 | --- | --- | --- |
 | Internet scanner hits port 8788 | No public listener: the box binds the tailnet IP, the VCN and ufw block 8788 | Nothing needed; SSH on 22 is still public unless you restrict it |
-| Someone else texts the bot | `COGS_CAPTURE_CHAT_IDS` drops other chats (unless `COGS_CAPTURE_ALLOW_ANY_CHAT=1`) | A stranger can still message the bot; it is dropped, not silent to Telegram |
+| Someone else texts the bot | `BRAIN2_CAPTURE_CHAT_IDS` drops other chats (unless `BRAIN2_CAPTURE_ALLOW_ANY_CHAT=1`) | A stranger can still message the bot; it is dropped, not silent to Telegram |
 | Someone reads the queue on disk | Sealed to your public key | Metadata (timing, sizes) |
 | Someone sniffs the drain | The tailnet is encrypted (WireGuard); the body is also sealed | Tailscale sees which nodes talk, not content |
-| Another tailnet device calls the box | Bearer token `COGS_CAPTURE_TOKEN`; optional ACL (below) | Any device you add to the tailnet can reach the port unless an ACL says otherwise |
+| Another tailnet device calls the box | Bearer token `BRAIN2_CAPTURE_TOKEN`; optional ACL (below) | Any device you add to the tailnet can reach the port unless an ACL says otherwise |
 | Bot token stolen from the VM | Revoke in BotFather | Messages sent while it was exposed |
 | Mac drain is off | Queue grows to the cap, box reports `/fail` | Late replies (see tradeoffs) |
 | Tailscale account compromised | 2FA on the identity provider you log in with | An attacker who joins the tailnet could reach the box, but still needs the bearer token and cannot decrypt the queue |
@@ -91,7 +91,7 @@ _Last mapped: 2026-10-20_
    `tailscale up` prints a login URL. Open it on your Mac and approve the node.
 6. **Find the address and name.**
    ```bash
-   tailscale ip -4        # 100.x.y.z  → COGS_CAPTURE_BIND
+   tailscale ip -4        # 100.x.y.z  → BRAIN2_CAPTURE_BIND
    tailscale status       # lists the node and its short name
    ```
    The full MagicDNS name looks like `brain2-capture.<your-tailnet>.ts.net`
@@ -112,8 +112,8 @@ _Last mapped: 2026-10-20_
    sudo cp deploy/oracle/capture.env.example /etc/brain2-capture.env   # fill it in
    sudo chmod 600 /etc/brain2-capture.env
    ```
-   In `/etc/brain2-capture.env` set `COGS_CAPTURE_BIND` to the 100.x address,
-   `COGS_CAPTURE_CHAT_IDS` to your chat id (**required**; the file says how to find
+   In `/etc/brain2-capture.env` set `BRAIN2_CAPTURE_BIND` to the 100.x address,
+   `BRAIN2_CAPTURE_CHAT_IDS` to your chat id (**required**; the file says how to find
    it), plus the token, public key and Healthchecks URL.
    ```bash
    sudo cp deploy/oracle/brain2-capture.service /etc/systemd/system/
@@ -124,8 +124,8 @@ _Last mapped: 2026-10-20_
    tailnet address before launching the box.
 9. **Close the public port** (next section).
 10. **On your Mac,** in `.env.local`:
-    `COGS_CAPTURE_BOX_URL=http://brain2-capture:8788` (or the full `.ts.net` name),
-    `COGS_CAPTURE_TOKEN=<same>`, plus `COGS_TELEGRAM_BOT_TOKEN`. Then `npm run phone:hub`.
+    `BRAIN2_CAPTURE_BOX_URL=http://brain2-capture:8788` (or the full `.ts.net` name),
+    `BRAIN2_CAPTURE_TOKEN=<same>`, plus `BRAIN2_TELEGRAM_BOT_TOKEN`. Then `npm run phone:hub`.
     Plain `http` is fine here: the tailnet encrypts the hop and the body is sealed.
 11. **Test:** from the Mac, `curl http://brain2-capture:8788/health` →
     `{"ok":true,...}`. Quit the hub, text BIM, check `queued` rises, restart the
@@ -139,7 +139,7 @@ _Last mapped: 2026-10-20_
 
 Three layers, so one mistake does not expose the box:
 
-1. **The box itself** binds only `COGS_CAPTURE_BIND` (the 100.x address). It is not
+1. **The box itself** binds only `BRAIN2_CAPTURE_BIND` (the 100.x address). It is not
    listening on the public interface.
 2. **Oracle VCN security list.** Make sure there is no ingress rule for TCP 8788.
    Remove it if you added one earlier. Menu names change, so check the current
@@ -196,8 +196,8 @@ syntax; do not paste a policy from memory.
   `sudo systemctl status tailscaled`, `sudo tailscale up`, then
   `sudo systemctl restart brain2-capture`.
 - **If the node was removed or the key expired,** the 100.x address may change.
-  Re-run `tailscale up`, `tailscale ip -4`, update `COGS_CAPTURE_BIND` and restart.
-  Re-check `COGS_CAPTURE_BOX_URL` on the Mac if you changed the name.
+  Re-run `tailscale up`, `tailscale ip -4`, update `BRAIN2_CAPTURE_BIND` and restart.
+  Re-check `BRAIN2_CAPTURE_BOX_URL` on the Mac if you changed the name.
 
 ## Down alerts
 
@@ -213,8 +213,8 @@ box reports `/fail`), and nothing is lost for as long as the VM lives.
 _Last mapped: 2026-10-20_
 
 - [ ] Private key backed up in your password manager.
-- [ ] `COGS_CAPTURE_CHAT_IDS` set to your chat id; a text from another account is not queued.
-- [ ] `COGS_CAPTURE_BIND` is the VM's 100.x address; `ss -ltn` on the VM shows 8788 only there.
+- [ ] `BRAIN2_CAPTURE_CHAT_IDS` set to your chat id; a text from another account is not queued.
+- [ ] `BRAIN2_CAPTURE_BIND` is the VM's 100.x address; `ss -ltn` on the VM shows 8788 only there.
 - [ ] No VCN ingress rule for 8788; ufw allows 8788 only on `tailscale0`; SSH still works.
 - [ ] Public-IP `curl` to 8788 from outside the tailnet times out.
 - [ ] Key expiry disabled for the VM node.
@@ -233,7 +233,7 @@ _Last mapped: 2026-10-20_
    everywhere, including the VM.
 3. In the Tailscale admin console, delete the `brain2-capture` node (and remove
    the VM's Tailscale: `sudo tailscale down`, `sudo apt-get remove tailscale`).
-4. Put the new token in the Mac's `.env.local`, unset `COGS_CAPTURE_BOX_URL`, and
+4. Put the new token in the Mac's `.env.local`, unset `BRAIN2_CAPTURE_BOX_URL`, and
    turn Message ingest back on in the desktop app.
 5. Anything left in `/var/lib/brain2-capture` is sealed. Delete it, or drain it
    first with the Mac if you still want those texts.

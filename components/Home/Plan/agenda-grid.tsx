@@ -28,7 +28,7 @@ import { readPlanDrag, writePlanDrag, type PlanDragPayload } from "@/lib/plan-dr
 import type { TrackedAgendaBlock } from "@/components/Home/Tracking/tracked-agenda-blocks"
 import { CatalogTagLabel } from "@/components/Home/Tracking/catalog-tag-chip"
 import { temporalAttr } from "@/lib/temporal-polarity"
-import { usePlanPointerDrop } from "./use-plan-rail-drag"
+import { usePlanPointerDrop } from "./rail/use-plan-rail-drag"
 import {
   hhmmToMinutes,
   plannedDurationMinutes,

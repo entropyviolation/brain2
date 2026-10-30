@@ -16,6 +16,27 @@ if (!fs.existsSync(infoPlist)) {
 }
 
 let plist = fs.readFileSync(infoPlist, "utf8")
+
+const localNetworkKey = "NSLocalNetworkUsageDescription"
+const localNetworkBlock = `	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>BRAIN2 reads your lists, habits, and the time grid from the Mac on this Wi-Fi.</string>
+`
+
+if (!plist.includes(localNetworkKey)) {
+  const anchor = "\t<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>"
+  if (!plist.includes(anchor)) {
+    console.warn("[mobile-ios-ats] no usage-string anchor — local network key skipped")
+  } else {
+    plist = plist.replace(anchor, `${localNetworkBlock}${anchor}`)
+    fs.writeFileSync(infoPlist, plist, "utf8")
+    console.log("[mobile-ios-ats] added NSLocalNetworkUsageDescription")
+  }
+}
+
 if (plist.includes("NSAllowsLocalNetworking")) {
   console.log("[mobile-ios-ats] ATS local networking already enabled")
   process.exit(0)

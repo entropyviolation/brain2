@@ -44,6 +44,7 @@ export const OPERATION_ATTR = {
   mission: "mission",
   stage: "stage",
   targetDate: "targetDate",
+  /** Legacy single blob. Folded into `Task.noteLog` (`foldOperationHomeNotes`). Not a schema field. */
   homeNotes: "homeNotes",
   /** Free-form categories this operation belongs to (an op can have many). */
   categories: "categories",
@@ -53,7 +54,7 @@ export const OPERATION_ATTR = {
   taskListId: "taskListId",
   /** JSON part formulas (kinds). See `lib/operation-parts.ts`. */
   partFormulas: "partFormulas",
-  /** JSON part instances, including ideas. See `lib/operation-parts.ts`. */
+  /** JSON part instances: notes (`ideas`), `currentStage`, `statusReport`, `completedFinish`. See `lib/operation-parts.ts`. */
   partInstances: "partInstances",
   /** Glance labels on the Parts board. Absent means every label. */
   partsGlance: "partsGlance",
@@ -142,7 +143,7 @@ export const OPERATION_PANELS: readonly OperationPanelDefinition[] = [
     id: "parts",
     label: "Parts",
     description:
-      "Formulas for the pieces of this operation — issues and articles, or rooms — each with its own page, ideas, and glance metrics.",
+      "Formulas for the pieces of this operation — issues and articles, or rooms — each with its own page: a stage, a status report, to-dos, notes, and glance metrics.",
     surface: "tab",
     default: true,
   },
@@ -170,7 +171,7 @@ export const OPERATION_PANELS: readonly OperationPanelDefinition[] = [
   {
     id: "resources",
     label: "Resources",
-    description: "Attached references, assets, contacts, and gear.",
+    description: "Links, files, and file references — the item's own resources, with a note on what each one is for here.",
     surface: "tab",
   },
   {
@@ -431,9 +432,9 @@ const OPERATION_ATTRIBUTES: AttributeDefinition[] = [
   // whatever names exist across operations, so no fixed option list here.
   { id: OPERATION_ATTR.categories, name: "Categories", type: "multistring" },
   { id: OPERATION_ATTR.targetDate, name: "Target Date", type: "datetime", datetimeMode: "date" },
-  // The Home notes pad lives in the dedicated `homeNotes` attribute so it never
-  // collides with the task's generic `notes` field.
-  { id: OPERATION_ATTR.homeNotes, name: "Home Notes", type: "string" },
+  // Home notes are the item note log (`Task.noteLog` / standing `Task.notes`).
+  // `homeNotes` stays as an attribute id so older vaults can be folded; it is
+  // not a schema field anymore, so the attributes panel cannot grow a second pad.
   {
     id: OPERATION_ATTR.trackingTagIds,
     name: "Tracking tags",

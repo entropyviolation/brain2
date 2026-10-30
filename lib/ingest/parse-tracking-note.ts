@@ -14,6 +14,7 @@
  * does not.
  */
 import { matchSavedLogKeyword } from "@/lib/log-keywords"
+import { escapeRegExp } from "@/lib/string-utils"
 import { LOG_CLOCK_SRC, parseLogWhen, peelLogLineWhen, peelLogRange } from "./log-line-time"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { parseExpectedWhen } from "./times"
@@ -479,8 +480,4 @@ function parseSwitchEnds(text: string): { from?: string; to: string } | null {
   const bare = text.trim()
   if (!bare) return null
   return { to: bare }
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }

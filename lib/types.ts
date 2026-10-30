@@ -84,8 +84,22 @@ export interface ItemLink {
   targetId: string
   /** Optional support/refute stance (second-brain belief graph). */
   stance?: LinkStance
-  /** Optional numeric weight for the relation (0-1), e.g. relation certainty. */
+  /**
+   * Unused except as a child's share (0–1) when the parent's
+   * `dependencyCombine` mode is additive. It is not belief certainty.
+   * Stance stays the belief spectrum.
+   */
   weight?: number
+}
+
+/**
+ * How a parent's dependencies combine (KG-DEP2–DEP5). Absent on the task
+ * means every open dependency blocks, the same as before this field existed.
+ */
+export interface DependencyCombine {
+  mode: "additive" | "redundant" | "threshold"
+  /** Threshold count: how many children must be met ("two of these four"). */
+  need?: number
 }
 
 /**
@@ -477,6 +491,12 @@ export interface Task extends Item {
    */
   captureOrigin?: CaptureOrigin
   createdAt: Date
+  /**
+   * ISO time of the last content change through `updateTask`. Absent on rows
+   * that have not been saved since this field existed. Not `createdAt`.
+   * Stays a string so the persist Date reviver does not turn it into a Date.
+   */
+  modifiedAt?: string
   completed: boolean
   /**
    * When the task last transitioned to completed. Stamped centrally by the task
@@ -584,6 +604,11 @@ export interface Task extends Item {
   urgency?: number // 1-5
   importance?: number // 1-5
   dependencies?: string[] // task IDs
+  /**
+   * How `dependencies` combine. Omitted means every open dependency blocks.
+   * Edges stay on `dependencies`; they are not copied onto `links`.
+   */
+  dependencyCombine?: DependencyCombine
   /** Task card: items or lists (`list:{id}`) holding what this task needs. */
   resourceIds?: string[]
   /** Task card: `event` items this task waits on (see `Subtask.awaitIds`). */
@@ -718,7 +743,7 @@ export interface Task extends Item {
   dayRatings?: Record<string, { importance?: number; excitement?: number }>
   /**
    * Resistance samples over time (morning walkthrough and elsewhere). Append-only;
-   * each reading keeps its timestamp so Analytics can show the series.
+   * each reading keeps its timestamp so Data can show the series.
    */
   resistanceReadings?: Array<{
     at: string
@@ -829,6 +854,12 @@ export interface TimeLogEntry {
    * Omitted when the review was closed without saving.
    */
   sessionReview?: TimeLogSessionReview
+  /**
+   * Reasons for pausing this sitting. One span per Pause.
+   * `stoppedAt` is set when Stop closed a gap that never resumed.
+   * Omitted when the sitting was not paused. No persist bump.
+   */
+  pauseSpans?: import("@/lib/work-pause").WorkPauseSpan[]
 }
 
 /** What the sitting review wrote onto one time log. A missing score was not asked. */
@@ -966,17 +997,27 @@ export interface ItemNoteEntry {
   pushCount?: number
 }
 
-/** A file attached to an item as a resource. Same blob storage as `file` attributes. */
+/** A file, file reference, or web link attached to an item as a resource. */
 export interface ItemResource extends FileValue {
   /** ISO time it was attached. */
   addedAt: string
   /** Optional caption: what this file is for. */
   caption?: string
   /**
+   * What this resource is for on the item that holds it. On an operation,
+   * that is the use in this operation. Same list as Item Detail → Resources.
+   */
+  useNote?: string
+  /**
    * Set when the file stays where it is on the computer instead of being
    * copied (`uri` is then `link:<id>`). Desktop only. `docs/RESOURCE_LINKS.md`.
    */
   link?: ResourceLink
+  /**
+   * Web address. `uri` is `url:<id>`, so attachment storage never treats it
+   * as a copied file.
+   */
+  url?: string
 }
 
 /** Where a linked resource lives on disk, and how to find it after a move. */
@@ -1756,6 +1797,11 @@ export interface List {
   /** Workspace module that created this list (auto-filed under Module Lists). */
   createdByModuleId?: string
   /**
+   * Slot role from a module package (`lib/module-package.ts`). Set only on a
+   * list `installModulePackage` just minted. Lists that already exist omit it.
+   */
+  moduleSlotId?: string
+  /**
    * Default item *type* for new rows in this list (e.g. "book"). Applied by
    * `withListMembership` when the item has no meaningful type yet. Must be on
    * `itemTypeIds` when that allowlist is set (List Settings keeps them in sync).
@@ -2369,7 +2415,7 @@ export interface PeriodReview {
     bestDayWhy?: string
     /** Morning gratitude list (often 10). Distinct from evening `gratitude`. */
     gratitude?: string[]
-    /** Where the ritual was completed — label text-pipeline rows in Analytics. */
+    /** Where the ritual was completed — label text-pipeline rows in Data. */
     source?: "telegram" | "desktop"
   }
   /**

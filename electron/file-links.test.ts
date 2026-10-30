@@ -25,6 +25,7 @@ type FileLinks = {
   extractLinkText: (p: string, opts?: { pdfParse?: (b: Buffer) => Promise<{ text: string }> }) => Promise<string>
   walkDir: (root: string, opts?: { maxEntries?: number }) => Promise<{ fileCount: number; bytes: number; names: string[]; truncated: boolean }>
   isExecutablePath: (p: string) => boolean
+  pathForOpen: (p: string) => Promise<{ path?: string; error?: string }>
   createPreviewRegistry: () => { urlFor: (p: string) => string; pathFor: (url: string) => string }
 }
 const links = nodeRequire("./file-links.js") as FileLinks
@@ -164,6 +165,22 @@ describe("extractLinkText", () => {
 })
 
 describe("guards", () => {
+  it("follows a symlink and refuses one whose target is a program", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brain2-open-"))
+    const doc = path.join(dir, "note.txt")
+    const program = path.join(dir, "run.command")
+    const link = path.join(dir, "alias.txt")
+    fs.writeFileSync(doc, "hello")
+    fs.writeFileSync(program, "#!/bin/sh\n")
+    fs.symlinkSync(doc, link)
+    expect((await links.pathForOpen(link)).path).toBe(fs.realpathSync(doc))
+    fs.unlinkSync(link)
+    fs.symlinkSync(program, link)
+    expect((await links.pathForOpen(link)).error).toMatch(/does not open programs/)
+    expect((await links.pathForOpen(path.join(dir, "missing.txt"))).error).toMatch(/not at that path/)
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+
   it("treats programs as not openable", () => {
     expect(links.isExecutablePath("/Applications/Calculator.app")).toBe(true)
     expect(links.isExecutablePath("/Applications/Calculator.app/")).toBe(true)

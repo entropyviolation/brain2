@@ -7,7 +7,7 @@
  * **Points visible** is on (Decision 13): the switch only hides figures.
  * A step with `tierPoints` pays by level instead: each level it reaches
  * (done to that level's view) pays once, keyed `…:{tier}`; falling back takes it.
- * Called from the To Do steps write (`todo-panel` `handleSteps`), which the
+ * Called from the To Do steps write (`desk/use-todo-desk-actions.ts` `handleSteps`), which the
  * lid and the task card share.
  */
 import type { Subtask } from "@/lib/types"

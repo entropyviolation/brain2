@@ -10,6 +10,11 @@
  *
  * `buildModuleTemplate` is pure (data only, unit-testable). `instantiateModuleTemplate`
  * commits the result to the task + modules stores and returns the new module id.
+ *
+ * Budget and Book Tasting read lists, attributes, views, and workflows from
+ * `lib/packages/golden/budget.json` and `book-tasting.json`. Sample rows
+ * (including Book Tasting PDF text) and `templateId` stay in the builders.
+ * Itinerary, Tidy, Film DNA, GradSearch, Sweep, and Blank stay written here.
  */
 import type { AttributeDefinition, AttributeValue, FileValue, Task, List, WorkflowDefinition } from "@/lib/types"
 import type { DashboardCard, ModuleInstance, ModuleView, ModuleViewConfig, ModuleViewKind } from "@/lib/modules-store"
@@ -23,6 +28,8 @@ import { FILMRECS_SHELVES } from "@/lib/filmrecs-types"
 import { FILM_TYPE_ID } from "@/lib/film-types"
 import { seedFilmToTask, type SeedFilm } from "@/lib/filmrecs-catalog"
 import filmrecsSeed from "@/lib/filmrecs-seed.json"
+import budgetGoldenJson from "@/lib/packages/golden/budget.json"
+import bookTastingGoldenJson from "@/lib/packages/golden/book-tasting.json"
 import { seedHouseCleaning } from "@/lib/house-cleaning"
 
 export type ModuleTemplateId =
@@ -32,6 +39,7 @@ export type ModuleTemplateId =
   | "book-tasting"
   | "filmrecs"
   | "gradsearch"
+  | "sweep"
   | "blank"
 
 export interface ModuleTemplateMeta {
@@ -76,6 +84,12 @@ export const MODULE_TEMPLATES: ModuleTemplateMeta[] = [
     name: "GradSearch",
     description:
       "Graduate program explorer: search, filter, re-score, compare, favorite, hide, and verify every tracked program — the same explorer as the standalone GradSearch app, with its full catalog.",
+  },
+  {
+    id: "sweep",
+    name: "Sweep",
+    description:
+      "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac. The scan runs in the desktop app.",
   },
   {
     id: "blank",
@@ -390,60 +404,199 @@ function buildHouseCleaning(uid: Uid): BuiltModuleTemplate {
   return { lists: [], seedTasks: [], module }
 }
 
+/**
+ * Shape of `lib/packages/golden/*.json` that Budget and Book Tasting read.
+ * Slot roles stand in for list ids. The package schema has no seed items and
+ * no `templateId`; those stay in the builders below.
+ */
+interface GoldenSlot {
+  role: string
+  name: string
+  description?: string
+  color?: string
+  itemLabel?: string
+  attributes?: AttributeDefinition[]
+  displayedAttributes?: string[]
+  defaultAttributeValues?: Record<string, AttributeValue>
+}
+
+interface GoldenView {
+  title: string
+  kind: ModuleViewKind
+  slot?: string
+  config?: ModuleViewConfig
+}
+
+interface GoldenWorkflow {
+  name: string
+  scope?: WorkflowDefinition["scope"]
+  trigger: WorkflowDefinition["trigger"]
+  conditions?: WorkflowDefinition["conditions"]
+  actions: WorkflowDefinition["actions"]
+  enabled?: boolean
+}
+
+interface GoldenPackage {
+  id: string
+  name: string
+  description?: string
+  slots: GoldenSlot[]
+  views: GoldenView[]
+  workflows?: GoldenWorkflow[]
+}
+
+/** List-id fields on a view config. Same set the package installer resolves. */
+const GOLDEN_LIST_ROLE_FIELDS = [
+  "categoryId",
+  "matchTargetCategoryId",
+  "quizSourceCategoryId",
+  "daysCategoryId",
+  "flightsCategoryId",
+  "entriesCategoryId",
+  "placesCategoryId",
+] as const satisfies readonly (keyof ModuleViewConfig)[]
+
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function asGolden(value: unknown, id: ModuleTemplateId): GoldenPackage {
+  if (!value || typeof value !== "object") throw new Error(`golden manifest "${id}" is not an object`)
+  const pkg = value as GoldenPackage
+  if (pkg.id !== id) throw new Error(`golden manifest id "${String(pkg.id)}" is not "${id}"`)
+  if (!Array.isArray(pkg.slots) || pkg.slots.length === 0) throw new Error(`golden manifest "${id}" has no slots`)
+  if (!Array.isArray(pkg.views) || pkg.views.length === 0) throw new Error(`golden manifest "${id}" has no views`)
+  return pkg
+}
+
+function roleId(role: string, roles: Map<string, string>): string {
+  const id = roles.get(role)
+  if (!id) throw new Error(`golden manifest names unknown slot "${role}"`)
+  return id
+}
+
+function listByRole(byRole: Map<string, List>, role: string): List {
+  const list = byRole.get(role)
+  if (!list) throw new Error(`golden manifest has no slot "${role}"`)
+  return list
+}
+
+/** One fresh copy of the manifest's lists. Roles stay off the list records. */
+function listsFromGolden(pkg: GoldenPackage, uid: Uid): { lists: List[]; byRole: Map<string, List> } {
+  const byRole = new Map<string, List>()
+  const lists = pkg.slots.map((slot) => {
+    if (byRole.has(slot.role)) throw new Error(`golden manifest repeats slot "${slot.role}"`)
+    const list: List = {
+      id: uid(slug(slot.name)),
+      name: slot.name,
+      color: slot.color ?? "#64748b",
+      description: slot.description,
+      createdAt: new Date(),
+      scheduleable: false,
+      itemLabel: slot.itemLabel,
+      itemAttributes: slot.attributes ? cloneJson(slot.attributes) : undefined,
+      displayedAttributes: slot.displayedAttributes ? [...slot.displayedAttributes] : undefined,
+      defaultAttributeValues: slot.defaultAttributeValues ? cloneJson(slot.defaultAttributeValues) : undefined,
+    }
+    byRole.set(slot.role, list)
+    return list
+  })
+  return { lists, byRole }
+}
+
+function viewConfigFromGolden(entry: GoldenView, roles: Map<string, string>, uid: Uid): ModuleViewConfig {
+  const config: ModuleViewConfig = entry.config ? cloneJson(entry.config) : {}
+  if (entry.slot) config.categoryId = entry.slot
+  for (const key of GOLDEN_LIST_ROLE_FIELDS) {
+    const value = config[key]
+    if (typeof value === "string" && value) config[key] = roleId(value, roles)
+  }
+  if (config.htmlListIds) {
+    config.htmlListIds = config.htmlListIds.map((role) => roleId(role, roles))
+  }
+  if (config.cards) {
+    config.cards = config.cards.map((card) => {
+      const next: DashboardCard = {
+        ...card,
+        id: uid(`card-${card.id}`),
+        categoryId: roleId(card.categoryId, roles),
+      }
+      if (card.subtract) {
+        next.subtract = { ...card.subtract, categoryId: roleId(card.subtract.categoryId, roles) }
+      }
+      return next
+    })
+  }
+  return config
+}
+
+function workflowFromGolden(
+  wf: GoldenWorkflow,
+  roles: Map<string, string>,
+  moduleId: string,
+  uid: Uid,
+): WorkflowDefinition {
+  const actions = wf.actions.map((action) => {
+    const next = { ...action } as WorkflowDefinition["actions"][number] & {
+      categoryId?: string
+      fromCategoryId?: string
+    }
+    if (typeof next.categoryId === "string") next.categoryId = roleId(next.categoryId, roles)
+    if (typeof next.fromCategoryId === "string") next.fromCategoryId = roleId(next.fromCategoryId, roles)
+    return next
+  })
+  const def: Omit<WorkflowDefinition, "id" | "name" | "moduleId"> = {
+    trigger: wf.trigger,
+    conditions: wf.conditions ? cloneJson(wf.conditions) : undefined,
+    actions,
+    scope: wf.scope
+      ? {
+          ...wf.scope,
+          listIds: wf.scope.listIds?.map((role) => roleId(role, roles)),
+        }
+      : undefined,
+  }
+  if (wf.enabled != null) def.enabled = wf.enabled
+  return workflow(uid, moduleId, wf.name, def)
+}
+
+/**
+ * Lists and views from the manifest. `templateId` is stamped here because the
+ * package schema does not carry it. No `config.package` and no `moduleSlotId`:
+ * this is a template build, and stored modules are not rewritten.
+ */
+function moduleFromGolden(
+  pkg: GoldenPackage,
+  templateId: ModuleTemplateId,
+  uid: Uid,
+  byRole: Map<string, List>,
+): { module: ModuleInstance; workflows?: WorkflowDefinition[] } {
+  if (pkg.id !== templateId) throw new Error(`golden manifest "${pkg.id}" cannot build "${templateId}"`)
+  const roles = new Map([...byRole].map(([role, list]) => [role, list.id]))
+  const moduleId = uid("module")
+  const module: ModuleInstance = {
+    id: moduleId,
+    type: "workspace",
+    kind: "workspace",
+    title: pkg.name,
+    description: pkg.description,
+    templateId,
+    config: {},
+    views: pkg.views.map((entry) => view(entry.kind, entry.title, viewConfigFromGolden(entry, roles, uid), uid)),
+  }
+  const workflows = pkg.workflows?.map((wf) => workflowFromGolden(wf, roles, moduleId, uid))
+  return workflows?.length ? { module, workflows } : { module }
+}
+
+const budgetGolden = asGolden(budgetGoldenJson, "budget")
+const bookTastingGolden = asGolden(bookTastingGoldenJson, "book-tasting")
+
 function buildBudget(uid: Uid): BuiltModuleTemplate {
-  const accounts = makeCategory(uid, "Accounts", {
-    color: "#22c55e",
-    itemLabel: "account",
-    description: "Where your money sits. Toggle each into the liquid / net-worth totals.",
-    attributes: [
-      attr("balance", "Balance", "number", { unit: "$", allowFloat: true }),
-      attr("atype", "Type", "selection", { optionSource: "manual", options: ["Checking", "Savings", "Cash", "Investment"] }),
-      attr("liquid", "Liquid?", "boolean", { booleanDisplay: "checkbox" }),
-      attr("netWorth", "Count in net worth?", "boolean", { booleanDisplay: "checkbox" }),
-    ],
-    displayedAttributes: ["balance", "atype", "liquid", "netWorth"],
-    defaultAttributeValues: { liquid: true, netWorth: true },
-  })
-
-  const payments = makeCategory(uid, "Monthly Payments", {
-    color: "#f97316",
-    itemLabel: "payment",
-    description: "Recurring bills — check off as paid; toggle which count toward the monthly total.",
-    attributes: [
-      attr("amount", "Amount", "number", { unit: "$", allowFloat: true }),
-      attr("dueDay", "Due day", "number"),
-      attr("paid", "Paid", "boolean", { booleanDisplay: "checkbox" }),
-      attr("include", "Count?", "boolean", { booleanDisplay: "checkbox" }),
-    ],
-    displayedAttributes: ["amount", "dueDay", "paid", "include"],
-    defaultAttributeValues: { paid: false, include: true },
-  })
-
-  const debts = makeCategory(uid, "Debts", {
-    color: "#ef4444",
-    itemLabel: "debt",
-    description: "What you owe — subtracted from net worth when counted.",
-    attributes: [
-      attr("balance", "Balance", "number", { unit: "$", allowFloat: true }),
-      attr("apr", "APR", "number", { unit: "%", allowFloat: true }),
-      attr("netWorth", "Count in net worth?", "boolean", { booleanDisplay: "checkbox" }),
-    ],
-    displayedAttributes: ["balance", "apr", "netWorth"],
-    defaultAttributeValues: { netWorth: true },
-  })
-
-  const expected = makeCategory(uid, "Expected Spend", {
-    color: "#a855f7",
-    itemLabel: "line",
-    description: "Upcoming discretionary spend — toggle items in/out of the forecast.",
-    attributes: [
-      attr("amount", "Amount", "number", { unit: "$", allowFloat: true }),
-      attr("category", "Category", "selection", { optionSource: "manual", options: ["Travel", "Gifts", "Home", "Fun", "Other"] }),
-      attr("include", "Count?", "boolean", { booleanDisplay: "checkbox" }),
-    ],
-    displayedAttributes: ["amount", "category", "include"],
-    defaultAttributeValues: { include: true },
-  })
+  const { lists, byRole } = listsFromGolden(budgetGolden, uid)
+  const accounts = listByRole(byRole, "accounts")
+  const payments = listByRole(byRole, "payments")
+  const debts = listByRole(byRole, "debts")
+  const expected = listByRole(byRole, "expected")
 
   const seedTasks: Task[] = [
     seed(accounts, "Checking", { balance: 3200, atype: "Checking", liquid: true, netWorth: true }),
@@ -461,67 +614,14 @@ function buildBudget(uid: Uid): BuiltModuleTemplate {
     seed(expected, "New desk chair", { amount: 320, category: "Home", include: false }),
   ]
 
-  const cards: DashboardCard[] = [
-    { id: uid("card-liquid"), label: "Liquid total", categoryId: accounts.id, attrId: "balance", fn: "sum", includeAttrId: "liquid", unit: "$" },
-    {
-      id: uid("card-networth"),
-      label: "Net worth",
-      categoryId: accounts.id,
-      attrId: "balance",
-      fn: "sum",
-      includeAttrId: "netWorth",
-      unit: "$",
-      subtract: { categoryId: debts.id, attrId: "balance", includeAttrId: "netWorth" },
-    },
-    { id: uid("card-expected"), label: "Expected spend", categoryId: expected.id, attrId: "amount", fn: "sum", includeAttrId: "include", unit: "$" },
-    { id: uid("card-payments"), label: "Monthly payments", categoryId: payments.id, attrId: "amount", fn: "sum", includeAttrId: "include", unit: "$" },
-    { id: uid("card-debts"), label: "Total debts", categoryId: debts.id, attrId: "balance", fn: "sum", unit: "$" },
-  ]
-
-  const module: ModuleInstance = {
-    id: uid("module"),
-    type: "workspace",
-    kind: "workspace",
-    title: "Budget",
-    description: "Accounts, payments, debts, and expected spend — with optional-inclusion rollups.",
-    templateId: "budget",
-    config: {},
-    views: [
-      view("dashboard", "Overview", { cards }, uid),
-      view("spreadsheet", "Accounts", { categoryId: accounts.id }, uid),
-      view("spreadsheet", "Monthly Payments", { categoryId: payments.id }, uid),
-      view("summary", "Payments by status", { categoryId: payments.id, groupAttrId: "paid", valueAttrId: "amount" }, uid),
-      view("spreadsheet", "Debts", { categoryId: debts.id }, uid),
-      view("spreadsheet", "Expected Spend", { categoryId: expected.id }, uid),
-    ],
-  }
-
-  return { lists: [accounts, payments, debts, expected], seedTasks, module }
+  const { module } = moduleFromGolden(budgetGolden, "budget", uid, byRole)
+  return { lists, seedTasks, module }
 }
 
 function buildBookTasting(uid: Uid): BuiltModuleTemplate {
-  const books = makeCategory(uid, "Reading List", {
-    color: "#b45309",
-    itemLabel: "book",
-    description: "Books you want to read; PDFs get matched and linked to these.",
-    attributes: [
-      attr("author", "Author", "string"),
-      attr("status", "Status", "selection", { optionSource: "manual", options: ["to-read", "reading", "read", "abandoned"] }),
-    ],
-    displayedAttributes: ["author", "status"],
-    defaultAttributeValues: { status: "to-read" },
-  })
-
-  const pdfs = makeCategory(uid, "PDF Shelf", {
-    color: "#475569",
-    itemLabel: "PDF",
-    description: "Attached PDFs whose extracted text is matched to a book.",
-    attributes: [
-      attr("file", "File", "file"),
-      attr("matchedBook", "Matched book", "string"),
-    ],
-    displayedAttributes: ["matchedBook"],
-  })
+  const { lists, byRole } = listsFromGolden(bookTastingGolden, uid)
+  const books = listByRole(byRole, "books")
+  const pdfs = listByRole(byRole, "pdfs")
 
   const seedTasks: Task[] = [
     seed(books, "The Left Hand of Darkness", { author: "Ursula K. Le Guin", status: "to-read" }),
@@ -556,42 +656,8 @@ function buildBookTasting(uid: Uid): BuiltModuleTemplate {
     }),
   ]
 
-  const moduleId = uid("module")
-  const module: ModuleInstance = {
-    id: moduleId,
-    type: "workspace",
-    kind: "workspace",
-    title: "Book Tasting",
-    description: "Match PDFs to books, then taste them: guess the title from a random snippet.",
-    templateId: "book-tasting",
-    config: {},
-    views: [
-      view("spreadsheet", "Reading List", { categoryId: books.id }, uid),
-      view(
-        "matcher",
-        "Match PDFs → books",
-        { categoryId: pdfs.id, matchTargetCategoryId: books.id, matchTextAttrId: "file", linkRelation: "about" },
-        uid,
-      ),
-      view(
-        "quiz",
-        "Taste a book",
-        { categoryId: books.id, quizSourceCategoryId: pdfs.id, fileAttrId: "file", matchTextAttrId: "file", quizChoiceCount: 4 },
-        uid,
-      ),
-    ],
-  }
-
-  const workflows: WorkflowDefinition[] = [
-    workflow(uid, moduleId, "On PDF added → match to a book, else flag", {
-      scope: { listIds: [pdfs.id] },
-      trigger: { kind: "item", event: "create" },
-      conditions: [{ field: "matchedBook", operator: "empty" }],
-      actions: [{ kind: "throw", message: "No matching book found — link this PDF in the Matcher view." }],
-    }),
-  ]
-
-  return { lists: [books, pdfs], seedTasks, module, workflows }
+  const { module, workflows } = moduleFromGolden(bookTastingGolden, "book-tasting", uid, byRole)
+  return { lists, seedTasks, module, workflows }
 }
 
 function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
@@ -648,6 +714,21 @@ function buildFilmRecs(uid: Uid): BuiltModuleTemplate {
   return { lists: [films], seedTasks, module }
 }
 
+function buildSweep(uid: Uid): BuiltModuleTemplate {
+  const module: ModuleInstance = {
+    id: uid("module"),
+    type: "workspace",
+    kind: "workspace",
+    title: "Sweep",
+    description: "Caches, logs, Xcode leftovers, the Trash, and duplicate files on this Mac.",
+    templateId: "sweep",
+    icon: "brush",
+    config: {},
+    views: [view("sweep", "Sweep", {}, uid)],
+  }
+  return { lists: [], seedTasks: [], module }
+}
+
 function buildGradSearch(uid: Uid): BuiltModuleTemplate {
   const module: ModuleInstance = {
     id: uid("module"),
@@ -699,6 +780,8 @@ export function buildModuleTemplate(id: ModuleTemplateId, seedNum = Date.now()):
       return buildFilmRecs(uid)
     case "gradsearch":
       return buildGradSearch(uid)
+    case "sweep":
+      return buildSweep(uid)
     case "blank":
     default:
       return buildBlank(uid)

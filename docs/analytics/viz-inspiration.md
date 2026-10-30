@@ -1,8 +1,8 @@
-# Information is Beautiful → Brain2 Analytics
+# Information is Beautiful → Brain2 Data
 
 _Last mapped: 2026-10-23_
 
-What this is: every data type that flows into Analytics, matched to a piece on
+What this is: every data type that flows into Data, matched to a piece on
 [Information is Beautiful](https://informationisbeautiful.net/) (IIB) and how to
 adapt it as an interactive plate. Section agents read **only their own section**
 below plus **Moves** and **Rules**. Nothing here is built. It is a menu, not a spec.
@@ -15,7 +15,7 @@ themselves. Open the link before you copy a geometry.
 ## Rules
 
 - Purely additive. A new plate sits beside the old one. No view id, store or math is dropped.
-- Use the house skin and kit first (`docs/analytics-plan/11-viz.md`, `components/Analytics/studio-kit.tsx`, `studio-plots.tsx`). IIB gives the **idea**: scale, anchors, annotation, sort, filter. It does not give a new color system. Data fills stay data.
+- Use the house skin and kit first (`docs/analytics-plan/11-viz.md`, `components/Analytics/studio/studio-kit.tsx`, `studio-plots.tsx`). IIB gives the **idea**: scale, anchors, annotation, sort, filter. It does not give a new color system. Data fills stay data.
 - Every plate keeps **n**, the window, `~` / **est.**, and Open in Lists.
 - **Instagram** and **Texts** are frames with their own look. Their rows are for reference only. Do not change them yet.
 

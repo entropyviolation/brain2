@@ -15,7 +15,7 @@
   <dict>
     <key>PATH</key>
     <string>__PATH__</string>
-    <key>COGS_IOS_TEAM_ID</key>
+    <key>BRAIN2_IOS_TEAM_ID</key>
     <string>__TEAM_ID__</string>
   </dict>
   <!-- Every 3 hours, and once at login. Most runs only check the date and exit. -->

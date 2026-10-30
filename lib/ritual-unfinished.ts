@@ -12,13 +12,7 @@
 import type { ReviewPeriod, Task } from "@/lib/types"
 import { tasksProspectiveForPeriod, tasksUndoneForPeriod } from "@/lib/period-ledger"
 import { isPastFunnelPeriod, isPlacementPushed } from "@/lib/scheduling"
-
-function monthsInQuarter(key: string): string[] {
-  const [year, quarter] = key.split("-Q")
-  const start = (Number(quarter) - 1) * 3 + 1
-  if (!year || !Number.isFinite(start) || start < 1) return []
-  return [0, 1, 2].map((i) => `${year}-${String(start + i).padStart(2, "0")}`)
-}
+import { monthsInQuarter } from "@/lib/seasons"
 
 function forLedgerPeriod(
   tasks: Task[],

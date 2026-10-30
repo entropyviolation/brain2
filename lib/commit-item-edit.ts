@@ -3,9 +3,10 @@
  *
  * `commitItemEdit` validates through `taskRepository`, persists with that
  * repository's existing `updateTask` path, and lets that path emit
- * `dispatchItemMutation` with the same open patch. It then appends one line
- * to `lib/item-activity.ts`. ItemDetail save uses `commitItemDraft` (patch
- * from two snapshots) instead of `recordItemWrite` + `updateTask`.
+ * `dispatchItemMutation` with the same open patch. History lines are written
+ * by that `updateTask` (one line per changed field, with this attribution).
+ * ItemDetail save uses `commitItemDraft` (patch from two snapshots) instead
+ * of `recordItemWrite` + `updateTask`. This function does not append a second copy.
  *
  * It does not call `applyLinkedEffects`. A rename stays a rename: habit sync,
  * sleep, work-session stop, points, and undo run only when a caller asks for
@@ -14,16 +15,11 @@
  */
 import { settleStepPoints } from "@/lib/step-points"
 import { taskRepository } from "@/lib/data/task-repository"
-import {
-  activityFieldLabel,
-  appendItemActivity,
-  type ItemActivityChange,
-  type ItemActivityOrder,
-} from "@/lib/item-activity"
+import { type ItemActivityOrder } from "@/lib/item-activity"
+import { type ItemWriteAttribution } from "@/lib/item-write-source"
 import { syncTrackedHabits } from "@/lib/habit-tracking-sync"
 import { syncSleepNight } from "@/lib/sleep-sync"
 import { stopWorkingOnOperation } from "@/lib/operation-work-session"
-import { itemTitle } from "@/lib/item-utils"
 import { serializeSnapshot } from "@/lib/unsaved-changes"
 import type { AttributeValue, ItemRecord, Task } from "@/lib/types"
 
@@ -41,6 +37,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   type: true,
   title: true,
   createdAt: true,
+  modifiedAt: true,
   attachedDate: true,
   tags: true,
   links: true,
@@ -77,6 +74,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   urgency: true,
   importance: true,
   dependencies: true,
+  dependencyCombine: true,
   context: true,
   entropy: true,
   rewardValue: true,
@@ -156,31 +154,6 @@ function namedOrder(order: ItemActivityOrder | undefined): ItemActivityOrder | u
   return undefined
 }
 
-function displayValue(value: unknown): string {
-  if (value === undefined || value === null || value === "") return "(empty)"
-  if (typeof value === "boolean") return value ? "yes" : "no"
-  if (typeof value === "number" && Number.isFinite(value)) return String(value)
-  if (typeof value === "string") return value
-  if (value instanceof Date) {
-    const time = value.getTime()
-    return Number.isNaN(time) ? "(empty)" : value.toISOString()
-  }
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return String(value)
-  }
-}
-
-function changeFor(field: string, previous: unknown, next: unknown): ItemActivityChange {
-  return {
-    field,
-    label: activityFieldLabel(field),
-    from: displayValue(previous),
-    to: displayValue(next),
-  }
-}
-
 /** Place known fields on the item. Anything else joins `attributes`. */
 export function applyItemEditPatch(item: Task, patch: ItemEditPatch): Task {
   const next: Task = { ...item }
@@ -215,56 +188,14 @@ export function applyItemEditPatch(item: Task, patch: ItemEditPatch): Task {
   return next
 }
 
-function activityChanges(before: Task, patch: ItemEditPatch): ItemActivityChange[] {
-  const changes: ItemActivityChange[] = []
-  let sawName = false
-  for (const [key, value] of Object.entries(patch)) {
-    if (key === "id") continue
-    if (key === "attributes") {
-      if (!isPlainRecord(value)) continue
-      for (const [attrKey, attrValue] of Object.entries(value)) {
-        changes.push(changeFor(attrKey, before.attributes?.[attrKey], attrValue))
-      }
-      continue
-    }
-    if (key === "title" || key === "description") {
-      if (sawName) continue
-      sawName = true
-      const next =
-        typeof patch.title === "string"
-          ? patch.title
-          : typeof patch.description === "string"
-            ? patch.description
-            : value
-      changes.push(changeFor("title", itemTitle(before), next))
-      continue
-    }
-    if (isTaskField(key)) {
-      changes.push(changeFor(key, (before as unknown as Record<string, unknown>)[key], value))
-      continue
-    }
-    changes.push(changeFor(key, before.attributes?.[key], value))
-  }
-  return changes
-}
-
-function summarize(source: string, changes: ItemActivityChange[], order?: ItemActivityOrder): string {
-  const head = order ? `${order} · ${source}` : source
-  if (changes.length === 1) {
-    const change = changes[0]
-    return `${head}: ${change.label}: ${change.from} → ${change.to}`
-  }
-  if (changes.length === 0) return `${head}: no keys changed`
-  return `${head}: ${changes.length} keys changed`
-}
-
 /**
  * Validate, persist, and log one item edit.
  *
  * The repository update is what calls `dispatchItemMutation`. Passing `patch`
  * puts that same bag on the event so listeners see the keys, not a sentence.
  * A second dispatch would run workflows twice, so this function does not emit
- * another event.
+ * another event. History lines come from `updateTask`, one per field that
+ * actually changed, with this call's attribution and order.
  */
 /**
  * Patch of keys that differ between two item snapshots. Used by ItemDetail
@@ -287,27 +218,17 @@ export function itemEditPatchBetween(before: Task, after: Task): ItemEditPatch {
 export function commitItemEdit(
   itemId: string,
   patch: ItemEditPatch,
-  source: string,
+  attribution: ItemWriteAttribution,
   order?: ItemActivityOrder,
 ): ItemRecord {
   const before = taskRepository.getById(itemId)
   if (!before) throw new Error(`commitItemEdit: no item ${itemId}`)
 
   const merged = applyItemEditPatch(before, patch)
-  taskRepository.update(merged, patch)
+  const tagged = namedOrder(order)
+  taskRepository.update(merged, patch, tagged ? { attribution, order: tagged } : { attribution })
   // Phase 12: a step ticked or unticked in item detail pays or takes back its step points.
   if ("subtasks" in patch) settleStepPoints({ id: before.id, description: before.description, stepPoints: merged.stepPoints }, before.subtasks, merged.subtasks)
-
-  const tagged = namedOrder(order)
-  const changes = activityChanges(before, patch)
-  appendItemActivity({
-    itemId,
-    at: new Date().toISOString(),
-    summary: summarize(source, changes, tagged),
-    changes,
-    source,
-    ...(tagged ? { order: tagged } : {}),
-  })
 
   return taskRepository.getById(itemId) ?? merged
 }
@@ -316,10 +237,15 @@ export function commitItemEdit(
  * Persist a full draft through `commitItemEdit`. No-op when nothing changed.
  * Returns the stored item (or `after` when the patch was empty).
  */
-export function commitItemDraft(before: Task, after: Task, source: string, order?: ItemActivityOrder): ItemRecord {
+export function commitItemDraft(
+  before: Task,
+  after: Task,
+  attribution: ItemWriteAttribution,
+  order?: ItemActivityOrder,
+): ItemRecord {
   const patch = itemEditPatchBetween(before, after)
   if (Object.keys(patch).length === 0) return after
-  return commitItemEdit(after.id, patch, source, order)
+  return commitItemEdit(after.id, patch, attribution, order)
 }
 
 export type LinkedEffectsRequest =

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Brain2 Chrome History</title>
+    <style>
+      body {
+        margin: 0;
+        width: 280px;
+        background: #c0c0c0;
+        color: #000;
+        font: 12px Tahoma, sans-serif;
+      }
+      main {
+        margin: 8px;
+        padding: 8px;
+        background: #d4d0c8;
+        border-top: 1px solid #fff;
+        border-left: 1px solid #fff;
+        border-right: 1px solid #404040;
+        border-bottom: 1px solid #404040;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      label {
+        display: block;
+        margin: 8px 0 2px;
+      }
+      input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+      }
+      p {
+        margin: 8px 0 0;
+        line-height: 1.35;
+      }
+      button {
+        font: inherit;
+        margin-top: 8px;
+        width: 100%;
+      }
+      .row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Brain2 Chrome History</h1>
+      <label for="profile">Profile name</label>
+      <input id="profile" type="text" maxlength="40" />
+      <label class="row"><input id="save" type="checkbox" /> Save a JSON file in Downloads</label>
+      <p id="status">Reading…</p>
+      <button id="yesterday" type="button">Export yesterday now</button>
+      <button id="backfill" type="button">Send the history Chrome still has</button>
+      <p>Just after midnight, yesterday is sent to Brain2 on this computer and, if the box above is on, saved under Downloads → Brain2 Chrome. Open Brain2 at localhost:3000 and it files itself.</p>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

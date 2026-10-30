@@ -154,7 +154,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--w95c-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* Milled footer — three keycaps centered in the bay. */
@@ -192,7 +192,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: none;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
   box-shadow:
     inset 2px 0 0 #b3b8be,
     inset -2px 0 0 #b3b8be,
@@ -220,4 +220,27 @@
     inset 0 -2px 0 #b3b8be,
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     0 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+@media (max-width: 767px) {
+  .w95-confirm {
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+  }
+
+  .w95-confirm-caption h2,
+  .w95-confirm-caption [data-slot="dialog-title"],
+  .w95-confirm-caption [data-radix-dialog-title] {
+    white-space: normal !important;
+    height: auto !important;
+  }
+
+  .w95-confirm-actions button.w95-keycap {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    height: auto !important;
+    white-space: normal !important;
+  }
 }

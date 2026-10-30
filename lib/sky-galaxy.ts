@@ -9,7 +9,7 @@
  * The galactic center lies toward Sagittarius.
  *
  * `galaxyBandAngle` is that inclination, in degrees. `GalaxySchematic` in
- * `components/Home/sky-galaxy.tsx` is the face-on wash the powers-of-ten
+ * `components/Home/moon/sky-galaxy.tsx` is the face-on wash the powers-of-ten
  * tour mounts for the 10^21 m Milky Way step instead of a text card.
  * No catalog, no photograph, no network.
  */

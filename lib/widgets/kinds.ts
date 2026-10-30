@@ -619,7 +619,7 @@ const BUILT_IN_KINDS: WidgetKind[] = [
   },
   {
     id: "budget",
-    name: "Budget",
+    name: "Money",
     group: "Money",
     version: 1,
     installs: "once",
@@ -629,14 +629,14 @@ const BUILT_IN_KINDS: WidgetKind[] = [
     startsShowing: false,
     settings: [],
     gallery: {
-      what: "This month's money in one square: net after what came in and what went out, with expected money kept apart.",
+      what: "This month's money in one square: net after what came in and what went out, with expected money kept apart. The detail is the money book.",
       how: [
-        "Earned and Spent count received money only. Spending comes from the Tracking log; earnings come from the budget.",
-        "Expected (🔮) money shows on its own line, sure and with maybes, and never changes the net.",
-        "Click the square for the month's breakdown. Add and edit lines in Tracking log → Spent → Budget.",
+        "Earned and Spent count received money only. Spending comes from the Tracking log; earnings come from the money book.",
+        "Expected money shows on its own line, sure and with maybes, and never changes the net.",
+        "Click the square for the book: a line such as earned $970 cash, plus accounts, debts, bills, a budget, plans, gigs, and a statement.",
       ],
-      useful: "A glance at the month's money without opening the budget.",
-      preview: { caption: "Budget", crt: "+$1.2M", footer: "earned $1.9M · spent $0.7M" },
+      useful: "A glance at the month's money, and the book behind it.",
+      preview: { caption: "Money", crt: "+$1.2M", footer: "earned $1.9M · spent $0.7M" },
     },
   },
 ]

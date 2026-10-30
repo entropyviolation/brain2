@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import { useTaskStore } from "@/lib/task-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { TaskType, type WeeklyTask } from "@/lib/types"
-import { HabitCompletionCell } from "./habit-completion-cell"
+import { HabitCompletionCell } from "./sheet/habit-completion-cell"
 import { HabitSourceDetail } from "./habit-source-detail"
 
 const date = new Date(2026, 9, 5)

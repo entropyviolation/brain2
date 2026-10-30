@@ -1,7 +1,7 @@
 /**
- * lib/instagram-lists-sync.ts — Fill the Instagram lists from the Analytics build
+ * lib/instagram-lists-sync.ts — Fill the Instagram lists from the Data build
  *
- * Analytics → Sources → Instagram builds `summary.json` for each export
+ * Data → Sources → Instagram builds `summary.json` for each export
  * (`electron/instagram-report.js`). The seven Instagram lists used to fill only
  * when that file was uploaded by hand. This reads the current build through
  * `instagramSource()` and runs the same `applyInstagramAnalysisImport`. A build

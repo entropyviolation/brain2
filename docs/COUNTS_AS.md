@@ -15,15 +15,15 @@ parents stay the unanswered design below. This file is the reference behind the
 copy now shown in the dialog.
 
 Implementation: `lib/pen-tree.ts` (pure graph),
-`components/Home/Tracking/pen-parent-picker.tsx` (the control),
+`components/Home/Tracking/pen-settings/pen-parent-picker.tsx` (the control),
 `components/Home/Tracking/pen-chain-visual.tsx` (the diagram),
-`components/Home/Tracking/pen-settings-dialog.tsx` (the section).
+`components/Home/Tracking/pen-settings/pen-settings-dialog.tsx` (the section).
 
 ---
 
 ## The rule
 
-> Painting still writes **this** pen. The grid and Analytics can roll the time
+> Painting still writes **this** pen. The grid and Data can roll the time
 > up to the parent when you ask them to.
 
 Paint an afternoon with *Ocean Beach* and the stored block says Ocean Beach,
@@ -32,7 +32,7 @@ before and after you nest it under San Diego. What changes is that the app now
 San Diego?" without you having painted a single San Diego block.
 
 Which rung you see is **Show as** on the palette (`displayDepth`), set per view
-and independently again on Analytics → Tracking:
+and independently again on Data → Tracking:
 
 | Show as | A block painted *Ocean Beach* draws as |
 |---|---|
@@ -122,7 +122,7 @@ forked. Cogs under Focus stays under Focus; a Computer work detail also named
 Cogs remains a label until you nest them yourself.
 
 Double-click a pen color — on a block, in the well, on a detail chip, in the
-Activity Log, on the Day Log strip, or on an Analytics swatch — to open that
+Activity Log, on the Day Log strip, or on an Data swatch — to open that
 pen's settings. The chain in settings still opens a pen with one click.
 
 ---
@@ -151,7 +151,7 @@ cyclic parent so a corrupt vault paints.
 
 **Find** (`lib/tracking-search.ts`) searches counts-as names along with the
 block's display name, notes, project, pen, secondary pens, and action-format
-templates. The Time Grid bezel, the Activity Log, and Analytics → Tracking
+templates. The Time Grid bezel, the Activity Log, and Data → Tracking
 all call it.
 
 ## Related

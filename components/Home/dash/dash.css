@@ -33,6 +33,8 @@
   --dash-lcd: #cdeeff;
   --dash-seg-font: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
   --dash-dot-font: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 /*
@@ -123,9 +125,13 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-ink) 9%, transparent);
 }
 
-/* The button the backend wraps a face in: no chrome of its own. */
+/* The button the backend wraps a face in: no chrome of its own.
+   `app/win95.css` also excludes `.vd-face` from the global key lip. That
+   lip's specificity was beating `all: unset` and washing the cluster. */
 :is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face {
   all: unset;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -1354,5 +1360,23 @@ body:is(*, .win95-app) .home-catalog.vdg[data-style="dash"] .vdg-faces.dash-samp
 @media (prefers-reduced-motion: reduce) {
   :is(body, body.win95-app .home95) .home-overview[data-style="dash"] * {
     transition: none !important;
+  }
+}
+
+/* Phone: four fluid columns. A span-3 face stays inside the screen. Desktop keeps the 88px cells. */
+@media (max-width: 767px) {
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: auto;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  :is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell {
+    min-width: 0;
+    max-width: 100%;
   }
 }

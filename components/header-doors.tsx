@@ -3,7 +3,7 @@
  *
  * Inbox, Quick Add, Rituals, and Settings stay on the first paint. The rooms
  * behind them load the first time they open, so a refresh does not download
- * a closed door. The mill keys themselves (label, count, gear) are here.
+ * a closed door. The keycaps themselves (label, count, gear) are here.
  * Rituals loads on the first press and replaces this key with the real menu;
  * the next press opens that menu. Quick Add mounts `QuickAddWroteHost` on the
  * key so the floating "added" confirmation outlives the dialog chunk.

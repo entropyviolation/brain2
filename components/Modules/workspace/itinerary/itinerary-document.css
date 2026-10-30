@@ -790,3 +790,38 @@
     display: flex;
   }
 }
+
+@media (max-width: 767px) {
+  .itinerary-doc-paper,
+  .itinerary-doc-toolbar {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .itinerary-schedule-row {
+    grid-template-columns: minmax(0, 5.5rem) minmax(0, 1fr);
+  }
+
+  .itinerary-mode-select,
+  .itinerary-row-remove,
+  .itinerary-day-actions,
+  .itinerary-day-block .itinerary-day-actions {
+    opacity: 1;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .itinerary-row-remove {
+    position: static;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .itinerary-mode-select,
+  .itinerary-inline-input,
+  .itinerary-autogrow,
+  .itinerary-time-input,
+  .itinerary-doc-toolbar .itinerary-inline-input {
+    font-size: 16px;
+  }
+}
