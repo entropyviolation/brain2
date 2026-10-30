@@ -8,10 +8,16 @@
  */
 "use client"
 
-import type { ExtractField, Flow, FlowNode, ProposeAction, SearchSource, TraceStep } from "@/lib/bim-flow/types"
+import { ENTRIES } from "@/lib/bim-flow/entries"
+import { FLOWS } from "@/lib/bim-flow/flows"
+import type { AnswerMode, ComputeFn, RouteDef, ExtractField, Flow, FlowNode, ProposeAction, RetrieveKind, SearchSource, TraceStep } from "@/lib/bim-flow/types"
 
 const SOURCES: SearchSource[] = ["items", "lists", "habits", "pens", "people"]
-const ACTIONS: ProposeAction[] = ["add-to-list", "habit-done", "intake", "mood", "person-mention", "idea", "todo", "dream", "body"]
+const RETRIEVE_KINDS: RetrieveKind[] = ["entries", "text", "overlap", "day", "texts"]
+const MODES: AnswerMode[] = ["answer", "summarize", "check"]
+const ACTIONS: ProposeAction[] = ["add-to-list", "habit-done", "intake", "mood", "person-mention", "idea", "todo", "dream", "body", "location", "company", "drive"]
+
+const COMPUTE_FNS: ComputeFn[] = ["count", "minutes", "by-day", "streak", "days-since", "longest-gap", "top-pens", "compare"]
 
 export function FlowInspector(props: {
   flow: Flow
@@ -32,7 +38,8 @@ export function FlowInspector(props: {
   }
   const c = node.config
   const set = (patch: Partial<FlowNode["config"]>) => props.onChange({ ...node, config: { ...c, ...patch } })
-  const searchNodes = props.flow.nodes.filter((n) => n.kind === "search")
+  const searchNodes = props.flow.nodes.filter((n) => n.kind === "search" || n.kind === "link")
+  const readNodes = props.flow.nodes.filter((n) => n.kind === "retrieve")
 
   const teach = (answer: "yes" | "no") => {
     if (!props.messageText) return
@@ -51,6 +58,82 @@ export function FlowInspector(props: {
           </button>
         ) : null}
       </div>
+
+      {node.kind === "message" ? (
+        <label className="bf-field">
+          <span>Start node for (which part of the app feeds it)</span>
+          <select className="bf-input" value={c.entry ?? ""} onChange={(e) => set({ entry: e.target.value || undefined })}>
+            <option value="">any (the default start)</option>
+            {ENTRIES.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.surface}{x.built ? "" : " (planned)"}</option>)}
+          </select>
+        </label>
+      ) : null}
+
+      {node.kind === "route" ? (
+        <>
+          <label className="bf-field">
+            <span>Question</span>
+            <textarea className="bf-input" rows={2} value={c.question ?? ""} onChange={(e) => set({ question: e.target.value })} />
+          </label>
+          <label className="bf-field">
+            <span>Outputs, one per line: key | label | when to pick it | regex (optional, picked by code with no model)</span>
+            <textarea
+              className="bf-input"
+              rows={7}
+              key={node.id}
+              defaultValue={(c.routes ?? []).map((r) => [r.key, r.label, r.hint ?? "", r.pattern ?? ""].join(" | ")).join("\n")}
+              onBlur={(e) => set({ routes: parseRoutes(e.target.value) })}
+            />
+          </label>
+          <label className="bf-field">
+            <span>Most outputs followed (keep 1; several pads the list)</span>
+            <input className="bf-input" type="number" min={1} max={3} value={c.maxRoutes ?? 1} onChange={(e) => set({ maxRoutes: Number(e.target.value) })} />
+          </label>
+        </>
+      ) : null}
+
+      {node.kind === "compute" ? (
+        <div className="bf-grid">
+          <label className="bf-field">
+            <span>Count</span>
+            <select className="bf-input" value={c.compute?.fn ?? "count"} onChange={(e) => set({ compute: { ...(c.compute ?? { fn: "count" }), fn: e.target.value as ComputeFn } })}>
+              {COMPUTE_FNS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </label>
+          <label className="bf-field">
+            <span>Days back (a time word in the message wins)</span>
+            <input className="bf-input" type="number" min={1} value={c.compute?.days ?? 7} onChange={(e) => set({ compute: { ...(c.compute ?? { fn: "count" }), days: Number(e.target.value) || 7 } })} />
+          </label>
+        </div>
+      ) : null}
+
+      {node.kind === "clarify" ? (
+        <label className="bf-field">
+          <span>Ask which, when a name fits two</span>
+          <select className="bf-input" value={c.clarifyKind ?? "any"} onChange={(e) => set({ clarifyKind: e.target.value as "person" | "topic" | "any" })}>
+            <option value="any">any</option>
+            <option value="person">people</option>
+            <option value="topic">topics</option>
+          </select>
+        </label>
+      ) : null}
+
+      {["gate", "route", "choose", "extract", "related", "answer"].includes(node.kind) ? (
+        <label className="bf-field">
+          <span>Model for this step only (blank = the run&apos;s plan)</span>
+          <input className="bf-input" list="bf-models" value={c.model ?? ""} placeholder="e.g. qwen2.5:3b-instruct" onChange={(e) => set({ model: e.target.value.trim() || undefined })} />
+        </label>
+      ) : null}
+
+      {node.kind === "handoff" ? (
+        <label className="bf-field">
+          <span>Hand the message to</span>
+          <select className="bf-input" value={c.flowId ?? ""} onChange={(e) => set({ flowId: e.target.value || undefined })}>
+            <option value="">—</option>
+            {FLOWS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+        </label>
+      ) : null}
 
       {node.kind === "gate" || node.kind === "choose" || node.kind === "extract" ? (
         <label className="bf-field">
@@ -129,6 +212,70 @@ export function FlowInspector(props: {
         </label>
       ) : null}
 
+      {node.kind === "extract" || node.kind === "related" || node.kind === "answer" || node.kind === "route" ? (
+        <label className="bf-field">
+          <span>Instructions to the model (empty = built in)</span>
+          <textarea className="bf-input" rows={7} value={c.system ?? ""} onChange={(e) => set({ system: e.target.value || undefined })} />
+        </label>
+      ) : null}
+
+      {node.kind === "answer" ? (
+        <label className="bf-field">
+          <span>Extra rules for this question type (added after the built-in ones)</span>
+          <textarea className="bf-input" rows={6} value={c.extra ?? ""} onChange={(e) => set({ extra: e.target.value || undefined })} />
+        </label>
+      ) : null}
+
+      {node.kind === "related" ? (
+        <label className="bf-field">
+          <span>Most words</span>
+          <input className="bf-input" type="number" min={1} value={c.max ?? 8} onChange={(e) => set({ max: Number(e.target.value) })} />
+        </label>
+      ) : null}
+
+      {node.kind === "retrieve" ? (
+        <div className="bf-grid">
+          <label className="bf-field">
+            <span>Reads</span>
+            <select className="bf-input" value={c.retrieve?.kind ?? "text"} onChange={(e) => set({ retrieve: { ...c.retrieve, kind: e.target.value as RetrieveKind } })}>
+              {RETRIEVE_KINDS.map((k) => <option key={k}>{k}</option>)}
+            </select>
+          </label>
+          <label className="bf-field">
+            <span>Most rows</span>
+            <input className="bf-input" type="number" min={1} value={c.retrieve?.limit ?? 12} onChange={(e) => set({ retrieve: { kind: "text", ...c.retrieve, limit: Number(e.target.value) } })} />
+          </label>
+          <label className="bf-field">
+            <span>Days back (0 = plan decides)</span>
+            <input className="bf-input" type="number" min={0} value={c.retrieve?.days ?? 0} onChange={(e) => set({ retrieve: { kind: "text", ...c.retrieve, days: Number(e.target.value) || undefined } })} />
+          </label>
+          <label className="bf-field">
+            <span>By meaning</span>
+            <input type="checkbox" checked={!!c.retrieve?.semantic} onChange={(e) => set({ retrieve: { kind: "text", ...c.retrieve, semantic: e.target.checked } })} />
+          </label>
+          <label className="bf-field">
+            <span>Tracking views (ids, comma)</span>
+            <input className="bf-input" value={(c.retrieve?.scopeIds ?? []).join(",")} onChange={(e) => set({ retrieve: { kind: "text", ...c.retrieve, scopeIds: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) } })} />
+          </label>
+        </div>
+      ) : null}
+
+      {node.kind === "answer" ? (
+        <div className="bf-grid">
+          <label className="bf-field">
+            <span>Mode</span>
+            <select className="bf-input" value={c.mode ?? "answer"} onChange={(e) => set({ mode: e.target.value as AnswerMode })}>
+              {MODES.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </label>
+          <label className="bf-field">
+            <span>Evidence from (comma ids; empty = whole path)</span>
+            <input className="bf-input" value={(c.fromNodeIds ?? []).join(",")} onChange={(e) => set({ fromNodeIds: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} />
+          </label>
+          <span className="bf-k">{readNodes.map((r) => r.id).join(", ")}</span>
+        </div>
+      ) : null}
+
       {node.kind === "propose" ? (
         <label className="bf-field">
           <span>Would write</span>
@@ -175,4 +322,12 @@ function parseFields(text: string): ExtractField[] {
       hint: hint || undefined,
       options: options ? options.split(",").map((o) => o.trim()).filter(Boolean) : undefined,
     }))
+}
+
+function parseRoutes(text: string): RouteDef[] {
+  return text
+    .split("\n")
+    .map((line) => line.split("|").map((x) => x.trim()))
+    .filter(([key]) => key)
+    .map(([key, label, hint, pattern]) => ({ key: key!.replace(/[^a-z0-9_-]/gi, ""), label: label || key!, hint: hint || undefined, pattern: pattern || undefined }))
 }

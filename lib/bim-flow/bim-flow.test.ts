@@ -111,3 +111,11 @@ describe("echoes and system lists", () => {
     expect(searchVault(s, "garlic", { source: "items" }).options).toEqual([])
   })
 })
+
+describe("termsMatched stems", () => {
+  it("matches showered ~ shower but not show ~ shower", async () => {
+    const { termsMatched } = await import("./retrieve")
+    expect(termsMatched("Showered", ["shower"])).toBe(1)
+    expect(termsMatched("Wrapping up show rn", ["shower"])).toBe(0)
+  })
+})

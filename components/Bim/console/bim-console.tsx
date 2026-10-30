@@ -3,7 +3,7 @@
  *
  * A green-phosphor terminal: tab strip, chat log, BIM's dossier card, and a
  * compose well with a keypad (digits answer numbered questions). CHAT, LOG,
- * COMMANDS, and LLM (a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**: they
+ * COMMANDS, and LLM (week suggestions, then a door to `/lab/bim-flow`) are live. GRAPH, ACTIONS, and RULES are **Planned**: they
  * say what they will show once BIM reads the knowledge graph and a model.
  * Every line runs through the Telegram bot's executor (`lib/ingest/bim-chat.ts`).
  */
@@ -16,6 +16,7 @@ import { BIM_CHAT_ID } from "@/lib/ingest/bim-chat"
 import { ALL_COMMANDS } from "@/lib/ingest/command-glossary"
 import { useIngestStore } from "@/lib/ingest/ingest-store"
 import { BIM_QUICK, openChoices, useBimChat } from "@/components/Bim/use-bim-chat"
+import { LlmSuggestions } from "./llm-suggestions"
 import "./bim-console.css"
 
 const TABS = ["chat", "log", "commands", "graph", "llm", "actions", "rules"] as const
@@ -186,6 +187,7 @@ export function BimConsole({ open, onOpenChange }: { open: boolean; onOpenChange
             {tab === "commands" ? <pre className="bim-crt-box bim-crt-log bim-crt-wide">{ALL_COMMANDS}</pre> : null}
             {tab === "llm" ? (
               <div className="bim-crt-box bim-crt-log bim-crt-wide">
+                <LlmSuggestions />
                 <p className="bim-crt-line">FLOW BENCH — LOCAL MODEL GATES OVER BIM TEXT. WRITES NOTHING.</p>
                 <button data-no95 type="button" onClick={() => (window.location.href = "/lab/bim-flow/")}>
                   OPEN FLOW BENCH

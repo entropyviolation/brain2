@@ -1276,6 +1276,25 @@ describe("applyVaultPatch", () => {
     expect(after.contentRev).toBeGreaterThan(state.contentRev)
   })
 
+  it("lands Health days from the phone without dropping the rest", () => {
+    const stored = JSON.stringify({ state: { days: { "2026-10-28": { steps: 100 } }, nights: { x: 1 } } })
+    const out = applyVaultPatch("brain2-health-import", stored, {
+      upserts: [{ id: "2026-10-29", steps: 8000, flights: 3 }],
+    })
+    expect(out.ok).toBe(true)
+    if (!out.ok) return
+    const state = JSON.parse(out.value).state
+    expect(state.days).toEqual({ "2026-10-28": { steps: 100 }, "2026-10-29": { steps: 8000, flights: 3 } })
+    expect(state.nights).toEqual({ x: 1 })
+  })
+
+  it("creates the Health store on the Mac when the first import patch arrives", () => {
+    const out = applyVaultPatch("brain2-health-import", undefined, { upserts: [{ id: "2026-10-29", steps: 8000 }] })
+    expect(out.ok).toBe(true)
+    if (!out.ok) return
+    expect(JSON.parse(out.value).state.days["2026-10-29"]).toEqual({ steps: 8000 })
+  })
+
   it("lands one sleep night and one goal field without dropping the rest", () => {
     const sleep = JSON.stringify({
       state: {

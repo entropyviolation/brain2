@@ -133,6 +133,30 @@ export function MobileKeyboard() {
     }
   }, [field, board])
 
+  // iOS ignores preventDefault on pointerdown: the tap still moves focus (the
+  // field blurs, the deck collapses) and a click lands on whatever is behind
+  // the deck, especially after hide or a board swap. Cancelling touchstart and
+  // mousedown stops both; pointer events still reach the keys.
+  useEffect(() => {
+    const deck = deckRef.current
+    if (!field || !deck) return
+    const stop = (event: Event) => {
+      if (event.cancelable) event.preventDefault()
+    }
+    const swallow = (event: Event) => {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    deck.addEventListener("touchstart", stop, { passive: false })
+    deck.addEventListener("mousedown", stop)
+    deck.addEventListener("click", swallow)
+    return () => {
+      deck.removeEventListener("touchstart", stop)
+      deck.removeEventListener("mousedown", stop)
+      deck.removeEventListener("click", swallow)
+    }
+  }, [field])
+
   if (!field || typeof document === "undefined") return null
 
   const kind = keyboardKind(field, field.dataset.mKbSavedMode || "")

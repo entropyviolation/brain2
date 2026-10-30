@@ -100,6 +100,8 @@ meaningful on its own.
 
 _Last mapped: 2026-10-23_ Visualization ideas from Information is Beautiful, per view, are in [`docs/analytics/viz-inspiration.md`](../../docs/analytics/viz-inspiration.md). It is a menu, not a spec.
 
+_Last mapped: 2026-10-30_ **Sources → Health** (`sources/HealthView.tsx`, math in `lib/health-report.ts`) reports the Apple Health data the iPhone import already stored: daily steps, distance, flights, active energy, heart rate, workouts from Activity, and a link to logged sleep. It reads `health-store.ts`, the time-tracking entries, and the sleep log, and writes nothing. Unlike Instagram and Browser it follows the shared date range. Days Health left blank stay out of every mean; weekday, trend, and sleep-link sentences are withheld below their floors (`HEALTH_FLOORS`). The Mac does not read Health, so the view is empty on a desktop that never received the phone's stores. **Planned:** a heart-rate-by-hour plate and sleep stages, which the import does not store yet.
+
 ## Folders
 
 _Last mapped: 2026-10-28_
@@ -113,7 +115,7 @@ The public door stays in this folder. Each studio group has the views it already
 | `accuracy/` | Plan vs reality, calibration, cycle, regret, goals |
 | `meta/` | Observatory, cross-section, metrics, correlation, spectrum, research report |
 | `library/` | Item types, lists and areas, attributes, tags, stages, weight, graph gaps |
-| `sources/` | Instagram and Browser |
+| `sources/` | Instagram, Browser, and Health |
 | `chrome/` | Studio index, group catalog, remembered range, lazy view map |
 | `studio/` | Chart frame, Open in Lists, studio kit, studio plots |
 

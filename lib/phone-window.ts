@@ -34,6 +34,7 @@ const PATCH_STORES = new Set([
   "habits-store",
   "sleep-store",
   "goals-store",
+  "health-import",
 ])
 
 type Collection = {
@@ -79,6 +80,8 @@ const COLLECTIONS: Record<string, Collection[]> = {
     { field: "quarterlyHabitData", shape: "cells" },
   ],
   "sleep-store": [{ field: "nights", shape: "map" }],
+  // Daily Health totals, keyed by date. The `nights` ledger stays on the phone: its ids are the same dates and would collide.
+  "health-import": [{ field: "days", shape: "map" }],
   "goals-store": [
     { field: "goals", claim: goalShaped },
     { field: "objectives", claim: (row) => !goalShaped(row) },
@@ -141,6 +144,8 @@ let status: PhoneWindowStatus = "idle"
 /** The step in flight, or why the last load missed. Shown on the phone so a failure names itself. */
 let detail: string | null = null
 let hubUrl = ""
+/** When the Mac last answered a full load (ms), for the phone hub. */
+let loadedAt: number | null = null
 let loadGen = 0
 let outboxTail: Promise<void> = Promise.resolve()
 
@@ -160,6 +165,17 @@ export function phoneWindowEngaged(): boolean {
 
 export function getPhoneWindowSnapshot(): { status: PhoneWindowStatus; detail: string | null } {
   return { status, detail }
+}
+
+/** What the phone hub shows: the Mac address that answered, when, and phone edits not yet sent. */
+export async function getPhoneWindowReport(): Promise<{ hubUrl: string; loadedAt: number | null; outbox: number }> {
+  let outbox = 0
+  try {
+    outbox = (await listOutbox()).length
+  } catch {
+    /* an unreadable outbox reads as empty */
+  }
+  return { hubUrl, loadedAt, outbox }
 }
 
 export function phoneWindowNote(next: PhoneWindowStatus = status): string | null {
@@ -886,6 +902,7 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   }
   if (gen !== loadGen) return status
   macAnswered = true
+  loadedAt = Date.now()
   detail = null
   setStatus("live")
   if ((await listOutbox()).length > 0) await flushPhoneOutbox()
