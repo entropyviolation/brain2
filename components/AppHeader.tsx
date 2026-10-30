@@ -19,7 +19,8 @@
  * the shell scrolls inside its bay. On a viewport 520px or narrower the
  * mill gives way to a phone bar: Back/Forward sit on the far left, then
  * BRAIN2, then a Quick Add keycap (+) and Menu. Go is the section switcher.
- * Friend, Rituals, System, and Capture open in a sheet. Refresh is the left key of
+ * Friend, Rituals, System, and Capture open in a sheet. In the iOS app a Phone
+ * group follows Capture (`PhoneDeskKeys`). Refresh is the left key of
  * that sheet and reloads the page; Close stays on the right. A live now well stays on
  * the bar so a running clock is still on screen. A wider window keeps the
  * one-row mill. Keys do not flex-shrink, and phosphor
@@ -47,6 +48,7 @@ import { BabyAnimalNest } from "@/components/baby-animal-nest"
 import { InboxKey, QuickAddKey, RitualsKey, SettingsKey } from "@/components/header-doors"
 import { HeaderNowBox } from "@/components/header-now-box"
 import { BimKey } from "@/components/Bim/bim-key"
+import { PhoneDeskKeys } from "@/components/Mobile/phone-desk-keys"
 import { HeaderNavButtons } from "@/components/header-nav-buttons"
 import { HeaderReminderBell } from "@/components/header-reminder-bell"
 import { Button } from "@/components/ui/button"
@@ -356,6 +358,7 @@ export function AppHeader({
               <QuickAddKey open={captureOpen} onOpenChange={onCaptureOpenChange} seed={captureSeed} />
             </div>
           </fieldset>
+          <PhoneDeskKeys />
         </div>
         </div>
       </div>

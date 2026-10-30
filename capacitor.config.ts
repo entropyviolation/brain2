@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli"
 
 /**
- * Capacitor config for packaging the /mobile Home shell as a native iOS app.
+ * Capacitor config for packaging the desk page as a native iOS app.
  *
  * Build flow:
  *   npm run mobile:ios
@@ -13,8 +13,8 @@ const config: CapacitorConfig = {
   appName: "BRAIN2",
   webDir: "out",
   server: {
-    // Open the mobile Home shell (not the full desktop tab bar).
-    appStartPath: "mobile/",
+    // Open the desk page. Its Menu sheet carries the phone keys
+    // (`components/Mobile/phone-desk-keys.tsx`). The shell stays at /mobile/.
     androidScheme: "https",
     iosScheme: "capacitor",
   },

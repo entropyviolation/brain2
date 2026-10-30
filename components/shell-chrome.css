@@ -1918,6 +1918,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell:not([data-tools="open"]) .b2-shell-rituals,
   .b2-shell:not([data-tools="open"]) .b2-shell-system,
   .b2-shell:not([data-tools="open"]) .b2-shell-capture .b2-shell-keys,
+  .b2-shell:not([data-tools="open"]) .b2-shell-phone,
   .b2-shell:not([data-tools="open"]) .b2-shell-sheet-bar,
   .b2-shell:not([data-tools="open"]) .b2-shell-sheet-close {
     display: none;
@@ -2279,7 +2280,8 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell[data-tools="open"] .b2-shell-brand,
   .b2-shell[data-tools="open"] .b2-shell-rituals,
   .b2-shell[data-tools="open"] .b2-shell-system,
-  .b2-shell[data-tools="open"] .b2-shell-capture {
+  .b2-shell[data-tools="open"] .b2-shell-capture,
+  .b2-shell[data-tools="open"] .b2-shell-phone {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2297,7 +2299,8 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   .b2-shell[data-tools="open"] .b2-shell-brand > legend,
   .b2-shell[data-tools="open"] .b2-shell-rituals > legend,
   .b2-shell[data-tools="open"] .b2-shell-system > legend,
-  .b2-shell[data-tools="open"] .b2-shell-capture > legend {
+  .b2-shell[data-tools="open"] .b2-shell-capture > legend,
+  .b2-shell[data-tools="open"] .b2-shell-phone > legend {
     position: static !important;
     display: block;
     width: auto !important;
@@ -2399,6 +2402,7 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
   }
 
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-capture .b2-shell-keys > button,
+  body.win95-app .b2-shell[data-tools="open"] .b2-shell-phone .b2-shell-keys > button,
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-rituals .b2-shell-keys > button,
   body.win95-app .b2-shell[data-tools="open"] .b2-shell-system button.b2-code-docs-key {
     flex: 1 1 6rem;
@@ -2442,4 +2446,20 @@ body.win95-app .trk-pen-now.is-compact button.todo-cap[type="button"]:not([role=
     min-width: 0;
     max-width: 100%;
   }
+}
+
+/* iOS app only (`PhoneDeskKeys`): the Mac window's state under the Phone keys. */
+.b2-shell-phone-line {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.b2-shell-phone-line[data-status="offline"],
+.b2-shell-phone-line[data-status="stale"],
+.b2-shell-phone .b2-shell-mac-key[data-status="offline"],
+.b2-shell-phone .b2-shell-mac-key[data-status="stale"] {
+  color: #b42318;
 }

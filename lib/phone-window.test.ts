@@ -151,6 +151,77 @@ describe("phone window", () => {
     setItem.mockRestore()
   })
 
+  it("a reload paints the saved copy before the Mac answers", async () => {
+    await writeLaunchCache(new Map([["brain2-task-storage", JSON.stringify(notedTask)]]))
+    asPhone()
+    let shownWhileAsking: boolean | null = null
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      shownWhileAsking = useTaskStore.getState().tasks.some((row) => row.id === "noted")
+      throw new Error("offline")
+    }))
+
+    expect(await loadPhoneWindow()).toBe("stale")
+    expect(shownWhileAsking).toBe(true)
+  })
+
+  it("a seed save at boot does not keep the saved copy from painting", async () => {
+    await writeLaunchCache(new Map([["brain2-task-storage", JSON.stringify(notedTask)]]))
+    asPhone()
+    cogsStateStorage().setItem(
+      "brain2-task-storage",
+      JSON.stringify({ state: { tasks: [], lists: [{ id: "example", name: "Example List" }] }, version: TASK_STORE_PERSIST_VERSION }),
+    )
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("offline")
+    }))
+
+    expect(await loadPhoneWindow()).toBe("stale")
+    expect(useTaskStore.getState().tasks.find((row) => row.id === "noted")?.notes).toBe("the long note")
+  })
+
+  it("a store's first read waits for the Mac and starts the load", async () => {
+    const mac = JSON.stringify(notedTask)
+    asPhone()
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "brain2-task-storage": mac } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+
+    const read = cogsStateStorage().getItem("brain2-task-storage")
+    expect(read).toBeInstanceOf(Promise)
+    expect(await read).toBe(mac)
+    expect(await loadPhoneWindow()).toBe("live")
+  })
+
+  it("a recompute while the Mac copy settles stays on the phone", async () => {
+    const posts: unknown[] = []
+    asPhone()
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posts.push(JSON.parse(String(init.body)))
+        return { ok: true, status: 200, json: async () => ({ ok: true }) }
+      }
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "brain2-task-storage": JSON.stringify(notedTask) } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+    // A habit sync on a half-loaded neighbour withdraws its Done row.
+    const stop = useTaskStore.subscribe((state) => {
+      if (!state.tasks.some((row) => row.id === "noted")) return
+      stop()
+      // Saves land ~48 ms later in the app, after the install itself is done.
+      setTimeout(() => useTaskStore.setState({ tasks: useTaskStore.getState().tasks.filter((row) => row.id !== "noted") }), 50)
+    })
+
+    expect(await loadPhoneWindow()).toBe("live")
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    await phoneOutboxSettled()
+    expect(posts).toEqual([])
+  })
+
   it("names why the Mac missed when there is no saved copy", async () => {
     asPhone()
     vi.stubGlobal("fetch", vi.fn(async () => {
