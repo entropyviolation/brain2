@@ -177,7 +177,7 @@
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fm-key-face);
   box-shadow: var(--fm-key-ring);
   cursor: pointer;
@@ -403,7 +403,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fm-key-face);
   box-shadow: var(--fm-key-ring);
   cursor: pointer;
@@ -433,7 +433,7 @@
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fm-key-face);
   box-shadow: var(--fm-key-ring);
   min-width: 75px;
@@ -469,7 +469,7 @@
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
     0 0 0 1px var(--chrome-pressed);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
   filter: none;
 }
 
@@ -480,7 +480,7 @@
 
 .fm98 .fm-btn:disabled {
   color: var(--chrome-lo);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-shadow: none;
   cursor: default;
   filter: none;
 }
@@ -550,7 +550,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0, transparent 40%),
     var(--chrome-pewter);
@@ -738,7 +738,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--chrome-lo);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
 }
 
 .fm98 .fm-btn.fm-gravity-key.active {
@@ -1053,7 +1053,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   cursor: default;
   user-select: none;
 }
@@ -1078,7 +1078,7 @@
   font-weight: 600;
   text-align: left;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
     #d8dadd;
@@ -1185,7 +1185,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate, #2a2c2e);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   cursor: default;
 }
 
@@ -1313,7 +1313,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 0 0 1px rgba(60, 64, 68, 0.28);
   margin-right: 0;
@@ -1556,7 +1556,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   padding: 6px 8px 5px;
   margin: 4px 3px 3px;
   border-radius: var(--r-2, 2px);
@@ -2311,7 +2311,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .fm98 .fm-inspector-facts dd {
@@ -2374,7 +2374,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: var(--chrome-pewter);
   box-shadow:
     0 0 0 1px var(--chrome-ring),
@@ -2551,7 +2551,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fm-key-face) !important;
   box-shadow: var(--fm-key-ring) !important;
   color: #1c1e20 !important;
@@ -2621,7 +2621,7 @@ body.win95-app .fm-sort-menu[role="listbox"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fm-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* ===== Folder context menu + in-place rename ===== */
@@ -2758,11 +2758,58 @@ body.win95-app .fm-sort-menu[role="listbox"] {
     flex-basis: 100%;
   }
 
-  .fm98 .fm-icon .fm-icon-pin,
-  .fm98 .fm-icon .fm-icon-edit {
+  /* Phone velvet is a fine repeat of the even weave, not one crop of the
+     whole photograph. Desktop keeps cover on /newvelv.jpg. */
+  .fm98 .fm-desktop.velvet {
+    background-image: url("/newvelv-tile.jpg");
+    background-repeat: repeat;
+    background-size: 132px 132px;
+    background-position: 0 0;
+  }
+
+  /* Star (Home) and pencil stay. The hit target is still 44px. Only a small
+     disc paints in the outer corner, so the orb and the name stay readable.
+     The :not() chain beats the global Win95 button lip. */
+  body.win95-app .fm98 .fm-icon button.fm-icon-pin:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key),
+  body.win95-app .fm98 .fm-icon button.fm-icon-edit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
     display: flex;
+    top: 0;
     width: 44px;
     height: 44px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    text-shadow: 0 1px 2px #000, 0 0 2px #000;
+  }
+
+  body.win95-app .fm98 .fm-icon button.fm-icon-pin:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    left: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 2px 0 0 3px;
+    background-image: radial-gradient(circle at 11px 11px, rgba(12, 8, 14, 0.62) 0 10px, transparent 11px);
+  }
+
+  body.win95-app .fm98 .fm-icon button.fm-icon-edit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    right: 0;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 2px 3px 0 0;
+    background-image: radial-gradient(circle at calc(100% - 11px) 11px, rgba(12, 8, 14, 0.62) 0 10px, transparent 11px);
+  }
+
+  body.win95-app .fm98 .fm-icon button.fm-icon-pin:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):active,
+  body.win95-app .fm98 .fm-icon button.fm-icon-edit:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):active {
+    box-shadow: none;
+  }
+
+  body.win95-app .fm98 .fm-icon button.fm-icon-pin.pinned:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+    color: #f0c14a;
   }
 
   .fm98 .fm-tree-folder .fm-tree-edit {
@@ -2802,4 +2849,191 @@ body.win95-app .fm-sort-menu[role="listbox"] {
     border-radius: 16px 16px 0 0 !important;
     padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
   }
+}
+
+/* Phone Lists chrome. `.fm-phone` is the iOS shell or a window at or under
+   767px. A wide desktop window never has the class, so these rules stay off. */
+.fm98.fm-phone .fm-import-sheet {
+  display: none !important;
+}
+
+.fm98.fm-phone .fm-toolbar:not(.fm-toolbar-modes) > .fm-btn {
+  min-height: 40px;
+  padding: 6px 10px 10px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  color: #1f2226 !important;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.fm98.fm-phone .fm-toolbar:not(.fm-toolbar-modes) > .fm-btn:not(:disabled):active,
+.fm98.fm-phone .fm-toolbar:not(.fm-toolbar-modes) > .fm-btn.active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+  color: #1f2226 !important;
+}
+
+.fm98.fm-phone .fm-toolbar:not(.fm-toolbar-modes) > .fm-btn:disabled {
+  color: #8b9096 !important;
+}
+
+.fm98.fm-phone .fm-toolbar-modes .fm-mode-deck {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.fm98.fm-phone .fm-toolbar-modes .fm-view-keys {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 2px;
+  min-width: 0;
+}
+
+.fm98.fm-phone .fm-toolbar-modes .fm-view-keys .fm-view-key {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  height: 26px;
+  padding: 0 2px;
+  gap: 2px;
+  justify-content: center;
+  letter-spacing: 0.01em;
+  font-size: 9px;
+}
+
+.fm98.fm-phone .fm-toolbar-modes .fm-view-key .fm-view-key-led {
+  width: 5px;
+  height: 5px;
+  box-shadow: 0 0 0 1px #141816;
+}
+
+.fm98.fm-phone .fm-mode-deck .fm-view-keys .fm-view-key .fm-view-key-full {
+  display: none;
+}
+
+.fm98.fm-phone .fm-mode-deck .fm-view-keys .fm-view-key .fm-view-key-abbr {
+  display: inline;
+}
+
+.fm98.fm-phone button.fm-status-label {
+  cursor: pointer;
+  min-height: 32px;
+  padding: 4px 8px 7px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -3px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  color: #1f2226 !important;
+  letter-spacing: 0.08em;
+}
+
+.fm98.fm-phone button.fm-status-label[aria-expanded="true"] {
+  transform: translateY(1px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -1px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.fm98.fm-phone .fm-split > .fm-sidebar.fm-folders-collapsed {
+  display: none !important;
+}
+
+.fm98.fm-phone .fm-title-bar-text > .fm-led-title {
+  flex: 1 1 0;
+  width: 0;
+}
+
+.fm98.fm-phone .fm-led-title {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-shadow: inherit;
+  text-align: left;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.fm98.fm-phone .fm-list-caption-name:has(.fm-led-title) {
+  display: flex;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.fm98.fm-phone .fm-list-caption-name .fm-led-title {
+  flex: none;
+  width: 100%;
+}
+
+.fm98.fm-phone .fm-led-title.is-scroll {
+  text-overflow: clip;
+}
+
+.fm98.fm-phone .fm-led-track {
+  display: inline-flex;
+  width: max-content;
+  gap: 2.5rem;
+  animation: fm-led-marquee var(--fm-led-ms, 12s) linear infinite;
+}
+
+@keyframes fm-led-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 1.25rem)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm98.fm-phone .fm-led-track {
+    animation: none;
+  }
+}
+
+.fm98.fm-phone .fm-title-bar-text:has(.fm-led-title.is-expanded),
+.fm98.fm-phone .fm-list-caption-name:has(.fm-led-title.is-expanded) {
+  height: auto;
+  white-space: normal;
+  overflow: visible;
+  align-items: flex-start;
+}
+
+.fm98.fm-phone .fm-led-title.is-expanded {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: unset;
+  height: auto;
 }

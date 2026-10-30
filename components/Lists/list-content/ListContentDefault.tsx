@@ -87,6 +87,10 @@ export function ListContentDefault({
   const rowPx = density === "compact" ? 28 : 40
   const { ref, start, end } = useWindowedSlice(tasks.length, rowPx)
   const visible = tasks.slice(start, end)
+  const listDefs = useMemo(
+    () => (openCategory ? listAttributeSchema(openCategory, types) : null),
+    [openCategory, types],
+  )
 
   return (
     <div
@@ -97,9 +101,7 @@ export function ListContentDefault({
     >
       {start > 0 ? <div style={{ height: start * rowPx }} aria-hidden /> : null}
       {visible.map((task) => {
-        const defs = openCategory
-          ? listAttributeSchema(openCategory, types)
-          : mergeListAttributes(categories, task.lists, types)
+        const defs = listDefs ?? mergeListAttributes(categories, task.lists, types)
         const itemDefs = [...defs, ...(task.itemAttributeDefinitions ?? [])]
         const byId = new Map<string, AttributeDefinition>()
         for (const d of itemDefs) {

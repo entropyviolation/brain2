@@ -20,6 +20,7 @@ import {
   getTasksForScheduledFolder,
 } from "@/lib/scheduled-lists-sync"
 import { tasksForArchiveList } from "@/lib/archive-lists"
+import { selectGlobalAllItems } from "@/lib/module-lists"
 import { buildGridEntries } from "@/lib/lists-grid-entries"
 import {
   buildListsTaskIndex,
@@ -70,6 +71,13 @@ export function useListsShelf({
     taskIndexPrevRef.current = next
     return next
   }, [allTasks])
+
+  const globalAllPrevRef = useRef<Task[] | null>(null)
+  const globalAllTasks = useMemo(() => {
+    const next = selectGlobalAllItems(allTasks, categories, folders, globalAllPrevRef.current)
+    globalAllPrevRef.current = next
+    return next
+  }, [allTasks, categories, folders])
 
   const categoryById = useMemo(() => {
     const map = new Map<string, List>()
@@ -140,6 +148,7 @@ export function useListsShelf({
         showSmartLists,
         showPeriodLedgerListsInAll,
         allTasks,
+        globalAllCount: globalAllTasks.length,
         getSmartTasks,
         getTasksForCategory,
         countForFolder,
@@ -157,6 +166,7 @@ export function useListsShelf({
       showSmartLists,
       showPeriodLedgerListsInAll,
       allTasks,
+      globalAllTasks,
       getSmartTasks,
       getTasksForCategory,
       countForFolder,
@@ -170,6 +180,7 @@ export function useListsShelf({
     getTasksForCategory,
     countForFolder,
     getCategoryCompletionRate,
+    globalAllTasks,
     itemLabelFor,
     isItemTypes,
     entries,

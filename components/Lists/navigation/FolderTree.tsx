@@ -39,6 +39,8 @@ export interface FolderTreeProps {
   itemTypes?: ItemTypeDefinition[]
   /** Open the virtual list of items of this type. */
   onOpenItemType?: (typeId: string) => void
+  /** Phone only. Hides this pane; the Address label brings it back. */
+  collapsed?: boolean
 }
 
 function QaGlyph({ glyph }: { glyph: string }) {
@@ -65,6 +67,7 @@ export function FolderTree({
   onNavToCategory,
   itemTypes = [],
   onOpenItemType,
+  collapsed = false,
 }: FolderTreeProps) {
   const tree = useMemo(() => buildFolderTree(folders), [folders])
   const moduleListsFolder = useMemo(
@@ -125,7 +128,12 @@ export function FolderTree({
       : []
 
   return (
-    <nav className="fm-sidebar" aria-label="Lists folders">
+    <nav
+      id="fm-folder-tree"
+      className={`fm-sidebar${collapsed ? " fm-folders-collapsed" : ""}`}
+      hidden={collapsed || undefined}
+      aria-label="Lists folders"
+    >
       <div className="fm-sidebar-heading" id="fm-qa-heading">
         Quick Access
       </div>

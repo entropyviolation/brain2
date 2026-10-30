@@ -20,7 +20,7 @@ import { openTargetKey } from "@/components/Lists/open-target"
 import type { IconPickerTarget, OpenTarget } from "@/components/Lists/types"
 import type { Folder, List, Task } from "@/lib/types"
 
-function latestTouch(createdAt: Date | undefined, tasks: Task[]): Date | undefined {
+function latestTouch(createdAt: Date | undefined, tasks: readonly Task[]): Date | undefined {
   let latest = createdAt ? new Date(createdAt).getTime() : 0
   for (const t of tasks) {
     for (const d of [t.createdAt, t.completedDate, t.startedAt]) {
@@ -98,8 +98,8 @@ export function ListsInspector({
   currentFolder: Folder | null
   openSmart: { id: string } | null
   openTarget: OpenTarget
-  listedTasks: Task[]
-  openTasks: Task[]
+  listedTasks: readonly Task[]
+  openTasks: readonly Task[]
   itemLabelFor: (categoryId?: string, category?: List | null) => string
   currentDisplay: ListDisplay
   setEditingCategory: (list: List | null) => void
