@@ -750,6 +750,18 @@ body.win95-app .qa-dialog .hpp-body button.qa-key:disabled {
     animation: none !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  /* One scroller: the dialog. With the keyboard up the viewport is short, and
+     a flex-shrunk body with its own overflow collapsed to a single row. */
+  .qa-dialog.ui-dialog-content > * {
+    flex-shrink: 0;
+  }
+
+  .qa-dialog.ui-dialog-content .hpp-body {
+    flex: none;
+    overflow: visible;
   }
 
   html:has(.cogs-mobile-app) body [role="dialog"].qa-dialog.ui-dialog-content > button.keycap-close.is-corner {
