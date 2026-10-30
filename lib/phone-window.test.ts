@@ -5,6 +5,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { slimStoredVault } from "@/lib/phone-hub-view.mjs"
 import { cogsStateStorage } from "@/lib/persist-storage"
 import { writeLaunchCache } from "@/lib/phone-window-cache"
+
+/** Runs inside the launch-cache write, the slow await of a phone load. */
+let duringCacheWrite: (() => void) | null = null
+vi.mock("@/lib/phone-window-cache", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/phone-window-cache")>()
+  return {
+    ...actual,
+    writeLaunchCache: async (...args: Parameters<typeof actual.writeLaunchCache>) => {
+      duringCacheWrite?.()
+      return actual.writeLaunchCache(...args)
+    },
+  }
+})
 import {
   engagePhoneWindow,
   flushPhoneOutbox,
@@ -47,6 +60,7 @@ const notedTask = {
 }
 
 beforeEach(() => {
+  duringCacheWrite = null
   localStorage.clear()
   resetPhoneWindowForTests()
   useTaskStore.getState().clearAllData()
@@ -243,5 +257,36 @@ describe("phone window", () => {
     ])
     expect(localStorage.getItem("brain2-habits-store")).toBeNull()
     setItem.mockRestore()
+  })
+
+  it("a seed save during the launch-cache write neither patches nor paints over the Mac copy", async () => {
+    const lists = Array.from({ length: 20 }, (_, i) => ({ id: `list-${i}`, name: `List ${i}` }))
+    const mac = JSON.stringify({ ...notedTask, state: { ...notedTask.state, lists } })
+    const seed = JSON.stringify({
+      state: { tasks: [], lists: [{ id: "example", name: "Example List" }], folders: [], removedTaskIds: [], removedListIds: [] },
+      version: TASK_STORE_PERSIST_VERSION,
+    })
+    const posts: unknown[] = []
+    asPhone()
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posts.push(JSON.parse(String(init.body)))
+        return { ok: true, status: 200, json: async () => ({ ok: true }) }
+      }
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "brain2-task-storage": mac } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+    duringCacheWrite = () => {
+      cogsStateStorage().setItem("brain2-task-storage", seed)
+    }
+
+    expect(await loadPhoneWindow()).toBe("live")
+    await phoneOutboxSettled()
+    expect(posts).toEqual([])
+    const held = JSON.parse(readPhoneWindowItem("brain2-task-storage") ?? "{}") as { state: { lists: Array<{ id: string }> } }
+    expect(held.state.lists.map((list) => list.id)).toEqual(lists.map((list) => list.id))
+    expect(useTaskStore.getState().lists.some((list) => list.id === "list-3")).toBe(true)
   })
 })
