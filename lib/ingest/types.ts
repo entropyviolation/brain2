@@ -77,6 +77,7 @@ export type IngestIntentKind =
   | "switched-to"
   | "menu"
   | "link"
+  | "tell"
   | "unknown"
 
 export interface IngestIntent {

@@ -176,7 +176,7 @@ function stampTextPipelineOnOpen(
   })
 }
 
-function ensureActivityPen(name: string): string {
+export function ensureActivityPen(name: string): string {
   const store = useTimeTrackingStore.getState()
   let scope = store.scopes.find((s) => s.id === ACTIVITY)
   if (!scope) {

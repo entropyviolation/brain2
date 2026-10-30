@@ -59,5 +59,6 @@ export const ANALYTICS_VIEWS: Record<AnalyticsTab, LazyExoticComponent<Component
   weight: view(() => import("../library/LibraryCuts").then((m) => ({ default: m.WeightView }))),
   graph: view(() => import("../library/GraphGapsView").then((m) => ({ default: m.GraphGapsView }))),
   browser: view(() => import("../sources/BrowserHistoryView").then((m) => ({ default: m.BrowserHistoryView }))),
+  health: view(() => import("../sources/HealthView").then((m) => ({ default: m.HealthView }))),
   instagram: view(() => import("../sources/InstagramView").then((m) => ({ default: m.InstagramView }))),
 }

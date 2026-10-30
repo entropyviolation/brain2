@@ -144,7 +144,7 @@ export function MobileApp() {
           {windowLine}
         </p>
 
-        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+        <nav className="cogs-mobile-main-tabs" aria-label="Mobile sections" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
           <button type="button" className={tab === "home" ? "m-keycap active" : "m-keycap"} onClick={() => setTab("home")}>
             Home
           </button>
@@ -158,6 +158,7 @@ export function MobileApp() {
             BIM
           </button>
           <a className="m-keycap" href="/mobile/nfc/">NFC</a>
+          <a className="m-keycap" href="/mobile/hub/">Hub</a>
         </nav>
       </header>
 

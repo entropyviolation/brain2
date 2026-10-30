@@ -14,7 +14,11 @@
  */
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { answerTell, applyTell, type TellPending, type TellReply } from "./apply-tell"
+import { parseTell } from "./bim-tell"
 import { ingestIncomingAsync } from "./executor"
+import { makeIngestEventId, useIngestStore } from "./ingest-store"
+import { looksLikeVerb } from "./parse-message"
 import { choiceTextFromCallback, inlineKeyboardForResult } from "./telegram-ui.mjs"
 import type { ApplyResult, IngestIntentKind, IngestSource } from "./types"
 
@@ -66,9 +70,69 @@ function lineId(): string {
   return `bim-${Date.now().toString(36)}-${seq}`
 }
 
+/**
+ * The question BIM last asked about a told fact ("When do you remember last
+ * seeing Shelby?"). In memory only: a reload forgets the question, not the answer.
+ */
+let pendingTell: TellPending | null = null
+
+export function openTellQuestion(): TellPending | null {
+  return pendingTell
+}
+
+function tellLine(reply: TellReply): BimLine {
+  return {
+    id: lineId(),
+    at: new Date().toISOString(),
+    who: "bim",
+    text: reply.text,
+    status: reply.status,
+    kind: "tell",
+  }
+}
+
+function logTell(raw: string, reply: TellReply, now: Date): void {
+  useIngestStore.getState().appendEvent({
+    id: makeIngestEventId(),
+    at: now.toISOString(),
+    channel: BIM_CHAT_SOURCE.channel,
+    chatId: BIM_CHAT_ID,
+    raw,
+    kind: "tell",
+    status: reply.status === "ok" ? "applied" : "clarify",
+    summary: reply.summary,
+  })
+}
+
+/**
+ * Facts, questions, and widget commands in plain words (`bim-tell.ts`). Runs
+ * ahead of the executor, only here: Telegram's ladder is unchanged. An open
+ * ritual or clarify question owns the line, and a real command (`log:`, `groc`)
+ * is never read as a fact. Null sends the line to the executor.
+ */
+function tryTell(text: string, now: Date): BimLine | null {
+  const executorBusy = useIngestStore.getState().getPending(BIM_CHAT_SOURCE.channel, BIM_CHAT_ID)
+  const held = pendingTell
+  pendingTell = null
+  if (executorBusy || looksLikeVerb(text, now)) return null
+
+  let reply: TellReply | null = null
+  if (held) reply = answerTell(held, text, now)
+  if (!reply) {
+    const tell = parseTell(text, now)
+    reply = tell ? applyTell(tell, now) : null
+  }
+  if (!reply) return null
+  pendingTell = reply.pending ?? null
+  logTell(text, reply, now)
+  return tellLine(reply)
+}
+
 /** Run one line through the bot's executor. Never throws. */
 export async function sendToBim(text: string, now = new Date()): Promise<BimLine> {
   try {
+    const told = tryTell(text, now)
+    if (told) return told
     const result = await ingestIncomingAsync(
       { source: BIM_CHAT_SOURCE, text, receivedAt: now.toISOString() },
       now,

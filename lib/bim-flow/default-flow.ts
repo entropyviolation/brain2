@@ -33,7 +33,7 @@ export function defaultFlow(): Flow {
     n("s-pens", "search", "Activity pens", 2, 0, { source: "pens", scopeId: "activity", all: true }),
     n("c-pen", "choose", "Which pen", 3, 0, { fromNodeId: "s-pens", max: 1, question: "Which activity pen is this message about?" }),
     n("x-time", "extract", "When", 4, 0, {
-      question: "How does this message sit in time against that activity?",
+      question: "How does this message sit in time against that activity? TRACKED shows what is already confirmed and what is unknown; a message never changes confirmed time, and a stated clock stays as written.",
       fields: [
         { name: "relation", type: "enum", options: ["starting", "doing_now", "finished", "did_earlier"], hint: "'woke' is finished sleep" },
         { name: "since", type: "clock", hint: "a clock the message names for when it began, like 4:46" },
@@ -61,7 +61,7 @@ export function defaultFlow(): Flow {
     n("g-person", "gate", "Names a person?", 1, 3, {
       question: "Does it name a specific person other than the writer? Yes: 'called elijah', 'Alexis'. No: 'someone', 'people'.",
     }),
-    n("s-people", "search", "People by name", 2, 3, { source: "people", limit: 8 }),
+    n("s-people", "link", "People linked", 2, 3, { linkKind: "person", limit: 8 }),
     n("c-person", "choose", "Which person", 3, 3, { fromNodeId: "s-people", max: 3, question: "Which of these people does the message name?" }),
     n("p-person", "propose", "Mention", 4, 3, { action: "person-mention" }),
 
@@ -93,6 +93,39 @@ export function defaultFlow(): Flow {
     }),
     n("p-body", "propose", "Body note", 2, 6, { action: "body" }),
 
+    n("g-loc", "gate", "Says where?", 1, 8, {
+      question: "Does the message say where the person is, or went? Yes: 'at the zoo', 'back home', 'driving to lindas'. No: where something is, or plans.",
+    }),
+    n("s-loc", "search", "Places by words", 2, 8, { source: "pens", scopeId: "location", limit: 8 }),
+    n("c-loc", "choose", "Which place", 3, 8, { fromNodeId: "s-loc", max: 1, question: "Which of these places is the person at or went to?" }),
+    n("p-loc", "propose", "Location", 4, 8, { action: "location" }),
+
+    n("g-comp", "gate", "With someone?", 1, 9, {
+      question: "Does the message say the person is with someone, or hung out with them? Yes: 'with elijah', 'lunch with rebecca'. No: only calling or texting them, or plans.",
+    }),
+    n("s-comp", "search", "Company by name", 2, 9, { source: "pens", scopeId: "company", limit: 8 }),
+    n("c-comp", "choose", "Who with", 3, 9, { fromNodeId: "s-comp", max: 2, question: "Who is the person with right now?" }),
+    n("p-comp", "propose", "Company", 4, 9, { action: "company" }),
+
+    n("g-drive", "gate", "Feels about a task?", 1, 10, {
+      question:
+        "Does the person say how they feel about doing a specific task: dreading, avoiding, or putting it off, or excited, eager, or can't wait to start it? " +
+        "Yes: 'ugh i still haven't emailed the landlord', 'cant wait to finish the bim flow'. No: moods about the day, plain plans, feelings about people.",
+    }),
+    n("x-drive", "extract", "Which task, which way", 2, 10, {
+      system:
+        "You read one message for how the person feels about a TASK they intend to do. task: short, as they would name it. " +
+        "pole: excitement if drawn to it, resistance if dreading or avoiding it. strength 1–10: 2 faint, 5 clear, 9 very strong. " +
+        "reason: why, in their words, only if the message says; else empty.",
+      fields: [
+        { name: "task", type: "string", hint: "the task, in a few words" },
+        { name: "pole", type: "enum", options: ["resistance", "excitement"] },
+        { name: "strength", type: "number", hint: "1 to 10: 2 faint, 5 clear, 9 very strong" },
+        { name: "reason", type: "string", hint: "why, if the message says" },
+      ],
+    }),
+    n("p-drive", "propose", "Drive log", 3, 10, { action: "drive" }),
+
     n("g-dream", "gate", "A dream?", 1, 7, {
       question: "Does it describe a dream from sleep? Yes: 'woke dream involving school'. No: goals ('dream job').",
     }),
@@ -100,7 +133,7 @@ export function defaultFlow(): Flow {
   ]
 
   const edges: FlowEdge[] = [
-    ...["g-act", "g-habit", "g-keep", "g-person", "g-intake", "g-mood", "g-body", "g-dream"].map((g) => e("msg", g)),
+    ...["g-act", "g-habit", "g-keep", "g-person", "g-intake", "g-mood", "g-body", "g-dream", "g-loc", "g-comp", "g-drive"].map((g) => e("msg", g)),
     e("g-act", "s-pens", "yes"), e("s-pens", "c-pen"), e("c-pen", "x-time"), e("x-time", "blocks"),
     e("g-habit", "s-habit", "yes"), e("s-habit", "c-habit"), e("c-habit", "p-habit"),
     e("g-keep", "s-items", "yes"), e("s-items", "c-list"), e("c-list", "p-list"),
@@ -109,6 +142,9 @@ export function defaultFlow(): Flow {
     e("g-mood", "x-mood", "yes"), e("x-mood", "p-mood"),
     e("g-body", "p-body", "yes"),
     e("g-dream", "p-dream", "yes"),
+    e("g-drive", "x-drive", "yes"), e("x-drive", "p-drive"),
+    e("g-loc", "s-loc", "yes"), e("s-loc", "c-loc"), e("c-loc", "p-loc"),
+    e("g-comp", "s-comp", "yes"), e("s-comp", "c-comp"), e("c-comp", "p-comp"),
   ]
   return { version: 1, nodes, edges }
 }

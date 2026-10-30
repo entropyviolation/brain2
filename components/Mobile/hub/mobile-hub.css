@@ -1,0 +1,62 @@
+/* components/Mobile/hub/mobile-hub.css — status rows for the Mobile hub. Tones reuse the shell's ok/warn greens and ambers. */
+.mobile-hub-rows {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.mobile-hub-row {
+  display: grid;
+  grid-template-columns: 0.8rem 1fr;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.55rem 0.7rem;
+  border: 2px solid #8a8a8a;
+  background: #dfe5f3;
+}
+
+.mobile-hub-row > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.mobile-hub-row span,
+.mobile-hub-row em {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.mobile-hub-row em {
+  font-style: normal;
+  opacity: 0.75;
+}
+
+.mobile-hub-dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-top: 0.2rem;
+  border-radius: 50%;
+  background: #9a9a9a;
+}
+
+.mobile-hub-row[data-tone="ok"] .mobile-hub-dot { background: #2f7a3c; }
+.mobile-hub-row[data-tone="warn"] .mobile-hub-dot { background: #c27a12; }
+.mobile-hub-row[data-tone="bad"] .mobile-hub-dot { background: #b3261e; }
+.mobile-hub-row[data-tone="bad"] { border-color: #b3261e; }
+
+.mobile-hub-summary[data-tone="ok"] { color: #2f7a3c; }
+.mobile-hub-summary[data-tone="warn"] { color: #a86206; }
+.mobile-hub-summary[data-tone="bad"] { color: #b3261e; }
+
+.mobile-hub .cogs-mobile-topbar-actions a {
+  min-height: 2.75rem;
+  padding-inline: 0.8rem;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}

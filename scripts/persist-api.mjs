@@ -46,6 +46,7 @@
  * 10%. Whatever the merge decides, the older copy stays restorable.
  */
 import fs from "node:fs"
+import zlib from "node:zlib"
 import path from "node:path"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
@@ -74,6 +75,7 @@ export { vaultRecordCount, shouldRejectVaultShrink, mergePersistSnapshots }
 const ROOT = path.resolve(__dirname, "..")
 const DEFAULT_DATA_FILE = path.join(ROOT, "data", "shared-persist.json")
 const RECOVERY_DIR = path.join(ROOT, "data", "recovery-backups")
+const BIM_FLOW_RUNS_DIR = path.join(ROOT, "data", "bim-flow-runs")
 const SAFE_RECOVERY_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*\.json$/
 
 /** Debounce for the disk write. The in-memory copy is always current. */
@@ -512,8 +514,33 @@ function handlePhonePersistPost(res, body) {
   })
 }
 
-function sendJson(res, status, body) {
+/** The vault read is ~16 MB of JSON; the phone gets it gzipped (about a tenth) when it asks. */
+function acceptsGzip(req) {
+  return /\bgzip\b/.test(String(req?.headers?.["accept-encoding"] ?? ""))
+}
+
+function sendJson(res, status, body, req) {
   const json = JSON.stringify(body)
+  if (req && json.length > 256 * 1024 && acceptsGzip(req)) {
+    zlib.gzip(json, { level: 1 }, (err, zipped) => {
+      if (err) {
+        res.writeHead(500)
+        res.end()
+        return
+      }
+      res.writeHead(status, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Encoding": "gzip",
+        Vary: "Accept-Encoding",
+        "Content-Length": zipped.length,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+      })
+      res.end(zipped)
+    })
+    return
+  }
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(json),
@@ -669,8 +696,166 @@ function handleRecoveryBackupsApi(req, res, pathname) {
   return true
 }
 
+/**
+ * BIM flow archive: every local-model call, flow run, and test result is
+ * appended as one JSON line to `data/bim-flow-runs/YYYY-MM-DD.jsonl`. Append
+ * only, so no run is ever lost to the browser's size cap or a cleared storage.
+ */
+async function handleBimFlowArchive(req, res) {
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS" })
+    res.end()
+    return true
+  }
+  if (req.method !== "POST") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  try {
+    const body = JSON.parse((await readBody(req)) || "{}")
+    const rows = Array.isArray(body.rows) ? body.rows : [body]
+    fs.mkdirSync(BIM_FLOW_RUNS_DIR, { recursive: true })
+    const day = new Date().toISOString().slice(0, 10)
+    const lines = rows.map((r) => JSON.stringify({ archivedAt: new Date().toISOString(), ...r }) + "\n").join("")
+    fs.appendFileSync(path.join(BIM_FLOW_RUNS_DIR, `${day}.jsonl`), lines)
+    sendJson(res, 200, { ok: true, written: rows.length })
+  } catch (err) {
+    sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "Invalid JSON" })
+  }
+  return true
+}
+
+/**
+ * Phone texts for the BIM flow lab, read only. Streams `data/phone-sync/messages.jsonl`
+ * and returns compact rows for a recent window. Old texts are not relevant to
+ * what the person is doing now, so the window is capped: `days` defaults to 14
+ * and never exceeds 60. `day=YYYY-MM-DD` returns that one local day (it must
+ * fall inside the cap). `index=1` returns text counts per local day instead.
+ */
+const TEXTS_FILE = path.join(ROOT, "data", "phone-sync", "messages.jsonl")
+const TEXTS_MAX_DAYS = 60
+async function handlePhoneTexts(req, res) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  const q = persistQuery(req)
+  const days = Math.min(TEXTS_MAX_DAYS, Math.max(1, Number(q.get("days")) || 14))
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  const floor = startOfToday.getTime() - (days - 1) * 86400000
+  const dayParam = q.get("day")
+  let from = floor
+  let to = Infinity
+  if (dayParam && /^\d{4}-\d\d-\d\d$/.test(dayParam)) {
+    const d = new Date(`${dayParam}T00:00:00`)
+    from = Math.max(floor, d.getTime())
+    to = d.getTime() + 86400000
+  }
+  const index = q.get("index") === "1"
+  const counts = {}
+  const rows = []
+  if (fs.existsSync(TEXTS_FILE)) {
+    const rl = (await import("node:readline")).createInterface({ input: fs.createReadStream(TEXTS_FILE), crlfDelay: Infinity })
+    for await (const line of rl) {
+      if (!line.includes('"type":"message"')) continue
+      let r
+      try { r = JSON.parse(line) } catch { continue }
+      if (typeof r.at !== "number" || r.at < from || r.at >= to) continue
+      if (index) {
+        const d = new Date(r.at)
+        const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        counts[k] = (counts[k] ?? 0) + 1
+      } else {
+        rows.push({ at: r.at, dir: r.direction, h: r.party?.handle ?? "", th: r.threadId ?? "", ...(r.members?.length ? { g: 1 } : {}), t: String(r.body ?? "").slice(0, 600) })
+      }
+    }
+  }
+  rows.sort((a, b) => a.at - b.at)
+  sendJson(res, 200, index ? { ok: true, days, counts } : { ok: true, days, rows })
+  return true
+}
+
+/**
+ * File activity for the BIM flow lab, read only. Walks the home folder for files
+ * created or modified in a recent window and returns `{ at, k: "new" | "mod", p }`
+ * (`p` is relative to home). Bursts of 100+ files in one minute and one top
+ * folder (a git checkout, an install, a sync) are collapsed to one event.
+ * Folders that are machine-written or private are skipped. The walk takes
+ * several seconds, so the result is cached for ten minutes. `days` defaults to
+ * 14 and never exceeds 60.
+ */
+const FILES_MAX_DAYS = 60
+const FILES_SKIP = new Set(["node_modules", ".git", ".next", "Library", ".Trash", ".cache", ".npm", ".claude", ".cursor", "Applications", "Applications (Parallels)", "Parallels", "Brain2Backups", "cogs-backups", "google-cloud-sdk", "Resilio Sync", "Creative Cloud Files", "__pycache__", "venv", ".venv", "dist", "build", "nltk_data"])
+const FILES_CACHE_MS = 600_000
+let filesCache = null
+async function walkFiles(dir, since, out) {
+  let items
+  try { items = await fs.promises.readdir(dir, { withFileTypes: true }) } catch { return }
+  await Promise.all(items.map(async (it) => {
+    if (it.name.startsWith(".") || FILES_SKIP.has(it.name)) return
+    const full = path.join(dir, it.name)
+    if (it.isDirectory()) return walkFiles(full, since, out)
+    if (!it.isFile()) return
+    try {
+      const st = await fs.promises.stat(full)
+      if (st.mtimeMs >= since) out.push({ at: Math.round(st.mtimeMs), k: "mod", p: full })
+      if (st.birthtimeMs >= since) out.push({ at: Math.round(st.birthtimeMs), k: "new", p: full })
+    } catch {}
+  }))
+}
+async function collectFileActivity(days) {
+  const home = process.env.HOME || ""
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  const since = startOfToday.getTime() - (days - 1) * 86400000
+  if (filesCache && filesCache.days >= days && Date.now() - filesCache.at < FILES_CACHE_MS) return filesCache.rows.filter((r) => r.at >= since)
+  const raw = []
+  await walkFiles(home, since, raw)
+  const bursts = new Map()
+  for (const r of raw) {
+    const top = path.relative(home, r.p).split(path.sep)[0]
+    const key = `${Math.floor(r.at / 60000)}|${top}`
+    bursts.set(key, (bursts.get(key) ?? 0) + 1)
+  }
+  const seen = new Set()
+  const rows = []
+  for (const r of raw.sort((a, b) => a.at - b.at)) {
+    const rel = path.relative(home, r.p)
+    const key = `${Math.floor(r.at / 60000)}|${rel.split(path.sep)[0]}`
+    if ((bursts.get(key) ?? 0) > 100) {
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    rows.push({ at: r.at, k: r.k, p: rel.slice(0, 200) })
+  }
+  filesCache = { days, at: Date.now(), rows: rows.slice(-40000) }
+  return filesCache.rows
+}
+async function handleFileActivity(req, res) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, { ok: false, error: "Method not allowed" })
+    return true
+  }
+  const days = Math.min(FILES_MAX_DAYS, Math.max(1, Number(persistQuery(req).get("days")) || 14))
+  sendJson(res, 200, { ok: true, days, rows: await collectFileActivity(days) })
+  return true
+}
+
 /** @returns {Promise<boolean>} true if handled */
 export async function handlePersistApi(req, res, pathname) {
+  if (pathname === "/api/phone-texts") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handlePhoneTexts(req, res)
+  }
+  if (pathname === "/api/file-activity") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handleFileActivity(req, res)
+  }
+  if (pathname === "/api/bim-flow-archive") {
+    if (!guardBrowserOrigin(req, res)) return true
+    return handleBimFlowArchive(req, res)
+  }
   const recovery = pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")
   const persist = pathname === "/api/persist" || pathname === "/api/persist/health"
   if (!recovery && !persist) return false
@@ -703,7 +888,7 @@ export async function handlePersistApi(req, res, pathname) {
   if (req.method === "GET") {
     const stored = readSharedPersist()
     if (persistQuery(req).get("canon") === "1") stored.items = omitCogsTwins(stored.items)
-    sendJson(res, 200, { ok: true, ...stored })
+    sendJson(res, 200, { ok: true, ...stored }, req)
     return true
   }
 

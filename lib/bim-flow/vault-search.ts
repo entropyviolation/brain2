@@ -39,6 +39,44 @@ export interface VaultSnapshot {
   scopes: { id: string; name: string; pens: { id: string; name: string }[] }[]
   /** Lists whose members are noise for matching (Instagram follower dumps, word banks). */
   skipListIds: Set<string>
+  /** What happened and when, for questions about the person. Absent in older snapshots. */
+  history?: VaultHistory
+  /** Named tables of dated text from the Data screens (miss reasons, ritual answers, pushed tasks…). */
+  datasets?: Record<string, Dataset>
+  /** Recent phone texts (a short window; old ones are not relevant). Loaded by the lab from the hub, not the stores. */
+  texts?: import("./texts").TextRow[]
+  /** Recent file events (created or changed), loaded by the lab from the hub. */
+  files?: import("./file-activity").FileEvent[]
+  /** People with every name they go by. */
+  people?: { id: string; title: string; names: string[]; /** Saved phone numbers and emails, for naming texts. */ handles?: string[] }[]
+}
+
+export interface HistoryEntry {
+  date: string
+  scope: string
+  pen: string
+  startMin: number
+  endMin: number
+  text: string
+  /** False when guessed or painted by a machine (screen time, sleep, phone sync). Absent = the person's own. */
+  confirmed?: boolean
+  /** A point event with no length. */
+  instant?: boolean
+  /** `generatedBy.kind` when a machine painted it ("screentime" = Mac ActivityWatch, "phone-sync", "text", "sleep"). */
+  source?: string
+}
+
+export interface VaultHistory {
+  entries: HistoryEntry[]
+  /** BIM / Telegram messages. `at` is ISO. */
+  feed: { at: string; text: string }[]
+  /** Log items. */
+  logs: { at: string; text: string }[]
+  dayNotes: { date: string; text: string }[]
+  /** Tracking view id → name. */
+  scopeNames: Record<string, string>
+  /** The iPhone Health import, by local date. */
+  health?: Record<string, { steps?: number; distanceM?: number; activeKcal?: number; heartAvg?: number; heartMax?: number }>
 }
 
 const SKIP_LIST = /instagram|1000 |mots|parole|語/i
@@ -98,4 +136,19 @@ export function searchVault(
       ? [...new Set(top.flatMap((h) => h.lists ?? []))]
       : [...new Set(top.map((h) => h.title))]
   return { terms, hits: top, options }
+}
+
+/** One dated line of a dataset. `source` is the column the Data screen groups by. */
+export interface DatasetRow {
+  /** Local date, YYYY-MM-DD, or "" when the row has none. */
+  date: string
+  source: string
+  text: string
+}
+
+export interface Dataset {
+  id: string
+  label: string
+  blurb: string
+  rows: DatasetRow[]
 }
