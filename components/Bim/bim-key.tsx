@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button"
 
 type ConsoleProps = { open: boolean; onOpenChange: (open: boolean) => void }
 
-export function BimKey() {
+/** `word` prints a word key instead of the terminal glyph (the phone sheet). */
+export function BimKey({ word }: { word?: string } = {}) {
   const [open, setOpen] = useState(false)
   const [Console, setConsole] = useState<ComponentType<ConsoleProps> | null>(null)
 
@@ -32,13 +33,13 @@ export function BimKey() {
       <Button
         variant="outline"
         size="sm"
-        className="b2-shell-icon"
+        className={word ? undefined : "b2-shell-icon"}
         title="BIM Chat"
         aria-label="BIM Chat"
         data-ui-name="BIM Chat"
         onClick={() => setOpen(true)}
       >
-        <SquareTerminal />
+        {word ?? <SquareTerminal />}
       </Button>
       {Console ? <Console open={open} onOpenChange={setOpen} /> : null}
     </>

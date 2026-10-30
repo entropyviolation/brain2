@@ -129,6 +129,7 @@
 
 html.m-keyboard-open .cogs-mobile-body,
 html.m-keyboard-open .cogs-mobile-login,
-html.m-keyboard-open .nfc-hub {
+html.m-keyboard-open .nfc-hub,
+html.m-keyboard-open body:has(.b2-shell-phone) {
   padding-bottom: calc(var(--m-keyboard-h, 280px) + 8px);
 }

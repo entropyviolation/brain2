@@ -112,6 +112,14 @@ let macAnswered = false
 let acceptPatches = true
 /** True while the Mac's copy goes into memory and the stores rehydrate from it. */
 let installingWindow = false
+/** True once memory holds the Mac's copy or the saved copy. A seed save at boot does not count. */
+let windowInstalled = false
+/** Where memory came from. A key the saved copy lacks waits for the Mac. */
+let installedFrom: "mac" | "cache" | null = null
+/** True while a load is running, so a store's first read can wait for it. */
+let loading = false
+/** Store reads waiting for the window. Each re-checks itself on `wakeReaders`. */
+const readers = new Set<() => boolean>()
 let status: PhoneWindowStatus = "idle"
 /** The step in flight, or why the last load missed. Shown on the phone so a failure names itself. */
 let detail: string | null = null
@@ -200,6 +208,37 @@ export function readPhoneWindowItem(name: string): string | null {
     if (legacy != null && legacy !== "") return legacy
   }
   return null
+}
+
+function windowReadyFor(name: string): boolean {
+  if (installedFrom === "mac") return true
+  if (installedFrom === "cache" && readPhoneWindowItem(name) != null) return true
+  return !loading && status !== "idle"
+}
+
+function wakeReaders() {
+  for (const ready of [...readers]) {
+    if (ready()) readers.delete(ready)
+  }
+}
+
+/**
+ * A store's first read on the phone. Memory starts empty after a reload, so a
+ * store that read it then would boot on its seed, and habit syncs would run on
+ * that seed and on half-loaded neighbours. Wait for the saved copy (if it holds
+ * this key) or the Mac. The first such read starts the load.
+ */
+export function readPhoneWindowItemWhenReady(name: string): string | null | Promise<string | null> {
+  if (windowReadyFor(name)) return readPhoneWindowItem(name)
+  if (!loading && status === "idle") void loadPhoneWindow()
+  if (windowReadyFor(name)) return readPhoneWindowItem(name)
+  return new Promise((resolve) => {
+    readers.add(() => {
+      if (!windowReadyFor(name)) return false
+      resolve(readPhoneWindowItem(name))
+      return true
+    })
+  })
 }
 
 export function removePhoneWindowItem(name: string): void {
@@ -476,9 +515,32 @@ function collapseItems(items: Record<string, unknown>): Map<string, string> {
   return next
 }
 
-function installMap(next: Map<string, string>) {
+function installMap(next: Map<string, string>, from: "mac" | "cache") {
   memory.clear()
   for (const [key, value] of next) memory.set(key, value)
+  windowInstalled = true
+  installedFrom = from
+}
+
+/** How long derived syncs get to settle after the stores fill, before phone patches resume. */
+const SETTLE_MS = 400
+
+/**
+ * Let the waiting stores hydrate and the habit syncs recompute, then flush their
+ * saves into memory with patches still off. A recompute against a half-loaded
+ * neighbour (habits filled, time grid not yet) once removed 45 habit Done rows
+ * on the Mac; it now stays on the phone until the next load.
+ */
+async function settleWithoutPatches() {
+  installingWindow = false
+  wakeReaders()
+  await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
+  try {
+    const { flushScheduledPersist } = await import("@/lib/persist-storage")
+    flushScheduledPersist()
+  } catch {
+    /* tests without the adapter */
+  }
 }
 
 /** Long enough for the whole vault over Wi-Fi; short enough that a dead socket names itself. */
@@ -672,31 +734,37 @@ async function rehydrateMemory() {
   )
 }
 
-async function paintCache(gen: number): Promise<PhoneWindowStatus> {
+/** Paint the saved copy plus unsent phone edits. True when memory now holds a window. */
+async function paintCache(gen: number): Promise<boolean> {
+  if (windowInstalled) return true
   const cached = await readLaunchCache()
-  if (gen !== loadGen) return status
-  if (memory.size > 0) {
-    setStatus("stale")
-    return status
-  }
-  if (cached.size === 0) {
-    setStatus("offline")
-    return status
-  }
-  installMap(cached)
+  if (gen !== loadGen || windowInstalled) return windowInstalled
+  if (cached.size === 0) return false
+  installMap(cached, "cache")
   acceptPatches = false
   try {
+    await replayOutbox()
     await rehydrateMemory()
+    await settleWithoutPatches()
   } finally {
     acceptPatches = true
   }
-  if (gen !== loadGen) return status
-  setStatus("stale")
-  return status
+  return true
 }
 
-/** Fetch the Mac file into memory. A miss paints the launch cache, or the offline line. */
-export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
+let inflightLoad: Promise<PhoneWindowStatus> | null = null
+
+/** Fetch the Mac file into memory. A miss paints the launch cache, or the offline line. A call during a load joins it. */
+export function loadPhoneWindow(): Promise<PhoneWindowStatus> {
+  if (inflightLoad) return inflightLoad
+  const run = runPhoneWindowLoad().finally(() => {
+    if (inflightLoad === run) inflightLoad = null
+  })
+  inflightLoad = run
+  return run
+}
+
+async function runPhoneWindowLoad(): Promise<PhoneWindowStatus> {
   engagePhoneWindow()
   if (!phoneWindowEngaged()) {
     detail = isDemoProfile() ? "Demo profile: the Mac is not loaded." : null
@@ -704,6 +772,7 @@ export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
     return "idle"
   }
   const gen = ++loadGen
+  loading = true
   try {
     return await loadPhoneWindowSteps(gen)
   } catch (err) {
@@ -711,14 +780,27 @@ export async function loadPhoneWindow(): Promise<PhoneWindowStatus> {
     if (gen !== loadGen) return status
     macAnswered = false
     setDetail(`Stopped while ${detail?.replace(/^\(|\)$/g, "") ?? "loading"}: ${errorText(err)}`)
-    setStatus(memory.size > 0 ? "stale" : "offline")
+    setStatus(windowInstalled ? "stale" : "offline")
     return status
+  } finally {
+    if (gen === loadGen) {
+      loading = false
+      wakeReaders()
+    }
   }
 }
 
 async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
+  if (!windowInstalled) {
+    // A reload starts with empty memory. Paint the saved copy now, not after
+    // the Mac misses: a 30 MB vault over Wi-Fi leaves the screen blank otherwise.
+    detail = "(opening the saved copy)"
+    setStatus("loading")
+    await paintCache(gen)
+    if (gen !== loadGen) return status
+  }
   detail = "(finding the Mac)"
-  if (memory.size === 0) setStatus("loading")
+  if (!windowInstalled) setStatus("loading")
   else emit()
   let candidates: string[] = []
   let candidateError = ""
@@ -749,11 +831,10 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   if (!first) {
     macAnswered = false
     detail = misses.length > 0 ? misses.join(" ") : `No Mac address saved${candidateError ? ` (${candidateError})` : ""}.`
-    setDetail(`(opening the saved copy) ${detail}`)
-    const why = detail
     const painted = await paintCache(gen)
-    if (gen === loadGen) setDetail(why)
-    return painted
+    if (gen !== loadGen) return status
+    setStatus(painted ? "stale" : "offline")
+    return status
   }
   setDetail("(sending phone edits)")
   await phoneOutboxSettled()
@@ -771,12 +852,13 @@ async function loadPhoneWindowSteps(gen: number): Promise<PhoneWindowStatus> {
   acceptPatches = false
   installingWindow = true
   try {
-    installMap(collapseItems(items))
+    installMap(collapseItems(items), "mac")
     setDetail("(saving the launch copy)")
     await writeLaunchCache(memory)
     await replayOutbox()
     setDetail("(drawing the vault)")
     await rehydrateMemory()
+    await settleWithoutPatches()
   } finally {
     installingWindow = false
     acceptPatches = true
@@ -832,6 +914,11 @@ export function resetPhoneWindowForTests(): void {
   macAnswered = false
   acceptPatches = true
   installingWindow = false
+  windowInstalled = false
+  installedFrom = null
+  loading = false
+  readers.clear()
+  inflightLoad = null
   status = "idle"
   detail = null
   hubUrl = ""

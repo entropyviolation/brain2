@@ -24,6 +24,7 @@ import { MobileHealthCard } from "@/components/Mobile/health/MobileHealthCard"
 import { MobileNfcCard } from "@/components/Mobile/nfc/MobileNfcCard"
 import { PersistStatusBanner } from "@/components/PersistStatusBanner"
 import { installTouchDnD } from "@/components/Mobile/install-touch-dnd"
+import { macKeyLabel } from "@/components/Mobile/phone-desk-keys"
 import { APP_NAME } from "@/lib/app-brand"
 import { clearMobileSession, readMobileSession } from "@/lib/mobile-auth"
 import { engagePhoneWindow, getPhoneWindowSnapshot, loadPhoneWindow, phoneWindowNote, subscribePhoneWindow } from "@/lib/phone-window"
@@ -50,13 +51,6 @@ function sectionName(tab: MobileTab): string {
   if (tab === "lists") return "Lists"
   if (tab === "bim") return "BIM Chat"
   return "Inventory"
-}
-
-function macKeyLabel(status: string): string {
-  if (status === "live") return "Mac ✓"
-  if (status === "loading") return "Mac …"
-  if (status === "offline" || status === "stale") return "Mac ✕"
-  return "Mac ?"
 }
 
 export function MobileApp() {

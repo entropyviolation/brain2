@@ -74,7 +74,7 @@ import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
 import { isPhoneWebStorage } from "@/lib/phone-device"
-import { applyPhoneWindowWrite, isPhonePinKey, phoneWindowEngaged, readPhoneWindowItem, removePhoneWindowItem } from "@/lib/phone-window"
+import { applyPhoneWindowWrite, isPhonePinKey, phoneWindowEngaged, readPhoneWindowItemWhenReady, removePhoneWindowItem } from "@/lib/phone-window"
 import { freePhoneWebStorage, slimPhonePersistValue } from "@/lib/phone-storage"
 import {
   ensureLegacyPersistCopied,
@@ -564,7 +564,7 @@ function vaultKind(name: string): string {
 export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
-      if (phoneWindowEngaged() && !isPhonePinKey(name)) return readPhoneWindowItem(name)
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) return readPhoneWindowItemWhenReady(name)
       if (!hasLocalStorage()) return null
       installHubFollow()
       ensureLegacyPersistCopied()
