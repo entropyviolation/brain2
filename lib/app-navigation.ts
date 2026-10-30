@@ -40,6 +40,10 @@ export const APP_NAV_KEYS = {
   opsPanel: persistKey("ops-panel"),
   modulesWorkspaceId: persistKey("modules-workspace-id"),
   modulesView: persistKey("modules-view"),
+  inventoryScene: persistKey("inventory-scene"),
+  inventoryBookshelfList: persistKey("inventory-bookshelf-list"),
+  /** Shopping views and the vault lists each one aggregates. */
+  inventoryShoppingLists: persistKey("inventory-shopping-lists"),
   itemDetailTab: persistKey("item-detail-tab"),
   uiScroll: persistKey("ui-scroll"),
 } as const
@@ -57,6 +61,7 @@ export const APP_TABS = [
   "scheduler",
   "operations",
   "modules",
+  "inventory",
   "analytics",
 ] as const
 export type AppTab = (typeof APP_TABS)[number]
