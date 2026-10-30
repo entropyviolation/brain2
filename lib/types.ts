@@ -84,8 +84,22 @@ export interface ItemLink {
   targetId: string
   /** Optional support/refute stance (second-brain belief graph). */
   stance?: LinkStance
-  /** Optional numeric weight for the relation (0-1), e.g. relation certainty. */
+  /**
+   * Unused except as a child's share (0–1) when the parent's
+   * `dependencyCombine` mode is additive. It is not belief certainty.
+   * Stance stays the belief spectrum.
+   */
   weight?: number
+}
+
+/**
+ * How a parent's dependencies combine (KG-DEP2–DEP5). Absent on the task
+ * means every open dependency blocks, the same as before this field existed.
+ */
+export interface DependencyCombine {
+  mode: "additive" | "redundant" | "threshold"
+  /** Threshold count: how many children must be met ("two of these four"). */
+  need?: number
 }
 
 /**
@@ -590,6 +604,11 @@ export interface Task extends Item {
   urgency?: number // 1-5
   importance?: number // 1-5
   dependencies?: string[] // task IDs
+  /**
+   * How `dependencies` combine. Omitted means every open dependency blocks.
+   * Edges stay on `dependencies`; they are not copied onto `links`.
+   */
+  dependencyCombine?: DependencyCombine
   /** Task card: items or lists (`list:{id}`) holding what this task needs. */
   resourceIds?: string[]
   /** Task card: `event` items this task waits on (see `Subtask.awaitIds`). */

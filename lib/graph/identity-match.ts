@@ -13,6 +13,7 @@
  * other people. The handle on `personProfile.instagram` is the local fact
  * this matcher reads.
  */
+import { EXTERNAL_ID_KINDS, normalizeExternalId, type ExternalIdKind } from "@/lib/graph/external-ids"
 import type { GraphProposal } from "@/lib/graph/proposal-schema"
 import { COMPANY, isWhoPen, variantPerson } from "@/lib/people-sync"
 import { companyPersonPens, type SpineItem, type SpineScope } from "@/lib/graph/vault-graph"
@@ -35,9 +36,42 @@ export interface IdentityCandidate {
 interface Side {
   address: string
   itemId?: string
-  kind: "person item" | "Company pen" | "who detail"
+  kind: "person item" | "Company pen" | "who detail" | "record"
   names: string[]
   instagram?: string
+  external?: Partial<Record<ExternalIdKind, string>>
+}
+
+function readExternal(item: {
+  personProfile?: { wikidata?: string; orcid?: string; isbn?: string; url?: string } | null
+  attributes?: Record<string, unknown> | null
+}): Partial<Record<ExternalIdKind, string>> {
+  const profile = item.personProfile
+  const attrs = item.attributes ?? {}
+  const out: Partial<Record<ExternalIdKind, string>> = {}
+  const take = (kind: ExternalIdKind, ...values: unknown[]) => {
+    for (const value of values) {
+      if (typeof value !== "string") continue
+      const canonical = normalizeExternalId(kind, value)
+      if (canonical) {
+        out[kind] = canonical
+        return
+      }
+    }
+  }
+  take("wikidata", profile?.wikidata, attrs.wikidata)
+  take("orcid", profile?.orcid, attrs.orcid)
+  take("isbn", profile?.isbn, attrs.isbn)
+  take("url", profile?.url, attrs.url)
+  return out
+}
+
+function sharedExternal(a: Side, b: Side): ExternalIdKind | undefined {
+  if (!a.external || !b.external) return undefined
+  for (const kind of EXTERNAL_ID_KINDS) {
+    if (a.external[kind] && a.external[kind] === b.external[kind]) return kind
+  }
+  return undefined
 }
 
 function norm(value: string): string {
@@ -59,7 +93,10 @@ function endKey(itemId: string | undefined, address: string): string {
 }
 
 export function identityCandidates(input: {
-  items: readonly (SpineItem & { personProfile?: { nicknames?: string[]; instagram?: string } | null })[]
+  items: readonly (SpineItem & {
+    personProfile?: { nicknames?: string[]; instagram?: string; wikidata?: string; orcid?: string; isbn?: string; url?: string } | null
+    attributes?: Record<string, unknown> | null
+  })[]
   scopes: readonly SpineScope[]
   /** Dismissed same-as proposals. A dismissal is not a deletion. */
   dismissed?: readonly { sourceId?: string; targetId?: string; relation?: string }[]
@@ -97,6 +134,20 @@ export function identityCandidates(input: {
       kind: "person item",
       names: [...new Set(names)],
       instagram: handle(item.personProfile?.instagram),
+      external: readExternal(item),
+    })
+  }
+  const personIds = new Set(personItems.map((item) => item.id))
+  for (const item of input.items) {
+    if (personIds.has(item.id)) continue
+    const external = readExternal(item)
+    if (!Object.keys(external).length) continue
+    sides.push({
+      address: `item:${item.id}`,
+      itemId: item.id,
+      kind: "record",
+      names: [],
+      external,
     })
   }
   for (const pen of companyPersonPens(input.scopes)) {
@@ -131,9 +182,11 @@ export function identityCandidates(input: {
       const left = endKey(a.itemId, a.address)
       const right = endKey(b.itemId, b.address)
       if (blocked.has(pairKey(left, right))) continue
-      const sharedHandle = !!a.instagram && a.instagram === b.instagram
-      const sharedName = a.names.some((name) => b.names.includes(name))
-      if (!sharedHandle && !sharedName) continue
+      const externalKind = sharedExternal(a, b)
+      const nameOk = a.kind !== "record" && b.kind !== "record"
+      const sharedHandle = nameOk && !!a.instagram && a.instagram === b.instagram
+      const sharedName = nameOk && a.names.some((name) => b.names.includes(name))
+      if (!externalKind && !sharedHandle && !sharedName) continue
       const source = a.itemId && b.itemId ? (a.itemId < b.itemId ? a : b) : a.itemId ? a : b.itemId ? b : null
       if (!source?.itemId) continue
       const other = source === a ? b : a
@@ -142,9 +195,11 @@ export function identityCandidates(input: {
       const key = pairKey(`item:${source.itemId}`, endKey(other.itemId, other.address))
       if (emitted.has(key)) continue
       emitted.add(key)
-      const reason = sharedHandle
-        ? `Same Instagram handle on a ${source.kind} and a ${other.kind}.`
-        : `Same name on a ${source.kind} and a ${other.kind}.`
+      const reason = externalKind
+        ? `Same ${externalKind} id on a ${source.kind} and a ${other.kind}.`
+        : sharedHandle
+          ? `Same Instagram handle on a ${source.kind} and a ${other.kind}.`
+          : `Same name on a ${source.kind} and a ${other.kind}.`
       out.push({ sourceId: source.itemId, targetId, relation: "same-as", reason })
     }
   }

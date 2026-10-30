@@ -1,10 +1,12 @@
 # Data section map
 
-_Last mapped: 2026-10-23_
+_Last mapped: 2026-10-28_
 
 One line per view so a section can be worked on alone. Read this, then the
 view's file and its row in [`components/Analytics/README.md`](../../components/Analytics/README.md).
 Do not re-map the whole room.
+
+The person’s intention for the tab — combined analysis over all vault data, plain spreadsheet libraries, sources (Instagram, texts, browser history), and screens that clean, annotate, correct, or confirm — is the **Intention** section of that README. This index is the shipping views.
 
 - Groups and view ids: `components/Analytics/chrome/analytics-tabs.ts`. Help copy per view is `ANALYTICS_TAB_HELP` in the same file.
 - View id → component: `components/Analytics/chrome/analytics-views.tsx` (one lazy chunk each).

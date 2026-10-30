@@ -10,7 +10,7 @@
  * 2. Biography grid: Full name, Nicknames (chips, `person-nicknames.tsx`),
  *    Phone numbers (the Phone Number attribute, every number they have had),
  *    Emails,
- *    Relation, Date met + Est., Instagram, Address.
+ *    Relation, Date met + Est., Instagram, Wikidata, ORCID, ISBN, URL, Address.
  * 3. Time together. 4. The host's `pipelines` slot (Company pens).
  * 5. Interactions (`person-log.tsx`; feeds Last seen).
  * 6. The Gift ideas key → a small popup with the list and quick notes
@@ -27,6 +27,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { normalizeExternalId, type ExternalIdKind } from "@/lib/graph/external-ids"
 import { openInstagramFor } from "@/lib/instagram-report"
 import { openTextsFor, readTextsIndex, subscribeTextsIndex, textsCardFor } from "@/lib/texts-report"
 import { IsolatedInput } from "@/components/ui/isolated-text-field"
@@ -437,6 +438,19 @@ export function PersonDetail({
             ) : null}
           </span>
         </label>
+        {(["wikidata", "orcid", "isbn", "url"] as const).map((key) => (
+          <IdentifierField
+            key={key}
+            kind={key}
+            value={profile?.[key] ?? ""}
+            onLive={(value) => liveProfile({ ...current(), [key]: value })}
+            onCommit={(value) => {
+              const trimmed = value.trim()
+              const canonical = normalizeExternalId(key, trimmed)
+              writeProfile({ ...current(), [key]: (canonical ?? trimmed) || undefined })
+            }}
+          />
+        ))}
         <div className="person-field person-address">
           <span>Address</span>
           <div className="person-address-row">
@@ -558,5 +572,25 @@ export function PersonDetail({
         }}
       />
     </section>
+  )
+}
+
+function IdentifierField({
+  kind,
+  value,
+  onLive,
+  onCommit,
+}: {
+  kind: ExternalIdKind
+  value: string
+  onLive: (value: string) => void
+  onCommit: (value: string) => void
+}) {
+  const label = kind === "wikidata" ? "Wikidata" : kind === "orcid" ? "ORCID" : kind === "isbn" ? "ISBN" : "URL"
+  return (
+    <label className="person-field">
+      {label}
+      <IsolatedInput type="text" aria-label={label} value={value} onLiveChange={onLive} onCommit={onCommit} />
+    </label>
   )
 }
