@@ -1599,6 +1599,8 @@ body.win95-app .todo-session-run button.dvd-key.ses-dvd.is-small:not([role="tab"
   --ses-ink-over: #ff8a9c;
   --ses-pixel: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
   --ses-dot: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   --dash-ink: var(--ses-ink-min);
   --dash-ghost: color-mix(in srgb, var(--dash-ink) 8%, transparent);
   --dash-glow: drop-shadow(0 0 1.5px color-mix(in srgb, var(--dash-ink) 85%, transparent))
@@ -2567,16 +2569,16 @@ body.win95-app .todo-session .ses-tube.is-typing input.ses-tube-input:not([type=
   .todo95-dialog.todo-session {
     left: 0 !important;
     right: 0 !important;
-    top: auto !important;
-    bottom: 0 !important;
+    top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+    bottom: auto !important;
     transform: none !important;
     translate: none !important;
     display: flex !important;
     flex-direction: column;
     width: 100% !important;
     max-width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: auto !important;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
     margin: 0 !important;
     box-sizing: border-box;
     border-radius: 16px 16px 0 0;

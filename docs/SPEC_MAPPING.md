@@ -9,8 +9,11 @@ The spec is the **checklist**, not the ceiling. Brain2 is intended as a
 **revolutionary living second brain** — adaptable, alive, beautiful,
 cutting-edge, infinite; a new type of software. **Item, used everywhere:**
 capture once, then connect and use in as many rooms as the record can honestly
-serve. **Data is the heart:** mass personal data and information-resource
-collection, presentation, and analysis, and the engine for endless tools.
+serve. **Data is the heart:** analytics and combined analysis over the vault,
+visualization and stats, spreadsheet libraries for viewing rows, sources such
+as Instagram, texts, and browser history, and screens that clean, annotate,
+correct, or confirm the data
+([`components/Analytics/README.md`](../components/Analytics/README.md)).
 Features below are how the current body matches that document. The larger claim
 (one Item graph, installable rooms, infinite adaptability) lives in the root
 [`README.md`](../README.md) and [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md).
@@ -40,8 +43,8 @@ capture-first, one underlying "item" concept **used in as many rooms as
 possible**, progressive scheduling, local-first/sync-ready,
 AI-ready-not-AI-dependent, everything reviewable. Product overlay (not in the
 original spec wording, load-bearing here): the organism is a **living perfect
-second brain**; **Data is the heart** of collection / presentation /
-analysis, not a side report. A record is a **map** of a life, not the life:
+second brain**; **Data is the heart** — analytics, visualization, stats, a
+library, sources, and annotation — not a side report. A record is a **map** of a life, not the life:
 it leaves characteristics out, carries a date, and keeps its order of
 abstraction (observed, recorded, derived, inferred). Description comes before
 inference. The next period starts from a handoff. Full parallels and the
@@ -1013,7 +1016,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
   Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
-  The Food heading opens `components/Home/Tracking/tracking-log/food/food-detail-dialog.tsx`: meals and snacks, recipes, and a kitchen (fridge, pantry, spice cabinet, freezer) in `brain2-kitchen`. Calories and the macro and micro set add up for accepted plates. A food is searched on this device, then USDA FoodData Central, then Open Food Facts, or filled from a nutrition-label photo. A keep guess uses the bought date and a typical keep time. It is a house guess, not a safety test.
+  The Food heading opens `components/Home/Tracking/tracking-log/food/food-detail-dialog.tsx`: meals and snacks, recipes, and a kitchen (fridge, pantry, spice cabinet, freezer) in `brain2-kitchen`. Calories and the face of twelve add up for accepted plates. More opens fatty acids, carbohydrate detail, vitamins, minerals, carotenoids, and amino acids. A food is searched on this device, then USDA FoodData Central, then Open Food Facts. A miss can become a saved food from a nutrition-facts link (a MyFoodData id is a USDA food). Saving a recipe does not log a meal. The Recipes tab plans a week and can open a plate that still has to be accepted. The grocery list is on the Kitchen tab. A week range shows each day's calories. Food notes for a day, week, month, and year are separate from the Tracking day summary. A keep guess uses the bought date and a typical keep time. It is a house guess, not a safety test.
   Bare intake (Intake pen, no class) sits in a short **Intake** group under
   those three. Events are other log-like instants (Text log pen and/or
   `eventKind`, no intake class); a new phrase such as left room is an Activity
@@ -1554,8 +1557,9 @@ platform still depends on that ontology, but UI style-breaks do not wait on it.
 The spec describes a personal cognitive management system; the project's
 ambition is a **new type of software** — a living, perfect second brain that
 stays adaptable, alive, beautiful, and infinite. **Every item should be
-connected and used in as many ways as possible.** **Data is the heart** of
-that mass of personal data. See "What this is trying to be" in
+connected and used in as many ways as possible.** **Data is the heart:**
+analytics and combined analysis, visualization and stats, libraries for viewing
+the rows, sources, and annotation. See "What this is trying to be" in
 [`../README.md`](../README.md). Tracked here so it stays connected to the code:
 - **User-defined item types/subtypes as a primary workflow.** Seam + UI exist
   (`ItemTypeDefinition`, Settings → **Manage Item Types**, Data →

@@ -403,6 +403,11 @@ describe("operation categories on the home board", () => {
       attributes: { [OPERATION_ATTR.stage]: "done" },
     })
     expect(sortOperations([planning, done], "name").map((o) => o.id)).toEqual(["a-done", "z-planning"])
+    const titleOnly = (op: Task): Task => ({ ...op, title: op.description, description: undefined as unknown as string })
+    expect(sortOperations([titleOnly(done), titleOnly(planning)], "name").map((o) => o.id)).toEqual([
+      "a-done",
+      "z-planning",
+    ])
     expect(sortOperations([done, planning], "stage").map((o) => o.id)).toEqual(["z-planning", "a-done"])
 
     const soon = makeOp("soon", "Soon", ["x"], {

@@ -56,6 +56,60 @@ describe("persist-storage", () => {
     expect(localStorage.getItem("cogs-task-storage")).toBe('{"state":{}}')
   })
 
+  it("keeps task attributes when this browser is not a phone", () => {
+    const storage = cogsStateStorage()
+    const fat = JSON.stringify({ state: { tasks: [{ id: "a", title: "Milk", attributes: { note: "x" } }] } })
+    storage.setItem("brain2-task-storage", fat)
+    expect(JSON.parse(localStorage.getItem("brain2-task-storage") ?? "{}").state.tasks[0].attributes).toEqual({ note: "x" })
+  })
+
+  it("on an iPhone, a task save keeps the name and list and drops attributes", () => {
+    const previous = navigator
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)" })
+    try {
+      const storage = cogsStateStorage()
+      const fat = JSON.stringify({
+        state: {
+          tasks: [{ id: "a", title: "Milk", description: "long", attributes: { note: "x" }, lists: ["g"], completed: false }],
+          lists: [{ id: "g", name: "Groceries", itemAttributes: [{ id: "n" }], color: "#fff" }],
+          folders: [{ id: "f", name: "House", listIds: ["g"], icon: "data:image/png,xxxx" }],
+        },
+        version: 19,
+      })
+      storage.setItem("brain2-task-storage", fat)
+      const saved = JSON.parse(localStorage.getItem("brain2-task-storage") ?? "{}")
+      expect(saved.state.tasks[0].title).toBe("Milk")
+      expect(saved.state.tasks[0].lists).toEqual(["g"])
+      expect(saved.state.tasks[0].attributes).toBeUndefined()
+      expect(saved.state.lists[0].name).toBe("Groceries")
+      expect(saved.state.lists[0].itemAttributes).toBeUndefined()
+      expect(saved.state.folders[0].icon).toBeUndefined()
+      expect(getPersistStatus().ok).toBe(true)
+    } finally {
+      vi.stubGlobal("navigator", previous)
+    }
+  })
+
+  it("on an iPhone, a full box drops a large side vault and then saves", () => {
+    const previous = navigator
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)" })
+    const rawSet = localStorage.setItem.bind(localStorage)
+    try {
+      rawSet("brain2-telegram-feed", "x".repeat(120_000))
+      vi.spyOn(localStorage, "setItem").mockImplementation((key: string, value: string) => {
+        if (key.endsWith("task-storage") && localStorage.getItem("brain2-telegram-feed")) throw quotaError()
+        rawSet(key, value)
+      })
+      const storage = cogsStateStorage()
+      storage.setItem("brain2-task-storage", JSON.stringify({ state: { tasks: [{ id: "a", title: "Milk", attributes: { n: 1 } }] } }))
+      expect(localStorage.getItem("brain2-telegram-feed")).toBeNull()
+      expect(JSON.parse(localStorage.getItem("brain2-task-storage") ?? "{}").state.tasks[0].title).toBe("Milk")
+      expect(getPersistStatus().ok).toBe(true)
+    } finally {
+      vi.stubGlobal("navigator", previous)
+    }
+  })
+
   it("does not throw on quota and leaves prior disk state intact", () => {
     localStorage.setItem("cogs-task-storage", "old")
     const storage = cogsStateStorage()

@@ -56,7 +56,7 @@
 .tcs-link { border: 0; padding: 0; background: none; font: inherit; color: #12356e; text-decoration: underline; cursor: pointer; }
 .task-card-plate {
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: #2a2c2e; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  color: #2a2c2e; text-shadow: none;
 }
 .task-card-spacer { flex: 1; }
 .task-card-key, .task-card-jewel, .task-card-bar button, .task-card-seg button {
@@ -1194,16 +1194,16 @@ body.win95-app .tcs-wait-pop input.tcs-wait-search:not([type="checkbox"]):not([t
   .task-card {
     left: 0 !important;
     right: 0 !important;
-    top: auto !important;
-    bottom: 0 !important;
+    top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+    bottom: auto !important;
     transform: none !important;
     translate: none !important;
     display: flex !important;
     flex-direction: column;
     width: 100% !important;
     max-width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: auto !important;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
     margin: 0 !important;
     box-sizing: border-box;
     border-radius: 16px 16px 0 0;

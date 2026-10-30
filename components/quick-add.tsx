@@ -3,7 +3,8 @@
  *
  * Captures a single free-text idea and runs it through `lib/smart-parse` to pull
  * out a folder/list path, date/time, priority and duration — shown live as chips
- * while you type. The date, time, priority, and duration stay in the title.
+ * while you type. The letters paint before that parse, so a fast burst is not
+ * waiting on the chips. The date, time, priority, and duration stay in the title.
  * A missing list or folder is created. Optionally lands in the Inbox for
  * clarification, or files straight onto the target list (All Items if none).
  * A leading `log:` or `thought process:` / `tp:` is the tracking log (same write
@@ -13,9 +14,10 @@
  * **Plain** (checkbox, default off) or `-p` / `-plain` on the line stores the
  * text as written: no list, folder, date, time, priority, duration, or Monkey brain.
  *
- * **Bulk** (checkbox in this same dialog) switches the field to a taller box and
+ * **Bulk** (checkbox in this same dialog) makes the same field taller and
  * writes through `writeBulkCapture` — header lines, `folder: list: item`,
- * `before` dates, and the inbox checkbox. One dialog, one task store.
+ * `before` dates, and the inbox checkbox. It does not mount a second field.
+ * One dialog, one task store.
  *
  * The dialog is optionally controlled (so Cmd/Ctrl-Shift-A in `app/page.tsx`
  * can open it and prefill a page selection); uncontrolled with its own trigger
@@ -34,7 +36,7 @@
 
 import type React from "react"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { Plus, CalendarDays, Clock, Tag, Flag, Timer, Folder, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,7 +49,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -99,6 +100,24 @@ export function quickAddWroteMessage(labels: string[]): string | null {
   if (labels.length === 1 && destination) return `Item added to ${destination} from Quick Add`
   if (destination) return `${labels.length} items added to ${destination} from Quick Add`
   return `${labels.length} items added from Quick Add`
+}
+
+/**
+ * iOS keeps a focus zoom when a field under 16px is focused inside a
+ * transformed dialog. Bulk used to mount that field. If the page is already
+ * scaled, blur and restore the unlocked viewport so a pinch can return.
+ */
+function releasePageZoom() {
+  const view = window.visualViewport
+  if (!view || view.scale <= 1.001) return
+  const active = document.activeElement
+  if (active instanceof HTMLElement && active !== document.body) active.blur()
+  const meta = document.querySelector('meta[name="viewport"]')
+  if (!(meta instanceof HTMLMetaElement)) return
+  const content = meta.getAttribute("content")
+  if (!content || /maximum-scale|user-scalable\s*=\s*no/i.test(content)) return
+  meta.setAttribute("content", "width=device-width, initial-scale=1, viewport-fit=cover")
+  requestAnimationFrame(() => meta.setAttribute("content", content))
 }
 
 interface QuickAddProps {
@@ -230,9 +249,7 @@ export function QuickAdd({
   const [plain, setPlain] = useState(false)
   const [skip, setSkip] = useState<string[]>([])
   const [grown, setGrown] = useState(false)
-  const ideaRef = useRef<HTMLInputElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
-  const caret = useRef<number | null>(null)
   const addTask = useTaskStore((state) => state.addTask)
   const seeded = useRef<string | null>(null)
 
@@ -247,33 +264,44 @@ export function QuickAdd({
     if (seed.includes("\n")) setBulk(true)
   }, [open, seed])
 
-  const parsed = useMemo(() => parseSmartCapture(ideaText, { plain, skip }), [ideaText, plain, skip])
+  // Chips and the button label follow a deferred copy so the letters paint
+  // before the parse. Submit reads the live field, below.
+  const previewText = useDeferredValue(ideaText)
+  const parsed = useMemo(() => parseSmartCapture(previewText, { plain, skip }), [previewText, plain, skip])
   const logIntent = useMemo(
-    () => (bulk ? null : quickAddLogIntent(ideaText, plain)),
-    [bulk, ideaText, plain],
+    () => (bulk ? null : quickAddLogIntent(previewText, plain)),
+    [bulk, previewText, plain],
   )
-  // The one-line field turns into the big box once the text wraps or has a
-  // newline. It stays big until the text is cleared, so nothing flickers.
+  // The same field grows once the text wraps or has a newline. It stays big
+  // until the text is cleared. The measure runs after paint, so a keystroke
+  // is not waiting on layout. Bulk does not swap in a new control: a new
+  // focused field under 16px, inside a transformed dialog, is what locks
+  // iOS zoom.
   const bigBox = bulk || grown
-  useLayoutEffect(() => {
-    const el = ideaRef.current
-    if (!bulk && !grown && el && (ideaText.includes("\n") || el.scrollWidth > el.clientWidth)) {
-      caret.current = el.selectionStart
-      setGrown(true)
-    }
+  useEffect(() => {
     if (!ideaText) {
       setGrown(false)
       setSkip([])
+      return
+    }
+    if (bulk || grown) return
+    let cancelled = false
+    const frame = requestAnimationFrame(() => {
+      const el = areaRef.current
+      if (cancelled || !el) return
+      if (ideaText.includes("\n") || el.scrollHeight > el.clientHeight + 1) setGrown(true)
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
     }
   }, [ideaText, bulk, grown])
-  useLayoutEffect(() => {
-    const el = areaRef.current
-    if (!grown || bulk || !el || caret.current === null) return
-    el.focus()
-    el.setSelectionRange(caret.current, caret.current)
-    caret.current = null
-  }, [grown, bulk])
-  const readyCount = bulk ? bulkReadyCount(ideaText, plain) : 0
+  useEffect(() => {
+    if (!open || !bulk) return
+    const frame = requestAnimationFrame(() => releasePageZoom())
+    return () => cancelAnimationFrame(frame)
+  }, [open, bulk])
+  const readyCount = bulk ? bulkReadyCount(previewText, plain) : 0
 
   const closeFresh = () => {
     setIdeaText("")
@@ -301,6 +329,9 @@ export function QuickAdd({
     e.preventDefault()
     if (!ideaText.trim()) return
 
+    const liveLog = bulk ? null : quickAddLogIntent(ideaText, plain)
+    const liveParsed = parseSmartCapture(ideaText, { plain, skip })
+
     if (bulk) {
       const created = writeBulkCapture(ideaText, sendToInbox, { plain, originKind: "quick-add" })
       const state = useTaskStore.getState()
@@ -310,17 +341,17 @@ export function QuickAdd({
       return
     }
 
-    if (logIntent) {
-      const logged = applyQuickAddLog(logIntent)
+    if (liveLog) {
+      const logged = applyQuickAddLog(liveLog)
       if (logged.status === "error") return
       if (logged.status === "ok") {
-        raiseQuickAddWrote(logIntent.kind === "thought-process" ? QUICK_ADD_THOUGHT_WROTE : QUICK_ADD_LOG_WROTE)
+        raiseQuickAddWrote(liveLog.kind === "thought-process" ? QUICK_ADD_THOUGHT_WROTE : QUICK_ADD_LOG_WROTE)
       }
       closeFresh()
       return
     }
 
-    const { suggestion } = parsed
+    const { suggestion } = liveParsed
     const target = ensureCaptureTarget(suggestion, () => {
       const s = useTaskStore.getState()
       return {
@@ -398,34 +429,23 @@ export function QuickAdd({
               </Label>
               {!bulk && logIntent ? <LogFlag thought={logIntent.kind === "thought-process"} /> : null}
               {!bulk && !logIntent && ideaText.trim() ? <SuggestionChips suggestion={parsed.suggestion} highlights={parsed.highlights} onSkip={(keys) => setSkip((prev) => [...new Set([...prev, ...keys])])} /> : null}
-              {bigBox ? (
-                <Textarea
-                  id="idea"
-                  ref={areaRef}
-                  placeholder={bulk ? "Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages" : "next actions: eventually: write the memoir"}
-                  value={ideaText}
-                  onChange={(e) => setIdeaText(e.target.value)}
-                  onKeyDown={(e) => {
-                    // One item: Enter still adds it, Shift-Enter breaks the line.
-                    if (!bulk && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault()
-                      e.currentTarget.form?.requestSubmit()
-                    }
-                  }}
-                  className="hpp-bulk-box resize-none font-mono text-sm min-h-[10rem]"
-                  autoFocus
-                />
-              ) : (
-                <Input
-                  id="idea"
-                  ref={ideaRef}
-                  placeholder="next actions: eventually: write the memoir"
-                  value={ideaText}
-                  onChange={(e) => setIdeaText(e.target.value)}
-                  className="h-11 text-base"
-                  autoFocus
-                />
-              )}
+              <Textarea
+                id="idea"
+                ref={areaRef}
+                rows={bigBox ? 8 : 2}
+                placeholder={bulk ? "Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages" : "next actions: eventually: write the memoir"}
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
+                onKeyDown={(e) => {
+                  // One item: Enter still adds it, Shift-Enter breaks the line.
+                  if (!bulk && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault()
+                    e.currentTarget.form?.requestSubmit()
+                  }
+                }}
+                className={bigBox ? "hpp-bulk-box qa-idea resize-none font-mono" : "qa-idea-line qa-idea resize-none"}
+                autoFocus
+              />
             </div>
             <SendToInboxField
               id="quick-add-inbox"
@@ -440,31 +460,29 @@ export function QuickAdd({
               }
               onCheckedChange={setSendToInbox}
             />
+            <div className="qa-modes">
+              <Label className="qa-mode-key" data-on={bulk ? "true" : "false"}>
+                <input
+                  id="quick-add-bulk"
+                  type="checkbox"
+                  checked={bulk}
+                  onChange={(e) => setBulk(e.target.checked)}
+                />
+                Bulk
+              </Label>
+              <Label className="qa-mode-key" data-on={plain ? "true" : "false"}>
+                <input
+                  id="quick-add-plain"
+                  type="checkbox"
+                  checked={plain}
+                  onChange={(e) => setPlain(e.target.checked)}
+                />
+                Plain
+              </Label>
+            </div>
             <details className="hpp-qa-more">
-              <summary className="cursor-pointer text-sm text-muted-foreground">Bulk &amp; shorthand</summary>
+              <summary className="cursor-pointer text-sm text-muted-foreground">Shorthand</summary>
               <div className="mt-3 space-y-3">
-                <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
-                  <input
-                    id="quick-add-bulk"
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border border-primary"
-                    checked={bulk}
-                    onChange={(e) => setBulk(e.target.checked)}
-                  />
-                  <Label htmlFor="quick-add-bulk" className="font-normal cursor-pointer">
-                    Bulk
-                  </Label>
-                  <input
-                    id="quick-add-plain"
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border border-primary"
-                    checked={plain}
-                    onChange={(e) => setPlain(e.target.checked)}
-                  />
-                  <Label htmlFor="quick-add-plain" className="font-normal cursor-pointer">
-                    Plain
-                  </Label>
-                </div>
                 <CaptureShorthandHelp variant={bulk ? "bulk" : "quick"} />
               </div>
             </details>

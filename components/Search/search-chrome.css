@@ -133,7 +133,7 @@
   line-height: 1.2;
   text-transform: uppercase;
   color: var(--fascia-nameplate, #2a2c2e);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .b2-search-checks {
@@ -283,7 +283,7 @@
   line-height: 1.2;
   text-transform: uppercase;
   color: var(--fascia-nameplate, #2a2c2e);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

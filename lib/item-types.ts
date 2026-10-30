@@ -26,12 +26,14 @@ import type {
 import { withOperationType } from "@/lib/operation-types"
 import { withComputerProjectType } from "@/lib/computer-project-types"
 import { withNoteType } from "@/lib/note-types"
-import { withBookType } from "@/lib/book-types"
+import { withBookSizeAttributes, withBookType } from "@/lib/book-types"
 import { withFlightType } from "@/lib/flight-types"
 import { withLocationType } from "@/lib/location-types"
 import { withDocumentType } from "@/lib/document-types"
 import { withPhotoType } from "@/lib/photo-types"
 import { withTrackingItemTypes } from "@/lib/tracking-item-types"
+import { withLogItemTypes } from "@/lib/log-item-types"
+import { withTimeblockType } from "@/lib/timeblock-types"
 import { withFilmType } from "@/lib/film-types"
 import { withCatalogTypes } from "@/lib/catalog-types"
 import { withPersonPhoneAttribute, withPersonType } from "@/lib/person-types"
@@ -84,7 +86,11 @@ export function getBuiltinItemTypes(): ItemTypeDefinition[] {
     withPersonType(
       withCatalogTypes(
         withFilmType(
-          withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+          withTimeblockType(
+            withLogItemTypes(
+              withTrackingItemTypes(withDocumentType(withPhotoType(withLocationType(withFlightType(withBookType(withNoteType(withOperationType(getBaseBuiltinItemTypes())))))))),
+            ),
+          ),
         ),
       ),
     ),
@@ -148,6 +154,19 @@ export function isCatalogItemType(type: Pick<ItemTypeDefinition, "kind">): boole
 }
 
 /**
+ * A catalog seed may grow a parent later. Copy that field onto a stored type
+ * only when the stored type has none. Name, attributes, panels, and rules stay.
+ */
+function fillMissingParent(
+  chosen: ItemTypeDefinition,
+  seed: ItemTypeDefinition,
+  hadStored: boolean,
+): ItemTypeDefinition {
+  if (!hadStored || chosen.parentTypeId || !seed.parentTypeId) return chosen
+  return { ...chosen, parentTypeId: seed.parentTypeId }
+}
+
+/**
  * Merge persisted types with seeds: system ids always come from code; catalog
  * ids keep the stored definition if present and only insert the seed when missing.
  */
@@ -164,7 +183,9 @@ export function mergeTypeRegistry(stored: ItemTypeDefinition[]): ItemTypeDefinit
       result.push(seed)
       continue
     }
-    result.push(withPersonPhoneAttribute(storedById.get(id) ?? seed))
+    const stored = storedById.get(id)
+    const chosen = withBookSizeAttributes(withPersonPhoneAttribute(stored ?? seed))
+    result.push(fillMissingParent(chosen, seed, stored != null))
   }
   for (const t of stored) {
     const id = t.id as string

@@ -12,7 +12,7 @@ In the Electron app, open it from the dev tools console: `location.href = "/lab/
 
 _Last mapped: 2026-10-27_
 
-- Pixelify, Silkscreen, and DotGothic16 load with this bench (`lib/fonts/home-pixel-faces.ts`), on `.lab` and on `<html>`.
+- Silkscreen and DotGothic16 load with this bench (`lib/fonts/home-pixel-faces.ts`), on `.lab` and on `<html>`. The arcade cabinet body is Karla.
 - `lab-store.ts` copies `useTaskStore` (tasks, lists, folders) into its own zustand store.
   - **Sandbox** (default): writes stay in the copy. While the copy is untouched, it follows the real store live.
   - **Live**: writes go through the real `updateTask` / `addTask`. It asks first.

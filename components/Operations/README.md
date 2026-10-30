@@ -315,7 +315,7 @@ Settings and After-action dialogs share the same milled chrome. In Settings,
 - `selectToDoNext` — next-actionable selector (incomplete, dependency-satisfied, ranked).
 - `isArchivedOperation` — `paused`, `done`, `abandoned`, or `completed`.
 - `selectOperations` / `collectOperationCategories` — the operations in a task array and every category in use.
-- `groupOperationsByCategory` / `filterOperationsByCategory` / `sortOperations` — the home board's grouping, filtering (`visibleCategoryKeys`: omit for no filter, `[]` for "all deselected"), and ordering by name / stage / target date / recency.
+- `groupOperationsByCategory` / `filterOperationsByCategory` / `sortOperations` — the home board's grouping, filtering (`visibleCategoryKeys`: omit for no filter, `[]` for "all deselected"), and ordering by name / stage / target date / recency. Name order uses the item name (`title`, then `description`). A phone row that only kept a title still sorts, and a missing description no longer throws and takes the app down. _Last mapped: 2026-10-28._
 
 Part formulas, glance meters, and the To do union are in `lib/operation-parts.ts`
 (`readPartFormulas`, `glanceMeters`, `collectOperationTodoTasks`).

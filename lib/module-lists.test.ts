@@ -6,6 +6,7 @@ import {
   MODULE_LISTS_FOLDER_NAME,
   addModuleCreatedLists,
   filterTasksHiddenFromGlobalAll,
+  selectGlobalAllItems,
   isFolderHiddenFromGlobalAll,
   isListHiddenFromGlobalAll,
   listIdsUsedByModule,
@@ -185,6 +186,27 @@ describe("module-lists helpers", () => {
       "both",
       "loose",
     ])
+  })
+
+  it("selects global All in one pass and reuses the array when those rows did not change", () => {
+    const mut = memoryMut()
+    mut.addList(list("pack", "Packing"))
+    mut.addList(list("errands", "Errands"))
+    addModuleCreatedLists(mut, workspace("mod-1", "Trip"), [mut.lists.find((c) => c.id === "pack")!])
+    const cleared = { ...task("done", ["errands"]), completed: true }
+    const items = [task("only-mod", ["pack"]), task("user", ["errands"]), cleared, task("loose", [])]
+    const first = selectGlobalAllItems(items, mut.lists, mut.folders)
+    expect(first.map((t) => t.id)).toEqual(["user", "loose"])
+    const again = selectGlobalAllItems(items, mut.lists, mut.folders, first)
+    expect(again).toBe(first)
+    const edited = selectGlobalAllItems(
+      [task("only-mod", ["pack"]), { ...items[1], description: "Renamed" }, cleared, items[3]],
+      mut.lists,
+      mut.folders,
+      first,
+    )
+    expect(edited).not.toBe(first)
+    expect(edited.map((t) => t.id)).toEqual(["user", "loose"])
   })
 
   it("syncs existing unfiled lists referenced by a workspace", () => {

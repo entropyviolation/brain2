@@ -15,6 +15,7 @@ import { DEFAULT_CORNER_DRIFT, DEFAULT_THEME, DEFAULT_WARMTH_DRIFT, useThemeStor
 import { DEFAULT_PCB_MODE } from "@/lib/pcb-backdrop"
 import { defaultScopes, defaultTags, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { useSleepStore } from "@/lib/sleep-store"
+import { useHealthImportStore } from "@/lib/phone-sync/health-store"
 import { useCycleMarksStore } from "@/lib/cycle-marks"
 import { useSunTimesStore } from "@/lib/sun-times-store"
 import { useUserSettingsStore } from "@/lib/user-settings-store"
@@ -156,6 +157,7 @@ export function resetAllStores() {
     penSort: "recent",
   })
   useSleepStore.setState({ nights: {} })
+  useHealthImportStore.setState({ days: {}, nights: {} })
   useCycleMarksStore.setState({ marks: {} })
   useSunTimesStore.getState().resetSunTimes()
   useWorkSessionStore.setState({ session: null })

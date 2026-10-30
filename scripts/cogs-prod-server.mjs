@@ -58,7 +58,7 @@ const TYPES = {
 }
 
 if (!fs.existsSync(path.join(OUT, "index.html"))) {
-  console.error("[cogs-prod] No production build in out/. Run npm run build first.")
+  console.error("[brain2-prod] No production build in out/. Run npm run build first.")
   process.exit(1)
 }
 
@@ -95,7 +95,7 @@ const server = createServer(async (req, res) => {
     res.setHeader("content-type", type)
     createReadStream(file).pipe(res)
   } catch (err) {
-    console.error("[cogs-prod] request error", err)
+    console.error("[brain2-prod] request error", err)
     if (!res.headersSent) {
       res.statusCode = 500
       res.end("internal server error")
@@ -106,9 +106,9 @@ const server = createServer(async (req, res) => {
 server.on("error", (err) => {
   if (err && err.code === "EADDRINUSE") {
     console.error("")
-    console.error(`[cogs-prod] port ${port} is already in use.`)
-    console.error(`[cogs-prod] electron:local will not take it. Leave the current server running.`)
-    console.error(`[cogs-prod] Find it:  lsof -nP -iTCP:${port} -sTCP:LISTEN`)
+    console.error(`[brain2-prod] port ${port} is already in use.`)
+    console.error(`[brain2-prod] electron:local will not take it. Leave the current server running.`)
+    console.error(`[brain2-prod] Find it:  lsof -nP -iTCP:${port} -sTCP:LISTEN`)
     console.error("")
     process.exit(1)
   }
@@ -128,13 +128,13 @@ process.on("SIGTERM", shutdown)
 
 server.listen(port, hostname, () => {
   console.log("")
-  console.log(`[cogs-prod] Ready — production out/ + the same /api handlers, on ONE port`)
-  console.log(`[cogs-prod] local:   http://127.0.0.1:${port}`)
-  console.log(`[cogs-prod] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
-  console.log(`[cogs-prod] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
-  console.log(`[cogs-prod] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
-  console.log(`[cogs-prod] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
-  console.log(`[cogs-prod] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
-  console.log(`[cogs-prod] data:    ${syncDataPath()}`)
+  console.log(`[brain2-prod] Ready — production out/ + the same /api handlers, on ONE port`)
+  console.log(`[brain2-prod] local:   http://127.0.0.1:${port}`)
+  console.log(`[brain2-prod] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
+  console.log(`[brain2-prod] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
+  console.log(`[brain2-prod] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
+  console.log(`[brain2-prod] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
+  console.log(`[brain2-prod] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
+  console.log(`[brain2-prod] data:    ${syncDataPath()}`)
   console.log("")
 })

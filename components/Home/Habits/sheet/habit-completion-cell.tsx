@@ -127,6 +127,8 @@ export interface HabitCompletionCellProps {
   onGoalChange: (value: number | undefined) => void
   onTextChange: (text: string) => void
   onIncrementalChange: (value: number | undefined) => void
+  /** Phone list: a text cell opens the note sheet, including when it is blank. */
+  notePopup?: boolean
 }
 
 export function HabitCompletionCell({
@@ -149,6 +151,7 @@ export function HabitCompletionCell({
   onGoalChange,
   onTextChange,
   onIncrementalChange,
+  notePopup = false,
 }: HabitCompletionCellProps) {
   const colors = useThemeStore((s) => s.colors)
   const ledTint = useHabitsStore((s) => s.percentLedTint)
@@ -418,6 +421,7 @@ export function HabitCompletionCell({
           className="habit-cell-slot habit-cell-slot-text"
           placeholder="…"
           ariaLabel={`${task.name} ${periodLabel} note`}
+          popup={notePopup}
         />
       )
 

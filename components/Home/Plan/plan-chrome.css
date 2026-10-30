@@ -159,7 +159,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--p-surface) 70%, var(--chrome-key-shade) 100%);
@@ -328,7 +328,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .plan95 .plan-split {
@@ -421,7 +421,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   box-shadow: inset 0 -1px var(--p-shadow), inset 0 -2px var(--p-highlight);
 }
 
@@ -758,7 +758,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
     var(--p-face);
@@ -910,7 +910,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   line-height: 1.35;
   color: #2a2c2e;
   text-decoration: none;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: transparent;
   box-shadow: inset 0 -1px var(--p-shadow), inset 0 -2px var(--p-highlight);
 }
@@ -998,7 +998,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
     linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
@@ -1031,7 +1031,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--p-surface, var(--chrome-face)) 70%, var(--chrome-key-shade) 100%);
@@ -1132,7 +1132,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .append-log-body {
@@ -1180,7 +1180,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     var(--p-face);
@@ -1735,7 +1735,7 @@ body.win95-app .plan95 .plan-view-keys [role="tab"]:active {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 -1px 0 rgba(55, 58, 62, 0.45),

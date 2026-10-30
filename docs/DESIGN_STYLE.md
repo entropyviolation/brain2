@@ -411,11 +411,29 @@ verb is.
 
 ### DSi pixel and lights
 
+_Last mapped: 2026-10-29_
+
 The wanted handheld feel is an old Nintendo DSi: chunky pixel type, hard pixel
 edges, and small glowing indicator lights. The pixel face already in the app
 is `public/fonts/w95fa.woff`. It is a Windows pixel font, not a DSi font file.
 Use it as pixel type. The DSi part still to push is the lamp: a few pixels of
 glow that say power, mode, or on.
+
+Pixel fonts are filled glyphs only. That is Silkscreen, DotGothic16, `w95fa`,
+and any other pixel face, in the web app and in the phone / iOS app. Do not
+put a white, cream, or light outline, lace, halo, or stroke on them. No
+`-webkit-text-stroke` or `text-stroke`, no `paint-order` stroke, and no
+multi-offset `text-shadow` or `drop-shadow` filter that traces the glyph in a
+light color. A one-pixel light lip does the same lace on these faces. The
+Needs Attention title (`.home-na-title`) was
+`text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75)`, and each block picked up a
+white edge. Habits phone tabs such as “Season (2)” had the same look. `w95fa`
+has one real weight. `font-weight` above that weight (600, 700, bold) makes
+WebKit paint a light fringe around the glyphs. That fringe is the same lace.
+On pixel faces set `font-synthesis: none` (and do not use a light
+`-webkit-text-stroke`). Do not “bold” a pixel face by synthesis. A dark
+shadow for depth is a different thing. The Dash word glow stays the ink’s own
+bloom. The phone states the same ban in `docs/MOBILE_STYLE.md`.
 
 Lights already in the house, to make more of:
 
@@ -474,7 +492,7 @@ showing a jewel does not owe the plate a twin.
 
 ### Milled fascia
 
-_Last mapped: 2026-10-27_
+_Last mapped: 2026-10-29_
 
 A material for a row of instruments, when the room wants machined keys. Not
 the required start for every new tab.
@@ -482,7 +500,7 @@ the required start for every new tab.
 | Piece | What it is |
 |-------|------------|
 | **Bay** | Brushed mill (1px horizontal hairlines) on cool silver. Outer `#5c6064` stroke, white top lip, inset pewter, a soft inner shadow. Radius 2–3px. |
-| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)`. A round power lamp may lead the label. Visual dashboard plates (Milled style) and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
+| **Nameplate** | 9–12px, weight 700, tracking ~0.14em, uppercase, ink `#2a2c2e`, engraved highlight `0 1px 0 rgba(255,255,255,0.78)` on a smooth face such as Karla. Do not put that light lip on a pixel face. It traces each block and reads as lace; the glyph stays filled ([DSi pixel and lights](#dsi-pixel-and-lights)). A round power lamp may lead the label. Visual dashboard plates (Milled style) and Modules catalog cards are the exception: Karla at 13px, because the 9px pixel plate was too small to read. |
 | **CRT** | The value in black glass (`#040a08`–`#070c0a`), a faint phosphor bloom at the top, a gunmetal ring. One green: `--hab-crt-green` (`#7dffc4`) and `--hab-crt-glow`. Pad the glyphs (about 8px 14px). Do not paint phosphor straight on the mill. |
 | **Label** | A padded silver chip (about 6px 9px), two lines at most. Sibling labels share one height. |
 | **Key** | A main room switcher (Home, Tracking, Habits period, Operations, Item detail, Plan, Scheduler, Inbox partitions) is a latching [keycap](#keycaps): pale silver skirt at rest, a gap so each cap reads alone. The selected key stays CRT glass plus the round green on-light. A press is the keycap drop: about 2px (`translateY(2px)`), the bottom skirt from about 4px to about 2px, and a soft inner shadow. The face stays the silver gradient. There is no keyframe flash. Other fascia keys stay raised metal: specular top lip, mill, pressed foot. Their press stays the milled sink (`--fascia-key-pressed`). |
@@ -901,8 +919,8 @@ match, and does not sand them into one shared kit.
   `analytics-chrome.css`): cobalt range bay with field rings and a degree
   ruler, typewriter keys and ball-bearing lamps, steel catalog drawers and
   index-card tabs for the index, cool white paper over a cobalt graph rule,
-  FIG.-numbered double-ruled plates, graphite scopes. Type is handheld pixel:
-  Pixelify Sans, Silkscreen, DotGothic16. No yellow, no celestial or astrology theme (star icons are fine). Title bar and status bar keep the room in the house. Item
+  FIG.-numbered double-ruled plates, graphite scopes. Type is Bricolage Grotesque
+  and Instrument Sans (`lib/fonts/analytics-type.ts`). No yellow, no celestial or astrology theme (star icons are fine). Title bar and status bar keep the room in the house. Item
   Types stays the library surface; Settings still edits types. Tooltips say
   what a control or a blank cell means (`ANALYTICS_TAB_HELP` and per-control
   titles). Match that density of explanation when a control would otherwise

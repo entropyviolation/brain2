@@ -33,6 +33,7 @@ import {
 import { APP_NAV_KEYS, opsPanelScrollSlot, readStoredRecord, writeStoredRecordField } from "@/lib/app-navigation"
 import { subscribeNavRestore } from "@/lib/screen-location"
 import { usePersistedScroll } from "@/lib/use-persisted-scroll"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { renameOperation } from "./operation-actions"
 import { OperationHome } from "./panels/OperationHome"
 import { OperationTasksPanel } from "./panels/OperationTasksPanel"
@@ -52,7 +53,6 @@ import {
 } from "./panels/OperationFieldPlanPanels"
 import type { Task } from "@/lib/types"
 import { getOperationTaskTree } from "@/lib/operations"
-import { itemTitleOrUntitled } from "@/lib/item-utils"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import "@/components/ItemDetail/chrome/item-detail-chrome.css"
 import "./operations-chrome.css"
@@ -252,12 +252,12 @@ export function OperationWorkspace({
                     className="ops-title-name"
                     data-no95
                     onClick={() => {
-                      setTitleDraft(operation.description)
+                      setTitleDraft(itemTitleOrUntitled(operation, ""))
                       setRenaming(true)
                     }}
                     title="Rename"
                   >
-                    {operation.description}
+                    {itemTitleOrUntitled(operation)}
                   </button>
                 </h2>
               )}
@@ -288,7 +288,11 @@ export function OperationWorkspace({
                 ))}
               </span>
             )}
-            <WorkingNowControl operationId={operation.id} operationName={operation.description} tasks={clockTasks} />
+            <WorkingNowControl
+              operationId={operation.id}
+              operationName={itemTitleOrUntitled(operation, "")}
+              tasks={clockTasks}
+            />
           </div>
         </div>
 

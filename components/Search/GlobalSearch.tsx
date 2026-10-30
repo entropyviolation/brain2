@@ -168,6 +168,7 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
   const [titleOnly, setTitleOnly] = React.useState(false)
 
   const listRef = React.useRef<HTMLUListElement>(null)
+  const rules = useItemTypeStore((s) => s.relationRules)
   const entries = useTimeTrackingStore((s) => s.entries)
   const scopes = useTimeTrackingStore((s) => s.scopes)
   const reviews = useReviewsStore((s) => s.reviews)
@@ -253,8 +254,10 @@ export function GlobalSearch({ open, onOpenChange, onSelect, limit = 20 }: Globa
       graph: spine,
       asOf: formatLocalDateKey(new Date()),
       impact: { items: items as Task[], lists: categories, pens: scopes.flatMap((scope) => scope.pens) },
+      items: items as Task[],
+      rules,
     })
-  }, [query, spine, items, categories, scopes])
+  }, [query, spine, items, categories, scopes, rules])
 
   // A new query or filter lands on the best hit. Same query with a new catalog
   // (vault hydration) only clamps the highlight into range.

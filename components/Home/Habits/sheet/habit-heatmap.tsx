@@ -8,6 +8,8 @@
  * (cell + column gap) so the left of the scrollport stays mounted.
  * A zero-width scroller still paints the whole span.
  * Surface is a pearl handheld screen of flat dusty-aqua squares in the Habits metal well.
+ * The phone may pass `weekPercent` to stick that habit's week percent on the right.
+ * The desktop mosaic leaves that column off.
  */
 "use client"
 
@@ -35,6 +37,7 @@ import { isHabitGoalMet } from "@/lib/habit-utils"
 import { isMissedOpportunity, missedOpportunityEligible } from "@/lib/habit-missed-opportunity"
 import { missReasonAsText } from "@/lib/blocked-reason"
 import { MissReasonDialog } from "@/components/Reviews/MissReasonDialog"
+import { HabitPercentReadout } from "@/components/Home/Habits/sheet/habit-percent-readout"
 import { habitHiddenWhenComplete } from "@/lib/habit-completion-source"
 import { exemptionHeatTitle, isExemptKind, loggedExemptionDay, type ExemptionKind } from "@/lib/habit-exemption"
 import { format } from "date-fns"
@@ -170,6 +173,12 @@ interface HabitHeatmapProps {
   onToggleMissed?: (taskId: string, periodKey: string, missed: boolean, missReason?: string) => void
   /** Row percent the sheet paints. 100 hides a row the focus cell has not met. */
   periodPercentFor?: (taskId: string) => number | null
+  /**
+   * Week (or span) percent stuck to the right of the cells.
+   * The phone heatmap passes this. The desktop mosaic does not.
+   */
+  weekPercent?: (taskId: string) => number | null
+  onWeekPercent?: (task: WeeklyTask) => void
   highlightPriorities?: boolean
   ritualIds?: readonly string[]
   ritualMultiplier?: number
@@ -191,6 +200,8 @@ export function HabitHeatmap({
   hideCompletedAndMissed = false,
   onToggleMissed,
   periodPercentFor,
+  weekPercent,
+  onWeekPercent,
   highlightPriorities = false,
   ritualIds = [],
   ritualMultiplier = 0,
@@ -312,7 +323,9 @@ export function HabitHeatmap({
         <div
           className="habit-heat-grid"
           style={{
-            gridTemplateColumns: `10rem repeat(${columns.length}, ${HEAT_CELL_PX}px)`,
+            gridTemplateColumns: weekPercent
+              ? `10rem repeat(${columns.length}, ${HEAT_CELL_PX}px) minmax(5.75rem, 7.25rem)`
+              : `10rem repeat(${columns.length}, ${HEAT_CELL_PX}px)`,
             columnGap: HEAT_GAP_PX,
           }}
         >
@@ -328,6 +341,7 @@ export function HabitHeatmap({
             </div>
           ))}
           {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
+          {weekPercent ? <div className="habit-heat-pct-head" aria-hidden="true" /> : null}
           {shown.map((task) => {
             const weight = effectivePriorityWeight(task, data, asOf, frequency)
             const neglect = autoPriorityWeight(task, data, asOf, frequency)
@@ -359,6 +373,8 @@ export function HabitHeatmap({
                 hideCompletedAndMissed={hideCompletedAndMissed}
                 onToggleMissed={onToggleMissed}
                 frequency={frequency}
+                weekPercent={weekPercent}
+                onWeekPercent={onWeekPercent}
               />
             )
           })}
@@ -394,6 +410,8 @@ function HeatmapRow({
   frequency,
   padBefore = 0,
   padAfter = 0,
+  weekPercent,
+  onWeekPercent,
 }: {
   task: WeeklyTask
   columns: HeatmapColumn[]
@@ -413,6 +431,8 @@ function HeatmapRow({
   frequency: HabitFrequency
   padBefore?: number
   padAfter?: number
+  weekPercent?: (taskId: string) => number | null
+  onWeekPercent?: (task: WeeklyTask) => void
 }) {
   const [askKey, setAskKey] = useState<string | null>(null)
   return (
@@ -518,6 +538,16 @@ function HeatmapRow({
         )
       })}
       {padAfter > 0 ? <div style={{ gridColumn: `span ${padAfter}` }} /> : null}
+      {weekPercent ? (
+        <button
+          type="button"
+          className="habit-heat-pct"
+          aria-label={`${task.name} week`}
+          onClick={() => onWeekPercent?.(task)}
+        >
+          <HabitPercentReadout value={weekPercent(task.id)} label={`${task.name} week`} />
+        </button>
+      ) : null}
       <MissReasonDialog
         open={askKey !== null}
         subject={task.name}

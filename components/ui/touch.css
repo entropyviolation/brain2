@@ -131,3 +131,21 @@
     inset: -9px;
   }
 }
+
+/* Landscape phones are wider than 767px and still coarse. A translated
+   dialog plus a focused field locks the visual viewport. Same sheet as above. */
+@media (min-width: 768px) and (max-width: 980px) and (pointer: coarse) {
+  .ui-dialog-content {
+    inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) !important;
+    transform: none !important;
+    animation: none !important;
+    width: auto !important;
+    max-width: none !important;
+    height: fit-content !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    margin: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overflow-wrap: anywhere;
+  }
+}

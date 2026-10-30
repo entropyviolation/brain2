@@ -10,14 +10,20 @@
   color: #1c1c1e;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 12px;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
+.hab-phone.has-day-tube {
+  padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
 }
 
 .hab-phone-head {
   position: sticky;
   top: 0;
   z-index: 4;
-  padding: calc(6px + env(safe-area-inset-top, 0px)) 16px 8px;
+  /* The app header already cleared the status bar. A second safe-area
+     inset here was a blank band under the Home tabs. */
+  padding: 4px 16px 8px;
   background: rgba(242, 242, 247, 0.88);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
@@ -44,7 +50,8 @@
   font-size: 17px;
 }
 
-.hab-phone-icon-btn,
+.hab-phone-gear,
+.hab-phone-key,
 .hab-phone-date,
 .hab-phone-day,
 .hab-phone-segment button,
@@ -52,26 +59,34 @@
 .hab-phone-meter,
 .hab-phone-pct,
 .hab-phone-period,
+.hab-phone-day-tube,
 .hab-phone-grab,
 .hab-phone-sheet-pages button {
   touch-action: manipulation;
 }
 
-.hab-phone-icon-btn {
+.hab-phone-gear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  width: 44px;
+  height: 44px;
   min-width: 44px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0;
   border: 0;
-  border-radius: 12px;
-  background: #fff;
-  color: #1c1c1e;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 0;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: inherit;
+}
+
+.hab-phone-gear img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .hab-phone-nav {
@@ -84,20 +99,8 @@
 .hab-phone-date {
   flex: 1;
   min-width: 0;
-  min-height: 44px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 12px;
-  background: #fff;
-  color: inherit;
-  font: inherit;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
   line-height: 1.2;
-}
-
-.hab-phone-date[aria-pressed="true"] {
-  box-shadow: inset 0 0 0 1px rgba(28, 28, 30, 0.28);
 }
 
 .hab-phone-window {
@@ -109,31 +112,22 @@
 
 .hab-phone-segment {
   display: flex;
-  gap: 0;
+  gap: 6px;
   margin: 8px 0 0;
-  padding: 2px;
-  border-radius: 10px;
-  background: rgba(118, 118, 128, 0.16);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .hab-phone-segment button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 44px;
-  padding: 4px 2px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #1c1c1e;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   line-height: 1.15;
-}
-
-.hab-phone-segment button[aria-selected="true"] {
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  letter-spacing: 0;
 }
 
 .hab-phone-days {
@@ -149,19 +143,11 @@
 
 .hab-phone-day {
   flex: 1 0 44px;
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   min-width: 44px;
-  min-height: 44px;
-  padding: 4px 6px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: #1c1c1e;
-  font: inherit;
   scroll-snap-align: center;
+  font-size: 13px;
+  letter-spacing: 0;
 }
 
 .hab-phone-day-kicker {
@@ -177,13 +163,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.hab-phone-day.is-on {
-  background: #1c1c1e;
-  color: #fff;
-}
-
-.hab-phone-day.is-on .hab-phone-day-kicker {
-  color: rgba(255, 255, 255, 0.72);
+.hab-phone-day.is-on .hab-phone-day-kicker,
+.hab-phone-day[aria-selected="true"] .hab-phone-day-kicker {
+  color: rgba(125, 255, 196, 0.78);
 }
 
 .hab-phone-day.is-today:not(.is-on) .hab-phone-day-num {
@@ -306,7 +288,8 @@
 
 .hab-phone-copy {
   flex: 1 1 auto;
-  min-width: 0;
+  /* A few characters was the climb row collapsing under a full-width field. */
+  min-width: 8.5rem;
 }
 
 .hab-phone .habit-name-title {
@@ -325,7 +308,13 @@
   font-size: 13px;
 }
 
-.hab-phone .habit-gem-btn {
+.hab-phone .habit-gem-btn,
+.hab-phone .habit-gem-socket,
+body.win95-app .hab-phone .habit-gem-btn,
+body.win95-app .hab-phone .habit-gem-socket,
+body.win95-app .hab-phone .habit-gem-socket:active,
+.hab95 .hab-phone .habit-gem-btn,
+.hab95 .hab-phone .habit-gem-socket {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -333,6 +322,32 @@
   height: 44px;
   min-width: 44px;
   min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.hab95 .hab-phone .habit-gem-btn .habit-gem,
+.hab95 .hab-phone .habit-gem-socket .habit-gem,
+.hab-phone .habit-gem-btn .habit-gem,
+.hab-phone .habit-gem-socket .habit-gem {
+  width: 40px;
+  height: 40px;
+}
+
+.hab-phone .habit-gem-socket:active,
+.hab95 .hab-phone .habit-gem-socket:active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.hab-phone .habit-gem-socket:active .habit-gem-press {
+  transform: scale(0.92);
 }
 
 .hab-phone-mark {
@@ -342,13 +357,84 @@
   min-width: 44px;
   min-height: 44px;
   flex: 0 0 auto;
+  width: auto;
+  max-width: calc(100% - 8.5rem);
 }
 
-.hab-phone-mark .hab-lamp {
-  width: 44px;
-  height: 44px;
+/* Desktop `.hab95 .hab-lamp` pins 15px. These selectors win only under `.hab-phone`. */
+.hab-phone .habit-lamp-cell,
+.hab95 .hab-phone .habit-lamp-cell,
+body.win95-app .hab-phone .habit-lamp-cell {
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
   min-width: 44px;
   min-height: 44px;
+  max-width: none;
+  max-height: none;
+}
+
+.hab-phone .hab-lamp,
+.hab-phone .hab-lamp:active,
+.hab95 .hab-phone .hab-lamp,
+.hab95 .hab-phone .hab-lamp:active,
+.hab95 .hab-phone .hab-lamp:not([data-fill="true"]),
+.hab95 .hab-phone .hab-lamp:not([data-fill="true"]):active,
+.hab95 .hab-phone .hab-lamp[data-fill="true"],
+.hab95 .hab-phone .hab-lamp[data-fill="true"]:active,
+body.win95-app .hab-phone .hab-lamp,
+body.win95-app .hab-phone .hab-lamp:active {
+  --hab-lamp-size: 48px;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: none;
+  max-height: none;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.hab-phone .hab-lamp[data-state="off"] {
+  filter: none;
+}
+
+.hab-phone .hab-lamp[data-state="off"] .hab-lamp-glass {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.72);
+}
+
+.hab-phone .hab-lamp[data-state="on"] {
+  filter:
+    drop-shadow(0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 85%, #fff))
+    drop-shadow(0 0 8px var(--hab-lamp-tint))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--hab-lamp-tint) 70%, transparent));
+}
+
+.hab-phone .hab-lamp[data-state="on"] .hab-lamp-glass {
+  box-shadow:
+    inset 0 0 8px color-mix(in srgb, var(--hab-lamp-tint) 75%, transparent),
+    inset 0 0 2px color-mix(in srgb, var(--hab-lamp-tint) 40%, #fff),
+    0 0 10px var(--hab-lamp-tint);
+}
+
+.hab-phone .hab-lamp[data-state="on"] .hab-lamp-die,
+.hab-phone .hab-lamp:not([data-fill="true"])[data-state="on"] .hab-lamp-die {
+  width: 64%;
+  height: 64%;
+  box-shadow:
+    0 0 6px var(--hab-lamp-tint),
+    0 0 12px color-mix(in srgb, var(--hab-lamp-tint) 80%, transparent);
+}
+
+.hab-phone .hab-lamp[data-state="on"] .hab-lamp-bloom {
+  opacity: 1;
+}
+
+.hab-phone .hab-lamp[data-state="partial"] {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hab-lamp-tint) 45%, transparent));
 }
 
 .hab-phone-mark .habit-cell-slot,
@@ -362,9 +448,56 @@
   line-height: 1.2;
 }
 
-.hab-phone-mark .habit-cell-num {
+.hab-phone-mark .habit-cell-slot.habit-cell-slot-text,
+.hab-phone-mark button.habit-cell-text-preview {
+  flex: 0 0 auto;
+  width: 6.5rem;
+  max-width: 6.5rem;
+}
+
+.hab-phone-mark .habit-cell-stack {
+  width: max-content !important;
+  max-width: 100%;
+  height: auto;
   min-height: 44px;
+  max-height: none;
+  contain: none;
+}
+
+.hab-phone-mark .habit-cell-num {
+  width: max-content !important;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  flex: 0 0 auto;
   justify-content: flex-end;
+}
+
+.hab-phone-mark .habit-cell-num input.habit-cell-slot {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 44px;
+  max-width: 8rem;
+  height: 44px;
+  field-sizing: content;
+}
+
+.hab-phone-mark .habit-cell-num .habit-goal {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 15px;
+  line-height: 1.2;
+  color: #3a3a3c;
+}
+
+.hab-phone-mark .habit-cell-num .habit-goal-den,
+.hab-phone-mark .habit-cell-num .habit-goal-unit {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .hab-phone-detail {
@@ -416,36 +549,65 @@
   margin: 8px 16px 16px;
 }
 
-.hab-phone-bar {
-  position: sticky;
+.hab-phone-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 4;
+  z-index: 6;
   display: flex;
-  gap: 8px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: rgba(242, 242, 247, 0.92);
+  flex-direction: column;
+  background: rgba(242, 242, 247, 0.94);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-top: 0.5px solid rgba(60, 60, 67, 0.29);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.hab-phone-day-tube {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 16px 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.hab-phone-day-tube .habit-pct {
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+}
+
+.hab-phone-day-tube .hab-pled-bar-glass,
+.hab-phone-day-tube .hab-pled-bar.is-wide .hab-pled-bar-glass {
+  height: 14px;
+}
+
+.hab-phone-day-tube .hab-pled-bar-read {
+  font-size: 15px;
+}
+
+.hab-phone-bar {
+  position: static;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border-top: 0;
 }
 
 .hab-phone-bar button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 44px;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 12px;
-  background: #fff;
-  color: #1c1c1e;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.hab-phone-bar button[aria-pressed="true"] {
-  background: #1c1c1e;
-  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0;
 }
 
 .hab-phone-shade {
@@ -570,6 +732,10 @@
   .hab-phone-shade {
     transition: none;
   }
+
+  .hab-phone .habit-gem-socket:active .habit-gem-press {
+    transform: none;
+  }
 }
 
 /* The week sheet and the heatmap scroll in this page. The document stays the screen width. */
@@ -595,6 +761,35 @@
   overflow-x: auto;
 }
 
+/* Week percent sticks to the right of the heatmap cells. Desktop omits the column. */
+.hab-phone .habit-heat-pct,
+.hab-phone .habit-heat-pct-head {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: #e7ebe4;
+}
+
+.hab-phone .habit-heat-pct-head {
+  align-self: stretch;
+  min-height: 28px;
+}
+
+.hab-phone .habit-heat-pct {
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  box-shadow: -6px 0 8px rgba(231, 235, 228, 0.92);
+}
+
 .hab-phone-sheet {
   max-height: min(92dvh, 100%);
   box-sizing: border-box;
@@ -604,4 +799,143 @@
 .hab-phone :is(input, select, textarea),
 .hab-phone-sheet :is(input, select, textarea, .habit95-input, .habit95-select, .native-select) {
   font-size: 16px;
+}
+
+/* Pale silver keycap, same skirt as `.m-keycap` / `.todo-cap`. The phone
+   page is not inside `.cogs-mobile-app`, so the face lives here. A latched
+   key is the CRT. Settings is the gear, not a key. */
+.hab-phone button.hab-phone-key,
+body.win95-app .hab-phone button.hab-phone-key,
+body.win95-app .hab-phone [role="tab"].hab-phone-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  min-height: 44px;
+  height: auto;
+  padding: 6px 6px 10px;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  color: #1f2226 !important;
+  font-weight: 700;
+  line-height: 1.15;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0;
+  white-space: normal;
+}
+
+.hab-phone button.hab-phone-key-icon {
+  flex: 0 0 44px;
+  width: 44px;
+  padding-inline: 0;
+}
+
+.hab-phone button.hab-phone-day.hab-phone-key {
+  flex-direction: column;
+  padding: 4px 2px 8px;
+}
+
+.hab-phone button.hab-phone-key:active:not(:disabled),
+body.win95-app .hab-phone button.hab-phone-key:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+.hab-phone button.hab-phone-key[aria-pressed="true"],
+.hab-phone button.hab-phone-key[aria-selected="true"],
+.hab-phone button.hab-phone-key.is-on,
+body.win95-app .hab-phone [role="tab"].hab-phone-key[aria-selected="true"],
+body.win95-app .hab-phone button.hab-phone-key[aria-pressed="true"] {
+  background: #070c0a !important;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%), #070c0a !important;
+  border-color: #070c0a !important;
+  color: #7dffc4 !important;
+  text-shadow: 0 0 3px #7dffc4 !important;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 8px 12px rgba(0, 0, 0, 0.45) !important;
+}
+
+body.win95-app .hab-phone [role="tablist"].hab-phone-segment,
+body.win95-app .hab-phone [role="tablist"].hab-phone-days {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+.hab-phone button.hab-phone-key::before,
+body.win95-app .hab-phone [role="tab"].hab-phone-key::before {
+  content: none;
+  display: none;
+}
+
+/* Note sheet is portaled to body, so it is not a child of `.hab-phone`.
+   `is-phone` is set only from the phone list. */
+.habit-text-editor-layer.is-phone .habit-text-editor-shade {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.habit-text-editor.is-phone {
+  top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 59px)) + 12px);
+  right: 16px;
+  bottom: auto;
+  left: 16px;
+  width: auto;
+  max-height: min(
+    70dvh,
+    calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 59px)) - 24px - env(safe-area-inset-bottom, 0px))
+  );
+  box-sizing: border-box;
+  gap: 8px;
+  padding: 8px 12px 16px;
+  border-radius: 16px;
+  background: #f2f2f7;
+  color: #1c1c1e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  overflow: auto;
+}
+
+.habit-text-editor.is-phone .habit-text-editor-bar {
+  justify-content: flex-end;
+}
+
+.habit-text-editor.is-phone .habit-text-editor-close {
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: #007aff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 44px;
+  cursor: pointer;
+}
+
+.habit-text-editor.is-phone .habit-text-editor-area {
+  min-height: 8.5rem;
+  border-radius: 10px;
+  font-size: 16px;
+  line-height: 1.35;
 }

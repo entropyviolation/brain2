@@ -83,6 +83,7 @@ import { useLinksViewStore } from "@/lib/graph/links-view-store"
 import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useCountStatusesStore } from "@/lib/count-statuses"
 import { useKitchenDayNotes } from "@/lib/kitchen-day-note"
+import { useKitchenNeeds } from "@/lib/kitchen-needs"
 import { useKitchenStore } from "@/lib/kitchen-store"
 import { useWardrobeStore } from "@/lib/wardrobe"
 import {
@@ -96,7 +97,7 @@ import {
 import { listPersistedDocs, putPersistedDoc, replaceAllPersistedDocs } from "@/lib/doc-persist"
 import { hydrateDocumentsFromIdb } from "@/lib/doc-hydrate"
 import { parseAppendLog, parseAppendLogDraft, serializeAppendLog } from "@/lib/append-log"
-import { isQuotaExceededError, persistErrorMessage, recordPersistFailure } from "@/lib/persist-storage"
+import { isQuotaExceededError, recordPersistFailure } from "@/lib/persist-storage"
 import { unionPersistSnapshots } from "@/lib/vault-guard.js"
 import { APP_ID, APP_ID_LEGACY, backupDownloadName } from "@/lib/app-brand"
 import {
@@ -115,6 +116,9 @@ import {
   isDemoProfile,
   isDemoPhysicalKey,
   demoPhysicalKey,
+  releaseCopiedUnprefixedKeys,
+  releaseDuplicateLegacyTwins,
+  releaseFriendPicLocalKeys,
 } from "@/lib/storage-keys"
 
 const appIdSchema = z.union([z.literal(APP_ID), z.literal(APP_ID_LEGACY)])
@@ -208,6 +212,7 @@ export const BACKUP_STORES: StoreDescriptor[] = [
   { key: persistKey("wardrobe"), rehydrate: persistRehydrate(useWardrobeStore) },
   { key: persistKey("kitchen"), rehydrate: persistRehydrate(useKitchenStore) },
   { key: persistKey("kitchen-day-note"), rehydrate: persistRehydrate(useKitchenDayNotes) },
+  { key: persistKey("kitchen-needs"), rehydrate: persistRehydrate(useKitchenNeeds) },
 ]
 
 /** Human labels for Settings restore preview (same keys as BACKUP_STORES, plus cogs-* aliases). */
@@ -298,6 +303,8 @@ export const BACKUP_STORE_LABELS: Record<string, string> = {
   "cogs-kitchen": "Kitchen",
   [persistKey("kitchen-day-note")]: "Kitchen day notes",
   "cogs-kitchen-day-note": "Kitchen day notes",
+  [persistKey("kitchen-needs")]: "Kitchen nutrient needs",
+  "cogs-kitchen-needs": "Kitchen nutrient needs",
 }
 
 export function backupStoreLabel(key: string): string {
@@ -558,6 +565,7 @@ const LIVE_STORES: Record<string, LivePersistStore> = {
   [persistKey("wardrobe")]: asLiveStore(useWardrobeStore),
   [persistKey("kitchen")]: asLiveStore(useKitchenStore),
   [persistKey("kitchen-day-note")]: asLiveStore(useKitchenDayNotes),
+  [persistKey("kitchen-needs")]: asLiveStore(useKitchenNeeds),
 }
 
 /**
@@ -970,18 +978,54 @@ function forgetLiveTaskTombstones(serialized: string): void {
   }
 }
 
+function restoreWriteError(key: string, error: unknown): Error {
+  recordPersistFailure(error)
+  const reason = isQuotaExceededError(error)
+    ? "Web storage is full. On a phone that box is about 5 MB, separate from free space on the device."
+    : error instanceof Error
+      ? error.message
+      : "Unknown error"
+  return new Error(`Restore failed while writing ${key}: ${reason}`)
+}
+
 function writeLocalStorage(key: string, value: string): void {
-  try {
+  const write = () => {
     if (persistSuffix(key) != null) writeAliasedLocal(key, value)
     else localStorage.setItem(key, value)
+  }
+  try {
+    write()
+    return
   } catch (error) {
-    recordPersistFailure(error)
-    const reason = isQuotaExceededError(error)
-      ? persistErrorMessage(error)
-      : error instanceof Error
-        ? error.message
-        : "Unknown error"
-    throw new Error(`Restore failed while writing ${key}: ${reason}`)
+    if (!isQuotaExceededError(error)) throw restoreWriteError(key, error)
+    // WebKit counts the old value and the new one together. Drop the previous
+    // vault (and leftover twins) so the replacement has the box to itself.
+    releaseDuplicateLegacyTwins()
+    releaseCopiedUnprefixedKeys()
+    releaseFriendPicLocalKeys()
+    const aliases = persistSuffix(key) != null ? persistKeyAliases(key) : [key]
+    const previous = new Map<string, string>()
+    for (const alias of aliases) {
+      try {
+        const cur = localStorage.getItem(alias)
+        if (cur != null) previous.set(alias, cur)
+        localStorage.removeItem(alias)
+      } catch {
+        /* the retry below is the one that has to succeed */
+      }
+    }
+    try {
+      write()
+    } catch (again) {
+      for (const [alias, cur] of previous) {
+        try {
+          localStorage.setItem(alias, cur)
+        } catch {
+          /* the new value did not fit, and neither did putting the old one back */
+        }
+      }
+      throw restoreWriteError(key, again)
+    }
   }
 }
 

@@ -240,7 +240,7 @@ export function EnhancedBulkAdd({
                 placeholder={"Writing:\nDraft chapter 1\nEdit outline\n\nNext Actions: Eventually:\nGo through old pages"}
                 value={tasksText}
                 onChange={(e) => setTasksText(e.target.value)}
-                className="flex-1 resize-none font-mono text-sm"
+                className="hpp-bulk-box flex-1 resize-none font-mono"
                 autoFocus
               />
             </div>

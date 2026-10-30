@@ -154,7 +154,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--w95c-nameplate);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 /* Milled footer — three keycaps centered in the bay. */
@@ -192,7 +192,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: none;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
   box-shadow:
     inset 2px 0 0 #b3b8be,
     inset -2px 0 0 #b3b8be,

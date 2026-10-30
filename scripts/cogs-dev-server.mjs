@@ -85,7 +85,7 @@ function listenersOnPort(port) {
 async function reclaimNodeListener(port) {
   const pids = reclaimablePids(listenersOnPort(port))
   if (!pids || pids.length === 0) return false
-  console.warn(`[cogs-dev] port ${port} held by leftover Node (${pids.join(", ")}); reclaiming.`)
+  console.warn(`[brain2-dev] port ${port} held by leftover Node (${pids.join(", ")}); reclaiming.`)
   for (const pid of pids) {
     try {
       process.kill(pid, "SIGTERM")
@@ -102,11 +102,11 @@ async function reclaimNodeListener(port) {
 
 function refuseBusyPort(port) {
   console.error("")
-  console.error(`[cogs-dev] port ${port} is already in use.`)
-  console.error(`[cogs-dev] Electron always loads http://localhost:${port}, so a leftover`)
-  console.error(`[cogs-dev] Next/node process on that port will make the desktop window hang.`)
-  console.error(`[cogs-dev] Find it:  lsof -nP -iTCP:${port} -sTCP:LISTEN`)
-  console.error(`[cogs-dev] Kill it:  kill $(lsof -t -nP -iTCP:${port} -sTCP:LISTEN)`)
+  console.error(`[brain2-dev] port ${port} is already in use.`)
+  console.error(`[brain2-dev] Electron always loads http://localhost:${port}, so a leftover`)
+  console.error(`[brain2-dev] Next/node process on that port will make the desktop window hang.`)
+  console.error(`[brain2-dev] Find it:  lsof -nP -iTCP:${port} -sTCP:LISTEN`)
+  console.error(`[brain2-dev] Kill it:  kill $(lsof -t -nP -iTCP:${port} -sTCP:LISTEN)`)
   console.error("")
   process.exit(1)
 }
@@ -129,8 +129,8 @@ async function reuseRunningServer() {
   const running = await findRunningCogsPort(ports)
   if (running === null) return
   console.log("")
-  console.log(`[cogs-dev] A dev server is already running on http://127.0.0.1:${running}; reusing it.`)
-  console.log(`[cogs-dev] Not starting a second one. Stop the first (Ctrl-C there) to start fresh.`)
+  console.log(`[brain2-dev] A dev server is already running on http://127.0.0.1:${running}; reusing it.`)
+  console.log(`[brain2-dev] Not starting a second one. Stop the first (Ctrl-C there) to start fresh.`)
   console.log("")
   const watch = setInterval(async () => {
     if (!(await findRunningCogsPort([running]))) process.exit(0)
@@ -154,7 +154,7 @@ if (strictPort) {
 } else {
   port = await pickPort(preferredPort)
   if (port !== preferredPort) {
-    console.warn(`[cogs-dev] ${preferredPort} busy — using ${port}. Electron still loads http://localhost:${preferredPort} and will not see this server.`)
+    console.warn(`[brain2-dev] ${preferredPort} busy — using ${port}. Electron still loads http://localhost:${preferredPort} and will not see this server.`)
   }
 }
 const dev = process.env.NODE_ENV !== "production"
@@ -184,7 +184,7 @@ const server = createServer(async (req, res) => {
     if (await handleCodeDocsApi(req, res, pathname)) return
     await handle(req, res, parsedUrl)
   } catch (err) {
-    console.error("[cogs-dev] request error", err)
+    console.error("[brain2-dev] request error", err)
     if (!res.headersSent) {
       res.statusCode = 500
       res.end("internal server error")
@@ -206,18 +206,18 @@ process.on("SIGTERM", shutdown)
 server.listen(port, hostname, () => {
   const lans = lanAddresses()
   console.log("")
-  console.log(`[cogs-dev] Ready — Next + hub API on ONE port`)
-  console.log(`[cogs-dev] local:   http://127.0.0.1:${port}`)
+  console.log(`[brain2-dev] Ready — Next + hub API on ONE port`)
+  console.log(`[brain2-dev] local:   http://127.0.0.1:${port}`)
   for (const ip of lans) {
-    console.log(`[cogs-dev] phone:   http://${ip}:${port}/mobile/`)
-    console.log(`[cogs-dev] desktop: http://${ip}:${port}/`)
+    console.log(`[brain2-dev] phone:   http://${ip}:${port}/mobile/`)
+    console.log(`[brain2-dev] desktop: http://${ip}:${port}/`)
   }
-  console.log(`[cogs-dev] hub:     ${`http://127.0.0.1:${port}`}/api/sync/*  (admin/admin; live sync parked)`)
-  console.log(`[cogs-dev] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
-  console.log(`[cogs-dev] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
-  console.log(`[cogs-dev] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
-  console.log(`[cogs-dev] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
-  console.log(`[cogs-dev] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
-  console.log(`[cogs-dev] data:    ${syncDataPath()}`)
+  console.log(`[brain2-dev] hub:     ${`http://127.0.0.1:${port}`}/api/sync/*  (admin/admin; live sync parked)`)
+  console.log(`[brain2-dev] ingest:  http://127.0.0.1:${port}/api/ingest/*  (${ingestDataPath()})`)
+  console.log(`[brain2-dev] notes:   http://127.0.0.1:${port}/api/notes  (loopback, Notes.app)`)
+  console.log(`[brain2-dev] screentime: http://127.0.0.1:${port}/api/screentime  (loopback, ActivityWatch)`)
+  console.log(`[brain2-dev] chrome-history: http://127.0.0.1:${port}/api/chrome-history  (loopback, extension)`)
+  console.log(`[brain2-dev] phone-sync: http://127.0.0.1:${port}/api/phone-sync/status  (loopback, run log)`)
+  console.log(`[brain2-dev] data:    ${syncDataPath()}`)
   console.log("")
 })

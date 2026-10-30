@@ -35,6 +35,7 @@ import {
   selectOperations,
   type OperationSortMode,
 } from "@/lib/operations"
+import { itemTitleOrUntitled } from "@/lib/item-utils"
 import type { Task } from "@/lib/types"
 import { OperationWorkspace } from "./OperationWorkspace"
 import { createOperation } from "./operation-actions"
@@ -64,7 +65,7 @@ function OperationCard({ operation, onOpen }: { operation: Task; onOpen: () => v
   return (
     <button type="button" className="ops-card" onClick={onOpen}>
       <div className="ops-card-head">
-        <span>{operation.description}</span>
+        <span>{itemTitleOrUntitled(operation)}</span>
         <span className={`ops-stage ops-stage-${stage}`}>{stage}</span>
       </div>
       <div className="ops-card-body">{mission.trim() ? mission : "No mission set."}</div>

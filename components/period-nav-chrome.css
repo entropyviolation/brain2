@@ -68,7 +68,7 @@
   letter-spacing: var(--period-nameplate-tracking);
   text-transform: uppercase;
   color: var(--period-nameplate) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
     linear-gradient(180deg, var(--chrome-mist) 0%, var(--period-surface) 48%, var(--chrome-foot) 100%);
@@ -95,7 +95,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   line-height: 1;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),

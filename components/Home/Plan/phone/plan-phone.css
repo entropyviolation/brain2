@@ -7,9 +7,10 @@
  *
  * The shape follows Apple Calendar and a Fantastical day: a compact sticky
  * bar, a large title that scrolls away, a month of circles and dots, a week
- * strip, a thumbable agenda, and sheets from the bottom. Sideways motion
- * changes the period. Vertical motion stays in the scroller. Springs are the
- * iOS sheet curve. Reduce Motion drops them.
+ * strip, a thumbable agenda, and sheets from the bottom. The dock keys are
+ * the same pale silver keycap as the phone tabs. Sideways motion changes the
+ * period. Vertical motion stays in the scroller. Springs are the iOS sheet
+ * curve. Reduce Motion drops them.
  */
 
 .plan95:has(.plan-phone) {
@@ -96,7 +97,6 @@
 }
 
 .plan-phone-nav > button,
-.plan-phone-dock > button,
 .plan-phone-sheet-head button,
 .plan-phone-agenda-head button {
   border: 0;
@@ -108,7 +108,6 @@
 }
 
 .plan-phone-nav > button:active,
-.plan-phone-dock > button:active,
 .plan-phone-choice:active,
 .plan-phone-row-main:active {
   opacity: 0.55;
@@ -525,17 +524,55 @@
 }
 
 .plan-phone-dock {
-  justify-content: space-around;
+  justify-content: stretch;
+  gap: 6px;
   min-height: 48px;
-  padding: 4px 8px max(8px, env(safe-area-inset-bottom));
+  padding: 6px 8px max(8px, env(safe-area-inset-bottom));
   border-top: 0.5px solid var(--phone-line);
   z-index: 2;
 }
 
-.plan-phone-dock > button {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 600;
+/* Same skirt as the phone tab keycaps. The long :not() list matches the mill
+   button skin in app/win95.css so this face wins. */
+.plan-phone-dock > button,
+body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 4px 10px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: #dfe2e6;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  color: #1f2226;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+.plan-phone-dock > button:active,
+body.win95-app .plan-phone-dock > button[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+  opacity: 1;
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.plan-phone-dock > button:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
 }
 
 .plan-phone-sheet-root {
@@ -743,12 +780,10 @@
 }
 
 .plan95[data-plan-dark="true"] .plan-phone .plan-phone-nav > button,
-.plan95[data-plan-dark="true"] .plan-phone .plan-phone-dock > button,
 .plan95[data-plan-dark="true"] .plan-phone .plan-phone-season-title,
 .plan95[data-plan-dark="true"] .plan-phone .plan-phone-row-more,
 .plan95[data-plan-dark="true"] .plan-phone .plan-phone-agenda-head button,
-.plan-phone[data-plan-dark="true"] .plan-phone-nav > button,
-.plan-phone[data-plan-dark="true"] .plan-phone-dock > button {
+.plan-phone[data-plan-dark="true"] .plan-phone-nav > button {
   color: #64d2ff;
 }
 

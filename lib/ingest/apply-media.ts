@@ -287,13 +287,14 @@ function mediaPending(ids: string[], caption: string, now: Date): PendingClarify
   }
 }
 
-function askAgain(pending: PendingClarify): ApplyResult {
-  return {
-    status: "needs_clarify",
-    kind: "unknown",
-    reply: MEDIA_QUESTION,
-    pending,
-  }
+/** Whole message is a photo-question answer. Anything else is a normal text. */
+export function mediaChoice(text: string): "journal" | "outfit" | "log" | "skip" | null {
+  const answer = text.replace(/^\uFEFF/, "").trim().toLowerCase()
+  if (answer === "skip") return "skip"
+  if (answer === "journal" || answer === "1") return "journal"
+  if (answer === "outfit" || answer === "2") return "outfit"
+  if (answer === "log" || answer === "3") return "log"
+  return null
 }
 
 async function askMediaRoute(photos: IncomingAttachment[], caption: string, now: Date): Promise<ApplyResult> {
@@ -305,7 +306,8 @@ async function askMediaRoute(photos: IncomingAttachment[], caption: string, now:
   if (!ids.length) {
     return { status: "error", kind: "unknown", reply: "Nothing to scan. Send a photo or a PDF." }
   }
-  return askAgain(mediaPending(ids, caption, now))
+  const pending = mediaPending(ids, caption, now)
+  return { status: "needs_clarify", kind: "unknown", reply: MEDIA_QUESTION, pending }
 }
 
 function dayReply(count: number, noun: string, now: Date, tail: string): string {
@@ -378,13 +380,16 @@ async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "l
       })
       if (id) made.push(id)
     }
-    if (!made.length) return { status: "error", kind: "unknown", reply: "That photo is gone. Send it again." }
+    if (!made.length) {
+      return { status: "error", kind: "unknown", reply: "That photo is gone. Send it again.", mediaSettled: true }
+    }
     return {
       status: "ok",
       kind: "unknown",
       reply: dayReply(made.length, "Outfit", now, "Tag the pieces on the Tracking log."),
       summary: `Outfit · ${formatLocalDateKey(now)}`,
       itemIds: made,
+      mediaSettled: true,
     }
   }
   if (mode === "log") {
@@ -393,13 +398,16 @@ async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "l
       const filed = await fileLogPhoto({ takenAt: now, uri, title: note || undefined })
       if (filed) made.push(filed.id)
     }
-    if (!made.length) return { status: "error", kind: "unknown", reply: "That photo is gone. Send it again." }
+    if (!made.length) {
+      return { status: "error", kind: "unknown", reply: "That photo is gone. Send it again.", mediaSettled: true }
+    }
     return {
       status: "ok",
       kind: "unknown",
       reply: dayReply(made.length, "Log photo", now, "It is on the day summary."),
       summary: `Log photo · ${formatLocalDateKey(now)}`,
       itemIds: made,
+      mediaSettled: true,
     }
   }
   const photos: IncomingAttachment[] = []
@@ -408,7 +416,14 @@ async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "l
     if (!dataUrl) continue
     photos.push({ kind: "photo", mime: "image/jpeg", name: "page.jpg", dataUrl })
   }
-  if (!photos.length) return { status: "error", kind: "journal", reply: "That photo is gone. Send it again." }
+  if (!photos.length) {
+    return {
+      status: "error",
+      kind: "journal",
+      reply: "That photo is gone. Send it again.",
+      mediaSettled: true,
+    }
+  }
   const doc = await ingestJournalPhotos(photos, note || defaultJournalTitle(now), now)
   return {
     status: "ok",
@@ -416,24 +431,22 @@ async function fileHeld(pending: PendingClarify, mode: "journal" | "outfit" | "l
     reply: `Docs: ${itemTitle(doc)} (${photos.length} page${photos.length === 1 ? "" : "s"})`,
     summary: `Journal “${itemTitle(doc)}”`,
     itemIds: [doc.id],
+    mediaSettled: true,
   }
 }
 
-export async function resolveMediaChoice(pending: PendingClarify, text: string, now = new Date()): Promise<ApplyResult> {
-  const answer = text.trim().toLowerCase()
-  if (answer === "skip") {
+/**
+ * Answer the open photo, or null when this text is not journal / outfit / log / skip.
+ * Null leaves the hold up. Callers must not re-ask on null — Live Location
+ * would send the question on every fix.
+ */
+export async function resolveMediaChoice(pending: PendingClarify, text: string, now = new Date()): Promise<ApplyResult | null> {
+  const mode = mediaChoice(text)
+  if (!mode) return null
+  if (mode === "skip") {
     await releaseMediaHold(pending)
-    return { status: "ok", kind: "unknown", reply: "Skipped.", summary: "Photo skipped" }
+    return { status: "ok", kind: "unknown", reply: "Skipped.", summary: "Photo skipped", mediaSettled: true }
   }
-  const mode =
-    answer === "journal" || answer === "1"
-      ? "journal"
-      : answer === "outfit" || answer === "2"
-        ? "outfit"
-        : answer === "log" || answer === "3"
-          ? "log"
-          : null
-  if (!mode) return askAgain(pending)
   return fileHeld(pending, mode)
 }
 

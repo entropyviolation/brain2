@@ -143,7 +143,7 @@ Redesign 2026-10-21: the header is a held machine, a screen above and a key fiel
 
 _Last mapped: 2026-10-28._
 
-The phone list stays in `.todo-ios` and does not widen the document. Sheets scroll inside the pane (`92dvh`, safe-area). Text fields on that screen are 16px. The task card and the session planner, opened from this page, become bottom sheets under `max-width: 767px` and scroll inside themselves; their fields are 16px there too. Those two editors stay their own UI. From 768px up they keep the desktop window.
+The phone list stays in `.todo-ios` and does not widen the document. Sheets scroll inside the pane (`92dvh`, safe-area). Text fields on that screen are 16px. The task card and the session planner, opened from this page, become sheets under `max-width: 767px` and start below the status bar so their close stays tappable. They scroll inside themselves; their fields are 16px there too. Those two editors stay their own UI. From 768px up they keep the desktop window.
 
 Decided: the phone To Do is a separate module, the way an iOS screen is separate from a desktop screen. `TodoPanel` only chooses. At `max-width: 767px` it mounts `todo-phone-page.tsx`. From 768px up it mounts the fascia (`TodoDeskPanel` in `desk/todo-desk-panel.tsx`) and does not mount the phone page. The two pages are never on screen together. They share stores and task writes. They do not share a layout. The older `max-width: 720px` rules in `todo-chrome.css` restyle the fascia; they are not this page, and they do not paint while the phone page is the one mounted. Nothing at `min-width: 768px` changed.
 
