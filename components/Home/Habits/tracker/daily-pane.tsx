@@ -7,7 +7,6 @@
  */
 "use client"
 
-import { format } from "date-fns"
 import { TaskGrid } from "@/components/Home/Habits/sheet/task-grid"
 import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
 import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
@@ -17,7 +16,6 @@ import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/l
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { GoodDaySummary } from "@/lib/habit-accomplishment"
 import { HabitDeskFrame, type HabitMeterProps, type HabitPriorityProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
-import { HabitPlanLog } from "@/components/Home/Habits/tracker/habit-plan-log"
 import { HabitSheetLoading } from "@/components/Home/Habits/tracker/habit-sheet-loading"
 import { habitSortTools, type HabitSortBag } from "@/components/Home/Habits/tracker/habit-sort-tools"
 import { habitViewToggles, type HabitViewToggleFlags } from "@/components/Home/Habits/tracker/view-toggles"
@@ -88,7 +86,6 @@ export function DailyPane({
   setShowTaskForm: (open: boolean) => void
   habitTab: HabitFrequency
 }) {
-  const dayPlanKey = formatLocalDateKey(currentDate)
   return (
     <HabitDeskFrame
       value="daily"
@@ -177,17 +174,6 @@ export function DailyPane({
             setShowTaskForm(true)
           }}
         />
-      }
-      plan={
-        hydrated && habitDayView ? (
-          <HabitPlanLog
-            period="day"
-            periodKey={dayPlanKey}
-            legend={`Day Plan — ${format(currentDate, "MMMM dd, yyyy")}`}
-            placeholder="Write your day plan, goals, and objectives..."
-            size="day"
-          />
-        ) : null
       }
     />
   )

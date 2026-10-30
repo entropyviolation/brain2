@@ -15,7 +15,6 @@ import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/l
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { HabitFreqTab } from "@/lib/app-navigation"
 import { HabitDeskFrame, type HabitMeterProps, type HabitPriorityProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
-import { HabitPlanLog, weekPlanLegend } from "@/components/Home/Habits/tracker/habit-plan-log"
 import { HabitSheetLoading } from "@/components/Home/Habits/tracker/habit-sheet-loading"
 import { habitSortTools, type HabitSortBag } from "@/components/Home/Habits/tracker/habit-sort-tools"
 import { habitViewToggles, type HabitViewToggleFlags } from "@/components/Home/Habits/tracker/view-toggles"
@@ -39,7 +38,6 @@ export function WeeklyPane({
   weeklyPeriodPercent,
   currentDate,
   habitWeekView,
-  weekPlanColumn,
   priorityProps,
   editingFrequency,
   reorderVisible,
@@ -73,7 +71,6 @@ export function WeeklyPane({
   weeklyPeriodPercent: Map<string, number>
   currentDate: Date
   habitWeekView: boolean
-  weekPlanColumn: PeriodColumn | undefined
   priorityProps: HabitPriorityProps
   editingFrequency: HabitFrequency | undefined
   reorderVisible: (frequency: HabitFrequency, visibleIds: string[]) => void
@@ -150,16 +147,6 @@ export function WeeklyPane({
             setShowTaskForm(true)
           }}
         />
-      }
-      plan={
-        hydrated && weekPlanColumn ? (
-          <HabitPlanLog
-            period="week"
-            periodKey={weekPlanColumn.key}
-            legend={weekPlanLegend(weekPlanColumn)}
-            placeholder="Write your week plan, priorities, and focus areas..."
-          />
-        ) : null
       }
     />
   )
