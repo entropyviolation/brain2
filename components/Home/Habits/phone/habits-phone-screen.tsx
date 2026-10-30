@@ -19,8 +19,6 @@ import {
 import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
 import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
 import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
-import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
-import type { PlanTextPeriod } from "@/lib/plan-text"
 import { HabitsScratchPad, habitsScratchTarget } from "@/components/Home/Habits/tracker/habits-scratch-pad"
 import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
 import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
@@ -43,27 +41,6 @@ import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { HabitWeekWindowMode } from "@/lib/habit-week-window"
 import type { HabitMonthWindowMode, HabitBirthday } from "@/lib/habit-month-window"
-
-function PhonePlanLog({
-  period,
-  periodKey,
-  legend,
-  placeholder,
-  size = "period",
-}: {
-  period: PlanTextPeriod
-  periodKey: string
-  legend: string
-  placeholder: string
-  size?: "day" | "period"
-}) {
-  return (
-    <fieldset className="hab-period-plan hab-plan-frame" {...planPeriodStampProps(period)}>
-      <legend>{legend}</legend>
-      <PlanTextLog period={period} periodKey={periodKey} placeholder={placeholder} size={size} />
-    </fieldset>
-  )
-}
 
 function phoneDay(date: Date, homeKey: string): HabitsPhonePeriod {
   const key = formatLocalDateKey(date)
@@ -111,9 +88,6 @@ export type HabitsPhoneScreenProps = {
   weekSheetPeriods: PeriodColumn[]
   monthSheetPeriods: PeriodColumn[]
   seasonSheetPeriods: PeriodColumn[]
-  weekPlanColumn?: PeriodColumn
-  monthPlanColumn?: PeriodColumn
-  seasonPlanColumn?: PeriodColumn
   dailyRows: WeeklyTask[]
   weeklyRows: WeeklyTask[]
   monthlyRows: WeeklyTask[]
@@ -203,7 +177,6 @@ export type HabitsPhoneScreenProps = {
   setPercentLoadingBar: (on: boolean) => void
   habitSmallLeds: boolean
   setHabitSmallLeds: (on: boolean) => void
-  dayPlanKey: string
 }
 
 export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
@@ -406,40 +379,8 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       })
     : null
 
-  const plan =
-    props.hydrated && tab === "daily" && props.habitDayView ? (
-      <PhonePlanLog
-        period="day"
-        periodKey={props.dayPlanKey}
-        legend={`Day Plan — ${format(props.currentDate, "MMMM dd, yyyy")}`}
-        placeholder="Write your day plan, goals, and objectives..."
-        size="day"
-      />
-    ) : props.hydrated && tab === "weekly" && props.weekPlanColumn ? (
-      <PhonePlanLog
-        period="week"
-        periodKey={props.weekPlanColumn.key}
-        legend={`Week Plan — ${format(props.weekPlanColumn.date, "MMM d")} to ${format(addCalendarDays(props.weekPlanColumn.date, 6), "MMM d")}`}
-        placeholder="Write your week plan, priorities, and focus areas..."
-      />
-    ) : props.hydrated && tab === "monthly" && props.monthPlanColumn ? (
-      <PhonePlanLog
-        period="month"
-        periodKey={props.monthPlanColumn.key}
-        legend={`Month Plan — ${format(props.monthPlanColumn.date, "MMMM yyyy")}`}
-        placeholder="Write your month plan, goals, and objectives..."
-      />
-    ) : props.hydrated && tab === "quarterly" && props.seasonPlanColumn ? (
-      <PhonePlanLog
-        period="quarter"
-        periodKey={props.seasonPlanColumn.key}
-        legend={`Season plan — ${quarterLabel(props.seasonPlanColumn.key)}`}
-        placeholder="Write this season's plan — what the quarter is for..."
-      />
-    ) : null
   const planWithScratch = props.hydrated ? (
     <>
-      {plan}
       <HabitsScratchPad
         target={habitsScratchTarget({
           habitTab: tab,
