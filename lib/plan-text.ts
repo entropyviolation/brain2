@@ -50,11 +50,15 @@ const MONTH_KEY_RE = /^(\d{4})-(\d{1,2})$/
 const WEEK_RANGE_RE = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/
 
 /**
- * Habits scratch pad: one undated append log under the Habits tab. It rides the
- * plan-text storage so it persists and syncs to the phone like any other plan log.
+ * Habits scratch pad: one append log per day / week / month / season shown on Habits.
+ * It rides the plan-text storage (`quarterPlan-habits-scratch-<scope>-<periodKey>`) so it
+ * persists and syncs to the phone like any other plan log.
  */
 export const HABITS_SCRATCH_PERIOD: PlanTextPeriod = "quarter"
-export const HABITS_SCRATCH_KEY = "habits-scratch"
+
+export function habitsScratchKey(scope: PlanTextPeriod, periodKey: string): string {
+  return `habits-scratch-${scope}-${periodKey}`
+}
 
 export function dayPlanKey(dayKey: string): string {
   return `dayPlan-${dayKey}`
