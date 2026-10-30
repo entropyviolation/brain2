@@ -58,6 +58,7 @@ import { DailyPane } from "@/components/Home/Habits/tracker/daily-pane"
 import { WeeklyPane } from "@/components/Home/Habits/tracker/weekly-pane"
 import { MonthlyPane } from "@/components/Home/Habits/tracker/monthly-pane"
 import { SeasonPane } from "@/components/Home/Habits/tracker/season-pane"
+import { HabitsScratchPad } from "@/components/Home/Habits/tracker/habits-scratch-pad"
 import type { HabitMeterProps } from "@/components/Home/Habits/tracker/habit-desk-frame"
 
 export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: Date }) {
@@ -610,6 +611,7 @@ export function HabitsDesktopPage({ currentDate = new Date() }: { currentDate?: 
           setShowTaskForm={form.setShowTaskForm}
         />
       </Tabs>
+      {hydrated ? <HabitsScratchPad /> : null}
       <HabitDeskDialogs
         showTaskForm={form.showTaskForm}
         setShowTaskForm={form.setShowTaskForm}
