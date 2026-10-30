@@ -52,6 +52,13 @@ function sectionName(tab: MobileTab): string {
   return "Inventory"
 }
 
+function macKeyLabel(status: string): string {
+  if (status === "live") return "Mac ✓"
+  if (status === "loading") return "Mac …"
+  if (status === "offline" || status === "stale") return "Mac ✕"
+  return "Mac ?"
+}
+
 export function MobileApp() {
   engagePhoneWindow()
   const [session, setSession] = useState(() => readMobileSession())
@@ -111,6 +118,19 @@ export function MobileApp() {
             <NotesIngest />
             <IphoneNotesStore />
             <Reviews />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="m-keycap cogs-mobile-mac-key"
+              data-status={windowSnap.status}
+              aria-label="Reload from the Mac"
+              onClick={() => {
+                void loadPhoneWindow()
+              }}
+            >
+              {macKeyLabel(windowSnap.status)}
+            </Button>
             <Button
               type="button"
               size="sm"

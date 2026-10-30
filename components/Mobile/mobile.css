@@ -174,11 +174,16 @@ html:has(.cogs-mobile-app) body.win95-app [role="tab"]:not([data-state="active"]
 /* The Mac window's state, in the bar that never scrolls. */
 .cogs-mobile-window-line {
   margin: 0;
-  padding: 0.2rem 0.75rem;
-  font-size: 0.72rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   line-height: 1.3;
   overflow-wrap: anywhere;
-  opacity: 0.85;
+}
+
+.cogs-mobile-chrome .cogs-mobile-mac-key[data-status="offline"],
+.cogs-mobile-chrome .cogs-mobile-mac-key[data-status="stale"] {
+  color: #b42318;
 }
 
 .cogs-mobile-window-line[data-status="offline"],
