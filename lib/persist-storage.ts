@@ -61,6 +61,11 @@
  * bot; a lower `allowlistRev` or an empty ingest seed is refused.
  * Identical `cogs-*` twins of a large `brain2-*` vault are dropped on boot and
  * on QuotaExceeded so Inbox clarifications and desktop hues can save again.
+ * On a phone that has opened the vault window (`lib/phone-window.ts`), a vault
+ * key lives in memory. It is not written to localStorage and it is not posted
+ * with `postHub`. A save of a store the hub can patch is queued in the phone
+ * outbox instead. Until that window is open, a phone still stores the small
+ * task and time-grid copy and does not POST it.
  * A successful habits/theme write stamps LED / tube / PCB pins from the new
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
@@ -68,6 +73,9 @@
 import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
+import { isPhoneWebStorage } from "@/lib/phone-device"
+import { applyPhoneWindowWrite, isPhonePinKey, phoneWindowEngaged, readPhoneWindowItemWhenReady, removePhoneWindowItem } from "@/lib/phone-window"
+import { freePhoneWebStorage, slimPhonePersistValue } from "@/lib/phone-storage"
 import {
   ensureLegacyPersistCopied,
   isPlanTextStorageKey,
@@ -78,6 +86,7 @@ import {
   writeAliasedLocal,
   releaseDuplicateLegacyTwins,
   releaseCopiedUnprefixedKeys,
+  releaseFriendPicLocalKeys,
   isDemoProfile,
   isQuotaExceededError,
 } from "@/lib/storage-keys"
@@ -555,6 +564,7 @@ function vaultKind(name: string): string {
 export function cogsStateStorage(): StateStorage {
   return {
     getItem: (name) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) return readPhoneWindowItemWhenReady(name)
       if (!hasLocalStorage()) return null
       installHubFollow()
       ensureLegacyPersistCopied()
@@ -575,6 +585,19 @@ export function cogsStateStorage(): StateStorage {
       return local
     },
     setItem: (name, value) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) {
+        try {
+          if (applyPhoneWindowWrite(name, value) === "same") return
+          const lastOkAt = new Date().toISOString()
+          failedKeys.delete(persistKey(name))
+          if (failedKeys.size > 0) status = { ...status, lastOkAt }
+          else status = { ok: true, lastOkAt, error: null, quotaExceeded: false }
+          emit()
+        } catch (error) {
+          recordPersistFailure(error, name)
+        }
+        return
+      }
       if (!hasLocalStorage()) {
         recordPersistFailure(new Error("localStorage is not available"), name)
         return
@@ -647,15 +670,32 @@ export function cogsStateStorage(): StateStorage {
           if (typeof kept === "string") value = kept
         }
         if (parsedGuards) stampAppearancePinsParsed(valueObj, name)
-        try {
-          writeAliasedLocal(name, value)
-        } catch (error) {
-          if (isQuotaExceededError(error)) {
-            releaseDuplicateLegacyTwins()
-            releaseCopiedUnprefixedKeys()
+        const phone = isPhoneWebStorage()
+        if (phone) {
+          const slim = slimPhonePersistValue(name, value)
+          if (typeof slim === "string") value = slim
+        }
+        if (previous === value) {
+          recordPersistSuccess(name)
+          return
+        }
+        const writePhone = () => {
+          try {
             writeAliasedLocal(name, value)
-          } else {
-            throw error
+            return true
+          } catch (error) {
+            if (!isQuotaExceededError(error)) throw error
+            return false
+          }
+        }
+        if (!writePhone()) {
+          releaseDuplicateLegacyTwins()
+          releaseCopiedUnprefixedKeys()
+          releaseFriendPicLocalKeys()
+          if (phone) freePhoneWebStorage(name)
+          if (!writePhone()) {
+            if (phone) freePhoneWebStorage(name, { dropTimegrid: true })
+            writeAliasedLocal(name, value)
           }
         }
         if (parsedGuards && SKIP_UNION_IDS.has(vaultKind(name))) {
@@ -664,13 +704,17 @@ export function cogsStateStorage(): StateStorage {
           else lastWritten.delete(name)
         }
         recordPersistSuccess(name)
-        postHub(name, value)
+        if (!phone) postHub(name, value)
       } catch (error) {
         lastWritten.delete(name)
         recordPersistFailure(error, name)
       }
     },
     removeItem: (name) => {
+      if (phoneWindowEngaged() && !isPhonePinKey(name)) {
+        removePhoneWindowItem(name)
+        return
+      }
       if (!hasLocalStorage()) return
       for (const key of persistKeyAliases(name)) {
         try {

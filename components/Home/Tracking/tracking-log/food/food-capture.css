@@ -1,0 +1,55 @@
+/* Label paste and barcode scan. The dialog fascia still styles inputs. */
+
+.trk-food-capture {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  max-width: 100%;
+}
+
+.trk-food-capture textarea {
+  font: inherit;
+  width: 100%;
+  max-width: 100%;
+  min-height: 6em;
+  padding: 4px 6px;
+  resize: vertical;
+}
+
+.trk-food-capture .trk-food-lines {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.trk-food-capture .trk-food-lines p {
+  margin: 8px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trk-food-capture video {
+  width: 100%;
+  max-height: 240px;
+  background: #241c2e;
+}
+
+.trk-food-capture .trk-food-scan-actions {
+  margin: 4px 0 8px;
+}
+
+@media (max-width: 767px) {
+  .trk-food-capture .trk-food-lines {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trk-food-capture textarea,
+  .trk-food-capture input,
+  .trk-food-capture button {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 100%;
+  }
+}

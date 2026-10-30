@@ -8,7 +8,7 @@ _Last mapped: 2026-10-22_
 
 _Last mapped: 2026-10-22_
 
-**Built:** `lib/phone-sync/calls.ts` and `lib/phone-sync/calls-reader.ts`, with tests. The reader reads `ZCALLRECORD` read-only through `node:sqlite` (`process.getBuiltinModule`, so bundlers leave it alone), 1000 rows a run. `COGS_CALLS_DB` points it at another file.
+**Built:** `lib/phone-sync/calls.ts` and `lib/phone-sync/calls-reader.ts`, with tests. The reader reads `ZCALLRECORD` read-only through `node:sqlite` (`process.getBuiltinModule`, so bundlers leave it alone), 1000 rows a run. `BRAIN2_CALLS_DB` points it at another file.
 
 - An outgoing call often keeps `ZANSWERED` at 0 after it connects. Any `ZDURATION` above 0 counts as answered.
 - `service` is `phone`, `facetime-audio`, `facetime-video`, or the VoIP app's bundle id from `ZSERVICE_PROVIDER`. `ZNAME`, `ZCALLTYPE` and `ZSERVICE_PROVIDER` are read only when the table has them.

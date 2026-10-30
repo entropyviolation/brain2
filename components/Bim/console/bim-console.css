@@ -1,0 +1,316 @@
+/* components/Bim/console/bim-console.css — green-phosphor BIM console (desktop). */
+
+.ui-dialog-content.bim-crt {
+  --crt-fg: #7dff9a;
+  --crt-dim: #3fa457;
+  --crt-bg: #04140a;
+  --crt-line: #2f9a4a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(1040px, calc(100vw - 32px));
+  max-width: none;
+  height: min(720px, calc(100vh - 48px));
+  padding: 10px 12px;
+  border: 2px solid var(--crt-line);
+  border-radius: 10px;
+  /* The Win95 dialog face paints grey; this screen is its own glass. */
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%) !important;
+  color: var(--crt-fg) !important;
+  font: 13px/1.45 "VT323", ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 0 0 4px #0b1f12, 0 0 40px rgba(60, 255, 120, 0.15);
+}
+
+/* Buttons carry `data-no95` so the Win95 keycap skin stays off them. */
+.ui-dialog-content.bim-crt button,
+.ui-dialog-content.bim-crt textarea {
+  font-family: "VT323", ui-monospace, "SF Mono", Menlo, monospace !important;
+}
+
+.bim-crt button {
+  font: inherit;
+  color: var(--crt-fg);
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: 1px solid var(--crt-line);
+  border-radius: 3px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.bim-crt button:hover:not(:disabled),
+.bim-crt button:focus-visible {
+  background: rgba(125, 255, 154, 0.12);
+  outline: none;
+}
+
+.bim-crt button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bim-crt-top,
+.bim-crt-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--crt-dim);
+}
+
+.bim-crt-x {
+  padding: 0 6px;
+}
+
+.bim-crt-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.bim-crt-tabs button {
+  padding: 3px 12px;
+}
+
+.bim-crt-tabs button.is-on {
+  background: var(--crt-fg);
+  color: var(--crt-bg);
+}
+
+.bim-crt-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 10px;
+}
+
+.bim-crt-left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bim-crt-box {
+  border: 1px solid var(--crt-line);
+  border-radius: 4px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.bim-crt-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bim-crt-line {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  text-transform: none;
+}
+
+.bim-crt-line.is-you {
+  color: #b7ffc6;
+}
+
+.bim-crt-line.is-error {
+  color: #ff8f8f;
+}
+
+.bim-crt-line.is-wait,
+.bim-crt-dim {
+  color: var(--crt-dim);
+}
+
+.bim-crt-who {
+  text-transform: uppercase;
+}
+
+.bim-crt-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 10px;
+}
+
+.bim-crt-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bim-crt-input textarea {
+  min-height: 72px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--crt-fg);
+  font: inherit;
+  text-transform: none;
+  caret-color: var(--crt-fg);
+  outline: none;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.bim-crt-input textarea::placeholder {
+  color: var(--crt-dim);
+}
+
+.bim-crt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.bim-crt-chips button {
+  padding: 1px 8px;
+  text-transform: none;
+}
+
+.bim-crt-quick button {
+  font-size: 11px;
+}
+
+.bim-crt-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bim-crt-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.bim-crt-keys button {
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.bim-crt-send {
+  padding: 6px 0;
+  background: rgba(125, 255, 154, 0.18) !important;
+}
+
+.bim-crt-side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bim-crt-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 11px;
+}
+
+.bim-crt-card dl {
+  margin: 0;
+}
+
+.bim-crt-card dt {
+  color: var(--crt-dim);
+}
+
+.bim-crt-card dd {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.bim-crt-face {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--crt-line);
+  background: repeating-linear-gradient(0deg, rgba(125, 255, 154, 0.12) 0 2px, transparent 2px 4px);
+  font-size: 26px;
+  letter-spacing: 0.1em;
+}
+
+.bim-crt-bio {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-size: 11px;
+}
+
+.bim-crt-wide {
+  text-transform: none;
+}
+
+/* Phone width: one column of glass. Chat, then compose, then quick keys.
+   The dossier and keypad step aside; the system keyboard has digits. */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  .ui-dialog-content.bim-crt {
+    width: auto !important;
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--phone-sheet-top, 0px)) !important;
+    margin-top: var(--phone-sheet-top, auto) !important;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 15px;
+    overflow: hidden !important;
+  }
+
+  .bim-crt-top > span:nth-child(2),
+  .bim-crt-foot > span:first-child,
+  .bim-crt-side,
+  .bim-crt-keys {
+    display: none;
+  }
+
+  .bim-crt-x {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .bim-crt-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .bim-crt-tabs button {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  .bim-crt-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bim-crt-compose {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .bim-crt-input textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .bim-crt-chips button {
+    min-height: 36px;
+  }
+
+  .bim-crt-send {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,2117 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Knowledge Graphs Course</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Knowledge Graphs Course</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed left syllabus rail + single reading column; each module = section with objectives, lesson, key terms, self-check */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#1b2230; --muted:#5a6475; --line:#dde1e8;
+  --accent:#0f6e6a; --accent-soft:#e3f1ef; --edge:#b45309; --edge-soft:#fbeedd;
+  --good:#1f7a3a; --bad:#b42318; --code-bg:#eef1f5;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1a2029; --fg:#e4e8ee; --muted:#9aa4b4; --line:#2c3440;
+  --accent:#4fc1b8; --accent-soft:#18302f; --edge:#f0a95a; --edge-soft:#33261a;
+  --good:#5cc77d; --bad:#f17066; --code-bg:#202733; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1a2029; --fg:#e4e8ee; --muted:#9aa4b4; --line:#2c3440;
+  --accent:#4fc1b8; --accent-soft:#18302f; --edge:#f0a95a; --edge-soft:#33261a;
+  --good:#5cc77d; --bad:#f17066; --code-bg:#202733; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16.5px;line-height:1.65;margin:0}
+.wrap{display:grid;grid-template-columns:270px minmax(0,1fr);gap:40px;max-width:1240px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 80px}
+nav.rail{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;padding-block:28px 40px;font-size:14px;border-right:1px solid var(--line);padding-right:18px}
+nav.rail h1{font-family:var(--display);font-size:20px;line-height:1.2;margin:0 0 4px}
+nav.rail .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:6px 0 4px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.ptext{font-size:12px;color:var(--muted);margin-bottom:16px;font-variant-numeric:tabular-nums}
+nav.rail .part{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:600}
+nav.rail a{display:flex;gap:8px;align-items:baseline;color:var(--fg);text-decoration:none;padding:4px 6px;border-radius:5px}
+nav.rail a:hover,nav.rail a:focus-visible{background:var(--accent-soft);outline:none}
+nav.rail a .n{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
+nav.rail a.done .n{color:var(--good)}
+nav.rail a.done .n::after{content:" ✓"}
+main{min-width:0;padding-top:28px}
+.hero{padding:28px 0 24px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.hero .eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.hero h2{font-family:var(--display);font-size:clamp(30px,5vw,46px);line-height:1.08;margin:8px 0 14px;text-wrap:balance}
+.hero p{max-width:68ch;color:var(--muted);margin:0 0 10px}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:18px}
+.howto div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:14px}
+.howto b{display:block;font-family:var(--display);font-size:15px}
+.partbanner{margin:56px 0 0;padding:18px 0 6px;border-top:3px solid var(--fg)}
+.partbanner .eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.partbanner h2{font-family:var(--display);font-size:30px;margin:4px 0 6px}
+.partbanner p{max-width:68ch;color:var(--muted);margin:0}
+section.mod{padding-top:48px;scroll-margin-top:16px}
+.modhead{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.modnum{font-family:var(--mono);font-size:13px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 7px}
+.src{font-size:12px;color:var(--muted)}
+section.mod h3{font-family:var(--display);font-size:clamp(24px,3.4vw,31px);line-height:1.15;margin:8px 0 14px;text-wrap:balance;width:100%}
+h4{font-family:var(--display);font-size:20px;margin:30px 0 8px;line-height:1.25}
+h5{font-size:15px;margin:20px 0 4px;letter-spacing:.01em}
+p,li{max-width:70ch}
+ul,ol{padding-left:22px}
+li{margin-bottom:4px}
+.obj{background:var(--accent-soft);border-radius:8px;padding:14px 18px;margin:6px 0 20px;font-size:15px}
+.obj b{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.obj ul{margin:6px 0 0}
+.note{border-left:3px solid var(--edge);background:var(--edge-soft);padding:10px 16px;border-radius:0 6px 6px 0;margin:18px 0;max-width:72ch;font-size:15px}
+.note b:first-child{color:var(--edge)}
+.ex{border:1px dashed var(--line);border-radius:8px;padding:12px 16px;margin:16px 0;background:var(--surface);max-width:76ch;font-size:15px}
+.ex::before{content:"Example";display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre code{overflow-wrap:normal}
+pre{font-family:var(--mono);font-size:13.5px;line-height:1.55;background:var(--code-bg);padding:14px 16px;border-radius:8px;overflow-x:auto;max-width:100%;margin:14px 0}
+pre code{background:none;padding:0;font-size:inherit}
+pre.mermaid{background:var(--surface);border:1px solid var(--line);text-align:center}
+.tbl{overflow-x:auto;margin:14px 0;max-width:100%}
+table{border-collapse:collapse;font-size:14.5px;min-width:480px}
+th,td{border-bottom:1px solid var(--line);padding:7px 12px;text-align:left;vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+dl.terms{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:6px 18px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin:22px 0;font-size:14.5px}
+dl.terms::before{content:"Key terms";grid-column:1/-1;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+dl.terms dt{font-weight:600}
+dl.terms dd{margin:0;color:var(--fg)}
+.check{margin:26px 0 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 18px}
+.check>.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.q{margin:12px 0 4px}
+.q p{font-weight:600;margin:4px 0 8px}
+.q button{display:block;width:100%;text-align:left;font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:6px 0;cursor:pointer}
+.q button:hover{border-color:var(--accent)}
+.q button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.q button.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--surface))}
+.q button.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.q .why{font-size:14px;color:var(--muted);margin:4px 0 0}
+.markdone{margin-top:14px;font:inherit;font-size:14px;background:var(--accent);color:var(--surface);border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+.markdone[aria-pressed="true"]{background:var(--good)}
+.markdone:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:14px 0}
+.grid2>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:15px;min-width:0}
+.grid2 h5{margin-top:0}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+.menu{display:none}
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:0}
+  nav.rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding-right:0}
+  nav.rail .links{display:none}
+  nav.rail.open .links{display:block}
+  .menu{display:inline-block;font:inherit;font-size:14px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+  dl.terms{grid-template-columns:minmax(0,1fr)}
+  dl.terms dd{margin-bottom:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div class="wrap">
+<nav class="rail" id="rail" aria-label="Course modules">
+  <h1>Knowledge Graphs</h1>
+  <div class="sub">A learning module in two parts: concepts, then practice</div>
+  <div class="progress" aria-hidden="true"><i id="pbar"></i></div>
+  <div class="ptext" id="ptext">0 of 0 modules complete</div>
+  <button class="menu" id="menu" aria-expanded="false" aria-controls="links">Show modules</button>
+  <div class="links" id="links"></div>
+</nav>
+<main>
+<header class="hero">
+  <div class="eyebrow">Self-paced course · 26 modules · ~10 hours</div>
+  <h2>Knowledge graphs, from first principles to production systems</h2>
+  <p>This course combines two sources. Part I follows the research survey <i>Knowledge Graphs</i> by Hogan et al. (ACM Computing Surveys, 2021): data models, query languages, schema, reasoning, machine learning, quality, and publication. Part II follows <i>Building Knowledge Graphs: A Practitioner's Guide</i> by Barrasa and Webber (O'Reilly, 2023): how to build, load, enrich, and use knowledge graphs in Neo4j with Cypher.</p>
+  <p>Part I uses the survey's running example: a tourism board in Chile building a graph of events, venues, cities, and travel routes. Part II uses the book's examples: movies, fraud rings, skills, IT dependencies, and documents.</p>
+  <div class="howto">
+    <div><b>Read</b>Each module opens with learning objectives and closes with key terms.</div>
+    <div><b>Check</b>Answer the self-check questions. You get instant feedback and an explanation.</div>
+    <div><b>Track</b>Mark a module complete. Progress is saved in this browser only.</div>
+  </div>
+</header>
+
+<div class="partbanner" id="part1">
+  <div class="eyebrow">Part I · Source: Hogan et al., <i>Knowledge Graphs</i> (2021)</div>
+  <h2>Foundations: how knowledge graphs work</h2>
+  <p>The concepts, formalisms, and techniques that every knowledge graph system draws on, independent of any one product.</p>
+</div>
+
+<section class="mod" id="m1" data-part="I" data-title="What a knowledge graph is">
+<div class="modhead"><span class="modnum">M1</span><span class="src">Survey §1, Appendix A</span></div>
+<h3>What a knowledge graph is, and why graphs</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>State an inclusive definition of a knowledge graph and explain each part of it.</li>
+<li>Explain why graphs suit diverse, evolving data better than a fixed relational schema.</li>
+<li>Distinguish open knowledge graphs from enterprise knowledge graphs.</li></ul></div>
+
+<p>The phrase "knowledge graph" appears in the literature as early as 1972, but its modern use comes from the <b>Google Knowledge Graph</b>, announced in 2012. Airbnb, Amazon, eBay, Facebook, IBM, LinkedIn, Microsoft, Uber and others followed with their own. The ideas behind it are older: semantic networks (1950s–60s), frames, description logics, the Semantic Web (2001), and Linked Data (2006).</p>
+
+<h4>A working definition</h4>
+<p>The survey adopts an inclusive definition:</p>
+<div class="note"><b>Definition.</b> A knowledge graph is a <i>graph of data intended to accumulate and convey knowledge of the real world</i>, whose <b>nodes</b> represent entities of interest and whose <b>edges</b> represent relations between these entities.</div>
+<p>Three ideas are packed into that sentence:</p>
+<ul>
+<li><b>Graph of data (data graph).</b> The data follows a graph-based model: a directed edge-labelled graph, a property graph, or another variant (Module 2).</li>
+<li><b>Knowledge.</b> "Something that is known." It can be a <i>simple statement</i> ("Santiago is the capital of Chile"), stored as an edge, or a <i>quantified statement</i> ("all capitals are cities"), which needs a more expressive representation such as an ontology or rules.</li>
+<li><b>Accumulate.</b> Knowledge can come from external sources, or be derived from the graph itself by <b>deductive</b> methods (logic: "Santiago is a city") or <b>inductive</b> methods (patterns and machine learning).</li>
+</ul>
+
+<p>The Practitioner's Guide gives a complementary, business-oriented definition: a knowledge graph is "a purposeful arrangement of data such that information is put in context and insight is readily available," with an <b>organizing principle</b> that gives the data meaning (Module 14).</p>
+
+<h4>Why use a graph at all?</h4>
+<p>The survey motivates graphs with the tourism board's first attempt at a relational table, <code>Event(name, venue, type, start, end)</code>. Real data quickly breaks it: events have several names (in different languages), several venues, several types, and unknown dates. After repeated, costly remodelling the board ends up with:</p>
+<pre><code>EventName(id, name)   EventStart(id, start)   EventEnd(id, end)
+EventVenue(id, venue) EventType(id, type)</code></pre>
+<p>That flexible schema is just a set of <b>binary relations</b> between entities, which is a graph. Starting with a graph would have avoided the upfront schema entirely. Graphs bring several benefits:</p>
+<ul>
+<li><b>Concise, intuitive abstraction</b> for social networks, biology, citations, transport, and other connected domains, including cycles.</li>
+<li><b>Postponed schema.</b> Data and its scope can evolve, and incomplete knowledge is easy to capture: just omit an edge.</li>
+<li><b>Navigational queries.</b> Graph query languages add recursive, arbitrary-length path matching on top of joins, unions, and projections.</li>
+<li><b>Formal semantics.</b> Ontologies and rules can define what the labels mean and support reasoning.</li>
+<li><b>Analytics and machine learning</b> can run directly over the graph (centrality, clustering, embeddings, graph neural networks).</li>
+</ul>
+
+<h4>Schema, identity, and context</h4>
+<p>Knowledge graphs are usually assembled from many sources, so they vary in structure and granularity. Three representations manage that diversity: a <b>schema</b> gives high-level structure; <b>identity</b> says which nodes refer to the same real-world entity; and <b>context</b> records the setting in which a fact holds. Modules 4–6 cover each.</p>
+
+<h4>Open and enterprise knowledge graphs</h4>
+<div class="grid2">
+<div><h5>Open knowledge graphs</h5>Published online for the public good. Cross-domain examples include DBpedia, Freebase, Wikidata, and YAGO, which are extracted from Wikipedia or built by volunteers. Domain-specific ones exist for media, government, geography, tourism, and life sciences.</div>
+<div><h5>Enterprise knowledge graphs</h5>Internal to a company. Used in web search (Google, Bing), commerce (Airbnb, Amazon, eBay, Uber), social networks (Facebook, LinkedIn), and finance (Accenture, Banca d'Italia, Bloomberg, Capital One, Wells Fargo) for search, recommendations, agents, advertising, analytics, and risk.</div>
+</div>
+
+<h4>The running example</h4>
+<p>A tourism board in Chile wants a graph of attractions, events, services, businesses, cities and routes. Planned applications: a multilingual tourism portal; demographic insights; sentiment analysis of reviews and complaints; tourist trajectories; new strategic flight and bus routes; and personalised recommendations. You will meet it in every Part I module.</p>
+
+<dl class="terms">
+<dt>Knowledge graph</dt><dd>A graph of data that accumulates and conveys knowledge of the real world; nodes are entities, edges are relations.</dd>
+<dt>Data graph</dt><dd>The graph of data itself, following a graph data model.</dd>
+<dt>Deductive knowledge</dt><dd>Knowledge entailed by logic from data plus rules or ontologies. Always correct given the premises.</dd>
+<dt>Inductive knowledge</dt><dd>Knowledge generalised from patterns. Useful but fallible, so it carries a confidence.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Which kind of knowledge can be stored directly as a single edge?</p>
+<button>"All capitals are cities"</button><button>"Every event has at least one venue"</button><button>"Santiago is the capital of Chile"</button>
+<div class="why" hidden>Simple statements map to edges. Quantified statements (about "all" things) need an ontology or rules.</div></div>
+<div class="q" data-a="1"><p>The tourism board's final relational schema had tables like EventName(id, name). Why does the survey say this schema is really a graph?</p>
+<button>Because it uses foreign keys</button><button>Because each table is a binary relation between an entity and a value or entity, which is exactly an edge type</button><button>Because it has no primary keys</button>
+<div class="why" hidden>Binary relations between pairs of entities are labelled edges. A graph model gives that flexibility from the start.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m2" data-part="I" data-title="Graph data models">
+<div class="modhead"><span class="modnum">M2</span><span class="src">Survey §2.1</span></div>
+<h3>Graph data models</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Describe directed edge-labelled graphs (and RDF), heterogeneous graphs, property graphs, and graph datasets.</li>
+<li>Choose a model by weighing minimality against flexibility.</li>
+<li>Name the main ways to store graphs.</li></ul></div>
+
+<h4>Directed edge-labelled graphs (del graphs)</h4>
+<p>A set of nodes (<code>Santiago</code>, <code>EID16</code>, <code>2018-03-22 12:00</code>) and a set of directed, labelled edges between them, such as <code>Santa Lucía —city→ Santiago</code>. Also called a <i>multi-relational graph</i>. Adding information means adding nodes and edges; incomplete information means leaving an edge out (the Food Truck festival simply has no start date yet).</p>
+<pre class="mermaid">graph LR
+  EID15((EID15)) -- name --> Nam["Ñam"]
+  EID15 -- type --> FF[Food Festival]
+  EID15 -- venue --> SL[Santa Lucía]
+  SL -- city --> SCL[Santiago]
+  EID16((EID16)) -- name --> FT["Food Truck"]
+  EID16 -- type --> FF
+  EID16 -- venue --> SO[Sotomayor]
+  SO -- city --> VM[Viña del Mar]
+  SCL -- flight --> ARI[Arica]
+  ARI -- bus --> VM
+  VM -- bus --> SCL</pre>
+<p>Compared with trees (XML, JSON), graphs don't force a hierarchy (should <i>venue</i> be a parent or sibling of <i>type</i>?) and they represent cycles naturally.</p>
+<h5>RDF</h5>
+<p>The W3C's <b>Resource Description Framework</b> standardises del graphs. RDF distinguishes three node types:</p>
+<ul>
+<li><b>IRIs</b> (Internationalized Resource Identifiers) for globally identifying entities on the Web.</li>
+<li><b>Literals</b> for strings (with optional language tags) and typed values such as integers and dates.</li>
+<li><b>Blank nodes</b>: anonymous nodes with no identifier, usable instead of internal IDs like EID15.</li>
+</ul>
+
+<h4>Heterogeneous graphs</h4>
+<p>Every node and edge has exactly one <b>type</b>, and the node type is part of the model rather than a <code>type</code> edge. An edge between same-typed nodes (<code>borders</code> between countries) is <i>homogeneous</i>; between different types (<code>capital</code> from Country to City) it is <i>heterogeneous</i>. Partitioning by type helps machine learning, but each node gets only one type, whereas a del graph allows zero or many.</p>
+
+<h4>Property graphs</h4>
+<p>Property graphs attach a <b>label</b> and a set of <b>property–value pairs</b> to both nodes and edges. Suppose the board wants to record which company operates each flight. In a del graph you cannot annotate the edge <code>Santiago —flight→ Arica</code> directly; you must turn the flight into a node (LA380) with <code>from</code>, <code>to</code>, <code>company</code>, and <code>mode</code> edges. In a property graph the edge itself carries <code>company = LATAM</code>, and nodes carry <code>lat</code> and <code>long</code>.</p>
+<pre class="mermaid">graph LR
+  S["Santiago : Capital City&lt;br/&gt;lat = −33.45, long = −70.66"] -- "LA380 : flight&lt;br/&gt;company = LATAM" --> A["Arica : Port City&lt;br/&gt;lat = −18.48, long = −70.33"]
+  A -- "LA381 : flight&lt;br/&gt;company = LATAM" --> S</pre>
+<p>Property graphs are the model behind Neo4j and are used in Part II. Property graphs and del graphs can be translated into each other <b>without loss of information</b>. The survey sums up the trade-off: del graphs are more <i>minimal</i>, property graphs more <i>flexible</i>, and the choice often comes down to which implementations are available.</p>
+
+<h4>Graph datasets</h4>
+<p>A <b>graph dataset</b> is a set of <b>named graphs</b> (each a pair of graph ID and graph) plus a <b>default graph</b> with no ID. You might keep Events and Routes in separate named graphs and store metadata about them (such as when each was last updated) in the default graph. This lets you update one source independently, separate trustworthy from untrustworthy sources, and track provenance. Graph names can themselves appear as nodes. Linked Data on the Web is a common use case.</p>
+
+<h4>Other models</h4>
+<p>Some models allow complex nodes containing edges or nested graphs (<i>hypernodes</i>); <i>hypergraphs</i> have edges that connect sets of nodes. Data can usually be converted between models.</p>
+
+<h4>Storing graphs</h4>
+<div class="tbl"><table><tr><th>Approach</th><th>How it works</th></tr>
+<tr><td>Triple table</td><td>One relational table with three columns (subject, predicate, object).</td></tr>
+<tr><td>Vertical partitioning</td><td>One two-column table per property.</td></tr>
+<tr><td>Property tables</td><td>One n-ary table per entity type.</td></tr>
+<tr><td>Native graph storage</td><td>Custom structures for fast access to nodes, edges, and neighbours (for example Neo4j's index-free adjacency, Module 15).</td></tr>
+<tr><td>Distributed</td><td>Partitioned across machines using NoSQL stores or custom schemes.</td></tr></table></div>
+
+<dl class="terms">
+<dt>del graph</dt><dd>Directed edge-labelled graph: nodes plus directed labelled edges. RDF is the standard form.</dd>
+<dt>IRI / literal / blank node</dt><dd>RDF's global identifier / data value / anonymous node.</dd>
+<dt>Property graph</dt><dd>Nodes and edges both carry labels and property–value pairs.</dd>
+<dt>Named graph</dt><dd>A graph paired with an identifier, inside a graph dataset.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="0"><p>You need to record that the flight Santiago→Arica is operated by LATAM. What is the most direct option in a property graph?</p>
+<button>Put a property company = LATAM on the flight edge</button><button>Create a separate named graph per airline</button><button>Add a blank node for the flight</button>
+<div class="why" hidden>Property graphs allow property–value pairs on edges. In a del graph you would reify the flight as a node instead.</div></div>
+<div class="q" data-a="1"><p>Can a property graph be converted to a directed edge-labelled graph?</p>
+<button>No, information is always lost</button><button>Yes, without loss of information</button><button>Only if it has no edge properties</button>
+<div class="why" hidden>The survey notes lossless translation in both directions; the choice is mostly practical.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m3" data-part="I" data-title="Querying graphs">
+<div class="modhead"><span class="modnum">M3</span><span class="src">Survey §2.2</span></div>
+<h3>Querying graphs</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Evaluate a basic graph pattern and explain homomorphism vs isomorphism semantics.</li>
+<li>Combine patterns with relational operators into complex graph patterns.</li>
+<li>Write regular path queries with inverse, Kleene star, disjunction, and concatenation.</li></ul></div>
+
+<p>The main graph query languages are <b>SPARQL</b> (for RDF) and <b>Cypher</b>, <b>Gremlin</b>, and <b>G-CORE</b> (for property graphs). They share a few primitives.</p>
+
+<h4>Basic graph patterns</h4>
+<p>A graph pattern looks like the data graph but allows <b>variables</b> (written <code>?event</code>) alongside constants. Evaluating it produces <b>mappings</b> from variables to constants such that, after substitution, the pattern is contained in the data graph. The result is a table.</p>
+<div class="ex">Pattern: <code>?ev —type→ Food Festival</code>, <code>?ev —venue→ ?vn1</code>, <code>?ev —venue→ ?vn2</code>. Over the tourism graph it returns rows such as (EID16, Piscina Olímpica, Sotomayor), and also rows where <code>?vn1</code> and <code>?vn2</code> map to the same venue.</div>
+<p>Whether those "same venue" rows count depends on the semantics:</p>
+<ul>
+<li><b>Homomorphism-based</b>: different variables may map to the same term. SPARQL uses this.</li>
+<li><b>Isomorphism-based</b>: variables must map to distinct terms. Cypher applies it to edges (a relationship is not reused within one match).</li>
+</ul>
+
+<h4>Complex graph patterns</h4>
+<p>Since a pattern yields a table, relational algebra can transform and combine results:</p>
+<div class="tbl"><table><tr><th>Operator</th><th>Effect</th></tr>
+<tr><td>Projection π</td><td>Keep some columns (variables)</td></tr>
+<tr><td>Selection σ</td><td>Keep rows matching a condition</td></tr>
+<tr><td>Renaming ρ</td><td>Rename columns</td></tr>
+<tr><td>Union ∪, difference −</td><td>Merge or subtract result tables</td></tr>
+<tr><td>Join ⋈</td><td>Extend rows with compatible rows from another table</td></tr>
+<tr><td>Anti-join ▷ (NOT EXISTS)</td><td>Rows with no compatible partner</td></tr>
+<tr><td>Left-join ⟕ (OPTIONAL)</td><td>Join but keep unmatched rows</td></tr></table></div>
+<p>Graph patterns with projection equal <b>conjunctive queries</b>; with the full set of operators they equal <b>first-order queries</b>. Example: "food or drinks festivals <i>not</i> held in Santiago, <i>optionally</i> with their start date and name."</p>
+<p>Results can contain duplicates. <b>Bag semantics</b> keeps them; <b>set semantics</b> (the <code>DISTINCT</code> keyword) removes them.</p>
+
+<h4>Navigational graph patterns</h4>
+<p>The feature that sets graph query languages apart is the <b>path expression</b>: a regular expression over edge labels, used in a <b>regular path query</b> <code>(x, r, y)</code>.</p>
+<ul>
+<li><code>p</code>: an edge label</li>
+<li><code>r⁻</code>: inverse (traverse backwards)</li>
+<li><code>r*</code>: Kleene star, zero or more repetitions</li>
+<li><code>r1 | r2</code>: disjunction</li>
+<li><code>r1 · r2</code>: concatenation</li>
+</ul>
+<div class="ex"><code>(Arica, (bus | flight)*, ?city)</code> finds every city reachable from Arica by bus or flight. Combined with <code>?event —type→ Food Festival</code> and <code>(venue · city)⁻</code>, it finds food festivals in cities reachable from Arica.</div>
+<p>Cycles make the set of matching paths infinite, so languages restrict what they return: shortest paths only, paths without repeated nodes or edges (Cypher), or simply the pairs of connected nodes (SPARQL 1.1).</p>
+
+<h4>Other features</h4>
+<p>Aggregation (<code>GROUP BY</code>, <code>COUNT</code>), datatype filters, federation across remote graphs, update languages, and entailment regimes.</p>
+
+<pre><code># SPARQL: names of food festivals and their venues' cities
+SELECT ?name ?city WHERE {
+  ?ev a :FoodFestival ; :name ?name ; :venue/:city ?city .
+}
+// Cypher: same idea on a property graph
+MATCH (e:FoodFestival)-[:VENUE]->(:Venue)-[:CITY]->(c:City)
+RETURN e.name, c.name</code></pre>
+
+<dl class="terms">
+<dt>Graph pattern</dt><dd>A query graph with variables, matched against the data graph.</dd>
+<dt>Regular path query</dt><dd>Query (x, r, y) where r is a regular expression over edge labels.</dd>
+<dt>Bag vs set semantics</dt><dd>Keep duplicates vs remove them (DISTINCT).</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Which path expression matches any sequence of buses and flights, including none?</p>
+<button><code>bus · flight</code></button><button><code>(bus | flight)*</code></button><button><code>bus⁻</code></button>
+<div class="why" hidden>Disjunction picks either label; the Kleene star allows zero or more repetitions.</div></div>
+<div class="q" data-a="0"><p>Which semantics allows two different variables to map to the same node?</p>
+<button>Homomorphism-based (SPARQL)</button><button>Isomorphism-based</button><button>Set semantics</button>
+<div class="why" hidden>Isomorphism requires distinct terms. Set vs bag semantics concerns duplicate rows, not variable mapping.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m4" data-part="I" data-title="Schema">
+<div class="modhead"><span class="modnum">M4</span><span class="src">Survey §3.1</span></div>
+<h3>Schema: semantic, validating, emergent</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Use sub-class, sub-property, domain, and range to infer new edges (RDFS).</li>
+<li>Explain the Open World, Closed World, and Local Closed World Assumptions.</li>
+<li>Describe shapes (SHACL, ShEx), open vs closed shapes, and quotient graphs.</li></ul></div>
+
+<p>A graph lets you postpone a schema, but you still often want one. The survey distinguishes three kinds.</p>
+
+<h4>1. Semantic schema: meaning, for inference</h4>
+<p>Defines the meaning of vocabulary terms. Classes such as Event, Festival, and Food Festival form a <b>class hierarchy</b>; properties form a <b>property hierarchy</b> (venue and city are sub-properties of location; bus and flight of connects to).</p>
+<div class="tbl"><table><tr><th>Feature</th><th>Definition</th><th>Inference</th><th>Example</th></tr>
+<tr><td>Subclass</td><td>c subc. of d</td><td>x type c ⇒ x type d</td><td>City subc. of Place</td></tr>
+<tr><td>Subproperty</td><td>p subp. of q</td><td>x p y ⇒ x q y</td><td>venue subp. of location</td></tr>
+<tr><td>Domain</td><td>p domain c</td><td>x p y ⇒ x type c</td><td>venue domain Event</td></tr>
+<tr><td>Range</td><td>p range c</td><td>x p y ⇒ y type c</td><td>venue range Venue</td></tr></table></div>
+<p>The W3C standard for this is <b>RDF Schema (RDFS)</b>, whose definitions are themselves serialised as a graph. <b>OWL</b> goes much further (Module 7).</p>
+<h5>Open vs closed world</h5>
+<ul>
+<li><b>Closed World Assumption (CWA)</b>: the data is complete; what is not stated is false. Typical of classical databases.</li>
+<li><b>Open World Assumption (OWA)</b>: a missing edge only means "unknown." A missing <code>Viña del Mar —flight→ Arica</code> doesn't prove no flight exists.</li>
+<li><b>Local Closed World Assumption (LCWA)</b>: parts of the graph are declared complete (for example, the board knows all flights), so the system can answer "no" there.</li>
+</ul>
+<p>Under CWA, adding an edge can contradict a previous "false"; under OWA, something proven false stays false as edges are added.</p>
+
+<h4>2. Validating schema: constraints, for checking</h4>
+<p>Where semantic schemas <i>infer</i> new data, validating schemas <i>check</i> existing data, for example that every event has a name, a venue, a start, and an end. The standard approach is <b>shapes</b>. A shape <i>targets</i> nodes (instances of a class, subjects of a property, results of a query…) and states <i>constraints</i> on them: cardinalities such as <code>[1..*]</code> or <code>[1..1]</code>, value types (string, dateTime), and links to nodes conforming to other shapes.</p>
+<pre><code>Event:  name: string [1..*]   start: dateTime [1..1]   end: dateTime [1..1]
+        type: any [1..*]      venue → Venue [1..*]
+Venue:  indoor: boolean [0..1]   city → City [0..1]   (inherits Place)
+City:   population: int ∧ >5000 [0..1]               (inherits Place)
+Place:  lat, long: float [0..1]   flight, bus → Place [0..*]</code></pre>
+<p>Here EID15 conforms to Event, which depends on Santa Lucía conforming to Venue and Santiago to City. Conformance can be <b>recursive</b>. EID16 fails because it lacks start and end.</p>
+<ul>
+<li><b>Open shapes</b> allow extra properties; <b>closed shapes</b> forbid them. If you add <code>Santiago —founder→ Pedro de Valdivia</code>, Santiago conforms to City only if City is open.</li>
+<li>Shapes can combine with <b>and, or, not</b>. Mixing recursion and negation can cause paradoxes (a "Barber" shape modelled on the barber paradox), which stratification, partial assignments, or stable-model semantics resolve.</li>
+<li>The two RDF shape languages are <b>SHACL</b> (W3C Recommendation) and <b>ShEx</b> (W3C Community Group Report).</li>
+<li>Validation can run over the graph <i>after</i> inference from a semantic schema; this may require relaxed cardinalities or open shapes.</li>
+</ul>
+
+<h4>3. Emergent schema: structure, discovered</h4>
+<p>Latent structure can be extracted automatically as an <b>emergent schema</b> (or <b>graph summary</b>). A common framework is the <b>quotient graph</b>: partition nodes (event, name, venue, class, date-time, city), merge each partition into one node, and keep an edge X→Z if some member of X links to some member of Z.</p>
+<ul>
+<li>Every quotient graph <b>simulates</b> its input, but may overstate (it suggests EID16 has a start date).</li>
+<li>A <b>bisimilar</b> quotient also requires every member of X to have the edge; it splits events with and without dates. Bisimilarity preserves forward path queries.</li>
+</ul>
+<p>Uses: a human-readable overview, a starting point for semantic or validating schemas, query optimisation, and integration.</p>
+
+<dl class="terms">
+<dt>RDFS</dt><dd>W3C standard for sub-class, sub-property, domain, range.</dd>
+<dt>OWA / CWA / LCWA</dt><dd>Missing = unknown / missing = false / complete in declared parts.</dd>
+<dt>Shape</dt><dd>Target set of nodes plus constraints; SHACL and ShEx implement them.</dd>
+<dt>Quotient graph</dt><dd>Summary that merges equivalent nodes while keeping edges.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Given <code>city range City</code> and the edge <code>Santa Lucía —city→ Arica</code>, what can be inferred?</p>
+<button>Santa Lucía type City</button><button>Nothing; ranges only validate</button><button>Arica type City</button>
+<div class="why" hidden>A range types the target node of the edge. Domains type the source.</div></div>
+<div class="q" data-a="0"><p>Which schema type checks that every event has exactly one start date?</p>
+<button>Validating schema (shapes)</button><button>Semantic schema (RDFS)</button><button>Emergent schema</button>
+<div class="why" hidden>Under OWA, RDFS can't enforce completeness; shapes list constraint violations.</div></div>
+<div class="q" data-a="1"><p>The board knows its flight data is complete but nothing else. Which assumption fits?</p>
+<button>Closed World</button><button>Local Closed World</button><button>Open World</button>
+<div class="why" hidden>LCWA treats selected parts of the graph as complete.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m5" data-part="I" data-title="Identity">
+<div class="modhead"><span class="modnum">M5</span><span class="src">Survey §3.2</span></div>
+<h3>Identity: which Santiago?</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Explain naming clashes and how persistent identifiers and IRIs prevent them.</li>
+<li>Use owl:sameAs and identifying properties to ground identity.</li>
+<li>Work with datatypes, labels, and existential (blank) nodes.</li></ul></div>
+
+<p>The node <code>Santiago</code> could mean Santiago de Chile, Santiago de Cuba, Santiago de Compostela, or an indie rock band. Context helps, but heuristics fail in harder cases.</p>
+
+<h4>Persistent identifiers</h4>
+<p>Merge a Chilean and a Cuban tourism graph that both use the local name <code>Santiago</code>, and the result says one Santiago is in both countries: a <b>naming clash</b>. <b>Persistent identifiers (PIDs)</b> solve this: DOIs for papers, ORCID iDs for authors, ISBNs for books, Alpha-2 codes for countries.</p>
+<p>RDF goes further and uses global <b>IRIs</b>. It separates the identifier of a thing from the URL of the page that describes it. In Wikidata, <code>https://www.wikidata.org/wiki/Q2887</code> is the web page about Santiago, while <code>http://www.wikidata.org/entity/Q2887</code> is the city itself. Without that split, "founded by Pedro de Valdivia" is ambiguous: founder of the page, or of the city?</p>
+<ul>
+<li><b>Namespaces and prefixes</b> abbreviate IRIs: <code>wd:Q2887 wdt:P112 wd:Q203534</code>.</li>
+<li>Dereferenceable HTTP IRIs return descriptions of the entity, which enables <b>Linked Data</b> (Module 12).</li>
+<li><b>PURL</b> services redirect a stable identifier to a changing location, improving persistence.</li>
+<li>URIs include URLs (locate) and URNs (name); IRIs are URIs that allow Unicode (<code>http://example.com/Ñam</code>).</li>
+</ul>
+
+<h4>External identity links</h4>
+<p>IRIs avoid clashes but don't establish that two IRIs mean the same thing: <code>chile:Santiago</code> and <code>geo:SantiagoDeChile</code> stay distinct after a merge. Two remedies:</p>
+<ol>
+<li>Add <b>uniquely identifying information</b>: coordinates, postal code, founding year.</li>
+<li>Add an <b>identity link</b>: <code>chile:Santiago owl:sameAs geo:SantiagoDeChile</code>. OWL semantics then let you combine the data of both nodes.</li>
+</ol>
+
+<h4>Datatypes</h4>
+<p>Values like dates are identified by their syntax, not by an IRI. RDF uses XML Schema Datatypes: a literal is a pair of lexical string and datatype IRI, such as <code>"2020-03-29T20:00:00"^^xsd:dateTime</code>. Without a datatype, <code>xsd:string</code> is assumed. Literals cannot have outgoing edges. Applications can order, compare, and cast typed values. Neo4j has its own types: numbers, strings, booleans, spatial points, temporal values.</p>
+
+<h4>Lexicalisation</h4>
+<p>Identifiers like <code>wd:Q2887</code> are deliberately opaque: they stay stable when names change (Eswatini, formerly Swaziland, kept <code>wd:Q1050</code>) and favour no language. Human-readable labels are added as edges: <code>rdfs:label "Santiago"</code>, <code>skos:altLabel "Santiago de Chile"</code>, <code>rdfs:comment</code>, with language tags like <code>"Ciudad"@es</code>. Graphs rich in such labels are <b>(multilingual) lexicalised knowledge graphs</b>.</p>
+
+<h4>Existential nodes</h4>
+<p>Two events share a venue that hasn't been announced. Omitting the venue loses information; inventing an IRI pretends the venue is known. An <b>existential node</b> (RDF <b>blank node</b>) says "some venue exists" without naming it. Blank nodes also build structures like <b>RDF lists</b> (<code>rdf:first</code>, <code>rdf:rest</code>, <code>rdf:nil</code>). They complicate comparing graphs, so they can be <b>skolemised</b> (replaced by canonical labels) or avoided.</p>
+
+<dl class="terms">
+<dt>PID</dt><dd>Long-lasting, globally unique identifier (DOI, ORCID, ISBN).</dd>
+<dt>owl:sameAs</dt><dd>Identity link stating two terms refer to the same entity.</dd>
+<dt>Literal</dt><dd>Typed data value, e.g. <code>"5"^^xsd:integer</code>.</dd>
+<dt>Blank node</dt><dd>Anonymous node expressing existence without identification.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Why does Wikidata use different IRIs for the page about Santiago and for Santiago itself?</p>
+<button>To save storage</button><button>So statements about the page (like who created it) are not confused with statements about the city</button><button>Because IRIs cannot contain letters</button>
+<div class="why" hidden>Separating information resources from the things they describe removes ambiguity such as "founded by."</div></div>
+<div class="q" data-a="0"><p>The best way to say "these events share an unknown venue" is:</p>
+<button>A blank (existential) node linked from both</button><button>Omit the venue edges</button><button>Mint a new IRI for the venue</button>
+<div class="why" hidden>Omitting loses the shared-venue fact; a new IRI is indistinguishable from a known venue.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m6" data-part="I" data-title="Context">
+<div class="modhead"><span class="modnum">M6</span><span class="src">Survey §3.3</span></div>
+<h3>Context: when and where a fact holds</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Define context as the scope of truth and name its common kinds.</li>
+<li>Compare direct representation, three reification patterns, and higher-arity options.</li>
+<li>Explain annotation frameworks with meet and join operators.</li></ul></div>
+
+<p>Most facts are true only in some context. <b>Temporal</b>: Santiago has been a city since 1541; flights Arica–Santiago began in 1956. <b>Geographic</b>: the graph describes Chile. <b>Provenance</b>: EID15's data came from the Ñam webpage on 4 January 2020. Contexts combine: Arica is a Chilean city (geographic) since 1883 (temporal) according to the Treaty of Ancón (provenance). Making context explicit lets you ask what held in 2016, or what holds if you exclude unreliable sources. Context can sit on nodes, edges, or sub-graphs.</p>
+
+<h4>Direct representation</h4>
+<p>Treat context as ordinary data: the event's start and end dates, or turn the flight edge into a flight node. Standard vocabularies help: the <b>Time Ontology</b> (instants, intervals, before, overlaps) and the <b>PROV Data Model</b> (entities derived from entities, generated or used by activities, attributed to agents).</p>
+
+<h4>Reification: edges about edges</h4>
+<p>To say <code>Santiago —flight→ Arica</code> is <i>valid from 1956</i>, create an identifier <i>e</i> for the edge itself:</p>
+<div class="tbl"><table><tr><th>Pattern</th><th>Structure</th></tr>
+<tr><td>RDF reification</td><td><i>e</i> —subject→ Santiago, <i>e</i> —predicate→ flight, <i>e</i> —object→ Arica, <i>e</i> —valid from→ 1956</td></tr>
+<tr><td>n-ary relation</td><td>Santiago —flight→ <i>e</i> —value→ Arica, <i>e</i> —valid from→ 1956</td></tr>
+<tr><td>Singleton property</td><td>Santiago —<i>e</i>→ Arica, <i>e</i> —singleton→ flight, <i>e</i> —valid from→ 1956</td></tr></table></div>
+<p>A reified edge does not assert the edge itself, so you can reify an edge to say it is <i>no longer</i> valid.</p>
+
+<h4>Higher-arity representations</h4>
+<ul>
+<li><b>Named graph</b>: put the edge in a graph and annotate the graph. Most flexible: many edges can share one context.</li>
+<li><b>Property graph</b>: put <code>valid from = 1956</code> on the edge.</li>
+<li><b>RDF*</b> (RDF-star): an edge can be used as a node. Least flexible without edge IDs: you cannot pair "2006–2010" and "2014–2018" for Bachelet's two presidencies on one edge.</li>
+</ul>
+
+<h4>Annotations: reasoning with context</h4>
+<p>Annotations define a contextual domain mathematically so that it can be computed automatically. <b>Temporal RDF</b> annotates edges with intervals; <b>Fuzzy RDF</b> with degrees of truth (Santiago has a semi-arid climate, degree 0.8). <b>Annotated RDF</b> is domain-independent, using semirings with two operators:</p>
+<ul><li><b>meet</b>: combine annotations that must hold together (intersection of day sets).</li>
+<li><b>join</b>: combine alternative results (union of day sets).</li></ul>
+<div class="ex">Query: flights from Santiago to cities with events. A Punta Arenas event on days 150–152 doesn't intersect the flight days [1–120, 220–365], so it drops out. Arica has two events whose meets give days 123–125 and 276–279; joined, Arica is returned with {[123,125],[276,279]}.</div>
+
+<h4>Other frameworks</h4>
+<p><b>Contextual knowledge repositories</b> assign sub-graphs a value on each context dimension, with partial orders (2020-03-22 ⪯ 2020-03 ⪯ 2020). <b>Contextual OLAP</b> builds a data cube whose cells contain knowledge graphs, with slice-and-dice and roll-up.</p>
+
+<dl class="terms">
+<dt>Context</dt><dd>The scope within which data is held to be true.</dd>
+<dt>Reification</dt><dd>Making statements about statements by giving an edge its own identifier.</dd>
+<dt>RDF*</dt><dd>RDF extension allowing edges as nodes.</dd>
+<dt>Meet / join</dt><dd>Annotation operators for "both hold" / "either holds."</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Which representation most easily gives the same context to many edges at once?</p>
+<button>RDF*</button><button>Singleton properties</button><button>Named graphs</button>
+<div class="why" hidden>Put all edges valid from 1956 into one named graph and annotate the graph once.</div></div>
+<div class="q" data-a="0"><p>In annotated RDF, which operator combines a flight's validity and an event's dates for the same answer?</p>
+<button>meet</button><button>join</button><button>union of graphs</button>
+<div class="why" hidden>Meet computes when both hold (intersection); join merges alternative answers.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m7" data-part="I" data-title="Deductive knowledge">
+<div class="modhead"><span class="modnum">M7</span><span class="src">Survey §4</span></div>
+<h3>Deductive knowledge: ontologies, entailment, reasoning</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Explain interpretations, models, and entailment, with UNA/NUNA and OWA/CWA.</li>
+<li>Read the main OWL features for individuals, properties, and classes.</li>
+<li>Compare reasoning by materialisation, query rewriting, and Description Logics.</li></ul></div>
+
+<p>Humans deduce that the Ñam festival is located in Santiago, or that cities with flights have airports nearby. Machines need explicit premises and <b>entailment regimes</b>. Then they deduce with precision and scale, which helps query answering, classification, and finding inconsistencies.</p>
+<div class="ex">The query "names of festivals with location Santiago" returns nothing over the raw graph: no node is typed Festival, and nothing has a direct location edge. With "Food Festival ⊑ Festival" and "venue then city implies location," the answer Ñam is entailed.</div>
+
+<h4>Ontologies</h4>
+<p>What is an "event"? One venue or many? One time interval or many? There is no single correct answer; it is convention. An <b>ontology</b> is a concrete, formal representation of what terms mean within a scope. Its value depends on agreement, detail, and adoption; shared ontologies improve interoperability. The main languages are <b>OWL</b> (W3C, works with RDF; largely subsumes RDFS) and <b>OBOF</b> (biomedicine).</p>
+
+<h5>Interpretations and assumptions</h5>
+<p>An <b>interpretation</b> maps the data graph's nodes and edge labels to a <b>domain graph</b> of entities and relations. Assumptions decide which interpretations count:</p>
+<ul>
+<li><b>UNA</b> (Unique Name Assumption): different names mean different entities, so Arica→Santiago and Viña del Mar→Santiago are at least two flights.</li>
+<li><b>NUNA</b>: two names may denote one entity, so there is at least one flight.</li>
+<li>OWL adopts <b>NUNA and OWA</b>, the most general case.</li>
+</ul>
+
+<h5>OWL features</h5>
+<div class="grid2">
+<div><h5>Individuals</h5>Assertions (edges); negation (a relation does not hold); <code>same as</code> (Región V = Región de Valparaíso); <code>different from</code> (Valparaíso the city ≠ the region).</div>
+<div><h5>Properties</h5>Sub-property, domain, range, equivalence, inverse (venue inv. of hosts), disjoint; transitive (part of), symmetric (nearby), asymmetric (capital), reflexive, irreflexive (flight); functional (population), inverse-functional (capital); key (City key lat, long); chains (location chain location · part of).</div>
+<div><h5>Classes</h5>Sub-class, equivalence, disjointness; complement, union, intersection, enumeration (EUState one of Austria…Sweden); restrictions: some values, all values, has value, has self (SelfDriving: driver self), cardinality (Polyglot ≥2 fluent), qualified cardinality (BinaryStarSystem = 2 body Star).</div>
+<div><h5>Other</h5>Annotation properties (metadata, versions); datatype vs object properties; datatype facets (latitudes within a range).</div>
+</div>
+<div class="note"><b>Modelling trap.</b> Defining DomesticAirport as "all flights are national flights" is a mistake: anything with no flights satisfies an "all values" condition vacuously. Intersect with Airport instead.</div>
+
+<h4>Semantics and entailment</h4>
+<p>Interpretations that satisfy a graph are its <b>models</b>. Each axiom restricts the models. Graph G <b>entails</b> G′ if every model of G is a model of G′. Example: <code>Santiago type City</code> plus <code>City subc. of Place</code> entails <code>Santiago type Place</code>.</p>
+<p><b>If–then vs if-and-only-if semantics.</b> <code>nearby type Symmetric</code> and <code>nearby inv. of nearby</code> impose the same condition. Under if-and-only-if semantics (used by OWL) they entail each other; under if–then semantics they don't.</p>
+
+<h4>Reasoning</h4>
+<p>Deciding entailment for all OWL features is <b>undecidable</b>. Practical reasoners give up one property:</p>
+<ol>
+<li>Always halt but may <b>miss entailments</b> (incomplete). Scalable; good with incomplete data. Usually rules.</li>
+<li>Always halt and are complete, but accept only <b>restricted features</b>. Preferred where missed entailments are dangerous, such as medicine. Usually Description Logics.</li>
+<li>Always correct but may <b>never halt</b> (first-order theorem provers).</li>
+</ol>
+<h5>Rules</h5>
+<p>A rule has a <b>body</b> (if) and <b>head</b> (then), both graph patterns. It corresponds to Datalog or Horn clauses.</p>
+<pre><code>?x type ?c . ?c subc. of ?d     ⇒  ?x type ?d
+?x ?p ?y   . ?p subp. of ?q     ⇒  ?x ?q ?y
+?x ?p ?y   . ?p domain ?c       ⇒  ?x type ?c
+?x ?p ?y   . ?p range ?c        ⇒  ?y type ?c
+?x flight ?y . ?x country ?z . ?y country ?z  ⇒  ?x domestic flight ?y</code></pre>
+<p>The last rule infers from a cycle, which ontology features cannot express. <b>OWL 2 RL/RDF</b> is a (necessarily incomplete) rule set for OWL. Rule languages include N3, RIF, SWRL, and SPIN; Datalog± adds existentials and Disjunctive Datalog adds disjunction.</p>
+<ul>
+<li><b>Materialisation</b>: apply rules repeatedly, adding conclusions, until a <i>fixpoint</i>. Optimised by Rete networks or MapReduce; the result can get very large.</li>
+<li><b>Query rewriting</b>: expand the query instead. <code>?x type Event</code> becomes <code>?x type Event ∪ ?x type Festival ∪ ?x type Periodic Market ∪ ?x venue ?y</code>. The <b>OWL 2 QL</b> profile is designed for this.</li>
+</ul>
+<h5>Description Logics</h5>
+<p>DLs formalised frames and semantic networks and heavily influenced OWL; <b>OWL 2 DL</b> is the decidable fragment. They describe <i>individuals</i>, <i>classes</i> (concepts), and <i>properties</i> (roles):</p>
+<ul>
+<li><b>A-Box</b> (assertions): <code>City(Santiago)</code>, <code>flight(Santiago, Arica)</code>.</li>
+<li><b>T-Box</b> (class axioms): <code>City ⊑ Place</code>; <code>∃flight.⊤ ⊑ ∃nearby.Airport</code>; <code>Airport ⊑ DomesticAirport ⊔ InternationalAirport</code>.</li>
+<li><b>R-Box</b> (property axioms): <code>flight ⊑ connectsTo</code>.</li>
+</ul>
+<p>Expressive DLs reduce entailment to (un)satisfiability and use <b>tableau</b> methods, which branch on disjunctions and introduce elements for existentials. Too costly for large data, but valuable for modelling complex domains.</p>
+
+<dl class="terms">
+<dt>Ontology</dt><dd>Formal representation of what terms mean in a domain.</dd>
+<dt>Entailment</dt><dd>G entails G′ if every model of G is a model of G′.</dd>
+<dt>Materialisation</dt><dd>Precomputing inferences until fixpoint.</dd>
+<dt>A-Box / T-Box / R-Box</dt><dd>DL assertions / class axioms / property axioms.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Under OWL (NUNA), the edges <code>Arica flight Santiago</code> and <code>Viña del Mar flight Santiago</code> tell us there is:</p>
+<button>Exactly two flights</button><button>At least one flight</button><button>At least two flights</button>
+<div class="why" hidden>Without a unique name assumption, Arica and Viña del Mar could be the same entity.</div></div>
+<div class="q" data-a="0"><p>Which reasoning strategy extends the query rather than the data?</p>
+<button>Query rewriting</button><button>Materialisation</button><button>Tableau</button>
+<div class="why" hidden>Query rewriting evaluates an expanded query over the original graph; materialisation adds inferred edges.</div></div>
+<div class="q" data-a="2"><p>A medical ontology must never miss an entailment. Which family of approaches fits best?</p>
+<button>Incomplete rule sets</button><button>Embeddings</button><button>Complete reasoning over a restricted (decidable) language such as a DL</button>
+<div class="why" hidden>Option 2 in the survey: always halts with the correct answer for restricted features.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m8" data-part="I" data-title="Inductive knowledge">
+<div class="modhead"><span class="modnum">M8</span><span class="src">Survey §5</span></div>
+<h3>Inductive knowledge: analytics, embeddings, GNNs, symbolic learning</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Pick a graph analytics technique for a question (centrality, communities, connectivity, similarity, paths).</li>
+<li>Explain how knowledge graph embeddings score edges, and compare TransE, DistMult, ComplEx, ConvE, RDF2Vec.</li>
+<li>Contrast recursive and convolutional GNNs, and explain rule mining with support and confidence.</li></ul></div>
+
+<p>Deduction gives certain conclusions; <b>induction</b> generalises patterns into predictions with a confidence. Almost all capitals have international airports, so Santiago probably does, but Vaduz (Liechtenstein) has none. A pattern might hold with confidence 0.959 (187 of 195 capitals).</p>
+<div class="tbl"><table><tr><th>Technique</th><th>Output</th><th>Paradigm</th></tr>
+<tr><td>Graph analytics</td><td>Numeric (scores, clusters)</td><td>Unsupervised</td></tr>
+<tr><td>Knowledge graph embeddings</td><td>Numeric vectors</td><td>Self-supervised</td></tr>
+<tr><td>Graph neural networks</td><td>Numeric model</td><td>Supervised</td></tr>
+<tr><td>Symbolic learning</td><td>Rules and axioms</td><td>Self-supervised</td></tr></table></div>
+
+<h4>Graph analytics</h4>
+<p>Analytics over the graph's <i>topology</i>, borrowing from graph theory and network analysis.</p>
+<div class="tbl"><table><tr><th>Technique</th><th>Question for the tourism board</th><th>Algorithms</th></tr>
+<tr><td>Centrality</td><td>Which transport hubs matter most?</td><td>Degree, betweenness, closeness, eigenvector, PageRank, HITS, Katz</td></tr>
+<tr><td>Community detection</td><td>Which groups of attractions go together (north, south, airport cities)?</td><td>Minimum cut, label propagation, Louvain modularity</td></tr>
+<tr><td>Connectivity</td><td>Which attractions become unreachable if a bus route fails?</td><td>Density, k-connectivity, strongly/weakly connected components, spanning trees</td></tr>
+<tr><td>Node similarity</td><td>Which places resemble each other (Calama and Arica)?</td><td>Structural equivalence, random walks, diffusion kernels</td></tr>
+<tr><td>Path finding</td><td>Shortest route Torres del Paine → Moon Valley</td><td>Simple paths, shortest paths, regular path queries</td></tr></table></div>
+<h5>Frameworks</h5>
+<p>Apache Spark GraphX, GraphLab, Pregel, Signal–Collect, and Shark use a <b>systolic</b> (vertex-centric) abstraction: each node is a processor. In every iteration a node reads incoming messages (<b>Msg</b> phase), aggregates them (<b>Agg</b> phase), and sends results along its out-edges.</p>
+<div class="ex"><b>PageRank</b>: each of n nodes starts at 1/n. A node sends d·R(v)/|out-edges| to each neighbour (damping factor d ≈ 0.85). Each node sums its messages and adds (1−d)/n. Repeat until convergence. The score is the probability a randomly travelling tourist is at that place.</div>
+<p>Message passing can't express everything (it is as powerful as the Weisfeiler–Lehman test), so frameworks add global steps and mutation steps.</p>
+<h5>Running analytics on data graphs</h5>
+<p>Most algorithms expect plain directed or undirected graphs. Four strategies prepare a data graph:</p>
+<ul>
+<li><b>Projection</b>: select a sub-graph (bus and flight edges) and drop labels.</li>
+<li><b>Weighting</b>: turn edge data into numbers (trip duration, price).</li>
+<li><b>Transformation</b>: convert to a lower-arity graph, lossy or lossless (lossless adds nodes, like reification).</li>
+<li><b>Customisation</b>: adapt the algorithm to use labels.</li>
+</ul>
+<p>Results can change dramatically between strategies. Analytics also combine with queries (extract a sub-graph, compute its strongly connected component, query events outside it during an airline strike) and with entailment: <code>hosts</code> and inverse <code>venue</code> edges mean the same thing but change direction-sensitive analytics. <i>Semantically invariant analytics</i> remain an open research topic.</p>
+
+<h4>Knowledge graph embeddings</h4>
+<p>Machine learning wants dense vectors. One-hot encoding a graph gives huge, sparse vectors (|L|·|V| long). An <b>embedding</b> maps each entity to a vector <b>e</b> and each relation to <b>r</b> in a low-dimensional space (typically 50–1000 dimensions). A <b>scoring function</b> rates the <b>plausibility</b> of an edge s–p→o. Training maximises the score of positive edges (in the graph) and minimises it for negative ones (edges with a node or label swapped out). This is self-supervision.</p>
+<p>Uses: confidence for extracted edges, <b>link prediction</b> (Module 11), similarity for deduplication and recommendation.</p>
+<div class="tbl"><table><tr><th>Family</th><th>Models</th><th>Idea</th></tr>
+<tr><td>Translational</td><td>TransE, TransH, TransR, TransD, RotatE, MuRP</td><td>TransE wants <b>e<sub>s</sub> + r<sub>p</sub> ≈ e<sub>o</sub></b>. Too simple for one-to-many relations (bus goes to many places) and cycles. TransH/R/D project into relation-specific spaces; RotatE uses rotations in complex space (symmetry, inversion, composition); MuRP uses hyperbolic space.</td></tr>
+<tr><td>Tensor decomposition</td><td>DistMult, RESCAL, HolE, ComplEx, SimplE, TuckER</td><td>The graph is a |V|×|L|×|V| 0/1 tensor; low-rank (CP) decomposition gives latent factors. DistMult scores Σ e<sub>s</sub>·r<sub>p</sub>·e<sub>o</sub> but can't tell direction. RESCAL uses a relation matrix; HolE circular correlation; ComplEx complex vectors; TuckER a Tucker core tensor (state of the art at the time).</td></tr>
+<tr><td>Neural</td><td>SME, NTN, MLP, ConvE, HypER</td><td>Non-linear scoring. NTN is expressive but has many parameters; ConvE reshapes vectors into a 2D matrix for convolutions; HypER generates relation-specific filters.</td></tr>
+<tr><td>Language models</td><td>RDF2Vec, KGloVe</td><td>RDF2Vec turns random walks into "sentences" for word2vec (e.g. 500 walks of length 8 per entity). KGloVe uses personalised PageRank co-occurrence with GloVe.</td></tr>
+<tr><td>Entailment-aware</td><td>KALE, RUGE, FSL</td><td>Combine rules with embeddings, using t-norm fuzzy logic or constraints like "bus is never more plausible than connects to."</td></tr></table></div>
+<div class="ex">Toy TransE in 2D: e<sub>Licantén</sub> + r<sub>west of</sub> lands exactly on e<sub>Curicó</sub>. To predict what is west of Antofagasta, compute e<sub>Antofagasta</sub> + r<sub>west of</sub> and pick the nearest entity: Toconao.</div>
+
+<h4>Graph neural networks</h4>
+<p>A GNN builds a neural network shaped like the data graph and learns, <b>supervised</b>, to map node features to outputs. It supports end-to-end classification of nodes, edges, or whole graphs.</p>
+<ul>
+<li><b>Recursive GNNs</b> (Scarselli et al.): each node has fixed feature vectors and a state vector. A learned <i>transition function</i> updates the state from neighbours' features and states, and an <i>output function</i> produces the result. Iterate to a fixpoint (the transition must be a contraction). Example: learn where to place tourist information offices from labelled examples.</li>
+<li><b>Convolutional GNNs</b>: the transition function is a convolution, as in image CNNs. Neighbourhood sizes vary, so they use spectral or spatial representations, or <b>attention</b>. They run a fixed number of layers with different weights per layer, while RecGNNs reuse one function to a fixpoint.</li>
+</ul>
+
+<h4>Symbolic learning</h4>
+<p>Numeric models are hard to explain and suffer from the <b>out-of-vocabulary</b> problem: a new node (CDG) has no embedding until retraining. Symbolic learning produces interpretable, quantified rules and axioms that apply to unseen nodes and can be checked by experts.</p>
+<h5>Rule mining</h5>
+<ul>
+<li><b>Support</b>: number of a rule's entailments that are positive (in the graph).</li>
+<li><b>Confidence</b>: ratio of entailments that are positive.</li>
+<li><b>Partial Completeness Assumption (PCA)</b>: an edge x–p→y′ counts as negative only if x has some other p-edge. PCA confidence = support ÷ (positive + negative entailments).</li>
+</ul>
+<div class="ex">Rule <code>?x flight ?y ⇒ ?y flight ?x</code> over a small airport graph: support 4, confidence 4/5 = 0.8, because SCL→ARI is a PCA negative (SCL has another flight, to LIM).</div>
+<p><b>AMIE</b> mines rules top-down from a head, adding body edges by three refinements (fresh variable, constant, or two existing variables), pruning by support, and keeping only <b>closed</b> rules (every variable appears at least twice). Later systems learn exceptions (non-monotonic rules), use embeddings (RuLES), cardinalities (CARL), or ontology-entailed negatives. <b>Differentiable rule mining</b> (NeuralLP, DRUM) treats rule bodies as adjacency-matrix multiplications and learns path-like rules end to end.</p>
+<h5>Axiom mining</h5>
+<p>Learns DL axioms such as disjointness (<code>DomesticAirport ⊓ InternationalAirport ≡ ⊥</code>) via association rules or TF-IDF class similarity. <b>DL-Learner</b> learns class descriptions separating positive from negative examples, e.g. {Iquique, Arica} vs {Santiago} gives <code>∃nearby.Airport ⊓ ¬(∃capital⁻.⊤)</code>.</p>
+
+<dl class="terms">
+<dt>Embedding</dt><dd>Dense low-dimensional vectors for entities and relations, scored for plausibility.</dd>
+<dt>GNN</dt><dd>Neural network following the graph's topology, trained on labelled examples.</dd>
+<dt>Support / confidence</dt><dd>Count / ratio of a rule's correct entailments.</dd>
+<dt>PCA</dt><dd>Treat x–p→y′ as false only when x has another known p value.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Why can't DistMult distinguish s–p→o from o–p→s?</p>
+<button>It uses complex numbers</button><button>Its element-wise product score is symmetric in s and o</button><button>It ignores relations</button>
+<div class="why" hidden>Σ e_s·r_p·e_o is unchanged when s and o swap. ComplEx and RESCAL fix this.</div></div>
+<div class="q" data-a="2"><p>A new airport node appears. Which approach can make predictions for it without retraining?</p>
+<button>TransE</button><button>ConvE</button><button>A mined rule like ?x flight ?y ⇒ ?y flight ?x</button>
+<div class="why" hidden>Rules are quantified, so they apply to unseen nodes; embeddings have an out-of-vocabulary problem.</div></div>
+<div class="q" data-a="0"><p>To find the transport hubs most tourists pass through, which analytics fits?</p>
+<button>Centrality (e.g. PageRank, betweenness)</button><button>Community detection</button><button>Node similarity</button>
+<div class="why" hidden>Centrality ranks importance; communities find groups.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m9" data-part="I" data-title="Creation and enrichment">
+<div class="modhead"><span class="modnum">M9</span><span class="src">Survey §6</span></div>
+<h3>Creation and enrichment</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Describe the text extraction pipeline: pre-processing, NER, entity linking, relation extraction.</li>
+<li>Extract from markup with wrappers, web tables, and Deep Web crawling.</li>
+<li>Map tables and trees to graphs (direct mapping, R2RML, JSON-LD), and choose ETL vs virtualisation.</li>
+<li>Build ontologies with competency questions, design patterns, and ontology learning.</li></ul></div>
+
+<p>Knowledge graphs are usually built from a small core and enriched incrementally ("pay-as-you-go", agile). The tourism board starts with attractions and events, and adds routes and crime reports later.</p>
+
+<h4>Human collaboration</h4>
+<p>In-house editors, crowdsourcing, feedback, or wikis. Some major graphs (Wikidata, early Freebase) rely mostly on people. Costs are high, and problems include error, disagreement, bias, and vandalism, plus licensing, tooling, and culture. People are also used to verify extracted data, write mappings, and design schemas.</p>
+
+<h4>Text sources</h4>
+<p>Sentence: <i>"Santiago has flights to Rapa Nui, which was named a World Heritage Site in 1995."</i></p>
+<ol>
+<li><b>Pre-processing</b>: tokenisation, part-of-speech tagging, dependency parsing, word sense disambiguation (WordNet, BabelNet: "flights" as air travel, not stairs).</li>
+<li><b>Named Entity Recognition</b>: find mentions of people, places, organisations. Supervised, bootstrapped from seeds, <b>distant supervision</b> (use entities already in the graph), or hand rules. New entities are <i>emerging entities</i>.</li>
+<li><b>Entity Linking</b>: link mentions to existing nodes. Challenges: aliases (Rapa Nui = Easter Island) and ambiguity (which Santiago?). Rank candidates using context, prior probability, and centrality.</li>
+<li><b>Relation Extraction</b>: binary relations in a closed setting (patterns, supervised, bootstrapping, distant supervision) or open (<b>Open Information Extraction</b>, relations taken from parse trees). <b>n-ary</b> RE captures context such as "in 1995," using frame semantics (FrameNet) or Discourse Representation Theory: ∃e: naming(e), patient(e, Easter Island), name(e, World Heritage Site). Open relations like "has flights to" must be aligned to existing labels (flight).</li>
+</ol>
+<p>Tasks are often done jointly (WSD+EL, NER+EL, NER+RE) for better accuracy.</p>
+
+<h4>Markup sources</h4>
+<ul>
+<li><b>Wrapper-based</b>: rules that locate data in HTML. Manual wrappers are brittle; induced wrappers (e.g. LODIE with distant supervision) learn tag paths from known edges and apply them to similar pages.</li>
+<li><b>Web tables</b>: classify tables (many are for layout), normalise (spans, splits, nesting), find the <i>protagonist</i> (main entity, often outside the table), then link cells, types, and relations. DBpedia and YAGO extract Wikipedia infoboxes.</li>
+<li><b>Deep Web crawling</b>: fill in search forms to reach data behind them.</li>
+</ul>
+
+<h4>Structured sources</h4>
+<p>Structured data can be <i>mapped</i> precisely rather than extracted imprecisely.</p>
+<h5>Tables</h5>
+<ul>
+<li><b>Direct mapping</b> (W3C standard): each non-null cell becomes an edge row–column→value; rows are named from primary keys (Claimant-XY12SDA vs the raw value XY12SDA); foreign keys become links; SQL types become XSD datatypes; nulls are omitted (not blank nodes, since SQL null can mean "no value"). There is also a CSV mapping standard and one for property graphs.</li>
+<li><b>Custom mapping</b> with <b>R2RML</b>: constants, cell values, templates (<code>{id}-{country}</code>), or SQL queries, e.g. a GROUP BY count producing <code>U.S. —crimes→ 2</code>.</li>
+</ul>
+<div class="grid2">
+<div><h5>ETL (materialisation)</h5>Transform and load the data as a graph. Use it like any other graph data, but updates must be propagated.</div>
+<div><h5>Query rewriting (virtualisation)</h5>Translate graph queries (SPARQL, Cypher) into SQL over the source. One copy of the data. <b>Ontology-Based Data Access (OBDA)</b> adds entailment.</div>
+</div>
+<h5>Trees and other graphs</h5>
+<p>Naive child-edges mirror tree structure, so use custom mappings: <b>GRDDL</b> for XML, <b>JSON-LD</b> for JSON; XSPARQL queries XML and RDF together. From other knowledge graphs (DBpedia, Wikidata, LinkedGeoData…), pull relevant sub-graphs with SPARQL <code>CONSTRUCT</code> and align entities and schema.</p>
+
+<h4>Schema and ontology creation</h4>
+<p><b>Ontology engineering</b> moved from waterfall methods to agile ones: DILIGENT (local vs global changes with review, like SNOMED CT's national extensions), eXtreme Design, Modular Ontology Modelling, SAMOD. Two key elements:</p>
+<ul>
+<li><b>Competency questions</b>: natural-language questions the ontology must answer, turned into test queries. "What events happen in Santiago?" fails until <code>location type Transitive</code> is added.</li>
+<li><b>Ontology Design Patterns</b>: reusable modelling templates, e.g. the Core Event pattern (spatio-temporal extent, sub-events, participants).</li>
+</ul>
+<p><b>Ontology learning</b> extracts terminology from text (unithood and termhood: "visitor visa", "World Heritage Site"), sub-class axioms from noun modifiers or <b>Hearst patterns</b> ("discounts, such as off-peak rates" ⇒ Off-Peak Rate ⊑ Discount), and even disjointness or cardinality axioms.</p>
+
+<dl class="terms">
+<dt>NER / EL / RE</dt><dd>Find entity mentions / link them to nodes / extract relations between them.</dd>
+<dt>Distant supervision</dt><dd>Use known graph edges to auto-label training text.</dd>
+<dt>R2RML</dt><dd>W3C language for custom relational-to-RDF mappings.</dd>
+<dt>Competency question</dt><dd>A question the ontology must be able to answer; used as a test.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="0"><p>"Rapa Nui" in text should attach to the existing node Easter Island. Which task does that?</p>
+<button>Entity linking</button><button>Named entity recognition</button><button>Relation extraction</button>
+<div class="why" hidden>NER finds the mention; EL links it to a node, handling aliases and ambiguity.</div></div>
+<div class="q" data-a="1"><p>The source database changes every minute and you want a single copy of the data. Which approach?</p>
+<button>ETL materialisation</button><button>Virtualisation via query rewriting</button><button>Graph dump</button>
+<div class="why" hidden>Query rewriting leaves the data in place; ETL needs propagation of updates.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m10" data-part="I" data-title="Quality assessment">
+<div class="modhead"><span class="modnum">M10</span><span class="src">Survey §7</span></div>
+<h3>Quality assessment</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Define quality as fitness for purpose.</li>
+<li>Name and measure the dimensions under accuracy, coverage, coherency, and succinctness.</li></ul></div>
+
+<p>Extracted data is incomplete and contains duplicates, contradictions, and errors, especially from multiple sources. <b>Quality</b> means <b>fitness for purpose</b>: assessment tells you what the graph can reliably be used for. <i>Dimensions</i> capture qualitative aspects; <i>metrics</i> measure them.</p>
+<div class="tbl"><table><tr><th>Cluster</th><th>Dimension</th><th>Meaning</th><th>Example / metric</th></tr>
+<tr><td rowspan="3">Accuracy</td><td>Syntactic</td><td>Data follows grammar and datatype rules</td><td><code>"March 29, 2019"^^xsd:dateTime</code> is malformed. Metric: ratio of bad values per property.</td></tr>
+<tr><td>Semantic</td><td>Values correctly describe the world</td><td>Inferring Valparaíso is the capital because Congress sits there. Check against multiple sources or gold standards.</td></tr>
+<tr><td>Timeliness</td><td>Up to date with the world</td><td>Flight status updated each minute at source, hourly in the graph.</td></tr>
+<tr><td rowspan="2">Coverage</td><td>Completeness</td><td>Required information is present</td><td>Schema, property, population, and linkability completeness. Compare with gold standards.</td></tr>
+<tr><td>Representativeness</td><td>Biases in what is included</td><td>Geographic, linguistic, or social bias (over-promoting Santiago). Compare with known distributions, Benford's law.</td></tr>
+<tr><td rowspan="2">Coherency</td><td>Consistency</td><td>No logical contradictions</td><td>flight range Airport + Airport disjoint with City + a flight to Santiago (a City). Count inconsistencies.</td></tr>
+<tr><td>Validity</td><td>No constraint violations</td><td>Shape "City has at most one country" violated by Santiago in Chile and Cuba. Count violations.</td></tr>
+<tr><td rowspan="3">Succinctness</td><td>Conciseness</td><td>No irrelevant schema (intensional) or data (extensional)</td><td>Events in Santiago de Cuba in a Chile tourism graph.</td></tr>
+<tr><td>Representational conciseness</td><td>Compact representation</td><td>Both <i>flight</i> and <i>flies to</i>; unlinked Santiago and Santiago de Chile; needless reification.</td></tr>
+<tr><td>Understandability</td><td>Interpretable by people</td><td>Labels and descriptions, ideally multilingual, for EID15 etc. Ratio of labelled nodes.</td></tr></table></div>
+<div class="note"><b>Consistency vs validity.</b> An OWL cardinality restriction would not flag Santiago having two countries: without UNA, a reasoner concludes Chile and Cuba are the same entity. A shape constraint flags it as a violation.</div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Having both <i>flight</i> and <i>flies to</i> with the same meaning hurts which dimension?</p>
+<button>Timeliness</button><button>Representativeness</button><button>Representational conciseness</button>
+<div class="why" hidden>Redundant schema elements reduce intensional representational conciseness.</div></div>
+<div class="q" data-a="0"><p>Your graph has far more events near the capital than elsewhere, matching curator locations rather than reality. Which dimension?</p>
+<button>Representativeness (bias)</button><button>Syntactic accuracy</button><button>Validity</button>
+<div class="why" hidden>Representativeness asks how biased the sample of the ideal graph is.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m11" data-part="I" data-title="Refinement">
+<div class="modhead"><span class="modnum">M11</span><span class="src">Survey §8</span></div>
+<h3>Refinement: completion and correction</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Distinguish general, type, and identity link prediction.</li>
+<li>Explain blocking for entity matching.</li>
+<li>Describe fact validation and inconsistency repair.</li></ul></div>
+<p>Refinement improves the graph as it is (completing and correcting) rather than ingesting new sources.</p>
+
+<h4>Completion</h4>
+<p>Knowledge graphs are incomplete. <b>Link prediction</b> (from Statistical Relational Learning) predicts missing edges.</p>
+<ul>
+<li><b>General links</b>: embeddings or mined rules. Since bus routes are usually return routes, predict Moon Valley —bus→ San Pedro.</li>
+<li><b>Type links</b>: a classification task over a few classes, using features like incoming and outgoing edge labels, or GNNs. Nodes with flight edges are likely Cities (right for Iquique, wrong for Easter Island).</li>
+<li><b>Identity links</b>: entity matching (record linkage, deduplication). <b>Value matchers</b> compare property values (population 7400 vs 7500); <b>context matchers</b> compare neighbourhoods (Easter Island vs Rapa Nui have similar coordinates and the same seat).</li>
+</ul>
+<p>Pairwise comparison costs O(n²), so <b>blocking</b> groups candidates by similarity-preserving keys (geographic regions), or uses windowing or multidimensional search. Confident matches are <b>consolidated</b> onto a canonical node.</p>
+
+<h4>Correction</h4>
+<h5>Fact validation (fact checking)</h5>
+<p>Score an edge's veracity, 0–1, against external sources. Unlike link prediction, it is usually online and evaluates given edges.</p>
+<ul>
+<li><b>Unstructured sources</b>: verbalise the edge into text, then use <b>fact finders</b> on a bipartite source–fact graph with mutually dependent trustworthiness and plausibility: <i>Sums</i> (HITS-based), <i>Average Log</i> (normalises prolific sources), <i>Investment</i>.</li>
+<li><b>Structured sources</b>: find paths in reference graphs that support the edge (mutual information, <b>metapaths</b>, PredPath), or use embeddings.</li>
+</ul>
+<h5>Inconsistency repair</h5>
+<p>If Santiago is typed City and Airport (disjoint), which edge do you remove? And removing <code>Santiago type Airport</code> is not enough if <code>flight range Airport</code> re-entails it. Options: suggest repairs for manual choice, compute <b>minimal hitting sets</b> weighted by source trust (Bonatti et al.), or answer queries with <b>consistent query answering</b> that holds under every possible repair.</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Why use blocking in identity-link prediction?</p>
+<button>To delete duplicates</button><button>To avoid O(n²) pairwise comparisons by only comparing within similar groups</button><button>To hide private data</button>
+<div class="why" hidden>Blocks reduce the comparison space.</div></div>
+<div class="q" data-a="0"><p>Which is usually an <i>online</i> task assessing a given edge with external sources?</p>
+<button>Fact validation</button><button>Link prediction</button><button>Type prediction</button>
+<div class="why" hidden>Link prediction is typically offline and generates candidate edges.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m12" data-part="I" data-title="Publication">
+<div class="modhead"><span class="modnum">M12</span><span class="src">Survey §9</span></div>
+<h3>Publication: principles, access, and usage control</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>List the FAIR principles and the four Linked Data principles.</li>
+<li>Compare access protocols from dumps to SPARQL.</li>
+<li>Apply licensing (ODRL), usage policies, encryption, and anonymisation.</li></ul></div>
+
+<h4>FAIR principles</h4>
+<div class="grid2">
+<div><h5>Findable</h5>F1 globally unique persistent identifier · F2 rich metadata · F3 metadata include the data's identifier · F4 registered in a searchable resource.</div>
+<div><h5>Accessible</h5>A1 retrievable by identifier via a standard protocol (A1.1 open, free, universal; A1.2 supports authentication) · A2 metadata outlive the data.</div>
+<div><h5>Interoperable</h5>I1 shared formal representation · I2 FAIR vocabularies · I3 qualified references to other (meta)data.</div>
+<div><h5>Reusable</h5>R1 richly described (R1.1 clear licence, R1.2 provenance, R1.3 community standards).</div>
+</div>
+<p>Supporting tools: IRIs (F), VoID dataset descriptions and DataHub (F), ontologies (I), PROV (R). Open PHACTS and UniProt are cited as FAIR.</p>
+
+<h4>Linked Data principles (Berners-Lee)</h4>
+<ol><li>Use IRIs to name things.</li><li>Use HTTP IRIs so names can be looked up.</li><li>Return useful content (RDF) when an IRI is looked up.</li><li>Include links to related entities' IRIs.</li></ol>
+<p>The result is a "Web of Data" you can traverse by dereferencing IRIs: from Lollapalooza 2018 (<code>cle:LP2018</code>) to Pearl Jam (<code>wd:Q142701</code>) to Eddie Vedder. Entity IRIs differ from document IRIs (<code>wd:</code> vs <code>wdd:</code>). Principle 4 needs <b>link discovery</b> across graphs: different vocabularies and no example links, so typically hand-written <b>linkage rules</b> with similarity measures, helped by shared identifiers (ISBN, country codes, Wikidata IDs).</p>
+
+<h4>Access protocols</h4>
+<div class="tbl"><table><tr><th>Protocol</th><th>Request</th><th>Server cost</th><th>Bandwidth / notes</th></tr>
+<tr><td>Dumps</td><td>Whole files</td><td>Lowest</td><td>Highest. Needs syntaxes (RDF/XML, JSON-LD, Turtle), compression (HDT-style), diffs.</td></tr>
+<tr><td>Node lookups</td><td>One node → its sub-graph</td><td>Low</td><td>Basis of Linked Data; patterns need many lookups and traversal.</td></tr>
+<tr><td>Edge (triple) patterns</td><td>e.g. <code>?ff type Food Festival</code></td><td>Low, predictable</td><td>Client joins locally; Triple Pattern Fragments; batches of bindings help.</td></tr>
+<tr><td>(Complex) graph patterns</td><td>Full SPARQL query</td><td>High, unpredictable</td><td>Lowest bandwidth; public endpoints suffer timeouts, yet serve millions of queries a day.</td></tr>
+<tr><td>Beyond</td><td>Entailment, recursion, federation</td><td>Higher still</td><td>Servers may offer several protocols.</td></tr></table></div>
+
+<h4>Usage control</h4>
+<ul>
+<li><b>Licensing</b>: W3C <b>ODRL</b> expresses permissions (Modify, Distribute, Derive), duties (Attribute), and prohibitions, and can model Apache, Creative Commons, and BSD licences. Compatibility checking (DALICC) supports combining graphs.</li>
+<li><b>Usage policies</b>: access control via edge patterns (WebAccessControl with WebID), and policies on processing, purpose, and recipient (SPECIAL, W3C DPV): "CompanyStaff may Analyse the LocationGraph on InternalServers for EventRecommendations."</li>
+<li><b>Encryption</b>: encrypt whole graphs or individual nodes and edges with different keys; CryptOntology records algorithms; functional encryption with indexing avoids decrypting everything.</li>
+<li><b>Anonymisation</b>: <b>k-anonymity</b> (each person indistinguishable from k−1 others; suppress quasi-identifiers), <b>l-diversity</b> (sensitive values vary within groups). Graphs face <b>neighbourhood attacks</b>, hence k-degree anonymity, k-isomorphic neighbour anonymity, and k-automorphism. For query interfaces, <b>ε-differential privacy</b> adds calibrated noise to aggregate answers.</li>
+</ul>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Which access protocol minimises bandwidth but makes server costs hardest to predict?</p>
+<button>Dumps</button><button>Node lookups</button><button>Complex graph patterns (SPARQL)</button>
+<div class="why" hidden>The server does all the work and returns only final answers.</div></div>
+<div class="q" data-a="0"><p>You publish aggregate counts through a query interface and must protect individuals. Which technique fits best?</p>
+<button>ε-differential privacy</button><button>k-anonymity on a dump</button><button>ODRL licence</button>
+<div class="why" hidden>The survey recommends differential privacy for query interfaces, k-anonymity for dumps.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m13" data-part="I" data-title="Knowledge graphs in practice">
+<div class="modhead"><span class="modnum">M13</span><span class="src">Survey §10–11</span></div>
+<h3>Knowledge graphs in practice, and what's next</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Compare DBpedia, YAGO, Freebase, Wikidata, and other open graphs.</li>
+<li>Name six common traits of enterprise knowledge graphs and their main industries.</li>
+<li>Summarise open research directions.</li></ul></div>
+
+<h4>Open knowledge graphs</h4>
+<p>"Open means anyone can freely access, use, modify, and share for any purpose." Most are Linked Open Data in RDF with dumps, Linked Data lookups, SPARQL, and sometimes Triple Pattern Fragments.</p>
+<div class="tbl"><table><tr><th>Graph</th><th>Source</th><th>Notable features</th></tr>
+<tr><td>DBpedia</td><td>Wikipedia infoboxes etc.</td><td>Extractors for labels, abstracts, links, geo; 97 languages (2012); four schemata (SKOS categories, YAGO, UMBEL, DBpedia ontology); live sync.</td></tr>
+<tr><td>YAGO</td><td>Wikipedia + WordNet</td><td>High coverage and quality; RDFS-based YAGO model; canonicalisation and type checking; later spatio-temporal and multilingual.</td></tr>
+<tr><td>Freebase</td><td>Human editors</td><td>MQL API, loose typing allowing incompatible types; bought by Google (2010), core of Google KG; read-only 2015 with 3+ billion edges; migrated to Wikidata.</td></tr>
+<tr><td>Wikidata</td><td>Collaborative editing</td><td>Feeds Wikipedia; language-agnostic Q/P IDs; references and conflicting claims; editable lightweight axioms and shapes; used by Siri.</td></tr>
+<tr><td>Others</td><td>Various</td><td>BabelNet (multilingual lexical), Cyc / OpenCyc (common sense, 900+ person-years), NELL (120M edges via OIE).</td></tr></table></div>
+<p>Domain-specific open graphs exist for media (BBC), government (US, UK), publications (OpenCitations, SciGraph, Microsoft Academic), geography (LinkedGeoData), life sciences (Bio2RDF), user content (Revyu), heritage, music, law, and tourism.</p>
+
+<h4>Enterprise knowledge graphs</h4>
+<p>Common traits (Noy et al.):</p>
+<ol><li>Data integrated from many internal and external sources, often text.</li><li>Very large: millions to billions of nodes and edges.</li><li>Refinement (linking, deduplication) is essential.</li><li>Must be kept up to date.</li><li>Mix ontological and machine-learning representations.</li><li>Ontologies are lightweight, often simple taxonomies.</li></ol>
+<div class="tbl"><table><tr><th>Industry</th><th>Examples and uses</th></tr>
+<tr><td>Web search</td><td>Google ("things, not strings"; Knowledge Panel), Microsoft Bing (formerly "Satori")</td></tr>
+<tr><td>Commerce</td><td>Amazon (product search and recommendations), eBay (conversational agents), Airbnb (neighbourhood experiences), Uber Eats (food)</td></tr>
+<tr><td>Social</td><td>Facebook (interests), LinkedIn (users, jobs, skills; translation, ads, matching), Pinterest (interest taxonomy)</td></tr>
+<tr><td>Finance</td><td>Bloomberg (sentiment, QA, events), Thomson Reuters/Refinitiv (supply chains, risk), Banca d'Italia (rule-based ownership reasoning), Accenture, Capital One, Wells Fargo</td></tr>
+<tr><td>Other</td><td>IBM and AstraZeneca (health, genomics), Bosch (driving scenes), Maana (oil & gas risk)</td></tr></table></div>
+
+<h4>Future directions</h4>
+<p>The survey sees research at intersections: formal semantics for property graphs and contextual reasoning (data + deduction); similarity-based query relaxation, shape induction, and contextual embeddings (data + induction); entailment-aware embeddings, expressive GNNs, and rule/axiom mining (deduction + induction). General challenges: <b>scalability, quality, diversity, dynamicity, and usability</b>, which will mature rather than be "solved."</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Which open knowledge graph was built from human contributions, acquired by Google, and later migrated into Wikidata?</p>
+<button>DBpedia</button><button>Freebase</button><button>YAGO</button>
+<div class="why" hidden>Freebase went read-only in 2015; much content moved to Wikidata.</div></div>
+<div class="q" data-a="2"><p>What kind of ontology do enterprise knowledge graphs typically use?</p>
+<button>Highly expressive OWL 2 DL</button><button>None</button><button>Lightweight ones, often simple taxonomies</button>
+<div class="why" hidden>Trait 6 in the survey's list.</div></div>
+</div>
+</section>
+
+<div class="partbanner" id="part2">
+  <div class="eyebrow">Part II · Source: Barrasa & Webber, <i>Building Knowledge Graphs</i> (O'Reilly, 2023)</div>
+  <h2>Practice: building knowledge graphs with Neo4j</h2>
+  <p>Tooling (Cypher, loading, integration, graph data science, graph ML) followed by use cases (metadata, identity, fraud, skills, dependencies, semantic search, natural language). All examples use the labelled property graph model and Neo4j, the authors' employer at the time of writing.</p>
+</div>
+
+<section class="mod" id="m14" data-part="II" data-title="Organizing principles">
+<div class="modhead"><span class="modnum">M14</span><span class="src">Book ch. 1–2</span></div>
+<h3>The property graph model and organizing principles</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Describe the labelled property graph (LPG) model and its "schema-ish" constraints.</li>
+<li>Climb the ladder of organizing principles: plain graph → property graph → taxonomy → ontology.</li>
+<li>Choose "just-enough semantics," and decide between standard and custom ontologies.</li></ul></div>
+
+<h4>Graphs, not charts</h4>
+<p>"Graph" here means nodes and relationships, not plotted charts. Graph theory began with Leonhard Euler and the <b>seven bridges of Königsberg</b> (18th century): Euler stripped away the geography and kept only connections, proving no walk could cross every bridge exactly once. The book compares this to software: remove real-world noise and keep the logical model.</p>
+
+<h4>The labelled property graph model</h4>
+<div class="grid2">
+<div><h5>Nodes</h5>Represent entities. Zero or more <b>labels</b> (Customer, Product) declare their role. Zero or more <b>properties</b> (key–value pairs such as price or date of birth).</div>
+<div><h5>Relationships</h5>Have a <b>type</b> (BOUGHT, FOLLOWS, LIKES) and a <b>direction</b>, optional properties (timestamp, distance), and <b>never dangle</b>: there is always a start and end node (possibly the same one).</div>
+</div>
+<pre class="mermaid">graph LR
+  R["Person&lt;br/&gt;name: 'Rosa', gender: 'f'"] -- "LIVES_IN&lt;br/&gt;since: 2020" --> B["Place&lt;br/&gt;city: 'Berlin'"]
+  R -- FRIEND --> K["Person&lt;br/&gt;name: 'Karl', age: 64"]
+  K -- FRIEND --> R
+  K -- FRIEND --> F["Person&lt;br/&gt;name: 'Fred'"]
+  F -- FRIEND --> K
+  K -- "LIVES_IN&lt;br/&gt;since: 1980" --> L["Place&lt;br/&gt;city: 'London'"]
+  F -- LIVES_IN --> L</pre>
+<p>Read it as "Rosa has lived in Berlin since 2020." Karl and Fred carry different properties, which is fine: real data is uneven.</p>
+<div class="note"><b>Schema-ish.</b> The LPG doesn't enforce a schema by label or relationship type. Where you need guarantees, add constraints (existence, uniqueness, node keys) just there, and change them over time. The authors call this neither schema nor schemaless but "schema-ish."</div>
+
+<h4>Definition and the organizing principle</h4>
+<p>"Knowledge graphs are interlinked sets of facts that describe real-world entities, events, or things and their interrelations in a human- and machine-understandable format." Critically, they must have an <b>organizing principle</b> so that people and software can reason about the data. It makes the <i>data</i> smarter, instead of keeping intelligence in applications and treating data as dumb.</p>
+<p>A knowledge graph is agnostic about physical storage: a single graph database, a federation of graph stores, a layer over a data lake, or a logical layer over many sources; fully materialised, virtualised ("smart index"), or hybrid. The book's summary image: a knowledge graph is like a skilled <b>librarian</b> who curates and recommends.</p>
+
+<h4>A ladder of organizing principles</h4>
+<p>The running example is an online store's sales and product catalogue.</p>
+<div class="tbl"><table><tr><th>Level</th><th>What it adds</th><th>What it enables</th><th>Limit</th></tr>
+<tr><td>Plain old graph</td><td>Just nodes (P, C) and edges</td><td>"What did this customer buy?" in both directions; popularity by in-degree</td><td>Meaning lives in code. A new data scientist, or a departed engineer, leaves the graph unreadable.</td></tr>
+<tr><td>Property graph</td><td>Labels, typed directed relationships, properties</td><td>Self-describing to an extent; introspect schema; tools like Neo4j Bloom and Linkurious visualise it without domain knowledge</td><td>Labels have no associativity: you can't tell an apple is a fruit or that two products are substitutes.</td></tr>
+<tr><td>Taxonomy</td><td>Category nodes linked by SUBCATEGORY_OF (or NARROWER_THAN, SUBCLASS_OF)</td><td>"x is a kind of y"; offer alternatives when out of stock; several hierarchies at once (product type plus Black Friday "half price" promotions); taxonomy similarity metrics</td><td>Only broader–narrower relationships.</td></tr>
+<tr><td>Ontology</td><td>Rich relationships between categories (PART_OF, COMPATIBLE_WITH, DEPENDS_ON, UPSELL) and their characteristics (transitive, symmetric)</td><td>Horizontal as well as vertical reasoning: recommend iPhone 12 Pro to someone viewing iPhone 12; bridge systems with cross-equivalences; layered modular ontologies</td><td>More complexity; build modularly.</td></tr></table></div>
+<p>The property graph's organizing principle acts as a <b>contract</b>: tools that honour it (labelled nodes, typed directed relationships, properties) work without domain knowledge.</p>
+<div class="note"><b>Why labels are not types.</b> In the LPG, labels are tags describing a node's role, with no inheritance. Type systems are left to applications by design; the database owns data and structure. Inheritance-style reasoning exists in parts of the Semantic Web stack, but the authors note it is complex and can be slow or intractable.</div>
+
+<h4>Choosing a principle</h4>
+<ul>
+<li>Let the <b>intended use</b> drive it. An ambitious metamodel up front is a common, expensive mistake.</li>
+<li><b>Don't boil the ocean</b>: capture the business language incrementally, treat it as malleable and versioned, and deliver value early (agile).</li>
+<li>Embrace <b>just-enough semantics</b> and avoid "ontological perfectionism."</li>
+</ul>
+<h5>Standard or your own?</h5>
+<p>Standards include <b>SNOMED CT</b> (clinical), <b>Library of Congress Classification</b>, <b>FIBO</b> (finance), <b>Schema.org</b> (web), and <b>Dublin Core</b>. Adopting one fosters interoperability and may be mandatory for regulatory reporting. If none fits, write your own: in natural language (easy but not machine readable) or in <b>RDFS</b>, <b>OWL</b>, or <b>SKOS</b> (taxonomies), which gives you editors and automated reasoning. Successful teams mix standards with adaptive customisation.</p>
+
+<h4>Essential characteristics</h4>
+<p>No specific technology is required. A good knowledge graph is <b>flexible and easy to maintain</b>, <b>performant</b>, and <b>not static</b>: use enriches it in a virtuous cycle.</p>
+<div class="note"><b>RDF is a wire format.</b> The authors argue RDF is a model for data exchange (subject–predicate–object, roughly start node–relationship–end node), not a guide to storage or querying. It's reasonable for sharing data, but "your data model shouldn't be dictated by your wire format." Compare Part I, where RDF is the standard data model.</div>
+
+<dl class="terms">
+<dt>Organizing principle</dt><dd>The layer of structure (model, taxonomy, ontology) that gives data meaning; a contract with consumers.</dd>
+<dt>Taxonomy</dt><dd>Broader–narrower category hierarchy.</dd>
+<dt>Ontology</dt><dd>Categories plus rich, characterised relationships between them.</dd>
+<dt>Just-enough semantics</dt><dd>Model only what current use cases need; grow later.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>A retailer wants to suggest a similar product when one is out of stock. What is the smallest organizing principle that supports this?</p>
+<button>Plain old graph</button><button>Taxonomy</button><button>Full OWL ontology</button>
+<div class="why" hidden>"x is a kind of y" lets you offer items in the same or nearby categories. Don't over-engineer.</div></div>
+<div class="q" data-a="0"><p>In the LPG, can you infer from labels that :Giraffe is a kind of :Mammal?</p>
+<button>No, labels have no associativity or inheritance</button><button>Yes, automatically</button><button>Only with indexes</button>
+<div class="why" hidden>Labels are role tags. Model hierarchy explicitly with category nodes and relationships.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m15" data-part="II" data-title="Graph databases and Cypher">
+<div class="modhead"><span class="modnum">M15</span><span class="src">Book ch. 3</span></div>
+<h3>Graph databases and the Cypher query language</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Write CREATE, MATCH, MERGE, SET, REMOVE, DELETE, and DETACH DELETE statements.</li>
+<li>Avoid duplicates with MERGE and node-key constraints.</li>
+<li>Write graph-local and graph-global queries, call procedures, and tune with EXPLAIN/PROFILE.</li>
+<li>Explain index-free adjacency, property-access cost, and ACID with Raft.</li></ul></div>
+
+<p><b>Cypher</b> is a declarative, pattern-matching language created by Neo4j and implemented elsewhere; its ideas feed the ISO standard <b>GQL</b>. Its patterns look like ASCII-art diagrams.</p>
+<pre><code>(:Person {name:'Rosa'})-[:LIVES_IN {since:2020}]->(:Place {city:'Berlin', country:'DE'})
+ ^ node  ^ label  ^ properties  ^ relationship type    ^ direction</code></pre>
+<p>Labels also put nodes in a label index the planner uses, so "if you know something about your domain, put it in your knowledge graph." Direction is mandatory when storing (Rosa lives in Berlin, not the reverse) but relationships can be traversed either way at the same constant cost.</p>
+
+<h4>Creating and deleting</h4>
+<pre><code>CREATE (:Person {name:'Rosa'})-[:LIVES_IN {since:2020}]->(:Place {city:'Berlin', country:'DE'})
+
+MATCH (n) RETURN n LIMIT 25          // show some of the graph
+MATCH (n) DELETE n                   // aborts if relationships would dangle
+MATCH ()-[r:LIVES_IN]->() DELETE r   // delete relationships
+MATCH (n) DETACH DELETE n            // delete nodes and their relationships (whole graph)</code></pre>
+<p><code>CREATE</code> always inserts, so running it twice gives two Rosas and two Berlins.</p>
+
+<h4>MERGE and its trap</h4>
+<p><code>MERGE</code> matches the <i>whole</i> pattern or creates the <i>whole</i> pattern. It never matches part and creates the rest. After Karl lives in London, <code>MERGE (:Person {name:'Fred'})-[:LIVES_IN]->(:Place {city:'London', country:'UK'})</code> can't match fully, so it creates a <b>second London</b>.</p>
+<p>The fix has two parts. First, a constraint so duplicate places are rejected (composite node keys are an Enterprise Edition feature):</p>
+<pre><code>CREATE CONSTRAINT no_duplicate_cities
+FOR (p:Place) REQUIRE (p.country, p.city) IS NODE KEY</code></pre>
+<p>Second, merge piece by piece, binding variables, in one transaction:</p>
+<pre><code>MERGE (london:Place {city:'London', country:'UK'})
+MERGE (fred:Person {name:'Fred'})
+MERGE (fred)-[:LIVES_IN]->(london)
+MERGE (karl:Person {name:'Karl'})
+MERGE (karl)-[:LIVES_IN]->(london)</code></pre>
+<p>London, UK and London, Ontario can coexist; duplicates of either cannot.</p>
+<pre><code>MATCH (p:Person) WHERE p.name = 'Rosa' SET p.dob = 19841203   // add/update property
+MATCH (p:Person) WHERE p.name = 'Rosa' REMOVE p.dob           // remove property
+MATCH (p:Person) WHERE p.name = 'Rosa' REMOVE p:Person        // remove label</code></pre>
+
+<h4>Graph-local queries</h4>
+<p>Anchored to known nodes.</p>
+<pre><code>// Who lives in Berlin?
+MATCH (p:Person)-[:LIVES_IN]->(:Place {city:'Berlin', country:'DE'})
+RETURN p
+
+// Friends of friends: exactly 2 hops, excluding Rosa herself
+MATCH (rosa:Person {name:'Rosa'})-[:FRIEND*2..2]->(fof:Person)
+WHERE rosa <> fof
+RETURN fof
+
+// Friends or friends-of-friends of anyone living in Berlin
+MATCH (:Place {city:'Berlin'})<-[:LIVES_IN]-(p:Person)<-[:FRIEND*1..2]-(f:Person)
+WHERE f <> p
+RETURN f</code></pre>
+<p>Without <code>WHERE rosa &lt;&gt; fof</code>, Rosa appears as her own friend-of-friend via Rosa→Karl→Rosa. Other predicates: <code>STARTS WITH</code>, <code>CONTAINS</code>, <code>ENDS WITH</code>, <code>IN [...]</code>, and path patterns such as <code>WHERE NOT (p)-[:KNOWS]->(:Person {name:'Karl'})</code>.</p>
+<div class="note"><b>No join bombs.</b> Unlike recursive joins in SQL, query latency in Neo4j is proportional to how much of the graph is visited, not to database size. A single traversal costs on the order of microseconds.</div>
+
+<h4>Graph-global queries</h4>
+<p>Not anchored; they process much or all of the graph.</p>
+<pre><code>// Most popular cities to live in
+MATCH (p:Place)<-[l:LIVES_IN]-(:Person)
+RETURN p AS place, count(l) AS rels
+ORDER BY rels DESC</code></pre>
+<p>Use aggregation (<code>count, avg, max, min, sum</code>), <code>SKIP</code>, and <code>LIMIT</code> to return compact answers from huge graphs. Tip: include labels you know (helps the planner) and <b>never omit relationship types</b>, which explodes the search space.</p>
+
+<h4>Procedures, functions, and tuning</h4>
+<pre><code>CALL db.schema.visualization()                         // see the graph's schema
+
+MATCH (p:Person {name:'Fred'})
+CALL apoc.atomic.concat(p, "name", 'dy')               // procedure: Fred → Freddy
+YIELD oldValue, newValue RETURN oldValue, newValue;
+
+RETURN apoc.date.convert(datetime().epochSeconds, "seconds", "days") AS outputInDays  // function</code></pre>
+<p><b>APOC</b> is the standard library of procedures and functions that ships with Neo4j; check it before writing something complicated. <code>EXPLAIN</code> shows the plan without running; <code>PROFILE</code> runs and instruments it. Reduce "DB hits" and cardinality early; scans can indicate a missing index; minimise time even at the cost of some DB hits.</p>
+
+<h4>Inside Neo4j: "mechanical sympathy"</h4>
+<ul>
+<li><b>Index-free adjacency</b>: graph structure is stored as fixed-length node and relationship records, so record ID × record size gives the file offset. Traversals are O(1) pointer chasing. A node's relationships act as its local index.</li>
+<li><b>Property storage</b> is a linked list of property records: O(N) reads, O(1) writes. Many property reads during big traversals can double latency, so <b>traverse first, read properties last</b>.</li>
+<li><b>Memory hierarchy</b>: keep the working set in RAM; for the most demanding cases, fit the whole graph in RAM. Avoid spinning disks (a 5 ms seek is thousands of traversals). Sometimes the cheapest fix is more RAM.</li>
+<li><b>ACID transactions</b> via a write-ahead log for crash recovery; clustering uses the <b>Raft</b> consensus algorithm; an opt-in <b>causal barrier</b> means you always read your own writes.</li>
+</ul>
+
+<dl class="terms">
+<dt>MERGE</dt><dd>Match the entire pattern, or create the entire pattern.</dd>
+<dt>Node key</dt><dd>Constraint requiring a unique, present combination of properties.</dd>
+<dt>Graph-local / global</dt><dd>Query anchored to known nodes / spanning the whole graph.</dd>
+<dt>Index-free adjacency</dt><dd>Nodes point directly to their relationships, giving O(1) traversals.</dd>
+</dl>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Karl already lives in London. You run <code>MERGE (:Person {name:'Fred'})-[:LIVES_IN]->(:Place {city:'London'})</code>. What happens without a constraint?</p>
+<button>Fred is linked to the existing London</button><button>An error is raised</button><button>A new Fred, relationship, and second London node are created</button>
+<div class="why" hidden>MERGE won't partially match. Merge the nodes separately, then the relationship.</div></div>
+<div class="q" data-a="0"><p>Why does a 3-hop query stay fast even as the database grows tenfold?</p>
+<button>Latency depends on the part of the graph traversed, thanks to index-free adjacency</button><button>Neo4j caches all query results</button><button>Cypher compiles to SQL joins</button>
+<div class="why" hidden>Each hop is a constant-time pointer chase.</div></div>
+<div class="q" data-a="1"><p>Which tip improves performance on large traversals?</p>
+<button>Read all properties at each step</button><button>Traverse structure first, then fetch properties of the final nodes</button><button>Omit relationship types for flexibility</button>
+<div class="why" hidden>Property reads are O(N); omitting types explodes the search space.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m16" data-part="II" data-title="Loading data">
+<div class="modhead"><span class="modnum">M16</span><span class="src">Book ch. 4</span></div>
+<h3>Loading knowledge graph data</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Choose between the Data Importer, LOAD CSV, and neo4j-admin import.</li>
+<li>Load irregular CSV safely with MERGE + SET and batch with CALL {…} IN TRANSACTIONS.</li>
+<li>Prepare CSV headers with :ID, :START_ID, and :END_ID.</li></ul></div>
+<div class="note"><b>Start small.</b> Import a representative slice first and check the model before the full job.</div>
+
+<div class="tbl"><table><tr><th>Tool</th><th>Database state</th><th>Speed</th><th>Best for</th></tr>
+<tr><td>Neo4j Data Importer</td><td>Online</td><td>Moderate</td><td>Visually drawing the model, mapping CSVs onto it, generating Cypher. Good for beginners and for prototyping.</td></tr>
+<tr><td>LOAD CSV</td><td>Online (serves other queries)</td><td>Fast, needs tuning</td><td>Incremental bulk loads at any point in the lifecycle; files or URLs (S3, Google Sheets); compressed files.</td></tr>
+<tr><td>neo4j-admin import</td><td><b>Offline</b></td><td>~1 million records/second</td><td>Initial bootstrapping of very large graphs (billions of records). Not resumable.</td></tr></table></div>
+
+<h4>Data Importer</h4>
+<p>Draw Person and Place nodes and FRIEND and LIVES_IN relationships, attach CSV files, and map columns. Headers declare IDs used only for linking:</p>
+<pre><code>people.csv     :ID(Person),name           23,Rosa  42,Karl  55,Fred
+places.csv     :ID(Place),city,country    143,Berlin,Germany  244,London,UK
+lives_in.csv   :START_ID(Person),:END_ID(Place),since   23,143,2020  55,244  42,244,1980</code></pre>
+<p>The generated Cypher uses three idioms: <code>CREATE CONSTRAINT</code>, <code>UNWIND</code> (turn a list into rows), and <code>MERGE</code>. For relationships it MATCHes nodes known to exist and MERGEs only the relationship. You can keep the generated Cypher in source control.</p>
+<pre><code>UNWIND [1, 2, 3, null] AS x RETURN x    // four rows</code></pre>
+
+<h4>LOAD CSV</h4>
+<pre><code>LOAD CSV WITH HEADERS FROM 'places.csv' AS line
+MERGE (:Place {country: line.country, city: line.city})
+
+// Irregular data: MERGE on the key, SET optional properties (null-safe)
+LOAD CSV WITH HEADERS FROM 'people.csv' AS line
+MERGE (p:Person {name: line.name})
+SET p.age = line.age
+SET p.gender = line.gender
+
+LOAD CSV WITH HEADERS FROM 'friend_rels.csv' AS line
+MATCH (p1:Person {name:line.from}), (p2:Person {name:line.to})
+MERGE (p1)-[:FRIEND]->(p2)
+
+LOAD CSV WITH HEADERS FROM 'lives_in.csv' AS line
+MATCH (person:Person {name:line.from}), (place:Place {city:line.to})
+MERGE (person)-[r:LIVES_IN]->(place)
+SET r.since = line.since</code></pre>
+<p>Putting a possibly-null value inside a MERGE pattern fails, so set it afterwards. Within one transaction the relationship and property are written atomically. Use real unique IDs rather than names in production.</p>
+<h5>Batching large loads</h5>
+<pre><code>LOAD CSV WITH HEADERS FROM 'people.csv' AS line
+CALL {
+  WITH line
+  MERGE (p:Person {name: line.name})
+  SET p.age = line.age, p.gender = line.gender
+} IN TRANSACTIONS OF 1000 ROWS     // before Neo4j 4.4: apoc.periodic.iterate</code></pre>
+<p>Use <code>EXPLAIN</code>/<code>PROFILE</code> on loads too. Watch for Cartesian products and <b>eager operators</b>, which pull all data at once and create choke points.</p>
+
+<h4>neo4j-admin import</h4>
+<p>Builds a database from CSV files on a filesystem (local or network mount, not S3), gzip allowed. Keep separate files per node and relationship type, and split large files with the header in its own file.</p>
+<pre><code>bin/neo4j-admin import --nodes=Person=import/people.csv \
+  --relationships=FRIEND=import/friends_header.csv,import/friends1.csv,import/friends2.csv \
+  --nodes=Place=import/places_header.csv,import/places1.csv,import/places2.csv \
+  --relationships=LIVES_IN=import/people_places.csv</code></pre>
+<p>It tolerates different separators, extra columns, duplicates, and bad relationships, and trims strings, but not stray special characters, missing quotes, or byte-order marks. It needs lots of RAM, may take hours, and is <b>not resumable</b>: don't press Ctrl-C. Since Neo4j 5 it can be used for more than the very first import.</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>You must load 3 billion records to bootstrap a new graph as fast as possible. Which tool?</p>
+<button>Data Importer</button><button>LOAD CSV</button><button>neo4j-admin import (offline)</button>
+<div class="why" hidden>About a million records per second, but the database is offline during the build.</div></div>
+<div class="q" data-a="0"><p>Some rows have no <code>since</code> value. How should you write it?</p>
+<button>MERGE the relationship, then SET r.since</button><button>Put since inside the MERGE pattern</button><button>Use CREATE instead</button>
+<div class="why" hidden>Null values inside a MERGE pattern cause failures; SET tolerates them.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m17" data-part="II" data-title="Integrating with systems">
+<div class="modhead"><span class="modnum">M17</span><span class="src">Book ch. 5</span></div>
+<h3>Integrating knowledge graphs with information systems</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Explain the knowledge graph's role in a data fabric.</li>
+<li>Use drivers correctly (one driver, many sessions, read/write hints, parameters).</li>
+<li>Compare federation, server-side procedures, data virtualisation, custom procedures, GraphQL, Kafka, Spark, and ETL.</li></ul></div>
+
+<h4>Towards a data fabric</h4>
+<p>A <b>data fabric</b> is an organisation-wide data access layer that offers a connected view of underlying systems. At its heart, the knowledge graph acts as a <b>curated index</b> across silos: "Give me the customer John Smith from Seattle" follows relationships to leaf nodes that point to records in a document store (customers), another graph (catalogue), and a relational database (billing). The client never sees the backends. Graphs fit because they accommodate several representations of the same entity and allow incremental association without big up-front design. Overlaying an ontology or canonical model lets you validate across systems, and graph features improve matching. One example rule: two product nodes are the same if their names are more than 95% similar and they have identical clustering coefficients.</p>
+
+<h4>Database drivers</h4>
+<p>Drivers are client-side middleware that connect applications over the <b>Bolt</b> protocol or HTTP. Official drivers: Java, JavaScript, Spring/OGM, Python, .NET, Go; community drivers for Ruby, Clojure, PHP, Haskell, Erlang/Elixir, Perl, Py2Neo, and C/C++. Even Neo4j Browser uses a (JavaScript) driver.</p>
+<pre><code>driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));   // 1. one per app
+try (Session session = driver.session()) {                              // 2. sessions are cheap
+  return session.readTransaction(tx ->                                  // 3. declare read vs write
+    tx.run("MATCH (a:Person)-[:FRIEND]->(b:Person) WHERE a.name = $name RETURN b.name",
+           parameters("name", name)));                                  // 4. parameterise
+}</code></pre>
+<ol>
+<li><b>Drivers are expensive</b> (connections, authentication): create one for the application's lifetime.</li>
+<li><b>Sessions are cheap</b>: use freely. They support async APIs and <b>bookmarks</b> (causal consistency).</li>
+<li><b>Declare read or write</b> so a cluster can route well.</li>
+<li><b>Parameterise</b>: no re-parsing or re-planning, and protection against injection. Neo4j 5 auto-parameterises where it can.</li>
+</ol>
+
+<h4>Federation with composite databases</h4>
+<p>A <b>composite database</b> is a virtual database over several physical ones, for example EMEA and APAC sales graphs plus a product catalogue.</p>
+<pre><code>CREATE DATABASE db1;  CREATE DATABASE db2;
+CREATE COMPOSITE DATABASE globalsales;
+CREATE ALIAS emeasales FOR DATABASE db1;
+CREATE ALIAS apacsales FOR DATABASE db2;
+
+UNWIND ['globalsales.apac', 'globalsales.emea'] AS g
+CALL {
+  USE graph.byName(g)
+  MATCH (c:Customer)-[:PURCHASED]->()-[o:ORDERS]->(:Product)
+  WITH c, sum(o.quantity * o.unitPrice) AS totalOrdered
+  WHERE totalOrdered > 100000
+  RETURN c.customerID AS name, c.country AS country, totalOrdered
+}
+RETURN name, country, totalOrdered</code></pre>
+
+<h4>Server-side procedures (APOC)</h4>
+<p>Enrich queries at run time from other systems without copying data. Remember that the remote call's latency and reliability add to yours.</p>
+<pre><code>// SQL via JDBC, then traverse the graph
+CALL apoc.load.driver("com.mysql.jdbc.Driver");
+WITH "select firstname, lastname from employees where firstname like ? and lastname like ?" AS sql
+CALL apoc.load.jdbcParams("northwind", sql, ['F%', '%w']) YIELD row
+MATCH (row)-[:WORKS_FOR*1..3]->(boss:Person) RETURN boss
+
+// JSON web API → MERGE into graph
+WITH "https://example.org/karl.json" AS url
+CALL apoc.load.json(url) YIELD value
+UNWIND value.products AS product
+MATCH (k:Person {name:'Karl'})
+MERGE (k)-[:BOUGHT]->(:Product {name: product.name, price: product.price})</code></pre>
+<p>APOC can also query MongoDB (e.g. failed lab experiments, then search 1–2 hops for environmental contaminants).</p>
+
+<h4>Data virtualisation</h4>
+<p>APOC keeps a catalogue of <b>virtual resources</b>: external sources queried on demand and presented as <b>virtual nodes</b>. The book's example is a <b>digital twin</b> of a telecom network: topology lives in the graph, while fast-changing device metrics stay in a SQL metrics database.</p>
+<pre><code>CALL apoc.dv.catalog.add("metrics-by-device-id", {
+  type: "JDBC", url: "jdbc:postgresql://localhost/metrics_collector?...",
+  query: "SELECT latency, packetloss, packetdupl, jitter, throughput FROM device_perf
+          WHERE device_id = $device_id AND timestamp > now() - interval '1 day'" })
+
+MATCH (aend:NetworkDevice)-[l:LINK]->(zend:NetworkDevice) WHERE l.linkId = "s1_385/ol"
+CALL apoc.dv.query("metrics-by-device-id", {device_id: aend.nd_id}) YIELD node
+RETURN aend.code, properties(node), zend.code</code></pre>
+<p>Virtualisation hides the difference between graph and non-graph data, but it can't hide latency.</p>
+
+<h4>Custom functions and procedures</h4>
+<p>Written in Java or another JVM language against Neo4j's Java API, tested and version-controlled like other code (not the "stigma" of SQL stored procedures). Inject the database with <code>@Context</code>, declare <code>@Procedure</code> and <code>@Description</code>, and return a <code>Stream</code> of records. Example: a node-degree histogram. Procedures can also wrap complex external APIs. Specialised virtualisation platforms (Dremio, Denodo, Data Virtuality) can host broader fabrics, with the knowledge graph as a master source for golden records.</p>
+
+<h4>Complementary tools</h4>
+<div class="tbl"><table><tr><th>Tool</th><th>Role</th><th>Key detail</th></tr>
+<tr><td>GraphQL</td><td>API toolkit (from Facebook) for user-facing apps</td><td>Neo4j's <code>@relationship(type: "LIVES_IN", direction: OUT)</code> directive maps types to graph relationships; mutations like <code>createPlaces</code> create nested nodes.</td></tr>
+<tr><td>Kafka Connect</td><td>Streaming source and sink</td><td><b>Source</b>: poll a Cypher query (e.g. new arrivals in Berlin every 5,000 ms, using <code>$lastCheck</code> on a timestamp). <b>Sink</b>: Cypher with MERGE unpacks each <code>event</code> into the graph.</td></tr>
+<tr><td>Spark connector</td><td>Big-data processing source and sink</td><td>Read by label or Cypher query (return values, not whole nodes); write by label or relationship. <code>SaveMode.ErrorIfExists</code> → CREATE; <code>SaveMode.Overwrite</code> → MERGE.</td></tr>
+<tr><td>ETL (Apache Hop, AWS Glue…)</td><td>Low-code pipelines</td><td>Check availability, create indexes and constraints, cleanse, import, e.g. Belgian beer data from Wikipedia. Prefer your enterprise's standard tool.</td></tr></table></div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Your service creates a new Neo4j driver for every request. What's wrong?</p>
+<button>Nothing; drivers are cheap</button><button>Drivers are expensive (connections, auth): create one per application and use cheap sessions</button><button>You should use HTTP instead</button>
+<div class="why" hidden>Create the driver once; open sessions as needed.</div></div>
+<div class="q" data-a="2"><p>Device metrics change every second and are already stored in PostgreSQL. How should the graph use them?</p>
+<button>Copy them into node properties every second</button><button>Ignore them</button><button>Virtualise them with an APOC virtual resource and query on demand</button>
+<div class="why" hidden>Keep topology in the graph and pull fast-changing data at query time.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m18" data-part="II" data-title="Graph data science">
+<div class="modhead"><span class="modnum">M18</span><span class="src">Book ch. 6</span></div>
+<h3>Enriching knowledge graphs with graph data science</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Classify algorithms (statistical, analytical, ML) and the five analytical families.</li>
+<li>Run the GDS workflow: project, load, execute, store (stream, mutate, write).</li>
+<li>Experiment in Python and move to production with primary and secondary servers.</li></ul></div>
+
+<h4>Kinds of algorithms</h4>
+<ul>
+<li><b>Statistical</b>: node and relationship counts, degree distributions, label types. Context for your results.</li>
+<li><b>Analytical</b>: patterns and latent knowledge.</li>
+<li><b>Machine learning</b>: algorithm results as features, or ML that evolves the graph (Module 19).</li>
+</ul>
+<div class="tbl"><table><tr><th>Family</th><th>What it finds</th><th>Uses</th></tr>
+<tr><td>Network propagation</td><td>How signals spread along deep paths</td><td>Disease spread, supply-chain weakness</td></tr>
+<tr><td>Influence (centrality)</td><td>Bridges and bottlenecks close to all other nodes</td><td>Influencers, critical junctions</td></tr>
+<tr><td>Community detection</td><td>Tightly knit groups (often by removing weak links)</td><td>Fraud rings, related works</td></tr>
+<tr><td>Similarity</td><td>Repeated patterns, shared properties or relationships</td><td>Recommendations, accident hotspots</td></tr>
+<tr><td>Link prediction</td><td>Missing relationships (e.g. closing triangles)</td><td>People you may know</td></tr></table></div>
+<p>Different algorithms give different answers (WCC vs Louvain for communities), so read the documentation and experiment.</p>
+
+<h4>How Neo4j Graph Data Science works</h4>
+<ol>
+<li><b>Read projected graph</b>: choose a sub-graph by labels and types or by Cypher.</li>
+<li><b>Load</b>: into a compact in-memory format.</li>
+<li><b>Execute</b>: run the algorithm in parallel with your parameters.</li>
+<li><b>Store</b>: <code>stream</code> results to the caller, <code>mutate</code> the projection, or <code>write</code> back to the graph.</li>
+</ol>
+<pre><code>CALL gds.graph.project.cypher('gds-example-graph',
+  'MATCH (p:Person) RETURN id(p) AS id',
+  'MATCH (p1:Person)-[:FRIEND]->(p2:Person) RETURN id(p1) AS source, id(p2) AS target, "FRIEND" AS type');
+CALL gds.betweenness.write('gds-example-graph', {writeProperty:'betweennessCentrality'});</code></pre>
+<p>Projection contract: node query returns <code>id</code>; relationship query returns <code>source</code>, <code>target</code>, <code>type</code>, and the relationships must connect projected nodes. A projection lives in the <b>graph catalogue</b> and can be reused. On the small social graph, Karl has the highest betweenness: without him the network falls apart. Bloom can size nodes by score. There are 65+ algorithms.</p>
+<div class="note"><b>Scale up, not out.</b> GDS keeps the projection in one large memory space for locality: a neighbour is a pointer dereference, not a network call. The authors argue scale-up is currently faster and often cheaper than distributed processing, and that CPUs beat GPUs because many graph algorithms aren't linear algebra.</div>
+
+<h4>Experimenting in Python</h4>
+<pre><code>pip install graphdatascience notebook
+
+from graphdatascience import GraphDataScience
+gds = GraphDataScience("bolt://127.0.0.1:7687", auth=("neo4j", "pw"), database="neo4j")
+gds.graph.project.cypher(graph_name='trains',
+  node_spec='MATCH (s:Station) RETURN id(s) AS id',
+  relationship_spec='MATCH (s1:Station)-[t:TRACK]->(s2:Station) '
+                    'RETURN id(s1) AS source, id(s2) AS target, t.distance AS distance')
+bham  = gds.find_node_id(["Station"], {"name": "Birmingham New Street"})
+eboro = gds.find_node_id(["Station"], {"name": "Edinburgh"})
+path = gds.shortestPath.dijkstra.stream(gds.graph.get("trains"),
+         sourceNode=bham, targetNode=eboro, relationshipWeightProperty="distance")
+# Shortest distance: 298.0
+result = gds.betweenness.stream(gds.graph.get("trains"))   # most central station?</code></pre>
+<div class="ex"><b>A counterintuitive result.</b> On the Great Britain rail network (2,593 stations), the most central station is <b>Tamworth</b> (betweenness ≈ 1,967,643), not Birmingham New Street (≈ 254,706), even though Birmingham has about 47 million passengers a year to Tamworth's 1.2 million. The projection counted track, not passengers or routes, and failures at Tamworth would ripple through to Birmingham. Refine projections, add data, and revisit hypotheses.</div>
+
+<h4>Production</h4>
+<ul>
+<li><b>Primary servers</b> handle transactions and Cypher (large RAM, high I/O). <b>Secondary servers</b> run data science (many fast CPUs, high RAM), updated asynchronously so they don't slow transactions. Tag servers by role. This is HTAP in one cluster, with no ETL or OLAP cubes.</li>
+<li>Use <b>bookmarks</b> (<code>session.lastBookmark()</code>, then <code>beginTransaction(bookmark)</code>) so a secondary has your latest writes before an algorithm runs.</li>
+<li>Switch <code>stream</code> to <code>write</code> to operationalise results, e.g. <code>gds.betweenness.write(graph, writeProperty="betweenness")</code>, enriching the graph for later ML features.</li>
+</ul>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="0"><p>Which execution mode persists algorithm results as node properties in the database?</p>
+<button>write</button><button>stream</button><button>mutate</button>
+<div class="why" hidden>stream returns results to the caller; mutate updates only the in-memory projection.</div></div>
+<div class="q" data-a="2"><p>Why might Tamworth beat Birmingham New Street on betweenness despite far fewer passengers?</p>
+<button>A bug in Dijkstra</button><button>Betweenness counts passengers</button><button>The projection modelled physical track only, where Tamworth sits on many shortest paths</button>
+<div class="why" hidden>Results reflect the projection; add richer data to test other hypotheses.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m19" data-part="II" data-title="Graph-native machine learning">
+<div class="modhead"><span class="modnum">M19</span><span class="src">Book ch. 7</span></div>
+<h3>Graph-native machine learning</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Distinguish in-graph ML from graph feature engineering.</li>
+<li>Run a topological link-prediction score.</li>
+<li>Build a GDS link-prediction pipeline end to end, from projection to persisted predictions.</li></ul></div>
+
+<p>Traditional software takes input and a hand-written function to produce output. <b>ML inverts this</b>: from inputs and past outputs it derives the function (a regression, a neural network, or geometric learning on graphs). Knowledge graphs are excellent fuel, in two ways:</p>
+<div class="grid2">
+<div><h5>In-graph ML</h5>Predict how the graph will evolve: missing relationships, labels, and properties. The graph enriches itself.</div>
+<div><h5>Graph feature engineering</h5>Extract features (PageRank, community, node embeddings) to train a better external model. Graphs give more, and higher-quality, features than columns like age or postcode.</div>
+</div>
+<p>Either way, model and graph form a <b>feedback loop</b>: using the model enriches the graph, which improves the model.</p>
+
+<h4>Topological link prediction</h4>
+<p>Load the Neo4j movie graph (<code>:play movie graph</code>), delete a relationship you know exists, and see whether an algorithm recommends it back.</p>
+<pre><code>MATCH (:Person {name:'Keanu Reeves'})-[r:ACTED_IN]->(:Movie {title:'The Matrix'}) DELETE r
+
+MATCH (keanu:Person {name:'Keanu Reeves'}), (m:Movie {title:'The Matrix'})
+RETURN gds.alpha.linkprediction.preferentialAttachment(keanu, m,
+       {relationshipQuery: "ACTED_IN"}) AS score       // 28.0</code></pre>
+<p><b>Preferential attachment</b> (Barabási–Albert) gives 28.0: a good indication, not emphatic. Other topological algorithms or larger graphs may help; ML pipelines usually do better.</p>
+
+<h4>A link-prediction pipeline: recommending complementary actors</h4>
+<ol>
+<li>Wrangle: connect co-stars.
+<pre><code>MATCH (a:Person)-[:ACTED_IN]->(:Movie)<-[:ACTED_IN]-(b:Person)
+MERGE (a)-[:ACTED_WITH]->(b)</code></pre></li>
+<li>Project:
+<pre><code>CALL gds.graph.project('actors-graph', {Person: {}},
+  {ACTED_WITH: {orientation: 'UNDIRECTED'}})</code></pre></li>
+<li>Create the pipeline: <code>CALL gds.beta.pipeline.linkPrediction.create('actors-pipeline')</code></li>
+<li>Add node properties from algorithms. Here a <b>FastRP</b> node embedding encodes each node's position in the topology (Node2Vec is an alternative):
+<pre><code>CALL gds.beta.pipeline.linkPrediction.addNodeProperty('actors-pipeline', 'fastRP',
+  {mutateProperty: 'embedding', embeddingDimension: 256, randomSeed: 42})</code></pre></li>
+<li>Add a <b>link feature</b> that combines a node pair's properties: <b>cosine</b> similarity (alternatives: Hadamard product, L2).
+<pre><code>CALL gds.beta.pipeline.linkPrediction.addFeature('actors-pipeline', 'cosine',
+  {nodeProperties: ['embedding']})</code></pre></li>
+<li>Split into test, train, and feature sets (positive and negative examples are generated for you):
+<pre><code>CALL gds.beta.pipeline.linkPrediction.configureSplit('actors-pipeline',
+  {testFraction: 0.25, trainFraction: 0.6, validationFolds: 3})</code></pre></li>
+<li>Add model candidates (logistic regression, random forest, multilayer perceptron) and auto-tuning: <code>configureAutoTuning('actors-pipeline', {maxTrials: 100})</code>.</li>
+<li>Estimate memory: <code>gds.beta.pipeline.linkPrediction.train.estimate(...) YIELD requiredMemory</code>.</li>
+<li>Train with a metric such as <b>AUCPR</b> (area under the precision-recall curve):
+<pre><code>CALL gds.beta.pipeline.linkPrediction.train('actors-graph', {
+  pipeline: 'actors-pipeline', modelName: 'actors-model',
+  metrics: ['AUCPR'], targetRelationshipType: 'ACTED_WITH', randomSeed: 73
+}) YIELD modelInfo, modelSelectionStats</code></pre></li>
+<li>Predict on an input projection, keeping the top 20 above a confidence threshold:
+<pre><code>CALL gds.beta.pipeline.linkPrediction.predict.mutate('actors-input-graph-for-prediction', {
+  modelName: 'actors-model', relationshipTypes: ['ACTED_WITH'],
+  mutateRelationshipType: 'SHOULD_ACT_WITH', topN: 20, threshold: 0.4 })</code></pre></li>
+<li>Persist to the graph, then remove symmetric duplicates:
+<pre><code>CALL gds.beta.graph.relationships.stream('actors-input-graph-for-prediction', ['SHOULD_ACT_WITH'])
+YIELD sourceNodeId, targetNodeId
+WITH gds.util.asNode(sourceNodeId) AS source, gds.util.asNode(targetNodeId) AS target
+MERGE (source)-[:SHOULD_ACT_WITH]->(target)
+
+MATCH (a:Person)-[:SHOULD_ACT_WITH]->(b:Person)-[d:SHOULD_ACT_WITH]->(a)
+WHERE id(a) > id(b) DELETE d</code></pre></li>
+</ol>
+<p>Results include pairs like Naomie Harris–Susan Sarandon, Danny DeVito–Demi Moore, and Ed Harris–Sam Rockwell. They are now ordinary graph data you can query and combine. Re-run periodically to keep them fresh. The threshold is low here because a human casting director reviews the results; production systems usually use a higher one. Most real effort goes into tuning properties, features, and metrics: "human intelligence is still needed to bootstrap artificial intelligence." If in-graph pipelines aren't enough, export feature vectors to TensorFlow, PyTorch, scikit-learn, Vertex AI, SageMaker, or Azure ML.</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Computing PageRank for each customer and feeding it to an external churn model is an example of:</p>
+<button>In-graph ML</button><button>Graph feature engineering</button><button>Data virtualisation</button>
+<div class="why" hidden>Features extracted from the graph train an external predictive model.</div></div>
+<div class="q" data-a="2"><p>In the actors pipeline, what turns two nodes' embeddings into one feature for the pair?</p>
+<button>FastRP</button><button>configureSplit</button><button>The link feature combiner (cosine)</button>
+<div class="why" hidden>Link features combine node properties of a pair; FastRP produces the node properties.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m20" data-part="II" data-title="Metadata knowledge graphs">
+<div class="modhead"><span class="modnum">M20</span><span class="src">Book ch. 8</span></div>
+<h3>Mapping data with metadata knowledge graphs</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Model datasets, platforms, fields, tasks, pipelines, and sinks.</li>
+<li>Write discovery, impact-analysis, and lineage queries.</li>
+<li>Connect a data layer and a metadata layer with relationships.</li></ul></div>
+
+<p>Departments build their own systems, so data ends up duplicated, nearly duplicated, and siloed, often with no owner for the overall picture. A <b>metadata knowledge graph</b> is an enterprise-wide map of the shape and location of data, the systems that process it, and its consumers. It makes <b>provenance</b> explicit for governance, compliance, and self-serve analytics.</p>
+<div class="note"><b>Metadata hubs.</b> Airbnb's Dataportal (announced at GraphConnect Europe 2017), Lyft's Amundsen, and LinkedIn's DataHub are knowledge-graph-backed metadata hubs; commercial tools followed.</div>
+
+<h4>The model</h4>
+<pre class="mermaid">graph LR
+  DP[DataPlatform&lt;br/&gt;BigQuery] -- source --- RAW[Dataset&lt;br/&gt;sales_details_raw]
+  RAW -- consumes --- T1[Task&lt;br/&gt;standardise_reference_fields]
+  T1 -- produces --> STD[Dataset&lt;br/&gt;sales_details_std]
+  STD -- consumes --- T2[Task&lt;br/&gt;aggregate_monthly]
+  T2 -- produces --> AGG[Dataset&lt;br/&gt;sales_monthly_agg]
+  AGG -- has_field --> F[Field&lt;br/&gt;address]
+  F -- associated_with --> CT[CatalogTerm&lt;br/&gt;location_info]
+  S1[DataSink&lt;br/&gt;Dashboard] -- consumes --> AGG
+  S2[DataSink&lt;br/&gt;MLFeatureSet] -- consumes --> AGG
+  AGG -- owned_by --> U[User / steward]</pre>
+<ul>
+<li><b>Dataset</b>: any data collection (table, document, stream), linked to its <b>DataPlatform</b> by <code>source</code> and to <b>Field</b> nodes describing its public schema.</li>
+<li><b>Task</b>: a job that processes data (an ETL step standardising the country field). Chains of tasks form <b>pipelines</b> and make dependencies explicit.</li>
+<li><b>DataSink</b>: a terminal consumer (dashboard, ML training set) that consumes datasets but produces none. It shows which data is valued.</li>
+<li>Any element can link to <b>domains</b>, <b>owners</b> (qualified by role, e.g. data steward), and <b>catalog terms</b> from an enterprise glossary or ontology.</li>
+</ul>
+
+<h4>Queries</h4>
+<pre><code>// Discovery: most-used Corporate Sales dataset containing location info
+MATCH (d:Dataset)
+WHERE (d)-[:associated_with]->(:Domain {name:'Corporate Sales'})
+  AND (d)-[:has_field]->(:Field)-[:associated_with]->(:CatalogTerm {name:'location_info'})
+RETURN d.id, d.desc, d.type, count{ (d)<-[:consumes]-(:DataSink) } AS dataset_usage_count
+
+// Impact: who is affected if this task fails?
+MATCH (t:Task)-[:produces|consumes*2..]-(:Dataset)<-[:consumes]-(s:DataSink)-[:owned_by]->(o)
+WHERE t.name = 'standardise_reference_fields'
+RETURN s.id, s.type, o.name
+
+// Lineage: which platforms feed Dashboard X?
+MATCH (s:DataSink)-[:consumes]->(:Dataset)-[:produces|consumes*2..]->(raw:Dataset)-[:source]->(dp:DataPlatform)
+WHERE s.type = 'Dashboard' AND s.id = 'X'
+RETURN raw.id, dp.id, dp.type</code></pre>
+<p>Impact analysis and lineage are the same graph traversed in opposite directions. Graph algorithms over this map can reveal strong or weak links between teams and data domains, since how data flows is a proxy for how the company operates.</p>
+
+<h4>Connecting data and metadata</h4>
+<p>Put both layers in one graph: customers –SUBSCRIBES_TO→ services at the bottom; above them, metadata showing the customer data belongs to a dataset sourced from an external system and curated by a steward. You can answer "Which customers subscribe to service X?" and back the answer with provenance. The layer is <b>non-invasive</b>: built above the source systems. It is a foundation for a 360° customer view and semantic search.</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="0"><p>"Which upstream systems does Dashboard X ultimately draw from?" is a question of:</p>
+<button>Data lineage</button><button>Impact analysis</button><button>Community detection</button>
+<div class="why" hidden>Lineage traverses from a sink back to sources; impact analysis goes from a task forward to sinks.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m21" data-part="II" data-title="Identity knowledge graphs">
+<div class="modhead"><span class="modnum">M21</span><span class="src">Book ch. 9</span></div>
+<h3>Identity knowledge graphs: entity resolution</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Recognise where duplicate identities arise.</li>
+<li>Run graph-based entity resolution: preparation, five-step matching, master entities with WCC.</li>
+<li>Match unstructured text by token graphs and Node Similarity (Jaccard).</li></ul></div>
+
+<p>Jane Coleman holds the bank's credit card. After marrying she becomes Jane Downe and opens a joint current account with Peter. With no consistent strong identifier (driving licence for one account, passport for the other), the bank keeps sending her card offers, and if she were a fraudster her activity would be scattered across two identities. This is <b>entity resolution</b>, or <b>master data management</b>: given two records, are they the same real-world thing?</p>
+<div class="tbl"><table><tr><th>Source</th><th>Name</th><th>Passport</th><th>Licence</th><th>DOB</th><th>Verdict</th></tr>
+<tr><td>Credit</td><td>Pete Downe</td><td>VX83041</td><td></td><td>1987-03-12</td><td rowspan="2">Same passport: easy match</td></tr>
+<tr><td>Current</td><td>Peter J. Downe</td><td>VX83041</td><td></td><td>1987-03-12</td></tr>
+<tr><td>Credit</td><td>Jane Coleman</td><td></td><td>49587640</td><td>1989-10-28</td><td rowspan="2">No shared identifier: looks like two people</td></tr>
+<tr><td>Current</td><td>Jane Downe</td><td>RA14958</td><td></td><td>1989-10-28</td></tr></table></div>
+<p>Where duplicates appear: <b>data integration</b> (sales, CRM, and marketing hold their own copies; analytics is unreliable until you build <b>golden records</b>); <b>anonymous activity</b> (clickstreams, cookies, devices); and <b>intentional or fraudulent duplicates</b> (tweaked insurance quotes, abused free trials, near-duplicate product listings).</p>
+
+<h4>Step 1: Data preparation</h4>
+<p>Harmonise units and types, make nulls real nulls (not the string "null"), unify case and encoding, and trim spaces and special characters. Load each record as a <code>Person</code> node with a <code>source</code> property for provenance, then build comparable <b>matching properties</b>:</p>
+<pre><code>LOAD CSV WITH HEADERS FROM "file:///ds1.csv" AS row
+CREATE (p:Person) SET p.source = "ds1", p += properties(row);
+
+// Lowest common denominator for birth info: year of birth
+MATCH (p:Person) WHERE p.source = "ds1" SET p.m_yob = toInteger(p.yob);
+MATCH (p:Person) WHERE p.source = "ds2" SET p.m_yob = date().year - toInteger(p.age);
+MATCH (p:Person) WHERE p.source = "ds3" SET p.m_yob = date(p.dob).year;
+
+// Canonical "first last" lower-case name
+MATCH (p:Person) WHERE p.source = "ds2"
+WITH p, split(p.name, ",") AS parts
+SET p.m_fullname = toLower(trim(parts[1]) + ' ' + trim(parts[0]));</code></pre>
+<p>Optionally generate <b>blocking keys</b> (postcode, or synthetic ones from algorithms or ML) to avoid n² comparisons. Preparation can also happen beforehand in pandas or SQL; choose for simplicity, robustness, and performance.</p>
+
+<h4>Step 2: Entity matching</h4>
+<p>Three kinds of features: <b>strong identifiers</b> (SSN, passport), <b>weak identifiers</b> (name), and <b>non-identifying features</b> (year of birth).</p>
+<ol>
+<li><b>SAME_AS</b> for a strong-identifier match.
+<pre><code>MATCH (p1:Person), (p2:Person)
+WHERE p1.source <> p2.source AND id(p1) > id(p2)      // symmetric: compare once
+  AND (p1.ssn = p2.ssn OR p1.passport_no = p2.passport_no)
+CREATE (p1)-[:SAME_AS {ssn_match: p1.ssn = p2.ssn,
+                       passport_match: p1.passport_no = p2.passport_no}]->(p2)</code></pre></li>
+<li>Weighted <b>SIMILAR</b> for a weak-identifier match above a threshold, where no SAME_AS exists.
+<pre><code>MATCH (p1:Person), (p2:Person)
+WHERE NOT (p1)-[:SAME_AS]-(p2) AND p1.source <> p2.source AND id(p1) > id(p2)
+  AND apoc.text.jaroWinklerDistance(p1.m_fullname, p2.m_fullname) < 0.2
+CREATE (p1)-[:SIMILAR {sim_score: 1 - apoc.text.jaroWinklerDistance(p1.m_fullname, p2.m_fullname)}]->(p2)</code></pre>
+Jaro–Winkler is a <i>distance</i>, so 1 − distance gives a 0–1 similarity where higher is stronger.</li>
+<li>Delete SIMILAR where strong identifiers <b>conflict</b> (Husein vs Hana Sprull: similar names, different SSNs).</li>
+<li>Apply a <b>correcting factor</b> from non-identifying features: ×1.1 if birth years are close, ×0.9 if not.</li>
+<li>Delete SIMILAR below a minimum score.</li>
+</ol>
+
+<h4>Step 3: Master entities</h4>
+<p>Each connected group of SAME_AS and SIMILAR nodes is one real entity. <b>Weakly Connected Components</b> (WCC, which ignores direction) finds them.</p>
+<pre><code>CALL gds.graph.project('identity-wcc', 'Person', ['SAME_AS','SIMILAR']);
+
+CALL gds.wcc.stream('identity-wcc') YIELD nodeId, componentId
+WITH gds.util.asNode(nodeId) AS person, componentId AS golden_id
+MERGE (pg:PersonMaster {uid: golden_id})
+  ON CREATE SET pg.fullname = person.m_fullname, pg.ssn = person.ssn, pg.passport_no = person.passport_no
+  ON MATCH  SET pg.ssn = coalesce(pg.ssn, person.ssn), pg.passport_no = coalesce(pg.passport_no, person.passport_no)
+MERGE (pg)-[:HAS_REFERENCE]->(person)</code></pre>
+<p>"Sidney Bernardy", "sydney joanne bernardy", and "syd j bernardy" collapse into one <code>PersonMaster</code> with traceable references to each source record. You can return it as JSON for other systems.</p>
+<div class="note"><b>Ongoing work.</b> Sources change. With deltas, remove deleted records first, since additions and removals can merge or split components. Graph features (relationship properties, neighbours, degree, centrality) are automatically available as extra matching evidence.</div>
+
+<h4>Unstructured data: token graphs</h4>
+<p>The Amazon–Google catalogue dataset (1,363 Amazon and 3,226 Google products) has no strong identifiers. Tokenise names into <code>Word</code> nodes, then compare products by the words they share:</p>
+<pre><code>CREATE INDEX FOR (w:Word) ON w.txt;
+MATCH (p:Product {source:"GGL"})
+UNWIND [x IN split(apoc.text.replace(toLower(p.name), "[^a-zA-Z0-9]", " "), " ") WHERE x <> ""] AS txt
+MERGE (w:Word {txt: txt}) MERGE (p)-[:includes]->(w);
+
+CALL gds.graph.project('identity-sim', ['Product','Word'], ['includes']);
+CALL gds.nodeSimilarity.stream('identity-sim', {similarityCutoff: 0.8})
+YIELD node1, node2, similarity
+WITH similarity, gds.util.asNode(node1) AS n1, gds.util.asNode(node2) AS n2
+WHERE n1.source = "GGL" AND n2.source = "AMZ"
+MERGE (n1)-[:SIMILAR {sim_score: similarity}]->(n2)</code></pre>
+<p><b>Node Similarity</b> uses <b>Jaccard</b> by default (or the overlap coefficient). Token similarity is more robust than string similarity: "apple apple mac os x server 10 4 7 10 client" vs "mac os x server v10.4.7 10-client" scores 0.8 on tokens but only 0.70 on Jaro–Winkler.</p>
+<div class="ex"><b>Case study: Meredith Corporation.</b> A media company ($3.2B revenue, 30+ brands, 180M monthly users) used WCC over cookies and devices: 30 billion nodes, 35 billion relationships, 4.4 TB. About 350 million apparent individuals were consolidated into 163 million profiles. Average touchpoint span grew from 14 days to 241 days, and visits from 4 per cookie to 23.8 per profile, improving customer understanding by 20–30%.</div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>Two records have very similar names but different SSNs. What does the five-step process do?</p>
+<button>Creates SAME_AS</button><button>Keeps SIMILAR with a boosted score</button><button>Removes the SIMILAR relationship (step 3)</button>
+<div class="why" hidden>A conflict on a strong identifier overrides weak-identifier similarity.</div></div>
+<div class="q" data-a="0"><p>Which algorithm turns SAME_AS/SIMILAR clusters into golden records?</p>
+<button>Weakly Connected Components</button><button>PageRank</button><button>Dijkstra</button>
+<div class="why" hidden>Each connected component is one master entity.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m22" data-part="II" data-title="Pattern detection: fraud and skills">
+<div class="modhead"><span class="modnum">M22</span><span class="src">Book ch. 10</span></div>
+<h3>Pattern detection: fraud rings and skills graphs</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Sanity-check a graph with counts and community detection, and sample suspicious structure.</li>
+<li>Find fraud rings while sparing innocent households; operationalise checks in the transaction flow.</li>
+<li>Build org, skills, expertise, and peer-rating layers; recommend skills; predict project outcomes with node regression.</li></ul></div>
+
+<h4>Fraud detection</h4>
+<p>US fraud losses were $5.8 billion in 2021 (FTC), with about $1 billion in banking and 70% annual growth; UK banks lost about £700 million. Every $1 lost costs a further $4.23 in handling and reputational damage. Traditional rule-based risk scores and manual review are slow, expensive, and inflexible. A graph gives connected context at scale.</p>
+<h5>The model and a sanity check</h5>
+<p>Each card is at the centre of its subgraph: purchases made <code>WITH</code> the card and chained by <code>NEXT</code>; a person who is <code>ACCOUNT_HOLDER</code>, <code>LIVES_AT</code> an address, and <code>OWNS</code> a phone. Normal customers form disconnected islands. With 2,399,999 people you'd expect 2,399,999 communities.</p>
+<pre><code>CALL gds.graph.project('fraud-wcc', ['Person','Phone','Address'], ['LIVES_AT','OWNS']);
+CALL gds.louvain.stream('fraud-wcc') YIELD nodeId, communityId
+WITH gds.util.asNode(nodeId) AS person, communityId
+SET person.communityId = communityId</code></pre>
+<p>Only <b>1,803,467</b> communities come back: about half a million people share a community with someone. Sample them:</p>
+<pre><code>MATCH (:Person) WITH count(*) AS count
+MATCH (a:Person)-[*2..4]-(b:Person)
+WHERE rand() < 10.0/count
+RETURN a</code></pre>
+<h5>Fraud rings vs innocent bystanders</h5>
+<p>Fraudsters prefer accounts held "in good faith": they behave well to raise credit limits (vertical scaling) and create many <b>synthetic identities</b> anchored to real addresses and phones (horizontal scaling), then cash out all at once. The ring pattern repeats Person → shared Phone → Person → shared Address → Person…</p>
+<pre><code>// Rings: long chains of shared contacts (run periodically, analytically)
+CALL {
+  MATCH ring = (p1:Person)-[:OWNS|LIVES_AT*5..]-(p2:Person)
+  WHERE p1 <> p2
+  RETURN ring
+} IN TRANSACTIONS OF 100 ROWS
+RETURN ring
+
+// Households: two people sharing BOTH an address and a phone (usually legitimate)
+MATCH households = (p:Person)-[:LIVES_AT]->(:Address)<-[:LIVES_AT]-(:Person)
+                   -[:OWNS]->(:Phone)<-[:OWNS]-(p)
+RETURN households</code></pre>
+<p>Subject-matter experts bootstrap which patterns mean fraud, for example bursts of short Uber rides or expensive similar purchases suggesting a cloned card. When one identity in a ring cashes out, traverse the ring to block every linked account: only hundreds or thousands of records, so it can run in the transaction flow.</p>
+<h5>Operationalising</h5>
+<p>Prefer <b>subgraph-local</b> pattern matching around the card during each purchase, which adds minimal latency. Reserve wider matching or algorithms for high-risk or high-value cases, since they can add milliseconds to seconds.</p>
+<div class="ex"><b>Case study: Banking Circle.</b> A graph of accounts and payments; community detection produces features (risk of near neighbours, distance to tax havens and known fraudsters) for an ML pipeline that flags high-risk clusters, replacing a slow manual process.</div>
+
+<h4>Skills matching</h4>
+<p>Strong teams need a mix of skills, seniority, and people who work well together. Model each dimension as a layer (org chart, expertise, project history, social engagement, tertiary skills such as languages) and combine them at query time.</p>
+<div class="tbl"><table><tr><th>Layer</th><th>Model</th><th>Example query</th></tr>
+<tr><td>Org chart</td><td>Tree of <code>REPORTS_TO</code> from CEO to SVPs, VPs, directors, ICs</td><td><code>MATCH (:VP {name:'Harry'})&lt;-[:REPORTS_TO*1..2]-(n) RETURN count(n)</code></td></tr>
+<tr><td>Skills via projects</td><td>Employee –PARTICIPATED→ Project –REQUIRES→ Skill; projects <code>DEPENDS</code> on earlier ones</td><td>Sum project durations per person for Java (James and Hugo lead)</td></tr>
+<tr><td>Expertise</td><td>Slack/Teams: User –WROTE→ Message –POSTED_TO→ Channel; Message –MENTIONS→ Skill; REPLY chains</td><td>Rank users by replies in threads about a skill (e.g. IL) across channels</td></tr>
+<tr><td>Social</td><td>Employee –RATED {ratings:[…]}→ Employee</td><td>Mutual average ratings; cliques with score ≥ 5</td></tr></table></div>
+<p>A bare <code>HAS_SKILL</code> edge says nothing about proficiency or recency. Project history gives both:</p>
+<pre><code>// Rosa's skills: total days of experience and when last used
+MATCH (:Employee {name:'Rosa'})-[part:PARTICIPATED]->(p:Project)-[:REQUIRES]->(s:Skill)
+WITH s AS skill, part.end AS lastUsed, duration.inDays(part.start, part.end).days AS days
+RETURN skill.name, sum(days) AS daysOfExperience, max(lastUsed)
+ORDER BY daysOfExperience DESC
+
+// Skills Rosa's project peers have that she doesn't: upskilling ideas
+MATCH (me:Employee {name:'Rosa'})-[:PARTICIPATED]->(:Project)<-[:PARTICIPATED]-(other:Employee)
+MATCH (other)-[:PARTICIPATED]->(:Project)-[:REQUIRES]->(s:Skill)
+WHERE NOT (me)-[:PARTICIPATED]->(:Project)-[:REQUIRES]->(s)
+WITH s AS skill, count(s) AS popularity
+RETURN DISTINCT skill.name, popularity ORDER BY popularity DESC     // Java first</code></pre>
+<p>Centre the same query on a skill instead of a person and managers get a staffing search. Add a skills <b>taxonomy</b> to reason about general vs specific skills (databases vs NoSQL, functional programming vs F#). Andy Grove's distinction between <i>organisational power</i> (org chart) and <i>knowledge power</i> (skills) is merged in one graph.</p>
+
+<h5>Predicting project outcomes</h5>
+<pre><code>// Which SVPs sit above failed projects (rating < 30)?
+MATCH (p:Project)<-[:PARTICIPATED_IN]-(:IC)-[:REPORTS_TO*3..3]->(svp:SVP)
+WHERE p.rating < 30.0
+RETURN svp, count(p) AS failedProjects ORDER BY failedProjects DESC</code></pre>
+<p>Small data can tell any story (Lynn Smyth may run a research group where failure is valuable), so use a <b>node regression pipeline</b> to predict ratings of incomplete projects:</p>
+<ol>
+<li>Project Employee, Project (with <code>rating</code>), and Incomplete nodes; PARTICIPATED_IN and REPORTS_TO, undirected.</li>
+<li><code>gds.alpha.pipeline.nodeRegression.create('projects-pipeline')</code></li>
+<li>Add a FastRP embedding (256 dimensions) as a node property; select it as the feature.</li>
+<li>Split with <code>testFraction: 0.2</code>; add a <b>random forest</b> (10 trees); auto-tune with <code>maxTrials: 100</code>.</li>
+<li>Train on <code>Project.rating</code> with <code>MEAN_SQUARED_ERROR</code>; predict for <code>Incomplete</code> nodes and list the 10 lowest predicted ratings for early intervention.</li>
+</ol>
+<div class="ex"><b>Case study: DXC Technology.</b> 130,000 employees and siloed HR systems. Its <b>Career Navigator</b> uses a Neo4j employee knowledge graph plus GDS similarity to recommend skills from the progressions of similar employees. DXC now offers it to customers.</div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>Two people share an address and a phone number. What is the most likely interpretation?</p>
+<button>A fraud ring</button><button>A legitimate household; one more check passed</button><button>A data error</button>
+<div class="why" hidden>Rings are long chains of shared contacts across many identities; households share both on a short pattern.</div></div>
+<div class="q" data-a="0"><p>Why prefer subgraph-local pattern matching during a card transaction?</p>
+<button>It touches few records, so latency stays minimal</button><button>It runs graph algorithms</button><button>It avoids using indexes</button>
+<div class="why" hidden>Save global analytics for periodic or high-risk checks.</div></div>
+<div class="q" data-a="2"><p>What makes project history better evidence of skill than a HAS_SKILL edge?</p>
+<button>It is smaller</button><button>It needs no queries</button><button>It captures duration (proficiency) and recency in context</button>
+<div class="why" hidden>Aggregate days per skill and the last date used.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m23" data-part="II" data-title="Dependency knowledge graphs">
+<div class="modhead"><span class="modnum">M23</span><span class="src">Book ch. 11</span></div>
+<h3>Dependency knowledge graphs</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Model dependencies, qualified dependencies, and temporal validity.</li>
+<li>Propagate impact under aggregate, redundant, and threshold semantics.</li>
+<li>Validate a dependency graph, and find single points of failure and root causes.</li></ul></div>
+
+<p>Project plans ("B can't start before A"), software supply chains (is a vulnerable library used directly or transitively?), and company ownership (find the <b>ultimate beneficial owner</b> for anti-money-laundering checks) are all <b>dependency modelling</b>: direct dependencies are relationships that build into networks of transitive dependencies.</p>
+
+<h4>Dependencies as a graph</h4>
+<p>In SQL, "does A depend on F?" needs one self-join per level, and a "no" answer requires exploring every chain. In a graph, it's one variable-length pattern:</p>
+<pre><code>LOAD CSV WITH HEADERS FROM "file:///dependencies.csv" AS row
+MERGE (a:Element {id: row.element})
+MERGE (b:Element {id: row.depends_on})
+MERGE (a)-[:DEPENDS_ON]->(b)
+
+MATCH path = (:Element {id:'A'})-[:DEPENDS_ON*]->(:Element {id:'F'})
+RETURN path</code></pre>
+
+<h4>Qualified and temporal dependencies</h4>
+<p>Put composable numbers on relationships: <code>OWNS {part: 25%}</code>, <code>CONSUMES {capacity: …}</code>. Add validity start and end properties, and query with a timestamp parameter <i>t</i> to see dependencies active at that time (past or future, as in booking systems).</p>
+
+<h4>Multidependency semantics</h4>
+<div class="grid2">
+<div><h5>Additive / aggregate</h5>All dependencies are active at once and each contributes a weight: portfolio assets, bonded network links, virtual drives.
+<pre><code>parent_impact = Σ child_impact × child_weight</code></pre>A tipping point may exist where the parent fails completely.</div>
+<div><h5>Redundant / protection</h5>Only one dependency needs to work; the rest are spares: high-availability servers, alternative broadcast routes, supply routes (Singapore–Felixstowe via Suez, or via the Trans-Siberian Railway).
+<pre><code>parent_impact = min(child impacts)</code></pre>Protection nodes absorb failures.</div>
+</div>
+<p><b>Threshold</b> generalisation, e.g. a database cluster needing 2 of 3 primaries for quorum:</p>
+<pre><code>parent_impact = 0 if Σ(1 − child_impact) ≥ parent_threshold else 1</code></pre>
+
+<h4>Impact propagation in Cypher</h4>
+<p>Each <code>DEPENDS_ON</code> has <code>mode</code> ('AGG' or 'RED') and a weight <code>abs</code>.</p>
+<pre><code>// 1. Scope: everything that could possibly be affected (topology only)
+:param declared => ["I","K","J"]
+MATCH (e:Element)-[:DEPENDS_ON*]->(impacted)
+WHERE impacted.id IN $declared
+RETURN collect(DISTINCT e.id) AS max_impact_list     // ["H","Q","P","O","N","G","B","A","F"]
+
+// 2a. Redundant node: impacted only if ALL its alternatives are (binary min)
+MATCH (e:Element {id:$current})-[d:DEPENDS_ON {mode:"RED"}]->(dependee)
+WITH e.id AS element, CASE WHEN dependee.id IN $declared THEN 1 ELSE 0 END AS partial
+RETURN element, min(partial) AS derived_impact
+
+// 2b. Aggregate node: weighted sum of declared severities (0..1)
+:param declared => {I: 0.5, K: 1, J: 0.33}
+MATCH (e:Element {id:$current})-[d:DEPENDS_ON {mode:"AGG"}]->()
+WITH e.id AS element, coalesce($declared[endNode(d).id], 0) * d.abs AS partial
+RETURN element, sum(partial) AS derived_impact</code></pre>
+
+<h4>Validating the graph</h4>
+<ol>
+<li><b>No cycles</b>: a dependency graph is a DAG. <code>MATCH cycle = (e:Element)-[:DEPENDS_ON*]->(e) RETURN cycle</code>. Limit scope (<code>e.id IN $node_subset</code>) or depth (<code>*3..45</code>) on large graphs.</li>
+<li><b>Aggregates add up</b>: relative weights sum to 1 (shareholders total 100%), or absolute weights equal the node's <code>total</code> (five bonded 20 Gbps lines = 100 Gbps).</li>
+<li><b>Consumption doesn't exceed production</b>: compare capacity from dependees (sum of AGG plus min of RED) with use by dependents; report percentage used, which is also useful for capacity planning.</li>
+<li><b>Redundancy meets thresholds</b>: a redundant set needs at least <code>threshold</code> members. One primary server with threshold 2 can never be satisfied.</li>
+</ol>
+<p>A failure may reveal a real provisioning problem or a bug in the ingestion pipeline; find out which.</p>
+
+<h4>Single points of failure</h4>
+<p>Three "redundant" database primaries are no help if two run on the same VM. A SPOF is two dependency chains from one element converging on the same node:</p>
+<pre><code>MATCH alertPath = (spof)<-[:DEPENDS_ON*]-(e:Element)-[:DEPENDS_ON*]->(spof)
+WHERE e.id = $selected_node_id
+RETURN alertPath</code></pre>
+<p>Some SPOFs can't be removed (a geographic bottleneck in an energy grid), but you should monitor them and plan responses such as backup generators for hospitals.</p>
+
+<h4>Root cause analysis</h4>
+<p>The inverse of impact propagation, used for <b>alarm or event correlation</b> in service assurance. Find leaf nodes (which depend on nothing) that explain several symptoms, then rank them:</p>
+<ul>
+<li><b>Precision</b>: share of observed symptoms the candidate explains.</li>
+<li><b>Recall</b>: share of the candidate's potential impact that was actually observed.</li>
+<li><b>F-score</b>: 2PR/(P+R).</li>
+</ul>
+<pre><code>MATCH (e:Element)-[:DEPENDS_ON*0..]->(x)
+WHERE e.id IN $symptoms AND NOT (x)-[:DEPENDS_ON]->()
+WITH x, collect(DISTINCT e.id) AS explains WHERE size(explains) > 1
+MATCH (x)<-[:DEPENDS_ON*0..]-(y)
+WITH x, explains, collect(DISTINCT y.id) AS maxImpact
+WITH x, toFloat(size(explains))/size($symptoms) AS precision,
+     toFloat(size([i IN maxImpact WHERE i IN $symptoms]))/size(maxImpact) AS recall
+RETURN x.id, precision, recall, 2*precision*recall/(precision+recall) AS fscore
+ORDER BY fscore DESC</code></pre>
+<div class="ex">Symptoms N, O, P, H, I, A, E. Candidates I, K, J each explain 5 of 7 (precision 0.71), but K and J would have caused many more failures than observed (recall 0.56 and 0.50). I balances both (recall 0.83, F 0.77) and is the most likely root cause. E (precision 0.29, recall 1.0) is a separate, independent cluster. Results are only as good as the symptom list, so combine with time and domain heuristics.</div>
+<div class="ex"><b>Case study: Vanguard.</b> To break monoliths of up to 4 million lines of Java into microservices, Vanguard built a knowledge graph of code artefacts and dependencies during the build, overlaid architecture diagrams to spot misalignments, pruned dead code, limited service-to-service calls, and published a code-quality scorecard.</div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>A service has two redundant links; one fails (impact 1), the other is fine (0). What's the service's impact?</p>
+<button>0.5</button><button>0, using min()</button><button>1</button>
+<div class="why" hidden>Redundant dependencies propagate the minimum: one working alternative is enough.</div></div>
+<div class="q" data-a="2"><p>A candidate root cause explains most symptoms, but many nodes depending on it are healthy. Which metric is low?</p>
+<button>Precision</button><button>F-score is undefined</button><button>Recall</button>
+<div class="why" hidden>Recall compares potential impact with what was observed.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m24" data-part="II" data-title="Semantic search and similarity">
+<div class="modhead"><span class="modnum">M24</span><span class="src">Book ch. 12</span></div>
+<h3>Semantic search and document similarity</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Annotate documents with entities (NER) and store them as a graph.</li>
+<li>Compute salience-weighted, explainable document similarity and handle cold start.</li>
+<li>Link entities to an organizing principle for true semantic search ("things, not strings").</li></ul></div>
+
+<p>Keyword search struggles with plurals, spelling variants, abbreviations, and acronyms, and ranks by term frequency or TF-IDF. Google improved ranking with <b>PageRank</b> (links between pages) and meaning with the <b>Knowledge Graph</b> ("things, not strings", Amit Singhal). Knowledge graphs resolve synonyms and related concepts, and open the door to question answering (Module 25).</p>
+
+<h4>From strings to things: annotation with NER</h4>
+<p>In "The New York Times… headquarters… in New York City," NER separates the organisation from the location even though they share words.</p>
+<pre><code>from transformers import pipeline
+ner_pipe = pipeline("ner", aggregation_strategy="simple")    # default model: bert-base-NER
+for entity in ner_pipe("Twitter chair Patrick Pichette joins graph data platform Neo4j board of directors."):
+    print(entity)
+# {'entity_group': 'ORG', 'score': 0.996, 'word': 'Twitter', ...}
+# {'entity_group': 'PER', 'score': 0.997, 'word': 'Patrick Pichette', ...}
+# {'entity_group': 'ORG', 'score': 0.831, 'word': 'Neo4j', ...}</code></pre>
+<p>NER returns a <b>type</b> (bert-base-NER: LOC, ORG, PER, MISC) and a <b>salience</b>, how central the entity is to the text. Use a domain-trained model for technical text. Store the results:</p>
+<pre><code>MERGE (a:Article {url:$url}) ON CREATE SET a.title = $title, a.text = $frg
+MERGE (p:Person {name:$author}) MERGE (a)-[:has_author]->(p)
+WITH a UNWIND $entityList AS entity
+MERGE (e:Entity {name: entity.word, type: entity.type})
+MERGE (a)-[:references {salience: entity.score}]->(e)</code></pre>
+<p>Now you can ask "what is this article about?" and "which articles mention this entity?" with the same pattern, and track <b>entity trends</b> month by month, which is far more meaningful than word counts.</p>
+
+<h4>Document similarity for recommendations</h4>
+<p><b>Content-based</b> recommendation ("you may also like") uses item features, here shared entities; <b>collaborative filtering</b> uses behaviour ("customers like you…").</p>
+<pre><code>// Top 5 similar articles, with an explanation
+MATCH (a1:Article)-[r1:references]->(e:Entity)<-[r2:references]-(rec)
+WHERE a1.url = $url1
+RETURN rec, sum(r1.salience * r2.salience) AS similarity_metric, collect(e) AS explanation
+ORDER BY similarity_metric DESC LIMIT 5
+
+// Or materialise it (batch with CALL {…} IN TRANSACTIONS on large graphs)
+MATCH (a1:Article)-[r1:references]->(e:Entity)<-[r2:references]-(a2:Article)
+WITH a1, a2, sum(r1.salience * r2.salience) AS m
+MERGE (a1)-[:similar {metric: m}]-(a2)</code></pre>
+<p><b>Cold start</b>: with no anchor article, show trending concepts from the last six months, or precompute similarity with an algorithm on a secondary server.</p>
+
+<h4>Making annotation semantic</h4>
+<p>Plain NER has two gaps: entities aren't <b>disambiguated</b> (UK vs United Kingdom), and there are no <b>relationships between entities</b> (Wales PART_OF the United Kingdom). The fix is <b>named-entity linking</b> (disambiguation) to an organizing principle such as <b>MeSH</b> or the <b>Disease Ontology</b> in life sciences, or Wikidata.</p>
+<ol>
+<li>Extract entities with a service that returns identifiers. The GCP Natural Language API adds <code>wikipedia_url</code> metadata, e.g. Patrick Pichette, salience 0.63.</li>
+<li>Use a cross-referenced knowledge base: Wikidata states <code>&lt;https://en.wikipedia.org/wiki/Neo4j&gt; schema:about wd:Q1628290</code>, and Neo4j is an instance of graph database (<code>wd:Q595971</code>).</li>
+</ol>
+<pre><code>// Load the organizing principle (SKOS/OWL/RDFS) with neosemantics
+CALL n10s.graphconfig.init({handleVocabUris:"IGNORE", classLabel:"Concept", subClassOfRel:"broader"});
+CALL n10s.skos.import.fetch("path-to-organizing-principle", "RDF/XML");
+
+// Extract and link in batches entirely from Cypher
+CALL apoc.periodic.iterate(
+ "MATCH (a:Article) WHERE a.processed IS NULL RETURN a",
+ "CALL apoc.nlp.gcp.entities.stream([item IN $_batch | item.a], {nodeProperty:'body', key:$key})
+  YIELD node, value SET node.processed = true
+  WITH node, value UNWIND value.entities AS entity
+  WITH entity, node WHERE entity.metadata.wikipedia_url IS NOT NULL
+  MATCH (c:Concept {altLabel: entity.metadata.wikipedia_url})
+  MERGE (node)-[rt:refers_to]->(c) SET rt.salience = entity.salience",
+ {batchMode:"BATCH_SINGLE", batchSize:10, params:{key:$key}})
+
+// Semantic search: articles about any kind of NoSQL DBMS, at any depth
+MATCH (c:Concept)<-[:broader*0..]-(sc)<-[:refers_to]-(article:Article)
+WHERE c.prefLabel = "NoSQL database management system"
+RETURN article.title</code></pre>
+<p>An article mentioning only "Neo4j" is found for "NoSQL database management systems" because the taxonomy knows Neo4j is a graph database, a kind of NoSQL database. That is semantic search. Several organizing principles give several complementary paths. Without built-in linking, annotate concepts with alternative labels or include/exclude regexes (COVID-19: <code>covid.*</code>, <code>corona.*</code>, but not <code>sars.*</code>) and write selection logic using context, distance, or centrality.</p>
+<div class="ex"><b>Case study: NASA Lessons Learned.</b> Decades of lessons since Apollo were siloed; the old system held under 1% of 20 million documents and keyword searches returned around 1,100 documents to read. A knowledge graph linking lessons by extracted entities and topics gives faster, fewer, more relevant results and shows topic correlations. One engineer: "This has saved us at least a year and over $2M in research and development towards our Mission to Mars planning."</div>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="2"><p>A query for "NoSQL databases" returns an article that only mentions Neo4j. What made that possible?</p>
+<button>Fuzzy string matching</button><button>TF-IDF</button><button>Entity linking to a concept hierarchy traversed with broader*</button>
+<div class="why" hidden>The organizing principle encodes that Neo4j ⊂ graph database ⊂ NoSQL.</div></div>
+<div class="q" data-a="0"><p>How is article-to-article similarity weighted in the book's metric?</p>
+<button>Sum of products of the shared entities' salience in each article</button><button>Count of shared words</button><button>PageRank of the articles</button>
+<div class="why" hidden>Σ r1.salience × r2.salience, plus the shared entities as an explanation.</div></div>
+</div>
+</section>
+
+<section class="mod" id="m25" data-part="II" data-title="Talking to your knowledge graph">
+<div class="modhead"><span class="modnum">M25</span><span class="src">Book ch. 13</span></div>
+<h3>Talking to your knowledge graph: NLP in, NLP out</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Name the three ways natural language and knowledge graphs interact.</li>
+<li>Extract facts for question answering; translate questions into Cypher; generate sentences from the graph.</li>
+<li>Load WordNet as a graph and compute path, Leacock–Chodorow, and Wu–Palmer similarity in Cypher.</li></ul></div>
+
+<div class="tbl"><table><tr><th>Interaction</th><th>Direction</th><th>Examples</th></tr>
+<tr><td>Natural language as <b>input</b></td><td>Text → graph</td><td>NER for semantic search (Module 24); fact extraction for question answering</td></tr>
+<tr><td>Natural language as <b>output</b></td><td>Graph → text</td><td>Conversational answers, automated reports</td></tr>
+<tr><td>Graph as <b>context for NLP</b></td><td>Graph supports NLP</td><td>Lexical databases such as WordNet, custom entity extractors, semantic similarity</td></tr></table></div>
+<p>The preface adds that knowledge graphs give machine learning high-quality features, are enriched by AI, and can help tame the hallucinations of large language models (LLMs) by grounding them in curated facts.</p>
+
+<h4>Question answering: from entities to facts</h4>
+<p>Semantic search answers "which documents talk about Tesla?" A question-answering graph answers "who is Tesla's CEO?" NLP moves from <b>entity extraction</b> to <b>fact extraction</b>: entity–property–value statements become relationships or properties. Keep links to source documents for provenance.</p>
+<pre><code># Diffbot Natural Language API: entities and facts
+payload = {"content": "Pichette is a partner at Inovia Capital and chair of commerce platform Lightspeed", "lang": "en"}
+res = requests.post(f"https://{HOST}/v1/?fields=entities,facts&token={TOKEN}", json=payload)
+# fact: "[Patrick Pichette] employee or member of [Inovia Capital]", confidence 0.95,
+#        with Wikidata URIs, types, and evidence passages
+
+UNWIND $facts AS fact
+MERGE (s:Entity {id: fact.entity.diffbotUri})
+MERGE (t:Entity {id: fact.value.diffbotUri})
+WITH s, t, fact
+CALL apoc.create.relationship(s, fact.property.name, {}, t) YIELD rel RETURN rel
+
+MATCH (:Organization {name:"Inovia Capital"})-[rel]-(p:Person)
+RETURN p.name, type(rel)        // Patrick Pichette | EMPLOYEE_OR_MEMBER_OF</code></pre>
+<p>The challenge is <b>harmonising relationships</b>: tell the extractor which relationship types matter, or relationship types multiply.</p>
+
+<h4>Natural language queries</h4>
+<p>Bloom suits domain users and Cypher suits specialists; a conversational interface widens access further. The book uses <b>spaCy's rule-based Matcher</b> over the movie graph (Person, Movie; ACTED_IN, DIRECTED, PRODUCED, WROTE, REVIEWED).</p>
+<pre><code>q1_pattern = [{"LOWER": "who"},
+              {"LEMMA": {"IN": ["direct","produce","write","review"]}, "POS": "VERB"},
+              {"IS_ASCII": True, "OP": "+"},          # the title, one or more words
+              {"IS_PUNCT": True, "OP": "?"}]          # optional "?"
+q1_verb_to_rel = {"direct":"DIRECTED", "produce":"PRODUCED", "write":"WROTE", "review":"REVIEWED"}
+
+# "do you know who wrote a few good men?"  →
+MATCH (p:Person)-[:WROTE]->(m:Movie)
+WHERE toLower(m.title) CONTAINS 'a few good men'
+WITH collect(p.name) AS answer_as_list
+RETURN CASE WHEN size(answer_as_list) > 0
+  THEN substring(reduce(r='', x IN answer_as_list | r + ', ' + x), 2)
+  ELSE "I cannot answer your question about 'a few good men'" END AS answer</code></pre>
+<p>Lemmas cover inflections (directed → direct). With three patterns (who-verb-title, when-was-title-released, who-acted-in-title) the bot answers "who directed unforgiven?" (Clint Eastwood), "when was top gun out?" (1986), and "who was in cloud atlas?" (Tom Hanks, Jim Broadbent, Halle Berry, Hugo Weaving), and shows the Cypher as an explanation. Because the graph is self-describing (<code>db.schema.*</code>), annotating the schema with natural-language terms lets the interface be generated and evolve automatically.</p>
+
+<h4>Natural language generation</h4>
+<p>Nouns become nodes and verbs become relationships ("Dan loves Ann"), so reversing that gives proto-sentences:</p>
+<pre><code>MATCH (x)-[r]->(y)
+RETURN x.name + " " + toLower(replace(type(r), "_", " ")) + " " + y.name AS sentence
+// "Euroyacht Limited officer of TUC LIMITED"   (Panama Papers sample)
+
+MATCH (n:Entity) UNWIND keys(n) AS property
+RETURN n.name + "'s " + replace(property, "_", " ") + " is " + n[property] AS sentence
+// "TUC LIMITED's jurisdiction is MLT"</code></pre>
+<p>Limits: it assumes a <code>name</code> property, cryptic names (<code>sub_109</code>) read badly, and incoming relationships need inverse phrasing. The general fix is to <b>annotate the ontology</b> (a "talkable" vocabulary):</p>
+<pre><code>mv:Movie  talk:name "title" .     mv:Person talk:name "name" .
+mv:ACTED_IN rdfs:domain mv:Person ; rdfs:range mv:Movie ;
+  talk:direct  "acted in"@default , "is in the cast of"@long , "worked in"@short ;
+  talk:inverse "has $o in it"@default , "includes"@short .
+mv:released talk:direct "was released in"@default , "The release year of $s was"@long .</code></pre>
+<p>Load it with <code>n10s.onto.import.fetch</code> (or plain Cypher). A generic query then picks the naming property, chooses direct or inverse phrasing by relationship direction, and substitutes <code>$s</code> and <code>$o</code>: "Hugo Weaving worked in Cloud Atlas, V for Vendetta, The Matrix…". Richer generation can use WordNet or ML. Bot frameworks such as <b>Rasa</b> can query Neo4j through knowledge-base actions.</p>
+
+<h4>Lexical databases: WordNet as a graph</h4>
+<p>WordNet groups words into <b>synsets</b> linked by semantic relations. Import its RDF release with neosemantics:</p>
+<pre><code>CREATE CONSTRAINT n10s_unique_uri ON (r:Resource) ASSERT r.uri IS UNIQUE;
+CALL n10s.graphconfig.init({handleVocabUris: "IGNORE"});
+CALL n10s.rdf.import.fetch(".../english-wordnet-2021.ttl.gz", "Turtle");
+
+// Meanings of "clear": Form ← LexicalEntry → LexicalSense → LexicalConcept
+MATCH (lemma:Form)<-[:canonicalForm]-(le:LexicalEntry)-[:sense]->()-[:isLexicalizedSenseOf]->(concept)
+WHERE lemma.writtenRep = "clear"
+RETURN le.partOfSpeech, concept.definition</code></pre>
+<p>Count senses to find the most polysemous word ("break", 75 senses), or traverse in reverse to find all words for one concept. <b>Hypernym</b> (more general) and <b>hyponym</b> (more specific) relations form a taxonomy (a globe is a kind of sphere); there are also meronyms (part-of) and more.</p>
+
+<h4>Graph-based semantic similarity</h4>
+<div class="tbl"><table><tr><th>Metric</th><th>Formula</th><th>dog vs lion</th></tr>
+<tr><td>Path similarity</td><td>1 / (1 + shortest hypernym path length)</td><td>path 5 → 0.167</td></tr>
+<tr><td>Leacock–Chodorow</td><td>−log<sub>10</sub>( pathLen / (2 × taxonomy depth) ); rewards similarity deep in the hierarchy</td><td>WordNet max depth = 19</td></tr>
+<tr><td>Wu–Palmer</td><td>2·depth(LCS) / (2·depth(LCS) + depth<sub>a</sub> + depth<sub>b</sub>), where LCS = least common subsumer</td><td>LCS "carnivore", depth 11</td></tr></table></div>
+<pre><code>MATCH (a:LexicalConcept {uri:$a_id}), (b:LexicalConcept {uri:$b_id})
+MATCH p = shortestPath((a)-[:hypernym*0..]-(b))
+RETURN length(p) AS pathLen, 1.0/(1 + length(p)) AS pathSim
+
+// Least common subsumer: two hypernym paths converging
+MATCH p = (a)-[:hypernym*0..]->(lcs)<-[:hypernym*0..]-(b)
+WITH lcs, length(p) AS len ORDER BY len LIMIT 1 ...</code></pre>
+<p>The Cypher results match NLTK's <code>path_similarity</code>, <code>lch_similarity</code>, and <code>wup_similarity</code>. Why do it in the graph? NLTK is tied to WordNet 3.0; you can <b>add domain terms</b> (proprietary/closed-source software and open-source software as hyponyms of software, then compute similarity with the same queries); you can apply the metrics to <b>any taxonomy</b> (DBpedia's subClassOf, Wikidata's P279); and you can change the algorithm. The German Center for Diabetes Research combined clinical trials, its own research, and all of PubMed in one knowledge graph.</p>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="0"><p>"Who is the CEO of Tesla?" needs a graph built by:</p>
+<button>Fact extraction (entity–property–value statements)</button><button>Entity extraction only</button><button>Document similarity</button>
+<div class="why" hidden>Entity extraction supports finding documents; facts support direct answers.</div></div>
+<div class="q" data-a="2"><p>What is the path similarity of two concepts 3 hypernym hops apart?</p>
+<button>0.33</button><button>3</button><button>0.25</button>
+<div class="why" hidden>1 / (1 + 3) = 0.25.</div></div>
+<div class="q" data-a="1"><p>Why annotate the ontology with talk:direct and talk:inverse phrases?</p>
+<button>To speed up queries</button><button>So generated sentences read naturally in both relationship directions, independent of schema names</button><button>To enforce constraints</button>
+<div class="why" hidden>"Keanu Reeves acted in The Matrix" vs "The Matrix has Keanu Reeves in it."</div></div>
+</div>
+</section>
+
+<section class="mod" id="m26" data-part="II" data-title="Knowledge lakes and synthesis">
+<div class="modhead"><span class="modnum">M26</span><span class="src">Book ch. 14 + both sources</span></div>
+<h3>From knowledge graphs to knowledge lakes, and putting it all together</h3>
+<div class="obj"><b>You will be able to</b><ul>
+<li>Describe how knowledge graph deployments evolve and what a knowledge lake is.</li>
+<li>Reconcile the research view (Part I) with the practitioner view (Part II).</li>
+<li>Plan a first knowledge graph project.</li></ul></div>
+
+<h4>How deployments grow</h4>
+<ol>
+<li><b>Departmental</b> knowledge graph fed by one department's data.</li>
+<li><b>Cross-functional</b> graphs interlocked through ontologies and middleware (compliance, customer 360).</li>
+<li><b>Foundational layer</b> for enterprise-wide reuse, with other systems built on its curated data.</li>
+</ol>
+<p>Success creates a risk: many knowledge graphs becoming ungovernable, "knowledge graphs all the way down."</p>
+
+<h4>Knowledge lakes</h4>
+<p>A <b>knowledge lake</b> is an architecture and usage pattern that is itself a knowledge graph and can subsume other knowledge graphs and non-graph data. It sits next to data warehouses and data lakes, holding a curated subset of the organisation's data as a graph for many projects: "a collection of knowledge graphs designed for reuse." It doesn't replace the data lake, which is built for volume and throughput with meaning deferred. The knowledge lake adds meaning afterwards and becomes the main lens for consuming business-meaningful data. It can start as small as one system and grow, with governance and automation to keep it fresh. "We are drowning in information but starved for knowledge" (John Naisbitt).</p>
+
+<h4>Two perspectives, one subject</h4>
+<div class="tbl"><table><tr><th>Topic</th><th>Survey (Part I)</th><th>Practitioner's Guide (Part II)</th></tr>
+<tr><td>Definition</td><td>Graph of data accumulating and conveying knowledge of the real world</td><td>Interlinked facts with an organizing principle; data in context</td></tr>
+<tr><td>Data model</td><td>Model-agnostic; prefers del graphs/RDF for presentation</td><td>Labelled property graph; RDF seen as an exchange format</td></tr>
+<tr><td>Semantics</td><td>RDFS, OWL, DLs, rules, entailment regimes</td><td>Taxonomies and ontologies as organizing principles; just-enough semantics</td></tr>
+<tr><td>Querying</td><td>Graph patterns, relational algebra, regular path queries (SPARQL, Cypher, G-CORE)</td><td>Cypher in depth: MERGE, variable-length paths, APOC, GDS</td></tr>
+<tr><td>Induction</td><td>Analytics, embeddings (TransE…TuckER), GNNs, rule and axiom mining</td><td>GDS algorithms, FastRP embeddings, link-prediction and node-regression pipelines</td></tr>
+<tr><td>Identity</td><td>IRIs, owl:sameAs, identity-link prediction, blocking</td><td>Entity resolution: SAME_AS/SIMILAR, WCC golden records, Jaccard token similarity</td></tr>
+<tr><td>Creation</td><td>Text, markup, structured mappings (R2RML), ontology engineering</td><td>Data Importer, LOAD CSV, neo4j-admin, Kafka, Spark, ETL, NER pipelines</td></tr>
+<tr><td>In practice</td><td>Open KGs (DBpedia, Wikidata…) and enterprise KGs by industry</td><td>Use cases: metadata, identity, fraud, skills, dependencies, search, NLP; case studies</td></tr></table></div>
+<p>Both sources agree that a knowledge graph is more than a graph: it needs an explicit layer of meaning (schema, ontology, organizing principle), a way to manage identity, and techniques, deductive and inductive, to grow and refine knowledge. Both favour incremental, "pay-as-you-go" or agile construction over big upfront modelling, and both note that enterprise ontologies tend to be lightweight taxonomies.</p>
+
+<h4>A first-project checklist</h4>
+<ol>
+<li>Pick one use case with a clear consumer. Write <b>competency questions</b> it must answer.</li>
+<li>Choose the lightest organizing principle that answers them: property graph, then taxonomy, then ontology. Reuse standards (Schema.org, SKOS, FIBO, SNOMED CT) where they fit.</li>
+<li>Design identity: keys and node-key constraints, persistent identifiers, an entity-resolution plan.</li>
+<li>Load a representative slice first (LOAD CSV), check the model, then bulk load.</li>
+<li>Decide what to materialise and what to virtualise (ETL vs query rewriting / APOC virtual resources).</li>
+<li>Validate with constraints or shapes; measure quality (accuracy, completeness, consistency, understandability).</li>
+<li>Enrich with algorithms (centrality, communities, similarity) and ML (link prediction), writing results back.</li>
+<li>Record provenance and context; plan licensing and privacy before publishing.</li>
+<li>Keep it current and encourage use: each use enriches the graph.</li>
+</ol>
+
+<div class="check"><div class="lbl">Self-check</div>
+<div class="q" data-a="1"><p>How does a knowledge lake relate to a data lake?</p>
+<button>It replaces it</button><button>It sits alongside it and adds curated meaning to data poured in at volume</button><button>It is a faster data lake</button>
+<div class="why" hidden>The data lake handles volume; the knowledge lake makes it business-meaningful.</div></div>
+<div class="q" data-a="2"><p>Which statement do both sources support?</p>
+<button>RDF is mandatory for knowledge graphs</button><button>Build a complete ontology before loading data</button><button>Start small and grow the graph and its semantics incrementally</button>
+<div class="why" hidden>The survey's "pay-as-you-go" and the book's "don't boil the ocean" say the same thing.</div></div>
+</div>
+</section>
+
+<section class="mod" id="glossary" data-skip="1">
+<div class="modhead"><span class="modnum">Ref</span><span class="src">Both sources</span></div>
+<h3>Glossary</h3>
+<dl class="terms" style="margin-top:6px">
+<dt>A-Box / T-Box / R-Box</dt><dd>Description Logic assertions about individuals / class axioms / property axioms.</dd>
+<dt>APOC</dt><dd>Neo4j's standard library of procedures and functions (loading, virtualisation, text, NLP).</dd>
+<dt>Blank node</dt><dd>RDF node without an identifier; expresses that something exists.</dd>
+<dt>Blocking</dt><dd>Grouping candidate records so matching compares only within groups, avoiding O(n²).</dd>
+<dt>Centrality</dt><dd>Measures of node importance: degree, betweenness, closeness, PageRank, eigenvector.</dd>
+<dt>Competency question</dt><dd>Natural-language question an ontology or graph must answer; used as a test.</dd>
+<dt>Cypher / GQL</dt><dd>Neo4j's declarative ASCII-art pattern language / the ISO graph query language standard it informs.</dd>
+<dt>Data fabric</dt><dd>Organisation-wide access layer; the knowledge graph acts as its curated index.</dd>
+<dt>del graph</dt><dd>Directed edge-labelled graph; RDF is its standard form.</dd>
+<dt>Embedding</dt><dd>Dense vector for a node or relation (TransE, DistMult, FastRP, Node2Vec, RDF2Vec).</dd>
+<dt>Entailment</dt><dd>G entails G′ when every model of G is a model of G′.</dd>
+<dt>Entity linking</dt><dd>Connecting a text mention to a specific node or concept (disambiguation).</dd>
+<dt>Entity resolution</dt><dd>Deciding which records refer to the same real-world entity; produces golden records.</dd>
+<dt>FAIR</dt><dd>Findable, Accessible, Interoperable, Reusable data publishing principles.</dd>
+<dt>GDS</dt><dd>Neo4j Graph Data Science: projections plus 65+ parallel algorithms and ML pipelines.</dd>
+<dt>GNN</dt><dd>Graph neural network; recursive (to a fixpoint) or convolutional (fixed layers).</dd>
+<dt>Index-free adjacency</dt><dd>Storage where nodes point directly to relationships; O(1) traversal.</dd>
+<dt>IRI</dt><dd>Internationalized Resource Identifier; global identifier used in RDF.</dd>
+<dt>Knowledge lake</dt><dd>Reusable, curated collection of knowledge graphs beside data lakes and warehouses.</dd>
+<dt>Link prediction</dt><dd>Predicting missing edges via heuristics, embeddings, rules, or ML pipelines.</dd>
+<dt>Linked Data</dt><dd>Publishing with dereferenceable HTTP IRIs that link to related entities.</dd>
+<dt>Materialisation</dt><dd>Applying rules until fixpoint and storing the inferred edges.</dd>
+<dt>MERGE</dt><dd>Cypher clause that matches a whole pattern or creates the whole pattern.</dd>
+<dt>Named graph</dt><dd>Graph with an ID inside a graph dataset; used for provenance and context.</dd>
+<dt>NER</dt><dd>Named-entity recognition: finding mentions of people, places, organisations in text.</dd>
+<dt>Ontology</dt><dd>Formal representation of what terms in a domain mean (OWL, OBOF).</dd>
+<dt>Open / Closed World</dt><dd>Missing facts are unknown / missing facts are false.</dd>
+<dt>Organizing principle</dt><dd>The layer of meaning (model, taxonomy, ontology) that makes a graph a knowledge graph.</dd>
+<dt>OWL</dt><dd>W3C Web Ontology Language; OWL 2 DL, RL, QL profiles trade expressivity for tractability.</dd>
+<dt>Projection</dt><dd>In-memory sub-graph prepared for analytics (GDS) or analysis.</dd>
+<dt>Property graph</dt><dd>Nodes and relationships carry labels/types and key–value properties.</dd>
+<dt>RDF / RDFS</dt><dd>W3C graph data model / its basic schema vocabulary (subclass, subproperty, domain, range).</dd>
+<dt>Regular path query</dt><dd>Query matching paths whose labels fit a regular expression.</dd>
+<dt>Reification</dt><dd>Giving an edge its own identifier so statements can be made about it.</dd>
+<dt>SHACL / ShEx</dt><dd>Shape languages for validating RDF graphs.</dd>
+<dt>SKOS</dt><dd>W3C vocabulary for taxonomies and thesauri (broader, narrower, prefLabel, altLabel).</dd>
+<dt>SPARQL</dt><dd>W3C query language for RDF.</dd>
+<dt>Taxonomy</dt><dd>Broader–narrower hierarchy of categories.</dd>
+<dt>WCC</dt><dd>Weakly Connected Components; groups nodes connected ignoring direction.</dd>
+</dl>
+</section>
+
+<footer>
+<p><b>Sources.</b> Aidan Hogan et al., "Knowledge Graphs," <i>ACM Computing Surveys</i> 54(4), 2021 (arXiv:2003.02320v6). Jesús Barrasa and Jim Webber, <i>Building Knowledge Graphs: A Practitioner's Guide</i>, O'Reilly Media, 2023. Code examples are adapted from the book and target Neo4j 4.4–5 with APOC and GDS; procedure names marked alpha or beta may have changed in later releases.</p>
+<p>Your completed modules are saved only in this browser.</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  var KEY = "kg-course-done-v1";
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { done = {}; }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(done)); } catch(e) {} }
+
+  var mods = Array.prototype.slice.call(document.querySelectorAll("section.mod:not([data-skip])"));
+  var links = document.getElementById("links");
+  var lastPart = null;
+
+  mods.forEach(function(sec){
+    var part = sec.getAttribute("data-part");
+    if (part !== lastPart) {
+      var p = document.createElement("div");
+      p.className = "part";
+      p.textContent = part === "I" ? "Part I · Foundations" : "Part II · Practice";
+      links.appendChild(p);
+      lastPart = part;
+    }
+    var a = document.createElement("a");
+    a.href = "#" + sec.id;
+    a.id = "nav-" + sec.id;
+    var n = document.createElement("span"); n.className = "n"; n.textContent = sec.id.replace("m","");
+    var t = document.createElement("span"); t.textContent = sec.getAttribute("data-title");
+    a.appendChild(n); a.appendChild(t);
+    links.appendChild(a);
+
+    var btn = document.createElement("button");
+    btn.className = "markdone";
+    btn.type = "button";
+    btn.id = "done-" + sec.id;
+    sec.appendChild(btn);
+    btn.addEventListener("click", function(){
+      if (done[sec.id]) delete done[sec.id]; else done[sec.id] = 1;
+      save(); render();
+    });
+  });
+  var g = document.createElement("div"); g.className = "part"; g.textContent = "Reference"; links.appendChild(g);
+  var ga = document.createElement("a"); ga.href = "#glossary";
+  ga.innerHTML = '<span class="n">·</span><span>Glossary</span>'; links.appendChild(ga);
+
+  function render(){
+    var count = 0;
+    mods.forEach(function(sec){
+      var on = !!done[sec.id];
+      if (on) count++;
+      var b = document.getElementById("done-" + sec.id);
+      b.textContent = on ? "Completed ✓ (click to undo)" : "Mark module complete";
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      document.getElementById("nav-" + sec.id).classList.toggle("done", on);
+    });
+    document.getElementById("pbar").style.width = (100 * count / mods.length) + "%";
+    document.getElementById("ptext").textContent = count + " of " + mods.length + " modules complete";
+  }
+  render();
+
+  // Self-check questions
+  document.querySelectorAll(".q").forEach(function(q){
+    var ans = parseInt(q.getAttribute("data-a"), 10);
+    var buttons = q.querySelectorAll("button");
+    var why = q.querySelector(".why");
+    buttons.forEach(function(b, i){
+      b.type = "button";
+      b.addEventListener("click", function(){
+        buttons.forEach(function(x){ x.classList.remove("right","wrong"); });
+        if (i === ans) { b.classList.add("right"); why.textContent = "Correct. " + why.getAttribute("data-why"); }
+        else { b.classList.add("wrong"); buttons[ans].classList.add("right"); why.textContent = "Not quite. " + why.getAttribute("data-why"); }
+        why.hidden = false;
+      });
+    });
+    why.setAttribute("data-why", why.textContent);
+  });
+
+  // Mobile menu
+  var menu = document.getElementById("menu"), rail = document.getElementById("rail");
+  menu.addEventListener("click", function(){
+    var open = rail.classList.toggle("open");
+    menu.setAttribute("aria-expanded", open ? "true" : "false");
+    menu.textContent = open ? "Hide modules" : "Show modules";
+  });
+  links.addEventListener("click", function(e){
+    if (e.target.closest("a") && window.innerWidth <= 900) { rail.classList.remove("open"); menu.textContent = "Show modules"; menu.setAttribute("aria-expanded","false"); }
+  });
+})();
+</script>
+</body></html>

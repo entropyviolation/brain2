@@ -18,7 +18,7 @@ Companion view: the canvas
 | --- | --- | --- |
 | Command core | `lib/ingest/` | Verb plus payload. Prefix-less text is a `log:` line (Inbox via `inbox:` or a trailing `-i`), except a multi-line `Name:` dump. LLM-free. |
 | Long poll | `electron/telegram-ingest.js`, `scripts/phone-hub.ts` | `getUpdates` timeout 25s. `allowed_updates`: `message`, `edited_message` only. |
-| Webhook | `scripts/phone-hub.ts` `POST /telegram/webhook` | Used when `COGS_TELEGRAM_WEBHOOK` is set. Optional `X-Telegram-Bot-Api-Secret-Token`. |
+| Webhook | `scripts/phone-hub.ts` `POST /telegram/webhook` | Used when `BRAIN2_TELEGRAM_WEBHOOK` is set. Optional `X-Telegram-Bot-Api-Secret-Token`. |
 | Queue-only poller | `scripts/telegram-ingest.mjs` (`npm run ingest`) | Does not apply. Prefer `npm run phone:hub`. |
 | Replies | `lib/ingest/deliver-reply.ts`, `lib/ingest/chunk-text.ts` | Plain `sendMessage`. Split at 3900 characters. Telegram’s cap is 4096. |
 | Pin | `pinChatMessage` / `unpinChatMessage` | One grocery pin in `livePins.grocery`. Private chats can pin without admin rights. |
@@ -185,7 +185,7 @@ inbox. Do not change the bare words.
 - **Process timezone.** A hub in UTC files `gm` and habit days on the wrong
   local date. Run the hub in the life zone, or store that zone and use it for
   every phone day. Do not infer a zone from the GPS trail.
-- **Reply failed after a successful write.** Analytics vision already names
+- **Reply failed after a successful write.** Data vision already names
   this. The human retry is a new message. Logging `sendOk` / `pinOk` (proposed
   in `05-telegram.md` and not present on the event) would make the split
   visible. It does not by itself stop the double write.
@@ -292,7 +292,7 @@ No product code was changed to obtain these results.
 | Command | Result |
 | --- | --- |
 | `npx vitest run lib/ingest` | 28 files, 218 tests, all passed (about 5.3s) |
-| `npx vitest run components/Settings/MessageIngestPanel.test.tsx components/ingest-log-dialog.test.tsx lib/rituals.test.ts` | 3 files, 12 tests, all passed |
+| `npx vitest run components/Settings/imports/MessageIngestPanel.test.tsx components/ingest-log-dialog.test.tsx lib/rituals.test.ts` | 3 files, 12 tests, all passed |
 
 ## Sources
 

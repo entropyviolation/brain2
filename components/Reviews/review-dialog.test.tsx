@@ -189,6 +189,24 @@ describe("ReviewDialog steps", () => {
     expect(useReviewsStore.getState().getReview("day", "2026-10-04")?.endCompleted).toBe(true)
     expect(onClose).toHaveBeenCalled()
   })
+
+  it("opens the time grid on the ritual day", () => {
+    render(<ReviewDialog open period="day" periodKey="2026-10-04" onClose={() => {}} />)
+    goTo("How the day was spent")
+    expect(document.querySelector('[data-ui-name="Night time glance"]')).toBeTruthy()
+    expect(document.querySelector('[data-ui-name="Time grid"]')).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Time grid" }))
+    const grid = document.querySelector('[data-ui-name="Time grid"]')
+    expect(grid).toBeTruthy()
+    const label = new Date("2026-10-04T00:00:00").toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    expect(grid).toHaveTextContent(label)
+    expect(within(grid as HTMLElement).queryByRole("button", { name: "Previous day" })).not.toBeInTheDocument()
+  })
 })
 
 describe("ReviewDialog unfinished rows", () => {

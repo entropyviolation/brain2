@@ -29,3 +29,17 @@
   height: 0.9em;
   opacity: 0.6;
 }
+
+@media (max-width: 767px) {
+  .native-select {
+    min-height: 44px;
+    font-size: 16px !important;
+    white-space: normal;
+  }
+
+  .native-select-value {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+}

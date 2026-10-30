@@ -13,6 +13,7 @@ import type { ImpliedRuleEffect, ItemLike } from "@/lib/item-types"
 import { getFieldValue } from "@/lib/item-types"
 import { LOGGED_ACTION_TYPE_ID } from "@/lib/item-types"
 import { taskRepository } from "@/lib/data/task-repository"
+import { withItemWriteSource } from "@/lib/item-write-source"
 import { usePointsStore } from "@/lib/points-store"
 import { useHabitsStore } from "@/lib/habits-store"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -113,7 +114,9 @@ export function executeImpliedEffects(
       if (!title) continue
       const award = effect.awardPoints !== false
       const logged = buildLoggedActionItem(source, title, award, now)
-      taskRepository.add(logged)
+      withItemWriteSource({ surface: "rule", name: effect.ruleName }, () => {
+        taskRepository.add(logged)
+      })
       created.push(logged)
       if (award) {
         const points = logged.rewardValue ?? 1

@@ -39,18 +39,33 @@ import {
   bankOpenStint,
   compactNowObjectives,
   editNowObjectiveText,
+  moveNowObjectiveToNext,
+  moveNowObjectiveToNow,
   removeNowObjective,
   toggleNowObjectiveComplete,
   type NowObjective,
+  type NowObjectiveLane,
 } from "@/lib/now-objective"
 import {
   createTaskForObjective,
+  fileObjectivesOnTask,
   homeForObjective,
   homesForOperation,
   mergeResumed,
+  objectivesAttachedToTask,
   toParked,
 } from "@/lib/unfinished-objectives"
 import { useUnfinishedObjectivesStore } from "@/lib/unfinished-objectives-store"
+import {
+  appendPause,
+  closeOpenPause,
+  isHoldPause,
+  mergeSittingNote,
+  pauseReasonText,
+  resumeOpenPause,
+  type PauseRequest,
+  type WorkPauseSpan,
+} from "@/lib/work-pause"
 
 export const ACTIVITY_SCOPE_ID = "activity"
 export const WORK_SESSION_TICK_MS = 15_000
@@ -196,16 +211,61 @@ export function buildWorkTimeLog(input: {
   title: string
   slice: WorkDaySlice
   startedAtIso: string
+  pauseSpans?: readonly WorkPauseSpan[]
+  endedAt?: Date
 }): TimeLogEntry {
+  const spans = input.pauseSpans?.length ? input.pauseSpans.map((span) => ({ ...span })) : undefined
+  const notes =
+    (spans
+      ? mergeSittingNote({
+          existing: undefined,
+          base: input.title,
+          owned: true,
+          replaceOwned: true,
+          startedAt: input.startedAtIso,
+          endedAt: input.endedAt,
+          spans,
+          stopped: true,
+        })
+      : undefined) ?? input.title
   return {
     id: workTimeLogId(input.operationId, input.startedAtIso, input.slice.date),
     date: input.slice.date,
     startTime: minutesToTimeString(input.slice.startMin),
     endTime: minutesToTimeString(input.slice.endMin),
     durationMinutes: input.slice.durationMinutes,
-    notes: input.title,
+    notes,
     activityLabel: input.title,
     taskId: input.operationId,
+    ...(spans ? { pauseSpans: spans } : {}),
+  }
+}
+
+function mirrorOperationSitting(
+  session: WorkSession,
+  ids: string[],
+  clock?: { endedAt?: Date; stopped?: boolean },
+): void {
+  if (!session.pauseSpans?.length) return
+  const tracking = useTimeTrackingStore.getState()
+  const base = workedOnTitle(session.title)
+  const spans = session.pauseSpans.map((span) => ({ ...span }))
+  for (const id of ids) {
+    const entry = tracking.entries.find((row) => row.id === id)
+    const owned = !entry?.notes || entry.notes.startsWith("worked on ")
+    const notes = mergeSittingNote({
+      existing: entry?.notes,
+      base,
+      owned,
+      startedAt: session.startedAt,
+      endedAt: clock?.endedAt,
+      spans,
+      stopped: clock?.stopped,
+    })
+    tracking.updateEntry(id, {
+      ...(notes !== undefined ? { notes } : {}),
+      pauseSpans: spans,
+    })
   }
 }
 
@@ -390,10 +450,15 @@ function extendLiveEntry(session: WorkSession, now: Date): string[] {
       ids.push(id)
     }
   }
+  if (session.pauseSpans?.length) {
+    const fresh = useTimeTrackingStore.getState()
+    const missing = ids.filter((id) => !fresh.entries.find((row) => row.id === id)?.pauseSpans?.length)
+    if (missing.length) mirrorOperationSitting(session, missing)
+  }
   return ids
 }
 
-function writeDoneAndTimeLogs(operation: Task, slices: WorkDaySlice[], startedAtIso: string): void {
+function writeDoneAndTimeLogs(operation: Task, slices: WorkDaySlice[], session: WorkSession, endedAt: Date): void {
   const tagNames = (() => {
     const ids = new Set(getOperationTrackingTagIds(operation))
     if (ids.size === 0) return []
@@ -406,7 +471,7 @@ function writeDoneAndTimeLogs(operation: Task, slices: WorkDaySlice[], startedAt
   let nextLogs = [...(operation.timeLogs ?? [])]
 
   for (const slice of slices) {
-    const done = buildWorkedOnDoneItem({ operation, slice, startedAtIso, tagNames })
+    const done = buildWorkedOnDoneItem({ operation, slice, startedAtIso: session.startedAt, tagNames })
     const existingDone = taskRepository.getById(done.id)
     if (existingDone) taskRepository.update({ ...existingDone, ...done, id: done.id })
     else taskRepository.add(done)
@@ -415,7 +480,9 @@ function writeDoneAndTimeLogs(operation: Task, slices: WorkDaySlice[], startedAt
       operationId: operation.id,
       title,
       slice,
-      startedAtIso,
+      startedAtIso: session.startedAt,
+      pauseSpans: session.pauseSpans,
+      endedAt,
     })
     const logIndex = nextLogs.findIndex((entry) => entry.id === log.id)
     if (logIndex >= 0) nextLogs[logIndex] = log
@@ -491,6 +558,8 @@ export function stopWorkingOnOperation(now = new Date(), opts?: { parkUnfinished
     useWorkSessionStore.getState().setSession(session)
   }
 
+  const spans = closeOpenPause(session.pauseSpans, now)
+  if (spans) session = { ...session, pauseSpans: spans }
   const operation = taskRepository.getById(session.operationId)
   const slices = splitIntoDaySlices(new Date(session.startedAt), end)
 
@@ -504,10 +573,11 @@ export function stopWorkingOnOperation(now = new Date(), opts?: { parkUnfinished
       session.nowObjectives,
     )
     useWorkSessionStore.getState().setSession({ ...session, trackingEntryIds: ids })
-    writeDoneAndTimeLogs(operation, slices, session.startedAt)
+    if (spans?.length) mirrorOperationSitting(session, ids, { endedAt: now, stopped: true })
+    writeDoneAndTimeLogs(operation, slices, session, now)
     syncTrackedHabits(slices.map((s) => s.date))
   } else if (operation) {
-    writeDoneAndTimeLogs(operation, slices, session.startedAt)
+    writeDoneAndTimeLogs(operation, slices, session, now)
   }
 
   useWorkSessionStore.getState().clearSession()
@@ -534,28 +604,44 @@ export function tickWorkSession(now = new Date()): WorkSession | null {
   })
 }
 
-/** Freeze elapsed + paint; resume continues the same session. */
-export function pauseWorkingOnOperation(now = new Date()): WorkSession | null {
+/**
+ * Freeze elapsed + paint. A Pause click passes the gap reason.
+ * Empty or missing reason does not pause. `{ hold: true }` freezes without a gap.
+ */
+export function pauseWorkingOnOperation(now = new Date(), request?: PauseRequest): WorkSession | null {
   return withoutUndo(() => {
     const session = useWorkSessionStore.getState().session
     if (!session || session.pausedAt) return session
-    useWorkSessionStore.getState().setSession({ ...session, pausedAt: now.toISOString() })
-    return tickWorkSession(now)
+    const hold = isHoldPause(request)
+    const spans = hold ? session.pauseSpans : appendPause(session.pauseSpans, now, pauseReasonText(request))
+    if (!hold && !spans) return session
+    useWorkSessionStore.getState().setSession({
+      ...session,
+      pausedAt: now.toISOString(),
+      ...(spans ? { pauseSpans: spans } : {}),
+    })
+    const ticked = tickWorkSession(now)
+    const live = ticked ?? useWorkSessionStore.getState().session
+    if (live?.pauseSpans?.length) mirrorOperationSitting(live, live.trackingEntryIds ?? [])
+    return useWorkSessionStore.getState().session
   })
 }
 
-/** Clear the open pause and fold its duration into `pausedAccumMs`. */
+/** Clear the open pause, record restarted-at, and fold the gap into `pausedAccumMs`. */
 export function resumeWorkingOnOperation(now = new Date()): WorkSession | null {
   return withoutUndo(() => {
     const session = useWorkSessionStore.getState().session
     if (!session?.pausedAt) return session
     const pauseMs = Math.max(0, now.getTime() - new Date(session.pausedAt).getTime())
+    const pauseSpans = resumeOpenPause(session.pauseSpans, now)
     const next: WorkSession = {
       ...session,
       pausedAt: undefined,
       pausedAccumMs: (session.pausedAccumMs ?? 0) + pauseMs,
+      ...(pauseSpans ? { pauseSpans } : {}),
     }
     useWorkSessionStore.getState().setSession(next)
+    if (pauseSpans?.length) mirrorOperationSitting(next, next.trackingEntryIds ?? [])
     return next
   })
 }
@@ -569,9 +655,13 @@ export function toggleWorkingOnOperation(operationId: string, now = new Date()):
   return startWorkingOnOperation(operationId, now)
 }
 
-/** Add an objective for right now on the live Operations activity block. */
-export function addWorkNowObjective(text: string, now = new Date()): WorkSession | null {
-  return withoutUndo(() => patchWorkNowObjectives((list) => addNowObjective(list, text, now)))
+/** Add an objective on the live Operations activity block, in Now or Next. */
+export function addWorkNowObjective(
+  text: string,
+  now = new Date(),
+  lane: NowObjectiveLane = "next",
+): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => addNowObjective(list, text, now, { lane })))
 }
 
 /** Already done during this sitting. Start is unknown, and not before the session began. */
@@ -614,12 +704,22 @@ export function attachWorkNowObjective(
         : target.taskId
     if (!taskId) return session
     const stepId = "createName" in target ? undefined : target.stepId
-    return patchWorkNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+    const next = patchWorkNowObjectives((list) => attachNowObjective(list, id, { taskId, stepId }))
+    fileObjectivesOnTask(taskId, objectivesAttachedToTask(next?.nowObjectives, taskId))
+    return next
   })
 }
 
 export function editWorkNowObjectiveText(id: string, text: string): WorkSession | null {
   return withoutUndo(() => patchWorkNowObjectives((list) => editNowObjectiveText(list, id, text)))
+}
+
+export function moveWorkNowObjectiveToNext(id: string, now = new Date()): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => moveNowObjectiveToNext(list, id, now)))
+}
+
+export function moveWorkNowObjectiveToNow(id: string, now = new Date()): WorkSession | null {
+  return withoutUndo(() => patchWorkNowObjectives((list) => moveNowObjectiveToNow(list, id, now)))
 }
 
 export function toggleWorkNowObjectiveComplete(id: string, now = new Date()): WorkSession | null {

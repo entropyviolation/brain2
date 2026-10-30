@@ -1,6 +1,8 @@
 # `components/Reviews/` — Rituals
 
-Global **BRAIN2** header **Rituals** control (not a top-level tab). Day rituals use
+_Last mapped: 2026-10-28_
+
+Global **BRAIN2** header **Rituals** control (not a top-level tab). On a phone (`max-width: 767px`) ritual dialogs that contain a ritual step are bottom sheets, and ritual fields are 16px. Other header dialogs are unchanged. Desktop chrome is unchanged. Day rituals use
 sun (morning) and moon (night). Week / month / quarter / year offer **Start
 ritual** (plan the coming period) and **Review ritual** (end: clarify, push,
 document, evaluate). Dialog shells use the shared pin-bar milled fascia
@@ -18,7 +20,7 @@ data opens unchanged. User-facing copy is Rituals.
 Other rooms may import:
 
 - `Reviews` from `reviews.tsx` — header Rituals control (`Rituals` is the same component). The pin bar keeps a thin key (`components/header-doors.tsx`) and loads this room the first time that key is pressed; the next press opens the menu. The mobile shell mounts it (`components/Mobile/MobileApp.tsx`).
-- `PostMortemDialog` from `PostMortemDialog.tsx` — Analytics opens a task reflection (`components/Analytics/ReflectionView.tsx`).
+- `PostMortemDialog` from `PostMortemDialog.tsx` — Analytics opens a task reflection (`components/Analytics/behavior/ReflectionView.tsx`).
 - `RitualWalkDialog` from `RitualWalkDialog.tsx` — Home → To Do opens the rite for that calendar day. The Home **Rituals** square opens its rows with it too (`components/Home/home-review-banner.tsx`, via `ritualSlotPlacement` / `starLordSlotPlacement` in `lib/ritual-todo.ts`).
 
 This room writes **`lib/reviews-store.ts`** (`useReviewsStore`: `saveReview`, `replaceMorningReview`, `replaceStartRitual`). `PostMortemDialog` saves the task reflection through `saveCompletionReview` in `lib/services/completion-service.ts`.
@@ -29,26 +31,70 @@ This room also writes **`lib/star-lord-store.ts`** for the three Star Lord Repor
 
 ## Files
 
+_Last mapped: 2026-10-27._
+
 | File | Purpose |
 |------|---------|
 | `reviews.tsx` | `Rituals` header button (`Reviews` alias) — day sun/moon + **prior-day night** + period Start/Review; **Star Lord Report** on the local new moon, full moon, and birthday; `ReviewDialog` (`data-ui-name="Period review"`) for night/end; `.hpp95` shell |
 | `RitualWalkDialog.tsx` | Opens the same morning, start, end, or Star Lord dialog from a Home → To Do row |
 | `StarLordReportDialog.tsx` | Star Lord Report (`data-ui-name="Star Lord Report"`). Preparation, three ledger questions, three inner-alchemy questions, closing. New moon is at home, facing north. Close saves a draft. Save awards section points plus the whole-ritual bonus |
-| `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude |
-| `MorningReview.tsx` | `MorningReviewDialog` (`data-ui-name="Morning review"`) — day morning (sun) ritual (HM2); same answers as text `gm` |
+| `StartRitualDialog.tsx` | Start / planning ritual for week–year (`data-ui-name="Start ritual"`): undone from last period, priorities, must-dos, **mark assigned tasks** required / prioritized, intentions, plan, gratitude. Open tasks in the period and the previous period key are `tasksScheduledInPeriod` / `previousKeyFor` in `lib/ingest/apply-ritual.ts` |
+| `MorningReview.tsx` | _Last mapped: 2026-10-27._ Public door for the day morning ritual (HM2). Re-exports `MorningReview` and `MorningReviewDialog`. Import `@/components/Reviews/MorningReview`. The twelve step bodies, the session draft, and `commitMorning` live in `morning/` |
 | `RitualSteps.tsx` | `RitualStepper` + `useRitualStep`: one question at a time. Lamp strip, `03 / 09` plate, optional step index (remembered per viewer), Back / Next, Alt+←/→. Styles in `ritual-steps.css`. Its own buttons carry `.rst-own` so the house key chrome skips them. _Last mapped: 2026-10-16_ Every rite uses it: Morning, Night / end, Start, Star Lord. The side index opens by default at 720px and wider; a toggle is remembered (`brain2-ritual-nav-open`). Under 640px the index is a strip above the card. Each rite hands in `{ id, label, answered, body }` steps and owns saving: moving to another step writes a draft. Step keys: `brain2-morning-step:{day}`, `brain2-ritual-step:end:{period}:{key}`, `brain2-ritual-step:start:{period}:{key}`, `brain2-ritual-step:star-lord:{kind}:{date}`. The last step's key is **Finish** (same as the primary save). A step's `answered` may be `"partial"`: a half-lit lamp, `(started)` in its label, not counted in the tally (night: Unfinished items, Reflection). `tone` colors the rite (`data-tone` in `ritual-steps.css`): `dawn` amber for Morning and Start, `dusk` ink blue for Night and End, `north` silver for Star Lord |
 | `CommitmentMarkList.tsx` | Shared required / prioritized task checkboxes (`marks`: `required` \| `prioritized` \| `both`) for morning sections and start-ritual rows |
 | `AffirmationsDialog.tsx` | Spoken-affirmations ritual from the morning dialog |
-| `DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
-| `NightTimeGlance.tsx` | Night ritual: time grid, day log, and activity log pinned to that ritual's day, plus a short analysis note. Day-log slabs keep their pen colors inside the dialog |
+| `end/DayReviewTomorrowSection.tsx` | Night / day end: "make a plan for tomorrow" (plan log + schedule/create tomorrow to-dos) |
+| `end/NightTimeGlance.tsx` | Night ritual: time grid, day log, and activity log pinned to that ritual's day, plus a short analysis note. Day-log slabs keep their pen colors inside the dialog |
 | `WhyBlockedControl.tsx` | Why blocked? Presets stay tokens. **Other** on a ritual row opens a single-line field. The optional prompt passes `noteAlways` so a multiline note sits beside any preset, and `aboveDialog` so pointer events stay on. The list is the shared menu layer, above that window. The field keeps spaces while you type; the saved note is trimmed |
 | `MissReasonDialog.tsx` | Optional why. The reason menu is the shared portaled select (`components/ui/menu-layer.ts`), above this dialog and its scrim (z-120), so the list stays visible and clickable. The note is a textarea about six lines tall (`max-h-40`); longer text scrolls inside the field, and the window itself caps at the viewport. Spaces stay in the field while typing; Save stores the trimmed note. Skip, the close key, and a blank Save resolve with no reason. Callers still push, miss, or mark |
-| `PeriodReviewStudio.tsx` | Week, month, season, and year: period stats, then the shared reflection questions. The week adds `GraphReviewSection` before the reflection. |
-| `GraphReviewSection.tsx` | _Last mapped: 2026-10-16._ Weekly graph review ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L9.1–L9.2): link edits per week, linkability, mean C, five vault-wide suggestions, newest checks, open inbox count. Read-only. |
+| `end/PeriodReviewStudio.tsx` | Week, month, season, and year: period stats, then the shared reflection questions. The week adds `GraphReviewSection` before the reflection. |
+| `graph/GraphReviewSection.tsx` | _Last mapped: 2026-10-28._ Weekly graph review ([`LINKS_REDESIGN.md`](../../docs/LINKS_REDESIGN.md) L9.1–L9.2): link edits per week, linkability, mean C, five vault-wide suggestions, newest checks, open inbox count, and a quality strip (`lib/graph/graph-quality.ts`: five counts, each a list). Read-only. Renders `DaySpineReadout`. |
+| `graph/DaySpineReadout.tsx` | _Last mapped: 2026-10-27._ This week on the day spine: up to five triples with their order, a one-person-place sentence and an unlinked-capture sentence when those triples exist, beliefs whose observation address is missing, up to five same-as candidates with **Offer** (the graph inbox; Accept writes), and four "where from" lines. Habit cells and the GPS name file are named as not on the spine. |
 | `PostMortemDialog.tsx` | Later per-task note from **Reflect** on a period ritual, or from Analytics. Satisfaction, resistance, focus, distraction (optional 1–10; clearing a score removes it, and a score this dialog does not show is left as saved) and its own note (`completionReview.reflectNotes`). It does not select goals, award the quick review, or edit length, start, or the quick-review `notes` — those stay on the completion popup (`components/Completion/`). It does not create, revise, or delete the `review:${taskId}` points row. A note saved before this split, and never awarded, still opens here; saving it stores `reflectNotes` and leaves `notes` alone. Close saves a changed note. |
 | `LookAheadSection.tsx` | _Last mapped: 2026-10-17_ Look-ahead steps for morning and start rituals. Modes: `lists` (bigger to-do lists by importance, each task once, **Do today** / **Do this week** moves it onto the rite's period via `scheduleFieldsForPeriod`), `due` (open tasks due within N days, soonest first, CRT countdown `1d 4h`), `overdue` (past deadline, **Do …** and **Missed**). Rows stay in place after an action. Helpers `lib/ritual-due.ts`. Morning steps **Week and month · Due within a week · Overdue** sit after To do for today. Start rituals add **This month** (week start only) · **Due this {period}** (7 / 31 / 92 / 366 days) · **Overdue** after Undone; a season start puts work on the season's first month. Visiting the step lights its lamp |
-| `LookBackSection.tsx` | _Last mapped: 2026-10-17_ End ritual **Look back** step (after Assumed times). Read-only plan beside the period: night shows that morning's day plan, must-do, intentions, best day, and Required / Priority tasks with ✓ when done; week to year show that Start ritual's priorities, must-do, intentions, and plan. A CRT tally counts done / pushed / missed / still open from this ritual. One note, `PeriodReview.lookBack`. Not scored |
-| `AssumedTimesSection.tsx` | _Last mapped: 2026-10-17_ Confirm assumed completion times in the end ritual. Fields are **Start · Took (min) · Finished**, linked by `lib/assumed-time-math.ts` (`linkTimes`): start or duration moves the finish; a finish edit keeps the start and changes the duration; past midnight wraps. **Save correction** confirms all three. **Negligible** confirms duration 0 and sets `Task.timeNegligible` (no time on purpose, not missing). Optional **Est.** marks duration or start as a rough estimate (`Task.timeRough`) |
+| `end/LookBackSection.tsx` | _Last mapped: 2026-10-17_ End ritual **Look back** step (after Assumed times). Read-only plan beside the period: night shows that morning's day plan, must-do, intentions, best day, and Required / Priority tasks with ✓ when done; week to year show that Start ritual's priorities, must-do, intentions, and plan. A CRT tally counts done / pushed / missed / still open from this ritual. One note, `PeriodReview.lookBack`. Not scored |
+| `end/AssumedTimesSection.tsx` | _Last mapped: 2026-10-17_ Confirm assumed completion times in the end ritual. Fields are **Start · Took (min) · Finished**, linked by `lib/assumed-time-math.ts` (`linkTimes`): start or duration moves the finish; a finish edit keeps the start and changes the duration; past midnight wraps. **Save correction** confirms all three. **Negligible** confirms duration 0 and sets `Task.timeNegligible` (no time on purpose, not missing). Optional **Est.** marks duration or start as a rough estimate (`Task.timeRough`) |
+
+_Last mapped: 2026-10-27._ `morning/` is the desktop ritual. `MorningReview.tsx` stays the import path.
+
+```text
+morning/
+  MorningReviewDialog.tsx   shell, stepper, day arrows, Speak them dialog
+  MorningReviewButton.tsx   entry button and its error boundary
+  use-morning-form.ts       field state, reseed, session draft
+  commit-morning.ts         store write (to-dos, walk, plan, sleep, slice, marks)
+  steps.ts                  twelve step ids and resumeStep map
+  types.ts                  MorningDraft / MorningSlice
+  draft.ts                  sessionStorage key brain2-morning-draft:{day}
+  painted-night.ts          sleep painted on the time grid
+  affirmation-pool.ts       Affirmations list, create if missing, open in Lists
+  StringListEditor.tsx      numbered lines (new to-dos, gratitude)
+  WalkSlot.tsx              one walk field, stored vs today vs new
+  NightStep.tsx             Last night
+  AffirmationsStep.tsx      Affirmations
+  TodosStep.tsx             To do for today
+  LookAheadStep.tsx         Week and month, Due within a week, Overdue
+  HabitsStep.tsx            Daily habit priorities
+  WalkStep.tsx              Go through to do list
+  PlanStep.tsx              Day plan
+  CircumstancesStep.tsx     Circumstances
+  BestDayStep.tsx           Best day ever
+  GratitudeStep.tsx         Gratitude
+```
+
+_Last mapped: 2026-10-27._ `end/` is the end ritual's sections. `graph/` is the weekly graph review and the day spine it renders.
+
+```text
+end/
+  AssumedTimesSection.tsx
+  LookBackSection.tsx
+  NightTimeGlance.tsx
+  DayReviewTomorrowSection.tsx
+  PeriodReviewStudio.tsx
+graph/
+  GraphReviewSection.tsx
+  DaySpineReadout.tsx
+```
 
 ## Entry point
 
@@ -88,7 +134,7 @@ Start of month is the 1st. Season start is the first day of the quarter
 30 Sep, 31 Dec). Year start is 1 January. Year end is 31 December. Morning
 and Night are every day.
 
-**Built 2026-10-16:** on today's day lens, the Night row hides until sunset and the Morning row hides from sunset while not done. Started and done rites always show, and the Rituals menu never hides anything. See [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 8. **Planned** there too: an optional **Put the day down** first row on the Night rite (free text, parsed into steps with a preview), and an optional weekly check-in in Header → Rituals (space, sleep, food, movement on 1–5, your own trend only).
+**Built 2026-10-16:** on today's day lens, the Night row hides until sunset and the Morning row hides from sunset while not done. Started and done rites always show, and the Rituals menu never hides anything. See [`docs/TODO_REDESIGN.md`](../../docs/TODO_REDESIGN.md) Phase 8. **Put the day down** and the weekly self-care check-in were declined when that plan was resolved (2026-10-27).
 
 **Star Lord ritual** is the named rite. It lands on the local day of the new
 moon, the local day of the full moon, and the birthday. The full moon is the
@@ -189,11 +235,11 @@ Backward compatible: `reviews` / `review` still work; preferred user language is
 
 ## Morning review ritual (HM2) — detail
 
-_Last mapped: 2026-10-16_
+_Last mapped: 2026-10-27_
 
-The desktop dialog walks one question at a time (`RitualStepper`): Last night, Affirmations, To do for today, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Moving to another step writes progress the same way **Save progress** does, so new to-do lines join the list before the walk. The step is kept per day in `localStorage` (`brain2-morning-step:{day}`). With nothing kept, a partial review opens at its `resumeStep`. **Finish** on the last step is **Save Morning Review**.
+The desktop dialog walks one question at a time (`RitualStepper`). The step bodies live in `components/Reviews/morning/`: Last night, Affirmations, To do for today, Week and month, Due within a week, Overdue, Daily habit priorities, Go through to do list, Day plan, Circumstances, Best day ever, Gratitude. Moving to another step writes progress the same way **Save progress** does, so new to-do lines join the list before the walk. The step is kept per day in `localStorage` (`brain2-morning-step:{day}`). With nothing kept, a partial review opens at its `resumeStep`. **Finish** on the last step is **Save Morning Review**. Callers still import `@/components/Reviews/MorningReview`.
 
-- **Affirmations:** **Shuffle** draws five new lines from the list (not the five on screen when the list is big enough). **Edit the list** saves the draft, closes, and opens Lists on the Affirmations list. **Speak them** speaks the lines on screen (`AffirmationsDialog` `lines`). _Last mapped: 2026-10-16_ Each plaque has a **✓** key that logs a recitation for the ritual's day (`lib/affirmation-log-store.ts`, source `ritual`); it shows the count once said, and Alt-click undoes one. **Speak them** (`AffirmationsDialog`, `dayKey` prop) logs each line as `speak` when you move past it. The Home **Affirmation** widget reads the same log.
+- **Affirmations:** **Shuffle** draws five new lines from the list (not the five on screen when the list is big enough). **Edit the list** saves the draft, closes, and opens Lists on the Affirmations list. **Speak them** is built in `morning/AffirmationsStep.tsx` and opens `AffirmationsDialog` from `morning/MorningReviewDialog.tsx` (the dialog stays outside the step). _Last mapped: 2026-10-16_ Each plaque has a **✓** key that logs a recitation for the ritual's day (`lib/affirmation-log-store.ts`, source `ritual`); it shows the count once said, and Alt-click undoes one. **Speak them** (`AffirmationsDialog`, `dayKey` prop) logs each line as `speak` when you move past it. The Home **Affirmation** widget reads the same log.
 - **Go through to do list:** a blank field shows the stored value greyed as its placeholder; typing replaces it. Grey italic is stored earlier, blue is logged today (that day's `dayRatings`, or a resistance reading from today), green is changing now, with **keep {value}** to drop the change. Importance and excitement fall back to the latest earlier day. A save clears the applied walk fields so a second save cannot log the same resistance reading twice; Skip stays.
 - **Gratitude** and new to-do lines: Enter moves to the next line (adding one, up to 10 for gratitude) and leaves the text where it was.
 
@@ -226,7 +272,7 @@ be decimals (`- 90 200 6.5 3.5 9`). A line that fails stays on that same item.
 
 **Why blocked?** on a ritual push saves `blockedReasons`. A preset is the token (`"no-time"`). **Other** with text is `{ reason: "other", note: "the rain" }`. Other left blank is the token `"other"` — it does not pretend a custom reason was written. Analytics → Reviews shows the words. The regret ledger keeps the token only.
 
-`MissReasonDialog` is the same preset control plus a note, for rooms that ask after the fact (Scheduler Push, To Do Push, missed tasks, header plan Skip, habit missed-op wand, operation Why missed). The dialog and its scrim are `z-[120]` so the prompt sits above the room that opened it. The reason list is the one portaled select menu, not a second copy in the page. It was painting underneath because the select's default `z-50` was copied onto the popper wrapper, under this scrim. Every select and dropdown now uses the shared menu layer (`components/ui/menu-layer.ts`), above this window, with pointer events on, so the options stay clickable. The note on this prompt is a textarea (several lines visible, `max-h-40`, scrolling inside the field). The dialog caps at the viewport (`max-h-[calc(100dvh-2rem)]`) and scrolls itself if the window is short. Ritual rows keep the inline control and a single-line Other field — that row is not this popup. A note with no preset is stored as Other. A preset with a note keeps both. Skip writes nothing and does not cancel the action that opened the prompt.
+`MissReasonDialog` is the same preset control plus a note, for rooms that ask after the fact (Scheduler Push, To Do Push, missed tasks, header plan Skip, habit missed-op wand, an operation marked abandoned). The dialog and its scrim are `z-[120]` so the prompt sits above the room that opened it. The reason list is the one portaled select menu, not a second copy in the page. It was painting underneath because the select's default `z-50` was copied onto the popper wrapper, under this scrim. Every select and dropdown now uses the shared menu layer (`components/ui/menu-layer.ts`), above this window, with pointer events on, so the options stay clickable. The note on this prompt is a textarea (several lines visible, `max-h-40`, scrolling inside the field). The dialog caps at the viewport (`max-h-[calc(100dvh-2rem)]`) and scrolls itself if the window is short. Ritual rows keep the inline control and a single-line Other field — that row is not this popup. A note with no preset is stored as Other. A preset with a note keeps both. Skip writes nothing and does not cancel the action that opened the prompt.
 
 ## Longer reflection (week, month, season, year)
 

@@ -8,10 +8,12 @@
  * `ConfidenceTracker`, and exposes a live `ConfidenceScore` for the UI.
  *
  * All scoring/DSP lives in the pure `lib/vocal-confidence` module (unit-tested);
- * this hook is just the browser glue (getUserMedia + AnalyserNode + rAF loop)
- * and React state, so it can't be exercised in jsdom but stays thin.
+ * this hook is just the browser glue (the shared app microphone + AnalyserNode
+ * + rAF loop) and React state, so it can't be exercised in jsdom but stays thin.
+ * Stopping a recitation drops the analyser. It does not release the microphone.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
+import { ensureLiveMic, liveAudioContext, micWasDenied } from "@/lib/live-mic"
 import {
   ConfidenceTracker,
   computeFrameMetrics,
@@ -52,6 +54,7 @@ export function useVocalConfidence(
   const [error, setError] = useState<string | null>(null)
 
   const streamRef = useRef<MediaStream | null>(null)
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const ctxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const bufferRef = useRef<Float32Array | null>(null)
@@ -70,11 +73,9 @@ export function useVocalConfidence(
       cancelAnimationFrame(rafRef.current)
       rafRef.current = null
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop())
+    sourceRef.current?.disconnect()
+    sourceRef.current = null
     streamRef.current = null
-    if (ctxRef.current && ctxRef.current.state !== "closed") {
-      void ctxRef.current.close().catch(() => {})
-    }
     ctxRef.current = null
     analyserRef.current = null
     bufferRef.current = null
@@ -138,11 +139,24 @@ export function useVocalConfidence(
 
       setStatus("requesting")
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const stream = await ensureLiveMic(true)
+        const ctx = stream ? liveAudioContext() : null
+        if (!stream || !ctx) {
+          teardown()
+          if (micWasDenied()) {
+            setStatus("denied")
+            setError("Microphone permission was denied. Enable it to use affirmations.")
+          } else {
+            setStatus("error")
+            setError("Could not start the microphone. Please try again.")
+          }
+          return
+        }
+        void ctx.resume().catch(() => {})
         streamRef.current = stream
-        const ctx = new AudioCtx()
         ctxRef.current = ctx
         const source = ctx.createMediaStreamSource(stream)
+        sourceRef.current = source
         const analyser = ctx.createAnalyser()
         analyser.fftSize = 2048
         source.connect(analyser)

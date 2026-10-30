@@ -3,7 +3,7 @@
  *
  * Pure helpers for the Tracking entry dialog. A block's start and end can each
  * be exact, estimated or unknown; the block-wide `clockCertainty` / `precision`
- * stay as the worse of the two so the grid hatch and Analytics keep working.
+ * stay as the worse of the two so the grid hatch and Data keep working.
  */
 import { entriesForDay, isInstant, type TimeEntry, type TrackingClockCertainty } from "@/lib/time-entries"
 

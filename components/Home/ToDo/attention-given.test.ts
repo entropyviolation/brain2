@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Task } from "@/lib/types"
 import type { TimeEntry } from "@/lib/time-entries"
 import { attentionGiven, attentionGivenLabel } from "./attention-given"
-import { waitingSinceLabel } from "./TodoTable"
+import { waitingSinceLabel } from "./ledger/TodoTable"
 
 const block = (id: string, date: string, startMin: number, endMin: number, taskId = "t1") =>
   ({ id, date, scopeId: "s", penId: "p", startMin, endMin, taskId }) as TimeEntry

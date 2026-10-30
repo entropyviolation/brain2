@@ -24,10 +24,12 @@ import {
 import { createPortal } from "react-dom"
 import { DismissableLayer, DismissableLayerBranch } from "@radix-ui/react-dismissable-layer"
 import { cn } from "@/lib/utils"
+import { COMPACT_MEDIA, readSafeInsets } from "@/components/ui/safe-insets"
 import { timeStringToMinutes } from "@/lib/time-entries"
 import {
   DEFAULT_DIAL_ID,
   clockDials,
+  loadDial,
   readHiddenDialIds,
   readSelectedDialId,
   visibleDials,
@@ -232,6 +234,9 @@ export function ClockPicker({
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
   const [dialId, setDialId] = useState(DEFAULT_DIAL_ID)
   const [hiddenDialIds, setHiddenDialIds] = useState<string[]>([])
+  /** Storage has been read, so the first image request is the stored dial. */
+  const [dialReady, setDialReady] = useState(false)
+  const [, setDialSrcEpoch] = useState(0)
   const [dialsEditing, setDialsEditing] = useState(false)
   const [handsId, setHandsId] = useState(DEFAULT_HANDS_ID)
   const [settingsOpen, setSettingsOpen] = useState(true)
@@ -353,12 +358,26 @@ export function ClockPicker({
     const visible = visibleDials(clockDials(), hiddenIds).map((dial) => dial.id)
     setHiddenDialIds(hiddenIds)
     setDialId(readSelectedDialId(visible))
+    setDialReady(true)
     setHandsId(readSelectedHandsId(handPairs().map((pair) => pair.id)))
     try {
       setSettingsOpen(window.localStorage.getItem("brain2.clock-settings-open") !== "0")
       setTicksOn(window.localStorage.getItem("brain2.clock-ticks") !== "0")
     } catch {}
   }, [])
+
+  useEffect(() => {
+    if (!dialReady || !open) return
+    const id = dialId
+    if (clockDials().find((item) => item.id === id)?.src) return
+    let cancel = false
+    void loadDial(id).then((src) => {
+      if (!cancel && src) setDialSrcEpoch((n) => n + 1)
+    })
+    return () => {
+      cancel = true
+    }
+  }, [dialReady, open, dialId])
 
   useEffect(() => {
     if (!defaultOpen) return
@@ -377,9 +396,25 @@ export function ClockPicker({
       const el = rootRef.current
       if (!el) return
       const rect = el.getBoundingClientRect()
-      const below = window.innerHeight - rect.bottom
-      const top = below < PANEL_HEIGHT && rect.top > PANEL_HEIGHT ? rect.top - PANEL_HEIGHT - 4 : rect.bottom + 4
-      const left = Math.max(4, Math.min(rect.left, window.innerWidth - PANEL_WIDTH - 4))
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const compact = typeof window.matchMedia === "function" && window.matchMedia(COMPACT_MEDIA).matches
+      if (!compact) {
+        const below = vh - rect.bottom
+        const top = below < PANEL_HEIGHT && rect.top > PANEL_HEIGHT ? rect.top - PANEL_HEIGHT - 4 : rect.bottom + 4
+        const left = Math.max(4, Math.min(rect.left, vw - PANEL_WIDTH - 4))
+        setPos({ top, left })
+        return
+      }
+      const safe = readSafeInsets()
+      const margin = 8
+      const panelW = Math.min(PANEL_WIDTH, Math.max(160, vw - safe.left - safe.right - margin * 2))
+      const panelH = Math.min(PANEL_HEIGHT, Math.max(120, vh - safe.top - safe.bottom - margin * 2))
+      const below = vh - safe.bottom - rect.bottom
+      const above = rect.top - safe.top
+      const rawTop = below < panelH && above > panelH ? rect.top - panelH - 4 : rect.bottom + 4
+      const top = Math.max(safe.top + margin, Math.min(rawTop, vh - safe.bottom - panelH - margin))
+      const left = Math.max(safe.left + margin, Math.min(rect.left, vw - safe.right - panelW - margin))
       setPos({ top, left })
     }
     place()
@@ -575,7 +610,8 @@ export function ClockPicker({
   const dials = clockDials()
   const shownDials = visibleDials(dials, hiddenDialIds)
   const dial = shownDials.find((item) => item.id === dialId) ?? shownDials[0]
-  const ceramicSrc = (dials.find((item) => item.id === DEFAULT_DIAL_ID) ?? dials[0]).src
+  const painting = dial.placement === "center" && dial.src ? dial.src : null
+  const ceramicSrc = dial.placement === "face" ? dial.src : ""
 
   const hands = handPairs()
   const handPair = hands.find((item) => item.id === handsId) ?? null
@@ -749,7 +785,7 @@ export function ClockPicker({
                 period={parts.period}
                 dialId={dial.id}
                 ceramicSrc={ceramicSrc}
-                painting={dial.placement === "center" ? dial.src : null}
+                painting={painting}
                 handPair={handPair}
                 ticks={ticksOn}
                 onMinute={(minute) => {
@@ -1111,7 +1147,7 @@ function AnalogFace({
         if (event.buttons === 1) pointMinute(event)
       }}
     >
-      {painting ? null : <img className="clock-picker-face" src={ceramicSrc} alt="" draggable={false} />}
+      {painting ? null : ceramicSrc ? <img className="clock-picker-face" src={ceramicSrc} alt="" draggable={false} /> : null}
       {painting ? (
         <div className="clock-picker-well">
           <img className="clock-picker-painting" src={painting} alt="" draggable={false} />

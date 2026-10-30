@@ -1,0 +1,117 @@
+/* components/Bim/phone/bim-phone.css — BIM Chat text terminal on the iPhone shell. */
+
+.bim-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #6e7378;
+  border-radius: 6px;
+  background: rgba(232, 236, 238, 0.92);
+}
+
+.bim-phone-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bim-phone-title {
+  font: 600 15px/1.2 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.12em;
+}
+
+.bim-phone-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 12px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  color: #4d5459;
+}
+
+.bim-phone-screen {
+  min-height: 46vh;
+  max-height: 58vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+  border: 1px solid #2a2f33;
+  border-radius: 4px;
+  background: #101416;
+  color: #cfe3d8;
+  font: 15px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.bim-phone-line {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bim-phone-line b {
+  font-weight: 600;
+}
+
+.bim-phone-line.is-you {
+  color: #9fc3e6;
+}
+
+.bim-phone-line.is-error {
+  color: #f0a3a3;
+}
+
+.bim-phone-line.is-wait {
+  opacity: 0.6;
+}
+
+.bim-phone-cursor {
+  display: inline-block;
+  width: 9px;
+  height: 16px;
+  background: #cfe3d8;
+  vertical-align: text-bottom;
+  animation: bim-phone-blink 1s steps(1) infinite;
+}
+
+@keyframes bim-phone-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-phone-cursor {
+    animation: none;
+  }
+}
+
+.bim-phone-compose {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.bim-phone-compose textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #6e7378;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+  font: 16px/1.35 ui-monospace, "SF Mono", Menlo, monospace;
+  resize: vertical;
+}
+
+.bim-phone-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bim-phone-keys .m-keycap {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-transform: none;
+}

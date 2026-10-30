@@ -23,6 +23,7 @@
  */
 
 import { compactMoodReading, sameMoodReading, type MoodReading } from "./mood-reading"
+import type { WorkPauseSpan } from "./work-pause"
 import { compactSpend } from "./spend"
 import { compactNowObjectives, sameNowObjectives, type NowObjective } from "./now-objective"
 import { sameFieldValues, type FieldValues } from "./pen-fields"
@@ -134,6 +135,22 @@ export function dominantEntry(map: (TimeEntry | null)[], start: number, step: nu
  */
 export type TimeEntryKind = "interval" | "instant"
 
+/** Door that wrote a log row. Omitted on older rows. No persist bump. */
+export type LogSource =
+  | "tracking-composer"
+  | "tracking-shelf-now"
+  | "now-popup"
+  | "bim"
+  | "quick-add"
+  | "inbox-transfer"
+  | "telegram-feed"
+  | "nfc"
+  | "phone-sync"
+  | "statement-import"
+
+/** Which of the three the block editor holds still. The other two follow each other. */
+export type SpanLock = "start" | "end" | "duration"
+
 /**
  * One tracked block. A pen may carry several **variants** at once ("hanging out"
  * with both Elijah and Rebecca), which is why they are a list rather than a
@@ -197,12 +214,19 @@ export interface TimeEntry {
   /**
    * Set when another record produced this block rather than a brush stroke —
    * the sleep log (`lib/sleep-sync.ts`) or Screen Time sync (`lib/screentime/sync.ts`).
-   * `id` is the local calendar day (`YYYY-MM-DD`). Phone sync (`lib/phone-sync/`) is the
-   * exception: its `id` is one source record (`messages:<guid>`), never a day. Each generator replaces only
+   * `id` is the local calendar day (`YYYY-MM-DD`) for sleep, screen time, and a text log.
+   * Phone sync (`lib/phone-sync/`) uses one source record (`messages:<guid>`).
+   * An NFC scan uses `nfc:{tagId}:{iso}` (and `nfc:{tagId}:span:{iso}` on the duration block)
+   * so a second tap does not replace the first. Each generator replaces only
    * its own kind+id, so re-deriving is idempotent and can never quietly delete
    * time the user painted by hand.
    */
   generatedBy?: { kind: "sleep" | "screentime" | "text" | "phone-sync"; id: string }
+  /**
+   * Which door wrote this row. Omitted on older rows — the detail line infers
+   * from `generatedBy` when it can. No persist bump.
+   */
+  logSource?: LogSource
   /**
    * Links calendar-day slices of one continuous block. Painting 11 PM–2 AM
    * stores Thursday 23:00–24:00 and Friday 00:00–02:00 with the same id, so the
@@ -213,7 +237,7 @@ export interface TimeEntry {
   /**
    * Optional display name for this block ("walk to the beach"). Empty/omitted
    * falls back to the primary pen's name. Surfaces that show a block title use
-   * this; Analytics counting still uses pens and tags.
+   * this; Data counting still uses pens and tags.
    */
   title?: string
   notes?: string
@@ -250,6 +274,18 @@ export interface TimeEntry {
   /** How sure each end is. Omitted = exact. `clockCertainty` / `precision` follow the worse of the two. */
   startCertainty?: TrackingClockCertainty
   endCertainty?: TrackingClockCertainty
+  /**
+   * Which of start, end, or duration stays put in the block editor.
+   * Omitted means start (a typed length moves the end), unless only the end
+   * is linked — that case keeps the end. No persist bump.
+   */
+  spanLock?: SpanLock
+  /**
+   * The length is a guess. Clocks can still be exact. Omitted = the length
+   * is as sure as the clocks. Also stores `precision: "estimated"` so the
+   * hatch still draws. No persist bump.
+   */
+  durationEstimated?: boolean
   /** A transit block that refits itself: the blocks it sits between, and its priced length. */
   transitFrom?: string
   transitTo?: string
@@ -303,6 +339,12 @@ export interface TimeEntry {
   taskId?: string
   /** The task step on the clock when the block last grew. Step changes are stamped as objectives. */
   stepId?: string
+  /**
+   * Reasons for pausing the Working-on-now sitting that painted this block.
+   * Same spans as the task or operation time log. Omitted when that sitting
+   * was not paused. No persist bump.
+   */
+  pauseSpans?: WorkPauseSpan[]
 }
 
 /** The detail fields that make two otherwise identical blocks worth keeping apart. */
@@ -322,6 +364,7 @@ const DETAIL_KEYS = [
   "transitManual",
   "moodReading",
   "taskId",
+  "pauseSpans",
   "stepId",
 ] as const
 
@@ -465,6 +508,7 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     DETAIL_KEYS.every((key) => {
       if (key === "moodReading") return sameMoodReading(a.moodReading, b.moodReading)
       if (key === "nowObjectives") return sameNowObjectives(a.nowObjectives, b.nowObjectives)
+      if (key === "pauseSpans") return JSON.stringify(a.pauseSpans ?? []) === JSON.stringify(b.pauseSpans ?? [])
       if (key === "fieldValues") return sameFieldValues(a.fieldValues, b.fieldValues)
       return (a[key] ?? undefined) === (b[key] ?? undefined)
     }) &&
@@ -475,7 +519,10 @@ function sameDetails(a: TimeEntry, b: TimeEntry): boolean {
     (a.switchTo ?? undefined) === (b.switchTo ?? undefined) &&
     (a.spendAmount ?? undefined) === (b.spendAmount ?? undefined) &&
     (a.spendOn ?? undefined) === (b.spendOn ?? undefined) &&
-    (a.spendSource ?? undefined) === (b.spendSource ?? undefined)
+    (a.spendSource ?? undefined) === (b.spendSource ?? undefined) &&
+    (a.logSource ?? undefined) === (b.logSource ?? undefined) &&
+    (a.spanLock ?? "start") === (b.spanLock ?? "start") &&
+    (a.durationEstimated ?? false) === (b.durationEstimated ?? false)
   )
 }
 
@@ -483,6 +530,7 @@ export function hasDetails(entry: Partial<TimeEntry>): boolean {
   return DETAIL_KEYS.some((key) => {
     if (key === "moodReading") return compactMoodReading(entry.moodReading) !== undefined
     if (key === "nowObjectives") return (entry.nowObjectives?.length ?? 0) > 0
+    if (key === "pauseSpans") return (entry.pauseSpans?.length ?? 0) > 0
     if (key === "fieldValues") return Object.keys(entry.fieldValues ?? {}).length > 0
     const value = entry[key]
     return value !== undefined && value !== "" && value !== null
@@ -929,6 +977,89 @@ export function parseDurationInput(text: string): number | null {
   if (minutes === null || !Number.isFinite(minutes)) return null
   const rounded = Math.round(minutes)
   return rounded > 0 ? rounded : null
+}
+
+/** Whole local days from `fromDate` to `toDate`. Same day is 0. */
+export function calendarDaysBetween(fromDate: string, toDate: string): number {
+  const [ay, am, ad] = fromDate.split("-").map(Number)
+  const [by, bm, bd] = toDate.split("-").map(Number)
+  const ua = Date.UTC(ay, (am || 1) - 1, ad || 1)
+  const ub = Date.UTC(by, (bm || 1) - 1, bd || 1)
+  return Math.round((ub - ua) / 86_400_000)
+}
+
+/**
+ * Start and end as minutes after `fromDate` midnight.
+ * A same-day end of 00:00 is the end of that day (1440), not the start of it.
+ * Null when the end is not after the start.
+ */
+export function readSpanClock(
+  fromDate: string,
+  fromClock: number,
+  toDate: string,
+  toClock: number,
+): { start: number; end: number } | null {
+  const days = calendarDaysBetween(fromDate, toDate)
+  const end = days === 0 && toClock === 0 ? MINUTES_PER_DAY : toClock + days * MINUTES_PER_DAY
+  if (!(end > fromClock)) return null
+  return { start: fromClock, end }
+}
+
+/**
+ * Write absolute minutes (after the current start date's midnight) back to
+ * clock strings. An end that lands on midnight stays 00:00 on the day it
+ * closes, which save reads as the end of that day.
+ */
+export function writeSpanClock(
+  fromDate: string,
+  startAbs: number,
+  endAbs: number,
+): { from: string; fromDate: string; to: string; toDate: string } | null {
+  if (!(endAbs > startAbs)) return null
+  const startShift = Math.floor(startAbs / MINUTES_PER_DAY)
+  const startClock = ((startAbs % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  const origin = shiftDateKey(fromDate, startShift)
+  const endRel = endAbs - startShift * MINUTES_PER_DAY
+  const endShift = Math.floor((endRel === MINUTES_PER_DAY ? 0 : endRel) / MINUTES_PER_DAY)
+  const endClock = ((endRel % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  return {
+    from: minutesToTimeString(startClock),
+    fromDate: origin,
+    to: minutesToTimeString(endClock),
+    toDate: shiftDateKey(origin, endShift),
+  }
+}
+
+/**
+ * One of start, end, or duration is held. Editing either of the other two
+ * rewrites the remaining one. Editing the held value itself keeps the other
+ * clock and lets the length follow — except a held length, which keeps start
+ * and moves the end.
+ * Minutes are absolute, after one midnight. Null when the edit would not
+ * leave a positive length.
+ */
+export function applySpanEdit(args: {
+  lock: SpanLock
+  start: number
+  end: number
+  edit: SpanLock
+  value: number
+}): { start: number; end: number } | null {
+  const dur = args.end - args.start
+  if (dur <= 0) return null
+  if (args.edit === "duration") {
+    if (args.value <= 0) return null
+    if (args.lock === "end") return { start: args.end - args.value, end: args.end }
+    return { start: args.start, end: args.start + args.value }
+  }
+  if (args.edit === "start") {
+    if (args.lock === "duration") return { start: args.value, end: args.value + dur }
+    if (args.value >= args.end) return null
+    return { start: args.value, end: args.end }
+  }
+  if (args.lock === "duration") return { start: args.value - dur, end: args.value }
+  if (args.value <= args.start) return null
+  return { start: args.start, end: args.value }
 }
 
 let counter = 0

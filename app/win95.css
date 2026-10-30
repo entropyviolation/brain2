@@ -12,10 +12,14 @@
  * Unskinned dialogs, menus, buttons, and nested tab strips pick up the
  * [milled fascia](../docs/DESIGN_STYLE.md#milled-fascia) via `--fascia-*` /
  * `--hab-crt-*` on `:root`. Portaled custom skins are scoped out of the
- * dialog face. App tabs keep equal-fill CRT keys. Nothing here changes
+ * dialog face. Main room switchers are latching keycaps (`.b2-keycap-tab`
+ * below); bare dialog tablists stay milled. Header Go keys are already caps.
+ * Nothing here changes
  * behaviour — only appearance — except text-field focus, which is Win95 navy
- * `#000080` on every input/textarea/select (never WebKit orange), and the
- * app-tab pin (`.b2-app-pin`), which sticks the bay under the title bar.
+ * `#000080` on every input/textarea/select (never WebKit orange), a 16px
+ * floor on those fields at phone width so iOS does not zoom the page on
+ * focus, and the app-tab pin (`.b2-app-pin`), which sticks the bay under
+ * the title bar.
  * Transitions/animations are preserved. Scope is `body.win95-app`
  * (added in app/layout.tsx).
  */
@@ -194,6 +198,9 @@ body.win95-app h3,
 body.win95-app h4,
 body.win95-app .native-select {
   font-family: var(--w95-font);
+  /* w95fa has one weight. Synthetic bold strokes a light fringe around each glyph. */
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 body.win95-app {
@@ -310,18 +317,24 @@ body.win95-app .bg-card {
 /*
  * Buttons: raised metal keys (specular lip + mill + pressed foot).
  * Utility background-color still wins; we only add image + ring. Skip tabs,
- * switches, opt-outs (`data-no95`), and title-bar close keys (`.b2-close-key`).
+ * switches, opt-outs (`data-no95`), title-bar close keys (`.b2-close-key`),
+ * the header fold (`.b2-shell-fold`), and transport discs (`.dvd-key`).
  * That lip is translucent on purpose — it must not be the only paint on a
- * close key, or the title bar shows through. Module skins override later.
+ * close key, or the title bar shows through.
+ * Dash widget faces (`.vd-face`) are excluded too. Each extra `:not()` raises
+ * this rule, and it was outranking the face reset in `dash.css` (`all: unset`),
+ * so the lip painted a glass wash over the cluster. The same raise squared the
+ * CD discs (their own rule had one fewer `:not()`). `.dvd-key` stays off this
+ * skin so a later exception cannot do that again. _Last mapped: 2026-10-27._
  */
-body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key) {
+body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
   border-radius: var(--r-2, 2px);
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.1) 14%, transparent 30%),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 2px);
   box-shadow: var(--fascia-key-ring);
 }
-body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(:disabled):active {
+body.win95-app button:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
   box-shadow: var(--fascia-key-pressed);
 }
 
@@ -420,9 +433,9 @@ body.win95-app .native-select {
 
 /*
  * Nested tab strips: milled bay + raised metal keys; active = CRT (not a
- * sunken gray folder tab). Do not force equal-fill here — that is App tabs /
- * Home tabs / module view keys only. App tabs below keep their equal-fill CRT
- * recipe unchanged. See docs/DESIGN_STYLE.md#milled-fascia.
+ * sunken gray folder tab). Do not force equal-fill here. Bare dialog
+ * tablists stay on this fallback. Main room switchers opt into the latching
+ * keycap below. See docs/DESIGN_STYLE.md#keycaps.
  */
 body.win95-app [role="tablist"] {
   gap: 4px;
@@ -441,7 +454,7 @@ body.win95-app [role="tab"] {
   background: var(--fascia-key-face);
   color: #1c1e20;
   letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   box-shadow: var(--fascia-key-ring);
 }
 body.win95-app [role="tab"]:active {
@@ -475,6 +488,37 @@ body.win95-app [role="tab"][data-state="active"]::before {
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px var(--hab-crt-green);
+}
+
+/*
+ * Main tab switcher rest face. Active CRT and the green LED stay in the
+ * room rules. Same skirt as `.todo-cap` (todo-chrome.css). Tokens live here
+ * so the cap renders outside `.todo95`.
+ */
+body.win95-app {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+}
+
+body.win95-app .b2-keycap-tab {
+  gap: 4px;
+}
+
+body.win95-app .b2-keycap-tab [role="tab"]:not([data-state="active"]):not([aria-selected="true"]):not(:active) {
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: #1f2226;
+  text-shadow: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 /*
@@ -534,7 +578,7 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"] {
   color: #1c1e20;
   font-weight: normal;
   letter-spacing: 0.08em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   box-shadow: var(--fascia-key-ring);
 }
 body.win95-app [data-ui-name="App tabs"] [role="tab"]:active {
@@ -554,12 +598,19 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"] {
    script has already set data-boot-tab, so the saved key wears the CRT and
    the fallback key steps back. data-nav-ready removes the override. */
 html[data-boot-tab]:not([data-nav-ready]) body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"] {
-  background: var(--fascia-key-face);
-  color: #1c1e20;
-  font-weight: normal;
-  letter-spacing: 0.08em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow: var(--fascia-key-ring);
+  background: linear-gradient(180deg, #f1f3f5, #dfe2e6);
+  color: #1f2226;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  outline: 0;
+  transform: none;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
 }
 html[data-boot-tab]:not([data-nav-ready]) body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::before {
   content: none;
@@ -570,6 +621,7 @@ html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app [data-tab="docs"
 html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app [data-tab="scheduler"],
 html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app [data-tab="operations"],
 html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app [data-tab="modules"],
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app [data-tab="inventory"],
 html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app [data-tab="analytics"] {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
@@ -586,6 +638,7 @@ html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app [data-tab="docs"
 html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app [data-tab="scheduler"]::before,
 html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app [data-tab="operations"]::before,
 html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app [data-tab="modules"]::before,
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app [data-tab="inventory"]::before,
 html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app [data-tab="analytics"]::before {
   content: "";
   display: block;
@@ -638,6 +691,28 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::befo
 body.win95-app :is([role="dialog"], [role="alertdialog"]) {
   transition-property: none;
 }
+
+/*
+ * Center a popup with the margin box, not translate(-50%, -50%).
+ * Chrome and Electron keep a transformed layer's text a beat behind the
+ * keys, and a fast burst in Quick Add shows up about a second late.
+ * Phone sheets already drop the transform (touch.css, mobile.css).
+ * A dialog that sets its own height (the item-type editor) keeps it.
+ */
+@media (min-width: 981px), (min-width: 768px) and (pointer: fine) {
+  body.win95-app :is([role="dialog"], [role="alertdialog"]).ui-dialog-content {
+    inset: 0;
+    height: fit-content;
+    margin: auto;
+    transform: none;
+    translate: none;
+    animation: none;
+  }
+
+  body.win95-app .ui-dialog-content.h-\[min\(92vh\,900px\)\] {
+    height: min(92vh, 900px);
+  }
+}
 body.win95-app .set95-dialog.set95-drift-preview {
   transition-property: background-color, background-image, border-color, color, box-shadow;
   transition-duration: 180ms;
@@ -672,14 +747,15 @@ body.win95-app [role="listbox"] {
 }
 
 /* CRT-ish caption on unskinned shadcn DialogTitle (h2.font-semibold.tracking-tight).
- * Analytics drills / popups (.an-drill, .an-popup) opt out — crisp titles in analytics-chrome.css.
- * The completion popup paints its own full-width bar in completion-dialog.css. */
+ * Data drills / popups (.an-drill, .an-popup) opt out — crisp titles in analytics-chrome.css.
+ * The completion popup paints its own full-width bar in completion-dialog.css.
+ * The tracking block editor (`.trk-entry`) paints its own bar out to the close key. */
 body.win95-app
   :is([role="dialog"], [role="alertdialog"]):not(.set95):not(.set95-dialog):not(.inbox-dialog):not(
     .id95
   ):not(.id95-dialog):not(.hab-grade-sheet):not(.ops95-dialog):not(.hpp95):not(.hpp95-dialog):not(
     .fm98-dialog
-  ):not(.w95-confirm):not(.an-drill):not(.an-popup):not(.completion-dialog)
+  ):not(.w95-confirm):not(.an-drill):not(.an-popup):not(.completion-dialog):not(.trk-entry)
   h2.font-semibold.tracking-tight {
   display: inline-block;
   width: fit-content;
@@ -800,9 +876,10 @@ body.win95-app *::-webkit-scrollbar-corner {
 }
 .cogs-color-swatch input[type="color"] {
   position: absolute;
-  inset: 2px;
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -848,6 +925,24 @@ body.win95-app input[type="radio"]:focus-visible {
   outline-color: #000080 !important;
   outline-offset: 1px;
   box-shadow: none;
+}
+
+/*
+ * iOS Safari and WKWebView zoom the layout when a focused text field, select,
+ * or textarea computes under 16px, and that scale often stays after blur.
+ * Room skins pin fields at 11–14px with !important (the search query is 14px).
+ * This floor wins on a phone, including landscape, so focus stays at scale 1.
+ * Pinch zoom is left on — a maximum-scale lock is what traps a zoomed page.
+ * The :not() list matches the navy focus rule below; on textarea/select those
+ * types never match, so every text field is included and specificity beats
+ * a two-class skin.
+ */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  body.win95-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app textarea:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  body.win95-app select:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]) {
+    font-size: 16px !important;
+  }
 }
 
 body.win95-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
@@ -913,10 +1008,85 @@ body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] .b2-tab-label {
   overflow: hidden;
   text-overflow: clip;
   font-size: 7px;
+  font-weight: 400;
+  font-synthesis: none;
   line-height: 1;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  filter: none;
 }
 body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]::before {
+  display: none;
+}
+
+/* Go keys rest as the pale silver cap. Focus and the current tab are the
+   black CRT with a green legend. A press is the old 1px milled sink. */
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"] {
+  --cap-top: #f1f3f5;
+  --cap-top2: #dfe2e6;
+  --cap-skirt: #b3b8be;
+  --cap-edge: #6e7378;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  color: #1f2226;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:focus,
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:focus-visible,
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"][data-state="active"],
+html[data-boot-tab="home"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="home"],
+html[data-boot-tab="categories"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="categories"],
+html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="docs"],
+html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="scheduler"],
+html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="operations"],
+html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="modules"],
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="inventory"],
+html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="analytics"] {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
+    var(--fascia-scope);
+  color: var(--hab-crt-green);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.04em;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  outline: 1px solid var(--hab-crt-green);
+  outline-offset: 1px;
+  border-color: #070c0a;
+  box-shadow: var(--fascia-crt-ring);
+  transform: translateY(1px);
+}
+
+body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]:active {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0, transparent 28%, transparent 72%, rgba(255, 255, 255, 0.08) 100%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px),
+    linear-gradient(165deg, var(--chrome-key-shade) 0%, var(--chrome-brush) 40%, var(--chrome-inset) 100%);
+  color: #1c1e20;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  outline: 0;
+  border-color: transparent;
+  box-shadow: var(--fascia-key-pressed);
+  transform: translateY(1px);
+}
+
+html[data-boot-tab]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-ui-name="App tabs"] [role="tab"]::before {
+  content: none;
   display: none;
 }

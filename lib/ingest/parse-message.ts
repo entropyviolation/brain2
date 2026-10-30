@@ -13,7 +13,7 @@
  * `tp:` / `thought process:` / `log: tp:` (colon required on the thought verb),
  * `intake food:`, `intake:`, `switch:` (colon immediately after switch),
  * `st:` / `switch task:`, `so:` / `switch objective:` / `switch goal:`,
- * `cycle:`, and `/now` / `/quicklists`.
+ * `cycle:`, `nfc:` (colon required), and `/now` / `/quicklists`.
  * Bare `now` / `status` / `where` are a status readout. `now` with a payload is Now capture.
  * `text` / `sent` / `call` / `called` / `did` / `add` / `got` / `bought` need a colon
  * (a real open grocery line can still check off `got` / `bought` without one).
@@ -135,6 +135,13 @@ function matchVerb(text: string, now: Date): IngestIntent | null {
     }
     const payload = [logHeader[2].trim(), restLines].filter((s) => s.length > 0).join("\n")
     return { kind: "event-log", payload, raw: text }
+  }
+
+  // `nfc:vitamin-d`. Colon required so a bare "nfc" note stays a log line.
+  const nfcHeader = /^(nfc)\s*[:：]\s*([\s\S]*)$/i.exec(firstLine)
+  if (nfcHeader) {
+    const payload = [nfcHeader[2]!.trim(), restLines].filter((s) => s.length > 0).join("\n")
+    return { kind: "nfc", payload, raw: text }
   }
 
   // Colon required so a bare habit keyword is not logged by accident.

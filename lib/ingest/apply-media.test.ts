@@ -90,6 +90,36 @@ describe("media ingest", () => {
     expect(useTaskStore.getState().tasks.find((t) => t.description === "oats")?.completed).toBe(true)
   })
 
+  it("leaves a photo question up while later texts and live location run", async () => {
+    const asked = await ingestIncomingAsync(
+      sim("", {
+        attachments: [{ kind: "photo", mime: "image/jpeg", name: "page.jpg", dataUrl: "idb:hold_test" }],
+        ocrText: "a page of handwriting",
+      }),
+      NOW,
+    )
+    expect(asked.status).toBe("needs_clarify")
+    expect(asked.reply).toBe("Journal, outfit, or log?")
+
+    const loc = await ingestIncomingAsync(sim("gps: Park\n37.80,-122.50", { locationUpdate: true }), NOW)
+    expect(loc.reply ?? "").not.toContain("Journal, outfit, or log?")
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const note = await ingestIncomingAsync(sim("picked up the mail"), NOW)
+    expect(note.status).toBe("ok")
+    expect(note.reply ?? "").not.toContain("Journal, outfit, or log?")
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const typed = ingestIncoming(sim("left the house"), NOW)
+    expect(typed.reply ?? "").not.toContain("Journal, outfit, or log?")
+    expect(useIngestStore.getState().getPending("simulate", "sim")?.kind).toBe("media")
+
+    const skip = await ingestIncomingAsync(sim("skip"), NOW)
+    expect(skip.status).toBe("ok")
+    expect(skip.reply).toBe("Skipped.")
+    expect(useIngestStore.getState().getPending("simulate", "sim")).toBeUndefined()
+  })
+
   it("dumps and bumps inventory with inv", () => {
     const added = ingestIncoming(sim("inv oats"), NOW)
     expect(added.status).toBe("ok")

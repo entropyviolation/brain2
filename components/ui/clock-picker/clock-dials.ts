@@ -5,26 +5,12 @@
  * the rim (`../ceramic-face.png`) and the default. The other files are
  * transparent center paintings. Hide and restore are per browser; the PNGs
  * stay on disk.
+ *
+ * Each painting is a dynamic `import()` of that file only. Nothing here
+ * statically imports the set, so the dev compiler does not walk every PNG
+ * with this module. `loadDial` fetches the one id the open panel is showing.
  */
 import manifest from "./backgrounds/manifest.json"
-import ceramicFace from "./ceramic-face.png"
-import cherubTwins from "./backgrounds/cherub-twins.png"
-import latticeRabbit from "./backgrounds/lattice-rabbit.png"
-import loveTripKitty from "./backgrounds/love-trip-kitty.png"
-import motherOfPearl from "./backgrounds/mother-of-pearl.png"
-import opalescentBirds from "./backgrounds/opalescent-birds.png"
-import pearlBlossom from "./backgrounds/pearl-blossom.png"
-import pearlFlower from "./backgrounds/pearl-flower.png"
-import pearlStarButton from "./backgrounds/pearl-star-button.png"
-import rabbitPortrait from "./backgrounds/rabbit-portrait.png"
-import silverBat from "./backgrounds/silver-bat.png"
-import silverFloralLocket from "./backgrounds/silver-floral-locket.png"
-import silverSphere from "./backgrounds/silver-sphere.png"
-import silverSpiral from "./backgrounds/silver-spiral.png"
-import tealPearl from "./backgrounds/teal-pearl.png"
-import umbrellaCats from "./backgrounds/umbrella-cats.png"
-import wingedCherub from "./backgrounds/winged-cherub.png"
-import wingedKitten from "./backgrounds/winged-kitten.png"
 
 export const DEFAULT_DIAL_ID = "ceramic"
 /** Selected dial id for this browser. */
@@ -33,37 +19,64 @@ export const CLOCK_DIAL_STORAGE_KEY = "brain2.clock-dial"
 export const CLOCK_DIAL_HIDDEN_KEY = "brain2.clock-dial-hidden"
 
 type Picture = { src: string } | string
+type PictureModule = { default: Picture }
 
 type ManifestEntry = { id: string; file: string; label: string }
 
 export type ClockDial = {
   id: string
   label: string
+  /** Bundled URL after `loadDial` for this id. Empty until then. */
   src: string
   /** The ceramic rim is the whole face. A painting sits in its center. */
   placement: "face" | "center"
 }
 
-/** Manifest `file` → bundled asset. Keys match `backgrounds/manifest.json`. */
-const SOURCES: Record<string, Picture> = {
-  "../ceramic-face.png": ceramicFace,
-  "cherub-twins.png": cherubTwins,
-  "lattice-rabbit.png": latticeRabbit,
-  "love-trip-kitty.png": loveTripKitty,
-  "mother-of-pearl.png": motherOfPearl,
-  "opalescent-birds.png": opalescentBirds,
-  "pearl-blossom.png": pearlBlossom,
-  "pearl-flower.png": pearlFlower,
-  "pearl-star-button.png": pearlStarButton,
-  "rabbit-portrait.png": rabbitPortrait,
-  "silver-bat.png": silverBat,
-  "silver-floral-locket.png": silverFloralLocket,
-  "silver-sphere.png": silverSphere,
-  "silver-spiral.png": silverSpiral,
-  "teal-pearl.png": tealPearl,
-  "umbrella-cats.png": umbrellaCats,
-  "winged-cherub.png": wingedCherub,
-  "winged-kitten.png": wingedKitten,
+const srcCache = new Map<string, string>()
+const pending = new Map<string, Promise<string | null>>()
+
+/** One static specifier per dial so the bundler emits a separate chunk. */
+function loaderFor(id: string): (() => Promise<PictureModule>) | null {
+  switch (id) {
+    case "ceramic":
+      return () => import("./ceramic-face.png")
+    case "cherub-twins":
+      return () => import("./backgrounds/cherub-twins.png")
+    case "lattice-rabbit":
+      return () => import("./backgrounds/lattice-rabbit.png")
+    case "love-trip-kitty":
+      return () => import("./backgrounds/love-trip-kitty.png")
+    case "mother-of-pearl":
+      return () => import("./backgrounds/mother-of-pearl.png")
+    case "opalescent-birds":
+      return () => import("./backgrounds/opalescent-birds.png")
+    case "pearl-blossom":
+      return () => import("./backgrounds/pearl-blossom.png")
+    case "pearl-flower":
+      return () => import("./backgrounds/pearl-flower.png")
+    case "pearl-star-button":
+      return () => import("./backgrounds/pearl-star-button.png")
+    case "rabbit-portrait":
+      return () => import("./backgrounds/rabbit-portrait.png")
+    case "silver-bat":
+      return () => import("./backgrounds/silver-bat.png")
+    case "silver-floral-locket":
+      return () => import("./backgrounds/silver-floral-locket.png")
+    case "silver-sphere":
+      return () => import("./backgrounds/silver-sphere.png")
+    case "silver-spiral":
+      return () => import("./backgrounds/silver-spiral.png")
+    case "teal-pearl":
+      return () => import("./backgrounds/teal-pearl.png")
+    case "umbrella-cats":
+      return () => import("./backgrounds/umbrella-cats.png")
+    case "winged-cherub":
+      return () => import("./backgrounds/winged-cherub.png")
+    case "winged-kitten":
+      return () => import("./backgrounds/winged-kitten.png")
+    default:
+      return null
+  }
 }
 
 function assetSrc(asset: Picture): string {
@@ -74,12 +87,11 @@ export function clockDials(): ClockDial[] {
   const entries = manifest as ManifestEntry[]
   const dials: ClockDial[] = []
   for (const entry of entries) {
-    const asset = SOURCES[entry.file]
-    if (!asset || !entry.id) continue
+    if (!entry.id || !loaderFor(entry.id)) continue
     dials.push({
       id: entry.id,
       label: entry.label,
-      src: assetSrc(asset),
+      src: srcCache.get(entry.id) ?? "",
       placement: entry.id === DEFAULT_DIAL_ID ? "face" : "center",
     })
   }
@@ -87,11 +99,34 @@ export function clockDials(): ClockDial[] {
     dials.unshift({
       id: DEFAULT_DIAL_ID,
       label: "Ceramic",
-      src: assetSrc(ceramicFace),
+      src: srcCache.get(DEFAULT_DIAL_ID) ?? "",
       placement: "face",
     })
   }
   return dials
+}
+
+/** Load one dial's image. Other dials stay unloaded. */
+export function loadDial(id: string): Promise<string | null> {
+  const cached = srcCache.get(id)
+  if (cached) return Promise.resolve(cached)
+  const inflight = pending.get(id)
+  if (inflight) return inflight
+  const load = loaderFor(id)
+  if (!load) return Promise.resolve(null)
+  const promise = load()
+    .then((mod) => {
+      const src = assetSrc(mod.default)
+      if (!src) return null
+      srcCache.set(id, src)
+      return src
+    })
+    .catch(() => null)
+    .finally(() => {
+      pending.delete(id)
+    })
+  pending.set(id, promise)
+  return promise
 }
 
 export function visibleDials(dials: readonly ClockDial[], hidden: readonly string[]): ClockDial[] {

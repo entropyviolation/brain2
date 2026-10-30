@@ -77,9 +77,9 @@ import {
   type SchedulerSortOrder,
 } from "./scheduler-utils"
 import { SchedulerTaskItem } from "./SchedulerTaskItem"
-import { PeriodFunnelTab } from "./PeriodFunnelTab"
-import { AlwaysTab } from "./AlwaysTab"
-import { DayTab } from "./DayTab"
+import { PeriodFunnelTab } from "./funnel/PeriodFunnelTab"
+import { AlwaysTab } from "./funnel/AlwaysTab"
+import { DayTab } from "./funnel/DayTab"
 import { ScheduleCardDetail } from "./ScheduleCardDetail"
 import {
   dismissCardWorkingQueue,
@@ -331,6 +331,12 @@ export function EnhancedScheduler() {
     [detail, wallClock],
   )
 
+  const setCardEstimate = useCallback((taskId: string, minutes: number) => {
+    const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
+    if (!task || (task.estimatedDuration ?? 0) === minutes) return
+    useTaskStore.getState().updateTask({ ...task, estimatedDuration: minutes })
+  }, [])
+
   const cellClick = useCallback(
     (period: SchedulePeriod, value: string) => {
       if (selectedTasks.size > 0) scheduleTasksToPeriod(Array.from(selectedTasks), period, value)
@@ -369,6 +375,7 @@ export function EnhancedScheduler() {
         showUnschedule?: boolean
         fromPeriod?: SchedulePlacementPeriod
         fromValue?: string
+        openOn?: "click" | "double"
       },
     ) => {
       const from =
@@ -383,7 +390,8 @@ export function EnhancedScheduler() {
           selected={selectedTasks.has(task.id)}
           showCheckbox={opts?.showCheckbox}
           showUnschedule={opts?.showUnschedule}
-          onClick={() => setSelectedTaskId(task.id)}
+          openOn={opts?.openOn ?? "click"}
+          onOpen={() => setSelectedTaskId(task.id)}
           onToggleSelect={toggleTaskSelection}
           onUnschedule={() => unscheduleTask(task.id, from)}
           onDragStart={(e, id) => handleDragStart(e, id, from)}
@@ -414,6 +422,7 @@ export function EnhancedScheduler() {
               }
         }
         renderTaskItem={renderTaskItem}
+        onEstimate={setCardEstimate}
         grain={detail.period === "eventually" ? undefined : detail.period}
         onPush={(taskId) => {
           const task = useTaskStore.getState().tasks.find((row) => row.id === taskId)
@@ -516,7 +525,7 @@ export function EnhancedScheduler() {
             onValueChange={(value) => setActiveTab(value as SchedulePeriod)}
             className="sch-funnel"
           >
-            <TabsList className="sch-period-tabs">
+            <TabsList className="sch-period-tabs b2-keycap-tab">
               <TabsTrigger value="always">Always</TabsTrigger>
               <TabsTrigger value="year">Year</TabsTrigger>
               <TabsTrigger value="quarter">Season</TabsTrigger>

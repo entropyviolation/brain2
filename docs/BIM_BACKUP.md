@@ -8,9 +8,9 @@ Nightly copy of the vault. Script: `scripts/backup-data.mjs`. Schedule: `deploy/
 
 - Everything in `data/`: `shared-persist.json`, `mobile-sync.json`, `message-ingest.json`, the Telegram and drain offset files, `recovery-backups/`.
 - `data/chrome-idb-snapshot/`, only while it is under 50 MB (`IDB_SNAPSHOT_MAX_BYTES` in the script).
-- Output is one `brain2-data-YYYYMMDD-HHMMSS.tar.gz.b2enc` per run (encrypted; see below), in `COGS_BACKUP_DIR` (or argv 1, default `~/Brain2Backups`). With no backup key it is a plain `.tar.gz` and the run prints a warning.
+- Output is one `brain2-data-YYYYMMDD-HHMMSS.tar.gz.b2enc` per run (encrypted; see below), in `BRAIN2_BACKUP_DIR` (or argv 1, default `~/Brain2Backups`). With no backup key it is a plain `.tar.gz` and the run prints a warning.
 - The tar is written as `.partial` and renamed when done. A crash never leaves a half file that looks real.
-- The newest `COGS_BACKUP_KEEP` (default 14) are kept, plain and encrypted counted together by date. Older ones are deleted.
+- The newest `BRAIN2_BACKUP_KEEP` (default 14) are kept, plain and encrypted counted together by date. Older ones are deleted.
 
 ## What is not backed up
 
@@ -28,10 +28,10 @@ _Last mapped: 2026-10-22_
 Decided 2026-10-22, before synced message bodies land in the vault. Backups are encrypted to a public key, so the 03:00 job needs no secret and a copy in iCloud or on a drive cannot be read without the private key.
 
 - Make the keys once: `node scripts/backup-keygen.mjs`. It writes `~/.brain2/backup-public.key` and `~/.brain2/backup-private.key` (mode 600) and refuses to overwrite either.
-- The job reads `COGS_BACKUP_PUBLIC_KEY`, else `~/.brain2/backup-public.key`. No key means a plain backup and a `WARNING` line in the log.
+- The job reads `BRAIN2_BACKUP_PUBLIC_KEY`, else `~/.brain2/backup-public.key`. No key means a plain backup and a `WARNING` line in the log.
 - Recipe: X25519 + HKDF-SHA256 + AES-256-GCM, streamed in 1 MB chunks (`scripts/backup-crypt.mjs`). Same idea as `scripts/sealed-box.mjs`, separate key and label (`brain2-backup-v1`).
 - The plain tar exists only as a `.partial` while it is encrypted, then it is deleted.
-- Plain `.tar.gz` backups from before the key keep their place in the rotation and age out after `COGS_BACKUP_KEEP` runs. Delete them by hand if you want them gone sooner.
+- Plain `.tar.gz` backups from before the key keep their place in the rotation and age out after `BRAIN2_BACKUP_KEEP` runs. Delete them by hand if you want them gone sooner.
 - Keep an offline copy of `backup-private.key`. Lose it and every encrypted backup stays locked.
 
 ## Try it

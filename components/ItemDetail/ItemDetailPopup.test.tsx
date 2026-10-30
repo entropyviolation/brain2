@@ -9,7 +9,7 @@ import { listItemActivity, resetItemActivity } from "@/lib/item-activity"
 import { useTaskStore } from "@/lib/task-store"
 import { useItemTypeStore } from "@/lib/item-type-store"
 import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
-import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/useItemDetailUnloadGuard"
+import { readItemDetailDock, resetItemDetailSessionForTests } from "@/components/ItemDetail/draft/useItemDetailUnloadGuard"
 
 describe("TaskDetailPopup", () => {
   const onClose = vi.fn()

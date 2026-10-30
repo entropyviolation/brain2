@@ -1,5 +1,5 @@
 /**
- * lib/texts-report.ts — Renderer side of Analytics → Texts
+ * lib/texts-report.ts — Renderer side of Data → Texts
  *
  * The texts report is built by `scripts/texts-analysis/` on this Mac and served
  * on loopback by `serve.py`. Electron starts that server (`electron/texts-report.js`)
@@ -65,7 +65,7 @@ export type ReportRequest =
   | { type: "sections"; sections: TextsSection[] }
   | { type: "section"; id: string }
 
-/** One heading of the report, for the Analytics sidebar. */
+/** One heading of the report, for the Data sidebar. */
 export type TextsSection = { id: string; label: string }
 
 function cleanHandles(value: unknown): string[] {
@@ -153,7 +153,7 @@ export function textsCardFor(handles: readonly string[], rows = readTextsIndex()
   return rows.find((row) => row.handles.some((h) => want.has(normalizeHandle(h)))) ?? null
 }
 
-/** Go to Analytics → Texts and open the relationship page for these numbers. */
+/** Go to Data → Texts and open the relationship page for these numbers. */
 export function openTextsFor(handles: readonly string[]): void {
   try {
     window.sessionStorage.setItem(OPEN_KEY, JSON.stringify(handles))
@@ -178,7 +178,7 @@ export function takePendingTextsOpen(): string[] | null {
   }
 }
 
-/** Open Analytics → Texts in its own, bigger window (desktop), or a browser window. */
+/** Open Data → Texts in its own, bigger window (desktop), or a browser window. */
 export function openTextsWindow(): void {
   const path = "/popout/?view=texts"
   const desktop = (window as unknown as { desktop?: { openModulePopout?: (target: string) => void } }).desktop

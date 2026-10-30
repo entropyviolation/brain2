@@ -1,20 +1,19 @@
-# Agent notes for Brain2
+# Claude Code notes for Brain2
 
-## Keep the room docs current
+This file loads on every Claude Code session. While it exists, Claude Code does not load `AGENTS.md`. Do not `@import` `AGENTS.md`, a README, or a doc from here. An import is copied into every session.
 
-Every room folder has a `README.md`, and `lib/README.md` covers `lib/`. Read those before mapping code yourself.
+Room folders and `lib/` each have a `README.md`. Read that before mapping the code yourself.
 
-When you map a module in depth (by reading it or through a subagent), write back anything future agents would otherwise have to re-derive:
+After a code change, update that folder's README once: current behavior, and why it left a plan if it did. Fix its file list when files were added, renamed, or removed. Edit `docs/SPEC_MAPPING.md` or `docs/DESIGN_STYLE.md` only when that claim changed. Edit a parent README only when an overview sentence is now false. Leave `docs/tree.md`, `docs/tree.txt`, screenshots, and unrelated docs alone unless asked.
 
-- Add findings that are missing from that folder's README, or that disagree with it. Fix the README where the code wins. Where the doc describes intent the code has not reached yet, label it **Planned**.
-- Put `_Last mapped: YYYY-MM-DD_` at the top of each section you add or change.
-- If changes are planned for the module, say so in its README and link the plan doc (for example `docs/TODO_REDESIGN.md`).
-- Keep the house voice: short, plain sentences, file paths in backticks, and approximate line numbers (`~123`) only where they save a search.
+When you map a module in depth, write the findings back. Label unbuilt intent **Planned**. Date a section you change with `_Last mapped: YYYY-MM-DD_`. Short plain sentences. Paths in backticks.
 
-Design language is in `docs/DESIGN_STYLE.md`. Redesign plans live in `docs/*_REDESIGN.md`.
+AMAP means do as much as possible, in parallel. Extend what already works: the smallest true shape, one named idea, a seam the next person can grow.
 
-Style slants (Hipgnosis, retrofuturism) live in `docs/mockups/slants/`. Use one only when asked for it by name. A slant never changes the house style.
+Design language is `docs/DESIGN_STYLE.md`. Redesign plans are `docs/*_REDESIGN.md`. A slant in `docs/mockups/slants/` applies only when asked by name.
 
-## Do not merge the three task editors
+The iOS / mobile app follows `docs/MOBILE_STYLE.md` and does not follow the desktop style.
 
-Item detail → Subtasks, the To do drawer and the To do task card all edit one task on purpose. They have different jobs, so they keep different UI and components. Do not merge them or make one mirror another without allie's yes. Why: `components/Home/ToDo/README.md` → "Three ways to edit a task stay separate".
+To update the iPhone app, from the repo root, unsandboxed, and without reading anything else first: `BRAIN2_IOS_TEAM_ID=25YWDVDMKT npm run ios:reinstall -- --force`. The phone must be unlocked, on the same Wi-Fi or plugged in. Wait for `[ios-reinstall] … installed`.
+
+Open a file in `.cursor/rules/` when the task matches it. Those notes stay out of this file: doc sync, verify-without-rewriting, design style while styling, the three task editors, and long files under `components/Modules`.

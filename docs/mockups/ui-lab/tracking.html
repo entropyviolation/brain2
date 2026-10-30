@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain2 Tracking UI Lab</title>
+<link rel="stylesheet" href="/app/win95.css">
+<link rel="stylesheet" href="/components/Home/Habits/habit-chrome.css">
+<link rel="stylesheet" href="/components/Home/Tracking/tracking-chrome.css">
+<link rel="stylesheet" href="/components/Home/Tracking/tracking-scope.css">
+<link rel="stylesheet" href="/components/Operations/operations-chrome.css">
+<link rel="stylesheet" href="/components/shell-chrome.css">
+<style>
+  /* Tailwind utilities the grid and pen markup use. Not a skin. */
+  .relative { position: relative; }
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  .flex-1 { flex: 1 1 0%; }
+  .flex-wrap { flex-wrap: wrap; }
+  .shrink-0 { flex-shrink: 0; }
+  .items-center { align-items: center; }
+  .items-stretch { align-items: stretch; }
+  .justify-end { justify-content: flex-end; }
+  .justify-center { justify-content: center; }
+  .gap-1\.5 { gap: 0.375rem; }
+  .whitespace-nowrap { white-space: nowrap; }
+  .sticky { position: sticky; }
+  .top-0 { top: 0; }
+  .z-20 { z-index: 20; }
+  .mt-0 { margin-top: 0; }
+  .min-w-0 { min-width: 0; }
+  .text-xs { font-size: 12px; }
+  .text-muted-foreground { color: #444; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .cogs-color-swatch.h-\[22px\] { height: 22px; width: 2rem; }
+
+  body.win95-app.lab-page {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    min-height: 100vh;
+    margin: 0;
+    background: #16171a;
+    color: #e6e6ea;
+  }
+  @media (max-width: 860px) {
+    body.win95-app.lab-page { grid-template-columns: 1fr; }
+  }
+  .bench {
+    padding: 12px;
+    background: #242428;
+    border-right: 1px solid #3a3a40;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 12px;
+  }
+  .bench h1 {
+    margin: 0 0 8px;
+    font-family: "w95fa", monospace;
+    font-size: 13px;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    color: #7dffc4;
+  }
+  .bench p { margin: 0 0 10px; color: #b8b8c0; line-height: 1.35; }
+  .bench a { color: #7dffc4; }
+  .bench label { display: block; margin: 8px 0 3px; }
+  .bench select, .bench input[type="range"] { width: 100%; }
+  .bench .val { float: right; font-variant-numeric: tabular-nums; color: #9a9aa2; }
+  .bench button.reset {
+    margin-top: 12px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #5a5a62;
+    background: #323238;
+    color: #eee;
+    font: inherit;
+    cursor: pointer;
+  }
+  .stage {
+    min-width: 0;
+    padding: 10px;
+    overflow: auto;
+    background: var(--w95-desktop, #008080);
+  }
+  /* The app bleeds to the viewport. Here the stage is that viewport. */
+  .stage .trk95[data-ui-name="Tracking"] {
+    --trk-bleed: 100%;
+    --home-tabs-width: 100%;
+    --home-tabs-top: 0px;
+    --home-tabs-height: 0px;
+    width: 100%;
+    margin-inline: 0;
+  }
+  .stage .trk-screen-bezel > .trk-grid { max-height: min(560px, 62vh); }
+
+  /* Lab tries. Absent at the defaults, so the linked sheets win. */
+  .stage [data-face="sans"] :is(h2, h3, button, input, .trk-pen-node, .trk-ckey-label, .trk-hour-bezel, .trk-block-label, .trk-silk, .trk-scope, .trk-scope-band, .trk-scope-name, .trk-push-label, .trk-notes, .trk-period-crt) {
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  .stage [data-face="serif"] :is(h2, h3, button, input, .trk-pen-node, .trk-ckey-label, .trk-hour-bezel, .trk-block-label, .trk-silk, .trk-scope, .trk-scope-band, .trk-scope-name, .trk-push-label, .trk-notes, .trk-period-crt) {
+    font-family: Georgia, "Iowan Old Style", serif;
+  }
+  .stage [data-type="on"] { zoom: var(--lab-type); }
+  .stage [data-density="on"].trk95 .trk-scope,
+  .stage .trk-scope[data-density="on"] { padding: calc(15px * var(--lab-d)) calc(13px * var(--lab-d)); gap: calc(9px * var(--lab-d)); }
+  .stage [data-density="on"].trk95 .trk-fascia,
+  .stage .trk-fascia[data-density="on"] { padding: calc(6px * var(--lab-d)); }
+  .stage [data-density="on"].trk95 .trk-desk,
+  .stage [data-density="on"].trk95 .trk-grid-desk { gap: calc(8px * var(--lab-d)); }
+  .stage [data-radius="on"] :is(.trk-scope, .trk-fascia, .trk-deck, .trk-screen-bezel, .trk-notes, .trk-now-module) {
+    border-radius: var(--lab-r);
+  }
+  .stage [data-layout="stack"].trk95 .trk-desk,
+  .stage [data-layout="stack"].trk95 .trk-grid-desk,
+  .stage .trk-grid-desk[data-layout="stack"] { grid-template-columns: minmax(0, 1fr); }
+  .stage .trk-fascia[data-layout="stack"] .trk-fascia-row { flex-wrap: wrap; }
+  .stage .trk-rack[data-layout="stack"] .trk-pen-list { max-height: 200px; }
+  .stage [data-layout="spread"].trk95 .trk-desk { grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 14px; }
+  .stage [data-layout="spread"].trk95 .trk-grid-desk,
+  .stage .trk-grid-desk[data-layout="spread"] { gap: 14px; }
+  .stage .trk-view-keys[data-layout="spread"] [role="tablist"] { gap: 4px; }
+  .stage [data-palette="cool"] {
+    --chrome-face: #b7c2cb; --chrome-mid: #d5dee6; --chrome-hi: #f5f8fb; --chrome-lo: #6d7b88;
+    --chrome-sheen: #e8eef3; --chrome-shade: #98a6b2; --chrome-inset: #aeb9c3; --t-surface: #b7c2cb; --t-face: #d5dee6;
+  }
+  .stage [data-palette="warm"] {
+    --chrome-face: #c9c0b3; --chrome-mid: #e6ddd0; --chrome-hi: #fffaf4; --chrome-lo: #8a7c6c;
+    --chrome-sheen: #f4ece3; --chrome-shade: #b5a796; --chrome-inset: #c6b9a8; --t-surface: #c9c0b3; --t-face: #e6ddd0;
+  }
+  .stage [data-palette="ink"] {
+    --chrome-face: #c5c7c9; --chrome-mid: #e3e4e6; --chrome-hi: #f7f7f8; --chrome-lo: #6a6e72;
+    --chrome-sheen: #ececed; --chrome-shade: #9c9fa3; --chrome-inset: #b1b4b8; --t-surface: #c5c7c9; --t-face: #e3e4e6;
+  }
+</style>
+</head>
+<body class="win95-app lab-page">
+<aside class="bench" aria-label="Lab bench">
+  <h1>Tracking lab</h1>
+  <p>Home, Tracking only. <a href="index.html">All labs</a></p>
+  <label>Scope
+    <select id="scope">
+      <option value="room">Whole section</option>
+      <option value="fascia">Fascia</option>
+      <option value="keys">View keys</option>
+      <option value="tray">Pen tray</option>
+      <option value="grid">Time grid</option>
+    </select>
+  </label>
+  <label>Type face
+    <select id="face">
+      <option value="house">House</option>
+      <option value="sans">Sans</option>
+      <option value="serif">Serif</option>
+    </select>
+  </label>
+  <label>Type scale <span class="val" id="scale-val">100</span>
+    <input id="scale" type="range" min="90" max="112" value="100">
+  </label>
+  <label>Density <span class="val" id="density-val">100</span>
+    <input id="density" type="range" min="88" max="112" value="100">
+  </label>
+  <label>Radius <span class="val" id="radius-val">0</span>
+    <input id="radius" type="range" min="0" max="8" value="0">
+  </label>
+  <label>Layout
+    <select id="layout">
+      <option value="shipped">As shipped</option>
+      <option value="stack">Stacked</option>
+      <option value="spread">Spread</option>
+    </select>
+  </label>
+  <label>Palette
+    <select id="palette">
+      <option value="house">House</option>
+      <option value="cool">Cooler</option>
+      <option value="warm">Warmer</option>
+      <option value="ink">Ink</option>
+    </select>
+  </label>
+  <button type="button" class="reset" id="reset">Reset</button>
+</aside>
+
+<div class="stage">
+  <div class="trk95" id="room" data-ui-name="Tracking" data-ui-docs="components/Home/Tracking/README.md" data-temporal="retrospective">
+    <div class="trk-window" data-desk="true">
+      <div>
+        <div class="trk-fascia" id="fascia">
+          <div class="trk-fascia-row">
+            <div class="trk-mark">
+              <img src="/orbs-removebackground/fc4b0cf92a8067fb971ab6ced800e34d.png" alt="" class="trk-title-orb">
+              <h2>Tracking</h2>
+            </div>
+            <div class="trk-view-bay">
+              <div class="hab-view-changer trk-view-keys" id="keys">
+                <div role="tablist" aria-label="Tracking view" class="inline-flex h-10 items-center justify-center">
+                  <button type="button" role="tab" data-state="active" aria-selected="true">Time Grid</button>
+                  <button type="button" role="tab" data-state="inactive" aria-selected="false">Activity Log</button>
+                  <button type="button" role="tab" data-state="inactive" aria-selected="false">Day Log</button>
+                  <button type="button" role="tab" data-state="inactive" aria-selected="false">Tracking log</button>
+                </div>
+              </div>
+              <button type="button" class="trk-settings-gear" data-no95="" aria-label="Tracking settings" title="Tracking settings">
+                <svg class="trk-settings-gear-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.2 7.2 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.31.6.22l2.39-.96c.51.4 1.05.71 1.63.94l.36 2.54c.05.24.25.42.5.42h3.84c.25 0 .45-.18.5-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="trk-now-module trk-now-row" role="group" aria-label="Now">
+          <span class="trk-now-lamp" aria-hidden="true"></span>
+          <span class="trk-now-plate" aria-hidden="true">Now</span>
+          <div class="ops-now-bar b2-now is-compact">
+            <label>
+              <span class="sr-only">Working on</span>
+              <input class="ops-now-field" role="combobox" aria-label="Operation to work on" aria-expanded="false" placeholder="Search or create an operation" value="">
+            </label>
+            <button type="button" class="todo-cap is-primary" disabled aria-label="Working on this now">▶ Start</button>
+          </div>
+          <span class="trk-now-arrow" aria-hidden="true">→</span>
+          <div class="ops-now-bar trk-pen-now b2-now is-compact" data-ui-name="Working on right now">
+            <label>
+              <span class="sr-only">Working on right now</span>
+              <input class="trk-pen-now-field" role="combobox" aria-label="Pen to start" aria-expanded="false" placeholder="Starts this pen's clock" value="">
+            </label>
+            <button type="button" class="todo-cap is-primary" disabled aria-label="Choose a pen to start its clock">▶ Start</button>
+          </div>
+        </div>
+
+        <div class="trk-desk" data-rack="true">
+          <aside class="trk-scope trk-rack" id="tray" aria-label="Pens" data-ui-name="Tracking control panel">
+            <div class="trk-scope-chassis" aria-hidden="true">
+              <span class="trk-standoff" data-corner="tl"></span>
+              <span class="trk-standoff" data-corner="tr"></span>
+              <span class="trk-standoff" data-corner="bl"></span>
+              <span class="trk-standoff" data-corner="br"></span>
+            </div>
+            <div class="trk-faceplate" aria-hidden="true">
+              <span class="trk-platehole" data-corner="tl"></span>
+              <span class="trk-platehole" data-corner="tr"></span>
+              <span class="trk-platehole" data-corner="bl"></span>
+              <span class="trk-platehole" data-corner="br"></span>
+            </div>
+            <div class="trk-scope-head">
+              <span class="trk-scope-badge">PEN</span>
+              <span class="trk-scope-name">RACK · 6 PENS</span>
+              <span class="trk-scope-pwr" aria-hidden="true"><span class="trk-scope-led"></span>INK</span>
+            </div>
+            <div class="trk-scope-sect">
+              <span class="trk-scope-band">Selected</span>
+              <div class="trk-rack-plate trk-selected">
+                <div class="trk-rack-row">
+                  <span class="trk-rack-swatch" style="background-color:#2563eb" title="Work" aria-hidden="true"></span>
+                  <span class="trk-rack-name">Work</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-xs text-muted-foreground">No what on options yet</span>
+                </div>
+                <button type="button" class="trk-rack-settings" title="Settings, tags and category for Work">Pen settings</button>
+              </div>
+            </div>
+            <div class="trk-scope-sect is-grow">
+              <span class="trk-scope-band">Pens</span>
+              <div class="trk-push-row" role="group" aria-label="Sort pens">
+                <div class="trk-push-cell is-stacked">
+                  <span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="true" aria-label="Recent" title="Sort pens Recent"></button></span>
+                  <span class="trk-push-label" aria-hidden="true">Recent</span>
+                </div>
+                <div class="trk-push-cell is-stacked">
+                  <span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="A–Z" title="Sort pens A–Z"></button></span>
+                  <span class="trk-push-label" aria-hidden="true">A–Z</span>
+                </div>
+                <div class="trk-push-cell is-stacked">
+                  <span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Tree" title="Sort pens Tree"></button></span>
+                  <span class="trk-push-label" aria-hidden="true">Tree</span>
+                </div>
+              </div>
+              <div class="trk-rack-latches" role="group" aria-label="View latches">
+                <button type="button" aria-pressed="false" title="Hide pens from this view's well">Hide</button>
+                <button type="button" title="Tracking settings">View</button>
+                <button type="button" aria-pressed="false" title="Tag library">Tags</button>
+              </div>
+              <div class="trk95 trk-swatches min-w-0 flex-1">
+                <input class="trk-search" placeholder="Find a pen…" aria-label="Find a pen">
+                <div class="trk-pen-list" role="group" aria-label="Pens">
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="true" title="Work"><span class="trk-pen-node-swatch" style="background-color:#2563eb" aria-hidden="true"></span><span class="trk-pen-node-name">Work</span></button>
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="false" title="Rest"><span class="trk-pen-node-swatch" style="background-color:#10b981" aria-hidden="true"></span><span class="trk-pen-node-name">Rest</span></button>
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="false" title="Exercise"><span class="trk-pen-node-swatch" style="background-color:#f59e0b" aria-hidden="true"></span><span class="trk-pen-node-name">Exercise</span></button>
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="false" title="Social"><span class="trk-pen-node-swatch" style="background-color:#ec4899" aria-hidden="true"></span><span class="trk-pen-node-name">Social</span></button>
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="false" title="Chores"><span class="trk-pen-node-swatch" style="background-color:#8b5cf6" aria-hidden="true"></span><span class="trk-pen-node-name">Chores</span></button>
+                  <button type="button" data-no95="" class="trk-pen-node" data-selected="false" title="Sleep"><span class="trk-pen-node-swatch" style="background-color:#1e293b" aria-hidden="true"></span><span class="trk-pen-node-name">Sleep</span></button>
+                </div>
+                <span class="trk-new-pen">
+                  <span class="cogs-color-swatch h-[22px] w-8"><input type="color" value="#2563eb" aria-label="New pen color"></span>
+                  <input class="trk-search flex-1" placeholder="New pen…" aria-label="New pen name" value="">
+                  <button type="button" class="trk-new-pen-add" disabled>+ New pen</button>
+                </span>
+              </div>
+            </div>
+            <div class="trk-rack-foot">
+              <span>6 pens · Activity</span>
+              <span>sorted recent</span>
+            </div>
+            <span class="trk-screw" data-corner="tl" style="--r:17deg;--lift:1" aria-hidden="true"></span>
+            <span class="trk-screw" data-corner="tr" style="--r:58deg;--lift:1" aria-hidden="true"></span>
+            <span class="trk-screw" data-corner="bl" style="--r:99deg;--lift:1" aria-hidden="true"></span>
+            <span class="trk-screw" data-corner="br" style="--r:140deg;--lift:1" aria-hidden="true"></span>
+          </aside>
+
+          <div class="trk-desk-main trk-desktop">
+            <div role="tabpanel" class="mt-0">
+              <div class="trk95 trk-canvas trk-grid-desk select-none" id="grid" data-ui-name="Time grid" data-ui-docs="components/Home/Tracking/README.md" data-ui-docs-anchor="time-gridtsx-behavior">
+                <main class="trk-scope trk-center-bay" aria-label="Time grid screen">
+                  <div class="trk-scope-chassis" aria-hidden="true">
+                    <span class="trk-standoff" data-corner="tl"></span><span class="trk-standoff" data-corner="tr"></span>
+                    <span class="trk-standoff" data-corner="bl"></span><span class="trk-standoff" data-corner="br"></span>
+                  </div>
+                  <div class="trk-faceplate" aria-hidden="true">
+                    <span class="trk-platehole" data-corner="tl"></span><span class="trk-platehole" data-corner="tr"></span>
+                    <span class="trk-platehole" data-corner="bl"></span><span class="trk-platehole" data-corner="br"></span>
+                  </div>
+                  <div class="trk-scope-head">
+                    <span class="trk-scope-badge">TRK</span>
+                    <span class="trk-scope-name">3132 · SCREEN</span>
+                    <span class="trk-scope-pwr" aria-hidden="true"><span class="trk-scope-led"></span>ON</span>
+                  </div>
+                  <div class="trk-deck" role="toolbar" aria-label="Tracking view modes" data-ui-name="Tracking view modes">
+                    <div class="trk-deck-slot is-legend">
+                      <span class="trk-deck-caption is-view">VIEW</span>
+                      <button type="button" class="trk-deck-caption is-ghost" data-no95="" aria-label="Clear ghosts">GHOST</button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="true" title="Activity — the view you paint"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">Activity</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost Activity" aria-pressed="false" disabled></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint Location"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">Location</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost Location" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint Mood"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">Mood</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost Mood" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint Company"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">Company</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost Company" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint Screen Time"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">Screen Time</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost Screen Time" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint iPhone Screen Time"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">iPhone Screen Time</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost iPhone Screen Time" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint iPhone Calls"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">iPhone Calls</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost iPhone Calls" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot">
+                      <button type="button" class="trk-ckey" data-no95="" aria-pressed="false" title="Paint iPhone Texts"><span class="trk-ckey-glyph" aria-hidden="true"></span><span class="trk-ckey-label">iPhone Texts</span></button>
+                      <button type="button" class="trk-cled" data-no95="" aria-label="Ghost iPhone Texts" aria-pressed="false"></button>
+                    </div>
+                    <div class="trk-deck-slot is-narrow">
+                      <button type="button" class="trk-ckey is-icon" data-no95="" aria-label="Add view"><span class="trk-ckey-label">+</span></button>
+                    </div>
+                    <div class="trk-deck-slot is-narrow">
+                      <button type="button" class="trk-ckey is-icon" data-no95="" aria-label="Remove view"><span class="trk-ckey-label">⌫</span></button>
+                    </div>
+                  </div>
+                  <div class="trk-period-crt" data-locked="false">
+                    <div class="trk-pgroup">
+                      <button type="button" class="trk-period-chev" aria-label="Previous day">‹</button>
+                      <div class="trk-scope-crt" title="15h tracked · 63% of the day"><h3>Mon, Oct 26, 2026</h3></div>
+                      <button type="button" class="trk-period-chev" aria-label="Next day">›</button>
+                      <button type="button" class="trk-period-today">Today</button>
+                    </div>
+                    <div class="trk-readouts">
+                      <div class="trk-readout" title="Tracked"><span class="trk-readout-plate">Tracked</span><div class="trk-scope-crt">15h</div></div>
+                      <div class="trk-readout" title="Of day"><span class="trk-readout-plate">Of day</span><div class="trk-scope-crt">63%</div></div>
+                    </div>
+                    <div class="trk-period-trailing">
+                      <button type="button" class="trk-micro-danger trk-period-aux">Clear day</button>
+                    </div>
+                  </div>
+                  <div class="trk-probe" role="status" data-empty="true"></div>
+                  <div class="trk-screen-bezel" data-face="paper">
+                    <div class="trk-grid trk-grid-full-day" tabindex="-1" data-start-hour="7" id="day-grid">
+                      <div class="trk-plot-paper" id="plot"></div>
+                    </div>
+                  </div>
+                  <div class="trk-ribbon">
+                    <div class="trk-ribbon-basis" role="group" aria-label="Percent of">
+                      <span class="trk-silk">%</span>
+                      <button type="button" aria-pressed="true">of tracked</button>
+                      <button type="button" aria-pressed="false">of day</button>
+                    </div>
+                    <div class="trk-occ-readout">
+                      <span class="trk-occ-pct">63%</span>
+                      <span class="trk-occ-of">of the day</span>
+                      <span class="trk-occ-tracked">15h tracked</span>
+                    </div>
+                    <div class="trk-ribbon-bar" aria-hidden="true">
+                      <span style="flex-grow:420;background:#1e293b"></span>
+                      <span style="flex-grow:420;background:#2563eb"></span>
+                      <span style="flex-grow:60;background:#10b981"></span>
+                      <span class="trk-ribbon-void" style="flex-grow:540"></span>
+                    </div>
+                    <div class="trk-ribbon-legend">
+                      <span><span class="trk-ribbon-swatch" style="background:#1e293b"></span> Sleep: <span>7h</span><span class="trk-day-nav-meta"> 47% of tracked</span></span>
+                      <span><span class="trk-ribbon-swatch" style="background:#2563eb"></span> Work: <span>7h</span><span class="trk-day-nav-meta"> 47% of tracked</span></span>
+                      <span><span class="trk-ribbon-swatch" style="background:#10b981"></span> Rest: <span>1h</span><span class="trk-day-nav-meta"> 7% of tracked</span></span>
+                      <span class="trk-day-nav-meta">untracked: 9h</span>
+                    </div>
+                  </div>
+                  <span class="trk-screw" data-corner="tl" style="--r:17deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="tr" style="--r:58deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="bl" style="--r:99deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="br" style="--r:140deg;--lift:1" aria-hidden="true"></span>
+                </main>
+
+                <aside class="trk-scope trk-instruments" aria-label="Instruments">
+                  <div class="trk-scope-chassis" aria-hidden="true">
+                    <span class="trk-standoff" data-corner="tl"></span><span class="trk-standoff" data-corner="tr"></span>
+                    <span class="trk-standoff" data-corner="bl"></span><span class="trk-standoff" data-corner="br"></span>
+                  </div>
+                  <div class="trk-faceplate" aria-hidden="true">
+                    <span class="trk-platehole" data-corner="tl"></span><span class="trk-platehole" data-corner="tr"></span>
+                    <span class="trk-platehole" data-corner="bl"></span><span class="trk-platehole" data-corner="br"></span>
+                  </div>
+                  <div class="trk-scope-head">
+                    <span class="trk-scope-badge">TRK</span>
+                    <span class="trk-scope-name">3132 · TIME RECORDER</span>
+                    <span class="trk-scope-pwr" aria-hidden="true"><span class="trk-scope-led"></span>ON</span>
+                  </div>
+                  <div class="trk-scope-sect">
+                    <span class="trk-scope-band">Tools</span>
+                    <div class="trk-pushes" role="group" aria-label="Paint tools">
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="true" aria-label="Draw" title="Paint with the selected pen"></button></span><span class="trk-push-label" aria-hidden="true">Draw</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Erase" title="Drag to clear minutes"></button></span><span class="trk-push-label" aria-hidden="true">Erase</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Scissors" title="Split a block at the minute you click"></button></span><span class="trk-push-label" aria-hidden="true">Scissors</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Point" title="Click opens a block — nothing ever paints"></button></span><span class="trk-push-label" aria-hidden="true">Point</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Fill" title="Type a clock range and fill it on one or more days"></button></span><span class="trk-push-label" aria-hidden="true">Fill</span></div>
+                    </div>
+                    <div class="trk-instrument-detail">
+                      <div class="trk-tool-detail" data-ui-name="Tool detail" data-paint-tool="draw">
+                        <div class="trk-tool-detail-head">
+                          <span class="trk-jewel trk-jewel-on" aria-hidden="true"><span class="trk-jewel-glass"><span class="trk-jewel-die"></span><span class="trk-jewel-spec"></span></span></span>
+                          <span class="trk-silk">Draw</span>
+                        </div>
+                        <p class="trk-tool-howto">Paint with the selected pen</p>
+                      </div>
+                    </div>
+                    <div class="trk-logkey">
+                      <button type="button" class="trk-latch trk-latch-log" title="Log activity"><span class="trk-led" aria-hidden="true"></span> Log activity</button>
+                    </div>
+                  </div>
+                  <div class="trk-scope-sect">
+                    <span class="trk-scope-band">Time base</span>
+                    <div class="trk-knob-block">
+                      <span class="trk-knob-title">Time / Div</span>
+                      <div class="trk-knob-dial" style="width:136px;height:136px">
+                        <button type="button" class="trk-knob-mark" data-no95="" data-current="true" aria-pressed="true" aria-label="day" style="left:15%;top:21%">DAY</button>
+                        <span class="trk-knob-mark" style="left:50%;top:4.5%">WEEK</span>
+                        <span class="trk-knob-mark" style="left:85%;top:21%">∞</span>
+                        <div class="trk-knob" role="slider" tabindex="0" aria-roledescription="dial" aria-label="Time grid span" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" aria-valuetext="DAY" style="transform:rotate(-50deg)">
+                          <span class="trk-knob-skirt"></span><span class="trk-knob-grip"></span><span class="trk-knob-cap"></span>
+                        </div>
+                      </div>
+                      <div class="trk-scope-crt trk-knob-read" aria-hidden="true">DAY</div>
+                    </div>
+                    <div class="trk-knobs2">
+                      <div class="trk-knob-block">
+                        <span class="trk-knob-title">Cell</span>
+                        <div class="trk-knob-dial" style="width:112px;height:112px">
+                          <div class="trk-knob" role="slider" tabindex="0" aria-roledescription="dial" aria-label="Cell size" aria-valuemin="0" aria-valuemax="4" aria-valuenow="5" aria-valuetext="5 MIN" style="transform:rotate(-50deg)">
+                            <span class="trk-knob-skirt"></span><span class="trk-knob-grip"></span><span class="trk-knob-cap"></span>
+                          </div>
+                        </div>
+                        <div class="trk-scope-crt trk-knob-read" aria-hidden="true">5 MIN</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="trk-scope-sect">
+                    <span class="trk-scope-band">Display</span>
+                    <div class="trk-slide" role="radiogroup" aria-label="SCREEN">
+                      <div class="trk-slide-labels">
+                        <button type="button" role="radio" data-no95="" aria-checked="false">GLASS</button>
+                        <button type="button" role="radio" data-no95="" aria-checked="true">PAPER</button>
+                      </div>
+                      <div class="trk-slide-track" aria-hidden="true"><span class="trk-slide-thumb" style="left:calc((100% - 26px) * 1 + 2px)"></span></div>
+                      <span class="trk-slide-cap">SCREEN</span>
+                    </div>
+                    <div class="trk-find">
+                      <label class="trk-field">
+                        <span class="trk-field-label">Find</span>
+                        <input aria-label="Find blocks" placeholder="Name, pen, counts as…" value="">
+                      </label>
+                    </div>
+                    <div class="trk-push-cell">
+                      <span class="trk-push-hole"><button type="button" class="trk-push" data-tone="cream" data-no95="" aria-pressed="false" aria-label="Day tubes" title="Your tracked week as tubes of liquid or sand, or as hourglasses. Optional."></button></span>
+                      <span class="trk-push-label" aria-hidden="true">Day tubes</span>
+                    </div>
+                  </div>
+                  <div class="trk-scope-sect">
+                    <span class="trk-scope-band">Flags</span>
+                    <div class="trk-pushes" role="group" aria-label="Flags">
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="mint" data-no95="" aria-pressed="false" aria-label="Multi"></button></span><span class="trk-push-label" aria-hidden="true">Multi</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="mint" data-no95="" aria-pressed="false" aria-label="Advanced"></button></span><span class="trk-push-label" aria-hidden="true">Advanced</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="mint" data-no95="" aria-pressed="false" aria-label="Hide log flags"></button></span><span class="trk-push-label" aria-hidden="true">Hide log flags</span></div>
+                      <div class="trk-push-cell"><span class="trk-push-hole"><button type="button" class="trk-push" data-tone="mint" data-no95="" aria-pressed="false" aria-label="Hide sun lines"></button></span><span class="trk-push-label" aria-hidden="true">Hide sun lines</span></div>
+                    </div>
+                  </div>
+                  <span class="trk-screw" data-corner="tl" style="--r:17deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="tr" style="--r:58deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="bl" style="--r:99deg;--lift:1" aria-hidden="true"></span>
+                  <span class="trk-screw" data-corner="br" style="--r:140deg;--lift:1" aria-hidden="true"></span>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="trk-lace" aria-label="Summaries">
+          <div class="trk-lace-paper">
+            <div class="trk-summary-slot"></div>
+            <div class="trk-notes trk-summary" id="trk-day-notes">
+              <div class="trk-notes-head">
+                <p class="trk-silk trk-notes-legend">Day summary</p>
+                <button type="button" class="trk-notes-fold" aria-expanded="false">Expand</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var blocks = [
+    { id: "b-sleep", name: "Sleep", color: "#1e293b", start: 0, end: 7 * 60 },
+    { id: "b-work-am", name: "Work", color: "#2563eb", start: 9 * 60, end: 12 * 60 },
+    { id: "b-rest", name: "Rest", color: "#10b981", start: 12 * 60, end: 13 * 60 },
+    { id: "b-work-pm", name: "Work", color: "#2563eb", start: 13 * 60, end: 17 * 60 }
+  ];
+  var step = 5;
+  var rowH = 24;
+  var now = new Date();
+  var nowMinute = now.getHours() * 60 + now.getMinutes();
+  var sunrise = 7 * 60 + 2;
+  var sunset = 18 * 60 + 4;
+
+  function ink(hex) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.62 ? "#111" : "#fff";
+  }
+  function clock(minute) {
+    var h = Math.floor(minute / 60);
+    var m = minute % 60;
+    var period = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12 || 12;
+    return h12 + ":" + String(m).padStart(2, "0") + " " + period;
+  }
+  function at(minute) {
+    for (var i = 0; i < blocks.length; i++) {
+      if (minute >= blocks[i].start && minute < blocks[i].end) return blocks[i];
+    }
+    return null;
+  }
+
+  var paper = document.getElementById("plot");
+  var axis = document.createElement("div");
+  axis.className = "trk-time-axis sticky top-0 z-20 flex items-stretch";
+  var bezel = document.createElement("div");
+  bezel.className = "trk-hour-bezel";
+  bezel.textContent = "min";
+  var ticks = document.createElement("div");
+  ticks.className = "flex flex-1";
+  for (var c = 0; c < 60 / step; c++) {
+    var minute = c * step;
+    var tick = document.createElement("div");
+    tick.className = "flex-1 whitespace-nowrap" + (c !== 0 && minute % 15 === 0 ? " trk-cell-quarter" : "");
+    tick.textContent = ":" + String(minute).padStart(2, "0");
+    ticks.appendChild(tick);
+  }
+  axis.appendChild(bezel);
+  axis.appendChild(ticks);
+  paper.appendChild(axis);
+
+  var field = document.createElement("div");
+  field.className = "relative";
+  for (var hour = 0; hour < 24; hour++) {
+    var origin = hour * 60;
+    var futureHour = origin + 60 > nowMinute && hour >= Math.floor(nowMinute / 60);
+    var row = document.createElement("div");
+    row.setAttribute("data-hour", String(hour));
+    row.className = "trk-hour-row relative flex shrink-0 items-stretch" + (futureHour ? " trk-future" : "");
+    row.style.height = rowH + "px";
+    row.style.minHeight = rowH + "px";
+    var hb = document.createElement("div");
+    hb.className = "trk-hour-bezel flex items-center justify-end";
+    hb.textContent = clock(origin);
+    var plot = document.createElement("div");
+    plot.className = "trk-plot";
+    var seen = {};
+    for (var m = 0; m < 60; m += step) {
+      var abs = origin + m;
+      var entry = at(abs);
+      var onQuarter = abs % 15 === 0 && m !== 0;
+      var cell = document.createElement("div");
+      cell.setAttribute("data-minute", String(abs));
+      var cls = "trk-cell";
+      if (entry) cls += " trk-cell-painted";
+      if (onQuarter) cls += " trk-cell-quarter";
+      else if (m !== 0) cls += " trk-cell-tick";
+      if (abs > nowMinute) cls += " trk-future";
+      cell.className = cls;
+      if (entry) {
+        cell.style.backgroundColor = entry.color;
+        if (entry.start >= abs && entry.start < abs + step) cell.setAttribute("data-entry-id", entry.id);
+      }
+      plot.appendChild(cell);
+      if (entry && !seen[entry.id] && entry.start >= abs && entry.start < abs + step) {
+        seen[entry.id] = true;
+        var end = Math.min(entry.end, origin + 60);
+        var run = document.createElement("span");
+        run.className = "trk-block-run";
+        run.setAttribute("data-entry-id", entry.id);
+        run.style.left = ((entry.start - origin) / 60 * 100) + "%";
+        run.style.width = ((end - entry.start) / 60 * 100) + "%";
+        var lab = document.createElement("span");
+        lab.className = "trk-block-label";
+        lab.style.color = ink(entry.color);
+        lab.textContent = entry.name;
+        run.appendChild(lab);
+        plot.appendChild(run);
+      }
+    }
+    row.appendChild(hb);
+    row.appendChild(plot);
+    field.appendChild(row);
+  }
+  var markers = document.createElement("div");
+  markers.className = "trk-day-clock-markers";
+  markers.setAttribute("aria-hidden", "true");
+  markers.style.cssText = "position:absolute;top:0;right:0;bottom:0;left:64px;pointer-events:none;z-index:6";
+  function mark(minute, tone, label) {
+    if (minute < 0 || minute >= 1440) return;
+    var el = document.createElement("div");
+    el.className = "trk-marker trk-marker-" + tone + " trk-marker-y";
+    el.style.top = (minute / 1440 * 100) + "%";
+    el.style.left = "0";
+    el.style.right = "0";
+    el.style.height = "2px";
+    var cap = document.createElement("span");
+    cap.className = "trk-marker-label";
+    cap.textContent = label;
+    el.appendChild(cap);
+    markers.appendChild(el);
+  }
+  mark(nowMinute, "now", "Now");
+  mark(sunrise, "sunrise", "Sunrise");
+  mark(sunset, "sunset", "Sunset");
+  field.appendChild(markers);
+  paper.appendChild(field);
+
+  var grid = document.getElementById("day-grid");
+  grid.scrollTop = 7 * rowH;
+
+  var SCOPES = {
+    room: document.getElementById("room"),
+    fascia: document.getElementById("fascia"),
+    keys: document.getElementById("keys"),
+    tray: document.getElementById("tray"),
+    grid: document.getElementById("grid")
+  };
+  var ATTRS = ["data-face", "data-type", "data-density", "data-radius", "data-layout", "data-palette"];
+  function clearNode(node) {
+    ATTRS.forEach(function (name) { node.removeAttribute(name); });
+    node.style.removeProperty("--lab-type");
+    node.style.removeProperty("--lab-d");
+    node.style.removeProperty("--lab-r");
+    ["--chrome-face", "--chrome-mid", "--chrome-hi", "--chrome-lo", "--chrome-sheen", "--chrome-shade", "--chrome-inset", "--t-surface", "--t-face"].forEach(function (name) {
+      node.style.removeProperty(name);
+    });
+  }
+  function apply() {
+    Object.keys(SCOPES).forEach(function (key) { clearNode(SCOPES[key]); });
+    var face = document.getElementById("face").value;
+    var scale = Number(document.getElementById("scale").value);
+    var density = Number(document.getElementById("density").value);
+    var radius = Number(document.getElementById("radius").value);
+    var layout = document.getElementById("layout").value;
+    var palette = document.getElementById("palette").value;
+    document.getElementById("scale-val").textContent = String(scale);
+    document.getElementById("density-val").textContent = String(density);
+    document.getElementById("radius-val").textContent = String(radius);
+    scale = Math.min(112, Math.max(90, scale));
+    density = Math.min(112, Math.max(88, density));
+    radius = Math.min(8, Math.max(0, radius));
+    var node = SCOPES[document.getElementById("scope").value] || SCOPES.room;
+    if (face !== "house") node.setAttribute("data-face", face);
+    if (scale !== 100) {
+      node.setAttribute("data-type", "on");
+      node.style.setProperty("--lab-type", String(scale / 100));
+    }
+    if (density !== 100) {
+      node.setAttribute("data-density", "on");
+      node.style.setProperty("--lab-d", String(density / 100));
+    }
+    if (radius !== 0) {
+      node.setAttribute("data-radius", "on");
+      node.style.setProperty("--lab-r", radius + "px");
+    }
+    if (layout !== "shipped") node.setAttribute("data-layout", layout);
+    if (palette !== "house") node.setAttribute("data-palette", palette);
+  }
+  ["scope", "face", "scale", "density", "radius", "layout", "palette"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", apply);
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    document.getElementById("scope").value = "room";
+    document.getElementById("face").value = "house";
+    document.getElementById("scale").value = "100";
+    document.getElementById("density").value = "100";
+    document.getElementById("radius").value = "0";
+    document.getElementById("layout").value = "shipped";
+    document.getElementById("palette").value = "house";
+    apply();
+  });
+  apply();
+})();
+</script>
+</body>
+</html>

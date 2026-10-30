@@ -71,6 +71,7 @@ export type IngestIntentKind =
   | "switch-objective"
   | "transit"
   | "habit-trigger"
+  | "nfc"
   | "currently"
   | "stopped-activity"
   | "switched-to"
@@ -143,6 +144,7 @@ export type PendingClarifyKind =
   | "ritual"
   | "duplicate"
   | "menu"
+  | "media"
 
 /** `today menu` / `week menu` / `month menu` / `season menu` (season is the quarter). */
 export type MenuPeriod = "day" | "week" | "month" | "quarter"
@@ -205,6 +207,15 @@ export interface PendingClarify {
   /** Open `today menu` (and week / month / season). Present when `kind` is `menu`. */
   menu?: MenuState
   /**
+   * Held photo for "Journal, outfit, or log?". Attachment ids only.
+   * The JPEG stays in IndexedDB. Never a data URL.
+   */
+  mediaHold?: {
+    attachmentIds: string[]
+    sentAt: string
+    caption: string
+  }
+  /**
    * Open lines the phone just skipped because an identical item is already
    * on the list. `see` peeks, `again` adds another, `dismiss` leaves them.
    */
@@ -239,6 +250,8 @@ export interface ApplyOk {
   pinKind?: "grocery" | "todo"
   /** Bot ritual card to edit instead of sending a new bubble. */
   ritualCardMessageId?: number
+  /** Closed the open photo question. Other results leave that hold in place. */
+  mediaSettled?: boolean
 }
 
 export interface ApplyClarify {
@@ -267,6 +280,8 @@ export interface ApplyError {
   reply: string
   kind: IngestIntentKind
   ritualCardMessageId?: number
+  /** Closed the open photo question. Other results leave that hold in place. */
+  mediaSettled?: boolean
 }
 
 export type ApplyResult = ApplyOk | ApplyClarify | ApplyIgnored | ApplyError
@@ -293,4 +308,9 @@ export interface IncomingMessage {
   attachments?: IncomingAttachment[]
   /** Test / simulate seam: skip Tesseract and use this OCR blob. */
   ocrText?: string
+  /**
+   * Client id for `POST /api/scan`. The dedupe key is `msg:hub:scan:<id>`.
+   * A retry with the same id does not log twice.
+   */
+  scanId?: string
 }

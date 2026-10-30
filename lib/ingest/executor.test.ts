@@ -21,6 +21,7 @@ import { resetIngestDedupeForTests } from "./dedupe"
 import { resetActionHistory } from "@/lib/action-history"
 import { resetPhoneUndoForTests, UNNAMED_UNDO } from "./phone-undo"
 import { resetGpsIngestLogForTests, useGpsIngestLog } from "./gps-log"
+import { resetIosLocationShareForTests } from "@/lib/phone-sync/location-share-order"
 import type { IncomingMessage } from "./types"
 
 const NOW = new Date(2026, 8, 19, 17, 42, 0)
@@ -52,6 +53,7 @@ describe("ingestIncoming", () => {
     resetIphoneNoteContinuations()
     resetIngestDedupeForTests()
     resetGpsIngestLogForTests()
+    resetIosLocationShareForTests()
     resetActionHistory()
     resetPhoneUndoForTests()
     telegramSeq = 100
@@ -71,6 +73,7 @@ describe("ingestIncoming", () => {
       shortcuts: {},
       groceryListId: null,
       discreteEventTriggers: DEFAULT_DISCRETE_EVENT_TRIGGERS.map((t) => ({ ...t })),
+      nfcTags: [],
       seenIngestKeys: [],
       phoneHubUrl: "",
       livePins: {},
@@ -673,6 +676,35 @@ describe("ingestIncoming", () => {
     )
     expect(first.status).toBe("ok")
     expect(moved.status).toBe("ok")
+  })
+
+  it("lets a Live Location update wait while the iOS app is sharing, and still paints a typed gps", () => {
+    useIngestStore.getState().allowChat({ chatId: "99", userId: "99", pairedAt: NOW.toISOString() })
+    const state = useTimeTrackingStore.getState()
+    useTimeTrackingStore.setState({
+      entries: [
+        ...state.entries,
+        {
+          id: "ps-loc",
+          date: formatLocalDateKey(NOW),
+          scopeId: "location",
+          penId: "pen",
+          kind: "instant",
+          startMin: 17 * 60,
+          endMin: 17 * 60,
+          title: "arrived",
+          generatedBy: { kind: "phone-sync", id: "location:pt:1:37.77000,-122.42000" },
+        },
+      ],
+    })
+    const live = ingestIncoming(
+      { ...tg("gps: Park\n37.80,-122.50"), telegramMessageId: 11, telegramUpdateId: 701, locationUpdate: true },
+      NOW,
+    )
+    expect(live).toMatchObject({ status: "ignored", kind: "gps", summary: "iOS app is sharing location" })
+    const typed = ingestIncoming(sim("gps: Home\n37.77,-122.42"), NOW)
+    expect(typed.status).toBe("ok")
+    expect(typed.kind).toBe("gps")
   })
 
   it("dedupes a repeat that only has a telegram message id", () => {

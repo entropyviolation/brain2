@@ -2,7 +2,7 @@
 
 Every wave is **done**, **open**, or **do not start**. Wave numbers are names, not a queue. No wave waits on an earlier one. Design lives in [`DESIGN_STYLE.md`](DESIGN_STYLE.md). This file does not add a visual manifesto.
 
-Brain2 keeps a record once and uses it in every room that record can honestly serve. Analytics is where the record is read back. The header mark is **BRAIN2**. Persist keys are **`brain2-*`** (`lib/storage-keys.ts`). Leftover **`cogs-*`** keys dual-write only at or under 8192 characters. A matching twin is removed. A drifted twin is kept because it may hold the newer value. A record stays dated, incomplete, and at its own order of abstraction. Description stays distinct from inference. The next period starts where the last one stopped. A miss between an order and its report is the next input. A coincidence is shown and is never called a cause. How those ideas join is [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). The essays that explore them are source material and are not assigned (below).
+Brain2 keeps a record once and uses it in every room that record can honestly serve. Data is where the record is read back. The header mark is **BRAIN2**. Persist keys are **`brain2-*`** (`lib/storage-keys.ts`). Leftover **`cogs-*`** keys dual-write only at or under 8192 characters. A matching twin is removed. A drifted twin is kept because it may hold the newer value. A record stays dated, incomplete, and at its own order of abstraction. Description stays distinct from inference. The next period starts where the last one stopped. A miss between an order and its report is the next input. A coincidence is shown and is never called a cause. How those ideas join is [`MAP_LOOP_MEANING.md`](MAP_LOOP_MEANING.md). The essays that explore them are source material and are not assigned (below).
 
 Home → Habits and Lists are examples of rooms that turned out well. Their CSS is not a skin for every other room.
 
@@ -12,7 +12,7 @@ Home → Habits and Lists are examples of rooms that turned out well. Their CSS 
 
 Frame, contents, and cabinet law live in [`DESIGN_STYLE.md`](DESIGN_STYLE.md). House motifs — brain, light bulb, graph-node connections — stay in use. The frame stays a vintage machine. Contents stay specific. The cabinet stays photographed objects and orbs. The frame is not frozen as a Windows dialog.
 
-- **`~` + dashed amber est.** Basis in the tooltip, click to correct (`lib/estimated-values.ts`, `components/Home/ToDo/CompletionTimeLine.tsx`). The same chip covers every derived number that still presents itself as observed. Wave 4 names the surfaces that already have it and the ones that do not.
+- **`~` + dashed amber est.** Basis in the tooltip, click to correct (`lib/estimated-values.ts`, `components/Home/ToDo/ledger/CompletionTimeLine.tsx`). The same chip covers every derived number that still presents itself as observed. Wave 4 names the surfaces that already have it and the ones that do not.
 - **Feral module interiors** — Tidy, Film DNA, Trip map. Unique look, shared Items. They stay out of `components/ui/`.
 - **Lists and Habits** — examples of rooms that turned out well (Lists orbs, velvet, Explorer furniture; Habits console, analog furniture, Willpower gems, CRT phosphor). Refine packing on those rooms. Leave the Habits console a console. Leave the Lists title bar an Explorer title bar. Do not clone `.hab95` or Lists chrome onto other rooms.
 - **Tracking** — paint, scissors, occupancy at most 24h, ghosts to confirm, sleep that agrees with the grid. The pen well stays plain steel. Paint math, the counts-as model, and pen nesting stay ([`COUNTS_AS.md`](COUNTS_AS.md), [`PEN_ACTION_FORMATS.md`](PEN_ACTION_FORMATS.md)).
@@ -29,7 +29,7 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 
 - **Empty rails stay.** Queue, Plan sidebar, funnel buckets, and KPI frames keep their reserved space when the last item is gone. That space is furniture. A chart axis that performs precision with no series is a lie: keep the frame, put one sentence inside it.
 - **Doors stay on the bar.** Tracking pens, To Do sort and filter, and header capture stay visible. Do not add a File menu. Do not hide them behind one popover or a `File / Capture / Review` menu.
-- **Streaks stay split.** Home glance and Analytics → Streaks may show the same number. They stay two surfaces.
+- **Streaks stay split.** Home glance and Data → Streaks may show the same number. They stay two surfaces.
 - **Lists keeps both counts.** The left count is sidebar scope. The right count is the open location. Labels are the fix. Deleting one count is not.
 - **One write door.** Implementation is `task-store`. UI and ingest call `useTaskStore` directly. `taskRepository` is the validating seam for services and sync (completion, scheduling, habit-done, sleep, pen actions, work sessions, implied actions). It is not what most screens call. New code writes an existing item through `commitItemEdit` (`lib/commit-item-edit.ts`). Existing `useTaskStore` calls stay. Workflows and implied actions listen through `dispatchItemMutation`. `lib/services/item-mutation-service.ts` is workflow wiring. Writes do not go through it.
 - **Do not wire Just-Start → Tracking.** Do not add capture tokens (`tomorrow` and `30m` already parse). Do not add an inline Done **est.** confirm; `CompletionTimeLine` already does that.
@@ -41,7 +41,7 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 - **Do not start a shared S/M/L dialog ladder.** Three widths would freeze every room. A dialog’s buttons state whether it saves or is live. Cancel is present wherever Save exists. That is the rule; a width ladder is not.
 - **Do not extract shared calendar chrome** between Plan and Scheduler. Plan opalescence stays on the chips. Cells stay as they are.
 - **Editable Gantt, commitment versus hours, and auto carry-over** are mechanics, not chrome. They are not started, and they do not reopen Wave 2.
-- **Out of Analytics:** CSV export, predictive or ML analytics, a custom Metrics chart builder. Sleep in Analytics does not switch the Home night; that would require `app/page.tsx`, and it stays out.
+- **Out of Data:** CSV export, predictive or ML analytics, a custom Metrics chart builder. Sleep in Data does not switch the Home night; that would require `app/page.tsx`, and it stays out.
 - **Out of the idea-bank ten** (Wave 11 is done; these stay out): velocity chart, PERT capture UI, ghost row, named weeks, definition-of-done field UI, Bayesian estimator, review-history charts, capacity score, idea flags, priority override log, procedure chains, summary auto-complete, Kanban back on Lists, auto-picking 52:17 from cognitive load, and a nanny that reschedules the day.
 - **“Usually ~N”** does not rewrite `estimatedDuration` and does not grow `beatTheClockMultiplier`.
 - **Whole-store IndexedDB, WAL, `PersistStatusBanner` as a verified write, and an append-only per-field log** were gated on parked-note naming; that Wave 10 piece is closed. They are not screen work — claim when ready.
@@ -52,8 +52,8 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 
 - Judge the open screen. A README or [`DESIGN_STYLE.md`](DESIGN_STYLE.md) alone is not a UI fix.
 - Habits and Lists are examples of rooms that turned out well. A new room follows [`DESIGN_STYLE.md`](DESIGN_STYLE.md). It does not wear another room’s stylesheet.
-- Recapture the `docs/screenshots/*.png` + `.txt` pair you changed, in the same step. The house set is a seeded-store capture (Wave 0). A personal-vault `COGS_FRESH=0` pass is still open.
-- Empty and populated both matter. A chart that looks finished at zero is a bug. Default `npm run capture-screenshots` clears localStorage (`COGS_FRESH`) and then writes a throwaway vault (tracking, sleep, tasks, operations, modules, goals, habit completions, plan logs). That harness is not the product, and it never posts to `/api/persist`.
+- Recapture the `docs/screenshots/*.png` + `.txt` pair you changed, in the same step. The house set is a seeded-store capture (Wave 0). A personal-vault `BRAIN2_FRESH=0` pass is still open.
+- Empty and populated both matter. A chart that looks finished at zero is a bug. Default `npm run capture-screenshots` clears localStorage (`BRAIN2_FRESH`) and then writes a throwaway vault (tracking, sleep, tasks, operations, modules, goals, habit completions, plan logs). That harness is not the product, and it never posts to `/api/persist`.
 - Count what you name. View kinds equal the real `MODULE_VIEW_KINDS` length.
 - Two controls that can disagree are two sources of truth. Two surfaces glancing at one fact are fine.
 - A new room has Win95 furniture and photographed objects, unless the interior is a document (a spreadsheet) or an allowed feral module.
@@ -65,7 +65,7 @@ These are closed. [`UI_CRITIQUE.md`](UI_CRITIQUE.md) is an unranked observation 
 | Wave | Name | Status |
 |------|------|--------|
 | 0 | Screenshots | **open** |
-| 1 | Analytics correctness | **done** |
+| 1 | Data correctness | **done** |
 | 2 | Plan and Scheduler chrome | **done** |
 | 3 | Period as data | **partial** |
 | 4 | Est. marks | **partial** |
@@ -87,13 +87,13 @@ Files: `scripts/screenshot-manifest.mjs`, `scripts/capture-screenshots.mjs`, `do
 
 **Landed.** The capture browser seeds a throwaway vault before boot (two operations, phases, parts, a linked to-do, a time log, timeline days, a place, a plan note, a resource, lists with several items, one objective, one goal, habit completions, plan logs, tracking, sleep). Docs is `12-docs.png` and `12-docs-reading.png`. Operations has one shot per panel that is not only Home, plus Settings and the after-action report. Item detail tabs, the completion dialog, Just Start, and Plan → Season are in the set. Older frames are copied to `docs/screenshots/history/` before overwrite.
 
-**Open.** One Modules workspace that is not a trip (`09-modules-workspace.png` is still Itinerary Creator). A personal-vault pass (`COGS_FRESH=0`) when local data should be the picture. Surfaces that still have no file stay listed in [`screenshots/README.md`](screenshots/README.md).
+**Open.** One Modules workspace that is not a trip (`09-modules-workspace.png` is still Itinerary Creator). A personal-vault pass (`BRAIN2_FRESH=0`) when local data should be the picture. Surfaces that still have no file stay listed in [`screenshots/README.md`](screenshots/README.md).
 
-### Wave 1 — Analytics correctness — **done**
+### Wave 1 — Data correctness — **done**
 
 Lane: `components/Analytics/**`. Shared date state is `analytics-range-store.ts`.
 
-Shipped: sample size and a caveat on thin interpretive tabs; one remembered date range across Analytics tabs; a jump from a chart to the underlying items in Lists; one honest sentence inside an empty chart frame; tab groups on a bar (Behavior / Time / Accuracy / Meta / Library) with a view changer beneath; habit bars by completion; Tracking breakdown and tag in one drill; Plan vs Reality as a window ribbon; Context Switch, Regret, Metrics, and Reflection honesty; cross-section density and the Item Types library. Item Types stays in Analytics. Settings still edits types. The title bar and status bar stay an instrument frame. Streaks stayed split on purpose.
+Shipped: sample size and a caveat on thin interpretive tabs; one remembered date range across Data tabs; a jump from a chart to the underlying items in Lists; one honest sentence inside an empty chart frame; tab groups on a bar (Behavior / Time / Accuracy / Meta / Library) with a view changer beneath; habit bars by completion; Tracking breakdown and tag in one drill; Plan vs Reality as a window ribbon; Context Switch, Regret, Metrics, and Reflection honesty; cross-section density and the Item Types library. Item Types stays in Data. Settings still edits types. The title bar and status bar stay an instrument frame. Streaks stayed split on purpose.
 
 ### Wave 2 — Plan and Scheduler chrome — **done**
 
@@ -115,7 +115,7 @@ Period is one fact. Chevrons stay local. There is no shared `PeriodNavigator`.
 
 One chip: `~`, dashed amber, **est.**, basis in the tooltip, click to correct (`lib/estimated-values.ts`). Audit, then mark. A second chip language is a bug.
 
-**Already marked.** To Do Done, Analytics sleep, Reviews assumed times, Morning Review sleep clocks, and the block-editor sleep clocks.
+**Already marked.** To Do Done, Data sleep, Reviews assumed times, Morning Review sleep clocks, and the block-editor sleep clocks.
 
 **Open.** Day Log, Goals, Settings sleep copy, and Scheduler durations. Settings copy that *is* the estimate belongs in the chip tooltip.
 
@@ -186,7 +186,7 @@ The ten gaps from the realistic slice of [`BRAIN2_FEATURE_IDEAS.md`](BRAIN2_FEAT
 7. Inbox walk and batch, with undo.
 8. Focus timer appends a `timeLogs` slice. Stop stays one click.
 9. WIP warning, soft cap, default 3 in progress, no hard block.
-10. Overcommitment early-warning on the shared Analytics range (Behavior → Overcommit): one sentence plus n.
+10. Overcommitment early-warning on the shared Data range (Behavior → Overcommit): one sentence plus n.
 
 ### Wave 12 — Wiki links, PDF provenance, doc versions — **open**
 
@@ -213,7 +213,7 @@ When two people work at once, claim a lane and leave the other lane’s files al
 | Lane | Owns | Leaves alone |
 |------|------|----------------|
 | Capture | `scripts/capture-screenshots.mjs`, `scripts/screenshot-manifest.mjs`, `docs/screenshots/` | App behavior |
-| Analytics | `components/Analytics/**` | Plan, Scheduler, Lists interiors |
+| Data | `components/Analytics/**` | Plan, Scheduler, Lists interiors |
 | Plan | `components/Home/Plan/**` | Tracking paint, Scheduler |
 | Scheduler | `components/Scheduler/**` | Home Plan |
 | Period | `lib/use-current-date.ts`, To Do date ownership, Habits cursor *data* | Habits’ milled `habit-chrome-btn` keys |
@@ -229,7 +229,7 @@ When two people work at once, claim a lane and leave the other lane’s files al
 | History / Backup / Workflows | `lib/action-history.ts`, `lib/item-activity.ts`, `lib/data/backup.ts`, workflow UI | Collapsing `Task` into `Item` |
 | Item | `lib/types.ts`, stores, migrations, search | UI restyles |
 
-After each completed step, update the colocated README, this file’s wave status, [`SPEC_MAPPING.md`](SPEC_MAPPING.md) when a spec’d surface moved, and the screenshot pair you touched (`.cursor/rules/update-docs-after-each-step.mdc`).
+At the end of a task, update the colocated README and this file’s wave status. [`SPEC_MAPPING.md`](SPEC_MAPPING.md) only when a spec’d surface moved. The tree and the gallery are a doc sync (`.cursor/rules/doc-sync.mdc`), not a step of the wave.
 
 ---
 

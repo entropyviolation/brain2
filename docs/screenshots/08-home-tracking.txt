@@ -30,8 +30,8 @@ SOURCE FILES:
 ================================================================================
 
 GLOBAL CHROME (all screens)
-  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Review / System / Capture as Win95 groupboxes of milled press keys. Names is the question mark in System and latches (sunken, aria-pressed); tooltip Names help mode while on. Phosphor counts on Review and Inbox. Capture is Now, Inbox, and Quick Add; Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
-  Tabs: milled fascia (brushed bay, raised silver keys, active key a CRT with a round power lamp) — Home · Lists · Docs · Scheduler · Operations · Modules · Analytics.
+  Pinned full-width mill title bar (`AppHeader`, sticky top, z-40): navy BRAIN2 caption with Tek POWER lamp + today's-friend jewel (64px chrome + black-mirror well; click for a Stardew Next Action bubble; Esc / × / outside to close) and Friend / Rituals / System / Capture as Win95 groupboxes of pale silver keycaps. Names is the question mark in System and latches (sunk keycap, aria-pressed); tooltip Names help mode while on. Phosphor counts on Rituals and Inbox. Capture is Now, Inbox, and Quick Add (Quick Add is the primary cap); Bulk is a checkbox inside Quick Add. Metrics opens from Now → Current moment. Ingest, From Notes, and Phone Notes live in Settings.
+  Tabs: Go well, pale silver keycaps at rest. The current tab and a focused key are the black CRT with a green legend, sunk 1px. A press is the old milled sink — Home · Lists · Docs · Scheduler · Operations · Modules · Data.
   Shortcuts: Cmd/Ctrl+K search · capture hotkey → Quick Add.
 
 VIEW-SPECIFIC

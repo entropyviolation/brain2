@@ -10,6 +10,7 @@ export type OpenTarget =
   | { type: "habits"; id: "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   | { type: "objectives" }
   | { type: "folder-all"; folderId: string }
+  | { type: "item-type"; id: string }
   | null
 
 export type OpenTargetState = Exclude<OpenTarget, null> | { mode: "closed" }
@@ -20,10 +21,11 @@ export type OpenTargetAction =
   | { type: "OPEN_HABITS"; id: "habits" | "weekly-habits" | "monthly-habits" | "season-habits" }
   | { type: "OPEN_OBJECTIVES" }
   | { type: "OPEN_FOLDER_ALL"; folderId: string }
+  | { type: "OPEN_ITEM_TYPE"; id: string }
   | { type: "CLOSE" }
   | { type: "SET"; target: OpenTarget }
 
-export type GridEntryKind = "folder" | "list" | "smart" | "habits" | "objectives" | "folder-all"
+export type GridEntryKind = "folder" | "list" | "smart" | "habits" | "objectives" | "folder-all" | "item-type"
 
 export interface GridEntry {
   kind: GridEntryKind

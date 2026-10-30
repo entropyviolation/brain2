@@ -1,0 +1,490 @@
+/* components/Lab/BimFlow/bim-flow.css — BIM's flow bench, in the console's green phosphor. */
+
+.bf-lab {
+  --crt-fg: #7dff9a;
+  --crt-dim: #3fa457;
+  --crt-faint: #1d5a2c;
+  --crt-bg: #04140a;
+  --crt-line: #2f9a4a;
+  --bf-no: #6e8f78;
+  --bf-seafoam: #7fe3c8;
+  --bf-cornflower: #8fb1ff;
+  --bf-err: #ff7d8a;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(220px, 38vh);
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--crt-fg);
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, #0a2414 0%, var(--crt-bg) 75%);
+  font: 15px/1.35 "VT323", ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+}
+
+.bf-lab button,
+.bf-lab .bf-input {
+  font: inherit;
+  color: var(--crt-fg);
+  background: transparent;
+  border: 1px solid var(--crt-line);
+  border-radius: 3px;
+  padding: 2px 8px;
+  box-shadow: none;
+  text-transform: none;
+}
+
+.bf-lab button {
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.bf-lab button:hover:not(:disabled),
+.bf-lab button:focus-visible {
+  background: rgba(125, 255, 154, 0.12);
+  outline: none;
+}
+
+.bf-lab button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bf-lab button.is-on,
+.bf-lab button.is-go {
+  background: rgba(125, 255, 154, 0.18);
+  text-shadow: 0 0 6px rgba(125, 255, 154, 0.7);
+}
+
+.bf-lab select.bf-input option {
+  background: var(--crt-bg);
+}
+
+.bf-lab textarea.bf-input {
+  width: 100%;
+  resize: vertical;
+}
+
+.bf-top,
+.bf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.bf-title {
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 8px rgba(125, 255, 154, 0.6);
+}
+
+.bf-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--crt-faint);
+}
+
+.bf-lamp {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--crt-line);
+}
+
+.bf-lamp.is-on {
+  background: var(--crt-fg);
+  box-shadow: 0 0 8px var(--crt-fg);
+}
+
+.bf-lamp.is-off {
+  background: var(--bf-err);
+  box-shadow: 0 0 8px var(--bf-err);
+}
+
+.bf-k {
+  color: var(--crt-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.bf-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* ---- board ---- */
+
+.bf-board-scroll {
+  overflow: auto;
+  border: 1px solid var(--crt-faint);
+  border-radius: 6px;
+  background-image:
+    linear-gradient(var(--crt-faint) 1px, transparent 1px),
+    linear-gradient(90deg, var(--crt-faint) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.bf-board {
+  position: relative;
+}
+
+.bf-wires {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.bf-wire-line {
+  fill: none;
+  stroke: var(--crt-dim);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.bf-wire.is-no .bf-wire-line {
+  stroke: var(--bf-no);
+  stroke-dasharray: 4 4;
+}
+
+.bf-wire.is-taken .bf-wire-line {
+  stroke: var(--crt-fg);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px var(--crt-fg));
+}
+
+.bf-wire.is-selected .bf-wire-line {
+  stroke: var(--bf-cornflower);
+  stroke-width: 2.5;
+}
+
+.bf-wire-line.is-draft {
+  stroke: var(--bf-seafoam);
+  stroke-dasharray: 2 3;
+}
+
+.bf-wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+
+.bf-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 18px 4px 10px;
+  border: 1px solid var(--crt-line);
+  border-radius: 4px;
+  background: rgba(4, 20, 10, 0.92);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.bf-node.is-selected {
+  outline: 2px solid var(--bf-cornflower);
+  outline-offset: 2px;
+}
+
+.bf-node.is-lit,
+.bf-node.is-yes {
+  border-color: var(--crt-fg);
+  box-shadow: 0 0 12px rgba(125, 255, 154, 0.45), inset 0 0 10px rgba(125, 255, 154, 0.12);
+}
+
+.bf-node.is-no {
+  border-color: var(--bf-no);
+  color: var(--bf-no);
+}
+
+.bf-node.is-dark {
+  opacity: 0.35;
+}
+
+.bf-node.is-error {
+  border-color: var(--bf-err);
+  color: var(--bf-err);
+}
+
+.bf-node.kind-search {
+  border-style: dashed;
+}
+
+.bf-node-tag {
+  font-size: 12px;
+  color: var(--crt-dim);
+  letter-spacing: 0.14em;
+}
+
+.bf-node.kind-search .bf-node-tag {
+  color: var(--bf-seafoam);
+}
+
+.bf-node.kind-propose .bf-node-tag,
+.bf-node.kind-blocks .bf-node-tag {
+  color: var(--bf-cornflower);
+}
+
+.bf-node-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bf-node-out {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 6px rgba(125, 255, 154, 0.7);
+}
+
+.bf-port {
+  position: absolute;
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  top: 50%;
+  border: 1px solid var(--crt-line);
+  border-radius: 50%;
+  background: var(--crt-bg);
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+  cursor: crosshair;
+}
+
+.bf-port.is-in {
+  left: -5px;
+  right: auto;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  cursor: default;
+}
+
+.bf-port.is-yes {
+  color: var(--crt-fg);
+}
+
+.bf-port.is-no {
+  color: var(--bf-no);
+}
+
+.bf-port:hover {
+  background: var(--crt-faint);
+}
+
+/* ---- inspector ---- */
+
+.bf-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--crt-faint);
+  border-radius: 6px;
+}
+
+.bf-inspector.is-empty {
+  color: var(--crt-dim);
+}
+
+.bf-inspector .bf-row .bf-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.bf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bf-field > span {
+  color: var(--crt-dim);
+}
+
+.bf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.bf-examples {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.bf-examples li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.bf-examples button {
+  margin-left: auto;
+  padding: 0 5px;
+}
+
+.bf-lab .is-yes {
+  color: var(--crt-fg);
+}
+
+.bf-lab b.is-no,
+.bf-lab button.is-no {
+  color: var(--bf-no);
+}
+
+.bf-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--crt-faint);
+  padding-top: 6px;
+}
+
+.bf-pre {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 13px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--crt-fg);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  border-radius: 3px;
+}
+
+.bf-pre.is-error {
+  color: var(--bf-err);
+}
+
+/* ---- run ---- */
+
+.bf-run {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 0.8fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.bf-run > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--crt-faint);
+  border-radius: 6px;
+}
+
+.bf-progress {
+  color: var(--crt-dim);
+  min-height: 1.3em;
+}
+
+.bf-paste {
+  flex: 1;
+}
+
+.bf-msgs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  flex: 1;
+}
+
+.bf-msgs li {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(47, 154, 74, 0.18);
+}
+
+.bf-msgs li.is-open {
+  background: rgba(143, 177, 255, 0.1);
+}
+
+.bf-lab .bf-msgs button {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0 2px;
+  text-align: left;
+  text-transform: none;
+}
+
+.bf-clock {
+  color: var(--crt-dim);
+}
+
+.bf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 2px 4px 46px;
+}
+
+.bf-chips i {
+  color: var(--crt-faint);
+}
+
+.bf-chip {
+  padding: 0 6px;
+  border: 1px solid var(--crt-line);
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.bf-chip.is-span {
+  border-color: var(--bf-cornflower);
+  color: var(--bf-cornflower);
+}
+
+.bf-chip.is-add-to-list,
+.bf-chip.is-habit-done {
+  border-color: var(--bf-seafoam);
+  color: var(--bf-seafoam);
+}
+
+.bf-est {
+  color: var(--crt-dim);
+}
+
+.bf-why {
+  padding-left: 46px;
+  font-size: 13px;
+  color: var(--crt-dim);
+}
+
+@media (max-width: 900px) {
+  .bf-lab {
+    position: static;
+    min-height: 100vh;
+    grid-template-rows: auto 60vh auto;
+    overflow: visible;
+    padding: 8px 16px;
+  }
+
+  .bf-main,
+  .bf-run {
+    grid-template-columns: 1fr;
+  }
+
+  .bf-run > div {
+    max-height: 50vh;
+  }
+}

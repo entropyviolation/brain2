@@ -10,6 +10,7 @@ describe("buildModuleTemplate", () => {
       "book-tasting",
       "filmrecs",
       "gradsearch",
+      "sweep",
       "blank",
     ])
   })
@@ -169,6 +170,15 @@ describe("buildModuleTemplate", () => {
     expect(built.seedTasks).toEqual([])
     const kinds = (built.module.views ?? []).map((v) => v.kind)
     expect(kinds).toEqual(["grad-search"])
+  })
+
+  it("builds a Sweep workspace with one view and no lists", () => {
+    const built = buildModuleTemplate("sweep", 14)
+    expect(built.module.templateId).toBe("sweep")
+    expect(built.module.title).toBe("Sweep")
+    expect(built.lists).toEqual([])
+    expect(built.seedTasks).toEqual([])
+    expect((built.module.views ?? []).map((v) => v.kind)).toEqual(["sweep"])
   })
 
   it("every view + workflow across all templates references real categories", () => {

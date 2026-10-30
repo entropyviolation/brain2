@@ -1,7 +1,7 @@
 /**
  * components/Reviews/PostMortemDialog.tsx — Task post-mortem (Brain2 #40)
  *
- * A later reflection, opened from Reflect on a period ritual or from Analytics.
+ * A later reflection, opened from Reflect on a period ritual or from Data.
  * It is not the completion popup. That popup (`CompletionDialog`) is what
  * appears when a task is marked done: goals, objectives, the clock, the quick
  * review, and its points. This dialog only adds the older 1–10 notes

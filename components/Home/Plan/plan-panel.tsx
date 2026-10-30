@@ -11,6 +11,8 @@
  * `brain2-plan-dark`); gem-and-trinket mode sits beside it (persist
  * `brain2-plan-gem-mode`). Both default off. Labels flip with the latch:
  * Dark → "light mode"; Gem and trinket → "no gem no trinket".
+ * A phone-width viewport (`use-plan-phone.ts`, max-width 767px) mounts
+ * `plan-phone.tsx` instead of this fascia. The desktop tree below stays as it is.
  *
  * Spec: §7.4 (calendar views), §8.5 (Plan panel).
  */
@@ -22,22 +24,24 @@ import { TaskDetailPopup } from "@/components/ItemDetail/ItemDetailPopup"
 import { orbFor } from "@/components/Icons"
 import type { CalendarEvent } from "@/lib/types"
 import type { PlannedAction } from "@/lib/planned-actions"
-import { SeasonView } from "./season-view"
-import { MonthView } from "./month-view"
-import { WeekView } from "./week-view"
-import { DayView } from "./day-view"
+import { SeasonView } from "./views/season-view"
+import { MonthView } from "./views/month-view"
+import { WeekView } from "./views/week-view"
+import { DayView } from "./views/day-view"
 import { EventDialog, type EventDraft } from "./event-dialog"
 import { PlannedActionDialog } from "./planned-action-dialog"
-import { PasteEventsDialog } from "./paste-events-dialog"
+import { PasteEventsDialog } from "./dialogs/paste-events-dialog"
 import { useEventStore } from "@/lib/event-store"
-import { SettingsDialog } from "./settings-dialog"
+import { SettingsDialog } from "./dialogs/settings-dialog"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { usePersistedTab } from "@/lib/use-persisted-tab"
 import { format } from "date-fns"
 import { PLAN_DEFAULT_EVENT_COLOR, resolvePlanColor } from "./plan-chip"
 import { usePlanDarkMode } from "./plan-theme"
-import { usePlanGemMode } from "./plan-gem-mode"
-import { PlanGemModeToggle } from "./plan-gem-mode-toggle"
+import { usePlanGemMode } from "./gem/plan-gem-mode"
+import { PlanGemModeToggle } from "./gem/plan-gem-mode-toggle"
+import { PlanPhone } from "./phone/plan-phone"
+import { usePlanPhone } from "./phone/use-plan-phone"
 import "./plan-chrome.css"
 
 const PLAN_TABS = ["quarter", "month", "week", "day"] as const
@@ -86,6 +90,7 @@ export function PlanPanel({
   const [planTab, setPlanTab] = usePersistedTab(APP_NAV_KEYS.homePlanTab, PLAN_TABS, "month")
   const [planDark, setPlanDark] = usePlanDarkMode()
   const [gemMode, setGemMode] = usePlanGemMode()
+  const phone = usePlanPhone()
 
   useEffect(() => {
     setNewEvent((prev) => ({ ...prev, date: currentDate }))
@@ -152,6 +157,88 @@ export function PlanPanel({
   const eventCount = events.length
   const eventLabel = `${eventCount} event(s)`
 
+  const dialogs = (
+    <>
+      <EventDialog
+        open={showEventDialog}
+        onOpenChange={setShowEventDialog}
+        editingEvent={editingEvent}
+        setEditingEvent={setEditingEvent}
+        newEvent={newEvent}
+        setNewEvent={setNewEvent}
+        events={events}
+        setEvents={(nextEvents) => {
+          if (editingEvent) {
+            const updatedEvent = nextEvents.find((e) => e.id === editingEvent.id)
+            if (updatedEvent) updateEvent(updatedEvent)
+          } else {
+            const newEventToAdd = nextEvents[nextEvents.length - 1]
+            if (newEventToAdd) addEvent(newEventToAdd)
+          }
+        }}
+      />
+
+      <PlannedActionDialog
+        open={showPlanDialog}
+        onOpenChange={(open) => {
+          setShowPlanDialog(open)
+          if (!open) setPlanDialogAction(null)
+        }}
+        action={planDialogAction}
+        createDate={currentDate}
+      />
+
+      <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
+
+      <PasteEventsDialog open={showPasteDialog} onOpenChange={setShowPasteDialog} />
+
+      <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+    </>
+  )
+
+  if (phone) {
+    return (
+      <div
+        className="plan95"
+        data-plan-phone="true"
+        data-plan-dark={planDark ? "true" : "false"}
+        data-ui-name="Plan"
+        data-ui-help="Prospective calendar: Season, Month, Week, and Day plus written intentions — not what was lived."
+        data-temporal="prospective"
+        data-ui-docs="components/Home/Plan/README.md"
+      >
+        <PlanPhone
+          currentDate={currentDate}
+          setCurrentDate={setCurrentDate}
+          planTab={planTab}
+          setPlanTab={setPlanTab}
+          events={events}
+          planDark={planDark}
+          setPlanDark={setPlanDark}
+          gemMode={gemMode}
+          setGemMode={setGemMode}
+          onOpenDay={handleOpenDay}
+          onOpenMonth={(date) => {
+            setCurrentDate(date)
+            setPlanTab("month")
+          }}
+          onTaskClick={handleTaskClick}
+          onEventClick={handleEventClick}
+          onCreateEvent={handleCreateEvent}
+          onAddEvent={() => setShowEventDialog(true)}
+          onAddPlan={() => {
+            setPlanDialogAction(null)
+            setShowPlanDialog(true)
+          }}
+          onPlannedAction={handleOpenPlannedAction}
+          onPaste={() => setShowPasteDialog(true)}
+          onSettings={() => setShowSettingsDialog(true)}
+        />
+        {dialogs}
+      </div>
+    )
+  }
+
   return (
     <div
       className="plan95"
@@ -191,7 +278,7 @@ export function PlanPanel({
                   Add Plan
                 </button>
               </div>
-              <TabsList className="plan-view-keys">
+              <TabsList className="plan-view-keys b2-keycap-tab">
                 <TabsTrigger value="quarter">Season</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
                 <TabsTrigger value="week">Week</TabsTrigger>
@@ -278,40 +365,7 @@ export function PlanPanel({
         </div>
       </div>
 
-      <EventDialog
-        open={showEventDialog}
-        onOpenChange={setShowEventDialog}
-        editingEvent={editingEvent}
-        setEditingEvent={setEditingEvent}
-        newEvent={newEvent}
-        setNewEvent={setNewEvent}
-        events={events}
-        setEvents={(nextEvents) => {
-          if (editingEvent) {
-            const updatedEvent = nextEvents.find((e) => e.id === editingEvent.id)
-            if (updatedEvent) updateEvent(updatedEvent)
-          } else {
-            const newEventToAdd = nextEvents[nextEvents.length - 1]
-            if (newEventToAdd) addEvent(newEventToAdd)
-          }
-        }}
-      />
-
-      <PlannedActionDialog
-        open={showPlanDialog}
-        onOpenChange={(open) => {
-          setShowPlanDialog(open)
-          if (!open) setPlanDialogAction(null)
-        }}
-        action={planDialogAction}
-        createDate={currentDate}
-      />
-
-      <SettingsDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
-
-      <PasteEventsDialog open={showPasteDialog} onOpenChange={setShowPasteDialog} />
-
-      <TaskDetailPopup taskId={selectedTaskId} open={!!selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      {dialogs}
     </div>
   )
 }

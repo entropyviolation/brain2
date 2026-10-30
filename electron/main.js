@@ -14,6 +14,7 @@
  * (spec §3; local `mongod` or Atlas) would be initialized here.
  */
 const { app, BrowserWindow, shell, protocol, net, globalShortcut, ipcMain } = require("electron")
+const { brain2Env } = require("../lib/brain2-env.cjs")
 const path = require("path")
 const fs = require("fs")
 const { pathToFileURL } = require("url")
@@ -22,6 +23,7 @@ const { createSharedPersistCache, hubRevArgument } = require("./persist-hub-cach
 const { createStaticFileResolver } = require("./static-file")
 const { LINK_SCHEME_PRIVILEGES, registerFileLinkIpc } = require("./file-links")
 const { INSTAGRAM_SCHEME_PRIVILEGES, registerInstagramIpc } = require("./instagram-ipc")
+const { isAppNavigationUrl, isBlankPopup, openExternalWeb } = require("./external-url")
 
 const isDev = !app.isPackaged
 
@@ -61,10 +63,26 @@ const FETCH_APPLE_NOTES_IPC_CHANNEL = "cogs:notes:fetchAppleNotes"
 // ActivityWatch screen time. MUST match `fetchScreenTime` in electron/ipc/channels.js +
 // `window.desktop.fetchScreenTime` in electron/preload.js.
 const FETCH_SCREENTIME_IPC_CHANNEL = "cogs:screentime:fetchScreenTime"
-// Analytics → Texts. MUST match the preload and electron/ipc/channels.js.
+// Data → Texts. MUST match the preload and electron/ipc/channels.js.
 const TEXTS_ENSURE_SERVER_IPC_CHANNEL = "cogs:texts:ensureServer"
 const TEXTS_STATUS_IPC_CHANNEL = "cogs:texts:status"
 const TEXTS_REFRESH_IPC_CHANNEL = "cogs:texts:refresh"
+
+// NFC tag shortcut. MUST match electron/nfc-shortcut.js + preload.
+function registerNfcShortcutIpcHandlers() {
+  const { registerNfcShortcutIpc } = require("./nfc-shortcut")
+  registerNfcShortcutIpc()
+}
+
+function registerCodeDocsIpcHandlers() {
+  const { registerCodeDocsIpcHandlers: register } = require("./code-docs")
+  register()
+}
+
+function registerSweepIpcHandlers() {
+  const { registerSweepIpc } = require("./sweep")
+  registerSweepIpc({ ipcMain, shell, app })
+}
 
 // Dev persist hub (Chrome localhost snapshot). MUST match preload.
 const GET_SHARED_PERSIST_IPC_CHANNEL = "cogs:persist:getShared"
@@ -92,7 +110,7 @@ protocol.registerSchemesAsPrivileged([
   },
   // Linked resources stream from disk into the preview well (`file-links.js`).
   LINK_SCHEME_PRIVILEGES,
-  // Analytics → Sources → Instagram report, built from the export (`instagram-ipc.js`).
+  // Data → Sources → Instagram report, built from the export (`instagram-ipc.js`).
   INSTAGRAM_SCHEME_PRIVILEGES,
 ])
 
@@ -111,33 +129,25 @@ function createWindow() {
   })
 
   win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
-    console.error(`[cogs] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`)
+    console.error(`[brain2] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`)
     if (isDev) {
-      console.error(`[cogs] expected the Next dev server at ${DEV_SERVER_URL}.`)
-      console.error("[cogs] If another node process is stuck on port 3000, kill it and rerun npm run electron:dev.")
+      console.error(`[brain2] expected the Next dev server at ${DEV_SERVER_URL}.`)
+      console.error("[brain2] If another node process is stuck on port 3000, kill it and rerun npm run electron:dev.")
     }
   })
 
   if (isDev) {
     win.loadURL(DEV_SERVER_URL)
     // Detached DevTools on this vault doubles the renderer cost. Opt in with
-    // COGS_DEVTOOLS=1; otherwise Cmd-Opt-I still opens them.
-    if (process.env.COGS_DEVTOOLS === "1") {
+    // BRAIN2_DEVTOOLS=1; otherwise Cmd-Opt-I still opens them.
+    if (brain2Env("DEVTOOLS") === "1") {
       win.webContents.openDevTools({ mode: "detach" })
     }
   } else {
     win.loadURL("app://local/")
   }
 
-  // Open external links (http/https) in the user's default browser instead of
-  // inside the desktop window.
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url)
-      return { action: "deny" }
-    }
-    return { action: "allow" }
-  })
+  installAppNavigationGuard(win)
 
   mainWindow = win
   win.on("closed", () => {
@@ -174,7 +184,7 @@ async function extractPdfText(dataUrl) {
     const result = await pdfParse(buffer)
     return (result && typeof result.text === "string" ? result.text : "").trim()
   } catch (err) {
-    console.warn("[cogs] PDF text extraction unavailable:", err && err.message)
+    console.warn("[brain2] PDF text extraction unavailable:", err && err.message)
     return ""
   }
 }
@@ -205,12 +215,12 @@ function resolvePopoutLoadURL(target) {
     pathAndQuery = `/popout/?sheet=${id}`
   } else if (target.startsWith("/popout")) {
     try {
-      const parsed = new URL(target, "https://cogs.local")
+      const parsed = new URL(target, "https://brain2.local")
       if (parsed.pathname !== "/popout" && parsed.pathname !== "/popout/") return null
       const moduleId = parsed.searchParams.get("module")
       const sheetId = parsed.searchParams.get("sheet")
       const view = parsed.searchParams.get("view")
-      // Whole views that open on their own (Analytics → Texts). Named here, never free text.
+      // Whole views that open on their own (Data → Texts). Named here, never free text.
       if (view && !moduleId && !sheetId) {
         if (view !== "texts") return null
         pathAndQuery = "/popout/?view=texts"
@@ -262,14 +272,7 @@ function openPopoutWindow(target) {
   })
 
   win.loadURL(url)
-
-  win.webContents.setWindowOpenHandler(({ url: opened }) => {
-    if (opened.startsWith("http://") || opened.startsWith("https://")) {
-      shell.openExternal(opened)
-      return { action: "deny" }
-    }
-    return { action: "allow" }
-  })
+  installAppNavigationGuard(win)
 }
 
 /** Register the module pop-out IPC handler. */
@@ -288,12 +291,71 @@ function windowWebPreferences() {
     preload: path.join(__dirname, "preload.js"),
     contextIsolation: true,
     nodeIntegration: false,
+    nodeIntegrationInWorker: false,
+    nodeIntegrationInSubFrames: false,
     sandbox: true,
+    webSecurity: true,
+    allowRunningInsecureContent: false,
+    webviewTag: false,
     // Default Blink waits until a script is hot, so each pop-out recompiles
     // the same Next bundles. Cache on the first compile instead.
     v8CacheOptions: "bypassHeatCheck",
     additionalArguments: [hubRevArgument(sharedPersist.revToken())],
   }
+}
+
+/**
+ * Keep the preload on the app origin. http(s) leaves via the system browser.
+ * A print popup (`about:blank`) gets an empty preload, not `window.desktop`.
+ * Login windows are separate and do not call this.
+ */
+function installAppNavigationGuard(win) {
+  const stayOrLeave = (event, url) => {
+    if (isAppNavigationUrl(url, { isDev })) return
+    event.preventDefault()
+    openExternalWeb(shell, url)
+  }
+  win.webContents.on("will-navigate", stayOrLeave)
+  win.webContents.on("will-redirect", stayOrLeave)
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isBlankPopup(url)) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            preload: path.join(__dirname, "blank-preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+            nodeIntegrationInWorker: false,
+            nodeIntegrationInSubFrames: false,
+            sandbox: true,
+            webSecurity: true,
+            webviewTag: false,
+          },
+        },
+      }
+    }
+    openExternalWeb(shell, url)
+    return { action: "deny" }
+  })
+  win.webContents.on("will-attach-webview", (event) => {
+    event.preventDefault()
+  })
+}
+
+/** Microphone, location, and clipboard prompts. Other prompts are refused. */
+function installPermissionGuard(ses) {
+  const allow = new Set([
+    "media",
+    "geolocation",
+    "clipboard-read",
+    "clipboard-sanitized-write",
+    "fullscreen",
+    "notifications",
+  ])
+  ses.setPermissionRequestHandler((_contents, permission, callback) => {
+    callback(allow.has(permission))
+  })
 }
 
 /** Read the Chrome-seeded hub file. Never writes Chrome's profile. */
@@ -327,7 +389,7 @@ function hydrateIndexedDBFromChromeSnapshot() {
     const lock = path.join(dest, "LOCK")
     if (fs.existsSync(lock)) fs.rmSync(lock)
   } catch (err) {
-    console.warn("[cogs] IndexedDB hydrate skipped:", err && err.message)
+    console.warn("[brain2] IndexedDB hydrate skipped:", err && err.message)
   }
 }
 
@@ -349,7 +411,7 @@ function registerScreenTimeIpcHandlers() {
   })
 }
 
-/** Analytics → Texts: start the loopback report server, read status, refresh. Weekly run. */
+/** Data → Texts: start the loopback report server, read status, refresh. Weekly run. */
 function registerTextsIpcHandlers() {
   // eslint-disable-next-line global-require
   const texts = require("./texts-report")
@@ -419,6 +481,8 @@ function registerQuickCaptureShortcut() {
 }
 
 app.whenReady().then(async () => {
+  const { session } = require("electron")
+  installPermissionGuard(session.defaultSession)
   if (!isDev) {
     protocol.handle("app", (request) => {
       const { pathname } = new URL(request.url)
@@ -446,11 +510,14 @@ app.whenReady().then(async () => {
     registerSpotifyAccountsIpcHandlers,
     registerTextsIpcHandlers,
     registerInstagramIpcHandlers,
+    registerNfcShortcutIpcHandlers,
+    registerCodeDocsIpcHandlers,
+    registerSweepIpcHandlers,
   ]) {
     try {
       register()
     } catch (err) {
-      console.error(`[cogs] ${register.name} failed:`, err)
+      console.error(`[brain2] ${register.name} failed:`, err)
     }
   }
 

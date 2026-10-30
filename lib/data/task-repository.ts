@@ -16,7 +16,49 @@ import type { ItemRecord, List, Folder } from "@/lib/types"
 import { useTaskStore } from "@/lib/task-store"
 import { parseOrThrow, taskSchema } from "@/lib/data/schemas"
 import { repairStoredTaskStatus } from "@/lib/completion-status"
+
+const TASK_STAGES = new Set(["inbox", "clarified", "scheduled", "completed", "list"])
+
+/**
+ * The phone copy keeps a short name and can omit the fields a save requires.
+ * Fill those from what is still on the row so opening the hub does not throw.
+ * A missing createdAt prefers a date the row already has.
+ */
+export function repairPhoneSlimTask<
+  T extends {
+    description?: unknown
+    title?: unknown
+    lists?: unknown
+    stage?: unknown
+    completed?: unknown
+    createdAt?: unknown
+    scheduledDate?: unknown
+    completedDate?: unknown
+    deadline?: unknown
+  },
+>(task: T): T {
+  if (!task || typeof task !== "object") return task
+  const descriptionMissing = typeof task.description !== "string"
+  const listsMissing = !Array.isArray(task.lists)
+  const stageMissing = typeof task.stage !== "string" || !TASK_STAGES.has(task.stage)
+  const completedMissing = typeof task.completed !== "boolean"
+  const createdMissing = task.createdAt == null || task.createdAt === ""
+  if (!descriptionMissing && !listsMissing && !stageMissing && !completedMissing && !createdMissing) {
+    return task
+  }
+  return {
+    ...task,
+    description: descriptionMissing ? (typeof task.title === "string" ? task.title : "") : task.description,
+    lists: listsMissing ? [] : task.lists,
+    stage: stageMissing ? "inbox" : task.stage,
+    completed: completedMissing ? false : task.completed,
+    createdAt: createdMissing
+      ? (task.scheduledDate ?? task.completedDate ?? task.deadline ?? "1970-01-01T00:00:00.000Z")
+      : task.createdAt,
+  }
+}
 import { addLink as addLinkTo, removeLink as removeLinkFrom } from "@/lib/links"
+import type { ItemActivityMeta } from "@/lib/item-activity"
 
 export interface TaskRepository {
   getAll(): ItemRecord[]
@@ -27,8 +69,9 @@ export interface TaskRepository {
   /**
    * Update an item record (delegates to `updateTask`).
    * `patch`, when passed, rides on the store's existing mutation event.
+   * `activity` is the History line's source and order. The store writes the lines.
    */
-  update(item: ItemRecord, patch?: Record<string, unknown>): ItemRecord
+  update(item: ItemRecord, patch?: Record<string, unknown>, activity?: ItemActivityMeta): ItemRecord
   remove(id: string): void
   getLists(): List[]
   getFolders(): Folder[]
@@ -59,16 +102,16 @@ export const taskRepository: TaskRepository = {
   },
 
   add(item) {
-    const repaired = repairStoredTaskStatus(item)
+    const repaired = repairPhoneSlimTask(repairStoredTaskStatus(item))
     parseOrThrow(taskSchema, repaired, "task")
     useTaskStore.getState().addTask(repaired)
     return repaired
   },
 
-  update(item, patch) {
-    const repaired = repairStoredTaskStatus(item)
+  update(item, patch, activity) {
+    const repaired = repairPhoneSlimTask(repairStoredTaskStatus(item))
     parseOrThrow(taskSchema, repaired, "task")
-    useTaskStore.getState().updateTask(repaired, patch)
+    useTaskStore.getState().updateTask(repaired, patch, activity)
     return repaired
   },
 

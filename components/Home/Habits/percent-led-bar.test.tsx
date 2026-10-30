@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { resetAllStores } from "@/tests/test-utils"
 import { useHabitsStore } from "@/lib/habits-store"
 import { PercentLedBar } from "./percent-led-bar"
-import { HabitPercentReadout } from "./habit-percent-readout"
+import { HabitPercentReadout } from "./sheet/habit-percent-readout"
 import "./habit-grid.css"
 
 describe("PercentLedBar", () => {

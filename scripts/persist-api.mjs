@@ -20,6 +20,12 @@
  * are shrink-protected the same way; a profile that already has the key
  * keeps it instead of taking a larger historical hub map.
  * Canonical keys are `brain2-*`; `cogs-*` is a lossless alias.
+ * `GET /api/persist?canon=1` sends one key per vault: the `cogs-*` twin is
+ * omitted when `brain2-*` is present. The file still stores both.
+ * A phone write is `POST { name, patch, source: "phone" }`. `applyVaultPatch`
+ * folds that patch onto the stored blob; the result then takes the same merge
+ * and recovery journal as a desktop POST. `POST { name, value, source: "phone" }`
+ * is refused. Desktop `{ name, value }` is unchanged.
  * Identical values are not rewritten, so a poll tick cannot bump the file mtime.
  * Empty plan-text values (`monthPlan-*` / `weekPlan-*` / `dayPlan-*` as `""`)
  * are deleted, not stored — they re-seeded a blank Month Plan on refresh.
@@ -43,6 +49,9 @@ import fs from "node:fs"
 import path from "node:path"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
+import { guardBrowserOrigin } from "../lib/ingest/request-origin.mjs"
+import { applyVaultPatch } from "../lib/vault-guard.js"
+import { readBody } from "./local-api-json.mjs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
@@ -75,11 +84,12 @@ const DEFAULT_FLUSH_MS = 1000
  * process changed it), writes are debounced and atomic, and exit flushes.
  *
  * In memory each vault is stored once, under its `brain2-*` name (`items`). On
- * disk and over the wire both `brain2-*` and `cogs-*` are still emitted: the
- * Electron preload, `lib/persist-storage.ts` and the phone hub look keys up by
- * either name, and an old file with twin keys must keep loading. Reads expand
- * the one copy back to both names. If a twin pair ever disagrees on disk, the
- * `brain2-*` copy wins, as it already did for every merge.
+ * disk, and on a normal GET, both `brain2-*` and `cogs-*` are still emitted:
+ * the Electron preload, `lib/persist-storage.ts` and the phone hub look keys up
+ * by either name, and an old file with twin keys must keep loading. Reads expand
+ * the one copy back to both names. `?canon=1` drops the `cogs-*` twin on the
+ * wire only. If a twin pair ever disagrees on disk, the `brain2-*` copy wins,
+ * as it already did for every merge.
  */
 const hub = {
   file: DEFAULT_DATA_FILE,
@@ -140,7 +150,7 @@ function collapseAliases(items) {
   return out
 }
 
-/** Both names for every vault: the shape on disk and over the wire. */
+/** Both names for every vault: the shape on disk and on a normal GET. */
 function expandAliases(items) {
   const out = {}
   for (const key of Object.keys(items)) {
@@ -148,6 +158,23 @@ function expandAliases(items) {
     if (key.startsWith("brain2-")) out["cogs-" + key.slice(7)] = items[key]
   }
   return out
+}
+
+/** `?canon=1` wire shape. One key per vault; disk still stores both aliases. */
+function omitCogsTwins(items) {
+  const out = {}
+  for (const key of Object.keys(items)) {
+    if (key.startsWith("cogs-") && Object.prototype.hasOwnProperty.call(items, "brain2-" + key.slice(5))) continue
+    out[key] = items[key]
+  }
+  return out
+}
+
+function persistQuery(req) {
+  const raw = typeof req?.url === "string" ? req.url : ""
+  const q = raw.indexOf("?")
+  if (q < 0) return new URLSearchParams()
+  return new URLSearchParams(raw.slice(q + 1))
 }
 
 function fileSig() {
@@ -441,13 +468,57 @@ export function upsertSharedPersistItem(name, value, source) {
   return view()
 }
 
+function phonePatchReason(result) {
+  if (result && typeof result.reason === "string" && result.reason) return result.reason
+  if (result && typeof result.error === "string" && result.error) return result.error
+  return "patch refused"
+}
+
+function rejectPhoneWrite(res, reason) {
+  sendJson(res, 409, { ok: false, error: reason, reason })
+}
+
+/**
+ * Phone saves are a patch, then the same merge a desktop POST uses.
+ * A whole-store body is refused before that merge, so it cannot write.
+ */
+function handlePhonePersistPost(res, body) {
+  if (Object.prototype.hasOwnProperty.call(body, "value")) {
+    rejectPhoneWrite(res, "phone whole-store write refused")
+    return
+  }
+  if (typeof body.name !== "string" || !body.patch || typeof body.patch !== "object" || Array.isArray(body.patch)) {
+    sendJson(res, 400, { ok: false, error: "Expected { name, patch }" })
+    return
+  }
+  syncFromDisk()
+  const storedJson = existingVaultItem(body.name)
+  let result
+  try {
+    result = applyVaultPatch(body.name, storedJson, body.patch)
+  } catch (err) {
+    rejectPhoneWrite(res, err instanceof Error ? err.message : "patch refused")
+    return
+  }
+  if (!result || result.ok !== true || typeof result.value !== "string") {
+    rejectPhoneWrite(res, phonePatchReason(result))
+    return
+  }
+  const stored = upsertSharedPersistItem(body.name, result.value, body.source)
+  sendJson(res, 200, {
+    ok: true,
+    skipped: stored.skipped ?? false,
+    updatedAt: stored.updatedAt,
+  })
+}
+
 function sendJson(res, status, body) {
   const json = JSON.stringify(body)
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(json),
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
+    "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
   })
   res.end(json)
@@ -518,15 +589,6 @@ export function vaultDropReason(name, existing, incoming, refused) {
 function journalVaultDrop(name, existing, incoming, refused) {
   const reason = vaultDropReason(name, existing, incoming, refused)
   if (reason) journalVaultSnapshot(name, existing, reason)
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    req.on("data", (c) => chunks.push(c))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
-    req.on("error", reject)
-  })
 }
 
 /** Safe filename only — never creates the folder, never writes a snapshot. */
@@ -609,15 +671,17 @@ function handleRecoveryBackupsApi(req, res, pathname) {
 
 /** @returns {Promise<boolean>} true if handled */
 export async function handlePersistApi(req, res, pathname) {
-  if (pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")) {
-    return handleRecoveryBackupsApi(req, res, pathname)
-  }
+  const recovery = pathname === "/api/recovery-backups" || pathname.startsWith("/api/recovery-backups/")
+  const persist = pathname === "/api/persist" || pathname === "/api/persist/health"
+  if (!recovery && !persist) return false
+  if (!guardBrowserOrigin(req, res)) return true
+  if (recovery) return handleRecoveryBackupsApi(req, res, pathname)
   if (pathname !== "/api/persist" && pathname !== "/api/persist/health") return false
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Accept",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
       "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     })
     res.end()
@@ -637,7 +701,9 @@ export async function handlePersistApi(req, res, pathname) {
   }
 
   if (req.method === "GET") {
-    sendJson(res, 200, { ok: true, ...readSharedPersist() })
+    const stored = readSharedPersist()
+    if (persistQuery(req).get("canon") === "1") stored.items = omitCogsTwins(stored.items)
+    sendJson(res, 200, { ok: true, ...stored })
     return true
   }
 
@@ -662,8 +728,18 @@ export async function handlePersistApi(req, res, pathname) {
   }
 
   if (req.method === "POST") {
+    let body
     try {
-      const body = JSON.parse((await readBody(req)) || "{}")
+      body = JSON.parse((await readBody(req)) || "{}")
+    } catch (err) {
+      sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : "Invalid JSON" })
+      return true
+    }
+    if (body && body.source === "phone") {
+      handlePhonePersistPost(res, body)
+      return true
+    }
+    try {
       if (typeof body.name !== "string" || typeof body.value !== "string") {
         sendJson(res, 400, { ok: false, error: "Expected { name, value }" })
         return true

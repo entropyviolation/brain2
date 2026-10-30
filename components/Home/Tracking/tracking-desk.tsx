@@ -16,19 +16,21 @@
 "use client"
 
 import { useState } from "react"
+import { TrackingPhone } from "@/components/Home/Tracking/phone/tracking-phone"
+import { useTrackingPhone } from "@/components/Home/Tracking/phone/use-tracking-phone"
 import { TrackingDeskSlotsContext } from "@/components/Home/Tracking/tracking-desk-slots"
 import { ScopePanel } from "@/components/Home/Tracking/trk-scope"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TimeGrid } from "@/components/Home/Tracking/time-grid"
 import { ActualDayView } from "@/components/Home/Tracking/actual-day-view"
 import { TrackingActivityLog } from "@/components/Home/Tracking/tracking-activity-log"
-import { TrackingLogView } from "@/components/Home/Tracking/tracking-log-view"
+import { TrackingLogView } from "@/components/Home/Tracking/tracking-log/tracking-log-view"
 import { WorkingNowStrip } from "@/components/Home/Tracking/working-now-strip"
 import { PenColorNowStrip } from "@/components/Home/Tracking/pen-color-now-strip"
 import { TrackingDayNotes } from "@/components/Home/Tracking/tracking-day-notes"
 import { PenPalette } from "@/components/Home/Tracking/pen-palette"
 import { PenModeDeck } from "@/components/Home/Tracking/pen-mode-bar"
-import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/tracking-view-settings-dialog"
+import { TrackingSettingsDialog, type TrackingSettingsSection } from "@/components/Home/Tracking/settings/tracking-view-settings-dialog"
 import { LogActivityLatch } from "@/components/Home/Tracking/log-activity-dialog"
 import { APP_NAV_KEYS } from "@/lib/app-navigation"
 import { formatLocalDateKey } from "@/lib/date-utils"
@@ -61,6 +63,18 @@ export function TrackingDesk({
   const showPenDesk = trackingTab !== "log"
   const [summarySlot, setSummarySlot] = useState<HTMLDivElement | null>(null)
   const dateKey = formatLocalDateKey(currentDate)
+  const phone = useTrackingPhone()
+
+  if (phone) {
+    return (
+      <TrackingPhone
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        trackingTab={trackingTab}
+        setTrackingTab={setTrackingTab}
+      />
+    )
+  }
 
   return (
     <div
@@ -79,7 +93,7 @@ export function TrackingDesk({
                 <h2>Tracking</h2>
               </div>
               <div className="trk-view-bay">
-                <div className="hab-view-changer trk-view-keys">
+                <div className="hab-view-changer trk-view-keys b2-keycap-tab">
                   <TabsList aria-label="Tracking view">
                     <TabsTrigger value="grid">Time Grid</TabsTrigger>
                     <TabsTrigger value="activity">Activity Log</TabsTrigger>

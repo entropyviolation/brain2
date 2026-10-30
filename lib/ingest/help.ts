@@ -29,6 +29,7 @@ Habits (dh: then the keyword)
 • A bare keyword is not a habit log
 Events (whole message, or log: / intake:)
 • smoked weed  ·  drank water  ·  ate egg salad  ·  took 2 adderall
+• nfc:vitamin-d  — a saved NFC tag. Settings → NFC tags. nfc:adderall 2 sets the count. Same tag within 20 seconds is ignored.
 • log: left room  ·  log: left room at 3:30 loc: home  ·  log: shower 10m  ·  log: START walk
   A line under the event is the note. The clock stays on the first line.
   est / estimated / ~ is estimated. unknown keeps the minute. loc: names a Location pen.
@@ -208,7 +209,7 @@ READ
 ALWAYS ON
 Pinned grocery card survives a closed laptop. For live replies 24/7:
   npm run phone:hub
-Webhook: COGS_TELEGRAM_WEBHOOK on the hub. One Telegram poller at a time.
+Webhook: BRAIN2_TELEGRAM_WEBHOOK on the hub. One Telegram poller at a time.
 
 PAIR
 • pair: 123456  |  /start 123456 — from Settings → Message ingest

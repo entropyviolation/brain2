@@ -7,6 +7,7 @@
  * `commitItemEdit`. Nothing here is a private database.
  */
 import { commitItemEdit } from "@/lib/commit-item-edit"
+import type { ItemWriteAttribution } from "@/lib/item-write-source"
 import { withStatus } from "@/lib/completion-status"
 import { parseLocalDate } from "@/lib/date-utils"
 import { clearEstimates, makeEstimate, mergeEstimates } from "@/lib/estimated-values"
@@ -26,6 +27,8 @@ export type HeaderPlanStep = {
   title: string
   minutes: number
 }
+
+const HEADER_TRACKING: ItemWriteAttribution = { surface: "header-tracking" }
 
 function rid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -62,23 +65,26 @@ export function createHeaderPlan(input: {
     const times = timesFromStartAndDuration(cursor, action.minutes)
     cursor = hhmmToMinutes(times.endTime)
     const id = rid(`htk${index}`)
-    useTaskStore.getState().addTask({
-      id,
-      title: action.title,
-      description: action.title,
-      type: "item",
-      stage: "scheduled",
-      lists: [],
-      createdAt,
-      completed: false,
-      tags: [],
-      links: [],
-      scheduledDate: day,
-      scheduledTime: times.startTime,
-      estimatedDuration: action.minutes,
-      startCertainty: input.startEstimated ? "estimated" : "exact",
-      attributes: { headerTracking: "plan" },
-    })
+    useTaskStore.getState().addTask(
+      {
+        id,
+        title: action.title,
+        description: action.title,
+        type: "item",
+        stage: "scheduled",
+        lists: [],
+        createdAt,
+        completed: false,
+        tags: [],
+        links: [],
+        scheduledDate: day,
+        scheduledTime: times.startTime,
+        estimatedDuration: action.minutes,
+        startCertainty: input.startEstimated ? "estimated" : "exact",
+        attributes: { headerTracking: "plan" },
+      },
+      HEADER_TRACKING,
+    )
     const placement = makePlannedAction({
       date: input.date,
       startTime: times.startTime,
@@ -103,7 +109,7 @@ export function renameHeaderPlanAction(actionId: string, title: string): void {
   if (!next || !action || next === action.title) return
   usePlannedActionStore.getState().updateAction({ ...action, title: next })
   if (action.sourceId && taskById(action.sourceId)) {
-    commitItemEdit(action.sourceId, { title: next }, "header-tracking", "observed")
+    commitItemEdit(action.sourceId, { title: next }, HEADER_TRACKING, "observed")
   }
 }
 
@@ -121,7 +127,7 @@ export function retimesHeaderPlanAction(actionId: string, minutes: number): void
     commitItemEdit(
       action.sourceId,
       { scheduledTime: times.startTime, estimatedDuration: length },
-      "header-tracking",
+      HEADER_TRACKING,
       "observed",
     )
   }
@@ -184,7 +190,7 @@ export function recordPlanFollowed(input: {
       estimates,
       timeLogs: [...(task.timeLogs ?? []), log],
     },
-    "header-tracking",
+    HEADER_TRACKING,
     estimated ? "derived" : "observed",
   )
 }
@@ -206,7 +212,7 @@ export function recordPlanSkipped(taskId: string, now = new Date(), missReason?:
       stage: "list",
       ...(missReason ? { missReason } : {}),
     },
-    "header-tracking",
+    HEADER_TRACKING,
     "observed",
   )
 }
@@ -226,7 +232,8 @@ export function insertUnplanned(input: {
   const estimates = input.estimated
     ? [makeEstimate("actualDuration", "logged", "You marked this length as approximate", now)]
     : undefined
-  useTaskStore.getState().addTask({
+  useTaskStore.getState().addTask(
+    {
     id,
     title,
     description: title,
@@ -255,7 +262,9 @@ export function insertUnplanned(input: {
         notes: "Not on the plan",
       },
     ],
-  })
+    },
+    HEADER_TRACKING,
+  )
   return id
 }
 

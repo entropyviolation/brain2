@@ -43,7 +43,7 @@ What works instead: one stable address (your Mac), your own login, a slow pace (
 
 _Last mapped: 2026-10-23_
 
-Settings → Imports → **Instagram accounts** (`components/Settings/InstagramAccountsPanel.tsx`, `lib/instagram-accounts.ts`, `electron/instagram-accounts.js`).
+Settings → Imports → **Instagram accounts** (`components/Settings/imports/InstagramAccountsPanel.tsx`, `lib/instagram-accounts.ts`, `electron/instagram-accounts.js`).
 
 - **Log into Instagram** opens Instagram's own login page in a desktop window. Two-factor and "confirm it's you" work there as in a browser. Brain2 never sees the password at login.
 - The window uses an in-memory partition. When `sessionid` and `ds_user_id` appear, main copies the session cookies out, seals them with `safeStorage` (macOS Keychain), writes `userData/instagram-accounts.json` (mode 600), clears the partition, and closes the window.

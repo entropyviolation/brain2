@@ -16,6 +16,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { affirmationKey, isAffirmationLens, type AffirmationLens } from "@/lib/affirmation-lenses"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type RecitationSource = "widget" | "ritual" | "speak"
 
@@ -130,3 +131,5 @@ export const useAffirmationLogStore = create<AffirmationLogState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useAffirmationLogStore)

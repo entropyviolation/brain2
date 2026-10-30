@@ -6,8 +6,10 @@
  * Covers the overview strip between the app tabs and the Home sub-tab bay
  * (review banner, date plate, today's progress, Needs Attention), plus the
  * five equal Home keys themselves. Scoped under `.home95` for the TOP strip;
- * Home tabs use `data-ui-name="Home tabs"` with `body.win95-app` specificity
- * (same recipe as App tabs in `app/win95.css`). The date plate is a milled
+ * Home tabs use `data-ui-name="Home tabs"` with `body.win95-app` specificity.
+ * Those five keys are latching keycaps (`.b2-keycap-tab` in `app/win95.css`):
+ * silver skirt at rest, selected key a CRT with the green on-light.
+ * _Last mapped: 2026-10-27._ The date plate is a milled
  * bay: weekday in a CRT, calendar date on a nameplate with a power lamp,
  * Widgets as a raised key. CRT numerals use `--hab-crt-green` (`#7dffc4`) +
  * `--hab-crt-glow`. Each tile is nameplate + CRT + full-width silver footer.
@@ -43,6 +45,9 @@
   font-size: 12px;
   color: #000;
   -webkit-font-smoothing: none;
+  /* One weight. Synthetic bold strokes a light fringe around each glyph. */
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 .home95 .home-window {
@@ -139,7 +144,9 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
     linear-gradient(180deg, var(--chrome-mist) 0%, var(--h-surface) 48%, var(--chrome-foot) 100%);
@@ -411,7 +418,7 @@
   text-transform: uppercase;
   line-height: 1;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -566,7 +573,7 @@
   line-height: 13px;
   letter-spacing: 0.02em;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   overflow: hidden;
   white-space: normal;
   display: -webkit-box;
@@ -1804,11 +1811,7 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   color: #fff;
 }
 
-.home95.home-weather-dialog ::highlight(search-text),
-.home95.home-weather-dialog ::highlight(target-text) {
-  background-color: color-mix(in srgb, var(--hab-crt-green, #7dffc4) 50%, #040a08);
-  color: #fff;
-}
+/* Find-in-page ::highlight() lives in weather-instrument.tsx. Lightning CSS rejects that pseudo-element and fails the page. */
 
 .home95.home-weather-dialog > button {
   top: 5px;
@@ -2218,7 +2221,9 @@ body .home-widget-dialog.home-widget-instrument.home-widget-hide-dialog {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
   cursor: default;
 }
 
@@ -2503,7 +2508,8 @@ body .home-widget-dialog.home-widget-instrument.is-sky {
   max-height: min(92vh, 920px);
 }
 
-body .home-widget-dialog.home-widget-instrument.home-widget-catalog {
+body .home-widget-dialog.home-widget-instrument.home-widget-catalog,
+body .home-widget-dialog.home-widget-instrument.is-money {
   width: min(52rem, calc(100vw - 1.5rem));
   max-width: 52rem;
 }
@@ -3354,7 +3360,7 @@ body.win95-app .home-widget-dialog.home-widget-instrument.is-sky .home-sky-reado
   line-height: 1.2;
   text-align: center;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   -webkit-font-smoothing: none;
   cursor: pointer;
 }
@@ -4443,7 +4449,8 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 .home95 .home-na-bar {
   display: flex;
   align-items: center;
-  padding: 8px 8px 4px;
+  justify-content: flex-start;
+  padding: 8px;
 }
 
 .home95 .home-na-toggle {
@@ -4457,6 +4464,8 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   background: transparent;
   color: #1c1e20;
   font: inherit;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   cursor: pointer;
 }
 
@@ -4475,7 +4484,9 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 .home95 .home-na-count {
@@ -4535,12 +4546,11 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
     inset 0 -1px 0 rgba(55, 58, 62, 0.4),
     0 0 0 1px var(--chrome-ring-deep);
   color: #1c1e20;
-  /* Chunky Pixelify Sans, mixed case: the thin spaced caps read as spindly. */
-  font-family: var(--font-pixelify), "w95fa", sans-serif;
+  font-family: var(--w95-font, Tahoma, "MS Sans Serif", Geneva, sans-serif);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   cursor: pointer;
 }
 
@@ -4588,7 +4598,7 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
 }
 
 .home95 .home-na-group p {
@@ -4609,10 +4619,10 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
 
 .home95 .home-na-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   min-height: 36px;
-  padding: 4px 6px 4px 10px;
+  padding: 2px 6px 2px 8px;
   border-radius: var(--r-2, 2px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.12));
   box-shadow:
@@ -4620,12 +4630,37 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
     0 0 0 1px var(--chrome-slate);
 }
 
-.home95 .home-na-open {
+.home95 .home-na-row.is-selected {
+  background: linear-gradient(180deg, rgba(34, 48, 108, 0.16), rgba(34, 48, 108, 0.06));
+  box-shadow:
+    inset 3px 0 0 #22306c,
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px var(--chrome-slate);
+}
+
+.home95 .home-na-check {
+  align-self: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* The row is the open control. `data-no95` keeps the mill button ring off the title. */
+.home95 .home-na-open,
+body.win95-app .home95 button.home-na-open[type="button"] {
   flex: 1;
+  align-self: stretch;
+  display: block;
   min-width: 0;
-  padding: 0;
+  margin: 0;
+  padding: 8px 4px;
   border: 0;
+  border-radius: 0;
   background: transparent;
+  background-image: none;
+  box-shadow: none;
   color: #1c1e20;
   font: inherit;
   font-size: 13px;
@@ -4637,42 +4672,124 @@ body .home-widget-dialog.is-sky .home-sky-motion-sum {
   cursor: pointer;
 }
 
+.home95 .home-na-open:focus,
+.home95 .home-na-open:focus-visible,
+body.win95-app .home95 button.home-na-open[type="button"]:focus,
+body.win95-app .home95 button.home-na-open[type="button"]:focus-visible {
+  outline: none;
+}
+
+.home95 .home-na-row:has(.home-na-open:focus-visible) {
+  box-shadow:
+    inset 3px 0 0 #22306c,
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px #22306c;
+}
+
 .home95 .home-na-actions {
   display: inline-flex;
+  align-items: center;
+  align-self: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.home95 .home-na-key {
-  min-height: 28px;
-  padding: 5px 13px 6px;
-  border: 0;
-  border-radius: var(--r-2, 2px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 30%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-nickel));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
-  color: #1c1e20;
-  font: inherit;
-  font-size: 10px;
+.home95 .home-na-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.home95 .home-na-select-count {
+  margin-right: auto;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #1c1e20;
+}
+
+/* House keycap (docs/DESIGN_STYLE.md → Keycaps). Same skirt as `.todo-cap`.
+   The `:not()` list matches the mill button skin in app/win95.css so the cap wins. */
+.home95 .home-na {
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-mod-top: #c9ccd0;
+  --todo-cap-mod-top2: #b9bdc1;
+  --todo-cap-mod-skirt: #969a9f;
+  --todo-cap-mod-edge: #55595d;
+}
+
+.home95 .home-na button.todo-cap,
+body.win95-app .home95 .home-na button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--todo-cap-leg);
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2));
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  outline: 0;
   cursor: pointer;
 }
 
-.home95 .home-na-key.is-danger {
-  color: #6a1818;
+.home95 .home-na button.todo-cap.is-mod,
+body.win95-app .home95 .home-na button.todo-cap.is-mod[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key) {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  color: #25282b;
+}
+
+.home95 .home-na button.todo-cap:active:not(:disabled),
+body.win95-app .home95 .home-na button.todo-cap[type="button"]:not([role="tab"]):not([role="switch"]):not([data-no95]):not(.b2-close-key):not(.b2-shell-fold):not(.vd-face):not(.dvd-key):not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.home95 .home-na button.todo-cap:focus-visible,
+body.win95-app .home95 .home-na button.todo-cap:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
 }
 
 /*
- * Home sub-tab row (`data-ui-name="Home tabs"`) — same milled fascia recipe as
- * App tabs in `app/win95.css`: one brushed silver bay, five equal keys, active
- * key = CRT black glass `#070c0a` + round phosphor power lamp, engraved
- * uppercase labels, phosphor text `#7dffc4`. Air sits ABOVE the bay (margin-top);
- * panels sit flush under the keys (`.home-pane` / `.home-body` kill mt-2/mt-6).
+ * Home sub-tab row (`data-ui-name="Home tabs"`). _Last mapped: 2026-10-27_
+ * Five latching keycaps (`.b2-keycap-tab` in `app/win95.css`): pale silver
+ * skirt at rest, selected key = CRT black glass `#070c0a` + green legend
+ * `#7dffc4` + the round phosphor lamp. A press is the milled sink. Air sits
+ * ABOVE the bay (margin-top); panels sit flush under the keys.
  */
 body.win95-app .home-body {
   display: flex;
@@ -4732,30 +4849,11 @@ body.win95-app .home-tabs [role="tab"] {
   gap: 8px;
   height: auto;
   min-height: 36px;
-  padding: 8px 8px;
-  border-radius: var(--r-2, 2px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.16) 12%, transparent 28%),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
-    linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 30%, var(--chrome-face, #c0c0c0) 62%, var(--chrome-key-shade) 100%);
-  color: #1c1e20;
+  padding: 6px 10px 10px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -1px 0 rgba(55, 58, 62, 0.45),
-    0 0 0 1px var(--chrome-ring-deep),
-    0 1px 0 var(--chrome-lip);
-}
-
-body.win95-app [data-ui-name="Home tabs"] [role="tab"]:active,
-body.win95-app .home-tabs [role="tab"]:active {
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.4),
-    0 0 0 1px var(--chrome-pressed);
 }
 
 body.win95-app [data-ui-name="Home tabs"] [role="tab"][data-state="active"],
@@ -4787,6 +4885,12 @@ body.win95-app .home-tabs [role="tab"][data-state="active"]::before {
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+body.win95-app [data-ui-name="Home tabs"] [role="tab"]:active,
+body.win95-app .home-tabs [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
 }
 
 /* Day / week / month / season plan log on Habits. Sibling of `.hab-desk`,
@@ -4838,7 +4942,7 @@ body.win95-app .home-tabs [role="tab"][data-state="active"]::before {
   text-transform: uppercase;
   line-height: 1.35;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: transparent;
   box-shadow: inset 0 -1px var(--chrome-lo, #808080), inset 0 -2px rgba(255, 255, 255, 0.7);
 }
@@ -5587,4 +5691,108 @@ body.win95-app .home-tabs[role="tablist"] {
   position: sticky;
   top: var(--home-tabs-top, 0px);
   z-index: 30;
+}
+
+/*
+ * Compact width only. The desktop fascia above is unchanged.
+ * The phone keeps the date, the widget bank, and the five tabs on screen:
+ * nothing sticks past the width, opened handhelds start below the status bar
+ * (a 100dvh sheet put the close key under it), and a text field is 16px so
+ * iOS does not zoom in and stay there.
+ */
+@media (max-width: 767px) {
+  .home95,
+  .home95 .home-window,
+  .home95 .home-window-body,
+  body.win95-app .home-body,
+  body.win95-app .home-pane {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .home95,
+  body.win95-app .home-body,
+  body.win95-app .home-pane {
+    overflow-x: clip;
+  }
+
+  .home95 .home-date-plate {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home95 .home-date-weekday {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .hab95 .home95 .home-overview > .vd-cell,
+  .hab95 .home95 .home-overview > .home-tile,
+  .home95 .home-overview,
+  .home95 .home-tile,
+  .home95 .hab-score-well.home-tile {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home95 .home-overview {
+    overflow-x: clip;
+  }
+
+  body.win95-app .home-tabs[role="tablist"] {
+    max-width: 100%;
+    min-width: 0;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  body.win95-app .home-tabs [role="tab"] {
+    min-height: 44px;
+    gap: 4px;
+    padding: 6px 2px 8px;
+    font-size: 11px;
+    letter-spacing: 0;
+    overflow: hidden;
+  }
+
+  body .home-widget-dialog.home-widget-instrument,
+  .home95.home-weather-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+    bottom: auto !important;
+    transform: none !important;
+    translate: none !important;
+    display: flex !important;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden;
+  }
+
+  .home-widget-dialog .home-widget-detail,
+  .home95.home-weather-dialog .home-widget-detail {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow: auto;
+  }
+
+  .home-widget-dialog :is(input, select, textarea),
+  .home95.home-weather-dialog :is(input, select, textarea),
+  .home-widget-dialog .home-widget-field input,
+  .home-widget-dialog .home-widget-field select,
+  .home-widget-dialog .home-widget-field textarea,
+  .home-widget-dialog .home-widget-field .native-select,
+  .home95.home-weather-dialog .home-weather-search input {
+    font-size: 16px;
+  }
 }

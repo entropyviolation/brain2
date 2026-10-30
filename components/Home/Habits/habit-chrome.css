@@ -7,7 +7,9 @@
  * Attention. Header, Daily/Weekly/Monthly keys, period nav, Settings / New habit,
  * and the Habits Tab Control Panel share the house milled fascia
  * (docs/DESIGN_STYLE.md#milled-fascia) — brushed silver bays, engraved nameplates,
- * CRT title, active period key = CRT + round power lamp. CRT overlay is `.hab-crt`
+ * CRT title. Period keys and the Tracking view keys are latching keycaps
+ * (`.b2-keycap-tab`): silver skirt at rest, selected key = CRT + round power
+ * lamp. _Last mapped: 2026-10-27._ CRT overlay is `.hab-crt`
  * (off). `.hab-view-changer` is also used on Home Tracking (Time Grid / Activity
  * Log / Day Log, and day-notes List / Bulk / Latest) so those keys match.
  * Grade detail popups use the portaled `.hab-grade-sheet` milled skin (outside
@@ -386,7 +388,7 @@ body.win95-app main:has(.hab95) [role="tabpanel"]:has(.hab95) {
   letter-spacing: 0.12em;
   color: var(--chrome-ink-deep);
   text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
 }
 
 /* Kill Home's inset-white fields. They were the remaining shifting block. */
@@ -564,7 +566,7 @@ body.win95-app .hab95 .habit-week-nav-range {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   white-space: nowrap;
   background-image:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 2px),
@@ -584,8 +586,9 @@ body.win95-app .hab95 .habit-week-nav-range {
   box-shadow: var(--hab-sunken);
 }
 
-/* Daily / Weekly / Monthly (and Tracking kin): equal keys in one milled bay;
- * active key is a CRT with a round power lamp — not a sunken gray folder tab. */
+/* Daily / Weekly / Monthly (and Tracking kin): latching keycaps in one bay.
+ * The face lives in `app/win95.css` (`.b2-keycap-tab`). Active stays CRT
+ * plus the round power lamp. _Last mapped: 2026-10-27_ */
 .hab95 .hab-view-changer,
 .trk95 .hab-view-changer,
 body.win95-app .hab95 .hab-view-changer,
@@ -627,7 +630,7 @@ body.win95-app .hab95 .hab-view-changer [role="tablist"].hab-period-keys {
 .hab95 .hab-view-changer [role="tablist"].hab-period-keys [role="tab"],
 body.win95-app .hab95 .hab-view-changer [role="tablist"].hab-period-keys [role="tab"] {
   min-width: 0;
-  padding: 4px 2px 5px;
+  padding: 3px 2px 8px;
   font-size: 9px;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -648,20 +651,11 @@ body.win95-app .trk95 .hab-view-changer [role="tab"] {
   min-width: 0;
   min-height: 28px;
   height: auto;
-  padding: 4px 10px 5px;
-  border-radius: var(--r-2, 2px);
+  padding: 3px 10px 8px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),
-    linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px var(--chrome-ring-deep);
 }
 
 .hab95 .hab-view-changer [role="tab"][data-state="active"],
@@ -695,6 +689,14 @@ body.win95-app .trk95 .hab-view-changer [role="tab"][data-state="active"]::befor
     0 0 0 2px #9aa09c,
     inset 0 1px 1px rgba(255, 255, 255, 0.55),
     0 0 4px #7dffc4;
+}
+
+.hab95 .hab-view-changer [role="tab"]:active,
+.trk95 .hab-view-changer [role="tab"]:active,
+body.win95-app .hab95 .hab-view-changer [role="tab"]:active,
+body.win95-app .trk95 .hab-view-changer [role="tab"]:active {
+  transform: translateY(1px);
+  box-shadow: var(--fascia-key-pressed);
 }
 
 .hab95 .habit-week-grade,
@@ -742,7 +744,7 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background-color: var(--hab-metal, var(--chrome-face, #c0c0c0));
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
@@ -1402,7 +1404,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab95 .hab-control-gauges .habit-week-grade strong {
@@ -1454,7 +1456,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-control-streak .habit-good-days {
@@ -1486,7 +1488,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   white-space: normal;
   line-height: 1.2;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab95 .hab-control-streak .habit-good-days-stat strong {
@@ -1535,7 +1537,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   text-transform: uppercase;
   text-align: left;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.14) 14%, transparent 30%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 36%, var(--hab-metal, var(--chrome-face, #c0c0c0)) 70%, var(--chrome-key-shade) 100%);
@@ -1635,7 +1637,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-sort-bay {
@@ -1689,7 +1691,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   border-radius: var(--r-2, 2px);
   appearance: none;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0, transparent 28%),
     var(--hab-metal-mid, var(--chrome-face));
@@ -1809,7 +1811,7 @@ body.win95-app .hab-well:has(.habit-grid thead)::-webkit-scrollbar-track {
   appearance: none;
   -webkit-appearance: none;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 2px),
     var(--hab-metal-mid, var(--chrome-face));
@@ -2145,12 +2147,12 @@ body.win95-app .hab95 button.hab-willpower-lab-toggle,
     0 0 0 1px var(--chrome-ring-deep),
     0 1px 0 var(--chrome-lip);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
 }
 
 .hab-willpower-lab-toggle.is-on {
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
 }
 
 .hab-willpower-settings-row {
@@ -2430,7 +2432,7 @@ body.win95-app .hab-grade-sheet.is-output {
   text-transform: uppercase;
   line-height: 1.2;
   color: var(--hab-grade-ink) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-lead {
@@ -2443,7 +2445,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.01em;
   line-height: 1.35;
   color: var(--hab-grade-ink) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background: transparent;
   box-shadow: none;
 }
@@ -2464,7 +2466,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-crt {
@@ -2504,7 +2506,7 @@ body.win95-app .hab-grade-sheet.is-output {
   line-height: 1.35;
   text-align: center;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-eq {
@@ -2524,7 +2526,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.02em;
   line-height: 1.35;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     var(--hab-grade-metal);
@@ -2563,7 +2565,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
   box-shadow: 0 0 0 1px var(--chrome-slate);
 }
@@ -2582,7 +2584,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0;
   text-transform: none;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-control-row {
@@ -2622,7 +2624,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-weight: 600;
   line-height: 1.35;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px),
     var(--hab-grade-metal);
@@ -2638,7 +2640,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
 }
 
 .hab-grade-sheet .habit-priority-math {
@@ -2698,7 +2700,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-weight: 600;
   line-height: 1.4;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 2px),
     var(--hab-grade-metal-mid);
@@ -2737,7 +2739,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-proof-head span:nth-child(2),
@@ -2751,7 +2753,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-size: 12px;
   line-height: 1;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-row {
@@ -2781,7 +2783,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
 }
 
 .hab-grade-sheet-row-readout {
@@ -2794,7 +2796,7 @@ body.win95-app .hab-grade-sheet.is-output {
 
 .hab-grade-sheet-row-readout.is-raw {
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-shadow: none;
   background: transparent;
   box-shadow: none;
 }
@@ -2820,7 +2822,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-size: 12px;
   font-weight: 600;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background: var(--hab-grade-metal-mid);
   box-shadow: var(--hab-grade-sunken);
 }
@@ -2872,7 +2874,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
   background: linear-gradient(180deg, var(--chrome-mist), #c8cccf);
   box-shadow: 0 0 0 1px var(--chrome-slate);
 }
@@ -2886,7 +2888,7 @@ body.win95-app .hab-grade-sheet.is-output {
   line-height: 1.45;
   max-width: 34em;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background: transparent;
   box-shadow: none;
 }
@@ -2930,7 +2932,7 @@ body.win95-app .hab-grade-sheet.is-output {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--hab-grade-ink) !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .hab-settings-row {
@@ -2947,7 +2949,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   white-space: nowrap;
 }
 
@@ -2960,7 +2962,7 @@ body.win95-app .hab-grade-sheet.is-output {
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
   color: var(--hab-grade-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: none;
   background: transparent;
   box-shadow: none;
 }
@@ -2974,7 +2976,7 @@ body.win95-app .hab-grade-sheet.is-output {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
   background: var(--hab-grade-metal-mid);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }

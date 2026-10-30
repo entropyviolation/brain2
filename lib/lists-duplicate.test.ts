@@ -71,11 +71,20 @@ describe("planDuplicateList", () => {
   ]
 
   it("settings only copies config into an empty list", () => {
-    const plan = planDuplicateList(lists[0], { scope: "settings", lists, folders, tasks })
+    const source = list({
+      id: "reading",
+      name: "Reading",
+      color: "#ef4444",
+      icon: "/orbs/1.png",
+      createdByModuleId: "mod",
+      moduleSlotId: "items",
+    })
+    const plan = planDuplicateList(source, { scope: "settings", lists: [source], folders, tasks })
     expect(plan.list.name).toBe("Reading copy")
     expect(plan.list.color).toBe("#ef4444")
     expect(plan.list.icon).toBe("/orbs/1.png")
     expect(plan.list.createdByModuleId).toBeUndefined()
+    expect(plan.list.moduleSlotId).toBeUndefined()
     expect(plan.folderIds).toEqual(["books"])
     expect(plan.tasks).toEqual([])
   })

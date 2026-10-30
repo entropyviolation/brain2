@@ -9,8 +9,11 @@ The spec is the **checklist**, not the ceiling. Brain2 is intended as a
 **revolutionary living second brain** — adaptable, alive, beautiful,
 cutting-edge, infinite; a new type of software. **Item, used everywhere:**
 capture once, then connect and use in as many rooms as the record can honestly
-serve. **Analytics is the heart:** mass personal data and information-resource
-collection, presentation, and analysis, and the engine for endless tools.
+serve. **Data is the heart:** analytics and combined analysis over the vault,
+visualization and stats, spreadsheet libraries for viewing rows, sources such
+as Instagram, texts, and browser history, and screens that clean, annotate,
+correct, or confirm the data
+([`components/Analytics/README.md`](../components/Analytics/README.md)).
 Features below are how the current body matches that document. The larger claim
 (one Item graph, installable rooms, infinite adaptability) lives in the root
 [`README.md`](../README.md) and [`MODULE_PLATFORM.md`](MODULE_PLATFORM.md).
@@ -40,8 +43,8 @@ capture-first, one underlying "item" concept **used in as many rooms as
 possible**, progressive scheduling, local-first/sync-ready,
 AI-ready-not-AI-dependent, everything reviewable. Product overlay (not in the
 original spec wording, load-bearing here): the organism is a **living perfect
-second brain**; **Analytics is the heart** of collection / presentation /
-analysis, not a side report. A record is a **map** of a life, not the life:
+second brain**; **Data is the heart** — analytics, visualization, stats, a
+library, sources, and annotation — not a side report. A record is a **map** of a life, not the life:
 it leaves characteristics out, carries a date, and keeps its order of
 abstraction (observed, recorded, derived, inferred). Description comes before
 inference. The next period starts from a handoff. Full parallels and the
@@ -60,7 +63,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - Module list (§2.2) maps to top-level tabs in `app/page.tsx` and
   `components/<Module>/` folders:
   **Home** | **Lists** | **Docs** | **Scheduler** | **Operations** | **Modules** |
-  **Analytics**, plus a global header cabinet (**BRAIN2** caption, today's friend
+  **Data**, plus a global header cabinet (**BRAIN2** caption, today's friend
   with a Stardew Next-Action bubble on click, Friend / Review / System / optional
   **now** well (inside Capture; idle → hidden; live Working sessions
   show name, elapsed, Stop, Pause↔Resume) / Capture groupboxes).
@@ -179,12 +182,15 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (`log:` / `log` / `log-`, saved keywords such as went outside, smoked weed, ate {item}, …) label tracker rows.
   Log lines, switch lines, and tracking-note clocks use `parseExpectedWhen` (a bare clock is military). Ordinary inbox text is not parsed this way.
   `generatedBy.kind === "text"`. **Activity spans:** `currently` / `stopped` /
-  `switched to`. Text dedupe is chat plus `message_id` (an edit does not re-apply) and `update_id` for the first delivery. Live Location re-applies per update. A missing pair is logged, not applied. Analytics tabs
+  `switched to`. Text dedupe is chat plus `message_id` (an edit does not re-apply) and `update_id` for the first delivery. Live Location re-applies per update. A missing pair is logged, not applied. Data tabs
   **Text events** / **Text spans**. Grocery dumps **pin** in the Telegram chat
   so a store trip can read the last list with the laptop off. The live grocery
   list is the Settings picker (`groc` / bare `store`); other open shopping-list
   counts sit once on that pinned card, and the dump reply is the same card. Live 24/7 replies:
-  `npm run phone:hub` (hydrate persist, own Telegram, webhook optional).
+  `npm run phone:hub` (hydrate persist, own Telegram, webhook optional,
+  `POST /api/scan` for one `nfc:` line while the hub is awake). The iPhone
+  app can read a blank sticker and post that line. The signed Shortcut stays
+  until that scan is proven ([`shortcuts/nfc-tags.md`](shortcuts/nfc-tags.md)).
   Dedupe stores `telegramMessageId`. An update with neither id is logged with a
   null dedupe key and is not applied.
   Shortcuts: `got:` / `bought:` (or a real open grocery line), `n …` (a discrete tick at send time, also on the covering
@@ -195,7 +201,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `npm run shortcut:iphone-notes` ([recipe](shortcuts/dump-iphone-notes-to-brain2.md)),
   AirDrop that file, then `iphone-notes:` → iPhone Notes
   Store. **iPhone Screen Time / Calls / Texts:** typed Telegram verbs
-  (`screen:`, `call:`, `text:`, `plan for rn:`, `do:`, `to do today:`, `gm`, `review`, `gps:` — a repeated pin, within 80 m, can be named on Analytics → Places and the next fix uses that Location pen) or AirDrop
+  (`screen:`, `call:`, `text:`, `plan for rn:`, `do:`, `to do today:`, `gm`, `review`, `gps:` — a repeated pin, within 80 m, can be named on Data → Places and the next fix uses that Location pen) or AirDrop
   [`Screen Time to Brain2.shortcut`](shortcuts/Screen%20Time%20to%20Brain2.shortcut),
   [`iPhone Call to Brain2.shortcut`](shortcuts/iPhone%20Call%20to%20Brain2.shortcut),
   [`iPhone Text to Brain2.shortcut`](shortcuts/iPhone%20Text%20to%20Brain2.shortcut),
@@ -210,7 +216,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   grocery and bumps Inventory/Pantry (asks when a name is new). Local Tesseract
   — no hosted vision API. See [`MESSAGE_INGEST.md`](MESSAGE_INGEST.md). Other
   messengers and Atlas-backed ingest are 🕓 later.
-- §4.4 Clarification — 🟡 `components/inbox.tsx` (`TaskClarificationDialog`).
+- §4.4 Clarification — 🟡 Public component `components/inbox.tsx`. The clarify sheet is `components/inbox/clarify/clarify-dialog.tsx`.
   Open ideas are listed **newest first** (`sortInboxNewestFirst`).
   Keyboard **Walk** starts at the caret when nothing is checked, and **Walk selected**
   steps the checks (Select all / **Select N** / **Select unsorted** / Deselect).
@@ -268,7 +274,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Still task-only (no type switching among task/note/event/log).
 - §4.5 Inbox vs. review queue — ✅ Inbox exists, the Review header surfaces pending
   period reviews, and a separate **Needs Attention** queue ships on Home
-  (`components/Home/NeedsAttention.tsx` over the pure selector in
+  (`components/Home/needs-attention/NeedsAttention.tsx` over the pure selector in
   `lib/needs-attention.ts`): overdue / blocked / unclarified / stale plus
   neglected (goals / operations / list items) and zombie (pushed or
   long-resident), grouped by reason. Title click opens the detail popup; kill /
@@ -339,8 +345,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   A click on the page behind the popup saves and minimizes. Refresh while
   detail is open saves and the next load opens that minimized dock.
   Tabs and chrome follow `resolveDetailView` (item type +
-  list `detailPanels` / `hiddenDetailPanels` + capabilities). Book shows a cover
+  list `detailPanels` / `hiddenDetailPanels` + capabilities). _Last mapped:
+  2026-10-27._ Several assigned types show fascia cards; a click sets
+  `viewAsTypeId` and the panels, capabilities, and layout follow that type.
+  The stored type stays. Book shows a cover
   and featured page fields; non-task types do not inherit Scheduling by default.
+  Computer Project (a subtype of Operation) has its own desk on Details.
   History tab is always on (`lib/item-activity.ts` append-only ledger). Adding a
   dependency that would loop is refused (`wouldCreateCycle` + Win95 confirm).
 - §5.6 Recurrence — 🟡 `Task.repeatSettings` exists in types (count / frequency
@@ -370,17 +380,28 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   To do tab keeps the panel id `tasks`), and `trackingTagIds` (Tracking-library
   tags so **Working on this now** can auto-fill linked Goal / Yes-No habits).
   The home board hides completed and inactive operations (`done`, `paused`,
-  `abandoned`, or `completed`) until **Show archived**. Settings can **delete**
+  `abandoned`, or `completed`) until **Show archived**. Sort includes
+  **Recently modified** (`Task.modifiedAt`). Home notes are the item note log
+  (`Task.noteLog`), not a separate pad; a leftover `homeNotes` attribute is
+  folded into that log. Settings can **delete**
   the operation after an Are you sure dialog. **Parts** are formulas
   (`partFormulas` / `partInstances`): a kind such as Issue → Article
   (drafted → written → formatted, then ordered / printed) or a plain Room.
-  Each part has its own page. Stage and finish steps are tasks and join To do;
-  ideas on a part are not tasks. Glance meters are chosen with **Metrics**.
+  Each part page is name, then status (current stage on the part, plus one
+  status report), then that part's to-dos, then notes. The stage progression
+  does not create or complete to-dos. Notes are the part's `ideas` and are
+  not tasks. Glance meters are chosen with **Metrics** and read the part's
+  stage. Older stage tasks already on the operation stay.
   Same composition idea as `ItemTypeDefinition.detailPanels` /
   `List.detailPanels`, applied per *item*. Panel ids migrate
   `activities`→`locations` and `itinerary`→`timeline`. Live work sessions
   (`lib/operation-work-session.ts`) stamp To Do Done, `timeLogs`, and the
-  Tracking minute grid from one clock. See `lib/operation-types.ts`,
+  Tracking minute grid from one clock. The Log tab
+  (`components/Operations/panels/OperationLogFeed.tsx`) lists those punches oldest
+  first and always includes a **created** row from the operation's `createdAt`,
+  including when no time has been logged. Pen colors on the log are `Task.penLinks`.
+  Double-clicking a punch opens the matching Tracking block (`EntryDialog`) when
+  the punch shares that block's id or start and end. _Last mapped: 2026-10-27._ See `lib/operation-types.ts`,
   `lib/operation-parts.ts`, `components/Operations/README.md`.
 
 ## §6 Next Actions / Lists — ✅/🟡
@@ -421,9 +442,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Lists panel reused outside the Lists tab** — ✅ an Operation's **To do** panel
   mounts `list-content/ListContentPanel` over a real per-operation list
   (`lib/operation-lists.ts`, filed in an **Operations** folder). Phase steps and
-  part stage/finish tasks are filed onto that list, so operation work is
-  ordinary items and appears in Lists / All Items / search. Ideas on parts are
-  not list items.
+  to-dos filed on a part are on that list, so operation work is ordinary items
+  and appears in Lists / All Items / search. A part's stage checklist and its
+  notes are not list items. Older stage tasks already created stay on the list.
 - Category shape — ✅ `TaskCategory`; **nested categories / sublists** — ✅
   `parentCategoryId` + `lib/list-tree.ts` (ancestor/descendant/move-cycle
   helpers), nesting rendered in `FolderTree.tsx`/`BreadcrumbNav.tsx`, per-category
@@ -622,7 +643,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   on every Home tab (all time, today, week, month). Today's footer splits habit pay,
   bonuses, and the rest. The today meter is habit points paid over the habit ceiling.
   Cards and the instrument quad still list the four periods.
-- §8.4 To-Do tiers + overdue — ✅ `components/Home/ToDo/todo-panel.tsx`.
+- §8.4 To-Do tiers + overdue — ✅ `components/Home/ToDo/todo-panel.tsx` (the door) and `components/Home/ToDo/desk/todo-desk-panel.tsx` (the desk).
   Open rows are **assigned**; `todoMarks` adds **Required** (its own list) and
   **Prioritized** (tagged on Assigned). The load strip shows days left,
   estimated time (all / required / required + prioritized; typed estimate or the
@@ -698,8 +719,8 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - §9.4 completion records keyed by ISO/local date — ✅ (`WeeklyData` keyed by
   date string). **Gap:** not a DB record; habits are `WeeklyTask`, not a unified
   `Habit` item.
-- §9.5 Streaks — ✅ `lib/streaks.ts` + Analytics **Streaks** tab
-  (`components/Analytics/StreaksWidget.tsx`); climb days use the derived target.
+- §9.5 Streaks — ✅ `lib/streaks.ts` + Data **Streaks** tab
+  (`components/Analytics/behavior/StreaksWidget.tsx`); climb days use the derived target.
 - **Habit time estimates** — ✅ `WeeklyTask.timeEstimate` (Add/Edit Habit →
   *Time estimate*): minutes per unit of the goal (10 min per page) or a flat length
   per completion, with an `estimated` / `definite` precision flag. `lib/habit-time-estimate.ts`
@@ -886,7 +907,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (`lib/module-list-import.ts`) now **projects** those trees into nested lists
   and items (Tidy: Whole house → area sublists with priority, estimates, actuals,
   completed, `parentTaskId` subtasks; Trip: Itinerary → day lists). Lists, search,
-  and Analytics can see the projection; two-way sync is still the north-star
+  and Data can see the projection; two-way sync is still the north-star
   payoff. Field map: [`components/Lists/MODULE_LISTS.md`](../components/Lists/MODULE_LISTS.md).
   Tracked as debt, not as a pattern to copy.
 
@@ -936,7 +957,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   rewritten into the huge timegrid blob per keystroke. Plain text: this profile
   wins. An envelope on either side keeps every paragraph. A failed write is
   reported in the well.
-- **Day / week spans** — ✅ `components/Home/Tracking/week-grid.tsx` behind a
+- **Day / week spans** — ✅ `components/Home/Tracking/grids/week-grid.tsx` behind a
   two-button switch on the grid, with the pen palette
   (`components/Home/Tracking/pen-palette.tsx`) shared between them so a selection
   survives the change. Optional **Infinite scroll** toggle next to Day/Week
@@ -985,7 +1006,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   in day mode is one continuous slab (title once, still clickable in every hour).
   Amber blocks are task `timeLogs`. Paint strip follows the selected day. Date
   keys are local calendar days. Agenda cards sit to the right of the time labels.
-- **Tracking log** — ✅ `components/Home/Tracking/tracking-log-view.tsx` on the
+- **Tracking log** — ✅ `components/Home/Tracking/tracking-log/tracking-log-view.tsx` on the
   Home Tracking fascia (persisted with the other view keys). Local **Day \| Week**
   (default Day; not persisted; `lockDate` forces Day). **Day** is the selected
   local day’s shelves. **Week** (`tracking-log-week.tsx`) is a seven-column board
@@ -995,6 +1016,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Under the composer, **Counts** (`brain2-count-statuses`) tallies a name (joints, days happy). Each + stores a time. An optional drug, food, or drink class also paints that intake instant. An optional keyword is saved in `brain2-log-keywords`, and `log:` of that phrase increments the count.
   Food, drink, and drugs are Activity instants with
   `intakeClass` and `eventKind` `intake.food` / `intake.drink` / `intake.drug`.
+  The Food heading opens `components/Home/Tracking/tracking-log/food/food-detail-dialog.tsx`: meals and snacks, recipes, and a kitchen (fridge, pantry, spice cabinet, freezer) in `brain2-kitchen`. Calories and the face of twelve add up for accepted plates. More opens fatty acids, carbohydrate detail, vitamins, minerals, carotenoids, and amino acids. A food is searched on this device, then USDA FoodData Central, then Open Food Facts. A miss can become a saved food from a nutrition-facts link (a MyFoodData id is a USDA food). Saving a recipe does not log a meal. The Recipes tab plans a week and can open a plate that still has to be accepted. The grocery list is on the Kitchen tab. A week range shows each day's calories. Food notes for a day, week, month, and year are separate from the Tracking day summary. A keep guess uses the bought date and a typical keep time. It is a house guess, not a safety test.
   Bare intake (Intake pen, no class) sits in a short **Intake** group under
   those three. Events are other log-like instants (Text log pen and/or
   `eventKind`, no intake class); a new phrase such as left room is an Activity
@@ -1004,7 +1026,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `started …` on the Switch pen plus `switchFrom` / `switchTo`. Another view
   paints that scope: To is the pen, the tick color is the destination.
   `so:` / `switch goal:` still store `objective …` on the Objective pen, in the
-  same Switch list. Note is a Text log instant. Thought process is that same instant
+  same Switch list. Note is a Text log instant with no `eventKind`, on its own Notes shelf. The composer and the shelf add do not append it onto a covering block; BIM `n` still does. The composer opens on Note. Thought process is that same instant
   with `eventKind` `thought-process` (a guiding strand of this moment: why you are doing something, what you expect to do next, and how it lands — not a general note, a one-word mood, or a short activity log such as brushed teeth), shelved under Thought process. Every tracking-log instant (intake, event, note, keyword log, spend, and switch, including one painted on Location, Mood, Company, or Activity) is a vertical tick on the Time grid and a row or one-minute slab where Activity Log and Day Log already draw instants (`discrete-log-instants.ts`). A scoped switch stays on that view. Older rows are recognized from the fields they already have. A painted interval stays a block. The clock is exact unless
   Estimated or Unknown; an unknown clock is a badge, and the bot keeps the
   named minute for placement. Log lines, switch lines, and tracking-note clocks
@@ -1023,7 +1045,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   `cycleDetailsOpen` on the same store defaults false (persist stays v15).
   While closed, the well shows only **Show cycle**, and **Hide cycle** on the
   well and on the open Cycle detail closes the latch and unmounts that dialog;
-  Analytics → Time → Cycle phase, with
+  Data → Time → Cycle phase, with
   tracking still on, shows a concealed line and **Show cycle** instead of the
   phase view.
   The phase is labeled from bleed days and ovulation marks, not a medical
@@ -1058,9 +1080,9 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   Plain summaries: this profile wins. Envelope copies keep every paragraph. A failed write
   shows **this summary is only in memory** in the well (`.trk-notes-unsaved`).
 - **Consistent totals across views** — ✅ `lib/tracking-summary.ts` is the only
-  place time is rolled up; Time Grid, Activity Log, Day Log and the Analytics
+  place time is rolled up; Time Grid, Activity Log, Day Log and the Data
   Tracking tab all read it. Occupancy is a **union**. Pen totals respect
-  `displayDepth`. `withPrecision` drops assumed blocks when Analytics **Include
+  `displayDepth`. `withPrecision` drops assumed blocks when Data **Include
   assumed** is off.
 - Views (Activity / Location / Mood / **Company** / **Screen Time** / **iPhone
   Screen Time** / **iPhone Calls** / **iPhone Texts**) with configurable pens — ✅.
@@ -1073,7 +1095,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   aw-server. ActivityWatch only records from when its watchers run (no Apple
   Screen Time / pre-install import). A reachable sync with 0 blocks is success.
   Prefs: `brain2-screentime-prefs` (includes honest `lastSyncNote`). Sync: `lib/screentime/` +
-  `window.desktop.fetchScreenTime` / loopback `/api/screentime`. Analytics Time
+  `window.desktop.fetchScreenTime` / loopback `/api/screentime`. Data Time
   tab **Screen Time**. Persist **v12** appends **iPhone Screen Time** (Telegram /
   AirDrop `Screen Time to Brain2.shortcut` Ask-for-app pings, estimated, no AW stamp), **iPhone Calls** (people
   pens, intervals; AirDrop `iPhone Call to Brain2.shortcut`), and **iPhone Texts** (people pens, instants; AirDrop `iPhone Text to Brain2.shortcut`) without
@@ -1092,12 +1114,12 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   and the same ladder as counts-as. A detail of Exercise is a pen that counts as
   Exercise (Walk, Gym). Adding a detail creates or adopts that pen; nesting a
   pen adds it to the parent's detail list (`PenVariant.penId`, persist **v13**,
-  `lib/pen-detail-sync.ts`). Several can still apply at once. Analytics drills
+  `lib/pen-detail-sync.ts`). Several can still apply at once. Data drills
   children first, then Split / Reach — both include time painted on the detail
   pen itself. A same-name pen that already counts as something else is not stolen.
 - **Block display name** — ✅ `TimeEntry.title` is an optional label for one
   block ("walk to the beach" on a block of *walking*). It changes what surfaces
-  print, never what anything counts: rollups, tags, habits and Analytics all
+  print, never what anything counts: rollups, tags, habits and Data all
   still read pens and tags. Blank falls back to the pen's name
   (`entryDisplayName`, `lib/time-entries.ts`), so the common case needs no typing.
 - **Several pens on one block, one primary** — ✅ `TimeEntry.penId` is the
@@ -1109,17 +1131,17 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   that *any* of its pens feeds, through the existing
   `tracked-time` → `habit-tracking` → `habit-tracking-sync` pipeline. No
   migration is needed: an older block simply has no `secondaryPenIds`, which
-  means "primary only". UI: `components/Home/Tracking/secondary-pens-field.tsx`
+  means "primary only". UI: `components/Home/Tracking/block-editor/secondary-pens-field.tsx`
   behind **add pen color** in the block editor (`block-pen-section.tsx` shows
   only pens already on the block until then).
 - **Counts as — explained, searchable, and drawn** — ✅ pen nesting. `parentId`
   is the display parent. `parentIds` is the full counts-as list, display parent
   first (`lib/pen-tree.ts`, persist **v14**):
   1. The copy now says what nesting actually does — painting still writes *this*
-     pen; the grid and Analytics may roll it up to the parent — instead of
+     pen; the grid and Data may roll it up to the parent — instead of
      implying that "Ocean Beach counts as San Diego" relabels the time.
   2. The native `<select>` is replaced by
-     `components/Home/Tracking/pen-parent-picker.tsx`: a sunken Win95 field that
+     `components/Home/Tracking/pen-settings/pen-parent-picker.tsx`: a sunken Win95 field that
      filters as you type and offers **Create new pen…**, so a pen can be nested
      under a parent that does not exist yet.
   3. `components/Home/Tracking/pen-chain-visual.tsx` draws the chain in the
@@ -1140,7 +1162,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   block and the Done row follows; a title the user edited by hand is left
   alone. `lib/pen-action-format.ts` (pure) + `lib/pen-action-sync.ts` (store →
   `taskRepository` bridge, deterministic `pen-action-<id>` ids) +
-  `components/Home/Tracking/pen-action-format-editor.tsx`. Separate from habit
+  `components/Home/Tracking/pen-settings/pen-action-format-editor.tsx`. Separate from habit
   tag links: this names an action, tags feed a goal.
   Reference: [`docs/PEN_ACTION_FORMATS.md`](./PEN_ACTION_FORMATS.md).
 - **Parallel counts-as** — ✅ `parentIds` on the pen, multiselect in
@@ -1153,25 +1175,27 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Find** — ✅ `lib/tracking-search.ts`. Time Grid bezel and Activity Log
   period bar (`tracking-find.tsx`) search display name, notes, project, pen,
   secondary pens, counts-as names, and action-format templates, then jump to
-  the block. Analytics → Time → Tracking uses the same matcher
-  (`components/Analytics/block-search.ts`).
+  the block. Data → Time → Tracking uses the same matcher
+  (`components/Analytics/time/block-search.ts`).
 - **Tags belong to time, not to pens** — ✅ `effectiveTagIds` (`lib/tracked-time.ts`)
   makes a block's tags the union of **every assigned pen's** standing tags (primary
   plus secondaries) and any pinned to that
   block alone (`TimeEntry.tagIds`, set from the block editor). Four hours of
   *San Diego Zoo* in the **Location** scope can count as *Exercise* without every
   zoo visit doing so, and the minutes reach habits and analytics exactly as a pen
-  tag would. Analytics → Tracking → **By tag** → click a tag shows which pens, in
+  tag would. Data → Tracking → **By tag** → click a tag shows which pens, in
   which scopes, fed it. A block tag can be promoted to the pen ("always tag X as
   Y") from the same dialog.
 - **Scopes attachable to each other** — ✅ `lib/entry-links.ts` + the **Also
-  happening** section of the block editor (`components/Home/Tracking/companion-section.tsx`).
+  happening** section of the block editor (`components/Home/Tracking/block-editor/companion-section.tsx`).
   Clicking a block shows what every other scope says about those exact minutes and
   fills in what they are missing in one click: *Ian's House* 1–5pm becomes *Social*
   too, with the party's guest list ticked off through the companion's variants
   without leaving the dialog. Attachments are one-offs by default and can be
-  promoted to a standing `PenLink` on the pen, which then fires on each future
-  stroke (`paintMinutes` → `applyPenLinks`). Suggestions come from the user's own
+  promoted to a standing `PenLink` on the source pen only, which then fires on each future
+  stroke of that pen (`paintMinutes` → `applyPenLinks`). The reverse is not implied.
+  Screen Time, iPhone Screen Time, iPhone Calls, and iPhone Texts appear in Also happening
+  only when a block already covers the window, and then as a readout. Suggestions come from the user's own
   history of co-painting two pens, not from heuristics. **An attachment only ever
   fills minutes the other scope left blank**, so a rule can never overwrite a
   statement. Deleting a scope, pen or variant prunes the links pointing at it.
@@ -1193,19 +1217,24 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   now** for a searched pen color (`lib/pen-color-session.ts`): the timer starts
   at the current second and paints a block of that color until stop. It does
   not write a Done row and does not replace the Operations clock.
+  Both clocks are open work sessions. A To Do **Session** is a planned work
+  session (a name, a length, Bare minimum / Goal / Exceptional). Play on a
+  line there starts this pen clock for that task or subtask. The countdown
+  stays on the plan. See `components/Home/ToDo/README.md`.
   Both clocks carry **objectives for right now** (`lib/now-objective.ts`,
   `TimeEntry.nowObjectives`): a popup checklist on the live row (header now well
-  and desk strips). **Add objective** stamps this moment. **Completed objective**
-  logs a line already finished this sitting, start unknown, not before the
-  session began. Hide completed folds done rows of this sitting. A row click
+  and desk strips). Open rows are **Now** or **Next**. **Now** starts a stint.
+  **Next** waits, and that wait does not count. **Completed** logs a line
+  already finished this sitting, start unknown, not before the session began.
+  Hide completed folds done rows of this sitting. A row click
   (away from the text and the checkbox) offers Delete, Save for later, and
   Attach to a task or subtask of the current activity (or a new task named from
   the objective). Save for later parks it on that task or subtask
   (`lib/unfinished-objectives-store.ts`) and takes it off this sitting, so the
   wait does not count as work. Stop, while any objective is still open, asks
-  whether to save them. Yes closes and parks them on that store, and they are
-  on the list from the start the next time that pen, task, or subtask is
-  tracked. No closes without parking. Cancel leaves the clock running. After
+  whether to save them. Yes closes and parks them on that store, and they come
+  back in Next (banked minutes kept, no new stint) the next time that pen,
+  task, or subtask is tracked. No closes without parking. Cancel leaves the clock running. After
   the clock stops, an optional end-of-session reflection
   (`lib/session-debrief.ts`) shows estimates against the minutes of that
   sitting, the log note, a note for the next start, a 1–5 satisfaction,
@@ -1252,7 +1281,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   (`lib/sleep-sync.ts`) + `nightFromGeneratedBlocks` (`lib/sleep-inference.ts`).
   Derived sleep blocks are ordinary blocks: retiming, splitting or deleting one
   reads the night back out of them and corrects the log, which re-writes the Done
-  row, the habit minutes and the Sleep tab — so the tracker and Analytics cannot
+  row, the habit minutes and the Sleep tab — so the tracker and Data cannot
   describe the same night differently, and a grid edit is no longer silently
   reverted. The ends taken are the outermost, since a one-interval night cannot
   hold a wakeful hour; confidence is untouched, because moving a block says
@@ -1268,7 +1297,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   window into hours the user was asleep. Settings → **Default time of day** reports
   what is actually in force. The Tracking strip offers the same derivation as a
   one-click **Fill**, rather than applying it silently.
-- **Sleep analytics** — ✅ `components/Analytics/SleepAnalytics.tsx` (Analytics →
+- **Sleep analytics** — ✅ `components/Analytics/time/SleepAnalytics.tsx` (Data →
   **Sleep**), reading logged and painted nights alike: average/median duration per
   night tracked, average bedtime and wake time, the standard deviation of each end
   as a regularity measure, the **earliest and latest** bedtime and wake time with
@@ -1333,7 +1362,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   reminder, what matters most tomorrow (both shown on the next morning), goals
   to focus tomorrow, and a glance at that day's time grid / day log / activity
   log in the pen colors. Week, month, season, and year add period stats and
-  `PeriodReview.arc` (one reflection model; Analytics → Reviews reads it).
+  `PeriodReview.arc` (one reflection model; Data → Reviews reads it).
 - **Star Lord Report** — ✅ `components/Reviews/StarLordReportDialog.tsx` +
   `lib/star-lord.ts` + `lib/lunar.ts` + `lib/star-lord-store.ts`. Opens from
   Header → Rituals on the local day of the new moon, the local day of the full
@@ -1354,7 +1383,7 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   required-today marks (`todoMarks`),
   habit priorities, day-plan, circumstances, best-day, gratitude; `source` labels
   text vs desktop. Partial progress + `STOP`. Surfaced on Home → To Do / Habits
-  priority bands, Analytics → Reviews + To-do pulse.
+  priority bands, Data → Reviews + To-do pulse.
 - **Start ritual (week–year)** — ✅ `StartRitualDialog` + Telegram
   `ritual start week|month|quarter|year`: undone from last period, priorities,
   must-do, mark assigned tasks required / prioritized, intentions, plan, gratitude on `PeriodReview.start`.
@@ -1366,14 +1395,14 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   **Other** stores the typed note beside the token. The same optional shape is
   asked on Scheduler and To Do **Push** (`SchedulePlacement.missReason`), on
   marking a task missed and on header-plan **Skip** when the linked task is
-  still open (`Task.missReason`), and on an operation marked abandoned or via
-  menubar **Why missed** (`OperationReview.blockedReasons`). A habit
+  still open (`Task.missReason`), and on an operation marked abandoned
+  (`OperationReview.blockedReasons`; no menubar **Why missed** button). A habit
   missed-opportunity wand stores `TaskCompletion.missReason` as a string.
   Skip, close, or a blank save still does the action. Dismiss, grades, and the
-  after-action form stay silent. Analytics → Reviews lists the dated notes
+  after-action form stay silent. Data → Reviews lists the dated notes
   with counts by preset token and by source (push, missed task, habit, missed
   op, ritual). Clustering is later.
-- **Assumed-time confirmation** — ✅ `components/Reviews/AssumedTimesSection.tsx`.
+- **Assumed-time confirmation** — ✅ `components/Reviews/end/AssumedTimesSection.tsx`.
   Autogenerated time data is never presented as observed: each derived value carries
   a `FieldEstimate` (`Task.estimates`, `lib/estimated-values.ts`) naming the field,
   how it was produced, and its basis. The day/week/month review lists the period's
@@ -1393,15 +1422,15 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
   A cleared score is removed; a save that omits a score leaves it. Agreeing
   awards **3 points + 0.1 per word** in those notes (`review:${taskId}`).
   Only that award writes the ledger row. `saveCompletionReview` /
-  `lib/completion-review.ts`. Analytics → Reflection and Goals read that summary.
+  `lib/completion-review.ts`. Data → Reflection and Goals read that summary.
 - **Task post-mortems (§13.7)** — ✅ `PostMortemDialog`, a later note from
-  ritual **Reflect** or Analytics. Satisfaction, resistance, focus, distraction,
+  ritual **Reflect** or Data. Satisfaction, resistance, focus, distraction,
   and `reflectNotes` (not the quick-review notes). It does not create, revise,
   or delete the quick-review points. It does not replace the completion popup.
-  Analytics → Reflection includes satisfaction and distraction on the feeling
+  Data → Reflection includes satisfaction and distraction on the feeling
   means and shows `reflectNotes` on the feelings plate and in prompt history.
   Operations have their own debrief (`addOperationReview` + `OperationPostMortemDialog`).
-  Analytics → Operations shows mean execution, planning, and morale, the sum
+  Data → Operations shows mean execution, planning, and morale, the sum
   and mean of stored `hoursLogged`, and the summary / what worked / what failed
   / lessons for reports in the window. Missing scores stay out of the means.
 - **Gap:** no scheduled prompting beyond the header badge.
@@ -1433,11 +1462,11 @@ ten-slice build: [`ScienceandSanityBrain2.md`](ScienceandSanityBrain2.md)
 - **Gap:** other configurable multipliers (urgency/consistency); retroactive adjustment.
 - §14.4 Regret accrual — ✅ `lib/regret-store.ts` (accrues the cost of not-done
   important/overdue items; day/week/month totals) + `Analytics/RegretView.tsx`.
-  Regret rows are local `YYYY-MM-DD`, same as the Analytics window. An old evening
+  Regret rows are local `YYYY-MM-DD`, same as the Data window. An old evening
   UTC key can still sit on the next civil day. Ledger equals `regretCost` for days
   written after the bridge; one stolen legacy date can stay one increment short.
 
-## §15 Analytics — 🟡
+## §15 Data — 🟡
 **Heart of the product**, not a leftover tab: the vault of items, time, habits,
 sleep, reviews, metrics, and operations is collected here, presented, analyzed,
 and used to invent the next instrument. Chart → Lists (`open-in-lists.ts`) is
@@ -1471,7 +1500,7 @@ how a finding stays a living item, not a screenshot.
   charts keep the frame (`chart-frame.tsx`). Chart → Lists (`open-in-lists.ts`).
   Classical stats only (`lib/metrics.ts`, `signal-stats.ts`, `studio-plot-stats.ts`). Derived numbers use
   `~` / **est.** Every view has `ANALYTICS_TAB_HELP` plus tooltips.
-- **Tracking find, grain, tags** — ✅ on Analytics → Time → Tracking.
+- **Tracking find, grain, tags** — ✅ on Data → Time → Tracking.
   **Find blocks** (`block-search.ts` → `lib/tracking-search.ts`): a jump outlines
   the block on the period filmstrip and opens the editor; **Show matches in this
   view** reruns the Tracking measures on that set only. **Days** and **Weeks**
@@ -1519,7 +1548,7 @@ model is never in a render path or a write path.
 ## §17 V1 Scope & Build Order
 The spec's suggested build order remains a good sequence. Export/import (§3.2)
 has already landed (`lib/data/backup.ts` + Settings). The live ordering for
-agents is [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md): screens and Analytics honesty
+agents is [`PLAN_OF_ACTION.md`](PLAN_OF_ACTION.md): screens and Data honesty
 first, with §5 naming debt continued in Wave 10 (title is the field of record;
 persist v18 mirrors `description` and parks note prose in `body`). The module
 platform still depends on that ontology, but UI style-breaks do not wait on it.
@@ -1528,15 +1557,18 @@ platform still depends on that ontology, but UI style-breaks do not wait on it.
 The spec describes a personal cognitive management system; the project's
 ambition is a **new type of software** — a living, perfect second brain that
 stays adaptable, alive, beautiful, and infinite. **Every item should be
-connected and used in as many ways as possible.** **Analytics is the heart** of
-that mass of personal data. See "What this is trying to be" in
+connected and used in as many ways as possible.** **Data is the heart:**
+analytics and combined analysis, visualization and stats, libraries for viewing
+the rows, sources, and annotation. See "What this is trying to be" in
 [`../README.md`](../README.md). Tracked here so it stays connected to the code:
 - **User-defined item types/subtypes as a primary workflow.** Seam + UI exist
-  (`ItemTypeDefinition`, Settings → **Manage Item Types**, Analytics →
+  (`ItemTypeDefinition`, Settings → **Manage Item Types**, Data →
   Library → **Item Types**, List Settings → **Item types** allowlist + default
   + **New type…**, `components/ItemTypes/`). New list items default to generic
   `item` (or `List.itemTypeId`). Catalog types include **Film** (`lib/film-types.ts`);
-  Film DNA Films lists get `itemTypeId` / `itemTypeIds: ["film"]`. Lists inspector
+  Film DNA Films lists get `itemTypeId` / `itemTypeIds: ["film"]`. Lists →
+  Quick Access → **Item Types** is one virtual list per type (including
+  Operations and Computer Projects), filled from `Task.type`. Lists inspector
   **Filter types** show/hides by exact type id (All Items + multi-type lists;
   `lists-ui-store.hiddenItemTypeIdsByTarget`). Task remains the hardcoded work
   surface. Implied actions (`logAction`, `incrementHabit`) wire attribute deltas
@@ -1549,7 +1581,7 @@ that mass of personal data. See "What this is trying to be" in
   `body`/type. ✅ `Item.body` + built-in `note` type (`lib/note-types.ts` — Docs
   folder/font/status attrs), dependency-light markdown editor
   `components/Editor/RichTextEditor.tsx`, ItemDetail `"body"` panel
-  `components/ItemDetail/BodyPanel.tsx`, and top-level **Docs** tab
+  `components/ItemDetail/tabs/body/BodyPanel.tsx`, and top-level **Docs** tab
   (`components/Docs/` — WYSIWYG HTML, Google Fonts, images, PDF ingest;
   helpers in `lib/doc-html.ts` / `doc-links.ts` / `pdf-to-html.ts`).
 - **Spreadsheet-style grid displays.** Google Sheets–style editable grids over
@@ -1570,7 +1602,7 @@ that mass of personal data. See "What this is trying to be" in
   Lists **□ Fullscreen** is an in-app Win95 child window around the same grid
   (not OS fullscreen).
 - **Self-tracking + analytics depth.** Track arbitrary user-defined metrics and
-  analyze them (extends §12 Tracking and §15 Analytics).
+  analyze them (extends §12 Tracking and §15 Data).
 - **Installable modules ("bring your own app").** ⛔ The end goal: any small
   `.tsx` app installs into Brain2 through a **port wizard** that maps its state
   onto Items, registers its views, and grants explicit **bridges** to Tracking /
@@ -1583,7 +1615,7 @@ that mass of personal data. See "What this is trying to be" in
 - **Map and territory (general semantics as practice).** 🕓 The vault already
   keeps orders apart (est. chips, hatched assumed time, Counts-as at read time,
   plan ghosts beside solid tracking). Still to build, as Wave 13: one order on
-  every derived value, extensional Analytics sentences, judgment copy that
+  every derived value, extensional Data sentences, judgment copy that
   describes events, an optional is-of-identity check, description-then-inference
   reviews, a period handoff, a per-record differential, label ladders beyond
   pens, graded completion by default, and dated **formulation** items (the idea
@@ -1625,7 +1657,7 @@ Spec-facing remainder, still true, but **not** the next checkout:
 5. **§15** Predictive analytics still deferred. Category performance (**Lists &
    areas**) and cognitive-state (**Mood field**: painted names plus the
    three-part reading, not only the four starter pens and the wellbeing
-   metrics) now ship as Analytics studio views. Honesty (sample-size, shared range, chart → Lists) shipped in Wave 1;
+   metrics) now ship as Data studio views. Honesty (sample-size, shared range, chart → Lists) shipped in Wave 1;
    the studio interior is the current house exception (title + status stay Lists).
 6. **§13** Scheduled review prompts. Generic task post-mortems already ship
    (`PostMortemDialog`).

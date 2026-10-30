@@ -158,7 +158,9 @@
 }
 
 .habit95-section-nav .habit95-section-key[aria-current="true"],
-.habit95-section-nav .habit95-section-key[aria-current="true"]:hover {
+.habit95-section-nav .habit95-section-key[aria-current="true"]:hover,
+.habit95-section-nav .habit95-section-key[aria-selected="true"],
+.habit95-section-nav .habit95-section-key[aria-selected="true"]:hover {
   color: #fff !important;
   background: var(--h95-blue) !important;
   box-shadow: var(--h95-sunken);
@@ -1018,7 +1020,7 @@ label.habit95-field > .native-select {
 
 .habit95-btn:disabled {
   color: var(--chrome-lo) !important;
-  text-shadow: 1px 1px 0 #fff;
+  text-shadow: none;
   cursor: default;
 }
 
@@ -1576,4 +1578,391 @@ body.win95-app .hab-willpower-lab-play button.hab-willpower-gems-hit,
   .hab-willpower-lab-foot {
     flex-wrap: wrap;
   }
+}
+
+/* Phone sheet. Desktop habit windows above stay on the pixel face. */
+@media (max-width: 767px) {
+  .habit95-dialog,
+  .hab-willpower-lab-dialog.habit95-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+    bottom: auto !important;
+    transform: none !important;
+    translate: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .habit95-dialog .habit95-body,
+  .habit95-form {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .habit95-form input[type="text"],
+  .habit95-form input[type="number"],
+  .habit95-form input[type="search"],
+  .habit95-form input[type="date"],
+  .habit95-form input[type="time"],
+  .habit95-form input[type="email"],
+  .habit95-form select,
+  .habit95-form textarea,
+  .habit95-form .habit95-input,
+  .habit95-form .habit95-select,
+  .habit95-form .native-select,
+  .habit95-field > input,
+  .habit95-field > select,
+  .habit95-field > textarea,
+  label.habit95-field > input,
+  label.habit95-field > select,
+  label.habit95-field > textarea {
+    font-size: 16px;
+    min-height: 44px;
+    height: auto;
+  }
+
+  .habit95-form input[type="checkbox"],
+  .habit95-form input[type="radio"],
+  .habit95-form input[type="range"] {
+    min-height: 0;
+    width: auto;
+    font-size: 16px;
+  }
+}
+
+/*
+ * Add / Edit Habit on a phone. WebKit sizes an auto-height flex item
+ * with flex-basis 0 and min-height 0 to nothing, so the sheet was a
+ * title bar and no fields. The fields set the height and the sheet
+ * scrolls. On a phone each section key is a tab and only that section
+ * shows. The physics lab keeps its own phone layout. Landscape
+ * phones are wider than 767px and still coarse.
+ */
+@media (max-width: 767px), (max-width: 980px) and (pointer: coarse) {
+  /* Hug the open tab. `inset` on `.ui-dialog-content` would stretch a short
+     section into an empty sheet. A long section still scrolls inside max-height. */
+  .habit95-dialog.ui-dialog-content:not(.hab-willpower-lab-dialog) {
+    top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: fit-content !important;
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .habit95-dialog:not(.hab-willpower-lab-dialog) .habit95-title-bar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    min-height: 48px;
+  }
+
+  .habit95-dialog:not(.hab-willpower-lab-dialog) .habit95-body,
+  .habit95-dialog:not(.hab-willpower-lab-dialog) .habit95-form,
+  .habit95-dialog:not(.hab-willpower-lab-dialog) .habit95-fields {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* One section per tab. The title bar stays sticky; the strip scrolls sideways. */
+  .habit95-dialog:not(.hab-willpower-lab-dialog) .habit95-title-btn.keycap-close {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    flex: 0 0 44px !important;
+  }
+
+  .habit95-form[data-phone-tabs="true"] .habit95-section-nav {
+    position: sticky;
+    top: 48px;
+    z-index: 7;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin: 0 0 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .habit95-form[data-phone-tabs="true"] .habit95-section-nav .habit95-section-key {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 44px !important;
+    height: auto !important;
+    padding: 8px 14px;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .habit95-form[data-phone-tabs="true"] .habit95-actions .habit95-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .habit95-form[data-phone-tabs="true"] input[type="text"],
+  .habit95-form[data-phone-tabs="true"] input[type="number"],
+  .habit95-form[data-phone-tabs="true"] input[type="search"],
+  .habit95-form[data-phone-tabs="true"] input[type="date"],
+  .habit95-form[data-phone-tabs="true"] input[type="time"],
+  .habit95-form[data-phone-tabs="true"] input[type="email"],
+  .habit95-form[data-phone-tabs="true"] select,
+  .habit95-form[data-phone-tabs="true"] textarea,
+  .habit95-form[data-phone-tabs="true"] .habit95-input,
+  .habit95-form[data-phone-tabs="true"] .habit95-select,
+  .habit95-form[data-phone-tabs="true"] .native-select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
+
+/*
+ * Phone physics lab. Portaled, so this is gated on the iOS shell
+ * (`html:has(.cogs-mobile-app)`), not on viewport width. Desktop habit
+ * windows, including a narrow desktop window, stay on the rules above.
+ * The sheet starts below the status bar (`--phone-sheet-top`, at least
+ * 59px when the inset is 0). The title-bar close is a 44px key in that
+ * band. A 100dvh sheet put that key under the island.
+ */
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog.habit95-dialog,
+.hab-willpower-lab-dialog.is-phone-physics.habit95-dialog {
+  top: calc(max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) + 12px) !important;
+  right: 0 !important;
+  bottom: auto !important;
+  left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: calc(100dvh - max(env(safe-area-inset-top, 0px), var(--phone-sheet-top, 0px)) - 12px - env(safe-area-inset-bottom, 0px)) !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  box-sizing: border-box !important;
+  padding-top: 0 !important;
+  padding-right: env(safe-area-inset-right, 0px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  padding-left: env(safe-area-inset-left, 0px) !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .habit95-title-bar,
+.hab-willpower-lab-dialog.is-phone-physics .habit95-title-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  min-height: 48px;
+  padding: 6px 8px;
+  flex-shrink: 0;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .habit95-title-btn.keycap-close,
+.hab-willpower-lab-dialog.is-phone-physics .habit95-title-btn.keycap-close {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  flex: 0 0 44px !important;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .habit95-body,
+.hab-willpower-lab-dialog.is-phone-physics .habit95-body {
+  overflow-x: visible;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Taller oval, crystal low, so a hop has sky inside the dish. */
+html:has(.cogs-mobile-app) .hab-willpower-lab-play,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-play {
+  padding: 6px 10px 4px;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-play .hab-willpower-gems-hit,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-play .hab-willpower-gems-hit {
+  width: min(19.5rem, 94%);
+  max-width: none;
+  --hab-willpower-scale: 1.45;
+  touch-action: none;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-play .hab-willpower-stage,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-play .hab-willpower-stage {
+  height: 280px;
+  min-height: 280px;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-play .hab-willpower-crystal,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-play .hab-willpower-crystal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 132px;
+  width: 100%;
+  margin: 0;
+  transform: scale(1.15);
+  transform-origin: 50% 42%;
+}
+
+html:has(.cogs-mobile-app) figure.hab-willpower-gems .hab-willpower-stage {
+  min-height: 200px;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) figure.hab-willpower-gems .hab-willpower-crystal {
+  margin-top: 36px;
+}
+
+html:has(.cogs-mobile-app) figure.hab-willpower-gems .hab-willpower-gems-hit {
+  touch-action: none;
+  overflow: visible;
+}
+
+/* Pale silver keycap, same skirt as `.cogs-mobile-app .m-keycap` in mobile.css.
+   The dialog is portaled outside that shell, so the face is repeated here. */
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab button.m-keycap,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab button.m-keycap {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  height: auto;
+  padding: 8px 12px 12px !important;
+  border: 1px solid #6e7378 !important;
+  border-radius: 4px !important;
+  background: #dfe2e6 !important;
+  background-image: linear-gradient(180deg, #f1f3f5, #dfe2e6) !important;
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -4px 0 #b3b8be,
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  color: #1f2226 !important;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-shadow: none;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab button.m-keycap:active:not(:disabled),
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab button.m-keycap:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 #b3b8be,
+    inset -2px 0 0 #b3b8be,
+    inset 0 -2px 0 #b3b8be,
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab button.m-keycap[aria-pressed="true"],
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab button.m-keycap[aria-pressed="true"] {
+  background: #070c0a !important;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%), #070c0a !important;
+  border-color: #070c0a !important;
+  color: #7dffc4 !important;
+  text-shadow: 0 0 3px #7dffc4;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-eq-head.m-keycap,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-eq-head.m-keycap {
+  width: 100%;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab-reset.m-keycap,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-reset.m-keycap {
+  width: 100%;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-explain-lead,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-explain-lead {
+  margin: 0;
+  padding: 2px 2px 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #1c1e20;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab-readout .hab-willpower-explain-lead,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-readout .hab-willpower-explain-lead {
+  color: #d7ffe9;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-slider,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-slider {
+  height: 44px;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-slider-track,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-slider-track {
+  top: 20px;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-slider-thumb,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-slider-thumb {
+  top: 12px;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab-foot,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-foot {
+  flex-wrap: wrap;
+}
+
+/* The desktop lab is a two-pane flex trap. On the phone the sheet itself
+   scrolls, so the readout and knobs grow and the pinned close stays put. */
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab {
+  flex: none;
+  height: auto;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab-main,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-main {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  height: auto;
+  overflow: visible;
+}
+
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-lab-readout,
+html:has(.cogs-mobile-app) .hab-willpower-lab-dialog .hab-willpower-knobs,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-lab-readout,
+.hab-willpower-lab-dialog.is-phone-physics .hab-willpower-knobs {
+  flex: none;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }

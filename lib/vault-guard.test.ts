@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { formatAppendLog } from "./append-log"
-import { applyAppearancePins, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, overlayHabitCompletions, overlayHabitCompletionsParsed, overlayIngestAllowlist, overlayIngestAllowlistParsed, stampAppearancePinsParsed } from "./vault-guard.js"
+import { applyAppearancePins, applyVaultPatch, pickPersistItem, mergePersistSnapshots, shouldRejectVaultShrink, vaultRecordCount, shouldRejectAppearanceDowngrade, shouldRejectContentDowngrade, shouldRejectIngestDowngrade, stampAppearancePins, shouldSkipHubAppearanceCopy, shouldRejectHubLogShrink, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, overlayHabitCompletions, overlayHabitCompletionsParsed, overlayIngestAllowlist, overlayIngestAllowlistParsed, stampAppearancePinsParsed } from "./vault-guard.js"
 
 function tasks(n: number) {
   return JSON.stringify({
@@ -1101,5 +1101,362 @@ describe("stampAppearancePins early return", () => {
     expect(vaultNeedsParsedGuards("brain2-task-storage")).toBe(true)
     expect(vaultNeedsParsedGuards("brain2-habits-store")).toBe(true)
     expect(vaultNeedsParsedGuards("brain2-sleep-store")).toBe(false)
+  })
+})
+
+describe("applyVaultPatch", () => {
+  function taskVault(tasks: object[], extra: Record<string, unknown> = {}) {
+    return JSON.stringify({
+      state: { tasks, lists: [], folders: [], removedTaskIds: [], removedListIds: [], ...extra },
+      version: 19,
+    })
+  }
+
+  it("keeps notes and attributes when a slim task upsert shares createdAt", () => {
+    const stored = taskVault([
+      {
+        id: "t1",
+        title: "Old",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        notes: "keep me",
+        attributes: { photo: "idb:pic" },
+        body: "full body",
+        listIds: ["l1"],
+      },
+    ])
+    const result = applyVaultPatch("brain2-task-storage", stored, {
+      upserts: [{ id: "t1", title: "New", createdAt: "2026-09-01T00:00:00.000Z" }],
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const task = JSON.parse(result.value).state.tasks[0]
+    expect(task.title).toBe("New")
+    expect(task.createdAt).toBe("2026-09-01T00:00:00.000Z")
+    expect(task.notes).toBe("keep me")
+    expect(task.attributes).toEqual({ photo: "idb:pic" })
+    expect(task.body).toBe("full body")
+    expect(task.listIds).toEqual(["l1"])
+    expect(JSON.parse(result.value).version).toBe(19)
+  })
+
+  it("refuses one patch that drops most lists, and keeps an ordinary delete", () => {
+    const lists = Array.from({ length: 40 }, (_, i) => ({ id: `l${i}`, name: `List ${i}` }))
+    const stored = taskVault([{ id: "t1", title: "Keep" }], { lists })
+    const wipe = applyVaultPatch("brain2-task-storage", stored, {
+      upserts: [{ id: "example", name: "Example List", color: "#EF4444" }],
+      removedIds: lists.slice(1).map((list) => list.id),
+    })
+    expect(wipe).toEqual({ ok: false, reason: "mass removal" })
+
+    const one = applyVaultPatch("brain2-task-storage", stored, { removedIds: ["l5"] })
+    expect(one.ok).toBe(true)
+  })
+
+  it("refuses a habits patch that swaps the habit list for a seed", () => {
+    const tasks = Array.from({ length: 50 }, (_, i) => ({ id: `h${i}`, name: `Habit ${i}`, frequency: "daily" }))
+    const stored = JSON.stringify({ state: { tasks, weeklyData: {}, contentRev: 1 }, version: 26 })
+    const seed = applyVaultPatch("brain2-habits-store", stored, {
+      upserts: [{ id: "seed-1", name: "Weekly review", frequency: "weekly" }],
+      removedIds: tasks.slice(0, 25).map((task) => task.id),
+    })
+    expect(seed).toEqual({ ok: false, reason: "mass removal" })
+  })
+
+  it("does not bring a tombstoned task back on a later upsert", () => {
+    const stored = taskVault([
+      { id: "keep", title: "Stay", notes: "n" },
+      { id: "gone", title: "Bye", notes: "x" },
+    ])
+    const deleted = applyVaultPatch("cogs-task-storage", stored, {
+      upserts: [{ id: "gone", title: "still here", notes: "no" }],
+      removedIds: ["gone"],
+    })
+    expect(deleted.ok).toBe(true)
+    if (!deleted.ok) return
+    const after = JSON.parse(deleted.value).state
+    expect(after.tasks.map((task: { id: string }) => task.id)).toEqual(["keep"])
+    expect(after.tasks[0].notes).toBe("n")
+    expect(after.removedTaskIds).toContain("gone")
+
+    const resurrect = applyVaultPatch("brain2-task-storage", deleted.value, {
+      upserts: [{ id: "gone", title: "I am back", notes: "nope", createdAt: "2026-10-30T00:00:00.000Z" }],
+    })
+    expect(resurrect.ok).toBe(true)
+    if (!resurrect.ok) return
+    const back = JSON.parse(resurrect.value).state
+    expect(back.tasks.map((task: { id: string }) => task.id)).toEqual(["keep"])
+    expect(back.removedTaskIds).toContain("gone")
+  })
+
+  it("lands one time-grid block and keeps older days", () => {
+    const stored = JSON.stringify({
+      state: {
+        entries: [
+          { id: "old-day", start: "2026-09-01T10:00:00.000Z", title: "older", notes: "zoo" },
+          { id: "yesterday", start: "2026-10-28T10:00:00.000Z", title: "yesterday" },
+        ],
+        dayNotes: { "2026-09-01": "zoo" },
+        scopes: [{ id: "scope-1", name: "Life" }],
+        removedEntryIds: [],
+      },
+      version: 4,
+    })
+    const result = applyVaultPatch("brain2-timegrid-store", stored, {
+      upserts: [{ id: "today", start: "2026-10-30T15:00:00.000Z", title: "painted" }],
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const grid = JSON.parse(result.value).state
+    expect(grid.entries.map((entry: { id: string }) => entry.id)).toEqual(["old-day", "yesterday", "today"])
+    expect(grid.entries[0].notes).toBe("zoo")
+    expect(grid.entries[2]).toMatchObject({ id: "today", title: "painted", start: "2026-10-30T15:00:00.000Z" })
+    expect(grid.dayNotes).toEqual({ "2026-09-01": "zoo" })
+    expect(grid.scopes).toEqual([{ id: "scope-1", name: "Life" }])
+  })
+
+  it("rejects a patch that would wipe the task vault", () => {
+    const stored = taskVault(Array.from({ length: 10 }, (_, i) => ({ id: `t${i}`, notes: "n" })))
+    const result = applyVaultPatch("brain2-task-storage", stored, {
+      removedIds: Array.from({ length: 8 }, (_, i) => `t${i}`),
+    })
+    expect(result).toEqual({ ok: false, reason: "vault shrink" })
+  })
+
+  it("refuses a patch for stores whose merge is not implemented yet", () => {
+    const stored = '{"state":{"tasks":[{"id":"h0"}]}}'
+    for (const name of ["cogs-event-storage", "brain2-kitchen", "cogs-modules-store"]) {
+      expect(applyVaultPatch(name, stored, { upserts: [{ id: "h0", title: "x" }] })).toEqual({
+        ok: false,
+        reason: "patch not implemented",
+      })
+    }
+  })
+
+  it("keeps habit fields the patch did not send and does not roll contentRev", () => {
+    const stored = JSON.stringify({
+      state: {
+        tasks: [
+          {
+            id: "h1",
+            title: "Water",
+            schedule: "daily",
+            completions: { "2026-09-01": { completed: true } },
+            notes: "keep",
+          },
+        ],
+        weeklyData: { "2026-09-01": { h1: { completed: true, text: "note" } } },
+        contentRev: 80,
+        percentLedTint: "#7d6bb8",
+      },
+      version: 19,
+    })
+    const result = applyVaultPatch("brain2-habits-store", stored, {
+      upserts: [{ id: "h1", title: "Tea" }],
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const state = JSON.parse(result.value).state
+    expect(state.tasks[0].title).toBe("Tea")
+    expect(state.tasks[0].schedule).toBe("daily")
+    expect(state.tasks[0].completions).toEqual({ "2026-09-01": { completed: true } })
+    expect(state.tasks[0].notes).toBe("keep")
+    expect(state.contentRev).toBeGreaterThan(80)
+    expect(shouldRejectContentDowngrade("brain2-habits-store", result.value, stored)).toBe(false)
+    expect(state.percentLedTint).toBe("#7d6bb8")
+    expect(state.weeklyData["2026-09-01"].h1).toEqual({ completed: true, text: "note" })
+
+    const cell = applyVaultPatch("cogs-habits-store", result.value, {
+      upserts: [{ id: "cell:weeklyData:2026-09-01:h1", completed: false }],
+    })
+    expect(cell.ok).toBe(true)
+    if (!cell.ok) return
+    const after = JSON.parse(cell.value).state
+    expect(after.weeklyData["2026-09-01"].h1).toEqual({ completed: false, text: "note" })
+    expect(after.tasks[0].notes).toBe("keep")
+    expect(after.contentRev).toBeGreaterThan(state.contentRev)
+  })
+
+  it("lands one sleep night and one goal field without dropping the rest", () => {
+    const sleep = JSON.stringify({
+      state: {
+        nights: {
+          "2026-09-01": { date: "2026-09-01", sleptMin: -30, note: "older" },
+          "2026-10-29": { date: "2026-10-29", wokeMin: 420, note: "keep" },
+        },
+        targetMinutes: 480,
+      },
+    })
+    const night = applyVaultPatch("cogs-sleep-store", sleep, {
+      upserts: [{ id: "2026-10-29", note: "edited" }],
+    })
+    expect(night.ok).toBe(true)
+    if (!night.ok) return
+    const nights = JSON.parse(night.value).state.nights
+    expect(nights["2026-09-01"]).toEqual({ date: "2026-09-01", sleptMin: -30, note: "older" })
+    expect(nights["2026-10-29"]).toEqual({ date: "2026-10-29", wokeMin: 420, note: "edited" })
+    expect(JSON.parse(night.value).state.targetMinutes).toBe(480)
+    expect(
+      applyVaultPatch("brain2-sleep-store", sleep, { removedIds: ["2026-09-01"] }),
+    ).toEqual({ ok: false, reason: "hub log shrink" })
+
+    const goals = JSON.stringify({
+      state: {
+        objectives: [{ id: "o1", title: "Health", description: "stay" }],
+        goals: [
+          { id: "g1", title: "Books", current: 1, target: 4, notes: "keep" },
+          { id: "g2", title: "Run", current: 0, target: 3 },
+        ],
+      },
+    })
+    const goal = applyVaultPatch("brain2-goals-store", goals, {
+      upserts: [{ id: "g1", current: 2 }],
+    })
+    expect(goal.ok).toBe(true)
+    if (!goal.ok) return
+    const rows = JSON.parse(goal.value).state
+    expect(rows.goals[0]).toEqual({ id: "g1", title: "Books", current: 2, target: 4, notes: "keep" })
+    expect(rows.goals[1].title).toBe("Run")
+    expect(rows.objectives[0]).toEqual({ id: "o1", title: "Health", description: "stay" })
+  })
+
+  it("rejects a patch that is not the upsert shape without throwing", () => {
+    const stored = taskVault([{ id: "t1", title: "A" }])
+    expect(() => applyVaultPatch("brain2-task-storage", stored, null)).not.toThrow()
+    expect(applyVaultPatch("brain2-task-storage", stored, null)).toEqual({ ok: false, reason: "invalid patch" })
+    expect(applyVaultPatch("brain2-task-storage", stored, { upserts: [{ title: "no id" }] })).toEqual({
+      ok: false,
+      reason: "invalid patch",
+    })
+    expect(applyVaultPatch("brain2-task-storage", stored, { removedIds: [1] })).toEqual({
+      ok: false,
+      reason: "invalid patch",
+    })
+    expect(applyVaultPatch("nope", stored, { upserts: [] })).toEqual({ ok: false, reason: "patch not implemented" })
+  })
+
+  it("field-merges plan text, planned actions, ingest events, and telegram rows", () => {
+    const plan = JSON.stringify({
+      v: 1,
+      entries: [
+        { id: "al_old", createdAt: "2026-09-01T00:00:00.000Z", text: "older day" },
+        { id: "al_today", createdAt: "2026-10-30T00:00:00.000Z", text: "today", stampSuffix: "phone" },
+      ],
+      draft: "still",
+    })
+    const planResult = applyVaultPatch("dayPlan-2026-10-30", plan, {
+      upserts: [{ id: "al_today", text: "today plus" }],
+    })
+    expect(planResult.ok).toBe(true)
+    if (!planResult.ok) return
+    const log = JSON.parse(planResult.value)
+    expect(log.entries.map((entry: { id: string }) => entry.id)).toEqual(["al_old", "al_today"])
+    expect(log.entries[0].text).toBe("older day")
+    expect(log.entries[1]).toMatchObject({ text: "today plus", stampSuffix: "phone" })
+    expect(log.draft).toBe("still")
+    expect(applyVaultPatch("weekPlan-2026-W44", plan, {}).ok).toBe(true)
+    expect(applyVaultPatch("cogs-monthPlan-2026-10", plan, {}).ok).toBe(true)
+
+    const actions = JSON.stringify({
+      state: {
+        actions: [
+          { id: "a1", title: "Block", notes: "keep" },
+          { id: "a2", title: "Other" },
+        ],
+      },
+    })
+    const actionResult = applyVaultPatch("brain2-planned-actions", actions, {
+      upserts: [{ id: "a1", title: "Renamed" }],
+    })
+    expect(actionResult.ok).toBe(true)
+    if (!actionResult.ok) return
+    const rows = JSON.parse(actionResult.value).state.actions
+    expect(rows[0]).toEqual({ id: "a1", title: "Renamed", notes: "keep" })
+    expect(rows[1].id).toBe("a2")
+
+    const ingest = JSON.stringify({
+      state: {
+        allowedChats: [{ chatId: "9" }],
+        allowlistRev: 2,
+        events: [{ id: "e1", summary: "ate", at: "2026-10-01T00:00:00.000Z" }],
+      },
+    })
+    const ingestResult = applyVaultPatch("cogs-ingest-store", ingest, {
+      upserts: [{ id: "e1", summary: "ate lunch" }],
+    })
+    expect(ingestResult.ok).toBe(true)
+    if (!ingestResult.ok) return
+    const ingestState = JSON.parse(ingestResult.value).state
+    expect(ingestState.events[0]).toEqual({ id: "e1", summary: "ate lunch", at: "2026-10-01T00:00:00.000Z" })
+    expect(ingestState.allowedChats).toEqual([{ chatId: "9" }])
+
+    const feed = JSON.stringify({
+      state: {
+        rows: [{ id: "m1", text: "hi", at: "2026-10-01T00:00:00.000Z", outcome: { status: "applied" } }],
+      },
+    })
+    const feedResult = applyVaultPatch("brain2-telegram-feed", feed, {
+      upserts: [{ id: "m1", text: "hi there" }],
+    })
+    expect(feedResult.ok).toBe(true)
+    if (!feedResult.ok) return
+    expect(JSON.parse(feedResult.value).state.rows[0]).toEqual({
+      id: "m1",
+      text: "hi there",
+      at: "2026-10-01T00:00:00.000Z",
+      outcome: { status: "applied" },
+    })
+  })
+
+  it("tombstones a list id on removedListIds and a time-grid block on removedEntryIds", () => {
+    const stored = JSON.stringify({
+      state: {
+        tasks: [{ id: "t1", title: "Item" }],
+        lists: [
+          { id: "keep", name: "Keep" },
+          { id: "gone", name: "Gone" },
+        ],
+        removedListIds: [],
+      },
+      version: 19,
+    })
+    const deleted = applyVaultPatch("brain2-task-storage", stored, { removedIds: ["gone"] })
+    expect(deleted.ok).toBe(true)
+    if (!deleted.ok) return
+    const state = JSON.parse(deleted.value).state
+    expect(state.lists.map((list: { id: string }) => list.id)).toEqual(["keep"])
+    expect(state.removedListIds).toContain("gone")
+    expect(state.tasks.map((task: { id: string }) => task.id)).toEqual(["t1"])
+    const back = applyVaultPatch("cogs-task-storage", deleted.value, {
+      upserts: [{ id: "gone", name: "Gone again" }],
+    })
+    expect(back.ok).toBe(true)
+    if (!back.ok) return
+    const backState = JSON.parse(back.value).state
+    expect(backState.lists.map((list: { id: string }) => list.id)).toEqual(["keep"])
+    expect(backState.tasks.map((task: { id: string }) => task.id)).toEqual(["t1"])
+
+    const grid = JSON.stringify({
+      state: {
+        entries: [
+          { id: "old-day", start: "2026-09-01T10:00:00.000Z" },
+          { id: "d2", start: "2026-09-02T10:00:00.000Z" },
+          { id: "d3", start: "2026-09-03T10:00:00.000Z" },
+          { id: "manual", start: "2026-10-30T10:00:00.000Z" },
+        ],
+        removedEntryIds: [],
+      },
+    })
+    const painted = applyVaultPatch("cogs-timegrid-store", grid, { removedIds: ["manual"] })
+    expect(painted.ok).toBe(true)
+    if (!painted.ok) return
+    const entries = JSON.parse(painted.value).state
+    expect(entries.entries.map((entry: { id: string }) => entry.id)).toEqual(["old-day", "d2", "d3"])
+    expect(entries.removedEntryIds).toContain("manual")
+    const again = applyVaultPatch("brain2-timegrid-store", painted.value, {
+      upserts: [{ id: "manual", title: "resurrected" }],
+    })
+    expect(again.ok).toBe(true)
+    if (!again.ok) return
+    expect(JSON.parse(again.value).state.entries.map((entry: { id: string }) => entry.id)).toEqual(["old-day", "d2", "d3"])
   })
 })

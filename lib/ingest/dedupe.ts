@@ -6,8 +6,9 @@
  * A text message is keyed by chat plus message id, so an edit (new update id,
  * same message id) does not run again. Live Location is the edit that
  * re-applies: each sample keeps its own update id. Simulate has no Telegram
- * ids and is not deduped. A Telegram (or hub) message with neither update id
+ * ids and is not deduped. A Telegram message with neither update id
  * nor message id has a null key: the executor logs that key and does not apply.
+ * A hub scan is keyed by `msg:hub:scan:<scanId>`, not a Telegram id.
  */
 import type { IncomingMessage } from "./types"
 
@@ -29,6 +30,10 @@ function updateKey(message: IncomingMessage): string | null {
 
 /** Every key this update should claim. Empty for simulate. */
 export function ingestDedupeKeys(message: IncomingMessage): string[] {
+  if (message.source.channel === "hub") {
+    const id = message.scanId?.trim()
+    return id ? [`msg:hub:scan:${id}`] : []
+  }
   if (message.source.channel === "simulate") return []
   const msg = messageKey(message)
   const upd = updateKey(message)

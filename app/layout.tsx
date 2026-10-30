@@ -1,15 +1,16 @@
 /**
  * app/layout.tsx — Next.js root layout
  *
- * The App Router root layout that wraps every page: loads Karla (`--font-karla`;
- * the pixel face is `public/fonts/w95fa.woff` via `win95.css`), applies
- * global metadata, and imports global + module chrome stylesheets (so Fast Refresh
- * cannot drop lazy-tab CSS). `win95.css` owns `--chrome-*`; `chrome-patina.css`
+ * The App Router root layout that wraps every page: loads Karla (`--font-karla`
+ * on `<html>`, Karla on `<body>`; the pixel face is `public/fonts/w95fa.woff`
+ * via `win95.css`). Later faces load with the screen that paints them
+ * (`lib/fonts/`). Applies global metadata, and imports global + module chrome
+ * stylesheets (so Fast Refresh cannot drop lazy-tab CSS). `win95.css` owns `--chrome-*`; `chrome-patina.css`
  * remaps module aliases onto that family; `pcb-backdrop.css` paints the
  * desktop field (Snowflake PCB plate by default; teal and other plates optional); `baby-animal-nest.css` skins the header CRT companion;
  * `machine-loading.css` skins the wait instrument (phosphor sine + screen pet);
  * `win95.css` also sets navy `#000080` text-field and checkbox/radio focus (never WebKit orange);
- * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `UiNamesHost` stamps
+ * `shell-chrome.css` skins the pinned mill title bar; `search-chrome.css` skins the Cmd/Ctrl-K palette; `modules-chrome.css` skins the Modules catalog; `settings-chrome.css` skins Settings dialogs; `header-popup-chrome.css` skins pin-bar capture/review dialogs; `code-docs.css` skins the code-documentation reader; `UiNamesHost` stamps
  * `data-ui-mode` on `<html>` (Names is the first overlay); `ChromePatina` writes the live gunmetal; `PcbBackdrop`
  * stamps `data-pcb-mode` on `<html>` (`suppressHydrationWarning` so a saved
  * plate cannot mismatch SSR). Server component (no "use client") since it only
@@ -18,8 +19,8 @@
  * Spec: §2.2 — the application shell that hosts all modules.
  */
 import type React from "react"
-import type { Metadata } from "next"
-import { Bricolage_Grotesque, DM_Mono, DotGothic16, Fraunces, Instrument_Sans, Karla, Pixelify_Sans, Silkscreen } from "next/font/google"
+import type { Metadata, Viewport } from "next"
+import { Karla } from "next/font/google"
 import "./globals.css"
 import "./win95.css"
 // Module chrome must live on the root layout, not only on lazy tab chunks.
@@ -54,12 +55,13 @@ import "@/components/machine-loading.css"
 import "@/components/shell-chrome.css"
 import "@/components/Search/search-chrome.css"
 import "@/components/UiNames/ui-names.css"
+import "@/components/CodeDocs/code-docs.css"
 import "@/components/Home/home-widget-face.css"
 import "@/components/Home/visual-dashboard.css"
 import "@/components/Home/dash/dash.css"
-import "@/components/Home/dash/dash-faces"
 import "./chrome-patina.css"
 import "./pcb-backdrop.css"
+import { AlwaysMic } from "./always-mic"
 import { ChromePatina } from "./chrome-patina"
 import { PcbBackdrop } from "./pcb-backdrop"
 import { CompletionPopupHost } from "@/components/Completion/CompletionPopupHost"
@@ -74,61 +76,22 @@ const karla = Karla({
   display: "swap",
 })
 
-// Analytics type (analytics-atlas.css): a characterful grotesque for titles
-// and values, a calm sans for prose, keys, labels and chart ticks.
-const anDisplay = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-an-display",
-  display: "swap",
-})
-
-const anText = Instrument_Sans({
-  subsets: ["latin"],
-  variable: "--font-an-text",
-  display: "swap",
-})
-
-// Handheld pixel faces, still used by Home dash, task card and Lab.
-const pixelify = Pixelify_Sans({
-  subsets: ["latin"],
-  variable: "--font-pixelify",
-  display: "swap",
-})
-
-const dotGothic = DotGothic16({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-dotgothic",
-  display: "swap",
-})
-
-// Task card: a soft, characterful serif for names and figures, a calm mono for labels.
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  axes: ["SOFT", "WONK", "opsz"],
-  display: "swap",
-})
-
-const dmMono = DM_Mono({
-  weight: ["400", "500"],
-  subsets: ["latin"],
-  variable: "--font-dmmono",
-  display: "swap",
-})
-
-const silkscreen = Silkscreen({
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  variable: "--font-silkscreen",
-  display: "swap",
-})
-
 export const metadata: Metadata = {
   title: APP_NAME,
   description:
     "A living application — cognitive offloading and getting stuff done. Adaptable, alive, beautiful: a new type of software.",
   generator: "v0.dev",
+}
+
+/**
+ * Lets a phone report the status-bar inset. Desktop inset is 0.
+ * Scale stays 1 and unlocked. iOS zooms a field under 16px and cannot
+ * zoom back out when maximum-scale is 1. The 16px floor is in `win95.css`.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
@@ -139,7 +102,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${karla.variable} ${anDisplay.variable} ${anText.variable} ${pixelify.variable} ${dotGothic.variable} ${silkscreen.variable} ${fraunces.variable} ${dmMono.variable}`}
+      className={karla.variable}
       data-pcb-mode={DEFAULT_PCB_MODE}
       data-pcb-ink={pcbInkFor(DEFAULT_PCB_MODE)}
       suppressHydrationWarning
@@ -149,6 +112,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NAV_BOOT_SCRIPT }} />
       </head>
       <body className={`${karla.className} win95-app`}>
+        <AlwaysMic />
         <ChromePatina />
         <PcbBackdrop />
         {children}

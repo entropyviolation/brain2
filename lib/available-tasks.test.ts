@@ -27,4 +27,35 @@ describe("hasUnmetDependencies / isAvailableNow", () => {
   it("does not block on missing (ghost) ids", () => {
     expect(hasUnmetDependencies({ dependencies: ["ghost"] }, tasks)).toBe(false)
   })
+
+  it("blocks exactly as before when dependencyCombine is absent", () => {
+    expect(hasUnmetDependencies({ dependencies: ["open"] }, tasks)).toBe(true)
+    expect(isAvailableNow({ dependencies: ["open"] }, tasks)).toBe(false)
+    expect(hasUnmetDependencies({ dependencies: ["done"] }, tasks)).toBe(false)
+    expect(hasUnmetDependencies({ dependencies: ["ghost"] }, tasks)).toBe(false)
+    const withMissed = [...tasks, { id: "late", completed: false, status: "missed" as const }]
+    expect(hasUnmetDependencies({ dependencies: ["late"] }, withMissed)).toBe(false)
+    const weighted = tasks.map((task) =>
+      task.id === "done"
+        ? { ...task, links: [{ id: "l", relation: "part-of", targetId: "goal", weight: 1 }] }
+        : task,
+    )
+    expect(hasUnmetDependencies({ dependencies: ["done", "open"] }, weighted)).toBe(true)
+    expect(isAvailableNow({ dependencies: ["done", "open"] }, weighted)).toBe(false)
+  })
+
+  it("asks the combine module only when dependencyCombine is set", () => {
+    expect(
+      hasUnmetDependencies({ dependencies: ["done", "open"], dependencyCombine: { mode: "redundant" } }, tasks),
+    ).toBe(false)
+    expect(
+      isAvailableNow({ dependencies: ["done", "open"], dependencyCombine: { mode: "redundant" } }, tasks),
+    ).toBe(true)
+    expect(
+      hasUnmetDependencies(
+        { dependencies: ["done", "open"], dependencyCombine: { mode: "threshold", need: 2 } },
+        tasks,
+      ),
+    ).toBe(true)
+  })
 })

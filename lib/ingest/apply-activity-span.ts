@@ -3,7 +3,7 @@
  *
  * Open intervals paint Activity from now through end of day. Stop truncates to
  * now. Switch closes the previous open span, starts the next, and logs a
- * switch instant for Analytics (all labeled from the text pipeline).
+ * switch instant for Data (all labeled from the text pipeline).
  */
 import { formatLocalDateKey } from "@/lib/date-utils"
 import { PEN_PALETTE, useTimeTrackingStore, type TrackPen } from "@/lib/time-tracking-store"
@@ -81,7 +81,7 @@ export function applySwitchedTo(payload: string, now = new Date()): ApplyResult 
   switchScopePen(date, ACTIVITY, nowMin, penId)
   stampTextPipelineOnOpen(date, penId, nowMin, name, now)
 
-  // Switch instant for Analytics.
+  // Switch instant for Data.
   const switchPen = ensureActivityPen("Switch")
   useTimeTrackingStore.getState().paintMinutes(date, ACTIVITY, nowMin, nowMin, switchPen, undefined, undefined, undefined, {
     kind: "instant",

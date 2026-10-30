@@ -1,0 +1,415 @@
+/**
+ * components/CodeDocs/code-docs.css — Reader for the repo docs folder.
+ *
+ * A navy caption, a file index, and a paper page. Prose is Karla so a long
+ * markdown file stays readable inside the pixel shell. Index rows opt out of
+ * the global key lip (`data-no95`).
+ */
+
+body.win95-app .code-docs-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, calc(100vw - 28px));
+  height: min(880px, calc(100vh - 28px));
+  overflow: hidden;
+  background: var(--chrome-face, #c0c0c0);
+  border: 2px solid #fff;
+  border-right-color: #5c5c5c;
+  border-bottom-color: #5c5c5c;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.code-docs-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 4px 42px 4px 10px;
+  background: #000080;
+  color: #fff;
+}
+
+.code-docs-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #39ff14;
+  box-shadow: 0 0 6px #39ff14;
+}
+
+body.win95-app .code-docs-title {
+  margin: 0;
+  color: #fff;
+  font-family: var(--w95-font, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+}
+
+body.win95-app .code-docs-count {
+  margin: 0 0 0 auto;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--font-karla), sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.code-docs-body {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+
+.code-docs-index {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid #6e7378;
+  background: #d5d2cb;
+}
+
+body.win95-app .code-docs-index,
+body.win95-app .code-docs-index button,
+body.win95-app .code-docs-index input,
+body.win95-app .code-docs-crumb,
+body.win95-app .code-docs-crumb button,
+body.win95-app .code-docs-page,
+body.win95-app .code-docs-page h1,
+body.win95-app .code-docs-page h2,
+body.win95-app .code-docs-page h3,
+body.win95-app .code-docs-page h4,
+body.win95-app .code-docs-prose,
+body.win95-app .code-docs-prose h1,
+body.win95-app .code-docs-prose h2,
+body.win95-app .code-docs-prose h3,
+body.win95-app .code-docs-prose h4,
+body.win95-app .code-docs-list,
+body.win95-app .code-docs-list button {
+  font-family: var(--font-karla), "Karla", sans-serif;
+  letter-spacing: 0;
+}
+
+.code-docs-find {
+  display: block;
+  padding: 8px;
+}
+
+.code-docs-find input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 2px solid #6e7378;
+  border-right-color: #fff;
+  border-bottom-color: #fff;
+  background: #fff;
+  color: #1c1e22;
+  font-size: 14px;
+}
+
+.code-docs-pins {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.code-docs-pins button,
+.code-docs-crumb button,
+.code-docs-list button {
+  border: 1px solid #6e7378;
+  background: #eceae4;
+  color: #1c1e22;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.code-docs-pins button:hover,
+.code-docs-list button:hover,
+.code-docs-row:hover {
+  background: #e4e0d4;
+}
+
+.code-docs-tree {
+  overflow: auto;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+
+.code-docs-dir {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.code-docs-twist {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1c1e22;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.code-docs-row {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px 8px;
+  border: 0;
+  background: transparent;
+  color: #1c1e22;
+  font-size: 13.5px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.code-docs-row[aria-current="page"] {
+  background: #000080;
+  color: #fff;
+}
+
+.code-docs-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #c8c5be;
+}
+
+.code-docs-crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  color: #1c1e22;
+  font-size: 13px;
+}
+
+.code-docs-crumb span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-docs-crumb button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.code-docs-page {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+  margin: 0 10px 10px;
+  padding: 22px 28px 40px;
+  background: #f7f4ee;
+  color: #1c1e22;
+  border: 2px solid #6e7378;
+  border-right-color: #fff;
+  border-bottom-color: #fff;
+}
+
+.code-docs-prose {
+  max-width: 74ch;
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+
+.code-docs-prose h1,
+.code-docs-prose h2,
+.code-docs-prose h3,
+.code-docs-folder-title {
+  font-weight: 650;
+  line-height: 1.25;
+  margin: 1.4em 0 0.45em;
+}
+
+.code-docs-prose h1,
+.code-docs-folder-title {
+  font-size: 1.7rem;
+  margin-top: 0;
+}
+
+.code-docs-prose h2 {
+  font-size: 1.28rem;
+}
+
+.code-docs-prose h3 {
+  font-size: 1.08rem;
+}
+
+.code-docs-prose p,
+.code-docs-prose ul,
+.code-docs-prose ol,
+.code-docs-prose blockquote,
+.code-docs-prose table,
+.code-docs-prose pre {
+  margin: 0.7em 0;
+}
+
+.code-docs-prose a {
+  color: #22306c;
+}
+
+.code-docs-prose code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.92em;
+}
+
+.code-docs-prose pre,
+.code-docs-source {
+  overflow: auto;
+  padding: 12px 14px;
+  background: #1c1e22;
+  color: #f3efe4;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.code-docs-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+}
+
+.code-docs-prose th,
+.code-docs-prose td {
+  border: 1px solid #c4bfb4;
+  padding: 5px 8px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.code-docs-prose th {
+  background: #ece7dc;
+}
+
+.code-docs-prose img,
+.code-docs-shot img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  border: 1px solid #c4bfb4;
+}
+
+.code-docs-shot figcaption,
+.code-docs-status,
+.code-docs-empty {
+  color: #3c403c;
+  font-size: 14px;
+}
+
+.code-docs-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.code-docs-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #c4bfb4;
+  background: #fff;
+  color: #1c1e22;
+  text-align: left;
+  cursor: pointer;
+}
+
+.code-docs-thumb img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  object-position: top;
+  background: #eceae4;
+}
+
+.code-docs-thumb span {
+  font-size: 12px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.code-docs-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.code-docs-list li {
+  margin: 4px 0;
+}
+
+.code-docs-frame {
+  flex: 1;
+  min-height: 0;
+  width: calc(100% - 20px);
+  margin: 0 10px 10px;
+  border: 2px solid #6e7378;
+  background: #fff;
+}
+
+.code-docs-status,
+.code-docs-empty {
+  margin: 8px 12px;
+}
+
+@media (max-width: 720px) {
+  .code-docs-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(160px, 34%) minmax(0, 1fr);
+  }
+
+  .code-docs-index {
+    border-right: 0;
+    border-bottom: 1px solid #6e7378;
+  }
+}
+
+@media (max-width: 767px) {
+  body.win95-app .code-docs-dialog {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px)) !important;
+    transform: none !important;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .code-docs,
+  .code-docs-body,
+  .code-docs-frame {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .code-docs-find input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .code-docs-row,
+  .code-docs-twist {
+    min-height: 44px;
+  }
+}
