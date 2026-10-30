@@ -42,9 +42,11 @@ export interface VaultSnapshot {
 }
 
 const SKIP_LIST = /instagram|1000 |mots|parole|語/i
+/** Lists the app fills itself (BIM's log, done items, thought process). Never a place to file. */
+const SYSTEM_LIST = /^(log|completed|thought process|all items|purchased)$/i
 
 export function skipListIdsFor(lists: { id: string; name: string }[]): Set<string> {
-  return new Set(lists.filter((l) => SKIP_LIST.test(l.name)).map((l) => l.id))
+  return new Set(lists.filter((l) => SKIP_LIST.test(l.name) || SYSTEM_LIST.test(l.name.trim())).map((l) => l.id))
 }
 
 function wordHits(title: string, words: string[]): string[] {

@@ -100,7 +100,9 @@ export function assembleBlocks(signals: ActivitySignal[], rules: BlockRules = DE
       continue
     }
 
-    const since = s.since ? placeSinceClock(s.since, at) : null
+    // A model often echoes the send minute as "since"; that says nothing.
+    const placed = s.since ? placeSinceClock(s.since, at) : null
+    const since = placed && at.getTime() - placed.getTime() >= MIN ? placed : null
     let live = open
     if (!live) {
       live = cur.open = {

@@ -2354,6 +2354,12 @@ Grouped by room. Each names its tier.
     see, how many calls this week, its score on the evaluation set, and the
     off switch.
 
+**Changed 2026-10-30 (the person's decision).** BIM's routed flow
+(`lib/bim-flow/`, bench `/lab/bim-flow`) will auto-file without accept. Each
+write is tagged `autowritten` and `llm`, carries its reasoning, and is one
+undo. A correction becomes a taught example on that node. **Planned**, not
+built. See `components/Lab/BimFlow/README.md`.
+
 **Refused even with a model** (tier D): writing findings, naming causes,
 judging the person, auto-filing without accept, summarising a period, changing
 a weight or a grade, rewriting the graph when a source arrives, inventing

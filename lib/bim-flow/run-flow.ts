@@ -138,7 +138,7 @@ async function runNode(node: FlowNode, ctx: Ctx, call: ModelCall, snap: VaultSna
   }
 
   if (node.kind === "blocks") {
-    const input = latestObject(ctx, ["activity", "relation"])
+    const input = latestObject(ctx, ["relation"])
     const activity = String(input?.activity ?? latestPick(ctx) ?? "")
     const relation = String(input?.relation ?? "")
     if (!activity || !["starting", "doing_now", "finished", "did_earlier"].includes(relation)) {
