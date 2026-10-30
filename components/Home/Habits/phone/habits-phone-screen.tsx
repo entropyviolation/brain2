@@ -21,7 +21,7 @@ import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit
 import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
 import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
 import type { PlanTextPeriod } from "@/lib/plan-text"
-import { HabitsScratchPad } from "@/components/Home/Habits/tracker/habits-scratch-pad"
+import { HabitsScratchPad, habitsScratchTarget } from "@/components/Home/Habits/tracker/habits-scratch-pad"
 import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
 import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
 import type { HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
@@ -440,7 +440,16 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
   const planWithScratch = props.hydrated ? (
     <>
       {plan}
-      <HabitsScratchPad />
+      <HabitsScratchPad
+        target={habitsScratchTarget({
+          habitTab: tab,
+          dayView: props.habitDayView,
+          currentDate: props.currentDate,
+          currentWeekStart: props.currentWeekStart,
+          currentMonth: props.currentMonth,
+          currentQuarter: props.currentQuarter,
+        })}
+      />
     </>
   ) : null
 
