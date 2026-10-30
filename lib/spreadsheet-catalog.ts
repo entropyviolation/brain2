@@ -176,7 +176,11 @@ function looksLikeDate(s: string): boolean {
   return !Number.isNaN(Date.parse(s))
 }
 
-/** Collect attribute definitions known anywhere in the vault. */
+/**
+ * Collect attribute definitions known anywhere in the vault.
+ * Unknown ids keep a running type. Values are not copied, so a vault of huge
+ * items does not pin every attribute payload into the catalog.
+ */
 export function collectVaultAttributeDefs(
   lists: List[],
   types: ItemTypeDefinition[],
@@ -195,24 +199,33 @@ export function collectVaultAttributeDefs(
     for (const def of composeListAttributes(list, types)) remember(def)
     for (const def of list.itemAttributes ?? []) remember(def)
   }
+  // null = the id was seen, but no held value yet (still a string column).
+  const unknown = new Map<string, AttributeType | null>()
   for (const item of items) {
     for (const def of item.itemAttributeDefinitions ?? []) remember(def)
-  }
-
-  const valuesById = new Map<string, AttributeValue[]>()
-  for (const item of items) {
-    for (const [id, value] of Object.entries(item.attributes ?? {})) {
-      const list = valuesById.get(id) ?? []
-      list.push(value)
-      valuesById.set(id, list)
+    const attrs = item.attributes
+    if (!attrs) continue
+    for (const id of Object.keys(attrs)) {
+      if (byId.has(id)) continue
+      if (!unknown.has(id)) unknown.set(id, null)
+      const value = attrs[id]
+      if (!hasHeldValue(value)) continue
+      const prev = unknown.get(id)
+      const next = prev == null ? inferType([value]) : widenHeldType(prev, value)
+      if (next !== prev) unknown.set(id, next)
     }
   }
-  for (const [id, values] of valuesById) {
+  for (const [id, type] of unknown) {
     if (byId.has(id)) continue
-    remember({ id, name: humanizeId(id), type: inferType(values) })
+    remember({ id, name: humanizeId(id), type: type ?? "string" })
   }
 
   return [...byId.values()]
+}
+
+function widenHeldType(prev: AttributeType, value: AttributeValue): AttributeType {
+  const next = inferType([value])
+  return prev === next ? prev : "string"
 }
 
 function humanizeId(id: string): string {
@@ -221,9 +234,27 @@ function humanizeId(id: string): string {
   return trimmed.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function itemHoldsAttribute(item: Task, id: string): boolean {
-  if (item.attributes && Object.prototype.hasOwnProperty.call(item.attributes, id)) return true
-  return !!item.itemAttributeDefinitions?.some((d) => d.id === id)
+/** One pass: attribute ids held on these rows, and which built-ins any row holds. */
+function scanListHoldings(items: readonly Task[]): { attrIds: Set<string>; builtins: Set<BuiltinFieldKey> } {
+  const attrIds = new Set<string>()
+  const builtins = new Set<BuiltinFieldKey>()
+  const specCount = BUILTIN_FIELD_SPECS.length
+  for (const item of items) {
+    const attrs = item.attributes
+    if (attrs) {
+      for (const id of Object.keys(attrs)) attrIds.add(id)
+    }
+    const defs = item.itemAttributeDefinitions
+    if (defs) {
+      for (const def of defs) if (def?.id) attrIds.add(def.id)
+    }
+    if (builtins.size < specCount) {
+      for (const spec of BUILTIN_FIELD_SPECS) {
+        if (!builtins.has(spec.key) && builtinHeldOnItem(item, spec.key)) builtins.add(spec.key)
+      }
+    }
+  }
+  return { attrIds, builtins }
 }
 
 function builtinHeldOnItem(item: Task, key: BuiltinFieldKey): boolean {
@@ -275,6 +306,12 @@ function builtinHeldOnItem(item: Task, key: BuiltinFieldKey): boolean {
   }
 }
 
+/**
+ * Above this, a grid paints from list and type schemas first. Item payloads
+ * (the huge part of a global All Items vault) are read after the rows are up.
+ */
+export const CATALOG_EAGER_ITEM_LIMIT = 800
+
 export interface BuildCatalogInput {
   list?: List
   lists: List[]
@@ -293,10 +330,11 @@ export function buildSpreadsheetCatalog(input: BuildCatalogInput): SheetColumnCa
   const { list, lists, types, listItems, vaultItems } = input
   const schemaIds = new Set(list ? composeListAttributes(list, types).map((d) => d.id) : [])
   const vaultDefs = collectVaultAttributeDefs(lists, types, vaultItems)
+  const held = scanListHoldings(listItems)
   const candidates: SheetColumnCandidate[] = []
 
   for (const def of vaultDefs) {
-    const onThisList = schemaIds.has(def.id) || listItems.some((item) => itemHoldsAttribute(item, def.id))
+    const onThisList = schemaIds.has(def.id) || held.attrIds.has(def.id)
     candidates.push({
       id: def.id,
       name: def.name,
@@ -308,7 +346,7 @@ export function buildSpreadsheetCatalog(input: BuildCatalogInput): SheetColumnCa
   }
 
   for (const spec of BUILTIN_FIELD_SPECS) {
-    const onThisList = listItems.some((item) => builtinHeldOnItem(item, spec.key))
+    const onThisList = held.builtins.has(spec.key)
     candidates.push({
       id: builtinColumnId(spec.key),
       name: spec.name,

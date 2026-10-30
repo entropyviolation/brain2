@@ -40,6 +40,7 @@ import { getBreadcrumb } from "@/components/Lists/navigation/BreadcrumbNav"
 import { ListsToolbar } from "@/components/Lists/toolbar/ListsToolbar"
 import { resolveOpenListChrome } from "@/components/Lists/lib/open-list-chrome"
 import { chooseListsLocation } from "@/components/Lists/lib/lists-location-choice"
+import { usePhoneListsLayout } from "@/components/Lists/board/use-phone-lists-layout"
 import { ListsTitleBar } from "@/components/Lists/board/lists-title-bar"
 import { ListsAddressBar } from "@/components/Lists/board/lists-address-bar"
 import { ListsStatusBar } from "@/components/Lists/board/lists-status-bar"
@@ -129,6 +130,8 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null)
   const [selectBandPx, setSelectBandPx] = useState(0)
+  const phoneLists = usePhoneListsLayout()
+  const [phoneFoldersOpen, setPhoneFoldersOpen] = useState(true)
 
   const { location, openTarget, setOpenTarget, closeTarget, isHome, isAll, currentFolder, navTo, openEntry, openItemType, activeIconId, setActiveIconId, setLocation } = nav
   const { searchTerm, setSearchTerm, searchResetKey, clearSearch, searchActive, searchResults } = search
@@ -190,6 +193,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
     globalAllHiddenFolderIds,
     globalAllUncategorizedOnly,
     globalAllHideUncategorized,
+    globalAllTasks: shelf.globalAllTasks,
   })
 
   const breadcrumb = getBreadcrumb({ searchActive, searchTerm, openTarget, openName: chrome.openName, isHome, isAll, isItemTypes: shelf.isItemTypes, currentFolderName: currentFolder?.name })
@@ -348,7 +352,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
   return (
     <div
       ref={listsSurfaceRef}
-      className="fm98"
+      className={phoneLists ? "fm98 fm-phone" : "fm98"}
       style={{
         // Select mode adds the control strip inside a fixed viewport. Grow the
         // window by that band so the folder tree and content keep the height
@@ -411,7 +415,11 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
             onChange={csv.handleCsvFile}
           />
 
-          <ListsAddressBar breadcrumb={breadcrumb} />
+          <ListsAddressBar
+            breadcrumb={breadcrumb}
+            foldersOpen={phoneLists ? phoneFoldersOpen : undefined}
+            onToggleFolders={phoneLists ? () => setPhoneFoldersOpen((open) => !open) : undefined}
+          />
 
           <ListsSelectStrip
             selectStripOpen={selectActions.selectStripOpen}
@@ -463,6 +471,7 @@ export function EnhancedCategoryView({ onTaskSelect }: EnhancedCategoryViewProps
               onEditFolder={setEditingFolder}
               itemTypes={itemTypes}
               onOpenItemType={openItemType}
+              collapsed={phoneLists && !phoneFoldersOpen}
             />
 
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>

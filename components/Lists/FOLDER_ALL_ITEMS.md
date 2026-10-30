@@ -38,6 +38,8 @@ Opening it is `EditListDialog` on the backing All Items list. **View prefs persi
 
 While All Items is open, content uses the backing list as `openCategory` so Default / Details / Spreadsheet / Checklist honor those fields. `openFolderAll` stays true (extra Lists column, checkbox filter). Active display mode still lives in `lists-ui-store.listDisplay` keyed by the folder-all target (`__root__` for Home All).
 
+Home All membership is `selectGlobalAllItems`: one pass, and the same array again when those rows did not change. A large open set paints that membership first. Item-only sort traits, the type filter, and item-only spreadsheet columns fill in after the rows are up.
+
 ## Inclusion checkboxes
 
 Folder All Items: list checkboxes live in the **right inspector** (`AllViewCheckboxFilter`, `aria-label="Filter lists"`), not in the item pane. **Select all** / **Deselect all** plus **Uncategorized**. **Show uncategorized only** stays at the top of the item pane.

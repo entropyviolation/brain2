@@ -123,6 +123,23 @@ describe("buildSpreadsheetCatalog", () => {
     expect(completed.type).toBe("boolean")
   })
 
+  it("infers a bare attribute from the first held value and widens a mixed column to string", () => {
+    const rows = [
+      item({ id: "a", description: "A", attributes: { mood: "calm", score: 1, blank: "" } }),
+      item({ id: "b", description: "B", attributes: { score: "high" } }),
+    ]
+    const catalog = buildSpreadsheetCatalog({
+      list: books,
+      lists: [books],
+      types: [],
+      listItems: rows,
+      vaultItems: rows,
+    })
+    expect(catalog.find((c) => c.id === "mood")).toMatchObject({ type: "string", onThisList: true })
+    expect(catalog.find((c) => c.id === "score")?.type).toBe("string")
+    expect(catalog.find((c) => c.id === "blank")?.type).toBe("string")
+  })
+
   it("defaults visible columns to list schema only — held attrs and builtins stay opt-in", () => {
     const catalog = buildSpreadsheetCatalog({
       list: books,

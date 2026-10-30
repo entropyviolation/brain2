@@ -216,4 +216,23 @@ describe("FolderTree", () => {
     )
     expect(screen.getAllByText("Module Lists").length).toBeGreaterThanOrEqual(2)
   })
+
+  it("hides the folder pane when the phone Address toggle closes it", () => {
+    render(
+      <FolderTree
+        folders={mockFolders}
+        location="home"
+        openTarget={null}
+        isHome
+        isAll={false}
+        onNavTo={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onCreateFolder={vi.fn()}
+        collapsed
+      />,
+    )
+    expect(screen.queryByRole("navigation", { name: "Lists folders" })).toBeNull()
+    expect(document.getElementById("fm-folder-tree")).toHaveAttribute("hidden")
+  })
 })

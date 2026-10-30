@@ -6,6 +6,8 @@
  * Open-list caption bar. Search state stays in useOpenListItems. This bar
  * only draws the name, the search field, and the caption keys.
  */
+import { PhoneLedTitle } from "@/components/Lists/board/phone-led-title"
+import { usePhoneListsLayout } from "@/components/Lists/board/use-phone-lists-layout"
 import { ListCaptionSearch, CaptionKeyGlyph } from "@/components/Lists/list-content/ListCaptionSearch"
 import { openTargetKey } from "@/components/Lists/open-target"
 import type { List } from "@/lib/types"
@@ -48,11 +50,12 @@ export function ListInnerCaption({
   openFolderAllSettings: () => void
   closeTarget: () => void
 }) {
+  const phone = usePhoneListsLayout()
   if (!openTarget) return null
   return (
     <div className={`fm-title-bar inactive fm-list-caption${listSearchOpen ? " searching" : ""}`}>
       <div className="fm-title-bar-text" data-testid="fm-inner-caption" title={innerCaption}>
-        <span className="fm-list-caption-name">{innerCaption}</span>
+        <span className="fm-list-caption-name">{phone ? <PhoneLedTitle text={innerCaption} /> : innerCaption}</span>
       </div>
       {listSearchOpen && listSearchable ? (
         <ListCaptionSearch

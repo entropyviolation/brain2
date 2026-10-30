@@ -68,6 +68,7 @@ import {
   type GridRange,
 } from "@/lib/spreadsheet-keys"
 import { expandPasteWrites } from "@/lib/spreadsheet-paste"
+import { useSpreadsheetCatalog } from "@/components/spreadsheet/use-spreadsheet-catalog"
 import {
   NAME_COLUMN_ID,
   MIN_SHEET_COL_WIDTH,
@@ -86,7 +87,6 @@ import {
 import {
   assignAttributeToList,
   attributeSettingsForColumn,
-  buildSpreadsheetCatalog,
   columnsFromIds,
   hideColumnId,
   insertColumnId,
@@ -234,17 +234,13 @@ export function SheetGrid({
     }
   }, [])
 
-  const catalog = useMemo(
-    () =>
-      buildSpreadsheetCatalog({
-        list: category,
-        lists,
-        types,
-        listItems: tasks,
-        vaultItems,
-      }),
-    [category, lists, types, tasks, vaultItems],
-  )
+  const catalog = useSpreadsheetCatalog({
+    list: category,
+    lists,
+    types,
+    listItems: tasks,
+    vaultItems,
+  })
   const extraIds = resolveColumnIds(config, catalog, category, types)
   const attrColumns = useMemo(() => columnsFromIds(catalog, extraIds), [catalog, extraIds])
   const allColumns = useMemo<SheetColumn[]>(
@@ -298,15 +294,18 @@ export function SheetGrid({
   }
 
   const rowHeights = config.rowHeights
+  const uniformRows = !rowHeights || Object.keys(rowHeights).length === 0
   const rowHeightOf = (rowId: string): number => rowHeights?.[rowId] ?? DEFAULT_ROW_H
   const rowOffsets = useMemo(() => {
+    if (uniformRows) return null
     const offsets = new Array<number>(displayTasks.length + 1)
     offsets[0] = 0
     for (let i = 0; i < displayTasks.length; i++) {
       offsets[i + 1] = offsets[i] + (rowHeights?.[displayTasks[i].id] ?? DEFAULT_ROW_H)
     }
     return offsets
-  }, [displayTasks, rowHeights])
+  }, [displayTasks, rowHeights, uniformRows])
+  const rowTop = (index: number): number => (rowOffsets ? rowOffsets[index] : index * DEFAULT_ROW_H)
   const sheetScrollRef = useRef<HTMLDivElement>(null)
   const [sheetSpan, setSheetSpan] = useState({ start: 0, end: 40 })
   useEffect(() => {
@@ -317,9 +316,18 @@ export function SheetGrid({
       const top = el.scrollTop
       const view = el.clientHeight || 480
       let start = 0
-      while (start < displayTasks.length && rowOffsets[start + 1] < top - 240) start++
+      if (!rowOffsets) {
+        start = Math.max(0, Math.min(displayTasks.length, Math.floor((top - 240) / DEFAULT_ROW_H)))
+      } else {
+        while (start < displayTasks.length && rowOffsets[start + 1] < top - 240) start++
+      }
       let end = start
-      while (end < displayTasks.length && rowOffsets[end] < top + view + 240) end++
+      const bottom = top + view + 240
+      if (!rowOffsets) {
+        end = Math.min(displayTasks.length, Math.ceil(bottom / DEFAULT_ROW_H))
+      } else {
+        while (end < displayTasks.length && rowOffsets[end] < bottom) end++
+      }
       if (end < start + 1) end = Math.min(displayTasks.length, start + 1)
       setSheetSpan((prev) => (prev.start === start && prev.end === end ? prev : { start, end }))
     }
@@ -875,7 +883,7 @@ export function SheetGrid({
           </thead>
           <tbody>
             {sheetStart > 0 && (
-              <tr aria-hidden style={{ height: rowOffsets[sheetStart] }}>
+              <tr aria-hidden style={{ height: rowTop(sheetStart) }}>
                 <td colSpan={attrColumns.length + 3} />
               </tr>
             )}
@@ -984,7 +992,7 @@ export function SheetGrid({
               )
             })}
             {sheetEnd < displayTasks.length && (
-              <tr aria-hidden style={{ height: rowOffsets[displayTasks.length] - rowOffsets[sheetEnd] }}>
+              <tr aria-hidden style={{ height: rowTop(displayTasks.length) - rowTop(sheetEnd) }}>
                 <td colSpan={attrColumns.length + 3} />
               </tr>
             )}

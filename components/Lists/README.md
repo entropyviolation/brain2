@@ -12,13 +12,13 @@ Test: `npx vitest run components/Lists/__tests__/enhanced-list-view.integration.
 
 Plan: `docs/LIST_SETTINGS_REDESIGN.md` (list settings sheet; shipped, this README is the behavior).
 
-Do not touch: velvet and photographed orbs. The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
+Do not touch: the desktop velvet photograph and photographed orbs. Phone Icons velvet is the 132px tile (`public/newvelv-tile.jpg`). The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
 
 # `components/Lists/` — Lists (File Manager)
 
 _Last mapped: 2026-10-28_
 
-**Purpose.** The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open. On a phone (`max-width: 767px`) the sidebar stacks under the list, pin and rename stay visible, fields are 16px, and list dialogs are bottom sheets. Desktop chrome is unchanged.
+**Purpose.** The Lists tab is the file manager for folders, lists, and items. One row is the same item the rest of the second brain can open. On a phone (the iOS shell, or a window at `max-width: 767px`) the sidebar stacks under the list, pin and rename stay visible, fields are 16px, and list dialogs are bottom sheets. A long window title or list caption plays across the black bar on the first tap, opens downward on the next tap, and closes on the tap after that. **Import spreadsheet** is hidden. Up, New List, New Folder, Settings, and Select are pale keycaps. The Display and View codes share one short line. The **Address** label opens and closes the folder tree. The Icons star and pencil stay in the outer corners: a 44px hit with a small disc, so the orb and the name stay clear. Phone Icons velvet repeats `public/newvelv-tile.jpg` at 132px (the even weave). Desktop velvet stays one cover of `public/newvelv.jpg`. A wide desktop window does not get this phone chrome.
 
 **Invariant.** Lists is the visual standard for the app. See `docs/DESIGN_STYLE.md`.
 
@@ -30,7 +30,7 @@ _Last mapped: 2026-10-28_
 
 **Plan.** `docs/LIST_SETTINGS_REDESIGN.md` (list settings sheet; shipped, this README is the behavior).
 
-**Leave alone.** Velvet and photographed orbs. The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
+**Leave alone.** The desktop velvet photograph and photographed orbs. Phone Icons velvet is the 132px tile (`public/newvelv-tile.jpg`). The Module Lists import block and the Connected lists block. Hooks in `hooks/` stay inside this folder. Keep this one write door.
 
 The **Lists** top-level tab. A Windows 95/98–styled file manager for folders, lists (categories), and items — the Explorer face of the **second brain**, not a silo. A row here is the same item Scheduler, Tracking, Modules, Reviews, and **Data** (the heart) can use. New rows default to generic `item` (or the list’s default `itemTypeId` from its type allowlist); they are not Tasks unless created as Next Actions. The write door is in the agent card.
 
@@ -118,8 +118,12 @@ components/Lists/
 │   ├── useListsSelectionActions.ts # Placement, select-all, delete, merge. One placement computation
 │   └── useListsIconChrome.ts      # Icon picker, folder organize epoch, list-desktop epochs
 ├── board/                         # Interior. Not a public door
-│   ├── lists-title-bar.tsx        # Title bar. Minimize and Maximize have no onClick
-│   ├── lists-address-bar.tsx      # Address status row
+│   ├── lists-title-bar.tsx        # Title bar. Minimize and Maximize have no onClick. Phone: long titles play, then open
+│   ├── phone-led-title.tsx        # Phone title: tap to play, tap to open the bar, tap to close
+│   ├── phone-led-title.test.tsx
+│   ├── use-phone-lists-layout.ts  # iOS shell or max-width 767px. Wide desktop is false
+│   ├── lists-address-bar.tsx      # Address status row. Phone: the label toggles the folder tree
+│   ├── lists-address-bar.test.tsx
 │   ├── lists-status-bar.tsx       # This folder, Tree, Smart lists, period-ledger checkbox
 │   ├── lists-select-strip.tsx     # Select strip and the band measure (+ 3 for the margin)
 │   ├── list-inner-caption.tsx     # Caption keys. Search state stays in useOpenListItems
@@ -144,7 +148,7 @@ components/Lists/
 │   ├── ListCaptionSearch.tsx      # Open-list caption: stamped key glyphs + one-list search field (right half of the caption)
 │   ├── reminder-quick-add.tsx     # Reminders compose (Lists + header): name, when (+ shell quick chips), repeat (incl. weekdays/month/year/moon), Text me, Persistent
 │   ├── AllViewCheckboxFilter.tsx # Folder/global All + type show/hide filter + Select all / Deselect all
-│   ├── use-windowed-slice.ts      # Visible-row window for long lists (default, checklist)
+│   ├── use-windowed-slice.ts      # Visible-row window for long lists (default, checklist, details)
 │   ├── ListContentDefault.tsx     # Default: reading rows (pip + orb + name + type/meta; honors List.defaultView)
 │   ├── ListContentChecklist.tsx   # Checklist with complete checkbox
 │   ├── ListContentIcons.tsx       # Per-item icon grid (✎ change icon). Desktop off: CSS flex wrap + HTML5 filing drag
@@ -326,14 +330,14 @@ _Last mapped: 2026-10-27._
 
 - **List Icons desktop — large lists**: Above `GRAVITY_SIM.LARGE_N` (80) Gravity degrades (edge cap 360, spatial pairs above 56 bodies for the living field, Skip/reduced settle skips pairwise and runs springs-only, paint ~50ms / commit ~1.2s, force-link DOM sampling off). **Skip to stable** always uses the current `listIconsGravityField` / `paramsRef` (`globalG` + source gains): rebuilds edges, then time-slices settle (`SETTLE_SLICE_STEPS` / `SETTLE_SLICE_MS`) so the click never runs hundreds of sync O(n²) steps; Reset / Gravity off / mode switches abort. PILE UP above `PHYSICS_N_CAP` (110) compact-heaps without entering the live pile/juice path. Small lists keep full grab/cords/bounce.
 
-- **Toolbar**: Two brushed bays. Top: **New** (list/folder/import), Settings, Select, Search. Bottom: the **View / Display** mode deck (Icons/List/Details/Cards or Default/Checklist/Icons/Details/Spreadsheet) so keys always own a full row — reserved LED gutter, container-query short codes when narrow, equal-fill full words when wide. Folder Icons still puts **Auto-organize** on that row. List Icons Display always reserves **Auto-organize**, **Gravity**, **⚙** (Gravity settings), and **PILE UP** width on that row (hidden until Desktop is on) so the velvet stage does not jump; **Reset** / **Skip to stable** appear while Gravity is on. The Desktop switch stays on the inspector. **Gravity** is a ModeKey-style toggle (dark LED + “Off” when off; pressed CRT face + lit green LED + “On” when on) — not a HabitBarRocker; settings is a separate gear, never a fourth toggle mode. Archive browsing is the Completed / Missed Opportunities lists under Next Actions — those toolbar buttons are gone.
+- **Toolbar**: _Last mapped: 2026-10-29._ Two brushed bays. Top: **New** (list/folder/import), Settings, Select, Search. On the phone, **Import spreadsheet** stays in the DOM and is not shown (`.fm-import-sheet`), and those word keys use the pale phone keycap. Bottom: the **View / Display** mode deck (Icons/List/Details/Cards or Default/Checklist/Icons/Details/Spreadsheet) so keys always own a full row — reserved LED gutter, container-query short codes when narrow, equal-fill full words when wide. On the phone the short codes stay, on one line, at 26px. Wide desktop keeps the full words and the import key. Folder Icons still puts **Auto-organize** on that row. List Icons Display always reserves **Auto-organize**, **Gravity**, **⚙** (Gravity settings), and **PILE UP** width on that row (hidden until Desktop is on) so the velvet stage does not jump; **Reset** / **Skip to stable** appear while Gravity is on. The Desktop switch stays on the inspector. **Gravity** is a ModeKey-style toggle (dark LED + “Off” when off; pressed CRT face + lit green LED + “On” when on) — not a HabitBarRocker; settings is a separate gear, never a fourth toggle mode. Archive browsing is the Completed / Missed Opportunities lists under Next Actions — those toolbar buttons are gone.
 - **Status bar**: two counts, labeled. Left is **This folder** (open location); right is **Tree** (all folders and lists). Do not drop one as a duplicate. Type is 12px so the counts stay readable. **Smart lists** sits beside the counts; in global All, **Show to do / done / undone** sits next to it.
 - **Inspector** (`board/lists-inspector.tsx`, `data-ui-name="List inspector"`): facts first (count, type, last touched — 12px), then actions. While Display is Icons, a **Desktop** rocker (`HabitBarRocker`) sits at the top of those actions for a list, All Items, or a smart list. **Add Item / Bulk add**, and the Default-view plain-text clipboard key, live only in the content sunken pane (one place per verb — not duplicated on this rail). **Delete List lives only in List Settings** (red **Delete** in **Dangerous actions**, beside **Clear list**). The right rail does not offer Delete. Folder **All Items** and Home **All** still get **List Settings** for view prefs; those dialogs have no Delete / Clear. Inclusion checkboxes (lists in a folder All, folders in Home All) live on this rail. **Filter types** appears when ≥2 distinct types are present (or the open list’s allowlist has ≥2): exact-id show/hide, empty hidden = show all (`lib/list-type-filter.ts`).
 - **Content Default**: title (`.fm-read-name`) and metadata (`.fm-read-meta`) split with a hairline — name is the reading column; type/U·I/date chips stay in the quieter meta bay.
 - **Cards**: metadata skim on mill face (less white slab). **Icons** stay the orb desktop.
 - **Clear list**: List Settings → Dangerous actions → **Clear list** → Win95 **Are you sure?** confirm. Confirm empties membership on this list (`removeTaskFromList` via `updateTask`, so connected-list exclusions stick). Items are not deleted; other lists keep them; the empty list remains. Cancel is a no-op.
 - **Type scale**: smallest Lists type is 10px (title glyphs, tree ±, orb badges, toolbar `.fm-btn-sm` left alone). Reading chrome is 11–13px: Default names / inspector facts / status 12px; U·I meta and inspector buttons 11px; Quick Access labels stay 13px.
-- **Open-list caption**: the inner caption bar over an open list shows the **list's name** (not the display mode — the Display deck already lights the active mode). Its keys are one family (`.fm-cap-key`, `filemanager98.css`): 30px rounded gunmetal caps with a specular lip, pressed foot, and stamped 16px marks (`CaptionKeyGlyph`) — **Search**, **Add item**, **List settings** (lists and All Items), **Close**. They opt out of the square fascia skin with `data-no95`; the caption × here is one of these keys, not `KeycapClose`.
+- **Open-list caption**: _Last mapped: 2026-10-29._ The inner caption bar over an open list shows the **list's name** (not the display mode — the Display deck already lights the active mode). On the phone, a name that does not fit uses the same taps as the window title: play across the bar, then open the bar, then close it (`board/phone-led-title.tsx`). Wide desktop keeps the ellipsis. Its keys are one family (`.fm-cap-key`, `filemanager98.css`): 30px rounded gunmetal caps with a specular lip, pressed foot, and stamped 16px marks (`CaptionKeyGlyph`) — **Search**, **Add item**, **List settings** (lists and All Items), **Close**. They opt out of the square fascia skin with `data-no95`; the caption × here is one of these keys, not `KeycapClose`.
 - **One-list search**: the caption's magnifier key turns the right half of the caption into a CRT search field for **this list only** (the name keeps the left half). Names only by default; the **All fields** lamp also reads description, notes, body, why, consequences, context, tags, subtasks, and every attribute value (file names and extracted text included). Every word must match. It filters whatever display is on, shows a live match count, and never touches membership. Esc clears, Esc again (or the key) closes; opening another list resets it. The pipeline lives in `hooks/useOpenListItems.ts` (`shownTasks`). The bar is `board/list-inner-caption.tsx`. `filterListItemsBySearch` in `lib/list-item-sort.ts`. The toolbar search (below) still searches the whole vault.
 - **Toolbar search**: The field owns keystrokes (`ToolbarSearch`) and filters through `useListsSearch` (folders, lists, and items; item hits capped). Parent filter state is updated from the field, never written back into it (that write-back is what skipped letters). Clear / opening a hit bumps `searchResetKey` to wipe the field. The toolbar vault scan is deferred with `useDeferredValue` the same way Folder List view defers its local search, so hits may follow the field by a frame. **Choosing a location** (Quick Access, folder tree, Up, opening a folder icon) calls `chooseListsLocation` so search clears and the folder's real contents show — you are not trapped in the previous query. Typing still searches; only a location choice clears. Select mode on the results panel is described under **Select mode** above. The **select mode control strip**’s Add to folder bay has its own folder search (empty = all destinations; no-match empty state; scroll when many).
 
@@ -374,7 +378,7 @@ Every task-store write re-serializes the whole vault (3.7 MB on a 6,900-item vau
 - The Trip/Tidy import (`mergeImportedItem`) keeps an item's schedule once the record's day sits in `schedulePlacements`. Otherwise the import and the day rollover (`hooks/use-day-rollover.ts`) undo each other.
 - The import does not re-create an item listed in `removedTaskIds`.
 
-Global All counts: `filterTasksHiddenFromGlobalAll` resolves each list once per call. Period ledger lists (`tasksForLedgerKind`) scan a cached pool of only scheduled or completed items. About 400 ledger lists still cost ~0.3 s whenever the All grid recomputes.
+Global All rows: `selectGlobalAllItems` (`lib/module-lists.ts`) keeps the active set (not cleared, not hidden with Module Lists) in one pass and reuses that array when those rows did not change. The All grid count and the open list share it. Opening All Items paints from that membership. Past about 800 rows, item-only sort traits and the type-filter checkboxes fill in after the rows are up — the first paint does not read notes or attribute values. A long reading-row snippet looks at the front of the note. Details windows its rows. Spreadsheet and Details catalogs paint from list and type schemas first when the vault or the open set is past that same size, then read item payloads. Period ledger lists (`tasksForLedgerKind`) scan a cached pool of only scheduled or completed items. About 400 ledger lists still cost ~0.3 s whenever the All grid recomputes.
 
 ## Tests
 
@@ -433,7 +437,7 @@ Run unit/integration tests: `npm test`. E2E requires dev server (started automat
 
 ## Plans for Lists chrome
 
-- Clickable Address crumbs (and an Address / Search tab pair like Explorer) so the sunken path is a control, not only a label.
+- Clickable Address crumbs (and an Address / Search tab pair like Explorer) so the sunken path is a control, not only a label. _Last mapped: 2026-10-29._ The phone **Address** label already opens and closes the folder tree. Crumb clicks are still planned. Wide desktop keeps the plain label.
 - Snap-to-grid while dragging with Shift, matching the packed cell size (freeform stays the default after a drag; snap is opt-in).
 - A pip click that does **not** become a hidden complete checkbox (status lamp stays a lamp). See [`DEFAULT_VIEW.md`](DEFAULT_VIEW.md).
 - More checklist checkbox variables (cancelled, deferred) if a list wants them — [`CHECKLIST.md`](CHECKLIST.md).
