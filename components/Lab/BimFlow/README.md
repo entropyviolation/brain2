@@ -294,4 +294,4 @@ graph on the hub when a message lands.
 
 _Last mapped: 2026-10-30_
 
-The BIM console's LLM tab (`components/Bim/console/llm-suggestions.tsx`) runs this engine on the last week and lists unsaved time blocks, items, and habit completions (`lib/bim-flow/suggestions.ts`). It uses the bench's saved `log-routed` graph and model. Texts feed time blocks and habits only, never items. Dismissals and cached per-message results live in `localStorage` (`bimsuggest-*`). Nothing is written to the vault yet; accepting a suggestion is **Planned**, on the auto-write plan in the handoff.
+The BIM console's LLM tab (`components/Bim/console/llm-suggestions.tsx`) runs this engine on the last week and lists unsaved time blocks, items, and habit completions (`lib/bim-flow/suggestions.ts`). It uses the bench's saved `log-routed` graph and model. Texts feed time blocks and habits only, never items. Dismissals and cached per-message results live in `localStorage` (`bimsuggest-*`). Running writes nothing. ACCEPT on a row writes that one suggestion (`lib/bim-flow/accept.ts`, one undo step). **Planned:** writing without a press, on the auto-write plan in the handoff.
