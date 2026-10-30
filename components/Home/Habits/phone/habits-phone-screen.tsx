@@ -21,6 +21,7 @@ import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit
 import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
 import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
 import type { PlanTextPeriod } from "@/lib/plan-text"
+import { HabitsScratchPad } from "@/components/Home/Habits/tracker/habits-scratch-pad"
 import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
 import { HabitsTabControls } from "@/components/Home/Habits/panel/habits-tab-controls"
 import type { HabitControlToggle } from "@/components/Home/Habits/control-bar/habit-priority-bar"
@@ -436,6 +437,12 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
         placeholder="Write this season's plan — what the quarter is for..."
       />
     ) : null
+  const planWithScratch = props.hydrated ? (
+    <>
+      {plan}
+      <HabitsScratchPad />
+    </>
+  ) : null
 
   const sortId = tab === "weekly" ? "habit-sort-weekly" : tab === "monthly" ? "habit-sort-monthly" : tab === "quarterly" ? "habit-sort-season" : "habit-sort"
   const good =
@@ -536,7 +543,7 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
       }
       columns={columns}
       heatmap={heatmap}
-      plan={plan}
+      plan={planWithScratch}
       tools={
         <HabitsControlPanel stones={props.willpowerStones}>
           <HabitsTabControls
