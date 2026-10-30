@@ -23,6 +23,7 @@ import { persistKey } from "@/lib/storage-keys"
 import type { PeriodReview, PeriodStartRitual, ReviewPeriod, StoredBlockedReason } from "@/lib/types"
 import { formatLocalDateKey, getWeekString, parseWeekString } from "@/lib/date-utils"
 import { quarterKey, quarterLabel } from "@/lib/seasons"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export { quarterOf } from "@/lib/seasons"
 
@@ -357,3 +358,5 @@ export function periodLabel(period: ReviewPeriod, key: string): string {
       return key
   }
 }
+
+registerPhoneWindowStore(useReviewsStore)

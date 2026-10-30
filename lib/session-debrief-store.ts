@@ -14,6 +14,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { WorkPauseSpan } from "@/lib/work-pause"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type SittingEnergy = "low" | "steady" | "high"
 
@@ -174,3 +175,5 @@ export function handoffsFor(
   }
   return out
 }
+
+registerPhoneWindowStore(useSessionDebriefStore)

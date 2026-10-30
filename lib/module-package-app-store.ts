@@ -18,6 +18,7 @@ import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { normalizePackagePath, type PackageAppFolder } from "@/lib/module-package-app"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 /** Whole folder, counted as UTF-8 bytes. The origin quota is shared. */
 export const MAX_PACKAGE_APP_BYTES = 6 * 1024 * 1024
@@ -140,3 +141,5 @@ export const useModulePackageAppStore = create<PackageAppState>()(
     { name: persistKey(PACKAGE_APP_PERSIST_NAME), version: 1, storage: createCogsJSONStorage() },
   ),
 )
+
+registerPhoneWindowStore(useModulePackageAppStore)

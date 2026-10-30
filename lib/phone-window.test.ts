@@ -29,6 +29,7 @@ import {
 } from "@/lib/phone-window"
 import { getPlanEntries } from "@/lib/plan-text"
 import { TASK_STORE_PERSIST_VERSION, useTaskStore } from "@/lib/task-store"
+import { usePointsStore } from "@/lib/points-store"
 
 const PHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
 
@@ -359,5 +360,24 @@ describe("phone window", () => {
     const held = JSON.parse(readPhoneWindowItem("brain2-task-storage") ?? "{}") as { state: { lists: Array<{ id: string }> } }
     expect(held.state.lists.map((list) => list.id)).toEqual(lists.map((list) => list.id))
     expect(useTaskStore.getState().lists.some((list) => list.id === "list-3")).toBe(true)
+  })
+
+  it("a second load refills a store outside REHYDRATE", async () => {
+    asPhone()
+    const points = (date: string) => JSON.stringify({ state: { pointsHistory: [{ date, points: 3 }] }, version: 0 })
+    let mac = points("2026-10-01")
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/api/persist")) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, items: { "points-store": mac } }) }
+      }
+      return { ok: false, status: 404, json: async () => ({}) }
+    }))
+
+    expect(await loadPhoneWindow()).toBe("live")
+    await usePointsStore.persist.rehydrate()
+    expect(usePointsStore.getState().pointsHistory.map((row) => row.date)).toEqual(["2026-10-01"])
+    mac = points("2026-10-30")
+    expect(await loadPhoneWindow()).toBe("live")
+    expect(usePointsStore.getState().pointsHistory.map((row) => row.date)).toEqual(["2026-10-30"])
   })
 })

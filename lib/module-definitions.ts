@@ -25,6 +25,7 @@ import type { ModuleDefinition, WorkflowDefinition } from "@/lib/types"
 import { useModulesStore, type ModuleInstance } from "@/lib/modules-store"
 import { useWorkflowsStore } from "@/lib/workflows-store"
 import { useTaskStore } from "@/lib/task-store"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 let counter = 0
 function nextId(prefix: string): string {
@@ -197,3 +198,5 @@ export function parseModuleDefinition(json: string): ModuleDefinition {
     enablePrint: raw.enablePrint,
   }
 }
+
+registerPhoneWindowStore(useModuleDefinitionsStore)

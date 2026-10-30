@@ -20,6 +20,7 @@ import { persist } from "zustand/middleware"
 import type { NutrientKey } from "@/lib/kitchen-nutrients"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const KITCHEN_NEEDS_KEY = persistKey("kitchen-needs")
 
@@ -555,3 +556,5 @@ export function resetKitchenNeeds(): void {
     /* the test double may refuse */
   }
 }
+
+registerPhoneWindowStore(useKitchenNeeds)

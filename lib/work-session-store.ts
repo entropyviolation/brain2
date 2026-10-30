@@ -13,6 +13,7 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import type { NowObjective } from "@/lib/now-objective"
 import type { WorkPauseSpan } from "@/lib/work-pause"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export interface WorkSession {
   operationId: string
@@ -62,3 +63,5 @@ export const useWorkSessionStore = create<WorkSessionState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useWorkSessionStore)

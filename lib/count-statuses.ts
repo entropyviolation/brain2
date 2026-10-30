@@ -25,6 +25,7 @@ import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
 import { stablePenColor, useTimeTrackingStore } from "@/lib/time-tracking-store"
 import type { IntakeClass, TrackingClockCertainty } from "@/lib/time-entries"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const COUNT_STATUSES_STORAGE_KEY = persistKey("count-statuses")
 
@@ -601,3 +602,5 @@ export function ensureCountForKeyword(phrase: string): string | null {
   }
   return useCountStatusesStore.getState().addCount({ name: keyword, keyword })
 }
+
+registerPhoneWindowStore(useCountStatusesStore)

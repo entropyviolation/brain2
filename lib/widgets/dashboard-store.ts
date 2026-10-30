@@ -51,6 +51,7 @@ import type {
   WidgetSettings,
   WidgetSize,
 } from "@/lib/widgets/types"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const HOME_DASHBOARD_STORAGE_KEY = persistKey("home-dashboard")
 
@@ -329,3 +330,5 @@ if (typeof window !== "undefined") {
     store.persist?.onFinishHydration?.(() => useDashboardStore.getState().ensureReady())
   }
 }
+
+registerPhoneWindowStore(useDashboardStore)

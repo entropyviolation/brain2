@@ -15,6 +15,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { createCogsJSONStorage } from "@/lib/persist-storage"
 import { persistKey } from "@/lib/storage-keys"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export const BUDGET_STORAGE_KEY = persistKey("budget")
 
@@ -373,3 +374,5 @@ export const useBudgetStore = create<BudgetState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useBudgetStore)

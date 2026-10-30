@@ -21,6 +21,7 @@ import { useModulePackageAppStore } from "@/lib/module-package-app-store"
 import type { HouseCleaningState } from "@/lib/house-cleaning"
 import type { SheetViewConfig } from "@/lib/spreadsheet-contract"
 import type { TripItineraryData } from "@/lib/trip-itinerary"
+import { registerPhoneWindowStore } from "@/lib/phone-window"
 
 export type ModuleType =
   | "list-explorer"
@@ -379,3 +380,5 @@ export const useModulesStore = create<ModulesState>()(
     },
   ),
 )
+
+registerPhoneWindowStore(useModulesStore)
