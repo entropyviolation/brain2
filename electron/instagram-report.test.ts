@@ -408,7 +408,7 @@ describe("copy from Google Drive", () => {
         })
         return r
       }
-      return fs.createReadStream(p, opts)
+      return fs.createReadStream(p, opts as Parameters<typeof fs.createReadStream>[1])
     }) as typeof fs.createReadStream
     return wrapped
   }
