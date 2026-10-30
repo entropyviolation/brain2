@@ -221,7 +221,7 @@ export interface TimeEntry {
    * its own kind+id, so re-deriving is idempotent and can never quietly delete
    * time the user painted by hand.
    */
-  generatedBy?: { kind: "sleep" | "screentime" | "text" | "phone-sync"; id: string }
+  generatedBy?: { kind: "sleep" | "screentime" | "text" | "phone-sync" | "llm"; id: string }
   /**
    * Which door wrote this row. Omitted on older rows — the detail line infers
    * from `generatedBy` when it can. No persist bump.

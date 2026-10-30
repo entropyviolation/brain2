@@ -58,10 +58,13 @@ export function applyNfcScan(payload: string, now = new Date()): ApplyResult {
     return { ...painted, kind: "nfc" }
   }
 
-  recordCountForKeyword(title, {
-    date: formatLocalDateKey(now),
-    startMin: minutesPastMidnight(now),
-  })
+  // A log line tallies its own bound count; an intake line does not.
+  if (tag.intakeClass) {
+    recordCountForKeyword(title, {
+      date: formatLocalDateKey(now),
+      startMin: minutesPastMidnight(now),
+    })
+  }
 
   const stamp = `nfc:${tag.id}:${now.toISOString()}`
   stampGenerated(painted.itemIds, stamp)
