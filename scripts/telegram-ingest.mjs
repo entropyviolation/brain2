@@ -43,7 +43,7 @@ function tokenFromEnvFiles() {
 
 const TOKEN = tokenFromEnvFiles()
 if (!TOKEN) {
-  console.error("[cogs-ingest] Set BRAIN2_TELEGRAM_BOT_TOKEN or gitignored .env.local")
+  console.error("[brain2-ingest] Set BRAIN2_TELEGRAM_BOT_TOKEN or gitignored .env.local")
   process.exit(1)
 }
 
@@ -84,7 +84,7 @@ async function flushReplies() {
         })
       }
     } catch (err) {
-      console.warn("[cogs-ingest] reply failed:", err.message)
+      console.warn("[brain2-ingest] reply failed:", err.message)
       leftover.push(reply)
     }
   }
@@ -94,10 +94,10 @@ async function flushReplies() {
 try {
   for (const call of commandMenuRegistration()) await api(call.method, call.params)
 } catch (err) {
-  console.warn("[cogs-ingest] commands", err.message)
+  console.warn("[brain2-ingest] commands", err.message)
 }
 
-console.log(`[cogs-ingest] polling Telegram → ${ingestDataPath()}`)
+console.log(`[brain2-ingest] polling Telegram → ${ingestDataPath()}`)
 writeIngestStore({ ...readIngestStore(), polling: true })
 
 process.on("SIGINT", () => {
@@ -142,7 +142,7 @@ while (true) {
     writeIngestStore({ ...store, pending, polling: true })
     await flushReplies()
   } catch (err) {
-    console.warn("[cogs-ingest]", err.message)
+    console.warn("[brain2-ingest]", err.message)
     await new Promise((r) => setTimeout(r, 1000))
   }
 }

@@ -159,7 +159,43 @@ describe("backup/restore", () => {
       throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
     })
     await expect(restoreBackup(backup)).rejects.toThrow(/Restore failed/)
+    await expect(restoreBackup(backup)).rejects.toThrow(/about 5 MB/)
     spy.mockRestore()
+  })
+
+  it("drops the previous vault and retries when the new copy cannot sit beside it", async () => {
+    localStorage.setItem("brain2-task-storage", "x".repeat(5000))
+    const backup = parseBackup(
+      JSON.stringify({
+        app: "brain2",
+        version: 1,
+        exportedAt: "2026-10-28T00:00:00.000Z",
+        stores: {
+          "brain2-task-storage": { state: { tasks: [{ id: "a", title: "Milk" }], lists: [] } },
+        },
+        planText: {},
+      }),
+    )
+    const original = Storage.prototype.setItem
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === "brain2-task-storage" && (this.getItem(key)?.length ?? 0) > 1000) {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError")
+      }
+      return original.call(this, key, value)
+    })
+    try {
+      await restoreBackup(backup, {
+        storeKeys: ["brain2-task-storage"],
+        mode: "replace",
+        planText: false,
+        attachments: false,
+        docs: false,
+        extras: false,
+      })
+    } finally {
+      spy.mockRestore()
+    }
+    expect(localStorage.getItem("brain2-task-storage")).toMatch(/Milk/)
   })
 
   it("previews which registered stores a backup contains", () => {

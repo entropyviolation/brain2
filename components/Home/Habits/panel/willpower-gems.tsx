@@ -11,7 +11,8 @@
  * net |Σ m v|, ΣE including spin K). Equations render as KaTeX (CRT phosphor);
  * Show equation expands the law, live numerics stay beside it, Explain is prose.
  * Held gems are kinematic — cards say so (no fake z̈ = −g while held).
- * The crystal is a solid and a Y-sort occluder. Gems paint outside the rim.
+ * The crystal is a solid and a Y-sort occluder. On the desktop, gems paint outside the rim.
+ * The iOS shell uses a contained dish, phone copy, and keycaps. Desktop strings stay.
  * Grab does not stir or press the plate. Stir is a short whirl, not a scatter
  * bomb. A full plate rests: glassy on a real hit, quiet at rest, dish lets go
  * of a supported gem. Painted Win95 sliders; collapsible equations / explains.
@@ -40,12 +41,14 @@ import katex from "katex"
 import "katex/dist/katex.min.css"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { KeycapClose } from "@/components/keycap-close"
+import { useInMobileShell } from "@/components/Mobile/use-in-mobile-shell"
 import { orbFor } from "@/components/Icons"
 import { removeBackground } from "@/lib/remove-background"
 import { useHabitsStore } from "@/lib/habits-store"
 import {
   bodyPotentialParts,
   clamp,
+  containWillpowerBodies,
   DEFAULT_WILLPOWER_PHYSICS,
   dishPeriod,
   dragWillpowerGem,
@@ -70,12 +73,22 @@ import {
   viewWillpowerBody,
   willpowerTelemetry,
   worldIsLive,
+  WILLPOWER_GEM_RADIUS,
   WILLPOWER_PHYSICS_FIELDS,
   type WillpowerBody,
   type WillpowerPhysicsParams,
   type WillpowerWorld,
 } from "@/lib/willpower-physics"
 import type { WillpowerStone } from "@/lib/willpower-stones"
+import {
+  PHONE_CARDS,
+  PHONE_FIELD_TEX,
+  PHONE_GRAB_REACH,
+  PHONE_KNOBS,
+  PHONE_UNIT_TEX,
+  phoneCardLayer,
+  type PhoneBit,
+} from "./willpower-gems-phone"
 import "../habit-form-dialog.css"
 
 export const DEFAULT_WILLPOWER_ORB = orbFor("willpower")
@@ -97,22 +110,39 @@ const SLOW_MO = 0.38
 
 type LabHistory = { ke: number[]; z: number[]; v: number[]; e: number[] }
 
+function shellIsPhone(): boolean {
+  return typeof document !== "undefined" && document.querySelector(".cogs-mobile-app") != null
+}
+
 function worldFor(el: HTMLElement, prev?: WillpowerWorld): WillpowerWorld {
   const w = el.clientWidth || 160
   const h = el.clientHeight || 96
   const scale = w / 160
-  return {
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1
+  const base = {
     width: w,
     height: h,
-    cx: w / 2,
-    cy: h / 2 + 2,
-    rx: w * 0.46,
-    ry: h * 0.42,
-    scale: Number.isFinite(scale) && scale > 0 ? scale : 1,
+    scale: safeScale,
     seed: prev?.seed ?? 1,
     stirAge: prev?.stirAge ?? 99,
     bounces: prev?.bounces ?? 0,
   }
+  if (!shellIsPhone()) {
+    return { ...base, cx: w / 2, cy: h / 2 + 2, rx: w * 0.46, ry: h * 0.42 }
+  }
+  const gem = WILLPOWER_GEM_RADIUS * safeScale
+  const lab = el.closest(".hab-willpower-lab-play") != null
+  if (lab) {
+    // Dish sits low so a hop paints in the sky of the oval, not in the rim.
+    const cy = h * 0.66
+    const rx = Math.max(gem + 14, w * 0.33)
+    const ry = Math.max(gem + 10, Math.min(h * 0.18, cy - h * 0.34))
+    return { ...base, cx: w / 2, cy, rx, ry, contain: true }
+  }
+  const cy = h * 0.68
+  const rx = Math.max(gem + 8, w * 0.34)
+  const ry = Math.max(gem + 6, Math.min(h * 0.16, cy - h * 0.28))
+  return { ...base, cx: w / 2, cy, rx, ry, contain: true }
 }
 
 function bodiesFor(
@@ -214,16 +244,34 @@ function LatexEq({
   }
 }
 
+function PhoneBits({ bits }: { bits: PhoneBit[] }) {
+  return (
+    <>
+      {bits.map((bit, i) =>
+        bit.tex ? (
+          <LatexEq key={i} tex={bit.tex} fallback={bit.text} decorative />
+        ) : (
+          <span key={i}>{bit.text}</span>
+        ),
+      )}
+    </>
+  )
+}
+
 function Sparkline({
   values,
   label,
   unit,
   digits = 0,
+  labelTex,
+  unitTex,
 }: {
   values: number[]
   label: string
   unit?: string
   digits?: number
+  labelTex?: string
+  unitTex?: string
 }) {
   const width = 280
   const height = 48
@@ -245,10 +293,19 @@ function Sparkline({
   return (
     <figure className="hab-willpower-spark-wrap">
       <figcaption>
-        <span>{label}</span>
+        <span>{labelTex ? <LatexEq tex={labelTex} fallback={label} decorative /> : label}</span>
         <em>
           {fmt(last, digits)}
-          {unit ? ` ${unit}` : ""}
+          {unitTex ? (
+            <>
+              {" "}
+              <LatexEq tex={unitTex} fallback={unit ?? unitTex} decorative />
+            </>
+          ) : unit ? (
+            ` ${unit}`
+          ) : (
+            ""
+          )}
         </em>
       </figcaption>
       <svg className="hab-willpower-spark" viewBox={`0 0 ${width} ${height}`} aria-hidden>
@@ -432,11 +489,13 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
   open,
   onToggle,
   onChange,
+  phone,
 }: {
   params: WillpowerPhysicsParams
   open: ReadonlySet<string>
   onToggle: (id: string) => void
   onChange: (patch: Partial<WillpowerPhysicsParams>) => void
+  phone: boolean
 }) {
   return (
     <section
@@ -457,11 +516,15 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
             const value = params[field.key]
             const span = field.max - field.min || 1
             const pct = clamp(((value - field.min) / span) * 100, 0, 100)
+            const symbolTex = PHONE_FIELD_TEX[field.key] ?? field.symbol
+            const unitTex = PHONE_UNIT_TEX[field.key]
+            const knobCopy = PHONE_KNOBS[field.key]
+            const cap = phone ? "m-keycap" : ""
             return (
               <div key={field.key} className="hab-willpower-knob-block">
-                <label className="hab-willpower-knob" title={field.equation}>
+                <label className="hab-willpower-knob" title={phone ? field.label : field.equation}>
                   <span>
-                    {field.symbol}
+                    {phone ? <LatexEq tex={symbolTex} fallback={field.symbol} decorative /> : field.symbol}
                     <small>{field.label}</small>
                   </span>
                   <span className="hab-willpower-slider">
@@ -488,25 +551,41 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
                   </span>
                   <em>
                     {formatKnob(field, value)}
-                    {field.unit ? ` ${field.unit}` : ""}
+                    {phone && unitTex ? (
+                      <>
+                        {" "}
+                        <LatexEq tex={unitTex} fallback={field.unit} decorative />
+                      </>
+                    ) : field.unit ? (
+                      ` ${field.unit}`
+                    ) : null}
                   </em>
                 </label>
+                {phone && knobCopy ? (
+                  <p className="hab-willpower-explain-lead">
+                    <PhoneBits bits={knobCopy.lead} />
+                  </p>
+                ) : null}
                 <div className="hab-willpower-knob-toggles">
                   <button
                     type="button"
-                    className="hab-willpower-explain-toggle"
+                    className={`hab-willpower-explain-toggle ${cap}`.trim()}
+                    data-no95={phone ? "" : undefined}
                     aria-expanded={eqShown}
                     onClick={() => onToggle(eqId)}
                   >
-                    {eqShown ? "Hide equation" : "Show equation"} {field.symbol}
+                    {eqShown ? "Hide equation" : "Show equation"}{" "}
+                    {phone ? <LatexEq tex={symbolTex} fallback={field.symbol} decorative /> : field.symbol}
                   </button>
                   <button
                     type="button"
-                    className="hab-willpower-explain-toggle"
+                    className={`hab-willpower-explain-toggle ${cap}`.trim()}
+                    data-no95={phone ? "" : undefined}
                     aria-expanded={whyShown}
                     onClick={() => onToggle(whyId)}
                   >
-                    {whyShown ? "Hide explain" : "Explain"} {field.symbol}
+                    {whyShown ? "Hide explain" : "Explain"}{" "}
+                    {phone ? <LatexEq tex={symbolTex} fallback={field.symbol} decorative /> : field.symbol}
                   </button>
                 </div>
                 {eqShown ? (
@@ -519,7 +598,15 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
                     />
                   </div>
                 ) : null}
-                {whyShown ? <p className="hab-willpower-explain">{field.explain}</p> : null}
+                {whyShown ? (
+                  phone && knobCopy ? (
+                    <p className="hab-willpower-explain">
+                      <PhoneBits bits={knobCopy.deeper} />
+                    </p>
+                  ) : (
+                    <p className="hab-willpower-explain">{field.explain}</p>
+                  )
+                ) : null}
               </div>
             )
           })}
@@ -528,6 +615,34 @@ const PhysicsKnobs = memo(function PhysicsKnobs({
     </section>
   )
 })
+
+function phoneReadout(id: string, ctx: LabEqCtx, held: boolean): { tex: string; fallback: string } | null {
+  if (id === "eq-g" && !held) {
+    const n = fmt(ctx.params.g)
+    return { tex: `-${n}\\,\\mathrm{px}/\\mathrm{s}^{2}`, fallback: `-${n} px/s^2` }
+  }
+  if (id === "eq-vz") {
+    const n = fmt(ctx.vz0)
+    return { tex: `${n}\\,\\mathrm{px}/\\mathrm{s}`, fallback: `${n} px/s` }
+  }
+  if (id === "eq-z") {
+    const n = fmt(ctx.z0, 1)
+    return { tex: `${n}\\,\\mathrm{px}`, fallback: `${n} px` }
+  }
+  if (id === "eq-e") {
+    const n = fmt(ctx.e, 2)
+    return { tex: n, fallback: n }
+  }
+  if (id === "eq-k") {
+    const n = fmt(ctx.ke)
+    return { tex: `${n}\\,\\mathrm{px}^{2}/\\mathrm{s}^{2}`, fallback: `${n} px^2/s^2` }
+  }
+  if (id === "eq-u") {
+    const n = fmt(ctx.totalU)
+    return { tex: n, fallback: n }
+  }
+  return null
+}
 
 function PhysicsLab({
   pose,
@@ -538,6 +653,7 @@ function PhysicsLab({
   onSlowMo,
   onChange,
   onReset,
+  phone,
 }: {
   pose: WillpowerBody[]
   params: WillpowerPhysicsParams
@@ -547,6 +663,7 @@ function PhysicsLab({
   onSlowMo: () => void
   onChange: (patch: Partial<WillpowerPhysicsParams>) => void
   onReset: () => void
+  phone: boolean
 }) {
   const gems = pose.filter((b) => !b.pinned)
   const crystal = pose.find((b) => b.pinned)
@@ -638,19 +755,22 @@ function PhysicsLab({
   )
   const showAll = () => setOpen(new Set(allIds))
   const hideAll = () => setOpen(new Set())
+  const cap = phone ? "m-keycap" : ""
+  const phoneHeld = Boolean(held)
 
   return (
-    <div className="hab-willpower-lab" data-physics-lab="willpower-gems">
+    <div className="hab-willpower-lab" data-physics-lab="willpower-gems" data-phone-lab={phone ? "true" : undefined}>
       <div className="hab-willpower-lab-toolbar">
-        <button type="button" className="habit95-btn" onClick={showAll}>
+        <button type="button" className={`habit95-btn ${cap}`.trim()} data-no95={phone ? "" : undefined} onClick={showAll}>
           Show all explanations
         </button>
-        <button type="button" className="habit95-btn" onClick={hideAll}>
+        <button type="button" className={`habit95-btn ${cap}`.trim()} data-no95={phone ? "" : undefined} onClick={hideAll}>
           Hide all explanations
         </button>
         <button
           type="button"
-          className={`habit95-btn${slowMo ? " habit95-btn-default" : ""}`}
+          className={`habit95-btn ${cap}${slowMo ? " habit95-btn-default" : ""}`.trim()}
+          data-no95={phone ? "" : undefined}
           aria-pressed={slowMo}
           onClick={onSlowMo}
         >
@@ -660,17 +780,34 @@ function PhysicsLab({
       <div className="hab-willpower-lab-main">
         <div className="hab-willpower-lab-readout">
           <section className="hab-willpower-eq-block" aria-label="Live equations">
-            <h3>{held ? "Held gem (kinematic)" : "Tracked gem (held, else highest K)"}</h3>
+            <h3>
+              {phone ? (
+                held ? (
+                  "Held gem (kinematic)"
+                ) : (
+                  <>
+                    Tracked gem (held, else highest <LatexEq tex="K" fallback="K" decorative />)
+                  </>
+                )
+              ) : held ? (
+                "Held gem (kinematic)"
+              ) : (
+                "Tracked gem (held, else highest K)"
+              )}
+            </h3>
             <div className="hab-willpower-eq-list">
               {eqCards.map((card) => {
                 const eqOpen = open.has(card.id)
                 const whyOpen = open.has(`${card.id}-why`)
+                const layer = phone ? phoneCardLayer(card.id, phoneHeld) : undefined
+                const readout = phone ? phoneReadout(card.id, eqCtx, phoneHeld) : null
                 return (
                   <article key={card.id} className="hab-willpower-eq-card">
                     <div className="hab-willpower-eq-row">
                       <button
                         type="button"
-                        className="hab-willpower-eq-head"
+                        className={`hab-willpower-eq-head ${cap}`.trim()}
+                        data-no95={phone ? "" : undefined}
                         aria-expanded={eqOpen}
                         aria-label={eqOpen ? "Hide equation" : "Show equation"}
                         onClick={() => toggle(card.id)}
@@ -680,7 +817,13 @@ function PhysicsLab({
                           <small aria-hidden="true">{eqOpen ? "Hide equation" : "Show equation"}</small>
                         </span>
                       </button>
-                      <em>{card.value(eqCtx)}</em>
+                      <em>
+                        {readout ? (
+                          <LatexEq tex={readout.tex} fallback={readout.fallback} decorative />
+                        ) : (
+                          card.value(eqCtx)
+                        )}
+                      </em>
                     </div>
                     {eqOpen ? (
                       <div className="hab-willpower-eq-body" role="math" aria-label={card.equationFallback}>
@@ -692,29 +835,57 @@ function PhysicsLab({
                         />
                       </div>
                     ) : null}
+                    {layer ? (
+                      <p className="hab-willpower-explain-lead">
+                        <PhoneBits bits={layer.lead} />
+                      </p>
+                    ) : null}
                     <button
                       type="button"
-                      className="hab-willpower-explain-toggle"
+                      className={`hab-willpower-explain-toggle ${cap}`.trim()}
+                      data-no95={phone ? "" : undefined}
                       aria-expanded={whyOpen}
                       onClick={() => toggle(`${card.id}-why`)}
                     >
                       {whyOpen ? "Hide explain" : "Explain"}
                     </button>
-                    {whyOpen ? <p className="hab-willpower-explain">{card.explain}</p> : null}
+                    {whyOpen ? (
+                      layer ? (
+                        <p className="hab-willpower-explain">
+                          <PhoneBits bits={layer.deeper} />
+                        </p>
+                      ) : (
+                        <p className="hab-willpower-explain">{card.explain}</p>
+                      )
+                    ) : null}
                   </article>
                 )
               })}
             </div>
           </section>
           <p className="hab-willpower-eq-meta">
-            apex {fmt(apex, 1)} px · t<sub>apex</sub> {fmt(tApex, 2)} s · t<sub>land</sub>{" "}
-            {fmt(tFloor, 2)} s · airborne {airborne}/{gems.length} · bounces {bounces}
+            {phone ? (
+              <>
+                <LatexEq tex={`${fmt(apex, 1)}\\,\\mathrm{px}`} fallback={`${fmt(apex, 1)} px`} decorative />
+                {" · "}
+                <LatexEq tex={`t_{\\mathrm{apex}} = ${fmt(tApex, 2)}\\,\\mathrm{s}`} fallback={`t_apex ${fmt(tApex, 2)} s`} decorative />
+                {" · "}
+                <LatexEq tex={`t_{\\mathrm{land}} = ${fmt(tFloor, 2)}\\,\\mathrm{s}`} fallback={`t_land ${fmt(tFloor, 2)} s`} decorative />
+                {` · airborne ${airborne}/${gems.length} · bounces ${bounces}`}
+              </>
+            ) : (
+              <>
+                apex {fmt(apex, 1)} px · t<sub>apex</sub> {fmt(tApex, 2)} s · t<sub>land</sub>{" "}
+                {fmt(tFloor, 2)} s · airborne {airborne}/{gems.length} · bounces {bounces}
+              </>
+            )}
           </p>
           <section className="hab-willpower-extra" aria-label="More lab quantities">
             <div className="hab-willpower-eq-row">
               <button
                 type="button"
-                className="hab-willpower-eq-head"
+                className={`hab-willpower-eq-head ${cap}`.trim()}
+                data-no95={phone ? "" : undefined}
                 aria-expanded={open.has("eq-extra")}
                 onClick={() => toggle("eq-extra")}
               >
@@ -723,7 +894,13 @@ function PhysicsLab({
                   <small>{open.has("eq-extra") ? "Hide" : "Show"}</small>
                 </span>
               </button>
-              <em>ΣE {fmt(totalE)}</em>
+              <em>
+                {phone ? (
+                  <LatexEq tex={`\\Sigma E = ${fmt(totalE)}`} fallback={`ΣE ${fmt(totalE)}`} decorative />
+                ) : (
+                  <>ΣE {fmt(totalE)}</>
+                )}
+              </em>
             </div>
             {open.has("eq-extra") ? (
               <dl>
@@ -761,7 +938,13 @@ function PhysicsLab({
                   <dt>
                     <LatexEq tex={"\\bar{\\omega}"} fallback="ω̄" decorative />
                   </dt>
-                  <dd>{fmt(omega, 2)} rad/s</dd>
+                  <dd>
+                    {phone ? (
+                      <LatexEq tex={`${fmt(omega, 2)}\\,\\mathrm{rad}/\\mathrm{s}`} fallback={`${fmt(omega, 2)} rad/s`} decorative />
+                    ) : (
+                      `${fmt(omega, 2)} rad/s`
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt>
@@ -771,7 +954,13 @@ function PhysicsLab({
                       decorative
                     />
                   </dt>
-                  <dd>{fmt(period, 2)} s</dd>
+                  <dd>
+                    {phone ? (
+                      <LatexEq tex={`${fmt(period, 2)}\\,\\mathrm{s}`} fallback={`${fmt(period, 2)} s`} decorative />
+                    ) : (
+                      `${fmt(period, 2)} s`
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt>
@@ -781,10 +970,16 @@ function PhysicsLab({
                       decorative
                     />
                   </dt>
-                  <dd>{fmt(comR, 1)} px</dd>
+                  <dd>
+                    {phone ? (
+                      <LatexEq tex={`${fmt(comR, 1)}\\,\\mathrm{px}`} fallback={`${fmt(comR, 1)} px`} decorative />
+                    ) : (
+                      `${fmt(comR, 1)} px`
+                    )}
+                  </dd>
                 </div>
                 <div>
-                  <dt>packing</dt>
+                  <dt>{phone ? <LatexEq tex="\\mathrm{packing}" fallback="packing" decorative /> : "packing"}</dt>
                   <dd>{fmt(packing, 2)}</dd>
                 </div>
                 <div>
@@ -793,15 +988,26 @@ function PhysicsLab({
                 </div>
               </dl>
             ) : null}
+            {phone ? (
+              <p className="hab-willpower-explain-lead">
+                <PhoneBits bits={PHONE_CARDS["eq-extra"]!.lead} />
+              </p>
+            ) : null}
             <button
               type="button"
-              className="hab-willpower-explain-toggle"
+              className={`hab-willpower-explain-toggle ${cap}`.trim()}
+              data-no95={phone ? "" : undefined}
               aria-expanded={open.has("eq-extra-why")}
               onClick={() => toggle("eq-extra-why")}
             >
               {open.has("eq-extra-why") ? "Hide explain" : "Explain"} instruments
             </button>
             {open.has("eq-extra-why") ? (
+              phone ? (
+                <p className="hab-willpower-explain">
+                  <PhoneBits bits={PHONE_CARDS["eq-extra"]!.deeper} />
+                </p>
+              ) : (
               <p className="hab-willpower-explain">
                 Crowd instruments: ΣE = Σ(K + U + K_ω) over every gem (same U and spin as the
                 sparkline), net momentum |Σ m v|, spin K for a solid sphere, mean spin, dish
@@ -809,16 +1015,48 @@ function PhysicsLab({
                 falls from e &lt; 1, the rest cutoff, drag, friction, spin damping, and speed
                 clamps. Slow-mo scales dt so the same laws are easier to watch.
               </p>
+              )
             ) : null}
           </section>
           <section className="hab-willpower-graphs" aria-label="Live trajectories">
-            <Sparkline values={history.ke} label="ΣK" unit="px²/s²" />
-            <Sparkline values={history.e} label="ΣE" unit="" />
-            <Sparkline values={history.z} label="max z" unit="px" digits={1} />
+            <Sparkline
+              values={history.ke}
+              label="ΣK"
+              unit="px²/s²"
+              labelTex={phone ? "\\Sigma K" : undefined}
+              unitTex={phone ? "\\mathrm{px}^{2}/\\mathrm{s}^{2}" : undefined}
+            />
+            <Sparkline
+              values={history.e}
+              label="ΣE"
+              unit=""
+              labelTex={phone ? "\\Sigma E" : undefined}
+            />
+            <Sparkline
+              values={history.z}
+              label="max z"
+              unit="px"
+              digits={1}
+              labelTex={phone ? "\\max z" : undefined}
+              unitTex={phone ? "\\mathrm{px}" : undefined}
+            />
             <figure className="hab-willpower-spark-wrap">
               <figcaption>
-                <span>z(t) next bounce (same step)</span>
-                <em>{fmt(apex, 1)} px</em>
+                <span>
+                  {phone ? (
+                    <LatexEq tex="z(t)" fallback="z(t)" decorative />
+                  ) : (
+                    "z(t) next bounce (same step)"
+                  )}
+                  {phone ? " next bounce (same step)" : ""}
+                </span>
+                <em>
+                  {phone ? (
+                    <LatexEq tex={`${fmt(apex, 1)}\\,\\mathrm{px}`} fallback={`${fmt(apex, 1)} px`} decorative />
+                  ) : (
+                    `${fmt(apex, 1)} px`
+                  )}
+                </em>
               </figcaption>
               <svg className="hab-willpower-spark hab-willpower-arc" viewBox="0 0 280 48" aria-hidden>
                 <line x1="16" y1="40" x2="264" y2="40" />
@@ -827,14 +1065,19 @@ function PhysicsLab({
             </figure>
           </section>
         </div>
-        <PhysicsKnobs params={params} open={open} onToggle={toggle} onChange={onChange} />
+        <PhysicsKnobs params={params} open={open} onToggle={toggle} onChange={onChange} phone={phone} />
       </div>
       <footer className="hab-willpower-lab-foot">
         <p>
           Same chrome + black-mirror world as the control-panel plate. Grab a gem without pressing the well.
           Edits persist until reset.
         </p>
-        <button type="button" className="habit95-btn habit95-btn-default hab-willpower-lab-reset" onClick={onReset}>
+        <button
+          type="button"
+          className={`habit95-btn habit95-btn-default hab-willpower-lab-reset ${cap}`.trim()}
+          data-no95={phone ? "" : undefined}
+          onClick={onReset}
+        >
           Reset to default
         </button>
       </footer>
@@ -1052,6 +1295,7 @@ function WillpowerGemsStage({
   const [history, setHistory] = useState(historyRef.current)
   const [slowMo, setSlowMo] = useState(false)
   const [bounces, setBounces] = useState(0)
+  const phone = useInMobileShell()
   const persistTimer = useRef(0)
   const storeSpots = useHabitsStore((s) => s.willpowerGemSpots)
   const setSpots = useHabitsStore((s) => s.setWillpowerGemSpots)
@@ -1081,7 +1325,11 @@ function WillpowerGemsStage({
     const el = stageRef.current
     if (el) {
       worldRef.current = worldFor(el, worldRef.current)
-      bodiesRef.current = bodiesFor(stones, worldRef.current, [], DEFAULT_WILLPOWER_PHYSICS)
+      bodiesRef.current = containWillpowerBodies(
+        bodiesFor(stones, worldRef.current, [], DEFAULT_WILLPOWER_PHYSICS),
+        worldRef.current,
+        DEFAULT_WILLPOWER_PHYSICS,
+      )
       setPose(bodiesRef.current)
     }
   }, [setParams, setSpots, stones])
@@ -1130,11 +1378,12 @@ function WillpowerGemsStage({
     const last = lastRef.current || now
     lastRef.current = now
     const scale = slowMoRef.current ? SLOW_MO : 1
-    const dt = Math.min((now - last) / 1000, 1 / 30) * scale
+    const phoneStep = shellIsPhone()
+    const dt = Math.min((now - last) / 1000, phoneStep ? 1 / 60 : 1 / 30) * scale
     const next = stepWillpowerWorld(bodiesRef.current, worldRef.current, dt, paramsRef.current)
     bodiesRef.current = next
     const grabbing = Boolean(grabRef.current)
-    if (grabbing || now - paintRef.current >= PAINT_MS || paintRef.current === 0) {
+    if (grabbing || now - paintRef.current >= (phoneStep ? 0 : PAINT_MS) || paintRef.current === 0) {
       paintRef.current = now
       setPose(next)
     }
@@ -1270,7 +1519,11 @@ function WillpowerGemsStage({
     const el = stageRef.current
     if (!el) return
     worldRef.current = worldFor(el, worldRef.current)
-    bodiesRef.current = bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current, spotsRef.current)
+    bodiesRef.current = containWillpowerBodies(
+      bodiesFor(stones, worldRef.current, bodiesRef.current, paramsRef.current, spotsRef.current),
+      worldRef.current,
+      paramsRef.current,
+    )
     setPose(bodiesRef.current)
   }, [stones])
 
@@ -1280,12 +1533,16 @@ function WillpowerGemsStage({
     const ro = new ResizeObserver(() => {
       const prev = worldRef.current
       const nextWorld = worldFor(el, prev)
-      bodiesRef.current = resolveWillpowerOverlaps(
-        scaleWillpowerBodies(
-          bodiesFor(stones, nextWorld, bodiesRef.current, paramsRef.current, spotsRef.current),
-          prev,
-          nextWorld,
+      bodiesRef.current = containWillpowerBodies(
+        resolveWillpowerOverlaps(
+          scaleWillpowerBodies(
+            bodiesFor(stones, nextWorld, bodiesRef.current, paramsRef.current, spotsRef.current),
+            prev,
+            nextWorld,
+          ),
+          paramsRef.current,
         ),
+        nextWorld,
         paramsRef.current,
       )
       worldRef.current = nextWorld
@@ -1394,7 +1651,7 @@ function WillpowerGemsStage({
     const stage = event.currentTarget.querySelector(".hab-willpower-stage") as HTMLElement | null
     if (stage) {
       const sim = toSim(stage, event.clientX, event.clientY, worldRef.current)
-      const hit = hitWillpowerGem(bodiesRef.current, sim.x, sim.y)
+      const hit = hitWillpowerGem(bodiesRef.current, sim.x, sim.y, shellIsPhone() ? PHONE_GRAB_REACH : 1)
       if (hit && !hit.pinned) {
         event.preventDefault()
         beginGrab(hit.id, stage, event.clientX, event.clientY, event.pointerId, event.currentTarget)
@@ -1416,7 +1673,7 @@ function WillpowerGemsStage({
     const id = event.currentTarget.getAttribute("data-stone-id")
     if (!id) return
     const sim = toSim(stage, event.clientX, event.clientY, worldRef.current)
-    const hit = hitWillpowerGem(bodiesRef.current, sim.x, sim.y) ?? bodiesRef.current.find((b) => b.id === id)
+    const hit = hitWillpowerGem(bodiesRef.current, sim.x, sim.y, shellIsPhone() ? PHONE_GRAB_REACH : 1) ?? bodiesRef.current.find((b) => b.id === id)
     if (!hit || hit.pinned) return
     beginGrab(hit.id, stage, event.clientX, event.clientY, event.pointerId, event.currentTarget)
   }
@@ -1427,7 +1684,8 @@ function WillpowerGemsStage({
       if (grab) {
         const dx = event.clientX - gestureRef.current.x
         const dy = event.clientY - gestureRef.current.y
-        if (dx * dx + dy * dy > 49) gestureRef.current.dragged = true
+        const dragSlop = shellIsPhone() ? 16 : 49
+        if (dx * dx + dy * dy > dragSlop) gestureRef.current.dragged = true
       }
       if (!grab) return
       const stage =
@@ -1512,7 +1770,7 @@ function WillpowerGemsStage({
   return (
     <>
       <Dialog open={hud} onOpenChange={setHud}>
-        <DialogContent className="habit95-dialog hab-willpower-lab-dialog">
+        <DialogContent className={`habit95-dialog hab-willpower-lab-dialog${phone ? " is-phone-physics" : ""}`}>
           <DialogHeader className="habit95-title-bar flex-row items-center space-y-0 text-left">
             <DialogTitle className="habit95-title-text">Willpower gems physics</DialogTitle>
             <KeycapClose className="habit95-title-btn" label="Close physics" onClick={() => setHud(false)} />
@@ -1538,6 +1796,7 @@ function WillpowerGemsStage({
               onSlowMo={() => setSlowMo((v) => !v)}
               onChange={onPhysicsChange}
               onReset={onPhysicsReset}
+              phone={phone}
             />
           </div>
         </DialogContent>

@@ -61,6 +61,10 @@
  * bot; a lower `allowlistRev` or an empty ingest seed is refused.
  * Identical `cogs-*` twins of a large `brain2-*` vault are dropped on boot and
  * on QuotaExceeded so Inbox clarifications and desktop hues can save again.
+ * On a phone the task vault and the time grid are stored as the small copy
+ * (names, list ids, about a week of blocks). A full box drops side vaults and
+ * retries, so a desktop-sized snapshot cannot stick the save banner up. The
+ * phone does not POST that small copy back to the desktop hub.
  * A successful habits/theme write stamps LED / tube / PCB pins from the new
  * blob; it does not re-apply an old pin onto that blob (that was resetting
  * Percent LED tint to a previous purple on refresh).
@@ -68,6 +72,8 @@
 import { emitAppendLogChange } from "@/lib/append-log"
 import { createJSONStorage, type PersistStorage, type StateStorage } from "zustand/middleware"
 import { overlayHabitCompletionsParsed, overlayIngestAllowlistParsed, pickPersistItem as pickVaultItem, presentPersistValue, shouldRejectAppearanceDowngradeParsed, shouldRejectContentDowngradeParsed, shouldRejectIngestDowngradeParsed, stampAppearancePinsParsed, unionPersistSnapshots, unionPersistSnapshotsParsed, vaultNeedsParsedGuards, vaultRecordCount, vaultRecordCountRoot } from "@/lib/vault-guard.js"
+import { isPhoneWebStorage } from "@/lib/phone-device"
+import { freePhoneWebStorage, slimPhonePersistValue } from "@/lib/phone-storage"
 import {
   ensureLegacyPersistCopied,
   isPlanTextStorageKey,
@@ -78,6 +84,7 @@ import {
   writeAliasedLocal,
   releaseDuplicateLegacyTwins,
   releaseCopiedUnprefixedKeys,
+  releaseFriendPicLocalKeys,
   isDemoProfile,
   isQuotaExceededError,
 } from "@/lib/storage-keys"
@@ -647,15 +654,32 @@ export function cogsStateStorage(): StateStorage {
           if (typeof kept === "string") value = kept
         }
         if (parsedGuards) stampAppearancePinsParsed(valueObj, name)
-        try {
-          writeAliasedLocal(name, value)
-        } catch (error) {
-          if (isQuotaExceededError(error)) {
-            releaseDuplicateLegacyTwins()
-            releaseCopiedUnprefixedKeys()
+        const phone = isPhoneWebStorage()
+        if (phone) {
+          const slim = slimPhonePersistValue(name, value)
+          if (typeof slim === "string") value = slim
+        }
+        if (previous === value) {
+          recordPersistSuccess(name)
+          return
+        }
+        const writePhone = () => {
+          try {
             writeAliasedLocal(name, value)
-          } else {
-            throw error
+            return true
+          } catch (error) {
+            if (!isQuotaExceededError(error)) throw error
+            return false
+          }
+        }
+        if (!writePhone()) {
+          releaseDuplicateLegacyTwins()
+          releaseCopiedUnprefixedKeys()
+          releaseFriendPicLocalKeys()
+          if (phone) freePhoneWebStorage(name)
+          if (!writePhone()) {
+            if (phone) freePhoneWebStorage(name, { dropTimegrid: true })
+            writeAliasedLocal(name, value)
           }
         }
         if (parsedGuards && SKIP_UNION_IDS.has(vaultKind(name))) {
@@ -664,7 +688,7 @@ export function cogsStateStorage(): StateStorage {
           else lastWritten.delete(name)
         }
         recordPersistSuccess(name)
-        postHub(name, value)
+        if (!phone) postHub(name, value)
       } catch (error) {
         lastWritten.delete(name)
         recordPersistFailure(error, name)

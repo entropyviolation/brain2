@@ -402,7 +402,7 @@ function registerFileLinkIpc({ ipcMain, dialog, shell, protocol, net, getWindow 
       }
       return out
     } catch (err) {
-      console.warn("[cogs] link pick failed:", err && err.message)
+      console.warn("[brain2] link pick failed:", err && err.message)
       return []
     }
   })

@@ -4,7 +4,8 @@
  * The square is an 8-bit moon, the phase name, and days to the sooner of
  * the next full moon and the next new moon. The detail header is a
  * photographic phase; illumination and the neighboring major phases sit
- * beside it, then the solar-system chart.
+ * beside it, then the solar-system chart. Inside the iOS shell the same
+ * tile opens the phone sheet instead, and this dialog stays the desktop one.
  */
 "use client"
 
@@ -17,6 +18,8 @@ import { HomeWidgetDialog, TileHide, TileOpen } from "@/components/Home/home-wid
 import { MoonOrrery } from "@/components/Home/moon/home-moon-orrery"
 import { MoonPhaseDisk } from "@/components/Home/moon/home-moon-phase"
 import { PixelMoon } from "@/components/Home/moon/home-moon-sprite"
+import { MobileMoonSheet } from "@/components/Mobile/moon/mobile-moon-sheet"
+import { useInMobileShell } from "@/components/Mobile/use-in-mobile-shell"
 
 export function MoonTile({
   currentDate,
@@ -27,6 +30,7 @@ export function MoonTile({
 }) {
   const [now, setNow] = useState(() => new Date())
   const [open, setOpen] = useState(false)
+  const mobile = useInMobileShell()
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000)
@@ -69,24 +73,28 @@ export function MoonTile({
           </div>
         </TileOpen>
       </div>
-      <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Moon" className="is-sky">
-        <div className="home-moon-facts">
-          <MoonPhaseDisk cycle={face.cycle} />
-          <div className="home-moon-copy">
-            <p className="home-widget-lead">{face.label}</p>
-            <ul className="home-moon-lines">
-              <li>{face.illuminationLine}</li>
-              <li>
-                Next Major Phase: {face.nextMajor.label} on {formatMajorWhen(face.nextMajor.at)}
-              </li>
-              <li>
-                Previous Major Phase: {face.previousMajor.label} on {formatMajorWhen(face.previousMajor.at)}
-              </li>
-            </ul>
+      {mobile ? (
+        <MobileMoonSheet open={open} onClose={() => setOpen(false)} face={face} />
+      ) : (
+        <HomeWidgetDialog open={open} onOpenChange={setOpen} title="Moon" className="is-sky">
+          <div className="home-moon-facts">
+            <MoonPhaseDisk cycle={face.cycle} />
+            <div className="home-moon-copy">
+              <p className="home-widget-lead">{face.label}</p>
+              <ul className="home-moon-lines">
+                <li>{face.illuminationLine}</li>
+                <li>
+                  Next Major Phase: {face.nextMajor.label} on {formatMajorWhen(face.nextMajor.at)}
+                </li>
+                <li>
+                  Previous Major Phase: {face.previousMajor.label} on {formatMajorWhen(face.previousMajor.at)}
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
-        <MoonOrrery date={when} />
-      </HomeWidgetDialog>
+          <MoonOrrery date={when} />
+        </HomeWidgetDialog>
+      )}
     </>
   )
 }

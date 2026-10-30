@@ -12,10 +12,15 @@ Two laws hold the house together:
    possible.** Lists, Scheduler, Tracking, Habits, Docs, Modules, Reviews, and
    search are rooms on the same graph — not separate products that happen to
    share a name. Isolation is a bug.
-2. **Data is the heart** (the desk tab formerly called Analytics). The rest of the house writes the vault. Data
-   is mass personal data and information-resource collection, presentation, and
-   analysis — and the place that turns that mass into endless tools. Capture
-   without analysis is a filing cabinet.
+2. **Data is the heart** (the desk tab formerly called Analytics). It is
+   analytics, analysis, visualization, stats, a library, and annotation. The
+   suites read and combine all data in the vault. Spreadsheet-style libraries
+   are for viewing the rows that already exist. Sources such as Instagram,
+   texts, and browser history can be added and updated. Some screens exist to
+   clean, annotate, correct, confirm, or otherwise fix the data. The other
+   rooms still write tasks, habits, and tracking. Capture without this room is
+   a filing cabinet. What already ships, and what is still planned, is
+   [`components/Analytics/README.md`](components/Analytics/README.md).
 
 A record is a **map**, not the life it describes. The miss between an order
 and what came back is the **next input**. What lines up without a cause is
@@ -169,12 +174,15 @@ and a rich-text/markdown body (`components/Editor/`); **Set up Second Brain**
 **metric logger** (`components/Tracking/`).
 
 **Planning & analytics depth (built):** the **Scheduler** adds dependency and
-**Gantt/critical-path** views. **Data** is the heart of that depth — not a
-report tab: **calibration** (estimate vs. actual), **streaks**,
+**Gantt/critical-path** views. **Data** is the heart of that depth. What ships
+is a studio, not only a report: **calibration** (estimate vs. actual), **streaks**,
 **plan-vs-reality**, **regret**, correlation, context-switch heatmaps, a
 **Cross-section** density over the shared range, an **Overcommit** early-warning
-(sentence + n on day-pushes + logged minutes), and an **Item Types** library
-(Settings still edits types). **Reviews** add a morning review and per-task
+(sentence + n on day-pushes + logged minutes), an **Item Types** library
+(Settings still edits types), and Sources for Instagram and browser history.
+The intention for the whole tab — combined suites over all vault data, plain
+spreadsheet libraries, source updates, and screens that clean and annotate —
+is in [`components/Analytics/README.md`](components/Analytics/README.md). **Reviews** add a morning review and per-task
 **post-mortems**; and a **Focus / Just-Start** mode (`components/Focus/`) breaks
 paralysis with one smallest step + a short timer. These are backed by pure logic
 in `lib/` and domain `lib/services/`. JSON backup, Zod schemas, and
@@ -324,7 +332,7 @@ app/page.tsx
     ├── Scheduler ─ Always → Year → Month → Week → Day funnel (+ dependency / gantt)
     ├── Operations ─ Graphic tool for a project (work, ideas, data, progress); category board hides archived; Parts + To do (Win95 command center). Computer Project is an Operation subtype with its own item-detail desk.
     ├── Modules ─── User-built mini-apps (workspaces) + dashboard widgets
-    └── Data ─ heart of the house: vault → presentation, analysis, new tools
+    └── Data ─ heart of the house: analytics, visualization, stats, library, sources, annotation
 ```
 
 Selecting a task from **Lists** (or Modules, Inbox, or global search) opens the
@@ -477,7 +485,7 @@ npm install --legacy-peer-deps   # react-day-picker peer-dep needs this flag
 npm run dev                      # web dev server at http://localhost:3000
 npm run electron:dev             # Next dev server + Electron window
 npm run electron:local           # production out/ on port 3000 + Electron (build first)
-npm run build                    # static export to out/
+npm run build                    # static export to out/ (staged; leaves dev .next alone)
 npm run electron:build           # package desktop installers into dist/
 npm test                         # vitest unit + integration tests
 npm run ingest                   # optional Telegram queue poller (prefer npm run phone:hub)
@@ -488,14 +496,14 @@ npm run shortcut:iphone-location # alias of shortcut:iphone-phone (includes Loca
 npm run test:e2e                 # Playwright (Lists flows; starts dev server)
 ```
 
-_Last mapped: 2026-10-27._ `electron:local` is the production window. `npm run build` writes `out/`. The script then serves that folder on port 3000 with the same `/api` handlers as `npm run dev`, and opens Electron on `http://localhost:3000`. The first run exports `data/` with `scripts/backup-data.mjs` before it serves. Later runs skip the export. It leaves port 3000 alone when something else is already listening. `electron:dev` is still the edit loop.
+_Last mapped: 2026-10-29._ `electron:local` is the production window. `npm run build` writes `out/`. It compiles in `.mobile-build` (`scripts/static-export-build.mjs`) and copies `out/` back, so a Turbopack dev server can keep `.next`. `electron:local` then serves that folder on port 3000 with the same `/api` handlers as `npm run dev`, and opens Electron on `http://localhost:3000`. The first run exports `data/` with `scripts/backup-data.mjs` before it serves. Later runs skip the export. It leaves port 3000 alone when something else is already listening. `electron:dev` is still the edit loop.
 
 `electron:dev` runs the dev server directly (not through a nested `npm run dev`)
 so Ctrl-C kills it instead of orphaning a listener on port 3000. It also sets
 `BRAIN2_STRICT_PORT=1`: the server stays on `http://localhost:3000` (Electron never
 follows a fallback port). If a leftover **Node** process is still listening after
 a crash (heap OOM / SIGABRT), the next `electron:dev` SIGTERMs that listener and
-binds 3000 itself. _Last mapped: 2026-10-25_ One dev stack at a time: if a healthy cogs server already answers `/api/health` (on 3000, or 3000–3014 without strict port), a second `dev` / `electron:dev` prints "reusing it" and starts no second Next. It stays alive as a light watcher so `concurrently -k` keeps Electron up, and it exits when the first server stops. A hung server fails the probe, so the OOM reclaim above still applies. Set `BRAIN2_ALLOW_SECOND_SERVER=1` to opt out. A non-Node occupant still errors — then
+binds 3000 itself. _Last mapped: 2026-10-25_ One dev stack at a time: if a healthy brain2 server already answers `/api/health` (on 3000, or 3000–3014 without strict port), a second `dev` / `electron:dev` prints "reusing it" and starts no second Next. It stays alive as a light watcher so `concurrently -k` keeps Electron up, and it exits when the first server stops. A hung server fails the probe, so the OOM reclaim above still applies. Set `BRAIN2_ALLOW_SECOND_SERVER=1` to opt out. A non-Node occupant still errors — then
 `kill $(lsof -t -nP -iTCP:3000 -sTCP:LISTEN)`. Both `dev` and `electron:dev`
 raise the Node heap to 8 GB (`--max-old-space-size=8192`); webpack’s compiler
 cache is on disk in dev so a long Fast Refresh session is less likely to abort. The desktop vault is **pinned** to
@@ -516,7 +524,7 @@ picks up the live lists/habits instead of an empty `brain2` profile.
 | `components/Scheduler/` | Period scheduling funnel + dependency/gantt views | [`components/Scheduler/README.md`](components/Scheduler/README.md) |
 | `components/Operations/` | Operations — a graphic tool for any project: category board (completed/inactive hidden until Show archived), per-operation panels, Parts formulas, Lists-backed To do, item clicks open the item-detail popup over the operation, delete from Settings (Win95 command-center chrome) | [`components/Operations/README.md`](components/Operations/README.md) |
 | `components/Modules/` | Composable dashboard modules + workspaces | [`components/Modules/README.md`](components/Modules/README.md) |
-| `components/Analytics/` | Heart of the app: collection, presentation, analysis, next tools | [`components/Analytics/README.md`](components/Analytics/README.md) |
+| `components/Analytics/` | Heart of the app: analytics, visualization, stats, library, sources, annotation | [`components/Analytics/README.md`](components/Analytics/README.md) |
 | `components/ItemDetail/` | Consolidated item/task detail (page + popup; type-owned tabs + History; cycle refuse) | [`components/ItemDetail/README.md`](components/ItemDetail/README.md) |
 | `components/ItemTypes/` | Manage item types (Settings + Data) | [`components/ItemTypes/README.md`](components/ItemTypes/README.md) |
 | `components/Editor/` | Rich-text/markdown body editor | [`components/Editor/README.md`](components/Editor/README.md) |

@@ -112,7 +112,7 @@
   border: none;
   border-radius: var(--r-2, 2px);
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   pointer-events: none;
@@ -141,7 +141,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background: var(--fascia-key-face);
   box-shadow: var(--fascia-key-ring);
   cursor: pointer;
@@ -161,13 +161,13 @@
 .docs95 .docs-btn:active:not(:disabled),
 .docs95 .docs-btn[aria-pressed="true"] {
   box-shadow: var(--fascia-key-pressed);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: none;
   filter: none;
 }
 
 .docs95 .docs-btn:disabled {
   color: var(--chrome-lo);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-shadow: none;
   cursor: default;
   filter: none;
 }
@@ -396,7 +396,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   cursor: pointer;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0, transparent 28%),

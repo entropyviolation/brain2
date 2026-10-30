@@ -106,7 +106,7 @@ async function ensureTextsServer(env = process.env) {
       stdio: "ignore",
       env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
     })
-    child.on("error", (err) => console.error("[cogs] texts server failed to start:", err))
+    child.on("error", (err) => console.error("[brain2] texts server failed to start:", err))
   }
 
   const deadline = Date.now() + START_WAIT_MS

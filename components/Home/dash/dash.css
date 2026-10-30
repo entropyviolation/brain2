@@ -33,6 +33,8 @@
   --dash-lcd: #cdeeff;
   --dash-seg-font: var(--font-silkscreen), Silkscreen, "w95fa", monospace;
   --dash-dot-font: var(--font-dotgothic), "DotGothic16", "w95fa", monospace;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 /*
@@ -128,6 +130,8 @@
    lip's specificity was beating `all: unset` and washing the cluster. */
 :is(body, body.win95-app .home95) .home-overview[data-style="dash"] > .vd-cell > .vd-face {
   all: unset;
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
   box-sizing: border-box;
   display: block;
   width: 100%;

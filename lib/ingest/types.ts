@@ -250,6 +250,8 @@ export interface ApplyOk {
   pinKind?: "grocery" | "todo"
   /** Bot ritual card to edit instead of sending a new bubble. */
   ritualCardMessageId?: number
+  /** Closed the open photo question. Other results leave that hold in place. */
+  mediaSettled?: boolean
 }
 
 export interface ApplyClarify {
@@ -278,6 +280,8 @@ export interface ApplyError {
   reply: string
   kind: IngestIntentKind
   ritualCardMessageId?: number
+  /** Closed the open photo question. Other results leave that hold in place. */
+  mediaSettled?: boolean
 }
 
 export type ApplyResult = ApplyOk | ApplyClarify | ApplyIgnored | ApplyError

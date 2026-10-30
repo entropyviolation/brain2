@@ -5,8 +5,12 @@ import { useLogKeywordsStore } from "@/lib/log-keywords-store"
 import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import {
   COUNT_STATUSES_STORAGE_KEY,
-  recordCountForKeyword,
+  incrementCountForEntry,
   migrateCountStatuses,
+  recordCountForKeyword,
+  removeCountTickForEntry,
+  sanitizeCountStatuses,
+  syncCountTicksForEntry,
   useCountStatusesStore,
 } from "./count-statuses"
 
@@ -160,5 +164,80 @@ describe("count statuses", () => {
     expect(useTimeTrackingStore.getState().entries.some((entry) => entry.title === "shower" && entry.kind !== "instant")).toBe(
       true,
     )
+  })
+
+  it("links a tick to an existing instant without painting another row", () => {
+    const before = useTimeTrackingStore.getState().entries.length
+    useTimeTrackingStore.setState({
+      entries: [
+        ...useTimeTrackingStore.getState().entries,
+        {
+          id: "log-1",
+          date: "2026-04-02",
+          scopeId: "activity",
+          penId: "act-work",
+          startMin: 615,
+          endMin: 615,
+          kind: "instant",
+          title: "coffee",
+          clockCertainty: "estimated",
+        },
+      ],
+    })
+    const id = useCountStatusesStore.getState().addCount({ name: "joints", intakeClass: "drug" })
+    expect(incrementCountForEntry(id!, "missing")).toBe(false)
+    expect(incrementCountForEntry(id!, "log-1")).toBe(true)
+    expect(incrementCountForEntry(id!, "log-1")).toBe(true)
+    const ticks = useCountStatusesStore.getState().counts.find((row) => row.id === id)?.ticks ?? []
+    expect(ticks).toHaveLength(1)
+    expect(ticks[0]).toMatchObject({
+      date: "2026-04-02",
+      startMin: 615,
+      clockCertainty: "estimated",
+      sourceEntryId: "log-1",
+    })
+    expect(useTimeTrackingStore.getState().entries).toHaveLength(before + 1)
+    expect(useTimeTrackingStore.getState().entries.some((entry) => entry.eventKind === "intake.drug")).toBe(false)
+
+    useTimeTrackingStore.getState().updateEntry("log-1", {
+      date: "2026-04-03",
+      startMin: 700,
+      endMin: 700,
+      clockCertainty: "exact",
+    })
+    syncCountTicksForEntry("missing")
+    expect(useCountStatusesStore.getState().counts.find((row) => row.id === id)?.ticks[0]?.startMin).toBe(615)
+    syncCountTicksForEntry("log-1")
+    expect(useCountStatusesStore.getState().counts.find((row) => row.id === id)?.ticks[0]).toMatchObject({
+      date: "2026-04-03",
+      startMin: 700,
+      sourceEntryId: "log-1",
+    })
+    expect(useCountStatusesStore.getState().counts.find((row) => row.id === id)?.ticks[0]?.clockCertainty).toBeUndefined()
+
+    useCountStatusesStore.getState().incrementCount(id!, { date: "2026-01-01", startMin: 10 })
+    expect(removeCountTickForEntry(id!, "other")).toBe(false)
+    expect(removeCountTickForEntry(id!, "log-1")).toBe(true)
+    const left = useCountStatusesStore.getState().counts.find((row) => row.id === id)?.ticks ?? []
+    expect(left).toHaveLength(1)
+    expect(left[0]?.sourceEntryId).toBeUndefined()
+    expect(removeCountTickForEntry(id!, "log-1")).toBe(false)
+  })
+
+  it("keeps sourceEntryId on ticks that were saved before this field existed", () => {
+    const counts = sanitizeCountStatuses({
+      counts: [
+        {
+          id: "count-old",
+          name: "days happy",
+          ticks: [
+            { id: "tick-old", date: "2026-04-02", startMin: 10 },
+            { id: "tick-new", date: "2026-04-02", startMin: 11, sourceEntryId: "log-9" },
+          ],
+        },
+      ],
+    })
+    expect(counts[0]?.ticks[0]?.sourceEntryId).toBeUndefined()
+    expect(counts[0]?.ticks[1]?.sourceEntryId).toBe("log-9")
   })
 })

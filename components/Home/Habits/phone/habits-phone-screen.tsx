@@ -7,7 +7,7 @@
  */
 "use client"
 
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { format } from "date-fns"
 import { HabitsPhone, type HabitsPhonePeriod } from "@/components/Home/Habits/phone/habits-phone"
 import { HabitWandBanner } from "@/components/Home/Habits/wands/habit-wand-banner"
@@ -17,6 +17,8 @@ import {
   type PeriodColumn,
 } from "@/components/Home/Habits/period-habit-list"
 import { HabitHeatmap } from "@/components/Home/Habits/sheet/habit-heatmap"
+import { HabitSpanBreakdownDialog } from "@/components/Home/Habits/dialogs/habit-span-breakdown"
+import { habitSpanBreakdown } from "@/lib/habit-span-breakdown"
 import { PlanTextLog, planPeriodStampProps } from "@/components/Home/Plan/plan-text-log"
 import type { PlanTextPeriod } from "@/lib/plan-text"
 import { HabitsControlPanel } from "@/components/Home/Habits/panel/habits-control-panel"
@@ -36,7 +38,7 @@ import {
 } from "@/lib/date-utils"
 import { quarterLabel, quarterKey, shiftQuarter } from "@/lib/seasons"
 import type { HabitFrequency, TaskCompletion, WeeklyData, WeeklyTask } from "@/lib/types"
-import type { ExemptionKind } from "@/lib/habit-exemption"
+import { isExemptKind, type ExemptionKind } from "@/lib/habit-exemption"
 import type { WillpowerStone } from "@/lib/willpower-stones"
 import type { HabitWeekWindowMode } from "@/lib/habit-week-window"
 import type { HabitMonthWindowMode, HabitBirthday } from "@/lib/habit-month-window"
@@ -204,6 +206,7 @@ export type HabitsPhoneScreenProps = {
 }
 
 export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
+  const [heatSpanId, setHeatSpanId] = useState<string | null>(null)
   const tab = props.habitTab
   const homeKey = formatLocalDateKey(props.currentDate)
   const dailySpan = props.weekDates.map((date) => phoneDay(date, homeKey))
@@ -374,8 +377,33 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
           props.updateCompletion(taskId, date, { missedOpportunity: missed, missReason: text })
         }}
         {...priority}
+        weekPercent={(taskId) => {
+          const task = props.dailyTasks.find((row) => row.id === taskId)
+          if (!task) return 0
+          if (props.weekDates.length > 0 && props.weekDates.every((date) => props.dailyExempt(task, formatLocalDateKey(date)))) {
+            return null
+          }
+          return props.dailyWeekPercent.get(taskId) ?? 0
+        }}
+        onWeekPercent={(task) => setHeatSpanId(task.id)}
       />
     ) : null
+
+  const heatSpanTask = heatSpanId ? props.dailyRows.find((task) => task.id === heatSpanId) ?? null : null
+  const heatSpan = heatSpanTask
+    ? habitSpanBreakdown({
+        task: heatSpanTask,
+        data: props.weeklyData,
+        columns: props.weekDates.map((date) => ({
+          key: formatLocalDateKey(date),
+          title: format(date, "EEEE, MMM d"),
+          date,
+        })),
+        unit: "day",
+        asOf: props.currentDate,
+        isExempt: (task, key) => isExemptKind(props.dailyKind(task, key)),
+      })
+    : null
 
   const plan =
     props.hydrated && tab === "daily" && props.habitDayView ? (
@@ -559,7 +587,18 @@ export function HabitsPhoneScreen(props: HabitsPhoneScreenProps) {
           />
         </HabitsControlPanel>
       }
-      dialogs={props.dialogs}
+      dialogs={
+        <>
+          {props.dialogs}
+          <HabitSpanBreakdownDialog
+            open={Boolean(heatSpan)}
+            onOpenChange={(next) => {
+              if (!next) setHeatSpanId(null)
+            }}
+            breakdown={heatSpan}
+          />
+        </>
+      }
       onSettings={props.openSettings}
       onNewHabit={() => props.openNewHabit(tab)}
       emptyLabel={

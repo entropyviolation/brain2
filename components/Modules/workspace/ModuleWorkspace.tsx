@@ -2,8 +2,8 @@
  * components/Modules/workspace/ModuleWorkspace.tsx — Full-screen module mini-app
  *
  * Renders a "workspace" `ModuleInstance` as its own screen: a header (back,
- * rename, add view, Settings, Workflows, Pop out, optional print + plan-sync) and
- * a tab per bound view. Views are user-composable (add/edit/remove) via
+ * rename, add view, Settings, a ? guide, Workflows, Pop out, optional print +
+ * plan-sync) and a tab per bound view. Views are user-composable (add/edit/remove) via
  * `ModuleViewEditor` and **drag-reorderable** in the tab bar, so a user can build
  * an Itinerary Creator, Cleaning system, or Budget without code. Authored
  * **workflows** (the Zapier-style automations) are edited via `WorkflowBuilder`,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Plus, Printer, CalendarCheck, Settings, Pencil, Zap, ExternalLink } from "lucide-react"
+import { ModuleHelpDialog } from "./ModuleHelpDialog"
 import { useModulesStore, type ModuleInstance, type ModuleView } from "@/lib/modules-store"
 import type { ModuleDefinition } from "@/lib/types"
 import { syncModuleToPlan } from "@/lib/module-plan-sync"
@@ -76,6 +77,7 @@ export function ModuleWorkspace({
   const [titleDraft, setTitleDraft] = useState(module.title)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [workflowsOpen, setWorkflowsOpen] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
@@ -167,9 +169,11 @@ export function ModuleWorkspace({
       <div className="mod-ws-window">
         <div className="mod-ws-app-caption no-print">
           <Button
+            type="button"
             variant="ghost"
             size="icon"
-            className="mod-caption-btn"
+            className="todo-cap is-mod mod-caption-btn"
+            data-no95=""
             onClick={onBack}
             title={popout ? "Close window" : "Back to Modules"}
           >
@@ -201,39 +205,53 @@ export function ModuleWorkspace({
           )}
           <div className="mod-ws-tools">
             {module.planSync && (
-              <Button variant="outline" size="sm" className="mod-ws-tool" onClick={doSync}>
-                <CalendarCheck className="h-3.5 w-3.5 mr-1" />
+              <Button type="button" variant="outline" size="sm" className="todo-cap mod-ws-tool" data-no95="" onClick={doSync}>
+                <CalendarCheck className="h-3.5 w-3.5" />
                 Sync to Plan
               </Button>
             )}
             {module.enablePrint && (
-              <Button variant="outline" size="sm" className="mod-ws-tool" onClick={doPrint}>
-                <Printer className="h-3.5 w-3.5 mr-1" />
+              <Button type="button" variant="outline" size="sm" className="todo-cap mod-ws-tool" data-no95="" onClick={doPrint}>
+                <Printer className="h-3.5 w-3.5" />
                 Print / Export
               </Button>
             )}
-            <Button variant="outline" size="sm" className="mod-ws-tool" onClick={() => setWorkflowsOpen(true)}>
-              <Zap className="h-3.5 w-3.5 mr-1" />
+            <Button type="button" variant="outline" size="sm" className="todo-cap mod-ws-tool" data-no95="" onClick={() => setWorkflowsOpen(true)}>
+              <Zap className="h-3.5 w-3.5" />
               Workflows
             </Button>
-            <Button variant="outline" size="sm" className="mod-ws-tool" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-3.5 w-3.5 mr-1" />
+            <Button type="button" variant="outline" size="sm" className="todo-cap mod-ws-tool" data-no95="" onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-3.5 w-3.5" />
               Settings
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="todo-cap is-mod mod-key-help"
+              data-no95=""
+              onClick={() => setHelpOpen(true)}
+              title="How to build and set up a module"
+              aria-label="How to build and set up a module"
+            >
+              ?
             </Button>
             {!popout && (
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
-                className="mod-ws-tool"
+                className="todo-cap mod-ws-tool"
+                data-no95=""
                 onClick={() => openModulePopout(module.id)}
                 title="Open in its own window"
               >
-                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                <ExternalLink className="h-3.5 w-3.5" />
                 Pop out
               </Button>
             )}
-            <Button size="sm" className="mod-ws-tool mod-ws-tool-default" onClick={() => setAddingView(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" />
+            <Button type="button" size="sm" className="todo-cap is-primary mod-ws-tool" data-no95="" onClick={() => setAddingView(true)}>
+              <Plus className="h-3.5 w-3.5" />
               Add view
             </Button>
           </div>
@@ -249,8 +267,8 @@ export function ModuleWorkspace({
         {views.length === 0 ? (
           <div className="mod-ws-empty">
             <p>No views yet.</p>
-            <Button className="mod-ws-tool mod-ws-tool-default mt-3" onClick={() => setAddingView(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Add your first view
+            <Button type="button" className="todo-cap is-primary mod-ws-tool mt-3" data-no95="" onClick={() => setAddingView(true)}>
+              <Plus className="h-4 w-4" /> Add your first view
             </Button>
           </div>
         ) : (
@@ -279,9 +297,11 @@ export function ModuleWorkspace({
                 <div className="mod-ws-viewbar no-print">
                   <h3>{v.title}</h3>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    className="mod-caption-btn"
+                    className="todo-cap is-mod mod-caption-btn"
+                    data-no95=""
                     onClick={() => setEditingView(v)}
                     title="Edit view"
                   >
@@ -317,6 +337,7 @@ export function ModuleWorkspace({
         title="Module settings"
       />
       <WorkflowBuilder open={workflowsOpen} onClose={() => setWorkflowsOpen(false)} moduleId={module.id} />
+      <ModuleHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }

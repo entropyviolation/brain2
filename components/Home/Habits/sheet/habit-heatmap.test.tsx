@@ -77,6 +77,27 @@ describe("HabitHeatmap", () => {
     const grid = heat.querySelector(".habit-heat-grid") as HTMLElement
     expect(grid.style.gridTemplateColumns).toMatch(/10rem/)
     expect(grid.style.gridTemplateColumns).toMatch(/14px/)
+    expect(heat.querySelector(".habit-heat-pct")).toBeNull()
+  })
+
+  it("sticks a week percent to the right of the cells when asked", () => {
+    const date = new Date(2026, 8, 16)
+    const onWeekPercent = vi.fn()
+    render(
+      <HabitHeatmap
+        tasks={[{ id: "stretch", name: "Stretch", type: TaskType.BOOLEAN, frequency: "daily" }]}
+        data={{}}
+        asOf={date}
+        frequency="daily"
+        onEditTask={() => {}}
+        weekPercent={() => 40}
+        onWeekPercent={onWeekPercent}
+      />,
+    )
+    const grid = document.querySelector(".habit-heat-grid") as HTMLElement
+    expect(grid.style.gridTemplateColumns).toContain("minmax(5.75rem, 7.25rem)")
+    fireEvent.click(screen.getByRole("button", { name: "Stretch week" }))
+    expect(onWeekPercent).toHaveBeenCalledOnce()
   })
 
   it("updates the column window once per frame and still grows history at the left edge", async () => {

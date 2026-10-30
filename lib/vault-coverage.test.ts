@@ -77,6 +77,7 @@ const PREF_ONLY_VAULTS: Record<string, string> = {
   "cogs-log-keywords": "saved log phrases the person can empty; not tracker rows",
   "cogs-count-statuses": "named tallies the person can delete; ticks ride on the definition, not tracker rows",
   "cogs-wardrobe": "outfits and pieces the person can delete; the photo bytes stay in the attachment store",
+  "cogs-kitchen-needs": "one body profile for nutrient needs; clearing the form empties it on purpose",
 }
 
 /** Live default state, shaped like the persisted blob the guard reads. */

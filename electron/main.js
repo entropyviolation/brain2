@@ -129,10 +129,10 @@ function createWindow() {
   })
 
   win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
-    console.error(`[cogs] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`)
+    console.error(`[brain2] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`)
     if (isDev) {
-      console.error(`[cogs] expected the Next dev server at ${DEV_SERVER_URL}.`)
-      console.error("[cogs] If another node process is stuck on port 3000, kill it and rerun npm run electron:dev.")
+      console.error(`[brain2] expected the Next dev server at ${DEV_SERVER_URL}.`)
+      console.error("[brain2] If another node process is stuck on port 3000, kill it and rerun npm run electron:dev.")
     }
   })
 
@@ -184,7 +184,7 @@ async function extractPdfText(dataUrl) {
     const result = await pdfParse(buffer)
     return (result && typeof result.text === "string" ? result.text : "").trim()
   } catch (err) {
-    console.warn("[cogs] PDF text extraction unavailable:", err && err.message)
+    console.warn("[brain2] PDF text extraction unavailable:", err && err.message)
     return ""
   }
 }
@@ -215,7 +215,7 @@ function resolvePopoutLoadURL(target) {
     pathAndQuery = `/popout/?sheet=${id}`
   } else if (target.startsWith("/popout")) {
     try {
-      const parsed = new URL(target, "https://cogs.local")
+      const parsed = new URL(target, "https://brain2.local")
       if (parsed.pathname !== "/popout" && parsed.pathname !== "/popout/") return null
       const moduleId = parsed.searchParams.get("module")
       const sheetId = parsed.searchParams.get("sheet")
@@ -389,7 +389,7 @@ function hydrateIndexedDBFromChromeSnapshot() {
     const lock = path.join(dest, "LOCK")
     if (fs.existsSync(lock)) fs.rmSync(lock)
   } catch (err) {
-    console.warn("[cogs] IndexedDB hydrate skipped:", err && err.message)
+    console.warn("[brain2] IndexedDB hydrate skipped:", err && err.message)
   }
 }
 
@@ -517,7 +517,7 @@ app.whenReady().then(async () => {
     try {
       register()
     } catch (err) {
-      console.error(`[cogs] ${register.name} failed:`, err)
+      console.error(`[brain2] ${register.name} failed:`, err)
     }
   }
 

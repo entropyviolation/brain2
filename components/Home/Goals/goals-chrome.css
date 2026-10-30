@@ -84,7 +84,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  text-shadow: none;
 }
 
 .gol95 .gol-title-orb {
@@ -118,7 +118,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.12) 16%, transparent 32%),
     linear-gradient(165deg, var(--chrome-key-sheen) 0%, var(--chrome-key-mid) 40%, var(--g-surface) 100%);
@@ -190,7 +190,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-shadow: none;
 }
 
 .gol95 .gol-section.is-objectives .gol-legend-plate {
@@ -476,7 +476,7 @@ body.win95-app .gol95 .gol-tabs[role="tablist"] {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #2a2c2e;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 2px),
     linear-gradient(180deg, var(--chrome-mist-2), var(--chrome-nickel));
@@ -765,7 +765,7 @@ body.win95-app .gol95 .gol-tabs [role="tab"] {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #1c1e20;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   background:
     radial-gradient(ellipse at 50% 30%, #ffffff 0 30%, transparent 70%),
     linear-gradient(165deg, var(--chrome-key-sheen), var(--chrome-mill-soft));

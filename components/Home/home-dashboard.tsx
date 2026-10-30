@@ -21,8 +21,8 @@
  * Spec: §8 (Home Dashboard).
  *
  * `dash/dash-faces` is imported here, the lazy Home chunk, so its registry
- * side effect runs before this dashboard paints. Pixelify, Silkscreen, and
- * DotGothic16 load with this chunk (`lib/fonts/home-pixel-faces.ts`).
+ * side effect runs before this dashboard paints. Silkscreen and DotGothic16
+ * load with this chunk (`lib/fonts/home-pixel-faces.ts`).
  */
 "use client"
 

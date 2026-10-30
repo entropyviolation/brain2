@@ -188,7 +188,9 @@ describe("WillpowerGems", () => {
     expect(screen.queryByRole("dialog", { name: /Willpower gems physics/i })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Physics" }))
     expect(useHabitsStore.getState().willpowerPhysicsHud).toBe(true)
-    expect(screen.getByRole("dialog", { name: /Willpower gems physics/i })).toBeInTheDocument()
+    const physicsDialog = screen.getByRole("dialog", { name: /Willpower gems physics/i })
+    expect(physicsDialog).toBeInTheDocument()
+    expect(physicsDialog).not.toHaveClass("is-phone-physics")
     expect(screen.getByLabelText("Live equations")).toBeInTheDocument()
     expect(screen.getByLabelText("Live trajectories")).toBeInTheDocument()
     expect(document.body.textContent).toMatch(/Tracked gem/)
@@ -469,6 +471,46 @@ describe("WillpowerGems", () => {
       if (previous) Object.defineProperty(document, "hidden", previous)
       else delete (document as { hidden?: boolean }).hidden
       frames.restore()
+    }
+  })
+
+  it("on the phone shell, uses keycaps, latex units, and a nested explanation", async () => {
+    const shell = document.createElement("div")
+    shell.className = "cogs-mobile-app"
+    document.body.appendChild(shell)
+    const user = userEvent.setup()
+    try {
+      render(
+        <WillpowerGems
+          stones={[{ id: "drink:2026-09-21", src: "/gems-removebackground/gem5.png", name: "Drink water" }]}
+        />,
+      )
+      await user.click(screen.getByRole("button", { name: "Physics" }))
+      const dialog = screen.getByRole("dialog", { name: /Willpower gems physics/i })
+      expect(dialog).toHaveClass("is-phone-physics")
+      expect(dialog.querySelector(".habit95-title-btn")).toBeTruthy()
+      expect(screen.getByRole("button", { name: "Show all explanations" })).toHaveClass("m-keycap")
+      expect(screen.getByRole("button", { name: "Reset to default" })).toHaveClass("m-keycap")
+      expect(screen.getByRole("button", { name: "Slow-mo" })).toHaveClass("m-keycap")
+      expect(document.querySelector("[data-phone-lab='true']")).toBeTruthy()
+      expect(screen.getAllByText(/A gem tossed up comes back/).length).toBeGreaterThan(0)
+      expect(screen.queryByText(/Vertical free-flight/)).not.toBeInTheDocument()
+      expect(document.querySelector(".hab-willpower-lab .katex")).toBeTruthy()
+      const explain = screen.getAllByRole("button", { name: /^Explain$/ })[0]!
+      expect(explain).toHaveClass("m-keycap")
+      await user.click(explain)
+      expect(screen.getByText(/The dish pulls sideways only/)).toBeInTheDocument()
+      const plate = document.querySelector(".hab-willpower-lab-play .hab-willpower-gems-hit") as HTMLElement
+      const stone = document.querySelector(".hab-willpower-lab-play .hab-willpower-stone") as HTMLElement
+      expect(stone).toBeTruthy()
+      fireEvent.pointerDown(stone, { clientX: 40, clientY: 40, pointerId: 3, bubbles: true })
+      expect(plate).toHaveClass("is-holding")
+      expect(plate).not.toHaveClass("is-pressed")
+      fireEvent.pointerUp(window, { pointerId: 3, bubbles: true })
+      await user.click(screen.getByRole("button", { name: "Close physics" }))
+      expect(screen.queryByRole("dialog", { name: /Willpower gems physics/i })).not.toBeInTheDocument()
+    } finally {
+      shell.remove()
     }
   })
 })

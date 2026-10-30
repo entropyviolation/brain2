@@ -407,7 +407,7 @@ describe("mergeTypeRegistry", () => {
     const merged = mergeTypeRegistry([customized])
     const book = merged.find((t) => t.id === "book")
     expect(book?.name).toBe("My Books")
-    expect(book?.attributes).toHaveLength(1)
+    expect(book?.attributes?.map((attribute) => attribute.id)).toEqual(["cover", "heightCm", "widthCm", "thicknessCm"])
   })
 
   it("always re-seeds system Task from code", () => {

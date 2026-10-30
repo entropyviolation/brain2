@@ -33,6 +33,15 @@ describe("AwardTile", () => {
     expect(screen.getByTestId("award-detail")).toBeInTheDocument()
   })
 
+  it("closes the handheld from the corner key", async () => {
+    const user = userEvent.setup()
+    render(<AwardTile onHide={() => {}} />)
+    await user.click(screen.getByRole("button", { name: "Open Latest award" }))
+    expect(screen.getByRole("dialog", { name: "Latest award" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("dialog", { name: "Latest award" })).not.toBeInTheDocument()
+  })
+
   it("jumps to the Data Points ledger", async () => {
     const user = userEvent.setup()
     render(<AwardTile onHide={() => {}} />)

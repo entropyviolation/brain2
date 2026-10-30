@@ -2,6 +2,7 @@
  * components/Modules/modules-chrome.css — Modules catalog + workspace window
  *
  * `.mod95` — catalog on the PCB (mini-windows + gadget wells).
+ * Catalog and workspace word keys are `.todo-cap` (silver skirt, navy lamp on primary).
  * Catalog card copy uses the Home overview face (Karla, one step up) from
  * `home-chrome.css`. `.mod95-ws` — opened workspace chrome, still the pixel face.
  * Feral interiors (Tidy, Film DNA, itinerary paper) still paint themselves
@@ -55,7 +56,7 @@
   font-weight: 700;
   letter-spacing: 0.3px;
   color: var(--mod-ink);
-  text-shadow: 1px 1px 0 var(--mod-hi);
+  text-shadow: none;
 }
 
 .mod95 .mod-desk-lede {
@@ -68,20 +69,6 @@
 
 .mod95 .mod-build {
   flex-shrink: 0;
-  min-height: 24px;
-  padding: 2px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--mod-ink) !important;
-  background: var(--mod-surface) !important;
-  border-radius: var(--r-0, 0px);
-  box-shadow: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-frame),
-    inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-hi),
-    inset -3px -3px var(--mod-frame), inset 3px 3px var(--mod-face);
-}
-
-.mod95 .mod-build:hover {
-  background: var(--mod-face) !important;
 }
 
 .mod95 .mod-group {
@@ -218,24 +205,10 @@
   text-shadow: 1px 1px 0 #000;
 }
 
-.mod95 .mod-caption-btn {
-  width: 16px !important;
-  height: 14px !important;
-  min-width: 16px !important;
-  padding: 0 !important;
-  color: #000 !important;
-  background: var(--mod-surface) !important;
-  border-radius: var(--r-0, 0px);
-  box-shadow: var(--mod-raised);
-}
-
-.mod95 .mod-caption-btn:hover {
-  background: var(--mod-face) !important;
-}
-
-.mod95 .mod-caption-btn svg {
-  width: 10px;
-  height: 10px;
+.mod95 .mod-caption-btn svg,
+.mod95-ws .mod-caption-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .mod95 .mod-ws-body {
@@ -469,29 +442,166 @@
   color: #000;
 }
 
-.mod95-ws .mod-caption-btn,
-.mod95-ws .mod-ws-tool {
-  min-height: 22px;
-  padding: 1px 8px;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--mod-ink) !important;
-  background: var(--mod-surface) !important;
-  border-radius: var(--r-0, 0px);
-  box-shadow: var(--mod-raised);
+/* Word keys and caption glyphs. Same skirt as `.todo-cap`
+   (docs/DESIGN_STYLE.md#keycaps). `data-no95` opts out of the mill lip.
+   _Last mapped: 2026-10-28._ */
+.mod95,
+.mod95-ws {
+  --todo-cap-top: #f1f3f5;
+  --todo-cap-top2: #dfe2e6;
+  --todo-cap-skirt: #b3b8be;
+  --todo-cap-edge: #6e7378;
+  --todo-cap-leg: #1f2226;
+  --todo-cap-mod-top: #c9ccd0;
+  --todo-cap-mod-top2: #b9bdc1;
+  --todo-cap-mod-skirt: #969a9f;
+  --todo-cap-mod-edge: #55595d;
+  --todo-cap-navy: #22306c;
 }
 
-.mod95-ws .mod-caption-btn {
-  width: 22px;
-  min-width: 22px;
-  padding: 0;
-}
-
-.mod95-ws .mod-ws-tool-default {
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap[data-no95] {
+  --cap-top: var(--todo-cap-top);
+  --cap-top2: var(--todo-cap-top2);
+  --cap-skirt: var(--todo-cap-skirt);
+  --cap-edge: var(--todo-cap-edge);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: auto;
+  min-height: 28px;
+  padding: 3px 10px 6px;
+  border: 1px solid var(--cap-edge);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) !important;
+  background-image: linear-gradient(180deg, var(--cap-top), var(--cap-top2)) !important;
+  color: var(--todo-cap-leg) !important;
+  font-family: var(--font-pixel, inherit);
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: inset -1px -1px var(--mod-frame), inset 1px 1px var(--mod-frame),
-    inset -2px -2px var(--mod-lo), inset 2px 2px var(--mod-hi),
-    inset -3px -3px var(--mod-frame), inset 3px 3px var(--mod-face);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  text-shadow: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  filter: none;
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -4px 0 var(--cap-skirt),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.35) !important;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap.is-mod[data-no95] {
+  --cap-top: var(--todo-cap-mod-top);
+  --cap-top2: var(--todo-cap-mod-top2);
+  --cap-skirt: var(--todo-cap-mod-skirt);
+  --cap-edge: var(--todo-cap-mod-edge);
+  color: #25282b !important;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap.is-primary[data-no95]:not(:disabled) {
+  --cap-edge: #2a3570;
+  color: #1a2556 !important;
+  letter-spacing: 0.02em;
+  outline: 2px solid var(--todo-cap-navy);
+  outline-offset: 1px;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap.is-primary[data-no95]::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--todo-cap-navy);
+  box-shadow: 0 0 0 1px #0f1638, 0 0 4px rgba(154, 215, 255, 0.55);
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap[data-no95]:hover:not(:disabled) {
+  filter: none;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap[data-no95]:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 2px 0 0 var(--cap-skirt),
+    inset -2px 0 0 var(--cap-skirt),
+    inset 0 -2px 0 var(--cap-skirt),
+    inset 0 2px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap[data-no95]:focus-visible {
+  outline: 2px solid #9ad7ff;
+  outline-offset: 1px;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap[data-no95]:disabled {
+  --cap-top: #c4c8cc;
+  --cap-top2: #b9bdc1;
+  color: #7d8185 !important;
+  cursor: default;
+  transform: none;
+}
+
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap.mod-caption-btn[data-no95],
+body.win95-app :is(.mod95, .mod95-ws) button.todo-cap.mod-key-help[data-no95] {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 0 3px;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.mod95-dialog .mod-help {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #1c1e20;
+}
+
+.mod95-dialog .mod-help section {
+  padding: 8px 10px 10px;
+  background: var(--chrome-face, #c0c0c0);
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+}
+
+.mod95-dialog .mod-help h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mod95-dialog .mod-help p,
+.mod95-dialog .mod-help li {
+  margin: 0;
+}
+
+.mod95-dialog .mod-help p + p,
+.mod95-dialog .mod-help ul {
+  margin-top: 6px;
+}
+
+.mod95-dialog .mod-help ul {
+  padding-left: 1.15rem;
+}
+
+.mod95-dialog .mod-help li + li {
+  margin-top: 5px;
+}
+
+.mod95-dialog .mod-help strong {
+  font-weight: 700;
 }
 
 .mod95-ws .mod-ws-app-caption .mod-ws-tools {

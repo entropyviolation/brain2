@@ -12,7 +12,11 @@
  * also files the message in Inbox after it lands wherever it was going.
  * An open morning review skips that ladder until the message is exactly STOP.
  * Blank text waits. Live Location is dropped while any text ritual is open
- * and resumes on the next edit after that ritual ends.
+ * and resumes on the next edit after that ritual ends. When the iOS app has
+ * shared location, a Live Location update stays quiet (`location-share-order.ts`).
+ * A typed `gps:` still paints. An open photo question answers only
+ * journal / outfit / log / skip (or 1 / 2 / 3). Live Location and every other
+ * text run as themselves and leave the photo waiting. They do not ask again.
  */
 import { INGEST_HELP } from "./help"
 import { BIM_PAIR_OK } from "./bim"
@@ -90,12 +94,14 @@ import { applyIphoneNotes } from "./apply-iphone-notes"
 import { applyPlanForNow, applyReadPlanToday } from "./apply-plan-text"
 import { applyDoNext, applyReadTodoToday, applyTodoPinReply, applyTodoToday } from "./apply-todos"
 import { applyGps } from "./apply-gps"
+import { bimLocationUpdateShouldApply } from "@/lib/phone-sync/location-share-order"
+import { useTimeTrackingStore } from "@/lib/time-tracking-store"
 import { advanceRitual, startMorningReview, startNightRitual, startPeriodReview, startReviewsBoard } from "./apply-ritual"
 import { advanceMenu, menuClaims, menuPeriodFromText, openMenu } from "./apply-menu"
 import { applyPin } from "./apply-pin"
 import { applyInventory } from "./apply-inventory"
 import { applyReceiptAnswer, applyReceiptText } from "./apply-receipt"
-import { applyJournalText, applyMedia, MEDIA_QUESTION, releaseMediaHold, resolveMediaChoice } from "./apply-media"
+import { applyJournalText, applyMedia, releaseMediaHold, resolveMediaChoice } from "./apply-media"
 import { isGpsTrackingLogEvent, useGpsIngestLog } from "./gps-log"
 import { applyNfcScan } from "./apply-nfc"
 import { makeIngestEventId, useIngestStore } from "./ingest-store"
@@ -243,7 +249,8 @@ export async function ingestIncomingAsync(message: IncomingMessage, now = new Da
   }
 
   if (pending?.kind === "media" && !message.attachments?.length) {
-    return finishIngest(message, await resolveMediaChoice(pending, String(message.text ?? ""), when))
+    const choice = await resolveMediaChoice(pending, String(message.text ?? ""), when)
+    if (choice) return finishIngest(message, choice)
   }
 
   if (message.attachments?.length) {
@@ -452,15 +459,12 @@ function applyNamedText(message: IncomingMessage, now: Date, text: string): Appl
   const store = useIngestStore.getState()
   const { source } = message
   const pending = store.getPending(source.channel, source.chatId)
-  if (pending?.kind === "media" && !message.attachments?.length) {
-    return { status: "needs_clarify", kind: "unknown", reply: MEDIA_QUESTION, pending }
-  }
   // A message that starts with a link is a saved link, ahead of clarify answers and pin replies.
   if (!message.attachments?.length) {
     const link = applyLink(text, { now, origin: telegramCaptureOrigin(message, text) })
     if (link) return link
   }
-  if (pending && !message.attachments?.length) {
+  if (pending && pending.kind !== "media" && !message.attachments?.length) {
     if (pending.kind === "duplicate" && isDuplicateFollowup(text)) {
       return resolveDuplicateClarify(pending, text, now)
     }
@@ -518,6 +522,9 @@ function dispatchIntent(message: IncomingMessage, intent: IngestIntent, now: Dat
       origin: telegramCaptureOrigin(message, raw),
     })
   }
+  if (intent.kind === "gps" && message.locationUpdate && !bimLocationUpdateShouldApply(now, useTimeTrackingStore.getState().entries)) {
+    return { status: "ignored", kind: "gps", summary: "iOS app is sharing location" }
+  }
   return dispatch(intent, now)
 }
 
@@ -552,9 +559,13 @@ function finishIngest(message: IncomingMessage, result: ApplyResult): ApplyResul
     }
   }
   const keepRitual = prev?.kind === "ritual" && "summary" in result && result.summary === "Undo refused during ritual"
+  const photoSettled = (next.status === "ok" || next.status === "error") && next.mediaSettled === true
+  const replacedPhoto = message.attachments?.some((row) => row.kind === "photo" || row.kind === "pdf") ?? false
+  const keepMedia = prev?.kind === "media" && !replacedPhoto && next.status !== "needs_clarify" && !photoSettled
   if (next.status === "needs_clarify") {
+    if (prev?.kind === "media" && next.pending.kind !== "media") void releaseMediaHold(prev)
     store.setPending(message.source.channel, message.source.chatId, next.pending)
-  } else if (keepRitual) {
+  } else if (keepRitual || keepMedia) {
     store.setPending(message.source.channel, message.source.chatId, prev)
   } else {
     store.setPending(message.source.channel, message.source.chatId, null)

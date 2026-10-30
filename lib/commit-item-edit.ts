@@ -73,6 +73,7 @@ const TASK_FIELDS: Record<keyof Task, true> = {
   urgency: true,
   importance: true,
   dependencies: true,
+  dependencyCombine: true,
   context: true,
   entropy: true,
   rewardValue: true,

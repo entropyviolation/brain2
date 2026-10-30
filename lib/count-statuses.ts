@@ -1,8 +1,10 @@
 /**
  * lib/count-statuses.ts — Named tallies on the Tracking log
  *
- * Each count keeps its own ticks (date + minute). An optional intake class
- * also paints an Intake instant. An optional keyword is saved in
+ * Each count keeps its own ticks (date + minute). A tick may name the log
+ * instant it came from (`sourceEntryId`). An optional intake class
+ * also paints an Intake instant when `incrementCount` runs. Linking an
+ * existing instant does not paint a second row. An optional keyword is saved in
  * `brain2-log-keywords` so `log:` of that phrase increments the count.
  * Storage: `brain2-count-statuses` (persist v2). Hub-safe Zustand persist.
  * Not cycle marks, and not the time-grid blob. Deleting a count drops its
@@ -51,6 +53,8 @@ export interface CountTick {
   date: string
   startMin: number
   clockCertainty?: Exclude<TrackingClockCertainty, "exact">
+  /** Log instant this tick was linked to. Older ticks omit it. */
+  sourceEntryId?: string
 }
 
 export interface CountStatus {
@@ -159,12 +163,14 @@ function cleanWhen(when: CountWhen): CountWhen | null {
   }
 }
 
-function tickFrom(when: CountWhen, id = newId("tick")): CountTick {
+function tickFrom(when: CountWhen, id = newId("tick"), sourceEntryId?: string): CountTick {
+  const source = sourceEntryId?.trim()
   return {
     id,
     date: when.date,
     startMin: when.startMin,
     ...(when.clockCertainty && when.clockCertainty !== "exact" ? { clockCertainty: when.clockCertainty } : {}),
+    ...(source ? { sourceEntryId: source } : {}),
   }
 }
 
@@ -178,7 +184,13 @@ function nowWhen(): CountWhen {
 
 function readTick(value: unknown): CountTick | null {
   if (!value || typeof value !== "object") return null
-  const row = value as { id?: unknown; date?: unknown; startMin?: unknown; clockCertainty?: unknown }
+  const row = value as {
+    id?: unknown
+    date?: unknown
+    startMin?: unknown
+    clockCertainty?: unknown
+    sourceEntryId?: unknown
+  }
   if (typeof row.date !== "string" || !DATE_KEY.test(row.date)) return null
   if (typeof row.startMin !== "number" || !Number.isFinite(row.startMin)) return null
   const startMin = Math.floor(row.startMin)
@@ -186,7 +198,14 @@ function readTick(value: unknown): CountTick | null {
   const clock = row.clockCertainty
   const certainty = clock === "estimated" || clock === "unknown" ? clock : undefined
   const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : newId("tick")
-  return { id, date: row.date, startMin, ...(certainty ? { clockCertainty: certainty } : {}) }
+  const source = typeof row.sourceEntryId === "string" ? row.sourceEntryId.trim() : ""
+  return {
+    id,
+    date: row.date,
+    startMin,
+    ...(certainty ? { clockCertainty: certainty } : {}),
+    ...(source ? { sourceEntryId: source } : {}),
+  }
 }
 
 function readCount(value: unknown): CountStatus | null {
@@ -362,7 +381,7 @@ export const useCountStatusesStore = create<CountStatusesState>()(
                   ticks: row.ticks.map((tick) => {
                     if (tick.id !== tickId) return tick
                     hit = true
-                    return tickFrom(clean, tick.id)
+                    return tickFrom(clean, tick.id, tick.sourceEntryId)
                   }),
                 },
           ),
@@ -494,6 +513,81 @@ export function recordCountForKeyword(phrase: string, when: CountWhen): boolean 
     if (useCountStatusesStore.getState().incrementCount(id, clean)) wrote = true
   }
   return wrote
+}
+
+function entryWhen(entryId: string): CountWhen | null {
+  const entry = useTimeTrackingStore.getState().entries.find((row) => row.id === entryId)
+  if (!entry) return null
+  return cleanWhen({
+    date: entry.date,
+    startMin: entry.startMin,
+    clockCertainty: entry.clockCertainty,
+  })
+}
+
+/**
+ * One tick for an existing log instant. The tick clock is the entry's
+ * `date`, `startMin`, and `clockCertainty`, not the current minute.
+ * A second call for the same count and entry does nothing.
+ * Does not paint an intake instant — `incrementCount` still does that
+ * when the count itself has an intake class.
+ */
+export function incrementCountForEntry(countId: string, entryId: string): boolean {
+  const when = entryWhen(entryId)
+  if (!when || !entryId.trim()) return false
+  const count = useCountStatusesStore.getState().counts.find((row) => row.id === countId)
+  if (!count) return false
+  if (count.ticks.some((tick) => tick.sourceEntryId === entryId)) return true
+  const tick = tickFrom(when, newId("tick"), entryId)
+  useCountStatusesStore.setState({
+    counts: useCountStatusesStore.getState().counts.map((row) =>
+      row.id === countId ? { ...row, ticks: [...row.ticks, tick] } : row,
+    ),
+  })
+  return true
+}
+
+/** Drop ticks on this count that were linked to `entryId`. */
+export function removeCountTickForEntry(countId: string, entryId: string): boolean {
+  const count = useCountStatusesStore.getState().counts.find((row) => row.id === countId)
+  if (!count || !entryId) return false
+  const kept = count.ticks.filter((tick) => tick.sourceEntryId !== entryId)
+  if (kept.length === count.ticks.length) return false
+  useCountStatusesStore.setState({
+    counts: useCountStatusesStore.getState().counts.map((row) => (row.id === countId ? { ...row, ticks: kept } : row)),
+  })
+  return true
+}
+
+/**
+ * After a clock edit, copy the entry's date, minute, and certainty onto
+ * every tick linked with `sourceEntryId`. No-op when the entry is missing.
+ * `updateEntry` does not call this: the time-grid store and this store
+ * would import each other. Call it after the clock write.
+ */
+export function syncCountTicksForEntry(entryId: string): void {
+  const when = entryWhen(entryId)
+  if (!when) return
+  let changed = false
+  const counts = useCountStatusesStore.getState().counts.map((count) => {
+    let touched = false
+    const ticks = count.ticks.map((tick) => {
+      if (tick.sourceEntryId !== entryId) return tick
+      const next = tickFrom(when, tick.id, entryId)
+      if (
+        next.date === tick.date &&
+        next.startMin === tick.startMin &&
+        next.clockCertainty === tick.clockCertainty
+      ) {
+        return tick
+      }
+      touched = true
+      changed = true
+      return next
+    })
+    return touched ? { ...count, ticks } : count
+  })
+  if (changed) useCountStatusesStore.setState({ counts })
 }
 
 /** Start a tally for a phrase that is already a log keyword. */

@@ -5,7 +5,8 @@
  * the field back to 0. Text cells do the same, and they do not write the store
  * on each keystroke: the grid, grades, and coverage scan stay still until the
  * note pauses or the field blurs. A note that already has text opens in a
- * larger editor. A blank cell stays the small inline field.
+ * larger editor. A blank cell stays the small inline field, except on the
+ * phone list (`popup`), where every note opens that editor.
  */
 "use client"
 
@@ -54,6 +55,7 @@ export function HabitNumberField({
       onValue(completionValueFromInput(raw))
     },
     onBlur: () => setDraft(null),
+    size: Math.min(12, Math.max(2, shown.length || 1)),
   }
   if (plain) return <input {...props} />
   return <Input {...props} />
@@ -99,6 +101,7 @@ export function HabitTextField({
   placeholder,
   plain = false,
   ariaLabel,
+  popup = false,
 }: {
   value: string
   onValue: (value: string) => void
@@ -107,6 +110,8 @@ export function HabitTextField({
   placeholder?: string
   plain?: boolean
   ariaLabel?: string
+  /** Phone list: tap opens the note sheet, including when the cell is blank. */
+  popup?: boolean
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
@@ -121,7 +126,7 @@ export function HabitTextField({
     setDraft(null)
   }
 
-  if (filled && !draftingInline) {
+  if ((popup || filled) && !draftingInline) {
     return (
       <>
         <button
@@ -129,17 +134,18 @@ export function HabitTextField({
           type="button"
           className={`habit-cell-text-preview ${className ?? ""}`.trim()}
           style={style}
-          title={value}
+          title={value || undefined}
           aria-label={ariaLabel ? `Edit ${ariaLabel}` : "Edit note"}
           onClick={() => setExpanded(true)}
         >
-          {value}
+          {value.trim() ? value : placeholder || "Note"}
         </button>
         {expanded ? (
           <HabitTextEditor
             text={shown}
             label={ariaLabel ?? "Habit note"}
             anchor={anchorRef.current}
+            phone={popup}
             onChange={(next) => {
               setDraft(next)
               schedule(next)
@@ -182,12 +188,15 @@ function HabitTextEditor({
   text,
   label,
   anchor,
+  phone = false,
   onChange,
   onClose,
 }: {
   text: string
   label: string
   anchor: HTMLElement | null
+  /** Phone sheet: below the status bar, with a 44px close. Desktop stays anchored. */
+  phone?: boolean
   onChange: (text: string) => void
   onClose: () => void
 }) {
@@ -216,14 +225,21 @@ function HabitTextEditor({
   if (typeof document === "undefined") return null
 
   return createPortal(
-    <div className="habit-text-editor-layer">
+    <div className={`habit-text-editor-layer${phone ? " is-phone" : ""}`}>
       <button type="button" className="habit-text-editor-shade" aria-label="Close note" onClick={onClose} />
       <div
-        className="habit-text-editor"
+        className={`habit-text-editor${phone ? " is-phone" : ""}`}
         role="dialog"
         aria-label={label}
-        style={{ top: place.top, left: place.left, width: place.width }}
+        style={phone ? undefined : { top: place.top, left: place.left, width: place.width }}
       >
+        {phone ? (
+          <div className="habit-text-editor-bar">
+            <button type="button" className="habit-text-editor-close" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        ) : null}
         <textarea
           ref={areaRef}
           className="habit-text-editor-area"
@@ -237,11 +253,13 @@ function HabitTextEditor({
             }
           }}
         />
-        <div className="habit-text-editor-bar">
-          <button type="button" className="habit95-btn" onClick={onClose}>
-            Done
-          </button>
-        </div>
+        {phone ? null : (
+          <div className="habit-text-editor-bar">
+            <button type="button" className="habit95-btn" onClick={onClose}>
+              Done
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

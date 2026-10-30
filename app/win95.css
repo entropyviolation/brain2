@@ -198,6 +198,9 @@ body.win95-app h3,
 body.win95-app h4,
 body.win95-app .native-select {
   font-family: var(--w95-font);
+  /* w95fa has one weight. Synthetic bold strokes a light fringe around each glyph. */
+  font-synthesis: none;
+  -webkit-text-stroke: 0;
 }
 
 body.win95-app {
@@ -451,7 +454,7 @@ body.win95-app [role="tab"] {
   background: var(--fascia-key-face);
   color: #1c1e20;
   letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   box-shadow: var(--fascia-key-ring);
 }
 body.win95-app [role="tab"]:active {
@@ -575,7 +578,7 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"] {
   color: #1c1e20;
   font-weight: normal;
   letter-spacing: 0.08em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: none;
   box-shadow: var(--fascia-key-ring);
 }
 body.win95-app [data-ui-name="App tabs"] [role="tab"]:active {
@@ -618,6 +621,7 @@ html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app [data-tab="docs"
 html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app [data-tab="scheduler"],
 html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app [data-tab="operations"],
 html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app [data-tab="modules"],
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app [data-tab="inventory"],
 html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app [data-tab="analytics"] {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),
@@ -634,6 +638,7 @@ html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app [data-tab="docs"
 html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app [data-tab="scheduler"]::before,
 html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app [data-tab="operations"]::before,
 html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app [data-tab="modules"]::before,
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app [data-tab="inventory"]::before,
 html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app [data-tab="analytics"]::before {
   content: "";
   display: block;
@@ -685,6 +690,28 @@ body.win95-app [data-ui-name="App tabs"] [role="tab"][data-state="active"]::befo
  */
 body.win95-app :is([role="dialog"], [role="alertdialog"]) {
   transition-property: none;
+}
+
+/*
+ * Center a popup with the margin box, not translate(-50%, -50%).
+ * Chrome and Electron keep a transformed layer's text a beat behind the
+ * keys, and a fast burst in Quick Add shows up about a second late.
+ * Phone sheets already drop the transform (touch.css, mobile.css).
+ * A dialog that sets its own height (the item-type editor) keeps it.
+ */
+@media (min-width: 981px), (min-width: 768px) and (pointer: fine) {
+  body.win95-app :is([role="dialog"], [role="alertdialog"]).ui-dialog-content {
+    inset: 0;
+    height: fit-content;
+    margin: auto;
+    transform: none;
+    translate: none;
+    animation: none;
+  }
+
+  body.win95-app .ui-dialog-content.h-\[min\(92vh\,900px\)\] {
+    height: min(92vh, 900px);
+  }
 }
 body.win95-app .set95-dialog.set95-drift-preview {
   transition-property: background-color, background-image, border-color, color, box-shadow;
@@ -1027,6 +1054,7 @@ html[data-boot-tab="docs"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [
 html[data-boot-tab="scheduler"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="scheduler"],
 html[data-boot-tab="operations"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="operations"],
 html[data-boot-tab="modules"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="modules"],
+html[data-boot-tab="inventory"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="inventory"],
 html[data-boot-tab="analytics"]:not([data-nav-ready]) body.win95-app .b2-shell-tabs [data-tab="analytics"] {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(125, 255, 196, 0.2), transparent 55%),

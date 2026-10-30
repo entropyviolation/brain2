@@ -78,7 +78,7 @@ full-page item so the desk is visible.
 - Changing the query or the Advanced filters moves the highlight back to the
   first hit, so Enter opens the best match.
 - Cmd/Ctrl-K toggles the palette. Cmd/Ctrl-Shift-A opens Quick Add and does not toggle search.
-- A house question is not a node lookup. The grammar is in `lib/graph/pattern-questions.ts`: `who with <person> during <date>..<date>` or a trip title, `places with one person`, `captures never linked`, `where from <name>`, `what reads <id>`, `day <YYYY-MM-DD>`, `people unseen`, and `? <subject> <relation> <object>` with `*` as a wildcard. The sentence is omitted when no triple matched.
+- A house question is not a node lookup. The grammar is in `lib/graph/pattern-questions.ts`: `who with <person> during <date>..<date>` or a trip title, `places with one person`, `captures never linked`, `where from <name>`, `what reads <id>`, `day <YYYY-MM-DD>`, `people unseen`, `unsupported beliefs`, `shared names`, `unpinned derived`, `via <relation> <title>`, and `? <subject> <relation> <object>` with `*` as a wildcard. `via` walks child relations. The sentence is omitted when no triple matched.
 
 ## Phone
 

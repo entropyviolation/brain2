@@ -22,6 +22,7 @@ import type { Task, TimeLogEntry } from "@/lib/types"
 import { isClearedFromWork } from "@/lib/completion-status"
 import { addCalendarDays, formatLocalDateKey, startOfLocalDay } from "@/lib/date-utils"
 import { localDayIso } from "@/lib/item-notes"
+import { itemTitle } from "@/lib/item-utils"
 import { taskModifiedMs } from "@/lib/task-modified"
 import {
   OPERATION_ATTR,
@@ -450,7 +451,7 @@ function targetTime(op: Task): number {
 
 /** Order operations by the home board's chosen sort (stable, non-mutating). */
 export function sortOperations(operations: Task[], mode: OperationSortMode = "name"): Task[] {
-  const byName = (a: Task, b: Task) => a.description.localeCompare(b.description)
+  const byName = (a: Task, b: Task) => itemTitle(a).localeCompare(itemTitle(b))
   const out = [...operations]
   if (mode === "stage") {
     out.sort((a, b) => (STAGE_RANK.get(stageOf(a)) ?? 0) - (STAGE_RANK.get(stageOf(b)) ?? 0) || byName(a, b))

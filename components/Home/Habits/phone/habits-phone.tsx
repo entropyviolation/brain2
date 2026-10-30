@@ -6,7 +6,7 @@
  * rendered here.
  * One scrolling page: sticky header, period keys, one grade strip, a
  * one-period list with a horizontal drag between periods, and a thumb bar.
- * Sheet opens the desktop grid. Tools opens the control panel and the
+ * Week opens the desktop grid. Tools opens the control panel and the
  * willpower plate in a bottom sheet. Writes go through the same cells.
  */
 "use client"
@@ -138,7 +138,7 @@ export interface HabitsPhoneProps {
   good: HabitsPhoneMeter | null
   through: string | null
   wand: ReactNode
-  /** Desktop grid for this tab. Mounted from the Sheet key. */
+  /** Desktop grid for this tab. Mounted from the Week key. */
   columns: ReactNode
   /** Daily heatmap. Replaces the list while Heatmap View is on. */
   heatmap: ReactNode | null
@@ -484,11 +484,12 @@ export function HabitsPhone(props: HabitsPhoneProps) {
     props.hydrated ? `${name} (${count})` : name
 
   const closeTools = useCallback(() => setTools(false), [])
+  const dayTube = props.frequency === "daily" && !props.heatmap && !sheet && props.hydrated && Boolean(period)
 
   return (
     <div
       ref={rootRef}
-      className={`hab-phone${compact ? " is-compact" : ""}`}
+      className={`hab-phone${compact ? " is-compact" : ""}${dayTube ? " has-day-tube" : ""}`}
       data-ui-name="Habits"
       data-ui-docs="components/Home/Habits/README.md"
       data-testid="habits-phone"
@@ -497,23 +498,24 @@ export function HabitsPhone(props: HabitsPhoneProps) {
       <header className="hab-phone-head">
         <div className="hab-phone-head-row">
           <h3 className="hab-phone-title">Habits</h3>
-          <button type="button" className="hab-phone-icon-btn" onClick={props.onSettings}>
-            Settings
+          <button type="button" className="hab-phone-gear" data-no95="" aria-label="Settings" onClick={props.onSettings}>
+            <img src="/ui/settings-gear.png" alt="" width={28} height={28} draggable={false} />
           </button>
         </div>
         <div className="hab-phone-nav">
-          <button type="button" className="hab-phone-icon-btn" aria-label={props.previousAria} onClick={props.onPrevious}>
+          <button type="button" className="hab-phone-key hab-phone-key-icon" data-no95="" aria-label={props.previousAria} onClick={props.onPrevious}>
             <ChevronLeft aria-hidden="true" />
           </button>
           <button
             type="button"
-            className="hab-phone-date"
+            className="hab-phone-key hab-phone-date"
+            data-no95=""
             aria-pressed={props.isCurrentPeriod}
             onClick={goCurrent}
           >
             {title}
           </button>
-          <button type="button" className="hab-phone-icon-btn" aria-label={props.nextAria} onClick={props.onNext}>
+          <button type="button" className="hab-phone-key hab-phone-key-icon" data-no95="" aria-label={props.nextAria} onClick={props.onNext}>
             <ChevronRight aria-hidden="true" />
           </button>
         </div>
@@ -531,6 +533,8 @@ export function HabitsPhone(props: HabitsPhoneProps) {
               key={id}
               type="button"
               role="tab"
+              className="hab-phone-key"
+              data-no95=""
               aria-selected={props.frequency === id}
               onClick={() => props.onFrequency(id)}
             >
@@ -567,7 +571,8 @@ export function HabitsPhone(props: HabitsPhoneProps) {
               key={item.key}
               type="button"
               role="tab"
-              className={`hab-phone-day${index === focus ? " is-on" : ""}${item.isCurrent ? " is-today" : ""}`}
+              className={`hab-phone-key hab-phone-day${index === focus ? " is-on" : ""}${item.isCurrent ? " is-today" : ""}`}
+              data-no95=""
               aria-selected={index === focus}
               onClick={() => setFocus(index)}
             >
@@ -626,15 +631,17 @@ export function HabitsPhone(props: HabitsPhoneProps) {
                       </div>
                     </section>
                   ))}
-                  <div className="hab-phone-group">
-                    <button type="button" className="hab-phone-period" onClick={() => setPeriodOpen(true)}>
-                      <span>{period.title}</span>
-                      <HabitPercentReadout
-                        value={props.periodPercent(period)}
-                        label={`${period.title} completion`}
-                      />
-                    </button>
-                  </div>
+                  {props.frequency === "daily" ? null : (
+                    <div className="hab-phone-group">
+                      <button type="button" className="hab-phone-period" onClick={() => setPeriodOpen(true)}>
+                        <span>{period.title}</span>
+                        <HabitPercentReadout
+                          value={props.periodPercent(period)}
+                          label={`${period.title} completion`}
+                        />
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>
@@ -643,21 +650,38 @@ export function HabitsPhone(props: HabitsPhoneProps) {
         )}
       </div>
 
-      <div className="hab-phone-bar">
-        <button type="button" onClick={props.onNewHabit}>
-          New habit
-        </button>
-        <button type="button" aria-pressed={props.isCurrentPeriod} onClick={goCurrent}>
-          {props.currentLabel}
-        </button>
-        {props.heatmap ? null : (
-          <button type="button" aria-pressed={sheet} onClick={() => setSheet((on) => !on)}>
-            Sheet
+      <div className="hab-phone-dock">
+        {dayTube && period ? (
+          <button
+            type="button"
+            className="hab-phone-day-tube"
+            data-testid="habits-phone-day-tube"
+            aria-label={`${period.title} completion`}
+            onClick={() => setPeriodOpen(true)}
+          >
+            <HabitPercentReadout
+              value={props.periodPercent(period)}
+              density="wide"
+              label={`${period.title} completion`}
+            />
           </button>
-        )}
-        <button type="button" aria-pressed={tools} onClick={() => setTools(true)}>
-          Tools
-        </button>
+        ) : null}
+        <div className="hab-phone-bar">
+          <button type="button" className="hab-phone-key" data-no95="" onClick={props.onNewHabit}>
+            New habit
+          </button>
+          <button type="button" className="hab-phone-key" data-no95="" aria-pressed={props.isCurrentPeriod} onClick={goCurrent}>
+            {props.currentLabel}
+          </button>
+          {props.heatmap ? null : (
+            <button type="button" className="hab-phone-key" data-no95="" aria-pressed={sheet} onClick={() => setSheet((on) => !on)}>
+              Week
+            </button>
+          )}
+          <button type="button" className="hab-phone-key" data-no95="" aria-pressed={tools} onClick={() => setTools(true)}>
+            Tools
+          </button>
+        </div>
       </div>
 
       <ToolsSheet open={tools} onClose={closeTools} reduce={reduce}>
@@ -789,9 +813,6 @@ function PhoneRow({
         />
         {props.detail ? <div className="hab-phone-detail"><HabitCompletionDetail task={task} completion={shown} now={period.date} /></div> : null}
       </div>
-      <button type="button" className="hab-phone-pct" aria-label={`${task.name} span`} onClick={onSpan}>
-        <HabitPercentReadout value={props.taskPercent(task.id)} label={`${task.name} span`} />
-      </button>
       <div className="hab-phone-mark">
         <HabitCompletionCell
           task={task}
@@ -818,6 +839,7 @@ function PhoneRow({
             if (!isGoalType(task.type)) return
             props.onUpdate(task.id, period.date, { value, goal: task.goal || 0 })
           }}
+          notePopup
           onTextChange={(text) => props.onUpdate(task.id, period.date, { text })}
           onIncrementalChange={(value) => {
             if (task.type !== TaskType.INCREMENTAL) return
@@ -825,6 +847,11 @@ function PhoneRow({
           }}
         />
       </div>
+      {props.frequency === "daily" ? null : (
+        <button type="button" className="hab-phone-pct" aria-label={`${task.name} span`} onClick={onSpan}>
+          <HabitPercentReadout value={props.taskPercent(task.id)} label={`${task.name} span`} />
+        </button>
+      )}
     </div>
   )
 }

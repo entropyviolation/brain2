@@ -70,9 +70,9 @@ describe("NeedsAttention", () => {
 
     expect(screen.queryByText("Aging unscheduled task")).not.toBeInTheDocument()
     expect(screen.queryByText("Stale")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unclarified")).not.toBeInTheDocument()
+    expect(screen.queryByText("Old inbox item")).not.toBeInTheDocument()
     expect(screen.getByText("Late report")).toBeInTheDocument()
-    expect(screen.getByText("Old inbox item")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Unclarified" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Overdue" })).toBeInTheDocument()
   })
 
@@ -139,34 +139,31 @@ describe("NeedsAttention", () => {
     expect(taskRepository.getById("zombie")?.subtasks?.map((s) => s.description)).toEqual(["Draft", "Edit"])
   })
 
-  it("clarifies an inbox item from the queue", () => {
+  it("does not list an inbox capture", () => {
     taskRepository.add(task({ id: "inbox", description: "Vague idea", stage: "inbox" }))
+    taskRepository.add(task({ id: "late-inbox", description: "Late inbox", stage: "inbox", deadline: daysAgo(2) }))
 
     render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
-    fireEvent.click(screen.getByRole("button", { name: "Clarify" }))
 
-    expect(taskRepository.getById("inbox")?.stage).toBe("list")
+    expect(screen.queryByText("Vague idea")).not.toBeInTheDocument()
+    expect(screen.queryByText("Late inbox")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Clarify" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Unclarified" })).not.toBeInTheDocument()
   })
 
   it("hides a category and remembers it", () => {
-    taskRepository.add(
-      task({
-        id: "inbox",
-        description: "Vague idea",
-        stage: "inbox",
-      }),
-    )
+    taskRepository.add(task({ id: "zombie", description: "Rescheduled forever", daysPushed: 8 }))
     taskRepository.add(task({ id: "overdue", description: "Late report", deadline: daysAgo(2) }))
 
     render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
-    fireEvent.click(screen.getByRole("button", { name: /Hide Unclarified/ }))
+    fireEvent.click(screen.getByRole("button", { name: /Hide Zombie/ }))
 
-    expect(screen.queryByText("Vague idea")).not.toBeInTheDocument()
+    expect(screen.queryByText("Rescheduled forever")).not.toBeInTheDocument()
     expect(screen.getByText("Late report")).toBeInTheDocument()
-    expect(JSON.parse(localStorage.getItem("cogs-needs-attention-hidden") ?? "[]")).toEqual(["unclarified"])
+    expect(JSON.parse(localStorage.getItem("cogs-needs-attention-hidden") ?? "[]")).toEqual(["zombie"])
 
-    fireEvent.click(screen.getByRole("button", { name: /Show Unclarified/ }))
-    expect(screen.getByText("Vague idea")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Show Zombie/ }))
+    expect(screen.getByText("Rescheduled forever")).toBeInTheDocument()
   })
 
   it("keeps the count at zero until the task vault has hydrated", () => {
@@ -220,5 +217,26 @@ describe("NeedsAttention", () => {
 
     expect(screen.getByRole("button", { name: /Needs Attention/ })).toHaveAttribute("aria-expanded", "false")
     expect(screen.queryByText("Late report")).not.toBeInTheDocument()
+  })
+
+  it("selects a range and deletes those rows together", () => {
+    taskRepository.add(task({ id: "a", description: "First zombie", daysPushed: 8 }))
+    taskRepository.add(task({ id: "b", description: "Second zombie", daysPushed: 8 }))
+    taskRepository.add(task({ id: "c", description: "Third zombie", daysPushed: 8 }))
+    vi.spyOn(window, "confirm").mockReturnValue(true)
+
+    render(<NeedsAttention onOpenItem={() => {}} options={{ now: NOW }} defaultCollapsed={false} />)
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select First zombie" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Third zombie" }), { shiftKey: true })
+
+    expect(screen.getByRole("checkbox", { name: "Select First zombie" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select Second zombie" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Select Third zombie" })).toBeChecked()
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete selected" }))
+
+    expect(taskRepository.getById("a")).toBeUndefined()
+    expect(taskRepository.getById("b")).toBeUndefined()
+    expect(taskRepository.getById("c")).toBeUndefined()
   })
 })

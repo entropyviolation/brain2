@@ -20,7 +20,9 @@ not the pattern to copy. The full account is "Debt" below.
 A module that keeps its records as Items is a room in the house — searchable
 from Cmd/Ctrl-K, schedulable, analyzable, ingestible by text message — because
 it never invented its own storage. **Data is the heart** of that graph:
-collection, presentation, analysis, and the next tool grown from the same mass.
+analytics and combined analysis, visualization and stats, libraries for viewing
+the rows, sources, and annotation
+([`components/Analytics/README.md`](../components/Analytics/README.md)).
 **Infinite adaptability, one nervous system.** New organs grow on that same
 graph.
 

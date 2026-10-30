@@ -81,17 +81,17 @@ Full contract, install ladder, manifest shape, and migration plan:
 
 ## Files
 
-_Last mapped: 2026-10-27._
+_Last mapped: 2026-10-28._
 
 | File | Purpose |
 |------|---------|
 | `modules-panel.tsx` | **Orchestrator**: lists workspaces + widgets, opens a workspace full-screen, hosts the build/config dialogs. Board faces use `orbFor` (or a stored photograph) — no Lucide fallbacks on the catalog. Trip / Tidy / Film DNA interiors are unchanged. Last open workspace survives refresh / tab switch. Catalog chrome is `.mod95` in `modules-chrome.css` (miniature windows + gadget wells; interiors keep their own skins). |
-| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. Catalog cards (workspace windows and dashboard widgets) take the Home overview face from `home-chrome.css`: Karla, titles 14px, descriptions and view counts 13px, widget body sentences one step up (`text-sm` 16px, `text-xs` 13px, `text-[10px]` 12px). The opened workspace stays on the pixel face. |
+| `modules-chrome.css` | Catalog (`.mod95`) + opened workspace window (`.mod95-ws`) so generic views/toolbars are not glass on the PCB. Imported from `app/layout.tsx`. Catalog cards (workspace windows and dashboard widgets) take the Home overview face from `home-chrome.css`: Karla, titles 14px, descriptions and view counts 13px, widget body sentences one step up (`text-sm` 16px, `text-xs` 13px, `text-[10px]` 12px). The opened workspace stays on the pixel face. Build module, the workspace bar (Sync to Plan, Print / Export, Workflows, Settings, Pop out, Add view), and the caption glyphs (back, pop out, edit view) are the house silver keycap (`.todo-cap`, `data-no95`). Build module and Add view wear the navy primary lamp. |
 | `module-helpers.ts` | **Pure helpers + constants**: random pickers, writing word banks, `MODULE_META`, `WIDGET_MODULE_TYPES`, `WIDGET_MODULE_CATALOG` (what each card should tell), `ruleMatches`, `tasksInList`, stat/rule-operator options. Unit-tested in `module-helpers.test.ts` |
 | `module-bodies.tsx` | `ModuleCard` + per-widget render bodies (analytics stat, list summary, writing prompt, list explorer, random task, rules). Exports `AnalyticsStat` (reused by workspace `stat` views) |
 | `module-helpers.test.ts` | Unit tests for the pure helpers (`ruleMatches`, `tasksInList`, `randN`) |
 | `ModuleConfigDialog.tsx` | Add/configure a **widget**. Its list field is `SingleListPicker` (built-in topics, or choose a list). |
-| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. |
+| `workspace/ModuleWorkspace.tsx` | Full-screen workspace renderer: Win95 window (back / rename / add view / **Print–Export** / **Sync to Plan** / **Pop out**) + a tab per view. Last view per workspace is restored. The ? key beside Settings opens `ModuleHelpDialog`. |
 | `workspace/module-popout.ts` | `/popout/?module=<id>` helpers + `openModulePopout` (Electron `BrowserWindow` or `window.open`). Hash `#popout/module/<id>` still parsed. |
 | `workspace/module-popout.test.ts` | Unit tests for path + hash round-trip |
 | `workspace/module-view-bodies.tsx` | The per-kind view bodies + `ModuleViewBody` switch + shared countdown `Timer` (writes `timeLogs` on complete). When the timer must ask which item to log, that choice is `ItemPicker`. |
@@ -104,6 +104,7 @@ _Last mapped: 2026-10-27._
 | `workspace/html/HtmlModuleView.tsx` | `html` view body: runs an uploaded `.html` in a sandboxed `<iframe srcDoc>` and answers its `window.brain2` calls (`lib/module-html-bridge.ts`). Writes go through `task-store`. |
 | `workspace/html/HtmlUploadDialog.tsx` | **Upload HTML file** from the Build a module dialog: pick a file (2 MB cap), name it, tick lists it may see, optionally allow edits. Creates a workspace with one `html` view. |
 | `workspace/html/HtmlViewFields.tsx` | Which lists an HTML page may see (`ListPicker`, multi, searchable) and the "Allow edits" toggle. Shared by the upload dialog and `ModuleViewEditor`. |
+| `workspace/ModuleHelpDialog.tsx` | Guide opened from the ? key beside Settings: the five Build module paths, each template’s own blurb, the caption keys, every view kind, plan sync, and where the records live. |
 | `workspace/ModuleSettingsDialog.tsx` | **Module definition / settings editor**: name, icon, description, bound lists (+ roles + attribute extensions), views (add/edit/remove/**reorder**), plan-sync + print toggles, attach workflows. Edits a controlled `ModuleDefinition` and reports via `onSave` |
 | `workspace/ModuleListsPanel.tsx` | In-workspace **bound-list editor**: each binding's `role`, list (`SingleListPicker`), optional item type, and per-binding attribute extensions (reuses Lists' `AttributeSchemaEditor`) |
 | `workspace/WorkflowBuilder.tsx` | **Visual workflow manager** ("Zapier for personal ideas"): list / add / edit / enable / delete / run a module's authored workflows. Persists to `lib/workflows-store.ts` |

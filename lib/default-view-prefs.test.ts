@@ -133,6 +133,11 @@ describe("formatEstimateMinutes / descriptionSnippet", () => {
         notes: "A very long note that should be clipped so the reading row stays a row not a paragraph of text.",
       }),
     ).toMatch(/…$/)
+    const huge = `Open here. ${"x".repeat(200_000)}`
+    const shown = descriptionSnippet({ description: "Dune", notes: huge })
+    expect(shown.startsWith("Open here.")).toBe(true)
+    expect(shown.endsWith("…")).toBe(true)
+    expect(shown.length).toBe(48)
   })
 })
 

@@ -11,6 +11,7 @@
  */
 import type { Folder, List, Task } from "@/lib/types"
 import type { ModuleInstance, ModuleViewConfig } from "@/lib/modules-store"
+import { isClearedFromWork } from "@/lib/completion-status"
 import { isFolderAllItemsCategoryId, FOLDER_ALL_PREFIX } from "@/lib/folder-all-items"
 import { useTaskStore } from "@/lib/task-store"
 
@@ -145,6 +146,37 @@ function globalAllTaskHider(lists: List[], folders: Folder[]): (task: Task) => b
 export function filterTasksHiddenFromGlobalAll(tasks: Task[], lists: List[], folders: Folder[]): Task[] {
   const isHidden = globalAllTaskHider(lists, folders)
   return tasks.filter((t) => !isHidden(t))
+}
+
+/**
+ * Active rows for Home / global All Items: not cleared, not hidden with the
+ * module-list tree. One pass over small fields (membership, status). The same
+ * array comes back when those rows did not change, so opening All does not
+ * rebuild it.
+ */
+export function selectGlobalAllItems(
+  tasks: readonly Task[],
+  lists: List[],
+  folders: Folder[],
+  prev?: readonly Task[] | null,
+): Task[] {
+  const isHidden = globalAllTaskHider(lists, folders)
+  const next: Task[] = []
+  for (const task of tasks) {
+    if (isClearedFromWork(task) || isHidden(task)) continue
+    next.push(task)
+  }
+  if (prev && prev.length === next.length) {
+    let same = true
+    for (let i = 0; i < next.length; i++) {
+      if (prev[i] !== next[i]) {
+        same = false
+        break
+      }
+    }
+    if (same) return prev as Task[]
+  }
+  return next
 }
 
 function addId(ids: Set<string>, id?: string | null) {

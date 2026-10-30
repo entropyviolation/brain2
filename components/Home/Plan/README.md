@@ -105,11 +105,11 @@ _Last mapped: 2026-10-27._
 
 ## Phone
 
-_Last mapped: 2026-10-27._
+_Last mapped: 2026-10-29._
 
 A screen-reader heading still says Plan. A viewport at or under 767px mounts `plan-phone.tsx` and does not mount the milled fascia. Wider than that, the fascia is unchanged — `plan-chrome.css` has no phone block. The cut is 767px because Home’s 720px stacks and the shell’s 520px title bar are different jobs.
 
-The phone calendar leaves the mill. It follows Apple Calendar and a Fantastical day: a compact bar (previous, the period, next, Add), a segmented Season / Month / Week / Day, a large title that scrolls off, and a bottom dock (Today, Explorer, Plan log, More). Month is a Sunday grid of circles and dots, the same columns as the desktop month. Week is a Monday strip, the same week as the desktop week. The agenda under them is the day you can thumb. Season is three months. A sideways flick changes the period you are on. A vertical move scrolls the agenda. `touch-action: pan-y` keeps those apart.
+The phone calendar leaves the mill. It follows Apple Calendar and a Fantastical day: a compact bar (previous, the period, next, Add), a segmented Season / Month / Week / Day, a large title that scrolls off, and a bottom dock. Today, Explorer, Plan log, and More are pale silver keycaps (the same skirt as the phone’s tab keys). Dark does not recolor those four. Month is a Sunday grid of circles and dots, the same columns as the desktop month. Week is a Monday strip, the same week as the desktop week. The agenda under them is the day you can thumb. Season is three months. A sideways flick changes the period you are on. A vertical move scrolls the agenda. `touch-action: pan-y` keeps those apart.
 
 Sheets hold what the fascia keys held. **Add** opens Add Event, Add Plan, Paste Events, an event at a chosen hour, and a free block (the drag-across-empty-minutes path, so **Session in this time** still lives on that dialog). **More** holds Settings, Paste Events, Dark, and Gem and trinket — the same ids `#plan-dark-mode`, `#plan-gem-mode`, and `#plan-chrome-toggles`. **Explorer** is the same rail, with a **Plan** key on each row because a drag has nothing to land on. **Plan log** is `PlanTextLog` for the open period. Edit still uses the event dialog and the planned-action dialog; on a phone those windows sit as a bottom sheet (safe area, 44px targets) and keep the unsaved-changes guard. Opening a row still uses `TaskDetailPopup`. The three task editors stay separate.
 
